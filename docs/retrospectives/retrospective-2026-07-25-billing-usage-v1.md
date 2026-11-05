@@ -1,7 +1,7 @@
 # Retrospective — Billing & usage v1 (Sprint 13a — usage meter + org-facing usage screen), 2026-07-25
 
-Brief: `docs/plans/2026-07-25-billing-usage-v1-brief.md`; design source
-`docs/plans/2026-07-24-billing-sources-investigation.md`. Executor: Opus 4.8. **Status: SHIPPED +
+Brief: `docs/plans/archive/2026-07-25-billing-usage-v1-brief.md`; design source
+`docs/plans/archive/2026-07-24-billing-sources-investigation.md`. Executor: Opus 4.8. **Status: SHIPPED +
 DEPLOYED 2026-07-25** — commits `be06153c`..`27562de0` (4 feature commits + a test-clock fix),
 migration `0116` applied migrate-first with RLS, both Cloud Builds SUCCESS for `27562de`, smoke
 green. **The meter is LIVE and recording; the org-facing usage screen stays flag-dark
@@ -11,7 +11,7 @@ so an org admin's first visible month is a complete one).
 ## The same-day arc: investigation → build
 
 This sprint is unusual in how fast it moved from "should we build this" to "it's live": the
-billing-sources investigation (`docs/plans/2026-07-24-billing-sources-investigation.md`) landed
+billing-sources investigation (`docs/plans/archive/2026-07-24-billing-sources-investigation.md`) landed
 2026-07-24, established that every billable call site is already org-resolvable at the existing
 Rule-6 seams but that literally zero metering existed, and closed the roadmap's "Billing & usage"
 gate the same day it opened. The owner triggered the build immediately rather than waiting for the

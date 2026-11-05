@@ -1,6 +1,6 @@
 # Retrospective — Requests list R1: tabs, filter, search, pager and Previous / Next (2026-11-03)
 
-Plan of record `docs/plans/2026-11-03-requests-list-r1-roadmap.md`; design of record the "Requests list" artifact
+Plan of record `docs/plans/archive/2026-11-03-requests-list-r1-roadmap.md`; design of record the "Requests list" artifact
 (https://claude.ai/artifact/KaYimA2jWrJdfpLEaCKYBF); owner approved the design and option A on 2026-11-03. Platform
 work, not billed. LIVE 2026-11-03: api `8e69ecdd` (build 1114af85, `halatuju-api-01242-ntg`), then web `2da37ff4`
 (build a972cc1e, `halatuju-web-01070-c44`; the same build carried Team tables T3's web, agreed with that session).

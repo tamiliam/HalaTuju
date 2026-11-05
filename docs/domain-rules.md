@@ -525,7 +525,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
   and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.
 - **The standing rule (owner, 2026-09-19):** a feature sprint does not grow a file waiting to be split —
   it runs that file's split first. The split table is "Which Phase-4 sprint owns which file" in
-  `docs/plans/2026-09-18-code-health-roadmap.md`; the ratchet binds regardless.
+  `docs/plans/archive/2026-09-18-code-health-roadmap.md`; the ratchet binds regardless.
 - ⛔ **Never set `UPDATE_EMAIL_GOLDEN`.** `tests/test_email_branding.py` pins every email's bytes in three
   languages; a failure means you changed what a student receives — that needs the owner.
 - **Patching a re-export package:** `patch('pkg.name')` can SUCCEED and patch nothing. Grep for both
@@ -568,3 +568,14 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 - **The debt register:** close a TD only with evidence; put the resolution marker ON the defining line in
   the same change; never write a new entry inside the Open Items Index.
 - **Never conclude an absence from a grep** — authored content (clauses, templates, copy) lives in the database.
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-05 (audit sprint A0.3)
+
+Live rules (full text, unchanged).
+
+- Patching a re-export package can succeed and patch nothing (grep `patch(` and `patch.object(`; use `patch_engine`). `apps/scholarship/constants.py` is a LEAF: add no import.
+- **i18n delivery:** only `messages.ts` and `messagesAdmin.ts` are static catalogue imports; ⛔ never add to `oneLocalePerVisitor.test.ts`'s exemption list; ⛔ never use an `admin.*` key outside the console.
+- **Serve, never assemble or derive in the browser** (`apply_url`, a gift's `state`, a request's status); one server definition per answer a screen shows; name the server function before building a control, tick or count.
+- Status is derived, never stored (invitations). **Never re-run `build_verdict` over old snapshots.** Version bumps are not optional (`VERDICT_ENGINE_VERSION`, genuineness `MODEL_VERSION`).
+- **Money:** read Vircle's `Principal Wallet ID`, never `Supp Wallet ID`; the webhook never overwrites a stored `vircle_id`; "sent to a person" comes from `duitnow_type`; a student's name in a spending report is never stored.
+- The padlock keys on `nric_locked`, never `identity_verified`. An organisation's Overview layout narrows, never widens.

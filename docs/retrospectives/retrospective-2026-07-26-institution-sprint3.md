@@ -1,6 +1,6 @@
 # Retrospective — Institution must-fill, Sprint 3: sponsor surface parity (2026-07-26)
 
-Final sprint of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`. Backend + one frontend
+Final sprint of `docs/plans/archive/2026-07-25-institution-must-fill-roadmap.md`. Backend + one frontend
 link. No migration. **No data insert** — which is the finding worth keeping.
 
 ## What was built

@@ -1,6 +1,6 @@
 # Retrospective — Overview phase 2, Sprint B: the arrows, and the drag that was not built
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-overview-phase-2-roadmap.md` · **Sprint:** B of 2 (the phase is now complete)
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-overview-phase-2-roadmap.md` · **Sprint:** B of 2 (the phase is now complete)
 **Built by:** an Opus 5 agent to a written brief and the standing hard rules. The lead reads the
 report and pushes.
 **Outcome: an org admin can put the five Overview panels in any order, from the screen that was

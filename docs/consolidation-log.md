@@ -5,105 +5,86 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries and the four sprint lines wrongly logged here are listed in that review, and line by line in git at `6e1d66db`)_
-
-- 2026-11-03 fix: request #53 - stamped name blocks are stamps; support letters need a signed, named approver (Maintenance; logged by the M7b close) — 581432ea
-- 2026-11-04 fix: request #53 follow-up - the stamp is its own yes/no question (logged by the T5b close) — 1656fc67
-- 2026-10-29 a75d80ff fix: STPM results page streams follow the MPM grouping - Sains Sukan under Arts only, Matematik (M) and ICT under both (halatuju-web/src/lib/stpmResultsSubjects.ts, halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts)
-- 2026-10-30 1a6f8cd1 feat: request 50 - sort the applications list by Assigned, unassigned last (halatuju_api/apps/scholarship/views_admin/applications.py, halatuju-web/src/app/admin/scholarship/page.tsx, test_admin_scholarship.py)
-- 2026-10-30 bf79bea6 refactor: move the reviewer FAQ out of faq.tsx (moves only) (halatuju-web/src/content/manual/faq.tsx, faq-reviewer.tsx, types.ts — the 600-line standard)
-- 2026-10-31 18192946 fix: profile password change saves under the sign-in email, not the phone (halatuju-web/src/components/adminProfile/SignInCard.tsx, shared.tsx, app/admin/profile/page.test.tsx)
-- 2026-10-30 827c8b05 fix: cockpit ticks mean a document backs the value (halatuju-web/src/lib/fieldVerification.ts, ApplicantCards.tsx, faq-reviewer.tsx, role-reviewer.tsx; owner ruling, display only)
-- 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
-- 2026-10-31 a0344a35 fix: a profile save keeps the catalogue-filled institution; backfill sees post-STPM degrees (halatuju_api/apps/scholarship/family.py, management/commands/backfill_institution.py + 3 test files; owner-approved backfill --apply on live after deploy: 47 + 45 rows)
-- 2026-11-01 f451a105 fix: My activity is a fixed-height column that scrolls (owner, option A) (halatuju-web/src/app/admin/profile/page.tsx, components/adminProfile/ActivityCard.tsx, shared.tsx + tests)
-- 2026-11-01 9ef402a4 fix: My activity asks for 6 rows first, 20 per Show older (owner) (ActivityCard.tsx, admin-api/profiles.ts + tests)
-- 2026-11-01 8e6773d5 fix: My activity shows 10 rows first and no per-row rebuilt tag (owner) (ActivityCard.tsx, en/ms/ta, manual Guide + FAQ + tests)
-- 2026-11-03 159e824f 07f6da5d fix: Programme Settings - the gift's Configuration row renamed and moved last in the Programme group (owner) (navigation.ts + test, en/ms/ta, manual Guide + FAQ; also the apply gift test waits for the prefill, a deploy-build flake)
-- 2026-11-03 a3495aa9 docs: slim halatuju_api/CLAUDE.md (CLAUDE.md, docs/*)
-- 2026-11-05 ebc30f68 fix: remove the TEMP tech-support help box and its personal mobile number, TD-066 (halatuju-web/src/components/ScholarshipNextSteps.tsx, messages en/ms/ta; 1 source file, owner ruling)
+_(cleared at the 2026-11-05 review - counter reset; the fifteen small-lane entries are named in that review, and line by line in git at the commit before it)_
 
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
-- 2026-11-02 Mobile-native Sprint M4 (part 0 shared-phone privacy fix; apply draft in this tab, one step per screen; document cards, Action Centre, award reader; award read-back of a passed quiz and a valid PIN; rule 15 one box level on phones; adversarial review fixes; not yet pushed) — 1c6ecf40 22cf678e 7e5dce9f 70a0ab05 dbf092b5 8717b111 94366446 86423305
-- 2026-11-02 Mobile-native Sprint M4b (student bottom tab bar; rule-15 sweep of dashboard, search, course pages, profile, saved, settings) — d37fc2f5 12c8f8dc 691e8804 6de6113d
-- 2026-11-03 Team tables T1 (hats plumbing: derived Admins/Reviewers/Mentors tables, page gates read keys; owner option B; adversarial review; no migration) — f9f85195 7b1e469e
-- 2026-11-02 Offer letters read exactly, Sprints S1-S4 (eval tooling, answers, today's reader measured, reader 2.4.0 + IC guard; live main cfd02d91) — 86694663 f3f1ebec ebf81b42 0ff5688d 15ad3710 fded4337 0246662b 4493b400 6c209f91 20e69d5a 7c7f3875 6e41400b edcbbc0c 5d96f857 a3be8d8b f78046ca 8b1ac648 2019fbea 6d024d26
-- 2026-11-02 Mobile-native Sprint M4c (rule-15 sweep of My Bursary, Home, scholarship landing, report, info/legal pages, pathways, onboarding, quizzes) — 633ff8b5 2a6db949 b93f425f
-- 2026-11-03 Mobile-native Sprint M5 (sponsor portal on phones: sponsor tab bar, display + Log out in My Account, fund bar + one confirm Sheet, rule 15 + 12 px across the portal, sign-in and landing) — 8144dc17 87f791fe 96c95693 ede659d4 5b565a66 3fbf7d30 93afa27c
-- 2026-11-03 Team tables T2 (the Team page: Admins / Reviewers tables, Add / Remove, labels retired, org admin may join Reviewers; lead rulings Q1-Q4; no migration; built, not live) — 31295fa3 8dc51562
-- 2026-11-03 Team tables T3 (Mentors under Team, mentor detail page, staff mentor may leave the last staff table as a mentor login, permissions only on the person page; no migration; built, not live) — c3d88aec a3e7f4c5
-- 2026-11-03 Team tables T5a (permission catalogue v2 + aliases, effective_v2 read-only, golden + coverage per live shape; no gate converted; no migration; live) — 3e232021
-- 2026-11-03 Requests list R1 (paged light list, four tabs that partition it, one Needs-action rule for badge and tab, kind filter, search, Previous / Next; owner option A; no migration; live api-01242-ntg, web-01070-c44) — 8e69ecdd 2da37ff4
 
-- 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; live de48d898) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
-- 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; live bff52794) — 3da191d7 932814ca d29b9447 979baefb
-- 2026-11-03 Mobile-native Sprint M7a (phase 1: maintenance status read-only on a phone, TD-480 item 4; owner split M7a / M7b; tabs: four chips, more one chooser; console tables as rows by CSS; rule 15 on the scholar file, student detail, payment run, request detail; table guard on every component folder; layout only, then the review: every decided door read-only on a phone, table ARIA roles; live 881e5465) — 66f8e80d efa1ecaa ed7afe2c b6624afc d9360541 e24c2834 881e5465
-- 2026-11-04 Team tables T5b — 2a41c5e6, 730a7216
-- 2026-11-04 TD-481 (an awaiting-QC case is declined only through the QC gate; owner ruling; adversarial review SHIP; no migration) — 62a74f07
-- 2026-11-04 TD-473 (a pre-U offer letter on a degree pick reads Pathway mismatch, known by its institution; owner ruling; three adversarial review rounds; 0 live letters change; no migration; Cockpit) — fd5c16e8
-- 2026-11-03 Mobile-native Sprint M7b (the DesktopOnly panel replaces the six desktop-only pages below md, by CSS, mounted once in AppShell from lib/desktopOnly.ts held equal to mobileClass; one way back; the why as the reason in en/ms/ta; Team -> Mentors, the source and mentor rosters as rows, staff-access actions not hidden; LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2) — 782738d9 47c82f0b 586bf355
-- 2026-11-04 Mobile-native Sprint M8 (close-out: last tap targets, every Must screen measured, spills number (rule 16), readable chart text, shared phone pills (rule 17); LIVE 2026-11-04, main bea7111d, halatuju-web-01077-mt9 then 01079-tv4) — 7343cbf2 e43f314e 71f31550 98f9896b 41763484 ed48f28d fcc36014 bea7111d
-
-_(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
-
-- 2026-10-28 Bumi coverage Sprint A (scraper Bumi signals + inventory) — 4350af2f
-- 2026-10-28 Bumi coverage Sprint B (the Bumiputera answer, migration 0087) — 6443120d 8a47851a daf1918d 6c458ed5
-- 2026-10-29 TD-416 message slices + Bumi coverage Sprint C (Islamic SPM subjects) — f1ae0a83 9d1dedca 5a4e186e f4aa714d 1a4aedc8
-- 2026-10-29 Bumi coverage Sprint D1 (UiTM SPM courses, courses/0088) — 7d484e3b c420f805 7318cdba a3e67e91 19fdf24e 8018922c
-- 2026-10-29 Bumi coverage Sprint D2 (other SPM courses, ATAU, Bumi matric tracks) — 17e4b0a2 0679e368 e8de21dc 1948c6b7 733649b5 de10ccda 6d806eb4
-- 2026-10-30 Bumi coverage Sprint F1 (public UP_TVET, non-MARA; pathways mara + tvet_other) — cb4676a8 ee50749e a1a7585a f4c4f30b 91b1123d 814d28c2 590c85a6 5ce776ab a60662cc
-- 2026-10-30 Bumi coverage Sprint F1b (held TVET flag fix) — 948f3e59 4186e78a 579e27ca
-- 2026-10-30 Bumi coverage Sprint F2 (MARA UP_TVET) — 896cdd25 ef6f53e6 6c9d15ad 2127fda6
-- 2026-10-31 Request 51 (People: Awaiting review + Interviewing replace Open now) — 54a2ef23
-- 2026-10-29 Student maintenance Sprint 1 (one predicate, on hold stops money, activity log, migration 0183) — ad299d31 901c63d5 ae939213 99ee813b
-- 2026-10-29 Student maintenance Sprint 2 (admin Scholars list + maintenance file) — 3b27acbd 1debc6cc
-- 2026-10-29 Student maintenance Sprint 3 (My Bursary hub; sub-state + Close move to the scholar file) — 1f78c76a c007883e
-- 2026-10-29 Student maintenance Sprint 4a (results review, standing, accepted-only sponsor readers, portal-only slips, migration 0186) — 3d38f1f8 10072c71
-- 2026-10-30 Student maintenance Sprint 4b (result terms, not submitted, Results overdue, student results emails + Student communications tab, migration 0188) — e421d37b 9da575eb eaee818a 9809de16 47d00f11
-- 2026-10-30 Student maintenance Sprint 5a (scholar file Money + Contract tabs; Payments-rule money, countersigned contract) — 3d636795 cebc9850
-- 2026-10-30 Student maintenance Sprint 5b (her Funds + Contract tabs on My Bursary; bursary message slice; closed file promises nothing) — f9c484df 2b62a6f8
-- 2026-10-30 Student maintenance Sprint 6a (one Student communications page for all 29 student emails; switches for the 9 safe ones; forward-only billing of student sends; migration 0189) — a1c9f85b 002c6ad7
-- 2026-10-31 Student maintenance Sprint 6b (letters on the scholar file and on My Bursary; documents only; + adversarial review round; migration 0192) — 0e506798 98b0f964
-- 2026-10-31 Common profile S1+S2 (one card-list Profile page for every role; admin/me + own password change; photo, job title, About, phone for everyone; fourth language; + adversarial review round; migration 0193) — 2fc01f4f 9fb07368 e9904922 2f6906dc 3931c140 13f7430a 13141011 3ad1f387
-- 2026-10-28 Back-issuing invoices, grouped development lines, bug work free (migrations 0181, 0182) — ec21c0b5 4c6aca75 fc864c2c 62ebb121 b0473994 ceea94e0
-- 2026-10-29 Billing — the busy-meter guard, the tenant payment declaration and the owner's four readings (migrations 0184, 0185) — dec989c6 b1045b8b e20a3363 8e946874 6db38edc
-- 2026-10-29 Student maintenance Sprint 2 (admin Scholars list and maintenance file) — 3b27acbd 1debc6cc _(logged by the billing session at its close, as above)_
-- 2026-10-29 Matric/Diploma Exact-read M1 (an ACADEMIC TRANSCRIPT is told by its issuer) — 98cc71e3 f856d20c _(logged by the billing session at its close, as above)_
-- 2026-10-29 Matric/Diploma Exact-read M2 (the Matriculation transcript is read Exact) — b0cdcd9d 6ce290ed _(logged by the billing session at its close, as above)_
-- 2026-10-29 Matric/Diploma Exact-read M3 (a polytechnic Diploma transcript is read Exact) — 814ffa0f 128a8fab _(logged by the billing session at its close, as above)_
-- 2026-10-29 Matric/Diploma Exact-read M4 (Matriculation and polytechnic genuineness, genuine or nothing) — 314a38ca 860792b8
-- 2026-10-30 Matric/Diploma Exact-read M4b (owner rulings: only the final result counts; slip/portal = final transcript owed) — 76748c33 59dd96c2 b9e71d82 1586a572 9ad721a2
-- 2026-10-29 Default payment schedule mirrors contract 10 (sprint: money; no migration) — e6a03fb3
-- 2026-10-30 Billing reads the published hours + corrections of an earlier month (sprint: money; migration scholarship/0187) — cbfa2a59 375edb62 fd6e2dd5 01214600
-- 2026-10-30 Billing — finishing a request includes its figures (sprint: money; no migration) — 0545ac0e eee279c8
-- 2026-10-30 source sign-in S1–S4 (+2 review rounds; migrations courses 0089, scholarship 0190, 0191) — 89714e00 e88810ac 17b51f6a bc9c050b e9bc334d bd22bfd7 f45bc558
-- 2026-10-30 Scholarship My Plans redesign (offer question, institution first, unfiltered; + adversarial review round; no migration) — ceb547fc c34519cb 53706f21
-- 2026-10-31 School search + same-name towns + MARA division in the picker (owner follow-ups to My Plans; two adversarial review rounds, money guarded; no migration) — 78348694 4a9777a5 30105247 fadedfc1 9282305d 820c1412
-- 2026-10-31 Mobile-native Sprint M0 (Mobile Standard, ratchet guards, mobile-check + ledger, viewport/manifest) — 9691f9a7 b38e6b67 c4f7d9d6 308ef3b5
-- 2026-11-01 Mobile-native Sprint M1 (M0 tooling review fixes, M1a global foundations, M1b shared Sheet + 15 overlays, review fixes) — 8d667133 225671b1 22eb88cc 9b3f3778 fb710d8f bb3d2722 506df8d1 a59da58b e0e0b7dd bd872cd9
-- 2026-11-01 Mobile-native Sprint M2 (one student header, phone menu in Sheet, onboarding header + grade rows, safe student sign-out) — 2e6a25ec 9b2f9c21 06794b91 7fd9410b
-- 2026-11-01 Mobile-native Sprint M3 (search filters in a sheet, course pages + sticky Save, saved compare on phones, report, 44 px footer) — b22ca47f d19dfdf9 ba3929f1 b239c88d be2749fd 56173595
-- 2026-10-31 Common profile Sprints S3-S5 (My activity: staff_activity + writer, reader, back-fill, the card; adversarial review round; migration scholarship 0195) — b269a631 d3e472c7 151de0f2 de573eb1 54e6cf3d 51bf847d
-- 2026-11-01 Common profile follow-up sprint (TD-439 owner ruling: phone written by admin/me only; TD-445, TD-446; no migration) — 83571471
-- 2026-11-01 Offer realignment (degree catalogue in the matcher, issuer for a hostel line, Bumi-only offers realign the pick; two adversarial review rounds; no migration; realign_bumi_offers --apply on live) — a8c763f8 333e7a96 1d849065
-- 2026-11-01 Offer date rule + offer link + one campus test (#243 link, owner date rule, #168 false tick; review rounds 3–5; no migration; both commands --apply on live) — 3aa80e5a 170db26f bc440b88 9969c1f3
-- 2026-11-01 Empty-pick fill (#202; owner: Check 1 records facts; review round 6; no migration; link_offer_courses --apply filled #202) — 3eba43b6 b19577ea
-- 2026-11-01 Route-aware exam-year colours (owner table; display only; no migration) — 49e50778
-- 2026-11-02 Offer matcher reads the S4 campus and programme_code fields (cloud session + Cockpit; adversarial review on the campus join; no migration) — 50cf6531 d08283f1 26e1f6cf 7b8403e3
-- 2026-11-01 Offer letters read exactly Sprint 1 (eval tooling: scorer, held-out split, review page, paged fetch; baseline 21/90 fully exact; no reader change) — 6cb620d5 7da17db2 af17c491 f7029a63 fe5981a3
-- 2026-11-01 Offer letters read exactly Sprint 2 (dev answers, campus split, OCR + replay, failure map, offer-check page; eval only, no reader change) — 68ab0595 ceea1ee5 19106084 40ece202
-- 2026-11-01 Offer letters read exactly Sprint 3 (today's AI reader measured on 216 letters, RM3.72; eval only) — d7c0a546
-- 2026-11-03 Offer letters read exactly Sprint 5 (the Exact read 2.0.0 covers more letters; offer_exact entry point; two adversarial review rounds; production dry run; no migration) — db9eb421 effb3bd4 7eb1dbbc 6c6beb12 23976848 ae443f45
-
-- 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration)
-
-- 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration) — 00397b75
-- 2026-11-03 Team tables T4 (Team -> Emails in three sections: read-only admin list from one backend registry, reviewer card moved, mentor invitation two doors; Terms three "Soon" sections; lead ruling option B; live) — d94af772
-- 2026-11-04 Offer letters read exactly Sprint 6 (the owner's genuineness rulings on a frozen baseline; agency-letterhead lift; 14 review rounds; owner stop rule; no migration; live a1d1dca7) — 50af00f0 4a32be43 b5c99503 a1ba5549 415ede3c 629e925f 66aceea5 4b1addb7 3571a9f7 b55b310a 5d75f2de 76b4d9b0 def2edea aa24e2ae df1c8d89 7d98ee8c 7a0bb146 85e578c8 9e67fb13 3ae266c2 dc2a2b28 8930acc7 632f54a7 7a25a6d6 52ff382f 56330c54 43be2123 2f613369 a1d1dca7
+_(cleared at the 2026-11-05 review; the sprint lines it read are named in that review, and line by line in git at the commit before it)_
 
 ## Reviews
+
+### 2026-11-05 — fifteen small changes and twenty-five unlogged commits, 28 Oct → 5 Nov: the Overview cards were patched four times after their sprint, and the lane carried a sprint-sized request
+
+**The fix-up first.** `wat_lint` found 25 code commits since 2026-10-28 that were neither logged nor said
+"sprint" (the Team tables T5c steps are named `T5c P1`..`P5b`, a subject the check cannot read as a sprint).
+They are logged here by SHA so the check can read them. **Team tables T5c, one sprint in steps:** P1 `42101dc0`,
+P2 `c1bc9cea`, P3 `04c5ebec`, P4a `ae27058d`, P4 `41647ccd`, review fix `1e0efcb7`, P5 S1 `8c798203`,
+S1b `00c12611`, nav split `f9d99859`, S2 `8576762e`, S2b `0bafbb84`, S2c `2e0e6b98`, label fix `d8b5be0c`, P5b
+S1 `7bf77b8e`, S2 `9f13e12e`, mentor card `eedc20f4`. **The Overview cards after P5b, four follow-ups in one
+day:** `38144e07` `2b618fc8` `7ce8de9c` (and `eedc20f4` above). **The audit-fix and release pass:** money, TD-465
+`b0bedd54` `bb5688f9`; security, `ecb02b7e` `26b47c88` `227eaf72`; the v3.1.0 patch `57046b2f`.
+
+**The fifteen small changes** (the `## Pending` entries): request 53 and its follow-up (`581432ea` `1656fc67`);
+STPM streams (`a75d80ff`); request 50 and its follow-up (`1a6f8cd1` `8aaee890`); the reviewer FAQ split
+(`bf79bea6`); the profile password (`18192946`); cockpit ticks (`827c8b05`); the catalogue institution
+(`a0344a35`); My activity, three times (`f451a105` `9ef402a4` `8e6773d5`); the gift Configuration row
+(`159e824f` `07f6da5d`); a docs slim (`a3495aa9`); the TEMP help box (`ebc30f68`).
+
+**The sprints since 2026-10-28** (context; each had its own close): Mobile-native M4, M4b, M4c, M5, M6a, M6b,
+M7a, M7b, M8; Team tables T1, T2, T3, T4, T5a, T5b; Offer letters read exactly S1-S6; Requests list R1; TD-481;
+TD-473; the offer matcher #337. Their lines are in git at the commit before this review.
+
+**Reflect.** The fifteen touched the officer cockpit (ticks, request 50 and 53), the admin profile (password,
+My activity), the apply and results pages (STPM streams, the help box), one backfill and a docs slim. The
+twenty-five touched the console doors (T5c), the Overview, and the audit-fix money and security items. Real
+defects: the password under the wrong identity (`18192946`), the lost institution (`a0344a35`), and all five
+audit-fix money and security commits. Not defects: `1a6f8cd1` is a feature, `bf79bea6` and `f9d99859` are
+moves, `159e824f` is a rename, `a3495aa9` is docs, and the T5c steps are feature work or its review rounds.
+
+**Cohere.**
+- **My activity (`f451a105` `9ef402a4` `8e6773d5`) - one surface asked three times.** The owner chose the
+  height, then the row count, then the row count again. Not a redesign: the owner's settled answer is now in
+  the card (10 rows first, fixed height). The lesson is the question, not the code: settle the row count with the
+  owner before the first build. Noted, no TD.
+- **Overview cards (`38144e07` `2b618fc8` `7ce8de9c` `eedc20f4`) - a cluster after a sprint.** P5b shipped the
+  cards and four patches followed within the day, each a rule the cards had to agree with the list they open
+  (the band, the ready-to-assign filter, the sublines). This is the 2026-10-28 class again ("a screen answering a
+  server question for itself", and its twin, a card and its list counting differently). Covered by the
+  existing cluster entry; the fixes made the cards open the list with the same filters (`?band`, `?ready`).
+- **Request 50 (`1a6f8cd1` `8aaee890`) - sprint-sized, accepted.** `1a6f8cd1` is a feature that sorts a list by a
+  derived column, then needed a second commit for the tie rule. `wat_lint` WARNed it. Accepted here (the list sort
+  is read-only and had tests); the follow-up proves the tie rule was a design question that a plan would have
+  asked.
+- **Request 53 (`581432ea` `1656fc67`) - a pair.** The stamp rule, then the stamp as its own yes/no question. Same
+  surface, two days, both owner rulings. Accepted.
+- **`bf79bea6` - a new module, moves only.** The reviewer FAQ split to hold the 600-line standard; `wat_lint`
+  WARNs a new module. Accepted: the second moves-only split the lane has carried to keep a ledger honest.
+- **A decision contradicted?** No fix reversed a recorded decision; the T5c commits wrote their own
+  `decisions.md` entries.
+
+**Anticipate.**
+- **Recurring class: "a sprint step committed as `fix:`/`feat:` with no word `sprint`".** Twenty-five commits in
+  nine days. Guardrail: a sprint step's subject carries the word "sprint" (as the T5c steps did not), or the
+  sprint close writes its line under `## Sprints since the last review`. The lane's own rule already says this;
+  the miss was the T5c steps being named by phase. Landed as the commit-type paragraph in the project
+  `CLAUDE.md` (below), which also says to name a sprint step as one.
+- **`fix:` is used for things that are not defects** (a rename, a review round, a label). That inflates `fix%`
+  (TD-385's very point). Guardrail landed: `CLAUDE.md` now says `fix:` is for a real defect; otherwise
+  `refactor:`, `test:`, `chore:` or `docs:`.
+- **Not landed (workspace tool change, needs the owner):** let `wat_lint` read `T5c P5`-style subjects as
+  sprint steps. Proposed, not made.
+
+**Close out.** Pending cleared (15 entries, 25 more logged above, counter reset); the sprint lines cleared.
+Register: the A0.2 sweep closed 25 entries on file:line evidence (11 FIXED, 6 STALE, 8 MERGED incl. TD-252
+into TD-198 - the sweep's FIXED on TD-252 was overturned: only the cron half shipped) and left four UNSURE ones
+open with a note (TD-127, 129, 395, 478); `td_open` 233 -> 208. The Open Items Index is regenerated: 208
+pointers = 208 open, by the 2026-10-28 method; 82 entries raised since were never listed and are in an
+untiered group. Code-health reading taken (plain, `227eaf7`): `fix%` 50 -> 51 WARN, accepted under TD-385
+(the third-accept rule is met: TD-385 is the TD entry, so this is not a third accept of a bare WARN); `std`
+FAIL accepted, see `docs/code-health.md`. Owed outside this review: tiering the 82, and the Next 15 upgrade
+(TD-506) that stops the bundle lines rising.
 
 ### 2026-10-28 — ten small changes and forty-one sprint lines, 18 Oct → 28 Oct: four screens answered a server question for themselves, and the lane carried three sprints
 

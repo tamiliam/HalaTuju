@@ -1,6 +1,6 @@
 # Retrospective — Platform Sprint 1: Organisation record + BrightPath as org #1 (2026-07-15)
 
-First sprint of the multi-tenant platform roadmap (`docs/plans/2026-07-14-platform-roadmap-draft.md`,
+First sprint of the multi-tenant platform roadmap (`docs/plans/archive/2026-07-14-platform-roadmap-draft.md`,
 Phase 1). Commit `a473a171`; live on revision `halatuju-api-00749-zzq`.
 
 ## What Was Built
@@ -17,7 +17,7 @@ Phase 1). Commit `a473a171`; live on revision `halatuju-api-00749-zzq`.
 - **Seed migration `scholarship/0098`**: BrightPath created as organisation #1 with today's live
   branding/sender constants captured verbatim (so Sprints 5/6 can render byte-identically from
   config); every existing cohort backfilled. Idempotent; reverse detaches cohorts, keeps the org row.
-- **Prod migrate-first runbook** `docs/plans/2026-07-15-sprint1-migrate-first.md` — hand-written
+- **Prod migrate-first runbook** `docs/plans/archive/2026-07-15-sprint1-migrate-first.md` — hand-written
   Postgres DDL with pre-checks (right-table guards, already-applied guard) and post-checks, applied
   via the Supabase MCP before the push.
 - Tests: `apps/scholarship/tests/test_platform_organisation.py` (+6) — seed values, idempotency,

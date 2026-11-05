@@ -1,6 +1,6 @@
 # Retrospective — Code health H10: fewer than half of the "mirrors" were mirrors
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H10 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H10 of H19
 **Built by:** an Opus 5 agent to the same brief and the same hard rules as H9. The lead reads the
 report and pushes.
 **Outcome: the ledger is empty but for a documented exception. PHASE 3 COMPLETE — the checkpoint

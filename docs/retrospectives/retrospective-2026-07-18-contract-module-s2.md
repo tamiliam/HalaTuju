@@ -1,7 +1,7 @@
 # Retrospective — Contract Module Sprint 2 (engine cutover)
 
 **Date:** 2026-07-18
-**Plan:** `docs/plans/2026-07-18-contract-module-plan.md`
+**Plan:** `docs/plans/archive/2026-07-18-contract-module-plan.md`
 **Branch:** `feat/contract-module` (renamed from `feat/contract-module-s1`); NOT
 pushed — the feature's single deploy is Sprint 5.
 **Scope:** Backend only. `bursary.py`/`payments.py` read the versioned template;

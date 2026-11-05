@@ -1,5 +1,7 @@
 # Multi-programme applications — roadmap
 
+> **Status (checked 2026-11-05): Parked - partly done (M1 only; M2-M4 not approved, re-plan when a second programme is close).**
+
 **Drafted 2026-07-28** per `Settings/_workflows/implementation-planning.md`.
 
 > **▶ OWNER RULING 2026-10-05 (TD-337) — ONE APPLICATION PER ORGANISATION.** *"If a student is

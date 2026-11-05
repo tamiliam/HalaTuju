@@ -1,6 +1,6 @@
 # Retrospective — Code health H1: one-word gates and a frozen production lock
 
-**Date:** 2026-09-18 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H1 of H19
+**Date:** 2026-09-18 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H1 of H19
 **Built by:** an Opus 5 agent to a written brief; verified, corrected and closed by the lead.
 **Freeze status:** in force. Closer to *stabilised* by one sprint of ten.
 

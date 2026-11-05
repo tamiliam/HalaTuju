@@ -3,7 +3,7 @@
 **Date:** 2026-06-20 · **For:** tamiliam (owner steps) + engineer (deploy steps)
 **Goal:** take the built-and-proven WhatsApp channel (Sprints 1–2, branch `feat/whatsapp-comms`) LIVE so the
 **99 B40 applicants** get interview reminders on WhatsApp alongside email.
-Companion to `docs/plans/2026-06-20-whatsapp-comms-channel.md` + `docs/whatsapp-setup-guide.md`.
+Companion to `docs/plans/archive/2026-06-20-whatsapp-comms-channel.md` + `docs/whatsapp-setup-guide.md`.
 
 > **Why there's a code step too:** the sandbox accepts free-text, but a **production** business-initiated WhatsApp
 > message (one *we* start, like a reminder) **must use a Meta-approved template**. Our `send_whatsapp` currently sends

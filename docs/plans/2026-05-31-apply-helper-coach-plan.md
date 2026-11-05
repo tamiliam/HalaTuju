@@ -1,5 +1,7 @@
 # Document Helper "Coach" — Implementation Plan
 
+> **Status (checked 2026-11-05): Parked (2026-05-31).** Never approved for coding; no later trace in the changelog or history.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 > Not yet approved for coding — this is the planning artefact. Get user sign-off, then start Task 1.
 

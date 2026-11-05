@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-03
 **Branch/worktree:** `feat/verify-v3` in `.worktrees/verify-model` (off main incl. V1+V2)
-**Roadmap:** `docs/plans/2026-07-03-verification-model-roadmap.md` (V3 of V1–V6)
-**Findings source:** `docs/plans/2026-07-03-check-model-audit.md` (#6–#9 + owner decisions 3 & 4)
+**Roadmap:** `docs/plans/archive/2026-07-03-verification-model-roadmap.md` (V3 of V1–V6)
+**Findings source:** `docs/plans/archive/2026-07-03-check-model-audit.md` (#6–#9 + owner decisions 3 & 4)
 **Migration:** NONE.
 **Tests:** 2046 scholarship pytest (+6 net) + 413 jest; tsc clean.
 **Owner checkpoint:** this sprint closes the V1–V3 block. Two design forks were taken to the owner

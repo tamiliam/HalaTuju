@@ -644,7 +644,7 @@ it greys the assign picker and the server ignores it). Every T5 step that moves 
 
 **Context:** `/admin/requests` was one unpaged list carrying every request's full detail, with a status dropdown the
 server never read (`?status=` was ignored). R1 makes it a paged, server-filtered queue. Plan of record
-`docs/plans/2026-11-03-requests-list-r1-roadmap.md` (D1-D12); design of record the "Requests list" artifact.
+`docs/plans/archive/2026-11-03-requests-list-r1-roadmap.md` (D1-D12); design of record the "Requests list" artifact.
 
 **Decision:**
 1. **The tabs PARTITION the list (owner, option A).** Needs action / In progress / Closed, and All is their sum. Every
@@ -2707,7 +2707,7 @@ the live stored read of that document (fetched 2026-10-29) carries the same misr
 
 The owner asked for a whole system to look after students who were awarded and accepted, until their file is
 closed: a student hub ("My Bursary", `/scholarship/bursary`) and an admin Scholars list + maintenance file
-(`/admin/scholars`). Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (8 sprints + 3 later).
+(`/admin/scholars`). Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (8 sprints + 3 later).
 **Rulings:** (1) **who is in it** — from award acceptance to closure: `awarded` with `vircle_activated_at` set, OR
 `active` / `maintenance`; closed students keep read-only access. ONE predicate (`maintenance_scope.py`) replaces the
 four gates that today accept only `active`/`maintenance` — live count 65, all `awarded` + Vircle-activated
@@ -2902,7 +2902,7 @@ separately, and Continue needs PA + three and a koko score.
 
 ## An STPM student's CGPA is the PNGK of their grades (PA + best three); every reader asks one function — 2026-10-28 (STPM CGPA C2)
 
-Owner ruling (roadmap `docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come
+Owner ruling (roadmap `docs/plans/archive/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come
 from onboarding, and the STPM CGPA is worked out from the subjects and grades, never typed. Live, 54 of 98 STPM
 students carried a CGPA that disagreed with their own grades; every certificate read Exact agrees with
 PNGK = (Pengajian Am + best three others) / 4. Decisions: (1) one function, `apps/courses/stpm_pngk.pngk_from_grades`
@@ -14238,7 +14238,7 @@ same treatment. Recorded in the roadmap's Sprint 4 section so it reads as a deci
 tab holds nothing but the funding questions); the story step always survives because the family
 roster is core. Rejected alternative: a per-programme step list on the payload — that is a
 stored layout, which is Layer 2 in disguise and forbidden by the standing constraint in
-`docs/plans/2026-07-28-configuration-layers-roadmap.md`.
+`docs/plans/archive/2026-07-28-configuration-layers-roadmap.md`.
 
 ## The requirement set is frozen at SUBMIT, not at start — 2026-08-30
 
@@ -17639,7 +17639,7 @@ Sprint D retires the chip, `StudentProfile.source` and the cockpit's `referred_b
 
 ## 2026-10-19 — Request #39: staff become a set of permissions; today's roles are presets; Finance approves payment runs
 
-**Owner rulings, 2026-10-19 (verbatim from the roadmap `docs/plans/2026-10-19-staff-permissions-roadmap.md`):**
+**Owner rulings, 2026-10-19 (verbatim from the roadmap `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md`):**
 
 > "Can we change all to admin and control only access permission? So, a reviewer is someone with
 > review permission. A QC likewise is an admin with QC permission. In that way, we can have different

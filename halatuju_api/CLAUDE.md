@@ -32,7 +32,7 @@ intake year). Django REST API `halatuju_api/` + Next.js 14 `halatuju-web/`, both
 
 ## Build-for-Tenancy Conventions (MANDATORY for all new work)
 
-HalaTuju is becoming a multi-tenant platform (course selector = shared base; scholarship programmes = org-owned tenants; plan of record in `docs/plans/2026-07-14-platform-roadmap-draft.md` at the repo root). Until that lands, **every sprint must follow `docs/build-for-tenancy-conventions.md` (repo root)** so ongoing BrightPath work stops deepening the coupling: new tunables on `ScholarshipCohort` (not module constants), no new "BrightPath"/persona/URL literals, new admin endpoints through the `_AdminBase` gates, referral fields (`PartnerAdmin.org`, `referred_by_org`) NEVER used for access control, billable calls only through the existing seams. The full rules + review checklist are in that doc.
+HalaTuju is becoming a multi-tenant platform (course selector = shared base; scholarship programmes = org-owned tenants; plan of record in `docs/plans/archive/2026-07-14-platform-roadmap-draft.md` at the repo root). Until that lands, **every sprint must follow `docs/build-for-tenancy-conventions.md` (repo root)** so ongoing BrightPath work stops deepening the coupling: new tunables on `ScholarshipCohort` (not module constants), no new "BrightPath"/persona/URL literals, new admin endpoints through the `_AdminBase` gates, referral fields (`PartnerAdmin.org`, `referred_by_org`) NEVER used for access control, billable calls only through the existing seams. The full rules + review checklist are in that doc.
 
 ## Architecture
 
@@ -56,10 +56,12 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 - ⚠ After an `UPDATE` touching a `DEFERRABLE INITIALLY DEFERRED` FK, run `SET CONSTRAINTS ALL IMMEDIATE;` before `CREATE INDEX` in the same transaction.
 - ⚠ Adding, pausing or re-timing a Scheduler job means editing `cron_health.EXPECTED_CADENCE` in the same change.
 - ⚠ A `node_modules` JUNCTION in a worktree is removed with `[IO.Directory]::Delete('<path>')` BEFORE `git worktree remove`.
+- **Commit type is honest.** `fix:` only for a real defect that was live or would have been; a rename, a label, a review-round tweak or a follow-up to your own sprint is `refactor:`, `test:`, `chore:` or `docs:`. `fix:` counts feed `fix%` (TD-385) and the Consolidation Review reads them as failures. A sprint step carries the word "sprint" in its subject.
 - With more than one agent in the checkout: declare files in `AGENT-TERRITORY.log`, stage explicit paths (never `git add -A`), build in a worktree, push with `git push origin HEAD:main`.
 - A live re-read through a Cloud Run JOB must carry the service's read flags (`DOC_GENUINENESS_CHECK_ENABLED=1`, `BILLING_USAGE_ENABLED=true`); ⚠ the genuineness flag is on only for the exact value `1`.
 - A one-off team command runs through the `release-decisions` job with an args override (recipe in the doc).
 - Env vars: ⚠ the Gemini key must belong to the HalaTuju GCP project (prepaid; credit out = outage); ⚠ rotating the Brevo key also means Supabase Auth's SMTP setting; `SPONSOR_MOCK_DONATIONS_ENABLED` is **NEVER in production**; ⛔ `BURSARY_AGREEMENT_ENABLED` needs TD-347 fixed first; `UPDATE_EMAIL_GOLDEN` is local-only and ⛔ never set.
+- **Which flags are ON in production:** the table in `docs/deployment.md` ("Live flag values"), read off the running service. Never read a flag from a settings default.
 - The api image installs `requirements.lock` (refresh it deliberately); `.dockerignore` is the file that counts for the image.
 - New documents go where the doc says: retrospectives `docs/retrospectives/`, release notes `docs/releases/`, history `docs/sprint-history.md`, domain rules `docs/domain-rules.md`.
 
@@ -75,24 +77,7 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 - **The gift gate:** `?programme=<code>` NARROWS inside the fence and never widens it; unknown or
   cross-tenant → 404, never "show everything". An **organisation-less super must name a gift** on
   money surfaces (`400 programme_required`, TD-334; the Overview still pools — TD-336).
-- **RLS:** every `public` table has RLS on (event trigger `rls_auto_enable`, since 2026-09-16 — it adds
-  no policy: add the `service_role` policy yourself). Scholarship tables are deny-all to the public key.
-  **The four advisory tables are READ-only to students through the public key since 2026-10-05** (eight
-  write policies dropped; undo `docs/security/2026-10-05-restore-student-write-policies.sql`); every write
-  goes through Django. Run the Supabase Security Advisor after any migration; 0 errors before deploy.
-  New-table policy templates (written after an earlier RLS incident): `halatuju_api/docs/incident-001-rls-disabled.md`.
-  Check the trigger: `select evtenabled from pg_event_trigger where evtname = 'rls_auto_enable';` — `'O'` = on.
-- **Google Workspace is keyless** (TD-125/TD-329): no service-account key exists. If the path breaks,
-  alert policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
-  (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com; recovery = the IAM grant
-  (`roles/iam.serviceAccountTokenCreator` for the runtime SA on `halatuju-meet`) and
-  `iamcredentials.googleapis.com` enabled. A key fallback would be a code restore plus a deploy.
-- **Audit lines:** `AUDIT <event>` log lines (applicant reads feed the `applicant_record_reads` metric
-  and its > 30-in-10-minutes alert); logs are JSON with a real `severity` (TD-290, `halatuju/logging_json.py`)
-  — an alert matching `severity>=WARNING` only works because of it. Loggers are named in full
-  (`apps.scholarship.emails`), never `__name__` inside a package (`AuditLoggerNameTest`).
-- **Sessions:** three PKCE Supabase clients (student / admin / sponsor) with separate storage keys;
-  the web never imports a value from `@supabase/supabase-js` outside `supabaseAuthClient.ts`.
+- **RLS:** every `public` table has RLS on (event trigger `rls_auto_enable`; it adds no policy: add the `service_role` policy yourself). Run the Supabase Security Advisor after any migration; 0 errors before deploy. The student write-policy history, new-table templates, the keyless Google Workspace recovery (alert policy, IAM grant), `AUDIT` log-line rules and the three-client session rules: `docs/security-posture.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05".
 
 ## Data handling
 
@@ -129,30 +114,13 @@ cd halatuju-web && npm run bundle-budget -- --gate
 cd halatuju-web && python C:/Users/tamil/Python/Settings/_tools/test_queue.py -- npm run mobile-check    # ANY UI change, before a push (local only)
 ```
 
-- **Full suites run ONCE locally, right before the push, after the last rebase.** Not after each review
-  round or fix — re-run only the affected test files then. Cloud Build runs the full suite again and
-  ships nothing red.
-
-- ⚠ Run the API gate with `-n auto`, not serially. ⚠ Frontend: all four gates before any push that deploys web; tsc and `next lint` need 0 ERRORS (`next build` lints before it emits).
-- ⚠ For any UI change run `npm run mobile-check` (and `npm run mobile-ledger`); ⚠ interactive behaviour needs a RENDERED test, a source-shape guard is not evidence.
-- Golden masters SPM 5,319 / STPM 2,025: if either moves you broke eligibility. Measure your own baseline; never quote an inherited number.
-- Reviewing the console locally: SQLite + `seed_local_console`, no production data, ever; never re-run extraction locally.
-- Pre-deploy checklist: both suites green; migration applied by hand + ledger row; new table has RLS + `service_role` policy + Advisor 0 errors; eligibility/money/identity adversarial review; version bumps (`VERDICT_ENGINE_VERSION`, genuineness `MODEL_VERSION`, `PROMPT_VERSION`); strings in en/ms/ta; the owner's yes to push.
-- ⛔ Never run `cleanup_orphan_blobs --apply` from a checkout or image older than S2 (it deletes staff photos). Dry-run first.
-- ⚠ Two roads reach QC (recommend via `verify-accept`, decline via `submit-decline`) and leave different marks; fixtures and the cockpit's rendered tests are in the doc.
+Full suites run ONCE locally, right before the push. Run the API gate with `-n auto`. All four frontend gates before any web deploy; any UI change runs `npm run mobile-check`. Golden masters SPM 5,319 / STPM 2,025: if either moves you broke eligibility. Never run `cleanup_orphan_blobs --apply` from a checkout older than S2 (it deletes staff photos). Never re-run extraction locally. The rest of the rules (pre-deploy checklist, the two roads to QC, rendered tests): `docs/testing.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05".
 
 ## Code standards (full text: `docs/code-standards.md`)
 
 Enforced by tests inside the deploy gate: no file over 600 lines (ledgered ones may not grow), no function of 150+ lines, one rule one home, no skipped tests, no new `# noqa` / `@ts-ignore` / `any`, every `eslint-disable` carries a reason, no unguarded mirror, no unused dependency, the `courses -> scholarship` import ceiling, new tests use the factory, a route may not get heavier (250 kB, median ratchet), applicant-detail GET pinned at 38 queries, the Mobile Standard. The two budget files are `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json` (frozen `baseline` + live `budget` that only tightens). The one-liners that cause damage if missed:
 
-- **NEVER raise a budget, a floor or a ledger**; split the file first, in its own commit, moves only. A new post-H18 query budget is a dated `_admitted` record, never in the frozen `baseline`.
-- ⛔ No value import from `@supabase/supabase-js` in `src/` (auth clients only in `supabaseAuthClient.ts`; `import type` is fine).
-- ⚠ Next's printed first-load counts the PAGE entry only; moving weight from a page into a layout lightens nothing. ⚠ 87.2 kB is the floor under every route. ⚠ The bundle budget cannot see CSS, fonts or lazy chunks, and does not run in `npm test`; `--from-log` needs the SAME build's `.next/`.
-- ⚠ The two query numbers (applicant detail with and without documents) being EQUAL is the point; ⚠ no write path may open or read the document snapshot. ⚠ `query_budgets` keys are route patterns, not file paths.
-- Moving a file that is in a ledger: declare the move (`_moved`); ⚠ a guard that READS a moved file by path must follow it in the same change; run BOTH suites.
-- ⚠ A tree-walking guard needs a floor; ⚠ allowlist a PATH, never a NAME (TD-277); ⚠ an empty `parametrize` / `.each` corpus generates ZERO tests; ⚠ the two trees watch each other (`test_web_guards_read_live_paths.py`, `crossTreePaths.test.ts`).
-- The debt register is not the api gate's (docs edits skip it): `code_health.py` at every close does the duplicate-id check.
-- The nine groups the code-health arc harvested (H19) are in the doc.
+- **NEVER raise a budget, a floor or a ledger**; split the file first, in its own commit, moves only. No value import from `@supabase/supabase-js` in `src/` (auth clients only in `supabaseAuthClient.ts`). The remaining guard rules (bundle, query budgets, moved ledger files, tree-walking guards, the nine harvested groups): `docs/code-standards.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05".
 
 ## Income — the rules that move money (full text: `docs/domain-rules.md`)
 
@@ -188,12 +156,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 - ⛔ **FINISHING A REQUEST INCLUDES ITS FIGURES; the owner is not your reminder.** Post the completion report (PLANNED, ACTUAL, CHARGED, and why) then record `actual_hours` / `charged_hours` on that analysis via `POST …/requests/<rid>/analysis/<aid>/hours/`. ⚠ `org_requests.done` refuses without it. ⚠ RECORD LAST, CLOSE NEXT: the gate tests the NEWEST approved analysis.
 - **Never raise a budget, a floor or a ledger**; split first. ⚠ `pathway_engine.py` (0 lines of room) and `models/applications.py` (1) are tight. A feature sprint runs the file's split first (owner 2026-09-19).
 - ⛔ **Never set `UPDATE_EMAIL_GOLDEN`**: a failing `test_email_branding.py` means you changed what a student receives, and that needs the owner.
-- Patching a re-export package can succeed and patch nothing (grep `patch(` and `patch.object(`; use `patch_engine`). `apps/scholarship/constants.py` is a LEAF: add no import.
-- **i18n delivery:** only `messages.ts` and `messagesAdmin.ts` are static catalogue imports; ⛔ never add to `oneLocalePerVisitor.test.ts`'s exemption list; ⛔ never use an `admin.*` key outside the console.
-- **Serve, never assemble or derive in the browser** (`apply_url`, a gift's `state`, a request's status); one server definition per answer a screen shows; name the server function before building a control, tick or count.
-- Status is derived, never stored (invitations). **Never re-run `build_verdict` over old snapshots.** Version bumps are not optional (`VERDICT_ENGINE_VERSION`, genuineness `MODEL_VERSION`).
-- **Money:** read Vircle's `Principal Wallet ID`, never `Supp Wallet ID`; the webhook never overwrites a stored `vircle_id`; "sent to a person" comes from `duitnow_type`; a student's name in a spending report is never stored.
-- The padlock keys on `nric_locked`, never `identity_verified`. An organisation's Overview layout narrows, never widens.
+- More live rules (re-export patching and the `constants.py` leaf, i18n delivery, serve-never-derive in the browser, status derived / never re-run `build_verdict` / version bumps, the money rules for Vircle wallets and spending names, the padlock and Overview layout): `docs/domain-rules.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05".
 - A Django `AlterField` that only changes a default does not rewrite existing rows. Node 24 is named in four places (change all four). A STPM `ua_offer` + `suspect` is often CORRECT.
 - The debt register: close a TD only with evidence, marker on the defining line, never write inside the Open Items Index.
 - **Never conclude an absence from a grep**: authored content lives in the database.
@@ -207,90 +170,12 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - One "Overview" row and page: per-person pending cards (`GET admin/scholarship/my-pending/`, `apps/scholarship/my_pending.py`) above the programme cards. Unassigned means ready to assign (`queries_sla.ready_to_assign`); cards open the filtered applications list (`?ready=1`, `?band=`, `?status`, `?assigned=me`) or `?tab=action`. Owner phone check OK 2026-11-05. Open lows: TD-502 to TD-505.
 - **NEXT, in order:** (1) push v3.1.0 (`Settings/_workflows/release.md`; notes `docs/releases/release-notes-v3.1.0.md`; the local tag sits on the security-patch commit; push needs the owner's yes); (2) the Next 15 upgrade as audit fix sprint 1 (TD-506; a security fix, so the freeze allows it); (3) TD-501 (reviewer invite must choose one gift or every gift; staff invites take no gift otherwise; Opus build, adversarial review, owner phone check); (4) the full project audit (`Settings/_workflows/project-audit.md`) on the new tag, after TD-501. **FREEZE in force: no T5d, no offer S7** until the audit's fix sprints are done.
 
-### STATE AT 2026-11-04 — T5c PART 5 (PROGRAMMES LANDING) LIVE (main 1c21ecaf, api-01253-gcr, web-01082-t9w; no migration)
+### Older state blocks and the other streams (full text in `docs/sprint-history.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05")
 
-- Everyone on the partner login lands on Organisation > Programmes. Read: `GET admin/scholarship/my-programmes/`
-  (`views_admin/my_programmes.py`): admins, finance and QC see every gift of their organisation; a reviewer only gifts
-  with a case assigned to them (open or done); a mentor only gifts of current mentees (card opens My students,
-  `admin/mentor/students/?programme=<id>`). The page has no v2 key (owner exception above). Open: TD-500, TD-501.
-- **NEXT, in order:** (1) owner's phone check of P5 (reviewer + mentor views); (2) release v3.1.0
-  (`Settings/_workflows/release.md`); (3) TD-501 fix sprint (reviewer invite chooses one gift or every gift; Opus build,
-  adversarial review, owner phone check); (4) full audit on the v3.1.0 tag (`Settings/_workflows/project-audit.md`).
-  **FREEZE: no T5d, no offer S7** until the audit's fix sprints are done.
-
-### STATE AT 2026-11-03 — REQUESTS LIST R1 LIVE (api-01242-ntg, web-01070-c44; no migration)
-
-- `/admin/requests` is a PAGED, server-filtered list: tabs Needs action · In progress · Closed · All (they PARTITION
-  the list; All is the sum), a Bug reports / Features filter on the effective kind, a title / `#id` search, 25 a
-  page; tab / kind / q / page in the URL. Lands on Needs action. Web: `components/admin/RequestsList.tsx`.
-- `org_requests_queue.needs_action_q` is the ONE Needs-action rule: the nav badge (`AdminOrgRequestCountView`) and
-  the Needs-action tab both call it. Change the rule there only, never in a view.
-- List rows are LIGHT (`OrgRequestOrgRowSerializer` / `OrgRequestOwnerRowSerializer`; tags served by `row_tags`):
-  no thread, attachments or analyses — the detail page reads them via `getOrgRequest(id)`. Do not put them back
-  on the row. Tab counts (`summary`) are of the whole fenced list, never the kind / search filter.
-- Server default `group=all`, so an old caller reads what it always did; an unknown group / kind is a 400
-  `bad_filter`. The old `?status=` was never read and is gone.
-- Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
-  Applications cockpit adopts the same hook after Mobile M6b.
-
-### Offer letters read exactly (separate stream): S1-S6 LIVE (S6 2026-11-04, main a1d1dca7, api-01250-ldm, web e8e351d9)
-
-Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (the older stream notes: `docs/sprint-history.md`).
-S6 = genuineness `MODEL_VERSION` 1.25.0 / `VERDICT_ENGINE_VERSION` 2026-11-04.1: the pre-S6 call is the BASELINE
-(`results_doc.baseline_genuineness`); `genuineness/offer_rulings.apply_rulings` changes it only by a BLOCK
-(letterhead private proof), a LIFT (full proof: `tvet_offer` incl. the agency-letterhead lift in
-`offer_agency.py`, `confirmation`, `incidental_company`) or a softening (`printout`, `tvet_slip`), each tagged
-`[S6 ruling: <tag>]`; every S6 word test reads `offer_text.normalise_s6`. A genuineness change re-runs
-`eval/offer_genuineness_check.py` (dev; held-out once; 13 calls differ from the baseline today). **New evasions
-go to TD for S7 unless they block a real public letter** (decisions S6 item 10). Stored statuses have NOT moved.
-- **NEXT = S7 (paid; owner yes):** a live re-read of the 13 S6-changed letters plus the S5 list, and a
-  genuineness re-score of apps 52, 135, 306 and 329. **Then S8:** the keep-exact gate. Open: TD-491..495.
-
-### Mobile-native arc (separate stream): COMPLETE (M0-M8; M8 live 2026-11-04, main bea7111d, halatuju-web-01079-tv4)
-
-Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md` (rules 15-17: one box level; nothing spills out of its box; phone pills via `lib/phonePill.ts`); ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (four numbers: overflow, small fields, small targets, spills) and `npm run mobile-ledger`; a new `page.tsx` is classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; a pinned bottom bar on a student or sponsor page carries `data-page-bar`; a desktop-only route needs `lib/desktopOnly.ts` AND `mobileClass.ts` plus a reason in en/ms/ta. Manifest stays `display: 'browser'`. Per-milestone rules: `docs/sprint-history.md`. **Open mobile work:** TD-489 (mentor screens' white cards), TD-490 (chart first paint on a phone).
-
-### STATE AT 2026-11-04 — TEAM TABLES T5b LIVE (main f44f0a8b, api-01248-ggf, web-01076-gr4; migration 0202 choices only, no endpoint, no web change)
-
-Roadmap T5; decisions.md "Team tables T5b". **`qc` IMPLIES `see_all`** (`staff_permissions.IMPLIES`, read by `clean`;
-`DEPENDS_ON` is gone): a stored `['qc']` resolves to `see_all + qc`, so every `see_all` reader opens for it by
-construction; `_b40_scope` names `qc` too; the editor saves `['qc']` as `see_all + qc` (`qc_needs_see_all` retired).
-It is never an Admin hat (`staff_tables.admin_keys` drops that `see_all`). v2: `HAT_IMPLIES` (still not a gate).
-**The QC separation guard is `apps/scholarship/qc_separation.refusal`** (asked by `_require_qc`): refuses the current
-assignee, anyone EVER assigned (`AssignmentEvent`), any interviewer (a draft counts) or slot proposer, the verdict
-recorder, the verify-accepter, and anyone whose activity list records review work on the case; super exempt. **A new
-kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481, TD-483, TD-484, TD-485. Review round 1: verb `interview_drafted` (migration 0202, choices only) is
-written by `AdminInterviewView.post` when a draft's credit moves to the saver, and is a guard verb. Live access unchanged.
-
-**TD-481 (2026-11-04):** `AdminRejectView` refuses `{category: 'interview'}` on an `interviewed` (AWAITING QC) case
-for everyone, super included — 400 `awaiting_qc`; it is declined only at `qc-decision`. The rule sits at the door, NOT
-in `admin_reject` / `INTERVIEW_REJECT_FROM` (the QC decision declines through them). Open from it: TD-486 (super's
-cancel-reopen), TD-487 and TD-488 (owner's calls). Test: `test_td481_awaiting_qc_decline.py`.
-
-T5c is LIVE (see the top block). TD-487 / TD-488 still await the owner.
-
-**T5c P1 (live 2026-11-04):** the organisation-read and admin-work doors open by v2 keys through ONE gate,
-`staff_tables.opens(admin, *keys)` (all held, via `effective_v2`; door -> key table in decisions.md "Team tables
-T5c"). **A new or converted door** asks `staff_tables.opens` (never imports v2: only `staff_tables` may,
-`V2Importers`), joins `V2_DOOR_MODULES`, and gets a parity line in `test_team_tables_t5c_doors`. Sources, the roster,
-the Mentors list, Admin emails and credits are still on the union doors (TD-497).
-
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
-
-Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permissions_v2.py` = the v2 vocabulary
-(`CATALOGUE_V2` page x tier in groups Organisation / Programme / Engagement / Money, `HATS` review + qc, `IMPLIES`,
-`DEPENDS_ON_V2`, lead-only marks), `ALIASES` old -> v2, and `effective_v2(admin)` (a READ in T5a; since T5c P1 the
-gate behind `staff_tables.opens` — see the T5c paragraph above; the rest still opens through `resolve` / `has_perm`
-and role checks), and `asked_set` refuses a v2 key. **A NEW PAGE must still be gated
-the old way AND get a v2 key** in `CATALOGUE_V2` plus a door in `test_permission_catalogue_v2._doors` (the coverage
-test asks the real gate per live shape). **One exception (owner, 2026-11-04; merged 2026-11-05):** a page that
-EVERY staff and mentor login on the partner side may open, whose content the server read narrows per person, takes
-no v2 key. Today that is the merged **Overview** at `/admin/organisation/programmes` (T5c P5b): its programme cards
-(`my-programmes`) and its per-person pending cards (`my-pending`, `my_pending.pending_for`) share ONE door,
-`my_programmes.lands`. The `org_read` door no longer guards the page; it guards individual CARDS (a card the caller
-may not see is ABSENT, never zero). Its door test must still assert, non-vacuously, that every staff + mentor shape
-opens it and partner / source / inactive shapes are refused, and each card is pinned to its v2 set
-(`LandingContent.test_the_pending_cards_open_exactly_on_v2_keys`).
+- Team tables T5a, T5b and T5c P1 (the `staff_tables.opens` door gate, `qc` implies `see_all`, `qc_separation.refusal`, the v2 permission catalogue), Requests list R1 (`org_requests_queue.needs_action_q` is the ONE Needs-action rule) and T5c Part 5 (Programmes landing; open TD-500, TD-501): rules and gotchas are in that section. A new page is gated the old way AND gets a v2 key, except the merged Overview.
+- **Offer letters read exactly:** S1-S6 live. **NEXT = S7 (paid; owner yes)**, then S8. Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. New evasions go to TD for S7 unless they block a real public letter.
+- **Mobile-native arc:** COMPLETE (M0-M8). Rules `docs/mobile-standard.md`, ledger `docs/mobile-ledger.md`; every UI change runs `npm run mobile-check`.
+- **FREEZE:** no T5d, no offer S7 until the audit fix sprints are done (roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md`).
 
 ## Known Issues & Future Work
 

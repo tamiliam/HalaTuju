@@ -1,6 +1,6 @@
 # Retrospective — Matriculation + polytechnic Diploma results read "Exact" (M1–M5, 2026-10-29 → 10-30)
 
-Roadmap: `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md`. Trigger: BrightPath request #49
+Roadmap: `docs/plans/archive/2026-10-29-matric-diploma-exact-read-roadmap.md`. Trigger: BrightPath request #49
 (triaged a bug by the owner; charge absorbed). Planned ~30 h.
 
 ## What shipped

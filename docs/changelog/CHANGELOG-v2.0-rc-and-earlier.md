@@ -588,7 +588,7 @@ Newer entries: [../../CHANGELOG.md](../../CHANGELOG.md).
 - **STPM eligibility engine** — `stpm_engine.py` with CGPA calculator, grade comparison, SPM prerequisite checks, STPM subject/group requirements, demographic filters
 - **STPM eligibility API** — `POST /api/v1/stpm/eligibility/check/` endpoint accepting STPM grades, SPM grades, CGPA, MUET band
 - **STPM golden master** — baseline 1811 across 5 test student profiles
-- **Implementation plan** — `docs/plans/2026-03-12-stpm-entrance.md` (5 sprints, 22 tasks)
+- **Implementation plan** — `docs/plans/archive/2026-03-12-stpm-entrance.md` (5 sprints, 22 tasks)
 
 ### Added (Sprint 2)
 - **STPM subject definitions** — `lib/subjects.ts` constants (20 subjects, grade scale, MUET bands, SPM prereqs) aligned with backend engine keys

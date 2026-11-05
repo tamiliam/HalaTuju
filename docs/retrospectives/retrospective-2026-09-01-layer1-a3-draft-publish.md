@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-01
 **Branch:** `feat/layer1-a3-draft-publish`
-**Roadmap:** `docs/plans/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 3 — **arc A is complete**
+**Roadmap:** `docs/plans/archive/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 3 — **arc A is complete**
 **Migration:** `courses/0072` — additive **plus one deliberate DROP** and a data step. Migrate-first.
 
 ---

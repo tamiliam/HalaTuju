@@ -1,6 +1,6 @@
 # Retrospective — Code health H14: the cockpit, panel by panel, and the one panel that stayed
 
-**Date:** 2026-09-20 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H14 of H19
+**Date:** 2026-09-20 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H14 of H19
 **Built by:** an Opus 5 agent to the same brief and the same hard rules as H9–H13. The lead reads
 the report, pushes and watches the deploy.
 **Outcome: `view.tsx` (3,599 lines) is 1,338; `ScholarshipDocuments.tsx` (1,914) is 825. The

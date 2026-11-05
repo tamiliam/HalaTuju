@@ -1,6 +1,6 @@
 # Retrospective — a safer clear, and a draft from English (2026-09-10)
 
-Plan: `docs/plans/2026-09-10-apply-copy-clear-and-draft.md`. Worktree `.worktrees/apply-copy-v2`,
+Plan: `docs/plans/archive/2026-09-10-apply-copy-clear-and-draft.md`. Worktree `.worktrees/apply-copy-v2`,
 branch `feat/apply-copy-v2`, base `origin/main` at `4c6c15e2`. **No migration.** api + web.
 
 Gates: pytest **6144** · jest **1971** · tsc **24** (TD-221 baseline) · lint **0 Errors** ·

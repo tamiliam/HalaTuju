@@ -336,7 +336,10 @@ Superseded on 2026-11-05 by the full fix roadmap, `docs/plans/2026-11-05-audit-f
 
 ## Owner rulings
 
-(None yet. To be added at step 6.)
+- 2026-11-05: full TD sweep wanted (all 219 open items checked). Done; see Appendix A.
+- 2026-11-05: the plan must improve every reading. The fix roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md` is APPROVED. Wave 0 may start. Each deploy group needs its own yes. Owner wants an update at every sprint and wave.
+- 2026-11-05: TD-066 (personal mobile number on the live site): remove the box. Done on branch td066; ships in G0.
+- Owner decisions D1-D13 (roadmap section 3) are still open. None blocks Wave 0.
 
 ## Closing section
 
@@ -427,7 +430,7 @@ One row per item; verdicts copied from the six sweep tables. Evidence is shorten
 | TD-260 | No verified contact: cannot reclaim account | OWNER | profile_claim.py:156-179 claim_channels still verified-only; no admin relink door. Owner picks widen… | - | - | - | identity/claims |
 | TD-262 | Income rule: option 4 ruling outstanding | OWNER | Register status: only option 4 (add income_support_doc) + F8/W1 stand; owner yes/no needed (decisions.md 4515… | - | - | - | income wizard / eligibility |
 | TD-265 | Finance summary sends unused programme column | OWNER | web/src/lib/admin-api/payments.ts:103-120 interface lacks programme; design call (column vs header) | - | - | - | finance/payments |
-| TD-278 | Unreachable xapp import target on roadmap | STALE | docs/plans/2026-09-18-code-health-roadmap.md:921-922 already annotates the target as unreachable; line 954… | - | - | - | code-health docs |
+| TD-278 | Unreachable xapp import target on roadmap | STALE | docs/plans/archive/2026-09-18-code-health-roadmap.md:921-922 already annotates the target as unreachable; line 954… | - | - | - | code-health docs |
 | TD-283 | Two central files exactly at size limit | OPEN | api/code-standards.json:637 serializers_admin.py 1006 (+20 allowance = 1026); file is 1026 lines.… | low | M | big | scholarship serializers/models |
 | TD-318 | WhatsApp STOP needs Twilio console webhook | OWNER | Webhook built (api/apps/scholarship/urls.py:224); owner must set URL in Twilio console | - | - | - | comms/WhatsApp |
 | TD-321 | Page images served at full size (no sharp) | OPEN | web/next.config.js:15 images: { unoptimized: true }; no sharp in package.json (fix waits on Next 15 upgrade) | low | S | speed | infra/web |

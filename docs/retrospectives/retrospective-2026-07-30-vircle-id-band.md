@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-30 · **Commit:** `21d48037` · **Branch:** `feat/vircle-id-validation`
 (worktree `.worktrees/vircle-id`) · **Migration:** none
-**Brief:** `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`
+**Brief:** `docs/plans/archive/2026-07-30-vircle-wallet-id-validation-roadmap.md`
 
 ---
 

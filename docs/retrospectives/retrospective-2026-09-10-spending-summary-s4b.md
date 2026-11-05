@@ -1,7 +1,7 @@
 # Retrospective — Sponsor spending S4b: the summary files itself back to Drive
 
 **2026-09-10.** Worktree `.worktrees/spending-ingest`, branch `feat/spending-ingest`.
-Roadmap `docs/plans/2026-09-10-sponsor-spending-roadmap.md`.
+Roadmap `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`.
 **Backend only. NO MIGRATION. Not merged, not deployed. Nothing a sponsor or student sees changes.**
 
 ## What was built

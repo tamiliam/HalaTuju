@@ -1,6 +1,6 @@
 # Retrospective — Nav/IA N3a: the breadcrumb switchers
 
-**Date:** 2026-07-28 · **Roadmap:** `docs/plans/2026-07-27-nav-ia-roadmap.md` (reopened for this
+**Date:** 2026-07-28 · **Roadmap:** `docs/plans/archive/2026-07-27-nav-ia-roadmap.md` (reopened for this
 one item) · **Migration:** none. **New dependency:** none.
 
 ---

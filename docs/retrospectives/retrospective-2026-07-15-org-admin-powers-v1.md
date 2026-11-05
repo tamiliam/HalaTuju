@@ -1,7 +1,7 @@
 # Retrospective — Org-Admin Powers v1 + Role-Matrix Alignment
 
 **Date:** 2026-07-15
-**Brief:** `docs/plans/2026-07-15-org-admin-powers-v1-brief.md`
+**Brief:** `docs/plans/archive/2026-07-15-org-admin-powers-v1-brief.md`
 **Authority:** `docs/scholarship/role-matrix.md` (owner-settled matrix)
 **Shape:** One sprint, one deploy, **NO migration** (no schema change anywhere).
 **Tests:** 3815 combined pytest (2562 scholarship + 1253 courses/reports) + 530 jest; tsc clean.

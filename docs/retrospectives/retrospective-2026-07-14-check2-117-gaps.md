@@ -2,7 +2,7 @@
 
 A live review of applicant #117 (KIRIIYARASAN) surfaced four defects, three systemic. Built as an
 isolated worktree/branch (`feat/check2-117-gaps`) in parallel with the status-vocabulary stream.
-Plan: `docs/plans/2026-07-14-check2-117-gaps.md`. No migration.
+Plan: `docs/plans/archive/2026-07-14-check2-117-gaps.md`. No migration.
 
 ## What Was Built
 

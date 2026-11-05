@@ -2,7 +2,7 @@
 
 Branch `feat/status-vocabulary` (worktree `.worktrees/status-vocab`), Stream B of the
 2026-07-14 parallel remote-station batch. Plan:
-`docs/plans/2026-07-14-status-vocabulary-and-stage-colours.md`. No deploy yet — primary
+`docs/plans/archive/2026-07-14-status-vocabulary-and-stage-colours.md`. No deploy yet — primary
 does the final merge to `main`.
 
 ## What Was Built

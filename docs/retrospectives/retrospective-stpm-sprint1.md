@@ -11,7 +11,7 @@
 - `stpm_engine.py` — CGPA calculator, grade comparison, full eligibility checker with 7 criteria (CGPA, MUET, demographics, STPM subjects, min subjects, subject groups, SPM prerequisites)
 - `POST /api/v1/stpm/eligibility/check/` API endpoint
 - STPM golden master baseline: 1811 across 5 test student profiles
-- Implementation plan: `docs/plans/2026-03-12-stpm-entrance.md` (5 sprints, 22 tasks)
+- Implementation plan: `docs/plans/archive/2026-03-12-stpm-entrance.md` (5 sprints, 22 tasks)
 
 ## What Went Well
 

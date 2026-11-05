@@ -1,75 +1,81 @@
 # HalaTuju — Roadmap
 
-Last updated: 2026-03-20
+Last updated: 2026-11-05 (audit sprint A0.3)
 
-## Status: v2.0 Released
+## Status: v3.1.0 released, audit fix freeze in force
 
-HalaTuju is feature-complete and live at [halatuju.xyz](https://halatuju.xyz).
+HalaTuju is live at [halatuju.xyz](https://halatuju.xyz). v3.0.0 (2026-10-06) was a complete bursary platform; **v3.1.0 (2026-11-05)** added the staff team and permissions, phone-native pages, exact offer-letter reading, post-award student care and one Overview page per staff member. Notes: [`docs/releases/release-notes-v3.1.0.md`](releases/release-notes-v3.1.0.md); the reasons: [`docs/decisions.md`](decisions.md); every change: [`CHANGELOG.md`](../CHANGELOG.md).
 
----
+**The plan of record is the audit fix roadmap:** [`docs/plans/2026-11-05-audit-fix-roadmap.md`](plans/2026-11-05-audit-fix-roadmap.md) (from the project audit, [`docs/audits/2026-11-05-project-audit.md`](audits/2026-11-05-project-audit.md)). **Freeze:** no Team tables T5d and no offer-letter S7 (paid) until its fix sprints are done.
 
-## What Shipped (v1.0–v2.0)
-
-- SPM eligibility engine (390 courses, 838 institutions)
-- STPM eligibility engine (1,113 degree programmes)
-- Quiz-based ranking with fit scores (SPM + STPM branching quiz)
-- Dashboard with merit traffic lights and pathway cards
-- Matric/STPM virtual course eligibility
-- PISMP integration with 27 IPG campuses
-- AI-powered counsellor reports (Gemini)
-- Course search and filtering (unified SPM + STPM)
-- Saved courses and admission outcomes tracking
-- Student profile with grade storage
-- NRIC identity gate (anonymous browsing → verified identity)
-- Supabase auth (Google OAuth, anonymous sign-in, linkIdentity)
-- Multi-language support (EN/BM/TA)
-- Field taxonomy (37 canonical fields, trilingual labels)
-- MASCO career mappings (4,854 occupations)
-- Admin portal (student list, detail, CSV export)
-- Custom domain: halatuju.xyz
-- CI/CD: Cloud Build continuous deployment from GitHub
+Which feature flags are on in production: [`docs/deployment.md`](deployment.md), section "Live flag values". The open debt register: [`docs/technical-debt.md`](technical-debt.md). Plan files: [`docs/plans/`](plans/) (each has a Status line; finished ones are in `docs/plans/archive/`).
 
 ---
 
-## Known Issues
+## What Shipped
 
-| # | Issue | Impact | Notes |
-|---|-------|--------|-------|
-| 1 | Phone/OTP login shows "coming soon" | Students without Google accounts cannot register | WhatsApp OTP plan exists (`docs/plans/2026-03-09-whatsapp-otp-plan.md`). Requires Twilio (~RM12/month) |
-| 2 | Settings page is a stub (TD-076) | Only has language selector and "Reset All Data" | Low impact — functional but sparse. See TD-076 |
-| 3 | Report generation has no loading indicator | 10-15 sec Gemini delay feels like a hang | Quick UI fix needed |
-| 4 | 87 offerings missing tuition fee data | Fee info not available in source CSVs | Data limitation, not a bug |
-| 5 | Course `#` marker not rendered as badge (TD-077) | `#` in course name means "typically has interview" — still shown as raw text | Strip `#` and show interview badge. See TD-077 |
-| 6 | `course` field named `course` not `name` (TD-024) | `course.course` reads oddly | Low risk, cosmetic. Migration + multi-file update needed |
-| 7 | StudentProfile table uses `api_` prefix (TD-025) | Legacy naming from Streamlit coexistence | Low risk. Requires migration + RLS policy update |
-| 8 | Startup data load is all-or-nothing (TD-047) | If DB connection fails at startup, first request returns 503 | Cloud Run restarts handle this naturally |
+### v1.0 to v2.0 (to 2026-03-20)
+
+- SPM and STPM eligibility engines, quiz-based ranking, dashboard with merit traffic lights, Matric/STPM virtual courses, PISMP with the IPG campuses
+- AI counsellor reports (Gemini), course search, saved courses and admission outcomes, student profile
+- NRIC identity gate, Supabase auth (Google OAuth, anonymous sign-in, linkIdentity), EN/BM/TA
+- Field taxonomy, MASCO career mappings, admin portal, custom domain halatuju.xyz, Cloud Build continuous deployment
+
+### v2.x to v3.0.0 (2026-03 to 2026-10-06)
+
+- The BrightPath bursary: application, documents with exact reading and genuineness checks, interviews, QC, awards and payments, sponsors and the sponsor pool
+- Multi-tenant platform: organisations, programmes (gifts), staff roles, branding, billing and the Requests space
+- WhatsApp outbound comms, partner comms, contract and bursary agreement modules (flags in the live flag table)
+
+### v3.1.0 (2026-11-05)
+
+- One Overview page for every staff member (Team tables T5c); the team, hats and permission catalogue v2 (T1 to T5)
+- Phones: Mobile Standard, bottom sheet, student tab bar, every screen measured (M0 to M8); first-load JavaScript 228 kB to 144 kB
+- Student maintenance after the award (Sprints 1 to 10): scholar file, results review, announcements, surveys, mentors, "My Bursary"
+- Offer letters read exactly (S1 to S6), STPM exact read and CGPA from grades, Matric/Diploma exact read, third results route, Bumiputera and Islamic coverage
+- Real invoices, tenant receipts, a paged Requests list
+- Security patch: Next 14.2.35, image optimiser off
 
 ---
 
-## Future Work
+## Now: the audit fix roadmap
 
-### High Priority
-- **Phone/OTP login** — Unblocks non-Google users. Twilio/WhatsApp integration needed
-- **User testing** — Real students through the full auth + eligibility + report flow
-- **Report loading UX** — Progress indicator during Gemini generation
+Waves, in order (detail and acceptance in the roadmap file): **Wave 0** ship what is ready and clean the register and documents (A0.1 to A0.3); **Wave 1** security and money (Next 15 upgrade first); **Wave 2** live harm and speed; **Wave 3** structure with tests first; **Wave 4** remaining open debt by area. Every deploy group needs the owner's yes.
 
-### Medium Priority
-- **W8: Institution proximity scoring** — Populate institution modifiers (urban, cultural safety net), capture student location, calculate real distance for proximity-based ranking
-- **Grade modulation** — 4 rules cross-referencing grades with quiz signals
-- **Report enhancements** — MASCO career data in prompt, institution/location context, EN language selector
-- **STPM pipeline maintenance** — Test scrapers against live MOHE annually before UPU season
-- **Efficacy domain consumption** — `efficacy_domain` is stored on StpmCourse but not used in ranking formula
+## Waiting on the owner
 
-### Low Priority / Cosmetic
-- **TD-024**: Rename `course` field to `name` on Course model
-- ~~**TD-025**: Rename `api_student_profiles` table to `student_profiles`~~ ✅ **RESOLVED 2026-06-01** — dropped the dead legacy `student_profiles` table instead (kept the `api_` prefix as canonical; the collision footgun is gone)
-- **Interview badge** — Parse `#` from course names into proper UI indicator
-- **PISMP course-campus mapping** — Refine which courses are taught at which IPG campuses
-- **Course detail page** — Remaining items from `docs/Course Detail Page.pdf`
-- **Settings page** — Account management, notification preferences, data export
-- **Remaining FIELD_KEY_MAP expansions** — pendidikan, bahasa, pengajian-islam, undang-undang, sains-sosial, umum need new quiz questions
+- Rulings listed in the audit fix roadmap, section "Owner decisions" (for example TD-487, TD-488, TD-496, TD-497, TD-499, TD-503)
+- Phone/OTP login (CO-06): paid OTP, deferred. Students without a Google account still cannot use a phone number to sign in
+- Cold starts and build minutes (TD-523): minimum instances cost money under the RM10 budget
 
-### Deferred / Parked
-- **Lentera integration** — HalaTuju as Beam 1 (Searchlight) within the broader Lentera programme
-- **Signal strength sync** — Store `signal_strength` in Supabase (currently localStorage only)
-- **Admin analytics** — Usage stats, grade distributions, course popularity, system health dashboard
+## After the freeze
+
+- Offer-letter exact read **S7** (paid live re-read of the S6-changed letters) and **S8** (the keep-exact gate)
+- Team tables **T5d**; TD-501 (reviewer invite chooses one gift or every gift)
+- A way to sign in as a reviewer, mentor, finance or QC on a local stack (TD-521)
+- Bumiputera/Islamic coverage steps beyond F2; org timing settings Sprint 2 (waits on its trigger); sources and referrals sprints after A
+
+## Still open from the earlier roadmap (not re-checked 2026-11-05)
+
+These were on the v2.0 list. Each is kept only if the register still holds it; confirm in `docs/technical-debt.md` before working on one.
+
+- Report generation has no loading indicator (10 to 15 second Gemini wait)
+- 87 offerings missing tuition fee data (a data limitation, not a bug)
+- Course `#` interview marker shown as raw text (TD-077)
+- Account options on the Settings page (TD-041; the old TD-076 stub entry was merged into it)
+- `course` field named `course`, not `name` (TD-024; cosmetic, needs a migration and a wide update)
+- Institution proximity scoring (W8), grade modulation, `efficacy_domain` not used in ranking
+- Annual STPM pipeline maintenance: test the MOHE scrapers before UPU season (see `docs/roadmap-course-data-pipeline.md`)
+
+## Resolved since v2.0 (kept for the record)
+
+- TD-025 (`api_` table prefix): the dead legacy table was dropped instead, 2026-06-01
+- TD-047 (all-or-nothing startup data load): resolved 2026-10-01 (`CoursesConfig.ensure_data` retries)
+- TD-076 (Settings stub): merged into TD-041; the version display is done
+
+## Parked
+
+- Lentera integration: HalaTuju as Beam 1 (Searchlight) within the broader Lentera programme
+- Signal strength sync to Supabase (localStorage only today)
+- Admin analytics: usage stats, grade distributions, course popularity
+- The "coming soon" screens are features, frozen with the rest (audit CO-07)

@@ -1,6 +1,6 @@
 # Retrospective — Code health H19: the standards move into how every sprint is run
 
-**Sprint:** H19, the nineteenth and last of the code-health arc (`docs/plans/2026-09-18-code-health-roadmap.md`).
+**Sprint:** H19, the nineteenth and last of the code-health arc (`docs/plans/archive/2026-09-18-code-health-roadmap.md`).
 **Date:** 2026-09-20. **Baseline:** `be270fdc`, working tree clean.
 **Nature of the change:** documentation only. **No production code, no test file, no test
 expectation, no migration, no `code-standards.json` edit, no `Settings/**` edit.**
@@ -191,7 +191,7 @@ as what happened.
 | `Settings/**` changed | **none** — read-only by the brief; the workflow text went to the lead |
 | Ledger headroom, measured | **0 of 32 api and 0 of 17 web `oversize_files` entries** more than ten lines above the real file |
 | TD raised | **TD-284** — `fix%`, `big` and `guard%` have targets and no enforcement |
-| Files written | `halatuju_api/CLAUDE.md`, `docs/plans/2026-09-18-code-health-roadmap.md`, `docs/code-health.md`, `docs/technical-debt.md`, `CHANGELOG.md`, this file |
+| Files written | `halatuju_api/CLAUDE.md`, `docs/plans/archive/2026-09-18-code-health-roadmap.md`, `docs/code-health.md`, `docs/technical-debt.md`, `CHANGELOG.md`, this file |
 
 ---
 

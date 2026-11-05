@@ -1,6 +1,6 @@
 # Retrospective — TD-360 Sprint 1: the admin console's words leave every non-admin route (2026-10-21)
 
-Roadmap: `docs/plans/2026-10-20-td360-split-messages-roadmap.md` (owner "yes" to all three open
+Roadmap: `docs/plans/archive/2026-10-20-td360-split-messages-roadmap.md` (owner "yes" to all three open
 questions on 2026-10-21). Decision: `docs/decisions.md` 2026-10-21. Commits `7d5f5054` (the super-check
 leaf) and `8b1b57ce` (the slices). Built on branch `td360` (base `6aec3206`). **Not pushed, not
 deployed.** Non-billed hygiene; the prerequisite for request #39 Sprint 4.

@@ -1,6 +1,6 @@
 # Retrospective — Org Config Sprint B: student comms + the deferred sponsor-email cap (2026-09-07)
 
-**Scope.** The roadmap's Sprint B (`docs/plans/2026-09-06-org-configuration-roadmap.md`): four
+**Scope.** The roadmap's Sprint B (`docs/plans/archive/2026-09-06-org-configuration-roadmap.md`): four
 student-communication settings — `query_email_delay_hours` (2), `nudge_auto_delay_minutes` (30),
 `nudge_cooldown_hours` (24), `max_clarify_open` (3) — plus `sponsor_email_max_cards` (5), the one
 setting Sprint A deferred because its render sites carried no organisation. Registry entries +

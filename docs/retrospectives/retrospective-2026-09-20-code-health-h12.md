@@ -1,6 +1,6 @@
 # Retrospective — Code health H12: the only deletion in the phase was not dead
 
-**Date:** 2026-09-20 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H12 of H19
+**Date:** 2026-09-20 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H12 of H19
 **Built by:** an Opus 5 agent to the same brief and the same hard rules as H9, H10 and H11. The
 lead reads the report, pushes and watches the deploy.
 **Outcome: `views_admin/__init__.py` (5,093 lines) is 154 lines of re-export. The package is thirty

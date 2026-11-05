@@ -1,6 +1,6 @@
 # Retrospective — Partner-organisation comms (S1 + S2/S3), 2026-07-26
 
-Roadmap `docs/plans/2026-07-26-partner-comms-roadmap.md`. Design of record: the Tailwind mock at
+Roadmap `docs/plans/archive/2026-07-26-partner-comms-roadmap.md`. Design of record: the Tailwind mock at
 <https://claude.ai/code/artifact/40bb4e5f-7335-4d88-97c4-d7a9f0399a04> (four revisions).
 Shipped in two passes on one day: S1 (controls + wording, live and dark) then S2+S3 together
 (rendering + sending, live and dark).

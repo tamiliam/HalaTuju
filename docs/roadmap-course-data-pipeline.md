@@ -1,5 +1,7 @@
 # Roadmap — Course-Data Freshness Pipeline
 
+> **Status (checked 2026-11-05): In progress.** The June next step ("deploy 3a") is out of date: the UP_TVET track and the Course Data dashboard later shipped (`docs/domain-rules.md`, Course data operations). Sprints 3b and 3c are not confirmed done; check `docs/technical-debt.md` before starting one.
+
 **Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** **Sprint 3 re-scoped to "3a" + BUILT
 2026-06-13** (on branch `spm-catalogue`; migration `0054` NOT yet applied to prod — ships on the owner's next deploy,
 migrate-first). `NEXT = deploy 3a` (owner), then Sprint 3b (synthetic-ID crosswalk) or 3c (SPM requirement parser).

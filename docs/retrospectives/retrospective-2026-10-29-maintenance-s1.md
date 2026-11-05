@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 1: one predicate, on hold stops money, the activity log (2026-10-29)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md`. Owner rulings: `docs/decisions.md`, 2026-10-29.
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md`. Owner rulings: `docs/decisions.md`, 2026-10-29.
 Shipped as `ad299d31` (moves only), `901c63d5` (feature), `ae939213` (lead review), `99ee813b` (adversarial
 review); pushed as `99ee813b`. Migration `scholarship/0183_maintenance_activity_log` applied by hand on production
 before the push (DDL, RLS, `service_role` policy, ledger row — all in its docstring).

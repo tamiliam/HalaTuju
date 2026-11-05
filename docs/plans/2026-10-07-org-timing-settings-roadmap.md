@@ -1,5 +1,7 @@
 # Student message timing becomes an organisation setting — roadmap
 
+> **Status (checked 2026-11-05): In progress (2026-10-07).** Sprint 1 live; Sprint 2 waits on its trigger.
+
 **Status:** Sprint 1 SHIPPED and live 2026-10-07 (`b6b90440`…`5fd333e6`; migration 0170; retro
 `docs/retrospectives/retrospective-2026-10-07-org-timing-s1.md`). Sprint 2 waits on its trigger.
 **Owner direction (2026-10-07, verbatim):** *"it seems all them could be moved to the organisation

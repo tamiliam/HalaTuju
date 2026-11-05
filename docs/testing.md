@@ -194,3 +194,20 @@ and there is nothing to render:
 | `codeStandards.test.ts` | The standards themselves. Deliberately ONE file, so the project gains one source-reading test and not a habit of them. |
 | `theme.test.ts`, `pageWidth.test.ts` | Convention checks that belong in ESLint. Noted, not moved (H6 scope). |
 | `applicationStatus` / `requestStatus` / `screenshotInput` (the disk-walk half) | Each asks "is there a case/surface nobody thought about?" — a question only a walk of the tree can answer. The BEHAVIOUR each one used to assert now lives in a mount. |
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-05 (audit sprint A0.3)
+
+Testing rules (full text, unchanged).
+
+- **Full suites run ONCE locally, right before the push, after the last rebase.** Not after each review
+  round or fix — re-run only the affected test files then. Cloud Build runs the full suite again and
+  ships nothing red.
+
+- ⚠ Run the API gate with `-n auto`, not serially. ⚠ Frontend: all four gates before any push that deploys web; tsc and `next lint` need 0 ERRORS (`next build` lints before it emits).
+- ⚠ For any UI change run `npm run mobile-check` (and `npm run mobile-ledger`); ⚠ interactive behaviour needs a RENDERED test, a source-shape guard is not evidence.
+- Golden masters SPM 5,319 / STPM 2,025: if either moves you broke eligibility. Measure your own baseline; never quote an inherited number.
+- Reviewing the console locally: SQLite + `seed_local_console`, no production data, ever; never re-run extraction locally.
+- Pre-deploy checklist: both suites green; migration applied by hand + ledger row; new table has RLS + `service_role` policy + Advisor 0 errors; eligibility/money/identity adversarial review; version bumps (`VERDICT_ENGINE_VERSION`, genuineness `MODEL_VERSION`, `PROMPT_VERSION`); strings in en/ms/ta; the owner's yes to push.
+- ⛔ Never run `cleanup_orphan_blobs --apply` from a checkout or image older than S2 (it deletes staff photos). Dry-run first.
+- ⚠ Two roads reach QC (recommend via `verify-accept`, decline via `submit-decline`) and leave different marks; fixtures and the cockpit's rendered tests are in the doc.
+

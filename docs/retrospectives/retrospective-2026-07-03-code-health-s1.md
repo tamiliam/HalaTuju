@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-Sprint 1 of the code-health roadmap (`docs/plans/2026-07-03-code-health-review.md`, findings #2/#3/#4):
+Sprint 1 of the code-health roadmap (`docs/plans/archive/2026-07-03-code-health-review.md`, findings #2/#3/#4):
 
 1. **Cancel-decline integrity (#2).** The decline email got its own stamp
    (`decline_email_sent_at`) instead of reusing `decision_email_sent_at` (already stamped by the

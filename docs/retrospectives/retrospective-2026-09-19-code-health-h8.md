@@ -1,6 +1,6 @@
 # Retrospective — Code health H8: the income rule has eleven homes, and the sprint stopped at its own gate
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H8 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H8 of H19
 **Built by:** an Opus 5 agent to a written brief with a hard stop gate; the lead verified the two
 most visible findings in the source, re-ran the suites, recorded the findings, and closed.
 **Outcome: PHASE A DELIVERED, PHASE B STOPPED — by design. No production code changed.**

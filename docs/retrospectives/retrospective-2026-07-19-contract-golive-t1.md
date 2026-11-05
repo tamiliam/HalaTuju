@@ -1,7 +1,7 @@
 # Retrospective — Contract Go-Live Transition, Sprint T1 (backend)
 
 **Date:** 2026-07-19 · **Branch:** `feat/contract-golive-transition` · **Not deployed** (single deploy is T2)
-**Plan:** `docs/plans/2026-07-19-contract-golive-transition-plan.md`
+**Plan:** `docs/plans/archive/2026-07-19-contract-golive-transition-plan.md`
 
 ## What Was Built
 

@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 5b: her Funds and Contract tabs on My Bursary (2026-10-30)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 5, student half — Sprint 5 is now complete).
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 5, student half — Sprint 5 is now complete).
 Shipped as `f9c484df` (feature) and `2b62a6f8` (fixes for the 7 adversarial review findings, 0 HIGH); live as
 api-01202-bvg. No migration.
 

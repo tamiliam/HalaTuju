@@ -1,6 +1,6 @@
 # Retrospective — Code health H9: the decision gates stop living in two languages
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H9 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H9 of H19
 **Built by:** an Opus 5 agent to a written brief carrying H8's rule (characterise first; a mirror
 is deleted only where the two sides already agree). The lead reads the report and pushes.
 **Outcome: the six named rules converted. No production code changed.**

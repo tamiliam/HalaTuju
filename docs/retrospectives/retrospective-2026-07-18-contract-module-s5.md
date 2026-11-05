@@ -1,7 +1,7 @@
 # Retrospective — Contract Module Sprint 5 (final: distribution + constants removal + cutover)
 
 **Date:** 2026-07-18
-**Plan:** `docs/plans/2026-07-18-contract-module-plan.md`
+**Plan:** `docs/plans/archive/2026-07-18-contract-module-plan.md`
 **Branch:** `feat/contract-module` — Sprint 5 is the feature's **single prod deploy**
 (migrate-first `0103` → merge to main → push).
 **Scope:** Execution distribution, removal of the hard-coded bursary.py constants

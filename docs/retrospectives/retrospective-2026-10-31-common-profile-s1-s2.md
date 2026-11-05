@@ -1,6 +1,6 @@
 # Retrospective — Common profile S1 + S2 (2026-10-31)
 
-Roadmap: `docs/plans/2026-10-31-common-profile-roadmap.md`. Mock-ups (owner-approved): https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582.
+Roadmap: `docs/plans/archive/2026-10-31-common-profile-roadmap.md`. Mock-ups (owner-approved): https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582.
 Shipped together: main `3ad1f387`, migration `scholarship/0193_staff_profile_card` applied by hand first.
 
 ## What Was Built

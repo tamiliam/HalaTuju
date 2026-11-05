@@ -1,7 +1,7 @@
 # Retrospective — Contract Module Sprint 4 (admin FE + quiz refactor + Word import)
 
 **Date:** 2026-07-18
-**Plan:** `docs/plans/2026-07-18-contract-module-plan.md` (gained the "Stitch
+**Plan:** `docs/plans/archive/2026-07-18-contract-module-plan.md` (gained the "Stitch
 approval" + "Word import" sections after Sprint 3).
 **Branch:** `feat/contract-module` (NOT pushed; single deploy at Sprint 5).
 **Scope:** Admin FE per the approved Stitch (with the owner's two corrections),

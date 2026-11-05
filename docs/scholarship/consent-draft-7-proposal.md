@@ -22,7 +22,7 @@ already or soon shown that its closed list does not cover:
    student's CGPA (`on_track` / `semester_completed` / `needs_attention` at CGPA ≤ 2.0 / `graduated`)
    plus semesters supported. "Course" and "study plans" arguably do not stretch to how well they are
    doing.
-2. **Bursary spending — planned.** `docs/plans/2026-07-18-bursary-spend-reporting-brief.md`. Its own
+2. **Bursary spending — planned.** `docs/plans/archive/2026-07-18-bursary-spend-reporting-brief.md`. Its own
    governance gate stops the sponsor panel until this consent (and the agreement) permit it.
 
 ---

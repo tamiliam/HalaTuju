@@ -1,7 +1,7 @@
 # Retrospective — Contract Module Sprint 1 (model + service + seed)
 
 **Date:** 2026-07-18
-**Plan:** `docs/plans/2026-07-18-contract-module-plan.md` (owner-settled)
+**Plan:** `docs/plans/archive/2026-07-18-contract-module-plan.md` (owner-settled)
 **Scope:** Backend only, ~18 files. Module INERT (nothing reads it). NO deploy —
 the feature's single prod deploy is Sprint 5.
 

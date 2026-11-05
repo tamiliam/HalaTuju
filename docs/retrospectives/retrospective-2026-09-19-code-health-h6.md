@@ -1,6 +1,6 @@
 # Retrospective — Code health H6: the cockpit gets a rendered test, and the text guards retire
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H6 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H6 of H19
 **Built by:** an Opus 5 agent to a written brief; the lead verified the findings against the code
 and the locale files, re-ran the gates, and closed.
 **Freeze status:** in force. **Phase 2 (tests that can fail) is complete** — six of the ten sprints

@@ -1,6 +1,6 @@
 # Retrospective — request #39, staff permissions and Finance approval (the whole arc, Sprints 1-4, 2026-10-19 → 2026-10-21)
 
-Roadmap: `docs/plans/2026-10-19-staff-permissions-roadmap.md` (owner "a", 2026-10-19: hold the quote at
+Roadmap: `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md` (owner "a", 2026-10-19: hold the quote at
 34 h). Decisions: `docs/decisions.md` 2026-10-19 (S1-S3) and 2026-10-21 (S4). Role matrix restructured as
 catalogue + presets + lead tier (`docs/scholarship/role-matrix.md`). Sprints 1-3 and TD-360 are live;
 Sprint 4 is built on `perm-s4`, **not pushed, not deployed, its adversarial review still to come**, and

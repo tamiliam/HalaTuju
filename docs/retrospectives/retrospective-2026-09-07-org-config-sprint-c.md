@@ -3,7 +3,7 @@
 Worktree `.worktrees/org-config-c`, branch `feat/org-config-sprint-c`. **No migration** — the
 exact shape the roadmap promised: registry entries + wired read sites + rows on the existing
 Organisation → Settings → Configuration tab. Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ · D/E/F open).
+`docs/plans/archive/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ · D/E/F open).
 
 ## What shipped
 

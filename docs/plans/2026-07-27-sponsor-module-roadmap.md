@@ -1,5 +1,7 @@
 # Sponsor module enrichment — roadmap (S4 remaining)
 
+> **Status (checked 2026-11-05): Parked - partly done (S1, S1.1, S2, S3 and sortable tables shipped; S4 reason, email log and CSV export not built, parked with the sponsor cluster).**
+
 **Design of record:** <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>
 (both screens + the email panel, built on real production figures).
 **Moved here 2026-07-28** from `.claude/plans/snazzy-whistling-biscuit.md` at sprint close, so the

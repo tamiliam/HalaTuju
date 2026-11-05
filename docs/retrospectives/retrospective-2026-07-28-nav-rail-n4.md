@@ -1,6 +1,6 @@
 # Retrospective — Nav/IA N4: the sidebar becomes a rail
 
-**Date:** 2026-07-28 · **Roadmap:** `docs/plans/2026-07-27-nav-ia-roadmap.md`
+**Date:** 2026-07-28 · **Roadmap:** `docs/plans/archive/2026-07-27-nav-ia-roadmap.md`
 **Design of record:** <https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280>
 **Migration:** none. **Backend:** none. **New dependency:** none.
 

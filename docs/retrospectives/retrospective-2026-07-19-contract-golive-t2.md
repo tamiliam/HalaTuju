@@ -1,7 +1,7 @@
 # Retrospective — Contract Go-Live Transition, Sprint T2 (Sources UI + witness dropdown + deploy)
 
 **Date:** 2026-07-19 · **The transition's single api+web deploy** (`eff5996c`) · Both flags remain OFF
-**Plan:** `docs/plans/2026-07-19-contract-golive-transition-plan.md`
+**Plan:** `docs/plans/archive/2026-07-19-contract-golive-transition-plan.md`
 
 ## What Was Built
 

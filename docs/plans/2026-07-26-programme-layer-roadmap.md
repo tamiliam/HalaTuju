@@ -1,7 +1,9 @@
 # Programme Layer — Roadmap (Organisation → Programme → Year → award)
 
+> **Status (checked 2026-11-05): Parked - partly done (P1a, P2, P3, P4a and P4b shipped; P1b rule defaults and reviewer programme scoping, and P4b-ii, not built, trigger-parked; re-plan when a second programme runs).**
+
 **Status:** owner-approved model, 2026-07-26. Sprint briefs below are ready for `sprint-start.md`.
-**Supersedes:** the sequencing of Phase 3 in `docs/plans/2026-07-14-platform-roadmap-draft.md` (see "How this re-bases the platform roadmap" below). The PRD's §2 org/module model still stands; its implicit assumption that a tenant runs exactly ONE programme does not.
+**Supersedes:** the sequencing of Phase 3 in `docs/plans/archive/2026-07-14-platform-roadmap-draft.md` (see "How this re-bases the platform roadmap" below). The PRD's §2 org/module model still stands; its implicit assumption that a tenant runs exactly ONE programme does not.
 **Decision records:** `docs/decisions.md`, five entries dated 2026-07-26 (hierarchy; funds/sponsor attachment; award vocabulary; gift-not-loan; reviewer scoping).
 
 ---

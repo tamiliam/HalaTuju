@@ -2,7 +2,7 @@
 
 **Effective 2026-07-15 — applies to ALL ongoing BrightPath/HalaTuju work, every sprint, every agent.**
 
-HalaTuju is becoming a multi-tenant platform (plan of record: `docs/plans/2026-07-14-platform-roadmap-draft.md`). The platform work itself is phased and gated — but from today, **no new work may deepen the platform↔tenant coupling** the tenancy audit inventoried. These conventions cost nothing now and save a migration later. They are checked at code review.
+HalaTuju is becoming a multi-tenant platform (plan of record: `docs/plans/archive/2026-07-14-platform-roadmap-draft.md`). The platform work itself is phased and gated — but from today, **no new work may deepen the platform↔tenant coupling** the tenancy audit inventoried. These conventions cost nothing now and save a migration later. They are checked at code review.
 
 ## The rules
 

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
+
+Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).
+
+### docs: Sprint A0.2 - debt register swept and the Consolidation Review (2026-11-05)
+
+Docs only, no code, not pushed. 25 register entries closed on file:line evidence (11 FIXED, 6 STALE, 8 MERGED), 4 UNSURE ones left open with a note; `td_open` 233 -> 208. Open Items Index regenerated (208 pointers). Consolidation Review written, Pending cleared, 25 unlogged commits logged. Project CLAUDE.md gains the commit-type rule.
+
 ### fix: security - documents record only their own storage path; staff first login needs a confirmed email (audit SEC-01, SEC-02)
 
 Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `docs/decisions.md` "Audit SEC-01 / SEC-02".
@@ -781,7 +789,7 @@ migration, no new stored field.
 
 ## Requests list R1 — tabs, filter, search, pager and Previous / Next (LIVE 2026-11-03; main 8e69ecdd api, 2da37ff4 web; api-01242-ntg, web-01070-c44)
 
-Plan of record: `docs/plans/2026-11-03-requests-list-r1-roadmap.md` (owner approved 2026-11-03, option A: the tabs
+Plan of record: `docs/plans/archive/2026-11-03-requests-list-r1-roadmap.md` (owner approved 2026-11-03, option A: the tabs
 SPLIT the list). Platform work, not billed. No migration, no change to a request's life, permissions or e-mail.
 
 - **Api — a paged, light list** (`AdminOrgRequestListView.get`): the shared `FlexiblePageNumberPagination` envelope
@@ -2005,7 +2013,7 @@ migration; no MODEL_VERSION bump (no reading change).
 
 ## Student maintenance Sprint 7b — mentoring: assignments, meetings and the two Mentoring tabs — LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq; migration 0196 applied by hand first)
 
-Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 7b); rules `apps/scholarship/mentoring.py`;
+Roadmap `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 7b); rules `apps/scholarship/mentoring.py`;
 decisions.md 2026-11-01. **Migration scholarship 0196 (`0196_mentoring`) — MIGRATE FIRST, by hand** (DDL, RLS +
 one service_role policy per table, ledger row and rollback in its docstring), then the API, then the web.
 
@@ -2122,7 +2130,7 @@ genuineness change — stored `vision_fields` are read as they are). **Applied o
 
 ## Common profile S5 — My activity on the Profile page - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
-Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no
+Roadmap `docs/plans/archive/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no
 migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migrate (0195), then the API, then
 `backfill_staff_activity --dry-run`, then `--apply`, then the web.
 
@@ -2178,7 +2186,7 @@ migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migra
 
 ## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
-Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of
+Roadmap `docs/plans/archive/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of
 S3; no web change and no new migration (`0195_staff_activity` loses two subject types it never needed). **Deploy
 order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_staff_activity --dry-run`, then
 `--apply`.
@@ -2240,7 +2248,7 @@ order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_st
 
 ## Common profile S3 — the activity list, part 1: the list and the case actions (migration 0195) - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
-Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
+Roadmap `docs/plans/archive/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
 visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5 the card. **Migrate first**
 (0195, hand-applied, new table + RLS + policy); the API never fails without it (see D9) but would record nothing.
 
@@ -2297,7 +2305,7 @@ Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no mig
 ## Mobile M0: the Mobile Standard, its guards and the phone baseline (2026-10-31)
 
 - New `docs/mobile-standard.md`: 14 rules for phone screens (360–430 px, iPhone Safari first, en/ms/ta), each with
-  why, how it is checked and the pattern to copy. Roadmap: `docs/plans/2026-10-31-mobile-native-roadmap.md`.
+  why, how it is checked and the pattern to copy. Roadmap: `docs/plans/archive/2026-10-31-mobile-native-roadmap.md`.
 - Every route is classed Must / Can / Desktop-only in `halatuju-web/src/lib/mobileClass.ts` (94 routes: 64 / 24 / 6);
   a desktop-only route needs a written reason, and a closed-set test fails on an unclassed page or a stale entry.
 - Static guards (`mobileStandard.test.ts`, in the deploy gate), each a floor that may only go down: text fields with an
@@ -2319,7 +2327,7 @@ Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no mig
 
 ## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
-Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md`
 (Sprint 7 split into 7a / 7b). Built on branch `maint-s7`. **Migrate first, by hand: scholarship 0194, then
 courses 0090** (the DDL, pre-checks, ledger rows and rollback are in each migration's docstring), then API,
 then web.
@@ -2463,7 +2471,7 @@ field, which shares the picker).
 
 ## Common profile S2 — photo, job title, About, phone for everyone (migration 0193) - 2026-10-31 — BUILT, not deployed
 
-Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/archive/2026-10-31-common-profile-roadmap.md`.
 Built on branch `profiles`. **First deploy point: migrate first** (0193, hand-applied; the old image keeps
 inserting profile rows because every new column has a database default), then API, then web.
 
@@ -2541,7 +2549,7 @@ inserting profile rows because every new column has a database default), then AP
 
 ## Common profile S1 — one Profile page from one card list (no migration) - 2026-10-31 — BUILT, not deployed
 
-Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/archive/2026-10-31-common-profile-roadmap.md`.
 Built on branch `profiles`.
 
 - **One page for every role.** `/admin/profile` is one shell that renders exactly the cards
@@ -2696,7 +2704,7 @@ Deploy is migrate-first (courses 0089 → scholarship 0190 → scholarship 0191)
 
 ## Source sign-in web (S2–S4 UI) — 2026-10-30
 
-Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, the web half of S2, S3 and S4. Design of record: the
+Roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`, the web half of S2, S3 and S4. Design of record: the
 eight owner-approved mock-ups ("Looks good. Proceed", 2026-10-30), built from the console's own components. No
 backend change. NOT deployed.
 
@@ -2779,7 +2787,7 @@ Adversarial review of S1–S4 backend (a reviewer that did not build it). New `t
 
 ## Source sign-in S4 (backend) — 2026-10-30
 
-Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S4, backend half: a signed-in source witnesses the
+Roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`, Sprint S4, backend half: a signed-in source witnesses the
 bursary contract from its console. Migration `scholarship/0191` (migrate-first; DDL + ledger row in its docstring).
 NOT deployed. `BURSARY_AGREEMENT_ENABLED` is off in production with 0 agreements, so this ships ready but quiet.
 
@@ -2814,7 +2822,7 @@ NOT deployed. `BURSARY_AGREEMENT_ENABLED` is off in production with 0 agreements
 
 ## Source sign-in S3 (backend) — 2026-10-30
 
-Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S3, backend half: the source console's read-only
+Roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`, Sprint S3, backend half: the source console's read-only
 API (the UI waits for the owner's approval of the mock-ups). No migration. NOT deployed.
 
 - **Six routes under `api/v1/admin/source/`** (`views_admin/source_console.py`; payloads
@@ -2848,7 +2856,7 @@ API (the UI waits for the owner's approval of the mock-ups). No migration. NOT d
 
 ## Source sign-in S2 (backend) — 2026-10-30
 
-Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S2, backend half (the UI half waits for the owner's
+Roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`, Sprint S2, backend half (the UI half waits for the owner's
 visual approval). Migration `scholarship/0190` (MIGRATE-FIRST; DDL and ledger row in its docstring). NOT deployed.
 
 - **Invite a source:** `POST admin/invitations/` with `audience='source_partner'` and `name`, `email`, and either
@@ -2881,7 +2889,7 @@ visual approval). Migration `scholarship/0190` (MIGRATE-FIRST; DDL and ledger ro
 
 ## Source sign-in S1 — 2026-10-30
 
-Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S1: the role and access foundation. Nothing
+Roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`, Sprint S1: the role and access foundation. Nothing
 visible to users yet — no path creates a source user until S2. Migration `courses/0089` (MIGRATE-FIRST; DDL and
 ledger row in its docstring). NOT deployed.
 
@@ -3633,7 +3641,7 @@ SPM batch needs, plus the 87 UiTM rows (84 ingested, 3 flagged for hand entry in
 
 ## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
 
-Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
+Roadmap `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
 (2026-10-29). No migration.
 
 - **`/admin/scholars`** — every funded student from award acceptance to closure (the S1 predicate), inside a gift:
@@ -3770,7 +3778,7 @@ ledger is consistent with ITSELF, and an empty ledger is perfectly consistent. T
 
 ## Student maintenance Sprint 1 — one predicate, on hold stops money, the activity log (migration 0183) - 2026-10-29
 
-Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; owner rulings in `docs/decisions.md`
+Roadmap `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md`; owner rulings in `docs/decisions.md`
 (2026-10-29). The 65 live funded students are all `awarded` with a live Vircle wallet, and every
 in-programme gate accepted only `active` / `maintenance` — so none of them could record a result, be
 put on hold, or reach the in-programme page. Backend foundation; the status state machine is unchanged.
@@ -3837,7 +3845,7 @@ put on hold, or reach the in-programme page. Backend foundation; the status stat
 
 ## Matric/Diploma Exact-read M1 - 2026-10-29
 
-Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a
+Sprint M1 of `docs/plans/archive/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a
 Matriculation transcript uploaded in the SPM card was read as an SPM slip).
 
 - **An "ACADEMIC TRANSCRIPT" is told by its issuer.** `results_kind` gains a second tier, read only
@@ -4765,7 +4773,7 @@ blockers and consent read nothing new — pinned by a test that fails if any of 
 ## Third results route S4 — reviewer requests and wrong slips - 2026-10-27
 
 Reviewers ask for results BY NAME (#37), and an STPM / Matriculation / Asasi / Diploma result
-uploaded as the SPM slip is recognised (#43; roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md`
+uploaded as the SPM slip is recognised (#43; roadmap `docs/plans/archive/2026-10-25-third-results-route-roadmap.md`
 §5a S4, owner rulings D1 D9 D12 D15). No migration (S3's columns). No `MODEL_VERSION` bump (detection
 reused; nothing scored). **`VERDICT_ENGINE_VERSION` 2026-10-27.1.** Not run by the build: the lead runs
 `note_team_refiled_higher --apply` after the deploy.
@@ -4826,7 +4834,7 @@ reused; nothing scored). **`VERDICT_ENGINE_VERSION` 2026-10-27.1.** Not run by t
 
 A student bound for a degree with STPM, Matriculation, Asasi or Diploma results uploads ONE
 **STPM / Matriculation / Asasi / Diploma results** document instead of an SPM slip (request #38;
-roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md` §5a S3a+S3b, owner rulings D6 D9
+roadmap `docs/plans/archive/2026-10-25-third-results-route-roadmap.md` §5a S3a+S3b, owner rulings D6 D9
 D12 D13; built and released together). ⚠ **Release: migration `scholarship.0178_higher_results`
 FIRST, by hand** (DDL + ledger row in its docstring: two additive NOT NULL columns with database
 defaults, `applicant_documents.results_kind`, `scholarship_applications.results_change_notes`).
@@ -5011,7 +5019,7 @@ Request #47: an ILKBS offer read "suspect" against the nearest university patter
 ## Third results route S2b — the route, student side - 2026-10-26
 
 A student can choose **Matriculation, Asasi or Diploma** ("STPM-equivalent qualifications"), enter
-the results per the approved mock, and apply (roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md`
+the results per the approved mock, and apply (roadmap `docs/plans/archive/2026-10-25-third-results-route-roadmap.md`
 §5a; rulings D2 D4 D5). ⚠ **Release: set `THIRD_ROUTE_OPEN=1` on `halatuju-api`
 (`--update-env-vars`) BEFORE the push** — until then the live api refuses every third-route write.
 - **Choose Your Exam:** a third card in the SPM / STPM card style (grid of three); the tap only
@@ -5459,7 +5467,7 @@ clickable mock the owner approved on 2026-10-21 in place of Stitch.
 
 Built on branch `td360` (base `6aec3206`). **Not pushed, not deployed. No migration. No string added,
 removed or reworded** (`src/messages/*.json` untouched). Non-billed hygiene; prerequisite for request #39
-Sprint 4. Roadmap `docs/plans/2026-10-20-td360-split-messages-roadmap.md`; decision `docs/decisions.md`
+Sprint 4. Roadmap `docs/plans/archive/2026-10-20-td360-split-messages-roadmap.md`; decision `docs/decisions.md`
 2026-10-21; retrospective `docs/retrospectives/retrospective-2026-10-21-td360-admin-slice.md`.
 
 - **Sliced delivery (`8b1b57ce`):** `scripts/messages-slice-loader.js` (wired in `next.config.js`) cuts
@@ -5516,7 +5524,7 @@ Built on branch `perm-s3` (base `09b8766e`, Sprints 1-2 live). **Not pushed, not
 
 ## Request #39, Sprint 2 of 4 — Finance approves payment runs - 2026-10-19
 
-Built on branch `perm-s2` (base `378c7601`, Sprint 1 live). **Not pushed, not deployed. No migration.** Adversarial review pending. Owner ruling 2026-10-19 (option A): *"Finance role currently doesn't have clear action items. I would like the role to be able to approve payment — the work that Suresh does today."* Roadmap: `docs/plans/2026-10-19-staff-permissions-roadmap.md`; decision: `docs/decisions.md` 2026-10-19 (Sprint 2); cutover: `docs/scholarship/finance-approves-cutover.md` (the lead's read-only pre-deploy query; deploy when no run is mid-chain).
+Built on branch `perm-s2` (base `378c7601`, Sprint 1 live). **Not pushed, not deployed. No migration.** Adversarial review pending. Owner ruling 2026-10-19 (option A): *"Finance role currently doesn't have clear action items. I would like the role to be able to approve payment — the work that Suresh does today."* Roadmap: `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md`; decision: `docs/decisions.md` 2026-10-19 (Sprint 2); cutover: `docs/scholarship/finance-approves-cutover.md` (the lead's read-only pre-deploy query; deploy when no run is mid-chain).
 
 - **Moves-only split first, its own commit:** the run sign-off chain (`finance_check_required`, `_collected_signer_emails`, `sign`, `cancel`) → new `apps/scholarship/payments_chain.py`, re-exported from `payments.py`; `payments.py` 748 → 632 (budget 736 → 632).
 - **Changed — Admin PREPARES, Finance APPROVES, and that approval completes the run** (releases Vircle → students, writes the disbursements, emails Vircle "prepared by … and approved by …" with the approver CC'd). The organisation admin no longer countersigns; they keep create / edit / cancel and **approve only under the per-run fallback** — when no active `payments_approve` holder who has not signed the run exists (no Finance person; the only one prepared or already checked it; revoked or switched mid-run). Nothing in flight strands (four in-flight rows, each a test).
@@ -5592,7 +5600,7 @@ Built on branch `perm-s2` (base `378c7601`, Sprint 1 live). **Not pushed, not de
 
 ## Request #39, Sprint 1 of 4 — staff permissions: the foundation, and the invite message - 2026-10-19
 
-Built on branch `perm-plan` (base `d15c0f14` + the roadmap `fd7864c1`). **Not pushed, not deployed; migration `courses/0081` NOT applied.** Adversarial review pending. Roadmap: `docs/plans/2026-10-19-staff-permissions-roadmap.md`; decision: `docs/decisions.md` 2026-10-19.
+Built on branch `perm-plan` (base `d15c0f14` + the roadmap `fd7864c1`). **Not pushed, not deployed; migration `courses/0081` NOT applied.** Adversarial review pending. Roadmap: `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md`; decision: `docs/decisions.md` 2026-10-19.
 
 - **Moves-only splits first, each its own commit:** `PartnerAdmin` → new `apps/courses/models_staff.py` (re-exported from `models.py`; the two FKs name `'PartnerOrganisation'` as a string), `models.py` 1240 → 1085 (budget 1244 → 1085); then `AdminInviteView` / `AdminResendView` / `AdminListView` / `AdminRevokeView` → `apps/courses/views_staff.py` byte-for-byte, `views_admin.py` 1161 → 795 (budget 1165 → 795), `AdminInviteView.post`'s 183 follows it via a declared `_moved` record. `makemigrations --check` clean after each.
 - **Added — the permission catalogue** (`apps/courses/staff_permissions.py`, a leaf; no new `courses → scholarship` import): 8 keys (`review`, `see_all`, `qc`, `spending`, `payments_prepare`, `payments_check`, `payments_approve`, `manage_team`), team presets = TODAY's powers (finance holds the CHECK and org_admin the APPROVAL until Sprint 2), `org_admin` a fixed lead tier, `qc ⇒ see_all`, `manage_team` never grantable; `resolve` / `holds` / `is_custom` / `is_lead_tier` / `holders(org, key)` (in Python; never a super).
@@ -8049,7 +8057,7 @@ ordinary means, so that a sprint six months from now cannot quietly undo them.
   project met three, four or five times. **`docs/lessons.md` is untouched and keeps the evidence -
   `CLAUDE.md` gets the rule, not the story.**
 - **The arc's closing retrospective**, the last section of
-  `docs/plans/2026-09-18-code-health-roadmap.md`: the readings on 2026-09-18 against today,
+  `docs/plans/archive/2026-09-18-code-health-roadmap.md`: the readings on 2026-09-18 against today,
   everything promised and not delivered named plainly, what is enforced and by what, and what is
   still open and whose it is. Every number in it is a Trend row, a gate line in a named
   retrospective, or a count taken on the day.
@@ -8872,7 +8880,7 @@ byte-identical, the relative-import depth aside.
 
 ### Docs
 
-- `docs/plans/2026-09-18-code-health-roadmap.md` - checkpoint marked DECIDED with the choice and
+- `docs/plans/archive/2026-09-18-code-health-roadmap.md` - checkpoint marked DECIDED with the choice and
   the rule; freeze section rewritten as LIFTED (the old text kept for the record); sequence
   diagram, Phase 6 heading and "Owner decisions" brought up to date.
 - `halatuju_api/CLAUDE.md` - the freeze notice above `## Next Sprint` replaced with the lifted
@@ -8884,7 +8892,7 @@ byte-identical, the relative-import depth aside.
 
 ## Code health H10 - de-mirror wave 2, and PHASE 3 IS COMPLETE - 2026-09-19
 
-Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H10 of H19. Retro
+Roadmap `docs/plans/archive/2026-09-18-code-health-roadmap.md`, sprint H10 of H19. Retro
 `docs/retrospectives/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** The
 `unguarded_mirrors` ledger goes **41 -> 3**, and the three that remain are a recorded decision, not
 a backlog. **The "stabilised" checkpoint is now the owner's to call** - the roadmap carries a plain
@@ -8946,7 +8954,7 @@ reading decision is recorded in `docs/code-health.md`), every other reading unch
 
 ## Code health H9 - the decision gates stop living in two languages - 2026-09-19
 
-Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H9 of H19. Retro
+Roadmap `docs/plans/archive/2026-09-18-code-health-roadmap.md`, sprint H9 of H19. Retro
 `docs/retrospectives/retrospective-2026-09-19-code-health-h9.md`. **No production code changed** - six front-end
 rules that said they mirrored a backend rule now have a test that reads the backend's own source
 and fails if either side moves. Every one was characterised side by side first (the H8 rule), on
@@ -9613,7 +9621,7 @@ written brief; verified and closed by the lead. **No behaviour change.** Retro:
 ## Code health: the full sprint roadmap is written (not yet approved) - 2026-09-18
 
 The owner: *"I need a full implementation plan, covering all the sprints, and not like this
-piecemeal version."* `docs/plans/2026-09-18-code-health-roadmap.md`, in the house roadmap format. Docs only.
+piecemeal version."* `docs/plans/archive/2026-09-18-code-health-roadmap.md`, in the house roadmap format. Docs only.
 
 **Revised the same day on two owner rulings - now nineteen sprints in six phases, about 118 hours.**
 - ***"I want to pause all other developments until this is stabilised or completed."*** A
@@ -10886,7 +10894,7 @@ were real — the second exposed a completely untested Drive-write path.**
 
 ## Sponsor spending S4a — the officer can see it, and correct it - 2026-09-10
 
-Fourth sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`, **split from S4 on the
+Fourth sprint of `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`, **split from S4 on the
 owner's call**: the screen ships here, the Gemini-written Drive summary follows as S4b. **api +
 web. NO MIGRATION. Nothing a sponsor or student sees changes; nothing is deployed.**
 `/admin/spending`, `apps/scholarship/spend_report.py`, `AdminSpendingView` +
@@ -10950,7 +10958,7 @@ fifteen bit after the test it was missing was written.**
 
 ## Sponsor spending S3 — every payment gets a category - 2026-09-10
 
-Third sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO
+Third sprint of `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO
 MIGRATION. Nothing a sponsor or student sees changes; nothing is deployed.**
 `apps/scholarship/spend_category.py` (the four-rung ladder), `manage.py sort_spending
 [--apply] [--all] [--no-ai]`, `--no-sort` on `ingest_spending`, and cron job
@@ -11025,7 +11033,7 @@ Gates: pytest full `apps/` **6236 passed** (+57); `makemigrations --check` clean
 
 ## Sponsor spending S2 — the reports arrive on their own - 2026-09-10
 
-Second sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO MIGRATION.
+Second sprint of `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO MIGRATION.
 Nothing a sponsor or student sees changes; nothing is deployed.** `sheets.spending_reports_in` +
 `read_spending_report`, `spending_import.files_needing_read` / `drive_sources` /
 `days_since_last_report` / `should_nudge`, `--drive` on the command, `emails
@@ -11092,7 +11100,7 @@ else.
 
 ## Sponsor spending S1 — a Vircle report becomes stored transactions - 2026-09-10
 
-First sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. Nothing a
+First sprint of `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. Nothing a
 sponsor or a student sees changes; nothing is deployed.** New `apps/scholarship/spending_import.py`
 (the whole parser + the ingest), two models (`BursarySpendTxn`, `MerchantCategory`), and
 `manage.py ingest_spending --file/--dir [--apply]`, report-only by default.
@@ -11239,7 +11247,7 @@ Two owner findings from using the live tab. **No migration.** api + web.
 Gates: pytest **6144** · jest **1971** · tsc **24** (baseline) · lint **0** · i18n **4972 × 3** ·
 `next build` exit 0 · `makemigrations --check` clean. Three bite-checks, all bit.
 Retro `docs/retrospectives/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
-`docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+`docs/plans/archive/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
 ## The Vircle confirm needs an explicit installed-and-registered tick - 2026-09-10
 
 Owner request, off a real failure the same morning: a student pressed Confirm on the Vircle card
@@ -12310,7 +12318,7 @@ docstring names. Both bites landed and bit (env arm disabled → 1 test fails; r
 
 The LAST sprint of the Org Config arc. Two settings join Organisation > Settings >
 Configuration under a new **Agreements** group - **no migration**. Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A-F all done);
+`docs/plans/archive/2026-09-06-org-configuration-roadmap.md` (A-F all done);
 retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-f.md`.
 
 - **`sign_accept_deadline_days` (30)** - how long a student has to sign once the "ready to
@@ -12347,7 +12355,7 @@ registry - each failed its owning test, each restored. i18n +5 keys x3 (ms/ta fi
 
 Four settings join Organisation > Settings > Configuration under a new **Documents** group
 (registry entries + wired read sites + rows - **no migration**). Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
+`docs/plans/archive/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
 retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-e.md`.
 
 - **`max_doc_size_mb` (8, ceiling 25)** - the tab speaks MB (the owner's unit) while the wire
@@ -12439,7 +12447,7 @@ two of them.
 
 Six settings join Organisation > Settings > Configuration under a new **Interviews** group
 (registry entries + wired read sites + rows - **no migration**). Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
+`docs/plans/archive/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
 retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-d.md`.
 
 - **The picker's lock-step copy is GONE.** `interviewSlots.ts` carried its own window, step and
@@ -12515,7 +12523,7 @@ ms and ta are first drafts.
 
 Five settings join Organisation > Settings > Configuration under a new **Reviewers & staff**
 group (registry entries + wired read sites + rows - **no migration**, the roadmap's promised
-shape). Roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C done);
+shape). Roadmap `docs/plans/archive/2026-09-06-org-configuration-roadmap.md` (A + B + C done);
 retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-c.md`.
 
 - **The three verdict clocks** (`review_sla_days` 10 / `review_nudge_soon_days` 2 /
@@ -12723,7 +12731,7 @@ Web only, no i18n, no migration. jest 1734 → 1735; lint 0; build clean.
 
 ## The Configuration tab learns student comms, and the sponsor email learns whose cap it wears - 2026-09-07
 
-**Org Config Sprint B** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`). Worktree
+**Org Config Sprint B** (roadmap `docs/plans/archive/2026-09-06-org-configuration-roadmap.md`). Worktree
 `.worktrees/org-config-b`, branch `feat/org-config-sprint-b`. **NO migration** — registry entries +
 wired read sites + rows on the existing tab, exactly the shape the roadmap promised.
 
@@ -12786,7 +12794,7 @@ lacking all three legacy proof types**, so exactly one row's answer moves.
 
 ## The organisation gets a Configuration tab, and the funded card learns to stay - 2026-09-07
 
-**Org Config Sprint A** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`, owner-approved
+**Org Config Sprint A** (roadmap `docs/plans/archive/2026-09-06-org-configuration-roadmap.md`, owner-approved
 phased build). Worktree `.worktrees/org-config`, branch `feat/org-config-tab`.
 **Migration `courses/0074`** (one new table `organisation_configurations`, additive, RLS +
 service_role policy — MIGRATE-FIRST).
@@ -13199,7 +13207,7 @@ bundle, not only the build log: the picker label and the `programme_required` se
 present. **NO migration.** web only. Retro
 `docs/retrospectives/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2.
 jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**; build clean.
-Two guards bite-checked. First sprint of `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`.
+Two guards bite-checked. First sprint of `docs/plans/archive/2026-09-02-sabah-self-serve-roadmap.md`.
 
 ### Fixed
 - **⚠ A LATENT REGRESSION IN THE LIVE PAYOUT PATH, not a Sabah feature.** P2b made a run pay ONE
@@ -15580,7 +15588,7 @@ accounts (Vircle caught it by hand).
   tells students to WhatsApp Vircle themselves, so it may already be active. The CSV gains a blank
   **`Correct eWallet ID (if different)`** column so replying is filling a cell.
 
-Brief `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`. **NO migration.**
+Brief `docs/plans/archive/2026-07-30-vircle-wallet-id-validation-roadmap.md`. **NO migration.**
 `pytest` 3893 scholarship + 1260 courses/reports · `jest` 1184 · `tsc` clean.
 
 ## The Requests module gains a conversation — 2026-07-30
@@ -16090,7 +16098,7 @@ said nothing about what each field was for. **No backend change; no migration.**
 
 ## A design sandbox, so an outside team can work without the codebase — 2026-07-28
 
-Sprint 1 of the configuration-layers roadmap (`docs/plans/2026-07-28-configuration-layers-roadmap.md`).
+Sprint 1 of the configuration-layers roadmap (`docs/plans/archive/2026-07-28-configuration-layers-roadmap.md`).
 
 BrightPath's UI/UX team can now open a URL and work with the real screens, without repo access and
 without a single real person's data in front of them. `/sandbox` mounts the actual components
@@ -16556,7 +16564,7 @@ live service, so the pre-S3 senders still do the work and nothing a sponsor rece
 
 ## Nav/IA arc CLOSED (N1 -> N4) — 2026-07-28
 
-No code. The roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md` is closed and marked so; arc
+No code. The roadmap `docs/plans/archive/2026-07-27-nav-ia-roadmap.md` is closed and marked so; arc
 retrospective in `docs/retrospectives/retrospective-2026-07-28-nav-ia-arc.md`.
 
 Four sprints, two days, all live: a 220-line layout became a 60-line guard over a route registry,
@@ -17036,7 +17044,7 @@ for: *"I want this feature activated, even though there are no emails at present
 
 ## Partner comms S2+S3 — the five emails can now actually be sent — 2026-07-26
 
-Sprints 2 and 3 of `docs/plans/2026-07-26-partner-comms-roadmap.md`, done in one pass at the owner's
+Sprints 2 and 3 of `docs/plans/archive/2026-07-26-partner-comms-roadmap.md`, done in one pass at the owner's
 direction after they challenged the split: *"Have we not built all 5 emails including the weekly
 ones?"* — a fair catch. S1 shipped the wording and the switches; **nothing could render or send.**
 Now it can. **Still dark**: `PARTNER_COMMS_ENABLED` is unset, all five templates are off, and no
@@ -17096,7 +17104,7 @@ Each is a way this would otherwise fail *quietly*:
 
 ## Partner comms S1 — an org_admin decides what partner organisations hear — 2026-07-26
 
-Sprint 1 of `docs/plans/2026-07-26-partner-comms-roadmap.md`. **Ships DARK** — two independent
+Sprint 1 of `docs/plans/archive/2026-07-26-partner-comms-roadmap.md`. **Ships DARK** — two independent
 gates (`PARTNER_COMMS_ENABLED`, default off, AND each template's own `enabled`), and nothing sends
 in this sprint at all: there is no sender yet. Migration `0128` (two tables + two stamps, additive).
 
@@ -17500,7 +17508,7 @@ behaviour-neutral by construction, nothing reads the new column yet.** Migration
 
 ## Institution must-fill Sprint 3 — sponsor surface parity — 2026-07-26
 
-Final sprint of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`. Backend + a one-line
+Final sprint of `docs/plans/archive/2026-07-25-institution-must-fill-roadmap.md`. Backend + a one-line
 frontend link, **no migration**, and — the headline — **no data insert after all**.
 
 - **Fixed — the catalogue resolvers were blind to the post-STPM catalogue.** The roadmap's third item
@@ -17583,7 +17591,7 @@ re-running #48's offer letter. Backend only, **no migration**, nothing re-extrac
 
 ## Institution is a must-fill fact — Sprint 1: it gets its own writer — 2026-07-25
 
-Sprint 1 of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`, off owner live review of #48
+Sprint 1 of `docs/plans/archive/2026-07-25-institution-must-fill-roadmap.md`, off owner live review of #48
 ("Institution is a must fill, as this is required in the sponsor's portal as well"). Backend only,
 **no migration**, no verdict/band/award/payment behaviour touched — this is a stored display fact.
 
@@ -17711,7 +17719,7 @@ never demand proof a genuine family can't produce. Retro
 ## Billing & usage v1 — the per-tenant usage meter + super/org_admin usage screen (Sprint 13a) — 2026-07-25
 
 The per-tenant usage meter (roadmap Sprint 13a) plus a dark, super/org_admin usage screen. Brief
-`docs/plans/2026-07-25-billing-usage-v1-brief.md`; design source `docs/plans/2026-07-24-billing-sources-investigation.md`.
+`docs/plans/archive/2026-07-25-billing-usage-v1-brief.md`; design source `docs/plans/archive/2026-07-24-billing-sources-investigation.md`.
 
 - **The meter.** New `UsageEvent` model (table `usage_events`, migration `0116`, additive; org FK
   PROTECT null = platform-base work, application FK SET_NULL, service/model/source/quantity/tokens,
@@ -17783,7 +17791,7 @@ copy; one-entry email-branding golden regen). Tests updated. No migration.
 
 Three additive extensions to the live Requests space (`REQUESTS_ENABLED=1`); everything is additive
 and pre-existing Sprint 15 tests pass unmodified except the two deliberate widenings noted. Brief
-`docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`. Closes TD-172.
+`docs/plans/archive/2026-07-24-sprint15-1-requests-v11-brief.md`. Closes TD-172.
 
 - **Role-correct component choices.** Removed the super-only surfaces `students` + `course_data` from
   the component set (an org_admin can't reach them). Values now derive from ONE source of truth,
@@ -17859,7 +17867,7 @@ An org-section "Requests" area that turns the feature-ask firehose into managed,
 bug/feature forms → an AI reviewer that classifies + estimates in HOURS + asks clarifying questions
 → a status flow → owner-gated hours quotes. Shipped dark, then verified live and flipped ON the
 same day after the owner reviewed the rate-card copy + UI mock (claude.ai artifact). Brief
-`docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
+`docs/plans/archive/2026-07-24-sprint15-requests-space-brief.md`; retro
 `docs/retrospectives/retrospective-2026-07-24-sprint15-requests-space.md`; decisions ×5; TD-172 logged.
 
 Core (5 commits, `a8bbefc6`..`ed3efeec`) + a same-day owner-approved increment (`d8e34931`):
@@ -17984,12 +17992,12 @@ tenant config over the network.
   copy ("Biasiswa BrightPath" / "BrightPath உதவித்தொகை") so they tokenise only the brand word,
   flagged as a copy-tidy-up candidate (TD-170); (3) the `info@` mailto is built as
   `info@${frontendDomain}` — there is no dedicated seam field for it.
-- Brief: `docs/plans/2026-07-24-sprint6-branding-frontend-brief.md`. Retrospective:
+- Brief: `docs/plans/archive/2026-07-24-sprint6-branding-frontend-brief.md`. Retrospective:
   `docs/retrospectives/retrospective-2026-07-24-sprint6-branding-frontend.md`.
 
 ## Payments — the Finance role: a dormant payment-run checker + funding summary — 2026-07-23
 
-Sprint 14 (brief `docs/plans/2026-07-22-sprint14-finance-role-brief.md`, owner-approved).
+Sprint 14 (brief `docs/plans/archive/2026-07-22-sprint14-finance-role-brief.md`, owner-approved).
 **Shipped DARK** — with no active finance admin the production chain is byte-identical, and all
 82 pre-existing payments tests pass UNMODIFIED, which is the regression guard rather than a
 claim.
@@ -18759,7 +18767,7 @@ var required (`DECLINE_QC_COOLOFF_HOURS` defaults to 24).
 ## Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy) — 2026-07-19
 
 Second and final sprint of the go-live transition (plan
-`docs/plans/2026-07-19-contract-golive-transition-plan.md`) — **the transition's single api+web
+`docs/plans/archive/2026-07-19-contract-golive-transition-plan.md`) — **the transition's single api+web
 deploy.** Both flags stay OFF; the flip is the owner's runbook. Stitch-approved before coding.
 
 - **Added — Sources page** (`admin/sources/page.tsx`): a super/org_admin registry of referral
@@ -18782,7 +18790,7 @@ deploy.** Both flags stay OFF; the flip is the owner's runbook. Stitch-approved 
 ## Contract Go-Live Transition — Sprint T1 (backend) — 2026-07-19
 
 First of two sprints managing the switch from the grandfather arrangement to contract mode
-(plan `docs/plans/2026-07-19-contract-golive-transition-plan.md`). **Backend only; NOT deployed
+(plan `docs/plans/archive/2026-07-19-contract-golive-transition-plan.md`). **Backend only; NOT deployed
 — the single deploy is Sprint T2.** Both flags stay OFF. On branch `feat/contract-golive-transition`.
 
 - **Added — contract-mode award email.** When `BURSARY_AGREEMENT_ENABLED`, the good-news award
@@ -18816,7 +18824,7 @@ First of two sprints managing the switch from the grandfather arrangement to con
 ## Contract Module — Sprint 5 (final): distribution + constants removal — 2026-07-18
 
 Fifth and final sprint of the contract module (plan
-`docs/plans/2026-07-18-contract-module-plan.md`) — the feature's **single prod deploy**.
+`docs/plans/archive/2026-07-18-contract-module-plan.md`) — the feature's **single prod deploy**.
 Still behind `BURSARY_AGREEMENT_ENABLED` (OFF); migration `0103` applied migrate-first.
 
 - **Added — execution distribution.** When an agreement is fully executed,
@@ -18844,7 +18852,7 @@ Still behind `BURSARY_AGREEMENT_ENABLED` (OFF); migration `0103` applied migrate
 
 ## Contract Module — Sprint 4: admin FE + quiz refactor + Word import — 2026-07-18
 
-Fourth sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+Fourth sprint of the contract module (plan `docs/plans/archive/2026-07-18-contract-module-plan.md`).
 The owner-approved Stitch screens become real admin pages; the student quiz is
 API-served; and an author can import a Word document to populate a draft's clauses.
 Behind `BURSARY_AGREEMENT_ENABLED` (OFF); **NO deploy** (Sprint 5); no migration.
@@ -18880,7 +18888,7 @@ Behind `BURSARY_AGREEMENT_ENABLED` (OFF); **NO deploy** (Sprint 5); no migration
 
 ## Contract Module — Sprint 3: admin API + Stitch (backend) — 2026-07-18
 
-Third sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+Third sprint of the contract module (plan `docs/plans/archive/2026-07-18-contract-module-plan.md`).
 The admin authoring/deployment API + the Stitch UI prototype. Backend only — the
 FE pages/components are Sprint 4, gated on the owner's Stitch approval. **NO
 deploy**; no migration.
@@ -18911,7 +18919,7 @@ deploy**; no migration.
 
 ## Contract Module — Sprint 2: engine cutover (backend) — 2026-07-18
 
-Second sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+Second sprint of the contract module (plan `docs/plans/archive/2026-07-18-contract-module-plan.md`).
 `bursary.py` and `payments.py` now read the versioned template instead of the
 hard-coded constants (which STAY in place — removal is Sprint 5). Backend only.
 **NO deploy** (Sprint 5 is the feature's single deploy); still behind
@@ -18957,7 +18965,7 @@ prerequisite was cancelled and folded into this sprint.
 ## Contract Module — Sprint 1: model + service + seed (backend, INERT) — 2026-07-18
 
 First sprint of the org-owned, versioned bursary-agreement module (plan
-`docs/plans/2026-07-18-contract-module-plan.md`). Backend only; the module is
+`docs/plans/archive/2026-07-18-contract-module-plan.md`). Backend only; the module is
 **INERT** — neither `bursary.py` nor `payments.py` reads it yet (Sprint 2). **NO
 deploy** — the feature's single prod deploy is at Sprint 5. Migration applied to
 local sqlite only.
@@ -19266,7 +19274,7 @@ An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing
 ## Payments module — Sprint P3: production cutover (the feature's single deploy) — 2026-07-16
 
 The one deploy for the whole Payments feature (P1 + P2 + the D10 guard). Migrate-first, one push,
-live backfill against prod. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+live backfill against prod. Plan `docs/plans/archive/2026-07-16-payments-module-plan.md`.
 
 - **Carry closed** — a per-language test now guards the D10 Vircle Wallet-ID mention in the
   award-offer email (the copy was already in en/ms/ta from P2; nothing had locked it in).
@@ -19290,7 +19298,7 @@ live backfill against prod. Plan `docs/plans/2026-07-16-payments-module-plan.md`
 ## Payments module — Sprint P2: API + UI (Vircle ID capture, run pages) — 2026-07-16
 
 Backend endpoints + admin UI on top of the P1 ledger. No deploy — the feature's single deploy
-is P3. Stitch screens owner-approved first. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+is P3. Stitch screens owner-approved first. Plan `docs/plans/archive/2026-07-16-payments-module-plan.md`.
 
 - **Endpoints** (`views_admin.py` + `urls.py`, all org-fenced, admin/org_admin only —
   reviewer/qc/partner 403, cross-org 404): list / create-draft / detail / item PATCH
@@ -19318,7 +19326,7 @@ is P3. Stitch screens owner-approved first. Plan `docs/plans/2026-07-16-payments
 ## Payments module — Sprint P1: ledger foundation + backfill (backend) — 2026-07-16
 
 Backend-only foundation for the organisation Payments module (Vircle payment runs). No API,
-frontend, or deploy — those are Sprints P2/P3. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+frontend, or deploy — those are Sprints P2/P3. Plan `docs/plans/archive/2026-07-16-payments-module-plan.md`.
 
 - **Migration `scholarship/0101`** (additive, not yet applied to prod — P3): `vircle_id` +
   `payment_credit` on `ScholarshipApplication`; new `PaymentRun` + `PaymentRunItem` models
@@ -19487,7 +19495,7 @@ retro `docs/retrospectives/retrospective-2026-07-15-undeclared-pathway.md`; deci
 ## Role-aware Guide & FAQ manual — 2026-07-16
 
 Frontend + content only, one deploy, no backend/migration. The reviewer-only Guide and FAQ
-became one role-aware self-help manual. Brief `docs/plans/2026-07-16-guide-faq-manual-brief.md`;
+became one role-aware self-help manual. Brief `docs/plans/archive/2026-07-16-guide-faq-manual-brief.md`;
 retro `docs/retrospectives/retrospective-2026-07-16-guide-faq-manual.md`.
 
 - **Content modules** in `halatuju-web/src/content/manual/` — four Basics chapters, four role
@@ -19504,13 +19512,13 @@ retro `docs/retrospectives/retrospective-2026-07-16-guide-faq-manual.md`.
   note + a pointer to the manual). Fixed two drifted facts: Save sends the case on for **QC** (not
   straight to sponsors), and reviewer sponsor-vetting references removed.
 - New org-admin/QC screenshots are labelled placeholders + a capture manifest
-  (`docs/plans/2026-07-16-manual-screenshot-manifest.md`). 552 jest (+22); `next build` clean.
+  (`docs/plans/archive/2026-07-16-manual-screenshot-manifest.md`). 552 jest (+22); `next build` clean.
 
 ## Org-Admin Powers v1 + role-matrix alignment — 2026-07-15
 
 One sprint, one deploy, **no migration**. The organisation roles gained the write powers
 `docs/scholarship/role-matrix.md` promises, all org-fenced and guarded. Brief
-`docs/plans/2026-07-15-org-admin-powers-v1-brief.md`; retro
+`docs/plans/archive/2026-07-15-org-admin-powers-v1-brief.md`; retro
 `docs/retrospectives/retrospective-2026-07-15-org-admin-powers-v1.md`.
 
 - **org_admin + qc are org-wide writers** (`_can_review_app`) — act on any own-org application
@@ -19694,7 +19702,7 @@ keep-better replacement real for this type (owner request). Deployed `af6ef919`;
 The organisation wall on the scholarship system. Behaviourally INVISIBLE while BrightPath is
 the only organisation — every fenced query returns exactly today's rows, and the full suite
 passed at every sprint with no edits to existing tests. Roadmap
-`docs/plans/2026-07-14-platform-roadmap-draft.md`; retro
+`docs/plans/archive/2026-07-14-platform-roadmap-draft.md`; retro
 `docs/retrospectives/retrospective-2026-07-15-platform-phase1-fencing.md`.
 
 ### Added
@@ -19716,7 +19724,7 @@ passed at every sprint with no edits to existing tests. Roadmap
 
 ### Notes
 - Deploy discipline: TWO checkpoints. Checkpoint 1 (S2+S3a DDL) applied MIGRATE-FIRST via Supabase
-  MCP (runbook `docs/plans/2026-07-15-phase1-checkpoint1-migrate-first.md`) then pushed; Checkpoint 2
+  MCP (runbook `docs/plans/archive/2026-07-15-phase1-checkpoint1-migrate-first.md`) then pushed; Checkpoint 2
   (S4, no migration) pushed. Both smoke-verified, zero error logs.
 - **Platform work now PAUSES.** Phase 2 is gated on rule stability; Phases 3–4 on a credible
   second-tenant prospect. The S3b guards keep the fence honest meanwhile.
@@ -19724,7 +19732,7 @@ passed at every sprint with no edits to existing tests. Roadmap
 
 ## Platform Sprint 1 — Organisation record + BrightPath as org #1 — 2026-07-15
 
-First sprint of the multi-tenant platform roadmap (`docs/plans/2026-07-14-platform-roadmap-draft.md`).
+First sprint of the multi-tenant platform roadmap (`docs/plans/archive/2026-07-14-platform-roadmap-draft.md`).
 Behaviourally INVISIBLE: columns are written and seeded but nothing reads them yet.
 
 ### Added
@@ -21224,7 +21232,7 @@ pytest + 455 jest**; golden masters intact.
     Vision calls plus up to three blob downloads per slip/BC upload). Digital PDFs keep the free
     text-layer path.
 - **Code-health Sprint 1 (2026-07-03) — three P1 findings from the full-codebase review
-  (`docs/plans/2026-07-03-code-health-review.md`).**
+  (`docs/plans/archive/2026-07-03-code-health-review.md`).**
   - **"Cancel decline" now actually cancels.** `cancel_pending_decline` keyed "was the student told?"
     off `decision_email_sent_at`, which the shortlist PASS email had already stamped for every
     normally-processed applicant — so a cancelled decline silently stayed `rejected`, the student saw
@@ -22243,7 +22251,7 @@ pytest + 455 jest**; golden masters intact.
   channel-independent and always sends). +2 reminder-gate tests + i18n parity (2751×3); `next build` clean; 361 jest.
   Migration **not** applied to prod (go-live step). Branch `feat/whatsapp-comms`.
 - **WhatsApp comms channel — Sprint 1: foundation + interview reminder (DARK).** First slice of the outbound WhatsApp
-  channel (plan `docs/plans/2026-06-20-whatsapp-comms-channel.md`). New `apps/scholarship/whatsapp.py`:
+  channel (plan `docs/plans/archive/2026-06-20-whatsapp-comms-channel.md`). New `apps/scholarship/whatsapp.py`:
   `normalise_msisdn` (Malaysian phone → E.164 `+60…`, deterministic + unit-tested — 98/99 prod applicants are `0XX…`)
   and `send_whatsapp` (best-effort POST to the **Twilio** REST API via stdlib `urllib` — **no new dependency, no Twilio
   SDK**; never raises into the caller). New `WhatsAppMessage` model (`whatsapp_messages` table, **migration `0067`**) logs

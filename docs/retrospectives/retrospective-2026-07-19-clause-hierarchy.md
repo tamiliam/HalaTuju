@@ -1,7 +1,7 @@
 # Retrospective — Contract clause hierarchy + upload-at-create
 
 **Date:** 2026-07-19 · Owner-approved (mockup signed off) · Contract module behind the OFF flags
-**Plan:** `docs/plans/2026-07-19-clause-hierarchy-plan.md`
+**Plan:** `docs/plans/archive/2026-07-19-clause-hierarchy-plan.md`
 
 ## What Was Built
 A 3-level clause hierarchy for contract templates + the docx importer surfaced as a create option.

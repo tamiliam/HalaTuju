@@ -1,6 +1,6 @@
 # Retrospective — Payments module Sprint P3 (production cutover) — 2026-07-16
 
-Plan: `docs/plans/2026-07-16-payments-module-plan.md` (§8 Sprint P3). This closes the 3-sprint
+Plan: `docs/plans/archive/2026-07-16-payments-module-plan.md` (§8 Sprint P3). This closes the 3-sprint
 Payments module (P1 ledger + backfill, P2 API + UI, P3 cutover) with the feature's single deploy.
 
 ## What Was Built / Done

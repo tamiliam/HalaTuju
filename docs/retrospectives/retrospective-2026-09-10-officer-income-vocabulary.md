@@ -3,7 +3,7 @@
 **Date:** 2026-09-10 · **Branch:** `feat/officer-income-vocabulary` ·
 **Worktree:** `.worktrees/income-vocab` · **Deployable:** api + web ·
 **Migration:** none · **Env var:** none · **Data step:** none ·
-**Plan:** `docs/plans/2026-09-09-officer-income-vocabulary.md` (owner-approved 2026-09-09)
+**Plan:** `docs/plans/archive/2026-09-09-officer-income-vocabulary.md` (owner-approved 2026-09-09)
 
 ---
 

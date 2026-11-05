@@ -1,6 +1,6 @@
 # Retrospective — Sponsor pool redesign (image-led cards + refined detail) — 2026-07-17
 
-Brief: `docs/plans/2026-07-16-sponsor-pool-redesign-brief.md`. One sprint, one deploy, NO
+Brief: `docs/plans/archive/2026-07-16-sponsor-pool-redesign-brief.md`. One sprint, one deploy, NO
 migration — two allowlist serializer fields + a frontend rebuild of the browse grid and the
 student detail page around a strict one-home-per-fact information architecture.
 

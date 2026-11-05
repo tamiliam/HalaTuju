@@ -1,6 +1,6 @@
 # Retrospective — Code health H13: two barrels, 231 importers, not one of them edited
 
-**Date:** 2026-09-20 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H13 of H19
+**Date:** 2026-09-20 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H13 of H19
 **Built by:** an Opus 5 agent to the same brief and the same hard rules as H9–H12. The lead reads
 the report, pushes and watches the deploy.
 **Outcome: `admin-api.ts` (4,118 lines) is 241 lines of re-export; `api.ts` (2,488) is 132. The

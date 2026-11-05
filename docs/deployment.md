@@ -260,3 +260,118 @@ Local-only (never on Cloud Run): `UPDATE_EMAIL_GOLDEN` (⛔ never set — see Li
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public), `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (public),
 `NEXT_PUBLIC_APP_VERSION` (from `COMMIT_SHA`, TD-076), `NEXT_PUBLIC_ORG_CODE` (unset in production),
 `NEXT_PUBLIC_SANDBOX`, `NEXT_PUBLIC_THEME_SWITCH`.
+
+## Live flag values (read from the running services, 2026-11-05)
+
+Read with `gcloud run services describe` (JSON) on the running services, never from settings defaults. Services: `halatuju-api` revision `halatuju-api-01256-9kt`, `halatuju-web` revision `halatuju-web-01085-zz5`, region asia-southeast1. Re-read before relying on a value; a deploy that sets an env var changes it.
+
+**Secret safety:** values are recorded only for switches and non-secret settings. Any key, token, password, DSN, address, id or other value that is or may be sensitive is listed by NAME only, as "(secret, not recorded)". No variable on either service is a Secret Manager reference; all are plain environment values.
+
+**Flag parsing:** the code reads most flags with `.lower() in ('1','true','yes')`. Two are stricter: `DOC_GENUINENESS_CHECK_ENABLED` is ON only for the exact value `1`, and `IC_GEMINI_FALLBACK_ENABLED` is OFF only for `0`.
+
+### Switches set on the api service
+
+| Variable | Live value | State |
+|---|---|---|
+| `SPONSOR_POOL_ENABLED` | `true` | ON |
+| `CHECK2_STUDENT_QUERIES_ENABLED` | `true` | ON |
+| `DOC_GENUINENESS_CHECK_ENABLED` | `1` | ON |
+| `CHECK2_AUTO_GENERATE` | `1` | ON |
+| `INTERVIEW_MEET_ENABLED` | `1` | ON |
+| `INTERVIEW_SCHEDULING_ENABLED` | `1` | ON |
+| `STUDENT_ASSIGNMENT_EMAIL_ENABLED` | `1` | ON |
+| `REVIEW_NUDGES_ENABLED` | `1` | ON |
+| `WHATSAPP_ENABLED` | `1` | ON |
+| `CHECK2_ANSWER_RELEVANCE_ENABLED` | `1` | ON |
+| `PROFILE_COMPLETE_EMAIL_ENABLED` | `1` | ON |
+| `VERDICT_CASE_SUMMARY_ENABLED` | `0` | OFF |
+| `VIRCLE_SETUP_ENABLED` | `1` | ON |
+| `REQUESTS_ENABLED` | `1` | ON |
+| `PARTNER_COMMS_ENABLED` | `1` | ON |
+| `SPONSOR_COMMS_ENABLED` | `1` | ON |
+| `BILLING_USAGE_ENABLED` | `true` | ON |
+| `THIRD_ROUTE_OPEN` | `1` | ON |
+| `MAINTENANCE_REMINDERS_ENABLED` | `true` | ON |
+
+### Switches NOT set on the api service (the code default applies)
+
+| Variable | Code default | State in production |
+|---|---|---|
+| `AWARD_ACCEPTANCE_ENABLED` | off | OFF |
+| `BANK_DETAILS_CAPTURE_ENABLED` | off | OFF |
+| `BURSARY_AGREEMENT_ENABLED` | off | OFF |
+| `PHONE_VERIFY_ENABLED` | off | OFF |
+| `SPONSOR_TERMS_ENABLED` | off | OFF |
+| `SPONSOR_MOCK_DONATIONS_ENABLED` | off, and refused on any managed database (never set in production) | OFF |
+| `IC_GEMINI_FALLBACK_ENABLED` | on (off only when set to `0`) | ON |
+
+### Non-secret settings on the api service
+
+| Variable | Live value |
+|---|---|
+| `DECLINE_COOLOFF_DAYS` | `7` |
+| `AWARD_COOLOFF_DAYS` | `2` |
+| `MERIT_DATA_VERSION` | `2026-03-13` |
+| `DATA_RELOAD_TRIGGER` | `sprint8-1771373867` |
+| `PISMP_DATA_RELOAD` | `2026-06-23-asasi-tvet` |
+| `DJANGO_SETTINGS_MODULE` | `halatuju.settings.production` |
+| Container limits | cpu `1000m`, memory `2Gi` |
+| Autoscaling | max instances `3`, no minimum set, startup CPU boost `true` |
+
+### Secret or sensitive variables on the api service (name only)
+
+| Variable | Value |
+|---|---|
+| `DB_HOST` | (secret, not recorded) |
+| `DB_PORT` | (secret, not recorded) |
+| `DB_USER` | (secret, not recorded) |
+| `DB_PASSWORD` | (secret, not recorded) |
+| `DB_NAME` | (secret, not recorded) |
+| `ALLOWED_HOSTS` | (secret, not recorded) |
+| `CORS_ALLOWED_ORIGINS` | (secret, not recorded) |
+| `SECRET_KEY` | (secret, not recorded) |
+| `SUPABASE_JWT_SECRET` | (secret, not recorded) |
+| `GEMINI_API_KEY` | (secret, not recorded) |
+| `SUPABASE_URL` | (secret, not recorded) |
+| `SUPABASE_SERVICE_ROLE_KEY` | (secret, not recorded) |
+| `EMAIL_HOST_USER` | (secret, not recorded) |
+| `EMAIL_HOST_PASSWORD` | (secret, not recorded) |
+| `FRONTEND_URL` | (secret, not recorded) |
+| `OPENAI_API_KEY` | (secret, not recorded) |
+| `EMAIL_HOST` | (secret, not recorded) |
+| `ADMIN_NOTIFY_EMAIL` | (secret, not recorded) |
+| `CRON_SECRET` | (secret, not recorded) |
+| `DOCUMENT_BACKUP_BUCKET` | (secret, not recorded) |
+| `COURSE_REFRESH_REMINDER_EMAIL` | (secret, not recorded) |
+| `MEET_ORGANISER_EMAIL` | (secret, not recorded) |
+| `DEFAULT_FROM_EMAIL` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_FROM` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_REMINDER_CONTENT_SID` | (secret, not recorded) |
+| `TWILIO_ACCOUNT_SID` | (secret, not recorded) |
+| `TWILIO_AUTH_TOKEN` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN` | (secret, not recorded) |
+| `TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM` | (secret, not recorded) |
+| `TWILIO_VERIFY_SERVICE_SID` | (secret, not recorded) |
+| `AWARD_EMAIL_APP_IDS` | (secret, not recorded) |
+| `VIRCLE_EMAIL_APP_IDS` | (secret, not recorded) |
+| `VIRCLE_SHEET_ID` | (secret, not recorded) |
+| `VIRCLE_DRIVE_FOLDER` | (secret, not recorded) |
+| `VIRCLE_PAYMENTS_FOLDER` | (secret, not recorded) |
+| `VIRCLE_GUIDE_FOLDER` | (secret, not recorded) |
+| `VIRCLE_AIRTABLE_PUSH_URL` | (secret, not recorded) |
+| `VIRCLE_AIRTABLE_SECRET` | (secret, not recorded) |
+| `VIRCLE_SPENDING_FOLDER` | (secret, not recorded) |
+| `VIRCLE_SPENDING_SUMMARY_FOLDER` | (secret, not recorded) |
+| `GOOGLE_DWD_SERVICE_ACCOUNT` | (secret, not recorded) |
+
+### halatuju-web
+
+The web service carries only the three build-time public settings below; they are not switches.
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | (secret, not recorded) |
+| `NEXT_PUBLIC_SUPABASE_URL` | (secret, not recorded) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (secret, not recorded) |

@@ -6,7 +6,7 @@ Owner, 2026-09-06: the sponsor page removes an awarded student's card after 2 da
 30 — but NOT by hard-coding it. Make it a configurable value under Organisation → Settings →
 Configuration (a new tab; only Colours existed), and make that tab the home for organisation-wide
 values that are hard-coded today. The owner approved the PHASED roadmap
-(`docs/plans/2026-09-06-org-configuration-roadmap.md`): Sprint A ships the engine, the tab, and
+(`docs/plans/archive/2026-09-06-org-configuration-roadmap.md`): Sprint A ships the engine, the tab, and
 the funded-card window; Sprints B–F migrate the other groups one at a time.
 
 ## What shipped
