@@ -15,8 +15,6 @@ Gemini read, the Check-2 asks, the slot that supersedes the previous copy) belon
 application under review, not to a funded student's tenth slip. The row carries
 ``request_code='in_programme'`` so it is its own slot and never resolves a pre-award request.
 """
-import re
-
 from django.db import transaction
 from django.utils import timezone
 
@@ -78,16 +76,16 @@ def record_slip(application, upload):
     file that is not an image or a PDF (`unsupported_format`), one over the organisation's size cap
     (`file_too_large`), or a blob that never landed (`upload_incomplete`)."""
     from apps.courses import org_config
-    from .storage import build_doc_key, object_exists
+    from .storage import is_issued_doc_key, object_exists
     from .views import _is_allowed_upload
     if not isinstance(upload, dict):
         raise ResultsError('bad_slip')
     path = upload.get('storage_path')
     # The exact shape the sign-upload door issues: `<this application's slip prefix>/<32 hex>`.
     # Nothing else — no `..`, no sub-folder, no other student's or type's prefix, no long tail.
-    prefix = build_doc_key(application, application.id, 'semester_result')
-    if (not isinstance(path, str) or len(path) > _MAX_SLIP_PATH or '..' in path
-            or not re.fullmatch(re.escape(prefix) + r'/[0-9a-f]{32}', path)):
+    # The ONE home of that shape is `storage.is_issued_doc_key` (the document POST asks it too).
+    if (not isinstance(path, str) or len(path) > _MAX_SLIP_PATH
+            or not is_issued_doc_key(application, 'semester_result', path)):
         raise ResultsError('bad_slip')
     name = str(upload.get('original_filename') or '')[:255]
     content_type = str(upload.get('content_type') or '')[:100]

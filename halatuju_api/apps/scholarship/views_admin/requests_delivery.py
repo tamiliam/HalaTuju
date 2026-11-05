@@ -368,10 +368,10 @@ class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
             size = int(request.data.get('size') or 0)
         except (TypeError, ValueError):
             size = 0
-        # Path prefix must belong to THIS request (foreign-path rejection).
-        from ..storage import build_request_attachment_key
-        expected_prefix = build_request_attachment_key(req.organisation_id, req.id, '')
-        if not storage_path.startswith(expected_prefix) or storage_path == expected_prefix:
+        # Path must sit inside THIS request's namespace (foreign-path rejection) and be clean: no
+        # `..`, leading `/`, backslash or empty segment (audit SEC-01 L2).
+        from ..storage import is_request_attachment_key
+        if not is_request_attachment_key(req.organisation_id, req.id, storage_path):
             return Response({'error': 'bad_path', 'code': 'bad_path'},
                             status=status.HTTP_400_BAD_REQUEST)
         # IMAGE allowlist only (no pdf).
@@ -422,10 +422,16 @@ class AdminOrgRequestAttachmentDeleteView(_OrgRequestsBase):
             return self._not_found()
         path = att.storage_path
         att.delete()
-        try:
-            from ..storage import delete_objects
-            delete_objects([path])
-        except Exception:
-            logger.warning('Requests: attachment blob sweep failed for %s', path, exc_info=True)
+        from ..storage import delete_objects, is_request_attachment_key
+        if not is_request_attachment_key(req.organisation_id, req.id, path):
+            # A row recorded before the record step refused unclean keys (SEC-01 L2): the row goes,
+            # the blob it names is kept. The path is never logged.
+            logger.warning('AUDIT request_attachment_delete_foreign_path request=%s (row deleted, '
+                           'blob kept)', req.id)
+        else:
+            try:
+                delete_objects([path])
+            except Exception:
+                logger.warning('Requests: attachment blob sweep failed for %s', path, exc_info=True)
         req.refresh_from_db()
         return Response(self._serialize(admin, req))

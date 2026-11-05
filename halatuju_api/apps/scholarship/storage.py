@@ -11,6 +11,7 @@ at deploy time (carry-forward), and these calls are mocked in tests.
 """
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 
@@ -33,12 +34,88 @@ def build_doc_key(app, *segments):
     return f'{org_id}/{tail}' if org_id else tail
 
 
+_MAX_DOC_KEY = 500   # the serializer's storage_path max_length
+
+
+def is_issued_doc_key(app, doc_type, path):
+    """True only for a key the upload-URL step could have issued for THIS application and THIS
+    doc_type: exactly ``build_doc_key(app, app.id, doc_type)`` + ``/`` + 32 lowercase hex (audit
+    SEC-01). No ``..``, no leading slash, no extra segments — so a client can never point a
+    document row at another application's file, a formal letter or a bursary PDF."""
+    if not isinstance(path, str) or len(path) > _MAX_DOC_KEY or '..' in path or path.startswith('/'):
+        return False
+    prefix = build_doc_key(app, app.id, doc_type)
+    return re.fullmatch(re.escape(prefix) + r'/[0-9a-f]{32}', path) is not None
+
+
+def recorded_doc_key_refusal(app, doc_type, path):
+    """The error code that refuses recording ``path`` as a ``doc_type`` document of ``app``, or
+    None when it may be recorded: ``bad_storage_path`` for a key this app's upload step never
+    issued (SEC-01), ``upload_incomplete`` when storage CONFIRMS the object is absent."""
+    if not is_issued_doc_key(app, doc_type, path):
+        return 'bad_storage_path'
+    if object_exists(path) is False:
+        return 'upload_incomplete'
+    return None
+
+
+def _is_legacy_own_doc_key(app, parts):
+    """The pre-fence document key (before platform Sprint 4): exactly ``<app.id>/<doc_type>/<name>``
+    with ``doc_type`` a real ``ApplicantDocument`` type. The first part is compared WHOLE (app 5 never
+    matches 50) and the doc-type middle keeps it apart from an org-prefixed bursary key
+    ``<org>/<app>/<file>`` (its middle part is an application id, never a doc type)."""
+    from .models import ApplicantDocument   # lazy: storage stays importable without the models
+    return (len(parts) == 3 and parts[0] == str(app.id)
+            and parts[1] in {code for code, _label in ApplicantDocument.DOC_TYPES})
+
+
+def is_inside_app_prefix(app, path):
+    """True when ``path`` is this application's own: under its document prefix
+    (``build_doc_key(app, app.id)`` + ``/``), or its legacy 3-part document key
+    ``<app.id>/<doc_type>/<name>`` (the ~1,114 rows recorded before the org prefix, audit SEC-01 L1);
+    never with a ``..``, ``.``, empty segment or leading slash."""
+    if not isinstance(path, str) or not path or path.startswith('/') or '\\' in path:
+        return False
+    parts = path.split('/')
+    if any(seg in ('', '.', '..') for seg in parts):
+        return False
+    return path.startswith(build_doc_key(app, app.id) + '/') or _is_legacy_own_doc_key(app, parts)
+
+
+def delete_own_doc_objects(app, paths):
+    """Delete only the blobs inside ``app``'s own prefix (SEC-01). A stored path outside it (a row
+    recorded before the record step checked keys) is left in storage — the caller still deletes
+    the row — and logged by count only, never by path."""
+    paths = [p for p in (paths or []) if p]
+    own = [p for p in paths if is_inside_app_prefix(app, p)]
+    if len(own) < len(paths):
+        logger.warning('AUDIT doc_delete_foreign_path app=%s count=%d (row deleted, blob kept)',
+                       getattr(app, 'id', None), len(paths) - len(own))
+    return delete_objects(own) if own else True
+
+
 def build_request_attachment_key(org_id, request_id, uuid_hex):
     """The storage-key scheme for a Requests-space screenshot attachment (Sprint 15.1):
     ``requests/<org_id>/<request_id>/<uuid>``. The ``requests/`` prefix keeps it in its own
     namespace (never collides with a doc key, which starts with a bare org id) and lets
     ``resolve_org_for_path`` read the owning org straight off the key for the download fence."""
     return f'requests/{org_id}/{request_id}/{uuid_hex}'
+
+
+def is_clean_key(path):
+    """True for a non-empty storage key with no ``..``, no leading slash, no backslash and no empty
+    or ``.`` segment — a key that can only name the object it spells (audit SEC-01 L2)."""
+    if not isinstance(path, str) or not path or path.startswith('/') or '\\' in path or '..' in path:
+        return False
+    return all(seg not in ('', '.') for seg in path.split('/'))
+
+
+def is_request_attachment_key(org_id, request_id, path):
+    """True only for a clean key inside THIS request's attachment namespace
+    (``build_request_attachment_key(org_id, request_id, '')`` + a name). The record, delete and
+    sign-link steps of a Requests attachment all ask this (audit SEC-01 L2)."""
+    prefix = build_request_attachment_key(org_id, request_id, '')
+    return is_clean_key(path) and path.startswith(prefix) and path != prefix
 
 
 def resolve_org_for_path(path):

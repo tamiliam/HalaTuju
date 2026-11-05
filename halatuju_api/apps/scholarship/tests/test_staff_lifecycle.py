@@ -468,15 +468,25 @@ class TestResendAndSignIn(TestCase):
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         return client
 
-    def test_a_cancelled_google_invitee_signing_in_is_told_too_by_verified_email_only(self):
+    def test_a_cancelled_google_invitee_signing_in_is_told_too_by_confirmed_email_only(self):
         # Cancelled before their first Google sign-in, so the row has no UID to match on.
+        # Audit SEC-02: "confirmed" is the server's `email_confirmed_at`, never a token claim.
         make_admin('reviewer', owning_org=self.org, is_active=False, uid=None,
                    email='cancelled.google@gmail.com')
         PartnerAdmin.objects.filter(email='cancelled.google@gmail.com').update(supabase_user_id=None)
-        told = self._google_client('cancelled.google@gmail.com', True).get('/api/v1/admin/role/')
+        read = 'apps.courses.supabase_admin.read_auth_user'
+        confirmed = {'id': 'google-sub-td335', 'email': 'cancelled.google@gmail.com',
+                     'email_confirmed_at': '2026-11-01T00:00:00Z',
+                     'app_metadata': {'provider': 'google', 'providers': ['google']}}
+        with patch(read, return_value=confirmed):
+            told = self._google_client('cancelled.google@gmail.com', False).get('/api/v1/admin/role/')
         self.assertEqual(told.json(), {'is_admin': False, 'withdrawn': True})
-        claimed = self._google_client('cancelled.google@gmail.com', False).get('/api/v1/admin/role/')
+        with patch(read, return_value={**confirmed, 'email_confirmed_at': None}):
+            claimed = self._google_client('cancelled.google@gmail.com', True).get('/api/v1/admin/role/')
         self.assertEqual(claimed.json(), {'is_admin': False, 'withdrawn': False})
+        with patch(read, return_value='failed'):
+            unreadable = self._google_client('cancelled.google@gmail.com', True).get('/api/v1/admin/role/')
+        self.assertEqual(unreadable.json(), {'is_admin': False, 'withdrawn': False})
 
 
 @override_settings(**SUPABASE)

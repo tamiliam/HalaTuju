@@ -38,8 +38,8 @@ def _create_supabase_user(supabase_url, service_role_key, email, name, temp_pass
     nothing expires, and we send our own email instead.
 
     `email_confirm` is load-bearing: PartnerAdminMixin.get_admin only links a PartnerAdmin row by
-    email when the JWT's `email_verified` claim is true. Without it the partner would sign in
-    successfully and still have no role.
+    email when the auth user's server-side `email_confirmed_at` is set (`link_refusal`, audit
+    SEC-02). Without it the partner would sign in successfully and still have no role.
 
     Returns (user_id, already_registered, error). `already_registered` means the address already
     had a HalaTuju account (student or Google) — not a failure: they keep their existing login and
@@ -155,6 +155,53 @@ def read_auth_user(uid):
     except Exception:  # a lookup failure is an answer, never a 500
         logger.warning('staff login: could not read auth user %s', uid, exc_info=True)
         return FAILED
+
+
+def login_providers(account):
+    """The sign-in providers an admin-API user object records, server-side only: ``app_metadata``'s
+    ``provider`` and ``providers`` and each identity's ``provider`` (never ``user_metadata``)."""
+    app_meta = account.get('app_metadata') or {}
+    found = set(p for p in (app_meta.get('providers') or []) if isinstance(p, str))
+    if isinstance(app_meta.get('provider'), str):
+        found.add(app_meta['provider'])
+    for identity in account.get('identities') or []:
+        if isinstance(identity, dict) and isinstance(identity.get('provider'), str):
+            found.add(identity['provider'])
+    return {p.strip().lower() for p in found}
+
+
+def link_refusal(uid, email):
+    """Why login ``uid`` may NOT be linked to the staff row invited at ``email``, or None when it may
+    (audit SEC-02). The JWT carries no trustworthy "email verified" flag — Supabase puts one only in
+    `user_metadata`, which the account's own browser can rewrite — so the answer is read server-side:
+    the auth user must exist, have `email_confirmed_at` set, and hold exactly this address.
+    ⚠ FAILS CLOSED: an unreadable login (`FAILED` / `GONE` / `INERT`) is refused, never linked. Never
+    raises. A refusal is an `AUDIT staff_link_refused` warning (the reason only, never the address);
+    the caller simply gets no staff role, and the response says nothing about the invite.
+
+    ⚠ A GOOGLE INVITE LINKS ONLY A GOOGLE LOGIN (audit SEC-02 L3). Both callers link only a row with
+    no login id, and a Gmail / Googlemail row has none because its invite issued no password and told
+    the invitee "Sign in with Google" (`staff_reinvite.provision_for_invite`, the welcome letter's
+    `_welcome_access_block`). With Supabase's "Confirm email" off, a password sign-up at that address
+    gets `email_confirmed_at` with no proof — so for such an address the login's server-side
+    providers (`app_metadata.provider(s)`, `identities[].provider`) must include ``google``."""
+    from .views_admin import is_google_email   # lazy: views_admin imports this module
+    try:
+        account = read_auth_user(uid)
+        if not isinstance(account, dict):
+            reason = 'login_unreadable'
+        elif not account.get('email_confirmed_at'):
+            reason = 'email_unconfirmed'
+        elif (account.get('email') or '').strip().lower() != (email or '').strip().lower():
+            reason = 'email_mismatch'
+        elif is_google_email(email) and 'google' not in login_providers(account):
+            reason = 'google_invite_not_google_login'
+        else:
+            return None
+    except Exception:  # belt and braces: read_auth_user never raises, but a link must never 500
+        reason = 'login_unreadable'
+    logger.warning('AUDIT staff_link_refused reason=%s', reason)
+    return reason
 
 
 def issue_temp_password(uid, name, password):

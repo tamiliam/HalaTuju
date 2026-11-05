@@ -30,7 +30,7 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from . import (password_change_flag, referral_links, staff_activity_hook, staff_permissions,
-               staff_reinvite, staff_tables)
+               staff_reinvite, staff_tables, supabase_admin)
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
@@ -109,14 +109,14 @@ class PartnerAdminMixin:
         if admin:
             return admin
 
-        # Fallback: lookup by email, backfill UID. Defence-in-depth (TD audit 2026-06-14):
-        # only link a provisioned admin row to a caller whose email claim is VERIFIED, so a
-        # JWT carrying an admin's unverified email can never acquire (super-)admin privilege.
+        # Fallback: lookup by email, backfill UID — only for a login whose email the SERVER confirms
+        # (`email_confirmed_at`, read via the admin API; audit SEC-02). The JWT's `user_metadata` is
+        # browser-writable, so no token claim decides this; an unreadable login is refused.
         su = getattr(request, 'supabase_user', None) or {}
         email = su.get('email')
-        if email and su.get('email_verified'):
+        if email:
             admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org', 'owning_organisation').first()
-            if admin:
+            if admin and supabase_admin.link_refusal(user_id, email) is None:
                 admin.supabase_user_id = user_id
                 admin.save(update_fields=['supabase_user_id'])
                 if admin.mentor_id is not None:   # a mentor login, or (S7d) a staff mentor

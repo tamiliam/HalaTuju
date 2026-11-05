@@ -124,6 +124,20 @@ class TestRecord(_Base):
         self.assertEqual(r.json()['code'], 'bad_path')
         self.assertEqual(self.req_a.attachments.count(), 0)
 
+    def test_an_unclean_path_inside_the_prefix_is_rejected(self):
+        """Audit SEC-01 L2: the prefix alone let `requests/<org>/<req>/../../<org>/<app>/ic/<x>` in."""
+        prefix = f'requests/{self.org_a.id}/{self.req_a.id}/'
+        self._auth('att-oa-a')
+        for path in (prefix + '../../5/7/ic/abc', prefix + '..', prefix + 'a/../b',
+                     '/' + prefix + 'abc123', prefix + 'a\\..\\b', prefix + 'a//b', prefix,
+                     prefix + './abc'):
+            with self.subTest(path=path):
+                payload = dict(_good_payload(self.org_a.id, self.req_a.id), storage_path=path)
+                r = self.client.post(f'{BASE}{self.req_a.id}/attachments/', payload, format='json')
+                self.assertEqual(r.status_code, 400)
+                self.assertEqual(r.json(), {'error': 'bad_path', 'code': 'bad_path'})
+        self.assertEqual(self.req_a.attachments.count(), 0)
+
     def test_pdf_rejected(self):
         self._auth('att-oa-a')
         payload = _good_payload(self.org_a.id, self.req_a.id, name='doc.pdf', ct='application/pdf')
@@ -197,6 +211,19 @@ class TestDownloadUrlOrgAssertion(_Base):
         m.assert_not_called()
         att.delete()
 
+    def test_an_unclean_stored_key_never_signs(self):
+        """SEC-01 L2: a row recorded before the record step refused `..` never gets a signed link."""
+        att = self.req_a.attachments.create(
+            storage_path=f'requests/{self.org_a.id}/{self.req_a.id}/../../5/7/ic/abc',
+            original_filename='x.png', content_type='image/png', size=10, uploaded_by=self.oa_a)
+        from apps.scholarship.serializers_admin import _serialize_org_request_attachments
+        with mock.patch('apps.scholarship.storage.create_signed_download_url',
+                        return_value='https://x/dl') as m:
+            out = _serialize_org_request_attachments(self.req_a)
+        self.assertIsNone(out[0]['download_url'])
+        m.assert_not_called()
+        att.delete()
+
     def test_download_signed_when_key_org_matches(self):
         self._attach(self.req_a, self.oa_a)
         from apps.scholarship.serializers_admin import _serialize_org_request_attachments
@@ -214,7 +241,24 @@ class TestDelete(_Base):
         r = self.client.delete(f'{BASE}{self.req_a.id}/attachments/{att.id}/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(self.req_a.attachments.count(), 0)
-        m.assert_called_once()
+        m.assert_called_once_with([att.storage_path])
+
+    @mock.patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_an_unclean_stored_key_deletes_the_row_and_keeps_the_blob(self, m):
+        """SEC-01 L2: a row holding `..` (recorded before the record step refused it) never sweeps
+        the blob it points at; the warning never carries the path."""
+        bad = f'requests/{self.org_a.id}/{self.req_a.id}/../../5/7/ic/abc'
+        att = self.req_a.attachments.create(
+            storage_path=bad, original_filename='x.png', content_type='image/png', size=10,
+            uploaded_by=self.oa_a)
+        self._auth('att-oa-a')
+        with self.assertLogs('apps.scholarship.views_admin', level='WARNING') as logs:
+            r = self.client.delete(f'{BASE}{self.req_a.id}/attachments/{att.id}/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.req_a.attachments.count(), 0)
+        m.assert_not_called()
+        self.assertTrue(any('request_attachment_delete_foreign_path' in w for w in logs.output))
+        self.assertFalse(any(bad in w for w in logs.output))
 
     @mock.patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_cross_org_attachment_delete_404(self, _m):
