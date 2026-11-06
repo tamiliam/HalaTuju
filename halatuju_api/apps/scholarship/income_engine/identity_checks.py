@@ -182,18 +182,21 @@ def parent_ic_reference(doc):
 
     ``names``: the name(s) the student entered for that member in the family roster, then the name
     on that member's own income proof (salary slip / EPF; on the STR route the STR, but only for the
-    declared earner — it is the earner's document). ``nric``: that proof's number ('' when none).
+    declared earner — it is the earner's document). ``nric`` is ALWAYS '' (request #59 hardening,
+    2026-11-06): only the NAME is arbitrated. The card's NUMBER is never steered toward the proof it
+    is then checked against (``proof_nric_status`` stays an independent check), nor toward the
+    student; the second opinion's number only fills a number the cheap read did not find.
     The member is the card's tag, else the declared earner (as ``student_income_ic_check`` reads it).
-    The merge applies to these exactly the bar it applies to the student's own card."""
+    The merge applies to these names exactly the bar it applies to the student's own card."""
     try:
         app = doc.application
         earner = (getattr(app, 'income_earner', '') or '').strip()
         member = (getattr(doc, 'household_member', '') or '').strip() or earner
         names = [n for m, n in _roster_candidates(app) if member and m == member]
-        p_name = p_nric = ''
+        p_name = ''
         if member and ((getattr(app, 'income_route', '') or '').strip() != 'str' or member == earner):
-            _, p_name, p_nric = _cluster_proof_identity(app, member)
-        return SimpleNamespace(nric=p_nric, names=[n for n in names + [p_name] if n])
+            _, p_name, _ = _cluster_proof_identity(app, member)
+        return SimpleNamespace(nric='', names=[n for n in names + [p_name] if n])
     except Exception:   # the lookup runs AFTER a paid read: a failure keeps the cheap reading (empty ref)
         logging.getLogger('apps.scholarship.income_engine').warning('parent_ic_reference failed; empty reference')
         return SimpleNamespace(nric='', names=[])

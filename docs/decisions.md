@@ -1,15 +1,16 @@
 # Architectural Decisions — HalaTuju
 
-## Request #59: a parent's IC second opinion is compared with that parent — 2026-11-05 (bug fix; builder rulings)
+## Request #59: a parent's IC second opinion is compared with that parent, never the student — 2026-11-06 (bug fix; owner-scheduled 2026-11-06)
 
-**The rule:** `vision._merge_ic_reads` accepts the Gemini second opinion's name / number only when it agrees with a reference the cheap read did not. For a `parent_ic` that reference is now `income_engine.parent_ic_reference(doc)` — that member's roster name(s) and that member's own income proof's name and NRIC — never the student's profile. The student's own `ic` keeps the profile, unchanged.
+**The bug:** `run_vision_for_document` also reads `parent_ic`, and `_merge_ic_reads` accepted the Gemini second opinion's name only when it matched the STUDENT's profile, impossible for a father's card. A misread name was kept, the card then did not match his own salary slip, and `parent_ic_person_mismatch` / `salary_slip_person_mismatch` blocked submission (application 154). This contradicted "parent_ic as universal compulsory" (S19, 2026-05-29: a parent's card is checked against that earner's proof, never matched to the student); "Cost-gated Gemini IC second opinion" (2026-06-02) was written for the student's own card.
 
-**Builder rulings:**
-- **Same bar, right person.** The compare stays `name_match` (exact parts; `partial` agrees, as on the student's card); the tolerant `relationship_name_match` is NOT used. Several names: Gemini must agree with one, the cheap read with none (one name = the old rule exactly).
-- **The STR is the earner's document only** (on the STR route `_cluster_proof_identity` ignores the member), so another member's card never takes the earner's STR as its reference. The consent record's `guardian_name` / `guardian_nric` are not used (not needed for #59; not to hand in the merge).
-- **The NRIC follows the same reference** (the proof's number): the student's number is never a parent card's reference. Before, a parent card's Gemini number was used only when the cheap read had none.
-- **The trigger `_should_gemini_ic` is unchanged** (a parent's card still always escalates, compared with the student; TD-390's note). Changing it would change cost and design, not fix this bug.
-- **No version bump, no automatic re-read.** Stored reads keep their names; re-reading #59's father's IC is the owner's call (paid).
+**The rule:** for a `parent_ic` the merge's NAME reference is `income_engine.parent_ic_reference(doc)`: the name(s) the student entered for that member in the roster, plus the name on that member's own live income proof (salary slip / EPF; the STR only for the declared earner). The member is the card's tag, else the declared earner. Never the student's name. The student's own `ic` merge is byte-identical (pinned against a verbatim copy of the old function).
+
+**Rulings:**
+- **Same bar, right person:** `name_match` (exact parts; `partial` agrees), not the tolerant relationship matcher. Several names: Gemini must agree with one, the cheap read with none.
+- **The NUMBER is never arbitrated on a parent's card** (hardening of the 2026-11-05 req-e build, which used the proof's number): the second opinion's number only fills a number the cheap read missed. The card-vs-proof number check (`proof_nric_status`) stays independent, so a different person's card still fails even when its name reads like the earner's.
+- **The trigger `_should_gemini_ic` is unchanged** (when the paid call runs); no threshold changed.
+- **No version bump:** no verdict-engine rule or genuineness signature changed; only what a NEW read stores. Stored reads are not re-read automatically; re-reading application 154's father's IC is the owner's call (one paid Re-run).
 
 ## Audit SEC-01 / SEC-02: a document records only its issued key; staff email-linking reads the server — 2026-11-05 (security hotfix)
 
