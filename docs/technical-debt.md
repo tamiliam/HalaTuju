@@ -344,7 +344,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
 - **TD-504** - Overview invitations card needs org_read; the Invitations page needs team_read - low
 - **TD-505** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
-- **TD-506** - Dependency advisories: Next.js (needs Next 15.5.28+), Pillow, pypdf - high (partly patched 2026-11-05)
+- **TD-506** - Dependency advisories: Pillow, pypdf (web half done 2026-11-06, A1.1: Next 15.5.29) - high (partly done)
 - **TD-510** - A request for an unlinked matching staff row makes a Supabase admin call of up to 15 s each time (SEC-02 L4) - low
 - **TD-511** - A student can delete their own locked slip file through a second row (SEC-01 L5) - low
 - **TD-512** - A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
@@ -7868,6 +7868,8 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 ### [TD-506] Dependency advisories: Next.js (needs Next 15.5.28+), Pillow, pypdf - high (partly patched 2026-11-05)
 
 **Raised 2026-11-05 by the v3.1.0 release audit; web part patched the same day (pre-v3.1.0 security patch).** Done: `next` and `eslint-config-next` pinned to 14.2.35, image optimiser off (`images.unoptimized`), `npm audit fix` without `--force`. **Still open:** the remaining Next.js advisories are fixed only in Next 15.5.28 or later. **The Next 15 upgrade is the FIRST audit fix sprint** (a security fix, so the freeze allows it). Python (`pip-audit`): Pillow 11.3.0 (fixed in 12.x / 13.0.0), pillow-heif 0.22.0 and pypdf 5.9.0 (fixed in 6.x) are **deferred to the audit**. pypdf 5.9.0 is pinned on purpose (the STPM certificate reader depends on its text layer), so a bump needs the exact-read eval re-run. Pillow touches document reading, so it needs a MODEL_VERSION check (`feedback_doc_recognition_versioning`) and the eval corpus and golden masters as the guard. *(A · L)*
+
+**Status (2026-11-06, audit sprint A1.1): web half DONE; the entry stays OPEN for the Python half (A1.2).** `next` and `eslint-config-next` 14.2.35 -> 15.5.29, `react` / `react-dom` 18 -> 19.2.9 (the line Next 15.5 vendors for the App Router), `@types/react` / `@types/react-dom` -> 19.2. `npm audit` now lists no advisory against `next` itself (before: 1 critical, the Next.js advisories of SEC-15; audit CO-15 was merged into SEC-15, so both are cleared for the web). Residue, not a Next advisory: `postcss` 8.4.31 that Next pins inside its own `node_modules` (high, CSS stringify / source-map advisories; build-time only, on our own stylesheets; npm offers only next 16 as the fix), `@tailwindcss/typography`'s `postcss-selector-parser` (moderate), and the jest / typescript-eslint dev-tool chain (glob, minimatch, deepmerge; moderate / low; present before the upgrade). Totals 30 (1 critical, 4 high) -> 28 (0 critical, 1 high).
 
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 

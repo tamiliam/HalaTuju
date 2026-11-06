@@ -40,7 +40,7 @@ Which feature flags are on in production: [`docs/deployment.md`](deployment.md),
 
 ## Now: the audit fix roadmap
 
-Waves, in order (detail and acceptance in the roadmap file): **Wave 0** ship what is ready and clean the register and documents (A0.1 to A0.3); **Wave 1** security and money (Next 15 upgrade first); **Wave 2** live harm and speed; **Wave 3** structure with tests first; **Wave 4** remaining open debt by area. Every deploy group needs the owner's yes.
+Waves, in order (detail and acceptance in the roadmap file): **Wave 0** ship what is ready and clean the register and documents (A0.1 to A0.3); **Wave 1** security and money (Next 15 upgrade first: A1.1 moves the web to Next 15.5.29 and React 19.2, deploy group G1); **Wave 2** live harm and speed; **Wave 3** structure with tests first; **Wave 4** remaining open debt by area. Every deploy group needs the owner's yes.
 
 ## Waiting on the owner
 

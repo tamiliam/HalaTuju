@@ -7,7 +7,7 @@ Last updated: 2026-03-14 (system audit — all counts verified)
 ```
 HalaTuju/
 ├── halatuju_api/          # Django REST backend
-├── halatuju-web/          # Next.js 14 frontend
+├── halatuju-web/          # Next.js 15 frontend
 ├── docs/                  # Documentation, retrospectives, plans
 ├── _archive/streamlit/    # Legacy Streamlit app (preserved, not active)
 ├── .claude/               # Architecture map
@@ -1059,7 +1059,7 @@ halatuju-web/
 ├── tailwind.config.ts             # Brand colours (primary: #137fec), Lexend font, 8px radius
 ├── tsconfig.json                  # Strict mode, path alias @/* → ./src/*
 ├── postcss.config.js              # Tailwind + Autoprefixer
-├── package.json                   # Next.js 14.2, React 18.2, Supabase 2.39, React Query 5.17, react-markdown 10.1
+├── package.json                   # Next.js 15.5, React 19.2, Supabase 2.39, React Query 5.17, react-markdown 10.1
 ├── .env.example                   # NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 ├── .env.local                     # Local dev env
 ├── .env.production                # Production public keys + API URL
@@ -1148,7 +1148,7 @@ Previous Streamlit prototype. **246 files, not actively developed.** Preserved f
 ```
 ┌──────────────────────────────────┐
 │  halatuju-web (Cloud Run)        │
-│  Next.js 14 — standalone Docker  │
+│  Next.js 15 — standalone Docker  │
 │  Region: asia-southeast1         │
 │  Thin client — no calculations   │
 └──────────────┬───────────────────┘

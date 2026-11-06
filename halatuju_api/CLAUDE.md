@@ -27,7 +27,7 @@ tells a Malaysian SPM or STPM leaver which courses they qualify for, ranks them 
 (golden masters: SPM 5,319, STPM 2,025). The **scholarship platform** runs a funder's bursary end to end:
 apply, results and documents read by OCR and AI, a deterministic verdict, interview, QC, award,
 sponsors, payments through Vircle, and an organisation's own console (tenancy: organisation → gift →
-intake year). Django REST API `halatuju_api/` + Next.js 14 `halatuju-web/`, both on Cloud Run
+intake year). Django REST API `halatuju_api/` + Next.js 15 `halatuju-web/`, both on Cloud Run
 (asia-southeast1), Supabase PostgreSQL + Storage + Auth (Singapore).
 
 ## Build-for-Tenancy Conventions (MANDATORY for all new work)

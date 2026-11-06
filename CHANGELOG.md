@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Sprint A1.1 - Next 15 upgrade (2026-11-06) - STOPPED at the bundle gate, not shippable yet
+
+Web moves from Next 14.2.35 to 15.5.29, React 18 to 19.2.9 (types and eslint-config-next to match). React 19 ref and JSX types fixed in nine files; five plain admin/sponsor login links became next/link (Next 15's lint now checks App Router routes); the sandbox surface page reads its segment with useParams (params is a Promise in Next 15). Three apply-page tests now wait for the restored draft step and the seeded referral answer, which React 19 commits a render later. Gates pass (419 suites, 6530 tests, 7730 keys). npm audit 30 (1 critical, 4 high) -> 28 (0 critical, 1 high: postcss 8.4.31 pinned inside next, build time only). **The bundle gate is red:** the shared chunk under every route rose 88.5 -> 104 kB, so the median (~157 against 146.5), /profile (204 against 195), /scholarship/apply (198 against 189) and /scholarship/application (217 against 209) are all over budget, and `scripts/bundle-budget.js` refuses Next 15's new `/manifest.webmanifest` row (no page entry). Budgets not changed; needs the owner's ruling.
+
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 
 Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).

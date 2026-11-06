@@ -24,7 +24,7 @@ database. v3.0.0 is that **plus a multi-tenant bursary platform**. Structurally:
 ## The pieces
 
 ```
- Browser ──► halatuju-web (Next.js 14, Cloud Run, Node 24)
+ Browser ──► halatuju-web (Next.js 15, Cloud Run, Node 24)
    │            student pages · /admin console · /sponsor portal
    │  Supabase Auth (3 PKCE clients: student / admin / sponsor) — sign-in only
    ▼
