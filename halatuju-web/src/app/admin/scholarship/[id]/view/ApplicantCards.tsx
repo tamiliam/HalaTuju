@@ -254,9 +254,11 @@ export function ApplicantCards({
                   {/* The tick renders AFTER the subject chips (item 1). The SPM slip's tick belongs to
                       SPM chips only — never to an STPM student's STPM grades (#132), which carry the
                       STPM results' own tick instead. The slip is checked against the SPM block
-                      `spm_grades_for` returns, so a third-route student's SPM chips earn it too. */}
+                      `spm_grades_for` returns, so a third-route student's SPM chips earn it too. Three
+                      exclusive routes (owner 2026-11-06): a third-route student's SPM chips are her
+                      SPM prereq ONLY - never her `grades` (an earlier SPM-page entry), never merged. */}
                   <Grades
-                    grades={isStpm ? app.stpm_grades : third ? { ...(app.spm_prereq_grades || {}), ...(app.grades || {}) } : app.grades}
+                    grades={isStpm ? app.stpm_grades : third ? app.spm_prereq_grades : app.grades}
                     trailing={isStpm
                       ? (stpmAllMatch ? stpmMark({ status: 'match', doc: '' }) ?? undefined : undefined)
                       : vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}

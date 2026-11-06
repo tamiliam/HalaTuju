@@ -16,7 +16,7 @@ def _verdict_academic(application, spm_only=False):
     (completeness), and the typed grades must match the slip (accuracy). All three clean →
     'verified'. Two independent readings: agreement verifies, a disagreement pinpoints the cell.
     Third route S3 / #388: `higher_results.academic_fact` picks the card; `spm_only` = the SPM card."""
-    from .academic_engine import compare_academics, read_slip, _slip_name_status
+    from .academic_engine import read_slip, _slip_name_status
     from . import higher_results, wrong_slip
     if not spm_only:      # the higher card (S3), or the SPM card capped while they are owed (#388)
         return higher_results.academic_fact(application, lambda: _verdict_academic(application, True))
@@ -51,7 +51,10 @@ def _verdict_academic(application, spm_only=False):
         unresolved.append(_item('grades_unverified'))
         return _fact('academic', 'review', evidence, unresolved)
 
-    cmp = compare_academics(higher_results.spm_grades_for(application.profile), data)
+    from .academic_compare import spm_slip_compare
+    cmp = spm_slip_compare(application.profile, data)
+    if not cmp['compared']:   # owner 2026-11-06: a tertiary holder with no SPM prereq - nothing to compare
+        return _fact('academic', 'review', evidence, unresolved)
     if cmp['missing']:
         unresolved.append(_item('academic_missing_subjects',
                                 entered=cmp['slip_count'] - len(cmp['missing']),

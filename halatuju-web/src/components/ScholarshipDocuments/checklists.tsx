@@ -436,7 +436,9 @@ export function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (
 // the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
 // "what to do" only when there's a real problem.
 
-type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending' | 'not_spm'   // not_spm: S4, never drawn here
+// not_spm: S4, never drawn here. not_compared (owner 2026-11-06): a tertiary student with no SPM prereq —
+// nothing to compare her slip with, so no tick and no warning (drawn as pending).
+type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending' | 'not_spm' | 'not_compared'
 
 function slipBadgeKind(s: SlipStatus): ICCheckKind {
   if (s === 'match') return 'match'

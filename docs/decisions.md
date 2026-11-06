@@ -18899,3 +18899,43 @@ rejected: UPU lists them as different subjects.
 **Revisit if:** a slip prints another subject in English (add it to `ENGLISH_NAMES`), or UPU renames a subject (an
 old-name entry in `OLD_NAMES`). Open: the grade form offers `digital_gfx` named "Grafik Digital", which UPU calls
 "Reka Bentuk Grafik Digital" — a student with that slip row reads missing + extra until the catalogue names match.
+
+## 2026-11-06 — Three exclusive routes for SPM grades (owner, 2026-11-06)
+
+**Decision (owner, verbatim intent):** "There are three routes: SPM, STPM, Matric/etc. Keep them exclusive. Do not
+combine." An SPM holder's SPM slip is compared with the SPM grades she entered (`profile.grades`). An STPM /
+Matriculation / Asasi / Diploma holder (`is_tertiary(results_held(profile))`) has her SPM slip compared ONLY with the
+SPM prereq she entered (`profile.spm_prereq_grades`); her `grades` (an earlier SPM-page entry), if any, is NOT read —
+anywhere. A prereq that does not match the slip raises the alert exactly as for an SPM holder (missing / wrong grade /
+extra) and the Academic check is not verified until it is resolved. No prereq = nothing to compare: no tick and no
+SPM warning (D9: the slip stays optional, never asked for). "Do not combine" applies to every reader.
+
+**Built:** `exam_questions.spm_grades_for` returns `grades` for SPM holders and `spm_prereq_grades` only for tertiary
+holders (no merge, no fall-back). `exam_questions.spm_slip_comparable` is False only for a tertiary holder with no
+prereq; `academic_compare.spm_slip_compare` is the one comparison the slip check, the verdict's SPM card and the
+ladder's chips call: not compared = every list empty, so the slip check reads `subjects` 'not_compared' (drawn as
+pending: no tick, no warning; an officer's slip request still closes, `doc_match_verdict` 'ok'), the SPM card is
+`review` with no SPM item, the ladder counts no chip, and on the higher-results card the slip neither ticks nor holds
+the card back (unless it raised something of its own, e.g. a name mismatch). Readers moved with it: the intake's SPM
+GRADE bars (`shortlisting._academic_ok`, ELIGIBILITY — a tertiary holder with only `grades` now reads "SPM grades not
+provided" against a set grade bar), the report (`reports/views.py`), the cockpit's third-route SPM chips
+(`ApplicantCards.tsx`) and the student's review page (`ScholarshipReview.tsx`). STPM's separate SPM PREREQUISITES row
+is unchanged. `results_route.clear_to_spm` (and its browser mirror `resultsLocal.clearHigherResultsLocally`) is a
+ROUTE CHANGE, not a combine, and stays: it moves the student to the SPM route and copies the prereq into `grades` only
+when `grades` is empty, after which she is an SPM holder read on `grades`. `VERDICT_ENGINE_VERSION` 2026-11-06.2; old
+snapshots are not re-built.
+
+**Supersedes in part:** the S2a / S3b rule that a tertiary holder's SPM grades are `grades` merged over
+`spm_prereq_grades`, `grades` winning a clash (the `spm_grades_for` docstring; "The web sends the WHOLE completed list"
+2026-10-26 S2b, "which `exam_questions.spm_grades_for` already merges"; "The required results upload follows the
+chosen course" 2026-10-26 S3a + S3b; D16c 2026-10-27's "with their SPM grades (`spm_grades_for`)"; "A tick means a
+document backs the value" 2026-10-30 item 4, for a third-route student's chips). Everything else in those entries
+stands.
+
+**Not changed (reported, not a reader of a tertiary student's SPM grades for comparison):** `courses/serializers.py`
+`_backed` (an unknown claimed qualification is "backed" by either field — a marker check); `courses/views.py`'s
+profile merit card (reads `grades` for every route, no merge); `exam_questions.results_held` (a declared tertiary
+student with no higher results and SPM `grades` reads SPM — the route decision itself).
+
+**Production measure (2026-11-06, read-only, branch vs main logic):** 184 tertiary applicants by profile (110 both fields, 50 differ, 8 only `grades`). Slip check, 70 compared slips: 29 change — 15 green→alert, 9 alert text changes, 4 green→not compared (the only-`grades` four), 1 alert→green. SPM grade bars (only 8 tertiary applicants sit on a blank-floor intake): 7 pass→fail (6 only-`grades`: "SPM grades not provided"; 1 on the prereq's own grades). Report: 14 third-route applicants' SPM grades change.
+**Revisit if:** the owner wants a tertiary student with only an old `grades` entry asked to fill in the SPM block.

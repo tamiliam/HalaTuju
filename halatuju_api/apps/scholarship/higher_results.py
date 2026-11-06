@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import re
 
-from apps.courses.exam_questions import spm_grades_for  # re-exported: one SPM-grade reader (S3b)
+from apps.courses.exam_questions import spm_grades_for, spm_slip_comparable  # one SPM-grade reader (S3b)
 
 _STR = {'type': 'string'}
 
@@ -460,7 +460,10 @@ def verdict_academic(application, spm_fact):
     if spm_fact is not None and _latest_doc(application, 'results_slip') is not None:
         evidence += spm_fact['evidence']
         unresolved += spm_fact['unresolved']
-        clean = clean and spm_fact['status'] == 'verified'
+        # Owner 2026-11-06: no SPM prereq = nothing to compare the slip with, so it neither ticks
+        # nor holds the card back (D9) - unless it raised something of its own (a name mismatch).
+        idle = not spm_slip_comparable(application.profile) and not spm_fact['unresolved']
+        clean = clean and (spm_fact['status'] == 'verified' or idle)
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
 
 

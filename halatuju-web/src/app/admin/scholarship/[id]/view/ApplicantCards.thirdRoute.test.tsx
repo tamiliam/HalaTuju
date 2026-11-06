@@ -94,3 +94,20 @@ it('SPM and STPM cards are untouched: no third-route lines', () => {
   expect(screen.queryByText('admin.scholarship.heldResults')).toBeNull()
   expect(screen.getByText('admin.scholarship.stpmCgpa')).toBeTruthy()
 })
+
+// Request #62, owner 2026-11-06: three exclusive routes. A third-route student's SPM chips are her
+// SPM prereq ONLY — an earlier SPM-page entry in `grades` is never drawn, never merged over it.
+it('draws only her SPM prereq, never her earlier `grades` (three exclusive routes)', () => {
+  renderWith({ ...MATRIC, grades: { math: 'D', eng: 'C' } })
+  expect(screen.getByText('math')).toBeTruthy()
+  expect(screen.getByText('B+')).toBeTruthy()          // the prereq's Matematik, not `grades`' D
+  expect(screen.queryByText('D')).toBeNull()
+  expect(screen.queryByText('eng')).toBeNull()          // a subject only in `grades` is not drawn
+  expect(screen.queryByText('C')).toBeNull()
+})
+
+it('no SPM prereq: no SPM chips at all, even with an earlier `grades` entry', () => {
+  renderWith({ ...MATRIC, spm_prereq_grades: {}, grades: { math: 'D' } })
+  expect(screen.queryByText('math')).toBeNull()
+  expect(screen.queryByText('D')).toBeNull()
+})

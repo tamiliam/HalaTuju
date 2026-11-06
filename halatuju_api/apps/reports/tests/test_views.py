@@ -229,8 +229,9 @@ class TestReportViews(TestCase):
         until S2b owned its content, roadmap section 4): a Matriculation holder reaches the engine
         as 'matric' with her results (the qualification, the CGPA as printed, the server's overall
         CGPA, the co-curriculum score, MUET) and her SPM grades from the ONE reader
-        (`spm_grades_for`, the STPM page's block included); the prompt is the STPM-equivalent one,
-        never the SPM leaver's."""
+        (`spm_grades_for`: the results page's SPM block ONLY, three exclusive routes, owner
+        2026-11-06 - her earlier `grades` are never merged in); the prompt is the STPM-equivalent
+        one, never the SPM leaver's."""
         from apps.reports.prompts import get_prompt
         mock_gen.return_value = {
             'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
@@ -249,7 +250,7 @@ class TestReportViews(TestCase):
         self.assertIsNone(kw['stpm_cgpa'])
         self.assertEqual(kw['higher'], {'label': 'Matriculation', 'cgpa': 3.5, 'overall_cgpa': 3.47,
                                         'koko': 8.0, 'muet_band': 4})
-        self.assertEqual(kw['grades'], {'bm': 'A', 'eng': 'B+', 'math': 'A-', 'hist': 'B'})
+        self.assertEqual(kw['grades'], {'hist': 'B'})      # the profile's `grades` (bm/eng/math) are not read
         self.assertEqual(get_prompt('bm', exam_type='matric'), get_prompt('bm', exam_type='stpm'))
         self.assertNotEqual(get_prompt('en', exam_type='diploma'), get_prompt('en', exam_type='spm'))
         snap = GeneratedReport.objects.latest('id').student_profile_snapshot

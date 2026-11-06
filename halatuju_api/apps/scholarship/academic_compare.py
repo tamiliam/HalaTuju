@@ -158,3 +158,16 @@ def compare_academics(profile_grades, slip) -> dict:
         'complete': len(slip_norm) > 0 and not missing and not extra,
         'accurate': not mismatched and not uncertain,
     }
+
+
+def spm_slip_compare(profile, slip) -> dict:
+    """`compare_academics` of the profile's SPM grades (`spm_grades_for`, three exclusive routes,
+    owner 2026-11-06) against a slip read, plus ``compared``. A tertiary holder with no SPM prereq
+    is NOT compared (`spm_slip_comparable`): every list empty, ``have_grades`` False, ``compared``
+    False, so a caller shows no tick and no SPM warning."""
+    from apps.courses.exam_questions import spm_grades_for, spm_slip_comparable
+    if spm_slip_comparable(profile):
+        return {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
+    blank = compare_academics({}, slip)
+    return {**blank, 'missing': [], 'extra': [], 'mismatched': [], 'uncertain': [],
+            'have_grades': False, 'complete': False, 'accurate': False, 'compared': False}

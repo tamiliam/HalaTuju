@@ -295,23 +295,31 @@ def third_route_calculation(data):
 
 
 def spm_grades_for(profile):
-    """The student's SPM grades, from ONE reader. SPM holders: `grades`, unchanged. Tertiary
-    holders: `grades` merged over `spm_prereq_grades` (the STPM page's SPM block writes the
-    latter; live, 42 of 64 STPM holders have `grades`, 54 `spm_prereq_grades`), `grades` winning a
-    clash because it is the full SPM record the comparison reads today.
+    """The student's SPM grades, from ONE reader. THREE EXCLUSIVE ROUTES (owner, 2026-11-06:
+    "There are three routes: SPM, STPM, Matric/etc. Keep them exclusive. Do not combine."):
 
-    S2a provides this; it does NOT yet feed `academic_engine.compare_academics`, which still reads
-    `profile.grades` - the SPM comparison input is unchanged until S3b moves it, characterised."""
+    * SPM holders: `grades` (the SPM page's entry) only.
+    * Tertiary holders (STPM / Matriculation / Asasi / Diploma, ``is_tertiary(results_held)``):
+      `spm_prereq_grades` (the SPM block on their results page) only. Their `grades` (an earlier
+      SPM-page entry), if any, is NOT read — no merge, no fall-back. No SPM prereq = no SPM grades
+      ({}), so a slip has nothing to be compared with: no tick and no SPM warning (D9: the slip
+      stays optional).
+
+    Supersedes the S2a/S3b rule (`grades` merged over `spm_prereq_grades`, `grades` winning a
+    clash). Every SPM-grade reader goes through here (slip check, verdict, ladder chips, the
+    intake's SPM GRADE bars, the report)."""
     if not profile:
         return {}
-    grades = getattr(profile, 'grades', None)
-    grades = dict(grades) if isinstance(grades, dict) else {}
-    if not is_tertiary(results_held(profile)):
-        return grades
-    prereq = getattr(profile, 'spm_prereq_grades', None)
-    merged = dict(prereq) if isinstance(prereq, dict) else {}
-    merged.update(grades)
-    return merged
+    field = 'spm_prereq_grades' if is_tertiary(results_held(profile)) else 'grades'
+    value = getattr(profile, field, None)
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def spm_slip_comparable(profile):
+    """Is there anything to compare an SPM slip with? False ONLY for a tertiary holder who entered
+    no SPM prereq (owner, 2026-11-06): her `grades` are not read, so the slip earns no tick and
+    raises no SPM warning (D9: it stays optional). An SPM holder is always compared, as before."""
+    return not profile or bool(spm_grades_for(profile)) or not is_tertiary(results_held(profile))
 
 
 def merit_100(profile):

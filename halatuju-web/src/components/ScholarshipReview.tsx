@@ -92,11 +92,12 @@ export default function ScholarshipReview({
   const subjectLabel = (code: string) => SUBJECT_NAMES[code]?.[lang === 'en' ? 'en' : 'bm'] || SUBJECT_NAMES[code]?.en || code
   const spmGrades = Object.entries(profile?.grades || {})
   const stpmGrades = Object.entries(profile?.stpm_grades || {})
-  // Third results route S2b: the SPM grades are the STPM page's block (`spm_prereq_grades`), with
-  // `grades` winning a clash — the server's `spm_grades_for` reading, so the row is never empty.
+  // Third results route S2b: the SPM grades are the results page's SPM block (`spm_prereq_grades`)
+  // ONLY — three exclusive routes (owner 2026-11-06), the server's `spm_grades_for` reading; her
+  // `grades` (an earlier SPM-page entry) is never shown or merged here.
   const third = isThirdRoute(app.exam_type) ? app.exam_type : null
   const grades = app.exam_type === 'stpm' ? stpmGrades
-    : third ? Object.entries({ ...(profile?.spm_prereq_grades || {}), ...(profile?.grades || {}) }) : spmGrades
+    : third ? Object.entries(profile?.spm_prereq_grades || {}) : spmGrades
   const fn = app.funding_need
   const plansLabel = app.chosen_programme?.course_name
     || [app.chosen_pathway, app.pre_u_track, app.pre_u_institution].filter(Boolean).join(' · ')

@@ -78,7 +78,7 @@ def _academic_red_chips(application):
     """RED academic content chips — Name (slip in a different name), Subjects (a slip subject the
     student never entered, or a typed one not on the slip — #62), Results (a CONFIRMED typed-vs-slip grade mismatch). 0–3. An uncertain
     grade (band disagreement) and an unread slip are grey/pending, not red."""
-    from .academic_engine import compare_academics, read_slip, _slip_name_status
+    from .academic_engine import read_slip, _slip_name_status
     from . import higher_results
     # Third route S3b: a higher-results applicant's card counts the higher card's chips, plus the
     # SPM slip's when one is on file (the same pair `higher_results.verdict_academic` reads).
@@ -92,7 +92,8 @@ def _academic_red_chips(application):
         return n
     data = read_slip(slip)
     if data['names']:
-        cmp = compare_academics(higher_results.spm_grades_for(application.profile), data)
+        from .academic_compare import spm_slip_compare     # owner 2026-11-06: three exclusive routes
+        cmp = spm_slip_compare(application.profile, data)   # not compared = empty lists, no chip
         if cmp['missing'] or cmp['extra']:     # request #62: ONE Subjects chip, either way round
             n += 1
         if cmp['mismatched']:

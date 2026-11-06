@@ -187,11 +187,20 @@ class TestSpmGradesFor(SimpleTestCase):
         p = _p(exam_type='spm', grades={'bm': 'A'}, spm_prereq_grades={'eng': 'B'})
         self.assertEqual(eq.spm_grades_for(p), {'bm': 'A'})
 
-    def test_a_tertiary_holder_reads_both_with_grades_winning(self):
-        p = _p(exam_type='stpm', stpm_cgpa=3.5, grades={'bm': 'A'},
+    def test_a_tertiary_holder_reads_the_prereq_only(self):
+        # Owner 2026-11-06, three exclusive routes (supersedes S2a/S3b's "grades wins a clash").
+        p = _p(exam_type='stpm', stpm_cgpa=3.5, grades={'bm': 'A', 'phy': 'A'},
                spm_prereq_grades={'bm': 'C', 'eng': 'B'})
-        self.assertEqual(eq.spm_grades_for(p), {'bm': 'A', 'eng': 'B'})
+        self.assertEqual(eq.spm_grades_for(p), {'bm': 'C', 'eng': 'B'})
         self.assertEqual(eq.spm_grades_for(None), {})
+
+    def test_a_tertiary_holder_with_no_prereq_has_no_spm_grades(self):
+        p = _p(exam_type='stpm', stpm_cgpa=3.5, grades={'bm': 'A'})
+        self.assertEqual(eq.spm_grades_for(p), {})
+        self.assertFalse(eq.spm_slip_comparable(p))
+        self.assertTrue(eq.spm_slip_comparable(_p(exam_type='spm', grades={})))   # SPM: always compared
+        self.assertTrue(eq.spm_slip_comparable(_p(exam_type='stpm', stpm_cgpa=3.5,
+                                                  spm_prereq_grades={'bm': 'A'})))
 
 
 class TestTheGate(SimpleTestCase):

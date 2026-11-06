@@ -328,8 +328,9 @@ class AShortReadNeverRaisesExtra(SimpleTestCase):
 
 
 class ThirdRouteSpmGrades(TestCase):
-    """A tertiary holder's SPM grades come from `spm_prereq_grades` merged with `grades`
-    (`spm_grades_for`); a subject typed only in the STPM page's SPM block is compared too."""
+    """A tertiary holder's SPM grades come from `spm_prereq_grades` ONLY (`spm_grades_for`; owner
+    2026-11-06, three exclusive routes — it used to be merged with `grades`): a subject typed in the
+    STPM page's SPM block is compared, and her `grades` are not (`test_three_exclusive_spm_routes`)."""
     STPM = dict(exam_type='stpm', results_exam_type='stpm', stpm_cgpa=3.71,
                 stpm_grades={'PA': 'A'}, completed_qualifications=['spm', 'stpm'], grades=CORE_TYPED)
 
@@ -347,5 +348,5 @@ class ThirdRouteSpmGrades(TestCase):
         self.assertEqual((chk['subjects'], chk['extra']), ('mismatch', ['Fizik']))
 
     def test_no_extra_subject_no_flag(self):
-        chk = self._check({'hist': 'B'})
+        chk = self._check(CORE_TYPED)
         self.assertEqual((chk['subjects'], chk['extra']), ('match', []))

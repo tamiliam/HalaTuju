@@ -37,7 +37,9 @@ DEGREE_ID = 'UH6481001'
 #: `completed_qualifications` list blank (every legacy row) — so `results_held` read SPM.
 LEGACY_SPM_WITH_STPM = dict(exam_type='spm', results_exam_type='spm', grades=SPM, stpm_cgpa=3.92,
                             spm_prereq_grades=SPM)
-STPM_HELD = dict(exam_type='stpm', results_exam_type='stpm', grades=SPM, stpm_cgpa=3.71,
+# Owner 2026-11-06 (three exclusive routes): an STPM holder's slip is compared with her SPM prereq
+# ONLY, so the fixture carries her SPM grades there too (it leaned on the old `grades` merge).
+STPM_HELD = dict(exam_type='stpm', results_exam_type='stpm', grades=SPM, spm_prereq_grades=SPM, stpm_cgpa=3.71,
                  stpm_grades={'PA': 'A', 'MATH_T': 'A-', 'PHYSICS': 'A-'},
                  completed_qualifications=['spm', 'stpm'])
 SPM_HELD = dict(exam_type='spm', results_exam_type='spm', grades=SPM)

@@ -176,4 +176,26 @@ describe('the results card reads the results we HOLD (TD-218)', () => {
     expect(screen.queryByText(/MATRIC/)).toBeNull()
     expect(screen.getAllByText(/ B\+$/).length).toBeGreaterThan(0)     // Matematik B+, from the block
   })
+
+  // Request #62, owner 2026-11-06: three exclusive routes — her SPM row is the block ONLY; an
+  // earlier SPM-page entry in `grades` is never merged over it (it used to win a clash).
+  it('a Matriculation holder\'s SPM row reads the block only, never her earlier `grades`', async () => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [doc(1, 'ic')] })
+    mockApi.getConsentStatus.mockResolvedValue(
+      { is_minor: false, consents: [] } as unknown as api.ConsentStatus)
+    render(
+      <ScholarshipReview
+        app={{ ...sandboxApplication, exam_type: 'matric', stpm_pngk: null } as unknown as ScholarshipApplication}
+        profile={{ ...sandboxProfileSpm, grades: { math: 'D', phy: 'C' }, spm_prereq_grades: { bm: 'A', math: 'B+' },
+          overall_cgpa: 3.47 } as unknown as StudentProfile}
+        token="sandbox-token" onEdit={jest.fn()} onBack={jest.fn()} onSubmit={jest.fn()}
+        submitting={false} submitError={null} canSubmit confirmed
+        t={(k: string) => k} lang="en"
+      />,
+    )
+    await waitFor(() => expect(screen.getByText(SECTION('identity'))).toBeTruthy())
+    expect(screen.getAllByText(/ B\+$/).length).toBeGreaterThan(0)     // the block's Matematik
+    expect(screen.queryAllByText(/ D$/)).toHaveLength(0)                 // `grades`' Matematik D
+    expect(screen.queryAllByText(/ C$/)).toHaveLength(0)                 // a subject only in `grades`
+  })
 })

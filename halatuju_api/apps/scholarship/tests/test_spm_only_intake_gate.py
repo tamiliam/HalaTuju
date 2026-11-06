@@ -2,8 +2,9 @@
 
 Before: an STPM / Matriculation / Asasi / Diploma holder on an intake with no STPM floor passed the
 academic test outright ("this programme sets no STPM requirement"). Now they are tested on the
-intake's SPM bars, on their SPM grades (`exam_questions.spm_grades_for`: `grades` over the STPM
-page's SPM block), and a failure says "SPM-only intake: …". Pinned here:
+intake's SPM bars, on their SPM grades (`exam_questions.spm_grades_for`: since the owner's
+2026-11-06 ruling, three exclusive routes, a tertiary holder's SPM prereq ONLY — her `grades` are
+never read; it used to be `grades` over the block), and a failure says "SPM-only intake: …". Pinned here:
 
 1. each tertiary qualification on a blank floor faces the SPM bars — passes when they clear them,
    fails (category 'merit') when they do not, and reads the STPM page's SPM block;
@@ -51,12 +52,12 @@ class TestABlankFloorTestsTertiaryOnTheSpmBars(SimpleTestCase):
     def test_each_tertiary_holder_who_clears_the_spm_bars_passes(self):
         for kind, fields in TERTIARY.items():
             with self.subTest(kind=kind):
-                self.assertEqual(_academic_ok(_p(SPM_STRONG, **fields), _cohort()), (True, ''))
+                self.assertEqual(_academic_ok(_p({}, spm_prereq_grades=SPM_STRONG, **fields), _cohort()), (True, ''))
 
     def test_each_tertiary_holder_below_the_spm_bars_fails_and_says_why(self):
         for kind, fields in TERTIARY.items():
             with self.subTest(kind=kind):
-                ok, why = _academic_ok(_p(SPM_WEAK, **fields), _cohort())
+                ok, why = _academic_ok(_p({}, spm_prereq_grades=SPM_WEAK, **fields), _cohort())
                 self.assertFalse(ok)
                 self.assertEqual(why, 'SPM-only intake: 0 at A- (need 3); '
                                       '0 at B+ or better (need 3 at A- plus 2 more at B+)')
@@ -78,12 +79,24 @@ class TestABlankFloorTestsTertiaryOnTheSpmBars(SimpleTestCase):
         p = _p({}, spm_prereq_grades=SPM_STRONG, **STPM)
         self.assertEqual(_academic_ok(p, _cohort()), (True, ''))
 
+    def test_only_the_prereq_is_read_never_grades_owner_2026_11_06(self):
+        # Three exclusive routes: strong `grades` but no prereq is "not provided", never a pass;
+        # weak `grades` never drag down a strong prereq, and strong `grades` never lift a weak one.
+        for kind, fields in TERTIARY.items():
+            with self.subTest(kind=kind):
+                self.assertEqual(_academic_ok(_p(SPM_STRONG, **fields), _cohort()),
+                                 (False, 'SPM-only intake: SPM grades not provided'))
+                self.assertEqual(_academic_ok(_p(SPM_WEAK, spm_prereq_grades=SPM_STRONG, **fields),
+                                              _cohort()), (True, ''))
+                self.assertFalse(_academic_ok(_p(SPM_STRONG, spm_prereq_grades=SPM_WEAK, **fields),
+                                              _cohort())[0])
+
     def test_the_merit_bar_is_not_applied_D3(self):
         # Good SPM grades, no co-curriculum score, blank STPM floor, merit bar 80: passes — an
         # STPM-level holder's coq / stream are written only by the SPM grades step (D3 stands).
         p = _p({}, spm_prereq_grades=SPM_STRONG, coq_score=None, **STPM)
         self.assertEqual(_academic_ok(p, _cohort(min_merit_score=80)), (True, ''))
-        self.assertEqual(_academic_ok(_p(SPM_STRONG, **DIPLOMA),
+        self.assertEqual(_academic_ok(_p({}, spm_prereq_grades=SPM_STRONG, **DIPLOMA),
                                       _cohort(min_spm_a_count=None, min_spm_bplus_count=None,
                                               min_merit_score=99.9)), (True, ''))
 

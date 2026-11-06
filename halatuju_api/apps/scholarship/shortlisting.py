@@ -165,8 +165,8 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
 
     # ⚠ OWNER RULING D16c (2026-10-27): A BLANK `min_stpm_pngk` MAKES THE INTAKE SPM-ONLY. It used
     # to mean "no STPM-level test, so pass"; an STPM / Matriculation / Asasi / Diploma holder on such
-    # an intake now faces the intake's SPM GRADE bars, on their SPM grades (`spm_grades_for`:
-    # `grades` over the STPM page's SPM block). NOT the merit bar (D3: SPM applicants only — their
+    # an intake now faces the intake's SPM GRADE bars, on their SPM grades (`spm_grades_for`: the
+    # results page's SPM block ONLY - three exclusive routes, owner 2026-11-06; `grades` unread). NOT the merit bar (D3: SPM applicants only — their
     # co-curriculum and stream are written only by the SPM grades step, so a merit would be guessed
     # low). With a floor set, both branches below are unchanged.
     spm_only = (exam == 'stpm' or exam in THIRD_ROUTE) and cohort.min_stpm_pngk is None

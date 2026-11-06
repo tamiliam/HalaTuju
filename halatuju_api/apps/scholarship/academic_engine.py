@@ -670,11 +670,11 @@ def student_slip_check(doc) -> dict:
                 'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': []}
 
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
-    # Third route S3b: ONE reader of the SPM grades — a tertiary holder's sit in the STPM page's
-    # SPM block (`spm_prereq_grades`) as often as in `grades`. SPM holders: `grades`, unchanged.
-    from apps.courses.exam_questions import spm_grades_for
-    cmp = compare_academics(spm_grades_for(profile) if profile is not None else None, data)
-    subjects = 'mismatch' if cmp['missing'] or cmp['extra'] else 'match'   # #62: extra = typed, not on it
+    # Three exclusive routes (owner 2026-11-06): tertiary = the SPM prereq only; none = 'not_compared'.
+    from .academic_compare import spm_slip_compare
+    cmp = spm_slip_compare(profile, data)
+    subjects = ('not_compared' if not cmp['compared'] else 'mismatch' if cmp['missing'] or cmp['extra']
+                else 'match')   # #62: extra = typed, not on it
     if not cmp['have_grades']:
         results = 'pending'
     elif cmp['mismatched']:
