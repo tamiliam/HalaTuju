@@ -2,10 +2,13 @@
 
 /** Mounts one real surface. A mount point — see the rule in `layout.sandbox.tsx`. */
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { surfaceBySlug } from '@/sandbox/surfaces'
 import { setSurfaceRoutes } from '@/sandbox/stubFetch'
 
-export default function SandboxSurfacePage({ params }: { params: { surface: string } }) {
+export default function SandboxSurfacePage() {
+  // Next 15: a page's `params` prop is a Promise; a client page reads the segment with useParams.
+  const params = useParams<{ surface: string }>()
   const surface = surfaceBySlug(params.surface)
 
   // During RENDER, not in an effect: the mounted screen fetches on mount, and this component's
