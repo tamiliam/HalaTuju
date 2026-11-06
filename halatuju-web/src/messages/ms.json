@@ -4928,6 +4928,8 @@
         },
         "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
+        "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
+        "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
         "rateTitle": "Nilaikan Ramalan AI"
       },

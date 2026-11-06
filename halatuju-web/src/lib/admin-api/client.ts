@@ -52,9 +52,24 @@ export async function adminFetch<T>(path: string, options?: ApiOptions): Promise
 export async function adminMutate<T>(path: string, method: string, body: unknown, options?: ApiOptions): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}${path}`, {
-    method, headers, body: body != null ? JSON.stringify(body) : undefined,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method, headers, body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (cause) {
+    // ⚠ NO ANSWER IS NOT A REFUSAL (request #61). `fetch` rejects only when no response arrived —
+    // the connection dropped, or the browser gave up waiting — and each browser words that
+    // differently (Safari "Load failed", Chrome "Failed to fetch", Firefox "NetworkError…"). The
+    // WRITE MAY HAVE LANDED: a finalise that took 50 s did, every time. So it is marked HERE, once,
+    // with `code: 'network_failure'` and `status: 0`, and no screen ever matches browser text.
+    // The message is the browser's own, unchanged, for callers that only read `.message`.
+    const err = new Error(cause instanceof Error ? cause.message : String(cause)) as Error
+      & { status?: number; code?: string }
+    err.status = 0
+    err.code = 'network_failure'
+    throw err
+  }
   if (!res.ok) {
     const b = await res.json().catch(() => ({}))
     const err = new Error(b.error || `Admin API error: ${res.status}`) as Error

@@ -242,6 +242,54 @@ describe('every interview question needs an answer before the reviewer decides',
     }
   })
 
+  // ── Request #61: "Save & generate final profile" that loses its answer ──────────────────────
+  /** Approve, then the Save that records + finalises + submits. */
+  const pressSaveAndFinalise = async () => {
+    const { api, app, unmount } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+      'motivation:motivation_grit': { verdict: 'resolved', rationale: '' } }) })
+    await loaded()
+    return { api, app, unmount, press: () => {
+      fireEvent.click(button('recordVerdict.approve'))
+      fireEvent.click(button('recordVerdict.save'))
+    } }
+  }
+
+  it('#61: no answer from the server says the decision may already be saved, never "Load failed"',
+     async () => {
+    const { api, press } = await pressSaveAndFinalise()
+    // The shape `adminMutate` throws when fetch itself rejects (asserted in adminFetchStatus).
+    api.recordVerdict.mockRejectedValue(Object.assign(new Error('Load failed'), {
+      code: 'network_failure', status: 0 }))
+    press()
+    expect((await screen.findAllByText('admin.scholarship.recordVerdict.mayAlreadyBeSaved'))
+      .length).toBeGreaterThan(0)
+    expect(screen.queryByText('Load failed')).toBeNull()
+  })
+
+  it('#61: an engine_error has its own line, not "Generate a draft profile first"', async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app, completeness: { complete: true },
+      finalise_result: { ok: false, code: 'engine_error' } } as never)
+    // The submit half refuses with a real code, so the finalise line is the one that speaks.
+    api.verifyAcceptApplication.mockRejectedValue(Object.assign(new Error('NRIC already in use'), {
+      code: 'nric_clash', status: 409 }))
+    press()
+    expect(await screen.findByText('admin.scholarship.recordVerdict.finaliseEngineError'))
+      .toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.finaliseNoDraft')).toBeNull()
+    // ⚠ A real server refusal with a code keeps its own words (unchanged by #61).
+    expect(screen.getAllByText('NRIC already in use').length).toBeGreaterThan(0)
+  })
+
+  it('#61: a real server refusal of the save itself still shows its own message', async () => {
+    const { api, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockRejectedValue(Object.assign(new Error('Not your applicant.'), {
+      code: 'not_reviewer', status: 403 }))
+    press()
+    expect((await screen.findAllByText('Not your applicant.')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('admin.scholarship.recordVerdict.mayAlreadyBeSaved')).toBeNull()
+  })
+
   it('the submit refusal names how many are left, in words', async () => {
     const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
       interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })

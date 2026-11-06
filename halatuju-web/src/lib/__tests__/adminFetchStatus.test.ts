@@ -14,7 +14,7 @@
  * reaching past the seam), so the claim is made where callers stand: `getPartnerStudent`, one of
  * the five GETs this sprint fixed the screen for.
  */
-import { getPartnerStudent } from '@/lib/admin-api'
+import { getPartnerStudent, recordVerdict } from '@/lib/admin-api'
 
 const realFetch = global.fetch
 
@@ -65,4 +65,23 @@ it('still resolves the body on a 200', async () => {
   respond(200, { supabase_user_id: 'uid-1', name: 'Test Student 07' })
   await expect(getPartnerStudent('7', { token: 'tok' }))
     .resolves.toMatchObject({ name: 'Test Student 07' })
+})
+
+// ── Request #61: the WRITE path marks "no answer came back" once, for every browser ─────────────
+it.each(['Load failed', 'Failed to fetch', 'NetworkError when attempting to fetch resource.'])(
+  'a fetch that rejects (%s) is marked network_failure, status 0, message untouched', async (msg) => {
+    global.fetch = jest.fn(async () => { throw new TypeError(msg) }) as unknown as typeof global.fetch
+    const err = await recordVerdict(7, { officer_verdict: {}, finalise: true } as never, { token: 'tok' })
+      .then(() => null, (e: unknown) => e as Error & { status?: number; code?: string })
+    expect(err?.code).toBe('network_failure')
+    expect(err?.status).toBe(0)
+    expect(err?.message).toBe(msg)
+  })
+
+it('a refused write is NOT a network failure — it keeps the server code', async () => {
+  respond(403, { error: 'Not your applicant.', code: 'not_reviewer' })
+  const err = await recordVerdict(7, { officer_verdict: {}, finalise: true } as never, { token: 'tok' })
+    .then(() => null, (e: unknown) => e as Error & { status?: number; code?: string })
+  expect(err?.code).toBe('not_reviewer')
+  expect(err?.status).toBe(403)
 })

@@ -4928,6 +4928,8 @@
         },
         "finaliseOk": "Verdict saved and final profile generated.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
+        "finaliseEngineError": "The final profile could not be written. Please press again.",
+        "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
         "rateTitle": "Rate AI Prediction"
       },

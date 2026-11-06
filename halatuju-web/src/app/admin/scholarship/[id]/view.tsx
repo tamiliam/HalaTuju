@@ -74,7 +74,7 @@ import {
 import {
   isClearAccept,
   isStuckAfterVerdict,
-  verdictSaveOutcome,
+  verdictSaveOutcome, verdictSaveErrorText,
   isQcAccepted,
   isQueryingLocked,
   isDecisionReady,
@@ -561,7 +561,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
           accepted = true
         } catch (e) {
           // The verdict is saved; only the accept failed (e.g. an NRIC clash) — surface it.
-          setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+          setError(verdictSaveErrorText(e, t, 'admin.scholarship.acceptError'))
         }
       }
       setApp(finalApp)
@@ -591,15 +591,16 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
           setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseOk')); setVerdictMsgTone('ok')
         } else {
           // Saved, but NOT finalised — work is incomplete. Amber, not green.
-          setVerdictMsg(fr?.code === 'no_interview'
-            ? t('admin.scholarship.recordVerdict.finaliseNoInterview')
-            : t('admin.scholarship.recordVerdict.finaliseNoDraft'))
+          // `engine_error` = the AI step failed; it is not a missing draft (request #61).
+          setVerdictMsg(t(fr?.code === 'no_interview' ? 'admin.scholarship.recordVerdict.finaliseNoInterview'
+            : fr?.code === 'engine_error' ? 'admin.scholarship.recordVerdict.finaliseEngineError'
+              : 'admin.scholarship.recordVerdict.finaliseNoDraft'))
           setVerdictMsgTone('warn')
         }
       }
       return true
     } catch (e) {
-      setError(interviewRefusalText(e, t) ?? (e instanceof Error ? e.message : t('admin.scholarship.acceptError')))
+      setError(interviewRefusalText(e, t) ?? verdictSaveErrorText(e, t, 'admin.scholarship.acceptError'))
       return false
     } finally { setBusy('') }
   }

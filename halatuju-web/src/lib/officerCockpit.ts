@@ -1075,6 +1075,16 @@ export function verdictSaveOutcome(input: {
   return 'saved'
 }
 
+/** The words for a Save verdict that threw. ⚠ A `network_failure` (marked by `adminMutate`: no
+ *  answer came back) may have SAVED — request #61: a 50 s finalise did, and the reviewer pressed
+ *  again, re-running paid AI calls — so it says so instead of printing the browser's text. */
+export function verdictSaveErrorText(e: unknown, t: (key: string) => string, fallback: string): string {
+  if ((e as { code?: string } | null)?.code === 'network_failure') {
+    return t('admin.scholarship.recordVerdict.mayAlreadyBeSaved')
+  }
+  return e instanceof Error ? e.message : t(fallback)
+}
+
 /** Querying (raise / Resolve / Ask again / request doc) is closed once the interview is concluded. */
 export function isQueryingLocked(status: string, interviewStatus?: string): boolean {
   return QUERYING_LOCKED_STATES.includes(status) || interviewStatus === 'submitted'

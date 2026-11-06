@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #61 - a decision save that loses its answer says it may already be saved; engine_error has its own message (2026-11-06)
+
+Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.
+
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 
 Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).
