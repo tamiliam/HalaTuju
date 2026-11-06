@@ -157,6 +157,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-530** — The payment-run page does not mark which students are no longer funded, so a maker who meets `not_payable_in_run` must find them by hand before excluding them. A design change (log only; A1.5 shows the count). *(C · S · raised 2026-11-06 by the A1.4 adversarial review)*
 - **TD-532** — Interview booking leftovers in `scheduling.book_slot` (the Meet path): a reschedule during a close does not cancel the moved event; a double-click on a first booking makes two Meet events; the lock does not re-check `slot.is_active`; a database error after `create_event` leaves the event orphaned. Also: the web interview page has no friendly message for `case_closed`. A low, accepted note: the QC accept's card blurb is made from a pre-lock read. *(C · M · raised 2026-11-06 by the A1.5 adversarial review)*
 - **TD-533** — Status writers outside QC still decide from a pre-lock copy (TD-383 follow-up): A1.4 and A1.5 locked the money writers and the 4 QC paths; about a dozen other writers still read status with no row lock. Fix is the same `status_lock` pattern in a later audit wave, plus the static scan over all writers that TD-383 never built. *(A · M · raised 2026-11-06 at the G2 pre-deploy gates)*
+- **TD-545** — The upload door leaves an orphan Storage file when it answers 409 `upload_conflict` (A1.8 / TD-115) — low
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - **TD-347** — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)*
@@ -8151,3 +8152,9 @@ line.
 - the self-QC check in _require_qc (`base.py:328`) reads the pre-lock copy
 
 **Fix:** the same `status_lock` pattern, in a later audit wave. TD-383's static scan over all writers is still not built. *(A · M)*
+
+### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
+
+**Raised 2026-11-07 by the A1.8 adversarial review (not fixed).** `DocumentListCreateView.post` (`views.py`, the `if doc is None` branch after `slot_writes.create_in_slot`) answers 409 `upload_conflict` when two uploads clash twice in one slot. The student's file was already put in Storage by the signed-URL step, and no row records it, so the blob is orphaned (harmless to the student, a little wasted storage, and invisible to every reader).
+
+**Fix:** delete the blob in that branch (best-effort, logged), or let a periodic sweep list Storage keys with no `applicant_documents` row. Never re-extract anything. *(A · L)*

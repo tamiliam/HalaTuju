@@ -218,6 +218,24 @@ class TestUploadDoor(TestCase):
         new = ApplicantDocument.objects.get(storage_path=_key(self.app, 'ic', 'new'))
         self.assertIsNotNone(new.superseded_at)
 
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.promotion.should_promote', return_value=True)
+    def test_a_clash_with_a_newer_rival_is_not_kept_previous(self, _promote, _vision):
+        """The rival that wins the slot is NEWER than this upload (the student's own double tap):
+        nothing was refused, so the reply must not say kept_previous."""
+        old = _doc(self.app, 'ic', storage_path=_key(self.app, 'ic', 'old'))
+
+        def lost_to_a_newer_copy(app, doc, stale_ids):
+            # the clash as it stands AFTER the rollback: a copy newer than this upload holds the slot
+            ApplicantDocument.objects.filter(id=old.id).update(superseded_at=timezone.now())
+            _doc(app, 'ic', storage_path='newer-rival')
+            return False
+
+        with patch('apps.scholarship.slot_writes.promote_into_slot', lost_to_a_newer_copy):
+            resp = self._post('ic', 'new')
+        self.assertEqual(resp.status_code, 201)
+        self.assertFalse(resp.json()['kept_previous'])
+
 
 class TestRefileIntoAnOccupiedSlot(TestCase):
     """refile_to_spm / refile_to_higher used to save the moved doc into its new slot while it was
@@ -278,6 +296,65 @@ class TestRefileIntoAnOccupiedSlot(TestCase):
         self.assertEqual((moved.doc_type, moved.superseded_by_id), ('higher_results', higher.id))
 
 
+class TestRefileRaceIsNotA500(TestCase):
+    """A rival goes live in the target slot at the moment of the move: supersede it and retry once;
+    if it still clashes, the document stays where it was (no note, no 500)."""
+
+    def _racing_save(self, moved, doc_type, limit):
+        orig = ApplicantDocument.save
+        state = {'n': 0}
+
+        def racing(self_, *a, **kw):
+            uf = kw.get('update_fields') or []
+            if self_.pk == moved.pk and 'doc_type' in uf and state['n'] < limit:
+                state['n'] += 1
+                ApplicantDocument.objects.create(
+                    application=self_.application, doc_type=doc_type, storage_path=f'rival-{state["n"]}')
+            return orig(self_, *a, **kw)
+        return patch.object(ApplicantDocument, 'save', racing)
+
+    def test_one_clash_is_superseded_and_retried(self):
+        app = _app()
+        moved = _doc(app, 'higher_results', results_kind='stpm')
+        with patch('apps.scholarship.promotion.should_promote', return_value=True), \
+                self._racing_save(moved, 'results_slip', limit=1):
+            out = results_route.refile_to_spm(app, moved)
+        self.assertEqual(out.doc_type, 'results_slip')
+        self.assertEqual(_live(app, 'results_slip').get().id, moved.id)
+
+    def test_a_persistent_clash_leaves_the_doc_where_it_was(self):
+        app = _app()
+        moved = _doc(app, 'higher_results', results_kind='stpm')
+        with patch('apps.scholarship.promotion.should_promote', return_value=True), \
+                self._racing_save(moved, 'results_slip', limit=5):
+            out = results_route.refile_to_spm(app, moved)
+        moved.refresh_from_db()
+        self.assertEqual(out.id, moved.id)
+        self.assertEqual((moved.doc_type, moved.results_kind), ('higher_results', 'stpm'))
+        self.assertIsNone(moved.superseded_at)
+        self.assertEqual(_live(app, 'higher_results').get().id, moved.id)
+        app.refresh_from_db()
+        self.assertFalse(app.results_change_notes)                    # no note for a move that did not happen
+
+    def test_refile_to_higher_persistent_clash_does_not_500(self):
+        app = _app()
+        moved = _doc(app, 'results_slip')
+        with patch('apps.scholarship.promotion.should_promote', return_value=True), \
+                self._racing_save(moved, 'higher_results', limit=5):
+            results_route.refile_to_higher(app, moved, 'stpm')
+        moved.refresh_from_db()
+        self.assertEqual(moved.doc_type, 'results_slip')
+        self.assertEqual(_live(app, 'results_slip').get().id, moved.id)
+
+    def test_refile_to_spm_twice_moves_and_notes_once(self):
+        app = _app()
+        moved = _doc(app, 'higher_results', results_kind='stpm')
+        results_route.refile_to_spm(app, moved)
+        results_route.refile_to_spm(app, moved)
+        app.refresh_from_db()
+        self.assertEqual(len(app.results_change_notes), 1)
+
+
 class TestStrDedupeInheritsMemberAfterSupersede(TestCase):
     def test_blank_keep_inherits_a_losers_member_without_a_collision(self):
         """The kept STR is blank-tagged; the loser names the recipient ('mother') in the slot the
@@ -293,6 +370,41 @@ class TestStrDedupeInheritsMemberAfterSupersede(TestCase):
         self.assertIsNone(keep.superseded_at)
         self.assertEqual(loser.superseded_by_id, keep.id)
         self.assertEqual(_live(app, 'str').count(), 1)
+
+
+class TestStrDedupeRetagRace(TestCase):
+    def _racing_save(self, keep, limit):
+        orig = ApplicantDocument.save
+        state = {'n': 0}
+
+        def racing(self_, *a, **kw):
+            if self_.pk == keep.pk and kw.get('update_fields') == ['household_member'] and state['n'] < limit:
+                state['n'] += 1
+                ApplicantDocument.objects.create(
+                    application=self_.application, doc_type='str', household_member='mother',
+                    storage_path=f'rival-{state["n"]}')
+            return orig(self_, *a, **kw)
+        return patch.object(ApplicantDocument, 'save', racing)
+
+    def test_a_rival_in_the_inherited_slot_is_superseded_and_retried(self):
+        app = _app()
+        _doc(app, 'str', member='mother')
+        keep = _doc(app, 'str')
+        with self._racing_save(keep, limit=1):
+            dedupe_income_proof(app, '', 'str')
+        keep.refresh_from_db()
+        self.assertEqual(keep.household_member, 'mother')
+        self.assertEqual(_live(app, 'str').get().id, keep.id)
+
+    def test_a_persistent_clash_leaves_keep_untagged_no_500(self):
+        app = _app()
+        _doc(app, 'str', member='mother')
+        keep = _doc(app, 'str')
+        with self._racing_save(keep, limit=5):
+            dedupe_income_proof(app, '', 'str')
+        keep.refresh_from_db()
+        self.assertEqual(keep.household_member, '')
+        self.assertIsNone(keep.superseded_at)
 
 
 class TestSplitPartInTheOriginalsOwnCard(SplitCase):
@@ -362,3 +474,13 @@ class TestBackfillTagIntoAnOccupiedSlot(TestCase):
         blank.refresh_from_db()
         self.assertEqual(blank.household_member, '')                 # rolled back, untouched
         self.assertIn('slot changed while this ran', out)
+
+    def test_a_row_superseded_earlier_in_the_run_is_not_retagged_live(self):
+        app = self._app()
+        doc = _doc(app, 'salary_slip', superseded_at=timezone.now())
+        _doc(app, 'salary_slip', member='father')
+        from apps.scholarship.management.commands.backfill_untagged_income_docs import Command
+        Command(stdout=StringIO())._apply(app, doc, 'father', None, 'takes the empty slot', doc)
+        doc.refresh_from_db()
+        self.assertEqual(doc.household_member, '')
+        self.assertIsNotNone(doc.superseded_at)

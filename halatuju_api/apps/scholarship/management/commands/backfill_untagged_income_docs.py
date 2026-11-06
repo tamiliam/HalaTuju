@@ -86,6 +86,9 @@ class Command(BaseCommand):
         The decision is the one reported above; only the order of the writes is fixed here."""
         with transaction.atomic():
             now = timezone.now()
+            # A row superseded earlier in this run (as another pair's loser) must not be re-tagged live.
+            if not ApplicantDocument.objects.filter(id=doc.id, superseded_at__isnull=True).exists():
+                return
             if doc.doc_type in DEDUPED:
                 # Only a live copy in the EXACT slot the tag moves into can collide. Settle that one
                 # pair by the de-dup's own winner first; the de-dup below then settles the rest.

@@ -175,7 +175,8 @@ def dedupe_income_proof(application, member, doc_type):
     live.sort(key=income_dedup_rank, reverse=True)
     keep, losers = live[0], live[1:]
     ids = [d.id for d in losers]
-    from django.db import transaction
+    import logging
+    from django.db import IntegrityError, transaction
     from django.utils import timezone as _tz
     # TD-115 (A1.8): supersede the losers FIRST, then re-tag the keep — the slot's unique index admits
     # one live row, and the inherited member may be a loser's still-live slot. One transaction.
@@ -188,6 +189,21 @@ def dedupe_income_proof(application, member, doc_type):
                 m = (getattr(d, 'household_member', '') or '').strip()
                 if m:
                     keep.household_member = m
-                    keep.save(update_fields=['household_member'])
+                    for attempt in (1, 2):
+                        try:
+                            with transaction.atomic():      # savepoint: a rival must not 500 the upload
+                                keep.save(update_fields=['household_member'])
+                            break
+                        except IntegrityError:
+                            if attempt == 1:    # a rival went live in that slot: it loses to keep, retry once
+                                docs.filter(doc_type=doc_type, household_member=m,
+                                            request_code=keep.request_code, superseded_at__isnull=True,
+                                            ).exclude(id=keep.id).update(
+                                    superseded_at=_tz.now(), superseded_by=keep)
+                                continue
+                            keep.household_member = ''   # still clashing: stay untagged, log, no 500
+                            logging.getLogger(__name__).warning(
+                                'AUDIT str_dedupe_retag_conflict app=%s doc=%s member=%r',
+                                getattr(application, 'id', None), keep.id, m)
                     break
     return ids

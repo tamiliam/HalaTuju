@@ -1267,7 +1267,12 @@ class DocumentListCreateView(APIView):
                 # doc's exact slot — then unstage this one into the prime slot.
                 # One transaction; a clash with a concurrent live copy keeps that copy (TD-115).
                 if not slot_writes.promote_into_slot(app, doc, stale_ids):
-                    kept_previous = True
+                    # A clash: another copy went live in this slot first. Only an OLDER live copy
+                    # means "we kept your previous one"; a NEWER one is usually the student's own
+                    # double tap, so no kept_previous (the newest upload is live, nothing was refused).
+                    kept_previous = ApplicantDocument.objects.filter(
+                        application=app, doc_type=doc.doc_type, household_member=doc.household_member,
+                        request_code=doc.request_code, superseded_at__isnull=True, id__lt=doc.id).exists()
                 doc.refresh_from_db()
             else:
                 kept_previous = True
