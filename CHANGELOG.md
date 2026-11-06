@@ -10,6 +10,7 @@ Branch a12 (not pushed; no migration; api only). `pip-audit -r requirements.lock
 
 - `requirements.txt` ranges widened to admit them (pypdf <7, Pillow <14, pillow-heif <2) and floors raised for DRF and PyJWT. `requirements.lock` edited in place for the ten pins (no other package moved). pypdfium2 stays 4.30.0.
 - No application code changed. New mocked-edge smoke tests, `test_a12_upload_libs_smoke.py`: a real HEIC (encoded by pillow-heif) converts to a real JPEG through `convert_heic_to_jpeg`; a real 3-page text PDF counts, renders and yields its text layer; a JPEG decodes; a garbage PDF degrades to nothing. No Gemini, no Vision, no re-extraction.
+- Fix (reviewer finding): the JWT middleware caught only `jwt.InvalidTokenError`, so an ES256 token with an unknown key ID raised `PyJWKClientError` and the request became a 500. It now catches `jwt.PyJWTError` and treats it like any invalid token (anonymous, warning logged, no token logged). Regression test in `test_auth.py`.
 - **Watch:** pypdf 6.x lays a text layer out differently from 5.9.0 (see decisions.md, "Local PDF libraries must match requirements.lock"). The STPM column parser reads both shapes, but a live digital certificate has not been re-read; MODEL_VERSION not bumped.
 
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)

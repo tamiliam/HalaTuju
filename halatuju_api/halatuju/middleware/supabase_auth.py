@@ -178,7 +178,9 @@ class SupabaseAuthMiddleware:
                 logger.warning("JWT token expired")
                 # Don't block - let the view decide how to handle
 
-            except jwt.InvalidTokenError as e:
+            except jwt.PyJWTError as e:
+                # PyJWTError also covers PyJWKClientError (unknown kid / JWKS fetch failure),
+                # which is NOT an InvalidTokenError and used to surface as a 500.
                 logger.warning(f"Invalid JWT token: {e}")
                 # Don't block - let the view decide how to handle
 
