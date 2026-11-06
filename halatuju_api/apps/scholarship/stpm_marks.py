@@ -13,7 +13,8 @@ document kind from `student_higher_check`. Nothing here feeds a verdict band or 
 
     {'grades': {KEY: {'status': 'match' | 'differ', 'doc': 'B+'}},   # only subjects on the document
      'cgpa': 'match' | 'differ' | 'not_calculated' | None,
-     'cgpa_doc': 3.67 | None}
+     'cgpa_doc': 3.67 | None,
+     'all_subjects': 'match' | 'mismatch' | 'pending' | ''}            # the whole slip vs what she entered
 
 * A grade: 'match' when the document shows the same grade for that subject, 'differ' (with the
   document's grade) when not; absent when there is no read document or the subject is not on it.
@@ -65,8 +66,12 @@ def stpm_marks(application):
         for _name, key, slip in stpm_rows(fields):
             if key in entered and entered[key] and slip and key not in grades:
                 grades[key] = {'status': 'match' if slip == entered[key] else 'differ', 'doc': slip}
+    # `all_subjects` (owner 2026-11-06): the document's own whole-slip answer — 'match' only when
+    # every printed STPM subject was entered AND every grade agrees (`_compare_stpm`'s `missing`
+    # counts a printed subject she left out, which the per-subject marks above cannot show).
     return {'grades': grades, 'cgpa': _cgpa_mark(chk if usable else None, calculated, fields),
-            'cgpa_doc': chk['cgpa_slip'] if usable else None}
+            'cgpa_doc': chk['cgpa_slip'] if usable else None,
+            'all_subjects': chk['grades_status'] if usable else ''}
 
 
 class ServesTheStpmMarks:

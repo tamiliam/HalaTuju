@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### fix: request #62 follow-up - the cockpit's SPM grades tick needs the subjects to check out too (2026-11-06)
 
-Web only, no server change. `fieldVerifications` ticks `grades` only when the results slip reports BOTH `subjects` and `results` as a clean match; before, `results` alone earned it, so app 262 (a typed Add Maths not on the slip, flagged "please check") still showed the tick beside her SPM prerequisites (owner: a tick means every value checks out). Tests: `fieldVerification.test.ts`.
+Web only, no server change. `fieldVerifications` ticks `grades` only when the results slip reports BOTH `subjects` and `results` as a clean match; before, `results` alone earned it, so app 262 (a typed Add Maths not on the slip, flagged "please check") still showed the tick beside her SPM prerequisites (owner: a tick means every value checks out). Tests: `fieldVerification.test.ts`. The STPM tick likewise needs `stpm_marks.all_subjects` == 'match' (served from `student_higher_check.grades_status`), so a printed STPM subject she did not enter withholds it. Tests: `test_stpm_marks.py`, `ApplicantCards.stpmMarks.test.tsx`.
 
 ### fix: request #61 - a decision save that loses its answer says it may already be saved; engine_error has its own message (2026-11-06)
 

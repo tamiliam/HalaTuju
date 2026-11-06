@@ -69,6 +69,28 @@ class TestTheStpmMarks(TestCase):
         m = stpm_marks(_app())
         self.assertEqual((m['grades'], m['cgpa'], m['cgpa_doc']), ({}, None, None))
 
+    def test_all_subjects_is_match_only_for_an_exact_slip(self):
+        """Owner 2026-11-06: the one STPM tick means subjects AND grades match exactly."""
+        app = _app()
+        _doc(app, READ)
+        self.assertEqual(stpm_marks(app)['all_subjects'], 'match')
+
+    def test_a_printed_subject_she_left_out_is_not_all_subjects(self):
+        # Every grade she entered matches, but the slip prints a fifth subject she did not enter.
+        app = _app()
+        _doc(app, {**READ, 'results': ROWS + [{'subject': 'BAHASA MELAYU', 'grade': 'B'}]})
+        m = stpm_marks(app)
+        self.assertTrue(all(v['status'] == 'match' for v in m['grades'].values()))
+        self.assertEqual(m['all_subjects'], 'mismatch')
+
+    def test_a_grade_that_differs_is_not_all_subjects(self):
+        app = _app()
+        _doc(app, {**READ, 'results': ROWS[:3] + [{'subject': 'KIMIA', 'grade': 'B'}]})
+        self.assertEqual(stpm_marks(app)['all_subjects'], 'mismatch')
+
+    def test_no_document_has_no_all_subjects(self):
+        self.assertEqual(stpm_marks(_app())['all_subjects'], '')
+
     def test_a_subject_not_on_the_document_has_no_mark(self):
         app = _app()
         _doc(app, {**READ, 'results': ROWS[:3]})

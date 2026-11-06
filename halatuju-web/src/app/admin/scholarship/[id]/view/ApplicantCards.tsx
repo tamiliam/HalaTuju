@@ -67,9 +67,12 @@ export function ApplicantCards({
         // 2026-10-30: "to be consistent with SPM"). A subject that differs keeps its own marker
         // naming what the document shows; a match no longer repeats the tick on every chip.
         const smGrades = Object.entries(sm?.grades || {})
+        // ...and only when the slip itself has no STPM subject she left out (owner 2026-11-06: a
+        // tick means subjects AND grades match exactly; `all_subjects` is the server's answer).
         const stpmAllMatch = smGrades.length > 0
           && smGrades.length === Object.values(app.stpm_grades || {}).filter(Boolean).length
           && smGrades.every(([, m]) => m?.status === 'match')
+          && sm?.all_subjects === 'match'
         const gradeMarks = sm ? Object.fromEntries(smGrades.filter(([, m]) => m?.status === 'differ')
           .map(([k, m]) => [k, stpmMark(m)])) : undefined
         const cgpaMark = sm?.cgpa === 'match' || sm?.cgpa === 'differ'

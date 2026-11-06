@@ -56,12 +56,22 @@ describe('ApplicantCards — STPM check marks', () => {
     renderStpm({ stpm_marks: {
       grades: { PA: { status: 'match', doc: 'A' }, MATH_T: { status: 'match', doc: 'A-' },
         PHYSICS: { status: 'match', doc: 'B' }, CHEMISTRY: { status: 'match', doc: 'B+' } },
-      cgpa: 'differ', cgpa_doc: 3.42,
+      cgpa: 'differ', cgpa_doc: 3.42, all_subjects: 'match',
     } })
     for (const k of ['PA', 'MATH_T', 'PHYSICS', 'CHEMISTRY']) {
       expect(within(chip(k)).queryByRole('img')).toBeNull()
     }
     expect(screen.queryAllByRole('img').filter((i) => i.getAttribute('title') === TICK)).toHaveLength(1)
+  })
+
+  it('no tick when the slip prints an STPM subject she did not enter, though every grade matches (owner 2026-11-06)', () => {
+    const allMatch = { PA: { status: 'match', doc: 'A' }, MATH_T: { status: 'match', doc: 'A-' },
+      PHYSICS: { status: 'match', doc: 'B' }, CHEMISTRY: { status: 'match', doc: 'B+' } } as const
+    for (const all_subjects of ['mismatch', 'pending', '', undefined] as const) {
+      const { unmount } = renderStpm({ stpm_marks: { grades: allMatch, cgpa: null, cgpa_doc: null, all_subjects } })
+      expect(screen.queryAllByRole('img').filter((i) => i.getAttribute('title') === TICK)).toHaveLength(0)
+      unmount()
+    }
   })
 
   it('ticks the SPM prerequisites once when the SPM slip matched (owner, 2026-10-30)', () => {

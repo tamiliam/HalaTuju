@@ -120,6 +120,9 @@ export interface StpmMarks {
   grades: Record<string, { status: 'match' | 'differ'; doc: string }>
   cgpa: 'match' | 'differ' | 'not_calculated' | null
   cgpa_doc: number | null
+  /** The whole slip against what she entered: 'match' only when every printed subject was entered
+   * and every grade agrees (owner 2026-11-06). The cockpit's ONE STPM tick needs it. */
+  all_subjects?: 'match' | 'mismatch' | 'pending' | ''
 }
 
 export interface AdminScholarshipDetail {
