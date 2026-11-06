@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
+
+Web only. `AppShell` skips the payment-runs count for a super admin with no organisation (the server answers 400 `programme_required` for that account, so the badge was always 0 and the console showed a red 400 on every page). A super with an organisation, and every other role, are unchanged. Test: `AppShell.test.tsx` (fails before, passes after). TD-525 marked fixed; a13's multi-gift scope entry renumbered TD-531 (it clashed with the G1 payments-badge entry).
+
 ### feat: the Matric / Asasi / Diploma CGPA entered carries a tick when the uploaded results read the same CGPA (owner) (2026-11-06)
 
 Web only. `fieldVerifications` → `higherCgpa` from the live higher-results upload's CGPA chip (`cgpa_status` 'match', within 0.05); `ApplicantCards` shows it beside "CGPA entered". New source label `admin.scholarship.verified.source.higherResults` (en/ms/ta; Tamil awaits review). Tests: `fieldVerification.test.ts`, `ApplicantCards.thirdRoute.test.tsx`.

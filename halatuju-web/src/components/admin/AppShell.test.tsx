@@ -382,6 +382,22 @@ describe('the rail waits for a gift before offering Configuration', () => {
     api.getPaymentRuns.mockResolvedValue({ runs: [] })
   })
 
+  it('TD-525: does not ask for the payment runs when a super has no organisation (the server refuses it)', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary')])
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getPaymentRuns.mockClear()
+    asRole('super', { owning_org_id: null })
+    const { unmount } = render(<AppShell>content</AppShell>)
+    await screen.findByText('admin.payments.title')
+    await waitFor(() => expect(api.getAdminScopes).toHaveBeenCalled())
+    expect(api.getPaymentRuns).not.toHaveBeenCalled()
+    unmount()
+    // A super WITH an organisation keeps the badge: the server answers them.
+    asRole('super', { owning_org_id: 7 })
+    render(<AppShell>content</AppShell>)
+    await waitFor(() => expect(api.getPaymentRuns).toHaveBeenCalled())
+  })
+
   it('shows Configuration when the tenant has exactly one gift — nothing to choose', async () => {
     // ⚠ PRODUCTION TODAY IS THIS CASE for every tenant but BrightPath. `programmeScope` resolves a
     // sole gift on its own, so nobody sees any of this behaviour until a second gift exists.

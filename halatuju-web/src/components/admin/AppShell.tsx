@@ -291,12 +291,16 @@ function Chrome(
   // endpoint asks). Same manners as the sponsor badge: only while the row is on the sidebar, and a
   // refusal is swallowed. A badge is a number, so it costs no message string.
   const wantsPaymentsCount = groups.some((g) => g.items.some((i) => i.badge === 'paymentsWaiting'))
+  // TD-525: a super with NO organisation of their own is refused this read without a gift
+  // (400 `programme_required`, the server's `_gift_required_for_orgless_super`), so the call is
+  // skipped for them: the badge was always 0 anyway and the console showed a red 400 on every page.
+  const orgless = effectiveRole(role) === 'super' && role?.owning_org_id == null
   useEffect(() => {
-    if (!token || !wantsPaymentsCount) { setPaymentsWaiting(0); return }
+    if (!token || !wantsPaymentsCount || orgless) { setPaymentsWaiting(0); return }
     getPaymentRuns(undefined, { token })
       .then((d) => setPaymentsWaiting(d.runs.filter((run) => run.your_step).length))
       .catch(() => { /* a badge is a hint; never block the shell on it */ })
-  }, [token, wantsPaymentsCount, pathname])
+  }, [token, wantsPaymentsCount, orgless, pathname])
 
   // What the bell shows: counts the console already fetches, gathered in one place. Nothing
   // here is a new endpoint, and nothing here has read state — see the note in the menu.

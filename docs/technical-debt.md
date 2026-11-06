@@ -8070,7 +8070,7 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the TD-465 money review.** money-a stops an APPROVE with no bursary at QC accept (`award_required`); a HOLD verdict that reaches QC accept with no amount has no check of its own. **Fix:** give the hold path its own check at QC accept, with a test. *(A · S)*
 
-### [TD-525] The payments badge is always 0 for a super admin with no organisation - medium
+### [TD-525] The payments badge is always 0 for a super admin with no organisation - medium - **FIXED 2026-11-06** (deploy-g2: AppShell skips the call for a super with no organisation)
 
 **Raised 2026-11-06 after the G1 deploy. Owner ruled: fix in the next web change.** `AppShell.tsx` (about line 296) calls `getPaymentRuns()` with no `?programme=` on every admin page. For a super admin with no organisation, the API (`views_admin/payments.py:182` through `views_admin/base.py:164` `_gift_required_for_orgless_super`) returns 400 `programme_required`. The `.catch` swallows it, so the "payments waiting" badge is always 0 for that account, and the console shows red 400s. This has happened since at least API revision 01248, before the 2026-11-06 deploy. **Fix:** a bug-only change. Skip the call, or pass the right programme, for super admins with no organisation. *(A · S)*
 
