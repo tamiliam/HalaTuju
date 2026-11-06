@@ -84,8 +84,10 @@ export function fieldVerifications(
   const docs = (app.documents || []).filter(isLive)
   const out: Partial<Record<VerifiableField, FieldVerification>> = {}
 
-  const set = (field: VerifiableField, docType: string, factKey: string, source: string): boolean => {
-    if (docs.some((d) => d.doc_type === docType && factVerified(d, factKey))) {
+  // `factKey` may name several facts: the ONE document must report every one of them clean.
+  const set = (field: VerifiableField, docType: string, factKey: string | string[], source: string): boolean => {
+    const keys = Array.isArray(factKey) ? factKey : [factKey]
+    if (docs.some((d) => d.doc_type === docType && keys.every((k) => factVerified(d, k)))) {
       out[field] = { source }
       return true
     }
@@ -98,7 +100,9 @@ export function fieldVerifications(
 
   // Academic.
   set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')
-  set('grades', 'results_slip', 'results', 'resultsSlip')
+  // The grades tick vouches for the whole chip row — which subjects AND their grades (owner,
+  // 2026-11-06, app 262: a typed subject not on the slip was flagged, yet the grades still ticked).
+  set('grades', 'results_slip', ['subjects', 'results'], 'resultsSlip')
 
   // Pathway (all three offer-based ticks). An offer is USABLE for verification unless it's a
   // genuine FAKE — a `not_offer_letter` / `not_*` read (it isn't an offer at all, so its fields are

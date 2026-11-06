@@ -47,6 +47,22 @@ describe('fieldVerifications', () => {
     expect(fv.grades).toEqual({ source: 'resultsSlip' })
   })
 
+  it('does NOT tick grades when the subjects do not check out, even if every grade matches (app 262)', () => {
+    for (const subjects of ['mismatch', 'missing', 'pending', undefined]) {
+      const fv = fieldVerifications(app([
+        { doc_type: 'results_slip', academic_check: { name: 'match', subjects, results: 'match' } },
+      ]))
+      expect(fv.grades).toBeUndefined()
+    }
+  })
+
+  it('does NOT tick grades on a grade mismatch with matching subjects', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'mismatch' } },
+    ]))
+    expect(fv.grades).toBeUndefined()
+  })
+
   it('ticks chosenProgramme + reportingDate from a genuine offer that carries a reporting date', () => {
     // reporting_official NOT required — the reporting date is READ off the offer (the #137 case).
     const fv = fieldVerifications(app([
