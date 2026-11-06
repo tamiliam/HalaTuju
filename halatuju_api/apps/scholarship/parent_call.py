@@ -143,6 +143,10 @@ def record_call(profile, *, application, outcome, consent, number='', parent_nam
         # off record_call is exactly as before.
         signing_held = (getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False)
                         and needs_parent_call(locked))
+        # Lock order (A1.6 review): the offer rows are locked HERE, before the call row is
+        # inserted (that insert key-share-locks the application row), so this transaction takes
+        # offer before application — the same order as the lapse job — and cannot deadlock it.
+        armed_offers = _lock_armed_offers(locked) if signing_held else None
         old_name, old_phone = current_contact(locked)
         if outcome == 'parent_number_corrected':
             number = malaysian_mobile(number)
@@ -167,24 +171,32 @@ def record_call(profile, *, application, outcome, consent, number='', parent_nam
             parent_name_given=parent_name, note=note,
             changed_by_email=(by_email or '')[:254], changed_by_role='admin')
         if signing_held and not needs_parent_call(locked):
-            _rearm_sign_deadlines(locked)
+            _rearm_sign_deadlines(armed_offers)
         return row
 
 
-def _rearm_sign_deadlines(profile):
+def _lock_armed_offers(profile):
+    """Lock (FOR UPDATE OF the offer rows ONLY — `of=('self',)`, so the joined application rows
+    are not locked) every ARMED open offer of this student, in pk order. Returns their application
+    ids. Model instances, not `values_list`: Django drops the OF clause for a values query."""
+    from .models import Sponsorship
+    return {sp.application_id for sp in (
+        Sponsorship.objects.select_for_update(of=('self',))
+        .filter(application__profile_id=profile.pk, status='offered', accept_deadline__isnull=False)
+        .order_by('pk').only('pk', 'application_id'))}
+
+
+def _rearm_sign_deadlines(app_ids):
     """TD-347, owner ruling 2026-10-06 (option B): the call that held signing is now recorded, so
     every ARMED open offer of this student gets a FRESH full accept window from today
     (`arm_sign_deadline`) — never pause-and-extend. An offer with no clock (the invitation was
     held, so never sent) is left alone: the invitation arms it when it goes. An offer already
-    lapsed is not an open offer and stays lapsed. Runs inside `record_call`'s transaction; the
-    offer rows are locked first, so the lapse job (which re-reads `accept_deadline` under the same
-    lock) cannot lapse an offer this call has just re-armed. No network call here."""
-    from .models import ScholarshipApplication, Sponsorship
+    lapsed is not an open offer and stays lapsed. Runs inside `record_call`'s transaction on the
+    offers `_lock_armed_offers` locked before the call row was written, so the lapse job (which
+    re-reads `accept_deadline` under the same lock) cannot lapse an offer this call has just
+    re-armed. No network call here."""
+    from .models import ScholarshipApplication
     from .sponsorship import arm_sign_deadline, current_offer
-    app_ids = set(Sponsorship.objects.select_for_update()
-                  .filter(application__profile_id=profile.pk, status='offered',
-                          accept_deadline__isnull=False)
-                  .order_by('pk').values_list('application_id', flat=True))
     for app in ScholarshipApplication.objects.filter(pk__in=app_ids).order_by('pk'):
         offer = current_offer(app)
         if offer is not None and offer.accept_deadline is not None:

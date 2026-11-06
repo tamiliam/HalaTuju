@@ -327,6 +327,32 @@ class TestTD347_TheCallReArmsTheSignDeadline(_ArmedOffer, TestCase):
         self._call_on(20)
         self.assertIsNone(self._deadline())
 
+    def test_a_second_call_after_the_hold_cleared_leaves_the_deadline(self):
+        self._call_on(20)
+        rearmed = self._deadline()
+        self._call_on(25)                                       # hold already cleared: no re-arm
+        self.assertEqual(self._deadline(), rearmed)
+
+    def test_another_students_offer_is_untouched(self):
+        other = make_student(guardians=[{'name': 'Siva', 'phone': SHARED}], contact_phone=SHARED)
+        their_offer = _award(make_application('awarded', student=other), 'offered')
+        their_offer.accept_deadline = self.armed
+        their_offer.save(update_fields=['accept_deadline'])
+        self._call_on(20)
+        their_offer.refresh_from_db()
+        self.assertEqual(their_offer.accept_deadline, self.armed)
+
+    def test_the_same_students_offer_on_another_application_is_rearmed_too(self):
+        # By design (`_rearm_sign_deadlines`): EVERY armed open offer of the student, since the
+        # one call clears the hold on all of them.
+        second = make_application('awarded', student=self.profile, cohort=make_cohort())
+        offer2 = _award(second, 'offered')
+        offer2.accept_deadline = self.armed
+        offer2.save(update_fields=['accept_deadline'])
+        self._call_on(20)
+        offer2.refresh_from_db()
+        self.assertEqual(offer2.accept_deadline, DAY_0 + timedelta(days=20 + _days()))
+
 
 @override_settings(BURSARY_AGREEMENT_ENABLED=False)
 class TestTD347_FlagOffChangesNothing(_ArmedOffer, TestCase):
@@ -334,3 +360,15 @@ class TestTD347_FlagOffChangesNothing(_ArmedOffer, TestCase):
     def test_with_signing_dark_the_call_leaves_the_clock(self):
         self._call_on(20)
         self.assertEqual(self._deadline(), self.armed)
+
+    def test_with_signing_dark_the_call_costs_the_same_queries_and_never_reads_offers(self):
+        with CaptureQueriesContext(connection) as ctx:
+            self._call_on(20)
+        sqls = [q['sql'] for q in ctx.captured_queries]
+        self.assertFalse([s for s in sqls if '"sponsorships"' in s], sqls)
+        self.assertEqual(len(sqls), FLAG_OFF_RECORD_CALL_QUERIES, sqls)
+
+
+# record_call's query count with BURSARY_AGREEMENT_ENABLED off, measured before the A1.6 lock-order
+# fix: the fix must add nothing to the flag-off path.
+FLAG_OFF_RECORD_CALL_QUERIES = 4
