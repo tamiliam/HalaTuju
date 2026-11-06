@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### fix: Sprint A1.6 - a recorded parent call re-arms the sign deadline (TD-347) (2026-11-06)
 
-Branch a16 (not pushed; no migration, no model change; in-app signing stays dark, TD-140 and TD-152 stay open). With `BURSARY_AGREEMENT_ENABLED` on, a parent call that CLEARS a flag holding signing now re-arms the student's armed open offer with a fresh full accept window from the day of the call (`parent_call.record_call` → `_rearm_sign_deadlines` → `arm_sign_deadline`, offer rows locked in the same transaction, no network call). No clock is started for a held invitation; a lapsed offer stays lapsed. Flag off: nothing changes. The ruling's "email states the new deadline" is not built (owner question). Tests: `test_parent_call_signing.py::TestTD347_*` (8; 3 fail on the old code).
+Branch a16 (not pushed; no migration, no model change; in-app signing stays dark, TD-140 and TD-152 stay open). With `BURSARY_AGREEMENT_ENABLED` on, a parent call that CLEARS a flag holding signing now re-arms the student's armed open offer with a fresh full accept window from the day of the call (`parent_call.record_call` → `_rearm_sign_deadlines` → `arm_sign_deadline`, offer rows locked in the same transaction, no network call). No clock is started for a held invitation; a lapsed offer stays lapsed. Flag off: nothing changes. The ruling's "email states the new deadline" is not built; logged as TD-534 (must land before the flag is set). Tests: `test_parent_call_signing.py::TestTD347_*` (8; 3 fail on the old code).
 
 ### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
 
