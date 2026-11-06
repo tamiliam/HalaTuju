@@ -42,7 +42,8 @@ class TestInviteReadsTheUidBack(TestCase):
     def _invite(self, created, read_back):
         with patch(POST, return_value=created), patch(GET, **read_back) as get:
             r = self.client.post('/api/v1/admin/invite/',
-                                 {'email': EMAIL, 'name': 'New Partner', 'role': 'reviewer'},
+                                 {'email': EMAIL, 'name': 'New Partner', 'role': 'reviewer',
+                                  'gift_scope': 'every'},   # TD-501: a reviewer names its gift
                                  format='json')
         self.assertEqual(r.status_code, 201, r.content)
         return PartnerAdmin.objects.get(email=EMAIL), get

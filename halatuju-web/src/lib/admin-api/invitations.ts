@@ -95,6 +95,9 @@ export interface InvitationsPayload {
    *  an invitation is a prompt to register TODAY, so a gift that is not open yet would be an
    *  invitation through a door that does not open. */
   programmes: Array<{ id: number; code: string; name: string }>
+  /** TD-501 (A1.3 review): the REVIEWER invite's gift choices — only the gifts of the organisation
+   *  the invite binds to, the same list the POST checks. Absent on an older api: then none. */
+  reviewer_programmes?: Array<{ id: number; code: string; name: string }>
   /** `?kind=source` only (source sign-in S2): every source user, and the sources to pick from. */
   source_users?: SourceUserRow[]
   sources?: InvitableSource[]

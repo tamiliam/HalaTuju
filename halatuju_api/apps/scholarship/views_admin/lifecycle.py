@@ -358,11 +358,11 @@ class AdminAssignableAdminsView(_AdminBase):
         #
         # ⚠ A reviewer's GIFT travels the same way, and for the same reason (S-ASSIGN,
         # 2026-09-04). `programme_id` NULL means EVERY gift — the owner's ruling and the
-        # permissive default every one of the 17 org-scoped staff on production still has — so a
-        # client that ignores this field behaves exactly as before. It is a NARROWING of who is
-        # offered work, never a fence: the org fence is `_org_scoped`, and a reviewer somehow
-        # handed another gift's case still passes it. The screen greys the row and says which
-        # gift they cover rather than hiding the name.
+        # permissive default every one of the 17 org-scoped staff on production still has. The
+        # screen greys the row and says which gift they cover rather than hiding the name. Since
+        # 2026-11-06 (owner ruling, TD-501) the SERVER enforces it too: `assign_reviewer` refuses
+        # `gift_mismatch` for a reviewer of another gift. It is still not a READ fence — that
+        # remains the organisation (`_org_scoped`) plus assignment.
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),

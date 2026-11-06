@@ -302,6 +302,9 @@ export async function inviteAdmin(
     new_org_code?: string
     contact_person?: string
     org_phone?: string
+    /** TD-501: a reviewer invite must choose — one gift (with `programme_id`) or every gift. */
+    gift_scope?: 'one' | 'every'
+    programme_id?: number
   },
   options?: ApiOptions
 ) {

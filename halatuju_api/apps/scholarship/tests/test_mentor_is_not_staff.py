@@ -137,7 +137,8 @@ class TestNoStaffPathReachesAMentor(TestCase):
 
     @override_settings(SUPABASE_SERVICE_ROLE_KEY='k', SUPABASE_URL='https://example.invalid')
     def test_the_staff_invite_cannot_grant_the_role(self):
-        body = {'email': 'newmentor@gmail.com', 'name': 'New Mentor', 'role': 'mentor'}
+        body = {'email': 'newmentor@gmail.com', 'name': 'New Mentor', 'role': 'mentor',
+                'gift_scope': 'every'}   # TD-501: the reviewer fallback names its gift
         refused = authed_client(self.lead).post('/api/v1/admin/invite/', body, format='json')
         self.assertEqual((refused.status_code, refused.json()['code']), (403, 'role_not_allowed'))
         # A super's unknown role falls back to reviewer, as it always has — never the mentor role.

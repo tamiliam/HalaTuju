@@ -1590,8 +1590,9 @@ export interface AssignOption {
  * permissive default that all 17 org-scoped staff on production still carry, so reading it as
  * "covers nothing" would grey out the entire live roster on the first render. Likewise an
  * UNKNOWN `applicationProgrammeId` (an older payload) greys nobody: a narrowing we cannot
- * evaluate must fall open, because the server is the authority and does not refuse on this at
- * all — this is an offer, not a fence.
+ * evaluate must fall open, because the server is the authority. Since 2026-11-06 (owner ruling,
+ * TD-501) the server REFUSES a new assignment across gifts (`gift_mismatch`, `assign_reviewer`);
+ * it still allows an every-gift reviewer or a case of unknown gift, the same rule as here.
  *
  * Who is offered at all is the server's `bad_assignee` rule, SERVED per row as `assignable` (#39
  * S3: `may_assign_to`); a payload without it falls back to super = any, else `reviewer`. The org fence

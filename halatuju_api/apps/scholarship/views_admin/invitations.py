@@ -11,6 +11,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
+from apps.courses import staff_gift
+
 from .gift_programmes import AdminProgrammeListView
 
 from .reviewers import _ReviewersBase
@@ -148,6 +150,13 @@ class AdminInvitationsView(_ReviewersBase):
                 {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
                 for p in AdminProgrammeListView()._programmes_for(admin)
                                                  .filter(is_active=True).order_by('code')
+            ],
+            # TD-501 (A1.3 review): the REVIEWER invite's gift choices — only the gifts of the
+            # organisation the invite binds to, the same home `staff_gift.for_invite` checks, so
+            # a super is no longer offered another organisation's gift that the POST then 404s.
+            'reviewer_programmes': [
+                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
+                for p in staff_gift.reviewer_gift_choices(admin)
             ],
             **extras,
         })

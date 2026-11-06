@@ -77,6 +77,15 @@ describe('the case list on a phone (Mobile M6a)', () => {
     expect(await within(list).findByText('admin.scholarship.assign.error.reviewer_paused')).toBeTruthy()
   })
 
+  it('TD-501: a gift_mismatch refusal says so in words, not the generic error', async () => {
+    mockApi.assignApplication.mockRejectedValue(new Error('gift_mismatch'))
+    render(<AdminScholarshipList />)
+    const list = await phone()
+    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
+    fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
+    expect(await within(list).findByText('admin.scholarship.assign.error.gift_mismatch')).toBeTruthy()
+  })
+
   it('Sort asks the SERVER for the column and direction the table headers would', async () => {
     render(<AdminScholarshipList />)
     const tools = await screen.findByTestId('list-phone-tools')

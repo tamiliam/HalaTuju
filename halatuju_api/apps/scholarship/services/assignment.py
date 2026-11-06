@@ -72,6 +72,36 @@ def may_assign_to(caller, target):
             and target.owning_organisation_id == caller.owning_organisation_id)
 
 
+# ⚠ THE GIFT BLOCKS ASSIGNMENT (owner ruling, 2026-11-06, TD-501 / audit fix A1.3). Before, a
+# reviewer's gift only greyed rows in the picker and the server took the assignment anyway. Now
+# `assign_reviewer` refuses `gift_mismatch` when the case's gift is not one the reviewer covers.
+# It blocks HANDING OUT work only: the READ fence is still the organisation (`_org_scoped` /
+# `_org_allows`) plus assignment, and a case already held is never taken away by this.
+# Written as "is the case gift IN the reviewer's gifts" so the approved multi-gift tagging (a
+# later sprint) changes `reviewer_gifts` alone.
+def reviewer_gifts(admin):
+    """The gift ids ``admin`` covers, or None for EVERY gift (`programme` NULL, the default)."""
+    programme_id = getattr(admin, 'programme_id', None)
+    return None if programme_id is None else frozenset({programme_id})
+
+
+def case_gift(application):
+    """The case's gift id: its own `programme`, else its cohort's; None when neither is known."""
+    if application.programme_id:
+        return application.programme_id
+    cohort = application.cohort if application.cohort_id else None
+    return cohort.programme_id if cohort is not None else None
+
+
+def gift_allows(admin, application):
+    """May ``admin`` be GIVEN this case by gift? Every-gift reviewer, or unknown case gift: yes."""
+    gifts = reviewer_gifts(admin)
+    if gifts is None:
+        return True
+    gift = case_gift(application)
+    return gift is None or gift in gifts
+
+
 def _can_review(admin):
     """A valid assignment target is an active reviewer, admin, qc, or super. Assignment grants
     selective WRITE access: a view-all 'admin' or the senior 'qc' role sees every application
@@ -249,6 +279,8 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
 
         unassigning = reviewer is None and current is not None
         _refuse_stage(application, current, reviewer, now)
+        if reviewer is not None and not gift_allows(reviewer, application):
+            raise AssignmentError('gift_mismatch')     # owner 2026-11-06 — see `reviewer_gifts`
 
         AssignmentEvent.objects.create(
             application=application, from_admin=current, to_admin=reviewer,

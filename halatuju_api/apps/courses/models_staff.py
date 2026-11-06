@@ -123,9 +123,11 @@ class PartnerAdmin(models.Model):
     # cover two of three cannot be expressed and would need a join table. That limit is accepted
     # deliberately (owner, 2026-09-04) and is unreachable until a third gift exists.
     #
-    # ⚠ IT IS NOT A FENCE, AND MUST NEVER BECOME ONE. The org fence is `_org_scoped`/`_org_allows`;
-    # a reviewer bound to a gift who is somehow handed another gift's case still passes the fence,
-    # because the fence is about the ORGANISATION. This decides who is OFFERED work.
+    # ⚠ NOT A READ FENCE; SINCE 2026-11-06 IT BLOCKS ASSIGNMENT (owner ruling, TD-501). The READ
+    # fence is still the organisation (`_org_scoped`/`_org_allows`) plus assignment. But a case may
+    # no longer be GIVEN to a reviewer whose gift differs from the case's: `assign_reviewer` refuses
+    # `gift_mismatch` (`services/assignment.py`, `gift_allows`). NULL here, or a case of unknown
+    # gift, still allows it. A case already held is not taken away.
     programme = models.ForeignKey(
         'scholarship.Programme', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='staff',

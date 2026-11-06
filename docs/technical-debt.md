@@ -339,7 +339,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 - **TD-499** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 - **TD-500** - Mentor My students list makes one alias query per mentee - low
-- **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0)
+- **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
 - **TD-502** - Overview cards without a filtered action link - low
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
 - **TD-504** - Overview invitations card needs org_read; the Invitations page needs team_read - low
@@ -359,6 +359,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-521** - No real sign-in per role on a local stack (CO-01) - medium
 - **TD-523** - Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
 - **TD-524** - A hold verdict can reach QC accept with no amount - medium
+- **TD-531** - Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -7838,7 +7839,7 @@ sprint about landing pages. A mentor carries a handful of mentees, so it is chea
 of all the caller's mentees in one query and keep `is_the_student` as the single rule, with the existing
 self-mentoring tests as the guard. *(A · S)*
 
-### [TD-501] Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0)
+### [TD-501] Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0) - **FIXED 2026-11-06** (A1.3)
 
 **Raised 2026-11-04 by the owner during T5c P5 (NOT fixed).** No staff invite takes a gift. `AdminInviteView`
 (`halatuju_api/apps/courses/views_staff.py:195-234`) reads no programme, and `staff_reinvite.py:292` sets the programme
@@ -7848,6 +7849,12 @@ gift can be set later by `POST admin/reviewers/<pk>/programme/`, which has no we
 comes from their mentees). **Owner ruling 2026-11-04 ("b"):** fix AFTER v3.1.0 as the FIRST fix sprint, before the
 other audit fixes. **Fix:** the reviewer invite must choose "one gift" or "every gift"; admins and mentors unchanged.
 It is a permission change: Opus build, adversarial review, owner phone check before it goes live. *(A · M)*
+
+**PART FIXED 2026-11-06 by audit fix A1.3 (branch a13, not pushed).** A reviewer invite must send `gift_scope`: `one` with a `programme_id` of the owning organisation (another organisation's gift is 404), or `every`. No choice is 400 `gift_required`; `every` with an id is 400 `gift_conflict` (`apps/courses/staff_gift.py`, called from `AdminInviteView`). Admins, mentors, sources and the other staff roles are not asked. A re-invite stores the gift the new invite chose, no longer NULL (`staff_reinvite.bring_back`). The Invitations page asks it with a required, blank-start select (every gift, or each active gift). `python manage.py staff_gift_report` lists, read-only, the reviewer rows with no gift (id, role, org; no name or email); existing rows are NOT rewritten (D5), the owner decides each. Tests: `test_reviewer_invite_gift.py`, the staff page jest.
+
+**Every-gift marker - owner ruled 2026-11-06: no new field.** "Every gift" stays stored as NULL, the default. No `every_gift_chosen_at` was built. The report lists every NULL-gift reviewer row for the owner to read.
+
+**FIXED 2026-11-06 (audit fix A1.3, owner ruling) - the gift blocks ASSIGNMENT.** Before, the picker greyed an other-gift reviewer but `assign_reviewer` accepted the assignment, so a gift-A reviewer could be given, and then read, a gift-B case. Now `assign_reviewer` (`scholarship/services/assignment.py`, the one assignment door; there is no bulk or auto-assign path) refuses `gift_mismatch` (400, never 500). Rule (`gift_allows`): reviewer gift NULL (every gift) - allow; case gift unknown - allow; otherwise the case gift (`application.programme`, else `cohort.programme`) must be in `reviewer_gifts(admin)`. A case already held is not taken away. The READ fence is unchanged: it is still the organisation plus assignment. `may_assign_to` (no application) is unchanged. The web shows an en/ms/ta message for the code. Written as set membership so the owner-approved multi-gift tagging (a separate sprint after G2) changes `reviewer_gifts` only. `qc` stays not gift-scoped (owner, 2026-11-06). Tests: `test_assign_gift_mismatch.py` (4 fail on the old code), the case-list phone jest. Review fixes the same day: the invite picker now offers only the gifts of the organisation the invite binds to (`reviewer_programmes`, `staff_gift.staff_invite_org`), and the report lists everyone who reviews (`team_holding(('review',))`), not the reviewer role only. The rest of the multi-gift scope is TD-525.
 
 ### [TD-502] Overview cards without a filtered action link - low
 
@@ -8071,3 +8078,7 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 ### [TD-529] Bundle budgets sit on the edge of the 2 kB ratchet window - medium
 
 **Raised 2026-11-06.** The four first-load lines (median, `/profile`, `/scholarship/apply`, `/scholarship/application`) sit at about build + 2.0 kB, the edge of the 2 kB ratchet window. CI builds come out a few hundredths of a kB smaller than local builds, so the G1 web build a1cc54eb failed on `/scholarship/apply` (budget 199.7, CI 197.676). **Fix:** in the next web change, re-measure and set each line to about build + 1 kB. Also fix the stale `_first_load_js_note` text in `halatuju-web/code-standards.json`. A ready commit exists on local branch `deploy-g1b` (2b012c19), but its values must be re-measured first. *(A · S)*
+
+### [TD-531] Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium
+
+**Raised 2026-11-06 by the A1.3 adversarial review (logged only, not built).** The owner approved multi-gift tagging (a reviewer covers a LIST of gifts) as its own sprint after G2. That sprint also covers: **(a)** two paths still make a reviewer without asking for a gift choice, so the new reviewer stays NULL (every gift) by default: Team -> Reviewers -> Add (`apps/scholarship/staff_tables_admin.py:158`, `_plan_add`) and the role switch (`apps/scholarship/staff_lifecycle.py:175`, `change_role`). Only the invite asks today (TD-501, `apps/courses/staff_gift.for_invite`). **(b)** `services/assignment.case_gift` takes `application.programme` first and the cohort's only when that is empty, while the lists filter on `programme` OR `cohort.programme`; the two agree only while `ScholarshipApplication.save` keeps `programme` filled from the cohort. **Fix (in that sprint):** ask the gift choice on both paths; agree ONE source of truth for the case gift and read it everywhere; then change `reviewer_gifts` to the reviewer's gift list (the assignment check is already written as membership). *(A · M)*
