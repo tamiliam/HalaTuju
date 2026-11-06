@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #58 - a mentor's My Profile Save keeps their qualifications, languages and address (2026-11-06)
+
+Web only; no server change. The profile page's second save step sent the reviewer's pause switch for everybody, so the server refused it with `not_reviewable` for a mentor or a staff member who mentors without reviewing, nothing on that step saved, and the page showed the raw code. The pause is now sent only for someone who reviews cases (`reviewsCases`, the rule that shows the switch) and only when it changed. A refusal on any step reads in words: new `admin.myProfile.error.not_reviewable` (en/ms/ta; Tamil awaits language review), and an unknown code falls back to "Failed to update." instead of the raw code. `updateReviewerProfile` goes through `adminMutate` so its refusals carry a code. Tests: `admin/profile/page.test.tsx` (rendered: mentor and staff mentor send no pause, both steps save, no raw code), `test_request58_profile_save.py` (mentor, staff mentor and reviewer through the real endpoints; a non-reviewer's pause still refused). Decision: `docs/decisions.md`.
+
 ### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
 
 Web only. `AppShell` skips the payment-runs count for a super admin with no organisation (the server answers 400 `programme_required` for that account, so the badge was always 0 and the console showed a red 400 on every page). A super with an organisation, and every other role, are unchanged. Test: `AppShell.test.tsx` (fails before, passes after). TD-525 marked fixed; a13's multi-gift scope entry renumbered TD-531 (it clashed with the G1 payments-badge entry).

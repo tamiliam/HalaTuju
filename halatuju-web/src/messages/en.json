@@ -5267,7 +5267,8 @@
         "about_too_long": "Keep About to 600 characters.",
         "not_editable": "That detail cannot be changed here.",
         "mentoring_area_required": "Type your area of mentoring.",
-        "mentoring_area_too_long": "Keep the area of mentoring to 120 characters."
+        "mentoring_area_too_long": "Keep the area of mentoring to 120 characters.",
+        "not_reviewable": "Only someone who reviews cases can pause. Your qualifications, languages and address were not saved; please try again."
       },
       "assignerSees": "The people who assign your cases can see this number.",
       "othersStillIn": "Your password is changed, but other devices may still be signed in. Sign out of them from those devices.",

@@ -5267,7 +5267,8 @@
         "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
         "not_editable": "Butiran itu tidak boleh diubah di sini.",
         "mentoring_area_required": "Taip bidang bimbingan anda.",
-        "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara."
+        "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara.",
+        "not_reviewable": "Hanya penilai kes boleh berehat seketika. Kelayakan, bahasa dan alamat anda tidak disimpan; sila cuba lagi."
       },
       "assignerSees": "Mereka yang menugaskan kes kepada anda boleh melihat nombor ini.",
       "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri.",

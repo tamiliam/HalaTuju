@@ -55,6 +55,8 @@ const withPhone = (r: ReviewerProfile | null, phone: string): ReviewerProfile =>
 const ME_REFUSALS = ['name_required', 'name_too_long', 'phone_required', 'phone_too_long',
   'job_title_too_long', 'about_too_long', 'not_editable', 'mentoring_area_required',
   'mentoring_area_too_long']
+/** An `admin/reviewer-profile/` refusal with words of its own (request #58). */
+const OTHER_REFUSALS = ['not_reviewable']
 
 /**
  * THE PROFILE PAGE — ONE shell for every admin-platform person, a source user included (common
@@ -229,9 +231,13 @@ export default function AdminProfilePage() {
       }
       if (revDirty && draft.reviewer) {
         // ⚠ Without the phone and "share with students": they are the card's, saved above.
-        const { phone: _p, share_phone_with_students: _s, ...rest } = draft.reviewer
-        void _p; void _s
-        await updateReviewerProfile(rest, { token })
+        // Request #58: the pause rides ONLY for someone who reviews cases (`reviews`, the rule that
+        // shows the switch) and only when it changed. The server refuses `paused` from anyone else
+        // with `not_reviewable` and refuses the WHOLE step, so a mentor's qualifications, languages
+        // and address never saved while it was always sent.
+        const { phone: _p, share_phone_with_students: _s, paused, paused_at: _a, ...rest } = draft.reviewer
+        void _p; void _s; void _a
+        await updateReviewerProfile(reviews && paused !== saved.reviewer?.paused ? { ...rest, paused } : rest, { token })
       }
       setDraft(next); setSaved(next)
       setMessage({ ok: true, text: t('admin.profileUpdated') })
@@ -249,9 +255,10 @@ export default function AdminProfilePage() {
       // A mentor's blank phone is not "a reviewer's" (S7a): its own words.
       const meKey = isMentor && code === 'phone_required' ? 'admin.mentors.profile.phoneRequired'
         : `admin.myProfile.error.${code}`
-      setMessage({ ok: false, text: step === 'me' && ME_REFUSALS.includes(code) ? t(meKey)
-        : step === 'source' ? t(refusalKey('profile', code))
-          : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
+      // Request #58: a known code in words; anything else the generic sentence, NEVER the raw code.
+      setMessage({ ok: false, text: step === 'source' ? t(refusalKey('profile', code))
+        : (step === 'me' ? ME_REFUSALS : OTHER_REFUSALS).includes(code) ? t(meKey)
+          : t('admin.profileUpdateFailed') })
     }
     setSaving(false)
   }

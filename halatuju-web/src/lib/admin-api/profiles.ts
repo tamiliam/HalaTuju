@@ -211,17 +211,7 @@ export async function updateReviewerProfile(
   data: Partial<Omit<ReviewerProfile, 'phone' | 'share_phone_with_students'>>,
   options?: ApiOptions
 ) {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}/api/v1/admin/reviewer-profile/`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Update failed: ${res.status}`)
-  }
-  return res.json() as Promise<ReviewerProfile>
+  // Request #58: through `adminMutate`, so a refusal carries its `code` for the page to word.
+  return adminMutate<ReviewerProfile>('/api/v1/admin/reviewer-profile/', 'PATCH', data, options)
 }
 

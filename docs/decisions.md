@@ -1,5 +1,15 @@
 # Architectural Decisions — HalaTuju
 
+## Request #58: My Profile sends the pause only for someone who reviews cases — 2026-11-06 (bug fix; owner-scheduled)
+
+**The bug:** the profile page's second save step (`admin/reviewer-profile/` PATCH: qualifications, languages, address) always carried `paused`, for mentors and staff mentors too. The server refuses `paused` from anyone without `review` (`not_reviewable`) and refuses the whole step, and the page showed the raw code.
+
+**The rule:** the page sends `paused` only when `reviewsCases(ctx)` (the same rule that shows the Taking part card and its switch, `lib/profileCards.ts`) AND the value changed; `paused_at` is never sent. A refusal on any save step reads in words: a known code its own sentence, anything else `admin.profileUpdateFailed`, never the code or the server's text.
+
+**Rulings:**
+- **The server is unchanged:** `paused` from a non-reviewer is still 400 `not_reviewable`, refused before anything is written. It is a permission check; quietly dropping the key would hide a client that asks for something it may not do.
+- `updateReviewerProfile` now goes through `adminMutate`, so its refusals carry a `code` like every other admin write.
+
 ## Request #59: a parent's IC second opinion is compared with that parent, never the student — 2026-11-06 (bug fix; owner-scheduled 2026-11-06)
 
 **The bug:** `run_vision_for_document` also reads `parent_ic`, and `_merge_ic_reads` accepted the Gemini second opinion's name only when it matched the STUDENT's profile, impossible for a father's card. A misread name was kept, the card then did not match his own salary slip, and `parent_ic_person_mismatch` / `salary_slip_person_mismatch` blocked submission (application 154). This contradicted "parent_ic as universal compulsory" (S19, 2026-05-29: a parent's card is checked against that earner's proof, never matched to the student); "Cost-gated Gemini IC second opinion" (2026-06-02) was written for the student's own card.
