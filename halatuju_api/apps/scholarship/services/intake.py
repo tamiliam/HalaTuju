@@ -122,13 +122,14 @@ def resolve_open_cohort(cohort_code='', programme_code=''):
     return open_cohorts[0]
 
 
-def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
+def create_application(*, profile, cohort, validated_data, to_email, lang='en', acknowledge=True):
     """
     Submit an application:
       1. write the form's financial fields back to the canonical profile,
       2. create the application with per-application fields only,
       3. freeze an intake snapshot (audit evidence),
-      4. send the acknowledgement email and stamp ``acknowledged_at``.
+      4. send the acknowledgement email and stamp ``acknowledged_at``
+         (``acknowledge=False``: the caller sends it after its transaction, ``submit_application``).
     Returns the created application.
     """
     data = dict(validated_data)
@@ -188,6 +189,13 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
         record_change(profile, old_contact, application=application, by_email=to_email,
                       by_role='student')
 
+    if acknowledge:
+        acknowledge_application(application, profile=profile, cohort=cohort, to_email=to_email, lang=lang)
+    return application
+
+
+def acknowledge_application(application, *, profile, cohort, to_email, lang='en'):
+    """Step 4 of ``create_application``: the "we have your application" email, and its stamp."""
     # S6a: the organisation may switch this courtesy notice off (`student_email_catalogue`), and the
     # send is billed to the application's organisation (it used to meter org-NULL).
     from .. import student_email_catalogue, usage as _usage
@@ -204,7 +212,33 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
         application.acknowledged_at = timezone.now()
         application.save(update_fields=['acknowledged_at'])
 
-    return application
+
+def submit_application(*, profile, cohort, validated_data, to_email, lang='en'):
+    """The student's submit (TD-348 / TD-351, A1.5). Returns ``(application, None)``, or
+    ``(None, reason)`` with an ``apply_gate`` refusal code when she may not apply.
+
+    The one-application rule is a read-then-write. Here the student's PROFILE row is locked, the
+    rule is asked again under the lock, and the row is created in the same transaction, so two
+    submits at one moment run one after the other and the second is refused (two rounds: TD-348).
+    A same-round insert that still meets the ``(cohort, profile)`` constraint answers the gate's
+    refusal, never a 500 (TD-351). The acknowledgement email goes AFTER the commit, so the lock is
+    never held across an SMTP call. ⚠ SQLite ignores the lock; the tests prove the re-ask."""
+    from django.db import IntegrityError, transaction
+    from apps.courses.models import StudentProfile
+    from . import apply_gate
+    try:
+        with transaction.atomic():
+            list(StudentProfile.objects.select_for_update().filter(pk=profile.pk).values_list('pk'))
+            verdict = apply_gate.apply_verdict(profile, cohort)
+            if not verdict.allowed:
+                return None, verdict.reason
+            application = create_application(profile=profile, cohort=cohort, validated_data=validated_data,
+                                             to_email=to_email, lang=lang, acknowledge=False)
+    except IntegrityError:   # the (cohort, profile) constraint: a same-round submit got in first
+        verdict = apply_gate.apply_verdict(profile, cohort)
+        return None, (verdict.reason or apply_gate.ALREADY_APPLIED)
+    acknowledge_application(application, profile=profile, cohort=cohort, to_email=to_email, lang=lang)
+    return application, None
 
 
 def score_application(application, *, rescore=False):

@@ -271,11 +271,31 @@ class TestTrancheReleaseUnderTheLock(TestCase):
 # ── the static pin: every money writer TD-383 names goes through the helper ─────────────────────
 
 class TestEveryMoneyWriterUsesTheHelper(TestCase):
-    """A1.5 widens this to the lifecycle writers and the static scan TD-383 asks for."""
-    WRITERS = (payments.complete, svc.fund_student, disbursement.release_tranche)
+    """Every writer TD-383 names locks and re-reads before it writes (A1.4 money, A1.5 lifecycle).
+    Each pattern is the writer's way into `status_lock` (directly, or through its module's one
+    helper: `_lock_open_case`, `_lock_tranche`). A new status-dependent writer joins this list."""
+    WRITERS = (   # (module, function name, the lock it must call)
+        ('payments', 'complete', r'lock_applications?_for\('),
+        ('sponsorship', 'fund_student', r'lock_applications?_for\('),
+        ('sponsorship', 'fund_student', r'lock_sponsor_wallet\('),          # the wallet, A1.5
+        ('sponsorship', 'reinstate_lapsed_sponsorship', r'lock_sponsor_wallet\('),
+        ('disbursement', 'release_tranche', r'lock_applications?_for\('),
+        ('disbursement', 'release_tranche', r'_lock_tranche\('),
+        ('disbursement', 'withhold_tranche', r'_lock_tranche\('),
+        ('disbursement', 'return_tranche', r'_lock_tranche\('),
+        ('disbursement', 'mark_due', r'_lock_tranche\('),
+        ('disbursement', '_lock_tranche', r'lock_application_for\('),
+        ('services.decline', 'admin_reject', r'lock_application_for\('),   # TD-365 decline side
+        ('services.intake', 'submit_application', r'select_for_update\(\)'),  # TD-348 / TD-351
+        ('scheduling', '_lock_open_case', r'lock_application_for\('),      # TD-368
+        ('scheduling', 'propose_slots', r'_lock_open_case\('),
+        ('scheduling', 'book_slot', r'_lock_open_case\('),
+    )
 
     def test_each_writer_locks_through_status_lock(self):
-        for writer in self.WRITERS:
-            src = inspect.getsource(writer)
-            with self.subTest(writer=writer.__qualname__):
-                self.assertRegex(src, r'lock_applications?_for\(')
+        import importlib
+        for module, name, pattern in self.WRITERS:
+            with self.subTest(writer=f'{module}.{name}', pattern=pattern):
+                writer = getattr(importlib.import_module(f'apps.scholarship.{module}'), name, None)
+                self.assertIsNotNone(writer, f'{module}.{name} is gone: move its pin with it')
+                self.assertRegex(inspect.getsource(inspect.unwrap(writer)), pattern)

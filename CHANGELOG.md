@@ -32,6 +32,20 @@ Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION`
 
 - `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. A short read (fewer rows than the slip's printed subject total, or a compulsory subject absent) never raises it. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
 
+### fix: Sprint A1.5 - the lifecycle writers re-read the status under the lock (TD-383 part 2: TD-368, TD-348, TD-351, TD-365 decline side, TD-442) (2026-11-06)
+
+Branch a15 (not pushed; no migration, no model change). Same choke-point as A1.4 (`status_lock.py`). Lock order, now written in `status_lock.py`: payment run, then application rows by pk, then the sponsor row (`FOR NO KEY UPDATE`), then child rows (Sponsorship, Disbursement).
+
+- TD-368 `scheduling.propose_slots` / `book_slot`: lock and re-read the case (`_lock_open_case`) and refuse a finished one (`review_writes_closed`; a reopened decision stays open) with `case_closed`. A close that lands during the Meet call wins and the new event is cancelled.
+- TD-365 (decline side) `services/decline.admin_reject`: re-reads the status under the lock; a stale copy answers `bad_status`.
+- TD-442 QC reject (`views_admin/verdict.py`): reopen, close-with-change, decline and the QC row run in one transaction; a decline that raises leaves the case not reopened. The zero-hold decline email goes after the commit (`admin_reject(..., defer_email=True)`).
+- TD-348 / TD-351 submit (`services/intake.submit_application`, called by `ApplicationListCreateView.post`): locks the student's profile row, asks the one-application rule again, then creates; a same-round insert that meets the `(cohort, profile)` constraint answers 409 with the gate's code, never a 500. The acknowledgement email goes after the commit.
+- Tranche writers (`disbursement.py`): `withhold_tranche`, `return_tranche` and `mark_due` lock the application, then the tranche, and re-read its status (`_lock_tranche`), so Mark due can no longer write `due` over `released`. `release_tranche` answers `bad_state` (was a 500) when the tranche row has gone.
+- Wallet (`sponsorship.fund_student`, `reinstate_lapsed_sponsorship`): `status_lock.lock_sponsor_wallet` locks the sponsor row before the balance check, so one sponsor's two funds at once cannot overspend the wallet.
+- Web: the payment-run page shows a message for `not_payable_in_run` (en/ms/ta).
+
+Tests: `test_lifecycle_lock.py` (17 regression tests fail on the old code and pass on the new; 2 guards), the static pin in `test_status_lock.py` widened to every writer above, `page.onHold.test.tsx`. Logged, not built (design change): TD-530, a marker on the run page for each student who is no longer funded.
+
 ### fix: Sprint A1.4 - no money moves on a status read earlier (TD-383 part 1: TD-367, TD-365, TD-420) (2026-11-06)
 
 Branch a14 (not pushed; no migration, no model change; api only). New choke-point `apps/scholarship/status_lock.py`: `lock_application_for` / `lock_applications_for` lock the application row inside the caller's transaction, re-read it, refuse unless the status is in the caller's set, and copy the fresh fields onto the caller's object. Lock order: payment run, then application rows by pk, then child rows. Used by:

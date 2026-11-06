@@ -6324,7 +6324,8 @@
         "not_ready": "The CSV is available once the run is signed.",
         "finance_check_required": "This run needs its check before it can be approved.",
         "on_hold": "This student's support is on hold. Resume it on their file before including them again.",
-        "on_hold_in_run": "{count} student(s) in this run are on hold. Exclude them; the run then goes back to draft and must be signed again."
+        "on_hold_in_run": "{count} student(s) in this run are on hold. Exclude them; the run then goes back to draft and must be signed again.",
+        "not_payable_in_run": "{count} student(s) in this run are no longer funded (for example, their case was closed). Exclude them; the run then goes back to draft and must be signed again."
       },
       "financeStep": "Checked",
       "financeSign": "Check",

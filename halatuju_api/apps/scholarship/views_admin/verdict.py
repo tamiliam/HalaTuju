@@ -443,20 +443,25 @@ class AdminQcDecisionView(_AdminBase):
                 return Response(
                     {'error': 'Say why you are rejecting so the reviewer has your reason.',
                      'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
-            except reopen_service.ReopenError as e:
-                return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-            reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
             from datetime import timedelta
             from apps.courses import org_config
-            hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
+            hold = timedelta(hours=org_config.value(app.owning_organisation, 'qc_decline_hold_hours'))
+            # TD-442: reopen, close, decline and the QC row are ONE unit. A decline that raises rolls
+            # the reopen back, so the case is left exactly as it was. The emails go after the commit.
             try:
-                admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours), activity=False)
+                with transaction.atomic():
+                    reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
+                    reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
+                    admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
+                    _record_qc(admin, app, 'reject', 'declined')
+            except reopen_service.ReopenError as e:
+                return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             except ValueError:
                 return Response({'error': 'This case cannot be rejected from its current state.',
                                  'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
-            _record_qc(admin, app, 'reject', 'declined')
+            if hold.total_seconds() <= 0:   # no embargo (a platform env value of 0 only)
+                from ..services import _send_decline_for
+                _send_decline_for(app)
             app.refresh_from_db()
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):

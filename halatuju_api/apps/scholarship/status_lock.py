@@ -12,10 +12,17 @@ row onto the caller's instance, so everything the writer reads afterwards (statu
 award amount, payment credit) is the committed value under the lock. ``lock_applications_for`` is
 the same for many rows at once, locked in primary-key order.
 
-LOCK ORDER (one order everywhere, so two writers can never deadlock): a payment RUN first
-(``payments_chain._lock``; ``maintenance.set_substate`` takes the run locks before it writes the
-application), then the APPLICATION row(s) in primary-key order, then the rows that hang off it
-(a Disbursement, a Sponsorship). ``closure.close_application`` takes only the application row.
+LOCK ORDER (one order everywhere, so two writers can never deadlock):
+  1. a payment RUN (``payments_chain._lock``; ``maintenance.set_substate`` takes the run locks
+     before it writes the application);
+  2. the APPLICATION row(s), in primary-key order;
+  3. the SPONSOR row (``lock_sponsor_wallet``, A1.5), before a wallet balance is read for a spend;
+  4. the rows that hang off them (a Sponsorship, a Disbursement / tranche).
+A writer may skip a step, never reverse two. ``closure.close_application`` takes only the
+application row. ``sponsorship.cancel_offer`` and the offer-lapse job (``lapse_expired_offers``)
+lock a Sponsorship together with its application and never take the sponsor row, so they cannot
+wait on a fund that holds it. The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
+foreign-key check (FOR KEY SHARE on the sponsor) does not wait on it.
 
 ⚠ SQLite (the test database) ignores ``select_for_update``. The tests therefore prove the RE-READ
 (a stale copy is refused), which is what makes the lock count on PostgreSQL: there a second writer
@@ -87,3 +94,13 @@ def lock_applications_for(applications, allowed_statuses):
             if row.status not in allowed_statuses:
                 refused.append(app)
     return refused
+
+
+def lock_sponsor_wallet(sponsor):
+    """Lock the SPONSOR row inside the caller's transaction before a spend reads the wallet
+    balance (A1.5). Two funds by one sponsor (two tabs, or the Support button against the
+    standing-gift job) then run one after the other, and the second reads a balance that already
+    counts the first. Step 3 of the lock order above: after the application row. No-op on SQLite."""
+    _require_atomic()
+    from .models import Sponsor
+    list(Sponsor.objects.select_for_update(no_key=True).filter(pk=sponsor.pk).values_list('pk', flat=True))

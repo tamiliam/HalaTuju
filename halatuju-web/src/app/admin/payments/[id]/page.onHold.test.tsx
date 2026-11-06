@@ -62,6 +62,18 @@ it('a refused approval says how many students are on hold', async () => {
   expect(await screen.findByText('admin.payments.error.on_hold_in_run|{"count":"2"}')).toBeTruthy()
 })
 
+it('a refused approval says how many students are no longer funded (TD-383)', async () => {
+  mockApi.getPaymentRun.mockResolvedValue(run({ items: [{ ...ITEM, on_hold: false }] }))
+  const refusal = Object.assign(new Error('not_payable_in_run'), {
+    status: 400, code: 'not_payable_in_run', body: { code: 'not_payable_in_run', count: 3 } })
+  mockApi.signPaymentRun.mockRejectedValue(refusal)
+  render(<PaymentRunPage />)
+  const box = await screen.findByPlaceholderText('admin.payments.fullName')
+  fireEvent.change(box, { target: { value: 'Approver One' } })
+  fireEvent.click(screen.getByText('admin.payments.countersign'))
+  expect(await screen.findByText('admin.payments.error.not_payable_in_run|{"count":"3"}')).toBeTruthy()
+})
+
 it('a student not on hold carries no chip', async () => {
   mockApi.getPaymentRun.mockResolvedValue(run({ items: [{ ...ITEM, on_hold: false }] }))
   render(<PaymentRunPage />)

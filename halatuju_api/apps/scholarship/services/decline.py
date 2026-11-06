@@ -163,11 +163,14 @@ def _finalise_reject(application, category, by_email):
     _send_decline_for(application)
 
 
-def admin_reject(application, admin, category, cooloff=None, *, activity=True):
+def admin_reject(application, admin, category, cooloff=None, *, activity=True, defer_email=False):
     """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
 
     ``activity``: the decline is a `declined` row on ``admin``'s own activity list (common profile
     S3). The QC's decision passes False — its click is ONE row, `qc_decision`, written by the view.
+
+    ``defer_email``: with a zero window, do NOT send the email here; the caller runs this inside
+    its own transaction and sends it (``_send_decline_for``) after that commits (TD-442, QC reject).
 
     ``cooloff`` (a ``timedelta``) overrides the organisation's day-based ``decline_hold_days``
     embargo — used by the QC-confirmed decline, whose window is the organisation's
@@ -184,9 +187,11 @@ def admin_reject(application, admin, category, cooloff=None, *, activity=True):
       - 'contractual' (failed post-award steps) — from 'recommended'/'sponsored'.
     Raises ValueError on a bad category/status combination. Returns True."""
     if category == 'interview':
+        allowed = INTERVIEW_REJECT_FROM
         if application.status not in INTERVIEW_REJECT_FROM:
             raise ValueError('bad_status')
     elif category == 'contractual':
+        allowed = ('recommended', 'active', 'maintenance')
         # 'contractual' is a genuinely post-award decline — from the funded states (active/
         # maintenance). 'recommended' stays permitted for back-compat, but the normal way to
         # decline a recommended case is a super's reopen (→ 'interviewed', AWAITING QC again),
@@ -206,7 +211,7 @@ def admin_reject(application, admin, category, cooloff=None, *, activity=True):
         # Do NOT "fix" this by adding 'awarded'. It sits two conditions away from a genuine
         # omission of 'awarded' that WAS a bug (the cockpit sign-off, fixed the same day), so it
         # looks like the same mistake and is not. `test_reject_status_sets.py` pins it.
-        if application.status not in ('recommended', 'active', 'maintenance'):
+        if application.status not in allowed:
             raise ValueError('bad_status')
     else:
         raise ValueError('bad_category')
@@ -222,24 +227,33 @@ def admin_reject(application, admin, category, cooloff=None, *, activity=True):
         days = org_config.value(application.owning_organisation, 'decline_hold_days')
         window = timedelta(days=days) if (days and days > 0) else timedelta(0)
     by = getattr(admin, 'email', '') or ''
-    _record_reject(application, category, by)        # the decision is immediate, either way
-    if category == 'contractual':
-        # Code-health S3 #6 (owner decision 2026-07-03): rejecting a funded/offered student
-        # AUTO-LAPSES their sponsorship(s) — the held amount returns to the sponsor's
-        # balance and impact/statement surfaces stop reporting the student as supported.
-        # (Without this the sponsorship sat HOLDING forever.) The disbursement ledger needs
-        # no touch: release_tranche already refuses any non-funded status (S6). Lazy import
-        # — the module dependency runs sponsorship → services.
-        from ..sponsorship import lapse_holding_sponsorships
-        lapse_holding_sponsorships(application)
-    if window.total_seconds() > 0:
-        # Embargo only the student email: schedule it; the student sees nothing until it goes.
-        application.pending_rejection_category = category
-        application.decline_due_at = timezone.now() + window
-        application.pending_decline_by = by
-        application.save(update_fields=['pending_rejection_category', 'decline_due_at',
-                                        'pending_decline_by'])
-    else:
+    # TD-365 / TD-383 (decline side): the status checked above is the caller's copy. Lock the row
+    # and RE-READ it, so a close, a fund or another decline that committed in between wins and this
+    # one answers bad_status. The writes run under the lock; the zero-window email after it.
+    from ..status_lock import StatusRefused, lock_application_for
+    with transaction.atomic():
+        try:
+            lock_application_for(application, allowed)
+        except StatusRefused:
+            raise ValueError('bad_status')
+        _record_reject(application, category, by)        # the decision is immediate, either way
+        if category == 'contractual':
+            # Code-health S3 #6 (owner decision 2026-07-03): rejecting a funded/offered student
+            # AUTO-LAPSES their sponsorship(s) — the held amount returns to the sponsor's
+            # balance and impact/statement surfaces stop reporting the student as supported.
+            # (Without this the sponsorship sat HOLDING forever.) The disbursement ledger needs
+            # no touch: release_tranche already refuses any non-funded status (S6). Lazy import
+            # — the module dependency runs sponsorship → services.
+            from ..sponsorship import lapse_holding_sponsorships
+            lapse_holding_sponsorships(application)
+        if window.total_seconds() > 0:
+            # Embargo only the student email: schedule it; the student sees nothing until it goes.
+            application.pending_rejection_category = category
+            application.decline_due_at = timezone.now() + window
+            application.pending_decline_by = by
+            application.save(update_fields=['pending_rejection_category', 'decline_due_at',
+                                            'pending_decline_by'])
+    if window.total_seconds() <= 0 and not defer_email:
         _send_decline_for(application)
     if activity:
         from .. import staff_activity
