@@ -325,6 +325,7 @@ def spm_grades_none_label(profile, fallback):
     (STPM / Matriculation / Asasi / Diploma), else the caller's own ``fallback`` (SPM unchanged)."""
     return SPM_PREREQ_NOT_DECLARED if is_tertiary(results_held(profile)) else fallback
 
+
 def spm_slip_comparable(profile, known=None):
     """Is there anything to compare an SPM slip with? False ONLY for a tertiary holder who entered
     no USABLE SPM prereq subject (owner, 2026-11-06): her `grades` are not read, so the slip earns

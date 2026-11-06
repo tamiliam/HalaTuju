@@ -657,19 +657,18 @@ def student_slip_check(doc) -> dict:
     skew = f.get('skew_angle')                        # the photo's measured tilt (deterministic read only)
     was_skewed = isinstance(skew, (int, float)) and abs(skew) >= 25.0
 
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
     if not data['names']:
-        # No subject rows. Distinguish "extraction hasn't run / was skipped" (genuinely
-        # PENDING) from "Gemini ran but couldn't read the subject table" (UNREADABLE — the
-        # student should re-upload a clearer copy). A bare candidate-name with empty results
-        # is the latter.
-        pending = (not sv) or sv == 'review_manually'
-        s = 'pending' if pending else 'unreadable'
+        # No subject rows: "extraction hasn't run / was skipped" (PENDING) vs "Gemini ran but
+        # couldn't read the subject table" (UNREADABLE — re-upload; a bare candidate-name is this).
+        from apps.courses.exam_questions import spm_slip_comparable   # #62 review 3: only the name speaks
+        s = ('not_compared' if not spm_slip_comparable(profile, _SUBJECT_BM)
+             else 'pending' if (not sv) or sv == 'review_manually' else 'unreadable')
         return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
                 'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
                 'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': []}
 
-    profile = getattr(getattr(doc, 'application', None), 'profile', None)
     # Three exclusive routes (owner 2026-11-06): tertiary = the SPM prereq only; none = 'not_compared'.
     from .academic_compare import spm_slip_compare
     cmp = spm_slip_compare(profile, data)
@@ -681,8 +680,8 @@ def student_slip_check(doc) -> dict:
         results = 'mismatch'
     elif cmp['uncertain']:
         results = 'uncertain'   # letter↔band disagree → please check, not a confident mismatch
-    else:
-        results = 'match'
+    else:   # #62 review 3: an entered subject the read could not grade-check → no tick yet
+        results = 'pending' if cmp['unchecked'] else 'match'
     return {
         'name': name, 'subjects': subjects, 'results': results,
         'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,

@@ -8,9 +8,13 @@ All notable changes to this project will be documented in this file.
 
 Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.
 
+### fix: request #62 review 3 - nothing checked means nothing shown; an unexplained hold now names its reason; no prompt version bump (owner)
+
+Branch req62 (not pushed; no migration; `VERDICT_ENGINE_VERSION` 2026-11-06.5; `PROMPT_VERSION` back to 2026-10-28.1 by owner decision - a bump re-drafts 164 profiles via the paid daily backfill; the new SPM line ships under the old label). A tertiary slip that grade-checked none of her declared subjects (nothing flagged) is not compared everywhere (no tick, no hold, the higher card not held); some checked and others unreachable = results pending plus `academic_grades_unchecked` naming them (en/ms/ta); no prereq + an unreadable subject table = not compared (no re-upload ask, the slip request closes); a whitespace grade is blank. Tests: `test_req62_review3.py`, `PROMPT_VERSION` pins.
+
 ### fix: request #62 - every SPM reader uses the SPM prereq for STPM/Matric/Diploma/Asasi students (owner 2026-11-06)
 
-Branch req62 (not pushed; no migration, no data change; `PROMPT_VERSION` 2026-11-06.1, no profile regenerated). The AI profile and gap prompts, `spm_a_count`, `english_only_email`, the PISMP aliran / STPM bidang defaults, the pool's academic band and the SPM merit read through `exam_questions.spm_grades_for`; a tertiary holder with no prereq reads "not declared (optional for this route)" in the two prompts. Tests: `test_spm_readers_prereq_only.py`, the `PROMPT_VERSION` pin in `test_third_route.py`.
+Branch req62 (not pushed; no migration, no data change; `PROMPT_VERSION` not bumped - see review 3). The AI profile and gap prompts, `spm_a_count`, `english_only_email`, the PISMP aliran / STPM bidang defaults, the pool's academic band and the SPM merit read through `exam_questions.spm_grades_for`; a tertiary holder with no prereq reads "not declared (optional for this route)" in the two prompts. Tests: `test_spm_readers_prereq_only.py`, the `PROMPT_VERSION` pin in `test_third_route.py`.
 
 ### fix: request #62 review 2 - nothing compared means nothing shown; no tick without a checked subject
 

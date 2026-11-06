@@ -76,6 +76,8 @@ def _verdict_academic(application, spm_only=False):
     for u in cmp['uncertain']:
         unresolved.append(_item('academic_grade_uncertain',
                                 subject=u['subject'], typed=u['typed'], slip=u['slip'], band=u['band']))
+    if cmp['unchecked']:   # #62 review 3: entered, but the read could not grade-check it - the hold's reason
+        unresolved.append(_item('academic_grades_unchecked', subjects=', '.join(cmp['unchecked'])))
 
     if not cmp['have_grades']:
         # Names extracted (so completeness is real) but no grades yet — accuracy

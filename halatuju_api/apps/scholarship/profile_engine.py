@@ -95,7 +95,7 @@ DEFAULT_LANGUAGE = 'English'
 #   2026-10-26.1 — Third results route S2b (route open): `Qualification:` = `held_summary` (S2a), e.g.
 #                  "Matriculation (STPM-equivalent), overall CGPA 3.47"; SPM / STPM unchanged.
 #   2026-10-28.1 — STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28)
-PROMPT_VERSION = '2026-11-06.1'   # 11-06.1 request #62 (INPUT, tertiary only): `SPM grades:` = `spm_grades_for` (the SPM prereq ONLY, never `grades`); none = "not declared (optional for this route)" (owner 2026-11-06)
+PROMPT_VERSION = '2026-10-28.1'   # ⚠ A BUMP RE-DRAFTS EVERY ASSIGNED UNEDITED PROFILE via the daily 04:00 backfill (paid calls) - ask the owner first. 28.1 STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28); #62 (2026-11-06) changed the tertiary `SPM grades:` line (the SPM prereq only) WITHOUT a bump, by owner decision
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (

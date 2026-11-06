@@ -4748,6 +4748,7 @@
           "pathway_switched": "Kursus ditukar — dahulu {from_programme} ({from_institution}), kini {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_extra_subjects": "Dimasukkan oleh pelajar tetapi tiada pada slip: {subjects}. Semak dengan mata: mungkin salah taip, atau baris yang terlepas semasa bacaan.",
+          "academic_grades_unchecked": "Dimasukkan oleh pelajar, tetapi bacaan tidak dapat menyemak gred pada slip: {subjects}. Sila semak dengan mata pada slip.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",

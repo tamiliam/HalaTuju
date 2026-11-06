@@ -45,8 +45,9 @@ export function useSpmResultsBlock() {
     const savedSpm = localStorage.getItem(KEY_SPM_PREREQ)
     const prereq: Record<string, string> = savedSpm ? JSON.parse(savedSpm) : {}
     // S2b review (D4 prefill): a compulsory grade the block lacks is taken from the SPM `grades`
-    // already on file (live, 17 STPM profiles hold them there, not here) — the server's
-    // `spm_grades_for` reads both — so making the block required never means retyping them.
+    // already on file (live, 17 STPM profiles hold them there, not here) so making the block
+    // required never means retyping them. NB the server reads ONLY `spm_prereq_grades` for a
+    // tertiary student (`spm_grades_for`, request #62), so the prefill must be SAVED to count.
     // Only the four compulsory subjects, and only to fill a gap: what the block holds wins.
     let spmOnFile: Record<string, string> = {}
     try { spmOnFile = JSON.parse(localStorage.getItem(KEY_GRADES) || '{}') || {} } catch { /* absent */ }

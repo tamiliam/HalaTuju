@@ -90,6 +90,7 @@ def compare_academics(profile_grades, slip) -> dict:
     prof_by_name, typed_name = {}, {}   # normname → typed grade / the subject's readable BM name
     for key, grade in (profile_grades or {}).items():
         nm = _SUBJECT_BM.get(key)
+        grade = str(grade or '').strip()   # #62 review 3: a blank / whitespace grade is not entered
         if nm and grade:
             prof_by_name[_norm_lower_alnum(nm)] = grade
             typed_name[_norm_lower_alnum(nm)] = nm
@@ -164,6 +165,10 @@ def compare_academics(profile_grades, slip) -> dict:
         'typed_graded': sum(1 for nn in prof_by_name if nn in grades),
         'typed_count': len(prof_by_name),
         'short_read': short,
+        # #62 review 3: typed subjects neither grade-checked nor flagged extra (a short read, or a row
+        # printed without a readable grade) - the check could not reach them.
+        'typed_ungraded': sorted(typed_name[nn] for nn in prof_by_name
+                                 if nn not in grades and typed_name[nn] not in extra),
     }
 
 
@@ -178,20 +183,24 @@ def spm_slip_compare(profile, slip) -> dict:
     section is optional and often holds just the compulsory four, so a slip subject she did not
     enter is never ``missing``; each entered one must be on the slip (else ``extra``, short-read
     guard as ever) with the same grade. ``complete`` = no extra. An SPM holder is unchanged: the
-    full match, ``missing`` included. Every reader (verdict, ladder chip, slip check) comes here."""
+    full match, ``missing`` included. Every reader (verdict, ladder chip, slip check) comes here.
+
+    #62 review 3: when NO entered subject was grade-checked and nothing was flagged, nothing was
+    compared (``compared`` False: no tick, no hold). When some were checked but others could not be
+    (``unchecked``: a short read, a printed row with no readable grade), it is not complete, and the
+    verdict names them ("please check by eye") so a hold always has its reason."""
     from apps.courses.exam_questions import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
     if spm_slip_comparable(profile, _SUBJECT_BM):
         cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
         if not profile or not is_tertiary(results_held(profile)):
-            return {**cmp, 'checked_count': cmp['slip_count']}
+            return {**cmp, 'checked_count': cmp['slip_count'], 'unchecked': []}
         # #62 review 2: a tick needs at least one entered subject grade-checked on the slip (never
-        # "All 0 grades match"), and on a SHORT read (which raises no extra) every entered subject
-        # must have been found and grade-checked, or the read may simply have dropped one.
-        checked = cmp['typed_graded']
-        return {**cmp, 'missing': [], 'checked_count': checked,
-                'complete': checked > 0 and not cmp['extra']
-                and (not cmp['short_read'] or checked == cmp['typed_count'])}
+        # "All 0 grades match"); review 3: every entered subject must be checked (or flagged extra).
+        checked, unchecked = cmp['typed_graded'], cmp['typed_ungraded']
+        if checked or cmp['extra']:
+            return {**cmp, 'missing': [], 'checked_count': checked, 'unchecked': unchecked,
+                    'complete': not cmp['extra'] and not unchecked}
     blank = compare_academics({}, slip)
     return {**blank, 'missing': [], 'extra': [], 'mismatched': [], 'uncertain': [],
             'have_grades': False, 'complete': False, 'accurate': False, 'compared': False,
-            'checked_count': 0}
+            'checked_count': 0, 'unchecked': []}

@@ -62,8 +62,9 @@ class ProfilePromptSpmLine(TestCase):
                 # only `grades`: none declared, optional on her route (not "not provided")
                 self.assertEqual(self._spm_line(_app(route, grades=OLD)), f'SPM grades: {NOT_DECLARED}')
 
-    def test_prompt_version_bumped(self):
-        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-11-06.1')
+    def test_prompt_version_not_bumped(self):
+        # owner 2026-11-06: no bump - a bump re-drafts every assigned unedited profile (paid)
+        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-28.1')
 
 
 class GapPromptAcademicLine(TestCase):

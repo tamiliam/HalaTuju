@@ -4748,6 +4748,7 @@
           "pathway_switched": "Course switched — was {from_programme} ({from_institution}), now {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_extra_subjects": "Entered by the student but not on the slip: {subjects}. Check by eye: a typing slip, or a row the read missed.",
+          "academic_grades_unchecked": "Entered by the student, but the read could not check the grade on the slip: {subjects}. Please check it by eye against the slip.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "academic_grade_band_mismatch": "{subject}: the slip clearly shows {slip} — the letter and the Malay band agree — but the student typed {typed}. The typed grade is wrong; ask the student to correct it.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",

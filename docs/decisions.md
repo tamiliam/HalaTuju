@@ -18943,12 +18943,17 @@ needs at least one entered subject grade-checked on the slip, and on a short rea
 **Every SPM reader (owner, 2026-11-06, verbatim):** "SPM applicants will onboard by filling SPM grades. STPM/etc.
 applicants onboard by filing STPM or alternative routes. For these students, only SPM prereq is available. SPM on its
 own will not be. As such, it is only right to keep it consistent: wire all SPM related matters to SPM prereq." — so the
-AI sponsor-profile prompt's `SPM grades:` line (`profile_engine._grades_summary`, `PROMPT_VERSION` 2026-11-06.1), the
+AI sponsor-profile prompt's `SPM grades:` line (`profile_engine._grades_summary`), the
 gap prompt's academic line (`gap_engine._academic_summary`; none for a tertiary holder reads "not declared (optional
 for this route)" in both), every `spm_a_count` (admin list + detail, student read serializer, the intake snapshot),
 `english_only_email`, `offer_pathway.infer_pismp_aliran` and `infer_stpm_bidang` (via `services/offer_sync` and
 `backfill_pre_u_track`), `pool.academic_band` and `shortlisting.spm_merit` / `_spm_bars` now read through
-`spm_grades_for` (no `VERDICT_ENGINE_VERSION` bump: the aliran is a picker default, never a band).
+`spm_grades_for` (no `VERDICT_ENGINE_VERSION` bump: the aliran is a picker default, never a band). The prompt changed WITHOUT a `PROMPT_VERSION` bump (stays 2026-10-28.1) by owner decision (2026-11-06)
+to avoid regenerating 164 profiles via the paid daily backfill; profiles drafted after this deploy carry the new SPM
+line under the old version label. **Review 3 (`VERDICT_ENGINE_VERSION` 2026-11-06.5):** no declared subject
+grade-checked and nothing flagged = not compared (nothing shown, asked or held); some checked, others not readable =
+results pending plus a "please check by eye" item naming them; no prereq + unreadable slip = not compared (only the name
+speaks).
 
 **Supersedes in part:** the S2a / S3b rule that a tertiary holder's SPM grades are `grades` merged over
 `spm_prereq_grades`, `grades` winning a clash (the `spm_grades_for` docstring; "The web sends the WHOLE completed list"
