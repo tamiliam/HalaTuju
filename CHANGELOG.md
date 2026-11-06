@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.
 
+### fix: request #62 - every SPM reader uses the SPM prereq for STPM/Matric/Diploma/Asasi students (owner 2026-11-06)
+
+Branch req62 (not pushed; no migration, no data change; `PROMPT_VERSION` 2026-11-06.1, no profile regenerated). The AI profile and gap prompts, `spm_a_count`, `english_only_email`, the PISMP aliran / STPM bidang defaults, the pool's academic band and the SPM merit read through `exam_questions.spm_grades_for`; a tertiary holder with no prereq reads "not declared (optional for this route)" in the two prompts. Tests: `test_spm_readers_prereq_only.py`, the `PROMPT_VERSION` pin in `test_third_route.py`.
+
 ### fix: request #62 review 2 - nothing compared means nothing shown; no tick without a checked subject
 
 Branch req62 (not pushed; no migration; `VERDICT_ENGINE_VERSION` 2026-11-06.4). No raw `not_compared` key on the student checklist (its rows are absent), `results` 'not_compared' (grey in the cockpit), a prereq of unknown keys / blank grades is not compared, no "All 0 grades match", a short read ticks only when every entered subject was graded, no `grades_unverified` hold without a prereq, a singular "1 grade matches" in en/ms/ta. Tests: `test_three_exclusive_spm_routes.py` (NothingComparedNothingShown), `slipExtra.test.tsx`, `officerCockpit.test.ts`.

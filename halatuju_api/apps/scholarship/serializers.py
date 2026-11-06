@@ -1,7 +1,7 @@
 """Serializers for B40 Assistance Programme intake."""
 from rest_framework import serializers
 
-from apps.courses.exam_questions import ResultsHeldField
+from apps.courses.exam_questions import ResultsHeldField, spm_grades_for
 from . import pool, results_review
 from .family import PROFESSION_CODES, form_guardians_shape
 from .serializers_maintenance import StudentMaintenanceFields
@@ -762,7 +762,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
-        return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
+        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
     def get_funding_need(self, obj):
         try:

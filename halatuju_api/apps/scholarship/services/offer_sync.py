@@ -9,6 +9,8 @@ from datetime import datetime, timezone as _tz
 
 from django.utils.dateparse import parse_date
 
+from apps.courses.exam_questions import spm_grades_for
+
 from ..document_snapshot import SNAPSHOT_ORDER
 from ..school_names import keep_our_town
 from .completeness import application_completeness
@@ -274,7 +276,7 @@ def autofill_pathway_from_offer(application):
         track = op.parse_stpm_stream(prog)
         if not track:
             profile = getattr(application, 'profile', None)
-            track = op.infer_stpm_bidang(getattr(profile, 'grades', None),
+            track = op.infer_stpm_bidang(spm_grades_for(profile),  # tertiary: prereq only (#62)
                                          getattr(profile, 'stream_subjects', None))
     if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
         application.pre_u_track = track

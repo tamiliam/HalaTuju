@@ -374,7 +374,8 @@ class TestTheReadersOnAMatricHolder(TestCase):
         # NO bump in S2a (review round 1): no live profile's input moved while the route was
         # shut. S2b opens the route and bumps it (superseding the S2a pin of '2026-10-25.1').
         # STPM CGPA sprint C2 (2026-10-28) bumps it again: the STPM PNGK and merit inputs moved.
-        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-28.1')
+        # Request #62 (2026-11-06): a tertiary holder's `SPM grades:` line reads her prereq only.
+        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-11-06.1')
 
     def test_the_ai_profile_input_is_unchanged_for_spm(self):
         from apps.scholarship import profile_engine

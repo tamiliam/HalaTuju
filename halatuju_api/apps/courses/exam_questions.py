@@ -315,6 +315,16 @@ def spm_grades_for(profile):
     return dict(value) if isinstance(value, dict) else {}
 
 
+#: What a prompt says when `spm_grades_for` is empty for a tertiary holder: her SPM prereq is
+#: optional on her route (owner, 2026-11-06), so the AI must not read it as a gap.
+SPM_PREREQ_NOT_DECLARED = 'not declared (optional for this route)'
+
+
+def spm_grades_none_label(profile, fallback):
+    """The prompt wording for NO SPM grades: ``SPM_PREREQ_NOT_DECLARED`` for a tertiary holder
+    (STPM / Matriculation / Asasi / Diploma), else the caller's own ``fallback`` (SPM unchanged)."""
+    return SPM_PREREQ_NOT_DECLARED if is_tertiary(results_held(profile)) else fallback
+
 def spm_slip_comparable(profile, known=None):
     """Is there anything to compare an SPM slip with? False ONLY for a tertiary holder who entered
     no USABLE SPM prereq subject (owner, 2026-11-06): her `grades` are not read, so the slip earns

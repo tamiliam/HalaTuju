@@ -15,6 +15,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from apps.courses.exam_questions import spm_grades_for, spm_grades_none_label
+
 from .profile_engine import (
     DEFAULT_LANGUAGE, _funding, _pathway, _quiz_interests, _resolve_language,
     _siblings_studying_display, _yesno,
@@ -122,11 +124,13 @@ def _val(v, fallback='(not provided)'):
 
 
 def _academic_summary(application):
-    """Compact grade summary + A-grade count for the prompt (best-effort)."""
+    """Compact SPM grade summary + A-grade count for the prompt (best-effort). The grades are
+    `spm_grades_for` (a tertiary holder's SPM prereq ONLY, never `grades`; owner 2026-11-06); none
+    reads `spm_grades_none_label` (tertiary: optional on her route, so not a gap)."""
     profile = application.profile
-    grades = getattr(profile, 'grades', None) if profile else None
+    grades = spm_grades_for(profile)
     if not grades:
-        return '(not provided)'
+        return spm_grades_none_label(profile, '(not provided)')
     try:
         from .profile_engine import count_spm_a_grades
         a_count = count_spm_a_grades(grades)

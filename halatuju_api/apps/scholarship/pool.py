@@ -13,7 +13,7 @@ import hashlib
 import re
 
 from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
-                                         results_held)
+                                         results_held, spm_grades_for)
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from .school_names import school_name_core
@@ -55,7 +55,7 @@ def academic_band(profile):
         label = QUALIFICATION_LABELS[held]
         cgpa = overall_cgpa(profile)
         return f'{label} · CGPA {cgpa:.2f}' if cgpa is not None else label
-    a = count_spm_a_grades(getattr(profile, 'grades', None) or {})
+    a = count_spm_a_grades(spm_grades_for(profile))
     return f"SPM · {a} A{'' if a == 1 else 's'}"
 
 

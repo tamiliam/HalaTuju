@@ -25,7 +25,7 @@ import time
 
 from django.conf import settings
 
-from apps.courses.exam_questions import held_summary
+from apps.courses.exam_questions import held_summary, spm_grades_for, spm_grades_none_label
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure
@@ -94,7 +94,8 @@ DEFAULT_LANGUAGE = 'English'
 #                  SPM merits are unchanged.
 #   2026-10-26.1 — Third results route S2b (route open): `Qualification:` = `held_summary` (S2a), e.g.
 #                  "Matriculation (STPM-equivalent), overall CGPA 3.47"; SPM / STPM unchanged.
-PROMPT_VERSION = '2026-10-28.1'   # 28.1 STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28)
+#   2026-10-28.1 — STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28)
+PROMPT_VERSION = '2026-11-06.1'   # 11-06.1 request #62 (INPUT, tertiary only): `SPM grades:` = `spm_grades_for` (the SPM prereq ONLY, never `grades`); none = "not declared (optional for this route)" (owner 2026-11-06)
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -537,13 +538,12 @@ def _join_human(items):
 
 
 def _grades_summary(profile):
-    """Summarise SPM results WITHOUT naming individual subjects: the count of A-grade
-    subjects, the band mix, and the broad subject GROUPS they span. Keeps the profile
-    readable and avoids revealing ethnicity via vernacular-language/literature subjects.
-    'not provided' when no grades."""
-    grades = getattr(profile, 'grades', None) if profile else None
-    if not isinstance(grades, dict) or not grades:
-        return 'not provided'
+    """Summarise SPM results (`spm_grades_for`: a tertiary holder's SPM prereq only) WITHOUT naming
+    subjects: the A-grade count, the band mix and the broad subject GROUPS they span (no ethnicity
+    via vernacular subjects). None: 'not provided', or `spm_grades_none_label` for tertiary."""
+    grades = spm_grades_for(profile)
+    if not grades:
+        return spm_grades_none_label(profile, 'not provided')
     bands = {'A+': 0, 'A': 0, 'A-': 0}
     total = 0
     groups_seen = set()

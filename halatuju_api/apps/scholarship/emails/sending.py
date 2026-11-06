@@ -10,6 +10,8 @@ Moved here VERBATIM from `emails.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.core.mail import EmailMessage, EmailMultiAlternatives
+
+from apps.courses.exam_questions import spm_grades_for
 from .shared import _P, _meter_email, logger
 
 
@@ -104,10 +106,9 @@ def english_only_email(application) -> bool:
     call_lang = (getattr(profile, 'preferred_call_language', '') or '').lower() if profile else ''
     if locale != 'en' or call_lang in ('ms', 'ta'):
         return False
-    grades = getattr(profile, 'grades', None) if profile else None
-    eng = ''
-    if isinstance(grades, dict):
-        eng = str(grades.get('eng', '') or '').strip().upper().replace('−', '-')
+    # SPM English from the ONE reader (a tertiary holder's SPM prereq only, owner 2026-11-06);
+    # none on file -> '' -> bilingual, the safe default.
+    eng = str(spm_grades_for(profile).get('eng', '') or '').strip().upper().replace('−', '-')
     return eng in ('A+', 'A')
 
 

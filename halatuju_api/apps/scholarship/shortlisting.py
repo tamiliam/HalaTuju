@@ -124,7 +124,7 @@ def spm_merit(profile):
     The arithmetic itself is not copied — `prepare_merit_inputs` / `calculate_merit_score` in
     `apps.courses.engine` are the single source, and are what the course selector uses too.
     """
-    grades = dict((getattr(profile, 'grades', None) or {}) if profile else {})
+    grades = spm_grades_for(profile)   # the ONE SPM reader (tertiary: SPM prereq only, #62)
     if not grades:
         return None
     # The engine's core uses 'history'; profiles store it as 'hist'. Without the rename History
@@ -201,7 +201,7 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
             return True, ''
         return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
 
-    return _spm_bars(profile, cohort, getattr(profile, 'grades', None) if profile else None)
+    return _spm_bars(profile, cohort, spm_grades_for(profile))   # SPM holder here: her `grades`
 
 
 def _spm_bars(profile, cohort, grades, spm_held=True):

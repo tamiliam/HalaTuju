@@ -7,7 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`. Then, on 20
 """
 from django.utils import timezone
 
-from apps.courses.exam_questions import results_held
+from apps.courses.exam_questions import results_held, spm_grades_for
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from ..shortlisting import count_spm_a_grades
@@ -156,7 +156,7 @@ def build_intake_snapshot(profile, app_data):
             'completed_qualifications': list(getattr(p, 'completed_qualifications', None) or [])
                                         if p else [],
             'results_held': results_held(p) if p else '',
-            'spm_a_count': count_spm_a_grades(getattr(p, 'grades', None) if p else None),
+            'spm_a_count': count_spm_a_grades(spm_grades_for(p)),   # tertiary: SPM prereq only (#62)
             'household_income': getattr(p, 'household_income', None) if p else None,
             'household_size': getattr(p, 'household_size', None) if p else None,
             'receives_str': bool(getattr(p, 'receives_str', False)) if p else False,

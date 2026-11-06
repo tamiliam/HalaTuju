@@ -1,7 +1,7 @@
 """Admin-facing serializers for the B40 Assistance Programme (Sprint 6a)."""
 from rest_framework import serializers
 
-from apps.courses.exam_questions import results_held
+from apps.courses.exam_questions import results_held, spm_grades_for
 from apps.courses.utils import tidy_parentage_marker
 
 from .models import (
@@ -292,7 +292,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
-        return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
+        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
 
 class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
@@ -672,7 +672,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
-        return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
+        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
     def get_qualification(self, obj):
         return held_qualification(obj.profile)
