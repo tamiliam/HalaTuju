@@ -335,7 +335,8 @@ class AdminOrgRequestAttachmentSignUploadView(_OrgRequestsBase):
         import uuid
         from ..storage import create_signed_upload_url, build_request_attachment_key
         path = build_request_attachment_key(req.organisation_id, req.id, uuid.uuid4().hex)
-        url = create_signed_upload_url(path)
+        # Audit A1.7 (SEC-18): signed no-overwrite — a URL can never replace the file at its key.
+        url = create_signed_upload_url(path, upsert=False)
         if not url:
             return Response({'error': 'storage_unavailable', 'code': 'storage_unavailable'},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -391,9 +392,13 @@ class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
             return Response({'error': 'attachment_limit', 'code': 'attachment_limit',
                              'max': org_requests.MAX_ATTACHMENTS},
                             status=status.HTTP_400_BAD_REQUEST)
-        req.attachments.create(
+        att = req.attachments.create(
             storage_path=storage_path, original_filename=original_filename[:255],
             content_type=content_type[:100], size=size, uploaded_by=admin)
+        # TD-173: iPhone HEIC → JPEG, in place, on the same path the document door uses, so the
+        # screenshot opens in a browser (soft; no-op for other types, never blocks the record).
+        from ..imaging import convert_heic_to_jpeg
+        convert_heic_to_jpeg(att)
         req.refresh_from_db()
         return Response(self._serialize(admin, req), status=status.HTTP_201_CREATED)
 

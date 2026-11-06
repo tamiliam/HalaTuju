@@ -844,7 +844,8 @@ class DocumentSignUploadView(APIView):
         doc_type = serializer.validated_data['doc_type']
         # Org-prefixed key (Sprint 4): <org_id>/<app_id>/<doc_type>/<uuid>.
         path = build_doc_key(app, app.id, doc_type, uuid.uuid4().hex)
-        url = create_signed_upload_url(path)
+        # Audit A1.7 (SEC-18): signed no-overwrite — a URL can never replace the file at its key.
+        url = create_signed_upload_url(path, upsert=False)
         if not url:
             return Response(
                 {'error': 'Document storage is temporarily unavailable.'},

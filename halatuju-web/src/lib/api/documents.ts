@@ -4,6 +4,7 @@
  */
 import { apiRequest } from './client'
 import type { ApiOptions } from './client'
+import { uploadContentType } from '../uploadContentType'
 
 // ── Documents / referee / consent (Sprint 5b) ───────────────────────────
 
@@ -371,7 +372,7 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
   const resp = await fetch(uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+    headers: { 'Content-Type': uploadContentType(file) },   // no upsert: signed without overwrite (A1.7)
   })
   if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
 }

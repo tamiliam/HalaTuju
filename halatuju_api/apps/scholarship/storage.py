@@ -177,7 +177,9 @@ def create_signed_upload_url(path, upsert=None):
     """Signed URL the browser can PUT a file to (private bucket). None on failure. ``upsert=False``
     (development modules S10 review) signs it with `x-upsert: false`, so the URL can never overwrite an
     object already at the key — a file checked and recorded cannot be swapped later without a new check.
-    The older document flows pass nothing and are unchanged (TD-467: bucket-level limits for all flows)."""
+    Every caller passes ``upsert=False`` since audit A1.7 (the student documents and request
+    attachments joined the development modules); the bucket's type / size limits are the live step
+    in ``docs/security/2026-11-06-b40-documents-bucket-limits.sql`` (TD-467)."""
     headers = {'x-upsert': 'true' if upsert else 'false'} if upsert is not None else None
     result = _post(f'/object/upload/sign/{BUCKET}/{path}', {}, headers=headers)
     rel = (result or {}).get('url')
