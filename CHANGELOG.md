@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)
+
+Not pushed; no migration. `income_engine/freshness.py` now logs under the written-out name `apps.scholarship.income_engine` instead of `getLogger(__name__)` (the audit-logger test refuses `__name__`). `uploadContentType.ts` keeps its extension table inside the function: a top-level const made the module count as having side effects, so the `@/lib/api` barrel could no longer drop the documents client from pages that never use it, adding about 2.8 kB to the median route's first-load JS. Median back to 156.631 kB (live 156.627; budget 157.6). Behaviour unchanged.
+
 ### fix: Sprint A1.6 - a recorded parent call re-arms the sign deadline (TD-347) (2026-11-06)
 
 Branch a16 (not pushed; no migration, no model change; in-app signing stays dark, TD-140 and TD-152 stay open). With `BURSARY_AGREEMENT_ENABLED` on, a parent call that CLEARS a flag holding signing now re-arms the student's armed open offer with a fresh full accept window from the day of the call (`parent_call.record_call` → `_rearm_sign_deadlines` → `arm_sign_deadline`, offer rows locked in the same transaction, no network call). No clock is started for a held invitation; a lapsed offer stays lapsed. Flag off: nothing changes. The ruling's "email states the new deadline" is not built; logged as TD-534 (must land before the flag is set). Tests: `test_parent_call_signing.py::TestTD347_*` (8; 3 fail on the old code).

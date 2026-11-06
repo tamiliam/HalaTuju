@@ -202,7 +202,7 @@ def dedupe_income_proof(application, member, doc_type):
                                     superseded_at=_tz.now(), superseded_by=keep)
                                 continue
                             keep.household_member = ''   # still clashing: stay untagged, log, no 500
-                            logging.getLogger(__name__).warning(
+                            logging.getLogger('apps.scholarship.income_engine').warning(
                                 'AUDIT str_dedupe_retag_conflict app=%s doc=%s member=%r',
                                 getattr(application, 'id', None), keep.id, m)
                     break
