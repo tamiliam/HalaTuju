@@ -64,13 +64,18 @@ const payloadFor = (kind: api.InvitationKind): api.InvitationsPayload => {
   }
   return { kind, waiting: WAITING, totals: TOTALS,
            invitable_roles: kind === 'reviewers' ? ['reviewer', 'qc'] : [],
-           programmes: giftChoices, invitations: [] }
+           programmes: giftChoices, reviewer_programmes: reviewerGiftChoices ?? giftChoices,
+           invitations: [] }
 }
+
+/** The REVIEWER invite's own gift list (TD-501, A1.3 review); unset → the same as `giftChoices`. */
+let reviewerGiftChoices: api.InvitationsPayload['programmes'] | undefined
 
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
   giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' }]
+  reviewerGiftChoices = undefined
   mockApi.getInvitations.mockImplementation(async (kind) => payloadFor(kind))
   // `useStaffAdmin` still owns invite/resend/revoke, and loads the staff list on mount; the
   // auto-mock must answer it or the hook throws before anything renders.
@@ -559,6 +564,18 @@ describe('a reviewer invite names its gift', () => {
     const sel = await waitFor(giftSelect)
     expect(sel.required).toBe(true)
     expect(sel.value).toBe('')
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['', 'every', '7', '9'])
+  })
+
+  it('offers only the gifts the server lists for the reviewer invite, never another organisation\'s', async () => {
+    // Regression (A1.3 review): a super's `programmes` holds every organisation's gifts, but the
+    // invite binds to one organisation and refuses the rest, so the picker reads its own list.
+    giftChoices = [...giftChoices, { id: 11, code: 'other', name: 'Another Tenant Gift' }]
+    reviewerGiftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+                           { id: 9, code: 'sabah', name: 'Sabah Gift' }]
+    await loaded()
+    await pick('reviewers')
+    const sel = await waitFor(giftSelect)
     expect(Array.from(sel.options).map((o) => o.value)).toEqual(['', 'every', '7', '9'])
   })
 

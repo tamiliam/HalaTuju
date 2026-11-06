@@ -20,9 +20,9 @@ never asked, and the source and mentor invites never come here.
 apart needs a model field, which is the owner's call (TD-501). Until then the INVITE is what
 refuses "not chosen"; `staff_gift_report` lists the NULL rows for the owner to decide (D5).
 
-⚠ THE GIFT IS A NARROWING, NOT A FENCE (`AdminReviewerProgrammeView`): it decides who is OFFERED
-a case. What a reviewer can READ is fenced by the organisation and by assignment
-(`views_admin.base._scoped_application`), not by this choice.
+⚠ THE GIFT IS NOT A READ FENCE: what a reviewer can READ is fenced by the organisation and by
+assignment (`views_admin.base._scoped_application`). Since 2026-11-06 (owner ruling) it BLOCKS
+ASSIGNMENT: `assign_reviewer` refuses `gift_mismatch` (`services.assignment.gift_allows`).
 """
 from django.apps import apps
 from rest_framework.response import Response
@@ -50,6 +50,30 @@ def _as_id(raw):
         value = int(raw.strip())
         return value if value > 0 else None
     return None
+
+
+def staff_invite_org(admin):
+    """The organisation a reviewer/admin/qc/finance invite by ``admin`` binds to — ONE home, read
+    by `AdminInviteView` (the binding) and by `reviewer_gift_choices` (the picker), so the gifts
+    offered and the gifts `for_invite` accepts cannot disagree (A1.3 review, 2026-11-06).
+
+    An org_admin: their own organisation. A super: BrightPath (org #1; a per-org staff picker is
+    future work). A partner or a new organisation admin is bound elsewhere and never comes here."""
+    if admin.role != 'org_admin' and admin.is_super:
+        PartnerOrganisation = apps.get_model('courses', 'PartnerOrganisation')
+        return PartnerOrganisation.objects.filter(code='brightpath').first()
+    return admin.owning_organisation
+
+
+def reviewer_gift_choices(admin):
+    """The ACTIVE gifts a reviewer invite by ``admin`` may name: only the gifts of the organisation
+    the invite binds to (`staff_invite_org`). Before, a super was offered every organisation's
+    gifts and then refused 404 on any that was not BrightPath's."""
+    Programme = apps.get_model('scholarship', 'Programme')
+    org = staff_invite_org(admin)
+    if org is None:
+        return Programme.objects.none()
+    return Programme.objects.filter(organisation=org, is_active=True).order_by('code')
 
 
 def for_invite(data, role, owning_org):
@@ -85,13 +109,20 @@ def for_invite(data, role, owning_org):
 
 
 def unchosen_rows():
-    """The gift-scoped staff rows whose gift is NULL — for `staff_gift_report` (D5). READ-ONLY.
+    """The staff rows who REVIEW and whose gift is NULL — for `staff_gift_report` (D5). READ-ONLY.
+
+    Who reviews is the assignable list's own rule (`team_holding(('review',))`, as in
+    `AdminAssignableAdminsView`): the reviewer role, plus any team member given `review`. Before,
+    this read `role='reviewer'` only and missed an admin who holds `review` (A1.3 review).
 
     NULL reads as "every gift" today, but for these rows nobody is known to have chosen it (they
     predate TD-501, or their gift was deleted under `SET_NULL`). The owner decides each row.
     A super is never listed: a super is global by design."""
+    from . import staff_permissions
     from .models import PartnerAdmin
     return (PartnerAdmin.objects
-            .filter(role__in=sorted(GIFT_SCOPED_ROLES), programme__isnull=True, is_super_admin=False)
+            .filter(staff_permissions.team_holding(('review',)))
+            .filter(programme__isnull=True, is_super_admin=False)
+            .exclude(role='super')
             .select_related('owning_organisation')
             .order_by('owning_organisation__code', 'id'))

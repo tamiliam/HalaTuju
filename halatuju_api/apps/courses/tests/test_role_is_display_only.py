@@ -130,7 +130,10 @@ ALLOWLIST = {
         'TD-501 A1.3: the invited kind says which fields the invite asks for (a reviewer names a gift); '
         'it grants or refuses no action'),
     'courses/staff_gift.py::unchosen_rows': ('DISPLAY', 'account kind',
-        'TD-501 A1.3: a read-only report lists the reviewer rows with no gift chosen'),
+        'TD-501 A1.3: a read-only report lists the rows who review with no gift chosen (a super is left out)'),
+    'courses/staff_gift.py::staff_invite_org': ('GATE-LEFT', 'T5e',
+        'TD-501 A1.3 review: lifted verbatim from AdminInviteView.post - which organisation an '
+        'org_admin or super staff invite binds to; T5e moves lead powers to keys'),
     'courses/staff_reinvite.py::bring_back': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_reinvite.py::provision': ('DISPLAY', 'account kind',

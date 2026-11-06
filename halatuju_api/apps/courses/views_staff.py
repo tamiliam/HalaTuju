@@ -293,7 +293,8 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         else:
             # A super inviting a B40 staff role (admin/reviewer/qc) → bind to org #1 (BrightPath)
             # for the access fence. super stays global (NULL). (Per-org staff picker is future.)
-            owning_org = PartnerOrganisation.objects.filter(code='brightpath').first()
+            # A1.3 review: one home with the gift picker (`staff_gift.reviewer_gift_choices`).
+            owning_org = staff_gift.staff_invite_org(admin)
         # TD-501 (A1.3): a reviewer invite names its gift — one gift, or every gift, chosen.
         programme, refusal = staff_gift.for_invite(request.data, role, owning_org)
         if refusal:

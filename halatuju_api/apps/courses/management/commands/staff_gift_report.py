@@ -6,7 +6,8 @@
 rows nobody is known to have chosen that: they predate the rule that a reviewer invite names its
 gift. The OWNER decides each row (one gift, or every gift) and sets it on Team → Reviewers.
 
-It prints the row id, the role, the organisation code, whether the account is switched on, whether
+"Reviewer" here means everyone who REVIEWS: the reviewer role plus any team member given `review`
+(`staff_gift.unchosen_rows`, the assignable list's rule). It prints the row id, the role, the organisation code, whether the account is switched on, whether
 a first sign-in is on record, and how many gifts the organisation runs. No name and no email.
 """
 from django.apps import apps

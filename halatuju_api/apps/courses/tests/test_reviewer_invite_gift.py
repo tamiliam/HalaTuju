@@ -199,3 +199,57 @@ class TestTheReport(_Base):
     def test_an_empty_report_says_so(self):
         PartnerAdmin.objects.filter(role='reviewer').delete()
         self.assertIn('Reviewer rows with no gift chosen: 0', self._report())
+
+    def test_an_admin_who_holds_review_is_listed_too(self):
+        # Regression (A1.3 review): the report read role='reviewer' only, so an admin given the
+        # `review` permission (assignable, gift NULL) was missed. Same rule as the assignable list.
+        reviews = make_admin('admin', owning_org=self.bp, name='Hidden Admin',
+                             email='hidden.admin@example.org')
+        PartnerAdmin.objects.filter(pk=reviews.pk).update(permissions=['review'])
+        plain = make_admin('admin', owning_org=self.bp)
+        before = list(PartnerAdmin.objects.order_by('id').values_list('id', 'programme_id', 'permissions'))
+
+        text = self._report()
+
+        listed = {line.split('\t')[0] for line in text.splitlines()[2:]}
+        self.assertIn(str(reviews.id), listed)
+        self.assertNotIn(str(plain.id), listed)
+        self.assertNotIn('Hidden Admin', text)
+        self.assertNotIn('hidden.admin@example.org', text)
+        after = list(PartnerAdmin.objects.order_by('id').values_list('id', 'programme_id', 'permissions'))
+        self.assertEqual(before, after)
+
+
+class TestThePickerOffersOnlyWhatTheInviteAccepts(_Base):
+    """Regression (A1.3 review): a super's reviewer invite binds to BrightPath, but the picker
+    offered every organisation's gifts, so picking another tenant's gift was then refused 404."""
+
+    URL = '/api/v1/admin/invitations/?kind=reviewers'
+
+    def _offered(self, caller):
+        r = authed_client(caller).get(self.URL)
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        return {p['id'] for p in r.json()['reviewer_programmes']}
+
+    def test_a_super_is_offered_only_the_bound_organisations_gifts_and_each_is_accepted(self):
+        boss = make_admin('super', super_admin=True, uid='gift-picker-super')
+        offered = self._offered(boss)
+        self.assertIn(self.gift_a.id, offered)
+        self.assertNotIn(self.elsewhere.id, offered)
+        bound = staff_gift.staff_invite_org(boss)
+        self.assertEqual(bound, self.bp)
+        for pid in sorted(offered):              # every choice offered is one the check accepts
+            with self.subTest(programme_id=pid):
+                programme, refusal = staff_gift.for_invite(
+                    {'gift_scope': 'one', 'programme_id': pid}, 'reviewer', bound)
+                self.assertIsNone(refusal)
+                self.assertEqual(programme.id, pid)
+        r = self._invite({'gift_scope': 'one', 'programme_id': self.gift_b.id}, caller=boss)
+        self.assertEqual(r.status_code, 201, r.content)
+
+    def test_an_org_admin_is_offered_their_own_active_gifts(self):
+        closed = make_programme(organisation=self.bp, name_en='Not open', is_active=False)
+        offered = self._offered(self.org_admin)
+        self.assertTrue({self.gift_a.id, self.gift_b.id} <= offered)
+        self.assertNotIn(self.elsewhere.id, offered)
+        self.assertNotIn(closed.id, offered)

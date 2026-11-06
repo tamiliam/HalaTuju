@@ -258,6 +258,9 @@ export default function OrganisationInvitationsPage() {
     </>
   )
   const giftChoices = data?.programmes ?? []
+  // TD-501 (A1.3 review): the server's own list for the organisation the invite binds to, so a
+  // super is never offered a gift that the invite would then refuse.
+  const reviewerGiftChoices = data?.reviewer_programmes ?? []
   const canInviteHere = canManage && (kind === 'sponsors' || invitable.length > 0)
 
   return (
@@ -360,7 +363,7 @@ export default function OrganisationInvitationsPage() {
                     onChange={(e) => setRGift(e.target.value)}>
                     <option value="">{t('admin.invitations.reviewerGiftChoose')}</option>
                     <option value="every">{t('admin.invitations.reviewerGiftEvery')}</option>
-                    {giftChoices.map((p) => (
+                    {reviewerGiftChoices.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
