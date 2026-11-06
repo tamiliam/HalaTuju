@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #54 - Household income on the card shows the declared figure, ticked only on a document match (2026-11-07)
+
+The cockpit ticked Household income whenever every earner was read, even outside the ±10% / RM300 band, and replaced the student's declared figure with the documents' total (contradicting `household.py`'s own docstring). Now: the field always shows the declared `household_income`; the tick keys off `household_check.income.matches`; a disagreement is an amber note ("Documents show RM x"); when an earner's income document is not fully checked or not read, the note gives the total read so far and names who ("Documents read so far show RM x. Father's income document is not fully checked."); no note when there are no income documents. Per capita = declared income ÷ effective size (confirmed roster count, else stated). Server: `household_check.income` gains additive `read_total`, `unchecked` (`[{member, reason: 'unverified' | 'unread'}]`) and `has_documents`. Display only: nothing stored, no scoring, no verdict change, no migration. The field derivation moved from `view.tsx` into `householdFigures` in `view/ApplicantCards.tsx` (view.tsx 1115 -> 1081 lines). New strings in en/ms/ta (`admin.scholarship.verified.incomeDiffers|incomePartial|uncheckedUnverified|uncheckedUnread`; Tamil awaits language review). Tests: `test_household_check.py` (6 new + a DB test; the helper now also mocks `_member_has_income_doc`), `ApplicantCards.household.test.tsx` (7 rendered cases).
+
 ### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
 
 Web only. `AppShell` skips the payment-runs count for a super admin with no organisation (the server answers 400 `programme_required` for that account, so the badge was always 0 and the console showed a red 400 on every page). A super with an organisation, and every other role, are unchanged. Test: `AppShell.test.tsx` (fails before, passes after). TD-525 marked fixed; a13's multi-gift scope entry renumbered TD-531 (it clashed with the G1 payments-badge entry).

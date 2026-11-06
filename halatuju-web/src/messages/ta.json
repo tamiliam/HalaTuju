@@ -4590,7 +4590,11 @@
         "sizeAccounted": "குடும்பத்தில் உள்ள அனைவரும் கணக்கில் கொள்ளப்பட்டுள்ளனர்",
         "declaredNote": "அறிவிக்கப்பட்டது: {value}",
         "rosterNote": "பட்டியல் {count} பேரைக் கணக்கிடுகிறது",
-        "stpmDiffers": "STPM முடிவுகள் {value} எனக் காட்டுகின்றன"
+        "stpmDiffers": "STPM முடிவுகள் {value} எனக் காட்டுகின்றன",
+        "incomeDiffers": "ஆவணங்கள் {value} எனக் காட்டுகின்றன",
+        "incomePartial": "இதுவரை படிக்கப்பட்ட ஆவணங்கள் {value} எனக் காட்டுகின்றன.",
+        "uncheckedUnverified": "{member}-இன் வருமான ஆவணம் இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.",
+        "uncheckedUnread": "{member}-இன் வருமானம் இன்னும் படிக்கப்படவில்லை."
       },
       "institution": "நிறுவனம்",
       "pathwaysConsidered": "பரிசீலித்த பாதைகள்",

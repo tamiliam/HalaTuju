@@ -4590,7 +4590,11 @@
         "sizeAccounted": "Everyone in the household is accounted for",
         "declaredNote": "Declared: {value}",
         "rosterNote": "Roster counts {count} people",
-        "stpmDiffers": "The STPM results show {value}"
+        "stpmDiffers": "The STPM results show {value}",
+        "incomeDiffers": "Documents show {value}",
+        "incomePartial": "Documents read so far show {value}.",
+        "uncheckedUnverified": "{member}'s income document is not fully checked.",
+        "uncheckedUnread": "{member}'s income has not been read yet."
       },
       "institution": "Institution",
       "pathwaysConsidered": "Pathways considered",

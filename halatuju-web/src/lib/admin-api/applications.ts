@@ -327,7 +327,9 @@ export interface AdminScholarshipDetail {
   // income / itemised roster corroborate the student's stated income + size? Drives the income /
   // household-size verified ticks. Non-mutating — a mismatch is flagged, never auto-applied.
   household_check?: {
-    income: { documented_total: number | null; all_known: boolean; genuine?: boolean; stated: number | null; matches: boolean }
+    income: { documented_total: number | null; all_known: boolean; genuine?: boolean; stated: number | null; matches: boolean
+      // Request #54: the total READ so far, the earners holding it back, and whether any income doc is on file.
+      read_total?: number | null; unchecked?: Array<{ member: string; reason: 'unverified' | 'unread' }>; has_documents?: boolean }
     // `confirmed`: the student answered the household_size_confirm query — the cockpit then shows
     // `described` (the roster count) with a tick + "Declared: {stated}" and uses it for per-capita.
     size: { described: number; stated: number | null; accounted: boolean; overcount: boolean; confirmed?: boolean }

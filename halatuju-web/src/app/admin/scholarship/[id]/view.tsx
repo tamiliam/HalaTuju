@@ -100,7 +100,7 @@ import {
   resolveReq,
 } from './view/shared'
 import { CockpitHeader } from './view/CockpitHeader'
-import { ApplicantCards } from './view/ApplicantCards'
+import { ApplicantCards, householdFigures } from './view/ApplicantCards'
 import { VerificationVerdict } from './view/VerificationVerdict'
 import { GeneratedProfile } from './view/GeneratedProfile'
 import { OutstandingPanel, requestRefusalText } from './view/OutstandingPanel'
@@ -809,40 +809,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         })
       : undefined
 
-  // Household income + size from the backend document-vs-stated reconciliation (household_check).
-  // Non-mutating throughout — the stored declared value is never overwritten, only the DISPLAY
-  // leads with the document-verified figure.
-  const _hc = app.household_check
-  const _fmtRm = (n: number) => `RM ${Number(n).toLocaleString('en-US')}`
-  // Income: when we've read every earner's income (confident), the DOCUMENT-VERIFIED total leads
-  // with a tick; the student's declared figure drops to a muted "Declared: RMx" note when it
-  // differs. Otherwise fall back to the declared value (no tick).
-  const _incConfident = !!_hc?.income.all_known && _hc.income.documented_total != null
-  const incomeValue = _incConfident
-    ? _fmtRm(_hc!.income.documented_total!)
-    : (app.household_income ? _fmtRm(app.household_income) : null)
-  const incomeTip = _incConfident
-    ? t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.incomeProof') })
-    : undefined
-  const incomeNote = _incConfident && !_hc!.income.matches && app.household_income
-    ? t('admin.scholarship.verified.declaredNote', { value: _fmtRm(app.household_income) })
-    : undefined
-  // Household size: once the student CONFIRMS the roster count (household_size_confirm query), lead
-  // with the roster count + a tick and drop the stated figure to a muted "Declared: M" note — the
-  // same document-on-top pattern as income (non-mutating). Otherwise: a tick when fully accounted,
-  // or an amber "Roster counts N" prompt on an unconfirmed over-count.
-  const _sizeConfirmed = !!_hc?.size.confirmed
-  const _effectiveSize = _sizeConfirmed ? _hc!.size.described : app.household_size
-  const sizeValue = _effectiveSize
-  const sizeTip = (_sizeConfirmed || _hc?.size.accounted) ? t('admin.scholarship.verified.sizeAccounted') : undefined
-  const sizeNote = _sizeConfirmed
-    ? (app.household_size ? t('admin.scholarship.verified.declaredNote', { value: String(app.household_size) }) : undefined)
-    : (_hc?.size.overcount ? t('admin.scholarship.verified.rosterNote', { count: String(_hc.size.described) }) : undefined)
-  const sizeNoteTone: 'amber' | 'muted' = _sizeConfirmed ? 'muted' : 'amber'
-  // Per capita income = the DOCUMENT-VERIFIED household income (when confident) ÷ the effective size
-  // (confirmed roster count, else stated). (Replaces the always-"No" JKM field.)
-  const _pcBase = _incConfident ? _hc!.income.documented_total! : app.household_income
-  const perCapita = _pcBase && _effectiveSize ? _pcBase / _effectiveSize : null
+  // Household income + size (request #54: the declared figures, ticked on a document match).
+  const household = householdFigures(app, t)
 
   // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
   // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
@@ -945,10 +913,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
 
       <ApplicantCards
-        app={app} t={t} vtip={vtip}
-        incomeValue={incomeValue} incomeTip={incomeTip} incomeNote={incomeNote}
-        sizeValue={sizeValue} sizeTip={sizeTip} sizeNote={sizeNote} sizeNoteTone={sizeNoteTone}
-        perCapita={perCapita} canCorrectGuardian={canAssign} onGuardianCorrected={refreshApp}
+        app={app} t={t} vtip={vtip} {...household}
+        canCorrectGuardian={canAssign} onGuardianCorrected={refreshApp}
       />
 
 

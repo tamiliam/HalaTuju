@@ -1,5 +1,11 @@
 # Architectural Decisions — HalaTuju
 
+## Household income on the card: declared figure, tick on a ±10% match, documents' figure flagged (owner 2026-11-06) — request #54
+
+**The rule:** everything on the applicant card is what the student DECLARED. The Household income field always shows the declared `household_income`. A tick only when `household_check.income.matches` (every earner read, every income document genuine, and the documents' total within ±10% of the declared figure with a RM300 minimum). When the documents disagree, an amber note names what they show; when an earner's income document is not fully checked (`unverified`: suspect / wrong type) or not read (`unread`), the note gives the total read so far (trusted or not) and names those earners with the cockpit's member labels; no note when no income document is on file. Per capita = declared income ÷ effective size (confirmed roster count, else stated) — it no longer switches to the documents' total. The same pattern household size already uses (amber "Roster counts N"; once confirmed the roster leads with a tick and "Declared: N" is a muted note).
+
+**Why:** the web used to lead with the documents' total whenever it was confident, even outside the band, which hid the student's own figure and contradicted the non-mutating reconciliation documented in `household.py`. Display only: nothing stored, scored, or fed to a verdict; the tolerance constants are unchanged.
+
 ## Request #59: a parent's IC second opinion is compared with that parent, never the student — 2026-11-06 (bug fix; owner-scheduled 2026-11-06)
 
 **The bug:** `run_vision_for_document` also reads `parent_ic`, and `_merge_ic_reads` accepted the Gemini second opinion's name only when it matched the STUDENT's profile, impossible for a father's card. A misread name was kept, the card then did not match his own salary slip, and `parent_ic_person_mismatch` / `salary_slip_person_mismatch` blocked submission (application 154). This contradicted "parent_ic as universal compulsory" (S19, 2026-05-29: a parent's card is checked against that earner's proof, never matched to the student); "Cost-gated Gemini IC second opinion" (2026-06-02) was written for the student's own card.

@@ -4590,7 +4590,11 @@
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
         "declaredNote": "Diisytiharkan: {value}",
         "rosterNote": "Senarai mencatat {count} orang",
-        "stpmDiffers": "Keputusan STPM menunjukkan {value}"
+        "stpmDiffers": "Keputusan STPM menunjukkan {value}",
+        "incomeDiffers": "Dokumen menunjukkan {value}",
+        "incomePartial": "Dokumen yang dibaca setakat ini menunjukkan {value}.",
+        "uncheckedUnverified": "Dokumen pendapatan {member} belum disemak sepenuhnya.",
+        "uncheckedUnread": "Pendapatan {member} belum dibaca lagi."
       },
       "institution": "Institusi",
       "pathwaysConsidered": "Laluan dipertimbang",
