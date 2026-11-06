@@ -103,6 +103,11 @@ def _member_income_genuine(application, member):
     return True
 
 
+def _member_has_income_doc(application, member):
+    """Request #54: whether *member* has any salary slip / EPF on file, read or not."""
+    return any(_cluster_docs(application, member, dt) for dt in ('salary_slip', 'epf'))
+
+
 def household_income_reconciliation(application):
     """Document-derived household monthly income vs the student's stated ``household_income``.
 
@@ -116,17 +121,29 @@ def household_income_reconciliation(application):
       - ``matches`` — True ONLY when confident AND ``documented_total`` is within tolerance of
         ``stated``. A cockpit "verified" tick keys off this; a mismatch is flagged to the reviewer
         (the documented figure shown beside the stated one), never auto-applied.
+      - ``read_total`` — request #54: Σ of the figures READ so far (trusted or not), served even when
+        not confident, so the cockpit can say "documents read so far show RMx"; None with no earner.
+      - ``unchecked`` — request #54: ``[{member, reason}]`` for each earner holding the figure back
+        from confidence: ``'unverified'`` (an income doc is suspect / wrong type) or ``'unread'``
+        (no income figure read for them).
+      - ``has_documents`` — request #54: any earner has a salary slip / EPF on file (no documents
+        at all → the cockpit shows no note).
+    Display only: nothing is stored, scored or fed to a verdict.
     """
     members = _income_earning_members(application)
-    total, all_known, genuine = 0.0, True, True
+    total, all_known, genuine, unchecked, has_docs = 0.0, True, True, [], False
     for m in members:
         amt, _src = earner_monthly_income(application, m)
         if amt is None:
             all_known = False
         else:
             total += amt
-        if not _member_income_genuine(application, m):
+        member_genuine = _member_income_genuine(application, m)
+        if not member_genuine:
             genuine = False
+        if not member_genuine or amt is None:
+            unchecked.append({'member': m, 'reason': 'unread' if amt is None else 'unverified'})
+        has_docs = has_docs or _member_has_income_doc(application, m)
     stated = getattr(getattr(application, 'profile', None), 'household_income', None)
     confident = bool(members) and all_known and genuine
     documented = round(total, 2) if confident else None
@@ -135,7 +152,9 @@ def household_income_reconciliation(application):
         tol = max(_INCOME_MATCH_TOL_MIN, _INCOME_MATCH_TOL_FRAC * float(stated))
         matches = abs(documented - float(stated)) <= tol
     return {'documented_total': documented, 'all_known': all_known, 'genuine': genuine,
-            'stated': stated, 'matches': matches}
+            'stated': stated, 'matches': matches,
+            'read_total': round(total, 2) if members else None, 'unchecked': unchecked,
+            'has_documents': has_docs}
 
 
 def household_size_accounted(application):

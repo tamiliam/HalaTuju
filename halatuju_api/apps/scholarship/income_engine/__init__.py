@@ -111,7 +111,8 @@ from .gaps import (
 )
 from .household import (
     _INCOME_MATCH_TOL_FRAC, _INCOME_MATCH_TOL_MIN, _NOT_IN_HOUSEHOLD, _described_household_count,
-    _income_earning_members, _member_income_genuine, household_income_reconciliation,
+    _income_earning_members, _member_has_income_doc, _member_income_genuine,
+    household_income_reconciliation,
     household_size_accounted, household_size_shortfall
 )
 from .informal import (
