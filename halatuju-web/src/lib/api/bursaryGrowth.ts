@@ -2,6 +2,7 @@
 // 404s anything else. Imported by `components/bursary/BursaryGrowth.tsx` only, so no other route carries it.
 import { apiRequest } from './client'
 import type { ApiOptions } from './client'
+import { uploadContentType } from '../uploadContentType'
 
 export type TaskKind = 'none' | 'reflection' | 'upload'
 
@@ -100,7 +101,7 @@ export async function sendTaskFile(id: number, file: File, options?: ApiOptions)
     `${BASE}${id}/task/sign/`, { ...options, method: 'POST', body: JSON.stringify({ size: file.size }) })
   const resp = await fetch(signed.upload_url, {
     method: 'PUT', body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },   // no upsert: signed without it (S10 review)
+    headers: { 'Content-Type': uploadContentType(file) },   // no upsert: signed without it (S10 review)
   })
   if (!resp.ok) throw Object.assign(new Error(`Upload failed: ${resp.status}`), { code: 'upload_incomplete' })
   return apiRequest(`${BASE}${id}/task/`, {

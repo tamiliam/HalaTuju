@@ -7,6 +7,7 @@
  */
 import { API_BASE, adminFetch, adminMutate, giftQuery } from './client'
 import type { ApiOptions } from './client'
+import { uploadContentType } from '../uploadContentType'
 
 export type ModuleStatus = 'draft' | 'scheduled' | 'published' | 'archived'
 export type ModuleAction = 'publish' | 'draft'
@@ -209,7 +210,7 @@ export async function uploadLessonFile(id: number, lessonId: number, file: File,
     `${url}sign/`, 'POST', { size: file.size }, options)
   const resp = await fetch(signed.upload_url, {
     method: 'PUT', body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },   // no upsert: signed without it (S10 review)
+    headers: { 'Content-Type': uploadContentType(file) },   // no upsert: signed without it (S10 review)
   })
   if (!resp.ok) throw Object.assign(new Error(`Upload failed: ${resp.status}`), { code: 'upload_failed' })
   return adminMutate<ModuleRow>(url, 'POST', { storage_path: signed.storage_path, original_filename: file.name }, options)

@@ -8,6 +8,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import { uploadContentType } from '../uploadContentType'
 
 // ---- Requests space (Sprint 15) ----
 // Bug/feature requests → AI reviewer → owner-gated hours quotes. Dark behind REQUESTS_ENABLED:
@@ -388,13 +389,13 @@ export async function uploadOrgRequestAttachment(
   const resp = await fetch(upload_url, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },   // no upsert: signed without overwrite (A1.7)
+    headers: { 'Content-Type': uploadContentType(file) },   // no upsert: signed without overwrite (A1.7)
   })
   if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
   return recordOrgRequestAttachment(id, {
     storage_path,
     original_filename: file.name,
-    content_type: file.type || 'application/octet-stream',
+    content_type: uploadContentType(file),
     size: file.size,
   }, options)
 }

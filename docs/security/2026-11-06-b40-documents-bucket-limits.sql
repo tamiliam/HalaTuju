@@ -31,6 +31,9 @@
 --   image/webp                              - accepted by both doors, and the server writes staff
 --                                             photos as webp (the bucket limits apply to the
 --                                             server's own uploads too).
+--   image/jpg, image/avif,                  - the record step accepts any image/*; some Android apps send
+--   image/heic-sequence, image/heif-sequence  the non-standard image/jpg, and phones can produce AVIF or HEIC
+--                                             sequences. SVG is deliberately NOT allowed (script risk).
 --   The server also writes pdf (bursary agreement, letters, split results) and jpeg (HEIC
 --   conversion) into this bucket; both are on the list.
 --
@@ -63,7 +66,11 @@ UPDATE storage.buckets
          'image/heif',
          'image/gif',
          'image/bmp',
-         'image/tiff'
+         'image/tiff',
+         'image/jpg',
+         'image/avif',
+         'image/heic-sequence',
+         'image/heif-sequence'
        ],
        file_size_limit = 26214400
  WHERE id = 'b40-documents';

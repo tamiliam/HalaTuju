@@ -52,8 +52,8 @@ it('the request-attachment upload PUT does not send x-upsert', async () => {
   expect(headers['Content-Type']).toBe('image/png')
 })
 
-it('a file with no type still goes up as octet-stream, without x-upsert', async () => {
+it('a file with no type goes up typed by its extension, without x-upsert', async () => {
   const file = new File(['heic'], 'IMG_0001.HEIC', { type: '' })
   await uploadFileToSignedUrl('https://storage.test/put?token=t', file)
-  expect(putHeaders()).toEqual({ 'Content-Type': 'application/octet-stream' })
+  expect(putHeaders()).toEqual({ 'Content-Type': 'image/heic' })
 })
