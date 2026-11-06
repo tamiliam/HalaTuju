@@ -7330,6 +7330,9 @@
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "giftLabel": "Jemputan ini untuk pemberian yang mana?",
       "giftChoose": "Pilih pemberian…",
+      "reviewerGiftLabel": "Pemberian mana yang akan diliputi oleh penilai ini?",
+      "reviewerGiftChoose": "Pilih satu pemberian atau semua pemberian…",
+      "reviewerGiftEvery": "Semua pemberian",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",

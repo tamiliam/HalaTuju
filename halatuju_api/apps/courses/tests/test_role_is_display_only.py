@@ -126,6 +126,11 @@ ALLOWLIST = {
         'queryset of staff holding a key; the label picks the preset half'),
     'courses/staff_permissions_v2.py::effective_v2': ('DISPLAY', 'T5a catalogue',
         'the v2 resolver reads the label for presets and the lead tier'),
+    'courses/staff_gift.py::for_invite': ('DISPLAY', 'account kind',
+        'TD-501 A1.3: the invited kind says which fields the invite asks for (a reviewer names a gift); '
+        'it grants or refuses no action'),
+    'courses/staff_gift.py::unchosen_rows': ('DISPLAY', 'account kind',
+        'TD-501 A1.3: a read-only report lists the reviewer rows with no gift chosen'),
     'courses/staff_reinvite.py::bring_back': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_reinvite.py::provision': ('DISPLAY', 'account kind',

@@ -537,6 +537,63 @@ describe('inviting an address that already has an account', () => {
   })
 })
 
+/**
+ * TD-501 (A1.3): a REVIEWER invite names its gift. The choice is required and starts blank, so
+ * "every gift" is something the inviter picks, never a silent default. Admins are not asked.
+ */
+describe('a reviewer invite names its gift', () => {
+  beforeEach(() => {
+    giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+                   { id: 9, code: 'sabah', name: 'Sabah Gift' }]
+    mockApi.inviteAdmin.mockResolvedValue({ message: 'Sent' } as Awaited<ReturnType<typeof api.inviteAdmin>>)
+  })
+  const fill = () => {
+    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Asha' } })
+    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'), { target: { value: 'asha@example.org' } })
+  }
+  const giftSelect = () => screen.getByTestId('invite-reviewer-gift') as HTMLSelectElement
+
+  it('asks, required and blank, offering every gift and each gift', async () => {
+    await loaded()
+    await pick('reviewers')
+    const sel = await waitFor(giftSelect)
+    expect(sel.required).toBe(true)
+    expect(sel.value).toBe('')
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['', 'every', '7', '9'])
+  })
+
+  it('sends one gift by its id', async () => {
+    await loaded()
+    await pick('reviewers')
+    fill()
+    fireEvent.change(await waitFor(giftSelect), { target: { value: '9' } })
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
+      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', gift_scope: 'one', programme_id: 9 },
+      expect.anything()))
+  })
+
+  it('sends every gift only when chosen', async () => {
+    await loaded()
+    await pick('reviewers')
+    fill()
+    fireEvent.change(await waitFor(giftSelect), { target: { value: 'every' } })
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
+      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', gift_scope: 'every' },
+      expect.anything()))
+  })
+
+  it('does not ask an admin invite, and sends no gift for it', async () => {
+    await loaded()
+    expect(screen.queryByTestId('invite-reviewer-gift')).toBeNull()
+    fill()
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
+      { email: 'asha@example.org', name: 'Asha', role: 'admin' }, expect.anything()))
+  })
+})
+
 describe('S7b follow-up: the Mentor kind, like Source', () => {
   afterEach(() => { window.history.replaceState({}, '', '/') })
 

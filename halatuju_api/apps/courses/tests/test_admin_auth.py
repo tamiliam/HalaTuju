@@ -194,7 +194,8 @@ class AdminInviteRoleTest(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("super-uid")}')
 
     def _invite(self, email, role=None):
-        payload = {'email': email, 'name': 'Invitee'}
+        # TD-501 (A1.3): a reviewer invite names its gift; other roles ignore the choice.
+        payload = {'email': email, 'name': 'Invitee', 'gift_scope': 'every'}
         if role is not None:
             payload['role'] = role
         with patch('apps.courses.views_admin.http_requests.post') as mock_post:
@@ -238,7 +239,7 @@ class AdminInviteRoleTest(TestCase):
 
     def test_invite_genuine_supabase_failure_502(self):
         # Any other Supabase error is still a failure — 502, no admin row created.
-        payload = {'email': 'fail@example.com', 'name': 'X', 'role': 'reviewer'}
+        payload = {'email': 'fail@example.com', 'name': 'X', 'role': 'reviewer', 'gift_scope': 'every'}
         with patch('apps.courses.views_admin.http_requests.post') as mock_post:
             mock_post.return_value = MagicMock(
                 status_code=500, text='boom', json=lambda: {'error_code': 'unexpected'})
@@ -348,7 +349,8 @@ class PartnerAccountCreationTest(TestCase):
             mock_post.return_value = MagicMock(
                 status_code=200, text='ok', json=lambda: {'id': 'created-uid'})
             r = self.client.post(
-                '/api/v1/admin/invite/', {'email': email, 'name': 'New Partner', 'role': role},
+                '/api/v1/admin/invite/', {'email': email, 'name': 'New Partner', 'role': role,
+                                          'gift_scope': 'every'},   # TD-501: a reviewer names its gift
                 format='json')
         return r, mock_post
 
@@ -420,7 +422,8 @@ class PartnerAccountCreationTest(TestCase):
                 status_code=200, text='ok', json=lambda: {'id': 'created-uid'})
             r = self.client.post(
                 '/api/v1/admin/invite/',
-                {'email': 'quiet@example.com', 'name': 'Q', 'role': 'reviewer'}, format='json')
+                {'email': 'quiet@example.com', 'name': 'Q', 'role': 'reviewer',
+                 'gift_scope': 'every'}, format='json')
         self.assertEqual(r.status_code, 201)
         self.assertFalse(r.json()['emailed'])
         self.assertIn('Resend', r.json()['message'])
@@ -438,7 +441,8 @@ class PartnerAccountCreationTest(TestCase):
         with patch('apps.courses.views_admin.http_requests.post') as mock_post:
             r = self.client.post(
                 '/api/v1/admin/invite/',
-                {'email': 'alice@gmail.com', 'name': 'Alice', 'role': 'reviewer'}, format='json')
+                {'email': 'alice@gmail.com', 'name': 'Alice', 'role': 'reviewer',
+                 'gift_scope': 'every'}, format='json')
         self.assertEqual(r.status_code, 201)
         self.assertTrue(r.json()['google'])
         mock_post.assert_not_called()                     # no Supabase account was created

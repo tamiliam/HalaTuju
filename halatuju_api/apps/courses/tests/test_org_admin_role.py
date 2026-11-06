@@ -94,7 +94,8 @@ class TestOrgAdminInvite(_Base):
             return self.client.post('/api/v1/admin/invite/', payload, format='json')
 
     def test_org_admin_invites_reviewer_bound_to_own_org(self):
-        r = self._invite('oa-uid', {'email': 'newrev@x.com', 'name': 'Rev', 'role': 'reviewer'})
+        r = self._invite('oa-uid', {'email': 'newrev@x.com', 'name': 'Rev', 'role': 'reviewer',
+                                    'gift_scope': 'every'})   # TD-501: a reviewer names its gift
         self.assertEqual(r.status_code, 201)
         a = PartnerAdmin.objects.get(email='newrev@x.com')
         self.assertEqual(a.role, 'reviewer')

@@ -703,7 +703,8 @@ class TestDeleteRemovesTheLogin(TestCase):
         user['app_metadata']['temp_password_expired'] = True
         with patch(f'{REQ}.get', return_value=_resp(body=user)), patch(f'{REQ}.put') as put:
             r = authed_client(self.org_admin).post('/api/v1/admin/invite/', {
-                'email': account.email, 'name': 'X', 'role': 'reviewer'}, format='json')
+                'email': account.email, 'name': 'X', 'role': 'reviewer',
+                'gift_scope': 'every'}, format='json')   # TD-501: a reviewer names its gift
         self.assertEqual(r.status_code, 409)
         put.assert_not_called()
 

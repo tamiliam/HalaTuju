@@ -25,7 +25,7 @@ from django.db import DatabaseError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import referral_links, staff_reinvite, staff_tables
+from . import referral_links, staff_gift, staff_reinvite, staff_tables
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
                           PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
@@ -294,6 +294,10 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             # A super inviting a B40 staff role (admin/reviewer/qc) → bind to org #1 (BrightPath)
             # for the access fence. super stays global (NULL). (Per-org staff picker is future.)
             owning_org = PartnerOrganisation.objects.filter(code='brightpath').first()
+        # TD-501 (A1.3): a reviewer invite names its gift — one gift, or every gift, chosen.
+        programme, refusal = staff_gift.for_invite(request.data, role, owning_org)
+        if refusal:
+            return refusal
 
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
         supabase_url = getattr(settings, 'SUPABASE_URL', '')
@@ -309,7 +313,8 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # never leaves this request except in the welcome email, and expires after the TTL. The
         # row (new, or the cancelled one brought back — TD-335) is written by `provision`.
         made = staff_reinvite.provision_for_invite(
-            reuse, email=email, name=name, role=role, org=org, owning_org=owning_org)
+            reuse, email=email, name=name, role=role, org=org, owning_org=owning_org,
+            programme=programme)
         if made.error == 'not_reusable':
             return exists
         if made.error:

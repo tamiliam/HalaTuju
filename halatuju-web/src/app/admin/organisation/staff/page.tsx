@@ -109,6 +109,9 @@ export default function OrganisationInvitationsPage() {
   // now this form never asked, so a benefactor invited for Sabah would have registered
   // straight into the flagship, silently.
   const [sProgramme, setSProgramme] = useState('')
+  // TD-501 (A1.3): a REVIEWER invite names its gift — one gift's id, or 'every'. Starts blank and
+  // the select is required: "every gift" must be chosen, never a default (the server 400s a blank).
+  const [rGift, setRGift] = useState('')
 
   // The kind on screen NOW: a reply for a kind you have already left (the mount's Admins read, when
   // `?kind=source` switches the tab a moment later) must not land under the new tab.
@@ -166,9 +169,12 @@ export default function OrganisationInvitationsPage() {
         ok = true
       } catch { ok = false }
     } else {
-      ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole })
+      const gift = subRole !== 'reviewer' ? {}
+        : rGift === 'every' ? { gift_scope: 'every' as const }
+        : { gift_scope: 'one' as const, programme_id: Number(rGift) }
+      ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole, ...gift })
     }
-    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme('') }
+    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme(''); setRGift('') }
     void load()
   }
 
@@ -339,6 +345,21 @@ export default function OrganisationInvitationsPage() {
                   <select className={inputCls} value={sProgramme} required
                     onChange={(e) => setSProgramme(e.target.value)}>
                     <option value="">{t('admin.invitations.giftChoose')}</option>
+                    {giftChoices.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {kind !== 'sponsors' && subRole === 'reviewer' && (
+                <label className="block text-sm">
+                  <span className="mb-1 block font-medium text-ground-700">
+                    {t('admin.invitations.reviewerGiftLabel')}
+                  </span>
+                  <select className={inputCls} value={rGift} required data-testid="invite-reviewer-gift"
+                    onChange={(e) => setRGift(e.target.value)}>
+                    <option value="">{t('admin.invitations.reviewerGiftChoose')}</option>
+                    <option value="every">{t('admin.invitations.reviewerGiftEvery')}</option>
                     {giftChoices.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}

@@ -40,7 +40,9 @@ class AlreadyOnTheTeam(TestCase):
     def _invite(self, caller, email, role='reviewer', name='Somebody'):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(caller.supabase_user_id)}')
         return self.client.post('/api/v1/admin/invite/',
-                                {'email': email, 'name': name, 'role': role}, format='json')
+                                {'email': email, 'name': name, 'role': role,
+                                 'gift_scope': 'every'},   # TD-501: a reviewer names its gift
+                                format='json')
 
     # ── the caller's own organisation ──────────────────────────────────────────────────────────
     def test_an_active_colleague_is_named_with_their_preset(self):

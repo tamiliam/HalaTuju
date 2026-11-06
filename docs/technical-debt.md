@@ -339,7 +339,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 - **TD-499** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 - **TD-500** - Mentor My students list makes one alias query per mentee - low
-- **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0)
+- **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (PART FIXED 2026-11-06 by A1.3: the reviewer invite asks; open: an every-gift marker, the assignment fence)
 - **TD-502** - Overview cards without a filtered action link - low
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
 - **TD-504** - Overview invitations card needs org_read; the Invitations page needs team_read - low
@@ -7848,6 +7848,12 @@ gift can be set later by `POST admin/reviewers/<pk>/programme/`, which has no we
 comes from their mentees). **Owner ruling 2026-11-04 ("b"):** fix AFTER v3.1.0 as the FIRST fix sprint, before the
 other audit fixes. **Fix:** the reviewer invite must choose "one gift" or "every gift"; admins and mentors unchanged.
 It is a permission change: Opus build, adversarial review, owner phone check before it goes live. *(A · M)*
+
+**PART FIXED 2026-11-06 by audit fix A1.3 (branch a13, not pushed).** A reviewer invite must send `gift_scope`: `one` with a `programme_id` of the owning organisation (another organisation's gift is 404), or `every`. No choice is 400 `gift_required`; `every` with an id is 400 `gift_conflict` (`apps/courses/staff_gift.py`, called from `AdminInviteView`). Admins, mentors, sources and the other staff roles are not asked. A re-invite stores the gift the new invite chose, no longer NULL (`staff_reinvite.bring_back`). The Invitations page asks it with a required, blank-start select (every gift, or each active gift). `python manage.py staff_gift_report` lists, read-only, the reviewer rows with no gift (id, role, org; no name or email); existing rows are NOT rewritten (D5), the owner decides each. Tests: `test_reviewer_invite_gift.py`, the staff page jest.
+
+**Still open (1) - an explicit every-gift marker (design stop, needs a migration, not built).** "Every gift" is still stored as NULL, so a row cannot tell "chose every gift" from "never chosen" (legacy rows; a gift deleted under SET_NULL). Proposal: an additive nullable `PartnerAdmin.every_gift_chosen_at`, with a check constraint that it and `programme` are never both set; written by the invite, the re-invite and `AdminReviewerProgrammeView`. Then the report can list only the truly unchosen.
+
+**Still open (2) - the gift is not a fence (finding, not changed).** A reviewer reads only what they are assigned (`_scoped_application`, `views_admin/base.py`), and A1.3 proves a gift-A reviewer cannot read an unassigned gift-B case. But `may_assign_to` (`scholarship/services/assignment.py:57`) and `assign_reviewer` (`:199`) never check the reviewer's gift, so a gift-B case CAN be assigned to a gift-A reviewer, who can then read it. `views_admin/reviewers.py:416` says the gift is a narrowing and must never become a fence: changing that is an owner decision. Also open: whether `qc` should be gift-scoped (only `reviewer` is today).
 
 ### [TD-502] Overview cards without a filtered action link - low
 

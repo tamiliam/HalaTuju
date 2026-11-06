@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint A1.3 - a reviewer invite names its gift (TD-501 / SEC-17, 2026-11-06)
+
+Branch a13 (not pushed; no migration, no data change). A reviewer invite must choose `gift_scope` `one` (with a `programme_id` of the owning organisation; another organisation's gift is 404) or `every`; no choice is 400 `gift_required`, `every` with an id is 400 `gift_conflict` (`apps/courses/staff_gift.py`). Other roles are not asked. A re-invite now stores the chosen gift instead of NULL (`staff_reinvite.bring_back`). The Invitations page asks it with a required, blank-start select (en/ms/ta; Tamil awaits language review). New read-only `manage.py staff_gift_report` lists reviewer rows with no gift (id, role, org; no personal data); existing rows are not rewritten. Open in TD-501: an explicit every-gift marker (needs a migration) and the assignment path ignoring the gift. Tests: `test_reviewer_invite_gift.py`, the staff page jest; existing invite tests now send `gift_scope`.
+
 ### fix: request #61 - a decision save that loses its answer says it may already be saved; engine_error has its own message (2026-11-06)
 
 Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.

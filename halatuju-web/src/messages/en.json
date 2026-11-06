@@ -7330,6 +7330,9 @@
       "noneInKind": "Nobody has been invited in this group yet.",
       "giftLabel": "Which gift is this invitation for?",
       "giftChoose": "Choose a gift…",
+      "reviewerGiftLabel": "Which gifts will this reviewer cover?",
+      "reviewerGiftChoose": "Choose one gift or every gift…",
+      "reviewerGiftEvery": "Every gift",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
