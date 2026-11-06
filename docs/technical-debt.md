@@ -156,6 +156,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - ~~**TD-383**~~ — A write that depends on an application's status (or a person's role) checks it on a copy read earlier, or not at all: one choke-point that locks and re-reads, plus a static test over the writers, then close TD-367, TD-365, TD-368, TD-382, TD-348 and TD-351 against it. A sprint. *(A · M · raised 2026-10-18 by the Consolidation Review, promoting a cluster)* **Closed 2026-11-06: part 1 (A1.4, money) and part 2 (A1.5, lifecycle) done; see the detail entry.**
 - **TD-530** — The payment-run page does not mark which students are no longer funded, so a maker who meets `not_payable_in_run` must find them by hand before excluding them. A design change (log only; A1.5 shows the count). *(C · S · raised 2026-11-06 by the A1.4 adversarial review)*
 - **TD-532** — Interview booking leftovers in `scheduling.book_slot` (the Meet path): a reschedule during a close does not cancel the moved event; a double-click on a first booking makes two Meet events; the lock does not re-check `slot.is_active`; a database error after `create_event` leaves the event orphaned. Also: the web interview page has no friendly message for `case_closed`. A low, accepted note: the QC accept's card blurb is made from a pre-lock read. *(C · M · raised 2026-11-06 by the A1.5 adversarial review)*
+- **TD-533** — Status writers outside QC still decide from a pre-lock copy (TD-383 follow-up): A1.4 and A1.5 locked the money writers and the 4 QC paths; about a dozen other writers still read status with no row lock. Fix is the same `status_lock` pattern in a later audit wave, plus the static scan over all writers that TD-383 never built. *(A · M · raised 2026-11-06 at the G2 pre-deploy gates)*
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - **TD-347** — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)*
@@ -8120,3 +8121,20 @@ publish with a blurb made from the old profile text, or with an empty blurb (whe
 saw a blurb on file, or no text, and the locked row has neither). The publish still runs its own PII
 scan on the locked row. Accepted as low: the window is seconds and the blurb is only the short card
 line.
+
+### [TD-533] Status writers outside QC still decide from a pre-lock copy (TD-383 follow-up) - medium
+
+**Raised 2026-11-06 at the G2 pre-deploy gates.** A1.4 and A1.5 locked the money writers and the 4 QC paths. These writers still read status with no row lock:
+
+- `views_admin/verdict.py:270` AdminSubmitDeclineView (writes interviewed)
+- `reopen.py:64-69` reopen_decision via the super's AdminReopenDecisionView (`verdict.py:242`)
+- `reopen.py:128-135` cancel_reopen via AdminCancelReopenView (`verdict.py:502`)
+- `views_admin/applications.py:354` verify-accept (atomic, no lock; gate at :303)
+- `views_admin/interviews.py:260` interview reopen
+- `sponsorship.py:741` respond_to_award, :865 hold_pending_award, :881 release_pending_awards (feed `award_revert.py:42`, _finalise_award :852)
+- `bursary.py:521` _maybe_activate
+- `services/confirmation.py:56`, `services/offer_sync.py:525`, `services/intake.py:294`, `services/reminders.py:124`
+- AdminRecordVerdictView _save_verdict (`verdict.py:50`), verdict fields with no lock
+- the self-QC check in _require_qc (`base.py:328`) reads the pre-lock copy
+
+**Fix:** the same `status_lock` pattern, in a later audit wave. TD-383's static scan over all writers is still not built. *(A · M)*
