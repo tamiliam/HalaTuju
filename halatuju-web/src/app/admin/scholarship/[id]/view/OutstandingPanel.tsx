@@ -23,7 +23,10 @@ const REQUEST_REFUSAL_CODES = ['querying_closed', 'prompt_required', 'bad_kind',
  */
 export function requestRefusalText(e: unknown, t: T): string {
   const err = (e ?? {}) as { status?: number; code?: string; message?: string }
-  if (typeof err.status !== 'number') return t('admin.scholarship.requestInfoError')
+  // `adminMutate` marks "no answer" as `network_failure` / status 0 since request #61.
+  if (typeof err.status !== 'number' || err.code === 'network_failure') {
+    return t('admin.scholarship.requestInfoError')
+  }
   if (err.code && REQUEST_REFUSAL_CODES.includes(err.code)) {
     return t(`admin.scholarship.requestRefused.${err.code}`)
   }

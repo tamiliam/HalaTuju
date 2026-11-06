@@ -84,7 +84,9 @@ describe('a request that fails is never silent', () => {
   })
 
   it('a request that never reached the server says it could not be sent', async () => {
-    expect(await raiseAndFail(new TypeError('Failed to fetch')))
+    // The shape `adminMutate` throws when fetch rejects (request #61): code + status 0.
+    expect(await raiseAndFail(Object.assign(new Error('Load failed'), {
+      code: 'network_failure', status: 0 })))
       .toBe('admin.scholarship.requestInfoError')
   })
 })
