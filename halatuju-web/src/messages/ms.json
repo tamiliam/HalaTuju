@@ -4171,7 +4171,8 @@
           "bad_assignee": "Pentadbir itu tidak lagi aktif.",
           "findings_submitted": "Penemuan temu duga sudah ada — buka semula keputusan dahulu jika anda perlu menukar penemu duga.",
           "not_assignable": "Penyemak hanya boleh ditugaskan semasa permohonan sedang disemak (Selesai atau Temu Duga). Ia sama ada belum bersedia, atau semakan sudah tamat.",
-          "reviewer_paused": "Beliau telah menjeda dirinya, jadi tiada kes baharu boleh diberikan kepadanya. Beliau boleh mula semula daripada profilnya sendiri, atau anda boleh membawanya kembali di halaman Penilai."
+          "reviewer_paused": "Beliau telah menjeda dirinya, jadi tiada kes baharu boleh diberikan kepadanya. Beliau boleh mula semula daripada profilnya sendiri, atau anda boleh membawanya kembali di halaman Penilai.",
+          "gift_mismatch": "Penilai ini meliputi pemberian lain, jadi kes ini tidak boleh diberikan kepadanya. Pilih penilai untuk pemberian ini, atau penilai yang meliputi semua pemberian."
         }
       },
       "requestInfoError": "Tidak dapat menghantar permintaan.",

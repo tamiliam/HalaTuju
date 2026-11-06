@@ -413,11 +413,11 @@ class AdminReviewerPauseView(_ReviewersBase):
 class AdminReviewerProgrammeView(_ReviewersBase):
     """POST admin/reviewers/<pk>/programme/ {programme_id} — which gift this person covers.
 
-    ⚠ **A NARROWING, NOT A FENCE, AND IT MUST NEVER BECOME ONE.** The organisation boundary is
-    `_org_scoped`/`_org_allows`; this only decides who is OFFERED a case. A reviewer scoped to
-    Sabah who is somehow handed a flagship case still passes the fence and can still work it —
-    deliberately, because the alternative is stranding an in-flight review the day somebody
-    tidies a dropdown.
+    ⚠ **NOT A READ FENCE; SINCE 2026-11-06 IT BLOCKS ASSIGNMENT** (owner ruling, TD-501). The
+    READ boundary is still `_org_scoped`/`_org_allows` plus assignment. But `assign_reviewer` now
+    refuses `gift_mismatch` when a NEW case's gift differs from this one. A case the person
+    ALREADY holds is not taken away when their gift changes here — deliberately, because the
+    alternative is stranding an in-flight review the day somebody tidies a dropdown.
 
     ⚠ **`programme_id` NULL / absent CLEARS IT, and clearing means EVERY GIFT** — the permissive
     default and what all 17 org-scoped staff on production have. So this endpoint can only ever
