@@ -7869,6 +7869,8 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **Raised 2026-11-05 by the v3.1.0 release audit; web part patched the same day (pre-v3.1.0 security patch).** Done: `next` and `eslint-config-next` pinned to 14.2.35, image optimiser off (`images.unoptimized`), `npm audit fix` without `--force`. **Still open:** the remaining Next.js advisories are fixed only in Next 15.5.28 or later. **The Next 15 upgrade is the FIRST audit fix sprint** (a security fix, so the freeze allows it). Python (`pip-audit`): Pillow 11.3.0 (fixed in 12.x / 13.0.0), pillow-heif 0.22.0 and pypdf 5.9.0 (fixed in 6.x) are **deferred to the audit**. pypdf 5.9.0 is pinned on purpose (the STPM certificate reader depends on its text layer), so a bump needs the exact-read eval re-run. Pillow touches document reading, so it needs a MODEL_VERSION check (`feedback_doc_recognition_versioning`) and the eval corpus and golden masters as the guard. *(A · L)*
 
+**Python half DONE 2026-11-06 (A1.2, branch a12, awaiting push):** Pillow 13.0.0, pillow-heif 1.3.0, pypdf 6.21.4 (the roadmap's 11.3.0 / 0.22.0 / 5.9.0 were already the locked versions and still carry advisories); pip-audit clean; full suite green; mocked HEIC / multi-page PDF / JPEG smoke tests added. The web half (Next 15) is NOT closed here: this entry stays open for A1.1. Still to do before calling the Python half proven live: re-read one digital STPM certificate on the new pypdf (its text-layer layout differs from 5.9.0).
+
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
 **Raised 2026-11-04 by Mobile M8 follow-up part 2 (NOT fixed).** A mentor's own pages, `/admin/my-students` and
@@ -8004,7 +8006,7 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `courses/views_admin.py` ~483-531 exports name, NRIC, email, phone, address, household income and disability with no `AUDIT` line, and does not neutralise cells that start with `=`, `+`, `-` or `@`; fields students type themselves reach Excel as typed. The other CSV exports do both (`survey_results._cell`). Scope is fenced to the partner's own referred students. **Fix:** reuse `_cell` and write the AUDIT line; add tests for both. *(A · S)*
 
-### [TD-516] Python dependency bumps on the auth path: DRF 3.18.2, pyjwt 2.15.0 (SEC-10) - medium (quick win)
+### ~~[TD-516] Python dependency bumps on the auth path: DRF 3.18.2, pyjwt 2.15.0 (SEC-10) - medium (quick win)~~ — RESOLVED 2026-11-06 (A1.2, branch a12, awaiting push: DRF 3.18.2, pyjwt 2.15.0, aiohttp 3.14.4, pyasn1 0.6.5, certifi 2026.10.18, multidict 6.9.1, opentelemetry-api 1.45.1; pip-audit clean)
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `requirements.lock` has DRF 3.18.1 (CVE-2026-114136, an unauthenticated memory blow-up: about 108 bytes in costs about 97 MiB, enough to hurt a 2 GiB instance on a 3-instance service) and pyjwt 2.14.0 (PYSEC-2026-4141; the RecursionError escapes the middleware's except clauses and becomes a 500). Also flagged, exploitability not assessed: aiohttp, pyasn1, certifi, multidict, opentelemetry-api. Pillow, pillow-heif and pypdf stay under TD-506. **Fix:** bump DRF and pyjwt, run the full suite, then take the rest in one pass. *(A · S)*
 

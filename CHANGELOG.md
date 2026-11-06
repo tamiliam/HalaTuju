@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Sprint A1.2 - Python dependency advisories cleared (SEC-10 / TD-516, SEC-16 / TD-506 Python half) (2026-11-06)
+
+Branch a12 (not pushed; no migration; api only). `pip-audit -r requirements.lock` went from about 200 findings in 10 packages to none. Lowest clearing version each: aiohttp 3.14.3 -> 3.14.4, certifi 2026.7.22 -> 2026.10.18, djangorestframework 3.18.1 -> 3.18.2, multidict 6.8.0 -> 6.9.1, opentelemetry-api 1.44.0 -> 1.45.1, pyasn1 0.6.4 -> 0.6.5, pyjwt 2.14.0 -> 2.15.0, pypdf 5.9.0 -> 6.21.4, pillow 11.3.0 -> 13.0.0, pillow-heif 0.22.0 -> 1.3.0. The roadmap's Pillow 11.3.0 / pypdf 5.9.0 / pillow-heif 0.22.0 were the versions already locked; the advisories need Pillow 13, pypdf 6.21.4 and pillow-heif 1.3.
+
+- `requirements.txt` ranges widened to admit them (pypdf <7, Pillow <14, pillow-heif <2) and floors raised for DRF and PyJWT. `requirements.lock` edited in place for the ten pins (no other package moved). pypdfium2 stays 4.30.0.
+- No application code changed. New mocked-edge smoke tests, `test_a12_upload_libs_smoke.py`: a real HEIC (encoded by pillow-heif) converts to a real JPEG through `convert_heic_to_jpeg`; a real 3-page text PDF counts, renders and yields its text layer; a JPEG decodes; a garbage PDF degrades to nothing. No Gemini, no Vision, no re-extraction.
+- **Watch:** pypdf 6.x lays a text layer out differently from 5.9.0 (see decisions.md, "Local PDF libraries must match requirements.lock"). The STPM column parser reads both shapes, but a live digital certificate has not been re-read; MODEL_VERSION not bumped.
+
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 
 Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).
