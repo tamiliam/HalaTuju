@@ -8051,3 +8051,23 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 ### [TD-524] A hold verdict can reach QC accept with no amount - medium
 
 **Raised 2026-11-05 by the TD-465 money review.** money-a stops an APPROVE with no bursary at QC accept (`award_required`); a HOLD verdict that reaches QC accept with no amount has no check of its own. **Fix:** give the hold path its own check at QC accept, with a test. *(A · S)*
+
+### [TD-525] The payments badge is always 0 for a super admin with no organisation - medium
+
+**Raised 2026-11-06 after the G1 deploy. Owner ruled: fix in the next web change.** `AppShell.tsx` (about line 296) calls `getPaymentRuns()` with no `?programme=` on every admin page. For a super admin with no organisation, the API (`views_admin/payments.py:182` through `views_admin/base.py:164` `_gift_required_for_orgless_super`) returns 400 `programme_required`. The `.catch` swallows it, so the "payments waiting" badge is always 0 for that account, and the console shows red 400s. This has happened since at least API revision 01248, before the 2026-11-06 deploy. **Fix:** a bug-only change. Skip the call, or pass the right programme, for super admins with no organisation. *(A · S)*
+
+### [TD-526] Unexplained 401, 403 and 400 lines in the logs after the 2026-11-06 deploy - low
+
+**Raised 2026-11-06 (to investigate).** The logs after the deploy show 16 x 401 on `/admin/scholarship/system-health/` (an unauthenticated poller?), 22 x 403 on `requests/count/` and `billing/usage/` (maybe the same class as TD-525), and 4 x 400 on interview-slots. **Fix:** find the caller of each line, then decide whether it is noise or a bug. Fix the bugs; leave the noise with a note here. *(B · S)*
+
+### [TD-527] Process lesson: a node_modules junction gives the wrong bundle sizes - low
+
+**Raised 2026-11-06.** A `node_modules` junction to the main checkout gives the wrong Next version and the wrong bundle sizes. **Rule:** always run a real `npm ci` in the worktree before a bundle or size gate. *(A · S)*
+
+### [TD-528] Process lesson: the local API gate must use the CI flags - low
+
+**Raised 2026-11-06.** The local API gate must run `python -m pytest -q -n auto -p no:cacheprovider`, as CI does. A serial run hid an xdist (execnet `DumpError`) subTest failure that broke the G0 build on 2026-11-05. **Rule:** never gate on a serial run alone. *(A · S)*
+
+### [TD-529] Bundle budgets sit on the edge of the 2 kB ratchet window - medium
+
+**Raised 2026-11-06.** The four first-load lines (median, `/profile`, `/scholarship/apply`, `/scholarship/application`) sit at about build + 2.0 kB, the edge of the 2 kB ratchet window. CI builds come out a few hundredths of a kB smaller than local builds, so the G1 web build a1cc54eb failed on `/scholarship/apply` (budget 199.7, CI 197.676). **Fix:** in the next web change, re-measure and set each line to about build + 1 kB. Also fix the stale `_first_load_js_note` text in `halatuju-web/code-standards.json`. A ready commit exists on local branch `deploy-g1b` (2b012c19), but its values must be re-measured first. *(A · S)*
