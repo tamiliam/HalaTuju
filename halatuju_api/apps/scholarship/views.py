@@ -1103,9 +1103,9 @@ class DocumentListCreateView(APIView):
         # Single-instance re-upload REPLACES the live copy in the slot. Phase 2 (version history):
         # the old row is no longer HARD-deleted — it is stamped `superseded_at` and pointed at the
         # replacement (`superseded_by`), retaining an audit trail shown under the officer "Old /
-        # Replaced" list; its Storage blob is deliberately KEPT (no sweep). Order still matters for
-        # data safety (TD audit 2026-06-14): create the replacement row FIRST inside a transaction,
-        # then supersede the prior copies — a failed create leaves the old live doc untouched.
+        # Replaced" list; its Storage blob is deliberately KEPT (no sweep). Order matters (TD-115):
+        # supersede FIRST, then create, in ONE transaction (`slot_writes`) — the slot's unique index
+        # admits one live row, and a failed create rolls back, leaving the old live doc untouched.
         # Snapshot the stale ids BEFORE the create so the new row (same slot) is never superseded.
         stale_ids = []
         if single:
@@ -1130,18 +1130,13 @@ class DocumentListCreateView(APIView):
                          .order_by(*SNAPSHOT_ORDER).first() if staged else None)
         if new_doc_type == 'higher_results':   # S3a (D13) the results held; S4 a request's own kind
             serializer.validated_data['results_kind'] = results_route.upload_kind(app, new_request_code)
-        with transaction.atomic():
-            doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
-            from django.utils import timezone as _tz
-            if staged:
-                # Not-live yet; the promote decision below owns ALL slot mutation. The existing live
-                # doc is untouched — a bad upload can never transiently displace a good proof.
-                ApplicantDocument.objects.filter(id=doc.id).update(
-                    superseded_at=_tz.now(), superseded_by=existing_live)
-                doc.refresh_from_db()
-            elif stale_ids:
-                ApplicantDocument.objects.filter(id__in=stale_ids).update(
-                    superseded_at=_tz.now(), superseded_by=doc)
+        # A staged doc is created not-live; the promote decision below owns ALL slot mutation. A
+        # concurrent upload into the same slot is retried once, then answered 409 (TD-115, never a 500).
+        from . import slot_writes
+        doc = slot_writes.create_in_slot(app, serializer.validated_data, staged=staged,
+                                         existing_live=existing_live, stale_ids=stale_ids, slot_filter=slot_filter)
+        if doc is None:
+            return Response({'error': 'upload_conflict', 'code': 'upload_conflict'}, status=status.HTTP_409_CONFLICT)
         # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
         # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
         from .imaging import convert_heic_to_jpeg
@@ -1261,7 +1256,6 @@ class DocumentListCreateView(APIView):
         if staged:
             from . import promotion, wrong_slip as _ws   # S4: a higher result never displaces an SPM slip
             from .resolution import doc_match_verdict
-            from django.utils import timezone as _tz2
             # USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
             # newest still wins, the task stays open, and the quality proxy keeps a pending doc from
             # burying an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays
@@ -1271,15 +1265,9 @@ class DocumentListCreateView(APIView):
                 # Promote: supersede everything this upload replaces — the staged-against set (the
                 # slot sweep, incl. any blank-tagged legacy copy) PLUS any other live copy in this
                 # doc's exact slot — then unstage this one into the prime slot.
-                _now = _tz2.now()
-                ApplicantDocument.objects.filter(
-                    id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id).update(
-                    superseded_at=_now, superseded_by=doc)
-                ApplicantDocument.objects.filter(
-                    application=app, doc_type=doc.doc_type, household_member=doc.household_member,
-                    request_code=doc.request_code, superseded_at__isnull=True).exclude(id=doc.id).update(
-                    superseded_at=_now, superseded_by=doc)
-                ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=None, superseded_by=None)
+                # One transaction; a clash with a concurrent live copy keeps that copy (TD-115).
+                if not slot_writes.promote_into_slot(app, doc, stale_ids):
+                    kept_previous = True
                 doc.refresh_from_db()
             else:
                 kept_previous = True

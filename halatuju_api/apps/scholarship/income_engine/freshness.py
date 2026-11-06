@@ -174,16 +174,20 @@ def dedupe_income_proof(application, member, doc_type):
         return []
     live.sort(key=income_dedup_rank, reverse=True)
     keep, losers = live[0], live[1:]
-    # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
-    # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
-    if doc_type == 'str' and not (getattr(keep, 'household_member', '') or '').strip():
-        for d in losers:
-            m = (getattr(d, 'household_member', '') or '').strip()
-            if m:
-                keep.household_member = m
-                keep.save(update_fields=['household_member'])
-                break
     ids = [d.id for d in losers]
+    from django.db import transaction
     from django.utils import timezone as _tz
-    docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)
+    # TD-115 (A1.8): supersede the losers FIRST, then re-tag the keep — the slot's unique index admits
+    # one live row, and the inherited member may be a loser's still-live slot. One transaction.
+    with transaction.atomic():
+        docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)
+        # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
+        # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
+        if doc_type == 'str' and not (getattr(keep, 'household_member', '') or '').strip():
+            for d in losers:
+                m = (getattr(d, 'household_member', '') or '').strip()
+                if m:
+                    keep.household_member = m
+                    keep.save(update_fields=['household_member'])
+                    break
     return ids

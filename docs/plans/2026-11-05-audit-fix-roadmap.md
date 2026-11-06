@@ -319,11 +319,12 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
 
 #### A1.8 TD-115: database guard on the document slot
 
-- **Goal:** Only one live document per (application, doc_type, household_member).
+- **Goal:** Only one live document per (application, doc_type, household_member, request_code). Four columns, not three: since TD-134 each officer request is its own slot, so a 3-column key would refuse the request-keyed uploads TD-134 exists for. (Corrected 2026-11-06 from the live data.)
 - **Scope:**
   - TD-115.
-  - A read-only count of live duplicates first. The owner sees the list, and duplicates are resolved by rule, not deleted silently.
-  - Then a partial `UniqueConstraint` (live rows only), applied by hand before the push.
+  - A read-only count of live duplicates first. The owner sees the list, and duplicates are resolved by rule, not deleted silently. (Counted 2026-11-06 on the 4-column key: 0 live duplicates in 3,272 rows, 2,519 live.)
+  - Then a partial `UniqueConstraint` (live rows only), applied by hand. In-programme results slips (`request_code = 'in_programme'`) are left out: one per semester, never replaced, by design.
+  - **Order: deploy FIRST, then the index** (not "before the push"). The old image's upload door puts a re-upload live first and supersedes after, so with the index in place it would 500. The new code supersedes first and is safe either way. Steps in migration `0203`'s docstring.
 - **Acceptance:**
   - A test: a second live row for the same slot raises.
   - The migration is applied, and `list_migrations` shows it.

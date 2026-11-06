@@ -269,7 +269,7 @@ Do one only when a sprint is already in that file.
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)*
 - **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)*
-- **TD-115** — The document slot has no database-level guard. *(D · L · partly done)*
+- **TD-115** — The document slot has no database-level guard. *(D · L)* **Fixed in code 2026-11-06 (Sprint A1.8): 4-column partial unique index, migration 0203; open until the owner applies it by hand after the deploy. See the detail entry.**
 - **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L)*
 - **TD-058** — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)*
 - **TD-024** — The course-name field is called course. *(D · L)*
@@ -1812,6 +1812,19 @@ Each is an open entry with a defining line in the register body (read it there).
   **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
   test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (Logged 2026-06-13; b+c closed 2026-06-14.)
   **Status 2026-09-30:** partly done — still to do: no database UniqueConstraint on the document slot.
+  **FIXED 2026-11-06 (Sprint A1.8), pending the live apply.** The key is FOUR columns, not the three above:
+  `(application, doc_type, household_member, request_code)` — since TD-134 each officer request is its own slot. A partial
+  `UniqueConstraint` `applicant_document_one_live_per_slot` on live rows (`superseded_at IS NULL`), leaving out in-programme
+  results slips (`request_code = 'in_programme'`, one per semester by design). Both text columns are NOT NULL, so
+  `nulls_distinct` is not needed. Live data 2026-11-06: 0 duplicates on that key (3,272 rows, 2,519 live). Five writers put
+  the new row live FIRST and are fixed to supersede first in one transaction: the upload door (`views.py`), `refile_to_spm` /
+  `refile_to_higher` (`results_route._move_into_slot`), `dedupe_income_proof`'s STR re-tag, `split_combined_results`, and
+  `backfill_untagged_income_docs`. Two uploads at once now meet the index: the upload door retries once, then answers 409
+  `upload_conflict`; a clash at promote keeps the new copy in Old / Replaced (`kept_previous`); the backfill skips that doc.
+  Tests: `test_td115_slot_constraint.py` (SQLite enforces partial unique indexes, so the real index runs).
+  ⚠ **DEPLOY-FIRST, not migrate-first:** the old image would 500 on every same-slot re-upload once the index exists. The
+  owner applies `0203` by hand AFTER the new api revision serves 100% — pre-check, apply and rollback SQL are in the
+  migration's docstring. Close this entry when `list_migrations` shows 0203.
 - **TD-116**: **EPF mining benefits NEW uploads only — existing EPF statements need a re-parse to populate the new fields.**
   The 2026-06-14 EPF work (`97a7793`) extracts `avg_monthly_contribution`/`months_counted`/`contribution_status`/
   `statement_date`/`address`, but these need the CARUMAN rows + statement body, which aren't in the already-stored

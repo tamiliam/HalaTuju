@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint A1.8 - the database allows one live document per slot (TD-115, 2026-11-06)
+
+Branch a18 (not pushed; API only). Migration `0203_applicantdocument_one_live_per_slot`: a partial unique index on `applicant_documents` (application, doc_type, household_member, request_code) WHERE superseded_at IS NULL, in-programme slips (`request_code='in_programme'`) left out because they are one per semester and never replaced. Every writer that put the new row live before it superseded the old one now supersedes first, in one transaction: the upload door (new `slot_writes.py`; a staged upload is created staged), refile to SPM / higher (`results_route._move_into_slot`), the STR de-dup re-tag (`dedupe_income_proof`), `split_combined_results` and `backfill_untagged_income_docs`. Two uploads into one slot at once: the second is retried once, then answered 409 `upload_conflict` (never a 500); a clash at the promote step keeps the live copy and answers 201 with `kept_previous`. SQLite enforces partial unique indexes, so the tests run the real index. **Deploy FIRST, then the owner applies the index by hand** (SQL in the migration's docstring): the old image creates live before it supersedes and would 500 against the index. Tests: `test_td115_slot_constraint.py` (24).
+
 ### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
 
 Web only. `AppShell` skips the payment-runs count for a super admin with no organisation (the server answers 400 `programme_required` for that account, so the badge was always 0 and the console showed a red 400 on every page). A super with an organisation, and every other role, are unchanged. Test: `AppShell.test.tsx` (fails before, passes after). TD-525 marked fixed; a13's multi-gift scope entry renumbered TD-531 (it clashed with the G1 payments-badge entry).

@@ -156,6 +156,21 @@ class ApplicantDocument(models.Model):
     class Meta:
         db_table = 'applicant_documents'
         ordering = list(SNAPSHOT_ORDER)   # newest uploaded_at, then highest id (TD-292)
+        constraints = [
+            # TD-115 (audit A1.8): the DATABASE guard on the document slot — at most ONE live row per
+            # (application, doc_type, household_member, request_code). request_code is part of the
+            # key since TD-134 (0067): each officer request is its own slot. Both text columns are
+            # NOT NULL ('' = none), so plain NULLS DISTINCT semantics never apply. Every writer
+            # supersedes the old row BEFORE the new one goes live (see the 0203 docstring).
+            # Carve-out: an in-programme results slip (request_code 'in_programme' =
+            # results_review.SLIP_REQUEST_CODE, written as a literal here to keep models free of that
+            # import) is EVIDENCE, one per semester, never a slot — so several live ones are by design.
+            models.UniqueConstraint(
+                fields=['application', 'doc_type', 'household_member', 'request_code'],
+                condition=models.Q(superseded_at__isnull=True) & ~models.Q(request_code='in_programme'),
+                name='applicant_document_one_live_per_slot',
+            ),
+        ]
 
     @staticmethod
     def live(qs):
