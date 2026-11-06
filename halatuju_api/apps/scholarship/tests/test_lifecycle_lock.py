@@ -4,6 +4,9 @@
     and a close that lands during the Meet call wins (the new event is dropped);
   * TD-365 (decline side): `admin_reject` re-reads the status under the lock, as `fund_student` does;
   * TD-442: a QC reject is one unit: a decline that raises leaves the case NOT reopened;
+  * the QC accept, reject and reopen lock and re-read the case first (a close, a reject, a second
+    click or a re-recorded verdict that committed meanwhile wins), and the accept's card-blurb
+    Gemini call runs before the lock, never inside it;
   * TD-348 / TD-351: the submit asks the one-application rule again under a lock on the student's
     profile, and a same-round insert that meets the constraint answers 409, never a 500;
   * the tranche writers (Withhold, Return, Mark due) lock and re-read like Release, and a Release
@@ -23,14 +26,16 @@ from django.utils import timezone
 
 from apps.courses import org_config
 from apps.scholarship import disbursement, pool, scheduling, status_lock
+from apps.scholarship import reopen as reopen_service
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    DecisionReopen, Disbursement, InterviewSlot, ScholarshipApplication, StaffActivity,
+    DecisionReopen, Disbursement, InterviewSlot, ScholarshipApplication, SponsorProfile,
+    StaffActivity,
 )
 from apps.scholarship.services import admin_reject, apply_gate
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
-    make_programme, make_student,
+    DECLINE_VERDICT, TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
+    make_org, make_programme, make_student,
 )
 from apps.scholarship.tests.test_endpoints_disbursements import fund_through_the_product
 from apps.scholarship.tests.test_status_lock import _funded_sponsor
@@ -257,6 +262,107 @@ class TestQcDecisionRereadsTheCase(TestCase):
         r = self._post({'decision': 'accept'})
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'recommended')
+
+    # Fix round 2: the accept refuses a verdict re-recorded since post() routed on it.
+    def test_an_accept_after_the_verdict_became_a_decline_does_not_recommend(self):
+        with _after_require_qc(self._set(officer_verdict=dict(DECLINE_VERDICT))), \
+                mock.patch.object(pool, 'publish_profile_to_pool') as publish:
+            r = self._post({'decision': 'accept'})
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_awaiting_qc'))
+        row = ScholarshipApplication.objects.get(pk=self.app.pk)
+        self.assertEqual((row.status, row.recommended_by), ('interviewed', ''))
+        publish.assert_not_called()
+
+    # Fix round 2: the QC reopen locks and re-reads too (three races the review reproduced).
+    def _reopen(self):
+        return self._post({'decision': 'reopen', 'comments': 'Recheck the payslips.'})
+
+    def _assert_reopen_refused(self, r, status, reopens=0):
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_awaiting_qc'))
+        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, status)
+        self.assertEqual(DecisionReopen.objects.filter(application=self.app).count(), reopens)
+        self.assertFalse(StaffActivity.objects.filter(actor=self.qc).exists())
+
+    def test_a_reopen_after_a_close_does_not_reopen_the_closed_case(self):
+        with _after_require_qc(self._set(status='closed', closed_at=timezone.now())), \
+                mock.patch('apps.scholarship.emails.send_qc_returned_email') as reviewer_mail:
+            r = self._reopen()
+        self._assert_reopen_refused(r, 'closed')
+        reviewer_mail.assert_not_called()
+
+    def test_a_reopen_after_a_reject_does_not_reopen_a_pending_decline(self):
+        with _after_require_qc(self._set(status='rejected', rejected_at=timezone.now(),
+                                         decline_due_at=_soon(hours=24))), \
+                mock.patch('apps.scholarship.emails.send_qc_returned_email') as reviewer_mail:
+            r = self._reopen()
+        self._assert_reopen_refused(r, 'rejected')
+        reviewer_mail.assert_not_called()
+
+    def test_a_double_clicked_reopen_writes_one_reopen_and_one_email(self):
+        def first_click():
+            reopen_service.reopen_decision(_stale(self.app), by_admin=self.qc,
+                                           reason='First click.', activity=False)
+        with _after_require_qc(first_click), \
+                mock.patch('apps.scholarship.emails.send_qc_returned_email') as reviewer_mail:
+            r = self._reopen()
+        self._assert_reopen_refused(r, 'interviewing', reopens=1)
+        reviewer_mail.assert_not_called()
+
+    def test_a_clean_reopen_still_returns_the_case_and_emails(self):    # guard: not a regression
+        with mock.patch('apps.scholarship.emails.send_qc_returned_email') as reviewer_mail:
+            r = self._reopen()
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'interviewing')
+        self.assertEqual(DecisionReopen.objects.filter(application=self.app).count(), 1)
+        reviewer_mail.assert_called_once()
+
+
+# ── Fix round 2: the accept's card-blurb Gemini call runs before the lock, never inside it ─────
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestQcAcceptMakesNoNetworkCallUnderTheLock(TestCase):
+    def setUp(self):
+        cohort = make_cohort()
+        self.qc = make_admin('qc', owning_org=cohort.owning_organisation)
+        self.app = make_application('awaiting_qc', outcome='recommend', cohort=cohort)
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _accept_with(self, blurb_on_file):
+        SponsorProfile.objects.create(
+            application=self.app, anon_markdown='A determined SPM leaver hoping to read engineering.',
+            anon_blurb=blurb_on_file)
+        order = []
+        real_lock = status_lock.lock_application_for
+
+        def lock(*a, **kw):
+            order.append('lock')
+            return real_lock(*a, **kw)
+
+        def gemini(*a, **kw):
+            order.append('gemini')
+            return 'Hopes to read engineering.'
+        with mock.patch('apps.scholarship.views_admin.verdict.lock_application_for', lock), \
+                mock.patch('apps.scholarship.profile_engine.generate_anon_blurb',
+                           side_effect=gemini) as blurb_call:
+            r = authed_client(self.qc).post(
+                f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+                {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        return order, blurb_call, SponsorProfile.objects.get(application=self.app)
+
+    def test_the_blurb_is_made_before_the_lock_and_published(self):
+        order, blurb_call, sp = self._accept_with('')
+        self.assertEqual(order, ['gemini', 'lock'])          # never 'lock' then 'gemini'
+        blurb_call.assert_called_once()
+        self.assertEqual((sp.anon_published, sp.anon_blurb), (True, 'Hopes to read engineering.'))
+
+    def test_an_accept_with_a_blurb_on_file_makes_no_gemini_call(self):  # guard
+        order, blurb_call, sp = self._accept_with('A determined SPM leaver.')
+        blurb_call.assert_not_called()
+        self.assertEqual(order, ['lock'])
+        self.assertEqual((sp.anon_published, sp.anon_blurb), (True, 'A determined SPM leaver.'))
 
 
 # ── TD-348 / TD-351: the submit asks the rule again under the lock ─────────────────────────────

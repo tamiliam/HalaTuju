@@ -42,6 +42,11 @@ def _text(value):
     return value.strip() if isinstance(value, str) else ''
 
 
+def _overall(app):
+    """The reviewer's recorded overall verdict ('accept', 'decline', ...), or None."""
+    return (app.officer_verdict if isinstance(app.officer_verdict, dict) else {}).get('overall')
+
+
 _OFFICER_FACT_VALUES = {'pass', 'fail', ''}
 _OFFICER_OVERALL_VALUES = {'accept', 'decline', 'hold', ''}
 
@@ -258,8 +263,7 @@ class AdminSubmitDeclineView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
-        if ov.get('overall') != 'decline' or app.verdict_decided_at is None:
+        if _overall(app) != 'decline' or app.verdict_decided_at is None:
             return Response(
                 {'error': 'Record a decline verdict before sending to QC.',
                  'code': 'no_decline_verdict'}, status=status.HTTP_400_BAD_REQUEST)
@@ -302,8 +306,7 @@ def _accept_absolute_stop(app):
                       'then accept.',
              'code': 'reporting_date_required'},
             status=status.HTTP_400_BAD_REQUEST)
-    ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
-    if ov.get('overall') == 'accept' and app.award_amount is None:
+    if _overall(app) == 'accept' and app.award_amount is None:
         return Response(
             {'error': 'The proposed bursary is missing. Reopen the case so the reviewer can '
                       'record the verdict again (that sets the bursary), then accept.',
@@ -321,6 +324,19 @@ def _not_awaiting_qc():
     """The same 400 as `_require_qc`, for a case that left QC after the view read it (A1.5)."""
     return Response({'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
                     status=status.HTTP_400_BAD_REQUEST)
+
+
+def _email_reviewer(app, kind, comments):
+    """Send the assigned reviewer the QC's comments: ``kind`` 'returned' (for revision) or
+    'rejected' (by QC). Called only after the decision's transaction has committed."""
+    from .. import emails
+    send = getattr(emails, f'send_qc_{kind}_email')   # read at call time, so a test can patch it
+    reviewer = app.assigned_to
+    if reviewer is not None and getattr(reviewer, 'email', ''):
+        send(to_email=reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
+             ref=pool.pool_ref(app.id),
+             applicant_name=getattr(getattr(app, 'profile', None), 'name', '') or '',
+             qc_comments=comments)
 
 
 class AdminQcDecisionView(_AdminBase):
@@ -341,14 +357,17 @@ class AdminQcDecisionView(_AdminBase):
                DecisionReopen row carrying the reason, closed as a correction) then declines as
                'interview' with the org's QC hold; the reviewer gets the "rejected by QC" email
                (distinct from the "returned for revision" one)."""
-    def _accept_recommend(self, request, app, admin, pk):
+    def _accept_recommend(self, request, app, admin, pk, seen_overall):
         """QC accept of a RECOMMEND verdict: interviewed -> recommended, then publish."""
-        # A1.5 review: lock and re-read first, so a reject (or close) that committed after
-        # _require_qc read the copy wins; the checks below then read the locked row.
+        blurb = pool.prepare_pool_blurb(app)   # its Gemini call runs BEFORE the lock, never in it
+        # A1.5 review: lock and re-read first, so a reject, a close or a re-recorded verdict
+        # that committed after post() read the copy wins; the checks below read the locked row.
         with transaction.atomic():
             try:
                 lock_application_for(app, ('interviewed',))
             except StatusRefused:
+                return _not_awaiting_qc()
+            if _overall(app) != seen_overall:
                 return _not_awaiting_qc()
             stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
             if stop is not None:
@@ -392,7 +411,7 @@ class AdminQcDecisionView(_AdminBase):
             # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
-            pool.publish_profile_to_pool(app)
+            pool.publish_profile_to_pool(app, blurb=blurb)
             _record_qc(admin, app, 'accept', 'recommended')
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
         return Response(AdminApplicationDetailSerializer(app).data)
@@ -407,10 +426,8 @@ class AdminQcDecisionView(_AdminBase):
             # verdict that is a rejection, not a recommendation — QC is the second pair of eyes on
             # BOTH outcomes (owner 2026-07-19). No gap floor here (a declined case is EXPECTED to
             # have red facts) and the shorter `qc_decline_hold_hours` hold (platform 24h, org-timing
-            # Sprint 1 — already two-person-vetted). Bucket
-            # 'interview' (reviewed but not selected); the decline email fires now, embargoed.
-            ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
-            if ov.get('overall') == 'decline':
+            # Sprint 1 — already two-person-vetted). Bucket 'interview'; the email fires, embargoed.
+            if _overall(app) == 'decline':
                 from datetime import timedelta
                 from apps.courses import org_config
                 hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
@@ -424,29 +441,24 @@ class AdminQcDecisionView(_AdminBase):
                 app.refresh_from_db()
                 logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
                 return Response(AdminApplicationDetailSerializer(app).data)
-            return self._accept_recommend(request, app, admin, pk)
+            return self._accept_recommend(request, app, admin, pk, _overall(app))
         if decision == 'reopen':
             comments = _text(request.data.get('comments'))
             if not comments:
                 return Response(
                     {'error': 'Say what was missing so the reviewer can fix it.',
                      'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
+            # A1.5 review: lock and re-read FIRST; a close, reject or second click refuses here.
             try:
-                reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
+                with transaction.atomic():
+                    lock_application_for(app, ('interviewed',))
+                    reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
+                    _record_qc(admin, app, 'reopen', 'reopened')
+            except StatusRefused:
+                return _not_awaiting_qc()
             except reopen_service.ReopenError as e:
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-            _record_qc(admin, app, 'reopen', 'reopened')
-            reviewer = app.assigned_to
-            if reviewer is not None and getattr(reviewer, 'email', ''):
-                from ..emails import send_qc_returned_email
-                name = getattr(getattr(app, 'profile', None), 'name', '') or ''
-                send_qc_returned_email(
-                    to_email=reviewer.email,
-                    reviewer_name=getattr(reviewer, 'name', ''),
-                    ref=pool.pool_ref(app.id),
-                    applicant_name=name,
-                    qc_comments=comments,
-                )
+            _email_reviewer(app, 'returned', comments)   # after the commit: a refusal emails nobody
             logger.info('AUDIT qc_reopen admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         if decision == 'reject':
@@ -469,8 +481,7 @@ class AdminQcDecisionView(_AdminBase):
             # the reopen back, so the case is left exactly as it was. The emails go after the commit.
             try:
                 with transaction.atomic():
-                    # A1.5 review: lock and re-read FIRST. A close, or a second QC's reject, that
-                    # committed after _require_qc read the copy refuses here (no reopen written).
+                    # A1.5 review: lock and re-read FIRST; a close or a second reject refuses here.
                     lock_application_for(app, ('interviewed',))
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
                     reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
@@ -487,17 +498,7 @@ class AdminQcDecisionView(_AdminBase):
                 from ..services import _send_decline_for
                 _send_decline_for(app)
             app.refresh_from_db()
-            reviewer = app.assigned_to
-            if reviewer is not None and getattr(reviewer, 'email', ''):
-                from ..emails import send_qc_rejected_email
-                name = getattr(getattr(app, 'profile', None), 'name', '') or ''
-                send_qc_rejected_email(
-                    to_email=reviewer.email,
-                    reviewer_name=getattr(reviewer, 'name', ''),
-                    ref=pool.pool_ref(app.id),
-                    applicant_name=name,
-                    qc_comments=comments,
-                )
+            _email_reviewer(app, 'rejected', comments)
             logger.info('AUDIT qc_reject admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         return Response({'error': 'bad_decision', 'code': 'bad_decision'},

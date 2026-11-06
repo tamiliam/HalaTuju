@@ -290,10 +290,18 @@ class TestEveryMoneyWriterUsesTheHelper(TestCase):
         ('scheduling', '_lock_open_case', r'lock_application_for\('),      # TD-368
         ('scheduling', 'propose_slots', r'_lock_open_case\('),
         ('scheduling', 'book_slot', r'_lock_open_case\('),
-        # QC accept and QC reject (A1.5 review): the lock is the first write-side step.
+        # QC accept, reopen and reject (A1.5 review + fix round 2): each takes the lock before it
+        # writes, in the class's order (accept helper, then post's reopen, then post's reject).
         ('views_admin.verdict', 'AdminQcDecisionView',
-         r"(?s)lock_application_for\(app, \('interviewed',\)\).*"
-         r"lock_application_for\(app, \('interviewed',\)\)"),
+         r"(?s)def _accept_recommend.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*decision == 'reopen'.*lock_application_for\(app, \('interviewed',\)\)\s+"
+         r"reopen_service\.reopen_decision"
+         r".*decision == 'reject'.*lock_application_for\(app, \('interviewed',\)\)\s+"
+         r"reopen_service\.reopen_decision"),
+        # ...and the accept's Gemini blurb is made BEFORE its locked block, then handed in.
+        ('views_admin.verdict', 'AdminQcDecisionView',
+         r"(?s)prepare_pool_blurb\(app\).*with transaction\.atomic\(\):"
+         r".*publish_profile_to_pool\(app, blurb=blurb\)"),
     )
 
     def test_each_writer_locks_through_status_lock(self):

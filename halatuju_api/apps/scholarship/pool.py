@@ -193,7 +193,24 @@ def is_pool_eligible(application):
     return has_active_share_consent(application)
 
 
-def publish_profile_to_pool(application):
+def prepare_pool_blurb(application):
+    """The card blurb `publish_profile_to_pool` would generate as its fallback, made BEFORE the
+    caller takes a row lock — it calls Gemini, and a DB lock is never held across a network call
+    (A1.5 review). Same input and the same identifier scan as the fallback. Returns '' when no call
+    is needed (no profile text, already published, a profile leak, a blurb already on file) or the
+    blurb fails the scan. Pass the result on: ``publish_profile_to_pool(app, blurb=...)``."""
+    from .models import SponsorProfile
+    from .profile_engine import generate_anon_blurb
+    sp = SponsorProfile.objects.filter(application=application).first()
+    profile = getattr(application, 'profile', None)
+    if (sp is None or not (sp.anon_markdown or '').strip() or sp.anon_published
+            or (sp.anon_blurb or '').strip() or scan_profile_pii(sp.anon_markdown, profile)):
+        return ''
+    blurb = generate_anon_blurb(application, sp.anon_markdown)
+    return blurb if (blurb and not scan_anon_for_identifiers(blurb, profile)) else ''
+
+
+def publish_profile_to_pool(application, *, blurb=None):
     """Make a QC-cleared student's already-generated anon profile visible to sponsors.
 
     Publishing is bound to the QC-Accept transition (→ ``recommended``) — the SINGLE point a
@@ -204,6 +221,8 @@ def publish_profile_to_pool(application):
     Idempotent and PII-backstopped: a no-op when there is no profile, it is already published,
     or the redaction scan finds a leak (left unpublished for a super to regenerate). The card
     blurb is generated here only as a fallback (the reviewer's finalise usually made it).
+    ``blurb``: one made earlier by `prepare_pool_blurb`, outside the caller's lock. Any str (even
+    '') is used instead of the fallback, so no network call runs here; None keeps the fallback.
     Returns True iff it published now."""
     from django.utils import timezone
     from .models import SponsorProfile
@@ -218,7 +237,8 @@ def publish_profile_to_pool(application):
     sp.anon_published_at = timezone.now()
     sp.realtime_notified_at = None
     if not (sp.anon_blurb or '').strip():
-        blurb = generate_anon_blurb(application, sp.anon_markdown)
+        if blurb is None:
+            blurb = generate_anon_blurb(application, sp.anon_markdown)
         sp.anon_blurb = blurb if (blurb and not scan_anon_for_identifiers(
             blurb, getattr(application, 'profile', None))) else ''
         fields.append('anon_blurb')
