@@ -4583,7 +4583,8 @@
           "parentIc": "IC ibu bapa",
           "incomeProof": "dokumen pendapatan",
           "strDoc": "dokumen STR",
-          "stpmResults": "keputusan STPM"
+          "stpmResults": "keputusan STPM",
+          "higherResults": "keputusan yang dimuat naik"
         },
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
         "declaredNote": "Diisytiharkan: {value}",

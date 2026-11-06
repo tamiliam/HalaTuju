@@ -15,7 +15,8 @@ import type { T } from './shared'
 
 const t = ((k: string) => k) as unknown as T
 
-function renderWith(extra: Partial<AdminScholarshipDetail> & Record<string, unknown>) {
+function renderWith(extra: Partial<AdminScholarshipDetail> & Record<string, unknown>,
+  vtip: (f: string) => string | undefined = () => undefined) {
   const app = {
     status: 'shortlisted', qualification: 'spm', grades: {}, documents: [], guardians: [],
     consents: [], top_choices: [], chosen_pathway: '', chosen_programme: {},
@@ -25,7 +26,7 @@ function renderWith(extra: Partial<AdminScholarshipDetail> & Record<string, unkn
   } as unknown as AdminScholarshipDetail
   return render(
     <ApplicantCards
-      app={app} t={t} vtip={() => undefined}
+      app={app} t={t} vtip={vtip as never}
       incomeValue={null} incomeTip={undefined} incomeNote={undefined}
       sizeValue={null} sizeTip={undefined} sizeNote={undefined} sizeNoteTone="muted"
       perCapita={null}
@@ -122,4 +123,16 @@ it("draws the student's results notes and never the team's (owner 2026-11-06)", 
   const notes = screen.getAllByTestId('results-change-note').map((p) => p.textContent)
   expect(notes).toEqual(['admin.scholarship.resultsChanged.refiledHigher'])
   expect(screen.queryByText(/teamSplit|Team/)).toBeNull()
+})
+
+it('ticks the CGPA entered when the uploaded results read the same CGPA, and only it (owner 2026-11-06)', () => {
+  renderWith(MATRIC, (f) => (f === 'higherCgpa' ? 'Matches the uploaded results' : undefined))
+  const cgpa = screen.getByText('admin.scholarship.higherCgpaEntered').parentElement as HTMLElement
+  expect(cgpa.querySelector('[title="Matches the uploaded results"]')).not.toBeNull()
+})
+
+it('no CGPA tick without a matching read', () => {
+  renderWith(MATRIC)
+  const cgpa = screen.getByText('admin.scholarship.higherCgpaEntered').parentElement as HTMLElement
+  expect(cgpa.querySelector('[title]')).toBeNull()
 })

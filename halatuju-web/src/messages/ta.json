@@ -4583,7 +4583,8 @@
           "parentIc": "பெற்றோரின் அடையாள அட்டை",
           "incomeProof": "வருமான ஆவணங்கள்",
           "strDoc": "STR ஆவணம்",
-          "stpmResults": "STPM முடிவுகள்"
+          "stpmResults": "STPM முடிவுகள்",
+          "higherResults": "பதிவேற்றிய முடிவுகள்"
         },
         "sizeAccounted": "குடும்பத்தில் உள்ள அனைவரும் கணக்கில் கொள்ளப்பட்டுள்ளனர்",
         "declaredNote": "அறிவிக்கப்பட்டது: {value}",

@@ -4583,7 +4583,8 @@
           "parentIc": "the parent's IC",
           "incomeProof": "the income documents",
           "strDoc": "the STR document",
-          "stpmResults": "the STPM results"
+          "stpmResults": "the STPM results",
+          "higherResults": "the uploaded results"
         },
         "sizeAccounted": "Everyone in the household is accounted for",
         "declaredNote": "Declared: {value}",

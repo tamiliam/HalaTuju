@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: the Matric / Asasi / Diploma CGPA entered carries a tick when the uploaded results read the same CGPA (owner) (2026-11-06)
+
+Web only. `fieldVerifications` → `higherCgpa` from the live higher-results upload's CGPA chip (`cgpa_status` 'match', within 0.05); `ApplicantCards` shows it beside "CGPA entered". New source label `admin.scholarship.verified.source.higherResults` (en/ms/ta; Tamil awaits review). Tests: `fieldVerification.test.ts`, `ApplicantCards.thirdRoute.test.tsx`.
+
 ### feat: a university student with no STPM/etc. results on file reads Unsure, not Probable (owner, #388) (2026-11-06)
 
 `higher_owed.cap`: Certain and Probable both fall to Unsure (`recommend`, amber) while a degree-bound tertiary student's higher results are owed and none is on file; a worse band stands, the reason item, the Check 2 ask and every gate are unchanged. `VERDICT_ENGINE_VERSION` 2026-11-06.6. Decisions: "Missing higher results cap Academic at Unsure". Tests: `test_third_route_higher_owed.py` (TestTheCapIsUnsure), `test_gift_asks_higher.py`.

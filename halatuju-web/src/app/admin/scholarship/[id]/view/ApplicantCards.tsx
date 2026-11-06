@@ -243,7 +243,7 @@ export function ApplicantCards({
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                   {third && <>
                     <Field label={t('admin.scholarship.heldResults')} value={`${t(`admin.scholarship.qualificationLabel.${third}`)}${app.overall_cgpa != null ? ` · CGPA ${fmt2(app.overall_cgpa)}` : ''}`} />
-                    <Field label={t('admin.scholarship.higherCgpaEntered')} value={fmt2(app.higher_cgpa)} />
+                    <Field label={t('admin.scholarship.higherCgpaEntered')} value={fmt2(app.higher_cgpa)} verifiedLabel={vtip('higherCgpa')} />
                     {third === 'diploma'
                       ? <Field label={t('admin.scholarship.diplomaFrom')} value={t(`admin.scholarship.diplomaInst.${app.higher_institution_type || 'unstated'}`)} />
                       : <Field label={t('admin.scholarship.higherKoko')} value={app.higher_koko} />}

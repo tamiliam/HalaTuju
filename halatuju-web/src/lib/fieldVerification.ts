@@ -19,6 +19,7 @@ export type VerifiableField =
   | 'nric'
   | 'school'
   | 'grades'
+  | 'higherCgpa'
   | 'chosenProgramme'
   | 'preUInstitution'
   | 'institution'
@@ -103,6 +104,9 @@ export function fieldVerifications(
   // The grades tick vouches for the whole chip row — which subjects AND their grades (owner,
   // 2026-11-06, app 262: a typed subject not on the slip was flagged, yet the grades still ticked).
   set('grades', 'results_slip', ['subjects', 'results'], 'resultsSlip')
+  // A Matriculation / Asasi / Diploma student's CGPA entered against the CGPA read off her results
+  // (owner 2026-11-06) — the drawer's own CGPA chip (`higherResultsFacts`), so they cannot disagree.
+  set('higherCgpa', 'higher_results', 'cgpa', 'higherResults')
 
   // Pathway (all three offer-based ticks). An offer is USABLE for verification unless it's a
   // genuine FAKE — a `not_offer_letter` / `not_*` read (it isn't an offer at all, so its fields are

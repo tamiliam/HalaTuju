@@ -56,6 +56,24 @@ describe('fieldVerifications', () => {
     }
   })
 
+  it('ticks a Matric / Asasi / Diploma CGPA when the uploaded results read the same CGPA (owner 2026-11-06)', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'higher_results', higher_check: { name: 'match', kind_status: 'match', cgpa_status: 'match' } },
+    ]))
+    expect(fv.higherCgpa).toEqual({ source: 'higherResults' })
+  })
+
+  it('does NOT tick that CGPA when it differs, is unread, is pending, or the upload is superseded', () => {
+    for (const cgpa_status of ['mismatch', 'unreadable', 'pending', '']) {
+      expect(fieldVerifications(app([
+        { doc_type: 'higher_results', higher_check: { name: 'match', kind_status: 'match', cgpa_status } },
+      ])).higherCgpa).toBeUndefined()
+    }
+    expect(fieldVerifications(app([
+      { doc_type: 'higher_results', superseded_at: '2026-11-01', higher_check: { cgpa_status: 'match' } },
+    ])).higherCgpa).toBeUndefined()
+  })
+
   it('does NOT tick grades on a grade mismatch with matching subjects', () => {
     const fv = fieldVerifications(app([
       { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'mismatch' } },
