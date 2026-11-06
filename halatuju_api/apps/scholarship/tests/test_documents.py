@@ -131,9 +131,11 @@ class TestDocumentApi(TestCase):
             application=self.app_a, doc_type='ic',
             storage_path=_key(self.app_a, 'ic', 'old-1'),
         )
+        # TD-115: the slot holds ONE live row, so the older copy is already history behind old_ic.
         old_ic_2 = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic',
             storage_path=_key(self.app_a, 'ic', 'old-2'),
+            superseded_at=_dj_tz.now(), superseded_by=old_ic,
         )
         income = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip',
@@ -154,10 +156,10 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live_ic.count(), 1)
         self.assertEqual(live_ic.first().storage_path, _key(self.app_a, 'ic', 'new'))
         new_id = live_ic.first().id
-        for old in (old_ic, old_ic_2):
+        for old, by in ((old_ic, new_id), (old_ic_2, old_ic.id)):
             old.refresh_from_db()
             self.assertIsNotNone(old.superseded_at)       # retained, not deleted
-            self.assertEqual(old.superseded_by_id, new_id)
+            self.assertEqual(old.superseded_by_id, by)    # the history chain is kept as it was
         self.assertTrue(ApplicantDocument.objects.filter(id=income.id).exists())
 
         # Phase 2: the stale blobs are RETAINED as version history — no Storage sweep.
@@ -699,16 +701,18 @@ class TestDocumentApi(TestCase):
         self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
         self.app_a.save(update_fields=['father_name'])
 
-        def ebill(tag, period):
+        def ebill(tag, period, request_code=''):
+            # TD-115: one live row per slot — the second copy is an officer re-request (the de-dup
+            # runs across request codes), the way two live bills can still meet.
             d = ApplicantDocument.objects.create(
                 application=self.app_a, doc_type='electricity_bill', household_member='',
-                storage_path=_key(self.app_a, 'eb', tag))
+                request_code=request_code, storage_path=_key(self.app_a, 'eb', tag))
             d.vision_fields = {'fields': {'billing_period': period, 'address': '12 Jln Mawar',
                                           'amount': 'RM90', 'name': 'RAVI A/L PERIAKARUPPAN'}}
             d.save(update_fields=['vision_fields'])
             return d
         may = ebill('may', '05/2026')
-        jun = ebill('jun', '06/2026')
+        jun = ebill('jun', '06/2026', request_code='income_doc_stale')
         superseded = dedupe_income_proof(self.app_a, '', 'electricity_bill')
         live = ApplicantDocument.objects.filter(
             application=self.app_a, doc_type='electricity_bill', superseded_at__isnull=True)
@@ -731,6 +735,7 @@ class TestDocumentApi(TestCase):
         clean.save(update_fields=['vision_fields'])
         stranger = ApplicantDocument.objects.create(          # newer period, but a stranger's name
             application=self.app_a, doc_type='electricity_bill', household_member='',
+            request_code='income_doc_stale',                  # TD-115: its own slot (a re-request)
             storage_path=_key(self.app_a, 'eb', 'stranger'))
         stranger.vision_fields = {'fields': {'billing_period': '06/2026', 'address': '9 Jln Lain',
                                              'amount': 'RM90', 'name': 'SURAINDRA A/S MAHA VAAM'}}
@@ -752,8 +757,9 @@ class TestDocumentApi(TestCase):
         # a non-dedupable type is never touched even with duplicates
         ApplicantDocument.objects.create(application=self.app_a, doc_type='parent_ic',
                                          household_member='father', storage_path='y')
-        ApplicantDocument.objects.create(application=self.app_a, doc_type='parent_ic',
-                                         household_member='father', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app_a, doc_type='parent_ic',   # TD-115:
+                                         household_member='father', request_code='req-z',  # own slot
+                                         storage_path='z')
         self.assertEqual(dedupe_income_proof(self.app_a, 'father', 'parent_ic'), [])
 
     def test_semester_check_name_nric_cgpa(self):
@@ -770,6 +776,7 @@ class TestDocumentApi(TestCase):
         self.assertEqual(c['name_status'], 'match')
         self.assertEqual(c['nric_status'], 'match')
         self.assertEqual(c['cgpa'], '3.50')
+        doc.delete()        # TD-115: the slot holds one live row; each case below takes it in turn
 
         # a semester-only slip: different name, no NRIC, no cumulative CGPA
         doc2 = ApplicantDocument.objects.create(
@@ -781,6 +788,7 @@ class TestDocumentApi(TestCase):
         self.assertEqual(c2['name_status'], 'mismatch')
         self.assertEqual(c2['nric_status'], 'no_ref')     # no NRIC on the slip → grey/red in FE
         self.assertEqual(c2['cgpa'], '')
+        doc2.delete()
 
         # unread slip → None (the row shows "Unread", not all-red)
         doc3 = ApplicantDocument.objects.create(

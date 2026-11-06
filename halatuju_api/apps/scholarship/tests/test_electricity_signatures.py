@@ -9,6 +9,7 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.electricity_doc import (
     MODEL_VERSION, electricity_genuineness, score_electricity_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import create_document
 
 
 class TestElectricitySignatures(SimpleTestCase):
@@ -85,7 +86,7 @@ class TestElectricityChipSurface(TestCase):
 
     def _bill(self, auth_status):
         vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='electricity_bill', storage_path='x',
             vision_fields=vf, uploaded_at=timezone.now())
 

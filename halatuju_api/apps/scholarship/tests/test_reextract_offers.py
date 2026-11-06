@@ -12,6 +12,7 @@ from io import StringIO
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
 from apps.scholarship.management.commands.reextract_offers import _below_genuine, PASS_MARKER
+from apps.scholarship.tests.factories import create_document
 
 
 def _app(suffix):
@@ -24,7 +25,7 @@ def _offer(app, auth=None, doc_type='offer_letter'):
     vf = {'fields': {'candidate_name': 'X'}}
     if auth is not None:
         vf['authenticity'] = auth
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type=doc_type, storage_path=f'{app.id}/of/x',
         vision_fields=vf, vision_run_at=timezone.now())
 

@@ -21,6 +21,7 @@ from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests import test_doc_signatures as spm
 from apps.scholarship.tests import test_signature_genuineness_wiring as wiring
 from apps.scholarship.tests.factories import make_application
+from apps.scholarship.tests.factories import create_document
 
 STPM_SLIP = """MPM
 MAJLIS PEPERIKSAAN MALAYSIA
@@ -162,7 +163,7 @@ class TheDoors(TestCase):
         self.app = make_application('profile_complete')
 
     def _results_upload(self, text, markers=None):
-        doc = ApplicantDocument.objects.create(application=self.app, doc_type='results_slip',
+        doc = create_document(application=self.app, doc_type='results_slip',
                                                storage_path=f'{self.app.id}/rs/x')
         with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
              patch('apps.scholarship.vision._extract_slip_deterministic', return_value=(None, {'reason': 'x'})), \
@@ -196,7 +197,7 @@ class TheDoors(TestCase):
         self.assertIn('document_not_genuine', [i['code'] for i in facts[0]['unresolved']])
 
     def _semester_upload(self, text):
-        doc = ApplicantDocument.objects.create(application=self.app, doc_type='semester_result',
+        doc = create_document(application=self.app, doc_type='semester_result',
                                                storage_path=f'{self.app.id}/sr/x')
         with patch('apps.scholarship.vision._fetch_image_bytes', return_value=None), \
              patch('apps.scholarship.vision.ocr_document', return_value={'text': text, 'error': None}), \

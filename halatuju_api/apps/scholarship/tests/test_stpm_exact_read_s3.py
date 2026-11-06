@@ -23,6 +23,7 @@ from apps.scholarship.tests.test_corpus_gaps_c3 import (CERTIFIED_COPY, ONLINE_C
                                                         STPM_SLIP)
 from apps.scholarship.tests.test_third_route_s3 import (DEGREE, MATRIC_HELD, MATRIC_PATHWAY, SPM_HELD, STPM_HELD,
                                                         STPM_FULL_HELD, STPM_FULL_READ, STPM_READ, _app, _doc)
+from apps.scholarship.tests.factories import create_document
 
 # The browser's print footer of the MPM results page (the result URL, a timestamp, "Page n of n").
 FOOTER = '\nhttps://stpm.mpm.edu.my/stpmX/result.php\n18/06/2026, 1:01 PM\nPage 1 of 2\n'
@@ -130,7 +131,7 @@ class TheUpload(TestCase):
         self.app = _app(STPM_HELD, DEGREE)
 
     def _upload(self, text, content_type='image/jpeg'):
-        doc = ApplicantDocument.objects.create(application=self.app, doc_type='higher_results',
+        doc = create_document(application=self.app, doc_type='higher_results',
                                                storage_path='test/hr', content_type=content_type)
         ocr = {'text': text, 'words': None, 'image': b'%PDF-x' if content_type.endswith('pdf') else b'img',
                'error': None}

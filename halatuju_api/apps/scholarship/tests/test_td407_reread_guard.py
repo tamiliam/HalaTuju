@@ -16,7 +16,7 @@ from django.test import TestCase, override_settings
 from apps.scholarship import vision
 from apps.scholarship.genuineness.bands import NOT_CHECKED
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.tests.factories import make_application
+from apps.scholarship.tests.factories import create_document, make_application
 from apps.scholarship.tests.test_corpus_gaps_c2 import UITM_OFFER
 
 STORED = {
@@ -31,7 +31,7 @@ _FIELDS = {'fields': {'candidate_name': 'X', 'programme': 'Diploma'}, 'warnings'
 
 
 def _offer(app, auth):
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/of/{auth["status"]}',
         vision_fields={'fields': {'candidate_name': 'X'}, 'student_verdict': 'ok', 'authenticity': dict(auth)})
 

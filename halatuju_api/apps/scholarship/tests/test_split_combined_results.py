@@ -16,6 +16,7 @@ from apps.scholarship.management.commands import split_combined_results as cmd
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.tests.factories import make_cohort
 from apps.scholarship.tests.test_third_route_s4 import DEGREE, POLY, SPM_HELD, STPM_HELD, _app
+from apps.scholarship.tests.factories import create_document
 
 WIDTHS = (101, 202, 303)        # page 1, 2, 3
 
@@ -67,7 +68,7 @@ class SplitCase(TestCase):
 
     def _combined(self, app, doc_type='results_slip', **kw):
         kw.setdefault('content_type', 'application/pdf')
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type=doc_type, storage_path=f'test/{doc_type}/orig',
             original_filename='results.pdf',
             vision_fields={'fields': {'exam': 'SPM'}, 'student_verdict': 'ok'}, **kw)
@@ -167,7 +168,7 @@ class TestApplySplit(SplitCase):
         """Review fix 1: a part that lost a promotion contest would never be read — so no contest."""
         app = self._app()
         doc = self._combined(app)
-        older = ApplicantDocument.objects.create(application=app, doc_type='higher_results',
+        older = create_document(application=app, doc_type='higher_results',
                                                  results_kind='stpm', storage_path='test/old')
         plan = [self._split(app, doc, [{'pages': [1], 'slot': 'results_slip'},
                                        {'pages': [2], 'slot': 'higher_results', 'kind': 'stpm'}])]
@@ -259,7 +260,7 @@ class TestMoveByTheTeam(SplitCase):
     def test_a_move_into_an_occupied_card_is_refused(self):
         app = self._app()
         doc = self._combined(app)
-        live = ApplicantDocument.objects.create(application=app, doc_type='higher_results',
+        live = create_document(application=app, doc_type='higher_results',
                                                 results_kind='stpm', storage_path='test/live')
         out = self._run([{'app': app.id, 'doc': doc.id, 'to': 'higher_results', 'kind': 'stpm'}], '--apply')
         self.assertIn(f'already holds live document(s) #{live.id}', out)

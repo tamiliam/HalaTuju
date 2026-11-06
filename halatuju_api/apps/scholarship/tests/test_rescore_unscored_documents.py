@@ -14,6 +14,7 @@ from apps.scholarship.genuineness import results_doc, signature_genuineness
 from apps.scholarship.management.commands import rescore_unscored_documents as cmd
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application
+from apps.scholarship.tests.factories import create_document
 
 
 def _text_of(signatures):
@@ -42,7 +43,7 @@ class RescoreUnscoredDocumentsTest(TestCase):
             vf['text'] = text
         if auth:
             vf['authenticity'] = {'status': auth}
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type=doc_type, storage_path=f'x/{doc_type}/{len(text)}',
             vision_fields=vf)
 

@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.factories import create_document
 
 # The #374 SHAPE — a self-filled parents' income form (synthetic: no real name, IC or amount).
 FORM = ('BORANG PENGESAHAN PENDAPATAN IBU BAPA / PENJAGA\n'
@@ -346,7 +347,7 @@ def _doc(app, doc_type, *, member='father', fields=None, seen='declaration', sta
     vf = {'fields': fields or {}, 'student_verdict': verdict, 'error': ''}
     if seen is not None:
         vf['authenticity'] = {'status': status, 'doc_seen': seen, 'probability': 0.5}
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type=doc_type, household_member=member, vision_fields=vf,
         storage_path=f'test/{doc_type}/{ApplicantDocument.objects.count()}', vision_run_at=timezone.now())
 
@@ -635,7 +636,7 @@ class _Case(TestCase):
             other_family_members=[], student=make_student(name=STUDENT, nric=STUDENT_NRIC), **kw)
 
     def _father_ic(self, app):
-        ApplicantDocument.objects.create(
+        create_document(
             application=app, doc_type='parent_ic', household_member='father', vision_name=FATHER,
             vision_nric=FATHER_NRIC, storage_path=f'test/pic/{app.id}', vision_run_at=timezone.now())
 

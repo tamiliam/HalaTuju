@@ -11,13 +11,14 @@ from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.pathway_engine import (is_confirmation_letter, offer_fails, offer_official_status,
                                              student_offer_check)
 from apps.scholarship.tests.factories import make_application
+from apps.scholarship.tests.factories import create_document
 
 
 def _offer(app, status, doc_seen='ua_offer', **fields):
     prof = app.profile
     f = {'candidate_name': prof.name, 'candidate_nric': prof.nric, 'programme': 'DIPLOMA KEJURUTERAAN AWAM',
          'institution': 'POLITEKNIK UNGKU OMAR', **fields}
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/{status}',
         vision_fields={'fields': f, 'student_verdict': 'ok', 'warnings': [], 'error': '',
                        'authenticity': {'status': status, 'doc_seen': doc_seen, 'probability': 0.5}},

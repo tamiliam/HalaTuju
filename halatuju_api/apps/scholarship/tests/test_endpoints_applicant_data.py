@@ -24,6 +24,7 @@ from apps.scholarship.models import ApplicantDocument, Referee
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_student,
 )
+from apps.scholarship.tests.factories import create_document
 
 API = '/api/v1/admin/scholarship/'
 GEMINI_REPLY = {'markdown': 'Identity is clear; income needs the payslip.', 'model_used': 'gm-x'}
@@ -114,7 +115,7 @@ class TestDocumentHelp(TestCase):
         cache.clear()
         self.student = make_student(name='Kavitha Raman')
         self.app = make_application('shortlisted', student=self.student)
-        self.doc = ApplicantDocument.objects.create(
+        self.doc = create_document(
             application=self.app, doc_type='ic', storage_path='test/ic.jpg',
             vision_run_at=timezone.now(), vision_error='image too blurred')
 
@@ -137,7 +138,7 @@ class TestDocumentHelp(TestCase):
 
     @mock.patch('apps.scholarship.profile_engine._call_gemini_text', return_value=GEMINI_REPLY)
     def test_a_document_with_nothing_wrong_spends_no_ai_call(self, gemini):
-        unread = ApplicantDocument.objects.create(
+        unread = create_document(
             application=self.app, doc_type='ic', storage_path='test/ic2.jpg')
         r = self._get(unread)
         self.assertEqual((r.status_code, r.json()), (200, {'message': '', 'source': 'none'}))

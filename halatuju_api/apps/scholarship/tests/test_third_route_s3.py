@@ -28,6 +28,7 @@ from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_cohort, make_student, matched_str_pair,
 )
 from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
+from apps.scholarship.tests.factories import create_document
 
 SPM = {f'sub{i}': 'A' for i in range(10)}
 STPM = {'PA': 'A', 'MATH_T': 'A-', 'PHYSICS': 'A-'}           # academic CGPA (4+3.67+3.67)/3 = 3.78
@@ -82,7 +83,7 @@ def _app(profile_fields, plan, stage='shortlisted', **kw):
 
 def _doc(app, doc_type, fields=None, verdict='ok', **kw):
     vf = {'fields': fields, 'student_verdict': verdict, 'error': ''} if fields is not None else {}
-    return ApplicantDocument.objects.create(application=app, doc_type=doc_type,
+    return create_document(application=app, doc_type=doc_type,
                                             storage_path=f'test/{doc_type}', vision_fields=vf, **kw)
 
 

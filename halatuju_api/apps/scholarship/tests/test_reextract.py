@@ -10,6 +10,7 @@ from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
+from apps.scholarship.tests.factories import create_document
 
 MARKER = 'reextract_2026_06'
 
@@ -22,10 +23,10 @@ class ReextractCommandTests(TestCase):
         self.app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=profile, status='interviewing')
         for i in range(3):
-            ApplicantDocument.objects.create(
+            create_document(
                 application=self.app, doc_type='offer_letter', storage_path=f'o{i}')
         # A photo must NEVER be picked up (not an extractable type).
-        ApplicantDocument.objects.create(application=self.app, doc_type='photo', storage_path='p')
+        create_document(application=self.app, doc_type='photo', storage_path='p')
 
     def _marked(self):
         return ApplicantDocument.objects.filter(**{f'vision_fields__{MARKER}': True}).count()
@@ -88,7 +89,7 @@ class ReextractCommandTests(TestCase):
         change is reachable in production ONLY through the env vars (TD-234). A NEW pass name
         must make already-done docs eligible again WITHOUT re-sweeping the whole corpus."""
         mock_re.side_effect = self._stamped_read
-        ApplicantDocument.objects.create(
+        create_document(
             application=self.app, doc_type='birth_certificate', storage_path='bc')
         call_command('reextract_documents', '--limit', '9')          # the standing pass
         self.assertEqual(mock_re.call_count, 4)                      # 3 offers + 1 certificate

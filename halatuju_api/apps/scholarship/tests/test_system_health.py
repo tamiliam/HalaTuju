@@ -18,6 +18,7 @@ from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application,
 )
 from apps.scholarship.views import CronRunView
+from apps.scholarship.tests.factories import create_document
 
 _402 = ('All AI models failed: gemini-2.5-flash: 402 RESOURCE_EXHAUSTED. Your prepayment credits '
         'are depleted.')
@@ -262,13 +263,13 @@ class ReadServiceRows(TestCase):
         self.apps = [make_application('shortlisted'), make_application('shortlisted')]
 
     def gemini_read(self, app, minutes_ago, error=''):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='offer_letter', storage_path=f'x/{ApplicantDocument.objects.count()}',
             content_type='image/jpeg', vision_fields_run_at=self.now - timedelta(minutes=minutes_ago),
             vision_fields={'capture': 'ai', 'error': error, 'fields': {} if error else {'a': 1}})
 
     def vision_read(self, app, minutes_ago, error='', nric=''):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='ic', storage_path=f'v/{ApplicantDocument.objects.count()}',
             content_type='image/jpeg', vision_run_at=self.now - timedelta(minutes=minutes_ago),
             vision_error=error, vision_nric=nric)

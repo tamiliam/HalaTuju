@@ -19,6 +19,7 @@ from apps.scholarship.resolution import (
     BANK_DETAILS_CODE,
 )
 from apps.scholarship.vision import doc_student_verdict
+from apps.scholarship.tests.factories import create_document
 
 _TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 _STUDENT = 'KAVITHA A/P SURESH'
@@ -51,7 +52,7 @@ class _Base(TestCase):
         )
 
     def _add_bank_doc(self, app, *, verdict='ok', fields=None):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='bank_statement', storage_path=f'{app.id}/bank/x',
             vision_run_at=timezone.now(),
             vision_fields={'fields': fields if fields is not None else _bank_fields(),
@@ -93,7 +94,7 @@ class TestUploadVerdict(_Base):
 
     def test_unscanned_bank_doc_is_pending(self):
         app = self._make('bank-pend')
-        doc = ApplicantDocument.objects.create(
+        doc = create_document(
             application=app, doc_type='bank_statement', storage_path='x', vision_fields={})
         self.assertEqual(doc_match_verdict(doc), 'pending')
 

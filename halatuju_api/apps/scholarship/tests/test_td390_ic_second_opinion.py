@@ -19,6 +19,7 @@ from django.utils import timezone
 from apps.scholarship import read_errors, vision
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.factories import create_document
 
 _402 = ("All AI models failed: gemini-2.5-flash: 402 RESOURCE_EXHAUSTED. Your prepayment credits are "
         "depleted.; gemini-2.5-flash-lite: 402 RESOURCE_EXHAUSTED.")
@@ -32,7 +33,7 @@ STUDENT_NAME = 'Kavitha A/P Rajan'
 def _doc(application, doc_type='ic', **kw):
     kw.setdefault('storage_path', f'test/{doc_type}/{ApplicantDocument.objects.count()}')
     kw.setdefault('content_type', 'image/jpeg')
-    return ApplicantDocument.objects.create(application=application, doc_type=doc_type, **kw)
+    return create_document(application=application, doc_type=doc_type, **kw)
 
 
 def _read(doc, *, nric, name, second):

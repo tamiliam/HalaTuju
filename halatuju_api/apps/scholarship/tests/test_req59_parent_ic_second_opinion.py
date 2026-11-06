@@ -18,6 +18,7 @@ from apps.scholarship import vision
 from apps.scholarship.income_engine import parent_ic_reference
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.factories import create_document
 
 _IMAGE = b'\xff\xd8\xff\xe0 not a real jpeg, never decoded'
 STUDENT_NRIC = '050101-14-1234'
@@ -27,7 +28,7 @@ FATHER_NRIC = '700101-14-5677'
 def _doc(application, doc_type, member='', **kw):
     kw.setdefault('storage_path', f'test/{doc_type}/{ApplicantDocument.objects.count()}')
     kw.setdefault('content_type', 'image/jpeg')
-    return ApplicantDocument.objects.create(application=application, doc_type=doc_type,
+    return create_document(application=application, doc_type=doc_type,
                                             household_member=member, **kw)
 
 

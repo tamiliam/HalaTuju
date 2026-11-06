@@ -23,12 +23,13 @@ from apps.scholarship.pathway_engine import (
 from apps.scholarship.promotion import is_pathway_switch
 from apps.scholarship.services.blockers import document_unreadable_blockers
 from apps.scholarship.tests.factories import make_application
+from apps.scholarship.tests.factories import create_document
 
 
 def _offer(app, status='genuine', superseded=False, **fields):
     prof = app.profile
     base = {'candidate_name': prof.name, 'candidate_nric': prof.nric.replace('-', '')}
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/{len(fields)}{superseded}',
         vision_fields={'fields': {**base, **fields}, 'authenticity': {'status': status, 'doc_seen': 'ua_offer'},
                        'student_verdict': 'ok', 'warnings': [], 'error': ''},

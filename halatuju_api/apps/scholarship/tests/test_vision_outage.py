@@ -9,6 +9,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import detect_vision_outage
+from apps.scholarship.tests.factories import create_document
 
 
 class TestVisionOutage(TestCase):
@@ -20,7 +21,7 @@ class TestVisionOutage(TestCase):
             cohort=cls.cohort, profile=cls.profile, status='shortlisted')
 
     def _doc(self, *, error='', nric='', name='', hours_ago=1, doc_type='ic'):
-        d = ApplicantDocument.objects.create(
+        d = create_document(
             application=self.app, doc_type=doc_type, storage_path='x',
             vision_error=error, vision_nric=nric, vision_name=name,
             vision_run_at=timezone.now() - timedelta(hours=hours_ago))

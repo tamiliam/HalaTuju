@@ -11,6 +11,7 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.school_leaving_doc import (
     MODEL_VERSION, school_leaving_genuineness, score_school_leaving_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import create_document
 
 # A full standard numbered Sijil Berhenti Sekolah (synthetic, modelled on the real form structure —
 # the owner-specified signature set: title + Kad Pengenalan · Tarikh/Tempat Lahir · Tarikh Masuk
@@ -113,7 +114,7 @@ class TestSchoolLeavingChipSurface(TestCase):
 
     def _cert(self, auth_status):
         vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='school_leaving_cert', storage_path='x',
             vision_fields=vf, uploaded_at=timezone.now())
 
@@ -142,7 +143,7 @@ class TestAcademicDuplicateCollapse(TestCase):
 
     def _cert(self, request_code, genuine=True):
         st = 'genuine' if genuine else 'suspect'
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='school_leaving_cert', storage_path='x',
             request_code=request_code, vision_fields={'authenticity': {'status': st}},
             uploaded_at=timezone.now())

@@ -31,6 +31,7 @@ from apps.scholarship.pathway_engine import offer_reporting_date_unknown, studen
 from apps.scholarship.services.offer_sync import institution_fill
 from apps.scholarship.tests.factories import make_application
 from apps.scholarship.tests.test_offer_course_match import BPP, UPM, seed_realign_catalogue
+from apps.scholarship.tests.factories import create_document
 
 #: A course taught at TWO campuses of one invented institute — the shape of IPG / KKTM / a
 #: multi-campus university diploma, where the catalogue holds one row per campus.
@@ -54,7 +55,7 @@ def seed_multi_campus():
 def _offer(app, **fields):
     prof = app.profile
     base = {'candidate_name': prof.name, 'candidate_nric': prof.nric.replace('-', '')}
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
         vision_fields={'fields': {**base, **fields}, 'authenticity': {'status': 'genuine'},
                        'student_verdict': 'ok', 'warnings': [], 'error': '', 'offer_reader_version': '2.0.0'},

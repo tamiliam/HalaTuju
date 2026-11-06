@@ -24,6 +24,7 @@ from apps.scholarship.tests.test_third_route_s3 import (
 )
 from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
 from apps.scholarship.verdict_ladder import _academic_red_chips
+from apps.scholarship.tests.factories import create_document
 
 OWN = 'ROHANA A/P GOPAL'
 MISREAD = 'RQHANA A/P GOPAL'          # the #56 shape: one O read as Q, in one part
@@ -120,7 +121,7 @@ def _doc(app, doc_type, fields=None, verdict='ok', genuineness=None):
     vf = {'fields': fields, 'student_verdict': verdict, 'error': ''} if fields is not None else {}
     if genuineness is not None:
         vf['authenticity'] = {'status': genuineness, 'reason': 'test'}
-    return ApplicantDocument.objects.create(application=app, doc_type=doc_type,
+    return create_document(application=app, doc_type=doc_type,
                                             storage_path=f'test/{doc_type}', vision_fields=vf)
 
 

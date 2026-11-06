@@ -8,6 +8,7 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.salary_doc import MODEL_VERSION, salary_genuineness, score_family
 from apps.scholarship.income_engine import usable_salary_slip
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import create_document
 
 
 class TestSalarySignatures(SimpleTestCase):
@@ -101,7 +102,7 @@ class TestUsableSalarySlipGate(TestCase):
             # this file is about the family; `test_income_declarations` owns the approver rule.
             from apps.scholarship.tests.factories import APPROVED_INFORMAL_FIELDS
             vf['fields'] = dict(APPROVED_INFORMAL_FIELDS)
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='salary_slip', household_member='father',
             storage_path='x', vision_fields=vf, uploaded_at=timezone.now())
 

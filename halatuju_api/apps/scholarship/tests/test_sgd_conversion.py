@@ -23,6 +23,7 @@ from apps.scholarship.serializers import ApplicantDocumentSerializer
 from apps.scholarship.sgd_conversion import sgd_conversion
 from apps.scholarship.tests.factories import (
     authed_client, make_admin, make_application, make_cohort, make_org, make_programme)
+from apps.scholarship.tests.factories import create_document
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -33,7 +34,7 @@ MY_SLIP = {**SG_SLIP, 'employer': 'Contoh Sdn Bhd', 'currency': 'MYR',
 
 
 def _slip(app, fields, doc_type='salary_slip'):
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type=doc_type, household_member='father', storage_path='x',
         vision_fields={'fields': fields, 'student_verdict': 'ok', 'capture': 'ai'})
 

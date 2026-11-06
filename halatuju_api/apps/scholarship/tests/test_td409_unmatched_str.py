@@ -11,13 +11,14 @@ from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.factories import create_document
 
 STUDENT, STUDENT_NRIC = 'Tan Mei Hua', '080808-14-5566'
 
 
 def _doc(app, doc_type, **kw):
     kw.setdefault('storage_path', f'test/{doc_type}/{ApplicantDocument.objects.count()}')
-    return ApplicantDocument.objects.create(application=app, doc_type=doc_type, **kw)
+    return create_document(application=app, doc_type=doc_type, **kw)
 
 
 class _STRCase(TestCase):

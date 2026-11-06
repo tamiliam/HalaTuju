@@ -17,6 +17,7 @@ from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.vision import _lock_nric_if_confirmed
+from apps.scholarship.tests.factories import create_document
 
 CARD = 'THARANI A/P A.UDAYA KUMAR'
 NRIC = '080722-14-1140'
@@ -37,7 +38,7 @@ class _Base(TestCase):
 
     def _ic(self, *, name=CARD, nric=NRIC, status='genuine', doc_type='ic'):
         vf = {'authenticity': {'status': status}} if status else {}
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x',
             vision_name=name, vision_nric=nric, vision_run_at=timezone.now(),
             vision_error='', vision_fields=vf,

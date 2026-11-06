@@ -10,6 +10,7 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.water_doc import (
     MODEL_VERSION, water_genuineness, score_water_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import create_document
 
 
 class TestWaterSignatures(SimpleTestCase):
@@ -109,7 +110,7 @@ class TestWaterChipSurface(TestCase):
 
     def _bill(self, auth_status):
         vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='water_bill', storage_path='x',
             vision_fields=vf, uploaded_at=timezone.now())
 
