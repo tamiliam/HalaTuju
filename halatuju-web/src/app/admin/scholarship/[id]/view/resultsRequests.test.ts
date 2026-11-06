@@ -37,18 +37,17 @@ describe('#37: results by name', () => {
   })
 })
 
-describe('D15: the Academic card names who moved a higher result out of the SPM card', () => {
+describe('D15: the Academic card draws a higher result the student moved out of the SPM card', () => {
+  // The team's own moves are no longer served to the cockpit (owner 2026-11-06, `cockpit_notes`).
   it.each([
     [{ kind: 'refiled_higher', by: 'student' }, 'admin.scholarship.resultsChanged.refiledHigher'],
-    [{ kind: 'refiled_higher', by: 'team' }, 'admin.scholarship.resultsChanged.refiledHigherTeam'],
     [{ kind: 'refiled_spm' }, 'admin.scholarship.resultsChanged.refiledSpm'],
     [{ kind: 'only_spm', by: 'student' }, 'admin.scholarship.resultsChanged.onlySpm'],
   ])('%j → %s', (note, key) => {
     expect(resultsChangeKey(note)).toBe(key)
   })
-  it('the team line reads as the brief asked', () => {
-    expect(en.admin.scholarship.resultsChanged.refiledHigherTeam)
-      .toBe('Moved from the SPM card to the {kind} results card by the HalaTuju team on {date}.')
+  it('the student line reads as before', () => {
+    expect(en.admin.scholarship.resultsChanged.refiledHigher).toContain('the student moved')
   })
 })
 

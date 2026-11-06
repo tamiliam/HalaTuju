@@ -111,3 +111,15 @@ it('no SPM prereq: no SPM chips at all, even with an earlier `grades` entry', ()
   expect(screen.queryByText('math')).toBeNull()
   expect(screen.queryByText('D')).toBeNull()
 })
+
+it("draws the student's results notes and never the team's (owner 2026-11-06)", () => {
+  // The server serves the student's notes only (`results_route.cockpit_notes`); an old cached
+  // payload's team split has no line on this card any more.
+  renderWith({ ...MATRIC, results_change_notes: [
+    { at: '2026-10-26T00:00:00', kind: 'refiled_higher', by: 'student', results_kind: 'matric' },
+    { at: '2026-10-28T00:00:00', kind: 'team_split', by: 'team', slot: 'results_slip', pages: [1] },
+  ] } as never)
+  const notes = screen.getAllByTestId('results-change-note').map((p) => p.textContent)
+  expect(notes).toEqual(['admin.scholarship.resultsChanged.refiledHigher'])
+  expect(screen.queryByText(/teamSplit|Team/)).toBeNull()
+})

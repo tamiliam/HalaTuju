@@ -196,6 +196,32 @@ def _note(application, kind, **fields):
     return note
 
 
+def is_team_note(note) -> bool:
+    """A note the TEAM wrote (owner, 2026-11-06: "They have served their purpose"): a split of a
+    combined upload (`team_split`, always the team) or a refile done by the team (`by == 'team'`)."""
+    return isinstance(note, dict) and (note.get('kind') == 'team_split' or (
+        note.get('kind') in ('refiled_higher', 'refiled_spm') and note.get('by') == 'team'))
+
+
+def cockpit_notes(notes) -> list:
+    """The `results_change_notes` the cockpit is SERVED: the student's own (a refile, "SPM results
+    only"), never the team's housekeeping (`is_team_note`). The stored list is untouched -
+    `wrong_slip` still reads the team's `refiled_higher` notes to know a document was moved."""
+    return [n for n in (notes if isinstance(notes, list) else []) if not is_team_note(n)]
+
+
+class ServesTheStudentsResultsNotes:
+    """The officer's detail payload serves `results_change_notes` through `cockpit_notes` (the
+    value replaced in place, so the key keeps its position; `serializers_admin.py` is at its size
+    allowance, the reason `serializers_admin_gift` gives for appending in `to_representation`)."""
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if 'results_change_notes' in data:
+            data['results_change_notes'] = cockpit_notes(data['results_change_notes'])
+        return data
+
+
 def refile_to_spm(application, doc, *, by: str = '', **note_fields) -> 'object':
     """Move a higher-results upload that reads as an SPM slip into the SPM slot, BEFORE submit only
     (the caller refuses otherwise). The FILE is kept; its higher-results READ is cleared (fix 6) so

@@ -8,7 +8,7 @@ from .models import (
     FundingNeed, GraduationMessage, InterviewSession, InterviewSlot, ReviewerProfile,
     ScholarshipApplication, SponsorProfile,
 )
-from . import pool, serializers_admin_family as _family, serializers_admin_gift as _gift, stpm_marks as _stpm
+from . import pool, results_route as _notes, serializers_admin_family as _family, serializers_admin_gift as _gift, stpm_marks as _stpm
 # The Requests-space payloads live in their own file since 2026-10-29 (moves only).
 # Imported HERE, at the top, so the re-export below is not an E402; the bindings
 # themselves sit where the code used to be, so a reader finds them in place.
@@ -295,7 +295,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
 
 
-class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, serializers.ModelSerializer):
+class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.

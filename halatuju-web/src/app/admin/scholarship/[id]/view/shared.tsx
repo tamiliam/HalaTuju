@@ -86,36 +86,16 @@ export function resolveReq(catKey: string, qual: string): ResolvedReq | null {
   const opt = c.options!.find((o) => o.value === qual)
   return opt ? { docType: opt.docType, member: '', ...(opt.kind ? { kind: opt.kind } : {}) } : null
 }
-/** The Academic card's line for one `results_change_notes` entry (third results route S3b + S4):
- *  "SPM results only", an SPM slip moved out of the higher card, or (S4, D15) a higher result moved
- *  OUT of the SPM card — by the student, or by the team (`by: 'team'`, the 2026-10-26 backfill); and the
- *  team's split of a combined upload ('team_split', one note per part) or its whole move back to SPM. */
-/** A split part's pages for its note: `[2, 3]` → "2–3", `[1, 3]` → "1, 3". */
-export function notePages(pages?: number[]): string {
-  if (!pages || !pages.length) return '—'
-  const contiguous = pages.every((p, i) => i === 0 || p === pages[i - 1] + 1)
-  return contiguous && pages.length > 1 ? `${pages[0]}–${pages[pages.length - 1]}` : pages.join(', ')
-}
-
-export function resultsChangeKey(n: { kind: string; by?: string; from?: string; slot?: string }): string {
-  // The team's split of a combined upload (`split_combined_results`, 2026-10-28): one note per part.
-  if (n.kind === 'team_split') {
-    return n.slot === 'higher_results' ? 'admin.scholarship.resultsChanged.teamSplitHigher'
-      : 'admin.scholarship.resultsChanged.teamSplitSpm'
-  }
-  if (n.kind === 'refiled_spm') {
-    return n.by === 'team' ? 'admin.scholarship.resultsChanged.refiledSpmTeam'
-      : 'admin.scholarship.resultsChanged.refiledSpm'
-  }
-  if (n.kind === 'refiled_higher') {
-    // The team's moves (2026-10-27) name the card they came FROM: the SPM card or the semester result.
-    if (n.by === 'team') {
-      return n.from === 'semester_result' ? 'admin.scholarship.resultsChanged.refiledHigherTeamSemester'
-        : 'admin.scholarship.resultsChanged.refiledHigherTeam'
-    }
-    return 'admin.scholarship.resultsChanged.refiledHigher'
-  }
-  return 'admin.scholarship.resultsChanged.onlySpm'
+/** The Academic card's line for one SERVED `results_change_notes` entry (third results route S3b +
+ *  S4): the student's own — "SPM results only", an SPM slip she moved out of the higher card, or a
+ *  higher result she moved OUT of the SPM card. The team's housekeeping notes (its refiles and the
+ *  split of a combined upload) are not served to the cockpit any more (owner, 2026-11-06:
+ *  `results_route.cockpit_notes`); a kind this card has no line for is not drawn (`null`). */
+export function resultsChangeKey(n: { kind: string }): string | null {
+  if (n.kind === 'refiled_spm') return 'admin.scholarship.resultsChanged.refiledSpm'
+  if (n.kind === 'refiled_higher') return 'admin.scholarship.resultsChanged.refiledHigher'
+  if (n.kind === 'only_spm') return 'admin.scholarship.resultsChanged.onlySpm'
+  return null
 }
 
 /** The higher-results slot the Documents drawer draws as MISSING, read off the SERVED Academic

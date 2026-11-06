@@ -6,12 +6,13 @@
  *
  *  - the Documents drawer draws the "STPM results" slot as MISSING from the SERVED Academic fact
  *    (`higher_results_not_on_file`, or S3's `higher_results_missing`) — never re-derived here;
- *  - the team's note names the card a moved result came FROM (the SPM card or the semester result);
+ *  - the team's own notes (its refiles, its split of a combined upload) are no longer drawn (owner
+ *    2026-11-06: not served, `results_route.cockpit_notes`); the student's still are;
  *  - the student's Check-2 ask reads "Please upload your STPM results" in her language.
  */
 import { render, screen } from '@testing-library/react'
 import { DocumentsDrawer } from './DocumentsDrawer'
-import { missingHigherKind, notePages, resultsChangeKey } from './shared'
+import { missingHigherKind, resultsChangeKey } from './shared'
 import { KNOWN_CODES, localiseParams } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictFact } from '@/lib/admin-api'
 import en from '@/messages/en.json'
@@ -55,22 +56,23 @@ describe('#388: the missing higher-results slot is read off the served Academic 
   })
 })
 
-describe("the team's note names the card it moved the result from", () => {
+describe("the Academic card draws the student's notes only (owner 2026-11-06)", () => {
   it.each([
-    [{ kind: 'refiled_higher', by: 'team', from: 'semester_result' }, 'admin.scholarship.resultsChanged.refiledHigherTeamSemester'],
-    [{ kind: 'refiled_higher', by: 'team', from: 'results_slip' }, 'admin.scholarship.resultsChanged.refiledHigherTeam'],
-    [{ kind: 'refiled_higher', by: 'team' }, 'admin.scholarship.resultsChanged.refiledHigherTeam'],
-    [{ kind: 'refiled_higher', by: 'student', from: 'semester_result' }, 'admin.scholarship.resultsChanged.refiledHigher'],
+    [{ kind: 'refiled_higher', by: 'student' }, 'admin.scholarship.resultsChanged.refiledHigher'],
+    [{ kind: 'refiled_spm' }, 'admin.scholarship.resultsChanged.refiledSpm'],
+    [{ kind: 'only_spm' }, 'admin.scholarship.resultsChanged.onlySpm'],
+    [{ kind: 'team_split' }, null],
   ])('%j → %s', (note, key) => {
     expect(resultsChangeKey(note)).toBe(key)
   })
-  it('both lines exist in all three languages', () => {
+  it("the team's lines are gone from all three languages", () => {
     for (const cat of [en, ms, ta]) {
-      expect(cat.admin.scholarship.resultsChanged.refiledHigherTeamSemester).toContain('{kind}')
-      expect(cat.admin.scholarship.resultsChanged.refiledHigherTeam).toContain('{kind}')
+      const rc = cat.admin.scholarship.resultsChanged as Record<string, unknown>
+      for (const k of ['refiledHigherTeam', 'refiledHigherTeamSemester', 'refiledSpmTeam', 'teamSplitSpm', 'teamSplitHigher']) {
+        expect(rc[k]).toBeUndefined()
+      }
+      expect(rc.refiledHigher).toContain('{kind}')
     }
-    expect(en.admin.scholarship.resultsChanged.refiledHigherTeamSemester)
-      .toBe('Moved from the semester result card to the {kind} results card by the HalaTuju team on {date}.')
   })
 })
 
@@ -88,28 +90,5 @@ describe("the student's Check-2 ask", () => {
     expect(out.kind).toBe(word)
     expect(lookup(cat)('scholarship.actionCentre.item.higher_results_requested.title').replace('{kind}', out.kind))
       .toBe(cat === en ? 'Please upload your final STPM results' : 'Sila muat naik keputusan akhir Matrikulasi anda')   // M4b: only the final result counts
-  })
-})
-
-describe("the team's split of a combined upload, and its move back to SPM, read as the team's", () => {
-  it.each([
-    [{ kind: 'team_split', by: 'team', slot: 'higher_results' }, 'admin.scholarship.resultsChanged.teamSplitHigher'],
-    [{ kind: 'team_split', by: 'team', slot: 'results_slip' }, 'admin.scholarship.resultsChanged.teamSplitSpm'],
-    [{ kind: 'refiled_spm', by: 'team' }, 'admin.scholarship.resultsChanged.refiledSpmTeam'],
-    [{ kind: 'refiled_spm' }, 'admin.scholarship.resultsChanged.refiledSpm'],
-  ])('%j → %s', (note, key) => {
-    expect(resultsChangeKey(note)).toBe(key)
-  })
-  it('names the pages', () => {
-    expect([notePages([1]), notePages([2, 3]), notePages([1, 3]), notePages(undefined)])
-      .toEqual(['1', '2–3', '1, 3', '—'])
-  })
-  it('the lines exist in all three languages', () => {
-    for (const cat of [en, ms, ta]) {
-      const rc = cat.admin.scholarship.resultsChanged
-      expect(rc.teamSplitHigher).toContain('{kind}')
-      for (const k of ['teamSplitHigher', 'teamSplitSpm'] as const) expect(rc[k]).toContain('{pages}')
-      expect(rc.refiledSpmTeam).toContain('{date}')
-    }
   })
 })
