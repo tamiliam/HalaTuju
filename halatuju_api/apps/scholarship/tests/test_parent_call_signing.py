@@ -13,6 +13,7 @@ THE RECORD FIXES — a call is recorded only against the number the admin was SH
 in between is refused), a confirming call needs a number on file, and a corrected number is stored
 with the name the parent gave.
 """
+from datetime import datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
 
@@ -21,6 +22,7 @@ from django.core.management import call_command
 from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.scholarship import bursary, parent_call
 from apps.scholarship.bursary import BursaryError
@@ -242,3 +244,131 @@ class TestTheListAndTheCaseFlagAgree(TestCase):
                 flag = parent_call.needs_parent_call(student)
                 self.assertEqual(flag, student.pk in listed)
                 self.assertEqual(flag, label in expected_flagged)
+
+
+DAY_0 = timezone.make_aware(datetime(2026, 3, 1, 9, 0))
+
+
+def _days():
+    from apps.courses import org_config
+    return org_config.value(None, 'sign_accept_deadline_days')
+
+
+class _ArmedOffer:
+    """An awarded student with an 'offered' award whose accept clock was armed on DAY_0 (the sign
+    invitation went out), and whose parent phone then became the student's own (the flag arose
+    AFTER the invitation — the TD-347 case)."""
+
+    def setUp(self):
+        self.profile = make_student(guardians=[{'name': 'Ravi', 'phone': SHARED}], contact_phone=SHARED)
+        self.app = make_application('awarded', student=self.profile)
+        self.offer = _award(self.app, 'offered')
+        self.offer.accept_deadline = DAY_0 + timedelta(days=_days())
+        self.offer.save(update_fields=['accept_deadline'])
+        self.armed = self.offer.accept_deadline
+
+    def _call_on(self, day, outcome='shared_confirmed', consent=True, number=SHARED, profile=None):
+        with patch('django.utils.timezone.now', return_value=DAY_0 + timedelta(days=day)):
+            return parent_call.record_call(profile or self.profile, application=self.app,
+                                           outcome=outcome, consent=consent, number=number)
+
+    def _deadline(self):
+        self.offer.refresh_from_db()
+        return self.offer.accept_deadline
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=True)
+class TestTD347_TheCallReArmsTheSignDeadline(_ArmedOffer, TestCase):
+    """Owner ruling 2026-10-06 (decisions.md, TD-347, option B): when a parent call that held
+    signing is recorded, the accept clock is RE-ARMED with a fresh full window from that day."""
+
+    def test_a_call_recorded_on_day_n_rearms_a_fresh_window_from_day_n(self):
+        self._call_on(20)
+        self.assertEqual(self._deadline(), DAY_0 + timedelta(days=20 + _days()))
+
+    def test_a_corrected_number_that_clears_the_flag_also_rearms(self):
+        self._call_on(20, outcome='parent_number_corrected', number=OTHER)
+        self.assertEqual(self._deadline(), DAY_0 + timedelta(days=20 + _days()))
+
+    def test_a_call_after_the_deadline_passed_but_before_the_lapse_job_rearms(self):
+        from apps.scholarship import sponsorship
+        self._call_on(_days() + 5)                              # the old deadline is 5 days gone
+        with patch('django.utils.timezone.now', return_value=DAY_0 + timedelta(days=_days() + 6)):
+            self.assertEqual(sponsorship.lapse_expired_offers()['lapsed'], 0)
+        self.assertEqual(self._deadline(), DAY_0 + timedelta(days=_days() + 5 + _days()))
+        self.offer.refresh_from_db()
+        self.assertEqual(self.offer.status, 'offered')
+
+    def test_an_offer_already_lapsed_stays_lapsed(self):
+        # The ruling says nothing about a call recorded after the lapse job ran; the current
+        # behaviour is kept: the offer stays lapsed and no clock is touched.
+        self.offer.status = 'lapsed'
+        self.offer.save(update_fields=['status'])
+        self._call_on(_days() + 5)
+        self.offer.refresh_from_db()
+        self.assertEqual((self.offer.status, self.offer.accept_deadline), ('lapsed', self.armed))
+
+    def test_a_call_that_does_not_clear_leaves_the_clock(self):
+        self._call_on(20, consent=False)
+        self._call_on(21, outcome='could_not_reach', consent=None)
+        self.assertEqual(self._deadline(), self.armed)
+
+    def test_a_call_when_signing_was_not_held_leaves_the_clock(self):
+        self.profile.contact_phone = OTHER                      # not shared: no call was needed
+        self.profile.save(update_fields=['contact_phone'])
+        self._call_on(20, outcome='parent_number_confirmed')
+        self.assertEqual(self._deadline(), self.armed)
+
+    def test_a_held_invitation_gets_no_clock_from_the_call(self):
+        # Flag BEFORE the invitation: nothing was armed, and the call does not start a clock the
+        # student cannot see; the invitation, once sent, arms it (ruling A, tested above).
+        self.offer.accept_deadline = None
+        self.offer.save(update_fields=['accept_deadline'])
+        self._call_on(20)
+        self.assertIsNone(self._deadline())
+
+    def test_a_second_call_after_the_hold_cleared_leaves_the_deadline(self):
+        self._call_on(20)
+        rearmed = self._deadline()
+        self._call_on(25)                                       # hold already cleared: no re-arm
+        self.assertEqual(self._deadline(), rearmed)
+
+    def test_another_students_offer_is_untouched(self):
+        other = make_student(guardians=[{'name': 'Siva', 'phone': SHARED}], contact_phone=SHARED)
+        their_offer = _award(make_application('awarded', student=other), 'offered')
+        their_offer.accept_deadline = self.armed
+        their_offer.save(update_fields=['accept_deadline'])
+        self._call_on(20)
+        their_offer.refresh_from_db()
+        self.assertEqual(their_offer.accept_deadline, self.armed)
+
+    def test_the_same_students_offer_on_another_application_is_rearmed_too(self):
+        # By design (`_rearm_sign_deadlines`): EVERY armed open offer of the student, since the
+        # one call clears the hold on all of them.
+        second = make_application('awarded', student=self.profile, cohort=make_cohort())
+        offer2 = _award(second, 'offered')
+        offer2.accept_deadline = self.armed
+        offer2.save(update_fields=['accept_deadline'])
+        self._call_on(20)
+        offer2.refresh_from_db()
+        self.assertEqual(offer2.accept_deadline, DAY_0 + timedelta(days=20 + _days()))
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=False)
+class TestTD347_FlagOffChangesNothing(_ArmedOffer, TestCase):
+
+    def test_with_signing_dark_the_call_leaves_the_clock(self):
+        self._call_on(20)
+        self.assertEqual(self._deadline(), self.armed)
+
+    def test_with_signing_dark_the_call_costs_the_same_queries_and_never_reads_offers(self):
+        with CaptureQueriesContext(connection) as ctx:
+            self._call_on(20)
+        sqls = [q['sql'] for q in ctx.captured_queries]
+        self.assertFalse([s for s in sqls if '"sponsorships"' in s], sqls)
+        self.assertEqual(len(sqls), FLAG_OFF_RECORD_CALL_QUERIES, sqls)
+
+
+# record_call's query count with BURSARY_AGREEMENT_ENABLED off, measured before the A1.6 lock-order
+# fix: the fix must add nothing to the flag-off path.
+FLAG_OFF_RECORD_CALL_QUERIES = 4

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.6 - a recorded parent call re-arms the sign deadline (TD-347) (2026-11-06)
+
+Branch a16 (not pushed; no migration, no model change; in-app signing stays dark, TD-140 and TD-152 stay open). With `BURSARY_AGREEMENT_ENABLED` on, a parent call that CLEARS a flag holding signing now re-arms the student's armed open offer with a fresh full accept window from the day of the call (`parent_call.record_call` → `_rearm_sign_deadlines` → `arm_sign_deadline`, offer rows locked in the same transaction, no network call). No clock is started for a held invitation; a lapsed offer stays lapsed. Flag off: nothing changes. The ruling's "email states the new deadline" is not built; logged as TD-534 (must land before the flag is set). Tests: `test_parent_call_signing.py::TestTD347_*` (8; 3 fail on the old code).
+
+Review follow-up (lock order): the offer rows are now locked BEFORE the call row is written, and only the offer rows (`select_for_update(of=('self',))`), so `record_call` takes offer before application like the daily lapse job and cannot deadlock it; the lock is taken only when the flag is on and the hold is active (flag-off path unchanged, 4 queries, pinned). Tests: +4 (a second call leaves the deadline; another student's offer untouched; the same student's offer on another application is re-armed too, by design; flag-off query count).
+
 ### fix: TD-525 - the payments badge no longer asks the server for a read it refuses (2026-11-06)
 
 Web only. `AppShell` skips the payment-runs count for a super admin with no organisation (the server answers 400 `programme_required` for that account, so the badge was always 0 and the console showed a red 400 on every page). A super with an organisation, and every other role, are unchanged. Test: `AppShell.test.tsx` (fails before, passes after). TD-525 marked fixed; a13's multi-gift scope entry renumbered TD-531 (it clashed with the G1 payments-badge entry).
