@@ -213,3 +213,26 @@ class TestPublicEndpointsRemainOpen(TestCase):
     def test_institutions_no_auth_required(self):
         response = self.client.get('/api/v1/institutions/')
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestUnknownKidTokenIsAnonymous(TestCase):
+    """An ES256 token whose key ID the JWKS does not know is an invalid token, not a 500."""
+
+    def test_unknown_kid_is_rejected_as_unauthenticated(self):
+        # Unsigned-looking token with header {"alg":"ES256","typ":"JWT","kid":"made-up-kid"}
+        token = (
+            'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im1hZGUtdXAta2lkIn0'
+            '.eyJzdWIiOiJ4In0.c2ln'
+        )
+
+        class FakeClient:
+            def get_signing_key_from_jwt(self, _token):
+                raise jwt.PyJWKClientError('Unable to find a signing key that matches: "made-up-kid"')
+
+        client = APIClient()
+        with patch('halatuju.middleware.supabase_auth._get_jwks_client', return_value=FakeClient()):
+            response = client.get(
+                '/api/v1/profile/', HTTP_AUTHORIZATION=f'Bearer {token}',
+            )
+        self.assertEqual(response.status_code, 401)

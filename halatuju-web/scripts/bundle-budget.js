@@ -144,6 +144,20 @@ const SHARED_LINE = /^\s*\+\s*First Load JS shared by all\s+([\d.]+)\s*(B|kB|MB)
 
 const UNIT_KB = { B: 0.001, kB: 1, MB: 1024 }
 
+/**
+ * NEXT 15 METADATA ROUTES (A1.1, 2026-11-06, owner-approved). Next 15 prints `app/manifest.ts` in
+ * the route table as `/manifest.webmanifest` with the shared first-load figure, but it is a ROUTE
+ * HANDLER (`/manifest.webmanifest/route` in the manifest), not a page: no visitor downloads that
+ * JavaScript to use a page. It is left out of the budget ONLY when both hold: the printed route is
+ * exactly one of Next's root metadata files below, and the manifest holds that route's handler
+ * entry. Any other row without a page entry still throws.
+ */
+const METADATA_ROUTE = /^\/(?:manifest\.webmanifest|robots\.txt|sitemap\.xml)$/
+
+function isMetadataHandler(entry) {
+  return entry.endsWith('/route') && METADATA_ROUTE.test(entry.slice(0, -'/route'.length))
+}
+
 /** `/sponsor/(portal)/x/page` → `/sponsor/x`: the route a manifest entry prints as. */
 function routeOfEntry(entry) {
   const route = entry.replace(/\/page$/, '').split('/').filter((s) => !/^\(.*\)$/.test(s)).join('/')
@@ -171,6 +185,7 @@ function gzipBytes(files, sizeOf) {
 function manifestReadings(manifest, sizeOf) {
   const out = new Map()
   for (const [entry, files] of Object.entries(manifest.pages || {})) {
+    if (isMetadataHandler(entry)) { out.set(entry.slice(0, -'/route'.length), { metadata: true }); continue }
     if (!entry.endsWith('/page')) continue
     const layouts = layoutEntries(entry, manifest.pages).flatMap((k) => manifest.pages[k])
     out.set(routeOfEntry(entry), {
@@ -196,7 +211,8 @@ function printTolerance(printedKb) {
  */
 function exactRoutes(routes, readings) {
   const drift = []
-  const exact = routes.map(({ route, kb }) => {
+  const pages = routes.filter(({ route }) => !(METADATA_ROUTE.test(route) && readings.get(route)?.metadata))
+  const exact = pages.map(({ route, kb }) => {
     const r = readings.get(route)
     if (!r) {
       drift.push(`${route}: printed ${kb} kB, no page entry in the manifest`)
@@ -449,7 +465,7 @@ function verdict(output) {
 }
 
 module.exports = {
-  routeOfEntry, layoutEntries, manifestReadings, exactRoutes, printTolerance, nearLine,
+  routeOfEntry, layoutEntries, manifestReadings, exactRoutes, printTolerance, nearLine, isMetadataHandler,
   NEAR_LINE_KB, SHRINK_SLACK_KB, CEILING_KB,
 }
 

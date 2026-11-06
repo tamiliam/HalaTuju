@@ -30,9 +30,9 @@ export default function BrandLogo({ width, height, priority, className }: BrandL
       width={width}
       height={height}
       loading={priority ? 'eager' : 'lazy'}
-      // The header's logo is the first picture on every page (next/image's `priority` did this). React 18
-      // does not know the camelCase prop, so the attribute is written in lower case, as next/image does.
-      {...(priority ? { fetchpriority: 'high' } : {})}
+      // The header's logo is the first picture on every page (next/image's `priority` did this). React 19
+      // knows the camelCase prop and renders it as the lower-case `fetchpriority` attribute.
+      fetchPriority={priority ? 'high' : undefined}
       decoding="async"
       className={className}
       style={{ color: 'transparent' }}

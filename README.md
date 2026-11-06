@@ -39,7 +39,7 @@ halatuju-web                          halatuju-api
 ```
 
 - **Backend**: Django REST API — eligibility engine loads DB into Pandas DataFrame at startup
-- **Frontend**: Next.js 14 — dashboard with merit traffic lights, pathway cards, course search
+- **Frontend**: Next.js 15 — dashboard with merit traffic lights, pathway cards, course search
 - **Database**: Supabase (PostgreSQL with RLS)
 - **AI Reports**: Google Gemini — bilingual counselor report generation
 - **Deployment**: Google Cloud Run (asia-southeast1)

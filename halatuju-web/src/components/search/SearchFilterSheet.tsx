@@ -60,7 +60,7 @@ export default function SearchFilterSheet({ open, onClose, groups, resultCount, 
       open={open}
       onClose={onClose}
       title={t('discovery.filters')}
-      initialFocus={firstChip as RefObject<HTMLElement>}
+      initialFocus={firstChip as RefObject<HTMLElement | null>}
       testId="search-filter-sheet"
       footer={(
         <>
@@ -84,7 +84,7 @@ export default function SearchFilterSheet({ open, onClose, groups, resultCount, 
   )
 }
 
-function FacetChips({ group, firstRef }: { group: FacetGroup; firstRef?: RefObject<HTMLButtonElement> }) {
+function FacetChips({ group, firstRef }: { group: FacetGroup; firstRef?: RefObject<HTMLButtonElement | null> }) {
   const { t } = useT()
   const [expanded, setExpanded] = useState(false)
   const limit = group.collapseAfter

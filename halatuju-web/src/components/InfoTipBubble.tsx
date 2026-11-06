@@ -17,7 +17,7 @@ const EDGE = 8
  */
 export default function InfoTipBubble({ text, root, onClose }: {
   text: string
-  root: RefObject<HTMLElement>
+  root: RefObject<HTMLElement | null>
   onClose: () => void
 }) {
   const [shift, setShift] = useState(0)

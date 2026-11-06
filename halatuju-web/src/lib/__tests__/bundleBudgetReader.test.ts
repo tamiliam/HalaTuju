@@ -10,7 +10,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import {
-  CEILING_KB, exactRoutes, layoutEntries, manifestReadings, nearLine, NEAR_LINE_KB, printTolerance,
+  CEILING_KB, exactRoutes, isMetadataHandler, layoutEntries, manifestReadings, nearLine, NEAR_LINE_KB,
+  printTolerance,
   routeOfEntry, SHRINK_SLACK_KB,
 } from '../../../scripts/bundle-budget'
 
@@ -83,6 +84,31 @@ describe('the exact figure replaces the printed one only when they agree', () =>
       .toThrow(/does not match the route table/)
     expect(() => exactRoutes([{ route: '/gone', kb: 100 }], readings))
       .toThrow(/no page entry in the manifest/)
+  })
+
+  test('Next 15 metadata route handlers are left out — only those, and only with their handler entry', () => {
+    const withHandler = manifestReadings({ pages: { ...MANIFEST.pages,
+      '/manifest.webmanifest/route': ['webpack.js', 'main-app.js'] } }, sizeOf)
+    const rows = [{ route: '/manifest.webmanifest', kb: 82 }, { route: '/admin/x', kb: 227 }]
+    // The handler row drops out; the real page row is still budgeted at its exact figure.
+    expect(exactRoutes(rows, withHandler)).toEqual([{ route: '/admin/x', kb: 227, firstPaint: 256 }])
+    // Without its handler entry, the same printed row is still refused.
+    expect(() => exactRoutes(rows, readings)).toThrow(/manifest.webmanifest: printed 82 kB, no page entry/)
+    // The pattern is strict: nested, look-alike or ordinary route handlers are not metadata.
+    expect(isMetadataHandler('/manifest.webmanifest/route')).toBe(true)
+    expect(isMetadataHandler('/admin/manifest.webmanifest/route')).toBe(false)
+    expect(isMetadataHandler('/manifest.webmanifest.evil/route')).toBe(false)
+    expect(isMetadataHandler('/api/x/route')).toBe(false)
+    expect(isMetadataHandler('/manifest.webmanifest/page')).toBe(false)
+    const handlerOnly = manifestReadings({ pages: { '/api/x/route': ['webpack.js'] } }, sizeOf)
+    expect(() => exactRoutes([{ route: '/api/x', kb: 82 }], handlerOnly)).toThrow(/no page entry/)
+  })
+
+  test('a real page row over the print is still refused while a metadata row is excused', () => {
+    const withHandler = manifestReadings({ pages: { ...MANIFEST.pages,
+      '/manifest.webmanifest/route': ['webpack.js'] } }, sizeOf)
+    expect(() => exactRoutes([{ route: '/manifest.webmanifest', kb: 82 }, { route: '/admin/x', kb: 240 }],
+      withHandler)).toThrow(/admin\/x: printed 240 kB, manifest 227.000 kB/)
   })
 
   test('the tolerance is half the last printed digit', () => {

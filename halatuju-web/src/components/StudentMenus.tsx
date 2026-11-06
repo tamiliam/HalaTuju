@@ -70,7 +70,7 @@ function Badge({ n }: { n: number }) {
 /** One row: a link, or — for a signed-out visitor and an account-only page — a button to the gate. */
 function Row({ link, here, onGo, onGate, first }: {
   link: NavLink; here: boolean; onGo: () => void; onGate: (l: NavLink) => void
-  first?: RefObject<HTMLAnchorElement & HTMLButtonElement>
+  first?: RefObject<(HTMLAnchorElement & HTMLButtonElement) | null>
 }) {
   const badge = link.badge ? <Badge n={link.badge} /> : null
   if (link.gate) {
@@ -201,7 +201,7 @@ export function PhoneMenu({ open, onClose, who, incompleteCount }: PhoneMenuProp
               {t('header.login.student')}
             </button>
             <Link href="/sponsor/login" onClick={go} className={`${ROW} ${ROW_IDLE}`}>{t('header.login.sponsor')}</Link>
-            <a href="/admin/login" className={`${ROW} ${ROW_IDLE}`}>{t('header.login.partner')}</a>
+            <Link href="/admin/login" onClick={go} className={`${ROW} ${ROW_IDLE}`}>{t('header.login.partner')}</Link>
           </div>
         )}
         <div className="mt-3 border-t border-ground-100 px-2 pt-4">

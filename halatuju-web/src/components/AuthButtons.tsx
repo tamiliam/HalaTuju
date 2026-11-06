@@ -54,9 +54,9 @@ export default function AuthButtons() {
             >
               {t('header.login.sponsor')}
             </Link>
-            <a href="/admin/login" className="block px-4 py-2 text-sm text-ground-700 hover:bg-ground-50">
+            <Link href="/admin/login" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-ground-700 hover:bg-ground-50">
               {t('header.login.partner')}
-            </a>
+            </Link>
           </div>
         )}
       </div>

@@ -10,7 +10,7 @@ import { useEffect, type RefObject } from 'react'
  *
  * One bar at a time: the course pages' Save bar and the saved page's compare bar never share a page.
  */
-export function useBottomBarInset(ref: RefObject<HTMLElement>, shown = true): void {
+export function useBottomBarInset(ref: RefObject<HTMLElement | null>, shown = true): void {
   // `shown`: a bar that mounts LATER than its owner (the compare bar, on the first tick) re-measures.
   useEffect(() => {
     const el = ref.current

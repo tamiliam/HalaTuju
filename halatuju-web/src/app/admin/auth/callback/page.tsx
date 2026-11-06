@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { getAdminSupabase, ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
@@ -121,9 +122,9 @@ export default function AdminAuthCallbackPage() {
           {detail && (
             <p className="mb-4 break-all font-mono text-xs text-ground-400">{detail}</p>
           )}
-          <a href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline">
+          <Link href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline">
             {t('login.backToLogin')}
-          </a>
+          </Link>
         </div>
       </main>
     )

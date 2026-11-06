@@ -23,6 +23,7 @@
  * and the turnaround is phrased as how long a STUDENT waited.
  */
 
+import type { JSX } from 'react'
 import { Donut, BarChart, LineChart, type ChartFigure } from '@/components/admin/charts/Charts'
 import TableFrame, { TH, TH_RIGHT } from '@/components/admin/TableFrame'
 import type { ProgrammeOverview } from '@/lib/admin-api'

@@ -34,7 +34,7 @@ export default function SponsorFilterSheet({ open, onClose, groups, count, onCle
   const canClear = groups.some((g) => g.value)
   return (
     <Sheet open={open} onClose={onClose} title={t('sponsorPortal.students.filters')}
-      initialFocus={firstChip as RefObject<HTMLElement>} testId="sponsor-filter-sheet"
+      initialFocus={firstChip as RefObject<HTMLElement | null>} testId="sponsor-filter-sheet"
       className="font-sponsor"
       footer={(
         <>
