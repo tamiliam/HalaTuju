@@ -371,7 +371,7 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
   const resp = await fetch(uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },   // no upsert: signed without overwrite (A1.7)
   })
   if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
 }
