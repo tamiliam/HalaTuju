@@ -32,6 +32,16 @@ Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION`
 
 - `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. A short read (fewer rows than the slip's printed subject total, or a compulsory subject absent) never raises it. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
 
+### fix: Sprint A1.4 - no money moves on a status read earlier (TD-383 part 1: TD-367, TD-365, TD-420) (2026-11-06)
+
+Branch a14 (not pushed; no migration, no model change; api only). New choke-point `apps/scholarship/status_lock.py`: `lock_application_for` / `lock_applications_for` lock the application row inside the caller's transaction, re-read it, refuse unless the status is in the caller's set, and copy the fresh fields onto the caller's object. Lock order: payment run, then application rows by pk, then child rows. Used by:
+
+- `payments.complete` (TD-367): a student CLOSED (or otherwise not awarded/active/maintenance) after she was put on the run refuses the whole completion with `not_payable_in_run` and the count, like `on_hold_in_run`; the approval answers 400 and rolls back, the run stays signed and unpaid. The hold and credit are read from the locked row.
+- `sponsorship.fund_student` (TD-365): re-checks `recommended` on the locked row, so a fund and a close (or two funds) cannot both win; the loser gets `not_fundable`. The award amount is the stored one.
+- `disbursement.release_tranche` (TD-420): locks the application, then the tranche; a hold or close committed after the page loaded, or a second press, is refused (`on_hold`, `not_in_programme`, `bad_state`).
+
+No amounts, rules or flows changed. Tests: `test_status_lock.py` (each race staged in both orders; SQLite ignores the lock, so the tests prove the re-read). Left for A1.5: the lifecycle writers and the decline side of TD-365. Web follow-up: the run page has no message for `not_payable_in_run` yet.
+
 ### chore: Sprint A1.1 - Next 15 upgrade (2026-11-06)
 
 **Owner-approved budget raise (2026-11-06, option A).** Next 15 + React 19 grew the shared JavaScript under every route from 88.5 to 104 kB, so the four first-load lines in `halatuju-web/code-standards.json` were raised to the new build plus 2 kB, rounded down: median 146.5 -> 158.6 (build 156.627), /profile 195 -> 205.5 (203.576), /scholarship/apply 189 -> 199.7 (197.703), /scholarship/application 209 -> 218.6 (216.684). The owner approved + 3 kB; the ratchet's existing 2 kB slack refuses a line more than 2 kB over the build, and no other rule was changed. `scripts/bundle-budget.js` leaves out Next 15's root metadata route handlers (`/manifest.webmanifest` and kin, only with their `/route` manifest entry); tests in `bundleBudgetReader.test.ts` show a real page row is still checked and any other row without a page entry still refused.

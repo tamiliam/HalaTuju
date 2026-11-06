@@ -310,7 +310,7 @@ class AdminPaymentRunSignView(_PaymentsBase):
         except payments.PaymentsError as e:
             body = {'error': e.code, 'code': e.code}
             if e.count is not None:
-                body['count'] = e.count       # on_hold_in_run: how many held students
+                body['count'] = e.count       # on_hold_in_run / not_payable_in_run: how many students
             return Response(body, status=status.HTTP_400_BAD_REQUEST)
         run.refresh_from_db()
         return Response(_payment_run_detail(run, admin))

@@ -584,6 +584,13 @@ def fund_student(sponsor, application):
     # this function), BEFORE any arithmetic, so the NULL wallet is never even consulted.
     if application.programme_id is None:
         raise SponsorshipError('programme_required')
+    # TD-365 / TD-383: lock and re-read the application FIRST (the same row a close locks), so a
+    # close, a reject or a second fund that committed since the caller read it is seen here.
+    from .status_lock import StatusRefused, lock_application_for
+    try:
+        lock_application_for(application, ('recommended',))
+    except StatusRefused:
+        raise SponsorshipError('not_fundable')
     if not is_fundable(application):
         raise SponsorshipError('not_fundable')
     amount = application.award_amount

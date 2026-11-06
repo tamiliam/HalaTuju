@@ -95,12 +95,27 @@ def release_tranche(disbursement, *, by_email='', reference='mock', note='', act
     """Mark a tranche disbursed (mock — TD-075). Only a 'scheduled' or 'due' tranche can
     be released, and NOT while the student's support is on hold (S5). Records who/when +
     the (mock) payment reference, and **flips the application ``active`` → ``maintenance``
-    on the first release**. Returns the row."""
+    on the first release**. Returns the row.
+
+    TD-420 / TD-383: the application row is locked and re-read FIRST (status and the stored hold),
+    then the tranche's own row, so a close or a hold that committed after the view loaded them is
+    seen, and two presses of Release cannot both pay one tranche."""
+    from .status_lock import StatusRefused, lock_application_for
     if disbursement.status not in ('scheduled', 'due'):
         raise DisbursementError('bad_state')
+    if disbursement.application is None:
+        raise DisbursementError('not_in_programme')
     # S6: never release money to a non-funded (e.g. closed) student — closure leaves any
     # leftover scheduled tranche un-releasable.
-    _require_funded(disbursement.application)
+    try:
+        lock_application_for(disbursement.application, pool.FUNDED_STATES)
+    except StatusRefused:
+        raise DisbursementError('not_in_programme')
+    fresh = Disbursement.objects.select_for_update().filter(pk=disbursement.pk).values('status').first()
+    if fresh is not None:
+        disbursement.status = fresh['status']
+    if disbursement.status not in ('scheduled', 'due'):
+        raise DisbursementError('bad_state')     # released (or withheld) since the page loaded
     # S5: an on-hold student's support is paused — no money goes out until resumed.
     from . import maintenance
     if maintenance.is_on_hold(disbursement.application):
