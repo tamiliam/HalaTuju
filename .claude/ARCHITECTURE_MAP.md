@@ -324,7 +324,7 @@ carries:
 | Column | Narrows | Set from |
 |---|---|---|
 | `SponsorProgrammeMembership` (existing) | which gift's students a benefactor sees, and where their money may be credited | the accept panel on `/admin/sponsors/<id>`, or `signup_programme_for` at registration |
-| `PartnerAdmin.programme` | who is OFFERED a case in the assignment dropdown | `POST admin/reviewers/<pk>/programme/` |
+| `ReviewerGift` (`reviewer_gifts`; no rows = every gift; multi-gift 2026-11-07) | who is OFFERED a case in the assignment dropdown (`services/assignment.gift_allows`) | `POST admin/reviewers/<pk>/programme/` `{programme_ids}`, the pencil on Team -> Reviewers, the reviewer invite tick list. `PartnerAdmin.programme` is a write-only mirror, dropped by TD-540 |
 | `Invitation.programme` | which gift a sponsor invitation was for | the sponsor invite form |
 
 **Referral sources are NOT on this table any more** (per-gift sources, 2026-10-08): each gift

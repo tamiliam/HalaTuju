@@ -321,9 +321,17 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     kw.setdefault('email', f'{role}{n}@example.test')
     kw.setdefault('is_active', True)
     kw.setdefault('owning_organisation', owning_org)
-    return PartnerAdmin.objects.create(
+    # Multi-gift (2026-11-06): ``programme=`` (one gift) or ``gifts=[..]`` become `ReviewerGift`
+    # rows through the product's one writer — the old column is never read any more.
+    gifts = list(kw.pop('gifts', ())) + ([kw.pop('programme')] if kw.get('programme') else [])
+    kw.pop('programme', None)
+    admin = PartnerAdmin.objects.create(
         supabase_user_id=uid or unique_suffix(f'{role}-uid-'),
         role=role, is_super_admin=bool(super_admin), org=org, **kw)
+    if gifts:
+        from apps.courses import staff_gift
+        staff_gift.set_gifts(admin, gifts)
+    return admin
 
 
 def make_student(**kw):

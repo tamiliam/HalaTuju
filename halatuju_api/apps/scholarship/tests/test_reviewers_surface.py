@@ -33,6 +33,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.courses import staff_gift
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import (
     DecisionReopen, ReviewerProfile, ScholarshipApplication, ScholarshipCohort,
@@ -148,7 +149,9 @@ class TestTheTable(_Base):
             # `is_active` because revoked is NOT paused and the screen has to say which;
             # `last_seen_at` because NULL means not recorded, never "never signed in".
             'is_active', 'last_seen_at',
-            'programme_id', 'programme_name',
+            # Multi-gift (owner, 2026-11-06): the gifts covered, [] = every gift, and the
+            # organisation whose gifts the pop-over may offer.
+            'gifts', 'organisation_id',
             # #39 Sprint 4: People's permission chips — whether the set is custom, and what it adds
             # to / takes from the preset. Keys only, never the raw stored column.
             'custom', 'permissions_added', 'permissions_removed',
@@ -169,23 +172,21 @@ class TestTheTable(_Base):
         condition that ruling NAMED has fired — this is not somebody quietly reversing a
         decision, it is the decision's own clause.
 
-        It is ONE gift, not a list (`programme_id`), per the model's ruling: with two gifts
-        "NULL = both" covers every case, and a person covering two of three would need a join
-        table. That limit is unreachable until a third gift exists.
+        Since multi-gift (owner, 2026-11-06) it is a LIST (`gifts`), read from the
+        `ReviewerGift` rows: a reviewer may cover two of three gifts. The old one-gift keys are
+        gone from the payload, so no screen can read the retired column by accident.
         """
         self._auth('rv-oa')
         row = self.client.get(LIST).json()['reviewers'][0]
-        self.assertIn('programme_id', row)
-        self.assertNotIn('programmes', row, 'one gift, not a list — see the model docstring')
+        self.assertIsInstance(row['gifts'], list)
+        self.assertNotIn('programme_id', row, 'the retired one-gift column is never served')
 
     def test_a_reviewer_with_no_gift_reads_as_EVERY_gift_not_as_a_blank_value(self):
-        """⚠ NULL IS THE PERMISSIVE DEFAULT and there is NO BACKFILL — every one of the 17
-        org-scoped staff on production still has it. The payload must let the screen say "every
-        gift" rather than render an empty cell that reads as missing data."""
+        """⚠ NO ROWS IS THE PERMISSIVE DEFAULT (owner, 2026-11-06). The payload is an EMPTY
+        list, so the screen says "every gift" rather than render a cell that reads as missing."""
         self._auth('rv-oa')
         row = self.client.get(LIST).json()['reviewers'][0]
-        self.assertIsNone(row['programme_id'])
-        self.assertEqual(row['programme_name'], '')
+        self.assertEqual(row['gifts'], [])
 
     def test_the_table_carries_NO_corrections_figure(self):
         # Owner decision, 2026-08-02: reopens appear on the detail page WITH their reasons, never as
@@ -440,7 +441,7 @@ class TestWhichGiftAReviewerCovers(TestCase):
     """S-ASSIGN, 2026-09-04. Reviewers had NO gift field at all.
 
     ⚠ IT IS A NARROWING, NOT A FENCE, and every test here is written to keep it one. The org
-    boundary is `_org_scoped`; this only decides who is OFFERED a case. NULL means EVERY gift —
+    boundary is `_org_scoped`; this only decides who is OFFERED a case. NO ROWS means EVERY gift —
     the permissive default all 17 org-scoped staff on production still have, with no backfill.
     """
 
@@ -485,8 +486,7 @@ class TestWhichGiftAReviewerCovers(TestCase):
         self._auth('gv-oa')
         r = self._set(self.reviewer, self.sabah.id)
         self.assertEqual(r.status_code, 200, r.content)
-        self.reviewer.refresh_from_db()
-        self.assertEqual(self.reviewer.programme_id, self.sabah.id)
+        self.assertEqual(staff_gift.gifts_of(self.reviewer), [self.sabah])
 
     def test_clearing_it_means_EVERY_gift_never_no_gift(self):
         """The only two states are "this gift" and "all of them". There is no third state in
@@ -495,8 +495,7 @@ class TestWhichGiftAReviewerCovers(TestCase):
         self._set(self.reviewer, self.sabah.id)
         r = self._set(self.reviewer, None)
         self.assertEqual(r.status_code, 200, r.content)
-        self.reviewer.refresh_from_db()
-        self.assertIsNone(self.reviewer.programme_id)
+        self.assertEqual(staff_gift.gifts_of(self.reviewer), [])
 
     def test_a_gift_that_is_not_switched_on_yet_is_offered(self):
         """⚠ THE CASE THIS EXISTS FOR — a gift is staffed BEFORE it opens."""
@@ -508,8 +507,7 @@ class TestWhichGiftAReviewerCovers(TestCase):
         # A 403 would confirm the other tenant's gift exists.
         self._auth('gv-oa')
         self.assertEqual(self._set(self.reviewer, self.foreign_gift.id).status_code, 404)
-        self.reviewer.refresh_from_db()
-        self.assertIsNone(self.reviewer.programme_id)
+        self.assertEqual(staff_gift.gifts_of(self.reviewer), [])
 
     def test_another_tenants_reviewer_is_404_never_403(self):
         self._auth('gv-oa')

@@ -295,8 +295,8 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             # for the access fence. super stays global (NULL). (Per-org staff picker is future.)
             # A1.3 review: one home with the gift picker (`staff_gift.reviewer_gift_choices`).
             owning_org = staff_gift.staff_invite_org(admin)
-        # TD-501 (A1.3): a reviewer invite names its gift — one gift, or every gift, chosen.
-        programme, refusal = staff_gift.for_invite(request.data, role, owning_org)
+        # TD-501 (A1.3) + multi-gift: a reviewer invite names its gifts (a list; [] = every gift).
+        gifts, refusal = staff_gift.for_invite(request.data, role, owning_org)
         if refusal:
             return refusal
 
@@ -315,7 +315,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # row (new, or the cancelled one brought back — TD-335) is written by `provision`.
         made = staff_reinvite.provision_for_invite(
             reuse, email=email, name=name, role=role, org=org, owning_org=owning_org,
-            programme=programme)
+            gifts=gifts)
         if made.error == 'not_reusable':
             return exists
         if made.error:

@@ -2,9 +2,9 @@
 
     python manage.py staff_gift_report
 
-⚠ READ-ONLY. It writes nothing and changes no row. A NULL gift reads as "every gift", but for these
+⚠ READ-ONLY. It writes nothing and changes no row. No gift rows reads as "every gift", but for these
 rows nobody is known to have chosen that: they predate the rule that a reviewer invite names its
-gift. The OWNER decides each row (one gift, or every gift) and sets it on Team → Reviewers.
+gifts. The OWNER decides each row (some gifts, or every gift) and sets it on Team → Reviewers.
 
 "Reviewer" here means everyone who REVIEWS: the reviewer role plus any team member given `review`
 (`staff_gift.unchosen_rows`, the assignable list's rule). It prints the row id, the role, the organisation code, whether the account is switched on, whether

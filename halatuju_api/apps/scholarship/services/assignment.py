@@ -77,29 +77,32 @@ def may_assign_to(caller, target):
 # `assign_reviewer` refuses `gift_mismatch` when the case's gift is not one the reviewer covers.
 # It blocks HANDING OUT work only: the READ fence is still the organisation (`_org_scoped` /
 # `_org_allows`) plus assignment, and a case already held is never taken away by this.
-# Written as "is the case gift IN the reviewer's gifts" so the approved multi-gift tagging (a
-# later sprint) changes `reviewer_gifts` alone.
+# Multi-gift tagging (owner design, 2026-11-06): a reviewer's gifts are `ReviewerGift` rows, and
+# NO rows means EVERY gift. TD-531 (b): a case's gifts are its own `programme` AND its cohort's —
+# the same pair the gift lists filter on (`Q(programme=p) | Q(cohort__programme=p)`), so a case a
+# reviewer sees in their gift's list is a case they may be given.
 def reviewer_gifts(admin):
-    """The gift ids ``admin`` covers, or None for EVERY gift (`programme` NULL, the default)."""
-    programme_id = getattr(admin, 'programme_id', None)
-    return None if programme_id is None else frozenset({programme_id})
+    """The gift ids ``admin`` covers, or None for EVERY gift (no `ReviewerGift` rows, the default)."""
+    rows = getattr(admin, 'gift_rows', None) if getattr(admin, 'pk', None) else None
+    ids = frozenset(row.programme_id for row in rows.all()) if rows is not None else frozenset()
+    return ids or None
 
 
-def case_gift(application):
-    """The case's gift id: its own `programme`, else its cohort's; None when neither is known."""
-    if application.programme_id:
-        return application.programme_id
+def case_gifts(application):
+    """The case's gift ids: its own `programme` and its cohort's; empty when neither is known."""
     cohort = application.cohort if application.cohort_id else None
-    return cohort.programme_id if cohort is not None else None
+    return frozenset(g for g in (application.programme_id,
+                                 cohort.programme_id if cohort is not None else None) if g)
 
 
 def gift_allows(admin, application):
-    """May ``admin`` be GIVEN this case by gift? Every-gift reviewer, or unknown case gift: yes."""
+    """May ``admin`` be GIVEN this case by gift? Every-gift reviewer, or unknown case gift: yes.
+    Otherwise the reviewer's gifts and the case's gifts must meet."""
     gifts = reviewer_gifts(admin)
     if gifts is None:
         return True
-    gift = case_gift(application)
-    return gift is None or gift in gifts
+    case = case_gifts(application)
+    return not case or bool(case & gifts)
 
 
 def _can_review(admin):

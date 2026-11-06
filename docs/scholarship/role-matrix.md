@@ -149,6 +149,13 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
   and refuses `org_admin` — bookkeeping is the maker's job; acceptance is the organisation's.
 - **A gift scope is a NARROWING, never a fence.** It decides who is OFFERED work; the org boundary
   stays `_org_scoped`/`_org_allows`. NULL means EVERY gift, and no row was backfilled.
+- **A reviewer covers a LIST of gifts (multi-gift, 2026-11-07).** The list is `ReviewerGift` rows
+  (`reviewer_gifts`); NO rows means EVERY gift and is the default for every new reviewer (invite,
+  Add, role switch). `admin/reviewers/<pk>/programme/` takes `{"programme_ids": [...]}` (`[]` =
+  every gift) and replaces the list whole; a gift outside the reviewer's OWN organisation is a 404.
+  The case's gifts are `application.programme` and `cohort.programme` read as one set; a new
+  assignment outside the reviewer's list is still the `gift_mismatch` 400. QC is unchanged.
+  `PartnerAdmin.programme` is no longer read (write-only mirror, TD-540).
 - **Sponsors under multi-org (D-1 caveat):** sponsor ACCOUNTS are platform-level identities;
   when a second organisation exists, account-level approval may move platform-side while
   pool membership stays org-level. Revisit this cell at tenant #2.

@@ -364,7 +364,11 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-521** - No real sign-in per role on a local stack (CO-01) - medium
 - **TD-523** - Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
 - **TD-524** - A hold verdict can reach QC accept with no amount - medium
-- **TD-531** - Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium
+- **TD-531** - Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium - **FIXED (2026-11-07, multi-gift)**
+- **TD-540** - Drop the old `partner_admins.programme_id` column and its write-only mirror - low
+- **TD-541** - A non-super admin with no organisation reads every organisation's reviewers on the other reviewer endpoints - medium
+- **TD-542** - The case-assign picker greys by the application's gift only; the server also accepts the cohort's gift - low
+- **TD-543** - Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8119,9 +8123,11 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-06.** The four first-load lines (median, `/profile`, `/scholarship/apply`, `/scholarship/application`) sit at about build + 2.0 kB, the edge of the 2 kB ratchet window. CI builds come out a few hundredths of a kB smaller than local builds, so the G1 web build a1cc54eb failed on `/scholarship/apply` (budget 199.7, CI 197.676). **Fix:** in the next web change, re-measure and set each line to about build + 1 kB. Also fix the stale `_first_load_js_note` text in `halatuju-web/code-standards.json`. A ready commit exists on local branch `deploy-g1b` (2b012c19), but its values must be re-measured first. *(A · S)*
 
-### [TD-531] Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium
+### [TD-531] Multi-gift sprint scope: reviewers made without a gift choice; two readings of the case gift - medium - **FIXED (2026-11-07, multi-gift reviewers)**
 
 **Raised 2026-11-06 by the A1.3 adversarial review (logged only, not built).** The owner approved multi-gift tagging (a reviewer covers a LIST of gifts) as its own sprint after G2. That sprint also covers: **(a)** two paths still make a reviewer without asking for a gift choice, so the new reviewer stays NULL (every gift) by default: Team -> Reviewers -> Add (`apps/scholarship/staff_tables_admin.py:158`, `_plan_add`) and the role switch (`apps/scholarship/staff_lifecycle.py:175`, `change_role`). Only the invite asks today (TD-501, `apps/courses/staff_gift.for_invite`). **(b)** `services/assignment.case_gift` takes `application.programme` first and the cohort's only when that is empty, while the lists filter on `programme` OR `cohort.programme`; the two agree only while `ScholarshipApplication.save` keeps `programme` filled from the cohort. **Fix (in that sprint):** ask the gift choice on both paths; agree ONE source of truth for the case gift and read it everywhere; then change `reviewer_gifts` to the reviewer's gift list (the assignment check is already written as membership). *(A · M)*
+
+**Fixed 2026-11-07 (multi-gift reviewers, migration `courses 0092_reviewergift`).** A reviewer's gifts are now rows in `reviewer_gifts` (`ReviewerGift`); NO rows means every gift. **(a)** By the owner's design the default IS every gift, so Add and the role switch leaving no rows is the intended answer, not a gap; an admin narrows it with the pencil on Team -> Reviewers, and the invite form now shows the same tick list with "Every gift" ticked. **(b)** `services/assignment.case_gifts` reads BOTH `application.programme` and `cohort.programme` as one set, the same reading the lists use, and a reviewer covers the case when they cover every gift, the case gift is unknown, or the two sets meet. The old `PartnerAdmin.programme` is no longer read; it is kept as a write-only mirror (TD-540).
 
 ### [TD-530] The payment-run page does not mark students who are no longer funded - low
 
@@ -8184,3 +8190,19 @@ inside the locked block; the lock rule). *(A · S)*
 **Raised 2026-11-07 by the A1.8 adversarial review (not fixed).** `DocumentListCreateView.post` (`views.py`, the `if doc is None` branch after `slot_writes.create_in_slot`) answers 409 `upload_conflict` when two uploads clash twice in one slot. The student's file was already put in Storage by the signed-URL step, and no row records it, so the blob is orphaned (harmless to the student, a little wasted storage, and invisible to every reader).
 
 **Fix:** delete the blob in that branch (best-effort, logged), or let a periodic sweep list Storage keys with no `applicant_documents` row. Never re-extract anything. *(A · L)*
+
+### [TD-540] Drop the old `partner_admins.programme_id` column and its write-only mirror - low
+
+**Raised 2026-11-07 by the multi-gift reviewers sprint.** A reviewer's gifts now live in `reviewer_gifts` (TD-531). Nothing reads `PartnerAdmin.programme` any more, but the column is kept so a rollback of the web or API finds it filled: `apps/courses/staff_gift.set_gifts` still writes it (the one gift when exactly one is chosen, else NULL). **Fix:** once the multi-gift deploy has run cleanly for a while, remove the mirror in `set_gifts`, drop the field from `PartnerAdmin` with a migration, and apply the column drop to the live database with the owner's yes. Check `docs/decisions.md` and the cutover SQL docs for any reader first. *(A · S)*
+
+### [TD-541] A non-super admin with no organisation reads every organisation's reviewers on the other reviewer endpoints - medium
+
+**Raised 2026-11-07 by the multi-gift adversarial review.** `_ReviewersBase._side` returns `org_id = None` for a non-super whose `owning_organisation` is empty, and `_reviewers` reads None as "no narrowing", so that account resolves every organisation's reviewers. The set-gifts endpoint now fails closed (404, regression test in `test_multi_gift_reviewers.py`). **Not fixed:** pause, restore, the list, the detail and the other endpoints built on `_reviewers`. **Fix:** make `_side` (or `_reviewers`) refuse a non-super with no organisation once, for all of them, then add one test per endpoint. *(A · S)*
+
+### [TD-542] The case-assign picker greys by the application's gift only; the server also accepts the cohort's gift - low
+
+**Raised 2026-11-07 by the multi-gift adversarial review.** The picker (`officerCockpit.ts` ~1619, `AssignAndWitness.tsx` ~84) greys a reviewer who does not cover the application's gift, while `services/assignment.py` 91-105 reads the application's AND the cohort's gift as one set. A reviewer covering only the cohort's gift is greyed in the picker but would be accepted by the server. **Fix:** serve the case's full gift set to the picker, or have the picker read the same set. *(A · S)*
+
+### [TD-543] Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
+
+**Raised 2026-11-07 by the multi-gift adversarial review.** A successful set-gifts logs `AUDIT reviewer_programme_set`, but a refused request (foreign gift, wrong role) writes nothing, and gifts chosen on the invite form are stored with no audit line. **Fix:** log both, same shape as the existing line. *(A · S)*

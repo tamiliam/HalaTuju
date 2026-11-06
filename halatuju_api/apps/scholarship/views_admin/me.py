@@ -36,7 +36,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
-from apps.courses import supabase_admin
+from apps.courses import staff_gift, supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
@@ -63,8 +63,8 @@ def _named(p, lang):
 def programmes_of(admin, lang='en'):
     """The gifts this person works within: a list, or `'all'` for every gift their organisation runs.
 
-    super / org-wide staff with no gift binding → 'all'; staff bound to ONE gift
-    (`PartnerAdmin.programme`, a narrowing, never a fence) → that gift; a source user → the gifts
+    super / org-wide staff with no gift rows → 'all'; staff tagged with gifts (`ReviewerGift`
+    rows, multi-gift 2026-11-06 — a narrowing, never a fence) → those gifts; a source user → the gifts
     `source_access` lets it see; a referral partner → [] (it has no gift work at all, the answer
     `AdminScopeListView` gives it too).
     """
@@ -73,8 +73,10 @@ def programmes_of(admin, lang='en'):
         return [_named(p, lang) for p in source_access.programmes_for(admin).order_by('code')]
     if not admin.is_super and admin.role in ('partner', 'mentor'):
         return []   # no gift work: a referral partner, or a mentor (S7a — mentoring is per scholar)
-    if admin.programme_id and not admin.is_super:
-        return [_named(admin.programme, lang)]
+    if not admin.is_super:
+        gifts = staff_gift.gifts_of(admin)
+        if gifts:
+            return [_named(p, lang) for p in gifts]
     return 'all'
 
 

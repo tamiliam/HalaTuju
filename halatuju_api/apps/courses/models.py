@@ -1048,7 +1048,7 @@ from .models_claim import ProfileClaimEvent, ProfileLoginAlias
 from .models_stpm import StpmCourse, StpmRequirement
 # `PartnerAdmin` (staff) — moved verbatim to its own module by a moves-only split (staff
 # permissions Sprint 1, request #39, 2026-10-19); re-exported here, same reason.
-from .models_staff import PartnerAdmin
+from .models_staff import PartnerAdmin, ReviewerGift
 # `CourseTag` (fit-scoring tags) — moved verbatim to its own module by a moves-only split (Bumi
 # coverage Sprint D1, 2026-10-29); re-exported here, same reason.
 from .models_course_tag import CourseTag

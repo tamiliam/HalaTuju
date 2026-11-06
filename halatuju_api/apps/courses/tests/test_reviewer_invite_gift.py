@@ -2,7 +2,7 @@
 
 Owner ruling "b": inviting a reviewer asks for an explicit choice, one gift or every gift. No choice
 is refused (400). A gift outside the owning organisation is 404. Admins are not asked. A re-invite
-stores the gift the new invite chose, never NULL. A read-only report lists the reviewer rows whose
+stores the gifts the new invite chose (multi-gift: a list, [] = every gift). A read-only report lists the reviewer rows whose
 gift was never chosen. And a reviewer invited to gift A cannot read a gift-B case.
 
 No real student data: every name and address here is synthetic.
@@ -21,6 +21,11 @@ from apps.scholarship.tests.factories import (
 )
 
 INVITE = '/api/v1/admin/invite/'
+
+
+def _gift_ids(row):
+    """The gift ids ``row`` covers, read from its `ReviewerGift` rows ([] = every gift)."""
+    return [g.id for g in staff_gift.gifts_of(row)]
 APPS = '/api/v1/admin/scholarship/applications/'
 CREATE = 'apps.courses.views_admin.http_requests.post'
 WELCOME = 'apps.courses.views_staff.send_partner_welcome_email'
@@ -68,13 +73,13 @@ class TestTheInviteAsksForTheGift(_Base):
         r = self._invite({'gift_scope': 'one', 'programme_id': self.gift_a.id})
         self.assertEqual(r.status_code, 201, r.content)
         row = PartnerAdmin.objects.get(email='new.reviewer@example.org')
-        self.assertEqual((row.role, row.programme_id), ('reviewer', self.gift_a.id))
+        self.assertEqual((row.role, _gift_ids(row)), ('reviewer', [self.gift_a.id]))
 
     def test_a_gift_id_sent_as_text_is_accepted(self):
         r = self._invite({'gift_scope': 'one', 'programme_id': str(self.gift_b.id)})
         self.assertEqual(r.status_code, 201, r.content)
-        self.assertEqual(PartnerAdmin.objects.get(email='new.reviewer@example.org').programme_id,
-                         self.gift_b.id)
+        self.assertEqual(_gift_ids(PartnerAdmin.objects.get(email='new.reviewer@example.org')),
+                         [self.gift_b.id])
 
     def test_another_organisations_gift_is_404_and_nothing_is_written(self):
         r = self._invite({'gift_scope': 'one', 'programme_id': self.elsewhere.id})
@@ -84,7 +89,7 @@ class TestTheInviteAsksForTheGift(_Base):
     def test_every_gift_is_an_explicit_choice(self):
         r = self._invite({'gift_scope': 'every'})
         self.assertEqual(r.status_code, 201, r.content)
-        self.assertIsNone(PartnerAdmin.objects.get(email='new.reviewer@example.org').programme_id)
+        self.assertEqual(_gift_ids(PartnerAdmin.objects.get(email='new.reviewer@example.org')), [])
 
     def test_every_gift_with_a_gift_named_is_refused(self):
         r = self._invite({'gift_scope': 'every', 'programme_id': self.gift_a.id})
@@ -95,20 +100,20 @@ class TestTheInviteAsksForTheGift(_Base):
         self.assertEqual(self._invite({}, caller=boss).status_code, 400)
         r = self._invite({'gift_scope': 'one', 'programme_id': self.gift_a.id}, caller=boss)
         self.assertEqual(r.status_code, 201, r.content)
-        self.assertEqual(PartnerAdmin.objects.get(email='new.reviewer@example.org').programme_id,
-                         self.gift_a.id)
+        self.assertEqual(_gift_ids(PartnerAdmin.objects.get(email='new.reviewer@example.org')),
+                         [self.gift_a.id])
 
     def test_an_admin_invite_is_unchanged(self):
         r = self._invite({'role': 'admin'})
         self.assertEqual(r.status_code, 201, r.content)
         row = PartnerAdmin.objects.get(email='new.reviewer@example.org')
-        self.assertEqual((row.role, row.programme_id), ('admin', None))
+        self.assertEqual((row.role, _gift_ids(row)), ('admin', []))
 
     def test_only_the_reviewer_is_gift_scoped(self):
         self.assertEqual(staff_gift.GIFT_SCOPED_ROLES, frozenset({'reviewer'}))
         for role in ('admin', 'qc', 'finance', 'org_admin', 'partner', 'mentor', 'source_partner'):
             with self.subTest(role=role):
-                self.assertEqual(staff_gift.for_invite({}, role, self.bp), (None, None))
+                self.assertEqual(staff_gift.for_invite({}, role, self.bp), ([], None))
 
 
 class TestAReinviteKeepsTheGift(_Base):
@@ -117,9 +122,11 @@ class TestAReinviteKeepsTheGift(_Base):
 
     def _cancelled(self, programme):
         # A Google address: no password is issued, so the re-invite touches no Supabase login.
-        return PartnerAdmin.objects.create(
+        row = PartnerAdmin.objects.create(
             email='again.reviewer@gmail.com', name='Old Name', role='reviewer', is_active=False,
-            owning_organisation=self.bp, programme=programme)
+            owning_organisation=self.bp)
+        staff_gift.set_gifts(row, [programme])
+        return row
 
     def _reinvite(self, body):
         return self._invite({'email': 'again.reviewer@gmail.com', 'name': 'Again', **body})
@@ -130,21 +137,20 @@ class TestAReinviteKeepsTheGift(_Base):
         self.assertEqual(r.status_code, 201, r.content)
         row.refresh_from_db()
         self.assertTrue(row.is_active)
-        self.assertEqual(row.programme_id, self.gift_a.id)
+        self.assertEqual(_gift_ids(row), [self.gift_a.id])
 
     def test_a_reinvite_to_the_same_gift_keeps_it(self):
         row = self._cancelled(programme=self.gift_a)
         r = self._reinvite({'gift_scope': 'one', 'programme_id': self.gift_a.id})
         self.assertEqual(r.status_code, 201, r.content)
-        row.refresh_from_db()
-        self.assertEqual(row.programme_id, self.gift_a.id)
+        self.assertEqual(_gift_ids(row), [self.gift_a.id])
 
     def test_a_reinvite_without_a_choice_is_refused_and_the_row_stays_off(self):
         row = self._cancelled(programme=self.gift_a)
         r = self._reinvite({})
         self.assertEqual(r.status_code, 400)
         row.refresh_from_db()
-        self.assertEqual((row.is_active, row.programme_id), (False, self.gift_a.id))
+        self.assertEqual((row.is_active, _gift_ids(row)), (False, [self.gift_a.id]))
 
 
 class TestAGiftAReviewerCannotReadAGiftBCase(_Base):
@@ -155,7 +161,7 @@ class TestAGiftAReviewerCannotReadAGiftBCase(_Base):
         r = self._invite({'gift_scope': 'one', 'programme_id': self.gift_a.id})
         self.assertEqual(r.status_code, 201, r.content)
         reviewer = PartnerAdmin.objects.get(email='new.reviewer@example.org')
-        self.assertEqual(reviewer.programme_id, self.gift_a.id)
+        self.assertEqual(_gift_ids(reviewer), [self.gift_a.id])
         mine = make_application(cohort=make_cohort(programme=self.gift_a), reviewer=reviewer)
         gift_b_case = make_application(cohort=make_cohort(programme=self.gift_b))
         self.assertEqual(gift_b_case.programme_id, self.gift_b.id)
@@ -179,7 +185,7 @@ class TestTheReport(_Base):
     def test_lists_only_reviewers_with_no_gift_and_writes_nothing(self):
         unchosen = make_admin('reviewer', owning_org=self.bp, name='Hidden Name',
                               email='hidden.person@example.org')
-        chosen = make_admin('reviewer', owning_org=self.bp, programme=self.gift_a)
+        chosen = make_admin('reviewer', owning_org=self.bp, gifts=[self.gift_a])
         an_admin = make_admin('admin', owning_org=self.bp)
         before = list(PartnerAdmin.objects.order_by('id').values_list('id', 'programme_id', 'is_active'))
 
@@ -240,10 +246,10 @@ class TestThePickerOffersOnlyWhatTheInviteAccepts(_Base):
         self.assertEqual(bound, self.bp)
         for pid in sorted(offered):              # every choice offered is one the check accepts
             with self.subTest(programme_id=pid):
-                programme, refusal = staff_gift.for_invite(
+                gifts, refusal = staff_gift.for_invite(
                     {'gift_scope': 'one', 'programme_id': pid}, 'reviewer', bound)
                 self.assertIsNone(refusal)
-                self.assertEqual(programme.id, pid)
+                self.assertEqual([g.id for g in gifts], [pid])
         r = self._invite({'gift_scope': 'one', 'programme_id': self.gift_b.id}, caller=boss)
         self.assertEqual(r.status_code, 201, r.content)
 

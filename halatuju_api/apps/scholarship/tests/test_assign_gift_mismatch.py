@@ -2,7 +2,7 @@
 
 Before, a reviewer's gift only greyed their row in the picker; `assign_reviewer` took the
 assignment anyway, so a gift-A reviewer could be handed (and then read) a gift-B case. Now the
-server refuses `gift_mismatch` (400). An every-gift reviewer (programme NULL) or a case of unknown
+server refuses `gift_mismatch` (400). An every-gift reviewer (no gift rows) or a case of unknown
 gift is still allowed, and a case already held is not taken away.
 
 No real student data: every name and address here is synthetic.
@@ -13,7 +13,7 @@ from django.test import TestCase, override_settings
 
 from apps.scholarship import services
 from apps.scholarship.models import AssignmentEvent, ScholarshipApplication
-from apps.scholarship.services.assignment import case_gift, gift_allows, reviewer_gifts
+from apps.scholarship.services.assignment import case_gifts, gift_allows, reviewer_gifts
 from apps.courses.models import PartnerOrganisation
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
@@ -58,7 +58,7 @@ class TestTheServiceRefusesAnotherGift(_Base):
         app = self._case(self.gift_b)
         ScholarshipApplication.objects.filter(pk=app.pk).update(programme=None)
         app.refresh_from_db()
-        self.assertEqual(case_gift(app), self.gift_b.id)
+        self.assertEqual(case_gifts(app), frozenset({self.gift_b.id}))
         with patch(READY, return_value=True), self.assertRaises(services.AssignmentError) as ctx:
             services.assign_reviewer(app, reviewer=self.rev_a, by_admin=self.oa)
         self.assertEqual(str(ctx.exception), 'gift_mismatch')
@@ -91,7 +91,7 @@ class TestTheEndpointSays400(_Base):
 
     def test_a_case_of_unknown_gift_is_allowed(self):
         app = self._case(None)
-        self.assertIsNone(case_gift(app))
+        self.assertEqual(case_gifts(app), frozenset())
         # A super: a case with no gift has no organisation either, so an org_admin's fence 404s it.
         r = self._post(self.boss, app, self.rev_a)
         self.assertEqual(r.status_code, 200, r.content)
@@ -109,7 +109,7 @@ class TestTheEndpointSays400(_Base):
 
 class TestTheRuleHasOneHome(_Base):
     def test_reviewer_gifts_is_a_set_or_none_for_every_gift(self):
-        # Written as membership so multi-gift tagging (a later sprint) changes `reviewer_gifts` only.
+        # Membership: multi-gift tagging (2026-11-06) changed `reviewer_gifts` only.
         self.assertEqual(reviewer_gifts(self.rev_a), frozenset({self.gift_a.id}))
         self.assertIsNone(reviewer_gifts(self.rev_every))
 

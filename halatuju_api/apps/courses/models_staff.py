@@ -111,23 +111,11 @@ class PartnerAdmin(models.Model):
         help_text='Tenant org this staff member is scoped to for B40 access '
                   '(NULL = platform-level: super/partner). Never the referral org.',
     )
-    # ⚠ NULL MEANS EVERY GIFT, AND THAT IS THE OWNER'S RULING (2026-09-04). Which gift a reviewer
-    # covers is a NARROWING, not a fence: `owning_organisation` above is the boundary, and this
-    # only says "offer this person the Sabah cases, not the flagship's". So NULL is the permissive
-    # default, every one of the 17 org-scoped staff on production keeps working untouched, and
-    # THERE IS NO BACKFILL — which is the point. Migration 0123 once populated a column for
-    # everybody alive that day and nothing kept doing it for the next person; a default that means
-    # "as before" cannot go stale that way (lessons.md, 2026-07-29).
-    #
-    # ⚠ ONE gift, not a list. With two gifts "NULL = both" covers every case; a person who should
-    # cover two of three cannot be expressed and would need a join table. That limit is accepted
-    # deliberately (owner, 2026-09-04) and is unreachable until a third gift exists.
-    #
-    # ⚠ NOT A READ FENCE; SINCE 2026-11-06 IT BLOCKS ASSIGNMENT (owner ruling, TD-501). The READ
-    # fence is still the organisation (`_org_scoped`/`_org_allows`) plus assignment. But a case may
-    # no longer be GIVEN to a reviewer whose gift differs from the case's: `assign_reviewer` refuses
-    # `gift_mismatch` (`services/assignment.py`, `gift_allows`). NULL here, or a case of unknown
-    # gift, still allows it. A case already held is not taken away.
+    # ⚠ RETIRED AS A SOURCE OF TRUTH (multi-gift tagging, 2026-11-06). Which gifts a reviewer
+    # covers now lives in `ReviewerGift` rows (below): NO rows = every gift. NOTHING READS this
+    # column any more. It is kept only as a WRITE-ONLY rollback mirror, written by
+    # `staff_gift.set_gifts` (exactly one gift -> that id, otherwise NULL — NULL reads "every
+    # gift" to the old image, the permissive side). Dropping it is TD-540, once the deploy is proven.
     programme = models.ForeignKey(
         'scholarship.Programme', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='staff',
@@ -345,3 +333,31 @@ class PartnerAdmin(models.Model):
     def __str__(self):
         org_name = self.org.name if self.org else 'Super Admin'
         return f'{self.name} ({org_name})'
+
+
+class ReviewerGift(models.Model):
+    """ONE GIFT A STAFF MEMBER COVERS (multi-gift tagging, owner design 2026-11-06).
+
+    ⚠ NO ROWS MEANS EVERY GIFT — the owner's default, and what every staff member had before (a
+    NULL `PartnerAdmin.programme`). Rows NARROW the offer to those gifts; they are a NARROWING,
+    never a read fence: the read boundary is still the organisation (`_org_scoped`/`_org_allows`)
+    plus assignment. Since 2026-11-06 they BLOCK assignment: `assign_reviewer` refuses
+    `gift_mismatch` when the case's gift is not among them (`services.assignment.gift_allows`).
+
+    ⚠ EVERY GIFT IS THE REVIEWER'S OWN ORGANISATION'S. A database check cannot see across the two
+    FKs, so the ONE writer, `staff_gift.set_gifts`, is only ever handed gifts resolved inside that
+    organisation (`staff_gift.resolve_gifts`, 404 otherwise). Never write rows anywhere else.
+    A string reference to the gift: no `courses -> scholarship` import.
+    """
+    partner_admin = models.ForeignKey(PartnerAdmin, on_delete=models.CASCADE, related_name='gift_rows')
+    programme = models.ForeignKey('scholarship.Programme', on_delete=models.CASCADE,
+                                  related_name='reviewer_rows')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'reviewer_gifts'
+        constraints = [models.UniqueConstraint(fields=['partner_admin', 'programme'],
+                                               name='reviewer_gift_one_row_per_pair')]
+
+    def __str__(self):
+        return f'{self.partner_admin_id} covers gift {self.programme_id}'

@@ -180,7 +180,7 @@ def _reviewer_dict(admin, work):
 
     ⚠ NO corrections figure here, by decision (2026-08-02). See `reopen.reviewer_reopens`.
     """
-    from apps.courses import staff_permissions
+    from apps.courses import staff_gift, staff_permissions
     added, removed = staff_permissions.preset_diff(admin)
     return {
         'id': admin.id,
@@ -209,18 +209,12 @@ def _reviewer_dict(admin, work):
         # everybody predating the column is empty. 20 of 21 staff carry a value on production; the
         # screen must say "not recorded" rather than accuse somebody of never turning up.
         'last_seen_at': admin.last_seen_at,
-        # ⚠ THE GIFT COLUMN IS BACK, AND ITS OWN TRIGGER IS WHY (S-ASSIGN, 2026-09-04). This
-        # used to be an explicit ABSENCE: "with one programme every reviewer serves it, so the
-        # column could only ever say one thing… it returns when a second programme exists". The
-        # owner created a second gift on 2026-09-03, so the condition that ruling named has
-        # fired. The old note is rewritten rather than deleted so the reasoning survives.
-        #
-        # ⚠ NULL MEANS EVERY GIFT and is the permissive default — every one of the 17 org-scoped
-        # staff on production still has it, and there is NO BACKFILL. A blank here is "as
-        # before", never a missing value; the screen must not render it as one.
-        'programme_id': admin.programme_id,
-        'programme_name': (admin.programme.name_en or admin.programme.code)
-                          if admin.programme_id else '',
+        # ⚠ THE GIFTS THIS PERSON COVERS (S-ASSIGN 2026-09-04; a LIST since multi-gift tagging,
+        # 2026-11-06). `[]` MEANS EVERY GIFT — the permissive default, never a missing value; the
+        # screen shows one "Every gift" chip for it. `ReviewerGift` rows, never the old column.
+        'gifts': staff_gift.gifts_payload(admin),
+        # The pop-over offers only this organisation's gifts (a super sees every organisation's).
+        'organisation_id': admin.owning_organisation_id,
         # Request #39 Sprint 4: People's permission chips — the same three fields the staff list
         # serves (`views_staff._permission_chips`), so the two tabs cannot disagree.
         'custom': staff_permissions.is_custom(admin),
@@ -261,7 +255,7 @@ class _ReviewersBase(_AdminBase):
         (`AdminAssignableView`), so a revoked reviewer can still never be handed a case.
         """
         from django.db.models import Q
-        from apps.courses import staff_permissions
+        from apps.courses import staff_gift, staff_permissions
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
         # ⚠ #39 Sprint 3: the TEAM MEMBERS who hold `review` or `qc` (was the roles reviewer, qc —
         # exactly the presets holding either). The organisation admin's lead tier holds `qc` but
@@ -270,7 +264,8 @@ class _ReviewersBase(_AdminBase):
         qs = (PartnerAdmin.objects
               .filter(Q(is_super_admin=True)
                       | staff_permissions.team_holding(('review', 'qc'), with_lead=True))
-              .select_related('reviewer_profile', 'programme', 'mentor').order_by('name'))
+              .select_related('reviewer_profile', 'mentor')
+              .annotate(**staff_gift.gift_annotation()).order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)
         if org_id is not None:
@@ -285,7 +280,9 @@ class _ReviewersBase(_AdminBase):
         nothing at exactly the moment somebody needs to put a reviewer on the new gift.
         """
         return [
-            {'id': p.id, 'code': p.code, 'name': p.name_en or p.code, 'is_active': p.is_active}
+            {'id': p.id, 'code': p.code, 'name': p.name_en or p.code, 'is_active': p.is_active,
+             # multi-gift: a super's pop-over offers only the REVIEWER's organisation's gifts.
+             'organisation_id': p.organisation_id}
             for p in AdminProgrammeListView()._programmes_for(admin).order_by('code')
         ]
 
@@ -411,56 +408,53 @@ class AdminReviewerPauseView(_ReviewersBase):
 
 
 class AdminReviewerProgrammeView(_ReviewersBase):
-    """POST admin/reviewers/<pk>/programme/ {programme_id} — which gift this person covers.
+    """POST admin/reviewers/<pk>/programme/ {programme_ids: [..]} — which gifts this person covers.
 
-    ⚠ **NOT A READ FENCE; SINCE 2026-11-06 IT BLOCKS ASSIGNMENT** (owner ruling, TD-501). The
-    READ boundary is still `_org_scoped`/`_org_allows` plus assignment. But `assign_reviewer` now
-    refuses `gift_mismatch` when a NEW case's gift differs from this one. A case the person
-    ALREADY holds is not taken away when their gift changes here — deliberately, because the
-    alternative is stranding an in-flight review the day somebody tidies a dropdown.
+    Multi-gift tagging (owner design, 2026-11-06): ``programme_ids`` is the whole list, and ``[]``
+    means EVERY gift (the default: no `ReviewerGift` rows). The one-gift body of before,
+    ``{programme_id}`` (absent / NULL = every gift), is still read for a page loaded pre-deploy.
 
-    ⚠ **`programme_id` NULL / absent CLEARS IT, and clearing means EVERY GIFT** — the permissive
-    default and what all 17 org-scoped staff on production have. So this endpoint can only ever
-    narrow or widen the offer; it can never lock somebody out of work they already hold.
+    ⚠ **NOT A READ FENCE; SINCE 2026-11-06 IT BLOCKS ASSIGNMENT** (owner ruling, TD-501):
+    `assign_reviewer` refuses `gift_mismatch` for a NEW case outside these gifts. A case the person
+    ALREADY holds is not taken away here — that would strand an in-flight review.
 
-    ⚠ **NARROWER THAN READING THIS SURFACE**, exactly like `AdminReviewerPauseView`: `admin` and
-    `finance` may look at the reviewers list, but deciding who gets which work is staff
-    management, which the role matrix gives to super + org_admin. The list gate would admit all
-    four, so this re-gates rather than inheriting.
+    ⚠ **NARROWER THAN READING THIS SURFACE**, like `AdminReviewerPauseView`: super + org_admin only.
 
-    The gift is resolved through `_programmes_for`, so a gift outside the caller's organisation
-    is **404, never 403** — a 403 would confirm the other tenant's gift exists.
+    ⚠ **EVERY GIFT IS THE REVIEWER'S OWN ORGANISATION'S** (`staff_gift.resolve_gifts` against the
+    TARGET's organisation — so a super, who reads every organisation, cannot tag another one's
+    gift either). Any other gift is **404, never 403** — a 403 would confirm it exists.
     """
 
     def post(self, request, pk):
+        from apps.courses import staff_gift
         admin, org_id, err = self._side(request)
         if err:
             return err
         if not (admin.is_super or self.has_role(admin, 'org_admin')):
             return self._deny_role()
         # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
+        # ⚠ A non-super with NO organisation makes `_side` return org_id None, which `_reviewers` reads
+        # as "no narrowing" (every organisation). Fail closed here: 404, never every org's people
+        # (TD-541 logs the same gap on the other reviewer endpoints).
+        if org_id is None and not admin.is_super:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         target = self._reviewers(org_id).filter(pk=pk).first()
         if target is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        asked = request.data.get('programme_id')
-        programme = None
-        if asked not in (None, ''):
-            programme = AdminProgrammeListView()._programmes_for(admin).filter(pk=asked).first()
-            if programme is None:
-                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        old = target.programme.code if target.programme_id else ''
-        target.programme = programme
-        target.save(update_fields=['programme'])
+        if 'programme_ids' in request.data:
+            raw = request.data.get('programme_ids')
+        else:
+            asked = request.data.get('programme_id')
+            raw = [] if asked in (None, '') else [asked]
+        gifts, refusal = staff_gift.resolve_gifts(raw, target.owning_organisation_id)
+        if refusal is not None:
+            return refusal
+        old = ','.join(g['code'] for g in staff_gift.gifts_payload(target))
+        staff_gift.set_gifts(target, gifts)
         logger.info('AUDIT reviewer_programme_set admin=%s old=%s new=%s by=%s',
                     target.id, old or '(every gift)',
-                    (programme.code if programme else '(every gift)'), admin.email or '')
-        return Response({
-            'id': target.id,
-            'programme_id': target.programme_id,
-            'programme_name': (programme.name_en or programme.code) if programme else '',
-        })
+                    ','.join(g.code for g in gifts) or '(every gift)', admin.email or '')
+        return Response({'id': target.id, 'gifts': staff_gift.gifts_payload(target)})
 
 
 class AdminReviewerSystemEmailsView(_ReviewersBase):

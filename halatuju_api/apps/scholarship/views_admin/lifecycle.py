@@ -306,7 +306,7 @@ class AdminAssignableAdminsView(_AdminBase):
         if not admin:
             return self._deny()
         from django.db.models import Q
-        from apps.courses import staff_permissions
+        from apps.courses import staff_gift, staff_permissions
         from ..services import R1_SUPER_TARGET_ROLES, may_assign_to
         # tenancy: list-fenced (2026-07-15). Super sees every assignable staff member; a
         # non-super (org_admin) sees only their OWN org's assignable staff — so a delegated
@@ -318,7 +318,8 @@ class AdminAssignableAdminsView(_AdminBase):
                   .filter(Q(is_super_admin=True)
                           | Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
                           | staff_permissions.team_holding(('review',)))
-                  .select_related('reviewer_profile', 'programme').order_by('name'))
+                  .select_related('reviewer_profile').annotate(**staff_gift.gift_annotation())
+                  .order_by('name'))
         if not self.has_role(admin, 'super'):
             admins = admins.filter(owning_organisation_id=admin.owning_organisation_id,
                                    is_super_admin=False)
@@ -356,10 +357,9 @@ class AdminAssignableAdminsView(_AdminBase):
         # them disabled with "Paused" as the reason, which also answers the reader's next question
         # instead of leaving a name mysteriously absent.
         #
-        # ⚠ A reviewer's GIFT travels the same way, and for the same reason (S-ASSIGN,
-        # 2026-09-04). `programme_id` NULL means EVERY gift — the owner's ruling and the
-        # permissive default every one of the 17 org-scoped staff on production still has. The
-        # screen greys the row and says which gift they cover rather than hiding the name. Since
+        # ⚠ A reviewer's GIFTS travel the same way, and for the same reason (S-ASSIGN 2026-09-04;
+        # a list since multi-gift tagging, 2026-11-06). `gifts` [] means EVERY gift — the owner's
+        # default. The screen greys the row ("Does not cover <gift>") rather than hiding it. Since
         # 2026-11-06 (owner ruling, TD-501) the SERVER enforces it too: `assign_reviewer` refuses
         # `gift_mismatch` for a reviewer of another gift. It is still not a READ fence — that
         # remains the organisation (`_org_scoped`) plus assignment.
@@ -371,8 +371,7 @@ class AdminAssignableAdminsView(_AdminBase):
                                 if getattr(a, 'reviewer_profile', None) is not None else ''),
              'paused': a.paused_at is not None,
              'assignable': may_assign_to(admin, a),
-             'programme_id': a.programme_id,
-             'programme_name': (a.programme.name_en or a.programme.code) if a.programme_id else '',
+             'gifts': staff_gift.gifts_payload(a),
              'corrections': corrections.get(a.id, 0)}
             for a in admins
         ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})

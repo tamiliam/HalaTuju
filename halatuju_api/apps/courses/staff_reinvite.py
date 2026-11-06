@@ -117,7 +117,7 @@ Provisioned = namedtuple('Provisioned', 'account google already_registered temp_
 
 
 def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=None, mentor=None,
-                         programme=None):
+                         gifts=()):
     """THE THREE ACCOUNT BRANCHES OF AN INVITE, in one place — the staff invite
     (`views_staff.AdminInviteView`) and, since source sign-in S2 (2026-10-30), the source invite
     (`apps.scholarship.source_invite`) both land here, so the two cannot drift apart:
@@ -135,19 +135,20 @@ def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=No
     Since student maintenance S7a (2026-10-31) the MENTOR invite (`apps.scholarship.mentor_invite`)
     lands here too, with ``mentor`` — the `scholarship.Mentor` a NEW `mentor` row signs in as.
 
-    ``programme`` (TD-501, A1.3) is the gift the staff invite chose (`staff_gift.for_invite`); None
-    = every gift, or a role that has no gift. A new row and a brought-back row both store it.
+    ``gifts`` (TD-501, A1.3; multi-gift 2026-11-06) are the gifts the staff invite chose
+    (`staff_gift.for_invite`); empty = every gift, or a role that has no gift. A new row and a
+    brought-back row both get exactly these `ReviewerGift` rows (`staff_gift.set_gifts`).
     """
     from .views_admin import generate_temp_password, is_google_email
     if is_google_email(email):
         account, _, err = provision(reuse, email=email, name=name, role=role, org=org,
                                     owning_org=owning_org, source=source, mentor=mentor,
-                                    programme=programme)
+                                    gifts=gifts)
         return Provisioned(account, True, False, None, err)
     temp_password = generate_temp_password()
     account, already, err = provision(reuse, email=email, name=name, role=role, org=org,
                                       owning_org=owning_org, temp_password=temp_password,
-                                      source=source, mentor=mentor, programme=programme)
+                                      source=source, mentor=mentor, gifts=gifts)
     return Provisioned(account, False, already, None if (already or err) else temp_password, err)
 
 
@@ -215,7 +216,7 @@ def reissue_credential(target):
 
 
 def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, source=None,
-              mentor=None, programme=None):
+              mentor=None, gifts=()):
     """The account a staff invite lands on. Returns ``(account, already_registered, error)``.
 
     ``reuse`` set → that switched-off row is brought back (`bring_back`). Otherwise a NEW row,
@@ -233,23 +234,23 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     """
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
-                          temp_password=temp_password, email=email, programme=programme)
+                          temp_password=temp_password, email=email, gifts=gifts)
     uid, already = None, False
     if temp_password is not None:
         uid, already, err = _new_login(email, name, temp_password)
         if err:
             return None, False, err
-    from . import staff_tables
+    from . import staff_gift, staff_tables
     created = PartnerAdmin.objects.create(
         email=email, name=name, org=org, role=role, owning_organisation=owning_org,
         supabase_user_id=uid, is_super_admin=(role == 'super'), source=source, mentor=mentor,
-        programme=programme,
         permissions=staff_tables.invite_permissions(role))   # T2: an invited Admin starts at `see_all`
+    staff_gift.set_gifts(created, gifts)       # multi-gift: exactly the gifts the invite chose
     return created, already, None
 
 
 def bring_back(existing, *, name, role, org, owning_org, temp_password=None, email=None,
-               programme=None):
+               gifts=()):
     """Reactivate ``existing`` for a re-invite. Returns ``(account, already_registered, error)``.
 
     ``temp_password`` None = a Google address: no password is ever issued (owner 2026-07-14), so
@@ -298,9 +299,7 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
         row.email = email
         row.is_super_admin = (role == 'super')
-        # TD-501 (A1.3): the gift is the one THIS invite chose (`staff_gift.for_invite`), never
-        # wiped to NULL — NULL reads as "every gift", which nobody chose.
-        row.is_active, row.paused_at, row.programme = True, None, programme
+        row.is_active, row.paused_at = True, None
         # ⚠ BACK TO THE PRESET (request #39): the inviter chose a role, and an old custom set of
         # permissions must never come back with it (roadmap Sprint 4 door list ruling).
         # Team tables T2: an Admin starts at `see_all` (`staff_tables.invite_permissions`), as a new row.
@@ -311,6 +310,9 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         # row, or `get_admin`'s email backfill — which links only a row with NO UID — never fires.
         row.supabase_user_id = uid
         row.save(update_fields=['name', 'email', 'role', 'org', 'owning_organisation',
-                                'is_super_admin', 'is_active', 'paused_at', 'programme', 'permissions',
+                                'is_super_admin', 'is_active', 'paused_at', 'permissions',
                                 'supabase_user_id', *fields])
+        # TD-501 (A1.3) + multi-gift: exactly the gifts THIS invite chose, never an old row's.
+        from . import staff_gift
+        staff_gift.set_gifts(row, gifts)
     return row, already, None

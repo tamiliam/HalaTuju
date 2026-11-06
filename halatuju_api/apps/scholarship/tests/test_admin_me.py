@@ -58,8 +58,8 @@ class TestAdminMe(TestCase):
         self.assertEqual(authed_client(me).get(ME + '?lang=ta').json()['programmes'],
                          [{'id': self.gift.pk, 'code': 'flag', 'name': 'முதன்மை'}])
         # A blank translation falls back to English; an unknown language is English.
-        me.programme = self.other_gift
-        me.save(update_fields=['programme'])
+        from apps.courses import staff_gift
+        staff_gift.set_gifts(me, [self.other_gift])
         self.assertEqual(authed_client(me).get(ME + '?lang=xx').json()['programmes'][0]['name'],
                          'Sabah')
 

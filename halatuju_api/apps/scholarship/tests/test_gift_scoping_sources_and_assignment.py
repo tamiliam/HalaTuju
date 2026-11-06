@@ -21,6 +21,7 @@ import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
+from apps.courses import staff_gift
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship.models import Programme
 
@@ -106,19 +107,17 @@ class TestWhichGiftsListASource(_Base):
 
 class TestTheAssignmentDropdownSeesTheGift(_Base):
     def test_it_carries_the_gift_so_the_picker_can_grey_a_mismatch(self):
-        self.reviewer.programme = self.sabah
-        self.reviewer.save(update_fields=['programme'])
+        staff_gift.set_gifts(self.reviewer, [self.sabah])
         self._auth('gs-oa')
         rows = {a['name']: a for a in self.client.get(ASSIGNABLE).json()['admins']}
-        self.assertEqual(rows['Anand']['programme_id'], self.sabah.id)
-        self.assertEqual(rows['Anand']['programme_name'], 'Sabah Bursary')
+        self.assertEqual(rows['Anand']['gifts'],
+                         [{'id': self.sabah.id, 'code': self.sabah.code, 'name': 'Sabah Bursary'}])
 
     def test_a_reviewer_on_another_gift_is_STILL_LISTED(self):
         """⚠ FLAGGED, NEVER FILTERED — the same rule as `paused`, and for the same reason: the
         cockpit unions the CURRENT assignee in from this list, so dropping anybody makes their
         case read "Unassigned" (bug #66). The screen greys the row instead."""
-        self.reviewer.programme = self.sabah
-        self.reviewer.save(update_fields=['programme'])
+        staff_gift.set_gifts(self.reviewer, [self.sabah])
         self._auth('gs-oa')
         names = [a['name'] for a in self.client.get(ASSIGNABLE).json()['admins']]
         self.assertIn('Anand', names)
@@ -126,5 +125,4 @@ class TestTheAssignmentDropdownSeesTheGift(_Base):
     def test_a_reviewer_with_no_gift_reads_as_EVERY_gift(self):
         self._auth('gs-oa')
         rows = {a['name']: a for a in self.client.get(ASSIGNABLE).json()['admins']}
-        self.assertIsNone(rows['Anand']['programme_id'])
-        self.assertEqual(rows['Anand']['programme_name'], '')
+        self.assertEqual(rows['Anand']['gifts'], [])
