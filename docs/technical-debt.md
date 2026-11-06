@@ -8087,7 +8087,7 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-06.** The local API gate must run `python -m pytest -q -n auto -p no:cacheprovider`, as CI does. A serial run hid an xdist (execnet `DumpError`) subTest failure that broke the G0 build on 2026-11-05. **Rule:** never gate on a serial run alone. *(A · S)*
 
-### [TD-529] Bundle budgets sit on the edge of the 2 kB ratchet window - medium
+### [TD-529] Bundle budgets sit on the edge of the 2 kB ratchet window - medium - **FIXED (2026-11-06, G2 gates: lines re-measured; /scholarship/apply 199.7 -> 198.8, note rewritten)**
 
 **Raised 2026-11-06.** The four first-load lines (median, `/profile`, `/scholarship/apply`, `/scholarship/application`) sit at about build + 2.0 kB, the edge of the 2 kB ratchet window. CI builds come out a few hundredths of a kB smaller than local builds, so the G1 web build a1cc54eb failed on `/scholarship/apply` (budget 199.7, CI 197.676). **Fix:** in the next web change, re-measure and set each line to about build + 1 kB. Also fix the stale `_first_load_js_note` text in `halatuju-web/code-standards.json`. A ready commit exists on local branch `deploy-g1b` (2b012c19), but its values must be re-measured first. *(A · S)*
 
