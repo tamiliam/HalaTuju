@@ -34,8 +34,8 @@ from apps.scholarship.models import (
 )
 from apps.scholarship.services import admin_reject, apply_gate
 from apps.scholarship.tests.factories import (
-    DECLINE_VERDICT, TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
-    make_org, make_programme, make_student,
+    DECLINE_VERDICT, RECOMMEND_VERDICT, TEST_JWT_SECRET, authed_client, make_admin,
+    make_application, make_cohort, make_org, make_programme, make_student,
 )
 from apps.scholarship.tests.test_endpoints_disbursements import fund_through_the_product
 from apps.scholarship.tests.test_status_lock import _funded_sponsor
@@ -317,6 +317,79 @@ class TestQcDecisionRereadsTheCase(TestCase):
         reviewer_mail.assert_called_once()
 
 
+# ── Fix round 3: the QC accept of a DECLINE verdict locks and re-reads first, too ───────────────
+
+def _zero_qc_hold():
+    real_value = org_config.value
+
+    def zero_hold(org, key, *a, **kw):
+        return 0 if key == 'qc_decline_hold_hours' else real_value(org, key, *a, **kw)
+    return mock.patch.object(org_config, 'value', side_effect=zero_hold)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestQcConfirmDeclineRereadsTheCase(TestCase):
+    """`admin_reject`'s own lock allows 'interviewing', so without the view's lock a decline
+    confirmed from a stale copy wrote `rejected` over another QC's reopen (the review's repro)."""
+    def setUp(self):
+        cohort = make_cohort()
+        org = cohort.owning_organisation
+        self.qc = make_admin('qc', owning_org=org)
+        self.qc2 = make_admin('qc', owning_org=org)
+        self.app = make_application('awaiting_qc', outcome='decline', cohort=cohort,
+                                    reviewer=make_admin('reviewer', owning_org=org))
+
+    def _accept(self):
+        return authed_client(self.qc).post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+            {'decision': 'accept'}, format='json')
+
+    def _assert_declined_nothing(self, r, status):
+        self.assertEqual((r.status_code, r.json().get('code')), (400, 'not_awaiting_qc'))
+        row = ScholarshipApplication.objects.get(pk=self.app.pk)
+        self.assertEqual((row.status, row.rejected_at, row.decline_due_at), (status, None, None))
+        self.assertFalse(StaffActivity.objects.filter(actor=self.qc).exists())
+
+    def test_a_confirm_after_another_qc_reopened_does_not_decline_the_reopen(self):
+        def other_qc_reopens():
+            reopen_service.reopen_decision(_stale(self.app), by_admin=self.qc2,
+                                           reason='Recheck.', activity=False)
+        with _after_require_qc(other_qc_reopens), \
+                mock.patch('apps.scholarship.services._send_decline_for') as send:
+            r = self._accept()
+        self._assert_declined_nothing(r, 'interviewing')
+        self.assertIsNotNone(ScholarshipApplication.objects.get(pk=self.app.pk)
+                             .decision_reopened_at)
+        self.assertEqual(DecisionReopen.objects.filter(application=self.app).count(), 1)
+        send.assert_not_called()
+
+    def test_a_confirm_after_the_verdict_became_a_recommend_does_not_decline(self):
+        update = ScholarshipApplication.objects.filter(pk=self.app.pk).update
+        with _after_require_qc(lambda: update(officer_verdict=dict(RECOMMEND_VERDICT))):
+            r = self._accept()
+        self._assert_declined_nothing(r, 'interviewed')
+
+    def test_a_zero_hold_confirm_sends_the_decline_after_the_commit(self):     # guard
+        seen = []
+
+        def send(app):
+            seen.append(ScholarshipApplication.objects.get(pk=app.pk).status)
+        with _zero_qc_hold(), \
+                mock.patch('apps.scholarship.services._send_decline_for', side_effect=send):
+            r = self._accept()
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(seen, ['rejected'])      # one email, sent on the committed decline
+
+    def test_a_clean_confirm_still_declines_with_the_hold(self):             # guard
+        with mock.patch('apps.scholarship.services._send_decline_for') as send:
+            r = self._accept()
+        self.assertEqual(r.status_code, 200, r.content)
+        row = ScholarshipApplication.objects.get(pk=self.app.pk)
+        self.assertEqual(row.status, 'rejected')
+        self.assertIsNotNone(row.decline_due_at)
+        send.assert_not_called()
+
+
 # ── Fix round 2: the accept's card-blurb Gemini call runs before the lock, never inside it ─────
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -363,6 +436,34 @@ class TestQcAcceptMakesNoNetworkCallUnderTheLock(TestCase):
         blurb_call.assert_not_called()
         self.assertEqual(order, ['lock'])
         self.assertEqual((sp.anon_published, sp.anon_blurb), (True, 'A determined SPM leaver.'))
+
+    # Fix round 3: the cheap refusals run on the pre-lock copy BEFORE the blurb, so a refused
+    # accept spends no Gemini call (they run again under the lock).
+    def _refused_accept(self, expected_code, gap=False):
+        SponsorProfile.objects.create(
+            application=self.app, anon_markdown='A determined SPM leaver hoping to read engineering.',
+            anon_blurb='')
+        facts = [{'fact': 'income', 'status': 'gap'}] if gap else []
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=facts), \
+                mock.patch('apps.scholarship.profile_engine.generate_anon_blurb',
+                           return_value='Hopes to read engineering.') as blurb_call:
+            r = authed_client(self.qc).post(
+                f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+                {'decision': 'accept'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, expected_code))
+        blurb_call.assert_not_called()
+        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'interviewed')
+
+    def test_a_refused_accept_with_no_reporting_date_makes_no_gemini_call(self):
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(reporting_date=None)
+        self._refused_accept('reporting_date_required')
+
+    def test_a_refused_accept_with_no_award_makes_no_gemini_call(self):
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(award_amount=None)
+        self._refused_accept('award_required')
+
+    def test_a_red_fact_floor_with_no_reason_makes_no_gemini_call(self):
+        self._refused_accept('verdict_gap_floor', gap=True)
 
 
 # ── TD-348 / TD-351: the submit asks the rule again under the lock ─────────────────────────────

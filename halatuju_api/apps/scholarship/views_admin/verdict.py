@@ -24,6 +24,7 @@ from ..services import AssignmentError, admin_reject, assign_reviewer, may_assig
 from ..status_lock import StatusRefused, lock_application_for
 
 from .base import _AdminBase
+from .qc_checks import _accept_absolute_stop, _not_awaiting_qc, _overall
 
 
 # ⚠ THE PACKAGE'S name, spelled out — never `__name__`. A submodule logger reads
@@ -40,11 +41,6 @@ def _text(value):
     TD-375 and its review: `(value or '').strip()` raised a 500 on a number or a list (only a
     hand-made request sends one). Read as MISSING, the endpoint's own "required" 400 answers it."""
     return value.strip() if isinstance(value, str) else ''
-
-
-def _overall(app):
-    """The reviewer's recorded overall verdict ('accept', 'decline', ...), or None."""
-    return (app.officer_verdict if isinstance(app.officer_verdict, dict) else {}).get('overall')
 
 
 _OFFICER_FACT_VALUES = {'pass', 'fail', ''}
@@ -278,54 +274,6 @@ class AdminSubmitDeclineView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
-def _accept_absolute_stop(app):
-    """The QC ACCEPT-to-recommend refusals that NO override passes, or None. (Extracted from
-    `AdminQcDecisionView.post` when the second one joined; the decline-confirm path never reaches
-    here.)
-
-    1. Reporting-date stop (owner 2026-07-23): a case cannot be accepted without a settled
-       reporting date. Deliberately an ABSOLUTE stop, unlike the red-fact floor — there is no
-       override, because the honest remedy is to record the date, not to wave the case through.
-       Three things silently default off a missing date: the bursary SIZE (a continuing student is
-       committed RM3,000 instead of RM1,000), payment eligibility, and the semester-result request.
-       QC clears it by reopening the case so the reviewer can enter the date
-       (AdminReportingDateView) — hence the box shows at 'interviewing' / on a reopen, not here.
-    2. TD-465 review: an APPROVE verdict must carry its bursary (`award_required`, no override).
-       Four routes fill the date without re-recording the verdict (an offer re-read, a cancelled
-       reopen, verify-accept and the reporting-date box), so a case whose verdict sized nothing
-       (an unknown STPM start year) could reach `recommended` with no amount. Re-recording the
-       verdict sizes it from the known date; that is the remedy, not an override.
-    3. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
-       (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
-       accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
-    """
-    if app.reporting_date is None:
-        return Response(
-            {'error': 'This student has no reporting date. Reopen the case so the reviewer can '
-                      'record it and record the verdict again (which sets the proposed bursary), '
-                      'then accept.',
-             'code': 'reporting_date_required'},
-            status=status.HTTP_400_BAD_REQUEST)
-    if _overall(app) == 'accept' and app.award_amount is None:
-        return Response(
-            {'error': 'The proposed bursary is missing. Reopen the case so the reviewer can '
-                      'record the verdict again (that sets the bursary), then accept.',
-             'code': 'award_required'},
-            status=status.HTTP_400_BAD_REQUEST)
-    if birth_state.ic_unlocked_for_rule(app.profile,
-                                        getattr(app.cohort, 'allowed_birth_states', None)):
-        return Response({'error': birth_state.IC_UNLOCKED_MESSAGE,
-                         'code': birth_state.IC_UNLOCKED},
-                        status=status.HTTP_400_BAD_REQUEST)
-    return None
-
-
-def _not_awaiting_qc():
-    """The same 400 as `_require_qc`, for a case that left QC after the view read it (A1.5)."""
-    return Response({'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
-                    status=status.HTTP_400_BAD_REQUEST)
-
-
 def _email_reviewer(app, kind, comments):
     """Send the assigned reviewer the QC's comments: ``kind`` 'returned' (for revision) or
     'rejected' (by QC). Called only after the decision's transaction has committed."""
@@ -337,6 +285,35 @@ def _email_reviewer(app, kind, comments):
              ref=pool.pool_ref(app.id),
              applicant_name=getattr(getattr(app, 'profile', None), 'name', '') or '',
              qc_comments=comments)
+
+
+def _accept_refusal(request, app):
+    """The QC accept-to-recommend's checks on ``app`` as read: (a refusal or None, the red facts,
+    the override reason). They only refuse, so they run on the pre-lock copy before the Gemini
+    blurb (a refused accept spends no call, A1.5 fix round 3) and again on the locked row."""
+    stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
+    if stop is not None:
+        return stop, [], ''
+    gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
+    # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can
+    # be changed after it (a MyKad matching the new number then locks it). An IC that
+    # fails the intake's CURRENT rule joins the floor (passed only with a recorded reason).
+    if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
+                              getattr(app.cohort, 'allowed_birth_states', None)) is False:
+        gap_facts.append(birth_state.FLOOR_FACT)
+    # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
+    override = _text(request.data.get('override_reason')) if gap_facts else ''
+    # _require_qc already gated this endpoint to a `super` or a `qc`; either may
+    # pass the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the
+    # QC gains the override, previously super-only). Stored + audited by the caller.
+    if gap_facts and not override:
+        return Response(
+            {'error': 'A verdict fact is still red — resolve it or reopen to the '
+                      'reviewer. A QC or super admin may override with a recorded '
+                      'reason.',
+             'code': 'verdict_gap_floor', 'facts': gap_facts},
+            status=status.HTTP_400_BAD_REQUEST), gap_facts, ''
+    return None, gap_facts, override
 
 
 class AdminQcDecisionView(_AdminBase):
@@ -359,6 +336,13 @@ class AdminQcDecisionView(_AdminBase):
                (distinct from the "returned for revision" one)."""
     def _accept_recommend(self, request, app, admin, pk, seen_overall):
         """QC accept of a RECOMMEND verdict: interviewed -> recommended, then publish."""
+        # Fix round 3: refuse on the pre-lock copy first, so a refused accept spends no Gemini
+        # call. These checks only refuse; they run again on the locked row below.
+        if app.status != 'interviewed':
+            return _not_awaiting_qc()
+        refusal = _accept_refusal(request, app)[0]
+        if refusal is not None:
+            return refusal
         blurb = pool.prepare_pool_blurb(app)   # its Gemini call runs BEFORE the lock, never in it
         # A1.5 review: lock and re-read first, so a reject, a close or a re-recorded verdict
         # that committed after post() read the copy wins; the checks below read the locked row.
@@ -369,30 +353,11 @@ class AdminQcDecisionView(_AdminBase):
                 return _not_awaiting_qc()
             if _overall(app) != seen_overall:
                 return _not_awaiting_qc()
-            stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
-            if stop is not None:
-                return stop
-            gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
-            # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can
-            # be changed after it (a MyKad matching the new number then locks it). An IC that
-            # fails the intake's CURRENT rule joins the floor (passed only with a recorded reason).
-            if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
-                                      getattr(app.cohort, 'allowed_birth_states', None)) is False:
-                gap_facts.append(birth_state.FLOOR_FACT)
+            refusal, gap_facts, override = _accept_refusal(request, app)
+            if refusal is not None:
+                return refusal
             update_fields = ['status']
-            if gap_facts:
-                # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
-                override = _text(request.data.get('override_reason'))
-                # _require_qc already gated this endpoint to a `super` or a `qc`; either may
-                # pass the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the
-                # QC gains the override, previously super-only). Stored + audited below.
-                if not override:
-                    return Response(
-                        {'error': 'A verdict fact is still red — resolve it or reopen to the '
-                                  'reviewer. A QC or super admin may override with a recorded '
-                                  'reason.',
-                         'code': 'verdict_gap_floor', 'facts': gap_facts},
-                        status=status.HTTP_400_BAD_REQUEST)
+            if gap_facts:   # passed with a recorded reason (see `_accept_refusal`): store + audit it
                 app.qc_override_reason = override
                 app.qc_override_by = getattr(admin, 'email', '') or ''
                 app.qc_override_at = timezone.now()
@@ -416,6 +381,33 @@ class AdminQcDecisionView(_AdminBase):
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
         return Response(AdminApplicationDetailSerializer(app).data)
 
+    def _accept_decline(self, app, admin, pk):
+        """QC accept of a DECLINE verdict: interviewed -> rejected ('interview', the QC hold)."""
+        from datetime import timedelta
+        from apps.courses import org_config
+        hold = timedelta(hours=org_config.value(app.owning_organisation, 'qc_decline_hold_hours'))
+        # Fix round 3: lock and re-read FIRST, as the reject does. `admin_reject`'s own lock also
+        # allows 'interviewing', so without this a confirm from a stale copy declined over another
+        # QC's reopen (left open, the student's decline armed). The email goes after the commit.
+        try:
+            with transaction.atomic():
+                lock_application_for(app, ('interviewed',))
+                if _overall(app) != 'decline':   # the verdict was re-recorded meanwhile
+                    return _not_awaiting_qc()
+                admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
+                _record_qc(admin, app, 'accept', 'declined')
+        except StatusRefused:
+            return _not_awaiting_qc()
+        except ValueError:
+            return Response({'error': 'This case cannot be declined from its current state.',
+                             'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+        if hold.total_seconds() <= 0:   # no embargo (a platform env value of 0 only)
+            from ..services import _send_decline_for
+            _send_decline_for(app)
+        app.refresh_from_db()
+        logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
     def post(self, request, pk):
         app, admin, err = self._require_qc(request, pk)
         if err:
@@ -428,19 +420,7 @@ class AdminQcDecisionView(_AdminBase):
             # have red facts) and the shorter `qc_decline_hold_hours` hold (platform 24h, org-timing
             # Sprint 1 — already two-person-vetted). Bucket 'interview'; the email fires, embargoed.
             if _overall(app) == 'decline':
-                from datetime import timedelta
-                from apps.courses import org_config
-                hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
-                try:
-                    admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours),
-                                 activity=False)
-                except ValueError:
-                    return Response({'error': 'This case cannot be declined from its current state.',
-                                     'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
-                _record_qc(admin, app, 'accept', 'declined')
-                app.refresh_from_db()
-                logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
-                return Response(AdminApplicationDetailSerializer(app).data)
+                return self._accept_decline(app, admin, pk)
             return self._accept_recommend(request, app, admin, pk, _overall(app))
         if decision == 'reopen':
             comments = _text(request.data.get('comments'))

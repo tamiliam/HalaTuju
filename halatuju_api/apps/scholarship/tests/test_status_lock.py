@@ -290,18 +290,24 @@ class TestEveryMoneyWriterUsesTheHelper(TestCase):
         ('scheduling', '_lock_open_case', r'lock_application_for\('),      # TD-368
         ('scheduling', 'propose_slots', r'_lock_open_case\('),
         ('scheduling', 'book_slot', r'_lock_open_case\('),
-        # QC accept, reopen and reject (A1.5 review + fix round 2): each takes the lock before it
-        # writes, in the class's order (accept helper, then post's reopen, then post's reject).
+        # All FOUR QC paths (A1.5 review + fix rounds 2 and 3) take the lock before they write, in
+        # the class's order: accept-recommend, accept-decline, then post's reopen and reject.
         ('views_admin.verdict', 'AdminQcDecisionView',
          r"(?s)def _accept_recommend.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*def _accept_decline.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*admin_reject\(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True\)"
          r".*decision == 'reopen'.*lock_application_for\(app, \('interviewed',\)\)\s+"
          r"reopen_service\.reopen_decision"
          r".*decision == 'reject'.*lock_application_for\(app, \('interviewed',\)\)\s+"
          r"reopen_service\.reopen_decision"),
-        # ...and the accept's Gemini blurb is made BEFORE its locked block, then handed in.
+        # ...and the accept's cheap refusals run first, then its Gemini blurb, BEFORE the locked
+        # block (fix round 3: a refused accept spends no call); the blurb is handed in.
         ('views_admin.verdict', 'AdminQcDecisionView',
-         r"(?s)prepare_pool_blurb\(app\).*with transaction\.atomic\(\):"
-         r".*publish_profile_to_pool\(app, blurb=blurb\)"),
+         r"(?s)_accept_refusal\(request, app\)\[0\].*prepare_pool_blurb\(app\)"
+         r".*with transaction\.atomic\(\):.*publish_profile_to_pool\(app, blurb=blurb\)"),
+        # ...and post() routes a decline verdict to the locked confirm, never straight to admin_reject.
+        ('views_admin.verdict', 'AdminQcDecisionView',
+         r"(?s)if _overall\(app\) == 'decline':\s+return self\._accept_decline\(app, admin, pk\)"),
     )
 
     def test_each_writer_locks_through_status_lock(self):
