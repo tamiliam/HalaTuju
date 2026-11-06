@@ -37,13 +37,13 @@ SPM_CODES = ('academic_missing_subjects', 'academic_extra_subjects', 'academic_g
              'grades_verified')
 
 
-def _slip_app(profile):
+def _slip_app(profile, results=None):
     app = make_application('submitted', student=make_student(**profile))
     doc = ApplicantDocument.objects.create(
         application=app, doc_type='results_slip', storage_path=f'{app.id}/rs/x',
         vision_run_at=timezone.now(),
         vision_fields={'student_verdict': 'ok', 'fields': {
-            'candidate_name': 'X', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2023', 'results': CORE}})
+            'candidate_name': 'X', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2023', 'results': results or CORE}})
     return app, doc
 
 
@@ -65,15 +65,16 @@ class TertiaryReadsThePrereqOnly(TestCase):
                 self.assertFalse(_codes(_verdict_academic(app, True)) & set(SPM_CODES[:6]))
 
     def test_a_prereq_that_does_not_match_the_slip_raises_the_alert(self):
-        prereq = {'bm': 'C', 'eng': 'A', 'math': 'A', 'phy': 'A'}     # bm wrong, hist missing, phy extra
+        prereq = {'bm': 'C', 'eng': 'A', 'math': 'A', 'phy': 'A'}     # bm wrong, hist not entered, phy extra
         app, doc = _slip_app({**MATRIC, 'grades': CORE_TYPED, 'spm_prereq_grades': prereq})
         chk = student_slip_check(doc)
         self.assertEqual((chk['subjects'], chk['results']), ('mismatch', 'mismatch'))
-        self.assertEqual((chk['missing'], chk['extra']), (['SEJARAH'], ['Fizik']))
+        self.assertEqual((chk['missing'], chk['extra']), ([], ['Fizik']))   # entered-only (11-06.3)
         self.assertEqual([m['subject'] for m in chk['mismatched']], ['BAHASA MELAYU'])
         fact = _verdict_academic(app, True)
         self.assertNotEqual(fact['status'], 'verified')
-        self.assertTrue({'academic_missing_subjects', 'academic_extra_subjects'} <= _codes(fact))
+        self.assertIn('academic_extra_subjects', _codes(fact))
+        self.assertNotIn('academic_missing_subjects', _codes(fact))
         self.assertTrue(_codes(fact) & {'academic_grade_mismatch', 'academic_grade_band_mismatch'})
         self.assertGreaterEqual(_academic_red_chips(app), 2)          # Subjects + Results chips
 
@@ -90,7 +91,60 @@ class TertiaryReadsThePrereqOnly(TestCase):
         self.assertEqual(_academic_red_chips(app), 0)
 
 
+#: An eight-subject slip (the four compulsory + four electives) — a full, complete read.
+FULL = CORE + [{'subject': 'FIZIK', 'grade': 'B'}, {'subject': 'KIMIA', 'grade': 'C'},
+               {'subject': 'BIOLOGI', 'grade': 'B'}, {'subject': 'MATEMATIK TAMBAHAN', 'grade': 'C'}]
+
+
+class TertiaryChecksOnlyWhatSheEntered(TestCase):
+    """Owner ruling 2026-11-06 (11-06.3): a tertiary holder's optional SPM prereq is checked on the
+    subjects she ENTERED; a slip subject she did not enter is never missing for her."""
+
+    def _tertiary(self, prereq, results=FULL):
+        return _slip_app({**STPM, 'spm_prereq_grades': prereq}, results)
+
+    def test_four_entered_all_on_the_slip_same_grades_is_a_match_and_tick_eligible(self):
+        from apps.scholarship.academic_compare import spm_slip_compare
+        from apps.scholarship.academic_engine import read_slip
+        app, doc = self._tertiary(CORE_TYPED)
+        chk = student_slip_check(doc)
+        self.assertEqual((chk['subjects'], chk['results']), ('match', 'match'))
+        self.assertEqual((chk['missing'], chk['extra'], chk['mismatched']), ([], [], []))
+        self.assertEqual(chk['slip_count'], 8)
+        cmp = spm_slip_compare(app.profile, read_slip(doc))
+        self.assertTrue(cmp['complete'] and cmp['accurate'])            # the tick's two conditions
+        self.assertEqual(cmp['checked_count'], 4)                       # "All 4 grades match"
+        self.assertFalse(_codes(_verdict_academic(app, True)) & set(SPM_CODES[:6]))
+        self.assertEqual(_academic_red_chips(app), 0)
+
+    def test_a_wrong_grade_on_an_entered_subject_mismatches(self):
+        app, doc = self._tertiary({**CORE_TYPED, 'phy': 'D'})          # slip: Fizik B
+        chk = student_slip_check(doc)
+        self.assertEqual((chk['subjects'], chk['results']), ('match', 'mismatch'))
+        self.assertEqual([m['subject'] for m in chk['mismatched']], ['FIZIK'])
+        self.assertTrue(_codes(_verdict_academic(app, True))
+                        & {'academic_grade_mismatch', 'academic_grade_band_mismatch'})
+
+    def test_an_entered_subject_not_on_a_complete_slip_is_extra(self):
+        app, doc = self._tertiary({**CORE_TYPED, 'poa': 'A'})          # Prinsip Perakaunan: not on it
+        chk = student_slip_check(doc)
+        self.assertEqual((chk['subjects'], chk['missing']), ('mismatch', []))
+        self.assertEqual(len(chk['extra']), 1)
+        codes = _codes(_verdict_academic(app, True))
+        self.assertIn('academic_extra_subjects', codes)
+        self.assertNotIn('academic_missing_subjects', codes)
+        self.assertEqual(_academic_red_chips(app), 1)                   # the one Subjects chip
+
+
 class SpmHolderUnchanged(TestCase):
+    def test_an_spm_holder_who_typed_fewer_than_the_slip_is_still_missing(self):
+        app, doc = _slip_app(dict(exam_type='spm', results_exam_type='spm', grades=CORE_TYPED), FULL)
+        chk = student_slip_check(doc)
+        self.assertEqual(chk['subjects'], 'mismatch')
+        self.assertEqual(chk['missing'], ['BIOLOGI', 'FIZIK', 'KIMIA', 'MATEMATIK TAMBAHAN'])
+        self.assertIn('academic_missing_subjects', _codes(_verdict_academic(app, True)))
+
+
     def test_an_spm_holder_is_compared_on_grades_and_never_on_the_prereq(self):
         spm = dict(exam_type='spm', results_exam_type='spm')
         _, doc = _slip_app({**spm, 'grades': CORE_TYPED, 'spm_prereq_grades': OLD_GRADES})

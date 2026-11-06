@@ -18902,6 +18902,15 @@ old-name entry in `OLD_NAMES`). Open: the grade form offers `digital_gfx` named 
 
 ## 2026-11-06 — Three exclusive routes for SPM grades (owner, 2026-11-06)
 
+**Principle (owner, 2026-11-06, verbatim):** "SPM only, SPM is must. STPM/etc. SPM is optional. If results are
+uploaded, it gets checked, and get a tick. If wrong subjects/grades are entered, these get flagged. The principle here:
+We are checking what the student has declared with documentary evidence."
+
+- SPM-only students: the full match (missing, extra, wrong grade).
+- Tertiary (STPM / Matriculation / Asasi / Diploma) students: only the declared prereq subjects are checked (extra,
+  wrong grade; never missing).
+- No slip: no check, never asked (D9).
+
 **Decision (owner, verbatim intent):** "There are three routes: SPM, STPM, Matric/etc. Keep them exclusive. Do not
 combine." An SPM holder's SPM slip is compared with the SPM grades she entered (`profile.grades`). An STPM /
 Matriculation / Asasi / Diploma holder (`is_tertiary(results_held(profile))`) has her SPM slip compared ONLY with the
@@ -18923,7 +18932,11 @@ provided" against a set grade bar), the report (`reports/views.py`), the cockpit
 is unchanged. `results_route.clear_to_spm` (and its browser mirror `resultsLocal.clearHigherResultsLocally`) is a
 ROUTE CHANGE, not a combine, and stays: it moves the student to the SPM route and copies the prereq into `grades` only
 when `grades` is empty, after which she is an SPM holder read on `grades`. `VERDICT_ENGINE_VERSION` 2026-11-06.2; old
-snapshots are not re-built.
+snapshots are not re-built. **Owner ruling later the same day (`VERDICT_ENGINE_VERSION` 2026-11-06.3):** a tertiary
+holder's prereq is checked on the subjects she ENTERED only — each must be on the slip with the same grade (wrong
+grade = mismatch / uncertain; not on a complete read = extra), but a slip subject she did not enter is never `missing`
+for her (`spm_slip_compare` returns `missing` [] and `complete` = no extra; the tick counts the entered subjects); SPM
+holders keep the full match.
 
 **Supersedes in part:** the S2a / S3b rule that a tertiary holder's SPM grades are `grades` merged over
 `spm_prereq_grades`, `grades` winning a clash (the `spm_grades_for` docstring; "The web sends the WHOLE completed list"

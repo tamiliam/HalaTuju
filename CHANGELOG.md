@@ -12,7 +12,7 @@ Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no
 
 Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION` 2026-11-06.2). Decisions: `docs/decisions.md` "Three exclusive routes for SPM grades".
 
-- A tertiary (STPM / Matriculation / Asasi / Diploma) student's SPM slip, SPM grade bars, report and SPM chips read her SPM prereq ONLY (`spm_grades_for`), never her `grades`; no prereq = the slip is not compared (no tick, no SPM warning). SPM holders unchanged. Tests: `test_three_exclusive_spm_routes.py`, updated pins in `test_third_route.py`, `test_spm_only_intake_gate.py`, `test_slip_extra_subjects.py`, `test_third_route_s4.py` (fixture), `reports/tests/test_views.py`, web `ApplicantCards.thirdRoute.test.tsx`, `ScholarshipReview.test.tsx`.
+- A tertiary (STPM / Matriculation / Asasi / Diploma) student's SPM slip, SPM grade bars, report and SPM chips read her SPM prereq ONLY (`spm_grades_for`), never her `grades`; no prereq = the slip is not compared (no tick, no SPM warning). SPM holders unchanged. 2026-11-06.3 (owner): her prereq is checked on the subjects she entered only — a slip subject she did not enter is never missing (wrong grade / not on the slip still flagged). Tests: `test_three_exclusive_spm_routes.py`, updated pins in `test_third_route.py`, `test_spm_only_intake_gate.py`, `test_slip_extra_subjects.py`, `test_third_route_s4.py` (fixture), `reports/tests/test_views.py`, web `ApplicantCards.thirdRoute.test.tsx`, `ScholarshipReview.test.tsx`.
 
 ### fix: request #62 - a typed subject not on the results slip is flagged (please check); English slip names folded
 

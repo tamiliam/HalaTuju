@@ -142,8 +142,9 @@ class TestSTPMApplicantsAreUntouched(_Engine):
 
     def _stpm(self, **cohort):
         c = make_cohort(**{**ONLY_CREDITS, 'min_spm_credit_count': 6, **cohort})
+        # Three exclusive routes (owner 2026-11-06): an STPM holder's SPM grades are her prereq.
         s = make_student(exam_type='stpm', results_exam_type='stpm', stpm_cgpa=3.5,
-                         grades=_grades('D', 'D', 'E'), receives_str=True)
+                         spm_prereq_grades=_grades('D', 'D', 'E'), receives_str=True)
         return evaluate(make_application(cohort=c, student=s), c)
 
     def test_a_credit_floor_does_not_reject_an_stpm_applicant_with_no_spm_credits(self):

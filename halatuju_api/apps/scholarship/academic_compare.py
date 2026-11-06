@@ -157,17 +157,30 @@ def compare_academics(profile_grades, slip) -> dict:
         'extra': extra,
         'complete': len(slip_norm) > 0 and not missing and not extra,
         'accurate': not mismatched and not uncertain,
+        'typed_on_slip': sum(1 for nn in prof_by_name if nn in slip_norm),
     }
 
 
 def spm_slip_compare(profile, slip) -> dict:
     """`compare_academics` of the profile's SPM grades (`spm_grades_for`, three exclusive routes,
-    owner 2026-11-06) against a slip read, plus ``compared``. A tertiary holder with no SPM prereq
-    is NOT compared (`spm_slip_comparable`): every list empty, ``have_grades`` False, ``compared``
-    False, so a caller shows no tick and no SPM warning."""
-    from apps.courses.exam_questions import spm_grades_for, spm_slip_comparable
+    owner 2026-11-06) against a slip read, plus ``compared`` and ``checked_count`` (the subjects a
+    tick vouches for). A tertiary holder with no SPM prereq is NOT compared (`spm_slip_comparable`):
+    every list empty, ``have_grades`` False, ``compared`` False, so a caller shows no tick and no SPM
+    warning.
+
+    A tertiary holder's prereq is checked on the subjects she ENTERED only (owner, 2026-11-06): the
+    section is optional and often holds just the compulsory four, so a slip subject she did not
+    enter is never ``missing``; each entered one must be on the slip (else ``extra``, short-read
+    guard as ever) with the same grade. ``complete`` = no extra. An SPM holder is unchanged: the
+    full match, ``missing`` included. Every reader (verdict, ladder chip, slip check) comes here."""
+    from apps.courses.exam_questions import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
     if spm_slip_comparable(profile):
-        return {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
+        cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
+        if not profile or not is_tertiary(results_held(profile)):
+            return {**cmp, 'checked_count': cmp['slip_count']}
+        return {**cmp, 'missing': [], 'complete': cmp['slip_count'] > 0 and not cmp['extra'],
+                'checked_count': cmp['typed_on_slip']}
     blank = compare_academics({}, slip)
     return {**blank, 'missing': [], 'extra': [], 'mismatched': [], 'uncertain': [],
-            'have_grades': False, 'complete': False, 'accurate': False, 'compared': False}
+            'have_grades': False, 'complete': False, 'accurate': False, 'compared': False,
+            'checked_count': 0}

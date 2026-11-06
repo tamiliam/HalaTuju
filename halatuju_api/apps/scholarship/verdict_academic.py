@@ -81,6 +81,6 @@ def _verdict_academic(application, spm_only=False):
         return _fact('academic', 'review', evidence, unresolved)
 
     if name_ok and cmp['complete'] and cmp['accurate']:
-        evidence.append(_item('grades_verified', count=cmp['slip_count']))
+        evidence.append(_item('grades_verified', count=cmp['checked_count']))   # tertiary: entered only
         return _fact('academic', 'verified', evidence, unresolved)
     return _fact('academic', 'review', evidence, unresolved)
