@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getSponsorSupabase, SPONSOR_STORAGE_KEY } from '@/lib/sponsor-supabase'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
@@ -36,7 +37,7 @@ export default function SponsorAuthCallbackPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-critical-600 mb-4">{error}</p>
-          <a href="/sponsor/login" className="text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{t('login.backToLogin')}</a>
+          <Link href="/sponsor/login" className="text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{t('login.backToLogin')}</Link>
         </div>
       </main>
     )

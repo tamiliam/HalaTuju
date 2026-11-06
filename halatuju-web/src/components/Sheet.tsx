@@ -87,7 +87,7 @@ export interface SheetProps {
   /** An action is in flight: nothing closes the sheet until it is false again. */
   busy?: boolean
   /** What to focus on open, when the first field is not the right place. */
-  initialFocus?: RefObject<HTMLElement>
+  initialFocus?: RefObject<HTMLElement | null>
   /** The dialog's accessible name when it must say more than the visible title (it then replaces
    *  `aria-labelledby`): e.g. "Flag — <shop>" over a title that shows only the shop. */
   label?: string

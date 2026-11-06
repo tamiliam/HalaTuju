@@ -184,8 +184,8 @@ describe('a saved choice', () => {
     fireEvent.click(screen.getByLabelText('BrightPath 2026'))
     fireEvent.click(screen.getByTestId('apply-choose-continue'))
     await screen.findByTestId('apply-gift-line')
-    await act(async () => { await Promise.resolve() })
-    expect(select().value).toBe('cumig')
+    // React 19 commits the seeded answer a render after the gift line: wait for it.
+    await waitFor(() => expect(select().value).toBe('cumig'))
     // Change to a gift that does not: now the list is known, and it is cleared.
     fireEvent.click(screen.getByTestId('apply-gift-change'))
     await screen.findByText('scholarship.apply.chooseTitle')
@@ -267,8 +267,11 @@ describe('a `?ref=` code never pre-fills (sources Sprint C, owner\'s ruling)', (
     intake.mockResolvedValue(OPEN([SMC]))
     mount('pptm')
     await screen.findByTestId('apply-gift-line')
-    await waitFor(() => expect(select().value).toBe(''))
-    expect(optionCodes()).not.toContain('pptm')
+    // Both at once: under React 19 the option list settles a render after the empty value.
+    await waitFor(() => {
+      expect(select().value).toBe('')
+      expect(optionCodes()).not.toContain('pptm')
+    })
   })
 
   it('never overwrites a choice she has already made (restored from the results detour)', async () => {

@@ -11,7 +11,8 @@ const nextConfig = {
   // Standalone output for Docker/Cloud Run
   output: 'standalone',
 
-  // Closes the image-optimizer advisories until the Next 15 upgrade.
+  // Off since the 14.2.35 security patch and kept off on Next 15 (A1.1): there is no sharp in the
+  // standalone image, so turning it on is TD-321's job (A2.5), not the upgrade's.
   images: { unoptimized: true },
 
   // Environment variables exposed to browser

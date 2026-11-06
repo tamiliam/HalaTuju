@@ -94,7 +94,8 @@ describe('an iOS tab kill (a remount, the tab storage kept)', () => {
 
     mount()
     await screen.findByTestId('apply-gift-line')
-    expect(stepLine()).toContain('scholarship.apply.section.family')
+    // React 19 restores the draft's step a render after the gift line shows: wait for it.
+    await waitFor(() => expect(stepLine()).toContain('scholarship.apply.section.family'))
     expect(await screen.findByDisplayValue('Rajan a/l Muthu')).toBeTruthy()
   })
 

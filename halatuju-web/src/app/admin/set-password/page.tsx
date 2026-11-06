@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'
 import { getAdminSupabase } from '@/lib/admin-supabase'
@@ -93,9 +94,9 @@ export default function AdminSetPasswordPage() {
               <div className="bg-caution-50 border border-caution-200 rounded-lg p-4 mb-6">
                 <p className="text-caution-700 text-sm">{t('admin.setPasswordNoLink')}</p>
               </div>
-              <a href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline text-sm">
+              <Link href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline text-sm">
                 {t('login.backToLogin')}
-              </a>
+              </Link>
             </div>
           ) : (
             <>
