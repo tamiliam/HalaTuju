@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### chore: Sprint A1.1 - Next 15 upgrade (2026-11-06) - STOPPED at the bundle gate, not shippable yet
+### chore: Sprint A1.1 - Next 15 upgrade (2026-11-06)
+
+**Owner-approved budget raise (2026-11-06, option A).** Next 15 + React 19 grew the shared JavaScript under every route from 88.5 to 104 kB, so the four first-load lines in `halatuju-web/code-standards.json` were raised to the new build plus 2 kB, rounded down: median 146.5 -> 158.6 (build 156.627), /profile 195 -> 205.5 (203.576), /scholarship/apply 189 -> 199.7 (197.703), /scholarship/application 209 -> 218.6 (216.684). The owner approved + 3 kB; the ratchet's existing 2 kB slack refuses a line more than 2 kB over the build, and no other rule was changed. `scripts/bundle-budget.js` leaves out Next 15's root metadata route handlers (`/manifest.webmanifest` and kin, only with their `/route` manifest entry); tests in `bundleBudgetReader.test.ts` show a real page row is still checked and any other row without a page entry still refused.
+
+Earlier the same day the sprint had stopped at the bundle gate:
 
 Web moves from Next 14.2.35 to 15.5.29, React 18 to 19.2.9 (types and eslint-config-next to match). React 19 ref and JSX types fixed in nine files; five plain admin/sponsor login links became next/link (Next 15's lint now checks App Router routes); the sandbox surface page reads its segment with useParams (params is a Promise in Next 15). Three apply-page tests now wait for the restored draft step and the seeded referral answer, which React 19 commits a render later. Gates pass (419 suites, 6530 tests, 7730 keys). npm audit 30 (1 critical, 4 high) -> 28 (0 critical, 1 high: postcss 8.4.31 pinned inside next, build time only). **The bundle gate is red:** the shared chunk under every route rose 88.5 -> 104 kB, so the median (~157 against 146.5), /profile (204 against 195), /scholarship/apply (198 against 189) and /scholarship/application (217 against 209) are all over budget, and `scripts/bundle-budget.js` refuses Next 15's new `/manifest.webmanifest` row (no page entry). Budgets not changed; needs the owner's ruling.
 

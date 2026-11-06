@@ -17071,6 +17071,8 @@ reaches the root boundary — answered 404. It is the router, not the `'use clie
 all behind the admin auth gate and are not indexed, and what was gained is the person who mistyped
 one no longer being ejected from the console. ⚠ **Re-test on a Next upgrade** — if a later version
 sets the status on a nested boundary, nothing else has to change and the 200 simply goes away.
+(Re-tested 2026-11-06, A1.1, on Next 15.5.29 with `next start`: `/admin/zzz-nonsense` and a
+deeper nonsense path still answer 200 with the console's own not-found; `/zzz-nonsense` answers 404.)
 The same pair exists for the sponsor portal (`app/sponsor/not-found.tsx`), where the landing is a
 literal `/sponsor` **by decision**: that portal has exactly one entrance and no role to derive
 from, which is the opposite of the console (see 2026-09-08).
