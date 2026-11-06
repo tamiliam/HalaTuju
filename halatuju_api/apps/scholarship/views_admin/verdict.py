@@ -21,6 +21,7 @@ from ..models import ScholarshipApplication, SponsorProfile
 from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
 from ..serializers_admin import AdminApplicationDetailSerializer
 from ..services import AssignmentError, admin_reject, assign_reviewer, may_assign_to
+from ..status_lock import StatusRefused, lock_application_for
 
 from .base import _AdminBase
 
@@ -316,6 +317,12 @@ def _accept_absolute_stop(app):
     return None
 
 
+def _not_awaiting_qc():
+    """The same 400 as `_require_qc`, for a case that left QC after the view read it (A1.5)."""
+    return Response({'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+
 class AdminQcDecisionView(_AdminBase):
     """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?} —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
@@ -334,6 +341,62 @@ class AdminQcDecisionView(_AdminBase):
                DecisionReopen row carrying the reason, closed as a correction) then declines as
                'interview' with the org's QC hold; the reviewer gets the "rejected by QC" email
                (distinct from the "returned for revision" one)."""
+    def _accept_recommend(self, request, app, admin, pk):
+        """QC accept of a RECOMMEND verdict: interviewed -> recommended, then publish."""
+        # A1.5 review: lock and re-read first, so a reject (or close) that committed after
+        # _require_qc read the copy wins; the checks below then read the locked row.
+        with transaction.atomic():
+            try:
+                lock_application_for(app, ('interviewed',))
+            except StatusRefused:
+                return _not_awaiting_qc()
+            stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
+            if stop is not None:
+                return stop
+            gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
+            # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can
+            # be changed after it (a MyKad matching the new number then locks it). An IC that
+            # fails the intake's CURRENT rule joins the floor (passed only with a recorded reason).
+            if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
+                                      getattr(app.cohort, 'allowed_birth_states', None)) is False:
+                gap_facts.append(birth_state.FLOOR_FACT)
+            update_fields = ['status']
+            if gap_facts:
+                # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
+                override = _text(request.data.get('override_reason'))
+                # _require_qc already gated this endpoint to a `super` or a `qc`; either may
+                # pass the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the
+                # QC gains the override, previously super-only). Stored + audited below.
+                if not override:
+                    return Response(
+                        {'error': 'A verdict fact is still red — resolve it or reopen to the '
+                                  'reviewer. A QC or super admin may override with a recorded '
+                                  'reason.',
+                         'code': 'verdict_gap_floor', 'facts': gap_facts},
+                        status=status.HTTP_400_BAD_REQUEST)
+                app.qc_override_reason = override
+                app.qc_override_by = getattr(admin, 'email', '') or ''
+                app.qc_override_at = timezone.now()
+                update_fields += ['qc_override_reason', 'qc_override_by', 'qc_override_at']
+                logger.info('AUDIT qc_gap_override admin_id=%s app_id=%s facts=%s',
+                            admin.id, pk, ','.join(gap_facts))
+            app.status = 'recommended'
+            # Capture WHO QC-accepted (the second pair of eyes), distinct from the reviewer's
+            # verdict — the cockpit shows "…accepted by {QC}". Stamped every accept (a reopen →
+            # re-accept re-attributes to the accepting QC).
+            app.recommended_by = getattr(admin, 'email', '') or ''
+            update_fields.append('recommended_by')
+            if app.stamp_first('recommended_at'):
+                update_fields.append('recommended_at')
+            app.save(update_fields=update_fields)
+            # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
+            # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
+            # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
+            pool.publish_profile_to_pool(app)
+            _record_qc(admin, app, 'accept', 'recommended')
+        logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
     def post(self, request, pk):
         app, admin, err = self._require_qc(request, pk)
         if err:
@@ -361,51 +424,7 @@ class AdminQcDecisionView(_AdminBase):
                 app.refresh_from_db()
                 logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
                 return Response(AdminApplicationDetailSerializer(app).data)
-            stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
-            if stop is not None:
-                return stop
-            gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
-            # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can be
-            # changed after it (a MyKad matching the new number then locks it). An IC that fails
-            # the intake's CURRENT rule joins the floor, so it is passed only with a recorded reason.
-            if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
-                                      getattr(app.cohort, 'allowed_birth_states', None)) is False:
-                gap_facts.append(birth_state.FLOOR_FACT)
-            update_fields = ['status']
-            if gap_facts:
-                # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
-                override = _text(request.data.get('override_reason'))
-                # _require_qc already gated this endpoint to a `super` or a `qc`; either may pass
-                # the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the QC
-                # gains the override, previously super-only). The reason is stored + audited below.
-                if not override:
-                    return Response(
-                        {'error': 'A verdict fact is still red — resolve it or reopen to the '
-                                  'reviewer. A QC or super admin may override with a recorded reason.',
-                         'code': 'verdict_gap_floor', 'facts': gap_facts},
-                        status=status.HTTP_400_BAD_REQUEST)
-                app.qc_override_reason = override
-                app.qc_override_by = getattr(admin, 'email', '') or ''
-                app.qc_override_at = timezone.now()
-                update_fields += ['qc_override_reason', 'qc_override_by', 'qc_override_at']
-                logger.info('AUDIT qc_gap_override admin_id=%s app_id=%s facts=%s',
-                            admin.id, pk, ','.join(gap_facts))
-            app.status = 'recommended'
-            # Capture WHO QC-accepted (the second pair of eyes), distinct from the reviewer's
-            # verdict — the cockpit shows "…accepted by {QC}". Stamped every accept (a reopen →
-            # re-accept re-attributes to the accepting QC).
-            app.recommended_by = getattr(admin, 'email', '') or ''
-            update_fields.append('recommended_by')
-            if app.stamp_first('recommended_at'):
-                update_fields.append('recommended_at')
-            app.save(update_fields=update_fields)
-            # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
-            # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
-            # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
-            pool.publish_profile_to_pool(app)
-            _record_qc(admin, app, 'accept', 'recommended')
-            logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return self._accept_recommend(request, app, admin, pk)
         if decision == 'reopen':
             comments = _text(request.data.get('comments'))
             if not comments:
@@ -450,10 +469,15 @@ class AdminQcDecisionView(_AdminBase):
             # the reopen back, so the case is left exactly as it was. The emails go after the commit.
             try:
                 with transaction.atomic():
+                    # A1.5 review: lock and re-read FIRST. A close, or a second QC's reject, that
+                    # committed after _require_qc read the copy refuses here (no reopen written).
+                    lock_application_for(app, ('interviewed',))
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
                     reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
                     admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
                     _record_qc(admin, app, 'reject', 'declined')
+            except StatusRefused:
+                return _not_awaiting_qc()
             except reopen_service.ReopenError as e:
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             except ValueError:

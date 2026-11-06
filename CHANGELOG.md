@@ -43,8 +43,9 @@ Branch a15 (not pushed; no migration, no model change). Same choke-point as A1.4
 - Tranche writers (`disbursement.py`): `withhold_tranche`, `return_tranche` and `mark_due` lock the application, then the tranche, and re-read its status (`_lock_tranche`), so Mark due can no longer write `due` over `released`. `release_tranche` answers `bad_state` (was a 500) when the tranche row has gone.
 - Wallet (`sponsorship.fund_student`, `reinstate_lapsed_sponsorship`): `status_lock.lock_sponsor_wallet` locks the sponsor row before the balance check, so one sponsor's two funds at once cannot overspend the wallet.
 - Web: the payment-run page shows a message for `not_payable_in_run` (en/ms/ta).
+- Review follow-up (QC, `views_admin/verdict.py`): the QC reject locks and re-reads the case FIRST inside its transaction, and the QC accept-recommend step (now `AdminQcDecisionView._accept_recommend`) does the same before its checks, its save and the pool publish. A close or another QC decision that committed after the page read the case answers `not_awaiting_qc` and writes nothing (no reopen row, no email, no publish). Logged, not built: TD-532 (the Meet-path leftovers in `book_slot`, and a friendly `case_closed` message on the web).
 
-Tests: `test_lifecycle_lock.py` (17 regression tests fail on the old code and pass on the new; 2 guards), the static pin in `test_status_lock.py` widened to every writer above, `page.onHold.test.tsx`. Logged, not built (design change): TD-530, a marker on the run page for each student who is no longer funded.
+Tests: `test_lifecycle_lock.py` (17 regression tests fail on the old code and pass on the new; 2 guards; the review follow-up adds 3 QC regression tests, a reinstatement wallet-lock test, 2 QC-reject email tests and 1 guard), the static pin in `test_status_lock.py` widened to every writer above, `page.onHold.test.tsx`. Logged, not built (design change): TD-530, a marker on the run page for each student who is no longer funded.
 
 ### fix: Sprint A1.4 - no money moves on a status read earlier (TD-383 part 1: TD-367, TD-365, TD-420) (2026-11-06)
 

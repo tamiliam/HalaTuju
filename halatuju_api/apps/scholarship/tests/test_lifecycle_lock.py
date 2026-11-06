@@ -21,7 +21,8 @@ from django.db import transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.scholarship import disbursement, scheduling, status_lock
+from apps.courses import org_config
+from apps.scholarship import disbursement, pool, scheduling, status_lock
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     DecisionReopen, Disbursement, InterviewSlot, ScholarshipApplication, StaffActivity,
@@ -33,6 +34,7 @@ from apps.scholarship.tests.factories import (
 )
 from apps.scholarship.tests.test_endpoints_disbursements import fund_through_the_product
 from apps.scholarship.tests.test_status_lock import _funded_sponsor
+from apps.scholarship.views_admin.base import _AdminBase
 
 
 def _stale(app):
@@ -157,6 +159,104 @@ class TestQcRejectIsOneUnit(TestCase):
         self.assertEqual((row.status, row.decision_reopened_at), ('interviewed', None))
         self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
         self.assertFalse(StaffActivity.objects.filter(actor=self.qc).exists())
+
+    def _reject(self):
+        return authed_client(self.qc).post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+            {'decision': 'reject', 'comments': 'Income evidence does not hold up.'}, format='json')
+
+    def test_a_zero_hold_reject_sends_the_decline_after_the_commit(self):
+        seen = []
+        real_value = org_config.value
+
+        def zero_hold(org, key, *a, **kw):
+            return 0 if key == 'qc_decline_hold_hours' else real_value(org, key, *a, **kw)
+
+        def send(app):
+            seen.append(ScholarshipApplication.objects.get(pk=app.pk).status)
+
+        with mock.patch.object(org_config, 'value', side_effect=zero_hold), \
+                mock.patch('apps.scholarship.services._send_decline_for', side_effect=send):
+            r = self._reject()
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(seen, ['rejected'])      # one email, sent on the committed decline
+
+    def test_a_held_reject_sends_no_decline_now(self):                  # guard: the embargo
+        with mock.patch('apps.scholarship.services._send_decline_for') as send:
+            r = self._reject()
+        self.assertEqual(r.status_code, 200, r.content)
+        send.assert_not_called()
+
+
+# ── A1.5 review: QC accept and QC reject lock and re-read before they write ─────────────────────
+
+def _after_require_qc(meanwhile):
+    """Run ``meanwhile`` just after `_require_qc` read the case: another writer commits then."""
+    real = _AdminBase._require_qc
+
+    def hooked(view, request, pk):
+        out = real(view, request, pk)
+        meanwhile()
+        return out
+    return mock.patch.object(_AdminBase, '_require_qc', hooked)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestQcDecisionRereadsTheCase(TestCase):
+    def setUp(self):
+        cohort = make_cohort()
+        org = cohort.owning_organisation
+        self.qc = make_admin('qc', owning_org=org)
+        self.app = make_application('awaiting_qc', outcome='recommend', cohort=cohort,
+                                    reviewer=make_admin('reviewer', owning_org=org))
+        # The fixture has no documents; a clean verdict lets the accept reach its write.
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _post(self, payload):
+        return authed_client(self.qc).post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/', payload,
+            format='json')
+
+    def _set(self, **fields):
+        return lambda: ScholarshipApplication.objects.filter(pk=self.app.pk).update(**fields)
+
+    def _reject(self):
+        return self._post({'decision': 'reject', 'comments': 'Income evidence does not hold up.'})
+
+    def test_a_reject_during_a_close_does_not_write_over_it(self):          # scenario A
+        with _after_require_qc(self._set(status='closed')), \
+                mock.patch('apps.scholarship.emails.send_qc_rejected_email') as reviewer_mail:
+            r = self._reject()
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_awaiting_qc'))
+        row = ScholarshipApplication.objects.get(pk=self.app.pk)
+        self.assertEqual((row.status, row.rejected_at, row.decision_reopened_at),
+                         ('closed', None, None))
+        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+        reviewer_mail.assert_not_called()
+
+    def test_a_second_qc_reject_at_the_same_moment_records_nothing(self):   # scenario B
+        with _after_require_qc(self._set(status='rejected', rejected_at=timezone.now())), \
+                mock.patch('apps.scholarship.emails.send_qc_rejected_email') as reviewer_mail:
+            r = self._reject()
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_awaiting_qc'))
+        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+        reviewer_mail.assert_not_called()
+
+    def test_an_accept_after_a_reject_committed_does_not_recommend(self):
+        with _after_require_qc(self._set(status='rejected', rejected_at=timezone.now())), \
+                mock.patch.object(pool, 'publish_profile_to_pool') as publish:
+            r = self._post({'decision': 'accept'})
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_awaiting_qc'))
+        row = ScholarshipApplication.objects.get(pk=self.app.pk)
+        self.assertEqual((row.status, row.recommended_by), ('rejected', ''))
+        publish.assert_not_called()
+
+    def test_a_clean_accept_still_recommends(self):                      # guard: not a regression
+        r = self._post({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'recommended')
 
 
 # ── TD-348 / TD-351: the submit asks the rule again under the lock ─────────────────────────────
@@ -295,3 +395,23 @@ class TestTheWalletIsLockedBeforeTheBalance(TestCase):
                 mock.patch.object(svc, 'sponsor_balance', side_effect=balance):
             svc.fund_student(sponsor, app)
         self.assertEqual(order[:2], [('lock', sponsor.pk), 'balance'])
+
+    def test_a_reinstatement_locks_the_wallet_before_it_reads_the_balance(self):
+        app = make_application('recommended')
+        sponsor = _funded_sponsor(app)
+        svc.fund_student(sponsor, app)
+        since = timezone.now() - timedelta(seconds=1)
+        self.assertTrue(svc.lapse_holding_sponsorships(app))
+        order = []
+        real_balance = svc.sponsor_balance
+
+        def balance(*a, **kw):
+            order.append('balance')
+            return real_balance(*a, **kw)
+
+        with mock.patch.object(status_lock, 'lock_sponsor_wallet', create=True,
+                               side_effect=lambda s: order.append(('lock', s.pk))), \
+                mock.patch.object(svc, 'sponsor_balance', side_effect=balance):
+            sp = svc.reinstate_lapsed_sponsorship(app, since=since)
+        self.assertEqual(order[:2], [('lock', sponsor.pk), 'balance'])
+        self.assertEqual(sp.status, 'active')

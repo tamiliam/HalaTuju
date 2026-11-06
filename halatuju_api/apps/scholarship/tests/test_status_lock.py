@@ -290,6 +290,10 @@ class TestEveryMoneyWriterUsesTheHelper(TestCase):
         ('scheduling', '_lock_open_case', r'lock_application_for\('),      # TD-368
         ('scheduling', 'propose_slots', r'_lock_open_case\('),
         ('scheduling', 'book_slot', r'_lock_open_case\('),
+        # QC accept and QC reject (A1.5 review): the lock is the first write-side step.
+        ('views_admin.verdict', 'AdminQcDecisionView',
+         r"(?s)lock_application_for\(app, \('interviewed',\)\).*"
+         r"lock_application_for\(app, \('interviewed',\)\)"),
     )
 
     def test_each_writer_locks_through_status_lock(self):
