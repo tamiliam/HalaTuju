@@ -171,12 +171,12 @@ export type {
   MaintenanceSubstate, ClosureReason, AdminDisbursement, DisbursementAction,
 } from './admin-api/lifecycle'
 
-// The reviewer roster, their workload, their gift and their pause.
+// The reviewer roster, their workload, their gifts and their pause.
 export {
-  setReviewerPaused, setReviewerProgramme, listReviewers, getReviewerDetail,
+  setReviewerPaused, setReviewerGifts, listReviewers, getReviewerDetail,
 } from './admin-api/reviewers'
 export type {
-  AdminReviewer, AdminReviewerGift, AdminReviewerReopen, AdminReviewerDetail,
+  AdminReviewer, AdminReviewerGift, AdminReviewerReopen, AdminReviewerDetail, ReviewerGiftTag,
 } from './admin-api/reviewers'
 
 // The sponsor queue, the review decision, memberships and wallet credits.

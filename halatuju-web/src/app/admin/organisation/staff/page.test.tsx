@@ -543,10 +543,11 @@ describe('inviting an address that already has an account', () => {
 })
 
 /**
- * TD-501 (A1.3): a REVIEWER invite names its gift. The choice is required and starts blank, so
- * "every gift" is something the inviter picks, never a silent default. Admins are not asked.
+ * A REVIEWER invite names its gifts (TD-501 A1.3; multi-gift, owner design 2026-11-06). The same
+ * tick list as the pencil pop-over, with "Every gift" ticked BY DEFAULT and a helper line. It is
+ * always sent as `programme_ids` (`[]` = every gift). Admins are not asked.
  */
-describe('a reviewer invite names its gift', () => {
+describe('a reviewer invite names its gifts', () => {
   beforeEach(() => {
     giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' },
                    { id: 9, code: 'sabah', name: 'Sabah Gift' }]
@@ -556,48 +557,53 @@ describe('a reviewer invite names its gift', () => {
     fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Asha' } })
     fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'), { target: { value: 'asha@example.org' } })
   }
-  const giftSelect = () => screen.getByTestId('invite-reviewer-gift') as HTMLSelectElement
+  const tick = (id: string) => screen.getByTestId(`invite-reviewer-gift-${id}`) as HTMLInputElement
 
-  it('asks, required and blank, offering every gift and each gift', async () => {
+  it('offers Every gift, ticked by default, the gifts greyed, and the helper line', async () => {
     await loaded()
     await pick('reviewers')
-    const sel = await waitFor(giftSelect)
-    expect(sel.required).toBe(true)
-    expect(sel.value).toBe('')
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['', 'every', '7', '9'])
+    await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
+    expect(tick('every').checked).toBe(true)
+    expect(tick('gift-7').disabled).toBe(true)
+    expect(tick('gift-9').disabled).toBe(true)
+    expect(screen.getByText('admin.invitations.reviewerGiftHelp')).toBeTruthy()
   })
 
-  it('offers only the gifts the server lists for the reviewer invite, never another organisation\'s', async () => {
+  it('offers only the gifts the server lists for the reviewer invite, never another organisation’s', async () => {
     // Regression (A1.3 review): a super's `programmes` holds every organisation's gifts, but the
-    // invite binds to one organisation and refuses the rest, so the picker reads its own list.
+    // invite binds to one organisation and refuses the rest, so the list reads its own payload.
     giftChoices = [...giftChoices, { id: 11, code: 'other', name: 'Another Tenant Gift' }]
     reviewerGiftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' },
                            { id: 9, code: 'sabah', name: 'Sabah Gift' }]
     await loaded()
     await pick('reviewers')
-    const sel = await waitFor(giftSelect)
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['', 'every', '7', '9'])
+    await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
+    expect(screen.queryByTestId('invite-reviewer-gift-gift-11')).toBeNull()
+    expect(tick('gift-9')).toBeTruthy()
   })
 
-  it('sends one gift by its id', async () => {
+  it('sends the ticked gifts by id', async () => {
     await loaded()
     await pick('reviewers')
     fill()
-    fireEvent.change(await waitFor(giftSelect), { target: { value: '9' } })
+    await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
+    fireEvent.click(tick('every'))
+    fireEvent.click(tick('gift-9'))
+    fireEvent.click(tick('gift-7'))
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
-      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', gift_scope: 'one', programme_id: 9 },
+      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', programme_ids: [7, 9] },
       expect.anything()))
   })
 
-  it('sends every gift only when chosen', async () => {
+  it('sends every gift (an empty list) when nothing is changed', async () => {
     await loaded()
     await pick('reviewers')
     fill()
-    fireEvent.change(await waitFor(giftSelect), { target: { value: 'every' } })
+    await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
-      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', gift_scope: 'every' },
+      { email: 'asha@example.org', name: 'Asha', role: 'reviewer', programme_ids: [] },
       expect.anything()))
   })
 

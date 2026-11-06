@@ -1565,8 +1565,6 @@ export interface AssignOption {
    * answer the next question.
    */
   reason: 'paused' | 'otherGift' | null
-  /** The gift this person covers, when they cover only one. Empty means every gift. */
-  programmeName: string
 }
 
 /**
@@ -1582,12 +1580,12 @@ export interface AssignOption {
  * not confiscate a case already theirs — and a `<select>` whose current value is disabled cannot
  * show its own state.
  *
- * ⚠ **A reviewer scoped to ANOTHER GIFT gets exactly the same treatment** (S-ASSIGN,
- * 2026-09-04): greyed with the gift named, never removed. Same two reasons — the current
- * assignee is unioned in from this list, and a vanished name is a mystery.
+ * ⚠ **A reviewer who does NOT COVER this case's gift gets exactly the same treatment** (S-ASSIGN,
+ * 2026-09-04; multi-gift 2026-11-06): greyed as "Does not cover <gift>", never removed. Same two
+ * reasons — the current assignee is unioned in from this list, and a vanished name is a mystery.
  *
- * ⚠ **A BLANK `programmeId` MEANS EVERY GIFT and must never grey anybody.** It is the
- * permissive default that all 17 org-scoped staff on production still carry, so reading it as
+ * ⚠ **AN EMPTY `gifts` LIST MEANS EVERY GIFT and must never grey anybody.** It is the
+ * permissive default that all org-scoped staff on production still carry, so reading it as
  * "covers nothing" would grey out the entire live roster on the first render. Likewise an
  * UNKNOWN `applicationProgrammeId` (an older payload) greys nobody: a narrowing we cannot
  * evaluate must fall open, because the server is the authority. Since 2026-11-06 (owner ruling,
@@ -1603,7 +1601,7 @@ export interface AssignOption {
  */
 export function assignOptions<T extends {
   id: number; name: string; role: string; paused?: boolean; assignable?: boolean
-  programme_id?: number | null; programme_name?: string
+  gifts?: ReadonlyArray<{ id: number }>
 }>(
   admins: T[],
   { isSuper, currentAssigneeId, applicationProgrammeId }: {
@@ -1616,8 +1614,10 @@ export function assignOptions<T extends {
     .filter((a) => a.id === currentAssigneeId || (a.assignable ?? (isSuper || a.role === 'reviewer')))
     .map((a) => {
       const isCurrent = a.id === currentAssigneeId
-      const coversOther = !!a.programme_id && !!applicationProgrammeId
-        && a.programme_id !== applicationProgrammeId
+      // Multi-gift: they may cover several gifts; greyed only when NONE of them is this case's.
+      const gifts = a.gifts ?? []
+      const coversOther = gifts.length > 0 && !!applicationProgrammeId
+        && !gifts.some((g) => g.id === applicationProgrammeId)
       // Paused wins the label: it is a fact about the PERSON (they have stepped back), while
       // the gift is a fact about this one case. Somebody who is both is unavailable either way.
       const reason: AssignOption['reason'] =
@@ -1628,7 +1628,6 @@ export function assignOptions<T extends {
         role: a.role,
         disabled: reason !== null,
         reason,
-        programmeName: a.programme_name || '',
       }
     })
 }

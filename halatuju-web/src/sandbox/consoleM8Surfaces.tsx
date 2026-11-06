@@ -252,7 +252,7 @@ function InviteSession({ children }: { children: ReactNode }) {
 const REVIEWER_DETAIL = {
   id: 7, name: LONG_TAMIL, email: 'penyemak7@contoh.invalid', role: 'reviewer', languages: ['ta', 'ms', 'en'],
   open_now: 4, awaiting_review: 12, interviewing: 3, completed: 148, turnaround_days: 12.5, paused: false, paused_at: null,
-  is_active: true, last_seen_at: '2026-11-02T09:00:00Z', programme_id: null, programme_name: '',
+  is_active: true, last_seen_at: '2026-11-02T09:00:00Z', gifts: [],
   programmes: [{ id: 1, code: 'contoh-2026', name: 'Biasiswa Contoh 2026', is_active: true },
     { id: 2, code: 'contoh-stpm', name: 'Bantuan STPM Contoh', is_active: false }],
   recommended: 96, declined: 31, rejected_after_review: 9, awaiting_qc: 12,

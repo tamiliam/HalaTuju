@@ -12,9 +12,10 @@
  * gives the course a field that reads exactly like one of the gift codes, so a pin wired to the
  * wrong field names the wrong gift here and fails.
  */
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import * as adminApi from '@/lib/admin-api'
 import { buildApplicationDetail } from '@/test/adminApplicationDetail'
 import { GiftScope, crumbSwitch, crumbText, scopeChosen, scopePinned } from '@/test/giftScope'
 
@@ -85,5 +86,38 @@ describe('a fresh mount of the application page, with no prior choice', () => {
     await mounted()
     const back = screen.getByRole('link', { name: /admin.scholarship.back/ })
     expect(back.getAttribute('href')).toBe('/admin/scholarship')
+  })
+})
+
+/**
+ * The assign picker and MULTI-GIFT reviewers (owner design, 2026-11-06). A reviewer who covers
+ * none of this case's gift is GREYED, "Does not cover <gift>" — never removed. One who covers
+ * every gift (`[]`), or several gifts including this one, stays open.
+ */
+describe('the assign picker greys a reviewer who does not cover the case’s gift', () => {
+  const FLAGSHIP = { id: 1, code: 'brightpath-flagship', name: 'Flagship Bursary' }
+  const row = (id: number, name: string, gifts: typeof FLAGSHIP[]) => ({
+    id, name, role: 'reviewer', email: `r${id}@example.test`, languages: ['en'], corrections: 0,
+    paused: false, gifts,
+  })
+
+  it('greys only the reviewer whose gifts leave this case out', async () => {
+    const getAdmins = adminApi.getAssignableAdmins as jest.Mock
+    // Queued BEFORE the mount: a once-value wins over the default `primeCockpitApi` sets.
+    getAdmins.mockResolvedValueOnce({ admins: [
+      row(60, 'Flagship Only', [FLAGSHIP]),
+      row(61, 'Every Gift', []),
+      row(62, 'Both Gifts', [FLAGSHIP, SABAH]),
+    ] })
+    renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { programme_id: SABAH.id, programme: SABAH } })
+    await mounted()
+    const card = screen.getByText('admin.scholarship.assignTitle').closest('div') as HTMLElement
+    const picker = within(card).getByRole('combobox')
+    const opt = (name: RegExp) => within(picker).getByRole('option', { name }) as HTMLOptionElement
+    await waitFor(() => expect(opt(/Flagship Only/).disabled).toBe(true))
+    expect(opt(/Flagship Only/).textContent).toContain('admin.scholarship.assign.doesNotCover')
+    expect(opt(/Every Gift/).disabled).toBe(false)
+    expect(opt(/Both Gifts/).disabled).toBe(false)
+    expect(opt(/Both Gifts/).textContent).not.toContain('doesNotCover')
   })
 })

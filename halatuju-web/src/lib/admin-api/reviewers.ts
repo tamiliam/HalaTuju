@@ -1,5 +1,5 @@
 /**
- * The reviewer roster (request #10): the workload maths, the detail, their gift, and the
+ * The reviewer roster (request #10): the workload maths, the detail, their gifts, and the
  * pause switch.
  *
  * ⚠ THREE SPANS of the old `admin-api.ts` (1426-1436, 3570-3671, 3841-3852) — `listReviewers`
@@ -29,9 +29,8 @@ export async function setReviewerPaused(id: number, paused: boolean, options?: A
  * There is deliberately **no corrections count** — reopens live on the detail page, with their
  * reasons, because a bare number beside a volunteer's name reads as a competence score.
  *
- * ⚠ The gift field is ONE gift (`programme_id`), never a list. It was absent by decision until
- * 2026-09-04 — *"with one programme the column could only say one thing; it comes back when a
- * second programme exists"* — and a second gift now exists, so the ruling's own clause fired.
+ * ⚠ The gifts are a LIST (`gifts`) since multi-gift tagging (owner design, 2026-11-06): a reviewer
+ * may cover two of three gifts. `[]` means EVERY gift — the default.
  */
 export interface AdminReviewer {
   id: number
@@ -58,10 +57,11 @@ export interface AdminReviewer {
   is_active: boolean
   /** NULL is "not recorded", NEVER "never signed in" — the backfill is best-effort. */
   last_seen_at: string | null
-  /** The gift they cover. **NULL = every gift**, the permissive default with no backfill —
-   *  render it as "every gift", never as a blank cell that reads as missing data. */
-  programme_id: number | null
-  programme_name: string
+  /** The gifts they cover, by code. **`[]` = every gift**, the default — render it as "Every
+   *  gift", never as a blank cell that reads as missing data. */
+  gifts: ReviewerGiftTag[]
+  /** Their organisation — the pop-over offers only its gifts (a super is served every org's). */
+  organisation_id?: number | null
   /** Common profile S2: a ~1-hour signed URL of their photo, or null. Staff screens only. */
   photo_url?: string | null
   /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
@@ -78,27 +78,34 @@ export interface AdminReviewer {
   remove?: TeamRemove
 }
 
-/** A gift the caller may scope a reviewer to. Includes gifts that are not switched on yet:
- *  a gift is staffed BEFORE it opens. */
-export interface AdminReviewerGift {
+/** One gift a reviewer covers, as served (`staff_gift.gifts_payload`). */
+export interface ReviewerGiftTag {
   id: number
   code: string
   name: string
+}
+
+/** A gift the caller may scope a reviewer to. Includes gifts that are not switched on yet:
+ *  a gift is staffed BEFORE it opens. */
+export interface AdminReviewerGift extends ReviewerGiftTag {
   is_active: boolean
+  /** Multi-gift: a super is offered every organisation's gifts, but a reviewer may be tagged only
+   *  with their OWN organisation's (the server refuses any other with a 404). */
+  organisation_id?: number
 }
 
 /**
- * Which gift a reviewer covers. Passing `null` clears it, and clearing means EVERY gift —
- * there is no state in which somebody is offered nothing.
+ * Which gifts a reviewer covers — the whole list. `[]` means EVERY gift: there is no state in
+ * which somebody is offered nothing.
  *
- * ⚠ A NARROWING, NEVER A FENCE. It decides who is OFFERED a case; the org boundary is
- * server-side and untouched, and a reviewer already holding another gift's case keeps it.
+ * ⚠ IT BLOCKS ASSIGNMENT, NOT READING (owner, 2026-11-06): the server refuses `gift_mismatch` for a
+ * new case outside these gifts. A case the person already holds is not taken away.
  */
-export async function setReviewerProgramme(
-  reviewerId: number, programmeId: number | null, options?: ApiOptions,
-): Promise<{ id: number; programme_id: number | null; programme_name: string }> {
+export async function setReviewerGifts(
+  reviewerId: number, programmeIds: number[], options?: ApiOptions,
+): Promise<{ id: number; gifts: ReviewerGiftTag[] }> {
   return adminMutate(`/api/v1/admin/reviewers/${reviewerId}/programme/`, 'POST',
-    { programme_id: programmeId }, options)
+    { programme_ids: programmeIds }, options)
 }
 
 /** One reopened decision, with the reason recorded at the time it was reopened. */

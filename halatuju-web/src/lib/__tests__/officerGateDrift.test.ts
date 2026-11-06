@@ -198,10 +198,10 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
     expect(offered[1].reason).toBe('paused')
   })
 
-  test('a blank gift on either side greys nobody — the permissive default the live roster carries', () => {
+  test('an empty gift list or an unknown case gift greys nobody — the live roster’s default', () => {
     const roster = [
-      { id: 80, name: 'Every gift', role: 'reviewer', programme_id: null },
-      { id: 81, name: 'Gift 7', role: 'reviewer', programme_id: 7 },
+      { id: 80, name: 'Every gift', role: 'reviewer', gifts: [] },
+      { id: 81, name: 'Gift 7', role: 'reviewer', gifts: [{ id: 7 }] },
     ]
     for (const applicationProgrammeId of [null, undefined]) {
       const offered = assignOptions(roster, {

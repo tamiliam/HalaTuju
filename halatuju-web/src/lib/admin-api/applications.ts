@@ -534,11 +534,10 @@ export async function getAssignableAdmins(options?: ApiOptions) {
       id: number; name: string; email: string; role: string
       languages: string[]; other_language?: string; corrections: number; paused: boolean
       assignable?: boolean   // #39 S3: may THIS caller hand them a case (`may_assign_to`)
-      /** Which gift they cover. **NULL = every gift** — the permissive default all 17
-       *  org-scoped staff still carry, so a blank must never grey anybody out. Flagged the
-       *  same way `paused` is: greyed with the gift named, never filtered out. */
-      programme_id: number | null
-      programme_name: string
+      /** Which gifts they cover (multi-gift, 2026-11-06). **`[]` = every gift** — the permissive
+       *  default all org-scoped staff still carry, so an empty list must never grey anybody out.
+       *  Flagged the same way `paused` is: greyed "Does not cover <gift>", never filtered out. */
+      gifts: Array<{ id: number; code: string; name: string }>
     }>
     past_assignees?: Array<{ id: number; name: string }>
   }>(

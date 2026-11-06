@@ -35,12 +35,12 @@ const REVIEWERS = [
   {
     id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
     languages: ['ta', 'en'], open_now: 3, awaiting_review: 1, interviewing: 2, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
-    is_active: true, last_seen_at: '2026-09-04T09:00:00Z',
+    is_active: true, last_seen_at: '2026-09-04T09:00:00Z', gifts: [],
   },
   {
     id: 6, name: 'Hafiz Rahman', email: 'hafiz@example.org', role: 'qc',
     languages: [], open_now: 0, awaiting_review: 0, interviewing: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
-    is_active: true, last_seen_at: null,
+    is_active: true, last_seen_at: null, gifts: [],
   },
 ] as unknown as api.AdminReviewer[]
 
@@ -162,6 +162,51 @@ describe('what must NOT be on this table', () => {
     await loaded()
     // With one programme it could only ever say one thing. It returns when a second exists.
     expect(document.body.innerHTML).not.toMatch(/programme/i)
+  })
+})
+
+/** Multi-gift (owner design, 2026-11-06): one grey chip per gift, or one "Every gift" chip, with a
+ *  pencil for someone who manages staff. Only once the organisation runs more than one gift. */
+describe('the gift chips under a name', () => {
+  const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary' }
+  const twoGifts = (rows = REVIEWERS) => {
+    giftChoices = [...giftChoices, { ...SABAH, is_active: true }]
+    mockApi.listReviewers.mockResolvedValue({ reviewers: rows, programmes: giftChoices })
+  }
+
+  it('shows one chip per gift, and EVERY GIFT for none', async () => {
+    twoGifts([{ ...REVIEWERS[0], gifts: [SABAH] }, REVIEWERS[1]])
+    await loaded()
+    expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary')
+    expect(ui().getByTestId('gifts-6').textContent).toBe('admin.reviewers.gifts.every')
+  })
+
+  it('an old API response with no gifts key reads as EVERY GIFT and does not crash', async () => {
+    const { gifts: _omitted, ...old } = REVIEWERS[0]
+    twoGifts([old as unknown as typeof REVIEWERS[0], REVIEWERS[1]])
+    await loaded()
+    expect(ui().getByTestId('gifts-5').textContent).toBe('admin.reviewers.gifts.every')
+  })
+
+  it('saves from the pencil and patches only that row', async () => {
+    twoGifts()
+    mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [SABAH] })
+    await loaded()
+    fireEvent.click(ui().getByTestId('gifts-edit-5'))
+    fireEvent.click(ui().getByTestId('gifts-ticks-5-every'))
+    fireEvent.click(ui().getByTestId('gifts-ticks-5-gift-9'))
+    fireEvent.click(ui().getByTestId('gifts-save-5'))
+    await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [9], { token: 'tok' }))
+    await waitFor(() => expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary'))
+    expect(mockApi.listReviewers).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives a plain admin the chips but no pencil', async () => {
+    viewerRole = { role: 'admin' }
+    twoGifts()
+    await loaded()
+    expect(ui().getByTestId('gifts-5')).toBeTruthy()
+    expect(ui().queryByTestId('gifts-edit-5')).toBeNull()
   })
 })
 

@@ -7,8 +7,9 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import {
-  getReviewerDetail, setReviewerPaused, setReviewerProgramme, type AdminReviewerDetail,
+  getReviewerDetail, setReviewerPaused, type AdminReviewerDetail,
 } from '@/lib/admin-api'
+import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import { effectiveRole } from '@/lib/navigation'
 import { mayOpen } from '@/lib/pageGuard'
 import RecordState from '@/components/admin/RecordState'
@@ -104,7 +105,6 @@ export default function AdminReviewerDetailPage() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [pauseError, setPauseError] = useState('')
-  const [giftError, setGiftError] = useState('')
   // Changing who gets work is staff management, so this is NARROWER than reading the page: an
   // `admin` or `finance` may look, only super/org_admin may act. The endpoint re-gates anyway.
   const viewerRole = effectiveRole(role)
@@ -219,7 +219,7 @@ export default function AdminReviewerDetailPage() {
             )}
             {pauseError && <p className="text-sm text-critical-600 mt-1.5">{pauseError}</p>}
 
-            {/* ── which gift they cover (S-ASSIGN) ──────────────────────────────────────
+            {/* ── which gifts they cover (S-ASSIGN; several since 2026-11-06) ──────────────────────────────────────
                 Sits with the role and the status because it is the same kind of fact about
                 the person, not a card of its own — the same reasoning that put the pause
                 control beside the status pill.
@@ -228,57 +228,22 @@ export default function AdminReviewerDetailPage() {
                 and the row could say only one thing — the owner's own 2026-08-02 ruling on
                 this exact column, and it still holds for a one-gift organisation.
 
-                ⚠ BLANK MEANS EVERY GIFT, never "no gift". The option is labelled so, because
-                an empty select reads as missing data and this is the live default for all 17
-                org-scoped staff. */}
+                ⚠ NO GIFT MEANS EVERY GIFT, never "no gift". Its chip says so, because a blank
+                reads as missing data and it is the default. */}
             {/* `?? []` is not defensive noise: web and api are separate Cloud Run services and
                 a deploy lands them in whichever order it lands them, so for a few minutes this
                 page can be newer than the payload it reads. A missing list must render nothing,
                 never throw a white screen over a reviewer's whole record. */}
             {(detail.programmes ?? []).length > 1 && (
-              <p className="text-sm text-ground-500 mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <div className="text-sm text-ground-500 mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>{t('admin.reviewers.detail.giftLabel')}</span>
-                {mayGift ? (
-                  <select
-                    className="border rounded-lg px-2 py-1 text-sm max-md:min-h-11 max-md:w-full max-md:min-w-0"
-                    value={detail.programme_id ?? ''}
-                    disabled={busy}
-                    onChange={async (e) => {
-                      const next = e.target.value ? Number(e.target.value) : null
-                      setBusy(true)
-                      setGiftError('')
-                      try {
-                        const r = await setReviewerProgramme(detail.id, next, { token: token! })
-                        // Patch just this pair. Nothing else on the record moves — the gift
-                        // narrows who is OFFERED work, it does not touch a case they hold.
-                        setDetail({
-                          ...detail,
-                          programme_id: r.programme_id,
-                          programme_name: r.programme_name,
-                        })
-                      } catch {
-                        setGiftError(t('admin.reviewers.detail.giftFailed'))
-                      } finally {
-                        setBusy(false)
-                      }
-                    }}
-                  >
-                    <option value="">{t('admin.reviewers.detail.giftEvery')}</option>
-                    {detail.programmes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {!p.is_active ? ` — ${t('admin.reviewers.detail.giftNotOpen')}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="font-medium text-ground-700">
-                    {detail.programme_name || t('admin.reviewers.detail.giftEvery')}
-                  </span>
-                )}
-              </p>
+                {/* Multi-gift (owner design, 2026-11-06): chips, and a pencil that opens the tick
+                    pop-over — the same control as the list. A save patches only the gifts: they
+                    narrow who is OFFERED work and do not touch a case the person already holds. */}
+                <ReviewerGiftsCell reviewer={detail} options={detail.programmes} token={token}
+                  canEdit={mayGift} onSaved={(gifts) => setDetail({ ...detail, gifts })} />
+              </div>
             )}
-            {giftError && <p className="text-sm text-critical-600 mt-1.5">{giftError}</p>}
           </div>
           {/* Mobile M8: four figures in one row ran 70 px past the card at 360 (owner's iPhone). Below md
               they are two by two across the card; from md the row is unchanged. */}

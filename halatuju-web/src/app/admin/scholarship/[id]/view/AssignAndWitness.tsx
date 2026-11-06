@@ -22,7 +22,7 @@ export function AssignAndWitness({
   isSuper: boolean
   canAssign: boolean
   decisionLocked: boolean
-  admins: Array<{ id: number; name: string; role: string }>
+  admins: Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>
   doAssign: (adminId: number | null) => void
   witnessCardVisible: boolean
   activeSources: SourceItem[]
@@ -74,9 +74,9 @@ export function AssignAndWitness({
                 because a name that simply vanishes leaves the reader guessing. The label says why.
                 The person already holding the case is never disabled: pause stops NEW work, and
                 disabling the current value would make the select unable to show its own state.
-                ⚠ A reviewer scoped to ANOTHER GIFT is greyed the same way, with the gift named
-                (S-ASSIGN). Same two reasons, and a blank gift on either side greys nobody — it
-                means "every gift", which is what all 17 live staff still carry.
+                ⚠ A reviewer who does not cover THIS case's gift is greyed the same way, "Does not
+                cover <gift>" (S-ASSIGN; multi-gift 2026-11-06). Same two reasons, and an empty gift
+                list (every gift) or a case of unknown gift greys nobody.
                 All the rules live in the pure `assignOptions`, where they are tested. */}
             {assignOptions(admins, {
               isSuper,
@@ -88,7 +88,7 @@ export function AssignAndWitness({
                   {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
                   {a.reason === 'paused' ? ` — ${t('admin.reviewers.status.paused')}` : ''}
                   {a.reason === 'otherGift'
-                    ? ` — ${t('admin.scholarship.assign.coversOtherGift', { gift: a.programmeName })}`
+                    ? ` — ${t('admin.scholarship.assign.doesNotCover', { gift: app.programme?.name ?? '' })}`
                     : ''}
                 </option>
               ))}

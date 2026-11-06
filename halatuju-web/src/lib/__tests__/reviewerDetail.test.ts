@@ -17,7 +17,7 @@ const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   // Revoked is NOT paused (2026-09-09); `last_seen_at` null means NOT RECORDED.
   is_active: true, last_seen_at: null,
   // NULL = every gift, the permissive default with no backfill — never "no gift".
-  programme_id: null, programme_name: '', ...over,
+  gifts: [], ...over,
 })
 
 const D = (over: Partial<AdminReviewerDetail> = {}): AdminReviewerDetail => ({

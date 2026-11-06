@@ -7,7 +7,10 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { listReviewers, type AdminItem, type AdminReviewer } from '@/lib/admin-api'
+import {
+  listReviewers, type AdminItem, type AdminReviewer, type AdminReviewerGift, type ReviewerGiftTag,
+} from '@/lib/admin-api'
+import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import { effectiveRole } from '@/lib/navigation'
 import { mayOpen, mayReadMentors } from '@/lib/pageGuard'
 import { lazySource } from '@/components/source/LazySource'
@@ -63,6 +66,10 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // is still true of a one-gift organisation, so it renders only above one gift — the ruling is
 // honoured rather than reversed. It is a line under the name, not a column: inventing a sort
 // key and a header for a fact most organisations never see is furniture.
+//
+// Multi-gift tagging (owner design, 2026-11-06): the line is now CHIPS — one grey chip per gift, or
+// one soft blue "Every gift" — with a pencil beside them (super / org_admin) that opens a pop-over
+// to change them in place (`components/admin/ReviewerGifts`).
 
 // A caseload figure: grey at zero (normal, never a flag), bold otherwise.
 const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
@@ -177,10 +184,11 @@ export default function AdminReviewersList() {
   }
 
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
-  // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
-  // covers it and the gift would say the same thing on every row — the owner's own 2026-08-02
-  // ruling, which still holds for a one-gift organisation.
-  const [giftCount, setGiftCount] = useState(0)
+  // The gifts the pencil may offer. With ONE, every reviewer covers it and the chips would say the
+  // same thing on every row — the owner's own 2026-08-02 ruling, which still holds for a one-gift
+  // organisation — so the chips render only above one.
+  const [giftOptions, setGiftOptions] = useState<AdminReviewerGift[]>([])
+  const giftCount = giftOptions.length
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const { sort, setSort } = useSort<ReviewerSortKey>(DEFAULT_SORT)
@@ -189,7 +197,7 @@ export default function AdminReviewersList() {
     if (!token) return
     setLoading(true)
     listReviewers({ token })
-      .then((d) => { setReviewers(d.reviewers); setGiftCount((d.programmes ?? []).length) })
+      .then((d) => { setReviewers(d.reviewers); setGiftOptions(d.programmes ?? []) })
       .catch(() => setError(t('admin.reviewers.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,6 +220,12 @@ export default function AdminReviewersList() {
     ? <span className="mt-0.5 block text-[11px] text-ground-500" data-testid="lead-no-self-qc">{t('admin.team.noSelfQc')}</span>
     : null
   const paged = usePagedRows(sorted)
+  // The chips and pencil, the same on the phone card and the desktop row. A save updates the row.
+  const giftsCell = (r: AdminReviewer) => (
+    <ReviewerGiftsCell reviewer={r} options={giftOptions} token={token} canEdit={canManage}
+      onSaved={(gifts: ReviewerGiftTag[]) => setReviewers((rs) =>
+        rs.map((x) => (x.id === r.id ? { ...x, gifts } : x)))} />
+  )
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
   // Below every hook on purpose — an early return above them would change the hook order between
@@ -375,11 +389,7 @@ export default function AdminReviewersList() {
                     <span className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600"
                       data-testid={`other-language-${r.id}`}>{r.other_language}</span>
                   )}
-                  {giftCount > 1 && (
-                    <span className="text-[11px] text-ground-400">
-                      {r.programme_name || t('admin.reviewers.detail.giftEvery')}
-                    </span>
-                  )}
+                  {giftCount > 1 && giftsCell(r)}
                 </div>
               </div>
             )
@@ -439,17 +449,12 @@ export default function AdminReviewersList() {
                           {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
-                      {/* Which gift they cover (S-ASSIGN). Under the name rather than as a
-                          column, so no sort key or header has to be invented for a fact that
-                          most organisations will never see; and shown only when there is more
-                          than one gift, per the ruling in the comment at the top of this file.
-                          ⚠ BLANK MEANS EVERY GIFT — it is the live default for all 17
-                          org-scoped staff and must read as an answer, not as missing data. */}
-                      {giftCount > 1 && (
-                        <div className="text-xs text-ground-400 mt-0.5">
-                          {r.programme_name || t('admin.reviewers.detail.giftEvery')}
-                        </div>
-                      )}
+                      {/* Which gifts they cover (S-ASSIGN; chips since multi-gift, 2026-11-06).
+                          Under the name rather than as a column, so no sort key or header has to
+                          be invented for a fact most organisations never see; and shown only
+                          above one gift, per the ruling at the top of this file.
+                          ⚠ NO GIFT MEANS EVERY GIFT — the default; its chip reads as an answer. */}
+                      {giftCount > 1 && <div className="mt-1">{giftsCell(r)}</div>}
                     </td>
                     <td className="px-4 py-3"><AlsoIn row={r} here="reviewers" /></td>
                     <td className="px-4 py-3 text-ground-700">

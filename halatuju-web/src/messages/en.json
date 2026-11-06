@@ -3515,13 +3515,18 @@
         "pauseNotePaused": "This reviewer is paused, so they are not being given new cases. Everything else — their account, their sign-in, the cases already theirs — is untouched.",
         "pauseFailed": "That could not be changed. Please try again.",
         "giftLabel": "Covers:",
-        "giftEvery": "Every gift",
         "giftNotOpen": "not open yet",
         "giftFailed": "That could not be changed. Please try again.",
         "about": "About",
         "recommended": "Recommended",
         "rejectedAfterReview": "Rejected after review",
         "awaitingQc": "Awaiting QC"
+      },
+      "gifts": {
+        "every": "Every gift",
+        "everyDefault": "Every gift (default)",
+        "edit": "Edit gifts for {name}",
+        "title": "Gifts for {name}"
       },
       "emails": {
         "title": "What reviewers are told",
@@ -4163,7 +4168,7 @@
       "assign": {
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
-        "coversOtherGift": "covers {gift}",
+        "doesNotCover": "Does not cover {gift}",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or their time to answer has passed.",
         "error": {
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",
@@ -7334,7 +7339,7 @@
       "giftLabel": "Which gift is this invitation for?",
       "giftChoose": "Choose a gift…",
       "reviewerGiftLabel": "Which gifts will this reviewer cover?",
-      "reviewerGiftChoose": "Choose one gift or every gift…",
+      "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {

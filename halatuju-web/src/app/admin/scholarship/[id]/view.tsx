@@ -184,7 +184,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const prevId = navIdx > 0 ? navIds[navIdx - 1] : null
   const nextId = navIdx >= 0 && navIdx < navIds.length - 1 ? navIds[navIdx + 1] : null
   // Phase C
-  const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string }>>([])
+  const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
   const [findings, setFindings] = useState<Record<string, { verdict: string; rationale: string }>>({})
   const [rubric, setRubric] = useState<Record<string, number>>({})
   const [note, setNote] = useState('')

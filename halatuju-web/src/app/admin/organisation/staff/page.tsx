@@ -17,6 +17,8 @@ import {
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import PanelTabs from '@/components/admin/PanelTabs'
 import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
+import { GiftTickList } from '@/components/admin/ReviewerGifts'
+import { EVERY_GIFT, idsToSave, type GiftTicks } from '@/lib/reviewerGifts'
 import { lazySource } from '@/components/source/LazySource'
 
 // The Source tab's form and roster: their own chunk, fetched when the tab is first opened.
@@ -109,9 +111,10 @@ export default function OrganisationInvitationsPage() {
   // now this form never asked, so a benefactor invited for Sabah would have registered
   // straight into the flagship, silently.
   const [sProgramme, setSProgramme] = useState('')
-  // TD-501 (A1.3): a REVIEWER invite names its gift — one gift's id, or 'every'. Starts blank and
-  // the select is required: "every gift" must be chosen, never a default (the server 400s a blank).
-  const [rGift, setRGift] = useState('')
+  // A REVIEWER invite names its gifts (TD-501, A1.3). Multi-gift (owner design, 2026-11-06): a tick
+  // list with "Every gift" ticked BY DEFAULT — the owner's ruling replaces A1.3's "must be chosen".
+  // Always sent as `programme_ids` (`[]` = every gift), so the server never sees a blank.
+  const [rGifts, setRGifts] = useState<GiftTicks>(EVERY_GIFT)
 
   // The kind on screen NOW: a reply for a kind you have already left (the mount's Admins read, when
   // `?kind=source` switches the tab a moment later) must not land under the new tab.
@@ -169,12 +172,10 @@ export default function OrganisationInvitationsPage() {
         ok = true
       } catch { ok = false }
     } else {
-      const gift = subRole !== 'reviewer' ? {}
-        : rGift === 'every' ? { gift_scope: 'every' as const }
-        : { gift_scope: 'one' as const, programme_id: Number(rGift) }
+      const gift = subRole !== 'reviewer' ? {} : { programme_ids: idsToSave(rGifts) }
       ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole, ...gift })
     }
-    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme(''); setRGift('') }
+    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme(''); setRGifts(EVERY_GIFT) }
     void load()
   }
 
@@ -355,19 +356,16 @@ export default function OrganisationInvitationsPage() {
                 </label>
               )}
               {kind !== 'sponsors' && subRole === 'reviewer' && (
-                <label className="block text-sm">
+                <div className="text-sm">
                   <span className="mb-1 block font-medium text-ground-700">
                     {t('admin.invitations.reviewerGiftLabel')}
                   </span>
-                  <select className={inputCls} value={rGift} required data-testid="invite-reviewer-gift"
-                    onChange={(e) => setRGift(e.target.value)}>
-                    <option value="">{t('admin.invitations.reviewerGiftChoose')}</option>
-                    <option value="every">{t('admin.invitations.reviewerGiftEvery')}</option>
-                    {reviewerGiftChoices.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="rounded-lg border border-ground-300 px-2 py-1">
+                    <GiftTickList ticks={rGifts} options={reviewerGiftChoices} onChange={setRGifts}
+                      everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-reviewer-gift" />
+                  </div>
+                  <p className="mt-1.5 text-xs text-ground-500">{t('admin.invitations.reviewerGiftHelp')}</p>
+                </div>
               )}
               {/* ⚠ A TEXTAREA, NOT AN INPUT, AND THE REASON IS NOT COSMETIC (BrightPath #17).
                   Enter inside a single-line box submits the form it sits in — that is the

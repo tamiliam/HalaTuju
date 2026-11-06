@@ -41,9 +41,9 @@ const DETAIL = {
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
   field_of_study: 'Physics',
   phone: '012-3456789', share_phone_with_students: false,
-  // NULL = every gift, the permissive default with no backfill. One gift in the choices, so the
-  // gift row does not render by default — today's BrightPath shape.
-  programme_id: null, programme_name: '',
+  // [] = every gift, the default. One gift in the choices, so the gift row does not render by
+  // default — today's BrightPath shape.
+  gifts: [], organisation_id: 1,
   programmes: [{ id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true }],
   reopens: [
     {
@@ -248,17 +248,19 @@ describe('the role gate and failure', () => {
 })
 
 /**
- * Which gift a reviewer covers (S-ASSIGN, 2026-09-04).
+ * Which gifts a reviewer covers (S-ASSIGN 2026-09-04; MULTI-GIFT, owner design 2026-11-06).
  *
- * Reviewers had no gift field at all until now. ⚠ It is a NARROWING, not a fence — it decides
- * who is OFFERED a case; the org boundary is server-side and a reviewer already holding
- * another gift's case keeps it.
+ * Chips, and a pencil that opens a tick list. ⚠ It is a NARROWING, not a fence — it decides who is
+ * OFFERED a case; the org boundary is server-side and a reviewer already holding another gift's
+ * case keeps it. `[]` = EVERY gift, the default.
  */
-describe('which gift a reviewer covers', () => {
+describe('which gifts a reviewer covers', () => {
   const TWO_GIFTS = [
     { id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true },
     { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: false },
   ]
+  const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary' }
+  const tick = (id: string) => screen.getByTestId(id) as HTMLInputElement
 
   it('⚠ says nothing when the organisation runs ONE gift', async () => {
     // Owner, 2026-08-02: with one programme the row could only ever say one thing. That ruling
@@ -267,60 +269,90 @@ describe('which gift a reviewer covers', () => {
     expect(screen.queryByText('admin.reviewers.detail.giftLabel')).toBeNull()
   })
 
-  it('asks once there are two', async () => {
-    await loaded({ programmes: TWO_GIFTS })
+  it('shows the gifts once there are two', async () => {
+    await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
     expect(screen.getByText('admin.reviewers.detail.giftLabel')).toBeTruthy()
+    expect(screen.getByTestId('gifts-5').textContent).toBe('Sabah Bursary')
   })
 
-  it('⚠ shows a blank as EVERY GIFT, never as an empty value', async () => {
-    // The live default: all 17 org-scoped staff carry NULL, and an empty select would read as
-    // missing data on every one of them.
-    await loaded({ programmes: TWO_GIFTS, programme_id: null })
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    expect(select.value).toBe('')
-    expect(screen.getByText('admin.reviewers.detail.giftEvery')).toBeTruthy()
+  it('⚠ shows no gifts as the EVERY GIFT chip, never as a blank', async () => {
+    await loaded({ programmes: TWO_GIFTS, gifts: [] })
+    expect(screen.getByTestId('gifts-5').textContent).toBe('admin.reviewers.gifts.every')
   })
 
-  it('offers a gift that is not switched on yet — a gift is STAFFED before it opens', async () => {
-    await loaded({ programmes: TWO_GIFTS })
-    expect(screen.getByText(/Sabah Bursary — admin\.reviewers\.detail\.giftNotOpen/)).toBeTruthy()
+  it('opens the pop-over with Every gift ticked and the gifts greyed', async () => {
+    await loaded({ programmes: TWO_GIFTS, gifts: [] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(tick('gifts-ticks-5-every').checked).toBe(true)
+    expect(tick('gifts-ticks-5-gift-7').disabled).toBe(true)
+    expect(tick('gifts-ticks-5-gift-9').disabled).toBe(true)
+    // A gift that is not switched on yet is still offered — a gift is STAFFED before it opens.
+    expect(screen.getByText('admin.reviewers.detail.giftNotOpen')).toBeTruthy()
   })
 
-  it('posts the chosen gift and patches only that pair', async () => {
-    mockApi.setReviewerProgramme.mockResolvedValue(
-      { id: 5, programme_id: 9, programme_name: 'Sabah Bursary' })
-    await loaded({ programmes: TWO_GIFTS })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
-    await waitFor(() => expect(mockApi.setReviewerProgramme)
-      .toHaveBeenCalledWith(5, 9, { token: 'tok' }))
+  it('posts the ticked gifts and patches only that row', async () => {
+    mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [SABAH] })
+    await loaded({ programmes: TWO_GIFTS, gifts: [] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    fireEvent.click(tick('gifts-ticks-5-every'))
+    expect(tick('gifts-ticks-5-gift-9').disabled).toBe(false)
+    fireEvent.click(tick('gifts-ticks-5-gift-9'))
+    fireEvent.click(screen.getByTestId('gifts-save-5'))
+    await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [9], { token: 'tok' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByTestId('gifts-5').textContent).toBe('Sabah Bursary')
     // Nothing else on the record moves, so a full re-fetch would only make the page flicker.
     expect(mockApi.getReviewerDetail).toHaveBeenCalledTimes(1)
   })
 
-  it('clears it back to EVERY gift with null, never with a magic id', async () => {
-    mockApi.setReviewerProgramme.mockResolvedValue(
-      { id: 5, programme_id: null, programme_name: '' })
-    await loaded({ programmes: TWO_GIFTS, programme_id: 9, programme_name: 'Sabah Bursary' })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } })
-    await waitFor(() => expect(mockApi.setReviewerProgramme)
-      .toHaveBeenCalledWith(5, null, { token: 'tok' }))
+  it('ticking Every gift clears the gifts and saves an empty list', async () => {
+    mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [] })
+    await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    expect(tick('gifts-ticks-5-gift-9').checked).toBe(true)
+    fireEvent.click(tick('gifts-ticks-5-every'))
+    expect(tick('gifts-ticks-5-gift-9').checked).toBe(false)
+    expect(tick('gifts-ticks-5-gift-9').disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('gifts-save-5'))
+    await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [], { token: 'tok' }))
   })
 
-  it('⚠ shows a plain admin the gift as TEXT, with no way to change it', async () => {
+  it('clearing the last gift tick puts Every gift back on', async () => {
+    await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    fireEvent.click(tick('gifts-ticks-5-gift-9'))
+    expect(tick('gifts-ticks-5-every').checked).toBe(true)
+  })
+
+  it('Cancel closes without saving', async () => {
+    await loaded({ programmes: TWO_GIFTS, gifts: [] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    fireEvent.click(tick('gifts-ticks-5-every'))
+    fireEvent.click(tick('gifts-ticks-5-gift-7'))
+    fireEvent.click(screen.getByText('common.cancel'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(mockApi.setReviewerGifts).not.toHaveBeenCalled()
+    expect(screen.getByTestId('gifts-5').textContent).toBe('admin.reviewers.gifts.every')
+  })
+
+  it('⚠ shows a plain admin the gifts as chips, with no way to change them', async () => {
     // Narrower than reading the page, exactly like pause: `admin` and `finance` may look;
     // deciding who gets which work is staff management.
     viewerRole = { role: 'admin' }
-    await loaded({ programmes: TWO_GIFTS, programme_id: 9, programme_name: 'Sabah Bursary' })
+    await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
     expect(screen.getByText('Sabah Bursary')).toBeTruthy()
-    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByTestId('gifts-edit-5')).toBeNull()
   })
 
-  it('names the failure rather than silently keeping the old value on screen', async () => {
-    mockApi.setReviewerProgramme.mockRejectedValue(new Error('boom'))
-    await loaded({ programmes: TWO_GIFTS })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
+  it('names the failure and keeps the pop-over open', async () => {
+    mockApi.setReviewerGifts.mockRejectedValue(new Error('boom'))
+    await loaded({ programmes: TWO_GIFTS, gifts: [] })
+    fireEvent.click(screen.getByTestId('gifts-edit-5'))
+    fireEvent.click(screen.getByTestId('gifts-save-5'))
     await waitFor(() =>
       expect(screen.getByText('admin.reviewers.detail.giftFailed')).toBeTruthy())
+    expect(screen.getByRole('dialog')).toBeTruthy()
   })
 })
 

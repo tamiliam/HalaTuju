@@ -302,9 +302,9 @@ export async function inviteAdmin(
     new_org_code?: string
     contact_person?: string
     org_phone?: string
-    /** TD-501: a reviewer invite must choose — one gift (with `programme_id`) or every gift. */
-    gift_scope?: 'one' | 'every'
-    programme_id?: number
+    /** Multi-gift (owner, 2026-11-06): the gifts a reviewer invite covers. `[]` = every gift,
+     *  the default. Each must be the organisation's own (the server refuses another with a 404). */
+    programme_ids?: number[]
   },
   options?: ApiOptions
 ) {

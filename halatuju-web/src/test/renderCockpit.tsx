@@ -109,10 +109,10 @@ export function primeCockpitApi(app: AdminScholarshipDetail): void {
   api.getAssignableAdmins.mockResolvedValue({ admins: [
     { id: ASSIGNED_ADMIN_ID, name: 'Test Reviewer 01', role: 'reviewer',
       email: 'reviewer@example.test', languages: ['en'], corrections: 0, paused: false,
-      programme_id: null, programme_name: '' },
+      gifts: [] },
     { id: OTHER_ADMIN_ID, name: 'Test Reviewer 05', role: 'reviewer',
       email: 'reviewer05@example.test', languages: ['en'], corrections: 0, paused: false,
-      programme_id: null, programme_name: '' },
+      gifts: [] },
   ] })
   api.getVerdictCaseSummary.mockResolvedValue({ enabled: false })
   api.getSources.mockResolvedValue({ sources: [] })
