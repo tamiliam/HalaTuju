@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: a university student with no STPM/etc. results on file reads Unsure, not Probable (owner, #388) (2026-11-06)
+
+`higher_owed.cap`: Certain and Probable both fall to Unsure (`recommend`, amber) while a degree-bound tertiary student's higher results are owed and none is on file; a worse band stands, the reason item, the Check 2 ask and every gate are unchanged. `VERDICT_ENGINE_VERSION` 2026-11-06.6. Decisions: "Missing higher results cap Academic at Unsure". Tests: `test_third_route_higher_owed.py` (TestTheCapIsUnsure), `test_gift_asks_higher.py`.
+
 ### fix: request #62 follow-up - the cockpit's SPM grades tick needs the subjects to check out too (2026-11-06)
 
 Web only, no server change. `fieldVerifications` ticks `grades` only when the results slip reports BOTH `subjects` and `results` as a clean match; before, `results` alone earned it, so app 262 (a typed Add Maths not on the slip, flagged "please check") still showed the tick beside her SPM prerequisites (owner: a tick means every value checks out). Tests: `fieldVerification.test.ts`.

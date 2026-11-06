@@ -66,9 +66,9 @@ class TestTheShapeIs388s(TestCase):
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
 class TestShowTheGapAndCapTheVerdict(TestCase):
-    def test_388_reads_probable_with_the_reason_named(self):
+    def test_388_reads_unsure_with_the_reason_named(self):
         f = _academic(_submitted())
-        self.assertEqual(f['status'], 'review')                       # Probable, never Certain
+        self.assertEqual(f['status'], 'recommend')                    # Unsure (owner 2026-11-06): a must for university
         note = next(i for i in f['unresolved'] if i['code'] == higher_owed.NOTE_CODE)
         self.assertEqual(note['params'], {'held': 'STPM', 'kind': 'stpm'})   # the drawer's slot
 
@@ -318,3 +318,23 @@ class TestNeverRevertedByThis(TestCase):
         app = _fresh(app)
         self.assertEqual((app.status, app.profile_completed_at is not None), ('profile_complete', True))
         self.assertNotIn('higher_results', app.requirements_snapshot['documents'])   # snapshot untouched
+
+
+class TestTheCapIsUnsure(TestCase):
+    """Owner 2026-11-06 (#388): the higher results are a MUST for a university student, so while
+    none is on file the Academic card is at best Unsure (amber), whatever the SPM slip shows."""
+
+    def _cap(self, status):
+        return higher_owed.cap({'fact': 'academic', 'status': status, 'evidence': [], 'unresolved': []}, 'stpm')
+
+    def test_certain_and_probable_fall_to_unsure(self):
+        for status in ('verified', 'review'):
+            self.assertEqual(self._cap(status)['status'], 'recommend', status)
+
+    def test_a_worse_band_stands(self):
+        for status in ('recommend', 'gap'):
+            self.assertEqual(self._cap(status)['status'], status)
+
+    def test_the_reason_is_always_named(self):
+        f = self._cap('gap')
+        self.assertIn(higher_owed.NOTE_CODE, [i['code'] for i in f['unresolved']])

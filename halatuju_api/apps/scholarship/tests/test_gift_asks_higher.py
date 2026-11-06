@@ -134,7 +134,7 @@ class TestAGiftThatAsks(TestCase):
         app = _submitted(asks=True)
         self.assertEqual(higher_owed.owed_kind(app), 'stpm')
         self.assertEqual(higher_owed.ask_codes(app), {higher_owed.ASK_CODE})
-        self.assertEqual(_academic(app)['status'], 'review')
+        self.assertEqual(_academic(app)['status'], 'recommend')   # Unsure (owner 2026-11-06)
 
 
 class TestFrozenSnapshotsAreKept(TestCase):

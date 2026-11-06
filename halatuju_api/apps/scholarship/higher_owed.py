@@ -145,11 +145,14 @@ def ask_params(application, code) -> dict:
 
 
 def cap(fact, kind):
-    """The Academic fact of an application owing the higher results: never Certain — 'verified'
-    falls to 'review' (Probable); a worse band stands — with the reason named."""
+    """The Academic fact of an application owing the higher results: at best Unsure — 'verified'
+    (Certain) and 'review' (Probable) fall to 'recommend' (Unsure, amber); a worse band stands —
+    with the reason named. Owner 2026-11-06 (#388): STPM / Matric / Diploma / Asasi results are a
+    MUST for a university student, so a matching SPM slip cannot carry the card to Probable while
+    they are not on file (it was capped at Probable from 2026-10-27)."""
     from apps.courses.exam_questions import QUALIFICATION_LABELS
     from .verdict_engine import _item
-    if fact['status'] == 'verified':
-        fact['status'] = 'review'
+    if fact['status'] in ('verified', 'review'):
+        fact['status'] = 'recommend'
     fact['unresolved'].append(_item('higher_results_not_on_file', held=QUALIFICATION_LABELS.get(kind, kind), kind=kind))
     return fact
