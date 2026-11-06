@@ -59,6 +59,8 @@ const errText = (e: unknown, t: (k: string, params?: Record<string, string>) => 
   // on_hold_in_run carries how many held students block the approval (maintenance S1, L3).
   const count = (e as { body?: { count?: number } })?.body?.count
   if (code === 'on_hold_in_run') return t('admin.payments.error.on_hold_in_run', { count: String(count ?? 1) })
+  // not_payable_in_run (TD-383): students no longer funded (e.g. closed) since they went on the run.
+  if (code === 'not_payable_in_run') return t('admin.payments.error.not_payable_in_run', { count: String(count ?? 1) })
   const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
                  'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready',
                  'finance_check_required', 'on_hold', 'on_hold_in_run']

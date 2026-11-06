@@ -584,9 +584,17 @@ def fund_student(sponsor, application):
     # this function), BEFORE any arithmetic, so the NULL wallet is never even consulted.
     if application.programme_id is None:
         raise SponsorshipError('programme_required')
+    # TD-365 / TD-383: lock and re-read the application FIRST (the same row a close locks), so a
+    # close, a reject or a second fund that committed since the caller read it is seen here.
+    from .status_lock import StatusRefused, lock_application_for, lock_sponsor_wallet
+    try:
+        lock_application_for(application, ('recommended',))
+    except StatusRefused:
+        raise SponsorshipError('not_fundable')
     if not is_fundable(application):
         raise SponsorshipError('not_fundable')
     amount = application.award_amount
+    lock_sponsor_wallet(sponsor)   # A1.5: two funds by one sponsor cannot both pass the balance
     # Spend authority is the wallet for THIS student's programme — never a cross-programme
     # total. A sponsor with money in the flagship cannot fund a Sabah student with it.
     if sponsor_balance(sponsor, application.programme) < amount:
@@ -919,6 +927,8 @@ def reinstate_lapsed_sponsorship(application, *, since):
     if sp is None:
         return None
     # Reinstatement spends from the wallet of the programme this student belongs to.
+    from .status_lock import lock_sponsor_wallet
+    lock_sponsor_wallet(sp.sponsor)   # A1.5: the same wallet race as fund_student
     if sponsor_balance(sp.sponsor, application.programme) < sp.amount:
         return None
     sp.status = 'active'

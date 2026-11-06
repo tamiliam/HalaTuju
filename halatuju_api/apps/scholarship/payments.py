@@ -510,7 +510,12 @@ def complete(run):
     ON HOLD STOPS MONEY (owner 2026-10-29), the last door: an INCLUDED item whose student is on hold
     NOW refuses the whole completion (``on_hold_in_run``; ``sign`` rolls back with it, so the run
     stays signed-but-unpaid and the maker excludes her). Each released item writes one
-    ``payment_released`` activity row, inside this transaction."""
+    ``payment_released`` activity row, inside this transaction.
+
+    LOCKED RE-READ (TD-367, TD-383): before any of that, every included application is locked and
+    re-read (``status_lock.lock_applications_for``); one that is no longer in ``PAYABLE_STATUSES``
+    (e.g. closed after it was put on the run) refuses the whole completion (``not_payable_in_run``,
+    with the count), exactly like a hold."""
     from . import sheets
     from . import emails
     from .disbursement import _flip_to_maintenance
@@ -523,6 +528,14 @@ def complete(run):
         raise PaymentsError('already_paid')
 
     items = [i for i in run.items.select_related('application') if i.included]
+    # TD-367 / TD-383: every included student is re-read UNDER HER ROW LOCK (after the run's lock,
+    # which `sign` took: one order, no deadlock), so a close or a hold that committed after the
+    # items were loaded is seen. A student no longer payable (closed, rejected, …) refuses the
+    # whole completion, the same way a hold does: `sign` rolls back and the maker excludes her.
+    from .status_lock import lock_applications_for
+    not_payable = lock_applications_for([i.application for i in items], PAYABLE_STATUSES)
+    if not_payable:
+        raise PaymentsError('not_payable_in_run', count=len(not_payable))
     held = sum(1 for i in items if _is_on_hold(i.application))
     if held:
         raise PaymentsError('on_hold_in_run', count=held)

@@ -18,6 +18,7 @@ from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from . import emails, meeting, pool, services, usage, whatsapp
@@ -97,6 +98,18 @@ def slot_in_window(dt, organisation=None) -> bool:
 
 class SchedulingError(Exception):
     """Raised with a stable string code the views map to a 400 response."""
+
+
+def _lock_open_case(application):
+    """TD-368 / TD-383: lock + re-read the row inside the caller's transaction; refuse a FINISHED
+    case (`review_writes_closed`: a reopened decision stays open, as the cockpit reads it)."""
+    from .status_lock import StatusRefused, lock_application_for
+    try:
+        lock_application_for(application, [c for c, _ in application.STATUS_CHOICES])
+    except StatusRefused:   # the row has gone
+        raise SchedulingError('case_closed')
+    if services.review_writes_closed(application):
+        raise SchedulingError('case_closed')
 
 
 def scheduling_enabled() -> bool:
@@ -330,70 +343,81 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     held = held_intervals(reviewer, exclude_application=application)
     if any(overlaps(s, duration_min, held) for s in future):
         raise SchedulingError('reviewer_conflict')
+    with transaction.atomic():   # TD-368: the writes under the row lock; Meet + notices after it
+        _lock_open_case(application)
+        # Reviewer reschedule: release the held booking (slot + Meet event + fields) so the new
+        # menu fully replaces it and the student must re-pick.
+        rescheduling = bool(release_booking and application.interview_status == 'booked')
+        stale_event = application.interview_calendar_event_id if rescheduling else ''
+        if rescheduling:
+            if application.interview_slot_id:
+                (InterviewSlot.objects
+                    .filter(id=application.interview_slot_id)
+                    .update(is_active=False, updated_at=now))
+            application.interview_status = ''
+            application.interview_slot = None
+            application.interview_start = None
+            application.interview_meeting_url = ''
+            application.interview_calendar_event_id = ''
+            application.interview_meeting_provider = ''
+            application.interview_reminded_1d_at = None
+            application.interview_reminded_1h_at = None
+            application.save(update_fields=[
+                'interview_status', 'interview_slot', 'interview_start', 'interview_meeting_url',
+                'interview_calendar_event_id', 'interview_meeting_provider',
+                'interview_reminded_1d_at', 'interview_reminded_1h_at',
+            ])
 
-    # Reviewer reschedule: release the held booking (slot + Meet event + fields) so the new
-    # menu fully replaces it and the student must re-pick.
-    rescheduling = bool(release_booking and application.interview_status == 'booked')
-    if rescheduling:
-        if application.interview_calendar_event_id:
-            meeting.cancel_event(application.interview_calendar_event_id)
-        if application.interview_slot_id:
-            (InterviewSlot.objects
-                .filter(id=application.interview_slot_id)
-                .update(is_active=False, updated_at=now))
-        application.interview_status = ''
-        application.interview_slot = None
-        application.interview_start = None
-        application.interview_meeting_url = ''
-        application.interview_calendar_event_id = ''
-        application.interview_meeting_provider = ''
-        application.interview_reminded_1d_at = None
-        application.interview_reminded_1h_at = None
-        application.save(update_fields=[
-            'interview_status', 'interview_slot', 'interview_start', 'interview_meeting_url',
-            'interview_calendar_event_id', 'interview_meeting_provider',
-            'interview_reminded_1d_at', 'interview_reminded_1h_at',
-        ])
+        booked_id = application.interview_slot_id if application.interview_status == 'booked' else None
+        # The menu the student was last shown — to decide whether to re-notify.
+        prev_menu = set(
+            InterviewSlot.objects
+            .filter(application=application, is_active=True)
+            .exclude(id=booked_id)
+            .values_list('start', flat=True))
 
-    booked_id = application.interview_slot_id if application.interview_status == 'booked' else None
-    # The menu the student was last shown — to decide whether to re-notify.
-    prev_menu = set(
-        InterviewSlot.objects
-        .filter(application=application, is_active=True)
-        .exclude(id=booked_id)
-        .values_list('start', flat=True))
+        # Withdraw the previous unbooked menu (keep the booked slot, if any).
+        (InterviewSlot.objects
+            .filter(application=application, is_active=True)
+            .exclude(id=booked_id)
+            .update(is_active=False, updated_at=now))
 
-    # Withdraw the previous unbooked menu (keep the booked slot, if any).
-    (InterviewSlot.objects
-        .filter(application=application, is_active=True)
-        .exclude(id=booked_id)
-        .update(is_active=False, updated_at=now))
-
-    created = [
-        InterviewSlot.objects.create(
-            application=application, reviewer=reviewer, start=s, duration_min=duration_min)
-        for s in sorted(future)
-    ]
-    # A fresh menu resets the application back to "awaiting a pick": clear any outstanding
-    # "these don't work" request, and lift a prior cancellation (otherwise the 'cancelled'
-    # state sticks and the student never sees the new times).
-    reset_fields = []
-    if application.interview_status == 'cancelled':
-        application.interview_status = ''
-        application.interview_cancelled_at = None
-        application.interview_slot = None
-        application.interview_start = None
-        reset_fields += ['interview_status', 'interview_cancelled_at',
-                         'interview_slot', 'interview_start']
-    if application.interview_alternatives_requested_at:
-        application.interview_alternatives_requested_at = None
-        application.interview_alternatives_note = ''
-        reset_fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
-    if application.interview_cancel_reason:        # fresh menu → the prior cancel reason is stale
-        application.interview_cancel_reason = ''
-        reset_fields.append('interview_cancel_reason')
-    if reset_fields:
-        application.save(update_fields=reset_fields)
+        created = [
+            InterviewSlot.objects.create(
+                application=application, reviewer=reviewer, start=s, duration_min=duration_min)
+            for s in sorted(future)
+        ]
+        # A fresh menu resets the application back to "awaiting a pick": clear any outstanding
+        # "these don't work" request, and lift a prior cancellation (otherwise the 'cancelled'
+        # state sticks and the student never sees the new times).
+        reset_fields = []
+        if application.interview_status == 'cancelled':
+            application.interview_status = ''
+            application.interview_cancelled_at = None
+            application.interview_slot = None
+            application.interview_start = None
+            reset_fields += ['interview_status', 'interview_cancelled_at',
+                             'interview_slot', 'interview_start']
+        if application.interview_alternatives_requested_at:
+            application.interview_alternatives_requested_at = None
+            application.interview_alternatives_note = ''
+            reset_fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
+        if application.interview_cancel_reason:        # fresh menu → the prior cancel reason is stale
+            application.interview_cancel_reason = ''
+            reset_fields.append('interview_cancel_reason')
+        if reset_fields:
+            application.save(update_fields=reset_fields)
+        # The interview process has begun — times are out, the first interview@ email goes to the
+        # student — so advance the application to 'interviewing' to reflect reality on the board.
+        # (The old trigger, creating the Interview-Stage capture draft, fired too late: reviewers
+        # schedule + conduct the interview first and fill the capture form last, so cases sat at
+        # 'profile_complete' through a booked/concluded interview.) Only ever advances FROM
+        # profile_complete — never pulls a later or decided case backward.
+        if application.status == 'profile_complete':
+            application.status = 'interviewing'
+            application.save(update_fields=['status'])
+    if stale_event:
+        meeting.cancel_event(stale_event)
     # Tell the student their times are ready to pick — but ONLY when the menu actually
     # changed (re-proposing the same set must not re-spam them), or when we just released a
     # booking to reschedule (they MUST re-pick, so always notify).
@@ -406,15 +430,6 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                 rescheduled=rescheduling)
         # Nudge on WhatsApp too (opt-in gated) so students who don't check email still respond.
         _send_wa_proposed(application, student_name, reviewer)
-    # The interview process has begun — times are out, the first interview@ email goes to the
-    # student — so advance the application to 'interviewing' to reflect reality on the board.
-    # (The old trigger, creating the Interview-Stage capture draft, fired too late: reviewers
-    # schedule + conduct the interview first and fill the capture form last, so cases sat at
-    # 'profile_complete' through a booked/concluded interview.) Only ever advances FROM
-    # profile_complete — never pulls a later or decided case backward.
-    if application.status == 'profile_complete':
-        application.status = 'interviewing'
-        application.save(update_fields=['status'])
     return created
 
 
@@ -430,6 +445,8 @@ def book_slot(application, *, slot_id, now=None):
     stamps. Returns the application.
     """
     now = now or timezone.now()
+    if services.review_writes_closed(application):   # TD-368; re-read under the lock below
+        raise SchedulingError('case_closed')
     slot = (InterviewSlot.objects
             .filter(application=application, id=slot_id, is_active=True)
             .select_related('reviewer').first())
@@ -487,29 +504,34 @@ def book_slot(application, *, slot_id, now=None):
             start=slot.start, duration_min=slot.duration_min,
             attendee_emails=[e for e in (student_email, reviewer_email) if e],
         )
-
-    application.interview_slot = slot
-    application.interview_start = slot.start
-    application.interview_status = 'booked'
-    application.interview_cancelled_at = None
-    if result is not None:
-        application.interview_meeting_url = result.get('url', '') or application.interview_meeting_url
-        application.interview_calendar_event_id = result.get('event_id', '') or application.interview_calendar_event_id
-        if result.get('url'):
-            application.interview_meeting_provider = 'google_meet'
-    # Set on EVERY (re)booking so reminder-notice (interview_start − interview_booked_at) reflects
-    # the CURRENT slot — a reschedule to a sooner time then correctly re-gates the 24h/1h reminders.
-    application.interview_booked_at = now
-    application.interview_confirmation_sent_at = now
-    application.interview_reminded_1d_at = None
-    application.interview_reminded_1h_at = None
-    application.save(update_fields=[
-        'interview_slot', 'interview_start', 'interview_status', 'interview_cancelled_at',
-        'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
-        'interview_booked_at', 'interview_confirmation_sent_at',
-        'interview_reminded_1d_at', 'interview_reminded_1h_at',
-    ])
-
+    with transaction.atomic():
+        try:
+            _lock_open_case(application)   # a close that landed during the Meet call wins
+        except SchedulingError:
+            if result and result.get('event_id') not in ('', None, prev_event):
+                meeting.cancel_event(result['event_id'])   # best-effort: drop the new event
+            raise
+        application.interview_slot = slot
+        application.interview_start = slot.start
+        application.interview_status = 'booked'
+        application.interview_cancelled_at = None
+        if result is not None:
+            application.interview_meeting_url = result.get('url', '') or application.interview_meeting_url
+            application.interview_calendar_event_id = result.get('event_id', '') or application.interview_calendar_event_id
+            if result.get('url'):
+                application.interview_meeting_provider = 'google_meet'
+        # Set on EVERY (re)booking so reminder-notice (interview_start − interview_booked_at) reflects
+        # the CURRENT slot — a reschedule to a sooner time then correctly re-gates the 24h/1h reminders.
+        application.interview_booked_at = now
+        application.interview_confirmation_sent_at = now
+        application.interview_reminded_1d_at = None
+        application.interview_reminded_1h_at = None
+        application.save(update_fields=[
+            'interview_slot', 'interview_start', 'interview_status', 'interview_cancelled_at',
+            'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
+            'interview_booked_at', 'interview_confirmation_sent_at',
+            'interview_reminded_1d_at', 'interview_reminded_1h_at',
+        ])
     # Confirmations (best-effort). The cutoff is resolved HERE, where the organisation is in
     # hand, and passed in — `emails` takes an address and a time, never a tenant.
     from apps.courses import org_config

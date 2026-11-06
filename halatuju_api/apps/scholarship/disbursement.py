@@ -20,7 +20,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from . import pool, staff_activity
-from .models import Disbursement
+from .models import Disbursement, ScholarshipApplication
 
 
 class DisbursementError(Exception):
@@ -95,12 +95,24 @@ def release_tranche(disbursement, *, by_email='', reference='mock', note='', act
     """Mark a tranche disbursed (mock — TD-075). Only a 'scheduled' or 'due' tranche can
     be released, and NOT while the student's support is on hold (S5). Records who/when +
     the (mock) payment reference, and **flips the application ``active`` → ``maintenance``
-    on the first release**. Returns the row."""
+    on the first release**. Returns the row.
+
+    TD-420 / TD-383: the application row is locked and re-read FIRST (status and the stored hold),
+    then the tranche's own row, so a close or a hold that committed after the view loaded them is
+    seen, and two presses of Release cannot both pay one tranche."""
+    from .status_lock import StatusRefused, lock_application_for
     if disbursement.status not in ('scheduled', 'due'):
         raise DisbursementError('bad_state')
+    if disbursement.application is None:
+        raise DisbursementError('not_in_programme')
     # S6: never release money to a non-funded (e.g. closed) student — closure leaves any
     # leftover scheduled tranche un-releasable.
-    _require_funded(disbursement.application)
+    try:
+        lock_application_for(disbursement.application, pool.FUNDED_STATES)
+    except StatusRefused:
+        raise DisbursementError('not_in_programme')
+    # released or withheld since the page loaded, or the row has gone (was a 500): bad_state
+    _lock_tranche(disbursement, ('scheduled', 'due'), lock_application=False)
     # S5: an on-hold student's support is paused — no money goes out until resumed.
     from . import maintenance
     if maintenance.is_on_hold(disbursement.application):
@@ -131,6 +143,7 @@ def withhold_tranche(disbursement, *, by_email='', note='', actor=None):
     application status (the student stays in maintenance/active). Returns the row."""
     if disbursement.status not in ('scheduled', 'due'):
         raise DisbursementError('bad_state')
+    _lock_tranche(disbursement, ('scheduled', 'due'))   # TD-383: a Release in flight wins
     disbursement.status = 'withheld'
     disbursement.actioned_by = (by_email or '')[:254]
     if note:
@@ -146,6 +159,7 @@ def return_tranche(disbursement, *, by_email='', note='', actor=None):
     'released' tranche can be returned. Ledger-only — no real refund. Returns the row."""
     if disbursement.status != 'released':
         raise DisbursementError('bad_state')
+    _lock_tranche(disbursement, ('released',))   # TD-383: two Returns cannot both land
     disbursement.status = 'returned'
     disbursement.actioned_by = (by_email or '')[:254]
     if note:
@@ -153,6 +167,25 @@ def return_tranche(disbursement, *, by_email='', note='', actor=None):
     disbursement.save(update_fields=['status', 'actioned_by', 'note', 'updated_at'])
     _record_tranche(actor, staff_activity.TRANCHE_RETURNED, disbursement)
     return disbursement
+
+
+def _lock_tranche(disbursement, allowed, *, lock_application=True):
+    """TD-383 (A1.5): lock in the ONE order (``status_lock.py``), the application row and then the
+    tranche row, and re-read the tranche's status, so two writers (Release and Mark due, Release and
+    Withhold) cannot both act on one tranche. ``bad_state`` when the row has gone or its status is
+    not in ``allowed``. The application lock takes any status (it gives the order, not a gate);
+    ``release_tranche`` has locked it already for its funded gate and passes False."""
+    from .status_lock import StatusRefused, lock_application_for
+    if lock_application and disbursement.application_id is not None:
+        try:
+            lock_application_for(disbursement.application,
+                                 [c for c, _ in ScholarshipApplication.STATUS_CHOICES])
+        except StatusRefused:   # the application row has gone
+            raise DisbursementError('bad_state')
+    fresh = Disbursement.objects.select_for_update().filter(pk=disbursement.pk).values('status').first()
+    if fresh is None or fresh['status'] not in allowed:
+        raise DisbursementError('bad_state')
+    disbursement.status = fresh['status']
 
 
 def _record_tranche(actor, verb, disbursement):
@@ -163,11 +196,16 @@ def _record_tranche(actor, verb, disbursement):
     staff_activity.record(actor, verb, disbursement.application, meta={'tranche': disbursement})
 
 
+@transaction.atomic
 def mark_due(disbursement):
     """Move a 'scheduled' tranche to 'due' (payable). Intended for an admin/cron when a
-    tranche's scheduled date arrives. Returns the row."""
+    tranche's scheduled date arrives. Returns the row.
+
+    TD-383 (A1.5): locked and re-read, so a Release that committed first is seen and 'due' is
+    never written over 'released' (that made the tranche payable a second time)."""
     if disbursement.status != 'scheduled':
         raise DisbursementError('bad_state')
+    _lock_tranche(disbursement, ('scheduled',))
     disbursement.status = 'due'
     disbursement.save(update_fields=['status', 'updated_at'])
     return disbursement

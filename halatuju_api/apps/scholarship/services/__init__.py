@@ -67,7 +67,7 @@ from .consent_blockers import (
 )
 from .intake import (
     create_application, release_decision, rescore_pending_decisions,
-    resolve_open_cohort, resolve_programme_by_code, score_application,
+    resolve_open_cohort, resolve_programme_by_code, score_application, submit_application,
 )
 from .reminders import (
     FINAL_REMINDER_GRACE_DAYS, REMINDER_THRESHOLDS_DAYS, _elapsed_days_local,

@@ -53,7 +53,6 @@ from .services import (
     confirm_profile,
     AmbiguousOpenCohort,
     consent_blockers,
-    create_application,
     is_minor,
     reconcile_income_route,
     record_consent,
@@ -62,6 +61,7 @@ from .services import (
     revert_if_profile_incomplete,
     save_application_details,
     score_application,
+    submit_application,
     switch_income_route,
 )
 
@@ -299,10 +299,11 @@ class ApplicationListCreateView(APIView):
 
         lang = request.data.get('lang') or 'en'
         to_email = profile.contact_email or supabase_user.get('email') or ''
-        application = create_application(
-            profile=profile, cohort=cohort,
-            validated_data=validated, to_email=to_email, lang=lang,
-        )
+        application, refused = submit_application(   # TD-348 / TD-351: the gate re-asked under a lock
+            profile=profile, cohort=cohort, validated_data=validated, to_email=to_email, lang=lang)
+        if refused:   # a submit that ran at the same moment got in first: 409, never a 500
+            return Response({'error': apply_gate.REFUSAL[refused], 'code': refused},
+                            status=status.HTTP_409_CONFLICT)
         # Prefill the new application's family roster from the profile (the durable
         # home) so the Story editor opens pre-filled; the two then two-way sync while
         # the application is open. Only when the profile has roster data and the new

@@ -6326,7 +6326,8 @@
         "not_ready": "CSV tersedia setelah larian ditandatangani.",
         "finance_check_required": "Larian ini perlu disemak sebelum boleh diluluskan.",
         "on_hold": "Sokongan pelajar ini ditangguhkan. Sambung semula dalam failnya sebelum memasukkannya semula.",
-        "on_hold_in_run": "{count} pelajar dalam larian ini ditangguhkan. Keluarkan mereka; larian itu kemudian kembali kepada draf dan perlu ditandatangani semula."
+        "on_hold_in_run": "{count} pelajar dalam larian ini ditangguhkan. Keluarkan mereka; larian itu kemudian kembali kepada draf dan perlu ditandatangani semula.",
+        "not_payable_in_run": "{count} pelajar dalam larian ini tidak lagi dibiayai (contohnya, kes mereka telah ditutup). Keluarkan mereka; larian itu kemudian kembali kepada draf dan perlu ditandatangani semula."
       },
       "financeStep": "Disemak",
       "financeSign": "Semak",
