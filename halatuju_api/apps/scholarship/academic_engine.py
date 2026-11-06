@@ -675,8 +675,8 @@ def student_slip_check(doc) -> dict:
     cmp = spm_slip_compare(profile, data)
     subjects = ('not_compared' if not cmp['compared'] else 'mismatch' if cmp['missing'] or cmp['extra']
                 else 'match')   # #62: extra = typed, not on it
-    if not cmp['have_grades']:
-        results = 'pending'
+    if not cmp['compared'] or not cmp['have_grades']:   # #62 review 2: nothing compared, nothing shown
+        results = 'not_compared' if not cmp['compared'] else 'pending'
     elif cmp['mismatched']:
         results = 'mismatch'
     elif cmp['uncertain']:

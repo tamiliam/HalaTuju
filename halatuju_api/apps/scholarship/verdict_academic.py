@@ -16,7 +16,8 @@ def _verdict_academic(application, spm_only=False):
     (completeness), and the typed grades must match the slip (accuracy). All three clean →
     'verified'. Two independent readings: agreement verifies, a disagreement pinpoints the cell.
     Third route S3 / #388: `higher_results.academic_fact` picks the card; `spm_only` = the SPM card."""
-    from .academic_engine import read_slip, _slip_name_status
+    from .academic_engine import read_slip, _slip_name_status, _SUBJECT_BM
+    from apps.courses.exam_questions import spm_slip_comparable
     from . import higher_results, wrong_slip
     if not spm_only:      # the higher card (S3), or the SPM card capped while they are owed (#388)
         return higher_results.academic_fact(application, lambda: _verdict_academic(application, True))
@@ -45,6 +46,8 @@ def _verdict_academic(application, spm_only=False):
     if kind := wrong_slip.higher_kind(slip):                   # S4 (#43): not an SPM slip at all
         return wrong_slip.academic_fact(slip, kind, evidence, unresolved)
     data = read_slip(slip)
+    if not spm_slip_comparable(application.profile, _SUBJECT_BM):   # #62 review 2: nothing to compare,
+        return _fact('academic', 'review', evidence, unresolved)    # so an unread slip holds nothing back
     if not data['names']:
         # The slip hasn't been field-extracted yet (legacy upload) — grades
         # unread, so honest under-claim: review until it's re-OCR'd.

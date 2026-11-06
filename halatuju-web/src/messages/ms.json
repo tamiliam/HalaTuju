@@ -4752,6 +4752,7 @@
           "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
+          "grades_verified_one": "1 gred sepadan dengan slip keputusan.",
           "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
           "offer_not_official": "Dinilai bukan surat tawaran (tawaran swasta / IPTS, cawangan swasta, atau bukan tawaran langsung) — gagal; pelajar diminta surat tawaran institusi awam.",
           "offer_issuer_not_checked": "Tawaran daripada {issuer} — penerbit TVET awam yang coraknya belum kami miliki, jadi surat ini TIDAK disemak. Semak surat ini sendiri.",

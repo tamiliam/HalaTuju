@@ -437,8 +437,15 @@ export function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (
 // "what to do" only when there's a real problem.
 
 // not_spm: S4, never drawn here. not_compared (owner 2026-11-06): a tertiary student with no SPM prereq —
-// nothing to compare her slip with, so no tick and no warning (drawn as pending).
-type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending' | 'not_spm' | 'not_compared'
+// nothing to compare her slip with, so no tick, no warning and NO ROW (nothing was checked, so nothing
+// to say; request #62 review 2).
+export const SLIP_STATUSES = ['match', 'partial', 'mismatch', 'unreadable', 'uncertain', 'pending', 'not_spm', 'not_compared'] as const
+type SlipStatus = (typeof SLIP_STATUSES)[number]
+
+/** The badge's i18n key, or null when the status draws no badge (nothing was compared). */
+export function slipStatusLabelKey(s: SlipStatus): string | null {
+  return s === 'not_spm' || s === 'not_compared' ? null : `scholarship.docs.slipCheck.status.${s}`
+}
 
 function slipBadgeKind(s: SlipStatus): ICCheckKind {
   if (s === 'match') return 'match'
@@ -453,6 +460,8 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   if (!chk) return null
 
   const badge = (s: SlipStatus) => {
+    const labelKey = slipStatusLabelKey(s)
+    if (!labelKey) return null
     const kind = slipBadgeKind(s)
     const cls: Record<ICCheckKind, string> = {
       match: 'bg-positive-50 text-positive-700 ring-positive-200',
@@ -463,7 +472,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
     }
     return (
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
-        {t(`scholarship.docs.slipCheck.status.${s}`)}
+        {t(labelKey)}
       </span>
     )
   }
@@ -503,7 +512,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name))}
-      {row(
+      {chk.subjects !== 'not_compared' && row(
         // Only show the "(entered/total)" count when there's a real subjects mismatch;
         // for match / couldn't-read / pending it's noise (and "(0/0)" looks broken).
         chk.subjects === 'mismatch' && chk.missing.length > 0
@@ -512,7 +521,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
         subjectsValue,
         badge(chk.subjects),
       )}
-      {row(t('scholarship.docs.slipCheck.results'), resultsValue, badge(chk.results))}
+      {chk.results !== 'not_compared' && row(t('scholarship.docs.slipCheck.results'), resultsValue, badge(chk.results))}
       {chk.exam_year || chk.exam
         ? row(
             t('scholarship.docs.slipCheck.exam'),

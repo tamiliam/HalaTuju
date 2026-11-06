@@ -462,7 +462,8 @@ def verdict_academic(application, spm_fact):
         unresolved += spm_fact['unresolved']
         # Owner 2026-11-06: no SPM prereq = nothing to compare the slip with, so it neither ticks
         # nor holds the card back (D9) - unless it raised something of its own (a name mismatch).
-        idle = not spm_slip_comparable(application.profile) and not spm_fact['unresolved']
+        from .academic_engine import _SUBJECT_BM    # usable prereq subjects only (#62 review 2)
+        idle = not spm_slip_comparable(application.profile, _SUBJECT_BM) and not spm_fact['unresolved']
         clean = clean and (spm_fact['status'] == 'verified' or idle)
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
 

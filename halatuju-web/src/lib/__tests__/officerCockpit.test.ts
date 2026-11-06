@@ -359,6 +359,11 @@ describe('documentFacts', () => {
       .toEqual(['name', 'ic_no'])
   })
 
+  it('request #62 review 2: a not-compared slip draws Subjects and Results GREY, never amber', () => {
+    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'not_compared', results: 'not_compared' }) })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'unknown' }, { key: 'results', status: 'unknown' }])
+  })
+
   it('results slip → Name, Subjects, Results from the 3-check', () => {
     expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'partial', results: 'match' }) })))
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
@@ -1518,6 +1523,15 @@ describe('verdictItemKey — STR-not-current resolves to a flat per-status key',
   })
   it('defaults a status-less str_not_current to the approved-but-dateless (unconfirmed) copy', () => {
     expect(verdictItemKey(item('str_not_current'))).toBe('str_not_current_unconfirmed')
+  })
+  it('request #62 review 2: one checked grade reads the singular copy, in all three locales', () => {
+    expect(verdictItemKey(item('grades_verified', { count: 1 }))).toBe('grades_verified_one')
+    expect(verdictItemKey(item('grades_verified', { count: 4 }))).toBe('grades_verified')
+    for (const m of [enMessages, msMessages, taMessages]) {
+      const items = (m as unknown as { admin: { scholarship: { verdict: { item: Record<string, string> } } } }).admin.scholarship.verdict.item
+      expect(items.grades_verified_one).toBeTruthy()
+      expect(items.grades_verified_one).not.toMatch(/\{count\}/)
+    }
   })
   it('passes every other item code through unchanged', () => {
     expect(verdictItemKey(item('income_salary_probable', { amount: 4200 }))).toBe('income_salary_probable')

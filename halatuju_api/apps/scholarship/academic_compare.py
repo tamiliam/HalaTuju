@@ -114,8 +114,9 @@ def compare_academics(profile_grades, slip) -> dict:
     printed = set(slip_norm).union(*(_printed_keys(line) for line in slip.get('raw_lines') or ()))
     # A SHORT read (fewer rows than the slip's printed total, or a compulsory subject absent) is not
     # complete either: it dropped rows, so it raises no extra (`_short_read`, #62 review).
+    short = _short_read(slip_norm, slip)
     extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in printed) \
-        if slip['grades'] and not _short_read(slip_norm, slip) else []
+        if slip['grades'] and not short else []
     mismatched, uncertain = [], []
     for nn, slip_g in grades.items():
         typed = prof_by_name.get(nn)
@@ -158,6 +159,11 @@ def compare_academics(profile_grades, slip) -> dict:
         'complete': len(slip_norm) > 0 and not missing and not extra,
         'accurate': not mismatched and not uncertain,
         'typed_on_slip': sum(1 for nn in prof_by_name if nn in slip_norm),
+        # #62 review 2: how many typed subjects the slip has a GRADE for (actually checked), how many
+        # were typed in all (known key, non-blank grade), and whether the read was short.
+        'typed_graded': sum(1 for nn in prof_by_name if nn in grades),
+        'typed_count': len(prof_by_name),
+        'short_read': short,
     }
 
 
@@ -174,12 +180,17 @@ def spm_slip_compare(profile, slip) -> dict:
     guard as ever) with the same grade. ``complete`` = no extra. An SPM holder is unchanged: the
     full match, ``missing`` included. Every reader (verdict, ladder chip, slip check) comes here."""
     from apps.courses.exam_questions import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
-    if spm_slip_comparable(profile):
+    if spm_slip_comparable(profile, _SUBJECT_BM):
         cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
         if not profile or not is_tertiary(results_held(profile)):
             return {**cmp, 'checked_count': cmp['slip_count']}
-        return {**cmp, 'missing': [], 'complete': cmp['slip_count'] > 0 and not cmp['extra'],
-                'checked_count': cmp['typed_on_slip']}
+        # #62 review 2: a tick needs at least one entered subject grade-checked on the slip (never
+        # "All 0 grades match"), and on a SHORT read (which raises no extra) every entered subject
+        # must have been found and grade-checked, or the read may simply have dropped one.
+        checked = cmp['typed_graded']
+        return {**cmp, 'missing': [], 'checked_count': checked,
+                'complete': checked > 0 and not cmp['extra']
+                and (not cmp['short_read'] or checked == cmp['typed_count'])}
     blank = compare_academics({}, slip)
     return {**blank, 'missing': [], 'extra': [], 'mismatched': [], 'uncertain': [],
             'have_grades': False, 'complete': False, 'accurate': False, 'compared': False,

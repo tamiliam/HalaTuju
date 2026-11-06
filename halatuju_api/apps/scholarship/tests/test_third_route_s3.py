@@ -597,7 +597,8 @@ class TestTheAcademicCard(TestCase):
         self.assertNotEqual(f['status'], 'verified')
 
     def test_an_spm_slip_on_file_is_compared_too(self):
-        app = _app(STPM_HELD, DEGREE)
+        # #62 review 2: with an SPM prereq to compare (none = nothing to compare, nothing held back)
+        app = _app({**STPM_HELD, 'spm_prereq_grades': {'bm': 'A'}}, DEGREE)
         _doc(app, 'higher_results', STPM_READ)
         _doc(app, 'results_slip', {'candidate_name': 'PRIYA', 'results': []})
         f = self._academic(app)

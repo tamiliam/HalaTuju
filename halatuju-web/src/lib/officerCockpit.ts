@@ -23,6 +23,8 @@ export function verdictItemKey(it: AdminVerdictItem): string {
   if (it.code === 'str_not_current') {
     return `str_not_current_${String(it.params?.status || 'unconfirmed')}`
   }
+  // Request #62 review 2: the flat singular form ("All 1 grades match" read wrong).
+  if (it.code === 'grades_verified' && Number(it.params?.count) === 1) return 'grades_verified_one'
   return it.code
 }
 
@@ -249,7 +251,8 @@ function factStatus(s: string | undefined | null): FactStatus {
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'
-    default:                       // '', 'no_ref', 'unknown', undefined
+    // 'not_compared' (request #62 review 2): no SPM prereq, so nothing was compared — grey, never amber
+    default:                       // '', 'no_ref', 'unknown', 'not_compared', undefined
       return 'unknown'
   }
 }

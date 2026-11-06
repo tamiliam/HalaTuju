@@ -315,11 +315,16 @@ def spm_grades_for(profile):
     return dict(value) if isinstance(value, dict) else {}
 
 
-def spm_slip_comparable(profile):
+def spm_slip_comparable(profile, known=None):
     """Is there anything to compare an SPM slip with? False ONLY for a tertiary holder who entered
-    no SPM prereq (owner, 2026-11-06): her `grades` are not read, so the slip earns no tick and
-    raises no SPM warning (D9: it stays optional). An SPM holder is always compared, as before."""
-    return not profile or bool(spm_grades_for(profile)) or not is_tertiary(results_held(profile))
+    no USABLE SPM prereq subject (owner, 2026-11-06): her `grades` are not read, so the slip earns
+    no tick and raises no SPM warning (D9: it stays optional). An SPM holder is always compared.
+    Usable (#62 review 2) = a non-blank grade, on a key in ``known`` when given (the scholarship
+    side passes its subject-name table; this app imports nothing from scholarship)."""
+    if not profile or not is_tertiary(results_held(profile)):
+        return True
+    return any(str(g or '').strip() and (known is None or k in known)
+               for k, g in spm_grades_for(profile).items())
 
 
 def merit_100(profile):

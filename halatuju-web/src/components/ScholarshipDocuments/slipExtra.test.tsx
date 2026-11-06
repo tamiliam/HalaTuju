@@ -9,7 +9,10 @@
  */
 import { render, screen, waitFor } from '@testing-library/react'
 
-import { ResultsSlipChecklist } from './checklists'
+import { ResultsSlipChecklist, SLIP_STATUSES, slipStatusLabelKey } from './checklists'
+import enMessages from '@/messages/en.json'
+import msMessages from '@/messages/ms.json'
+import taMessages from '@/messages/ta.json'
 import DocumentHelpCoach from '../DocumentHelpCoach'
 import type { AcademicCheck, ApplicantDocument } from '@/lib/api'
 import * as api from '@/lib/api'
@@ -67,5 +70,27 @@ describe('the document coach', () => {
     expect(screen.getByText('scholarship.docs.help.fallback.slip_subjects_extra')).toBeTruthy()
     const link = screen.getByText('scholarship.docs.help.adjustGrades').closest('a')
     expect(link?.getAttribute('href')).toBe('/onboarding/grades')
+  })
+})
+
+describe('request #62 review 2: nothing compared, nothing shown', () => {
+  it('every slip status renders a real label in en/ms/ta, or nothing at all (never a raw key)', () => {
+    const lookup = (m: unknown, key: string) =>
+      key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], m)
+    for (const s of SLIP_STATUSES) {
+      const key = slipStatusLabelKey(s)
+      if (key === null) continue
+      for (const m of [enMessages, msMessages, taMessages]) expect(typeof lookup(m, key)).toBe('string')
+    }
+    expect(slipStatusLabelKey('not_compared')).toBeNull()
+  })
+
+  it('a not-compared slip draws no Subjects or Results row and no badge key', () => {
+    const { container } = render(
+      <ResultsSlipChecklist doc={slipDoc(check({ subjects: 'not_compared', results: 'not_compared' }))} t={t} />)
+    expect(container.textContent).not.toContain('not_compared')
+    expect(screen.queryByText(/scholarship\.docs\.slipCheck\.subjects/)).toBeNull()
+    expect(screen.queryByText(/scholarship\.docs\.slipCheck\.results/)).toBeNull()
+    expect(screen.getByText(/scholarship\.docs\.slipCheck\.name/)).toBeTruthy()
   })
 })

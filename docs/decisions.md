@@ -18936,7 +18936,10 @@ snapshots are not re-built. **Owner ruling later the same day (`VERDICT_ENGINE_V
 holder's prereq is checked on the subjects she ENTERED only — each must be on the slip with the same grade (wrong
 grade = mismatch / uncertain; not on a complete read = extra), but a slip subject she did not enter is never `missing`
 for her (`spm_slip_compare` returns `missing` [] and `complete` = no extra; the tick counts the entered subjects); SPM
-holders keep the full match.
+holders keep the full match. **Review 2 (`VERDICT_ENGINE_VERSION` 2026-11-06.4):** nothing compared means
+nothing shown — a prereq with no usable subject (known key, non-blank grade) counts as none, a not-compared slip is
+served `results` 'not_compared' (no row, no badge, grey chip) and an unread slip holds nothing back; a tertiary tick
+needs at least one entered subject grade-checked on the slip, and on a short read every entered subject.
 
 **Supersedes in part:** the S2a / S3b rule that a tertiary holder's SPM grades are `grades` merged over
 `spm_prereq_grades`, `grades` winning a clash (the `spm_grades_for` docstring; "The web sends the WHOLE completed list"

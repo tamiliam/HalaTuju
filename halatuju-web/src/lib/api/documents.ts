@@ -213,8 +213,10 @@ export interface AcademicCheck {
   // 'not_spm' (third results route S4, #43): the SPM card holds a HIGHER result (`higher_kind`), so
   // nothing was compared with the SPM grades — neither a match nor a mismatch. The card then draws
   // the S4 note instead of the SPM checklist (`cards.tsx`), so the checklist never meets it.
-  subjects: SlipCheckStatus | 'not_spm'
-  results: SlipCheckStatus | 'not_spm'
+  // 'not_compared' (request #62, owner 2026-11-06): a tertiary student with no usable SPM prereq -
+  // nothing to compare the slip with, so the checklist shows no row and no badge for it.
+  subjects: SlipCheckStatus | 'not_spm' | 'not_compared'
+  results: SlipCheckStatus | 'not_spm' | 'not_compared'
   candidate_name: string
   exam: string
   exam_year: string

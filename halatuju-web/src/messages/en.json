@@ -4752,6 +4752,7 @@
           "academic_grade_band_mismatch": "{subject}: the slip clearly shows {slip} — the letter and the Malay band agree — but the student typed {typed}. The typed grade is wrong; ask the student to correct it.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",
           "grades_verified": "All {count} grades match the results slip.",
+          "grades_verified_one": "The 1 grade matches the results slip.",
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
           "offer_not_official": "Scored not an offer letter (a private / IPTS offer, a private wing, or not an offer at all) — a fail; the student is asked for a public institution's offer letter.",
           "offer_issuer_not_checked": "Offer from {issuer} — a public TVET issuer we don't have a pattern for yet, so it was NOT checked. Check the letter by eye.",

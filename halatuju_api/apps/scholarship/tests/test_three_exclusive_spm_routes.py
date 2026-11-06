@@ -43,7 +43,8 @@ def _slip_app(profile, results=None):
         application=app, doc_type='results_slip', storage_path=f'{app.id}/rs/x',
         vision_run_at=timezone.now(),
         vision_fields={'student_verdict': 'ok', 'fields': {
-            'candidate_name': 'X', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2023', 'results': results or CORE}})
+            'candidate_name': 'X', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2023',
+            'results': CORE if results is None else results}})
     return app, doc
 
 
@@ -82,7 +83,7 @@ class TertiaryReadsThePrereqOnly(TestCase):
         # her `grades` match the slip exactly — and are still not read
         app, doc = _slip_app({**STPM, 'grades': CORE_TYPED, 'spm_prereq_grades': {}})
         chk = student_slip_check(doc)
-        self.assertEqual((chk['subjects'], chk['results']), ('not_compared', 'pending'))
+        self.assertEqual((chk['subjects'], chk['results']), ('not_compared', 'not_compared'))   # review 2
         self.assertEqual((chk['missing'], chk['extra'], chk['mismatched']), ([], [], []))
         self.assertEqual(doc_match_verdict(doc), 'ok')                # an officer's slip request closes
         fact = _verdict_academic(app, True)
@@ -181,3 +182,74 @@ class TheHigherCardFold(TestCase):
         f = _academic(app)
         self.assertEqual(f['status'], 'review')
         self.assertTrue(_codes(f) & {'academic_grade_mismatch', 'academic_grade_band_mismatch'})
+
+
+#: The compulsory four with Sejarah's row dropped by the reader: a SHORT read (no extra raised).
+NO_HIST = CORE[:3]
+
+
+class NothingComparedNothingShown(TestCase):
+    """Request #62 review 2: no tick without a declared subject actually grade-checked, and nothing
+    shown or held back when there is nothing to compare."""
+
+    def _cmp(self, prereq, results=CORE):
+        from apps.scholarship.academic_compare import spm_slip_compare
+        from apps.scholarship.academic_engine import read_slip
+        app, doc = _slip_app({**STPM, 'spm_prereq_grades': prereq}, results)
+        return app, doc, spm_slip_compare(app.profile, read_slip(doc))
+
+    def test_a_prereq_with_no_usable_subject_is_not_compared(self):
+        # fix 2: unknown keys / blank grades are nothing to compare (never "All 0 grades match")
+        for prereq in ({'zzz_unknown': 'A'}, {'bm': '', 'eng': None}):
+            with self.subTest(prereq=prereq):
+                _, doc, cmp = self._cmp(prereq)
+                self.assertFalse(cmp['compared'] or cmp['complete'])
+                self.assertEqual(student_slip_check(doc)['results'], 'not_compared')
+
+    def test_no_tick_when_no_entered_subject_was_grade_checked(self):
+        # fix 2 + 5: a short read raises no extra, but Fizik was never checked -> no tick
+        _, _, cmp = self._cmp({'phy': 'A'}, NO_HIST)
+        self.assertEqual((cmp['extra'], cmp['checked_count']), ([], 0))
+        self.assertFalse(cmp['complete'])
+
+    def test_no_tick_on_a_full_read_that_graded_none_of_her_subjects(self):
+        # fix 2: Fizik is PRINTED (a raw line the reader dropped), so not extra, yet never graded
+        from apps.scholarship.academic_compare import spm_slip_compare
+        from apps.scholarship.academic_engine import read_slip
+        app, doc = _slip_app({**STPM, 'spm_prereq_grades': {'phy': 'A'}})
+        doc.vision_fields['fields']['_debug_rows'] = ['1511 FIZIK A']
+        cmp = spm_slip_compare(app.profile, read_slip(doc))
+        self.assertEqual((cmp['extra'], cmp['short_read'], cmp['checked_count']), ([], False, 0))
+        self.assertFalse(cmp['complete'])           # never "All 0 grades match"
+
+    def test_a_short_read_ticks_only_when_every_entered_subject_was_checked(self):
+        # fix 5: Sejarah entered, its row dropped -> not tick-eligible; without it -> eligible
+        _, _, cmp = self._cmp(CORE_TYPED, NO_HIST)
+        self.assertTrue(cmp['short_read'])
+        self.assertFalse(cmp['complete'])
+        _, _, cmp = self._cmp({k: CORE_TYPED[k] for k in ('bm', 'eng', 'math')}, NO_HIST)
+        self.assertTrue(cmp['complete'] and cmp['accurate'])
+        self.assertEqual(cmp['checked_count'], 3)
+
+    def test_an_unread_slip_does_not_hold_a_no_prereq_student(self):
+        # fix 3: names not yet read, no prereq -> no grades_unverified
+        app, _ = _slip_app({**STPM, 'spm_prereq_grades': {}}, [])
+        self.assertNotIn('grades_unverified', _codes(_verdict_academic(app, True)))
+        app, _ = _slip_app({**STPM, 'spm_prereq_grades': CORE_TYPED}, [])     # control: compared
+        self.assertIn('grades_unverified', _codes(_verdict_academic(app, True)))
+
+    def test_not_compared_closes_every_reader_quietly(self):
+        # fix 4: results 'not_compared' - no coach, no blocker, the officer's slip request closes
+        from apps.scholarship.help_engine import verdict_for_document
+        app, doc = _slip_app({**STPM, 'spm_prereq_grades': {}})
+        chk = student_slip_check(doc)
+        self.assertEqual((chk['subjects'], chk['results']), ('not_compared', 'not_compared'))
+        self.assertEqual(doc_match_verdict(doc), 'ok')
+        self.assertEqual(verdict_for_document(doc), '')
+        self.assertEqual(_academic_red_chips(app), 0)
+
+    def test_the_student_page_is_served_the_held_qualification(self):
+        # fix 7: `exam_type` on the student payload is `results_held`, never the declaration
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        app, _ = _slip_app({**MATRIC, 'exam_type': 'spm', 'results_exam_type': ''})
+        self.assertEqual(ApplicationReadSerializer(app).data['exam_type'], 'matric')
