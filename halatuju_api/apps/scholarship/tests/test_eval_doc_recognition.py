@@ -74,3 +74,12 @@ class EvalDocRecognitionHarnessTest(TestCase):
         self._run()
         self.assertEqual(ApplicantDocument.objects.count(), 0)
         self.assertEqual(ScholarshipApplication.objects.count(), 0)
+
+
+class EvalFixtureSameSlotTest(TestCase):
+    def test_two_same_slot_corpus_docs_build_without_error(self):
+        from apps.scholarship._test_fixtures import build_application_with_docs
+        built = build_application_with_docs(
+            {}, [{'doc_type': 'ic', 'snapshot': {}}, {'doc_type': 'ic', 'snapshot': {}}])
+        self.assertEqual(len(built), 2)
+        self.assertTrue(all(d.superseded_at is None for d in built))

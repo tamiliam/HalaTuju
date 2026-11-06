@@ -29,7 +29,7 @@ from django.utils import timezone
 from apps.scholarship import gemini, read_errors, vision
 from apps.scholarship.models import ApplicantDocument, ResolutionItem
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application,
+    TEST_JWT_SECRET, authed_client, create_document, make_admin, make_application,
 )
 
 #: What Google returned all day on 2026-10-23/24, per model.
@@ -77,7 +77,7 @@ def _gemini_down():
 def _doc(application, doc_type, **kw):
     kw.setdefault('storage_path', f'test/{doc_type}/{ApplicantDocument.objects.count()}')
     kw.setdefault('content_type', 'image/jpeg')
-    return ApplicantDocument.objects.create(application=application, doc_type=doc_type, **kw)
+    return create_document(application, doc_type, **kw)    # TD-115: extra live copies take their own slot
 
 
 # ── 1. Our outage is not the student's unreadable document ─────────────────────────────────────

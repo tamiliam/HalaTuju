@@ -27,7 +27,7 @@ command with NO arguments, so the write is switched on there by ``INCOME_DOC_TAG
 flag is the honest way. It reads STORED fields only: no Vision, no Gemini, no re-extraction.
 """
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from apps.scholarship import promotion
@@ -77,6 +77,47 @@ class Command(BaseCommand):
         winner = max(others + [doc], key=income_dedup_rank)
         doc.household_member = ''              # ...and put it back; the write is the caller's
         return winner, max(others, key=income_dedup_rank)
+
+    def _apply(self, app, doc, member, existing, verdict, winner):
+        """Write the tag and the slot decision for one document, in one transaction.
+
+        TD-115 (A1.8): the slot's unique index admits ONE live row, so the tag is written only once
+        the copy that loses the member's slot has left it — never live beside it, even for a moment.
+        The decision is the one reported above; only the order of the writes is fixed here."""
+        with transaction.atomic():
+            now = timezone.now()
+            # A row superseded earlier in this run (as another pair's loser) must not be re-tagged live.
+            if not ApplicantDocument.objects.filter(id=doc.id, superseded_at__isnull=True).exists():
+                return
+            if doc.doc_type in DEDUPED:
+                # Only a live copy in the EXACT slot the tag moves into can collide. Settle that one
+                # pair by the de-dup's own winner first; the de-dup below then settles the rest.
+                colliders = list(ApplicantDocument.objects.filter(
+                    application=app, doc_type=doc.doc_type, household_member=member,
+                    request_code=doc.request_code, superseded_at__isnull=True,
+                ).exclude(id=doc.id).values_list('id', flat=True))
+                if colliders and winner is doc:
+                    ApplicantDocument.objects.filter(id__in=colliders).update(
+                        superseded_at=now, superseded_by=doc)
+                elif colliders:
+                    ApplicantDocument.objects.filter(id=doc.id).update(
+                        superseded_at=now, superseded_by=winner)
+                doc.household_member = member
+                doc.save(update_fields=['household_member'])
+                # ⚠ The de-dup is the WRITER for these types — never a second copy of the
+                # decision here. It re-reads the live set with the tag now written, so the
+                # report above and this write ask `income_dedup_rank` the same question.
+                dedupe_income_proof(app, member, doc.doc_type)
+                return
+            if existing is not None:
+                if verdict == 'replaces the live copy':
+                    ApplicantDocument.objects.filter(id=existing.id).update(
+                        superseded_at=now, superseded_by=doc)
+                else:
+                    ApplicantDocument.objects.filter(id=doc.id).update(
+                        superseded_at=now, superseded_by=existing)
+            doc.household_member = member
+            doc.save(update_fields=['household_member'])
 
     def handle(self, *args, **options):
         # The cron endpoint passes no arguments, so on the live service the env var IS the flag.
@@ -131,22 +172,16 @@ class Command(BaseCommand):
                 f"{doc.original_filename or 'no filename'}) -> {member}; {verdict}")
 
             if apply:
-                with transaction.atomic():
-                    doc.household_member = member
-                    doc.save(update_fields=['household_member'])
-                    if doc.doc_type in DEDUPED:
-                        # ⚠ The de-dup is the WRITER for these types — never a second copy of the
-                        # decision here. It re-reads the live set with the tag now written, so the
-                        # report above and this write ask `income_dedup_rank` the same question.
-                        dedupe_income_proof(app, member, doc.doc_type)
-                    elif existing is not None:
-                        now = timezone.now()
-                        if verdict == 'replaces the live copy':
-                            ApplicantDocument.objects.filter(id=existing.id).update(
-                                superseded_at=now, superseded_by=doc)
-                        else:
-                            ApplicantDocument.objects.filter(id=doc.id).update(
-                                superseded_at=now, superseded_by=existing)
+                try:
+                    self._apply(app, doc, member, existing, verdict,
+                                winner if doc.doc_type in DEDUPED else None)
+                except IntegrityError:
+                    # TD-115 (A1.8): an upload took this slot while the sweep ran. Nothing was
+                    # written for this document (its transaction rolled back); the next run decides it.
+                    unresolved += 1
+                    self.stdout.write(f"  skip doc #{doc.id} (app {app.id}, {doc.doc_type}) — its slot "
+                                      "changed while this ran; left blank for the next run")
+                    continue
             tagged += 1
             if existing is None:
                 pass

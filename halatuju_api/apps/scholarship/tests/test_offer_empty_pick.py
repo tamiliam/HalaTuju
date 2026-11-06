@@ -21,6 +21,7 @@ from apps.scholarship.services import autofill_pathway_from_offer
 from apps.scholarship.services.offer_link import fill_empty_pick, plan_offer_link
 from apps.scholarship.tests.factories import make_application
 from apps.scholarship.tests.test_offer_course_match import seed_realign_catalogue
+from apps.scholarship.tests.factories import create_document
 
 #: #202's own letter.
 LETTER_202 = {'programme': 'Sarjana Muda Sains Kimia dengan Kepujian - UW6442001',
@@ -32,7 +33,7 @@ FILLED = {'course_id': 'UW6442001', 'course_name': 'Sarjana Muda Sains Kimia den
 
 def _offer(app, status='genuine', nric=None, **fields):
     prof = app.profile
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
         vision_fields={'fields': {'candidate_name': prof.name,
                                   'candidate_nric': (nric or prof.nric).replace('-', ''),

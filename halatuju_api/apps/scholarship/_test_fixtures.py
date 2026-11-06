@@ -109,10 +109,15 @@ def build_application_with_docs(app_ctx, docs, profile_fields=None, app_fields=N
     _set_safe(app, app_fields)                    # declared family roster / income answers / …
     app.save()
     built = []
+    taken = set()
     for d in docs:
         doc = ApplicantDocument(application=app, doc_type=d['doc_type'],
                                 household_member=d.get('household_member', '') or '',
                                 storage_path=f"eval/{d['doc_type']}/{uuid.uuid4().hex[:8]}")
+        slot = (doc.doc_type, doc.household_member)
+        if slot in taken:      # TD-115: one live row per slot, so a 2nd same-slot corpus doc takes its own
+            doc.request_code = 'slot' + uuid.uuid4().hex[:12]
+        taken.add(slot)
         snap = d.get('snapshot') or {}
         for fld in _SNAPSHOT_FIELDS:
             if fld in snap and snap[fld] is not None:

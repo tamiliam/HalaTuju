@@ -174,16 +174,36 @@ def dedupe_income_proof(application, member, doc_type):
         return []
     live.sort(key=income_dedup_rank, reverse=True)
     keep, losers = live[0], live[1:]
-    # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
-    # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
-    if doc_type == 'str' and not (getattr(keep, 'household_member', '') or '').strip():
-        for d in losers:
-            m = (getattr(d, 'household_member', '') or '').strip()
-            if m:
-                keep.household_member = m
-                keep.save(update_fields=['household_member'])
-                break
     ids = [d.id for d in losers]
+    import logging
+    from django.db import IntegrityError, transaction
     from django.utils import timezone as _tz
-    docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)
+    # TD-115 (A1.8): supersede the losers FIRST, then re-tag the keep — the slot's unique index admits
+    # one live row, and the inherited member may be a loser's still-live slot. One transaction.
+    with transaction.atomic():
+        docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)
+        # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
+        # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
+        if doc_type == 'str' and not (getattr(keep, 'household_member', '') or '').strip():
+            for d in losers:
+                m = (getattr(d, 'household_member', '') or '').strip()
+                if m:
+                    keep.household_member = m
+                    for attempt in (1, 2):
+                        try:
+                            with transaction.atomic():      # savepoint: a rival must not 500 the upload
+                                keep.save(update_fields=['household_member'])
+                            break
+                        except IntegrityError:
+                            if attempt == 1:    # a rival went live in that slot: it loses to keep, retry once
+                                docs.filter(doc_type=doc_type, household_member=m,
+                                            request_code=keep.request_code, superseded_at__isnull=True,
+                                            ).exclude(id=keep.id).update(
+                                    superseded_at=_tz.now(), superseded_by=keep)
+                                continue
+                            keep.household_member = ''   # still clashing: stay untagged, log, no 500
+                            logging.getLogger(__name__).warning(
+                                'AUDIT str_dedupe_retag_conflict app=%s doc=%s member=%r',
+                                getattr(application, 'id', None), keep.id, m)
+                    break
     return ids

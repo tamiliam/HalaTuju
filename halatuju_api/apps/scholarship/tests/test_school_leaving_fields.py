@@ -9,6 +9,7 @@ from apps.courses.models import StudentProfile
 from apps.scholarship.academic_engine import student_school_leaving_check
 from apps.scholarship.doc_parse import parse_by_labels
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import create_document
 
 # A standard numbered Sijil Berhenti Sekolah (synthetic, modelled on the real form).
 STD_CERT = (
@@ -128,7 +129,7 @@ class TestSchoolLeavingCheck(TestCase):
             cohort=cohort, profile=self.profile, status='profile_complete')
 
     def _doc(self, fields):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=self.app, doc_type='school_leaving_cert', storage_path='x',
             vision_fields={'student_verdict': 'ok', 'fields': fields}, uploaded_at=timezone.now())
 
@@ -187,7 +188,7 @@ class TestSchoolLeavingCheck(TestCase):
         self.assertEqual(kq('TIDAK BAIK'), 'bad')
 
     def test_unread_returns_none(self):
-        d = ApplicantDocument.objects.create(
+        d = create_document(
             application=self.app, doc_type='school_leaving_cert', storage_path='x',
             vision_fields={}, uploaded_at=timezone.now())
         self.assertIsNone(student_school_leaving_check(d))

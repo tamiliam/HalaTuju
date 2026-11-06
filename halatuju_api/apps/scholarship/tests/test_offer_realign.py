@@ -21,6 +21,7 @@ from apps.scholarship.services.offer_sync import plan_bumi_realign, realign_bumi
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_student)
 from apps.scholarship.tests.test_offer_course_match import seed_realign_catalogue
+from apps.scholarship.tests.factories import create_document
 
 UITM_LETTER = ('BA272 SARJANA MUDA PERNIAGAAN KEWANGAN (KEPUJIAN)',
                'UiTM CAWANGAN SABAH, KAMPUS KOTA KINABALU', 'UNIVERSITI TEKNOLOGI MARA')
@@ -33,7 +34,7 @@ UITM_COURSE = {'course_id': 'UE6343001', 'course_name': 'Sarjana Muda Perniagaan
 def _offer(app, letter, *, status='genuine', nric=None):
     programme, institution, issuer = letter
     prof = app.profile
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
         vision_fields={'fields': {
             'candidate_name': prof.name, 'candidate_nric': (nric or prof.nric).replace('-', ''),

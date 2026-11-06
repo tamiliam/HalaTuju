@@ -328,6 +328,10 @@ def _upload_parts(app, doc, reader, parts):
 
 def _create_parts(app, doc, uploaded, unassigned):
     stem = doc.original_filename or f'document {doc.id}'
+    # TD-115 (A1.8): the original leaves its slot FIRST — a part in the original's own card takes
+    # the same slot, and the slot's unique index admits one live row. Its `superseded_by` (the part
+    # that replaces it) is set once the parts exist. The caller's transaction holds all three steps.
+    ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=timezone.now())
     made = []
     for part, path, size in uploaded:
         made.append(ApplicantDocument.objects.create(
@@ -336,8 +340,7 @@ def _create_parts(app, doc, uploaded, unassigned):
             storage_path=path, content_type='application/pdf', size=size,
             original_filename=f'{stem} ({_page_label(part["pages"])})'[:255]))
     own = next((m for m in made if m.doc_type == doc.doc_type), made[0])
-    ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=timezone.now(),
-                                                       superseded_by=own)
+    ApplicantDocument.objects.filter(id=doc.id).update(superseded_by=own)
     for part_doc, (part, _, _) in zip(made, uploaded):
         results_route._note(app, 'team_split', by='team', document_id=part_doc.id,
                             from_document_id=doc.id, pages=part['pages'], slot=part['slot'],

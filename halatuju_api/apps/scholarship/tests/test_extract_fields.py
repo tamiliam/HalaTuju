@@ -10,6 +10,7 @@ from apps.courses.models import StudentProfile
 from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.doc_keys import issued_key
+from apps.scholarship.tests.factories import create_document
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER = 'extract-user'
@@ -127,7 +128,7 @@ class TestRunFieldExtraction(TestCase):
             cohort=cls.cohort, profile=cls.profile, status='shortlisted')
 
     def _doc(self, dt='salary_slip'):
-        return ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path='x')
+        return create_document(application=self.app, doc_type=dt, storage_path='x')
 
     @patch('apps.scholarship.vision.extract_document_fields')
     def test_stores_and_stamps(self, mock_ex):
@@ -257,7 +258,9 @@ class TestUploadGuardrails(TestCase):
     def test_doc_limit_reached(self):
         # Fill to the cap with multi-instance docs (which don't replace).
         ApplicantDocument.objects.bulk_create([
-            ApplicantDocument(application=self.app, doc_type='salary_slip', storage_path=f'x{i}') for i in range(3)])
+            ApplicantDocument(application=self.app, doc_type='salary_slip', storage_path=f'x{i}',
+                              request_code=f'req{i}')   # TD-115: each in its own slot
+            for i in range(3)])
         r = self._post(doc_type='water_bill')   # a new type → would exceed
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['error'], 'doc_limit_reached')
@@ -266,8 +269,10 @@ class TestUploadGuardrails(TestCase):
     def test_replacement_allowed_at_cap(self):
         # results_slip is single-instance → re-upload replaces, not blocked by cap.
         ApplicantDocument.objects.bulk_create([
-            ApplicantDocument(application=self.app, doc_type='salary_slip', storage_path=f'x{i}') for i in range(2)])
-        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='r')
+            ApplicantDocument(application=self.app, doc_type='salary_slip', storage_path=f'x{i}',
+                              request_code=f'req{i}')   # TD-115: each in its own slot
+            for i in range(2)])
+        create_document(application=self.app, doc_type='results_slip', storage_path='r')
         r = self._post(doc_type='results_slip')   # replaces existing → allowed
         self.assertEqual(r.status_code, 201)
 

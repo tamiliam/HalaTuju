@@ -24,6 +24,12 @@ ASK = 'mother_ic_for_str_unreadable'
 @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
 class TestTheStrIcAskResolvesOnTheSameFact(WhoseStrBase):
 
+    @staticmethod
+    def _replace_her_ic(app):
+        """TD-115: the new IC REPLACES the one on file (one live row per slot), as a re-upload does."""
+        app.documents.filter(doc_type='parent_ic', household_member='mother',
+                             superseded_at__isnull=True).update(superseded_at=timezone.now())
+
     def _asked(self):
         """The mother's STR offers ONLY her NRIC; her IC on file read only her NAME. Submitted,
         so Check 2 asks her IC again as UNREADABLE — and the one-time notice already went out."""
@@ -38,6 +44,7 @@ class TestTheStrIcAskResolvesOnTheSameFact(WhoseStrBase):
 
     def test_an_ic_whose_NAME_reads_but_not_the_NRIC_leaves_the_ask_open_and_sends_nothing(self):
         app, ask = self._asked()
+        self._replace_her_ic(app)
         again = _doc(app, 'parent_ic', 'mother', name=MOTHER_NAME)       # the NRIC did not read
         self.assertEqual(doc_match_verdict(again), 'ok', 'the shape TD-316 names: verdict ok')
         self.assertEqual(resolve_doc_items_for_upload(app, again), 'ok')  # what the FE is told
@@ -53,6 +60,7 @@ class TestTheStrIcAskResolvesOnTheSameFact(WhoseStrBase):
 
     def test_the_ic_that_SETTLES_it_resolves_the_ask(self):
         app, ask = self._asked()
+        self._replace_her_ic(app)
         settles = _doc(app, 'parent_ic', 'mother', name=MOTHER_NAME, nric=MOTHER_NRIC)
         self.assertEqual(resolve_doc_items_for_upload(app, settles), 'ok')
         ask.refresh_from_db()

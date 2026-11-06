@@ -11,6 +11,7 @@ Synthetic twins of each page's fixed wording; a real final transcript is never a
 from unittest.mock import patch
 
 from django.test import SimpleTestCase, TestCase, override_settings
+from django.utils import timezone
 
 from apps.scholarship import vision
 from apps.scholarship.genuineness import matric_poly_doc as m
@@ -21,6 +22,7 @@ from apps.scholarship.tests.test_matric_parse import four_sem_pages
 from apps.scholarship.tests.test_matric_poly_doc import KPM_LETTER, MATRIC, MATRIC_OFFER, POLY, PORTAL
 from apps.scholarship.tests.test_poly_diploma_parse import NL, UITM
 from apps.scholarship.tests.test_third_route_s3 import DEGREE, MATRIC_HELD, _app
+from apps.scholarship.tests.factories import create_document
 
 #: A Matriculation semester result slip: the KPM header, ONE semester, the slip's title and disclaimer.
 SLIP_HEAD = ['KEMENTERIAN PENDIDIKAN', 'BAHAGIAN MATRIKULASI', 'MATRICULATION DIVISION',
@@ -221,9 +223,15 @@ class TestTheLivePath(TestCase):
 
     def _upload(self, text, stage='shortlisted', app=None, results_kind='matric', request_code='', **kw):
         app = app or _app(MATRIC_HELD, DEGREE, stage=stage, **kw)
-        doc = ApplicantDocument.objects.create(application=app, doc_type='higher_results', results_kind=results_kind,
-                                               storage_path='test/hr-m4b', content_type='image/jpeg',
-                                               request_code=request_code)
+        if request_code:
+            # TD-115: a second upload against the SAME officer request REPLACES the first (one live
+            # row per slot), as the upload door does. Uploads with no request code are separate
+            # documents — `create_document` gives each its own slot.
+            app.documents.filter(doc_type='higher_results', household_member='', request_code=request_code,
+                                 superseded_at__isnull=True).update(superseded_at=timezone.now())
+        extra = {'request_code': request_code} if request_code else {}
+        doc = create_document(application=app, doc_type='higher_results', results_kind=results_kind,
+                              storage_path='test/hr-m4b', content_type='image/jpeg', **extra)
         with patch('apps.scholarship.vision.extract_document_fields',
                    return_value={'fields': dict(self.READ), 'warnings': [], 'error': ''}):
             vision.run_field_extraction_for_document(
@@ -267,7 +275,7 @@ class TestTheLivePath(TestCase):
     def test_b_a_non_final_upload_is_never_certain_even_with_the_check_off(self):
         """The TD-114 floor is inert with the check off: the not-final rule must hold the card itself."""
         app = _app(MATRIC_HELD, DEGREE)
-        ApplicantDocument.objects.create(
+        create_document(
             application=app, doc_type='higher_results', results_kind='matric', storage_path='test/hr-m4b-off',
             vision_fields={'fields': dict(self.READ, results_kind_detected='matric'), 'student_verdict': 'ok',
                            'error': '', 'authenticity': {'status': NOT_CHECKED, 'doc_seen': m.MATRIC_SLIP,
@@ -340,7 +348,7 @@ class TestTheLivePath(TestCase):
             self.assertEqual(higher_owed.ask_codes(fresh), set())
 
     def _junk(self, app, verdict='unreadable'):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='higher_results', results_kind='matric', storage_path='test/junk',
             vision_fields={'fields': {}, 'student_verdict': verdict, 'error': ''})
 
@@ -422,7 +430,7 @@ class TestTheM5ForcedOverwrite(TestCase):
 
     def _doc(self, kind='matric'):
         app = _app(MATRIC_HELD, DEGREE)
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='higher_results', results_kind=kind, storage_path='test/m5',
             content_type='image/jpeg', vision_fields={'fields': dict(self.READ), 'student_verdict': 'ok', 'error': '',
                                                       'authenticity': dict(self.OLD)})

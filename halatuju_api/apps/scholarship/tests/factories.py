@@ -612,3 +612,21 @@ def record_result(application, **kw):
     kw.setdefault('slip_upload', slip_upload_for(application))
     with mock.patch('apps.scholarship.storage.object_exists', return_value=True):
         return in_programme.record_semester_result(application, **kw)
+
+
+# ── Several live documents of one kind (TD-115) ──────────────────────────────────────────────
+def create_document(application=None, doc_type=None, **kw):
+    """Create a document the way a test that needs MORE THAN ONE live copy of a kind has to since
+    TD-115 (migration 0203): the database holds one live row per slot (application, doc_type,
+    household_member, request_code). If the slot already has a live row and the caller named no
+    ``request_code`` / ``superseded_at``, the new row takes its own slot (an officer-style
+    ``request_code``), so both stay live. A test that means "the older copy was replaced" must
+    supersede the old row itself instead."""
+    from apps.scholarship.models import ApplicantDocument
+    if 'request_code' not in kw and kw.get('superseded_at') is None:
+        taken = ApplicantDocument.objects.filter(
+            application=application, doc_type=doc_type, superseded_at__isnull=True,
+            household_member=kw.get('household_member', '')).exists()
+        if taken:
+            kw['request_code'] = 'slot' + uuid.uuid4().hex[:12]
+    return ApplicantDocument.objects.create(application=application, doc_type=doc_type, **kw)

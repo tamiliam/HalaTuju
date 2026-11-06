@@ -222,6 +222,41 @@ class ServesTheStudentsResultsNotes:
         return data
 
 
+_MOVE_FIELDS = ['doc_type', 'results_kind', 'request_code', 'vision_fields', 'vision_fields_run_at',
+                'vision_run_at', 'vision_name_match', 'vision_address_match', 'vision_error']
+
+
+def _move_into_slot(application, doc, existing, doc_type, promotion, ApplicantDocument):
+    """Save a re-filed ``doc`` (its new slot fields already set in memory) into ``doc_type``'s slot.
+    Returns True when moved, False when a rival kept clashing (the doc stays where it was — no 500).
+    The weaker of it and ``existing`` becomes history, as before. TD-115 (A1.8): the slot's unique
+    index admits ONE live row, so nothing goes live while another is: on a promote the other live
+    copies are superseded FIRST and then the doc is saved; on a keep the doc is saved already
+    superseded (one write). Same decision as before — `should_promote` reads only the in-memory doc."""
+    from django.db import IntegrityError, transaction
+    for attempt in (1, 2):
+        try:
+            with transaction.atomic():      # savepoint: a clash must not poison the caller's transaction
+                now = timezone.now()
+                if existing is None or promotion.should_promote(doc, existing, usable=True):
+                    ApplicantDocument.objects.filter(
+                        application=application, doc_type=doc_type, superseded_at__isnull=True,
+                    ).exclude(id=doc.id).update(superseded_at=now, superseded_by=doc)
+                    doc.save(update_fields=_MOVE_FIELDS)
+                else:
+                    doc.superseded_at, doc.superseded_by = now, existing
+                    doc.save(update_fields=_MOVE_FIELDS + ['superseded_at', 'superseded_by'])
+            doc.refresh_from_db()
+            return True
+        except IntegrityError:
+            # A rival went live in the target slot meanwhile. Retry once (the supersede above then
+            # takes it too, as the upload door does); a second clash leaves the document where it was.
+            logger.warning('AUDIT results_refile_slot_conflict app=%s doc=%s into=%s attempt=%s',
+                           application.id, doc.id, doc_type, attempt)
+    doc.refresh_from_db()                   # the write rolled back: back to the slot it came from
+    return False
+
+
 def refile_to_spm(application, doc, *, by: str = '', **note_fields) -> 'object':
     """Move a higher-results upload that reads as an SPM slip into the SPM slot, BEFORE submit only
     (the caller refuses otherwise). The FILE is kept; its higher-results READ is cleared (fix 6) so
@@ -234,24 +269,22 @@ def refile_to_spm(application, doc, *, by: str = '', **note_fields) -> 'object':
     ``by`` / ``note_fields`` (2026-10-28, `split_combined_results`): the TEAM's move records
     ``by='team'`` and its own fields on the note; a student's move passes neither, so its note is
     exactly as before."""
+    from django.db import transaction
     from . import promotion
     from .document_snapshot import live_docs
     from .models import ApplicantDocument
-    existing = live_docs(application, 'results_slip').exclude(id=doc.id).first()
-    doc.doc_type, doc.results_kind, doc.request_code = 'results_slip', '', ''
-    doc.vision_fields, doc.vision_fields_run_at, doc.vision_run_at = {}, None, None
-    doc.vision_name_match, doc.vision_address_match, doc.vision_error = '', '', ''
-    doc.save(update_fields=['doc_type', 'results_kind', 'request_code', 'vision_fields',
-                            'vision_fields_run_at', 'vision_run_at', 'vision_name_match',
-                            'vision_address_match', 'vision_error'])
-    now = timezone.now()
-    if existing is None or promotion.should_promote(doc, existing, usable=True):
-        ApplicantDocument.objects.filter(
-            application=application, doc_type='results_slip', superseded_at__isnull=True,
-        ).exclude(id=doc.id).update(superseded_at=now, superseded_by=doc)
-    else:
-        ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=now, superseded_by=existing)
-    doc.refresh_from_db()
+    with transaction.atomic():
+        # Lock the row (as refile_to_higher does), so a double tap moves it - and notes it - once.
+        locked = ApplicantDocument.objects.select_for_update().filter(pk=doc.pk).first()
+        if locked is None or locked.doc_type == 'results_slip' or locked.superseded_at is not None:
+            return locked or doc
+        doc = locked
+        existing = live_docs(application, 'results_slip').exclude(id=doc.id).first()
+        doc.doc_type, doc.results_kind, doc.request_code = 'results_slip', '', ''
+        doc.vision_fields, doc.vision_fields_run_at, doc.vision_run_at = {}, None, None
+        doc.vision_name_match, doc.vision_address_match, doc.vision_error = '', '', ''
+        if not _move_into_slot(application, doc, existing, 'results_slip', promotion, ApplicantDocument):
+            return doc
     _note(application, 'refiled_spm', document_id=doc.id, **({'by': by} if by else {}), **note_fields)
     logger.info('AUDIT results_refiled_to_spm app=%s doc=%s kept_existing=%s', application.id,
                 doc.id, bool(doc.superseded_at))
@@ -291,17 +324,8 @@ def _refile_to_higher_locked(application, doc, kind, promotion, live_docs, Appli
     doc.doc_type, doc.results_kind, doc.request_code = 'higher_results', kind, ''
     doc.vision_fields, doc.vision_fields_run_at, doc.vision_run_at = {}, None, None
     doc.vision_name_match, doc.vision_address_match, doc.vision_error = '', '', ''
-    doc.save(update_fields=['doc_type', 'results_kind', 'request_code', 'vision_fields',
-                            'vision_fields_run_at', 'vision_run_at', 'vision_name_match',
-                            'vision_address_match', 'vision_error'])
-    now = timezone.now()
-    if existing is None or promotion.should_promote(doc, existing, usable=True):
-        ApplicantDocument.objects.filter(
-            application=application, doc_type='higher_results', superseded_at__isnull=True,
-        ).exclude(id=doc.id).update(superseded_at=now, superseded_by=doc)
-    else:
-        ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=now, superseded_by=existing)
-    doc.refresh_from_db()
+    if not _move_into_slot(application, doc, existing, 'higher_results', promotion, ApplicantDocument):
+        return doc
     _note(application, 'refiled_higher', document_id=doc.id, results_kind=kind, by=by, **note_fields)
     logger.info('AUDIT results_refiled_to_higher app=%s doc=%s kind=%s kept_existing=%s',
                 application.id, doc.id, kind, bool(doc.superseded_at))

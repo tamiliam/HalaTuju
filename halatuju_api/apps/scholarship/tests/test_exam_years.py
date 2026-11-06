@@ -18,6 +18,7 @@ from apps.scholarship.exam_years import expected_years, year_status
 from apps.scholarship.higher_results import student_higher_check
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import create_document
 
 
 def _app(route, cohort_year=2026):
@@ -68,7 +69,7 @@ class TheTableTest(TestCase):
 
 
 def _doc(app, doc_type, fields, **kw):
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/x', vision_run_at=timezone.now(),
         vision_fields={'fields': fields, 'student_verdict': 'ok', 'warnings': [], 'error': ''}, **kw)
 

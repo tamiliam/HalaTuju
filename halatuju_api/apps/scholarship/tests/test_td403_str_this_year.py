@@ -29,6 +29,7 @@ from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student, matched_str_pair
+from apps.scholarship.tests.factories import create_document
 
 STUDENT_NRIC = '060606-14-1234'
 STUDENT = 'Anbu A/L Devaraj'
@@ -55,7 +56,7 @@ def _income_gate(app):
 
 
 def _payslip(app):
-    ApplicantDocument.objects.create(
+    create_document(
         application=app, doc_type='salary_slip', storage_path='test/salary_slip', household_member='father',
         vision_fields={'fields': {'name': FATHER.upper(), 'nric': FATHER_NRIC, 'gross_income': '2500',
                                   'period': '09/2026'}, 'student_verdict': 'ok', 'error': ''})
@@ -233,7 +234,7 @@ class ALaterYearsPageDoesNotCountAndBlamesNobody(TestCase):
 
 def _upload_str(app, *, year, status, source_type='semakan_status'):
     """A re-upload of the household STR (the keep-better guard decides whether it takes the slot)."""
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='str', storage_path=f'test/str/{ApplicantDocument.objects.count()}',
         vision_run_at=timezone.now(), vision_fields={'fields': {
             'recipient_name': FATHER.upper(), 'recipient_nric': FATHER_NRIC, 'status': status,

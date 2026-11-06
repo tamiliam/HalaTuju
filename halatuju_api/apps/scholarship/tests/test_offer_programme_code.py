@@ -15,13 +15,14 @@ from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.promotion import is_pathway_switch
 from apps.scholarship.tests.factories import make_application
 from apps.scholarship.tests.test_offer_course_match import seed_realign_catalogue
+from apps.scholarship.tests.factories import create_document
 
 UKUR = 'Sarjana Muda Ukur Bahan dengan Kepujian'
 
 
 def _offer(app, fields):
     prof = app.profile
-    return ApplicantDocument.objects.create(
+    return create_document(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
         vision_fields={'fields': {'candidate_name': prof.name, 'candidate_nric': prof.nric.replace('-', ''),
                                   **fields},

@@ -29,6 +29,7 @@ from apps.scholarship.tests.factories import (
 )
 from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
 from apps.scholarship.verdict_ladder import _academic_red_chips
+from apps.scholarship.tests.factories import create_document
 
 SPM = {'bm': 'A+', 'eng': 'A', 'hist': 'A', 'math': 'A', 'phy': 'C+', 'chem': 'D', 'bio': 'C+',
        'addmath': 'D'}
@@ -99,7 +100,7 @@ def _doc(app, doc_type, fields=None, verdict='ok', authenticity=None, **kw):
     vf = {'fields': fields, 'student_verdict': verdict, 'error': ''} if fields is not None else {}
     if authenticity is not None:
         vf['authenticity'] = authenticity
-    return ApplicantDocument.objects.create(application=app, doc_type=doc_type,
+    return create_document(application=app, doc_type=doc_type,
                                             storage_path=f'test/{doc_type}/{len(str(fields))}',
                                             vision_fields=vf, **kw)
 
@@ -344,7 +345,7 @@ class TestTheTeamsMoveBackfill(TestCase):
         out = []
         for app_id, doc_id in backfill.MOVED:
             app = _app(STPM_HELD, DEGREE, id=app_id)
-            ApplicantDocument.objects.create(pk=doc_id, application=app, doc_type='higher_results',
+            create_document(pk=doc_id, application=app, doc_type='higher_results',
                                              results_kind='stpm', storage_path=f'test/{doc_id}')
             out.append(app)
         return out
@@ -573,7 +574,7 @@ class TestReviewFindings(TestCase):
 
     def test_1_a_fresh_unread_upload_never_promotes(self):
         app = _app(LEGACY_SPM_WITH_STPM, UNDECIDED)
-        ApplicantDocument.objects.create(application=app, doc_type='higher_results', results_kind='stpm',
+        create_document(application=app, doc_type='higher_results', results_kind='stpm',
                                          storage_path='test/fresh')
         self.assertEqual(eq.results_held(_fresh(app).profile), 'spm')
 

@@ -16,6 +16,7 @@ from apps.scholarship.check2_queries import sync_check2_queries
 from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
+from apps.scholarship.tests.factories import create_document
 
 TODAY = datetime.date(2026, 6, 29)
 # ⚠ The integration tests below run `sync_check2_queries`, which reads the REAL clock
@@ -43,7 +44,7 @@ class _Base(TestCase):
         return ScholarshipApplication.objects.create(**defaults)
 
     def _slip(self, app, period, member='father'):
-        return ApplicantDocument.objects.create(
+        return create_document(
             application=app, doc_type='salary_slip', household_member=member,
             storage_path=f'x/{period}', vision_fields={'fields': {'period': period}})
 

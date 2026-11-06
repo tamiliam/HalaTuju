@@ -42,11 +42,11 @@ def _doc(app, doc_type='results_slip', member='', **kw):
 class TestSupersededInvisibleToReads(TestCase):
     def test_latest_doc_skips_superseded(self):
         app = _app()
-        old = _doc(app, 'str')
+        # TD-115: one live row per slot — the old copy leaves the slot before the new one lands.
+        old = _doc(app, 'str', superseded_at=timezone.now())
         new = _doc(app, 'str')
-        old.superseded_at = timezone.now()
         old.superseded_by = new
-        old.save(update_fields=['superseded_at', 'superseded_by'])
+        old.save(update_fields=['superseded_by'])
         self.assertEqual(verdict_engine._latest_doc(app, 'str'), new)
 
     def test_present_doc_types_skips_superseded(self):
@@ -60,11 +60,10 @@ class TestSupersededInvisibleToReads(TestCase):
         app = _app()
         app.income_route = 'salary'
         app.save(update_fields=['income_route'])
-        old = _doc(app, 'salary_slip', member='father')
+        old = _doc(app, 'salary_slip', member='father', superseded_at=timezone.now())   # TD-115
         new = _doc(app, 'salary_slip', member='father')
-        old.superseded_at = timezone.now()
         old.superseded_by = new
-        old.save(update_fields=['superseded_at', 'superseded_by'])
+        old.save(update_fields=['superseded_by'])
         got = list(income_engine._cluster_docs(app, 'father', 'salary_slip'))
         self.assertEqual(got, [new])
 
@@ -86,10 +85,10 @@ class TestReplacePathSupersedes(TestCase):
     def test_supersede_keeps_row_and_blob(self):
         app = _app()
         old = _doc(app, 'ic', storage_path='ic-old')
+        # mimic the view's transaction body: supersede FIRST (TD-115, one live row per slot)
+        ApplicantDocument.objects.filter(id=old.id).update(superseded_at=timezone.now())
         new = _doc(app, 'ic', storage_path='ic-new')
-        # mimic the view's transaction body
-        ApplicantDocument.objects.filter(id=old.id).update(
-            superseded_at=timezone.now(), superseded_by=new)
+        ApplicantDocument.objects.filter(id=old.id).update(superseded_by=new)
         old.refresh_from_db()
         self.assertIsNotNone(old.superseded_at)          # row retained
         self.assertEqual(old.superseded_by_id, new.id)
@@ -102,12 +101,12 @@ class TestReplacePathSupersedes(TestCase):
 class TestStudentRemoveHardDeletesChain(TestCase):
     def test_remove_deletes_whole_chain(self):
         app = _app()
-        a = _doc(app, 'ic')
-        b = _doc(app, 'ic')
+        a = _doc(app, 'ic', superseded_at=timezone.now())   # TD-115: one live row per slot
+        b = _doc(app, 'ic', superseded_at=timezone.now())
         c = _doc(app, 'ic')
         # a ← b ← c  (c is live)
-        ApplicantDocument.objects.filter(id=a.id).update(superseded_at=timezone.now(), superseded_by=b)
-        ApplicantDocument.objects.filter(id=b.id).update(superseded_at=timezone.now(), superseded_by=c)
+        ApplicantDocument.objects.filter(id=a.id).update(superseded_by=b)
+        ApplicantDocument.objects.filter(id=b.id).update(superseded_by=c)
         # transitive walk (mirrors DocumentDetailView.delete)
         chain, frontier = [c], [c]
         while frontier:
@@ -130,7 +129,9 @@ class TestResolvedMember(TestCase):
         # a properly-tagged doc keeps its own tag (no name lookup)
         tagged = _doc(app, 'parent_ic', member='mother')
         self.assertEqual(resolved_member_for(app, tagged), 'mother')
-        # a blank doc whose name matches nobody → '' (shown in the SALARY catch-all)
+        # a blank doc whose name matches nobody → '' (shown in the SALARY catch-all). It takes
+        # the same blank slot, which holds one live row (TD-115), so the first blank leaves it.
+        blank_ic.delete()
         mystery = _doc(app, 'parent_ic', member='', vision_name='SOMEONE ELSE ENTIRELY')
         self.assertEqual(resolved_member_for(app, mystery), '')
         # a non-income blank doc is never name-resolved

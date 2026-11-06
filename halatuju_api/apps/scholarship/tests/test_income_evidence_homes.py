@@ -48,6 +48,7 @@ from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.verdict_income_salary import verdict_income_salary
 from apps.scholarship.tests.factories import (APPROVED_INFORMAL_FIELDS, make_application, make_cohort,
                                               make_student)
+from apps.scholarship.tests.factories import create_document
 
 # ── Document builders ───────────────────────────────────────────────────────────────────────
 #: A salary slip whose OCR read a clean monthly gross. No authenticity signal → the
@@ -70,7 +71,7 @@ def _doc(app, doc_type, member='', *, fields=None, authenticity=None, superseded
         vf['fields'] = dict(fields)
     if authenticity is not None:
         vf['authenticity'] = {'status': authenticity}
-    d = ApplicantDocument.objects.create(
+    d = create_document(
         application=app, doc_type=doc_type, household_member=member,
         storage_path=f'fake/{doc_type}/{member or "household"}/{app.id}',
         vision_fields=vf, vision_name=name, vision_nric=nric,

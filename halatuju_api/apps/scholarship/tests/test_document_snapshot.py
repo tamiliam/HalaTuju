@@ -134,10 +134,12 @@ def _documents(application, which):
             _add(application, dt, fields=_STR_FIELDS if dt == 'str' else _OK, i=i)
         return
     if which == 'several-same-type':
+        # TD-115: one live row per slot, so each further copy takes its own slot (a request_code) —
+        # the readers still see several live documents of one type.
         for i in range(3):
-            _add(application, 'salary_slip', fields=_OK, i=i)
+            _add(application, 'salary_slip', fields=_OK, i=i, request_code=f'req{i}' if i else '')
         for i in range(2):
-            _add(application, 'str', fields=_STR_FIELDS, i=i)
+            _add(application, 'str', fields=_STR_FIELDS, i=i, request_code=f'req{i}' if i else '')
         return
     if which == 'superseded':
         # ⚠ EVERY REPLACED ROW HERE IS MATERIALLY WORSE THAN THE ROW THAT REPLACED IT, and that
@@ -160,11 +162,13 @@ def _documents(application, which):
             ('ic', _OK, _OK, {'vision_error': 'blurry'}, {}),
         ]
         for doc_type, dead_fields, live_fields, dead_columns, live_columns in pairs:
-            dead = _add(application, doc_type, fields=dead_fields, i=0, **dead_columns)
+            # TD-115: the replaced row is stamped superseded BEFORE its replacement goes live (the
+            # slot's unique index refuses two live rows), as the upload door does; it then points at
+            # the replacement, as a re-upload leaves it.
+            dead = _add(application, doc_type, fields=dead_fields, i=0,
+                        superseded_at=timezone.now(), **dead_columns)
             live = _add(application, doc_type, fields=live_fields, i=1, **live_columns)
-            # Stamped exactly as a re-upload stamps them (views.py's supersede path).
-            ApplicantDocument.objects.filter(id=dead.id).update(
-                superseded_at=timezone.now(), superseded_by=live)
+            ApplicantDocument.objects.filter(id=dead.id).update(superseded_by=live)
         return
     if which == 'tagged-and-untagged':
         _add(application, 'parent_ic', member='father', fields=_OK, i=0)
@@ -176,9 +180,12 @@ def _documents(application, which):
         return
     if which == 'identical-timestamps':
         a = _add(application, 'str', fields=_STR_FIELDS, i=0)
-        b = _add(application, 'str', fields={**_STR_FIELDS, 'student_verdict': 'unreadable'}, i=1)
+        # TD-115: the tie is across two live rows, so the second of each pair has its own slot.
+        b = _add(application, 'str', fields={**_STR_FIELDS, 'student_verdict': 'unreadable'}, i=1,
+                 request_code='req1')
         c = _add(application, 'salary_slip', fields=_OK, i=0)
-        d = _add(application, 'salary_slip', fields={'student_verdict': 'unreadable'}, i=1)
+        d = _add(application, 'salary_slip', fields={'student_verdict': 'unreadable'}, i=1,
+                 request_code='req1')
         # ⚠ THE WHOLE POINT: one instant, four rows, no tie-breaker anywhere in the ORDER BY.
         stamp = timezone.now()
         ApplicantDocument.objects.filter(id__in=[a.id, b.id, c.id, d.id]).update(
@@ -195,7 +202,8 @@ def _documents(application, which):
         _add(application, 'water_bill', fields={'fields': [], 'authenticity': {}}, i=4)
         # TD-293 (2026-10-03): the two shapes that used to 500 the endpoint, moved here from the
         # retired CRASHING_GARBAGE once the readers became tolerant.
-        _add(application, 'ic', fields={'authenticity': 'not a dict'}, i=5)
+        _add(application, 'ic', fields={'authenticity': 'not a dict'}, i=5,
+             request_code='req5')   # TD-115: its own slot, beside the first ic
         _add(application, 'electricity_bill', fields={'authenticity': {'status': 12345}}, i=6)
         return
     raise AssertionError(f'unknown document set {which!r}')
@@ -605,11 +613,14 @@ class TheReadersAnswerTheSameWithAndWithoutASnapshot(TestCase):
         _add(self.app, 'parent_ic', member='father', fields=_OK, i=0)
         _add(self.app, 'parent_ic', member='', fields=_OK, i=1)
         _add(self.app, 'salary_slip', member='father', fields=_OK, i=0)
-        _add(self.app, 'salary_slip', member='father', fields=_OK, i=1)
+        # TD-115: the second father's slip sits in its own slot (an officer re-request) — two live
+        # rows of one kind and member, still.
+        _add(self.app, 'salary_slip', member='father', fields=_OK, i=1, request_code='req1')
         _add(self.app, 'income_support_doc', member='mother', fields=_OK, i=0)
-        dead = _add(self.app, 'str', fields=_STR_FIELDS, i=0)
-        _add(self.app, 'str', fields=_STR_FIELDS, i=1)
-        ApplicantDocument.objects.filter(id=dead.id).update(superseded_at=timezone.now())
+        # The replaced STR is stamped superseded BEFORE its replacement goes live (one live row per slot).
+        dead = _add(self.app, 'str', fields=_STR_FIELDS, i=0, superseded_at=timezone.now())
+        live = _add(self.app, 'str', fields=_STR_FIELDS, i=1)
+        ApplicantDocument.objects.filter(id=dead.id).update(superseded_by=live)
 
     def _both(self, call):
         off = call()

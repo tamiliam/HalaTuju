@@ -24,13 +24,16 @@ from apps.scholarship.tests.source_walk import API_ROOT, floor_count, read_sourc
 
 
 class IdenticalTimestampsTest(TestCase):
-    """Two live documents of one type, one `uploaded_at`: the higher id is "the latest"."""
+    """Two live documents of one type, one `uploaded_at`: the higher id is "the latest".
+
+    TD-115: a slot holds ONE live row, so the two rows sit in different slots (the older one is an
+    officer re-request's own `request_code`) — the tie-break reads across slots and is unchanged."""
 
     def setUp(self):
         self.app = make_application('profile_complete')
         self.older = ApplicantDocument.objects.create(
             application=self.app, doc_type='statement_of_intent', storage_path='p/soi-1',
-            vision_fields={'text': 'FIRST ROW'})
+            request_code='req-soi', vision_fields={'text': 'FIRST ROW'})
         self.newer = ApplicantDocument.objects.create(
             application=self.app, doc_type='statement_of_intent', storage_path='p/soi-2',
             vision_fields={'text': 'SECOND ROW'})

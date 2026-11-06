@@ -158,6 +158,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-532** — Interview booking leftovers in `scheduling.book_slot` (the Meet path): a reschedule during a close does not cancel the moved event; a double-click on a first booking makes two Meet events; the lock does not re-check `slot.is_active`; a database error after `create_event` leaves the event orphaned. Also: the web interview page has no friendly message for `case_closed`. A low, accepted note: the QC accept's card blurb is made from a pre-lock read. *(C · M · raised 2026-11-06 by the A1.5 adversarial review)*
 - **TD-533** — Status writers outside QC still decide from a pre-lock copy (TD-383 follow-up): A1.4 and A1.5 locked the money writers and the 4 QC paths; about a dozen other writers still read status with no row lock. Fix is the same `status_lock` pattern in a later audit wave, plus the static scan over all writers that TD-383 never built. *(A · M · raised 2026-11-06 at the G2 pre-deploy gates)*
 - **TD-534** — Reopen-signing email does not state the new accept deadline (TD-347 follow-up): a recorded parent call now re-arms the clock, but nothing tells the student the new date. **MUST LAND BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** Needs en/ms/ta wording; the send goes after the save. *(A · S · raised 2026-11-06 by Sprint A1.6)*
+- **TD-545** — The upload door leaves an orphan Storage file when it answers 409 `upload_conflict` (A1.8 / TD-115) — low
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - ~~**TD-347**~~ — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)* **Fixed 2026-11-06 (Sprint A1.6): a clearing call re-arms the clock; the deadline email is TD-534; see the detail entry.**
@@ -270,7 +271,7 @@ Do one only when a sprint is already in that file.
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)*
 - **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)*
-- **TD-115** — The document slot has no database-level guard. *(D · L · partly done)*
+- **TD-115** — The document slot has no database-level guard. *(D · L)* **Fixed in code 2026-11-06 (Sprint A1.8): 4-column partial unique index, migration 0203; open until the owner applies it by hand after the deploy. See the detail entry.**
 - **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L)*
 - **TD-058** — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)*
 - **TD-024** — The course-name field is called course. *(D · L)*
@@ -1813,6 +1814,19 @@ Each is an open entry with a defining line in the register body (read it there).
   **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
   test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (Logged 2026-06-13; b+c closed 2026-06-14.)
   **Status 2026-09-30:** partly done — still to do: no database UniqueConstraint on the document slot.
+  **FIXED 2026-11-06 (Sprint A1.8), pending the live apply.** The key is FOUR columns, not the three above:
+  `(application, doc_type, household_member, request_code)` — since TD-134 each officer request is its own slot. A partial
+  `UniqueConstraint` `applicant_document_one_live_per_slot` on live rows (`superseded_at IS NULL`), leaving out in-programme
+  results slips (`request_code = 'in_programme'`, one per semester by design). Both text columns are NOT NULL, so
+  `nulls_distinct` is not needed. Live data 2026-11-06: 0 duplicates on that key (3,272 rows, 2,519 live). Five writers put
+  the new row live FIRST and are fixed to supersede first in one transaction: the upload door (`views.py`), `refile_to_spm` /
+  `refile_to_higher` (`results_route._move_into_slot`), `dedupe_income_proof`'s STR re-tag, `split_combined_results`, and
+  `backfill_untagged_income_docs`. Two uploads at once now meet the index: the upload door retries once, then answers 409
+  `upload_conflict`; a clash at promote keeps the new copy in Old / Replaced (`kept_previous`); the backfill skips that doc.
+  Tests: `test_td115_slot_constraint.py` (SQLite enforces partial unique indexes, so the real index runs).
+  ⚠ **DEPLOY-FIRST, not migrate-first:** the old image would 500 on every same-slot re-upload once the index exists. The
+  owner applies `0203` by hand AFTER the new api revision serves 100% — pre-check, apply and rollback SQL are in the
+  migration's docstring. Close this entry when `list_migrations` shows 0203.
 - **TD-116**: **EPF mining benefits NEW uploads only — existing EPF statements need a re-parse to populate the new fields.**
   The 2026-06-14 EPF work (`97a7793`) extracts `avg_monthly_contribution`/`months_counted`/`contribution_status`/
   `statement_date`/`address`, but these need the CARUMAN rows + statement body, which aren't in the already-stored
@@ -8164,3 +8178,9 @@ carries no deadline at all. So a student whose clock was re-armed is not told th
 email that tells her signing is open again and states the new `accept_deadline`; it needs en/ms/ta
 wording (Tamil to the style guide), and the send goes AFTER `record_call`'s transaction commits (never
 inside the locked block; the lock rule). *(A · S)*
+
+### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
+
+**Raised 2026-11-07 by the A1.8 adversarial review (not fixed).** `DocumentListCreateView.post` (`views.py`, the `if doc is None` branch after `slot_writes.create_in_slot`) answers 409 `upload_conflict` when two uploads clash twice in one slot. The student's file was already put in Storage by the signed-URL step, and no row records it, so the blob is orphaned (harmless to the student, a little wasted storage, and invisible to every reader).
+
+**Fix:** delete the blob in that branch (best-effort, logged), or let a periodic sweep list Storage keys with no `applicant_documents` row. Never re-extract anything. *(A · L)*
