@@ -437,8 +437,8 @@ class GoldenTable(TestCase):
         with mock.patch.object(AdminAssignReviewerView, '_scoped_application',
                                return_value=(self._case(status='profile_complete'), None)), \
                 mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'), \
-                mock.patch('apps.scholarship.views_admin.verdict.AdminApplicationDetailSerializer',
-                           return_value=SimpleNamespace(data={})):
+                mock.patch('apps.scholarship.views_admin.verdict._detail_payload',
+                           return_value={}):
             r = self._http(self.people['org_admin'], 'post',
                            '/api/v1/admin/scholarship/applications/1/assign/',
                            {'reviewer_id': a.id})

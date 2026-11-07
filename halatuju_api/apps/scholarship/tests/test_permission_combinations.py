@@ -246,8 +246,8 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
         with mock.patch.object(AdminAssignReviewerView, '_scoped_application',
                                return_value=(case, None)), \
                 mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'), \
-                mock.patch('apps.scholarship.views_admin.verdict.AdminApplicationDetailSerializer',
-                           return_value=SimpleNamespace(data={})):
+                mock.patch('apps.scholarship.views_admin.verdict._detail_payload',
+                           return_value={}):
             refused = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.maker.id},
                                        format='json')
             taken = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.finance.id},

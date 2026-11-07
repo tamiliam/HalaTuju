@@ -132,4 +132,6 @@ class TestTheCockpitIsServedTheMarks(TestCase):
         body = r.json()
         self.assertEqual(body['stpm_marks']['cgpa'], 'match')
         self.assertEqual(body['stpm_marks']['grades']['MATH_T'], {'status': 'match', 'doc': 'A-'})
-        self.assertEqual(list(body)[-1], 'programme')       # the gift's key stays last
+        # The gift's key stays the serializer's last; the view's two A1.11a keys (_detail_payload:
+        # qc_refusal, rejected_by_unassigned) are appended after it.
+        self.assertEqual(list(body)[-3:], ['programme', 'qc_refusal', 'rejected_by_unassigned'])
