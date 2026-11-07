@@ -108,6 +108,15 @@ class TestCompletenessGaps(_Base):
         self.app.save()
         self.assertIn('transport_cost_unknown', self._codes())
 
+    def test_no_transport_gap_for_a_degree_bound_student(self):
+        # Owner decision 8, 2026-11-07: #251's stale 'stpm' code with a degree programme is a
+        # degree student (no STPM daily-travel question).
+        self.app.chosen_pathway = 'stpm'
+        self.app.pathway_certainty = 'sure'
+        self.app.chosen_programme = {'course_name': 'Ijazah Sarjana Muda Sejarah'}
+        self.app.save()
+        self.assertNotIn('transport_cost_unknown', self._codes())
+
     def test_device_gap_unless_ticked(self):
         self.assertIn('device_status_unknown', self._codes())
         FundingNeed.objects.create(application=self.app, categories=['device'])

@@ -4648,6 +4648,8 @@
         "variableNote": "Berbeza mengikut institusi dan bidang — sahkan semasa temu duga.",
         "practicalNote": "Latihan praktikal/internship mungkin menambah kos pengangkutan.",
         "none": "Laluan belum dipilih — tiada anggaran. Guna keperluan yang dinyatakan pelajar.",
+        "studyMonths": "bulan pengajian",
+        "continuingNote": "Pelajar sedia ada: dianggarkan untuk baki tahun pengajian.",
         "pathway": {
           "stpm": "STPM (Tingkatan 6) — selepas persekolahan percuma. Meliputi pengangkutan, makan, kelas tuisyen.",
           "matric": "Matrikulasi — selepas elaun BSHP, asrama & pengajaran. Kebanyakannya makan + yuran kecil.",
@@ -4655,6 +4657,13 @@
           "poly": "Diploma Politeknik — selepas pinjaman PTPTN + asrama murah disediakan. Kebanyakannya makan + lain-lain.",
           "university": "Diploma universiti awam — selepas pinjaman PTPTN. Meliputi makan, asrama & yuran.",
           "pismp": "PISMP — selepas elaun IPG & asrama. Meliputi makan, tambahan asrama, pengangkutan.",
+          "degree": "Ijazah universiti awam: selepas pinjaman PTPTN. Meliputi kos sara hidup (RM1,200 × 10 bulan setahun) & yuran.",
+          "mara_diploma": "Diploma MARA, selepas pinjaman pelajaran MARA. Meliputi makan, asrama & yuran.",
+          "ilkbs": "IKBN / IKTBN: yuran pengajian & asrama percuma, selepas elaun ~RM100 sebulan. Kebanyakannya makan + kos kecil.",
+          "iljtm": "ILJTM: yuran pengajian & asrama percuma, tiada elaun. Meliputi makan + kos kecil.",
+          "kkom": "Kolej Komuniti: yuran pengajian & asrama percuma, tiada elaun. Meliputi makan + kos kecil.",
+          "mara_cert": "Sijil kemahiran MARA: yuran pengajian & asrama percuma, tiada elaun diandaikan. Meliputi makan + kos kecil.",
+          "tvet": "Institut TVET: yuran pengajian & asrama percuma, tiada elaun diandaikan. Meliputi makan + kos kecil.",
           "unknown": "Belum dipilih"
         }
       },

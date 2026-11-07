@@ -121,18 +121,21 @@ class TestADivisionPickIsStoredAsUniversity:
         assert epf_evidence.semester_result_gap(self._app()) is True
         assert epf_evidence.semester_result_gap(self._app(chosen_pathway='mara')) is False
 
+    @pytest.mark.django_db
     def test_funding_estimate_is_a_university_diplomas(self):
-        # The whole estimate for a division pick, stored the way the picker stores it, equals a plain
-        # UA diploma's — and is NOT what a MARA skills-campus course gets (no estimate at all).
+        # The estimate for a division pick, stored the way the picker stores it, is the 'mara_diploma'
+        # row (owner decision 9, 2026-11-07) with a plain UA diploma's numbers; a MARA skills-campus
+        # course not in the catalogue gets the generic TVET row (decision 12), not a diploma's.
         from apps.scholarship.funding_estimate import estimate_funding
         division = estimate_funding(self._app())
         plain = estimate_funding(self._app(chosen_programme={
             'course_id': 'UK-DIP', 'course_name': 'Diploma Sains', 'institution_id': 'UNIV-UKM'}))
         campus = estimate_funding(self._app(chosen_pathway='mara', chosen_programme={
             'course_id': 'TVET-MARA-1', 'course_name': 'Diploma Teknologi', 'institution_id': 'MARA-001'}))
-        assert division == plain
-        assert division['known'] is True and division['pathway'] == 'university'
-        assert campus['known'] is False
+        assert division['pathway'] == 'mara_diploma' and plain['pathway'] == 'university'
+        assert {**division, 'pathway': 'university'} == plain
+        assert division['known'] is True
+        assert (campus['pathway'], campus['known']) == ('tvet', True)
 
     def test_a_upu_diploma_offer_is_the_same_pathway_family(self):
         from apps.scholarship import offer_pathway as op
