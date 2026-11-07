@@ -108,7 +108,7 @@ import { RefereesPanel, InterviewStage } from './view/InterviewPanels'
 import { DocumentsDrawer } from './view/DocumentsDrawer'
 import { RateAndEstimate } from './view/RateAndEstimate'
 import { BlockersPanel } from './view/BlockersPanel'
-import { QcPanel } from './view/QcPanel'
+import { QcPanel, qcRefusalText } from './view/QcPanel'
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
@@ -402,16 +402,23 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
   }
 
-  const doReject = async (category: 'interview' | 'contractual') => {
+  // TD-227 (A1.11a): the decline needs a reason (stored on the case; the server answers 400
+  // comments_required without one). The confirm became a prompt; Cancel still does nothing.
+  const doReject = async (category: 'interview' | 'contractual', preset = '') => {
     if (!token) return
     const confirmKey = category === 'contractual'
       ? 'admin.scholarship.reject.confirmContractual' : 'admin.scholarship.reject.confirmReview'
-    if (!window.confirm(t(confirmKey))) return
+    const answer = window.prompt(`${t(confirmKey)}\n\n${t('admin.scholarship.reject.reasonPrompt')}`, preset)
+    if (answer === null) return
+    const comments = answer.trim()
+    if (!comments) { setError(t('admin.scholarship.reject.reasonRequired')); return }
     setBusy('reject'); setError('')
     try {
-      setApp(await rejectApplication(id, category, { token }))
+      setApp(await rejectApplication(id, category, comments, { token }))
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.reject.error'))
+      const code = (e as { code?: string } | null)?.code
+      setError(code === 'comments_required' ? t('admin.scholarship.reject.reasonRequired')
+        : e instanceof Error ? e.message : t('admin.scholarship.reject.error'))
     } finally { setBusy('') }
   }
 
@@ -641,7 +648,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       // goes to AWAITING QC for a second pair of eyes before it becomes a rejection.
       if (!(await doRecordVerdict(false, false))) return   // refused: sending on would 400 over it
       if (app?.status === 'recommended') {
-        await doReject('contractual')
+        await doReject('contractual', verdictReason)
       } else {
         await doSubmitDecline()
       }
@@ -699,9 +706,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       setQcOverrideOpen(false); setQcOverrideReason('')
     } catch (e) {
       const code = (e as { code?: string })?.code
-      setError(code === 'self_verdict_qc_forbidden'
-        ? t('admin.scholarship.qcDecision.selfVerdictForbidden')
-        : e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error'))
+      // TD-483: every separation code in en / ms / ta (was only `self_verdict_qc_forbidden`).
+      setError(qcRefusalText(code, t)
+        || (e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error')))
     } finally { setBusy('') }
   }
 

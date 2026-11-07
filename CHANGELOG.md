@@ -52,6 +52,31 @@ Review follow-ups (A1.10a): (1) web: the wallet-credit check button and the "awa
 
 Tidy-up (A1.10a): the four new page-read doors are renamed apart (`may_read_announcements`, `may_read_surveys`, `may_read_development`, `may_read_mentoring`) to satisfy the one-rule-one-home test; the reopen refusal for a reviewer who cannot review now also says to Restore a revoked one; TD-560 and TD-561 logged.
 
+### fix: Sprint A1.11b - decline and close gates (TD-487 / SEC-19, TD-488) (2026-11-07)
+
+Branch a111a (not pushed; no migration). Built to the owner's rulings of 2026-11-07 (decisions.md).
+- TD-487 / SEC-19 (option A): `/reject/` refuses the `interview` bucket at every status, a super included, 400 `interview_decline_needs_qc`; AWAITING QC keeps `awaiting_qc`. An interview decline goes record-verdict -> submit-decline -> QC. `contractual` and `org-reject` are unchanged. The cockpit never sent `interview`, so no web change. The decline road stays open at `profile_complete` and `interviewing`.
+- TD-488 (supersedes part of TD-352): before an award, a close works only at `submitted` and `recommended`; `shortlisted`, `profile_complete`, `interviewing` and `interviewed` refuse 400 `stage_not_closeable`. `CLOSEABLE_FROM` is `PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES`. The cockpit hides the Close card at those stages and shows the owner-approved explainer before an award (en / ms / ta); `closeOfferDrift` is in step. Who may close, everything after an award and the emails are unchanged.
+- Guide: a reviewer FAQ on a student who stops answering, and an org-admin FAQ on close versus decline.
+- TD-216 left open (needs a migration and a new box, Stitch first). TD-498 owner ruling recorded only.
+- TD-496 closed (owner ruling B): retired the unused graduation-messages list (`AdminGraduationMessageListView`, route `admin/graduation-messages/`, its tests); the review POST is untouched. No hits in 30 days of logs, no web caller.
+
+Tests: `test_a111b_decline_and_close_gates.py` (new), `test_close_stalled.py`, `test_reject_buckets.py`, `test_td481_awaiting_qc_decline.py`, `test_a111a_reject_reason_qc_refusal.py`, `test_staff_activity.py` updated; jest `closeOfferDrift.test.ts`, `view.close.test.tsx`.
+
+### fix: Sprint A1.11a - QC separation evidence (TD-484, TD-443, TD-485, TD-486, TD-441 item 3) (2026-11-07)
+
+Branch a111a (not pushed). Migration `0204_decisionreopen_reopened_from` is written and NOT applied (additive, `db_default=''`). API only; no user-visible text change except the 503 `evidence_not_recorded` sentence.
+- TD-484 / TD-443: `staff_footprint.footprint` now counts past assignments (`AssignmentEvent` either side), review-verb activity rows and every email stamp in the schema (`EMAIL_STAMPS`, one query), so a person the QC guard remembers is revoked, never deleted.
+- TD-485: the five guard verbs are no longer best-effort; a lost write raises `EvidenceNotRecorded` (503) and submit-decline, the interview draft save and `submit_interview` roll back with it. Auto-finalise (Gemini) still runs after the commit. Pre-S3 / pre-F7 history gaps stay open.
+- TD-486: `cancel_reopen` restores from the recorded `reopened_from`, so a declined case QC sent back can no longer land at `recommended`.
+- TD-483 follow-up: the verdict, submit-decline, QC-decision, reopen, assign and interview replies now carry `qc_refusal` (and `rejected_by_unassigned`) via the shared `_detail_payload`, so the cockpit never falls back to its old assignee guess after a move to awaiting QC; `_assert_agrees` also checks the real qc-decision 403 code.
+- TD-441 item 3: the first-sign-in link is a compare-and-set (`supabase_admin.link_login`).
+- Review fixes (part 1): the interviewer stamp on submit now sits in the evidence transaction; `link_login` treats a lost race to the SAME login as success; the People list computes each footprint once per row; vacuous footprint test and the submit and draft-save 503 paths now covered.
+- Part 2: TD-227 (`/reject/` refuses a decline with no reason, 400 `comments_required`; the reason is stored on the case and the record says when the decliner was not the assigned reviewer, `rejected_by_unassigned`) and TD-483 (the detail read and the `/reject/` reply serve `qc_refusal` from the same separation rule; the QC panel hides with a one-line note; all five refusal codes in en / ms / ta). Tests: `test_a111a_reject_reason_qc_refusal.py`, `view.rejectReason.test.tsx` (6).
+- Left for A1.11b: TD-216.
+
+Tests: `test_a111a_footprint.py` (11), `test_a111a_evidence.py` (6), `test_a111a_cancel_reopen.py` (5), `courses/tests/test_a111a_link_cas.py` (4); 21 of these 26 and the changed verify-accept test in `test_staff_activity.py` fail on the old code (the other 5 are controls).
+
 ### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)
 
 Not pushed; no migration. `income_engine/freshness.py` now logs under the written-out name `apps.scholarship.income_engine` instead of `getLogger(__name__)` (the audit-logger test refuses `__name__`). `uploadContentType.ts` keeps its extension table inside the function: a top-level const made the module count as having side effects, so the `@/lib/api` barrel could no longer drop the documents client from pages that never use it, adding about 2.8 kB to the median route's first-load JS. Median back to 156.631 kB (live 156.627; budget 157.6). Behaviour unchanged.

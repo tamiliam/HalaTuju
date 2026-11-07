@@ -81,6 +81,16 @@ def refusal(admin, app):
     return None
 
 
+def for_viewer(admin, app):
+    """TD-483 (A1.11a): the refusal code the QC door would give THIS viewer on THIS case, served on
+    the detail read so the cockpit hides the QC panel the server would refuse. None unless the
+    viewer holds `qc` and the case is awaiting QC (`interviewed`), the stage `_require_qc` checks
+    before it asks `refusal`; otherwise `refusal`, the same answer the door gives."""
+    if admin is None or app is None or app.status != 'interviewed' or not admin.has_perm('qc'):
+        return None
+    return refusal(admin, app)
+
+
 def barred_ids(admin, apps):
     """The ids among ``apps`` (a queryset of applications) that `refusal` would refuse ``admin`` — the
     SAME conditions, asked in bulk (T5c P5b S1: the Overview's ``qc_awaiting`` card leaves out the cases

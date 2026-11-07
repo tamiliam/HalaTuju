@@ -6,16 +6,27 @@
  * dropdown that answers `reason_not_allowed`.
  */
 import {
-  closeErrorKey, closeOffer, stageStatus, POST_AWARD_REASONS, POST_AWARD_STATUSES, PRE_AWARD_REASONS,
-  PRE_AWARD_STATUSES,
+  closeErrorKey, closeOffer, stageStatus, POST_AWARD_REASONS, POST_AWARD_STATUSES, PRE_AWARD_CLOSEABLE,
+  PRE_AWARD_REASONS, PRE_AWARD_STATUSES,
 } from '@/lib/closeOffer'
 import { pyChoiceValues, pySeq, readApi } from '@/test/apiSource'
 
 const sorted = (xs: readonly string[]) => [...xs].sort()
 
 describe('closeOffer', () => {
-  test.each(PRE_AWARD_STATUSES)('%s → shown, pre-award, stalled + withdrawn only', (status) => {
+  test.each(['submitted', 'recommended'])('%s → shown, pre-award, stalled + withdrawn only', (status) => {
     expect(closeOffer(status, true)).toEqual({ show: true, preAward: true, reasons: ['stalled', 'withdrawn'] })
+  })
+  // TD-488 (owner ruling 2026-11-07): close is extraordinary. At these stages the case is declined
+  // (Reject, or the interview findings sent to QC), and the api answers `stage_not_closeable`.
+  test.each(['shortlisted', 'profile_complete', 'interviewing', 'interviewed'])(
+    '%s → no Close card, even for a super (TD-488)', (status) => {
+      expect(closeOffer(status, true)).toEqual({ show: false, preAward: true, reasons: [] })
+    })
+  test('every pre-award stage is classified: closeable or not, nothing left over', () => {
+    const shown = PRE_AWARD_STATUSES.filter((s) => closeOffer(s, true).show)
+    expect(sorted(shown)).toEqual(sorted(PRE_AWARD_CLOSEABLE))
+    for (const s of PRE_AWARD_CLOSEABLE) expect(PRE_AWARD_STATUSES).toContain(s)
   })
   test('awarded → no Close card: the offer is always out and nothing releases it (TD-366)', () => {
     expect(closeOffer('awarded', true)).toEqual({ show: false, preAward: false, reasons: [] })
@@ -57,7 +68,7 @@ describe('stageStatus — a closed case reads as post-award only with the milest
 })
 
 describe('closeErrorKey', () => {
-  test.each(['bad_reason', 'not_closeable', 'sponsorship_open', 'decline_pending'])(
+  test.each(['bad_reason', 'not_closeable', 'sponsorship_open', 'decline_pending', 'stage_not_closeable'])(
     '%s has its own sentence', (code) => {
       expect(closeErrorKey(code)).toBe(`admin.closure.error.${code}`)
     })
@@ -75,6 +86,7 @@ describe('drift — closure.py holds the same table', () => {
   test('the stage sets', () => {
     expect(sorted(pySeq(src, 'PRE_AWARD_STATUSES'))).toEqual(sorted(PRE_AWARD_STATUSES))
     expect(sorted(pySeq(src, 'POST_AWARD_STATUSES'))).toEqual(sorted(POST_AWARD_STATUSES))
+    expect(sorted(pySeq(src, 'PRE_AWARD_CLOSEABLE'))).toEqual(sorted(PRE_AWARD_CLOSEABLE))
   })
 
   test('the reasons for each stage, in order', () => {
@@ -82,8 +94,10 @@ describe('drift — closure.py holds the same table', () => {
     expect(pySeq(src, 'POST_AWARD_REASONS')).toEqual([...POST_AWARD_REASONS])
   })
 
-  test('the two stages together are exactly the apply gate’s in-play set, and that is what closes', () => {
-    expect(src).toMatch(/^CLOSEABLE_FROM = IN_PLAY_STATUSES$/m)
+  test('the two stages together are exactly the apply gate’s in-play set; the closeable pre-award stages plus post-award close', () => {
+    // TD-488: CLOSEABLE_FROM is no longer the whole in-play set.
+    expect(src).toMatch(/^CLOSEABLE_FROM = PRE_AWARD_CLOSEABLE \| POST_AWARD_STATUSES$/m)
+    expect(src).not.toMatch(/^CLOSEABLE_FROM = IN_PLAY_STATUSES$/m)
     const inPlay = pySeq(readApi('apps/scholarship/services/apply_gate.py'), 'IN_PLAY_STATUSES')
     expect(inPlay.length).toBeGreaterThanOrEqual(9)
     expect(sorted([...PRE_AWARD_STATUSES, ...POST_AWARD_STATUSES])).toEqual(sorted(inPlay))

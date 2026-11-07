@@ -7,6 +7,7 @@ and every importer are unchanged.
 ⚠ TWO SPANS of the old root (lines 138-143 and 735-952). They were not adjacent there, but
 they are one domain, and each span is byte-identical to the lines it came from.
 """
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -14,9 +15,10 @@ from .. import staff_activity
 from ..anomaly_engine import detect_anomalies
 from ..interview_completeness import missing_agenda_items
 from ..models import InterviewSession
-from ..serializers_admin import AdminApplicationDetailSerializer, InterviewSessionSerializer
+from ..serializers_admin import InterviewSessionSerializer
 from ..services import submit_interview
 
+from .applications import _detail_payload
 from .base import _AdminBase
 
 
@@ -194,10 +196,11 @@ class AdminInterviewView(_AdminBase):
             # existing name: that is the case this exists to protect (A interviews, B submits →
             # the record must still read A).
             session.interviewer = admin
-        session.save()
-        if credit_moves:
-            staff_activity.record(admin, staff_activity.INTERVIEW_DRAFTED, app,
-                                  meta={'session': session.pk})
+        with transaction.atomic():   # TD-485: the guard's evidence holds with the save, or neither
+            session.save()
+            if credit_moves:
+                staff_activity.record(admin, staff_activity.INTERVIEW_DRAFTED, app,
+                                      meta={'session': session.pk})
         # A draft save does NOT advance the funnel. 'interviewing' means the interview
         # process is genuinely underway for an accountable reviewer — reached by proposing
         # times (scheduling.propose_slots) or submitting the session (offline fallback),
@@ -228,11 +231,14 @@ class AdminInterviewSubmitView(_AdminBase):
             return Response({'error': 'Every interview question needs an answer before you submit.',
                              'code': 'findings_incomplete', 'missing': missing},
                             status=status.HTTP_400_BAD_REQUEST)
-        if session.interviewer_id is None:
-            session.interviewer = admin
-            session.save(update_fields=['interviewer'])
-        submit_interview(session, actor=admin)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        # The interviewer stamp rides in the SAME transaction as the submit's evidence write (nested
+        # atomics join this one), so a failed evidence write rolls the stamp back with it.
+        with transaction.atomic():
+            if session.interviewer_id is None:
+                session.interviewer = admin
+                session.save(update_fields=['interviewer'])
+            submit_interview(session, actor=admin)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminInterviewReopenView(_AdminBase):
@@ -259,4 +265,4 @@ class AdminInterviewReopenView(_AdminBase):
         if app.status == 'interviewed':   # back a step so Check 2 + the decision gate reopen
             app.status = 'interviewing'
             app.save(update_fields=['status'])
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))

@@ -204,6 +204,29 @@ def link_refusal(uid, email):
     return reason
 
 
+def link_login(admin, uid, email):
+    """Write login ``uid`` onto the staff row ``admin`` (read by ``email``); True when it landed.
+
+    ⚠ TD-441 item 3 (A1.11a): A COMPARE-AND-SET. The caller read the row by email and then checked
+    the login over the network (`link_refusal`); a staff email move, a revoke or another link that
+    committed in between must not be overwritten by a write by primary key alone. The UID lands
+    only while the row still carries this email, is still active and still has no login; else
+    nothing is written and the caller gets no staff role this time."""
+    from .models import PartnerAdmin
+    linked = PartnerAdmin.objects.filter(
+        pk=admin.pk, email__iexact=email, supabase_user_id__isnull=True,
+        is_active=True).update(supabase_user_id=uid)
+    if not linked:
+        # A concurrent first request from the SAME login may have won the race: that is success.
+        # Only when the row now carries THIS login id (and is still this person's, active); never
+        # a link to a different row or a different login.
+        linked = PartnerAdmin.objects.filter(
+            pk=admin.pk, email__iexact=email, supabase_user_id=uid, is_active=True).exists()
+    if linked:
+        admin.supabase_user_id = uid
+    return bool(linked)
+
+
 def issue_temp_password(uid, name, password):
     """Set ``password`` as this account's temporary password with a fresh TTL clock. True on 2xx.
 

@@ -109,6 +109,17 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>When do I <strong>close</strong> an application, and when do I decline it instead?</>,
+      a: <>Before an award, <strong>Close</strong> works at two stages only: <strong>Submitted</strong> (the
+        case did not move on) and <strong>Recommended</strong> (for example, no sponsor comes, the student stops
+        responding, or she says she no longer wants the scholarship). Only a super admin or an organisation
+        admin can close. At the other stages the Close card is hidden. Drop a stuck Shortlisted student with
+        <strong> Reject</strong>. Once a reviewer has the case, the reviewer writes it in the interview findings
+        and declines, and the decline goes to <strong>Quality check</strong>; nobody, a super admin included,
+        can decline it directly. The student gets an email when a case is closed, and can apply again in a
+        later round.</>,
+    },
+    {
       q: <>How do I let somebody do more (or less) than their role?</>,
       a: <>On <strong>Team</strong>, click the person&rsquo;s name (on the Reviewers or the Admins tab) and open
         the <strong>Permissions</strong> tab on their page &mdash; the only place permissions are set. It has a

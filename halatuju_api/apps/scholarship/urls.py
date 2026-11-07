@@ -76,7 +76,6 @@ from .views_admin import (
     AdminDisbursementActionView,
     AdminDisbursementScheduleView,
     AdminMaintenanceSubstateView,
-    AdminGraduationMessageListView,
     AdminGraduationMessageReviewView,
     AdminSetAwardAmountView,
     AdminSponsorshipListView,
@@ -595,6 +594,5 @@ urlpatterns = [
     path('admin/me/photo/', AdminMePhotoView.as_view()),   # S2: own photo (multipart POST / DELETE)
     path('admin/me/activity/', AdminMeActivityView.as_view()),   # S4: own activity list, every role
     # F9a — graduation thank-you moderation queue
-    path('admin/graduation-messages/', AdminGraduationMessageListView.as_view()),
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),
 ] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS

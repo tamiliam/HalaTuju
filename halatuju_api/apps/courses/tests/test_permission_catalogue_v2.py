@@ -11,7 +11,7 @@ WHAT IS HERE
 - `GoldenV2`    — each live shape (+ qc, super, partner) -> its v2 set, by hand. `resolve()` still
   answers exactly today's tuple for each shape.
 - `Coverage`    — each shape x each of TODAY's doors, asked of the REAL gate function: a door that opens
-  today must be covered by v2 keys in the shape's set. One door is declared unmapped (`UNMAPPED`).
+  today must be covered by v2 keys in the shape's set. No door is left unmapped (the one that was, the graduation list, was retired: TD-496).
 - `NotYetWritable` — a v2 key cannot be saved and is dropped on read.
 - `V2Importers` (T5c, replacing T5a's `NotYetAGate`, lead ruling R6) — only `staff_tables` imports the
   v2 module, and only the allowlisted door modules decide by v2 keys (`staff_tables.opens`).
@@ -289,13 +289,6 @@ def _lands(a):
     return lands(a, _AdminBase()._b40_scope(a))
 
 
-#: A door open today that NO v2 key covers, with why. The graduation-messages list opens by role
-#: (`graduation.py:31`: reviewer / admin) and the approved catalogue has no key for it — T5c decides.
-UNMAPPED = {'graduation_list': ({'admin', 'admin_see_all_spending', 'reviewer',
-                                 'reviewer_see_all_spending', 'reviewer_see_all',
-                                 'reviewer_review_qc'},   # T5b shape: the role list opens it, not a key
-                                'graduation.py:31 role list reviewer/admin; no v2 key in the catalogue')}
-
 MATRIX = Path(__file__).resolve().parents[2] / 'scholarship' / 'tests' / 'fixtures' / \
     'team_tables_access_before.json'
 
@@ -330,14 +323,6 @@ class Coverage(TestCase):
     def test_the_inactive_admin_opens_nothing_but_its_own_role(self):
         row = json.loads(MATRIX.read_text(encoding='utf-8'))['admin_inactive']
         self.assertEqual([k for k, code in row.items() if 200 <= code < 300], ['GET api/v1/admin/role/'])
-
-    def test_the_unmapped_door_is_still_what_it_says(self):
-        from apps.scholarship.views_admin import graduation
-        src = Path(graduation.__file__).read_text(encoding='utf-8')
-        self.assertIn("admin.role in ('reviewer', 'admin')", src)
-        shapes, _ = UNMAPPED['graduation_list']
-        self.assertEqual(shapes, {s for s, p in self.people.items() if p.is_active and not p.is_super
-                                  and p.role in ('reviewer', 'admin')})
 
 
 class LandingContent(TestCase):

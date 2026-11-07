@@ -4,10 +4,14 @@
  * TD-352 — AN OFFICER CLOSES A STALLED APPLICATION (owner ruling, option A, 2026-10-06).
  *
  * An application in play stops the student starting another. A case that stopped moving would
- * hold her place for ever, so the Close card now shows at EVERY in-play status, with the reasons
- * the api accepts at that stage (`lib/closeOffer`, drift-tested against `closure.py`): before an
- * award only "No movement" and "Withdrawn"; at active / maintenance, the funded list plus "No
- * movement"; at awarded, none (the offer is always out — TD-366).
+ * hold her place for ever, so the Close card shows with the reasons the api accepts at that stage
+ * (`lib/closeOffer`, drift-tested against `closure.py`): before an award only "No movement" and
+ * "Withdrawn"; at active / maintenance, the funded list plus "No movement"; at awarded, none (the
+ * offer is always out — TD-366).
+ * TD-488 (owner ruling 2026-11-07): before an award the card shows at SUBMITTED and RECOMMENDED
+ * only, with the owner-approved explainer (`close-guide`). At shortlisted / profile_complete /
+ * interviewing / AWAITING QC it is hidden: the case is declined there (Reject, or the interview
+ * findings for QC), and the api answers `stage_not_closeable`.
  * A finished case shows no card. The api's `sponsorship_open` refusal (a live offer or paid money)
  * is answered by the server and shown in the card.
  */
@@ -43,7 +47,12 @@ describe('before an award — stalled and withdrawn only', () => {
     renderCockpit({ role: 'super', stage, build })
     await loaded()
     expect(reasons()).toEqual(['stalled', 'withdrawn'])
-    expect(within(card()).getByText('admin.closure.notePreAward')).toBeTruthy()
+    // The owner-approved explainer: a heading, then short lines naming the two stages.
+    const guide = within(card()).getByTestId('close-guide')
+    for (const key of ['heading', 'use', 'stages', 'submitted', 'recommended', 'otherStages', 'email']) {
+      expect(within(guide).getByText(`admin.closure.guide.${key}`)).toBeTruthy()
+    }
+    expect(within(card()).queryByText('admin.closure.note')).toBeNull()
     // The funded offboarding checklist is not a pre-award question.
     expect(within(card()).queryByText('admin.closure.checklist.finalDisbursement')).toBeNull()
   })
@@ -58,6 +67,29 @@ describe('before an award — stalled and withdrawn only', () => {
     expect(await screen.findByText('admin.closure.reason.stalled')).toBeTruthy()
   })
 
+  it.each([
+    ['shortlisted', {}],
+    ['profile_complete', {}],
+    ['assigned', {}],
+    ['interviewing', {}],
+    ['awaiting_qc', { outcome: 'recommend' }],
+    ['awaiting_qc', { outcome: 'decline' }],
+  ] as const)('TD-488: a %s case shows no Close card, even to a super', async (stage, build) => {
+    renderCockpit({ role: 'super', stage, build })
+    await loaded()
+    expect(screen.queryByText(TITLE)).toBeNull()
+    expect(screen.queryByTestId('close-guide')).toBeNull()
+  })
+
+  it('shows the stage refusal in the card if the api answers stage_not_closeable', async () => {
+    const { api } = renderCockpit({ role: 'super', stage: 'submitted' })
+    await loaded()
+    api.closeApplication.mockRejectedValue(new Error('stage_not_closeable'))
+    fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
+    await confirmClose()
+    expect(within(card()).getByText('admin.closure.error.stage_not_closeable')).toBeTruthy()
+  })
+
   it('shows the sponsorship refusal in the card (e.g. money paid at recommended)', async () => {
     const { api } = renderCockpit({ role: 'super', stage: 'recommended' })
     await loaded()
@@ -70,9 +102,9 @@ describe('before an award — stalled and withdrawn only', () => {
 
 describe('closing is final — the button asks twice (review round 1, item 7)', () => {
   it('the first click only asks; "Go back" asks nothing and closes nothing', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'interviewing' })
+    const { api } = renderCockpit({ role: 'super', stage: 'submitted' })
     await loaded()
-    expect(within(card()).getByText('admin.closure.notePreAward')).toBeTruthy()
+    expect(within(card()).getByTestId('close-guide')).toBeTruthy()
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
     fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
     const ask = screen.getByTestId('close-confirm')
@@ -86,7 +118,7 @@ describe('closing is final — the button asks twice (review round 1, item 7)', 
 
 describe('the confirm row stays until the request settles (review round 2)', () => {
   it('shows the loading label while the close is in flight, then goes', async () => {
-    const { api, app } = renderCockpit({ role: 'super', stage: 'interviewing' })
+    const { api, app } = renderCockpit({ role: 'super', stage: 'submitted' })
     await loaded()
     let settle: (v: unknown) => void = () => {}
     api.closeApplication.mockReturnValue(new Promise((r) => { settle = r }) as never)

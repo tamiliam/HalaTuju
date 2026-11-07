@@ -191,6 +191,11 @@ class DecisionReopen(models.Model):
     reason = models.TextField(help_text="Why the decision was reopened (the asserted reviewer error).")
     # Pool-publish state captured at reopen, so a cancel restores it exactly.
     was_published = models.BooleanField(default=False)
+    # ⚠ TD-486 (A1.11a): the status the case was reopened FROM, so a cancel restores from the
+    # record, never by guessing from the current status (a case QC sent back can return to
+    # 'interviewed' by submit-decline / verify-accept while the reopen stays open). '' = a row
+    # written before this field (the cancel then falls back to the old inference).
+    reopened_from = models.CharField(max_length=20, blank=True, default='', db_default='')
     # True once the reopen led to a re-saved decision (a real correction → counts).
     resulted_in_change = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

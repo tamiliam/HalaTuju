@@ -4096,7 +4096,15 @@
     "closure": {
       "title": "Close the file",
       "note": "Closing is final. Choose the reason that best fits how the support ended.",
-      "notePreAward": "Closing is final. The student may apply again in a later round. She is emailed.",
+      "guide": {
+        "heading": "Close this application",
+        "use": "Use this only when a case is stuck and Reject does not fit.",
+        "stages": "Close works at two stages only:",
+        "submitted": "Submitted: the case did not move on.",
+        "recommended": "Recommended: for example, no sponsor comes, the student stops responding, or the student says they no longer want the scholarship.",
+        "otherStages": "At other stages, use Reject, or write it in the interview findings for Quality check.",
+        "email": "The student gets an email. It says either ‘closed at your request’ or ‘closed by our team’. Both say the student can apply again in a later round."
+      },
       "reasonLabel": "Closure reason",
       "reasonUnset": "Choose a reason…",
       "close": "Close the file",
@@ -4119,6 +4127,7 @@
         "not_closeable": "This application is already finished.",
         "sponsorship_open": "This application holds a sponsor's offer or paid money. It cannot be closed here. Ask the platform owner.",
         "decline_pending": "A decline is pending. Cancel it first.",
+        "stage_not_closeable": "Before an award, a case can be closed only at Submitted or Recommended. At this stage, use Reject, or write it in the interview findings for Quality check.",
         "generic": "Could not close the file. You may not have permission."
       }
     },
@@ -4378,6 +4387,9 @@
         "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them (after a short cool-off, if one is set).",
         "running": "Declining…",
         "error": "Couldn't decline this applicant. Please try again.",
+        "reasonPrompt": "Why are you declining? The reason is recorded on the case. The student does not see it.",
+        "reasonRequired": "Write why you are declining. The reason is recorded on the case.",
+        "notAssigned": "not the assigned reviewer",
         "category": {
           "incomplete": "Not completed",
           "merit": "Merit",
@@ -4980,7 +4992,13 @@
         "rejectPlaceholder": "State your reason for rejecting this candidate",
         "rejectConfirm": "Reject & inform reviewer",
         "error": "Could not submit the QC decision.",
-        "selfVerdictForbidden": "You recorded this verdict — it must be QC-checked by someone else.",
+        "refusal": {
+          "self_qc_forbidden": "You reviewed this case — it must be QC-checked by someone else.",
+          "self_verdict_qc_forbidden": "You recorded this verdict — it must be QC-checked by someone else.",
+          "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
+          "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
+          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else."
+        },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",

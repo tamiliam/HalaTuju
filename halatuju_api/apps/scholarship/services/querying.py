@@ -4,6 +4,7 @@ Which stages may still be queried, and submitting an interview.
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from django.db import transaction
 from django.utils import timezone
 
 
@@ -132,6 +133,16 @@ def submit_interview(session, actor=None):
     ``actor`` — the admin who pressed Submit (the view passes it), who is NOT always the session's
     ``interviewer`` (lessons.md 2026-08-02) — gets an `interview_submitted` row on their own activity
     list (common profile S3), once: a re-submit of a submitted session writes nothing."""
+    with transaction.atomic():   # TD-485: the guard's evidence holds with the submit, or neither
+        advanced = _submit_interview_writes(session, actor)
+    # Outside the transaction: the auto-finalise may call Gemini (never hold a lock across it).
+    _maybe_autofinalise(session.application, session)
+    return advanced
+
+
+def _submit_interview_writes(session, actor):
+    """`submit_interview`'s database writes, run inside its transaction. Returns whether the
+    application advanced."""
     now = timezone.now()
     submitted_now = session.status != 'submitted'
     if submitted_now:
@@ -152,5 +163,4 @@ def submit_interview(session, actor=None):
         from .. import staff_activity
         staff_activity.record(actor, staff_activity.INTERVIEW_SUBMITTED, app, meta=lambda: {
             'session': session, 'interviewer': session.interviewer_id})
-    _maybe_autofinalise(app, session)
     return advanced

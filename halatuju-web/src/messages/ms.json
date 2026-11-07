@@ -4096,7 +4096,15 @@
     "closure": {
       "title": "Tutup fail",
       "note": "Penutupan adalah muktamad. Pilih sebab yang paling sesuai dengan cara sokongan berakhir.",
-      "notePreAward": "Penutupan adalah muktamad. Pelajar boleh memohon semula pada pusingan akan datang. Dia akan dimaklumkan melalui e-mel.",
+      "guide": {
+        "heading": "Tutup permohonan ini",
+        "use": "Gunakan ini hanya apabila sesuatu kes tersekat dan Tolak tidak sesuai.",
+        "stages": "Tutup hanya berfungsi pada dua peringkat:",
+        "submitted": "Dihantar: kes ini tidak bergerak ke peringkat seterusnya.",
+        "recommended": "Disyorkan: contohnya, tiada penaja tampil, pelajar berhenti memberi maklum balas, atau pelajar menyatakan dia tidak lagi mahukan biasiswa itu.",
+        "otherStages": "Pada peringkat lain, gunakan Tolak, atau tuliskannya dalam penemuan temu duga untuk Semakan kualiti.",
+        "email": "Pelajar akan menerima e-mel. E-mel itu menyatakan sama ada ‘ditutup atas permintaan anda’ atau ‘ditutup oleh pasukan kami’. Kedua-duanya menyatakan pelajar boleh memohon semula pada pusingan akan datang."
+      },
       "reasonLabel": "Sebab penutupan",
       "reasonUnset": "Pilih sebab…",
       "close": "Tutup fail",
@@ -4119,6 +4127,7 @@
         "not_closeable": "Permohonan ini telah pun selesai.",
         "sponsorship_open": "Permohonan ini memegang tawaran penaja atau wang yang telah dibayar. Ia tidak boleh ditutup di sini. Tanya pemilik platform.",
         "decline_pending": "Penolakan sedang menunggu. Batalkannya dahulu.",
+        "stage_not_closeable": "Sebelum anugerah, kes hanya boleh ditutup pada peringkat Dihantar atau Disyorkan. Pada peringkat ini, gunakan Tolak, atau tuliskannya dalam penemuan temu duga untuk Semakan kualiti.",
         "generic": "Tidak dapat menutup fail. Anda mungkin tiada kebenaran."
       }
     },
@@ -4378,6 +4387,9 @@
         "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
         "running": "Menolak…",
         "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
+        "reasonPrompt": "Mengapa anda menolak? Sebabnya direkodkan pada kes ini. Pelajar tidak melihatnya.",
+        "reasonRequired": "Tulis sebab anda menolak. Sebabnya direkodkan pada kes ini.",
+        "notAssigned": "bukan penyemak yang ditugaskan",
         "category": {
           "incomplete": "Tidak lengkap",
           "merit": "Merit",
@@ -4980,7 +4992,13 @@
         "rejectPlaceholder": "Nyatakan sebab anda menolak calon ini",
         "rejectConfirm": "Tolak & maklum penyemak",
         "error": "Tidak dapat menghantar keputusan QC.",
-        "selfVerdictForbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
+        "refusal": {
+          "self_qc_forbidden": "Anda yang menyemak kes ini — ia mesti disemak QC oleh orang lain.",
+          "self_verdict_qc_forbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
+          "self_assigned_qc_forbidden": "Kes ini pernah ditugaskan kepada anda — ia mesti disemak QC oleh orang lain.",
+          "self_interview_qc_forbidden": "Anda yang menemu duga pelajar ini — kes ini mesti disemak QC oleh orang lain.",
+          "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain."
+        },
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
         "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",

@@ -2,8 +2,11 @@
  * Which Close card the officer cockpit offers, and with which reasons (TD-352, 2026-10-06).
  *
  * Owner ruling (option A): a stalled application is released by an officer closing it by hand.
- * The api (`closure.close_application`) closes from EVERY in-play status, with a reason that fits
- * the stage. This is the web's copy of that reasons-by-stage table, so the card never offers a
+ * TD-488 (owner ruling 2026-11-07): close is an extraordinary step. Before an award the api
+ * (`closure.close_application`) closes only at `submitted` and `recommended`
+ * (`PRE_AWARD_CLOSEABLE`); every other pre-award stage answers `stage_not_closeable`, so the card
+ * is not offered there. After an award nothing changed. Each close takes a reason that fits the
+ * stage. This is the web's copy of that reasons-by-stage table, so the card never offers a
  * reason the api would refuse with `reason_not_allowed`. The api's other refusal,
  * `sponsorship_open` (a live offer or paid money, before a funded state), is mirrored only where it
  * is certain: an `awarded` case always holds its offer, so no card is offered there. Elsewhere the
@@ -13,10 +16,12 @@
  */
 import type { ClosureReason } from '@/lib/admin-api/lifecycle'
 
-/** Before a funder has committed. A close here frees the student and emails her. */
+/** Before a funder has committed — the classification. A close here frees the student and emails her. */
 export const PRE_AWARD_STATUSES = [
   'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended',
 ] as const
+/** TD-488: the only pre-award stages a close works at (the api's `PRE_AWARD_CLOSEABLE`). */
+export const PRE_AWARD_CLOSEABLE = ['submitted', 'recommended'] as const
 /** A funder has committed (awarded) or the student is funded (active / maintenance). */
 export const POST_AWARD_STATUSES = ['awarded', 'active', 'maintenance'] as const
 
@@ -38,7 +43,8 @@ export interface CloseOffer {
  */
 export function closeOffer(status: string, orgSuper: boolean): CloseOffer {
   if ((PRE_AWARD_STATUSES as readonly string[]).includes(status)) {
-    return orgSuper
+    // TD-488: shortlisted / profile_complete / interviewing / interviewed are declined, not closed.
+    return orgSuper && (PRE_AWARD_CLOSEABLE as readonly string[]).includes(status)
       ? { show: true, preAward: true, reasons: PRE_AWARD_REASONS }
       : { show: false, preAward: true, reasons: [] }
   }
@@ -82,7 +88,7 @@ export function stageStatus(
 const ERROR_KEY = new Map([
   ['bad_reason', 'bad_reason'], ['reason_not_allowed', 'bad_reason'],
   ['not_closeable', 'not_closeable'], ['sponsorship_open', 'sponsorship_open'],
-  ['decline_pending', 'decline_pending'],
+  ['decline_pending', 'decline_pending'], ['stage_not_closeable', 'stage_not_closeable'],
 ])
 
 /** The message key for a failed close: its sentence when the code is known, else generic. */

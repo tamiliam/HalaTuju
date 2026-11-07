@@ -116,8 +116,8 @@ class PartnerAdminMixin:
         if email:
             admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org', 'owning_organisation').first()
             if admin and supabase_admin.link_refusal(user_id, email) is None:
-                admin.supabase_user_id = user_id
-                admin.save(update_fields=['supabase_user_id'])
+                if not supabase_admin.link_login(admin, user_id, email):   # TD-441: compare-and-set
+                    return None
                 if admin.mentor_id is not None:   # a mentor login, or (S7d) a staff mentor
                     _mentor_linked(admin)
                 return admin
@@ -634,7 +634,7 @@ def _mentor_linked(admin):
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)
 
 
-def _deletable_now(caller, target):
+def _deletable_now(caller, target, work=None):
     """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
 
     Three conditions, all required, and each is refused again by `AdminDeleteView`:
@@ -647,7 +647,7 @@ def _deletable_now(caller, target):
         return False
     if target.is_super or target.role not in _DELETABLE_ROLES:
         return False
-    return not staff_footprint.has_footprint(target)
+    return not (work if work is not None else staff_footprint.footprint(target))
 
 
 def _staff_target_manageable(caller, target):

@@ -39,6 +39,20 @@ from .base import _AdminBase
 logger = logging.getLogger('apps.scholarship.views_admin')
 
 
+def _detail_payload(app, admin):
+    """The detail payload for THIS viewer. A1.11a adds two keys here, not in the serializer (at its
+    line budget): `qc_refusal` (TD-483), the code the QC door would refuse this viewer with, from
+    the same `qc_separation` rule, so the cockpit hides a QC panel the server would refuse; and
+    `rejected_by_unassigned` (TD-227), whether a `/reject/` decline was made by someone other than
+    the assigned reviewer."""
+    from .. import qc_separation
+    from ..services.decline import rejected_by_unassigned
+    data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
+    data['qc_refusal'] = qc_separation.for_viewer(admin, app)
+    data['rejected_by_unassigned'] = rejected_by_unassigned(app)
+    return data
+
+
 class AdminApplicationListView(_AdminBase):
     """The B40 Applications list.
 
@@ -232,7 +246,7 @@ class AdminApplicationDetailView(_AdminBase):
         # rule is "no write to applicant_documents", and the stakes are why the ON==OFF matrix
         # in `test_document_snapshot.py` compares the FIRST open as well as the warmed one.
         with document_snapshot(app):
-            return Response(AdminApplicationDetailSerializer(app, context={'admin': admin}).data)
+            return Response(_detail_payload(app, admin))
 
     def patch(self, request, pk):
         """Admin-editable per-application flags: mentoring-candidate. Writes are
@@ -364,9 +378,11 @@ class AdminVerifyAcceptView(_AdminBase):
 
 class AdminRejectView(_AdminBase):
     """POST .../<pk>/reject/ {category} — post-shortlist admin rejection (buckets 3 & 4).
-    'interview'  = reviewed but not selected (allowed from shortlisted/profile_complete/
-                   interviewing) → extra-thankful email. NOT from 'interviewed' (AWAITING QC):
-                   400 awaiting_qc, for everyone, super included (TD-481, below).
+    'interview'  = REFUSED HERE AT EVERY STATUS (TD-487 / SEC-19, owner ruling 2026-11-07,
+                   below). An interview decline goes record-verdict → submit-decline → QC; the
+                   QC decision calls `admin_reject(..., 'interview', ...)` itself. 'interviewed'
+                   keeps its TD-481 code `awaiting_qc`; every other status answers
+                   400 `interview_decline_needs_qc`. Super included.
     'contractual' = failed post-award steps (allowed from 'recommended'/'sponsored') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
@@ -389,8 +405,29 @@ class AdminRejectView(_AdminBase):
                           'not here.',
                  'code': 'awaiting_qc'},
                 status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ TD-487 / SEC-19 (owner ruling 2026-11-07, option A): the 'interview' bucket is refused
+        # at THIS door at every other status too. Before, a case reopened back to 'interviewing'
+        # (QC reopen, or a super's reopen-decision) could be declined here with no QC at all. A
+        # reviewer's interview decline always goes record-verdict → submit-decline → QC, which is
+        # open at shortlisted / profile_complete / interviewing. The org admin's drop of a stuck
+        # SHORTLISTED case keeps its own door (`org-reject`); 'contractual' is unchanged.
+        if category == 'interview':
+            return Response(
+                {'error': 'An interview decline goes through Quality check. Record the decline '
+                          'verdict and send it to QC.',
+                 'code': 'interview_decline_needs_qc'},
+                status=status.HTTP_400_BAD_REQUEST)
+        # TD-227 (A1.11a): every decline here carries its reason, stored on the case
+        # (`rejection_comments`), so a decline by someone other than the assignee is never silent.
+        comments = request.data.get('comments')
+        comments = comments.strip() if isinstance(comments, str) else ''
+        if not comments:
+            return Response(
+                {'error': 'Say why you are declining. The reason is recorded on the case.',
+                 'code': 'comments_required'},
+                status=status.HTTP_400_BAD_REQUEST)
         try:
-            admin_reject(app, admin, category)
+            admin_reject(app, admin, category, comments=comments)
         except ValueError as e:
             code = str(e)  # 'bad_status' | 'bad_category'
             msg = ('Only an accepted applicant can be declined for contractual reasons.'
@@ -400,7 +437,7 @@ class AdminRejectView(_AdminBase):
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         # Declining a REOPENED decision is a real correction (counting model B).
         reopen_service.close_reopen_with_change(app)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminOrgRejectView(_AdminBase):

@@ -19,10 +19,10 @@ from ..interview_completeness import decision_gate_applies, decision_refusal
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication, SponsorProfile
 from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
-from ..serializers_admin import AdminApplicationDetailSerializer
 from ..services import AssignmentError, admin_reject, assign_reviewer, may_assign_to
 from ..status_lock import StatusRefused, lock_application_for
 
+from .applications import _detail_payload
 from .base import _AdminBase
 from .qc_checks import _accept_absolute_stop, _not_awaiting_qc, _overall
 
@@ -218,7 +218,7 @@ class AdminRecordVerdictView(_AdminBase):
                         ('-' if award_was is None else award_was),
                         ('-' if app.award_amount is None else app.award_amount))
 
-        data = AdminApplicationDetailSerializer(app).data
+        data = _detail_payload(app, admin)
         data['finalise_result'] = finalise_result
         return Response(data)
 
@@ -243,7 +243,7 @@ class AdminReopenDecisionView(_AdminBase):
                 app, by_admin=admin, reason=request.data.get('reason'))
         except reopen_service.ReopenError as e:   # 'decline_pending' carries a sentence (TD-349)
             return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminSubmitDeclineView(_AdminBase):
@@ -267,11 +267,12 @@ class AdminSubmitDeclineView(_AdminBase):
             return Response(
                 {'error': 'Only a live in-review application can be sent to QC.',
                  'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
-        app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
-        app.save(update_fields=['status'])
-        staff_activity.record(admin, staff_activity.DECLINE_SENT_TO_QC, app)   # common profile S3
+        with transaction.atomic():   # TD-485: the guard's evidence holds with the move, or neither
+            app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
+            app.save(update_fields=['status'])
+            staff_activity.record(admin, staff_activity.DECLINE_SENT_TO_QC, app)   # common profile S3
         logger.info('AUDIT submit_decline admin_id=%s app_id=%s', admin.id, pk)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 def _email_reviewer(app, kind, comments):
@@ -379,7 +380,7 @@ class AdminQcDecisionView(_AdminBase):
             pool.publish_profile_to_pool(app, blurb=blurb)
             _record_qc(admin, app, 'accept', 'recommended')
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
     def _accept_decline(self, app, admin, pk):
         """QC accept of a DECLINE verdict: interviewed -> rejected ('interview', the QC hold)."""
@@ -406,7 +407,7 @@ class AdminQcDecisionView(_AdminBase):
             _send_decline_for(app)
         app.refresh_from_db()
         logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
     def post(self, request, pk):
         app, admin, err = self._require_qc(request, pk)
@@ -440,7 +441,7 @@ class AdminQcDecisionView(_AdminBase):
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             _email_reviewer(app, 'returned', comments)   # after the commit: a refusal emails nobody
             logger.info('AUDIT qc_reopen admin_id=%s app_id=%s', admin.id, pk)
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return Response(_detail_payload(app, admin))
         if decision == 'reject':
             # QC OUTRIGHT rejection (owner 2026-07-19): the QC won't uphold the reviewer's recommend
             # and won't bounce it back — it's rejected here. Collapses today's manual two-step
@@ -480,7 +481,7 @@ class AdminQcDecisionView(_AdminBase):
             app.refresh_from_db()
             _email_reviewer(app, 'rejected', comments)
             logger.info('AUDIT qc_reject admin_id=%s app_id=%s', admin.id, pk)
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return Response(_detail_payload(app, admin))
         return Response({'error': 'bad_decision', 'code': 'bad_decision'},
                         status=status.HTTP_400_BAD_REQUEST)
 
@@ -505,7 +506,7 @@ class AdminCancelReopenView(_AdminBase):
             # TD-371 refusal carries one, and the cockpit prints `error`.
             return Response({'error': e.message, 'code': e.code},
                             status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminVerdictMetricsView(_AdminBase):
@@ -576,4 +577,4 @@ class AdminAssignReviewerView(_AdminBase):
             assign_reviewer(app, reviewer=reviewer, by_admin=admin)
         except AssignmentError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))

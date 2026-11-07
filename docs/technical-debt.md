@@ -137,7 +137,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-143** — A birth certificate cropped above its header: treat as suspect, or as not a birth certificate? *(B · S)*
 - **TD-128** — Special-needs teaching courses match only a physical disability. Ask about other needs now? *(B · M)*
 - **TD-265** — Show the funding gift on each payment row, or once in the header, or not at all? *(C · S)*
-- **TD-227** — Should a rejection need a written reason, and show when the rejecter was not the assigned reviewer? *(C · S)*
+- ~~**TD-227**~~ — Should a rejection need a written reason, and show when the rejecter was not the assigned reviewer? *(C · S)* **Closed 2026-11-07: fixed in Sprint A1.11a (both guardrails).**
 - **TD-211** — The Reporting Date tick is green on any date read. Keep it, show it differently, or cross-check it? *(C · S)*
 - ~~**TD-066**~~ — The testing-only help box is still live with a personal mobile number. Keep (which number) or remove? *(C · S)* **Closed 2026-11-05: removed (owner ruling).**
 - **TD-225** — The logo half-disappears in dark mode. Commission a dark version, and let each organisation upload one? *(C · M)*
@@ -232,7 +232,7 @@ Class C at medium or large size, and class D that is small.
 - **TD-247** — Supplier bills reach the cost ledger only when someone imports them by hand. *(C · M)*
 - **TD-245** — We cannot tell spent-nothing from wallet-missing-in-the-export. *(C · M · looked at 2026-10-04: needs a table for the unmatched rows — a migration)*
 - **TD-228** — Picking an organisation in the crumb filters nothing on Sponsors and Sources (Requests narrows since 2026-10-05; Payments and Spending narrow through the gift — TD-246, closed). *(C · M · partly done 2026-10-05: the server door `_org_narrowing` and the `orgScope` context exist; two lists left)*
-- **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done · looked at 2026-10-04: needs the box split — a column, a second labelled box, Stitch)*
+- **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done · looked at 2026-10-04 and again 2026-11-07 in A1.11b: needs the box split — a column, a second labelled box, Stitch; moved to a later sprint)*
 - **TD-215** — The donor-pitch email exists only in English. *(C · M)*
 - **TD-155** — Partners have no Scholarship view of the students they referred. *(C · M · a planned feature)*
 - **TD-132** — Sponsor portal wording, English and Tamil, was never reviewed by the owner. *(C · M)*
@@ -332,12 +332,12 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-477** - The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 - **TD-478** - A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
 - **TD-480** - Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
-- **TD-483** - The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low
+- ~~**TD-483**~~ - The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low **Fixed 2026-11-07 (Sprint A1.11a).**
 - **TD-484** - A person deleted and re-invited with the same email escapes the QC separation guard - medium
 - **TD-485** - A failed activity write leaves the QC guard without its evidence - low
 - **TD-486** - A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
-- **TD-487** - A decline at `/reject/` before AWAITING QC has no second check - medium (owner's call)
-- **TD-488** - An organisation admin can close a case AWAITING QC, past the QC gate - low (owner's call)
+- ~~**TD-487**~~ - A decline at `/reject/` before AWAITING QC has no second check (SEC-19) - medium **Fixed 2026-11-07 (Sprint A1.11b).**
+- ~~**TD-488**~~ - An organisation admin can close a case AWAITING QC, past the QC gate - low **Fixed 2026-11-07 (Sprint A1.11b).**
 - **TD-489** - The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 - **TD-490** - The Programme Overview charts paint the desktop box first on a phone, then swap - low
 - **TD-491** - A scanned multi-page offer is genuineness-scored on page 1 only - medium
@@ -345,9 +345,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-493** - The agency-letterhead lift does not catch a private name with no organisation word - medium
 - **TD-494** - The agency lift's descriptor excuse can hide a company name - medium
 - **TD-495** - "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
-- **TD-496** - The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
+- **TD-496** - CLOSED 2026-11-07 (owner ruling B): the graduation-messages list was retired; nothing called it
 - ~~**TD-497**~~ **FIXED 2026-11-07 (Sprint A1.10a: no door calls a union gate; a guard test refuses a new one)** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
-- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g) (partly done 2026-11-07, A1.10a: Announcements, Surveys, Development, scholar Mentoring and Sources split; sponsor terms and sponsor emails left)
+- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (owner 2026-11-07: fix inside T5g) (partly done 2026-11-07, A1.10a: Announcements, Surveys, Development, scholar Mentoring and Sources split; sponsor terms and sponsor emails left)
 - ~~**TD-499**~~ **FIXED 2026-11-07 (Sprint A1.10b: Quality check brings See all students, which stays locked on while it is held)** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 - **TD-500** - Mentor My students list makes one alias query per mentee - low
 - **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
@@ -3702,6 +3702,7 @@ invited who would rather read Malay or Tamil.
 ### [TD-216] The interviewer label is stamped by the first click, not by the person who interviewed — medium
 **Status 2026-09-30:** partly done — still to do: findings and conclusion share one box, so a conclusion-only rewrite still takes the credit.
 **Status 2026-10-04 (Later-tier batch 4, left OPEN):** what remains is the split of `InterviewSession.overall_note` into findings and conclusion — a new column (a migration), a second box on the Interview Stage with its own label in three languages, Stitch first. Not a plain fix; `_is_authoring` cannot tell the two apart while they share one field.
+**Status 2026-11-07 (Sprint A1.11b, left OPEN; moved to a later sprint):** the owner allowed a fix in A1.11b only if it needed no migration and no new UI. It needs both: the `overall_note` split is a new column (a migration), and the conclusion needs a second labelled box on the Interview Stage (new UI, so Stitch first). Nothing in the stored data tells a conclusion-only rewrite from a findings rewrite until then, so no smaller fix exists. Plan it as its own sprint.
 
 
 **Status:** ✅ RESOLVED 2026-08-13 (commit `01cb0c77`) · **IN-HOUSE, NOT BILLABLE** (owner,
@@ -4182,7 +4183,18 @@ whether `funding_envelope` is a real requirement or should follow it.
 
 ---
 
-### [TD-227] A rejection can be recorded by someone who was never assigned, with no reason — medium
+### ~~[TD-227] A rejection can be recorded by someone who was never assigned, with no reason — medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** Both guardrails. (1) `POST .../reject/` requires `comments` for every caller
+and both buckets (400 `comments_required`, nothing moves); `admin_reject(..., comments=)` stores it in
+`rejection_comments`. The cockpit asks for it in the decline prompt (Cancel still does nothing; a blank reason is
+refused before sending). (2) `services.decline.rejected_by_unassigned` (served on the detail read as
+`rejected_by_unassigned`) says whether a `/reject/` decline was made by someone other than the assignee; the
+record block shows the reason for any decline that has one and adds "not the assigned reviewer". Read from the
+record, so no migration: a rejected case cannot be reassigned, and only that door writes a reason on an
+`interview` / `contractual` decline (the QC paths write none, so they answer None, as do old reasonless rows).
+Tests: `tests/test_a111a_reject_reason_qc_refusal.py::RejectNeedsAReason`, `::WhoDeclined`,
+`view.rejectReason.test.tsx`.
 
 **Found:** Sabah S2 (2026-09-03), reconciling the owner's count of automatic rejections against
 production.
@@ -7300,7 +7312,12 @@ chain. *(A · S)* **Narrowed 2026-10-31 (S7a follow-up):** `reissue_credential` 
 also a student profile, profile alias or sponsor (`staff_lifecycle.login_used_elsewhere`), on every Resend path. Left:
 an invitee whose own login is admin-only (no student or sponsor side).
 
-### [TD-441] An admin role on a student's or sponsor's own login has side effects - medium
+### [TD-441] An admin role on a student's or sponsor's own login has side effects - medium (item 3 FIXED 2026-11-07, Sprint A1.11a)
+
+**Item 3 fixed 2026-11-07 (Sprint A1.11a).** `_find_admin` now links through `supabase_admin.link_login`, a
+compare-and-set: `filter(pk=..., email__iexact=..., supabase_user_id__isnull=True, is_active=True).update(...)`. An
+email move, a revoke or another link committing during the network check leaves the row alone and the sign-in is not
+staff (`apps/courses/tests/test_a111a_link_cas.py`; 3 fail on the old code). Items 1 and 2 stay open.
 
 **Raised 2026-10-31 by the adversarial review of the S7a follow-up** (owner ruling: a student's or sponsor's
 address may be invited as a mentor, as it already could as staff). All three are pre-existing on the staff path.
@@ -7333,7 +7350,15 @@ The QC-accept branch saves before `publish_profile_to_pool`, with the same shape
 one `transaction.atomic()` (the decline email must then go `on_commit`), and test that a failing decline leaves the
 case exactly as it was. *(B · S)*
 
-### [TD-443] `staff_footprint` misses most of a staff member's history - medium
+### ~~[TD-443] `staff_footprint` misses most of a staff member's history - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `staff_footprint.EMAIL_STAMPS` lists every email stamp (assigner, closer,
+recommender, resolution, reopener, permission changer, credit signers, tranches, invoices, receipts, declarations,
+billing corrections / adjustments / hours, vetting, merchant flags and notes, guardian changes, every template kind,
+sponsor terms, letters, announcements, surveys, modules, mentors, application items, programme aliases), matched
+case-insensitively and counted in ONE query (`_stamp_counts`, subqueries on the staff row). Tests:
+`tests/test_a111a_footprint.py::TestEveryEmailStamp` (every listed field is real; keys unique; each family counted;
+a row with the address in two stamps counts once; one query).
 
 **Raised 2026-10-31 by the common profile S4 adversarial review (M1); pre-existing.** `staff_footprint.footprint`
 decides whether a staff row may be deleted, but it ignores most email stamps: assigner `by_email`, `closed_by`,
@@ -7790,7 +7815,15 @@ that a colleague later rewrote is no longer named anywhere the guard reads, and 
 `StaffActivity` row (`interview_drafted`, once per person per session) on an authoring save, added to
 `qc_separation.REVIEW_VERBS`; or a small authors list on the session. *(A · S)*
 
-### [TD-483] The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low
+### ~~[TD-483] The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** The detail read (and the `/reject/` reply) serves `qc_refusal`: the code the
+QC door would refuse THIS viewer with, from `qc_separation.for_viewer` (None unless the viewer holds `qc` and the case
+is `interviewed`; otherwise `qc_separation.refusal`, the door's own answer). `QcPanel` hides on it and shows a
+one-line note in en / ms / ta instead; a reply with no viewer falls back to the old current-assignee check. `view.tsx`
+now words all five refusal codes in en / ms / ta (`qcDecision.refusal.<code>`, replacing `selfVerdictForbidden`).
+The `PermissionEditor.tsx` comment says `IMPLIES`. Tests: `tests/test_a111a_reject_reason_qc_refusal.py::
+QcRefusalOnDetail`, `view.rejectReason.test.tsx`.
 
 **Raised 2026-11-03 by Team tables T5b.** `view/QcPanel.tsx` hides the QC box only when the caller is the CURRENT
 assignee. Since T5b the server also refuses a QC who was assigned before, interviewed, verify-accepted or recorded the
@@ -7804,7 +7837,13 @@ ta; fix the comment. *(W · S)* **Review round 1 adds:** `view.tsx`'s QC error h
 `self_verdict_qc_forbidden`; the three new codes (and the old `self_qc_forbidden`) reach the person as the server's
 English sentence in every language — each needs en / ms / ta words beside it.
 
-### [TD-484] A person deleted and re-invited with the same email escapes the QC separation guard - medium
+### ~~[TD-484] A person deleted and re-invited with the same email escapes the QC separation guard - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `staff_footprint.footprint` now also counts the guard's own sources:
+`cases_held_before` (any `AssignmentEvent` naming the person on either side) and `review_actions` (their
+`StaffActivity` rows in `qc_separation.REVIEW_VERBS`). Such a person is revoked, never deleted, so the row and its
+history survive a re-invite and the QC guard still refuses (`tests/test_a111a_footprint.py::
+TestGuardEvidenceKeepsThePerson`: assign, reassign, delete -> 409 `has_work`, QC -> 403 `self_assigned_qc_forbidden`).
 
 **Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `qc_separation.refusal` reads the person's
 history by ROW: `AssignmentEvent.to_admin` / `from_admin`, `InterviewSession.interviewer`, `InterviewSlot.reviewer`
@@ -7817,7 +7856,16 @@ same email, comes back as a new row the guard knows nothing about, and can QC th
 counts the guard's own sources (any `AssignmentEvent` either side, a review-verb activity row), so such a person is
 revoked, never deleted. A test: assign, reassign, delete, re-invite, QC -> 403. *(A · S)*
 
-### [TD-485] A failed activity write leaves the QC guard without its evidence - low
+### [TD-485] A failed activity write leaves the QC guard without its evidence - low (live writes FIXED 2026-11-07, Sprint A1.11a; history gaps open)
+
+**Live writes fixed 2026-11-07 (Sprint A1.11a).** `staff_activity.record` stays best-effort for every verb except
+`GUARD_EVIDENCE` (exactly `qc_separation.REVIEW_VERBS`): a failed write of one of those logs an ERROR and raises
+`EvidenceNotRecorded` (503 `evidence_not_recorded`, "Nothing was changed; try again."). Submit-decline, the interview
+draft save and `submit_interview` (new `_submit_interview_writes`) now write their status change and the evidence in
+one `transaction.atomic()`, so a lost row rolls the action back; the Gemini auto-finalise stays after the commit.
+Tests: `tests/test_a111a_evidence.py`; `test_staff_activity.py` verify-accept test now expects the refusal. **Still
+open:** the pre-S3 and pre-F7 history gaps (the 2026-11-04 extension below) cannot be rebuilt from data we do not
+have.
 
 **Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `staff_activity.record` is best-effort by
 contract (D9: it never raises; a failure is a WARNING log). Since T5b two of the guard's sources live ONLY there — a
@@ -7832,7 +7880,15 @@ verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)
 write leaves no trace; and a draft author re-pointed by `repair_interview_credit`, or one who drafted before T5b's
 `interview_drafted` verb, leaves no activity row. Same fix family.
 
-### [TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
+### ~~[TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `DecisionReopen.reopened_from` (migration
+`0204_decisionreopen_reopened_from`, NOT applied; additive, `db_default=''`) records the status the reopen moved the
+case from. `cancel_reopen` restores that status only while the case still sits where the reopen put it; if a
+submit-decline or verify-accept already moved it on, the status stays (the QC decides). The birth-state checks run
+only for a restore to `recommended`. Rows from before the field (blank) keep the old inference; live had no open
+reopen rows on 2026-11-07. Tests: `tests/test_a111a_cancel_reopen.py` (the probe ends at `interviewed`, not
+`recommended`).
 
 **Raised 2026-11-04 by the TD-481 sprint's inventory (NOT fixed; proved by a scratch request test, then deleted).**
 `reopen.cancel_reopen` infers where a reopen came from by the CURRENT status (`reopen.py`, the "Mirror of reopen"
@@ -7848,7 +7904,18 @@ Super-only door, so no separation breach, but a declined case lands at sponsor-p
 reopened-from status on `DecisionReopen` and invert from it, or have `submit-decline` / `verify-accept` close (or
 refuse on) an open reopen; a regression test of the probe above. *(A · S)*
 
-### [TD-487] A decline at `/reject/` before AWAITING QC has no second check - medium (owner's call)
+### ~~[TD-487] A decline at `/reject/` before AWAITING QC has no second check - medium~~ — FIXED 2026-11-07 (Sprint A1.11b; SEC-19)
+
+**Fixed 2026-11-07 (Sprint A1.11b, owner ruling option A; decisions.md 2026-11-07).** `AdminRejectView` refuses the
+`interview` bucket at EVERY status, super included: 400 `interview_decline_needs_qc` ("An interview decline goes
+through Quality check. Record the decline verdict and send it to QC."); `interviewed` keeps TD-481's `awaiting_qc`.
+`services.decline.admin_reject` and `INTERVIEW_REJECT_FROM` are unchanged, because the QC decision declines through
+them. The decline road left is record-verdict -> submit-decline -> QC, open at `profile_complete` (once the interview
+is submitted the case is `interviewing`) and `interviewing`; a stuck `shortlisted` case keeps the org admin's
+`org-reject`; `contractual` is unchanged. The cockpit never sent `interview`, so no web change. Regression tests of
+both probes (QC reopen -> `interviewing` -> `/reject/`; a super's reopen-decision -> `/reject/`), every stage, and
+the road that remains: `test_a111b_decline_and_close_gates.py`.
+
 
 **Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed; proved by a scratch request test, then deleted).**
 TD-481 closed `/reject/ {category: 'interview'}` at `interviewed` only (the owner's ruling). At `shortlisted`,
@@ -7863,7 +7930,17 @@ it as a correction. A super can do the same in two steps (`reopen-decision` on `
 `/reject/` altogether (a reviewer's decline always goes record-verdict -> submit-decline -> QC), or keep it for the
 pre-interview statuses only and refuse it on a case with an open reopen; regression tests of the probe. *(A · S)*
 
-### [TD-488] An organisation admin can close a case AWAITING QC, past the QC gate - low (owner's call)
+### ~~[TD-488] An organisation admin can close a case AWAITING QC, past the QC gate - low~~ — FIXED 2026-11-07 (Sprint A1.11b)
+
+**Fixed 2026-11-07 (Sprint A1.11b, owner ruling; decisions.md 2026-11-07, supersedes part of TD-352).** Before an
+award a close works only at `submitted` and `recommended` (`closure.PRE_AWARD_CLOSEABLE`; reasons `stalled`,
+`withdrawn`). `shortlisted`, `profile_complete`, `interviewing` and `interviewed` refuse 400 `stage_not_closeable`,
+for a super too. `CLOSEABLE_FROM` is now `PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES`, no longer
+`IN_PLAY_STATUSES`; who may close and everything after an award are unchanged. The cockpit hides the Close card at
+the four refused stages (`lib/closeOffer.ts`, drift-tested), and the card carries the owner-approved explainer where
+it shows before an award. Emails unchanged. Tests: `test_close_stalled.py`, `closeOfferDrift.test.ts`,
+`view.close.test.tsx`.
+
 
 **Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed).** `POST .../close/ {closure_reason: 'stalled'}`
 (`views_admin/lifecycle.py` ~155, `closure.close_application` ~228) is open to a super or the organisation admin
@@ -7912,6 +7989,13 @@ is the `review` hat (7 active shapes move: the five `admin` shapes lose it; `fin
 gain it); every Engagement key moves 10 (all org-admin shapes gain; every reviewer shape loses); `students.view`
 moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
 `_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
+**Owner 2026-11-07: B, retire the list** after a check that nothing calls it (decisions.md 2026-11-07).
+**CLOSED 2026-11-07 (owner ruling B).** Proof nothing called it: no web page or fetch helper names
+`/admin/graduation-messages/` (the web only calls the sponsor endpoint), no API caller, and no request in the
+last 30 days of `halatuju-api` logs. Removed on branch a111a: `AdminGraduationMessageListView`, its route
+`admin/graduation-messages/`, its export, its tests (org-fence list test, role-gate test, the catalogue test's
+`UNMAPPED` entry) and its `GATE-LEFT` line in `test_role_is_display_only`; the access-matrix fixtures keep the old
+cell, filtered by `RETIRED_CELLS`. Kept: the moderation POST `.../<id>/review/` and its `_require_reviewer` door.
 
 ### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 
@@ -7927,6 +8011,7 @@ Sources (with Partner emails, the witness override and Team -> Admin emails) now
 **Left:** the sponsor terms and sponsor emails. Their `.view` key is `sponsors.view`, which finance and a person
 at Admins by a key already hold, so splitting their read would OPEN both pages to them today. Needs a ruling
 (accept the widening, or wait for T5g's own key) before it is split.
+owner 2026-11-07: fix inside T5g, must-do item of the T5g plan.
 
 ### [TD-499] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g) - **FIXED (2026-11-07, A1.10b)**
 
