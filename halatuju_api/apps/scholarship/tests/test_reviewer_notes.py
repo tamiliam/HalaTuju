@@ -182,7 +182,7 @@ class WindowTest(_Base):
 
 class BodyRulesTest(_Base):
     def test_blank_and_whitespace_only_are_refused(self):
-        for body in ('', '   ', '\n\t', '​﻿', None, 42, ['x']):
+        for body in ('', '   ', '\n\t', '\u200b\ufeff', None, 42, ['x']):
             with self.subTest(repr(body)):
                 r = self._post(self.org_admin, body)
                 self.assertEqual(r.status_code, 400)
@@ -197,7 +197,7 @@ class BodyRulesTest(_Base):
 
     def test_every_refusal_has_words(self):
         from apps.scholarship.views_admin.reviewer_notes import _MESSAGES
-        self.assertEqual(set(_MESSAGES), {'writer_only', 'notes_closed', 'empty_body', 'too_long'})
+        self.assertEqual(set(_MESSAGES), {'writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'})
 
 
 class AppendOnlyTest(_Base):
@@ -278,3 +278,68 @@ class OnlyTheseModulesReadNotesTest(TestCase):
                     if self.PATTERN.search(fh.read()):
                         found.add(os.path.relpath(path, apps_dir).replace(os.sep, '/'))
         self.assertEqual(found, self.ALLOWED_READERS)
+
+
+class ReviewFixesTest(_Base):
+    """The independent review of 2d1ae890 (R1 to R5)."""
+
+    def _raw(self, payload):
+        return authed_client(self.org_admin).post(
+            _url(self.app.pk), payload, content_type='application/json')
+
+    def test_r1_a_nul_or_a_lone_surrogate_is_a_coded_400_not_a_500(self):
+        for raw in ('{"body": "abc\\u0000def"}', '{"body": "abc\\ud800def"}', '{"body": "\\udfff"}'):
+            with self.subTest(raw):
+                r = self._raw(raw)
+                self.assertEqual(r.status_code, 400, r.content)
+                self.assertEqual(r.json()['code'], 'bad_body')
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_r1_a_proper_surrogate_pair_is_kept(self):
+        r = self._raw('{"body": "ok \\ud83d\\ude00"}')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(ReviewerNote.objects.get().body, 'ok \U0001F600')
+
+    def test_r2_a_body_that_is_not_an_object_is_refused_not_a_500(self):
+        for raw in ('["x"]', '"text"', '42', 'null'):
+            with self.subTest(raw):
+                r = self._raw(raw)
+                self.assertEqual(r.status_code, 400, r.content)
+                self.assertEqual(r.json()['code'], 'empty_body')
+
+    def test_r3_the_window_is_re_read_under_the_lock(self):
+        stale = type(self.app).objects.get(pk=self.app.pk)   # read while the window is open
+        type(self.app).objects.filter(pk=self.app.pk).update(
+            officer_verdict={'overall': 'accept'}, verdict_decided_at=timezone.now())
+        with self.assertRaises(reviewer_notes.ReviewerNoteError) as caught:
+            reviewer_notes.add_note(stale, MARK, author=self.org_admin)
+        self.assertEqual(caught.exception.code, 'notes_closed')
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_r3_the_insert_runs_under_a_row_lock(self):
+        from unittest import mock
+        with mock.patch('apps.scholarship.reviewer_notes.lock_application_for',
+                        wraps=reviewer_notes.lock_application_for) as lock:
+            reviewer_notes.add_note(self.app, MARK, author=self.org_admin)
+        lock.assert_called_once_with(self.app, reviewer_notes.NOTE_STATUSES)
+
+    def test_r4_invisible_characters_alone_are_an_empty_note(self):
+        for ch in ('\u00ad', '\u2800', '\u3164', '\u115f', '\u1160', '\u180e', '\u200e', '\u2060', '\uffa0'):
+            with self.subTest(hex(ord(ch))):
+                r = self._post(self.org_admin, f' {ch}{ch} ')
+                self.assertEqual(r.status_code, 400)
+                self.assertEqual(r.data['code'], 'empty_body')
+
+    def test_r4_the_ends_are_trimmed_as_the_card_trims_them_so_2000_agrees(self):
+        body = '\ufeff' + 'a' * NOTE_MAX + '\u200b\u3000'
+        self.assertEqual(self._post(self.org_admin, body).status_code, 201)
+        self.assertEqual(ReviewerNote.objects.get().body, 'a' * NOTE_MAX)
+
+    def test_r5_a_read_writes_one_audit_line_with_ids_only(self):
+        reviewer_notes.add_note(self.app, MARK, author=self.org_admin)
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            self.assertEqual(self._get(self.reviewer).status_code, 200)
+        lines = [m for m in logs.output if 'AUDIT reviewer_notes_read' in m]
+        self.assertEqual(len(lines), 1)
+        self.assertIn(f'admin_id={self.reviewer.id} app_id={self.app.pk}', lines[0])
+        self.assertNotIn(MARK, ' '.join(logs.output))

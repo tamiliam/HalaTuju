@@ -33,6 +33,10 @@ Then run the Supabase Security Advisor (0 errors before the deploy).
 BETWEEN MIGRATE AND DEPLOY nothing reads or writes the table, so the old image is unaffected.
 DEPLOYING BEFORE MIGRATING would make the new card's GET and POST 500 (the table is missing); the
 rest of the case page is untouched, because the notes are a separate fetch. Migrate first.
+
+ROLLBACK: drop the table and the ledger row ONLY BEFORE ANY NOTE EXISTS. After that, roll forward: the old image
+does not know the model, the FKs have no ON DELETE in the database, so deleting a note's author or an application
+with notes would fail on the old image (and its `staff_footprint` would not even refuse the staff delete first).
 """
 import django.db.models.deletion
 from django.db import migrations, models

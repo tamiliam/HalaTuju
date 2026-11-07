@@ -4210,6 +4210,7 @@
         "error": {
           "writer_only": "Only an organisation admin can add a note for the reviewer.",
           "notes_closed": "Notes can be added from Awaiting review until the reviewer records a decision.",
+          "bad_body": "This note contains characters that cannot be saved. Remove them and try again.",
           "empty_body": "Write the note first.",
           "too_long": "A note can be at most {max} characters.",
           "generic": "Could not add the note. Please try again."

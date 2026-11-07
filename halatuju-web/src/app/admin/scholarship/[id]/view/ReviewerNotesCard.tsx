@@ -20,11 +20,23 @@ import { formatDateTime } from '@/lib/formatDate'
 
 import type { T } from './shared'
 
-const CODES = ['writer_only', 'notes_closed', 'empty_body', 'too_long'] as const
+const CODES = ['writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'] as const
 
-/** Characters as the server counts them (code points, after trimming the ends). */
+/** What does not count as writing. ⚠ THE SERVER'S `_INVISIBLE` (`apps/scholarship/reviewer_notes.py`), source for
+ *  source: `trim()` alone disagrees with it (U+FEFF, the Hangul fillers), and then the 2,000 boundary and the
+ *  blank check would answer differently here and there. `ReviewerNotesCard.test.tsx` compares the two. */
+export const INVISIBLE = /[\t\n\v\f\r \x1c-\x1f\x85\xa0\xad\u115f\u1160\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u2064\u2800\u3000\u3164\ufeff\uffa0]/
+const EDGES = new RegExp(`^${INVISIBLE.source}+|${INVISIBLE.source}+$`, 'g')
+const ALL_INVISIBLE = new RegExp(INVISIBLE.source, 'g')
+
+/** Characters as the server counts them (code points, after trimming the invisible ends). */
 export function noteLength(text: string): number {
-  return Array.from(text.trim()).length
+  return Array.from(text.replace(EDGES, '')).length
+}
+
+/** True when the note would store nothing visible (the server's `empty_body`). */
+export function looksEmpty(text: string): boolean {
+  return text.replace(ALL_INVISIBLE, '').length === 0
 }
 
 export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
@@ -45,6 +57,7 @@ export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
     let live = true
     getReviewerNotes(appId, { token })
       .then((d) => { if (live) { setData(d); setLoadFailed(false) } })
+      // Review R6: a failed REFRESH is said out loud; the notes already on screen stay, marked stale.
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }
   }, [appId, token, refreshKey])
@@ -54,9 +67,10 @@ export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
   const fmt = (n: number) => n.toLocaleString('en-GB')
   const length = noteLength(draft)
   const over = length > max
+  const blank = looksEmpty(draft)
 
   const submit = async () => {
-    if (!token || busy || length === 0 || over) return
+    if (!token || busy || blank || over) return
     setBusy(true); setError('')
     try {
       const next = await addReviewerNote(appId, draft, { token })
@@ -87,7 +101,7 @@ export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
         </p>
       </div>
 
-      {loadFailed && !data && (
+      {loadFailed && (
         <p className="text-sm text-critical-600">{t('admin.scholarship.reviewerNotes.loadError')}</p>
       )}
 
@@ -99,7 +113,7 @@ export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
                 <span className="font-semibold text-ground-900 break-words">{n.author_name}</span>
                 <span>{formatDateTime(n.created_at)}</span>
               </div>
-              <p className="text-sm leading-relaxed text-ground-900 whitespace-pre-line break-words">{n.body}</p>
+              <p className="text-sm leading-relaxed text-ground-900 whitespace-pre-wrap break-words">{n.body}</p>
             </li>
           ))}
         </ol>
@@ -124,7 +138,7 @@ export function ReviewerNotesCard({ appId, token, t, isWriter, refreshKey }: {
               {t('admin.scholarship.reviewerNotes.counter', { count: fmt(length), max: fmt(max) })}
             </span>
           </div>
-          <button type="button" onClick={submit} disabled={busy || length === 0 || over}
+          <button type="button" onClick={submit} disabled={busy || blank || over}
             className="w-full min-h-11 rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
             {busy ? t('admin.scholarship.reviewerNotes.adding') : t('admin.scholarship.reviewerNotes.add')}
           </button>

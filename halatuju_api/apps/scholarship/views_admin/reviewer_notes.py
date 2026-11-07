@@ -26,6 +26,7 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 _MESSAGES = {
     'writer_only': 'Only an organisation admin can add a note for the reviewer.',
     'notes_closed': 'Notes can be added from Awaiting review until the reviewer records a decision.',
+    'bad_body': 'This note contains characters that cannot be saved. Remove them and try again.',
     'empty_body': 'Write the note first.',
     'too_long': f'A note can be at most {NOTE_MAX:,} characters.',
 }
@@ -51,7 +52,11 @@ class AdminReviewerNotesView(_AdminBase):
         app, err = self._scoped_application(request, pk)
         if err:
             return err
-        return Response(self._payload(app, self.get_admin(request)))
+        admin = self.get_admin(request)
+        # Review R5: the notes are part of the file, so their read is audited like the detail GET's
+        # (`AUDIT applicant_detail_read`): ids only, never the text.
+        logger.info('AUDIT reviewer_notes_read admin_id=%s app_id=%s', getattr(admin, 'id', '?'), pk)
+        return Response(self._payload(app, admin))
 
     def post(self, request, pk):
         admin = self.get_admin(request)
@@ -64,7 +69,9 @@ class AdminReviewerNotesView(_AdminBase):
         if err:
             return err
         try:
-            note = reviewer_notes.add_note(app, request.data.get('body'), author=admin)
+            # Review R2: a JSON body that is not an object (`[...]`, `"text"`) has no `.get`.
+            body = request.data.get('body') if isinstance(request.data, dict) else None
+            note = reviewer_notes.add_note(app, body, author=admin)
         except reviewer_notes.ReviewerNoteError as e:
             return Response({'error': _MESSAGES[e.code], 'code': e.code},
                             status=status.HTTP_400_BAD_REQUEST)

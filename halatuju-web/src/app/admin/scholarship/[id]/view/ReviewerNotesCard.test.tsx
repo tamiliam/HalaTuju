@@ -7,7 +7,8 @@
  * worded by its code.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { ReviewerNotesCard, noteLength } from './ReviewerNotesCard'
+import { INVISIBLE, ReviewerNotesCard, looksEmpty, noteLength } from './ReviewerNotesCard'
+import { readApi } from '@/test/apiSource'
 import { addReviewerNote, getReviewerNotes, type ReviewerNotes } from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api', () => ({ getReviewerNotes: jest.fn(), addReviewerNote: jest.fn() }))
@@ -124,4 +125,61 @@ it('counts characters as the server does (trimmed, code points)', () => {
   expect(noteLength('  ab  ')).toBe(2)
   expect(noteLength('தமிழ்')).toBe(5)
   expect(noteLength('😀')).toBe(1)
+})
+
+// ── The independent review of 2d1ae890 (R4, R6) ─────────────────────────────────────────────────
+const ch = (...codes: number[]) => String.fromCharCode(...codes)
+
+describe('DRIFT: the card trims and blanks exactly as the server does (R4)', () => {
+  it('the invisible character class is the same source, character for character', () => {
+    const src = readApi('apps/scholarship/reviewer_notes.py')
+    const m = src.match(/_INVISIBLE = re\.compile\(r'([^']*)'\)/)
+    if (!m) throw new Error('drift test: no _INVISIBLE = re.compile(r...) in reviewer_notes.py — follow it.')
+    expect(m[1].length).toBeGreaterThan(40)
+    expect(INVISIBLE.source).toBe(m[1])
+  })
+
+  it('a note of invisible characters only looks empty', () => {
+    for (const code of [0xad, 0x2800, 0x3164, 0x115f, 0x1160, 0x180e, 0x200b, 0x200e, 0x2060, 0xfeff, 0xffa0]) {
+      expect(looksEmpty(` ${ch(code, code)} `)).toBe(true)
+    }
+    expect(looksEmpty('a')).toBe(false)
+  })
+
+  it('a BOM and a wide space at the ends do not count against the 2,000', () => {
+    expect(noteLength(ch(0xfeff) + 'a'.repeat(2000) + ch(0x200b, 0x3000))).toBe(2000)
+  })
+
+  it('the button stays off for a note of invisible characters', async () => {
+    get.mockResolvedValue(payload({ notes: [] }))
+    mount(true)
+    fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: ch(0x3164, 0x2800) } })
+    expect((screen.getByRole('button', { name: `${P}.add` }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('R6', () => {
+  it('a refresh that fails after a first load says so, and keeps the notes on screen', async () => {
+    get.mockResolvedValueOnce(payload({ can_add: false })).mockRejectedValueOnce(new Error('offline'))
+    const view = render(<ReviewerNotesCard appId={7} token="tok" t={t} isWriter={false} refreshKey="a" />)
+    expect(await screen.findByText(NOTE.body)).toBeTruthy()
+    view.rerender(<ReviewerNotesCard appId={7} token="tok" t={t} isWriter={false} refreshKey="b" />)
+    expect(await screen.findByText(`${P}.loadError`)).toBeTruthy()
+    expect(screen.getByText(NOTE.body)).toBeTruthy()
+  })
+
+  it('keeps the spaces a note was written with', async () => {
+    get.mockResolvedValue(payload({ can_add: false }))
+    mount(false)
+    expect((await screen.findByText(NOTE.body)).className).toContain('whitespace-pre-wrap')
+  })
+
+  it('words a bad_body refusal', async () => {
+    get.mockResolvedValue(payload({ notes: [] }))
+    add.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_body' }))
+    mount(true)
+    fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'x' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
+    expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.bad_body:2,000`)
+  })
 })

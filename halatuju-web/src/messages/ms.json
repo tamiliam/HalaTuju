@@ -4210,6 +4210,7 @@
         "error": {
           "writer_only": "Hanya pentadbir organisasi boleh menambah nota untuk penyemak.",
           "notes_closed": "Nota boleh ditambah dari peringkat Menunggu semakan sehingga penyemak merekodkan keputusan.",
+          "bad_body": "Nota ini mengandungi aksara yang tidak boleh disimpan. Buang aksara itu dan cuba lagi.",
           "empty_body": "Tulis nota terlebih dahulu.",
           "too_long": "Nota boleh mengandungi paling banyak {max} aksara.",
           "generic": "Nota tidak dapat ditambah. Sila cuba lagi."

@@ -85,4 +85,8 @@ COMMIT;
 **Order:** apply the SQL, then deploy api + web together. Between the two nothing reads the table, so the old image is
 safe. Deploying first would make only the new card's fetch 500 (the rest of the case page does not depend on it).
 **Rollback:** `BEGIN; DROP TABLE reviewer_notes; DELETE FROM django_migrations WHERE app = 'scholarship' AND name = '0205_reviewer_notes'; COMMIT;`
-(only before any note is worth keeping).
+— **only before any note exists.** ⚠ Once notes exist, do NOT roll the API image back while the table stays: the
+two foreign keys have no `ON DELETE` in the database (Django does the CASCADE / SET NULL in Python, and the old image
+does not know the model), so on the old image deleting a staff member who wrote a note, or an application that has
+notes, fails on the foreign key; and the old `staff_footprint` does not count `reviewer_notes`, so it would offer
+that delete in the first place. Once notes exist, roll FORWARD (fix and redeploy) instead.
