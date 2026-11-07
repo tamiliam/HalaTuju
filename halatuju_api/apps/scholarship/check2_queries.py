@@ -128,7 +128,7 @@ DOC_SPECS = {
     # income_engine, auto-resolved when the gap clears.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
-    higher_owed.ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'},  # #388: owed over a pre-S3 snapshot
+    **higher_owed.ASK_SPECS,  # #388 owed over a pre-S3 snapshot; 2026-11-07 declare + upload (higher_owed)
     # Per-bill utility re-upload (owner 2026-07-08): each bill that is missing / stale / undated /
     # unreadable → its own request. Clears when a clean, current bill of that type supersedes it.
     'water_bill_recheck':       {'doc_type': 'water_bill'},
@@ -264,7 +264,7 @@ GOVERNED_BY = {
     'epf_statement_missing': _INCOME,            # deprecated code, still auto-resolves
     'school_leaving_cert_missing': (('document', 'school_leaving_cert'),),
     'semester_result_missing': None,             # continuing-student rule, not a catalogue card
-    higher_owed.ASK_CODE: (('document', 'results_slip'),),   # the core results item (higher_owed)
+    **higher_owed.GOVERNED,                      # the core results item (higher_owed)
     'water_bill_recheck': (('document', 'water_bill'),),
     'electricity_bill_recheck': (('document', 'electricity_bill'),),
     'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves

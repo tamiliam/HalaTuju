@@ -2446,6 +2446,10 @@
         "higher_results_requested": {
           "title": "Please upload your final {kind} results",
           "desc": "Your final {kind} results are not on your application yet. Upload the official final result showing your name and CGPA clearly: for Matriculation or a Diploma, your final academic transcript (a semester result slip does not count)."
+        },
+        "higher_results_declare_requested": {
+          "title": "Enter and upload your STPM, Matriculation, Asasi or Diploma results",
+          "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. Enter those results on your results page, then upload the official final result showing your name and CGPA clearly. For Matriculation or a Diploma, that is your final academic transcript (a semester result slip does not count)."
         }
       },
       "vircle": {
@@ -2499,6 +2503,7 @@
       "updatePathwayOnProfile": "Update on your profile",
       "addStpmSubjects": "Add my STPM subjects",
       "confirmStpmKoko": "Confirm my score",
+      "enterHigherResults": "Enter my results",
       "confirmPathwaySwitchYes": "Yes, I've switched to this pathway",
       "confirmPathwaySwitchOnProfile": "Confirm and choose your programme",
       "pathwayName": {
@@ -4808,6 +4813,8 @@
           "higher_results_not_final": "The {held} upload is not the final result (a semester result slip, a polytechnic's student-portal page or a transcript showing the programme still in progress), so it does not count: the final academic transcript is still owed — the student is asked for it once the application is submitted. Academic cannot be Certain until it is on file.",
           "higher_results_not_results": "The {held} upload is a Matriculation offer letter, not a results document, so it does not count: the final academic transcript is still owed. Academic cannot be Certain until it is on file.",
           "higher_results_not_on_file": "{held} results not on file. This application was submitted before the higher-results upload existed, so its SPM slip alone cannot make Academic Certain.",
+          "higher_results_not_declared": "STPM / Matriculation / Asasi / Diploma results not on file. The student declared SPM results only but chose a university degree, which needs one of these. The application was submitted before the higher-results upload existed, so the SPM slip alone cannot make Academic Certain.",
+          "higher_results_undeclared": "Higher results are on file, but the student declared SPM results only, so there is nothing declared to check them against. Confirm the qualification and its results at interview.",
           "higher_results_unreadable": "The higher results could not be read — ask for a clearer copy.",
           "higher_results_name_mismatch": "The higher results are in a different name. Confirm.",
           "higher_results_name_near": "The name on the higher results differs from the student's by one look-alike letter (probably a misread). Check they are the student's results.",

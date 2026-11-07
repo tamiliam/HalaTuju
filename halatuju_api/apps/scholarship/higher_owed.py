@@ -27,6 +27,30 @@ incl. D1's read-time promotion); bound for a university degree (`results_route.d
 programme that asks for results at all; a frozen requirement that does NOT already require the
 higher results (those already read the higher card and raise their own S3 ticket); and no higher
 result already sitting in the SPM card (S4's wrong-slip note speaks for that one).
+
+EVERY DEGREE STUDENT MUST HAVE THEM (owner 2026-11-07, apps 158 / 168 / 247, widened the same day):
+a student bound for a university degree — or already studying for one — must have STPM /
+Matriculation / Asasi / Diploma results on file; Check 2 checks that she DECLARED them and asks for
+the document. Exempt: a UA diploma and PISMP (SPM entry: `results_route.destination` POST_SPM, and
+an offer read as 'diploma' / 'pismp'), and an intake that asks no higher results (D16c).
+
+* **Declared** (`declared_kind`): the results held when tertiary, else a LEGACY row's entered higher
+  results (STPM grades / CGPA, or a third-route CGPA under a third-route exam) whose recorded
+  completion still reads SPM — #161 / #205 / #226 / #243 / #251 / #276's shape, which the #388 rule
+  missed because `results_held` honours the recorded 'spm'. Owed with that kind: the upload ask as
+  #388's, and the upload carries the kind (`upload_kind`) so the card compares her entered results.
+* **Declared nothing** (`undeclared`: SPM only, no tertiary exam declared — a Form Six student
+  keeps her semester ask): we do not know WHICH she holds, so `_owed` answers `UNSPECIFIED` (never
+  one of the four kinds) and every reader names all four. The Academic reason is
+  `UNDECLARED_NOTE_CODE` (params ``kind`` '' → the drawer's generic slot); the ask is
+  `DECLARE_ASK_CODE` — enter the results AND upload the document (model principle: a document with
+  nothing declared can never tick), closed only when both are done. Her upload lands in the higher
+  card with a BLANK `results_kind` (a guessed kind would turn "cannot tell" into "kind matches").
+  Once one is on file the card reads it but stays at best Unsure with `UNDECLARED_ON_FILE_CODE`
+  (`cap_undeclared`) — also for an application frozen AFTER S3a that requires the upload.
+* **Degree-bound** (`_degree_bound`): `results_route.destination` DEGREE; or, with no catalogue
+  `course_id`, the chosen programme's name reads as a degree even under a post-SPM pathway code
+  (#251: a stale 'stpm' code over a degree course). `destination()` itself is unchanged.
 """
 from __future__ import annotations
 
@@ -36,30 +60,120 @@ ASK_CODE = 'higher_results_requested'
 #: `resolution.CODE_TO_TICKET` code on purpose: the ask is Check 2's, so no second system ticket.
 #: Spelled as a literal at its one `_item` call (`cap`) so `test_verdict_item_i18n` can check its words.
 NOTE_CODE = 'higher_results_not_on_file'
+#: `_owed`'s answer for an SPM-only, degree-bound student: owed, kind unknown. Deliberately NOT one
+#: of `wrong_slip.HIGHER_KINDS`, so no reader can mistake it for a declared kind.
+UNSPECIFIED = 'unspecified'
+#: The SPM-only arm's two Academic reason items (cockpit copy `admin.scholarship.verdict.item.<code>`):
+#: owed with none on file (the drawer's Missing slot reads it too), and on file but undeclared.
+UNDECLARED_NOTE_CODE = 'higher_results_not_declared'
+UNDECLARED_ON_FILE_CODE = 'higher_results_undeclared'
+#: The Check-2 ask for a student who declared NO higher results: enter them on her results page AND
+#: upload the document (copy `scholarship.actionCentre.item.<code>`, the card's onboarding button).
+DECLARE_ASK_CODE = 'higher_results_declare_requested'
+#: The two asks' `check2_queries.DOC_SPECS` and `GOVERNED_BY` entries (ONE home, spread in there).
+ASK_SPECS = {ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'},
+             DECLARE_ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'}}
+GOVERNED = {ASK_CODE: (('document', 'results_slip'),), DECLARE_ASK_CODE: (('document', 'results_slip'),)}
+
+
+def declared_kind(application) -> str:
+    """The higher results she DECLARED: the results held when tertiary, else a legacy row's entered
+    STPM results ('stpm') or third-route CGPA under a third-route exam ('matric' …); '' = none."""
+    from apps.courses.exam_questions import THIRD_ROUTE, has_stpm_results
+    from . import results_route
+    kind = results_route.held_kind(application)
+    profile = getattr(application, 'profile', None)
+    if kind or profile is None:
+        return kind
+    if has_stpm_results(profile):
+        return 'stpm'
+    exam = (getattr(profile, 'exam_type', '') or '').strip().lower()
+    return exam if exam in THIRD_ROUTE and getattr(profile, 'higher_cgpa', None) is not None else ''
+
+
+def _spm_only(application) -> bool:
+    """Declared SPM results only: held 'spm', no higher results entered, and the exam she declared is
+    not a tertiary one (a Form Six student has no STPM results yet; her semester ask is her route)."""
+    from apps.courses.exam_questions import is_tertiary
+    from . import results_route
+    if results_route.held(application) != 'spm' or declared_kind(application):
+        return False
+    return not is_tertiary(getattr(getattr(application, 'profile', None), 'exam_type', '') or '')
+
+
+def _degree_bound(application) -> bool:
+    """Bound for (or studying for) a university degree: `results_route.destination` DEGREE; or, with
+    no catalogue `course_id` (the catalogue decides when there is one), the chosen programme's NAME
+    reads as a degree even under a post-SPM pathway code (#251: a stale 'stpm' code; the name is the
+    offer's own, autofilled). A UA diploma / PISMP reads 'diploma' / 'pismp'. No document is read: the
+    offer letter's programme was assessed and adds nothing the autofilled name does not carry."""
+    from . import results_route
+    if results_route.destination(application) == results_route.DEGREE:
+        return True
+    prog = getattr(application, 'chosen_programme', None)
+    prog = prog if isinstance(prog, dict) else {}
+    if str(prog.get('course_id') or '').strip():
+        return False
+    name = (prog.get('course_name') or '').strip()
+    from .offer_pathway import detect_pathway_type
+    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
+
+
+def _needs_higher(application) -> bool:
+    """SUBMITTED, on an intake that asks higher results (D16c), a programme that asks for results,
+    degree-bound, and no higher result already sitting in the SPM card (S4's wrong slip, #43: they
+    ARE on file — the card says so itself)."""
+    from . import requirements, results_route
+    if getattr(application, 'profile_completed_at', None) is None:
+        return False
+    if not results_route.gift_asks_higher(application):
+        return False
+    if requirements.resolve(application, 'document').get('results_slip', 'off') == 'off':
+        return False
+    if not _degree_bound(application):
+        return False
+    from .verdict_engine import _latest_doc
+    from .wrong_slip import higher_kind
+    return not higher_kind(_latest_doc(application, 'results_slip'))
+
+
+def _too_late(application) -> bool:
+    """Owner 2026-11-07: Recommended or any later stage (`family.DECIDED_STATUSES`) is too late for
+    the 2026-11-07 arms — no owed slot, cap or ask. #388's own shape (held tertiary, catalogue
+    degree) is unchanged."""
+    from .family import DECIDED_STATUSES
+    return getattr(application, 'status', '') in DECIDED_STATUSES
+
+
+def undeclared(application) -> bool:
+    """A degree-bound application whose student declared NO higher results — whatever her snapshot
+    froze — before Recommended. The declare + upload ask's gap, and `cap_undeclared`'s test."""
+    return (getattr(application, 'profile_completed_at', None) is not None and not _too_late(application)
+            and _spm_only(application) and _needs_higher(application))
 
 
 def _owed(application) -> str:
-    """The held kind ('stpm' | 'matric' | 'asasi' | 'diploma') when the higher results are owed
-    over a frozen pre-S3 requirement, else ''. Cheapest test first: an SPM holder (most rows)
-    stops at the second line and reads nothing."""
-    from . import requirements, results_route
+    """The declared kind ('stpm' | 'matric' | 'asasi' | 'diploma') — or `UNSPECIFIED` when she
+    declared none — when the higher results are owed over a frozen pre-S3 requirement, else ''."""
+    from . import requirements
     if getattr(application, 'profile_completed_at', None) is None:
         return ''
-    kind = results_route.held_kind(application)
-    if not kind:
+    from . import results_route
+    held = results_route.held_kind(application)
+    kind = declared_kind(application) or (UNSPECIFIED if _spm_only(application) else '')
+    if not kind or not _needs_higher(application):
         return ''
-    if not results_route.gift_asks_higher(application):        # D16c: an SPM-only intake asks none
-        return ''
-    docs = requirements.resolve(application, 'document')        # the FROZEN copy once submitted
-    if docs.get('higher_results') == 'required' or docs.get('results_slip', 'off') == 'off':
-        return ''
-    if results_route.destination(application) != results_route.DEGREE:
-        return ''
-    # Her higher results already sit in the SPM card (S4's wrong slip, #43): they ARE on file — the
-    # card says so itself — so asking for them again would ask for what she sent.
-    from .verdict_engine import _latest_doc
-    from .wrong_slip import higher_kind
-    return '' if higher_kind(_latest_doc(application, 'results_slip')) else kind
+    if _too_late(application) and not (held and results_route.destination(application) == results_route.DEGREE):
+        return ''                        # a 2026-11-07 arm, at Recommended or later: too late
+    return '' if requirements.resolve(application, 'document').get('higher_results') == 'required' else kind
+
+
+def upload_kind(application) -> str:
+    """`results_route.upload_kind`'s last fallback: the DECLARED kind of a legacy row that owes them
+    (held SPM, STPM results entered), so her upload compares what she entered; '' otherwise."""
+    from .wrong_slip import HIGHER_KINDS
+    kind = _owed(application)
+    return kind if kind in HIGHER_KINDS else ''
 
 
 def _live_higher(application):
@@ -114,11 +228,23 @@ def final_owed_kind(application) -> str:
 
 
 def ask_codes(application) -> set:
-    """`check2_queries._gap_sets`' share: {ASK_CODE} while owed and not answered, else empty. The
+    """`check2_queries._gap_sets`' share: {DECLARE_ASK_CODE} while she has declared no higher results
+    (2026-11-07; it stays the one card, once open, until a clean upload answers it); {ASK_CODE} while
+    owed and not answered; else empty. The
     sync's own rules then apply — raised once, only in the Completed stage
     (`services.auto_queries_allowed`), auto-resolved when this empties, re-opened if it re-fires."""
+    if undeclared(application):          # 2026-11-07: declare AND upload, until she has declared
+        return {DECLARE_ASK_CODE}
     owed = (_owed(application) and not answered(application)) or final_owed_kind(application)
-    return {ASK_CODE} if owed else set()
+    if not owed:
+        return set()
+    return {DECLARE_ASK_CODE if _open(application, (DECLARE_ASK_CODE,)) else ASK_CODE}   # one card
+
+
+def _open(application, codes) -> bool:
+    from .models import ResolutionItem
+    return ResolutionItem.objects.filter(application=application, source='check2', code__in=codes,
+                                         status='open').exists()
 
 
 def ask_owns_higher_tickets(application) -> bool:
@@ -126,9 +252,7 @@ def ask_owns_higher_tickets(application) -> bool:
     higher results? Then it is the one Action-Centre card for that document, and S3's own
     higher-results tickets (`higher_results_unreadable` …, raised on the `late_anchor` card) are not
     raised beside it. The reviewer still sees the reason on the Academic card."""
-    from .models import ResolutionItem
-    return bool(_owed(application)) and ResolutionItem.objects.filter(
-        application=application, source='check2', code=ASK_CODE, status='open').exists()
+    return bool(_owed(application) or undeclared(application)) and _open(application, (ASK_CODE, DECLARE_ASK_CODE))
 
 
 def owes_higher(application) -> bool:
@@ -154,5 +278,23 @@ def cap(fact, kind):
     from .verdict_engine import _item
     if fact['status'] in ('verified', 'review'):
         fact['status'] = 'recommend'
-    fact['unresolved'].append(_item('higher_results_not_on_file', held=QUALIFICATION_LABELS.get(kind, kind), kind=kind))
+    if kind == UNSPECIFIED:     # SPM only, bound for a degree (2026-11-07): all four, none named
+        fact['unresolved'].append(_item('higher_results_not_declared', kind=''))
+    else:
+        fact['unresolved'].append(_item('higher_results_not_on_file', held=QUALIFICATION_LABELS.get(kind, kind), kind=kind))
+    return fact
+
+
+def cap_undeclared(application, fact):
+    """The Academic fact of an SPM-only, degree-bound application once a higher upload is on file
+    (owner 2026-11-07, decision 5: a tick only on a match). She declared no higher results, so there
+    is nothing to check the upload against: at best Unsure — Certain and Probable fall to 'recommend';
+    a worse band stands — with `UNDECLARED_ON_FILE_CODE` named, so the officer confirms it at
+    interview. Every other application's fact is returned untouched."""
+    if not undeclared(application) or not _live_higher(application):
+        return fact
+    from .verdict_engine import _item
+    if fact['status'] in ('verified', 'review'):
+        fact['status'] = 'recommend'
+    fact['unresolved'].append(_item('higher_results_undeclared'))
     return fact

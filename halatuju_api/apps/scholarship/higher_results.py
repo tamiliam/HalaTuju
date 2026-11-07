@@ -404,8 +404,8 @@ def academic_fact(application, spm_fact):
     answer (called once). The higher card when it anchors (S3); else the SPM card — capped at
     Probable with the reason named while the higher results are owed and none is on file (#388)."""
     from . import higher_owed
-    if anchors_on_higher(application):
-        return verdict_academic(application, spm_fact())
+    if anchors_on_higher(application):     # SPM only + an undeclared upload: at best Unsure (2026-11-07)
+        return higher_owed.cap_undeclared(application, verdict_academic(application, spm_fact()))
     kind = higher_owed.owed_kind(application)
     return higher_owed.cap(spm_fact(), kind) if kind else spm_fact()
 
@@ -523,7 +523,9 @@ def answers_higher_ask(doc) -> bool:
     read by an officer's request (`results_requests.answers`, so `resolution`'s closure too) and by
     Check 2's #388 / ruling-B ask (`higher_owed.answered`): not an SPM slip, and the FINAL result (a
     non-final page never closes an ask, so it can never close-then-reopen) — nor an offer letter."""
-    return student_higher_check(doc)['kind_status'] != 'spm' and not final_owed(doc) and not not_results(doc)
+    chk = student_higher_check(doc)     # 2026-11-07: an upload of no named kind reads 'spm' only off the detection
+    return ('spm' not in (chk['kind_status'], chk['kind_detected']) and not final_owed(doc)
+            and not not_results(doc))
 
 
 def _scored(doc) -> bool:

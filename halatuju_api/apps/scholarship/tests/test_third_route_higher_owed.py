@@ -78,12 +78,13 @@ class TestShowTheGapAndCapTheVerdict(TestCase):
         self.assertEqual(f['status'], 'verified')
         self.assertNotIn(higher_owed.NOTE_CODE, [i['code'] for i in f['unresolved']])
 
-    def test_an_spm_holder_bound_for_a_degree_gets_nothing_new(self):
-        """D14 is for applications not yet submitted; a submitted SPM holder keeps her frozen card."""
+    def test_an_spm_holder_bound_for_a_degree_owes_them_unspecified(self):
+        """Reversed 2026-11-07 (owner, apps 158/168/247: "STPM/etc. is a must for univ students"):
+        a submitted SPM-only holder bound for a degree owes them too, kind unknown. Pinned in full in
+        `test_higher_owed_spm_only.py`."""
         app = _submitted(profile=SPM_HELD)
-        f = _academic(app)
-        self.assertEqual(f['status'], 'verified')
-        self.assertEqual(higher_owed.owed_kind(app), '')
+        self.assertEqual(_academic(app)['status'], 'recommend')
+        self.assertEqual(higher_owed.owed_kind(app), higher_owed.UNSPECIFIED)
 
     def test_no_course_chosen_gets_nothing_new(self):
         self.assertEqual(higher_owed.owed_kind(_submitted(plan=UNDECIDED)), '')
@@ -143,8 +144,8 @@ class TestTheCheck2Ask(TestCase):
         sync_check2_queries(app)
         self.assertFalse(_ask(app).exists())
 
-    def test_nothing_for_a_post_spm_or_spm_held_application(self):
-        for app in (_submitted(plan=POLY), _submitted(profile=SPM_HELD)):
+    def test_nothing_for_a_post_spm_application(self):
+        for app in (_submitted(plan=POLY), _submitted(profile=SPM_HELD, plan=POLY)):
             sync_check2_queries(app)
             self.assertFalse(_ask(app).exists())
 

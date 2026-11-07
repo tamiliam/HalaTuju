@@ -13,7 +13,7 @@
 import { render, screen } from '@testing-library/react'
 import { DocumentsDrawer } from './DocumentsDrawer'
 import { missingHigherKind, resultsChangeKey } from './shared'
-import { KNOWN_CODES, localiseParams } from '@/lib/actionCentre'
+import { KNOWN_CODES, localiseParams, onboardingAskFor } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictFact } from '@/lib/admin-api'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -90,5 +90,40 @@ describe("the student's Check-2 ask", () => {
     expect(out.kind).toBe(word)
     expect(lookup(cat)('scholarship.actionCentre.item.higher_results_requested.title').replace('{kind}', out.kind))
       .toBe(cat === en ? 'Please upload your final STPM results' : 'Sila muat naik keputusan akhir Matrikulasi anda')   // M4b: only the final result counts
+  })
+})
+
+describe('2026-11-07: declared SPM only, bound for a degree (apps 158 / 168 / 247)', () => {
+  it('the served `higher_results_not_declared` draws the generic Missing slot (all four named)', () => {
+    expect(missingHigherKind({ verdict: [academic('higher_results_not_declared', { kind: '' })] })).toBe('')
+    const app = { documents: [], verdict: [academic('higher_results_not_declared', { kind: '' })] }
+    render(<DocumentsDrawer app={app as unknown as AdminScholarshipDetail} t={lookup(en) as never} busy=""
+      setViewerDoc={() => {}} doReRunVision={() => {}} />)
+    expect(screen.getByTestId('higher-missing').textContent)
+      .toContain('STPM / Matriculation / Asasi / Diploma results')
+  })
+  it('the undeclared-on-file reason is not a Missing slot', () => {
+    expect(missingHigherKind({ verdict: [academic('higher_results_undeclared')] })).toBeNull()
+  })
+  it('the declare + upload ask is a known code with words in all three languages and an onboarding button', () => {
+    expect(KNOWN_CODES).toContain('higher_results_declare_requested')
+    expect(onboardingAskFor('higher_results_declare_requested'))
+      .toEqual({ path: '/onboarding/exam-type', buttonKey: 'scholarship.actionCentre.enterHigherResults' })
+    for (const cat of [en, ms, ta]) {
+      const item = cat.scholarship.actionCentre.item.higher_results_declare_requested
+      expect(item.title).toContain('STPM')
+      expect(item.desc).toContain('SPM')
+      expect(item.title).not.toContain('{kind}')
+      expect(cat.scholarship.actionCentre.enterHigherResults).toBeTruthy()
+    }
+    expect(en.scholarship.actionCentre.item.higher_results_declare_requested.title)
+      .toBe('Enter and upload your STPM, Matriculation, Asasi or Diploma results')
+  })
+  it('both reasons have words in all three languages', () => {
+    for (const cat of [en, ms, ta]) {
+      const items = cat.admin.scholarship.verdict.item as Record<string, string>
+      expect(items.higher_results_not_declared).toBeTruthy()
+      expect(items.higher_results_undeclared).toBeTruthy()
+    }
   })
 })
