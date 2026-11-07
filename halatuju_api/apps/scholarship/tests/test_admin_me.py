@@ -69,10 +69,6 @@ class TestAdminMe(TestCase):
         self.assertEqual((data['role'], data['is_super'], data['programmes']), ('super', True, 'all'))
         self.assertIsNone(data['organisation'])
 
-    def test_a_legacy_super_flag_reads_as_super(self):
-        me = make_admin('reviewer', super_admin=True)
-        self.assertEqual(authed_client(me).get(ME).json()['role'], 'super')
-
     def test_a_referral_partner(self):
         referrer = make_org(name='CUMIG')
         me = make_admin('partner', org=referrer)

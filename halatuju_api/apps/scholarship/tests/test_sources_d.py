@@ -219,7 +219,7 @@ class TestReferralPartnersAreMarkedBySuperOnly(_World):
             f'{LIST}999999/', {'is_referral_partner': True}, format='json').status_code, 404)
 
     def test_a_super_by_role_alone_may_list_mark_and_unmark(self):
-        """Review: `is_super` counts the role, not only the legacy flag."""
+        """Review: `is_super` reads the role alone (TD-064)."""
         role_super = make_admin('super')
         self.assertTrue(role_super.is_super)
         self.assertEqual(authed_client(role_super).get(LIST).status_code, 200)

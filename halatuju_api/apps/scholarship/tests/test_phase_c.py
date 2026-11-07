@@ -496,7 +496,7 @@ class TestRoleEndpoint(PhaseCBase):
         r = self.client.get('/api/v1/admin/role/')
         self.assertEqual(r.json()['role'], 'reviewer')
 
-    def test_legacy_super_reported_as_super(self):
+    def test_super_reported_as_super(self):
         self._auth(SUPER)
         r = self.client.get('/api/v1/admin/role/')
         self.assertEqual(r.json()['role'], 'super')

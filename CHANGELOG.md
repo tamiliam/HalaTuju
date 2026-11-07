@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### fix: Sprint A1.10b - retire the legacy super flag, and the editor's QC rule (TD-064, TD-499) (2026-11-07)
 
 - TD-064: `role` is the only super marker. `PartnerAdmin.is_super_admin` is gone from the model and from every reader and writer in courses and scholarship; `is_super` reads the role. The API key `is_super_admin` stays, computed from the role. Migration `courses/0093_retire_partneradmin_is_super_admin` (state-only for the field): re-makes the two CHECKs without the flag and gives the column a DB default. ⚠ DEPLOY ORDER: run the pre-check SELECTs, the owner applies STEP 1 (SQL in the migration docstring) BEFORE the push, then push; after the new image serves all traffic, STEP 2 drops the column by hand. Do not demote a super between the steps.
+- TD-064 review follow-ups: no new or demoted super between STEP 1 and STEP 2 (rollback safety); follow-up migration 0094 (DROP COLUMN IF EXISTS, state no-op) to add after STEP 2; legacy-super-flag tests renamed or removed; stale help_text and CLAUDE.md text fixed.
 - TD-499: the web permission editor now matches the server: Quality check brings See all students, which stays ticked and locked while Quality check is on; See all students off no longer strips Quality check. The unused `admin.permEditor.qcHint` message is removed (en, ms, ta).
 - Tests: `test_td064_role_only_super.py` (new); about 70 API test fixtures switched from the flag to `role='super'`; `PermissionEditor.test.tsx` TD-499 block.
 

@@ -44,7 +44,7 @@ Rendered offline with Django's postgresql schema editor from this migration, ver
 BETWEEN STEP 1 AND STEP 2 both images work: the old one writes the flag in lockstep with the role and
 reads it; the new one leaves it to the default (false) and reads the role. ⚠ In that window a row the
 NEW image demotes from `super` keeps flag true, and the OLD image would still read it as a super — so
-do not demote a super until STEP 2 is done (there is one super, the owner).
+do not demote a super until STEP 2 is done (there is one super, the owner). Likewise, between STEP 1 and STEP 2 do not invite or create a new super, and do not demote the super: if traffic rolls back to the old image, a super made by the new image has the flag false and is refused at the flag-only doors.
 
 STEP 2 — after the new image is live (check `SELECT count(*) FROM pg_constraint WHERE conrelid =
 'partner_admins'::regclass AND pg_get_constraintdef(oid) ILIKE '%is_super_admin%'` is 0 first; DROP
