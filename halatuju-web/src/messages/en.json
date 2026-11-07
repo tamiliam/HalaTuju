@@ -2449,7 +2449,11 @@
         },
         "higher_results_declare_requested": {
           "title": "Enter and upload your STPM, Matriculation, Asasi or Diploma results",
-          "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. Enter those results on your results page, then upload the official final result showing your name and CGPA clearly. For Matriculation or a Diploma, that is your final academic transcript (a semester result slip does not count)."
+          "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. Enter those results on your results page, then upload the official final result showing your name and CGPA clearly. For Matriculation or a Diploma, that is your final academic transcript (a semester result slip does not count).",
+          "onFile": {
+            "title": "Enter your STPM, Matriculation, Asasi or Diploma results",
+            "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. We already have your results document, so you do not need to upload it again: just enter those results on your results page."
+          }
         }
       },
       "vircle": {
@@ -4846,6 +4850,7 @@
           "higher_results_cgpa_mismatch": "CGPA entered {entered}, but the document reads {slip}. Check.",
           "higher_results_cgpa_unread": "No CGPA could be read off the document — check it by eye.",
           "higher_results_subjects_missing": "STPM subjects on the slip but not entered: {subjects}.",
+          "higher_results_subjects_unrecognised": "A subject on the results could not be recognised, so the slip cannot be confirmed as matching: {subjects}.",
           "higher_results_grade_mismatch": "{subject}: typed {typed}, but the STPM slip reads {slip}. Check.",
           "higher_results_not_checked": "Genuineness of higher results is NOT checked yet (no pattern for these documents) — check the document by eye."
         }
@@ -5015,8 +5020,10 @@
         "subtitle": "Queries raised and/or documents requested by the system/reviewer",
         "questionLabel": "Question",
         "uploadLabel": "Upload",
+        "enterLabel": "Enter",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "lockedClosed": "Querying closed — this application is no longer under review. This is now a read-only record.",
+        "lateAskOpen": "The higher-results request below is still open: the student can still answer it.",
         "itemOne": "item",
         "itemMany": "items",
         "overflow": "{n} more question(s) queued — asked automatically once the current ones are answered or waived.",

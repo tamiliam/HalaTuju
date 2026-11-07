@@ -8,7 +8,7 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import { showsCheck2Box } from '@/lib/officerCockpit'
-import { itemCopy, localiseParams, titleSourceFor } from '@/lib/actionCentre'
+import { LATE_HIGHER_ASKS, itemCopy, localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminResolutionItem } from '@/lib/admin-api'
 
 import { REQUEST_CATEGORIES, REQ_CAT, type ResolvedReq, type T } from './shared'
@@ -97,6 +97,9 @@ export function OutstandingPanel({
             {t(lockReason === 'interview'
               ? 'admin.scholarship.outstanding.locked'
               : 'admin.scholarship.outstanding.lockedClosed')}
+            {/* 2026-11-07: the higher-results asks stay open (and may be raised) after the interview */}
+            {(app.resolution_items ?? []).some((i) => i.status === 'open' && LATE_HIGHER_ASKS.has(i.code))
+              && <> {t('admin.scholarship.outstanding.lateAskOpen')}</>}
           </p>
         )}
         {/* V3 (#7): a higher-priority query crowded out by the clarify cap stays visible here,
@@ -146,7 +149,8 @@ export function OutstandingPanel({
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-ground-800 break-words">
                               {/* A document request is a task ("Upload"), not a "Question" — label by kind. */}
-                              <span className="font-semibold">{item.kind === 'doc' ? t('admin.scholarship.outstanding.uploadLabel') : t('admin.scholarship.outstanding.questionLabel')}:</span> {question}
+                              <span className="font-semibold">{t(item.params?.doc_on_file === true ? 'admin.scholarship.outstanding.enterLabel'   // the declare ask, document on file
+                                : item.kind === 'doc' ? 'admin.scholarship.outstanding.uploadLabel' : 'admin.scholarship.outstanding.questionLabel')}:</span> {question}
                               {' '}
                               <span className="ml-0.5 rounded bg-ground-200 px-1.5 py-0.5 text-[11px] text-ground-500 align-middle">{item.fact}</span>
                               {' '}
