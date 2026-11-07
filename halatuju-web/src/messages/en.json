@@ -1494,6 +1494,7 @@
           "school": "Brothers/sisters in school",
           "tertiary": "In college or university",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
+          "notSaved": "Not saved — tap your answer again.",
           "clusterDone": "Complete",
           "strTitle": {
             "father": "Father's STR document",

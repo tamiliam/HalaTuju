@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
+
+Branch a112 (not pushed; no migration, no model change). Goal: what we bill and report matches what was used. Forward-only; no back-billing.
+- **TD-459:** `usage.gemini_tokens` adds `thoughts_token_count` to the output count (thinking is billed at the output rate). All four Gemini seams read through it. Old rows keep the candidates-only count and are not repaired. Tenant cost shares split by event count, so no invoice amount changes; token totals on the usage screen and `spend_category` now include thinking. The eval's fresh-read record notes the same.
+- **TD-428:** the email-verification mail goes through `profile_claim.send_verification_email`, which meters through the existing lazy `_scholarship('emails')` door (no new courses -> scholarship import) and keeps the profile-id-only failure log (SEC-09). One `email` usage row tagged `send_verification_email`, org NULL; the student email catalogue follows.
+- **TD-460 (b):** the income wizard shows "Not saved — tap your answer again" (en/ms/ta, role alert) when an answer save fails, and clears it on the next save that works. Part (a), the write-on-open of the pre-fill, is unchanged and waits on the owner.
+- **Not built, owner decisions (status lines in the register):** TD-422 (per-source busy-meter map), TD-425 (how a stranded correction carries), TD-174 (which senders an organisation pays for), TD-245 (needs a new table).
+- Tests: `test_usage.py` (+5), `test_offer_fresh_read.py` (meter now counts thinking), `test_email_verification.py` (+1); jest `IncomeWizard.saveFailed.test.tsx` (3, new). Tamil and Malay strings need language review.
+
 ### fix: a reviewer can move a booked interview to later the same day (TD-137) (2026-11-07)
 
 Branch fix/reviewer-reschedule-lead (not pushed; no migration). Reported by an interviewer the same day: moving a booked 1:30 pm interview to 3, 5 and 6 pm failed with "Could not save. Please try again." The picker's 2-hour reschedule notice (TD-137, 2026-06-21) was UI-only on the belief that the server accepted any future slot; the propose door has checked the organisation's 24-hour notice since 2026-06-19, so every same-day reschedule was refused as `too_soon`. The propose door now applies `RESCHEDULE_MIN_LEAD_HOURS` (2, new in `constants.py`) only when `reschedule` is sent AND the interview is booked; a first proposal still meets the full notice. The card names a `too_soon` refusal ("…at least N hours from now", en/ms/ta) instead of the bare error. Tests: `test_reviewer_reschedule_lead.py` (6; the same-day move fails on the old code), web `InterviewScheduleCard.test.tsx` (3, rendered), `rescheduleLeadDrift.test.ts` (the picker's copy is the server's number, and the door reads it). Tamil string needs language review.

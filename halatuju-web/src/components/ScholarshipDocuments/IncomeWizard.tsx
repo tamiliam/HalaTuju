@@ -144,18 +144,18 @@ export default function IncomeWizard({
   // respect their choice). Source of truth: the persisted income_working_members is non-empty
   // once they save, and `touchedMembers` covers the moment before that save round-trips.
   const [touchedMembers, setTouchedMembers] = useState(false)
-  // TD-262 F2: the cash/informal door is no longer a FALLBACK behind a text link — it is the
-  // third card, and each `MemberIncomeGroup` owns whether its own card is open (seeded from that
-  // member's saved figure). Nothing about it is the wizard's business any more.
+  // TD-262 F2: the cash door is the third card; each `MemberIncomeGroup` owns its own open state.
+  const [saveFailed, setSaveFailed] = useState(false)
 
   const save = async (patch: Record<string, unknown>) => {
     setAns((a) => ({ ...a, ...patch }))
     if (!token) return
     try {
       await updateScholarshipDetails(app.id, patch, { token })
+      setSaveFailed(false)
       onChange?.()
     } catch {
-      /* soft — local state already updated, save retries on the next change */
+      setSaveFailed(true) // TD-460(b): SHOWN, not swallowed — the screen showed an answer the server lacked
     }
   }
 
@@ -427,8 +427,8 @@ export default function IncomeWizard({
         </Question>
       )}
 
-      {/* Family burden (siblings in school / tertiary) moved to the Story tab's
-          "About your family" card in the 2026-06 redesign — captured once there. */}
+      {saveFailed && <p role="alert" className="text-sm text-critical-600">{iq('notSaved')}</p>}
+      {/* Family burden (siblings in school / tertiary) lives on the Story tab's family card. */}
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
