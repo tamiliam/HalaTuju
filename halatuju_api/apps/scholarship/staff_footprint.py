@@ -49,6 +49,7 @@ EMAIL_STAMPS = (
     ('memberships_vetted', 'scholarship', 'SponsorProgrammeMembership', ('vetted_by',)),
     ('merchant_flags', 'scholarship', 'MerchantFlag', ('opened_by_email', 'closed_by_email')),
     ('merchant_notes', 'scholarship', 'MerchantFlagNote', ('author_email',)),
+    ('reviewer_notes', 'scholarship', 'ReviewerNote', ('author_email',)),   # request #55
     ('guardian_changes', 'scholarship', 'GuardianContactChange', ('changed_by_email',)),
     ('partner_templates', 'scholarship', 'PartnerEmailTemplate', ('updated_by_email',)),
     ('sponsor_templates', 'scholarship', 'SponsorEmailTemplate', ('updated_by_email',)),

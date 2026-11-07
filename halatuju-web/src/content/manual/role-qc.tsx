@@ -77,6 +77,16 @@ export const roleQc: ManualChapter = {
       ),
     },
     {
+      anchor: 'qc-reviewer-notes',
+      perm: 'qc',
+      title: 'Notes for the reviewer',
+      body: (
+        <>A case may carry <strong>Notes for the reviewer</strong> from the organisation admin, under
+        <strong> Reviewer assigned</strong>: what they asked the reviewer to explore. They are read-only for you.
+        When you check a case, it is worth seeing whether the review answered them.</>
+      ),
+    },
+    {
       anchor: 'qc-no-conflict',
       perm: 'qc',
       title: 'The no-conflict rule',

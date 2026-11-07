@@ -140,6 +140,16 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
   (`?parent_call=needed`, owner ruling B) — the same roles that see the flag; inside the list's
   organisation fence. `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
   Manual: `role-org-admin` § *Correcting a parent's phone number*; FAQ: org_admin.
+- **Notes for the reviewer are written by super + `org_admin` only and read through the file's own
+  fence (request #55, 2026-11-07)** — `GET/POST admin/scholarship/applications/<pk>/reviewer-notes/`.
+  READ = `_scoped_application`, the applicant-detail GET's gate: super, `org_admin`, `admin`
+  (view-only), `qc` (own organisation), and the reviewer ASSIGNED to the case; an unassigned reviewer,
+  `finance` and `partner` 403; another organisation 404. WRITE = super + `org_admin` (403
+  `writer_only` for everyone else), from Awaiting review (`profile_complete`) or Interviewing until the
+  reviewer records an Approve or Decline (`interview_completeness.decision_gate_applies`; a reopened
+  decision reopens it at Interviewing); 400 `notes_closed` otherwise. Append-only, 2,000 characters.
+  Students and sponsors never; no AI prompt reads them. Manual: `role-org-admin` § *Notes for the
+  reviewer*, `role-reviewer` § *Notes from your org admin*, `role-qc`; FAQ: org_admin, reviewer.
 - **Last-org-admin protection:** the sole active `org_admin` of a tenant cannot be revoked.
 - **Gift scoping is super + `org_admin` only (S-ASSIGN, 2026-09-04), and it is NARROWER than
   reading the surface it sits on.** `admin` and `finance` may READ the reviewers list and the

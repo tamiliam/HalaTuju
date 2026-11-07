@@ -19061,3 +19061,28 @@ removal; A1.11b recorded the ruling only.
 
 **Ruling 5 (TD-498 = B):** split each Engagement / sponsor door's GET onto `<page>.view` inside Sprint T5g, the
 same sprint that lets `view` be ticked alone, as a must-do item of the T5g plan; not in the audit fixes.
+
+## 2026-11-07 — Request #55: Notes for the reviewer (owner-approved mock-up; analysis 144)
+
+The org admin writes notes for the reviewer on the application page, directly under "Reviewer assigned", instead
+of texting them. Owner-settled (analysis 144 and the mock-up, 2026-11-07): org admin and platform super write;
+the assigned reviewer, QC and staff who may already open the file read; students and sponsors never; never fed to
+any AI prompt; append-only with author and time; 2,000 characters; blank refused.
+
+**Builder's choices, recorded:**
+- **The window's markers.** "From Awaiting review" is status `profile_complete` (its label is "Awaiting
+  review"), then `interviewing`; `shortlisted` is before it. "Until the reviewer records a decision" is the
+  codebase's own `interview_completeness.decision_gate_applies`, not the bare `verdict_decided_at` stamp: a hold
+  or blank verdict stamps it too and is not a decision (TD-253 review F1), and a decision a super reopens is handed
+  back to the reviewer. Combined with the two statuses, a reopen back to Interviewing reopens the notes and a
+  reopen that lands at awaiting QC does not. After that the notes stay, read-only, for good.
+- **A separate endpoint**, not a key on the detail payload: the applicant-detail GET stays at its pinned 38
+  queries, and the card re-reads when the case's status or verdict stamp changes.
+- **No activity row.** The note itself records who and when. This follows `merchant_flags`, whose log notes write
+  no `staff_activity` row (only open and close do); a `staff_activity` verb would add a choices migration, a
+  back-fill rule and three languages of labels for no new information. `student_activity` is the funded
+  scholar's timeline and was not the place for a pre-award staff briefing.
+- **Author as FK + email stamp.** `author` is SET_NULL; `author_email` joins `staff_footprint.EMAIL_STAMPS`, so
+  a person who has written a note is revoked, never deleted.
+- **Leak guard is structural:** `test_reviewer_notes.py` lists every module allowed to name the model; an AI
+  prompt builder, student view or sponsor view that started reading it would fail the suite.

@@ -4194,6 +4194,27 @@
           "gift_mismatch": "Penilai ini meliputi pemberian lain, jadi kes ini tidak boleh diberikan kepadanya. Pilih penilai untuk pemberian ini, atau penilai yang meliputi semua pemberian."
         }
       },
+      "reviewerNotes": {
+        "title": "Nota untuk penyemak",
+        "introWriter": "Perkara yang anda mahu penyemak teliti. Hanya dilihat oleh penyemak yang ditugaskan dan QC, tidak sekali-kali oleh pelajar atau penaja.",
+        "introReader": "Daripada pentadbir organisasi anda: perkara untuk diteliti bersama pelajar ini. Baca sahaja.",
+        "empty": "Tiada nota daripada pentadbir organisasi anda.",
+        "addLabel": "Tambah nota",
+        "placeholder": "Apakah yang patut diteliti oleh penyemak?",
+        "counter": "{count} / {max}",
+        "appendOnly": "Nota tidak boleh diubah atau dipadam. Untuk membetulkannya, tambah nota lain.",
+        "add": "Tambah nota",
+        "adding": "Menambah…",
+        "closedHint": "Nota boleh ditambah dari peringkat Menunggu semakan sehingga penyemak merekodkan keputusan. Nota ini kekal dalam fail, baca sahaja.",
+        "loadError": "Nota tidak dapat dimuatkan.",
+        "error": {
+          "writer_only": "Hanya pentadbir organisasi boleh menambah nota untuk penyemak.",
+          "notes_closed": "Nota boleh ditambah dari peringkat Menunggu semakan sehingga penyemak merekodkan keputusan.",
+          "empty_body": "Tulis nota terlebih dahulu.",
+          "too_long": "Nota boleh mengandungi paling banyak {max} aksara.",
+          "generic": "Nota tidak dapat ditambah. Sila cuba lagi."
+        }
+      },
       "requestInfoError": "Tidak dapat menghantar permintaan.",
       "requestsDocumentsStep": "Pelajar masih melengkapkan dokumen mereka. Apa yang masih perlu diserahkan tersenarai di bawah Halangan; mereka sudah pun diminta menyerahkannya.",
       "requestRefused": {

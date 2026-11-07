@@ -160,7 +160,8 @@ describe('Team tables T1: the console access matrix', () => {
       expected[cell] = now
     }
     // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
-    expect(measured[shape]).toEqual(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform))
+    expect(measured[shape]).toEqual(
+      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)))
   })
 })
 
@@ -176,6 +177,29 @@ function t3Moves(cells: Record<string, unknown>): Record<string, unknown> {
   out['open /admin/organisation/mentors'] = cells['open /admin/organisation/reviewers']
   for (const m of MENUS) out[m] = programmeSettingsLast(out[m] as string[])
   return out
+}
+
+/**
+ * Request #55 (2026-11-07): THE ONLY CELLS IT MOVES are three new Guide SECTIONS ("Notes for the reviewer"), each
+ * inserted after a named one in a chapter a shape already sees. No chapter, menu row, page or landing moves; a
+ * shape that did not see the chapter sees no new section.
+ */
+const R55_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
+  ['role-reviewer', 'reviewer-working-a-case', 'reviewer-notes-from-admin'],
+  ['role-qc', 'qc-review-all', 'qc-reviewer-notes'],
+  ['role-org-admin', 'org-admin-assigning', 'org-admin-reviewer-notes'],
+]
+function r55GuideMoves(cells: Record<string, unknown>): Record<string, unknown> {
+  const guide = (cells.guide as string[]).map((row) => {
+    const [slug, list] = [row.slice(0, row.indexOf(':')), row.slice(row.indexOf(':') + 1)]
+    let anchors = list ? list.split(',') : []
+    for (const [chapter, after, added] of R55_SECTIONS) {
+      const at = anchors.indexOf(after)
+      if (slug === chapter && at >= 0) anchors = [...anchors.slice(0, at + 1), added, ...anchors.slice(at + 1)]
+    }
+    return `${slug}:${anchors.join(',')}`
+  })
+  return { ...cells, guide }
 }
 
 /** Owner 2026-11-03 (small change): the gift's Configuration row became "Programme Settings", the LAST row of the

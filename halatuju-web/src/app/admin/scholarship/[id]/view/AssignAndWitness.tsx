@@ -5,7 +5,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import type { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { showsReviewerAssignedCard, assignOptions } from '@/lib/officerCockpit'
 import type { AdminScholarshipDetail, SourceItem } from '@/lib/admin-api'
 
@@ -15,6 +15,7 @@ export function AssignAndWitness({
   app, t, busy, isSuper, canAssign, decisionLocked, admins, doAssign,
   witnessCardVisible, activeSources, witnessSel, setWitnessSel,
   witnessBusy, witnessMsg, setWitnessMsg, witnessEditing, setWitnessEditing, doAssignWitness,
+  notesCard,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -34,6 +35,8 @@ export function AssignAndWitness({
   witnessEditing: boolean
   setWitnessEditing: Dispatch<SetStateAction<boolean>>
   doAssignWitness: () => void
+  /** Request #55: "Notes for the reviewer", drawn directly under Reviewer assigned (owner). */
+  notesCard?: ReactNode
 }) {
   return (<>
 
@@ -101,6 +104,8 @@ export function AssignAndWitness({
         </div>
         )
       })()}
+
+      {notesCard}
 
       {/* ── Witness organisation — directly below Reviewer assigned (owner 2026-07-22; it used
             to sit full-width BELOW the whole cockpit grid, far from the related controls).

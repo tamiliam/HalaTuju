@@ -126,6 +126,12 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   foreign key (a purge never touches it). Written only by `apps/scholarship/staff_activity.record`, best-effort.
   Read only through `GET admin/me/activity/` (`staff_activity_read.py`: own rows; names decided at read time, D8);
   rebuilt from older records by `backfill_staff_activity` (S4; rows marked `backfilled`).
+- Notes for the reviewer (request #55, 2026-11-07; scholarship 0205): `reviewer_notes` — `application`
+  (CASCADE), `body` (varchar 2000, CHECK not empty), `author` (SET_NULL) + `author_email` (counted by
+  `staff_footprint`), `created_at`; oldest first. Append-only (no edit or delete endpoint; `save()` refuses an
+  update). Written only by `reviewer_notes.add_note`; read only by `GET/POST admin/scholarship/applications/<pk>/
+  reviewer-notes/`. Never in a student or sponsor payload or an AI prompt (`test_reviewer_notes.py` lists the
+  only modules that may name it). RLS on, one `service_role` policy.
 
 ## Scheduled work
 

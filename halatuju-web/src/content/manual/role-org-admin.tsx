@@ -208,6 +208,20 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The Assigned column and inline reviewer control (placeholder)',
     },
     {
+      anchor: 'org-admin-reviewer-notes',
+      title: 'Notes for the reviewer',
+      body: (
+        <>On an applicant&rsquo;s page, under <strong>Reviewer assigned</strong>, you can write
+        <strong> Notes for the reviewer</strong>: the points you would like explored in the interview. Type in
+        <strong> Add a note</strong> (up to 2,000 characters; the counter shows how many you have used) and press
+        <strong> Add note</strong>. Each note keeps your name and the time. You can add notes from
+        <strong> Awaiting review</strong> until the reviewer records a decision; after that they stay on the
+        file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another. The
+        assigned reviewer and QC read them (as can colleagues who may open the file); the student and sponsors
+        never do, and the notes are never used in the AI-written profile or summary.</>
+      ),
+    },
+    {
       anchor: 'org-admin-acting',
       title: 'Acting on cases, and QC',
       noConflictBanner: true,
