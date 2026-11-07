@@ -27,6 +27,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from . import agreement_guard
 from .vision import name_match, nric_match
 
 logger = logging.getLogger(__name__)
@@ -500,19 +501,14 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
             'foundation_signatory_name': p['foundation_signatory_name'],
             'foundation_signatory_title': p['foundation_signatory_title'],
             'foundation_signatory_nric': p['foundation_signatory_nric'],
-            'student_signed_name': student_signed_name,
-            'student_signed_nric': student_signed_nric,
-            'student_signed_at': now,
-            'student_ip': ip,
-            'guarantor_name': guarantor_name,
-            'guarantor_nric': guarantor_nric,
-            'guarantor_relationship': guarantor_relationship,
-            'guarantor_method': guarantor_method,
-            'guarantor_signed_at': now,
-            'guarantor_ip': ip,
-            'rendered_html': html,
-            'agreement_sha256': sha,
-            'pdf_storage_path': pdf_path,
+            'student_signed_name': student_signed_name, 'student_signed_nric': student_signed_nric,
+            'student_signed_at': now, 'student_ip': ip,
+            'guarantor_name': guarantor_name, 'guarantor_nric': guarantor_nric,
+            'guarantor_relationship': guarantor_relationship, 'guarantor_method': guarantor_method,
+            'guarantor_signed_at': now, 'guarantor_ip': ip,
+            'rendered_html': html, 'agreement_sha256': sha, 'pdf_storage_path': pdf_path,
+            # A1.13 review finding 1: a re-signing never inherits an old Foundation / witness stamp.
+            **agreement_guard.UNSIGNED_COUNTERPARTS,
         },
     )
     return agreement
@@ -536,11 +532,14 @@ def _maybe_activate(agreement):
         app.save(update_fields=fields)
 
 
+@transaction.atomic
 def countersign_foundation(agreement, *, by_name, actor=None):
     """Stamp the Foundation's countersignature and re-render/regenerate the PDF so the
     countersignature appears in the artefact. Best-effort on the PDF: a render failure still stamps
     the fields (the signature record is what binds). The Foundation signs LAST, so this normally
-    fully executes the agreement → the application moves 'awarded' → 'active' (see _maybe_activate)."""
+    fully executes the agreement → the application moves 'awarded' → 'active' (see _maybe_activate).
+    Refuses (``AgreementNotCurrent``) unless the case is awarded and the agreement current (A1.13)."""
+    agreement_guard.lock_current(agreement, agreement_guard.COUNTERSIGN)
     now = timezone.now()
     agreement.foundation_signed_by = by_name or agreement.foundation_signatory_name
     agreement.foundation_signed_at = now
@@ -560,7 +559,9 @@ def countersign_foundation(agreement, *, by_name, actor=None):
 
 def record_witness(agreement, *, org, by_name, witness_name=''):
     """Record the partner organisation's (non-blocking) witness attestation, and
-    re-render/regenerate the PDF so the witness block appears. Best-effort PDF."""
+    re-render/regenerate the PDF so the witness block appears. Best-effort PDF. Refuses
+    (``AgreementNotCurrent``) a withdrawn / superseded agreement or a case past funding (A1.13)."""
+    agreement_guard.lock_current(agreement, agreement_guard.WITNESS)
     now = timezone.now()
     agreement.witness_org = org
     agreement.witness_signed_by = by_name or ''

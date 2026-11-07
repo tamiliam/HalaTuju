@@ -388,7 +388,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
 - **TD-591** - An award that has already paid money cannot be withdrawn; what happens to a paid case is the owner's call (links TD-366) - medium (money)
 - **TD-592** - Payments: a known course start year after the paid month's year still pays on the pathway floor; tightening it is the owner's call - medium (money)
-- **TD-593** - Loose ends after an award withdrawal: countersign still works, the Vircle task stays, no staff_activity verb - low
+- **TD-593** - Loose ends after an award withdrawal: the Vircle task stays, no staff_activity verb (the countersign part was fixed by the A1.13 review) - low
+- **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8499,3 +8500,9 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-593] Loose ends after an award withdrawal - low
 
 **Raised 2026-11-08 by Sprint A1.13 (TD-198), out of scope.** (1) The Foundation countersignature on the bursary agreement still works on a case whose award was withdrawn. (2) The Vircle setup task in the student's Action Centre stays visible after a withdrawal. (3) There is no staff_activity verb for a withdrawal (one would need a migration); the record is the internal `student_activity` row with who, when and the reason. Also noted, existing behaviour: an open payment-run draft that already lists the case is refused as a whole run (`not_payable_in_run`) until it is rebuilt. **Fix:** refuse the countersignature unless the case is awarded or later, hide the Vircle task when the award is gone, and decide whether a staff_activity verb is worth a migration. *(A · S)*
+
+**Status 2026-11-08 (A1.13 adversarial review, finding 1): part (1) FIXED.** The withdrawal now voids the agreement (signatures, Foundation and witness stamps and the sponsorship link cleared; the old stamps kept in the activity row's meta), and `agreement_guard.lock_current` refuses the countersignature unless the case is awarded and the agreement is signed for the current holding sponsorship, and the witness unless the case is awarded, active or in maintenance. A re-signing never inherits an old Foundation or witness stamp. Parts (2) and (3) stay open, so this stays low. *(A · S)*
+
+### [TD-594] Two award paths still lock out of order - low
+
+**Raised 2026-11-08 by the A1.13 adversarial review fixes, out of scope.** The review made the accept, the hold-release job, the award-email job and the sponsor's cancel take the application lock first (the withdrawal's order). Two paths were not in the findings and are unchanged: `sponsorship.hold_pending_award` writes the sponsorship and the application with no lock at all, and `lapse_expired_offers` locks the sponsorship and then writes the application (the reverse order, so a deadlock with a withdrawal is possible, though Postgres would break it by failing one side). **Fix:** take `lock_application_for` first in both, then re-read the sponsorship under its lock, with a stale-copy test each as in `test_a113_review_fixes.py`. *(A · S)*

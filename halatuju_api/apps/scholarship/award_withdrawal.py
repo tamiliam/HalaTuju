@@ -31,6 +31,7 @@ from django.utils import timezone
 
 from . import activity
 from . import usage as _usage
+from .agreement_guard import void_on_withdrawal
 from .award_revert import revert_to_pool
 from .models import Disbursement, Sponsorship
 from .models.activity import EVENT_AWARD_WITHDRAWN
@@ -138,12 +139,15 @@ def withdraw_award(application, *, by_admin, reason):
         for tranche in application.disbursements.filter(status__in=('scheduled', 'due')).order_by('pk'):
             withhold_tranche(tranche, by_email=actor_email, note=note, actor=by_admin)
             withheld.append(tranche.pk)
+        # Review finding 1: the agreement dies with the award (signatures + sponsorship link
+        # cleared), so it can be neither countersigned nor paid on after a re-award.
+        agreement_was = void_on_withdrawal(application)
         revert_to_pool(application)
         activity.log_event(
             application, EVENT_AWARD_WITHDRAWN, actor_email=actor_email, body=text, internal=True,
             meta={'sponsorship_ids': [sp.pk for sp in holding], 'amount_freed': str(freed),
                   'tranches_withheld': withheld, 'to': application.status,
-                  'student_emailed': told})
+                  'student_emailed': told, 'agreement_voided': agreement_was})
         if told:
             pk = application.pk
             transaction.on_commit(lambda: _send_withdrawn_email(_reload(pk)))

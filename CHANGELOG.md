@@ -13,6 +13,14 @@ Branch a113 (not pushed; no migration, no model change beyond a new activity eve
 - **CO-05 / TD-075 / TD-142:** status only; dated notes in the register. They wait on the lawyer, the entity and TD-140.
 - Tests: `test_award_withdrawal.py` (24, new), `test_course_start.py` (8, new), `test_student_activity.py` (event list); jest `WithdrawAwardCard.test.tsx` (new).
 - New debt: TD-591 (withdrawing a paid award), TD-592 (payments start-year idea), TD-593 (loose ends after a withdrawal).
+- **Adversarial review fixes (BLOCK on the first commit; no migration, no money rule changed):**
+  - F1: the withdrawal voids the bursary agreement (new `agreement_guard.py`; the old stamps are kept in the activity meta). Countersign and witness re-read the case and the agreement under lock and refuse a withdrawn or superseded agreement (409 `agreement_not_current` with a `reason`; countersign needs `awarded`, witness `awarded`/`active`/`maintenance`, or a decline still in its cool-off from one of those, as the source console already allows). A re-signing resets the Foundation and witness fields. Latent today: `BURSARY_AGREEMENT_ENABLED` is not set on the live API. TD-593 part (1) closed.
+  - F2: `respond_to_award` locks the case (awarded only) and re-reads the offer under lock; a stale accept is refused as `no_offer`.
+  - F3: `release_pending_awards` locks and re-reads each case and re-checks the due time and the active sponsorship before either write.
+  - F4: `release_award_offer_emails` re-reads each sponsorship under lock (still holding, not yet emailed) before sending.
+  - F5: `cancel_offer` locks the application before the sponsorship.
+  - Tests: `test_a113_review_fixes.py` (new; one per finding, plus the withdrawal of an accepted award, one in its hold period, and a payment run completed after a withdrawal); `test_staff_activity_money.py` fixture now countersigns a signed agreement.
+  - New debt: TD-594 (`hold_pending_award` unlocked; `lapse_expired_offers` locks in reverse order).
 
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 

@@ -629,13 +629,9 @@ def release_award_offer_emails(now=None, held=None):
     the window stops the email. Hourly scheduler (job ``release-award-offer-emails``). Returns the
     count sent. Request #26: a student whose parent phone needs a call WAITS (ids into ``held``).
 
-    ``offer_emailed_at`` is stamped ONLY ON SUCCESS (changed 2026-07-12). It previously stamped
-    either way, on the reasoning that a transient failure "never re-floods" — but the query filters
-    on ``offer_emailed_at IS NULL``, so a single failed send permanently suppressed that student's
-    email and they would simply never learn they had won. That is a far worse outcome than a retry,
-    and the same fix was already made in ``send_award_offer_emails`` (code-health S3 #7); this path
-    was missed. A genuinely undeliverable address now retries hourly — visible in the logs, and
-    fixable — rather than failing silently forever.
+    ``offer_emailed_at`` is stamped ONLY ON SUCCESS (2026-07-12; as ``send_award_offer_emails``,
+    code-health S3 #7): stamping a failed send suppressed the email for good, so the student never
+    learnt she had won. An undeliverable address now retries hourly, visibly, instead.
 
     On a successful send it also raises the Vircle setup task, because the email now carries the
     Vircle instructions and the task it points at must exist by the time the student reads it."""
@@ -643,48 +639,55 @@ def release_award_offer_emails(now=None, held=None):
     from .award_timing import award_email_release_window
     from .parent_call import held_for_parent_call
     now = now or timezone.now()
-    # Contract mode (go-live transition, 2026-07-19): when the bursary agreement flag is ON the
-    # good-news email invites the student to REVIEW & SIGN the agreement, carries NO Vircle content,
-    # and raises NO Vircle setup task here — the Vircle install email + task now fire automatically
-    # at agreement EXECUTION (bursary.distribute_executed_agreement). When the flag is OFF the path
-    # below is byte-identical to before (Vircle-flavoured award email + raise_setup_task).
+    # Contract mode (2026-07-19): flag ON → the email invites the student to REVIEW & SIGN, with NO
+    # Vircle content or task (those fire at EXECUTION, bursary.distribute_executed_agreement). Flag
+    # OFF → the Vircle-flavoured award email + raise_setup_task, as before.
     bursary_on = getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False)
-    qs = (Sponsorship.objects
-          .filter(award_email_release_window(now),   # per organisation: award_timing.py
-                  status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True)
-          .select_related('application', 'application__profile'))
+    due = list(Sponsorship.objects
+               .filter(award_email_release_window(now),   # per organisation: award_timing.py
+                       status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True)
+               .order_by('pk').values_list('pk', flat=True))
     sent = 0
-    for sp in qs:
-        app = sp.application
-        name = getattr(app.profile, 'name', '') if app.profile else ''
-        if held_for_parent_call(app, held):
-            continue   # request #26: the award email waits for the parent call; unstamped, so retried
-        if bursary_on:
-            # Bill the tenant — an unwrapped send meters org-NULL (see emails._meter_email).
+    for pk in due:
+        # A1.13 review finding 4: RE-READ each row under its lock and send + stamp under it, so a
+        # cancel / withdrawal that landed after the list was read stops the email.
+        with transaction.atomic():
+            sp = (Sponsorship.objects.select_for_update(of=('self',))
+                  .select_related('application', 'application__profile')
+                  .filter(pk=pk, status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True)
+                  .first())
+            if sp is None:
+                continue
+            app = sp.application
+            name = getattr(app.profile, 'name', '') if app.profile else ''
+            if held_for_parent_call(app, held):
+                continue   # request #26: the email waits for the parent call; unstamped, so retried
+            if bursary_on:
+                # Bill the tenant — an unwrapped send meters org-NULL (see emails._meter_email).
+                with _usage.usage_context(application=app):
+                    ok = send_award_offer_sign_email(
+                        to_email=app.notify_email, applicant_name=name,
+                        lang=getattr(app, 'locale', '') or 'en')
+                if not ok:
+                    continue   # stamp only on success (see below); retry next run
+                sp.offer_emailed_at = now
+                sp.save(update_fields=['offer_emailed_at', 'updated_at'])
+                sent += 1
+                continue   # NO Vircle task on the contract-mode path — it's raised at execution
+            from .vircle import can_register
             with _usage.usage_context(application=app):
-                ok = send_award_offer_sign_email(
+                ok = send_award_offer_email(
                     to_email=app.notify_email, applicant_name=name,
-                    lang=getattr(app, 'locale', '') or 'en')
+                    lang=getattr(app, 'locale', '') or 'en',
+                    guardian_note=not can_register(app), branding=_branding.for_application(app))
             if not ok:
-                continue   # stamp only on success (see below); retry next run
+                continue   # stamp ONLY on success (2026-07-12, the docstring): next run retries
             sp.offer_emailed_at = now
             sp.save(update_fields=['offer_emailed_at', 'updated_at'])
+            # The award email now CARRIES the Vircle instructions, so the task it refers to must
+            # exist the moment the student reads it — but never for a student whose email failed.
+            raise_setup_task(app)
             sent += 1
-            continue   # NO Vircle task on the contract-mode path — it's raised at execution
-        from .vircle import can_register
-        with _usage.usage_context(application=app):
-            ok = send_award_offer_email(
-                to_email=app.notify_email, applicant_name=name,
-                lang=getattr(app, 'locale', '') or 'en',
-                guardian_note=not can_register(app), branding=_branding.for_application(app))
-        if not ok:
-            continue   # stamp ONLY on success (2026-07-12, the docstring): the next hourly run retries
-        sp.offer_emailed_at = now
-        sp.save(update_fields=['offer_emailed_at', 'updated_at'])
-        # The award email now CARRIES the Vircle instructions, so the task it refers to must exist
-        # the moment the student reads it — but never for a student whose email failed.
-        raise_setup_task(app)
-        sent += 1
     return sent
 
 
@@ -721,8 +724,15 @@ def cancel_offer(sponsor, sponsorship_id):
 
     ``offer_emailed_at`` — not an elapsed-hours calculation — is the gate, because it IS the fact
     that matters (the student has been told); a separate clock could drift from the cron that sends
-    the email. Locked FOR UPDATE so a cancel can't race ``release_award_offer_emails`` and land on
-    the wrong side of that line. Raises SponsorshipError on a bad state."""
+    the email. Locked FOR UPDATE so a cancel can't race ``release_award_offer_emails`` (it sends +
+    stamps under the same row lock) and land on the wrong side of that line. A1.13 review F5: the
+    APPLICATION is locked first, as the withdrawal does. Raises SponsorshipError on a bad state."""
+    from .models import ScholarshipApplication
+    from .status_lock import lock_application_for
+    app_id = (Sponsorship.objects.filter(id=sponsorship_id, sponsor=sponsor, status='offered')
+              .values_list('application_id', flat=True).first())
+    if app_id is not None:   # any status: this lock is for ORDER only; the checks are unchanged
+        lock_application_for(app_id, tuple(c for c, _ in ScholarshipApplication.STATUS_CHOICES))
     sp = (Sponsorship.objects.select_for_update()
           .filter(id=sponsorship_id, sponsor=sponsor, status='offered')
           .select_related('application').first())
@@ -755,8 +765,15 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     (guarantor_name/_nric/_relationship). The agreement is signed INSIDE this atomic block
     BEFORE the consent + 'active' flip, so a BursaryError rolls the whole acceptance back.
     When the flag is OFF, none of the new fields are required and no agreement is created —
-    behaviour is exactly as before."""
-    sponsorship = current_offer(application)
+    behaviour is exactly as before. A1.13 review F2: the case, then the offer, is locked and re-read
+    first, so an accept racing a withdrawal / cancel answers ``no_offer``, never 'active'."""
+    from .status_lock import StatusRefused, lock_application_for
+    try:
+        lock_application_for(application, ('awarded',))
+    except StatusRefused:
+        raise SponsorshipError('no_offer')
+    sponsorship = (application.sponsorships.select_for_update().filter(status='offered')
+                   .order_by('-offered_at').first())
     if sponsorship is None:
         raise SponsorshipError('no_offer')
 
@@ -815,10 +832,8 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     sponsorship.status = 'active'
     sponsorship.consent = consent
     sponsorship.decided_at = timezone.now()
-    # Offer-lapse rework: the agreement has bound (student + guarantor signed above, flag-ON) —
-    # the accept clock is FULFILLED, so clear any armed deadline. (The status also leaves 'offered'
-    # here, which alone takes it out of the lapse query; clearing the deadline keeps the record
-    # honest and belt-and-braces.)
+    # Offer-lapse rework: accepted → the accept clock is FULFILLED; clear any armed deadline (leaving
+    # 'offered' already takes it out of the lapse query — this keeps the record honest).
     sponsorship.accept_deadline = None
     sponsorship.save(update_fields=['status', 'consent', 'decided_at', 'accept_deadline', 'updated_at'])
 
@@ -880,20 +895,28 @@ def hold_pending_award(application):
 
 def release_pending_awards(now=None):
     """Finalise every accepted award whose cool-off has passed: flip 'sponsored' + send the
-    funding-confirmed email + open onboarding. Intended for the scheduler. Returns the count."""
+    funding-confirmed email + open onboarding. Intended for the scheduler. Returns the count.
+    A1.13 review F3: each case is locked and re-read (awarded only) and re-checked before a write."""
     from .models import ScholarshipApplication
+    from .status_lock import StatusRefused, lock_application_for
     now = now or timezone.now()
     qs = (ScholarshipApplication.objects
           .filter(award_due_at__isnull=False, award_due_at__lte=now)
           .exclude(status='active').select_related('cohort', 'profile'))
     released = 0
     for app in qs:
-        # Only finalise if the acceptance still holds (not held/lapsed in the window).
-        if not app.sponsorships.filter(status='active').exists():
-            _revert_to_pool(app)
-            continue
-        _finalise_award(app, app.locale)
-        released += 1
+        with transaction.atomic():
+            try:
+                lock_application_for(app, ('awarded',))
+            except StatusRefused:
+                continue   # withdrawn / closed / already moved on since the list was read
+            if app.award_due_at is None or app.award_due_at > now:
+                continue   # held, withdrawn or re-timed since the list was read
+            if not app.sponsorships.filter(status='active').exists():   # held / lapsed meanwhile
+                _revert_to_pool(app)
+                continue
+            _finalise_award(app, app.locale)
+            released += 1
     return released
 
 
@@ -947,9 +970,8 @@ def lapse_expired_offers(lapsed_ids=None):
     the sponsor's balance; the application reverts to the pool). Intended for a scheduled job.
 
     Offer-lapse rework (go-live transition, 2026-07-19, owner decision 3):
-      • ARMED-ONLY. A NULL ``accept_deadline`` means the sign-invitation clock was never started,
-        so the offer is NOT a lapse candidate. (Django's ``accept_deadline__lt=now`` already
-        excludes NULLs; ``isnull=False`` makes the intent explicit.)
+      • ARMED-ONLY. A NULL ``accept_deadline`` (the sign-invitation clock never started) is NOT a
+        lapse candidate (``isnull=False`` makes explicit what ``__lt=now`` already does).
       • PAID APPS NEVER AUTO-LAPSE. An application with any released disbursement (e.g. the
         grandfather cohort, already being paid while their in-app acceptance is back-filled) is
         REFUSED — it is logged and returned in ``flagged`` for an admin to handle by hand, never
