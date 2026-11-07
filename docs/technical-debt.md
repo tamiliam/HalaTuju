@@ -7559,9 +7559,10 @@ student who answers once on a bad connection sees her answer while the server ho
 household-income route engine (money: who is means-tested how). Fix: show "Not saved — tap again" on a failed save,
 and decide (owner) whether a pre-fill may be stored before the student confirms it. *(M · S)*
 
-**Status 2026-11-07 (A1.12): part (b) fixed, part (a) open.** (b) A failed answer save now shows "Not saved — tap
-your answer again" (`scholarship.docs.income.wizard.notSaved`, en/ms/ta, role alert); the next save that works clears
-it (`IncomeWizard.saveFailed.test.tsx`). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
+**Status 2026-11-07 (A1.12): part (b) fixed, part (a) open.** (b) A failed answer save is kept by field with its
+value (`ScholarshipDocuments/failedSaves.tsx`); the alert (`scholarship.docs.income.wizard.notSaved` / `tryAgain`,
+en/ms/ta) stays until every failed field is saved, and Try again re-sends the exact values
+(`IncomeWizard.saveFailed.test.tsx`, 6). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
 route / earner / working members when the page opens, before the student taps anything?
 
 ### [TD-461] The post-shortlist step wizard still has the 10 px icon tab bar - low
