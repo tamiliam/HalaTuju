@@ -1,10 +1,9 @@
-"""TD-153 (b) — the last three oversight lists that any admin could read now gate on ROLE.
+"""TD-153 (b) — the oversight lists (the graduation queue was retired 2026-11-07, TD-496) that any admin could read now gate on ROLE.
 
 Each gate is the union of roles that legitimately reach the data (decisions.md 2026-09-30):
 
   endpoint                                  allowed (super always passes)
   /admin/sponsorships/                      org_admin, admin, finance   (the Sponsors roles)
-  /admin/graduation-messages/               reviewer, admin             (moderator + ex-'viewer')
   /admin/scholarship/verdict-metrics/       org_admin, admin, qc, reviewer (Applications roles)
 
 lessons.md 2026-09-28: "for a rule keyed on role, loop EVERY role that can reach the screen" — so
@@ -21,7 +20,6 @@ ROLES = tuple(code for code, _ in PartnerAdmin.ROLE_CHOICES)
 
 GATES = {
     '/api/v1/admin/sponsorships/': {'super', 'org_admin', 'admin', 'finance'},
-    '/api/v1/admin/graduation-messages/': {'super', 'reviewer', 'admin'},
     '/api/v1/admin/scholarship/verdict-metrics/': {'super', 'org_admin', 'admin', 'qc',
                                                   'reviewer'},
 }
@@ -51,9 +49,6 @@ class OversightListRoleGateTest(TestCase):
 
     def test_the_sponsorships_list(self):
         self._check('/api/v1/admin/sponsorships/')
-
-    def test_the_graduation_message_queue(self):
-        self._check('/api/v1/admin/graduation-messages/')
 
     def test_the_verdict_metrics(self):
         self._check('/api/v1/admin/scholarship/verdict-metrics/')

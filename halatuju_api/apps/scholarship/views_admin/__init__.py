@@ -101,7 +101,7 @@ from .credits import (
 from .guardian_contact import AdminGuardianCallView, AdminGuardianContactView
 from .graduation import (
     _BursaryAdminBase, AdminBursaryCountersignView, AdminBursaryWitnessView,
-    AdminGraduationMessageListView, AdminGraduationMessageReviewView,
+    AdminGraduationMessageReviewView,
 )
 from .interview_slots import (
     _parse_slot_starts, AdminInterviewSlotsView,

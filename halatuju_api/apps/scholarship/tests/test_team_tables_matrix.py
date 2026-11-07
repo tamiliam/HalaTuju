@@ -316,11 +316,18 @@ class AccessMatrix(TestCase):
         return cells
 
 
+#: Cells of the BEFORE fixtures whose ROUTE has since been retired (the fixtures are never regenerated).
+#: TD-496 (owner 2026-11-07, B): the graduation-messages list; its moderation POST stays.
+RETIRED_CELLS = ('GET api/v1/admin/graduation-messages/',)
+
+
 def _before():
-    """Every shape's BEFORE row: the original fixture and the mixed-keys one (never overlapping)."""
+    """Every shape's BEFORE row: the original fixture and the mixed-keys one (never overlapping), minus
+    the cells of retired routes."""
     first, mixed = json.loads(FIXTURE.read_text()), json.loads(MIXED_FIXTURE.read_text())
     assert not set(first) & set(mixed)
-    return {**first, **mixed}
+    return {shape: {k: v for k, v in row.items() if k not in RETIRED_CELLS}
+            for shape, row in {**first, **mixed}.items()}
 
 
 def _shape_test(shape):

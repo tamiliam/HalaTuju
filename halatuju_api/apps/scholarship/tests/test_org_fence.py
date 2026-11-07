@@ -172,11 +172,6 @@ class TestOrgFenceProof(TestCase):
         if app_ids is not None:
             self.assertEqual(app_ids, {self.a['app'].id})
 
-    def test_graduation_list_isolated(self):
-        self._auth('a-admin')
-        r = self.client.get('/api/v1/admin/graduation-messages/?status=all').json()
-        self.assertEqual(len(r['messages']), 1)
-
     def test_verdict_metrics_isolated(self):
         self._auth('a-admin')
         m = self.client.get('/api/v1/admin/scholarship/verdict-metrics/').json()
@@ -665,7 +660,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminAssignReviewerView': 'gate+super/org_admin', 'AdminInterviewSlotsView': 'gate',
         # list/aggregate fenced via _org_scoped
         'AdminApplicationListView': 'list-fenced', 'AdminSponsorshipListView': 'list-fenced',
-        'AdminVerdictMetricsView': 'list-fenced', 'AdminGraduationMessageListView': 'list-fenced',
+        'AdminVerdictMetricsView': 'list-fenced',
         # list-fenced (PartnerAdmin staff pool, org-scoped for a non-super caller — 2026-07-15)
         'AdminAssignableAdminsView': 'list-fenced',
         # secondary fetch + _can_review_app / _org_allows re-gate

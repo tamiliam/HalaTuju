@@ -339,7 +339,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-493** - The agency-letterhead lift does not catch a private name with no organisation word - medium
 - **TD-494** - The agency lift's descriptor excuse can hide a company name - medium
 - **TD-495** - "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
-- **TD-496** - The graduation-messages list opens by role label; no v2 key reproduces its holders - low (owner 2026-11-07: retire it, B; removal is a later small job)
+- **TD-496** - CLOSED 2026-11-07 (owner ruling B): the graduation-messages list was retired; nothing called it
 - **TD-497** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 - **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (owner 2026-11-07: fix inside T5g)
 - **TD-499** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
@@ -7930,8 +7930,13 @@ is the `review` hat (7 active shapes move: the five `admin` shapes lose it; `fin
 gain it); every Engagement key moves 10 (all org-admin shapes gain; every reviewer shape loses); `students.view`
 moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
 `_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
-**Owner 2026-11-07: B, retire the list** after a check that nothing calls it (decisions.md 2026-11-07). A later
-small job on the A1.11 branch does the removal; A1.11b recorded the ruling only.
+**Owner 2026-11-07: B, retire the list** after a check that nothing calls it (decisions.md 2026-11-07).
+**CLOSED 2026-11-07 (owner ruling B).** Proof nothing called it: no web page or fetch helper names
+`/admin/graduation-messages/` (the web only calls the sponsor endpoint), no API caller, and no request in the
+last 30 days of `halatuju-api` logs. Removed on branch a111a: `AdminGraduationMessageListView`, its route
+`admin/graduation-messages/`, its export, its tests (org-fence list test, role-gate test, the catalogue test's
+`UNMAPPED` entry) and its `GATE-LEFT` line in `test_role_is_display_only`; the access-matrix fixtures keep the old
+cell, filtered by `RETIRED_CELLS`. Kept: the moderation POST `.../<id>/review/` and its `_require_reviewer` door.
 
 ### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 

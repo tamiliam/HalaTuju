@@ -6,42 +6,11 @@ and every importer are unchanged.
 """
 from rest_framework import status
 from rest_framework.response import Response
-from halatuju.pagination import FlexiblePageNumberPagination
 from ..models import GraduationMessage
 from .. import in_programme as in_programme_service
 from ..serializers_admin import AdminGraduationMessageSerializer
 
 from .base import _AdminBase
-
-
-class AdminGraduationMessageListView(_AdminBase):
-    """GET /api/v1/admin/graduation-messages/ — the moderation queue (F9a). Reviewer +
-    super (viewer is read-only staff and may also read). ``?status=pending`` (default)
-    filters; ``?status=all`` returns everything. Staff see the full text + scan
-    outcome — they are NOT the anonymity boundary.
-
-    Role gate (TD-153 b, 2026-09-30): exactly the roles this docstring always named — `reviewer`
-    (who moderates, via `AdminGraduationMessageReviewView`) and super — plus `admin`, which is
-    what 'viewer' became when it was retired on 2026-06-09. No page calls this queue."""
-
-    def get(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not (admin.is_super or admin.role in ('reviewer', 'admin')):
-            return self._deny_role()
-        # org-fence: _org_scoped on the application join, applied below.
-        qs = GraduationMessage.objects.select_related('application').all()
-        qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')
-        status_f = request.GET.get('status', 'pending')
-        if status_f != 'all':
-            qs = qs.filter(status=status_f)
-        paginator = FlexiblePageNumberPagination()
-        page = paginator.paginate_queryset(qs, request, view=self)
-        data = AdminGraduationMessageSerializer(page, many=True).data
-        return paginator.envelope(
-            data, results_key='messages', total_count=paginator.page.paginator.count,
-        )
 
 
 class AdminGraduationMessageReviewView(_AdminBase):
