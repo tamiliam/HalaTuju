@@ -139,10 +139,12 @@ class TestTheCheck2Ask(TestCase):
         from apps.scholarship.check2_deferred import HELD_WHILE_DEFERRED
         self.assertIn(higher_owed.ASK_CODE, HELD_WHILE_DEFERRED)
 
-    def test_the_machine_asks_only_in_the_completed_stage(self):
+    def test_the_machine_also_asks_while_interviewing(self):
+        # Owner 2026-11-07 (reverses this test's Completed-only rule for THIS ask): the reviewer or
+        # QC may pick it up even if the student does not answer. `higher_owed.LATE_ASK_STATUSES`.
         app = _submitted(stage='interviewing')
         sync_check2_queries(app)
-        self.assertFalse(_ask(app).exists())
+        self.assertEqual(_ask(app).get().status, 'open')
 
     def test_nothing_for_a_post_spm_application(self):
         for app in (_submitted(plan=POLY), _submitted(profile=SPM_HELD, plan=POLY)):

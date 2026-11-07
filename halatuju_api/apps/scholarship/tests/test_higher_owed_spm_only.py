@@ -115,15 +115,26 @@ class TestGroup1DeclaredSpmOnly(TestCase):
                          ('open', 'doc', 'higher_results', 'academic', {}))
         self.assertFalse(_ask(app).exists())                        # one card, not two
 
-    def test_the_stage_rule_is_unchanged(self):
-        app = _spm_only(stage='interviewing')                       # only profile_complete asks
+    def test_this_ask_also_reaches_interviewing_and_interviewed(self):
+        # Owner 2026-11-07: "Even if the student doesn't respond, the reviewer or QC may pick it up."
+        app = _spm_only(stage='interviewing')
         sync_check2_queries(app)
-        self.assertFalse(_items(app, DECLARE).exists())
+        self.assertEqual(_items(app, DECLARE).get().status, 'open')
         app = _spm_only()                                           # the live 'interviewed' status
         type(app).objects.filter(pk=app.pk).update(status='interviewed')
         sync_check2_queries(_fresh(app))
-        self.assertFalse(_items(app, DECLARE).exists())
+        self.assertEqual(_items(app, DECLARE).get().status, 'open')
         self.assertEqual(_academic(app)['status'], 'recommend')     # the cap still shows the gap
+
+    def test_the_late_stage_exception_is_these_two_asks_only(self):
+        app = _spm_only(stage='interviewing')
+        for code in (higher_owed.ASK_CODE, DECLARE):
+            self.assertTrue(higher_owed.may_raise(app, code, False))
+        self.assertFalse(higher_owed.may_raise(app, 'payslip_requested', False))   # any other ask: the rule
+        for status in ('shortlisted', 'recommended', 'awarded', 'rejected'):
+            type(app).objects.filter(pk=app.pk).update(status=status)
+            self.assertFalse(higher_owed.may_raise(_fresh(app), DECLARE, False))
+        self.assertTrue(higher_owed.may_raise(_fresh(app), 'payslip_requested', True))  # the rule itself untouched
 
     def test_no_course_id_but_a_degree_by_name(self):
         """187 / 274 / 361: pathway 'degree' or 'university', a degree course name, no catalogue id."""

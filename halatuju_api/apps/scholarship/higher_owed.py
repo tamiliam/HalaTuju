@@ -74,6 +74,19 @@ DECLARE_ASK_CODE = 'higher_results_declare_requested'
 ASK_SPECS = {ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'},
              DECLARE_ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'}}
 GOVERNED = {ASK_CODE: (('document', 'results_slip'),), DECLARE_ASK_CODE: (('document', 'results_slip'),)}
+#: Owner, 2026-11-07: these two asks ALONE may also be raised (or re-opened) by the machine while the
+#: case is with its reviewer or awaiting QC — an exception to the Completed-stage-only rule
+#: (`services.querying.AUTO_QUERY_STATUSES`, 2026-07-13) and the post-interview lock (V3), because a
+#: degree student without her higher results on file is a gap that must reach her: "Even if the
+#: student doesn't respond, the reviewer or QC may pick it up." Recommended onward stays out.
+LATE_ASK_STATUSES = ('interviewing', 'interviewed')
+
+
+def may_raise(application, code, may_ask: bool) -> bool:
+    """May Check 2 CREATE / RE-OPEN `code` now? The general rule (`may_ask`), or one of the two
+    higher-results asks on a completed application in `LATE_ASK_STATUSES`."""
+    return may_ask or (code in ASK_SPECS and application.profile_completed_at is not None
+                       and application.status in LATE_ASK_STATUSES)
 
 
 def declared_kind(application) -> str:

@@ -35,7 +35,7 @@ Verified facts:
 | 8 | "Already in university" with no catalogue course: assess whether a degree course name or a live offer letter whose programme reads as a degree should count as degree-bound for THIS check only (`destination()` unchanged). Built: the course name (the offer's own, autofilled); the offer read was not needed. |
 | 9 | Legacy rows that DECLARED higher results (STPM grades / CGPA) but whose recorded completion still reads SPM (161, 205, 226, 243, 251, 276) are the same rule: owed with the declared kind. |
 | 10 | Recommended or any later stage is too late: the new arms (owed slot, cap, ask) stop at `family.DECIDED_STATUSES` (187, 276 out). #388's own shape unchanged. |
-| 11 | The Check-2 stage rule is NOT changed; report who would actually be asked. |
+| 11 | ~~The Check-2 stage rule is NOT changed~~ — owner, 2026-11-07: these two asks may also be raised while `interviewing` / `interviewed` (`higher_owed.may_raise`); every other ask keeps the Completed-stage rule; Recommended onward never. |
 
 ## What to build
 

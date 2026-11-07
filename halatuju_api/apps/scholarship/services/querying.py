@@ -38,6 +38,9 @@ def querying_locked(application):
 #                             not a to-do) — see views.SET_ASIDE_STATES.
 #   Rejected / withdrawn / expired / closed — nobody.
 #
+# ONE EXCEPTION (owner, 2026-11-07): the two higher-results asks may also be raised by the machine
+# while interviewing / interviewed — `higher_owed.LATE_ASK_STATUSES` / `may_raise`.
+#
 # A REOPENED decision lands the case back in `interviewing` (or `interviewed`), so it follows the
 # same rules by status alone — deliberately NOT via the querying_locked reopen exception, which
 # would otherwise let the machine start asking a reopened case fresh questions.

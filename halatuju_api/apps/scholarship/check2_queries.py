@@ -501,7 +501,7 @@ def sync_check2_queries(application):
         if code in held:
             continue
         if code in proof_wanted:
-            if item is None and may_ask:         # machine asks only in the Completed stage
+            if item is None and higher_owed.may_raise(application, code, may_ask):   # Completed only, bar 2
                 try:
                     # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
                     # tagged to the RIGHT household member. Without this, a model doc-request stored
@@ -518,7 +518,7 @@ def sync_check2_queries(application):
                     raised_student_visible = True
                 except IntegrityError:
                     pass
-            elif item is not None and item.status == 'resolved' and may_ask:
+            elif item is not None and item.status == 'resolved' and higher_owed.may_raise(application, code, may_ask):
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
                 # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
                 # post-lock — a concluded case doesn't re-ask.
