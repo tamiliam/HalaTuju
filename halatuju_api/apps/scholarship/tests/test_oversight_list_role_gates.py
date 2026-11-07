@@ -58,7 +58,7 @@ class OversightListRoleGateTest(TestCase):
     def test_the_verdict_metrics(self):
         self._check('/api/v1/admin/scholarship/verdict-metrics/')
 
-    def test_a_legacy_super_flag_passes_every_gate(self):
-        legacy = make_admin('reviewer', owning_org=self.org, super_admin=True)
+    def test_a_super_passes_every_gate(self):
+        super_admin = make_admin('super', owning_org=self.org)
         for path in GATES:
-            self.assertEqual(authed_client(legacy).get(path).status_code, 200, path)
+            self.assertEqual(authed_client(super_admin).get(path).status_code, 200, path)

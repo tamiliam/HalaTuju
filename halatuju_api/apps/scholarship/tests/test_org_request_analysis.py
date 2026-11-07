@@ -60,7 +60,7 @@ class _Base(TestCase):
             supabase_user_id='an-oa-x', role='org_admin', is_active=True,
             owning_organisation=cls.other, name='Intruder', email='x@an2.test')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='an-su', is_super_admin=True, is_active=True,
+            supabase_user_id='an-su', role='super', is_active=True,
             name='Super', email='su@an.test')
 
     def setUp(self):

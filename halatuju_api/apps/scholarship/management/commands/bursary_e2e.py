@@ -157,7 +157,7 @@ class Command(BaseCommand):
         # The Foundation officer who can countersign (super).
         PartnerAdmin.objects.create(
             supabase_user_id='e2e-super', name='Foundation Officer',
-            email='foundation.officer@example.test', is_super_admin=True, role='super', is_active=True)
+            email='foundation.officer@example.test', role='super', is_active=True)
 
         profile = StudentProfile.objects.create(
             supabase_user_id='e2e-stu', name='E2E Student', nric='000101-10-1233',

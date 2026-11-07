@@ -27,7 +27,7 @@ def _org(code):
 def _admin(uid, org=None, role='org_admin', super_=False):
     return PartnerAdmin.objects.create(
         supabase_user_id=uid, email=f'{uid}@example.com', name=uid,
-        role=role, is_super_admin=super_, is_active=True, owning_organisation=org)
+        role='super' if super_ else role, is_active=True, owning_organisation=org)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

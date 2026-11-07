@@ -291,7 +291,7 @@ class TestPartnerViewsNeverSeeIt(TestCase):
         self.addCleanup(self._p1.stop); self.addCleanup(self._p2.stop)
         self.client.credentials(HTTP_AUTHORIZATION='Bearer fake-but-patched')
         PartnerAdmin.objects.create(supabase_user_id=SUPER_UID, email='s@example.com',
-                                    name='Super', is_super_admin=True)
+                                    name='Super', role='super')
         StudentProfile.objects.create(supabase_user_id='student-x', name='TEST STUDENT',
                                       nationality='malaysian', bumiputera=True)
 

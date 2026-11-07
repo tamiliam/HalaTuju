@@ -40,7 +40,7 @@ class _Base(TestCase):
         cls.org_a = brightpath_org()   # migration 0098 seeds 'brightpath'
         cls.org_b = PartnerOrganisation.objects.create(code='ct-b', name='Org B')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='ct-super', is_super_admin=True, is_active=True,
+            supabase_user_id='ct-super', role='super', is_active=True,
             name='Super', email='ctsuper@x.com')
         cls.oa = PartnerAdmin.objects.create(
             supabase_user_id='ct-oa', role='org_admin', is_active=True,

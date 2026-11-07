@@ -476,7 +476,7 @@ class TestIsolationFromStaffAndSponsors(ClaimBase):
 
     def test_an_alias_never_redirects_an_admin_lookup(self):
         admin = PartnerAdmin.objects.create(
-            supabase_user_id='td254-admin-uid', role='super', is_super_admin=True,
+            supabase_user_id='td254-admin-uid', role='super', 
             name='Test Admin 07', email='admin07@example.invalid')
         ProfileLoginAlias.objects.create(alias_uid=admin.supabase_user_id, profile=self.target)
         resp = authed_client(admin.supabase_user_id).get('/api/v1/admin/scholarship/applications/')

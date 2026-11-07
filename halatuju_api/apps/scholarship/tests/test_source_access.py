@@ -72,7 +72,7 @@ class TestTheSourceBinding(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             PartnerAdmin.objects.filter(pk=user.pk).update(role='reviewer')
         with self.assertRaises(IntegrityError), transaction.atomic():
-            PartnerAdmin.objects.filter(pk=user.pk).update(is_super_admin=True)
+            PartnerAdmin.objects.filter(pk=user.pk).update(role='super')
 
     def test_an_unrelated_save_on_staff_reads_no_source(self):
         """The guard costs a source user one look-up and a staff save nothing."""

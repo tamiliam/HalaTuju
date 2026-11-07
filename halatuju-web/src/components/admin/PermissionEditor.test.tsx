@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  *
  * "What <name> can do" — the staff-permission editor (request #39 Sprint 4), against the design of
- * record the owner approved on 2026-10-21: two groups of site Toggles, Quality check held behind See
- * all students, a "Custom" chip and "changed" markers, a consequence line worded from the SERVER's
+ * record the owner approved on 2026-10-21: two groups of site Toggles, Quality check bringing See
+ * all students (TD-499: it IMPLIES it, as the server says), a "Custom" chip and "changed" markers, a consequence line worded from the SERVER's
  * dry run (never re-derived here), the server's refusal shown as it is, Save and Reset.
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -69,23 +69,38 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()          // nothing changed, nothing asked
 })
 
-it('holds Quality check until See all students is on, and drops it when See all goes', async () => {
-  mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
-  await open()
-  expect((toggle('qc') as HTMLButtonElement).disabled).toBe(true)
-  expect(screen.getByText('admin.permEditor.qcHint')).toBeTruthy()
-  fireEvent.click(toggle('see_all'))
-  expect((toggle('qc') as HTMLButtonElement).disabled).toBe(false)
-  fireEvent.click(toggle('qc'))
-  expect(isOn('qc')).toBe(true)
-  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
-    7, ['review', 'see_all', 'qc'], true, { token: 'tok' }))
-  const asked = mockApi.saveStaffPermissions.mock.calls.length
-  fireEvent.click(toggle('see_all'))
-  expect(isOn('qc')).toBe(false)
-  // Back to the set she holds: nothing to ask the server, and the line says so.
-  expect(screen.getByText('admin.permEditor.noChange(name=Rohini)')).toBeTruthy()
-  expect(mockApi.saveStaffPermissions).toHaveBeenCalledTimes(asked)
+describe('TD-499: Quality check IMPLIES See all students (the server rule since T5b)', () => {
+  it('allows Quality check without See all students, and brings it along', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    await open()
+    expect((toggle('qc') as HTMLButtonElement).disabled).toBe(false)
+    expect(isOn('see_all')).toBe(false)
+    fireEvent.click(toggle('qc'))
+    expect(isOn('qc')).toBe(true)
+    expect(isOn('see_all')).toBe(true)
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['review', 'qc', 'see_all'], true, { token: 'tok' }))
+  })
+
+  it('refuses to switch See all students off while Quality check is on (locked), and never strips Quality check', async () => {
+    await open({ ...ROHINI, permissions: ['review', 'see_all', 'qc'] })
+    expect((toggle('see_all') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(toggle('see_all'))
+    expect(isOn('see_all')).toBe(true)
+    expect(isOn('qc')).toBe(true)
+    expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
+  })
+
+  it('unlocks See all students once Quality check is off, and leaves it as it was in Admins', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    await open({ ...ROHINI, permissions: ['review', 'see_all', 'qc'] })
+    fireEvent.click(toggle('qc'))
+    expect(isOn('qc')).toBe(false)
+    expect(isOn('see_all')).toBe(true)
+    expect((toggle('see_all') as HTMLButtonElement).disabled).toBe(false)
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['review', 'see_all'], true, { token: 'tok' }))
+  })
 })
 
 it('asks the server for a dry run and words the line from its answer (Rohini\'s Spending)', async () => {
@@ -309,11 +324,10 @@ describe('Team tables T3: one section per table (owner, 2026-11-03)', () => {
       7, ['review', 'spending', 'qc', 'see_all'], false, { token: 'tok' }))
   })
 
-  it('in both tables, Quality check is held until the Admin permission is on, and says so', async () => {
+  it('in both tables, Quality check is never held back, and says it brings See all students (TD-499)', async () => {
     await open()
-    expect((toggle('qc') as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText('admin.permEditor.qcHint')).toBeTruthy()
-    expect(screen.queryByTestId('qc-brings-see-all')).toBeNull()
+    expect((toggle('qc') as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByTestId('qc-brings-see-all').textContent).toBe('admin.permEditor.qcBrings')
   })
 })
 

@@ -173,7 +173,7 @@ class TestTheListSortInterleavesRoutes(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        PartnerAdmin.objects.create(supabase_user_id=ADMIN, is_super_admin=True, is_active=True,
+        PartnerAdmin.objects.create(supabase_user_id=ADMIN, role='super', is_active=True,
                                     name='Admin', email='m100@example.com')
         cls.cohort = make_cohort(code='m100', name='B40', year=2026)
         rows = [

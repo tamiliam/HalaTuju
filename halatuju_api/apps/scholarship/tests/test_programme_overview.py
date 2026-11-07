@@ -102,7 +102,7 @@ class _Base(TestCase):
                 name=uid, email=f'{uid}@ov.test', **kw)
 
         cls.su = PartnerAdmin.objects.create(
-            supabase_user_id='ov-su', is_super_admin=True, is_active=True,
+            supabase_user_id='ov-su', role='super', is_active=True,
             name='Super', email='ov-su@ov.test')
         cls.oa = staff('ov-oa', 'org_admin')
         cls.adm = staff('ov-adm', 'admin')

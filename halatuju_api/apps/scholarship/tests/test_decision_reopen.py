@@ -45,7 +45,7 @@ class TestDecisionReopen(TestCase):
         self.reviewer = PartnerAdmin.objects.create(
             supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
         self.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id=SUPER, is_super_admin=True, is_active=True, name='Boss', email='s@x.com')
+            supabase_user_id=SUPER, role='super', is_active=True, name='Boss', email='s@x.com')
         # A decided, accepted application with a PUBLISHED sponsor profile.
         self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=self.profile, status='recommended',

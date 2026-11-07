@@ -531,8 +531,8 @@ class TestTheSupportingRows(TestCase):
         for role, _label in PartnerAdmin.ROLE_CHOICES:
             admin = make_admin(role)
             self.assertEqual(admin.role, role)
-            self.assertFalse(admin.is_super_admin)
-        self.assertTrue(make_admin('super', super_admin=True).is_super_admin)
+            self.assertEqual(admin.is_super, role == 'super')    # the role alone (TD-064)
+        self.assertEqual(make_admin('reviewer', super_admin=True).role, 'super')
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

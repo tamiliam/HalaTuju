@@ -297,10 +297,8 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     without it the admin sits in the NULL bucket and every request 404s. A super is global and
     needs neither.
 
-    ⚠ A super admin is BOTH things in this codebase — ``is_super_admin`` is the live flag and
-    ``role='super'`` is the newer column that was backfilled from it — so passing
-    ``super_admin=True`` sets the flag and leaves ``role`` as given, exactly as the live rows
-    are shaped. Pass ``role='super'`` as well if the code under test reads the column.
+    ``super_admin=True`` makes the row a super: ``role='super'``, the only super marker since TD-064
+    (A1.10b retired the ``is_super_admin`` flag).
     """
     if role not in dict(PartnerAdmin.ROLE_CHOICES):
         raise _StageError(
@@ -327,7 +325,7 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     kw.pop('programme', None)
     admin = PartnerAdmin.objects.create(
         supabase_user_id=uid or unique_suffix(f'{role}-uid-'),
-        role=role, is_super_admin=bool(super_admin), org=org, **kw)
+        role='super' if super_admin else role, org=org, **kw)
     if gifts:
         from apps.courses import staff_gift
         staff_gift.set_gifts(admin, gifts)

@@ -32,7 +32,7 @@ class _Base(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='s', email='s@x.com', name='Super',
-            is_super_admin=True, is_active=True, role='super')
+            is_active=True, role='super')
         cls.r1 = PartnerAdmin.objects.create(
             supabase_user_id='r1', email='r1@x.com', name='R1',
             is_active=True, role='reviewer')

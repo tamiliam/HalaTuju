@@ -86,7 +86,7 @@ class SponsorDetailBase(TestCase):
         cls.approver_a = _admin(cls.org_a, 'org_admin', 'Suresh Thirugnanam', 'suresh@a.com')
         cls.org_admin_b = _admin(cls.org_b, 'org_admin', 'Beta Admin', 'beta@b.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='sd-super', role='super', is_super_admin=True, is_active=True,
+            supabase_user_id='sd-super', role='super', is_active=True,
             name='Owner', email='owner@x.com')
 
     def _confirmed_credit(self, programme, amount, ref, maker, approver):

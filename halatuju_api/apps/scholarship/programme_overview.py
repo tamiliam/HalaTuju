@@ -95,8 +95,8 @@ def may_customise(admin):
 def sections_for(admin):
     """Which sections this admin's role may receive. `()` for anyone unlisted.
 
-    ⚠ The EFFECTIVE role, not `admin.role` — a legacy super carries `is_super_admin` with some
-    other role string in the column, and `has_role` would answer True to every check. An unknown
+    ⚠ The EFFECTIVE role (`is_super` maps to 'super'), and a super's `has_role` would answer True
+    to every check, so the role string is read, never `has_role`. An unknown
     or unlisted role gets nothing rather than a default, which is the safe direction: a new role
     added to `ROLE_CHOICES` without a decision here is REFUSED by the view (which turns an empty
     tuple into a 403), never handed somebody else's sections.

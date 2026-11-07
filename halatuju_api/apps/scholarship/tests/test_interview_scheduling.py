@@ -127,7 +127,7 @@ class SchedulingServiceTests(TestCase):
         # proposed, and (being the forward trigger) must not flip it into the funnel with no
         # accountable owner. Refused for EVERYONE, including a super (closes the bypass).
         superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-sched', is_super_admin=True, is_active=True,
+            supabase_user_id='super-sched', role='super', is_active=True,
             name='Boss', email='boss-sched@example.com')
         app = self._unassigned_pc_app()
         for who in (superadmin, self.reviewer):
@@ -142,7 +142,7 @@ class SchedulingServiceTests(TestCase):
     def test_propose_endpoint_returns_400_not_assigned_for_super(self):
         # End-to-end: the super's propose POST on an unassigned app → 400 not_assigned, no change.
         PartnerAdmin.objects.create(
-            supabase_user_id='super-ep', is_super_admin=True, is_active=True,
+            supabase_user_id='super-ep', role='super', is_active=True,
             name='Boss', email='boss-ep@example.com')
         app = self._unassigned_pc_app(uid='stud-ep')
         client = APIClient()
@@ -1000,7 +1000,7 @@ class SchedulingEndpointTests(TestCase):
         # a non-super reaching these endpoints must sit inside the cohort's organisation.
         org = cls.cohort.owning_organisation
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@example.com')
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='rev-uid', role='reviewer', is_active=True,

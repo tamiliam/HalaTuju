@@ -426,7 +426,7 @@ class TestSourcesAdminAPI(TestCase):
             organisation=cls.org, code='src-a', name='Source A', contact_person='P',
             contact_email='p@e.test', phone='0111', show_in_apply=True)
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='gl-super', is_super_admin=True, is_active=True,
+            supabase_user_id='gl-super', role='super', is_active=True,
             name='Super', email='s@x.com')
         cls.oa = PartnerAdmin.objects.create(
             supabase_user_id='gl-oa', role='org_admin', is_active=True,

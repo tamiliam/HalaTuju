@@ -37,7 +37,7 @@ class _Base(TestCase):
             supabase_user_id='att-oa-b', role='org_admin', is_active=True,
             owning_organisation=cls.org_b, name='OrgAdmin B', email='aoab@x.com')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='att-sup', is_super_admin=True, is_active=True,
+            supabase_user_id='att-sup', role='super', is_active=True,
             name='Super', email='asup@x.com')
         cls.req_a = OrgRequest.objects.create(
             organisation=cls.org_a, submitted_by=cls.oa_a, kind='feature',

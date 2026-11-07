@@ -86,7 +86,7 @@ def may_act(caller, target, table):
     from apps.courses.views_admin import _staff_target_manageable
     if caller is None or target is None or table not in TABLES:
         return False
-    if target.is_super or target.is_super_admin:
+    if target.is_super:
         return False
     if target.role == sp.LEAD_ROLE:
         # Lead ruling Q4: a super, or the organisation admin on their OWN row — Reviewers only (the lead
@@ -352,7 +352,6 @@ def change(target_id, table, action, *, by, dry_run=False):
         fields = {'permissions': p['stored']}
         if p['role_changed']:
             fields['role'] = p['role']
-            fields['is_super_admin'] = False
         rows = PartnerAdmin.objects.filter(pk=target.pk, role=p['role_from'], is_active=True)
         if p['becomes_mentor']:
             # T3: the mentor link and the mentor record must still be live as the row is written (the
@@ -377,7 +376,7 @@ def candidates(caller, table, organisation_id):
     """The people the Add sheet offers: ACTIVE members of ``organisation_id`` the caller may act on, not
     in ``table``, whom an Add would accept. Name order."""
     from apps.courses.models import PartnerAdmin
-    qs = (PartnerAdmin.objects.filter(is_active=True, is_super_admin=False)
+    qs = (PartnerAdmin.objects.filter(is_active=True)
           .exclude(role='super').select_related('mentor').order_by('name', 'id'))
     if organisation_id is not None:
         qs = qs.filter(owning_organisation_id=organisation_id)

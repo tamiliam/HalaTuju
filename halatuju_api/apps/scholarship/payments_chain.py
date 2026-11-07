@@ -195,8 +195,8 @@ def fallback_approvers(run):
     from apps.courses.models import PartnerAdmin
     signed = _collected_signer_emails(run)
     return [a for a in PartnerAdmin.objects.filter(
-                owning_organisation_id=_org_id(run), role='org_admin', is_active=True,
-                is_super_admin=False).order_by('id')
+                owning_organisation_id=_org_id(run), role='org_admin',
+                is_active=True).order_by('id')
             if _email(a) not in signed]
 
 

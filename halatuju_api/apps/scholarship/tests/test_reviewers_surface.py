@@ -75,7 +75,7 @@ class _Base(TestCase):
             supabase_user_id='rv-off', role='reviewer', is_active=False,
             owning_organisation=cls.org, name='Gone', email='gone@rv.test')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='rv-su', is_super_admin=True, is_active=True,
+            supabase_user_id='rv-su', role='super', is_active=True,
             name='Super', email='su@rv.test')
 
         ReviewerProfile.objects.create(

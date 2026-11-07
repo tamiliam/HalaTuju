@@ -54,7 +54,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
             supabase_user_id=SUPER_UID,
             email='super@halatuju.com',
             name='Super',
-            is_super_admin=True,
+            role='super',
         )
         StudentProfile.objects.create(
             supabase_user_id=SUPER_UID,

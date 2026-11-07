@@ -109,7 +109,7 @@ class TestClosedCaseRefusesEveryReviewWrite(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(
             code='cc-e', name='B40', year=2026, owning_organisation=cls.org)
         PartnerAdmin.objects.create(
-            supabase_user_id=SUPER, role='super', is_super_admin=True, is_active=True,
+            supabase_user_id=SUPER, role='super', is_active=True,
             name='SU', email='su@x.com')
 
     _seq = 0
@@ -175,7 +175,7 @@ class TestTheGuardIsNarrow(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(
             code='cc-n', name='B40', year=2026, owning_organisation=cls.org)
         PartnerAdmin.objects.create(
-            supabase_user_id=SUPER, role='super', is_super_admin=True, is_active=True,
+            supabase_user_id=SUPER, role='super', is_active=True,
             name='SU', email='su@x.com')
 
     _seq = 0

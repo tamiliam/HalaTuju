@@ -194,7 +194,7 @@ class TestOrganisationConfigurationEndpoint(TestCase):
             supabase_user_id='rev-a', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Reviewer A', email='reva@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
 
     def setUp(self):
@@ -691,7 +691,7 @@ class TestPerOrgReviewClocks(TestCase):
             supabase_user_id='rc-rev2', role='reviewer', is_active=True,
             owning_organisation=self.org, name='Reviewer Two', email='rc-rev2@x.com')
         superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='rc-super', is_super_admin=True, is_active=True,
+            supabase_user_id='rc-super', role='super', is_active=True,
             name='Super', email='rc-super@x.com')
         with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as sent:
             services.assign_reviewer(app, reviewer=other, by_admin=superadmin)

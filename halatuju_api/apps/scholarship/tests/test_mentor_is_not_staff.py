@@ -173,6 +173,6 @@ class TestNoStaffPathReachesAMentor(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             PartnerAdmin.objects.filter(pk=self.user.pk).update(role='partner')
         with self.assertRaises(IntegrityError), transaction.atomic():
-            PartnerAdmin.objects.filter(pk=self.user.pk).update(role='super', is_super_admin=True)
+            PartnerAdmin.objects.filter(pk=self.user.pk).update(role='super')
         with self.assertRaises(IntegrityError), transaction.atomic():
             PartnerAdmin.objects.filter(pk=self.user.pk).update(mentor=None)

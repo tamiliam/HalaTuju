@@ -84,7 +84,7 @@ class Command(BaseCommand):
         if admin is None:
             admin = Admin(email=email)
         admin.name = admin.name or name
-        admin.role, admin.is_super_admin, admin.is_active = 'super', True, True
+        admin.role, admin.is_active = 'super', True
         admin.owning_organisation = org
         if uid:
             admin.supabase_user_id = uid

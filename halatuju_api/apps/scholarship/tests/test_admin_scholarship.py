@@ -31,7 +31,7 @@ class TestAdminScholarship(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id=ADMIN, is_super_admin=True, is_active=True,
+            supabase_user_id=ADMIN, role='super', is_active=True,
             name='Admin', email='admin@example.com',
         )
         cls.cohort = make_cohort(code='c', name='B40', year=2026)
@@ -888,7 +888,7 @@ class TestTheInterviewIsCreditedThroughTheENDPOINT(TestCase):
         from apps.courses.models import PartnerOrganisation
         cls.org = PartnerOrganisation.objects.create(code='td216', name='TD216 Org')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='td216-super', is_super_admin=True, role='super', is_active=True,
+            supabase_user_id='td216-super', role='super', is_active=True,
             name='The Owner', email='owner@example.com')
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='td216-rev', role='reviewer', is_active=True,

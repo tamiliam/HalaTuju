@@ -8224,7 +8224,6 @@
       "subtitle": "Starts from the {preset} set. Switch on extra permissions when they need them.",
       "custom": "Custom",
       "changed": "changed",
-      "qcHint": "Quality check needs the Admin permission “See all students”.",
       "save": "Save changes",
       "reset": "Reset to {preset}",
       "footnote": "You cannot change your own permissions or an organisation admin's.",

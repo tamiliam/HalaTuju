@@ -46,7 +46,7 @@ class Command(BaseCommand):
         # The org staff table's own membership rule, so the backfill covers exactly the people the
         # page will show — no more (super, Referral Partners) and no fewer.
         staff_roles = ('reviewer', 'admin', 'qc', 'org_admin', 'finance')
-        rows = (PartnerAdmin.objects.filter(role__in=staff_roles, is_super_admin=False)
+        rows = (PartnerAdmin.objects.filter(role__in=staff_roles)
                 .exclude(invitations__isnull=False).order_by('id'))
 
         made = accepted = still_open = 0

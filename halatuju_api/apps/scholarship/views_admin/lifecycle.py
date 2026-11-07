@@ -315,14 +315,13 @@ class AdminAssignableAdminsView(_AdminBase):
         # nobody already holding one vanishes — bug #66) PLUS anyone given `review`; WHO MAY BE
         # PICKED is the served `assignable` flag (`may_assign_to`, the assign endpoint's own rule).
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(is_super_admin=True)
-                          | Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
+                  .filter(Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
                           | staff_permissions.team_holding(('review',)))
                   .select_related('reviewer_profile').annotate(**staff_gift.gift_annotation())
                   .order_by('name'))
         if not self.has_role(admin, 'super'):
-            admins = admins.filter(owning_organisation_id=admin.owning_organisation_id,
-                                   is_super_admin=False)
+            admins = admins.filter(
+                owning_organisation_id=admin.owning_organisation_id).exclude(role='super')
         # Internal-only "corrections" tally per reviewer (reopened decisions that led
         # to a real change). Never shown to sponsors/students — an internal quality
         # signal for whoever assigns reviewers.

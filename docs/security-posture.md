@@ -66,7 +66,7 @@ section before relying on any of it. Release notes: `docs/releases/release-notes
 - `admin` (view-only), `reviewer` (only the applicants assigned to them), `qc` (the QC gate only),
   `finance` (the payment-run checker; no applicant data beyond the payments allowlist), `partner`
   (a referral organisation's own students — referral, not tenancy).
-- `is_super_admin` is still kept beside `role` (TD-064). Sponsors are a separate `Sponsor` identity
+- `role` is the only super marker since A1.10b (TD-064, 2026-11-07); the legacy `is_super_admin` column is read by nothing and is dropped by hand after that deploy. Sponsors are a separate `Sponsor` identity
   with their own Supabase client; a sponsor never sees a student's identity (allowlist serializers).
 
 **Fences:**

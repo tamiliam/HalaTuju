@@ -156,7 +156,7 @@ GOLDEN = {
     },
     'reviewers_tab_lists': {
         'where': 'views_admin/reviewers.py _reviewers (team members holding review or qc; + '
-                 'is_super_admin)',
+                 'role super)',
         'keys': ('review', 'qc'),
         'today': _t('super', 'qc', 'reviewer'),
         # Owner 2026-10-19 ("yes"): org admins stay OFF the Reviewers list/tab, so it stays exactly
@@ -330,17 +330,6 @@ GOLDEN = {
         'today': _t('super', 'org_admin'),
         'rule': lambda a, c: a.has_perm('manage_team'),
     },
-}
-
-
-#: Sprint 3 review fix 2 — the answers a LEGACY super (`is_super_admin=True`, role 'reviewer') gave
-#: before Sprint 3 that differ now: gate -> (before, why). Production has no such row (2026-10-19).
-LEGACY_FLAG_MOVED = {
-    'org_admin_may_assign_to': (True, 'before S3 the org_admin target rule read role == reviewer, '
-                                      'so a same-organisation legacy super with role reviewer could '
-                                      'be assigned; may_assign_to says "never a super", which is what '
-                                      'its docstring always promised (the assignable list already '
-                                      'left every flagged super out).'),
 }
 
 
@@ -655,23 +644,6 @@ class GoldenTable(TestCase):
                                  f'{gate}: the permission rule and today disagree for {sorted(differs)}; '
                                  f'declared: {sorted(row.get("diverges", {}))}')
 
-    def test_a_legacy_super_flag_on_a_team_role_answers_as_a_super(self):
-        """Sprint 3 review fix 2. `is_super_admin=True` with a role other than 'super' (the legacy
-        shape) is a SUPER to every gate here, exactly as `has_role` treated it before #39 — with ONE
-        answer that moved, declared in `LEGACY_FLAG_MOVED`. Production (read by the lead,
-        2026-10-19): NO row has the flag with another role, so nobody is affected; this row exists
-        so the shape can never drift silently."""
-        from django.utils import timezone
-        legacy = make_admin('reviewer', owning_org=self.org, super_admin=True)
-        PartnerAdmin.objects.filter(pk=legacy.pk).update(first_seen_at=timezone.now())
-        legacy.refresh_from_db()
-        for gate, row in GOLDEN.items():
-            with self.subTest(gate=gate):
-                got = getattr(self, f'probe_{gate}')(legacy)
-                self.assertEqual(got, row['today']['super'], f'{gate}: a legacy-flag reviewer')
-                if gate in LEGACY_FLAG_MOVED:
-                    self.assertNotEqual(got, LEGACY_FLAG_MOVED[gate][0])
-
     def test_the_lone_member_probe_restores_the_organisation(self):
         # The lone-member rows move a person; the other rows must not see it. (Sprint 2: finance no
         # longer arms the check, so the probe that still answers True for them is asked instead.)
@@ -712,7 +684,7 @@ class ReverseSweep(TestCase):
         self.assertEqual(PartnerAdmin(role='mentor').permission_set, ())
         for role in roles:
             with self.subTest(role=role):
-                a = PartnerAdmin(role=role, is_super_admin=(role == 'super'))
+                a = PartnerAdmin(role=role)
                 held = a.permission_set
                 self.assertTrue(set(held) <= set(sp.CATALOGUE))
         self.assertEqual(sorted(sp.PRESETS), sorted(sp.TEAM_ROLES))

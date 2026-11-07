@@ -33,7 +33,7 @@ class TestRepairInterviewCredit(TestCase):
     def setUpTestData(cls):
         cls.org = PartnerOrganisation.objects.create(code='ric', name='RIC Org')
         cls.owner = PartnerAdmin.objects.create(
-            supabase_user_id='ric-super', is_super_admin=True, role='super', is_active=True,
+            supabase_user_id='ric-super', role='super', is_active=True,
             name='Ve. Elanjelian', email=OWNER)
         cls.owner_org_admin = PartnerAdmin.objects.create(
             supabase_user_id='ric-orgadmin', role='org_admin', is_active=True,

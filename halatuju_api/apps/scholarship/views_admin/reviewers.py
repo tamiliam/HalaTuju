@@ -262,14 +262,14 @@ class _ReviewersBase(_AdminBase):
         # stays OFF this tab by its tier (owner, 2026-10-19: "yes"), which `team_holding` guarantees —
         # until Team -> Reviewers -> Add gives them `review` (Team tables T2, owner ruling 5).
         qs = (PartnerAdmin.objects
-              .filter(Q(is_super_admin=True)
+              .filter(Q(role='super')
                       | staff_permissions.team_holding(('review', 'qc'), with_lead=True))
               .select_related('reviewer_profile', 'mentor')
               .annotate(**staff_gift.gift_annotation()).order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)
         if org_id is not None:
-            qs = qs.filter(owning_organisation_id=org_id, is_super_admin=False)
+            qs = qs.filter(owning_organisation_id=org_id).exclude(role='super')
         return qs
 
     def _gift_choices(self, admin):

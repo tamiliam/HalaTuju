@@ -366,7 +366,7 @@ class TestBursaryEndpoints(TestCase):
         app = self._signed_app(suffix='cs')
         PartnerAdmin.objects.create(
             supabase_user_id='super-1', name='Boss', email='boss@h.org',
-            is_super_admin=True, role='super', is_active=True)
+            role='super', is_active=True)
         self._auth('super-1')
         resp = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/bursary-agreement/countersign/')
@@ -427,7 +427,7 @@ class TestBursaryEndpoints(TestCase):
             org=cumig, role='partner', is_active=True)
         PartnerAdmin.objects.create(
             supabase_user_id='super-2c', name='Boss', email='boss2c@h.org',
-            is_super_admin=True, role='super', is_active=True)
+            role='super', is_active=True)
         self.assertEqual(self._witness_as('partner-2c', app).status_code, 403)
         self.assertEqual(self._witness_as('super-2c', app).status_code, 200)
         self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, smc.id)
@@ -444,7 +444,7 @@ class TestBursaryEndpoints(TestCase):
             org=cumig, role='partner', is_active=True)
         PartnerAdmin.objects.create(
             supabase_user_id='super-2p', name='Boss', email='boss2p@h.org',
-            is_super_admin=True, role='super', is_active=True)
+            role='super', is_active=True)
         self.assertEqual(self._witness_as('partner-2p', app).status_code, 403)
         resp = self._witness_as('super-2p', app)
         self.assertEqual((resp.status_code, resp.data['code']), (400, 'no_witness_organisation'))
@@ -462,7 +462,7 @@ class TestBursaryEndpoints(TestCase):
         app.save(update_fields=['witness_org'])
         PartnerAdmin.objects.create(
             supabase_user_id='super-ov', name='Boss', email='bossov@h.org',
-            is_super_admin=True, role='super', is_active=True)
+            role='super', is_active=True)
         self.assertEqual(self._witness_as('super-ov', app).status_code, 200)
         self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, override.pk)
 
@@ -634,7 +634,7 @@ class TestSigningChainNotifications(TestCase):
     def _super(self, email='foundation@h.org'):
         return PartnerAdmin.objects.create(
             supabase_user_id=f'sup-{email}', name='The Foundation', email=email,
-            is_super_admin=True, role='super', is_active=True)
+            role='super', is_active=True)
 
     def _accept(self, app):
         _verify_guarantor_phone(app)

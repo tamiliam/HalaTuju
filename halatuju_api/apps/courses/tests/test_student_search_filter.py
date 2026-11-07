@@ -36,7 +36,7 @@ class StudentSearchFilterTest(TestCase):
 
         PartnerAdmin.objects.create(
             supabase_user_id=SUPER_UID, email='super@halatuju.com',
-            name='Super', is_super_admin=True,
+            name='Super', role='super',
         )
 
         def mk(uid, name, nric, exam, source, phone='', email=''):

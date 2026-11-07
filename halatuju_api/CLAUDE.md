@@ -69,7 +69,7 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 
 - **Roles** (`PartnerAdmin.role`): `super` (platform, cross-org), `org_admin`, `admin` (view-only),
   `reviewer` (assigned applicants only), `qc`, `finance` (payment-run checker, no B40 data), `partner`
-  (referral org's own students). `is_super_admin` is kept beside `role` (TD-064). Sponsors are a
+  (referral org's own students). `role` is the only super marker; the old `is_super_admin` column is retired from the model (TD-064, migration 0093; column dropped by hand, then migration 0094). Sponsors are a
   separate `Sponsor` identity. The role matrix is `docs/scholarship/role-matrix.md`.
 - **The organisation fence** is `_AdminBase` (`_org_scoped` / `_org_allows`); every new admin endpoint
   goes through it, and the H3 guard fails a wired route no test drives or that skips the fence.

@@ -80,12 +80,12 @@ class Resolve(TestCase):
         self.assertEqual(set(b.permission_set), set(sp.LEAD_TIER) | {'review'})
         self.assertFalse(sp.is_custom(b))
 
-    def test_a_super_holds_every_key_by_flag_or_by_role(self):
-        for a in (PartnerAdmin(role='reviewer', is_super_admin=True), PartnerAdmin(role='super')):
-            with self.subTest(role=a.role):
-                self.assertEqual(a.permission_set, sp.CATALOGUE)
-                self.assertFalse(sp.is_lead_tier(a))
-                self.assertFalse(sp.is_custom(a))
+    def test_a_super_holds_every_key_by_role(self):
+        # TD-064 (A1.10b): the role is the only super marker; the legacy flag is gone.
+        a = PartnerAdmin(role='super')
+        self.assertEqual(a.permission_set, sp.CATALOGUE)
+        self.assertFalse(sp.is_lead_tier(a))
+        self.assertFalse(sp.is_custom(a))
 
     def test_a_partner_holds_nothing_whatever_is_stored(self):
         a = PartnerAdmin(role='partner', permissions=['review', 'see_all'])

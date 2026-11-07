@@ -26,7 +26,7 @@ from apps.scholarship.serializers_admin import OrgRequestOrgSerializer
 def _org_and_admins():
     org = PartnerOrganisation.objects.create(code='delib-org', name='Delib')
     owner = PartnerAdmin.objects.create(
-        supabase_user_id='d-sup', is_super_admin=True, is_active=True,
+        supabase_user_id='d-sup', role='super', is_active=True,
         name='Owner', email='owner@x.com')
     oa = PartnerAdmin.objects.create(
         supabase_user_id='d-oa', role='org_admin', is_active=True,

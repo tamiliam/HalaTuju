@@ -234,7 +234,7 @@ export async function getStaffPermissions(adminId: number, options?: ApiOptions)
 }
 
 /** Save a set, or with `dryRun` ask what saving it would do. A refusal throws with the server's
- *  sentence and its `code` (`has_open_cases`, `qc_needs_see_all`, …). */
+ *  sentence and its `code` (`has_open_cases`, `would_leave_people`, …). */
 export async function saveStaffPermissions(adminId: number, permissions: string[], dryRun: boolean,
                                            options?: ApiOptions) {
   return adminMutate<StaffPermissionsPlan>(`/api/v1/admin/admins/${adminId}/permissions/`, 'PATCH',

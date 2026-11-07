@@ -59,7 +59,7 @@ def _listed_on_people(caller, target):
     return (caller.owning_organisation_id is not None
             and target.owning_organisation_id == caller.owning_organisation_id
             and target.role in PROGRAMME_STAFF_ROLES
-            and not target.is_super_admin and not target.is_super)
+            and not target.is_super)
 
 
 def already_exists_answer(caller, existing):
@@ -162,7 +162,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             if target is None or not _staff_target_manageable(admin, target):
                 return Response({'error': 'Admin not found'}, status=404)
-            if target.is_super_admin or target.is_super:
+            if target.is_super:
                 return Response({'error': 'Cannot delete a super admin', 'code': 'not_deletable'},
                                 status=400)
             if target.role not in _DELETABLE_ROLES:
@@ -445,8 +445,7 @@ class AdminListView(PartnerAdminMixin, APIView):
             admins = admins.filter(
                 owning_organisation_id=admin.owning_organisation_id,
                 role__in=PROGRAMME_STAFF_ROLES,
-                is_super_admin=False,
-            )
+            ).exclude(role='super')
         admins = list(admins)
         invites = _invitations_for(admins)
         # Dormancy threshold per ROW, not per page (Org Config Sprint C): a super's list spans
@@ -474,7 +473,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'id': a.id,
                 'name': a.name,
                 'email': a.email,
-                'is_super_admin': a.is_super_admin,
+                'is_super_admin': a.is_super,
                 'role': 'super' if a.is_super else a.role,
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
@@ -542,7 +541,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             # 404 for a missing row OR a target outside this caller's remit (cross-org / super).
             return Response({'error': 'Admin not found'}, status=404)
 
-        if target.is_super_admin:
+        if target.is_super:
             return Response({'error': 'Cannot revoke super admin'}, status=400)
 
         action = request.data.get('action')

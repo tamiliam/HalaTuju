@@ -107,7 +107,7 @@ class EveryCallerReadsTheOneClockTests(TestCase):
             supabase_user_id='sla-rev2', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Bala', email='bala@sla.test')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='sla-su', is_super_admin=True, is_active=True,
+            supabase_user_id='sla-su', role='super', is_active=True,
             name='Super', email='su@sla.test')
         cls.cohort = ScholarshipCohort.objects.create(
             code='sla-2026', name='SLA', year=2026, owning_organisation=cls.org)

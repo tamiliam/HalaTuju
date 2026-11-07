@@ -49,8 +49,8 @@ class TestReviewerProfileComplete(TestCase):
         for role, sup in (('admin', False), ('qc', False), ('viewer', False),
                           ('partner', False), (None, True)):
             a = PartnerAdmin.objects.create(
-                supabase_user_id=f'u-{role}-{sup}', role=(role or 'admin'),
-                is_super_admin=sup, is_active=True, name='X', email=f'{role}{sup}@x.com')
+                supabase_user_id=f'u-{role}-{sup}', role=('super' if sup else role),
+                is_active=True, name='X', email=f'{role}{sup}@x.com')
             self.assertTrue(reviewer_profile_complete(a), role)
 
     def test_reviewer_with_no_profile_row_is_incomplete(self):
@@ -109,5 +109,5 @@ class TestRoleEndpointExposesFlag(TestCase):
 
     def test_super_flag_true(self):
         PartnerAdmin.objects.create(
-            supabase_user_id='sup', is_super_admin=True, is_active=True, name='S', email='s@x.com')
+            supabase_user_id='sup', role='super', is_active=True, name='S', email='s@x.com')
         self.assertTrue(self._get_role('sup').json()['reviewer_profile_complete'])

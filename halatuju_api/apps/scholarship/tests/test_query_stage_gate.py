@@ -182,7 +182,7 @@ class TestOfficerEndpointRefusesTheBlockedStages(TestCase):
         from apps.courses.models import PartnerAdmin
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id='admin-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='admin-uid', role='super', is_active=True,
             name='R', email='r@x.com',
         )
 

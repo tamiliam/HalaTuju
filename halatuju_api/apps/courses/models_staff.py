@@ -34,9 +34,8 @@ MENTOR_LINK_ROLES = (MENTOR_ROLE, *STAFF_MENTOR_ROLES, 'finance')
 
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
-    # Role categories. Kept ALONGSIDE is_super_admin (expand-contract): is_super_admin
-    # is backfilled into role and still read by legacy code; a later TD drops it once
-    # role is the sole source of truth.
+    # Role categories. `role` is the ONLY super marker: the legacy `is_super_admin` boolean was
+    # retired by TD-064 (A1.10b, courses 0093 — state-only; the owner drops the column by hand).
     #   super    — PLATFORM superadmin (the owner). Everything, cross-org; the only role
     #              that sees the platform surfaces (Dashboard / Students directory / Course
     #              Data) — those are super-only from the surface-partition sprint (2026-07-15).
@@ -149,7 +148,6 @@ class PartnerAdmin(models.Model):
         help_text='The mentor this login is: a mentor login, or a staff member who also mentors (S7d). '
                   'NULL for everybody else.',
     )
-    is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default='reviewer',
         help_text='super / admin / partner / reviewer. Backfilled from is_super_admin.',
@@ -222,7 +220,7 @@ class PartnerAdmin(models.Model):
             # Source sign-in S1: every row alive on 2026-10-30 has `source` NULL and another role,
             # so this holds for production as it stands and is added with the column (courses 0089).
             models.CheckConstraint(
-                condition=(Q(role=SOURCE_ROLE, source__isnull=False, is_super_admin=False)
+                condition=(Q(role=SOURCE_ROLE, source__isnull=False)
                            | (~Q(role=SOURCE_ROLE) & Q(source__isnull=True))),
                 name='partner_admin_source_iff_source_partner'),
             # Student maintenance S7a: the same shape for a mentor (courses 0090). RELAXED by S7d
@@ -230,7 +228,7 @@ class PartnerAdmin(models.Model):
             # role in `MENTOR_LINK_ROLES` and never a super. A staff member may now ALSO be a mentor.
             models.CheckConstraint(
                 condition=((~Q(role=MENTOR_ROLE) & Q(mentor__isnull=True))
-                           | Q(mentor__isnull=False, is_super_admin=False, role__in=MENTOR_LINK_ROLES)),
+                           | Q(mentor__isnull=False, role__in=MENTOR_LINK_ROLES)),
                 name='partner_admin_mentor_iff_mentor'),
             # S7a review fix: ONE login per mentor, in the database too (courses 0090).
             models.UniqueConstraint(fields=['mentor'], condition=Q(mentor__isnull=False),
@@ -240,8 +238,7 @@ class PartnerAdmin(models.Model):
     #: The columns a change to which can break the source or mentor binding; a
     #: `save(update_fields=…)` that names none of them (a sign-in stamp, a name edit) is not re-checked.
     _SOURCE_BINDING_FIELDS = frozenset({'role', 'source', 'source_id', 'owning_organisation',
-                                        'owning_organisation_id', 'is_super_admin',
-                                        'mentor', 'mentor_id'})
+                                        'owning_organisation_id', 'mentor', 'mentor_id'})
 
     @property
     def is_source_user(self):
@@ -281,15 +278,11 @@ class PartnerAdmin(models.Model):
         if self.mentor_id is not None:
             if self.role not in MENTOR_LINK_ROLES:
                 return 'Only a mentor login or a staff member who may mentor can have a mentor record.'
-            if self.is_super_admin:
-                return 'A mentor is never a super admin.'
             if self.owning_organisation_id != self.mentor.organisation_id:
                 return "A mentor belongs to its mentor record's organisation."
             return None
         if not self.is_source_user:
             return None
-        if self.is_super_admin:
-            return 'A source user is never a super admin.'
         if self.owning_organisation_id != self.source.organisation_id:
             return "A source user belongs to its source's organisation."
         return None
@@ -310,8 +303,8 @@ class PartnerAdmin(models.Model):
 
     @property
     def is_super(self):
-        """True for a super admin via either the new role or the legacy flag."""
-        return self.role == 'super' or self.is_super_admin
+        """True for a super admin. The role is the single source (TD-064 retired the legacy flag)."""
+        return self.role == 'super'
 
     @property
     def is_paused(self):

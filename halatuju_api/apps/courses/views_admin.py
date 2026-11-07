@@ -126,8 +126,8 @@ class PartnerAdminMixin:
 
     @staticmethod
     def has_role(admin, *roles):
-        """Phase C role check. Treats a legacy super (is_super_admin=True) as
-        'super'. 'viewer' is read-only; 'reviewer' is the workhorse; 'super' can
+        """Phase C role check. Reads the role only (TD-064 retired the legacy
+        flag). 'viewer' is read-only; 'reviewer' is the workhorse; 'super' can
         do everything (so a super passes any role check)."""
         if admin is None:
             return False
@@ -312,7 +312,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         from . import org_config
         return Response({
             'is_admin': True,
-            'is_super_admin': admin.is_super_admin,
+            'is_super_admin': admin.is_super,
             'role': 'super' if admin.is_super else admin.role,
             'admin_id': admin.id,
             # The login page's temp-password gate reads THIS, never a hard-coded mirror of the
@@ -375,7 +375,7 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
             'org_code': org.code if org else None,
-            'is_super_admin': admin.is_super_admin,
+            'is_super_admin': admin.is_super,
             'total_students': total,
             'completed_onboarding': completed,
             'by_exam_type': by_exam,
@@ -435,7 +435,7 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
             serializer.data,
             results_key='students',
             org_name=org.name if org else 'Semua Organisasi',
-            is_super_admin=admin.is_super_admin,
+            is_super_admin=admin.is_super,
             source_options=source_options,
         )
 
@@ -448,7 +448,7 @@ class PartnerStudentDetailView(PartnerAdminMixin, APIView):
         if not admin:
             return Response({'error': 'Not a partner admin'}, status=403)
 
-        if admin.is_super_admin:
+        if admin.is_super:
             try:
                 student = StudentProfile.objects.get(supabase_user_id=user_id)
             except StudentProfile.DoesNotExist:
@@ -467,7 +467,7 @@ class PartnerStudentDetailView(PartnerAdminMixin, APIView):
 
     def delete(self, request, user_id):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin or not admin.is_super:
             return Response({'error': 'Super admin access required'}, status=403)
 
         try:
@@ -744,7 +744,7 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
 
     def get(self, request):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin or not admin.is_super:
             return Response({'error': 'Super admin access required'}, status=403)
 
         orgs = referral_links.referral_partners().order_by('name').values(

@@ -10421,7 +10421,7 @@ future Sponsor table.
 **Trade-offs:** Two role sources to keep in sync until `is_super_admin` is dropped
 (a future TD).
 
-**Revisit if:** all `is_super_admin` readers are migrated → drop the boolean.
+**Revisit if:** all `is_super_admin` readers are migrated → drop the boolean. **Done 2026-11-07 (A1.10b, TD-064):** every reader uses `role`; migration courses 0093 leaves the field in state only, and the owner drops the column by hand after the deploy.
 
 ## Auth entry: preserve browse-first; sponsor = register-interest — 2026-05-30
 

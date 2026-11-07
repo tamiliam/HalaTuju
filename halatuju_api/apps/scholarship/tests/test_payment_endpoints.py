@@ -74,7 +74,7 @@ class _Base(TestCase):
             supabase_user_id='pe-pt', role='partner', is_active=True, org=cls.org_a,
             name='Partner', email='pt@x.com')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='pe-su', is_super_admin=True, is_active=True, name='Super', email='su@x.com')
+            supabase_user_id='pe-su', role='super', is_active=True, name='Super', email='su@x.com')
         cls.admin_b = PartnerAdmin.objects.create(
             supabase_user_id='pe-ab', role='admin', is_active=True, owning_organisation=cls.org_b,
             name='Admin B', email='ab@x.com')

@@ -63,7 +63,7 @@ class _Base(TestCase):
             cohort=cls.cohort_b, profile=prof_b, status='interviewed',
             ai_verdict_snapshot=[], officer_verdict={})
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='pow-super', is_super_admin=True, is_active=True,
+            supabase_user_id='pow-super', role='super', is_active=True,
             name='Super', email='psuper@x.com')
         cls.oa = PartnerAdmin.objects.create(
             supabase_user_id='pow-oa', role='org_admin', is_active=True,

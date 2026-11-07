@@ -427,7 +427,7 @@ class TestAdminSponsorship(TestCase):
                                                       programme=_gift())
         PartnerAdmin.objects.create(supabase_user_id='rev', role='reviewer', is_active=True, name='Rev', email='r@x.com')
         PartnerAdmin.objects.create(supabase_user_id='vie', role='admin', is_active=True, name='Vie', email='v@x.com')
-        PartnerAdmin.objects.create(supabase_user_id='sup', role='super', is_active=True, name='Sup', email='s@x.com', is_super_admin=True)
+        PartnerAdmin.objects.create(supabase_user_id='sup', role='super', is_active=True, name='Sup', email='s@x.com')
 
     def setUp(self):
         self.client = APIClient()

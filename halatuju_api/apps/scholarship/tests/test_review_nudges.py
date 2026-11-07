@@ -24,7 +24,7 @@ class ReviewNudgeTests(TestCase):
             supabase_user_id='orgadmin-uid', role='org_admin', is_active=True,
             owning_organisation=cls.org, name='Suresh', email='orgadmin@example.com')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='sup-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='sup-uid', role='super', is_active=True,
             name='Super', email='super@example.com')
         cls.cohort = ScholarshipCohort.objects.create(
             code='c', name='B40', year=2026, owning_organisation=cls.org)

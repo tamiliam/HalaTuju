@@ -124,7 +124,7 @@ class TestTheStamp(TestCase):
 class TestThePayload(TestCase):
     def setUp(self):
         self.super = PartnerAdmin.objects.create(
-            supabase_user_id='seen-su', is_super_admin=True, role='super', is_active=True,
+            supabase_user_id='seen-su', role='super', is_active=True,
             name='Super', email='su@example.org')
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("seen-su")}')
@@ -155,7 +155,7 @@ class TestTheInvitationOnTheStaffList(TestCase):
 
     def setUp(self):
         self.super = PartnerAdmin.objects.create(
-            supabase_user_id='inv-su', is_super_admin=True, role='super', is_active=True,
+            supabase_user_id='inv-su', role='super', is_active=True,
             name='Super', email='su-inv@example.org')
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("inv-su")}')
