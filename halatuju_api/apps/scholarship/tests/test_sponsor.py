@@ -121,7 +121,7 @@ class TestAdminSponsorVetting(TestCase):
         PartnerAdmin.objects.create(supabase_user_id='adm', role='admin', is_active=True, name='Adm', email='adm@x.com')
         PartnerAdmin.objects.create(supabase_user_id='qc', role='qc', is_active=True, name='QC', email='qc@x.com')
         PartnerAdmin.objects.create(supabase_user_id='oa', role='org_admin', is_active=True, name='OA', email='oa@x.com')
-        PartnerAdmin.objects.create(supabase_user_id='sup', is_super_admin=True, is_active=True, name='Sup', email='sup@x.com')
+        PartnerAdmin.objects.create(supabase_user_id='sup', role='super', is_active=True, name='Sup', email='sup@x.com')
         cls.s = Sponsor.objects.create(supabase_user_id='sp', name='S', email='s@x.com', status='pending')
 
     def setUp(self):

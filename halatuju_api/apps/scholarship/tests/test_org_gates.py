@@ -49,7 +49,7 @@ class OrgFenceMixin:
         cls.app_a = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, cohort=cls.cohort_a, profile=cls.prof_a)
         cls.app_b = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, cohort=cls.cohort_b, profile=cls.prof_b)
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
         cls.admin_a = PartnerAdmin.objects.create(
             supabase_user_id='admin-a', role='admin', is_active=True, owning_organisation=cls.org_a,

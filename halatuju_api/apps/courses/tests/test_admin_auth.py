@@ -48,16 +48,16 @@ class PartnerAdminModelTest(TestCase):
         )
         self.assertEqual(admin.email, 'admin@cumig.org')
         self.assertEqual(admin.org, self.org)
-        self.assertFalse(admin.is_super_admin)
+        self.assertFalse(admin.is_super)
         self.assertIsNone(admin.supabase_user_id)
 
     def test_create_super_admin(self):
         admin = PartnerAdmin.objects.create(
             email='super@halatuju.com',
             name='Super Admin',
-            is_super_admin=True,
+            role='super',
         )
-        self.assertTrue(admin.is_super_admin)
+        self.assertTrue(admin.is_super)
         self.assertIsNone(admin.org)
 
     def test_email_unique(self):
@@ -92,7 +92,7 @@ class PartnerAdminMixinTest(TestCase):
             supabase_user_id='super-uid-1',
             email='super@halatuju.com',
             name='Super',
-            is_super_admin=True,
+            role='super',
         )
         for i in range(2):
             StudentProfile.objects.create(
@@ -185,7 +185,7 @@ class AdminInviteRoleTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@halatuju.com',
         )
 
@@ -210,13 +210,13 @@ class AdminInviteRoleTest(TestCase):
         self.assertEqual(r.json()['role'], 'reviewer')
         a = PartnerAdmin.objects.get(email='rev@example.com')
         self.assertEqual(a.role, 'reviewer')
-        self.assertFalse(a.is_super_admin)
+        self.assertFalse(a.is_super)
 
     def test_invite_viewer(self):
         self._invite('view@example.com', 'admin')
         a = PartnerAdmin.objects.get(email='view@example.com')
         self.assertEqual(a.role, 'admin')
-        self.assertFalse(a.is_super_admin)
+        self.assertFalse(a.is_super)
 
     def test_invite_existing_supabase_user_grants_without_password(self):
         # Supabase 422 email_exists (person already has an account) is NOT a failure:
@@ -253,7 +253,7 @@ class AdminInviteRoleTest(TestCase):
         self._invite('sup2@example.com', 'super')
         a = PartnerAdmin.objects.get(email='sup2@example.com')
         self.assertEqual(a.role, 'reviewer')
-        self.assertFalse(a.is_super_admin)
+        self.assertFalse(a.is_super)
 
     def test_invite_defaults_to_reviewer(self):
         self._invite('def@example.com')  # no role sent
@@ -335,7 +335,7 @@ class PartnerAccountCreationTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@halatuju.com',
         )
 
@@ -468,7 +468,7 @@ class AdminResendTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@halatuju.com',
         )
         cls.target = PartnerAdmin.objects.create(

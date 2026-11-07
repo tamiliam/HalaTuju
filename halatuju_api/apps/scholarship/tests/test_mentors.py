@@ -83,7 +83,7 @@ class TestInvite(_Base):
         login = self.login()
         mentor = Mentor.objects.get(pk=body['mentor']['id'])
         self.assertEqual((login.role, login.mentor_id, login.owning_organisation_id, login.is_active,
-                          login.supabase_user_id, login.is_super_admin),
+                          login.supabase_user_id, login.is_super),
                          ('mentor', mentor.pk, self.org.pk, True, 'uid-new', False))
         self.assertEqual((mentor.organisation_id, mentor.area, mentor.created_by_email),
                          (self.org.pk, '', self.lead.email))

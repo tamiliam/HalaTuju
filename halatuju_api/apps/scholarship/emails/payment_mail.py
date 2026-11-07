@@ -132,7 +132,7 @@ def _instruction_cc(run):
     emails = [(run.org_admin_signed_email or '').strip()]
     emails += list(PartnerAdmin.objects.filter(
         owning_organisation_id=getattr(run, 'organisation_id', None), role='org_admin',
-        is_active=True, is_super_admin=False).order_by('id').values_list('email', flat=True))
+        is_active=True).order_by('id').values_list('email', flat=True))
     seen, cc = set(), []
     for e in emails:
         e = (e or '').strip()

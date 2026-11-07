@@ -38,7 +38,7 @@ def _token(uid):
 def _admin(org, role, uid, email, *, is_super=False):
     return PartnerAdmin.objects.create(
         owning_organisation=org, supabase_user_id=uid, email=email, name=email.split('@')[0],
-        role=role, is_super_admin=is_super, is_active=True,
+        role='super' if is_super else role, is_active=True,
     )
 
 

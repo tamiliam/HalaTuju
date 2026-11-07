@@ -448,7 +448,7 @@ class TestSignOff(TestCase):
             supabase_user_id='rv', role='reviewer', is_active=True, owning_organisation=cls.org,
             name='Rev Iewer', email='rev@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='su', is_super_admin=True, is_active=True, name='Super One', email='super@x.com')
+            supabase_user_id='su', role='super', is_active=True, name='Super One', email='super@x.com')
 
     def _run(self):
         _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
@@ -891,7 +891,7 @@ class TestFinanceCheck(TestCase):
             supabase_user_id='fin-ap', role='org_admin', is_active=True, owning_organisation=cls.org,
             name='Approver One', email='approver@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='fin-su', is_super_admin=True, is_active=True,
+            supabase_user_id='fin-su', role='super', is_active=True,
             name='Super One', email='super@x.com')
 
     def _run(self):

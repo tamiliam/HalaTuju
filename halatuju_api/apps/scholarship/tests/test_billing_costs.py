@@ -53,7 +53,7 @@ class _Base(TestCase):
         # charge arithmetic has to be right about today.
         cls.org = PartnerOrganisation.objects.get(code='brightpath')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='oa', role='org_admin', is_active=True,

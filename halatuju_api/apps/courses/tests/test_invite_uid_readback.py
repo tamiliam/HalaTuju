@@ -32,7 +32,7 @@ class TestInviteReadsTheUidBack(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        PartnerAdmin.objects.create(supabase_user_id='super-uid', is_super_admin=True,
+        PartnerAdmin.objects.create(supabase_user_id='super-uid', role='super',
                                     is_active=True, name='Super', email='super@halatuju.com')
 
     def setUp(self):

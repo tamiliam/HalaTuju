@@ -53,7 +53,7 @@ class TestOrganisationThemeEndpoint(TestCase):
             supabase_user_id='rev-a', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Reviewer A', email='reva@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
 
     def setUp(self):

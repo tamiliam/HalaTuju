@@ -326,7 +326,7 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     # super-admin bypass (a plain reviewer is already assignment-scoped below + by _require_app_write).
     if application.assigned_to_id is None:
         raise SchedulingError('not_assigned')
-    is_super = bool(getattr(reviewer, 'is_super_admin', False)) or getattr(reviewer, 'role', '') == 'super'
+    is_super = getattr(reviewer, 'role', '') == 'super'
     if not is_super and application.assigned_to_id != getattr(reviewer, 'id', None):
         raise SchedulingError('not_assigned')
 

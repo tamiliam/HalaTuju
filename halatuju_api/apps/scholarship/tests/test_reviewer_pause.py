@@ -68,7 +68,7 @@ class _Base(TestCase):
             supabase_user_id='pz-x', role='reviewer', is_active=True,
             owning_organisation=cls.other, name='Intruder', email='x@pz2.test')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='pz-su', is_super_admin=True, is_active=True,
+            supabase_user_id='pz-su', role='super', is_active=True,
             name='Super', email='su@pz.test')
         ReviewerProfile.objects.create(partner_admin=cls.reviewer)
 

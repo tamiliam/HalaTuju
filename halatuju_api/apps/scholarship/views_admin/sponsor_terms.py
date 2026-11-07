@@ -247,7 +247,7 @@ class AdminSponsorTermsPublishView(_SponsorTermsBase):
         try:
             # super OR org_admin. A plain `admin` may AUTHOR but not make it binding: they are
             # staff doing the work, not the people answerable for what a donor is bound by.
-            may_publish = bool(admin.is_super_admin) or admin.role == 'org_admin'
+            may_publish = admin.is_super or admin.role == 'org_admin'
             sponsor_terms_mod.publish(terms, by_email=admin.email or '', allowed=may_publish)
         except sponsor_terms_mod.SponsorTermsError as exc:
             return _terms_err(exc)

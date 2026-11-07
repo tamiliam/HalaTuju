@@ -52,8 +52,8 @@ class _Base(TestCase):
 
         def admin(uid, role, name, email, org, super_flag=False, active=True):
             return PartnerAdmin.objects.create(
-                supabase_user_id=uid, role=role, is_active=active, owning_organisation=org,
-                name=name, email=email, is_super_admin=super_flag)
+                supabase_user_id=uid, role='super' if super_flag else role, is_active=active,
+                owning_organisation=org, name=name, email=email)
 
         cls.maker = admin('ce-mk', 'admin', 'Maker One', 'maker@x.com', cls.org_a)
         cls.approver = admin('ce-ap', 'org_admin', 'Approver One', 'appr@x.com', cls.org_a)

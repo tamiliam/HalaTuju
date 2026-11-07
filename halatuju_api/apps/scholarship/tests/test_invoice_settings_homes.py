@@ -46,7 +46,7 @@ class _TwoTenants(TestCase):
             legal_name='HalaTuju Platform', address='1 Jalan Contoh', email='billing@halatuju.xyz',
             bank_name='Maybank', bank_account_name='HalaTuju', bank_account_no='5140')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
 
     @classmethod

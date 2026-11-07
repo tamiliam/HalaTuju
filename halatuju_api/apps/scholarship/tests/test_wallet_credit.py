@@ -390,8 +390,6 @@ class TestIdentityGates(CreditMixin, TestCase):
         """A super has every role, so pairwise distinctness — not the role gate — is what
         confines them to one signature."""
         boss = _admin(None, 'super', 'The Boss', 'boss@x.com')
-        boss.is_super_admin = True
-        boss.save()
         c = self._record('10000')
         self._sign(c, boss)
         with self.assertRaises(svc.CreditError) as ctx:

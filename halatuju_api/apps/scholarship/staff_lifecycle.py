@@ -177,8 +177,8 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
 
     The row is LOCKED for the plan and the write, so a revoke or another switch landing in between
     cannot be overwritten; the UPDATE also carries the role it expects, belt and braces. Writes
-    `role`, `is_super_admin` (kept in lockstep, as the invite does — never true here) and, moving to
-    finance, clears `paused_at` (pause is meaningless for a role that is never assigned work, and a
+    `role` (the only super marker since TD-064; never 'super' here) and, moving to finance, clears
+    `paused_at` (pause is meaningless for a role that is never assigned work, and a
     "Paused" pill on a finance admin would be a control that lies — `set_paused`'s own rule). An
     OPEN invitation for this person carries the new role too: the Invitations page shows the role
     from it, and a Resend reads the account's.
@@ -202,7 +202,7 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
         # T2 (review 2026-11-03): the person's resolved keys are KEPT exactly — stored NULL only when they
         # equal the new role's preset. A switch never gives or takes a key.
         kept = None if tuple(before) == staff_permissions.preset_for(new_role) else list(before)
-        fields = {'role': new_role, 'is_super_admin': False, 'permissions': kept}
+        fields = {'role': new_role, 'permissions': kept}
         # ⚠ A pause is KEPT between reviewer and QC on purpose: both are review roles that can be
         # assigned work, so "no new work for now" still means something; only Finance clears it.
         if new_role == 'finance':

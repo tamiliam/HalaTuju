@@ -36,7 +36,7 @@ class TestReleasingAnIcLock(TestCase):
                                     ('qc', 'qc', False), ('adm', 'admin', False),
                                     ('rev', 'reviewer', False)):
             PartnerAdmin.objects.create(
-                supabase_user_id=uid, role=role, is_super_admin=is_super, is_active=True,
+                supabase_user_id=uid, role='super' if is_super else role, is_active=True,
                 name=uid.upper(), email=f'{uid}@x.com', owning_organisation=cls.org,
             )
         cls.cohort = ScholarshipCohort.objects.create(

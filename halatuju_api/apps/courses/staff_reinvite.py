@@ -223,9 +223,8 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     with — unless this is a Google address (``temp_password`` None) — a Supabase login we create
     ourselves (`_create_supabase_user` says why). The UID is stored at creation; it is None on the
     already-registered path, whose existing account links by verified email on next sign-in.
-    `is_super_admin` is kept in lockstep with the role (expand-contract: several call sites still
-    gate on it directly). Moved here from `AdminInviteView.post` so that function stays inside its
-    long-function allowance.
+    The role is the only super marker (TD-064 retired `is_super_admin`). Moved here from
+    `AdminInviteView.post` so that function stays inside its long-function allowance.
 
     ``source`` (source sign-in S2) is the referral source a NEW `source_partner` row signs in for;
     None for every staff role. A brought-back row keeps the source it already has (the source
@@ -243,7 +242,7 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     from . import staff_gift, staff_tables
     created = PartnerAdmin.objects.create(
         email=email, name=name, org=org, role=role, owning_organisation=owning_org,
-        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source, mentor=mentor,
+        supabase_user_id=uid, source=source, mentor=mentor,
         permissions=staff_tables.invite_permissions(role))   # T2: an invited Admin starts at `see_all`
     staff_gift.set_gifts(created, gifts)       # multi-gift: exactly the gifts the invite chose
     return created, already, None
@@ -298,7 +297,6 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
             row.mentor = None
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
         row.email = email
-        row.is_super_admin = (role == 'super')
         row.is_active, row.paused_at = True, None
         # ⚠ BACK TO THE PRESET (request #39): the inviter chose a role, and an old custom set of
         # permissions must never come back with it (roadmap Sprint 4 door list ruling).
@@ -310,7 +308,7 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         # row, or `get_admin`'s email backfill — which links only a row with NO UID — never fires.
         row.supabase_user_id = uid
         row.save(update_fields=['name', 'email', 'role', 'org', 'owning_organisation',
-                                'is_super_admin', 'is_active', 'paused_at', 'permissions',
+                                'is_active', 'paused_at', 'permissions',
                                 'supabase_user_id', *fields])
         # TD-501 (A1.3) + multi-gift: exactly the gifts THIS invite chose, never an old row's.
         from . import staff_gift

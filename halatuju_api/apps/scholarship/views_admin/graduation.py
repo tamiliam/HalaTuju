@@ -105,7 +105,7 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super_admin or self.has_role(admin, 'super')):
+        if not self.has_role(admin, 'super'):
             return self._deny_role()
         agreement = self._agreement(pk)
         if agreement is None:
@@ -134,7 +134,7 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             return self._deny()
         # The grandfathered "referring partner may witness" door is CLOSED: a `partner` login is a
         # REFERRAL PARTNER's, which is never the witness. A source user witnesses from its console.
-        if not (admin.is_super_admin or self.has_role(admin, 'super')):
+        if not self.has_role(admin, 'super'):
             return self._deny_role()
         agreement = self._agreement(pk)
         if agreement is None:

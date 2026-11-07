@@ -44,14 +44,14 @@ STAFF_MENTOR_ROLES = PartnerAdmin.STAFF_MENTOR_ROLES
 
 def eligible(login):
     """May this STAFF login mentor (be added, or mentor again)? See the module docstring."""
-    return (login is not None and login.is_active and not login.is_super and not login.is_super_admin
+    return (login is not None and login.is_active and not login.is_super
             and login.role in STAFF_MENTOR_ROLES and login.owning_organisation_id is not None)
 
 
 def candidates(organisation_ids=None):
     """The staff the "Add a staff member as mentor" sheet may offer: eligible, not a mentor yet, of
     ``organisation_ids`` (None = every organisation, a super with no narrowing). Name order."""
-    qs = PartnerAdmin.objects.filter(role__in=STAFF_MENTOR_ROLES, is_active=True, is_super_admin=False,
+    qs = PartnerAdmin.objects.filter(role__in=STAFF_MENTOR_ROLES, is_active=True,
                                      mentor__isnull=True, owning_organisation__isnull=False)
     if organisation_ids is not None:
         qs = qs.filter(owning_organisation_id__in=list(organisation_ids))

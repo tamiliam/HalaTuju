@@ -26,7 +26,7 @@ class TestReviewerAssignment(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@example.com',
         )
         cls.reviewer = PartnerAdmin.objects.create(

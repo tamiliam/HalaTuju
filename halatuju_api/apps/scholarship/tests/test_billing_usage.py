@@ -54,7 +54,7 @@ class TestBillingUsageEndpoint(TestCase):
                                   input_tokens=200, output_tokens=80)
 
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
         cls.org_admin_a = PartnerAdmin.objects.create(
             supabase_user_id='oa-a', role='org_admin', is_active=True,
@@ -224,8 +224,8 @@ class TestTheMonthTheScreenOpensOn(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.org = PartnerOrganisation.objects.create(code='tz', name='Timezone Org')
-        PartnerAdmin.objects.create(supabase_user_id='tz-super', role='admin',
-                                    is_active=True, is_super_admin=True,
+        PartnerAdmin.objects.create(supabase_user_id='tz-super',
+                                    is_active=True, role='super',
                                     name='Super', email='s@example.org')
 
     def _payload(self):

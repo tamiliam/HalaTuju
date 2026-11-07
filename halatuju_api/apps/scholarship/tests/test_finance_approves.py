@@ -50,7 +50,7 @@ class _Chain(TestCase):
         cls.finance = _person(cls.org, 'finance', 'Fina Approver', 'fina@x.com')
         cls.suresh = _person(cls.org, 'org_admin', 'Suresh Lead', 'suresh@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='fa-su', is_super_admin=True, is_active=True, name='Super One',
+            supabase_user_id='fa-su', role='super', is_active=True, name='Super One',
             email='super@x.com')
 
     def _run(self):

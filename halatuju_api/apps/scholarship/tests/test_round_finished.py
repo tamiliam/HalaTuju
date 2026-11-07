@@ -39,7 +39,7 @@ class TestFinishingARound(TestCase):
             organisation=cls.org, code='fin-gift', name_en='Fin Gift', is_active=True)
         cls.admin = PartnerAdmin.objects.create(
             supabase_user_id='fin-admin', email='fin-admin@example.com', name='Fin Admin',
-            role='org_admin', is_super_admin=False, is_active=True, owning_organisation=cls.org)
+            role='org_admin', is_active=True, owning_organisation=cls.org)
         # A SECOND tenant, for the fence.
         cls.other_org = PartnerOrganisation.objects.create(
             code='fin-other', name='Other Org', is_active=True)

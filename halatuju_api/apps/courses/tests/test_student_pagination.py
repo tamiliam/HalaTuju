@@ -37,7 +37,7 @@ class StudentListPaginationTest(TestCase):
             supabase_user_id=SUPER_UID,
             email='super@halatuju.com',
             name='Super',
-            is_super_admin=True,
+            role='super',
         )
         # 57 students → at the default page size of 25 that's 3 pages.
         for i in range(57):

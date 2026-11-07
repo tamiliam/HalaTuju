@@ -20,7 +20,7 @@ import {
  * on every change — what saving would do: each toggle asks the endpoint for a DRY RUN, and the line
  * under the switches is worded from its answer (`added`, `removed`, `consequences`) or shows its
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
- * the one local rule, Quality check needing See all students, only mirrors what the server refuses.
+ * the one local rule, Quality check bringing See all students, only mirrors what the server answers.
  *
  * Loaded as its own chunk by `LazyPermissionEditor` — most visits to People never open it.
  *
@@ -34,9 +34,10 @@ import {
  * "Admin permissions" (`see_all`, `spending`, the three payment keys) only for somebody in Admins;
  * "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money groups,
  * which showed every key to everyone, are gone. "See all students" is an ADMIN permission; Quality check
- * still needs it (the server's `DEPENDS_ON`, unchanged), and its note says so.
+ * IMPLIES it (the server's `staff_permissions.IMPLIES`, T5b; TD-499), so it comes on with Quality check and
+ * stays ticked and locked while Quality check is on; turning it off never takes Quality check away.
  * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
- * server served, changed only by the switches on screen (and Quality check's own dependency).
+ * server served, changed only by the switches on screen (and the key Quality check brings).
  * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
 export const TABLE_KEYS = {
   admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'],
@@ -102,20 +103,17 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const tables = view?.tables
   const inAdmins = !tables || tables.includes('admins')
   const inReviewers = !tables || tables.includes('reviewers')
-  // Somebody NOT in Admins has no "See all students" switch, so Quality check brings it along — and takes
-  // it away again unless it was an ADMIN key before (held without Quality check), so turning Quality check
-  // off never leaves somebody seated at Admins by a key nobody ticked (T2's rule, kept).
+  // Quality check brings See all students along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
+  // no "See all students" switch, so turning Quality check off takes it away again unless it was an ADMIN
+  // key before (held without Quality check), so turning Quality check off never leaves somebody seated at
+  // Admins by a key nobody ticked (T2's rule, kept). In Admins the switch is on screen and stays as it is.
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
   const flip = useCallback((key: string, on: boolean) => {
     setSaved(false)
     setWant((cur) => {
       let next = on ? [...cur, key] : cur.filter((k) => k !== key)
-      // Quality check needs See all students: switching the second off takes the first with it.
-      if (key === 'see_all' && !on) next = next.filter((k) => k !== 'qc')
-      if (!inAdmins && key === 'qc') {
-        if (on && !next.includes('see_all')) next = [...next, 'see_all']
-        if (!on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
-      }
+      if (key === 'qc' && on && !next.includes('see_all')) next = [...next, 'see_all']
+      if (!inAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       return next
     })
   }, [inAdmins, seeAllWasAdmin])
@@ -172,7 +170,8 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
 
   const row = (key: string) => {
     const on = want.includes(key)
-    const blocked = key === 'qc' && !want.includes('see_all') && inAdmins
+    // See all students is locked on while Quality check holds it (TD-499).
+    const locked = key === 'see_all' && want.includes('qc')
     const changed = on !== view.permissions.includes(key)
     return (
       <div key={key} data-key={key} className="flex items-center justify-between gap-4 py-2.5">
@@ -186,12 +185,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
             )}
           </div>
           <div className="text-[13px] text-ground-500">{t(`admin.perm.${key}.desc`)}</div>
-          {blocked && <div className="text-xs text-caution-700">{t('admin.permEditor.qcHint')}</div>}
-          {key === 'qc' && !inAdmins && (
+          {key === 'qc' && (
             <div className="text-xs text-ground-500" data-testid="qc-brings-see-all">{t('admin.permEditor.qcBrings')}</div>
           )}
         </div>
-        <Toggle on={on} disabled={blocked || busy} label={t(`admin.perm.${key}.name`)}
+        <Toggle on={on} disabled={locked || busy} label={t(`admin.perm.${key}.name`)}
           onChange={(v) => flip(key, v)} />
       </div>
     )

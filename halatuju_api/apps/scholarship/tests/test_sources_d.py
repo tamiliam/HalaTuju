@@ -221,7 +221,7 @@ class TestReferralPartnersAreMarkedBySuperOnly(_World):
     def test_a_super_by_role_alone_may_list_mark_and_unmark(self):
         """Review: `is_super` counts the role, not only the legacy flag."""
         role_super = make_admin('super')
-        self.assertFalse(role_super.is_super_admin)
+        self.assertTrue(role_super.is_super)
         self.assertEqual(authed_client(role_super).get(LIST).status_code, 200)
         loose = _row('sd-role')
         self.assertEqual(self._patch(role_super, loose, True).status_code, 200)

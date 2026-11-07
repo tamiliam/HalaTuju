@@ -34,7 +34,7 @@ class _Base(TestCase):
         cls.other = PartnerOrganisation.objects.create(code='inspire', name='Inspire')
         cls.referral = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='oa-uid', role='org_admin', is_active=True,

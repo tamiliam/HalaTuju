@@ -51,7 +51,7 @@ class _Base(TestCase):
             supabase_user_id='oa-b', role='org_admin', is_active=True,
             owning_organisation=cls.org_b, name='OrgAdmin B', email='oab@x.com')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='sup', is_super_admin=True, is_active=True,
+            supabase_user_id='sup', role='super', is_active=True,
             name='Super', email='sup@x.com')
         # Every other B40 role, bound to org A — all must be refused (403) on the requests surface.
         for role in ('admin', 'reviewer', 'qc', 'finance'):
@@ -140,7 +140,7 @@ class TestFlagOff(TestCase):
             supabase_user_id='oa-off', role='org_admin', is_active=True,
             owning_organisation=cls.org, name='OA', email='oa@off.com')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='sup-off', is_super_admin=True, is_active=True,
+            supabase_user_id='sup-off', role='super', is_active=True,
             name='S', email='s@off.com')
         cls.req = OrgRequest.objects.create(
             organisation=cls.org, submitted_by=cls.oa, kind='feature',
@@ -181,7 +181,7 @@ class TestDarkByDefault(TestCase):
         from django.conf import settings
         self.assertFalse(getattr(settings, 'REQUESTS_ENABLED', False))
         PartnerAdmin.objects.create(
-            supabase_user_id='dbd-su', is_super_admin=True, is_active=True,
+            supabase_user_id='dbd-su', role='super', is_active=True,
             name='S', email='s@dbd.com')
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("dbd-su")}')
         self.assertEqual(self.client.get(BASE).status_code, 404)

@@ -35,7 +35,7 @@ SELECT owning_organisation_id, role, count(*) AS active,
        count(*) FILTER (WHERE first_seen_at IS NOT NULL) AS signed_in,
        count(*) FILTER (WHERE permissions IS NOT NULL) AS custom_sets
 FROM partner_admins
-WHERE is_active AND NOT is_super_admin AND role IN ('finance', 'org_admin', 'admin')
+WHERE is_active AND role IN ('finance', 'org_admin', 'admin')
 GROUP BY owning_organisation_id, role
 ORDER BY owning_organisation_id, role;
 

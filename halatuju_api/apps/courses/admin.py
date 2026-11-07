@@ -87,8 +87,8 @@ class PartnerOrganisationAdmin(admin.ModelAdmin):
 
 @admin.register(PartnerAdmin)
 class PartnerAdminAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'org', 'is_super_admin', 'created_at']
-    list_filter = ['is_super_admin', 'org']
+    list_display = ['name', 'email', 'org', 'role', 'created_at']
+    list_filter = ['role', 'org']
     search_fields = ['name', 'email']
     # Request #39: read-only here until Sprint 4's editor, which enforces the rules (lead tier,
     # qc => see_all, open cases, history). A hand edit here would bypass every one of them.

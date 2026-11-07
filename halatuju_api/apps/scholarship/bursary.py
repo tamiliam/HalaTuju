@@ -647,11 +647,9 @@ def foundation_notify_emails(application=None):
     explicit = [e.strip() for e in env.split(',') if e.strip()]
     if explicit:
         return list(dict.fromkeys(explicit))
-    from django.db.models import Q
     from apps.courses.models import PartnerAdmin
     supers = list(
-        PartnerAdmin.objects.filter(is_active=True)
-        .filter(Q(role='super') | Q(is_super_admin=True))
+        PartnerAdmin.objects.filter(is_active=True, role='super')
         .exclude(email='').values_list('email', flat=True)
     )
     if supers:

@@ -715,7 +715,7 @@ class TestWhoMayOpenIt(_EndpointBase):
         pooled (the read and the correction both, through the one door).
         """
         PartnerAdmin.objects.create(
-            supabase_user_id='ep-super', is_super_admin=True, is_active=True,
+            supabase_user_id='ep-super', role='super', is_active=True,
             name='Super', email='s@x.com')
         self.auth('ep-super')
         res = self.client.get(f'{self.URL}?programme={self.cohort.programme.code}')

@@ -33,7 +33,7 @@ def code_of(org):
 
 def _super():
     return PartnerAdmin.objects.create(
-        supabase_user_id='super', is_super_admin=True, is_active=True,
+        supabase_user_id='super', role='super', is_active=True,
         name='Super', email='super@x.test')
 
 

@@ -218,7 +218,7 @@ def unchosen_rows():
     from .models import PartnerAdmin
     return (PartnerAdmin.objects
             .filter(staff_permissions.team_holding(('review',)))
-            .filter(gift_rows__isnull=True, is_super_admin=False)
+            .filter(gift_rows__isnull=True)
             .exclude(role='super')
             .select_related('owning_organisation')
             .order_by('owning_organisation__code', 'id'))

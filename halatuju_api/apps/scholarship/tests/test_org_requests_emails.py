@@ -119,7 +119,7 @@ class TestWiring(TestCase):
             supabase_user_id='wi-oa', role='org_admin', is_active=True,
             owning_organisation=cls.org, name='Omar', email='omar@wi.test')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='wi-su', is_super_admin=True, is_active=True,
+            supabase_user_id='wi-su', role='super', is_active=True,
             name='Super', email='su@wi.test')
 
     def setUp(self):

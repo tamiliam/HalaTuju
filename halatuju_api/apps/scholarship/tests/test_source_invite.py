@@ -76,7 +76,7 @@ class TestInviteForAnExistingSource(_Base):
         self.assertEqual((user.role, user.source_id, user.owning_organisation_id, user.is_active),
                          ('source_partner', self.source.pk, self.org.pk, True))
         self.assertEqual(user.supabase_user_id, 'uid-new')
-        self.assertFalse(user.is_super_admin)
+        self.assertFalse(user.is_super)
         inv = Invitation.objects.get(pk=body['id'])
         self.assertEqual((inv.audience, inv.role, inv.organisation_id, inv.referral_source_id,
                           inv.partner_admin_id, inv.credential_issued, inv.send_count),

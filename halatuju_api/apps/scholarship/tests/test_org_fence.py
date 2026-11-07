@@ -133,7 +133,7 @@ class TestOrgFenceProof(TestCase):
         cls.a = tenant('A', 'a')
         cls.b = tenant('B', 'b')
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            supabase_user_id='super-uid', role='super', is_active=True,
             name='Super', email='super@x.com')
         # A qc + a reviewer bound to org A — needed to exercise the org gate on the
         # QC and graduation-review endpoints (their ROLE gate fires before the org

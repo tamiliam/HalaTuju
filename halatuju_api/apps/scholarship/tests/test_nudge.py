@@ -153,7 +153,7 @@ class TestNudgeEndpoint(TestCase):
         mk = PartnerAdmin.objects.create
         mk(supabase_user_id=ORG_ADMIN, role='org_admin', is_active=True, name='OA',
            email='oa@x.com', owning_organisation=cls.org)
-        mk(supabase_user_id=SUPER, role='super', is_super_admin=True, is_active=True,
+        mk(supabase_user_id=SUPER, role='super', is_active=True,
            name='SU', email='su@x.com')
         cls.reviewer = mk(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='R',
                           email='r@x.com', owning_organisation=cls.org)

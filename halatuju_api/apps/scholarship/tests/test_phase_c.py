@@ -32,7 +32,7 @@ class PhaseCBase(TestCase):
         # a non-super acting on these cases must sit inside the cohort's organisation.
         org = cls.cohort.owning_organisation
         cls.super = PartnerAdmin.objects.create(
-            supabase_user_id=SUPER, is_super_admin=True, is_active=True,
+            supabase_user_id=SUPER, role='super', is_active=True,
             name='Super', email='super@example.com',
         )
         cls.reviewer = PartnerAdmin.objects.create(

@@ -31,7 +31,7 @@ class ApplicationListPaginationTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id=ADMIN, is_super_admin=True, is_active=True,
+            supabase_user_id=ADMIN, role='super', is_active=True,
             name='Admin', email='admin@example.com',
         )
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)

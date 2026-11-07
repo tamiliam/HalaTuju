@@ -198,8 +198,7 @@ def holders(organisation, key):
         return []
     holds(None, key)                       # validates the key, so a typo raises here too
     from .models_staff import PartnerAdmin
-    staff = (PartnerAdmin.objects.filter(owning_organisation=organisation, is_active=True,
-                                         is_super_admin=False)
+    staff = (PartnerAdmin.objects.filter(owning_organisation=organisation, is_active=True)
              .exclude(role='super').order_by('id'))
     return [a for a in staff if key in resolve(a)]
 
@@ -226,11 +225,10 @@ def team_holding(keys, *, with_lead=False):
     # Team tables T2: ``with_lead`` also answers the ORGANISATION ADMINS who joined the Reviewers table
     # (`lead_reviews`) when `review` is asked — read in the SAME query (the Reviewers list's budget).
     roles = (*TEAM_ROLES, LEAD_ROLE) if with_lead and LEAD_MAY_ADD in wanted else TEAM_ROLES
-    custom = (PartnerAdmin.objects.filter(role__in=roles, is_super_admin=False,
-                                          permissions__isnull=False)
-              .only('id', 'role', 'is_super_admin', 'permissions'))
+    custom = (PartnerAdmin.objects.filter(role__in=roles, permissions__isnull=False)
+              .only('id', 'role', 'permissions'))
     custom_ids = [a.pk for a in custom
                   if (lead_reviews(a) if a.role == LEAD_ROLE else wanted & set(resolve(a)))]
-    return (Q(permissions__isnull=True, role__in=preset_roles, is_super_admin=False)
+    return (Q(permissions__isnull=True, role__in=preset_roles)
             | Q(pk__in=custom_ids))
 

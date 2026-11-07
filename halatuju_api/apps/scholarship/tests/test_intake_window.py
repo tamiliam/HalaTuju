@@ -35,7 +35,7 @@ class TestIntakeWindow(TestCase):
             organisation=cls.org, code='win-gift', name_en='Win Gift', is_active=True)
         cls.admin = PartnerAdmin.objects.create(
             supabase_user_id='win-admin', email='win-admin@example.com', name='Win Admin',
-            role='org_admin', is_super_admin=False, is_active=True, owning_organisation=cls.org)
+            role='org_admin', is_active=True, owning_organisation=cls.org)
 
     def setUp(self):
         self.client = APIClient()

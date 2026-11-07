@@ -75,7 +75,7 @@ class TestEveryRoleSeesTheSamePayload(TestCase):
         for uid, role, sup in (('p-sup', 'super', True), ('p-oa', 'org_admin', False),
                                ('p-qc', 'qc', False), ('p-rev', 'reviewer', False)):
             PartnerAdmin.objects.create(
-                supabase_user_id=uid, role=role, is_super_admin=sup, is_active=True,
+                supabase_user_id=uid, role='super' if sup else role, is_active=True,
                 name=uid, email=f'{uid}@x.com', owning_organisation=cls.org)
         cls.cohort = ScholarshipCohort.objects.create(
             code='c-pay', name='B40', year=2026, owning_organisation=cls.org)

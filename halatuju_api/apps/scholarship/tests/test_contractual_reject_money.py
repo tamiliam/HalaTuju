@@ -41,7 +41,7 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
                                                       programme=_gift())
         cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id='crm-admin', role='super', is_super_admin=True,
+            supabase_user_id='crm-admin', role='super', 
             is_active=True, name='A', email='admin@x.com')
 
     def _funded_app(self):
@@ -138,7 +138,7 @@ class TestRejectClearsAwardAmount(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='rca', name='B40', year=2026)
         cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id='rca-admin', role='super', is_super_admin=True,
+            supabase_user_id='rca-admin', role='super', 
             is_active=True, name='A', email='rca@x.com')
 
     def _app(self, status, amount='3000'):
