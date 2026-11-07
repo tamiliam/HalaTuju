@@ -634,7 +634,7 @@ def _mentor_linked(admin):
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)
 
 
-def _deletable_now(caller, target):
+def _deletable_now(caller, target, work=None):
     """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
 
     Three conditions, all required, and each is refused again by `AdminDeleteView`:
@@ -647,7 +647,7 @@ def _deletable_now(caller, target):
         return False
     if target.is_super or target.role not in _DELETABLE_ROLES:
         return False
-    return not staff_footprint.has_footprint(target)
+    return not (work if work is not None else staff_footprint.footprint(target))
 
 
 def _staff_target_manageable(caller, target):

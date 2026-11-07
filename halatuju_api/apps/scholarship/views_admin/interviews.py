@@ -230,10 +230,13 @@ class AdminInterviewSubmitView(_AdminBase):
             return Response({'error': 'Every interview question needs an answer before you submit.',
                              'code': 'findings_incomplete', 'missing': missing},
                             status=status.HTTP_400_BAD_REQUEST)
-        if session.interviewer_id is None:
-            session.interviewer = admin
-            session.save(update_fields=['interviewer'])
-        submit_interview(session, actor=admin)
+        # The interviewer stamp rides in the SAME transaction as the submit's evidence write (nested
+        # atomics join this one), so a failed evidence write rolls the stamp back with it.
+        with transaction.atomic():
+            if session.interviewer_id is None:
+                session.interviewer = admin
+                session.save(update_fields=['interviewer'])
+            submit_interview(session, actor=admin)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

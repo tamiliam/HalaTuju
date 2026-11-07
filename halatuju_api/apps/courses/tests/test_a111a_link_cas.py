@@ -49,3 +49,9 @@ class TestTheLinkIsACompareAndSet(TestCase):
         r = self._sign_in_while({'name': 'Rohini K'})
         self.assertTrue(r.json()['is_admin'], r.content)
         self.assertEqual(self.row.supabase_user_id, SUB)
+
+    def test_the_same_login_winning_the_race_is_still_a_success(self):
+        """Two first requests from one login: the loser finds its OWN id on the row and gets the role."""
+        r = self._sign_in_while({'supabase_user_id': SUB})
+        self.assertTrue(r.json()['is_admin'], r.content)
+        self.assertEqual(self.row.supabase_user_id, SUB)

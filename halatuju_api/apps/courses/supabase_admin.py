@@ -216,6 +216,12 @@ def link_login(admin, uid, email):
     linked = PartnerAdmin.objects.filter(
         pk=admin.pk, email__iexact=email, supabase_user_id__isnull=True,
         is_active=True).update(supabase_user_id=uid)
+    if not linked:
+        # A concurrent first request from the SAME login may have won the race: that is success.
+        # Only when the row now carries THIS login id (and is still this person's, active); never
+        # a link to a different row or a different login.
+        linked = PartnerAdmin.objects.filter(
+            pk=admin.pk, email__iexact=email, supabase_user_id=uid, is_active=True).exists()
     if linked:
         admin.supabase_user_id = uid
     return bool(linked)

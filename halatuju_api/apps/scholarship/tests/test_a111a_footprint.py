@@ -12,7 +12,7 @@ from django.test import TestCase, override_settings
 
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import staff_activity, staff_footprint
-from apps.scholarship.models import AssignmentEvent, ScholarshipApplication
+from apps.scholarship.models import AssignmentEvent, ScholarshipApplication, StaffActivity
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org)
 
@@ -66,8 +66,9 @@ class TestGuardEvidenceKeepsThePerson(TestCase):
     def test_a_non_review_activity_row_is_not_review_work(self):
         clerk = make_admin('admin', owning_org=self.org)
         app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort)
-        staff_activity.record(clerk, staff_activity.NOTE_ADDED, app) \
-            if hasattr(staff_activity, 'NOTE_ADDED') else None
+        row = staff_activity.record(clerk, staff_activity.QUERY_RAISED, app)
+        self.assertIsNotNone(row)   # the row IS written; it is simply not review work
+        self.assertTrue(StaffActivity.objects.filter(actor=clerk, verb='query_raised').exists())
         self.assertNotIn('review_actions', staff_footprint.footprint(clerk))
 
 

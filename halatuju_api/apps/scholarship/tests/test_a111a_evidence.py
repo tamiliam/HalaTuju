@@ -86,3 +86,44 @@ class TestGuardEvidenceIsNotBestEffort(TestCase):
         self.assertEqual(depth['n'], outer)   # the Gemini call holds no extra transaction
         self.assertTrue(StaffActivity.objects.filter(
             subject_id=app.pk, verb=staff_activity.INTERVIEW_SUBMITTED).exists())
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestInterviewViewsRollBackWholly(TestCase):
+    """Review fix: the interviewer stamp and the draft save ride in the evidence transaction."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = make_org()
+        cls.reviewer = make_admin('reviewer', owning_org=cls.org)
+        cls.cohort = make_cohort(owning_organisation=cls.org)
+
+    def _url(self, app, tail):
+        return f'/api/v1/admin/scholarship/applications/{app.pk}/interview/{tail}'
+
+    def test_submit_view_503_leaves_the_interviewer_stamp_unchanged(self):
+        app = make_application('profile_complete', cohort=self.cohort, reviewer=self.reviewer)
+        session = InterviewSession.objects.create(
+            application=app, status='draft',
+            findings={'motivation:motivation_grit': {'verdict': 'deleted'}})
+        self.assertIsNone(session.interviewer_id)
+        with _a_real_db_error():
+            r = authed_client(self.reviewer).post(self._url(app, 'submit/'), {}, format='json')
+        self.assertEqual((r.status_code, r.json().get('code')), (503, 'evidence_not_recorded'),
+                         r.content[:300])
+        session.refresh_from_db()
+        app.refresh_from_db()
+        self.assertIsNone(session.interviewer_id)
+        self.assertEqual(session.status, 'draft')
+        self.assertEqual(app.status, 'profile_complete')
+        self.assertFalse(StaffActivity.objects.filter(subject_id=app.pk).exists())
+
+    def test_draft_save_503_rolls_back_wholly(self):
+        app = make_application('profile_complete', cohort=self.cohort, reviewer=self.reviewer)
+        with _a_real_db_error():
+            r = authed_client(self.reviewer).post(
+                self._url(app, ''), {'overall_note': 'Met the family.'}, format='json')
+        self.assertEqual((r.status_code, r.json().get('code')), (503, 'evidence_not_recorded'),
+                         r.content[:300])
+        self.assertFalse(InterviewSession.objects.filter(application=app).exists())
+        self.assertFalse(StaffActivity.objects.filter(subject_id=app.pk).exists())

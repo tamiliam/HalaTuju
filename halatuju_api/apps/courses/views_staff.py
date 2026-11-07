@@ -468,6 +468,7 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         data = []
         for a in admins:
+            work = staff_footprint.footprint(a)   # once per row: 'deletable' reuses it
             data.append({
                 'id': a.id,
                 'name': a.name,
@@ -505,8 +506,8 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # `staff_footprint`, and `AdminDeleteView` for why a footprint rather than the
                 # database's own protections. `work` says what stops it, so the screen can name
                 # the reason instead of hiding a button for no visible cause.
-                'deletable': _deletable_now(admin, a),
-                'work': staff_footprint.footprint(a),
+                'deletable': _deletable_now(admin, a, work=work),
+                'work': work,
                 # Request #39 Sprint 4: People's permission chips. `custom` = a set saved on the
                 # editor; the two lists are what differs from the preset (both empty on it).
                 **_permission_chips(a),
