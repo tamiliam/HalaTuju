@@ -159,6 +159,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-533** — Status writers outside QC still decide from a pre-lock copy (TD-383 follow-up): A1.4 and A1.5 locked the money writers and the 4 QC paths; about a dozen other writers still read status with no row lock. Fix is the same `status_lock` pattern in a later audit wave, plus the static scan over all writers that TD-383 never built. *(A · M · raised 2026-11-06 at the G2 pre-deploy gates)*
 - **TD-534** — Reopen-signing email does not state the new accept deadline (TD-347 follow-up): a recorded parent call now re-arms the clock, but nothing tells the student the new date. **MUST LAND BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** Needs en/ms/ta wording; the send goes after the save. *(A · S · raised 2026-11-06 by Sprint A1.6)*
 - **TD-545** — The upload door leaves an orphan Storage file when it answers 409 `upload_conflict` (A1.8 / TD-115) — low
+- **TD-580** — Read a SCANNED polytechnic transcript Exact: `poly_diploma_parse` reads only a digital PDF's text layer, so a scanned / merged PDF goes to Gemini (live: app 168, doc 5303). Build a word-box path with the same proofs. **Owner priority: next after the higher-owed fix (2026-11-07).** *(B · M)*
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - ~~**TD-347**~~ — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)* **Fixed 2026-11-06 (Sprint A1.6): a clearing call re-arms the clock; the deadline email is TD-534; see the detail entry.**
@@ -8184,6 +8185,10 @@ carries no deadline at all. So a student whose clock was re-armed is not told th
 email that tells her signing is open again and states the new `accept_deadline`; it needs en/ms/ta
 wording (Tamil to the style guide), and the send goes AFTER `record_call`'s transaction commits (never
 inside the locked block; the lock rule). *(A · S)*
+
+### [TD-580] Read a SCANNED polytechnic transcript Exact - medium
+
+**Raised 2026-11-07 by the owner (queued AFTER the higher-owed fix; owner priority: next after it).** `poly_diploma_parse` reads only a digital PDF's text layer (by design: no scan of the two-column layout had been seen); a scanned or merged PDF goes to Gemini. Live: app 168, doc 5303, a Politeknik Kota Kinabalu provisional transcript (Gemini read the final CGPA 3.78 correctly). Polytechnic transcripts are one standard JPPKK layout, so build a word-box path with the same proofs (credits, GPA / CGPA recomputed). Note: doc 5303 sits in the higher-results card with `results_kind` 'stpm' (the team's split), so its card reads the kind as different once read. *(B · M)*
 
 ### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
 

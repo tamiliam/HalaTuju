@@ -128,7 +128,7 @@ DOC_SPECS = {
     # income_engine, auto-resolved when the gap clears.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
-    higher_owed.ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'},  # #388: owed over a pre-S3 snapshot
+    **higher_owed.ASK_SPECS,  # #388 owed over a pre-S3 snapshot; 2026-11-07 declare + upload (higher_owed)
     # Per-bill utility re-upload (owner 2026-07-08): each bill that is missing / stale / undated /
     # unreadable → its own request. Clears when a clean, current bill of that type supersedes it.
     'water_bill_recheck':       {'doc_type': 'water_bill'},
@@ -264,7 +264,7 @@ GOVERNED_BY = {
     'epf_statement_missing': _INCOME,            # deprecated code, still auto-resolves
     'school_leaving_cert_missing': (('document', 'school_leaving_cert'),),
     'semester_result_missing': None,             # continuing-student rule, not a catalogue card
-    higher_owed.ASK_CODE: (('document', 'results_slip'),),   # the core results item (higher_owed)
+    **higher_owed.GOVERNED,                      # the core results item (higher_owed)
     'water_bill_recheck': (('document', 'water_bill'),),
     'electricity_bill_recheck': (('document', 'electricity_bill'),),
     'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves
@@ -501,7 +501,7 @@ def sync_check2_queries(application):
         if code in held:
             continue
         if code in proof_wanted:
-            if item is None and may_ask:         # machine asks only in the Completed stage
+            if item is None and higher_owed.may_raise(application, code, may_ask):   # Completed only, bar 2
                 try:
                     # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
                     # tagged to the RIGHT household member. Without this, a model doc-request stored
@@ -518,7 +518,7 @@ def sync_check2_queries(application):
                     raised_student_visible = True
                 except IntegrityError:
                     pass
-            elif item is not None and item.status == 'resolved' and may_ask:
+            elif item is not None and item.status == 'resolved' and higher_owed.may_raise(application, code, may_ask):
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
                 # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
                 # post-lock — a concluded case doesn't re-ask.

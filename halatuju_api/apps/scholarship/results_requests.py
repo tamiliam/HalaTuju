@@ -66,5 +66,8 @@ B: a semester slip, the portal page). The system's Check-2 ask for owed higher r
         return True
     if item.doc_type == 'higher_results' and doc.doc_type == 'higher_results':
         from .higher_results import answers_higher_ask      # not an SPM slip, and the FINAL result (SF3)
+        from . import higher_owed       # 2026-11-07: the declare + upload ask also needs her results ENTERED
+        if item.code == higher_owed.DECLARE_ASK_CODE and higher_owed.undeclared(doc.application):
+            return False
         return answers_higher_ask(doc)
     return True

@@ -28,6 +28,7 @@ _INCOME_SLOTS = ('salary_slip', 'income_support_doc')
 #: own `DOC_SPECS`, never restated here.
 HELD_WHILE_DEFERRED = ('water_bill_recheck', 'electricity_bill_recheck', 'school_leaving_cert_missing',
                        'semester_result_missing', 'higher_results_requested',     # #388 (`higher_owed.ASK_CODE`)
+                       'higher_results_declare_requested',                        # `higher_owed.DECLARE_ASK_CODE`
                        *_INCOME_ASKS)
 
 

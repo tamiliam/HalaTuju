@@ -175,8 +175,10 @@ def upload_kind(application, request_code: str = '') -> str:
     answering an officer's request for named results carries THAT request's kind
     (`results_requests.requested_kind`), so it lands in the right slot whatever the results page
     holds. '' otherwise."""
+    from . import higher_owed
     from .results_requests import requested_kind
-    return requested_kind(application, request_code) or held_kind(application)
+    # 2026-11-07: a submitted legacy row owing them carries the kind she ENTERED (held SPM, STPM grades)
+    return requested_kind(application, request_code) or held_kind(application) or higher_owed.upload_kind(application)
 
 
 # ── The two student actions (D13) ──────────────────────────────────────────────────────────────
