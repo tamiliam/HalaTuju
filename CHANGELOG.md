@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Team's Admins, Reviewers and Mentors tables read alike; a mentor's page gets a details box (2026-11-08)
+
+Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the three Team tables were not consistent. On `admin/organisation/reviewers`:
+- **Admins** (`StaffTable`, only when the `team` prop is set; the platform's Organisations and Partners screens are unchanged): the email sits under the name, with no Email column. A Last seen column comes after Status ("Not recorded" when empty), and the headers use the shared `TH` style. The empty row's `colSpan` now counts every column (it was one short).
+- **Reviewers**: the first header reads "Name", not "Reviewer".
+- **Mentors** (`MentorsAdmin`):
+  - Columns: Name (email and phone under it, as on Admins and Reviewers), Also in, Scholars now, Meetings (90 days), Last meeting, Concerns open, Status (Active / Revoked), Last seen, Action. Area and Languages moved to the mentor's page.
+  - Removed: the Active / Inactive chips, the "n waiting to accept: see Invitations" line, and both footnotes.
+  - One list: a revoked pure mentor stays listed as Revoked, with Restore. A staff member taken off Mentors drops off the list and comes back through Add Mentor.
+  - The actions use the other tabs' wording: Revoke / Restore (endpoints `deactivate` / `reactivate`) and Remove from Mentors (`stop`). The confirm texts were updated to match.
+  - Add Mentor moved onto the tab row beside Add Admin / Add Reviewer. The page owns the open state; the sheet stays in the Mentors chunk.
+- **Mentor page** (`MentorDetail`): a labelled "About" box shows Email, Phone (with +60, via `displayPhone`), Area and Languages in full. Each row says "Not given" or "Not filled in yet" rather than disappearing. The header line keeps only "mentoring since … · last signed in …". An inactive pure mentor reads Revoked.
+
+Unused keys removed (en/ms/ta): `admin.mentors.note`, `staffNote`, `waiting`, `seeInvitations`, `empty`, `col.mentor`, `col.status`, `col.actions`. ⚠ The new Tamil strings (and the Malay ones) need a language review. Tests: `MentorsAdmin.test.tsx` (rewritten list block, plus two detail-box tests), `StaffAdmin.test.tsx` (four Team-layout tests), and `page.test.tsx` ("Name" header, Add Mentor on the tab row, none for a read-only admin).
+
 ### chore: Team's Add Admin / Add Reviewer button moves onto the tab row (2026-11-08)
 
 Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the button sat on a row of its own. On `admin/organisation/reviewers` it now sits at the right end of the tab row (Admins, Reviewers, Mentors, Emails, Terms), sized like a tab (44 px on a phone), and outside the tablist, because a button there is not a tab to a screen reader. `PanelTabs` is unchanged (19 pages use it). Test: `page.test.tsx` "Add sits on the tab row".

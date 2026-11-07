@@ -126,6 +126,8 @@ export default function AdminReviewersList() {
   // page, Permissions tab (one section per table they sit in). The NAME opens it, as before.
   // T2: the Add sheet (which table) and the Remove confirm (who, from which table).
   const [adding, setAdding] = useState<TeamTableName | null>(null)
+  // Add Mentor's sheet lives in the Mentors chunk; its button is on the tab row with the other two.
+  const [addingMentor, setAddingMentor] = useState(false)
   const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName } | null>(null)
   const teamDone = (text: string) => {
     setAdding(null); setRemoving(null)
@@ -250,12 +252,14 @@ export default function AdminReviewersList() {
           { key: 'terms', labelKey: 'admin.reviewers.tabTerms' },
         ]} />
       </div>
-      {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
-          Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}
-      {canManage && (panel === 'admins' || panel === 'reviewers') && (
-        <button type="button" onClick={() => setAdding(panel)} data-testid={`team-add-${panel}-open`}
+      {/* T2: Add Admin / Add Reviewer / Add Mentor — an EXISTING member only; new people are invited on
+          Invitations. Offered to whoever may edit permissions on Team (super, org_admin); the endpoint
+          re-checks. */}
+      {canManage && (panel === 'admins' || panel === 'reviewers' || (panel === 'mentors' && mayMentors)) && (
+        <button type="button" data-testid={`team-add-${panel}-open`}
+          onClick={() => (panel === 'mentors' ? setAddingMentor(true) : setAdding(panel))}
           className="shrink-0 rounded-lg border border-transparent bg-brand-fill px-4 py-1.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
-          {t(`admin.team.add.${panel}`)}
+          {t(panel === 'mentors' ? 'admin.mentors.addMentor' : `admin.team.add.${panel}`)}
         </button>
       )}
       </div>
@@ -273,7 +277,9 @@ export default function AdminReviewersList() {
 
       {/* T3: the Mentors table, its own chunk (the old Mentors page's, `lazySource`), handed this page's
           "Also in" chips so the chunk imports nothing the route already carries. */}
-      {panel === 'mentors' && mayMentors && <TeamMentors AlsoIn={AlsoIn} />}
+      {panel === 'mentors' && mayMentors && (
+        <TeamMentors AlsoIn={AlsoIn} adding={addingMentor} onAddClose={() => setAddingMentor(false)} />
+      )}
 
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
@@ -385,7 +391,7 @@ export default function AdminReviewersList() {
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
-                <SortHeader col="name" label={t(REVIEWER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
+                <SortHeader col="name" label={t('admin.nameHeader')} sort={sort} onSort={onSort} />
                 {/* T2: "Also in" replaces the Role column. T3: no permission column (the person's page). */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.team.colAlsoIn')}

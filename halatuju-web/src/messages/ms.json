@@ -8650,11 +8650,8 @@
         "inactive": "Tidak aktif"
       },
       "col": {
-        "mentor": "Mentor",
         "area": "Bidang",
         "languages": "Bahasa",
-        "status": "Status",
-        "actions": "Tindakan",
         "scholarsNow": "Penerima biasiswa kini",
         "meetings90": "Pertemuan (90 hari)",
         "lastMeeting": "Pertemuan terakhir",
@@ -8664,17 +8661,17 @@
       "activeSeen": "Aktif · log masuk terakhir {date}",
       "inactiveOn": "Tidak aktif sejak {date}",
       "action": {
-        "deactivate": "Nyahaktifkan",
-        "reactivate": "Aktifkan semula",
+        "deactivate": "Batalkan",
+        "reactivate": "Pulihkan",
         "resend": "Hantar semula",
         "revoke": "Tarik balik",
-        "stop": "Hentikan bimbingan",
+        "stop": "Keluarkan daripada Mentor",
         "resume": "Jadi mentor semula"
       },
       "confirm": {
-        "deactivate": "Nyahaktifkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh mengaktifkan mereka semula kemudian.",
+        "deactivate": "Batalkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh memulihkan mereka kemudian.",
         "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian.",
-        "stop": "Hentikan bimbingan oleh {name}? Penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail. Log masuk kakitangan mereka tidak disentuh."
+        "stop": "Keluarkan {name} daripada Mentor? Penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula."
       },
       "done": {
         "resend": "Jemputan dihantar semula ke {email}.",
@@ -8686,8 +8683,6 @@
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
         "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri."
       },
-      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor. Mentor baharu dijemput di Jemputan → Mentor; Tambah Mentor menambah seseorang yang sudah dalam pasukan anda. Jadual ini menyenaraikan mentor yang telah log masuk dan kakitangan yang juga menjadi mentor. Mentor tidak pernah dipadam: nyahaktifkan sahaja, yang juga menamatkan bimbingan mereka. Pertemuan lalu kekal dalam fail setiap penerima biasiswa. Klik nama untuk halaman mentor.",
-      "empty": "Tiada mentor dalam senarai ini.",
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
         "title": "Bimbingan",
@@ -8702,8 +8697,6 @@
         "aboutSeen": "Pelajar anda melihat Tentang saya anda. Ditulis untuk rakan sekerja? Pastikan ia sesuai dibaca oleh pelajar.",
         "accessMentor": "{role} · Mentor"
       },
-      "waiting": "{count} menunggu untuk menerima:",
-      "seeInvitations": "lihat Jemputan",
       "emptyNone": "Belum ada mentor. Jemput seorang di Jemputan → Mentor, atau tambah seseorang yang sudah dalam pasukan anda dengan \"Tambah Mentor\".",
       "emptyNoneRead": "Belum ada mentor.",
       "staffSheet": {
@@ -8718,11 +8711,10 @@
         "loadError": "Senarai kakitangan tidak dapat dimuatkan."
       },
       "staffTag": "Kakitangan · {role}",
-      "staffNote": "\"Hentikan bimbingan\" menamatkan bimbingan seorang kakitangan (penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail); log masuk kakitangan mereka tidak disentuh. Jika akaun kakitangan ditarik balik, bimbingan mereka turut tamat. Mentor kakitangan dipaparkan di bawah Tidak aktif selepas Hentikan bimbingan, dengan \"Jadi mentor semula\".",
       "addMentor": "Tambah Mentor",
       "removeTitle": {
-        "stop": "Hentikan bimbingan oleh {name}?",
-        "deactivate": "Nyahaktifkan {name}?"
+        "stop": "Keluarkan {name} daripada Mentor?",
+        "deactivate": "Batalkan {name}?"
       },
       "detail": {
         "back": "Pasukan · Mentor",

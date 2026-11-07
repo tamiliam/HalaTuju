@@ -25,8 +25,11 @@ jest.mock('@/lib/admin-api')
 // T3: the Mentors tab's screen is its own chunk (`components/mentors/MentorsAdmin`, tested there).
 jest.mock('@/components/mentors/MentorsAdmin', () => ({
   __esModule: true,
-  default: ({ AlsoIn }: { AlsoIn: unknown }) =>
-    <div data-testid="team-mentors-screen">{typeof AlsoIn === 'function' ? 'chips' : ''}</div>,
+  default: ({ AlsoIn, adding, onAddClose }: { AlsoIn: unknown; adding?: boolean; onAddClose?: () => void }) =>
+    <div data-testid="team-mentors-screen" data-adding={adding ? 'yes' : 'no'}>
+      {typeof AlsoIn === 'function' ? 'chips' : ''}
+      <button type="button" data-testid="mock-mentor-sheet-close" onClick={() => onAddClose?.()} />
+    </div>,
 }))
 
 const mockApi = api as jest.Mocked<typeof api>
@@ -89,7 +92,10 @@ const loaded = async () => {
 describe('what the table shows', () => {
   it('draws the columns the surface was approved with', async () => {
     await loaded()
-    for (const key of ['colName', 'colAwaiting', 'colInterviewing', 'colCompleted',
+    // Owner 2026-11-08: the first header reads "Name", as on Admins and Mentors.
+    expect(ui().getByText('admin.nameHeader')).toBeTruthy()
+    expect(ui().queryByText('admin.reviewers.colName')).toBeNull()
+    for (const key of ['colAwaiting', 'colInterviewing', 'colCompleted',
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
@@ -191,11 +197,11 @@ describe('sorting', () => {
 
   it('flips a column when its header is clicked, and says so to a screen reader', async () => {
     await loaded()
-    const header = screen.getByText('admin.reviewers.colName').closest('th')!
+    const header = screen.getByText('admin.nameHeader').closest('th')!
     expect(header.getAttribute('aria-sort')).toBe('none')
-    fireEvent.click(screen.getByText('admin.reviewers.colName'))
+    fireEvent.click(screen.getByText('admin.nameHeader'))
     await waitFor(() =>
-      expect(screen.getByText('admin.reviewers.colName').closest('th')!.getAttribute('aria-sort'))
+      expect(screen.getByText('admin.nameHeader').closest('th')!.getAttribute('aria-sort'))
         .toBe('ascending'))
     const names = screen.getAllByRole('row').slice(1)
       .map((r) => r.querySelector('a')!.textContent)
@@ -722,6 +728,28 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     await loaded()
     fireEvent.click(screen.getByText('admin.team.tabMentors'))
     expect(await screen.findByTestId('team-mentors-screen')).toBeTruthy()
+  })
+
+  it('Add Mentor sits on the tab row too, and opens the Mentors screen\'s sheet (owner 2026-11-08)', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    const mentors = await screen.findByTestId('team-mentors-screen')
+    expect(mentors.getAttribute('data-adding')).toBe('no')
+    const add = screen.getByTestId('team-add-mentors-open')
+    expect(add.textContent).toBe('admin.mentors.addMentor')
+    expect(add.previousElementSibling?.contains(screen.getByRole('tablist'))).toBe(true)
+    fireEvent.click(add)
+    expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('yes')
+    fireEvent.click(screen.getByTestId('mock-mentor-sheet-close'))
+    expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('no')
+  })
+
+  it('⚠ no Add Mentor for a viewer who may not manage (admin)', async () => {
+    viewerRole = { role: 'admin' }
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    await screen.findByTestId('team-mentors-screen')
+    expect(screen.queryByTestId('team-add-mentors-open')).toBeNull()
   })
 
   it('T3: the Mentors tab is offered only to who read the old Mentors page (not finance)', async () => {
