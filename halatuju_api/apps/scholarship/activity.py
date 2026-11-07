@@ -55,3 +55,19 @@ def add_entry(application, kind, body, *, actor_email, internal=False):
     return StudentActivity.objects.create(
         application=application, kind=kind, body=text,
         actor_email=(actor_email or '')[:254], internal=bool(internal))
+
+
+def withdrawn_agreement_pdfs():
+    """A1.13 third review: the storage path of every signed PDF a withdrawal voided. The withdrawal
+    keeps it in the ``award_withdrawn`` row's meta (``agreement_voided.pdf_storage_path``, the audit);
+    when the student signs again after a re-award, the agreement row's own path is overwritten. Read
+    by ``cleanup_orphan_blobs`` so that old signed contract is never swept as an orphan. It returns
+    paths only — no body, no actor — so the log stays read by this module alone."""
+    from .models.activity import EVENT_AWARD_WITHDRAWN
+    paths = set()
+    for meta in StudentActivity.objects.filter(event=EVENT_AWARD_WITHDRAWN).values_list('meta', flat=True):
+        voided = meta.get('agreement_voided') if isinstance(meta, dict) else None
+        path = voided.get('pdf_storage_path') if isinstance(voided, dict) else None
+        if isinstance(path, str) and path:
+            paths.add(path)
+    return paths

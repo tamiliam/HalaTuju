@@ -99,6 +99,15 @@ def is_void(agreement):
     return not agreement.binds and agreement.sponsorship_id is None
 
 
+def live_agreement(application):
+    """The application's agreement, or None when it has none OR it is void (A1.13 third review).
+    A voided row is no contract: after a re-award the student must be shown the NEW contract to
+    sign (the preview), never "agreement signed" on the dead one. Her signing then overwrites the
+    same row (`bursary.sign_agreement`'s update_or_create on the application)."""
+    agreement = getattr(application, 'bursary_agreement', None)
+    return None if agreement is None or is_void(agreement) else agreement
+
+
 def void_on_withdrawal(application):
     """Under the caller's application lock: void this case's agreement, if it has one. Returns the
     old signature stamps (ISO text, for the audit row), or None when there was no agreement."""

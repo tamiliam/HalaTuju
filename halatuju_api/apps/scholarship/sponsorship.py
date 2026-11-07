@@ -997,7 +997,9 @@ def lapse_expired_offers(lapsed_ids=None):
                 'disbursements. Flagged for admin review.', app.id, sp.id)
             continue
         with transaction.atomic():
-            sp = (Sponsorship.objects.select_for_update().select_related('application')
+            # A1.13 third review: the case FIRST (house order), then OF the offer row only.
+            _status_lock.lock_case_of_sponsorship(pk=sp.pk)
+            sp = (Sponsorship.objects.select_for_update(of=('self',)).select_related('application')
                   .filter(pk=sp.pk, status='offered', accept_deadline=sp.accept_deadline).first())
             if sp is None:
                 continue   # accepted / cancelled / re-armed since the list was read — leave it

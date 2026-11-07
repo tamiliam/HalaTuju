@@ -19,10 +19,13 @@ LOCK ORDER (one order everywhere, so two writers can never deadlock):
   3. the SPONSOR row (``lock_sponsor_wallet``, A1.5), before a wallet balance is read for a spend;
   4. the rows that hang off them (a Sponsorship, a Disbursement / tranche).
 A writer may skip a step, never reverse two. ``closure.close_application`` takes only the
-application row. ``sponsorship.cancel_offer`` and the award-email job (the APPLICATION first, then
-the Sponsorship, via ``lock_case_of_sponsorship`` — A1.13 review, matching
-``award_withdrawal.withdraw_award``) and the offer-lapse job
-(``lapse_expired_offers``) never take the sponsor row, so they cannot wait on a fund that holds it.
+application row. ``sponsorship.cancel_offer``, the award-email job and the offer-lapse job
+(``lapse_expired_offers``) take the APPLICATION first, then the Sponsorship (``of=('self',)``), via
+``lock_case_of_sponsorship`` — A1.13 reviews, matching ``award_withdrawal.withdraw_award``; the
+parent-call record (``parent_call.record_call``) locks the student's applications in pk order
+before her offer rows (A1.13 third review: until then the lapse job and the call took the
+Sponsorship first, the reverse of the withdrawal, and could deadlock it). None of these take the
+sponsor row, so they cannot wait on a fund that holds it.
 A bursary agreement row comes after its application (``agreement_guard``). The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
 foreign-key check (FOR KEY SHARE on the sponsor) does not wait on it.
 

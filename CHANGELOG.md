@@ -27,6 +27,12 @@ Branch a113 (not pushed; no migration, no model change beyond a new activity eve
   - 3: the withdrawal's audit meta also keeps the Foundation signer, the witness organisation, name, signer, IP and admin, the agreement hash and the PDF path.
   - 4: a voided agreement (unsigned, no sponsorship) serves no PDF link. The PDF path stays on the row on purpose: `cleanup_orphan_blobs` treats a path no row names as an orphan and would delete the signed contract.
   - 5: tests for the email-job lock order, the source console's witness door answering 409, and the real held-decline flow.
+- **Third review fixes (on 62e092dad; no migration, no money rule changed):**
+  - Med 1: two writers still locked the sponsorship before the application. `lapse_expired_offers` now takes `lock_case_of_sponsorship` first and re-reads the offer with `select_for_update(of=('self',))`. `parent_call.record_call`, when the call clears a flag holding signing, now locks all the student's applications in pk order (`_lock_applications_of`) before `_lock_armed_offers`. The docstrings in `parent_call.py` and `status_lock.py` that called the old order safe are corrected. TD-594's lapse part is closed.
+  - Med 2: after a withdrawal and a re-award, the voided agreement row was still sent as `bursary_agreement`, so the award page showed "agreement signed" with no PDF and the student could not accept. New `agreement_guard.live_agreement` treats a void row as no agreement. The award payload then shows the preview of the new contract, and `GET scholarship/bursary-agreement/` answers 404 until she signs. Signing overwrites the same row (`update_or_create` on the application). No web change was needed.
+  - Low 1: `cleanup_orphan_blobs.known_paths()` also keeps the signed PDF path held in each `award_withdrawn` activity row's meta, so the withdrawn contract is not deleted as an orphan once a re-signing writes a new path. The log is read through `activity.withdrawn_agreement_pdfs()` (paths only), so `activity.py` stays the log's only reader outside the staff file (the `test_letters` guard).
+  - Low 2 (left as it is): the award-email job sends over the network while holding the application lock. Logged as TD-595.
+  - Tests: `test_a113_third_review.py` (new; lock-order spies for the lapse job and the parent call, the full withdraw, re-award, preview and sign path, and the orphan sweep).
 
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 
