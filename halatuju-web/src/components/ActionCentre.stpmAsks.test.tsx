@@ -70,3 +70,19 @@ describe.each([
     expect(peekOnboardingReturn()).toBe('/scholarship/application')
   })
 })
+
+describe('higher_results_declare_requested (2026-11-07: declared SPM only, bound for a degree)', () => {
+  it('shows the upload AND a button to the exam-type page, with no reply box', async () => {
+    const item = { ...ASK('higher_results_declare_requested'), kind: 'doc', doc_type: 'higher_results' } as ResolutionItem
+    mockApi.getResolutionItems.mockResolvedValue({ open: [item], resolved: [] })
+    mockApi.listDocuments.mockResolvedValue({ documents: [] })
+    const { container } = render(<ActionCentre token="test-token" studentName="Test Student" applicationId={7} />)
+    await screen.findByText('Enter and upload your STPM, Matriculation, Asasi or Diploma results')
+    expect(container.querySelector('input[type="file"]')).not.toBeNull()
+    const link = screen.getByRole('link', { name: 'Enter my results' })
+    expect(link.getAttribute('href')).toBe('/onboarding/exam-type')
+    expect(container.querySelector('textarea')).toBeNull()
+    fireEvent.click(link)
+    expect(peekOnboardingReturn()).toBe('/scholarship/application')
+  })
+})

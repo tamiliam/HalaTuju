@@ -76,7 +76,7 @@ export function RefereesPanel({
 
 export function InterviewStage({
   app, t, busy, canWrite, decisionReopened, decisionRecorded, interviewLocked, interviewMsg,
-  agendaItems, editableAgenda, findings, setFindings, note, setNote,
+  interviewError, interviewUnansweredCount, agendaItems, editableAgenda, findings, setFindings, note, setNote,
   doSuggestGaps, doReopenInterview, doDeleteAgendaItem, doSaveInterview, doSubmitInterview,
 }: {
   app: AdminScholarshipDetail
@@ -87,6 +87,8 @@ export function InterviewStage({
   decisionRecorded: boolean
   interviewLocked: boolean
   interviewMsg: string
+  interviewError: string
+  interviewUnansweredCount: number
   agendaItems: AgendaItem[]
   editableAgenda: AgendaItem[]
   findings: Findings
@@ -282,6 +284,16 @@ export function InterviewStage({
                 {interviewMsg && <span className="text-sm font-medium text-positive-700">{interviewMsg}</span>}
               </div>
             )}
+            {/* ⚠ BESIDE THE BUTTON, NOT IN ANOTHER CARD (case 254): a refused submit printed only in
+                the right-hand column read as "nothing happened". The refusal wins; otherwise the
+                live count says how many are left before she presses. */}
+            {canWrite && (interviewError ? (
+              <p role="alert" className="text-sm text-critical-600">{interviewError}</p>
+            ) : interviewUnansweredCount > 0 ? (
+              <p className="text-xs text-caution-700">
+                {t('admin.scholarship.interview.stillToAnswer', { count: String(interviewUnansweredCount) })}
+              </p>
+            ) : null)}
           </>
         )}
       </div>

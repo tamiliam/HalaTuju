@@ -2446,6 +2446,10 @@
         "higher_results_requested": {
           "title": "Sila muat naik keputusan akhir {kind} anda",
           "desc": "Keputusan akhir {kind} anda belum ada dalam permohonan anda. Muat naik keputusan akhir rasmi dengan nama dan PNGK anda jelas kelihatan: bagi Matrikulasi atau Diploma, transkrip akademik akhir anda (slip keputusan semester tidak dikira)."
+        },
+        "higher_results_declare_requested": {
+          "title": "Isi dan muat naik keputusan STPM, Matrikulasi, Asasi atau Diploma anda",
+          "desc": "Program ijazah universiti memerlukan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, tetapi permohonan anda hanya menunjukkan keputusan SPM. Isi keputusan tersebut di halaman keputusan anda, kemudian muat naik keputusan akhir rasmi dengan nama dan PNGK anda jelas kelihatan. Bagi Matrikulasi atau Diploma, itu ialah transkrip akademik akhir anda (slip keputusan semester tidak dikira)."
         }
       },
       "vircle": {
@@ -2499,6 +2503,7 @@
       "updatePathwayOnProfile": "Kemas kini di profil anda",
       "addStpmSubjects": "Tambah subjek STPM saya",
       "confirmStpmKoko": "Sahkan markah saya",
+      "enterHigherResults": "Isi keputusan saya",
       "confirmPathwaySwitchYes": "Ya, saya telah bertukar ke laluan ini",
       "confirmPathwaySwitchOnProfile": "Sahkan dan pilih program anda",
       "pathwayName": {
@@ -4269,6 +4274,7 @@
         "interviewedBy": "Ditemu duga oleh",
         "reopenError": "Tidak dapat membuka semula temu duga.",
         "unanswered": "Jawab setiap soalan sebelum menghantar ({count} lagi): tandakan Selesai, tulis nota ringkas seperti “Lihat kesimpulan”, atau padamkannya.",
+        "stillToAnswer": "Soalan yang belum dijawab: {count}. Tandakan setiap satu Selesai, tulis nota ringkas seperti “Lihat kesimpulan”, atau padamkannya.",
         "verdict": {
           "resolved": "Selesai"
         },
@@ -4595,7 +4601,11 @@
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
         "declaredNote": "Diisytiharkan: {value}",
         "rosterNote": "Senarai mencatat {count} orang",
-        "stpmDiffers": "Keputusan STPM menunjukkan {value}"
+        "stpmDiffers": "Keputusan STPM menunjukkan {value}",
+        "incomeDiffers": "Dokumen menunjukkan {value}",
+        "incomePartial": "Dokumen yang dibaca setakat ini menunjukkan {value}.",
+        "uncheckedUnverified": "Dokumen pendapatan {member} belum disemak sepenuhnya.",
+        "uncheckedUnread": "Pendapatan {member} belum dibaca lagi."
       },
       "institution": "Institusi",
       "pathwaysConsidered": "Laluan dipertimbang",
@@ -4808,6 +4818,8 @@
           "higher_results_not_final": "Muat naik {held} ini bukan keputusan akhir (slip keputusan semester, halaman portal pelajar politeknik atau transkrip yang menunjukkan pengajian masih berjalan), jadi ia tidak dikira: transkrip akademik akhir masih belum diterima — pelajar akan diminta menghantarnya sebaik sahaja permohonan dihantar. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
           "higher_results_not_results": "Muat naik {held} ini ialah surat tawaran Matrikulasi, bukan dokumen keputusan, jadi ia tidak dikira: transkrip akademik akhir masih belum diterima. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
           "higher_results_not_on_file": "Keputusan {held} tiada dalam fail. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
+          "higher_results_not_declared": "Keputusan STPM / Matrikulasi / Asasi / Diploma tiada dalam fail. Pelajar mengisytiharkan keputusan SPM sahaja tetapi memilih program ijazah universiti, yang memerlukan salah satu daripadanya. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
+          "higher_results_undeclared": "Keputusan pengajian tinggi ada dalam fail, tetapi pelajar mengisytiharkan keputusan SPM sahaja, jadi tiada maklumat yang diisytiharkan untuk disemak dengannya. Sahkan kelayakan dan keputusannya semasa temu duga.",
           "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
           "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",
           "higher_results_name_near": "Nama pada keputusan pengajian tinggi berbeza daripada nama pelajar dengan satu huruf yang serupa bentuknya (mungkin salah baca). Semak bahawa keputusan ini milik pelajar.",
@@ -5272,7 +5284,8 @@
         "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
         "not_editable": "Butiran itu tidak boleh diubah di sini.",
         "mentoring_area_required": "Taip bidang bimbingan anda.",
-        "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara."
+        "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara.",
+        "not_reviewable": "Hanya penilai kes boleh berehat seketika. Kelayakan, bahasa dan alamat anda tidak disimpan; sila cuba lagi."
       },
       "assignerSees": "Mereka yang menugaskan kes kepada anda boleh melihat nombor ini.",
       "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri.",

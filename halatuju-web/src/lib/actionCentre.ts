@@ -129,6 +129,9 @@ export const KNOWN_CODES = [
   // #388 (2026-10-27) — Check 2 asks a student submitted before S3a for the higher results she
   // holds ("Please upload your STPM results"; `higher_owed.ASK_CODE`, params.results_kind).
   'higher_results_requested',
+  // 2026-11-07 — a degree-bound student who declared NO higher results: enter them (the onboarding
+  // results page, `onboardingAskFor`) AND upload the document (`higher_owed.DECLARE_ASK_CODE`).
+  'higher_results_declare_requested',
   'academic_missing_subjects',
   // Request #62 — an entered subject the slip does not show (please check, never a block).
   'academic_extra_subjects',
@@ -359,6 +362,9 @@ export function profilePickerHref(item: Pick<ResolutionItem, 'params'>): string 
 const ONBOARDING_ASKS: Record<string, { path: string; buttonKey: string }> = {
   stpm_grades_incomplete: { path: '/onboarding/stpm-grades', buttonKey: 'scholarship.actionCentre.addStpmSubjects' },
   stpm_koko_confirm: { path: '/onboarding/stpm-grades', buttonKey: 'scholarship.actionCentre.confirmStpmKoko' },
+  // 2026-11-07: a DOC ask with a button too — she picks her qualification on the exam-type page
+  // (the same door as the higher-results card's "update results" link); the upload is on the card.
+  higher_results_declare_requested: { path: '/onboarding/exam-type', buttonKey: 'scholarship.actionCentre.enterHigherResults' },
 }
 export function onboardingAskFor(code: string): { path: string; buttonKey: string } | null {
   return ONBOARDING_ASKS[code] ?? null

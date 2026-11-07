@@ -642,3 +642,62 @@ describe('a staff member who also mentors', () => {
     expect(screen.queryByTestId('about-seen-by-students')).toBeNull()
   })
 })
+
+// ── Request #58: the two-step Save for someone who does not review cases ───────────────────────
+describe('request #58: a full Save by someone who does not review', () => {
+  const MENTOR_ME: api.AdminMe = { ...STAFF_ME, role: 'mentor', permissions: [], programmes: [],
+    organisation: { id: 3, name: 'BrightPath Test' }, mentoring_area: 'Engineering' }
+  const ADMIN_ME: api.AdminMe = { ...MENTOR_ME, role: 'admin', permissions: PRESET.admin, programmes: 'all' }
+
+  /** Change step 1 (the name) and step 2 (the address), press Save, return what step 2 sent. */
+  async function saveBothSteps() {
+    render(<ProfilePage />)
+    fireEvent.change(await screen.findByDisplayValue('Priya'), { target: { value: 'Priya D' } })
+    await screen.findByTestId('profile-card-qualifications')
+    fireEvent.change(await screen.findByLabelText('admin.reviewer.city'), { target: { value: 'Ipoh' } })
+    await waitFor(() => expect(save().disabled).toBe(false))
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateReviewerProfile).toHaveBeenCalled())
+    return mockApi.updateReviewerProfile.mock.calls[0][0]
+  }
+
+  it.each([
+    ['a mentor account', 'mentor', {}, MENTOR_ME],
+    ['a staff member who mentors but does not review', 'admin', { mentoring: true }, ADMIN_ME],
+  ] as const)('%s: both steps save, and the pause switch is never sent', async (_l, role, extra, me) => {
+    signIn(role, extra)
+    mockApi.getAdminMe.mockResolvedValue(me)
+    mockApi.updateAdminMe.mockImplementation((data) => Promise.resolve({ ...me, ...data }))
+    const sent = await saveBothSteps()
+    expect(mockApi.updateAdminMe).toHaveBeenCalledWith({ name: 'Priya D' }, { token: 'tok' })
+    expect(sent).toEqual(expect.objectContaining({ city: 'Ipoh', field_of_study: 'Law' }))
+    expect('paused' in sent || 'paused_at' in sent).toBe(false)
+    expect(await screen.findByText('admin.profileUpdated')).toBeTruthy()
+  })
+
+  it('a not_reviewable refusal reads in words, never as the code', async () => {
+    signIn('mentor')
+    mockApi.getAdminMe.mockResolvedValue(MENTOR_ME)
+    mockApi.updateReviewerProfile.mockRejectedValue(
+      Object.assign(new Error('not_reviewable'), { code: 'not_reviewable' }))
+    await saveBothSteps()
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.myProfile.error.not_reviewable')
+    expect(screen.queryByText('not_reviewable')).toBeNull()
+  })
+
+  it('an unknown refusal on that step falls back to the generic sentence', async () => {
+    signIn('mentor')
+    mockApi.getAdminMe.mockResolvedValue(MENTOR_ME)
+    mockApi.updateReviewerProfile.mockRejectedValue(
+      Object.assign(new Error('some_new_code'), { code: 'some_new_code' }))
+    await saveBothSteps()
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.profileUpdateFailed')
+    expect(screen.queryByText('some_new_code')).toBeNull()
+  })
+
+  it('a reviewer who did not touch the pause does not send it (one who did: the Toggles test above)', async () => {
+    signIn('reviewer')
+    const sent = await saveBothSteps()
+    expect('paused' in sent || 'paused_at' in sent).toBe(false)
+  })
+})

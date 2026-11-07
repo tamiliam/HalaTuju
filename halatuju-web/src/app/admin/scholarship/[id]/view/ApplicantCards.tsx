@@ -4,9 +4,8 @@
  * THE APPLICANT SUMMARY — About, Family & finances, Academic (with Plans folded in) and Support,
  * in two masonry columns.
  *
- * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was; the
- * document-verified income and household-size readings are still computed in the cockpit and
- * arrive here as props, because the header uses them too.
+ * ⚠ Lifted out of `view.tsx` whole at code health H14. The household income / size readings arrive
+ * as props, computed by `householdFigures` below (request #54 moved them here from the cockpit).
  */
 import { isThirdRoute } from '@/lib/qualification'
 import VerifiedTick from '@/components/VerifiedTick'
@@ -25,6 +24,49 @@ import { Card, DiffMarker, Field, Grades, joinOr, resultsChangeKey, yn, NON_PARE
 import { GuardianCorrect } from './GuardianCorrect'
 import { GuardianCallRecord } from './GuardianCallRecord'
 import { FamilyAnswers } from './FamilyAnswers'
+
+const V = 'admin.scholarship.verified'
+const rm = (n: number) => `RM ${Number(n).toLocaleString('en-US')}`
+
+/**
+ * The household income / size / per-capita fields (from the server's `household_check`). Request
+ * #54 (owner 2026-11-06): the card shows what the student DECLARED. A tick means the documents
+ * support it — income only on a ±10% / RM300 match (`income.matches`), size when accounted for or
+ * confirmed. When the documents disagree, an amber note names what they show (never a replacement
+ * of the declared figure); when an earner's document is untrusted or unread, the note gives the
+ * total read so far and names who. Per capita = declared income ÷ effective size. Display only.
+ */
+export function householdFigures(app: AdminScholarshipDetail, t: T) {
+  const hc = app.household_check
+  const inc = hc?.income
+  const notes: string[] = []
+  if (inc?.documented_total != null && !inc.matches) {
+    notes.push(t(`${V}.incomeDiffers`, { value: rm(inc.documented_total) }))
+  } else if (inc && inc.documented_total == null && inc.has_documents && inc.unchecked?.length) {
+    if (inc.read_total) notes.push(t(`${V}.incomePartial`, { value: rm(inc.read_total) }))
+    for (const u of inc.unchecked) {
+      const member = t(`scholarship.docs.income.wizard.member.${u.member}`)
+      notes.push(u.reason === 'unverified' ? t(`${V}.uncheckedUnverified`, { member }) : t(`${V}.uncheckedUnread`, { member }))
+    }
+  }
+  // Household size: once the student CONFIRMS the roster count (household_size_confirm query), the
+  // roster count leads with a tick and the stated figure drops to a muted "Declared: M" note.
+  // Otherwise: a tick when fully accounted, or an amber "Roster counts N" on an unconfirmed over-count.
+  const confirmed = !!hc?.size.confirmed
+  const size = confirmed ? hc!.size.described : app.household_size
+  return {
+    incomeValue: app.household_income ? rm(app.household_income) : null,
+    incomeTip: inc?.matches ? t(`${V}.tooltip`, { source: t(`${V}.source.incomeProof`) }) : undefined,
+    incomeNote: notes.length ? notes.join(' ') : undefined,
+    sizeValue: size,
+    sizeTip: (confirmed || hc?.size.accounted) ? t(`${V}.sizeAccounted`) : undefined,
+    sizeNote: confirmed
+      ? (app.household_size ? t(`${V}.declaredNote`, { value: String(app.household_size) }) : undefined)
+      : (hc?.size.overcount ? t(`${V}.rosterNote`, { count: String(hc.size.described) }) : undefined),
+    sizeNoteTone: (confirmed ? 'muted' : 'amber') as 'amber' | 'muted',
+    perCapita: app.household_income && size ? app.household_income / size : null,
+  }
+}
 
 export function ApplicantCards({
   app, t, vtip, incomeValue, incomeTip, incomeNote,
@@ -193,7 +235,7 @@ export function ApplicantCards({
               {/* Family & finances — moved up under About (was below Academic) */}
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={incomeValue} verifiedLabel={incomeTip} note={incomeNote} noteTone="muted" />
+                  <Field label={t('admin.scholarship.income')} value={incomeValue} verifiedLabel={incomeTip} note={incomeNote} />
                   <Field label={t('admin.scholarship.householdSize')} value={sizeValue} verifiedLabel={sizeTip} note={sizeNote} noteTone={sizeNoteTone} />
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
