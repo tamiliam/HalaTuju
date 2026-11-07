@@ -86,6 +86,48 @@ class TestDefaultScheduleGovernsPayments(TestCase):
         self.assertEqual(_reasons(app, 2027, 4).count('schedule_complete'), 0)
         self.assertIn('schedule_complete', _reasons(app, 2027, 5))
 
+    def test_a_degree_student_under_a_stale_stpm_code_takes_the_university_row(self):
+        # #251 (owner 2026-11-07): the award is RM2,000, so the schedule must not be STPM's
+        # 15 payments (RM3,000) or its continuing 5 (RM1,000) — it is paid as a university student.
+        for reporting in (date(2026, 6, 8), date(2025, 6, 10)):
+            app = make_application('awarded', cohort=self.cohort, chosen_pathway='stpm',
+                                   reporting_date=reporting,
+                                   chosen_programme={'course_name': 'Ijazah Sarjana Muda Sejarah'})
+            row = payments._schedule_row(app)
+            self.assertEqual((row.pathway, row.variant, row.total),
+                             ('university', '', Decimal('2000.00')), reporting)
+
+    def _degree_on_stpm_code(self, award_amount, reporting=date(2026, 6, 8)):
+        app = make_application('awarded', cohort=self.cohort, chosen_pathway='stpm',
+                               reporting_date=reporting,
+                               chosen_programme={'course_name': 'Ijazah Sarjana Muda Sejarah'})
+        ScholarshipApplication.objects.filter(pk=app.pk).update(award_amount=award_amount)
+        app.refresh_from_db()
+        return app
+
+    def test_a_stored_stpm_award_keeps_the_stpm_row(self):
+        # Review 2026-11-07: a stored award never resizes, so a degree-bound student already
+        # holding RM3,000 on the 'stpm' code is paid the STPM 15 payments, never the RM2,000 row.
+        row = payments._schedule_row(self._degree_on_stpm_code(Decimal('3000')))
+        self.assertEqual((row.pathway, row.variant, row.total), ('stpm', '', Decimal('3000.00')))
+
+    def test_a_stored_continuing_award_keeps_the_continuing_stpm_row(self):
+        row = payments._schedule_row(self._degree_on_stpm_code(Decimal('1000'), date(2025, 6, 10)))
+        self.assertEqual((row.pathway, row.variant, row.total),
+                         ('stpm', 'continuing', Decimal('1000.00')))
+
+    def test_an_empty_or_default_award_takes_the_university_row(self):
+        for amount in (None, Decimal('2000')):
+            row = payments._schedule_row(self._degree_on_stpm_code(amount))
+            self.assertEqual((row.pathway, row.variant, row.total),
+                             ('university', '', Decimal('2000.00')), amount)
+
+    def test_a_form_six_student_keeps_the_stpm_row(self):
+        app = make_application('awarded', cohort=self.cohort, chosen_pathway='stpm',
+                               reporting_date=date(2026, 6, 8),
+                               chosen_programme={'course_name': 'Tingkatan Enam'})
+        self.assertEqual(payments._schedule_row(app).pathway, 'stpm')
+
     def test_an_unknown_pathway_takes_the_default_row(self):
         row = payments._schedule_row(self._app('something_new'))
         self.assertEqual((row.pathway, row.start_month, len(row.paid_offsets), row.total),

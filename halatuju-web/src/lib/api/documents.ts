@@ -248,8 +248,11 @@ export interface HigherCheck {
   cgpa_slip: number | null
   cgpa_entered: number | null
   cgpa_status: 'match' | 'mismatch' | 'unreadable' | 'pending'
-  grades_status: '' | 'match' | 'mismatch' | 'pending'
+  /** 'not_compared' (2026-11-07): an upload she never declared — nothing to compare, grey. */
+  grades_status: '' | 'match' | 'mismatch' | 'pending' | 'not_compared'
   missing: string[]
+  /** Printed STPM subjects no name rule recognises (an STPM read only); optional for an older api. */
+  unrecognised?: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
   readable: boolean | null
   /** The ONE note to show (D13), never a block: (D) an SPM slip here, (B) another higher kind, (C) differences. */

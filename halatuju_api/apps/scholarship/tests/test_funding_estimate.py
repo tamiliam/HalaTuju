@@ -35,9 +35,13 @@ class TestClassify(_Base):
         self.assertEqual(classify_pathway(self._app(chosen_pathway='university')), 'university')
         self.assertEqual(classify_pathway(self._app(intended_pathway='asasi')), 'asasi')
 
-    def test_unestimated_pathways_are_unknown(self):
-        for pw in ('kkom', 'iljtm', 'ilkbs'):
-            self.assertEqual(classify_pathway(self._app(chosen_pathway=pw)), 'unknown', pw)
+    def test_skills_pathways_are_estimated(self):
+        # Was `test_unestimated_pathways_are_unknown` (all three 'unknown'): owner decisions
+        # 10-12, 2026-11-07, estimate every skills institute and every other TVET course.
+        cases = {'kkom': 'kkom', 'iljtm': 'iljtm', 'ilkbs': 'ilkbs',
+                 'tvet': 'tvet', 'tvet_other': 'tvet', 'mara': 'mara_cert'}
+        for pw, cat in cases.items():
+            self.assertEqual(classify_pathway(self._app(chosen_pathway=pw)), cat, pw)
 
     def test_single_considered_used_when_undecided(self):
         app = self._app(pathway_certainty='uncertain', pathways_considered=['stpm'])
@@ -85,10 +89,11 @@ class TestClassify(_Base):
                                'course_name': 'Asasi Teknologi Kejuruteraan'})
         self.assertEqual(classify_pathway(poly_coded), 'asasi')
 
-    def test_chosen_programme_kkom_gives_no_estimate(self):
+    def test_chosen_programme_kkom_is_kkom(self):
+        # Was `test_chosen_programme_kkom_gives_no_estimate`: decision 11 (2026-11-07).
         app = self._app(chosen_programme={'course_id': 'KKOM-DIP-1',
                         'course_name': 'Diploma Kolej Komuniti'})
-        self.assertEqual(classify_pathway(app), 'unknown')
+        self.assertEqual(classify_pathway(app), 'kkom')
 
     def test_explicit_pathway_beats_programme(self):
         app = self._app(pathway_certainty='sure', chosen_pathway='stpm',
@@ -147,6 +152,23 @@ class TestEstimate(_Base):
         for pw in ('stpm', 'matric', 'asasi'):
             self.assertFalse(estimate_funding(self._app(chosen_pathway=pw,
                              pathway_certainty='sure'))['practical'], pw)
+
+    def test_post_spm_dicts_are_unchanged(self):
+        # Decision 1 (2026-11-07): the degree work leaves every post-SPM figure byte-identical,
+        # with no degree-only keys.
+        pinned = {
+            'stpm':       (500, 18, 9000, False, False),
+            'matric':     (200, 10, 2000, False, False),
+            'asasi':      (700, 10, 7000, True, False),
+            'poly':       (120, 36, 4300, False, True),
+            'university': (220, 30, 6600, True, True),
+            'pismp':      (180, 60, 10800, False, True),
+        }
+        for pw, (monthly, months, total, variable, practical) in pinned.items():
+            est = estimate_funding(self._app(chosen_pathway=pw, pathway_certainty='sure'))
+            self.assertEqual(est, {'pathway': pw, 'known': True, 'monthly': monthly,
+                                   'months': months, 'total': total, 'variable': variable,
+                                   'practical': practical}, pw)
 
     def test_no_device_in_estimate(self):
         # Device is deliberately excluded (tranche support is unsuitable for a lump sum).

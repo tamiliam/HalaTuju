@@ -48,7 +48,8 @@ an offer read as 'diploma' / 'pismp'), and an intake that asks no higher results
   card with a BLANK `results_kind` (a guessed kind would turn "cannot tell" into "kind matches").
   Once one is on file the card reads it but stays at best Unsure with `UNDECLARED_ON_FILE_CODE`
   (`cap_undeclared`) — also for an application frozen AFTER S3a that requires the upload.
-* **Degree-bound** (`_degree_bound`): `results_route.destination` DEGREE; or, with no catalogue
+* **Degree-bound** (`results_route.degree_bound`, promoted from here 2026-11-07 for the funding
+  estimate and the award rule): `results_route.destination` DEGREE; or, with no catalogue
   `course_id`, the chosen programme's name reads as a degree even under a post-SPM pathway code
   (#251: a stale 'stpm' code over a degree course). `destination()` itself is unchanged.
 """
@@ -114,24 +115,6 @@ def _spm_only(application) -> bool:
     return not is_tertiary(getattr(getattr(application, 'profile', None), 'exam_type', '') or '')
 
 
-def _degree_bound(application) -> bool:
-    """Bound for (or studying for) a university degree: `results_route.destination` DEGREE; or, with
-    no catalogue `course_id` (the catalogue decides when there is one), the chosen programme's NAME
-    reads as a degree even under a post-SPM pathway code (#251: a stale 'stpm' code; the name is the
-    offer's own, autofilled). A UA diploma / PISMP reads 'diploma' / 'pismp'. No document is read: the
-    offer letter's programme was assessed and adds nothing the autofilled name does not carry."""
-    from . import results_route
-    if results_route.destination(application) == results_route.DEGREE:
-        return True
-    prog = getattr(application, 'chosen_programme', None)
-    prog = prog if isinstance(prog, dict) else {}
-    if str(prog.get('course_id') or '').strip():
-        return False
-    name = (prog.get('course_name') or '').strip()
-    from .offer_pathway import detect_pathway_type
-    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
-
-
 def _needs_higher(application) -> bool:
     """SUBMITTED, on an intake that asks higher results (D16c), a programme that asks for results,
     degree-bound, and no higher result already sitting in the SPM card (S4's wrong slip, #43: they
@@ -143,7 +126,7 @@ def _needs_higher(application) -> bool:
         return False
     if requirements.resolve(application, 'document').get('results_slip', 'off') == 'off':
         return False
-    if not _degree_bound(application):
+    if not results_route.degree_bound(application):
         return False
     from .verdict_engine import _latest_doc
     from .wrong_slip import higher_kind
@@ -276,9 +259,31 @@ def owes_higher(application) -> bool:
 
 
 def ask_params(application, code) -> dict:
-    """The params frozen onto the ask at creation: the kind held, so the copy reads "Please upload
-    your STPM results." Every other Check-2 document request carries none ({})."""
+    """The params put on the ask at creation: the kind held, so the copy reads "Please upload your
+    STPM results"; the declare ask's ``doc_on_file`` (`refresh_params`). Every other one: none ({})."""
+    if code == DECLARE_ASK_CODE:
+        return {DOC_ON_FILE: True} if _live_higher(application) else {}
     return {'results_kind': _owed(application) or final_owed_kind(application)} if code == ASK_CODE else {}
+
+
+#: 2026-11-07 (app 278): the declare ask's flag that her higher-results DOCUMENT is already on file,
+#: so the card (and the cockpit's Check-2 line) asks her only to ENTER her results — copy
+#: `scholarship.actionCentre.item.higher_results_declare_requested.onFile`, chosen at render by this flag.
+DOC_ON_FILE = 'doc_on_file'
+
+
+def refresh_params(application, item) -> None:
+    """Keep the declare ask's ``doc_on_file`` true to the documents NOW — every Check-2 sync (the
+    cockpit's and the Action Centre's reads run one), so it is right when the upload arrives AFTER
+    the ask was raised, or is removed. Every other item is left untouched."""
+    if item is None or item.code != DECLARE_ASK_CODE:
+        return
+    params = dict(item.params or {})
+    params.pop(DOC_ON_FILE, None)
+    params.update(ask_params(application, DECLARE_ASK_CODE))
+    if params != (item.params or {}):
+        item.params = params
+        item.save(update_fields=['params'])
 
 
 def cap(fact, kind):

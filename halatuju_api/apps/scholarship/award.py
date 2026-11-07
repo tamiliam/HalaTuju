@@ -22,6 +22,13 @@ The amount is applied automatically when a reviewer records an APPROVE verdict (
 remain for the ``award_disqualifier`` cockpit flag; ``ALLOWED_AMOUNTS`` / ``is_allowed_amount``
 remain for the still-present (now UI-less) super set-award endpoint. This module is the single
 source of truth for the rule so the cockpit and the backend can't drift.
+
+Owner decision (2026-11-07, decision 7 of the degree funding-estimate fix): the bursary is sized by
+the FUNDED PERIOD. STPM gets RM3,000 only because Form 6 is an 18-month programme; every other
+pathway is funded for 12 months at RM2,000 (and a continuing STPM student's RM1,000 is the remaining
+stretch). A DEGREE-BOUND student (``results_route.degree_bound``) is therefore on the 12-month
+RM2,000 basis whatever the stored pathway code says: never the STPM amount, never the STPM
+start-year stop. Live case #251: a stale ``chosen_pathway='stpm'`` over a degree course.
 """
 from decimal import Decimal
 
@@ -55,15 +62,27 @@ def _stpm_continuing(application):
     return started_before_cohort(application)
 
 
+def _sized_as_stpm(application):
+    """True for a Form 6 student: ``chosen_pathway == 'stpm'`` AND not degree-bound (owner
+    2026-11-07, decision 7: a degree is funded for 12 months at RM2,000 whatever the stored code
+    says, because STPM's RM3,000 exists only for Form 6's 18 months)."""
+    pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
+    if pathway != 'stpm':
+        return False
+    from .results_route import degree_bound
+    return not degree_bound(application)
+
+
 def course_start_unknown(application):
     """True when the course-start year cannot be established at all — neither an intake year on
     the offer nor a stored reporting date. The bursary CANNOT be sized honestly here: the rule
     would silently fall through to the fresh-entrant (larger) amount. QC refuses to accept such a
     case (owner 2026-07-23: an absolute stop, no override — the officer records the date instead).
-    Only meaningful for STPM, the one pathway whose amount depends on the start year."""
+    Only meaningful for STPM, the one pathway whose amount depends on the start year; a
+    degree-bound student under a stale 'stpm' code never trips it (owner 2026-11-07, decision 7:
+    a degree is on the 12-month RM2,000 basis, ``_sized_as_stpm``)."""
     from .pathway_engine import course_start_year
-    pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
-    return pathway == 'stpm' and course_start_year(application) is None
+    return _sized_as_stpm(application) and course_start_year(application) is None
 
 # Verdict codes that DEFAULT the proposal to "no amount". Confident negatives only —
 # a clear, evidence-backed reason this pathway/income is outside the accepted criteria.
@@ -98,9 +117,16 @@ def proposed_award_amount(application, verdict=None):
     and the old fall-through to RM3,000 committed the fresh-entrant figure by default. None is
     the existing "no automatic amount" outcome: record-verdict leaves ``award_amount`` unset and
     QC's absolute reporting-date stop (owner 2026-07-23) refuses the accept until the officer
-    records the date; a re-recorded verdict then sizes it from the known year."""
-    pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
-    if pathway == 'stpm':
+    records the date; a re-recorded verdict then sizes it from the known year.
+
+    Owner decision 2026-11-07 (decision 7): the amount follows the FUNDED PERIOD — STPM's RM3,000
+    is Form 6's 18 months, everything else is 12 months at RM2,000. A DEGREE-BOUND student
+    (``results_route.degree_bound``) gets RM2,000 whatever the stored code says (#251: a stale
+    'stpm' over a degree), never RM3,000 / RM1,000 and never None. This only sizes an EMPTY
+    ``award_amount``: record-verdict applies it on an APPROVE when the amount is unset, so a stored
+    amount (an earlier verdict's, or a super's) is never resized by a re-recorded verdict. The
+    payment schedule follows the stored amount (`contracts.pick_schedule_row`'s guard)."""
+    if _sized_as_stpm(application):
         if course_start_unknown(application):
             return None
         return _STPM_CONTINUING_AMOUNT if _stpm_continuing(application) else _STPM_AMOUNT

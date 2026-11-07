@@ -2449,7 +2449,11 @@
         },
         "higher_results_declare_requested": {
           "title": "Enter and upload your STPM, Matriculation, Asasi or Diploma results",
-          "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. Enter those results on your results page, then upload the official final result showing your name and CGPA clearly. For Matriculation or a Diploma, that is your final academic transcript (a semester result slip does not count)."
+          "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. Enter those results on your results page, then upload the official final result showing your name and CGPA clearly. For Matriculation or a Diploma, that is your final academic transcript (a semester result slip does not count).",
+          "onFile": {
+            "title": "Enter your STPM, Matriculation, Asasi or Diploma results",
+            "desc": "A university degree needs your STPM, Matriculation, Asasi or Diploma results, but your application shows SPM results only. We already have your results document, so you do not need to upload it again: just enter those results on your results page."
+          }
         }
       },
       "vircle": {
@@ -4666,6 +4670,8 @@
         "variableNote": "Varies by institution and field — confirm at interview.",
         "practicalNote": "A practical/internship term may add travel costs.",
         "none": "Pathway not chosen yet — no estimate. Use the student's stated needs.",
+        "studyMonths": "study months",
+        "continuingNote": "Continuing student: estimated for the years left.",
         "pathway": {
           "stpm": "STPM (Form 6) — after free schooling. Covers travel, meals, tuition classes.",
           "matric": "Matrikulasi — after the BSHP allowance, hostel & teaching. Mostly meals + small fees.",
@@ -4673,6 +4679,13 @@
           "poly": "Politeknik diploma — after the PTPTN loan + cheap provided hostel. Mostly meals + misc.",
           "university": "Public-university diploma — after the PTPTN loan. Covers meals, hostel & fees.",
           "pismp": "PISMP — after the IPG allowance & hostel. Covers meals, hostel top-up, travel.",
+          "degree": "Public-university degree: after the PTPTN loan. Covers living costs (RM1,200 × 10 months a year) & fees.",
+          "mara_diploma": "MARA diploma, after the MARA education loan. Covers meals, hostel & fees.",
+          "ilkbs": "IKBN / IKTBN: free tuition & hostel, after the ~RM100 monthly allowance. Mostly meals + small costs.",
+          "iljtm": "ILJTM: free tuition & hostel, no allowance. Covers meals + small costs.",
+          "kkom": "Kolej Komuniti: free tuition & hostel, no allowance. Covers meals + small costs.",
+          "mara_cert": "MARA skills certificate: free tuition & hostel, no allowance assumed. Covers meals + small costs.",
+          "tvet": "TVET institute: free tuition & hostel, no allowance assumed. Covers meals + small costs.",
           "unknown": "Not chosen"
         }
       },
@@ -4868,6 +4881,7 @@
           "higher_results_cgpa_mismatch": "CGPA entered {entered}, but the document reads {slip}. Check.",
           "higher_results_cgpa_unread": "No CGPA could be read off the document — check it by eye.",
           "higher_results_subjects_missing": "STPM subjects on the slip but not entered: {subjects}.",
+          "higher_results_subjects_unrecognised": "A subject on the results could not be recognised, so the slip cannot be confirmed as matching: {subjects}.",
           "higher_results_grade_mismatch": "{subject}: typed {typed}, but the STPM slip reads {slip}. Check.",
           "higher_results_not_checked": "Genuineness of higher results is NOT checked yet (no pattern for these documents) — check the document by eye."
         }
@@ -5037,8 +5051,10 @@
         "subtitle": "Queries raised and/or documents requested by the system/reviewer",
         "questionLabel": "Question",
         "uploadLabel": "Upload",
+        "enterLabel": "Enter",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "lockedClosed": "Querying closed — this application is no longer under review. This is now a read-only record.",
+        "lateAskOpen": "The higher-results request below is still open: the student can still answer it.",
         "itemOne": "item",
         "itemMany": "items",
         "overflow": "{n} more question(s) queued — asked automatically once the current ones are answered or waived.",

@@ -68,36 +68,8 @@ TICKETS = {
 RESULTS_PAGE = {'stpm': '/onboarding/stpm-grades', 'matric': '/onboarding/higher-grades',
                 'asasi': '/onboarding/higher-grades', 'diploma': '/onboarding/higher-grades'}
 
-#: STPM subject keys (`stpm_grades`, the web's `STPM_SUBJECTS`) → the names a slip prints for
-#: them, Malay and English. An unrecognised printed subject is IGNORED (cannot tell → no note).
-_STPM_NAMES = {
-    'PA': ('pengajian am', 'general studies'), 'MATH_T': ('matematik t', 'mathematics t'),
-    'MATH_M': ('matematik m', 'mathematics m'), 'PHYSICS': ('fizik', 'physics'),
-    'CHEMISTRY': ('kimia', 'chemistry'), 'BIOLOGY': ('biologi', 'biology'),
-    'FURTHER_MATH': ('matematik lanjutan t', 'further mathematics t', 'further mathematics'),
-    'ECONOMICS': ('ekonomi', 'economics'), 'ACCOUNTING': ('perakaunan', 'accounting'),
-    'BUSINESS': ('pengajian perniagaan', 'business studies'), 'GEOGRAFI': ('geografi', 'geography'),
-    'SEJARAH': ('sejarah', 'history'),
-    'KESUSASTERAAN_MELAYU': ('kesusasteraan melayu', 'kesusasteraan melayu komunikatif',
-                             'communicative malay literature'),
-    'BAHASA_MELAYU': ('bahasa melayu',), 'BAHASA_CINA': ('bahasa cina', 'chinese language'),
-    'BAHASA_TAMIL': ('bahasa tamil', 'tamil language'), 'SENI_VISUAL': ('seni visual', 'visual arts'),
-    'SYARIAH': ('syariah', 'syariah islamiah', 'pengajian syariah'),
-    'USULUDDIN': ('usuluddin', 'pengajian usuluddin'),
-    'ICT': ('sains komputer', 'ict', 'information and communications technology', 'computing'),
-    # STPM CGPA sprint C1 (2026-10-28): the rest of the MPM list (`courses/stpm_subjects.py`).
-    'BAHASA_ARAB': ('bahasa arab', 'arabic language'),
-    'LITERATURE_IN_ENGLISH': ('literature in english', 'kesusasteraan inggeris'),
-    'TAHFIZ_AL_QURAN': ('tahfiz al-quran', 'tahfiz al quran'),
-    'SAINS_SUKAN': ('sains sukan', 'sports science'),
-}
-
-
-def _squash(s):
-    return re.sub(r'[^a-z0-9]', '', (s or '').lower())
-
-
-_STPM_BY_NAME = {_squash(n): key for key, names in _STPM_NAMES.items() for n in names}
+#: The STPM subject names a slip prints, and the ONE matcher (typo-tolerant, 2026-11-07): `stpm_names`.
+from .stpm_names import _STPM_BY_NAME, _STPM_NAMES, _squash, stpm_key, stpm_keyed_rows  # re-exported
 
 
 def _fields(doc):
@@ -136,7 +108,7 @@ def entered_lookup(grades):
         return None
 
     def lookup(subject):
-        return entered_grade_value(grades.get(_STPM_BY_NAME.get(_squash(subject)))) or None
+        return entered_grade_value(grades.get(stpm_key(subject))) or None
     lookup.count = sum(1 for g in grades.values() if entered_grade_value(g))   # subjects entered (stpm_parse 1.2.0)
     return lookup
 
@@ -258,14 +230,14 @@ def _entered_cgpa(profile, kind):
 
 def stpm_rows(fields):
     """(printed name, subject key, the slip's grade) for each RECOGNISED STPM row of a read — the
-    one matcher `_compare_stpm` and the cockpit's per-grade marks (`stpm_marks`) both walk."""
-    for row in fields.get('results') or []:
-        if not isinstance(row, dict):
-            continue
-        name = (row.get('subject') or '').strip()
-        key = _STPM_BY_NAME.get(_squash(re.sub(r'^\d+\s*', '', name)))   # "950 MATEMATIK (T)"
-        if key is not None:
-            yield name, key, re.sub(r'\s+', '', (row.get('grade') or '')).upper()
+    one matcher (`stpm_names`, typo-tolerant since 2026-11-07) `_compare_stpm` and the cockpit's
+    per-grade marks (`stpm_marks`) both walk."""
+    return ((name, key, grade) for name, key, grade in stpm_keyed_rows(fields) if key is not None)
+
+
+def unrecognised_stpm(fields) -> list:
+    """The printed subject rows NO rule recognises (2026-11-07: never silently dropped)."""
+    return [name for name, key, _grade in stpm_keyed_rows(fields) if key is None and name]
 
 
 def entered_stpm(profile):
@@ -275,7 +247,7 @@ def entered_stpm(profile):
 
 def _compare_stpm(profile, fields):
     """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
-    grades that differ from the slip's. Unrecognised printed subjects are ignored."""
+    grades that differ from the slip's. Unrecognised printed subjects: `unrecognised_stpm`."""
     entered = entered_stpm(profile)
     missing, mismatched = [], []
     for name, key, slip in stpm_rows(fields):
@@ -302,8 +274,8 @@ def student_higher_check(doc) -> dict:
     source the Documents card, the gates and the Academic card read, so none can disagree.
 
     ``{name, candidate_name, exam, kind_held, kind_detected, kind_status, cgpa_slip,
-    cgpa_entered, cgpa_status, grades_status, missing, mismatched, readable, note, note_kind,
-    note_path, actions_open}``.
+    cgpa_entered, cgpa_status, grades_status, missing, mismatched, unrecognised, readable, note,
+    note_kind, note_path, actions_open}``. `grades_status` 'not_compared': an undeclared upload.
     Statuses: 'match' / 'mismatch' / 'unreadable' / 'pending' ('' when not applicable).
     `kind_status`: 'match' | 'different' | 'spm' | '' (cannot tell). `readable` is None until
     read. `note`: 'spm_slip' | 'kind_differs' | 'grades_differ' | '' — the ONE note to show (D13),
@@ -313,14 +285,20 @@ def student_higher_check(doc) -> dict:
     vf, f = _fields(doc)
     sv = vf.get('student_verdict')
     read = bool(sv) and sv != 'review_manually'
-    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    app = getattr(doc, 'application', None)
+    profile = getattr(app, 'profile', None)
     held = results_held(profile)
     kind_held = held if is_tertiary(held) else (getattr(doc, 'results_kind', '') or '')
+    # 2026-11-07 (app 278): a kind from the slot or a team split, NOT her declaration — she declared
+    # no higher results (`higher_owed.declared_kind`), so there is nothing to compare: no kind tick,
+    # no grade / subject claim (owner: "a tick only when documentary evidence matches it").
+    from .higher_owed import declared_kind
+    undeclared = bool(kind_held) and not is_tertiary(held) and app is not None and not declared_kind(app)
     detected = (f.get('results_kind_detected') or '') if read else ''
     kind_status = ('' if not detected or not kind_held else 'spm' if detected == 'spm'
-                   else 'match' if detected == kind_held else 'different')
+                   else '' if undeclared else 'match' if detected == kind_held else 'different')
     slip_cgpa = _as_cgpa(f.get('cgpa'))
-    entered = _entered_cgpa(profile, kind_held)
+    entered = None if undeclared else _entered_cgpa(profile, kind_held)
     if not read:
         cgpa_status = 'pending'
     elif slip_cgpa is None:
@@ -333,12 +311,17 @@ def student_higher_check(doc) -> dict:
         cgpa_status = 'mismatch'
     else:
         cgpa_status = 'pending'       # a figure we cannot tell is cumulative: never a note (fix 7)
-    missing, mismatched = ([], [])
+    missing, mismatched, unrecognised = [], [], []
     grades_status = ''
-    if kind_held == 'stpm' and read and kind_status != 'spm':
+    if kind_held == 'stpm' and read and kind_status != 'spm' and undeclared:
+        grades_status = 'not_compared'            # grey: nothing declared to compare against
+    elif kind_held == 'stpm' and read and kind_status != 'spm':
         missing, mismatched = _compare_stpm(profile, f)
+        # No silent drop (2026-11-07): a row an STPM read prints that no name rule recognises is
+        # named, and the whole slip cannot read as matching while it stands.
+        unrecognised = unrecognised_stpm(f) if detected == 'stpm' else []
         grades_status = 'mismatch' if (missing or mismatched) else (
-            'match' if f.get('results') else 'pending')
+            'match' if f.get('results') and not unrecognised else 'pending')
     readable = None if not read else bool(
         sv not in ('wrong_doc', 'unreadable') and (slip_cgpa is not None or f.get('results')
                                                    or (f.get('candidate_name') or '').strip()))
@@ -362,7 +345,7 @@ def student_higher_check(doc) -> dict:
         'exam': (f.get('exam') or '').strip(), 'kind_held': kind_held, 'kind_detected': detected,
         'kind_status': kind_status, 'cgpa_slip': slip_cgpa, 'cgpa_entered': entered,
         'cgpa_status': cgpa_status, 'grades_status': grades_status, 'missing': missing,
-        'mismatched': mismatched, 'readable': readable, 'note': note, 'note_kind': note_kind,
+        'mismatched': mismatched, 'unrecognised': unrecognised, 'readable': readable, 'note': note, 'note_kind': note_kind,
         'note_path': RESULTS_PAGE.get(note_kind, ''),
         # The note's two ACTIONS (move it / SPM only) are open only before the Step-4 Submit
         # (review fix 1+2); after it the reviewer's own request route is the way.
@@ -448,6 +431,8 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_cgpa_unread'))
     if chk['missing']:
         unresolved.append(_item('higher_results_subjects_missing', subjects=', '.join(chk['missing'])))
+    if chk['unrecognised']:
+        unresolved.append(_item('higher_results_subjects_unrecognised', subjects=', '.join(chk['unrecognised'])))
     for m in chk['mismatched']:
         unresolved.append(_item('higher_results_grade_mismatch', **m))
     not_final = final_owed(doc)          # owner ruling B (M4b): the final transcript is still owed

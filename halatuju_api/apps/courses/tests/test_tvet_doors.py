@@ -105,8 +105,11 @@ class TestScholarshipSide:
         for code in ('mara', 'tvet_other'):
             assert pathway_family(code) == 'tertiary' and code in POST_SPM_CODES
 
+    @pytest.mark.django_db
     def test_a_tvet_programme_is_never_estimated_as_a_university_diploma(self):
-        assert _classify_programme({'course_id': 'TVET-47351', 'course_name': 'Diploma Teknologi Elektronik'}) is None
+        # Owner decision 12 (2026-11-07): every TVET course is estimated, by its family; one not in
+        # the catalogue is the generic 'tvet' row, never the UA-diploma 'university' one.
+        assert _classify_programme({'course_id': 'TVET-47351', 'course_name': 'Diploma Teknologi Elektronik'}) == 'tvet'
 
 
 _F2 = Path(__file__).resolve().parents[3] / 'data' / 'tvet' / 'tvet_new_courses_F2.json'
@@ -188,5 +191,6 @@ class TestMaraDoors:
         ordered = sort_eligible_courses(bumi)
         assert {c['course_id'] for c in ordered} == {c['course_id'] for c in bumi}
         diploma = next(c for c in self.review['courses'] if c['level'] == 'Diploma')
-        assert _classify_programme({'course_id': diploma['course_id'], 'course_name': diploma['course']}) is None
+        # Owner decision 9 (2026-11-07): a MARA diploma is estimated like a public-university diploma.
+        assert _classify_programme({'course_id': diploma['course_id'], 'course_name': diploma['course']}) == 'mara_diploma'
         assert pathway_family('mara') == 'tertiary'
