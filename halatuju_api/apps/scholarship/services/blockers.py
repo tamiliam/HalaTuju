@@ -98,6 +98,9 @@ def _stuck_unread_documents(limit):
                             vision_fields_run_at__isnull=True, superseded_at__isnull=True,
                             vision_fields={}))
                 .exclude(request_code=SLIP_REQUEST_CODE)   # S4a: a results slip is never machine-read
+                # A2.3: a queued upload is not stuck — the read-documents queue owns it (a 'failed'
+                # one, read three times without finishing, is the sweep's again).
+                .exclude(read_state='pending')
                 .order_by('uploaded_at')[:limit])
 
 

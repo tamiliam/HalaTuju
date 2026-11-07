@@ -64,6 +64,7 @@ from apps.scholarship.tests.factories import (
     make_org, make_programme, make_shortlistable_student, make_source,
 )
 from apps.scholarship.tests.test_income_whose_str_vouches import WhoseStrBase
+from apps.scholarship.tests.test_assign_query_budget import ASSIGN_BUDGETS
 
 #: `…/halatuju_api`. Four levels up from `apps/scholarship/tests/this_file.py`. Derived, never
 #: hard-coded — `test_code_standards.py` does the same, for the same reason: a file that changes
@@ -957,6 +958,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **SCHOLARS_BUDGETS,
         **LANDING_BUDGETS,
         **PENDING_BUDGETS,
+        **ASSIGN_BUDGETS,      # A2.3: measured in test_assign_query_budget.py
     }
 
     def test_every_measured_key_has_a_budget(self):

@@ -31,6 +31,7 @@ from apps.scholarship.tests.factories import (
 )
 
 from .test_sponsor_pool import _make_eligible_app
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 URL = '/api/v1/admin/scholarship/organisation/configuration/'
@@ -693,8 +694,10 @@ class TestPerOrgReviewClocks(TestCase):
         superadmin = PartnerAdmin.objects.create(
             supabase_user_id='rc-super', role='super', is_active=True,
             name='Super', email='rc-super@x.com')
+        from apps.scholarship import assign_notify
         with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as sent:
             services.assign_reviewer(app, reviewer=other, by_admin=superadmin)
+            assign_notify.run_pending()   # A2.3: the assign-emails cron sends it
         expected = (timezone.now() + timedelta(days=7)).date().strftime('%d %b %Y')
         self.assertEqual(sent.call_args.kwargs['review_by'], expected)
 
@@ -1066,7 +1069,7 @@ class TestPerOrgDocumentLimits(TestCase):
     def test_the_size_refusal_uses_the_organisations_cap_and_reports_it(self):
         _configure(self.org, 'max_doc_size_mb', 2)
         self._app(self.cohort, 'se-size')
-        r = self._client('se-size').post('/api/v1/scholarship/documents/', {
+        r = post_doc(self._client('se-size'), {
             'doc_type': 'ic', 'storage_path': 'b40/se/ic.jpg', 'original_filename': 'ic.jpg',
             'content_type': 'image/jpeg', 'size': 3 * 1024 * 1024}, format='json')
         self.assertEqual(r.status_code, 400)
@@ -1085,7 +1088,7 @@ class TestPerOrgDocumentLimits(TestCase):
             application=app, doc_type='other', storage_path='b40/se/o1.jpg',
             original_filename='o1.jpg', content_type='image/jpeg', size=10, request_code='r1')
         client = self._client('se-caps')
-        refused = client.post('/api/v1/scholarship/documents/', {
+        refused = post_doc(client, {
             'doc_type': 'other', 'storage_path': 'b40/se/o2.jpg', 'original_filename': 'o2.jpg',
             'content_type': 'image/jpeg', 'size': 10, 'request_code': 'r2'}, format='json')
         self.assertEqual((refused.status_code, refused.json()['error'], refused.json()['max']),
@@ -1095,7 +1098,7 @@ class TestPerOrgDocumentLimits(TestCase):
             ApplicantDocument.objects.create(
                 application=app, doc_type=dt, storage_path=f'b40/se/{dt}.jpg',
                 original_filename=f'{dt}.jpg', content_type='image/jpeg', size=10)
-        full = client.post('/api/v1/scholarship/documents/', {
+        full = post_doc(client, {
             'doc_type': 'parent_ic', 'storage_path': 'b40/se/pic.jpg',
             'original_filename': 'pic.jpg', 'content_type': 'image/jpeg', 'size': 10},
             format='json')

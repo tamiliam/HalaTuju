@@ -489,7 +489,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const doAssign = async (adminId: number | null) => {
     if (!token) return
     setBusy('assign'); setError('')
-    try { setApp(await assignApplication(id, adminId, { token })) }
+    // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page.
+    try { await assignApplication(id, adminId, { token }); setApp(await getScholarshipApplication(id, { token })) }
     catch (e) {
       const code = e instanceof Error ? e.message : ''
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',

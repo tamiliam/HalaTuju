@@ -384,6 +384,7 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
+- **TD-586** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8233,6 +8234,8 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
 
+**Progress 2026-11-07 (A2.3, SP-03 and SP-04).** Upload: the read leaves the request (`upload_read.py`; the web asks `/read/` at once, the `read-documents` cron is the safety net). Assign: the emails go through the `assign-emails` cron (`assign_notify.py`) and the reply is slim, 15 queries, with a budget test (`test_assign_query_budget.py`). Migration 0205, not run. The first-assign Gemini draft is still inline (TD-586). **Left:** interview submit (SP-05) and the income coach cache (SP-06).
+
 ### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; applying the SEC-11 SQL is the owner's step, TD-550)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-08 and 09 confirmed; SEC-11 and 12 read, not run).** (1) `profile_claim._within` does a cache get then set, not an atomic add. (2) `courses/views.py` ~1418 writes an email address into a WARNING line. (3) `public.partner_organisations` has an "Allow public read" policy (Security Advisor 0012) exposing contact names, emails and phones. (4) No CSP, X-Frame-Options or Referrer-Policy on the web; HSTS is 30 days on the API. **Fix:** atomic add; log the user id; tighten the policy; add a `headers()` block. *(A · S)*
@@ -8427,3 +8430,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-561] The credit sign view loads the credit without a row lock - medium
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
+
+### [TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low
+
+**Raised 2026-11-07 by A2.3.** When `CHECK2_AUTO_GENERATE` is on, the first assign of a case still calls Gemini for the sponsor-profile draft before it replies, so that one assign can stay slow after A2.3 moved the emails out. Left as it is on purpose: the owner has not decided whether the draft should wait for the cron. **Fix (once decided):** queue the draft the same way as the assign emails, or keep it inline and accept the wait. *(B · S)*

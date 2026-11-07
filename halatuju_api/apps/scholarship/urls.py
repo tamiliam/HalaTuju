@@ -24,6 +24,7 @@ from .views import (
     VircleAirtableUpdateView,
     DocumentDetailView,
     DocumentHelpView,
+    DocumentReadView,
     IncomeRouteSwitchView,
     GraduationMessageView,
     IncomeClusterHelpView,
@@ -249,6 +250,7 @@ urlpatterns = [
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
+    path('scholarship/documents/<int:pk>/read/', DocumentReadView.as_view()),   # A2.3: run a queued read now
     # Third results route S3b (D13): the higher-results card's SPM-slip note.
     path('scholarship/results/refile-to-spm/', RefileToSpmView.as_view()),
     path('scholarship/results/spm-only/', SpmOnlyView.as_view()),

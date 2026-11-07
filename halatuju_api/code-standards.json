@@ -23,6 +23,14 @@
       "from": "apps/courses/views_admin.py::AdminInviteView.post",
       "to": "apps/courses/views_staff.py::AdminInviteView.post"
     }
+,
+    {
+      "on": "2026-11-07",
+      "why": "Audit sprint A2.3 (TD-519): the document read and slot judging that DocumentListCreateView.post ran inside the upload request moved verbatim into apps/scholarship/upload_read.py::read_and_judge, so the read can run after the request (the read endpoint or the read-documents cron). The recorded debt follows the moved lines; post itself is now under the limit and leaves the ledger, and the budget falls 312 to 197.",
+      "ledger": "long_functions",
+      "from": "apps/scholarship/views.py::DocumentListCreateView.post",
+      "to": "apps/scholarship/upload_read.py::read_and_judge"
+    }
   ],
   "_admitted_how_this_works": "Budgets set AFTER the H4 freeze, admitted by a dated record instead of a rewrite of the frozen `baseline` (TD-286, lead ruling 2026-10-04). Each record names the date, the sprint or TD that set the number, why it exists, its ledger (`query_budgets` ONLY), its key and its value. THE VALUE IS THE LIVE BUDGET: `apps/scholarship/tests/test_query_budgets.py` reads every number from here or from `budget.query_budgets`, and holds none of its own. A record may be ADDED (a new standard is stricter, not looser) or its value LOWERED (the tightness tests say by how much); it may never be RAISED, and `Settings/_tools/code_health.py` refuses a raised one at every close by comparing this array with the last recorded run's copy. `test_code_standards.py` refuses a record that is incomplete, names another ledger, or shadows a frozen key. `_admitted` is a sibling of `baseline`, so admitting a budget never moves `BASELINE_SHA256`.",
   "_admitted": [
@@ -337,6 +345,22 @@
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-pending/::GET::qc-4-cases",
       "value": 10
+    },
+    {
+      "on": "2026-11-07",
+      "by": "audit sprint A2.3 (TD-519)",
+      "why": "One assign by an org-admin: the reply is slim (no full case rebuild) and both assignment emails are queued for the assign-emails cron, so neither is sent inside the request. First assignment of a submitted case, with the student email on and the first-assign profile draft off. Measured 15 on 2026-11-07 (the full case reply alone cost hundreds before).",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/<int:pk>/assign/::POST::first-assign",
+      "value": 15
+    },
+    {
+      "on": "2026-11-07",
+      "by": "audit sprint A2.3 (TD-519)",
+      "why": "The same, moving an assigned case to a second reviewer. Measured 15 on 2026-11-07, equal to the first assignment.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/<int:pk>/assign/::POST::reassign",
+      "value": 15
     }
   ],
   "_history": [
@@ -640,7 +664,7 @@
       "apps/scholarship/spending_import.py": 749,
       "apps/scholarship/sponsorship.py": 999,
       "apps/scholarship/verdict_engine.py": 941,
-      "apps/scholarship/views.py": 2421,
+      "apps/scholarship/views.py": 2281,
       "apps/scholarship/views_sponsor.py": 718,
       "apps/scholarship/vision.py": 2321,
       "halatuju/settings/base.py": 611
@@ -658,8 +682,8 @@
       "apps/scholarship/help_engine.py::verdict_for_document": 152,
       "apps/scholarship/resolution.py::doc_match_verdict": 177,
       "apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer": 192,
+      "apps/scholarship/upload_read.py::read_and_judge": 197,
       "apps/scholarship/verdict_engine.py::_verdict_income": 210,
-      "apps/scholarship/views.py::DocumentListCreateView.post": 312,
       "apps/scholarship/vision.py::_run_field_extraction_impl": 306
     },
     "duplicated_names": {

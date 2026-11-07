@@ -247,7 +247,6 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     Returns the application.
     """
     from ..models import AssignmentEvent
-    from .. import usage as _usage
     now = now or timezone.now()
 
     # ⚠ THE TARGET IS RE-READ UNDER ITS ROW LOCK (#39 Sprint 4, the TD-382 class). The editor's
@@ -288,6 +287,8 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
         AssignmentEvent.objects.create(
             application=application, from_admin=current, to_admin=reviewer,
             by_email=getattr(by_admin, 'email', '') or '',
+            # A2.3: a real assignment queues its two emails (assign_notify); an unassign sends none.
+            notify_state='pending' if reviewer is not None else '',
         )
         status_reverted = False
         if unassigning:
@@ -315,51 +316,9 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
         application.save(update_fields=_fields)
         _record_assignment(by_admin, application, current, reviewer)
 
-    # Notify the reviewer they have a new applicant to review. Only on an actual
-    # assignment (not an unassign); the no-op short-circuit above means an unchanged
-    # assignee never reaches here, so we never re-send. Best-effort.
-    if reviewer is not None and getattr(reviewer, 'email', ''):
-        from .. import review_sla
-        from ..emails import send_reviewer_assigned_email
-        from ..pool import pool_ref
-        # Per-organisation SLA (Org Config Sprint C). This read used to carry its own dead
-        # default of 7 against the sweep's 10 — base.py always defined the setting so it never
-        # fired, but the review-by date in this email and the nudge sweep's due date now come
-        # from the ONE delegation and cannot drift.
-        # ⚠ AND SINCE 2026-09-15 THE ARITHMETIC IS SHARED TOO, not just the number: `review_sla`
-        # is the one home for `assigned_at + sla`, so the date a reviewer is promised here is
-        # computed by the same line the nudge sweep and the Overview's bands use.
-        review_by = review_sla.review_due(
-            application.assigned_at or now, application.owning_organisation).date()
-        with _usage.usage_context(application=application):
-            send_reviewer_assigned_email(
-                to_email=reviewer.email,
-                reviewer_name=getattr(reviewer, 'name', ''),
-                ref=pool_ref(application.id),
-                programme=getattr(application.cohort, 'name', '') if application.cohort else '',
-                review_by=review_by.strftime('%d %b %Y'),
-            )
-
-    # F7: advance notice to the STUDENT — who will interview them + how, so they expect the
-    # call and pick up. Gated by STUDENT_ASSIGNMENT_EMAIL_ENABLED (OFF until reviewers give
-    # non-objection to sharing their contact). The reviewer's phone is included unless they
-    # opted out (ReviewerProfile.share_phone_with_students). Best-effort; never blocks assignment.
-    if reviewer is not None:
-        from django.conf import settings as _settings
-        from .. import student_email_catalogue as _catalogue   # S6a: the organisation's own switch
-        if (getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False)
-                and _catalogue.may_send(application, 'interviewer_assigned')):
-            from ..emails import english_only_email, send_student_assigned_reviewer_email
-            profile = application.profile
-            student_email = (application.notify_email
-                             or getattr(profile, 'contact_email', '') or '')
-            with _usage.usage_context(application=application):
-                send_student_assigned_reviewer_email(
-                    student_email,
-                    student_name=getattr(profile, 'name', '') if profile else '',
-                    reviewer_name=getattr(reviewer, 'name', ''),
-                    english_only=english_only_email(application),
-                )
+    # A2.3 / TD-519: the reviewer's and the student's assignment emails are NOT sent here any more.
+    # The AssignmentEvent above was written queued (notify_state 'pending'), and the assign-emails
+    # cron sends both after the request, with the same gates and content (`assign_notify`).
 
     # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on
     # a ready profile to orient from (the owner's design). Fires only on the FIRST

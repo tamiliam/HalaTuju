@@ -218,6 +218,13 @@ class AssignmentEvent(models.Model):
         help_text="Email of the super-admin who performed the (re)assignment.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    # A2.3 / TD-519: the assignment emails (reviewer + student) are sent AFTER the request by the
+    # `assign-emails` cron (`assign_notify.py`). 'pending' until sent, '' after (and for every row
+    # the old image wrote — it sent inline), 'failed' after MAX_ATTEMPTS. `db_default` keeps the
+    # still-serving old image able to insert.
+    notify_state = models.CharField(max_length=10, blank=True, default='', db_default='')
+    notify_claimed_at = models.DateTimeField(null=True, blank=True)
+    notify_attempts = models.PositiveSmallIntegerField(default=0, db_default=0)
 
     class Meta:
         db_table = 'assignment_events'

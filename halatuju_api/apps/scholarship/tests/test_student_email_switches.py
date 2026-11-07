@@ -156,14 +156,19 @@ class TestInterviewerAssigned(TestCase):
 
     @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
     def test_off(self, send):
+        from apps.scholarship import assign_notify
         _off(self.app, 'interviewer_assigned')
         assignment.assign_reviewer(self.app, reviewer=self.reviewer, by_admin=self.super)
+        assign_notify.run_pending()                 # A2.3: the gate is asked at send time
         send.assert_not_called()
         self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).assigned_to_id, self.reviewer.id)
 
     @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
     def test_on(self, send):
+        from apps.scholarship import assign_notify
         assignment.assign_reviewer(self.app, reviewer=self.reviewer, by_admin=self.super)
+        send.assert_not_called()                    # A2.3: never inside the request
+        assign_notify.run_pending()                 # the assign-emails cron
         send.assert_called_once()
 
 

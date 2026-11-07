@@ -24,6 +24,7 @@ from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_student,
 )
 from apps.scholarship.vision import relationship_name_match
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 
 def _doc(app, member, name, doc_type='parent_ic'):
@@ -182,7 +183,7 @@ class FullNameMatchThroughTheUploadViewTest(TestCase):
         with patch('apps.scholarship.vision.run_vision_for_document', side_effect=_read), \
              patch('apps.scholarship.storage.create_signed_download_url',
                    return_value='https://s/dl'):
-            resp = authed_client(self.student).post('/api/v1/scholarship/documents/', {
+            resp = post_doc(authed_client(self.student), {
                 'doc_type': 'parent_ic', 'household_member': member,
                 'storage_path': issued_key(self.app, 'parent_ic', suffix),
                 'original_filename': 'ic.jpg', 'size': 1000,
