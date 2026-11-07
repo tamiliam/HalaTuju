@@ -170,27 +170,56 @@ class TestWorker(TestCase):
         sp.refresh_from_db()
         self.assertEqual((sp.finalise_state, sp.finalise_attempts), ('pending', 0))
 
-    def test_qc_cleared_meanwhile_publishes_as_qc_would_have(self, _down):
-        # QC accepted while the profile was still being written: the case is 'recommended' with
-        # nothing published. The worker does what QC-Accept would have done, with no extra call.
+    def test_the_worker_never_publishes(self, _down):
+        # A2.1 review (M1): even on a 'recommended' case with nothing published, publishing stays
+        # with QC-Accept (which refuses while the profile is pending, so QC reads the final text).
         app = make_application('recommended')
         _, sp = _queued(app, anon_markdown='', anon_blurb='', anon_published=False, anon_published_at=None)
-        with patch(REFINE, return_value=FINAL), patch(BLURB, return_value='Wants to study.') as blurb:
-            pf.run_pending()
-        self.assertEqual(blurb.call_count, 1)
+        with patch(REFINE, return_value=FINAL), patch(BLURB, return_value='Wants to study.'), \
+                patch('apps.scholarship.pool.publish_profile_to_pool') as publish:
+            self.assertEqual(pf.run_pending()['done'], 1)
+        publish.assert_not_called()
         sp.refresh_from_db()
-        self.assertTrue(sp.anon_published)
-        self.assertEqual(sp.anon_blurb, 'Wants to study.')
+        self.assertFalse(sp.anon_published)
+        self.assertEqual((sp.anon_markdown, sp.anon_blurb), (FINAL['markdown'], 'Wants to study.'))
 
-    def test_a_leaking_text_never_replaces_a_published_profile(self, _down):
+    def test_a_published_profile_keeps_its_sponsor_text(self, _down):
+        # A2.1 review (M1): a CLEAN new text is not swapped in either; only final_markdown moves.
         app = make_application('recommended')
-        _, sp = _queued(app, anon_markdown='## Old clean', anon_published=True)
-        leaking = dict(FINAL, markdown=f'## About {app.profile.name}')
-        with patch(REFINE, return_value=leaking), patch(BLURB) as blurb:
-            pf.run_pending()
-        blurb.assert_not_called()
+        _, sp = _queued(app, anon_markdown='## Old clean', anon_blurb='Old blurb', anon_published=True,
+                        anon_model_used='old-model')
+        with patch(REFINE, return_value=FINAL), patch(BLURB, return_value='New blurb'):
+            self.assertEqual(pf.run_pending()['done'], 1)
         sp.refresh_from_db()
-        self.assertEqual((sp.final_markdown, sp.anon_markdown), (leaking['markdown'], '## Old clean'))
+        self.assertEqual(sp.final_markdown, FINAL['markdown'])
+        self.assertEqual((sp.anon_markdown, sp.anon_blurb, sp.anon_model_used, sp.anon_published),
+                         ('## Old clean', 'Old blurb', 'old-model', True))
+
+    def test_qc_accept_refuses_while_pending(self, _down):
+        from apps.scholarship.views_admin.qc_checks import _accept_absolute_stop
+        app = make_application('verdict_recorded', outcome='recommend')
+        app.reporting_date = timezone.localdate()
+        app.award_amount = 1000
+        _queued(app)
+        refusal = _accept_absolute_stop(app)
+        self.assertEqual((refusal.status_code, refusal.data['code']), (400, 'profile_pending'))
+        with patch(REFINE, return_value=FINAL), patch(BLURB, return_value=''):
+            pf.run_pending()
+        self.assertNotEqual(getattr(_accept_absolute_stop(app), 'data', {}).get('code'), 'profile_pending')
+
+    def test_a_run_stops_claiming_after_its_time_budget(self, _down):
+        # A2.1 review (L4): no new row is claimed once the budget is spent; the rest wait.
+        apps = [make_application('verdict_recorded', outcome='recommend') for _ in range(3)]
+        for app in apps:
+            _queued(app)
+        ticks = iter([0, 0, pf.TIME_BUDGET_SECONDS, pf.TIME_BUDGET_SECONDS])
+        with patch(REFINE, return_value=FINAL) as refine, patch(BLURB, return_value=''):
+            counts = pf.run_pending(clock=lambda: next(ticks))
+        self.assertEqual((counts['done'], counts['deferred'], refine.call_count), (1, 2, 1))
+        self.assertEqual(SponsorProfile.objects.filter(finalise_state='pending').count(), 2)
+
+    def test_the_batch_is_small(self, _down):
+        self.assertEqual((pf.BATCH, pf.TIME_BUDGET_SECONDS), (3, 150))
 
     def test_the_command_runs_the_batch(self, _down):
         app = make_application('verdict_recorded', outcome='recommend')
@@ -200,10 +229,22 @@ class TestWorker(TestCase):
         self.assertEqual(SponsorProfile.objects.get(application=app).final_markdown, FINAL['markdown'])
 
     def test_the_cron_job_is_registered(self, _down):
-        from apps.scholarship.cron_health import EVERY_15_MIN, EXPECTED_CADENCE
+        from apps.scholarship.cron_health import EVERY_5_MIN, EXPECTED_CADENCE
+        from apps.scholarship.services.system_health import cadence_word
         from apps.scholarship.views import CronRunView
         self.assertEqual(CronRunView.JOBS['finalise-profiles'], 'run_pending_finalise')
-        self.assertEqual(EXPECTED_CADENCE['finalise-profiles'], EVERY_15_MIN)
+        self.assertEqual(EXPECTED_CADENCE['finalise-profiles'], EVERY_5_MIN)
+        self.assertEqual(cadence_word(EVERY_5_MIN), 'every5')
+
+    def test_system_health_counts_failed_profiles(self, _down):
+        # A2.1 review (L2): a profile the cron gave up on is no longer silent.
+        from apps.scholarship.services.system_health import profiles_row
+        self.assertEqual((profiles_row()['status'], profiles_row()['code']), ('green', 'ok'))
+        app = make_application('verdict_recorded', outcome='recommend')
+        _, sp = _queued(app)
+        SponsorProfile.objects.filter(pk=sp.pk).update(finalise_state='failed')
+        row = profiles_row()
+        self.assertEqual((row['status'], row['code'], row['params']), ('amber', 'failed', {'count': '1'}))
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

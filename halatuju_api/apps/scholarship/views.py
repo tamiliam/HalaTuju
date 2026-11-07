@@ -2092,7 +2092,7 @@ class CronRunView(APIView):
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
         'reextract-offers': 'reextract_offers',  # one-off batches (20/run): re-score offers with missing/below-genuine (<0.70) authenticity under the current MODEL_VERSION
-        'finalise-profiles': 'run_pending_finalise',  # EVERY 15 MIN (A2.1): the final profile record-verdict queued (profile_finalise)
+        'finalise-profiles': 'run_pending_finalise',  # EVERY 5 MIN (A2.1): the final profile record-verdict queued (profile_finalise)
         'reprocess-ic-vision': 'reprocess_unread_ic',  # HOURLY (0 * * * *): self-heal reads stuck unprocessed or deferred by OUR outage (services.read_retry)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)

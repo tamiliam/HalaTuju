@@ -7,9 +7,8 @@ and every importer are unchanged.
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
-from .. import pool
+from .. import pool, profile_finalise
 from ..models import ApplicantDocument, SponsorProfile
-from ..profile_engine import refine_sponsor_profile
 from ..serializers import ApplicantDocumentSerializer
 from ..serializers_admin import AdminApplicationDetailSerializer, SponsorProfileSerializer
 
@@ -59,31 +58,24 @@ class AdminGenerateProfileView(_AdminBase):
 
 
 class AdminFinaliseProfileView(_AdminBase):
-    """Phase D: POST .../<pk>/finalise-profile/ — second Gemini pass that refines the
+    """Phase D: POST .../<pk>/finalise-profile/ — the second Gemini pass that refines the
     existing draft profile with the SUBMITTED interview's findings → ``final_markdown``.
-    Reviewer-gated, admin-on-demand. Requires both a draft and a submitted interview."""
+    Reviewer-gated, admin-on-demand. Requires both a draft and a submitted interview.
+
+    ⚠ A2.1 review (L1): it RE-QUEUES the profile for the ``finalise-profiles`` cron (pending,
+    attempts 0, a new token) instead of calling Gemini inline; this is the retry after 'failed'.
+    Only the queue columns are saved, so it can never revert a row a running job is writing."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        sp = SponsorProfile.objects.filter(application=app).first()
-        if sp is None or not sp.current_markdown.strip():
-            return Response({'error': 'Draft a profile first.', 'code': 'no_draft'},
+        result, sp = profile_finalise.queue_finalise(app, request.data.get('language'))
+        if sp is None:
+            message = {'no_draft': 'Draft a profile first.',
+                       'no_interview': 'Submit an interview first.'}[result['code']]
+            return Response({'error': message, 'code': result['code']},
                             status=status.HTTP_400_BAD_REQUEST)
-        session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
-        if session is None:
-            return Response({'error': 'Submit an interview first.', 'code': 'no_interview'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        result = refine_sponsor_profile(
-            app, draft=sp.current_markdown, session=session,
-            language=request.data.get('language'))
-        if 'error' in result:
-            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        sp.final_markdown = result['markdown']
-        sp.final_model_used = result.get('model_used', '')
-        sp.prompt_version = result.get('prompt_version', '')
-        sp.finalised_at = timezone.now()
-        sp.save()
+        sp.save(update_fields=profile_finalise.QUEUE_FIELDS)
         return Response(SponsorProfileSerializer(sp).data)
 
 

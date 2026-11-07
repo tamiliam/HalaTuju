@@ -2,7 +2,7 @@
 A2.1 / TD-517 — write the final sponsor profiles that record-verdict queued.
 
 Record-verdict no longer calls Gemini inside the request: it marks the profile 'pending', and this
-command (the `finalise-profiles` cron, every 15 minutes) runs the refine and the card blurb, with
+command (the `finalise-profiles` cron, every 5 minutes) runs the refine and the card blurb, with
 retry. Billable Gemini calls, at most `profile_finalise.BATCH` a run; skipped while Gemini reads are
 down. See `apps/scholarship/profile_finalise.py`.
 

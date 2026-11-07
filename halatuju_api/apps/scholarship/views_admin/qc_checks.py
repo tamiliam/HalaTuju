@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .. import birth_state
+from ..models import SponsorProfile
 
 
 def _overall(app):
@@ -33,6 +34,9 @@ def _accept_absolute_stop(app):
     3. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
        (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
        accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
+    4. A2.1 review: the final profile is still being written (`profile_pending`, no override).
+       QC-Accept publishes the sponsor text, so QC must read the final one; the remedy is to wait
+       for the `finalise-profiles` cron (a few minutes) and reload.
     """
     if app.reporting_date is None:
         return Response(
@@ -52,6 +56,12 @@ def _accept_absolute_stop(app):
         return Response({'error': birth_state.IC_UNLOCKED_MESSAGE,
                          'code': birth_state.IC_UNLOCKED},
                         status=status.HTTP_400_BAD_REQUEST)
+    if SponsorProfile.objects.filter(application=app, finalise_state='pending').exists():
+        return Response(
+            {'error': 'The final sponsor profile is still being written. Wait a few minutes, '
+                      'reload the page and read it, then accept.',
+             'code': 'profile_pending'},
+            status=status.HTTP_400_BAD_REQUEST)
     return None
 
 

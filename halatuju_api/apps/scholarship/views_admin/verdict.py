@@ -63,7 +63,7 @@ def _save_verdict(app, admin, verdict_fields, sp_to_save):
         reopen_service.close_reopen_with_change(app)
         staff_activity.record(admin, staff_activity.VERDICT_RECORDED, app, meta=lambda: {
             'overall': app.officer_verdict.get('overall') or 'blank',
-            'finalised': sp_to_save is not None})
+            'finalised': getattr(sp_to_save, 'finalise_state', '') == profile_finalise.PENDING})
 
 
 def _record_qc(admin, app, decision, outcome):
@@ -167,6 +167,8 @@ class AdminRecordVerdictView(_AdminBase):
         if request.data.get('finalise'):
             finalise_result, sp_to_save = profile_finalise.queue_finalise(
                 app, request.data.get('language'))
+        else:   # the verdict changed: drop a profile still queued for the old one
+            sp_to_save = profile_finalise.supersede_pending(app)
 
         _save_verdict(app, admin, verdict_fields, sp_to_save)
         if 'award_amount' in verdict_fields:
