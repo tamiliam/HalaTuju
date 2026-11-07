@@ -304,7 +304,7 @@ def sign_admin_credit(credit, admin, typed_name):
     mirrored function is what stops them drifting into two subtly different controls.
 
       * DRAFT → the MAKER (role ``admin``, or super) signs → ``admin_signed``.
-      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (role ``finance``, or super) may
+      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (``payments_approve``, TD-475; or super) may
         sign → ``finance_checked``. An org_admin trying to countersign here gets
         ``finance_check_required`` (told WHY, not a bare wrong_role — from their seat
         nothing looks amiss).
@@ -321,9 +321,9 @@ def sign_admin_credit(credit, admin, typed_name):
     ``super`` to one slot per credit without a special case for supers.
 
     ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
-    appointing a finance admin ARMS the check for a credit already mid-chain, and revoking
-    the last one degrades it back to two steps. ⚠ The finance-ROLE rule is
-    ``payments.credit_check_required`` since #39 S2 (runs moved to permissions). WHO may sign
+    giving someone ``payments_approve`` ARMS the check for a credit already mid-chain, and revoking
+    the last holder degrades it back to two steps. ⚠ The rule is
+    ``payments.credit_check_required`` (a key since TD-475, A1.10a; a role before). WHO may sign
     which step is `credit_steps.step_refusal` since T5c P5b (the Overview counts with it). Returns the credit.
     """
     from . import credit_steps, payments, staff_activity
@@ -332,7 +332,7 @@ def sign_admin_credit(credit, admin, typed_name):
     if not payments._name_matches(admin, typed_name):
         raise CreditError('name_mismatch')
     now = timezone.now()
-    needs_finance = payments.credit_check_required(_credit_org(credit))   # #39 S2: today's role rule
+    needs_finance = payments.credit_check_required(_credit_org(credit), credit)   # TD-475; per credit
     refusal = credit_steps.step_refusal(credit, admin, needs_finance)
     if refusal:
         raise CreditError(refusal)
@@ -393,7 +393,7 @@ def cancel_admin_credit(credit, admin):
 
 
 def _credit_org(credit):
-    """The organisation whose finance role governs this credit — the one running the gift."""
+    """The organisation whose credit checkers govern this credit — the one running the gift."""
     return credit.programme.organisation if credit.programme_id else None
 
 

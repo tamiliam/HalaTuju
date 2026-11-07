@@ -245,6 +245,19 @@ class Remove(_Base):
         self.assertEqual((fin.role, fin.permissions), ('reviewer', None))
         self.assertFalse(fin.has_perm('payments_approve'))
 
+    def test_td475_an_admin_holding_approve_leaving_admins_says_the_credit_check_goes(self):
+        # TD-475 (A1.10a): the KEY, not the finance label — an Admin given payments_approve on Team arms
+        # the credit check, and taking it from the last holder says so.
+        from apps.scholarship import payments
+        adm = make_admin('admin', owning_org=self.org, permissions=['review', 'see_all', 'payments_approve'])
+        self.assertTrue(payments.credit_check_required(self.org))
+        self.assertTrue(self.act(self.lead, 'admins', adm, 'remove', dry_run=True).json()['finance_check_off'])
+
+    def test_td475_with_another_holder_the_credit_check_stays(self):
+        make_admin('admin', owning_org=self.org, permissions=['see_all', 'payments_approve'])
+        fin = make_admin('finance', owning_org=self.org, permissions=['review', 'payments_approve'])
+        self.assertFalse(self.act(self.lead, 'admins', fin, 'remove', dry_run=True).json()['finance_check_off'])
+
     def test_the_list_serves_where_remove_is_accepted(self):
         rohini = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'spending'])
         make_application('assigned', reviewer=rohini, cohort=self.cohort)
@@ -456,7 +469,8 @@ class ChangeRoleUnderT2(TestCase):
         self.assertEqual(r.status_code, 200, r.content[:300])
         self.assertFalse(r.json()['permissions_reset'])
         self.assertEqual(r.json()['consequences'], [])
-        self.assertEqual(r.json()['consequence'], 'finance_check_off')   # the credit check, as before
+        # TD-475 (A1.10a): the credit check is the KEY now, which the switch keeps, so nothing moves.
+        self.assertIsNone(r.json()['consequence'])
         self.assertEqual(self.switch(fin, 'admin').status_code, 200)
         fin.refresh_from_db()
         self.assertEqual((fin.role, fin.permissions), ('admin', ['payments_approve']))

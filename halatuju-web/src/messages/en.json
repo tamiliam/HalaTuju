@@ -8245,7 +8245,8 @@
         "not_signed_in": "{name} has never signed in, so the payment change takes effect at their first sign-in.",
         "files_widened_all": "{name} will be able to read every student’s file in this organisation.",
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
-        "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run."
+        "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run.",
+        "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded."
       },
       "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
     },

@@ -77,6 +77,13 @@ def may_make(admin):
     return staff_tables.opens_door(admin, 'development')
 
 
+def may_read_development(admin):
+    """The READ of the staff module pages and the scholar file's Growth tab (A1.10a, TD-498):
+    `development.view`. Today the same holders as `may_make`."""
+    from apps.courses import staff_tables
+    return staff_tables.opens_door(admin, 'development_read')
+
+
 def today():
     return timezone.localtime(timezone.now(), MYT).date()
 

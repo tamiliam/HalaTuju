@@ -249,13 +249,17 @@ def plan_table_change(target, table, action, *, open_n=None):
         spa._refuse_stranding(target, out['before'], out['after'])
     out['consequences'] = (spa.consequences(target, out['before'], out['after'])
                            if not target.is_mentor else [])
-    # Leaving the Finance LABEL moves the wallet-credit check (a finance-ROLE rule, staff_lifecycle).
-    out['finance_check_off'] = bool(out['role_changed'] and target.role == 'finance'
+    # TD-475 (A1.10a): the wallet-credit check turns on the KEY `payments_approve` (`credit_steps.
+    # CHECKER_KEY`), so it goes off when this change takes the key from the organisation's last active
+    # holder — whatever their label (was: leaving the Finance LABEL).
+    from .credit_steps import CHECKER_KEY
+    out['finance_check_off'] = bool(CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
                                     and target.owning_organisation_id is not None
-                                    and not staff_lifecycle._other_active_finance(target))
+                                    and not staff_lifecycle.other_active_checker(target))
     # Lead ruling Q2b: said in plain words on the confirm.
-    # Review 2026-11-03: a change that makes them role `admin` OPENS the admin work pages (the role gate,
-    # `staff_tables.may_do_admin_work`) — a Remove from Reviewers (Q2b) or a mentor login added to Admins.
+    # Review 2026-11-03: a change that makes them role `admin` OPENS the admin work pages (the `admin`
+    # label's own grant in the v2 vocabulary, LABEL_GRANTS) — a Remove from Reviewers (Q2b) or a mentor
+    # login added to Admins.
     # It can be a GAIN, so the confirm says so in plain words.
     out['opens_admin_pages'] = bool(out['role_changed'] and out['role'] == 'admin')
     out['added'] = [k for k in out['after'] if k not in out['before']]

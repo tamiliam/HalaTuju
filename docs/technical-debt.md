@@ -62,6 +62,11 @@ in git at the commit before this one; the 2026-10-18 one is at `6e1d66db`.
 >
 > **Amended 2026-11-05 (Sprint A0.3).** TD-522 closed with its evidence on its defining line and its pointer
 > removed from the untiered group: 207 open = 207 pointers (23 + 8 + 25 + 49 + 20 + 1 + 81).
+>
+> **Amended 2026-11-07 (Sprint A1.10a).** `code_health.count_td` read 216 open before this sprint (the sprints
+> between A0.3 and A1.10a raised and closed entries without amending this note) and **210 after it**: TD-336,
+> TD-435, TD-475, TD-476, TD-497 and TD-504 closed, each with its marker on its defining line; their index
+> pointers are struck through, not removed. TD-498 is partly done and stays open.
 
 > **How the 136 was reached on 2026-10-28.** The 2026-10-18 method below, re-run. (1)
 > `code_health.count_td`: 412 defined, 136 open, no new duplicate id. (2) The pointer diff, both
@@ -220,7 +225,7 @@ Class C at medium or large size, and class D that is small.
 - **TD-343** — If the intake request fails, the apply form names no gift and submits no code (the server then resolves or refuses). *(D · S · raised 2026-10-05 by the apply-gift-clarity sprint)*
 - **TD-342** — An abandoned Google sign-in leaves a pending `apply` action that can later return the student to `?p=<old gift>` (named on the form, so not silent). *(D · S · raised 2026-10-05 by the apply-gift-clarity sprint)*
 - **TD-338** — One programme with two cohorts open: the intake is ambiguous even with its code, the chooser lists the same code twice, and submit 409s for ever. *(C · M · raised 2026-10-05 by the apply-gift-clarity sprint)*
-- **TD-336** — The Programme Overview pools platform-wide money totals for a super with no organisation who names no gift (TD-334's shape, no gift gate). *(C · S · raised 2026-10-05 by Later-tier batch 5's review)*
+- ~~**TD-336**~~ **FIXED 2026-11-07 (Sprint A1.10a: the money sections wait for a gift; see the detail entry)** — The Programme Overview pools platform-wide money totals for a super with no organisation who names no gift (TD-334's shape, no gift gate). *(C · S · raised 2026-10-05 by Later-tier batch 5's review)*
 - **TD-328** — A gift with no agreement template pays the default schedule (`default_schedule.py`, a copy of contract 10 with its gap months and end, since 2026-10-29) until the first template goes live; then the default is removed and such a gift is not paid (owner ruling 2026-10-04; trigger = the first live template). *(A · S)*
 - **TD-321** — Production serves every page image at full size: there is no sharp package, so Next never resizes. *(C · S · raised 2026-10-01)*
 
@@ -295,7 +300,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-431** - An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
 - **TD-432** - Source users have no Guide or FAQ - low
 - **TD-434** - The TVET pathway map gives a course the FIRST institution category it meets, and a course with none falls to an unpickable `tvet` - low
-- **TD-435** - A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low
+- ~~**TD-435**~~ **FIXED 2026-11-07 (Sprint A1.10a)** - A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low
 - **TD-437** - A source's Organisation card has no Website, because `ReferralSource` has no column for it - low
 - **TD-438** - The header photo's signed link expires after about an hour in a tab left open - low
 - **TD-447** - Offer confirm can still store a hostel line when the stored course is stale - low
@@ -322,8 +327,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-469** - Mobile M5 leftovers: the sponsor desktop has no language control; admin-side sponsor labels - low
 - **TD-472** - The console has no language control at any width - low
 - **TD-474** - An STPM school name followed by a one-word town line takes the town - low
-- **TD-475** - Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
-- **TD-476** - A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
+- ~~**TD-475**~~ **FIXED 2026-11-07 (Sprint A1.10a: the checker seat is `payments_approve`)** - Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
+- ~~**TD-476**~~ **FIXED 2026-11-07 (Sprint A1.10a: the reopen refuses)** - A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
 - **TD-477** - The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 - **TD-478** - A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
 - **TD-480** - Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
@@ -341,14 +346,14 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-494** - The agency lift's descriptor excuse can hide a company name - medium
 - **TD-495** - "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
 - **TD-496** - The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
-- **TD-497** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
-- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+- ~~**TD-497**~~ **FIXED 2026-11-07 (Sprint A1.10a: no door calls a union gate; a guard test refuses a new one)** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
+- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g) (partly done 2026-11-07, A1.10a: Announcements, Surveys, Development, scholar Mentoring and Sources split; sponsor terms and sponsor emails left)
 - **TD-499** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 - **TD-500** - Mentor My students list makes one alias query per mentee - low
 - **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
 - **TD-502** - Overview cards without a filtered action link - low
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
-- **TD-504** - Overview invitations card needs org_read; the Invitations page needs team_read - low
+- ~~**TD-504**~~ **FIXED 2026-11-07 (Sprint A1.10a)** - Overview invitations card needs org_read; the Invitations page needs team_read - low
 - **TD-505** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
 - **TD-506** - Dependency advisories: Pillow, pypdf (web half done 2026-11-06, A1.1: Next 15.5.29) - high (partly done)
 - **TD-510** - A request for an unlinked matching staff row makes a Supabase admin call of up to 15 s each time (SEC-02 L4) - low
@@ -376,6 +381,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-549** - 15 deny-all tables have no service_role policy (SEC-14) - low - **FIXED (2026-11-07, A1.9b: hand-apply SQL written; the owner applies it, TD-550)**
 - **TD-550** - A1.9b owner steps: apply the SEC-14 and SEC-11 SQL files, check the web's headers live after G4, rule on web HSTS - low
 - **TD-569** - Throttle and admin-login counters live in the database cache (MAX_ENTRIES 300); a cull can wipe them and reset a lock early - low
+
+- **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
+- **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -6653,7 +6661,7 @@ depends on, not a defect.
 - ~~**TD-333 (raised 2026-10-04 by Later-tier batch 4, TD-150) - low, officer/student-visible: `offer_pathway.detect_pathway_type` reads a degree letter that names "(Diplomasi)" as a DIPLOMA.**~~ **RESOLVED 2026-10-05 (Later-tier batch 5: every level word in `detect_pathway_type` matches as a WHOLE word — no letter either side — so "(DIPLOMASI)" is not a diploma while "(DIPLOMA)" and "SIJIL" still are; the families and their order are unchanged, and "Bacelor" joins the degree words. The degree letter now resolves to its course. No production characterisation was run (local-only batch): a stored letter whose ONLY level word is glued to another word (e.g. "DIPLOMAKEJURUTERAAN") would now read no type — worth a read-only count before the deploy. All callers' suites green. `test_td331_td332_programme.py`, the two `…_td333` tests)** It tests `'diploma' in text` before the degree words, so "IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA (DIPLOMASI)" is typed `diploma`, and since TD-332 the tertiary resolver then skips the degree course — the letter resolves to nothing (label-only), never to a wrong id, so it fails safe. TD-332 fixed the same substring trap on the COURSE side (`catalogue_levels`, whole words); the LETTER side is the same fix, but `detect_pathway_type` feeds the verdict's pathway family and the switch note, so it wants a characterisation over the stored letters first. `test_td331_td332_programme.test_diplomasi_is_not_a_diploma` says so. *(C · S)*
 - ~~**TD-334 (raised 2026-10-04 by Later-tier batch 4's review, TD-246) - low, tenancy-adjacent: a super with NO organisation of their own who sends no `?programme=` still reads every organisation pooled on Payments and Spending.**~~ **RESOLVED 2026-10-05 (Later-tier batch 5: `_AdminBase._gift_required_for_orgless_super` answers `400 programme_required` on the run list, the funding summary and both Spending endpoints (the read and the category correction, through `_spending_admin`, the one door) when an organisation-less super names no gift. Naming any organisation's gift still opens it; a super WITH an organisation and an org_admin read exactly as before (decisions.md 2026-09-11 untouched). Three tests that asserted the pooled read are RE-POINTED at the gift-named read plus the 400 (`test_payment_endpoints` x2, `test_spend_report` x1). Query budgets unchanged. `test_td334_orgless_super_names_a_gift.py`)** The TD-246 closure rests on the web gift gate (`useGiftGate`: with two or more live gifts nothing is drawn until one is chosen; with one, the client resolves it), so the console cannot send that request today. The server itself does not refuse it: `AdminPaymentRunListView`, `AdminPaymentFundingSummaryView` and `_SpendingBase._spending_admin` read "no programme" as "every gift the fence allows", which for an organisation-less super is the platform. **Fix if it ever matters:** a server-side `programme_required` for an organisation-less super on those reads (an organisation's own admins keep the whole-organisation view). **Trigger:** the gift gate changes, or a direct API reader appears. *(D · S)*
 - ~~**TD-335 (raised 2026-10-05 by Later-tier batch 5's review, TD-214) - low, officer-visible: a cancelled STAFF invitation's address cannot be invited again.**~~ **RESOLVED 2026-10-09 (the staff lifecycle sprint, the entry's own fix: `apps/courses/staff_reinvite.py` — `may_reuse` lets `AdminInviteView` bring back a switched-off account with `first_seen_at` NULL that the caller may manage, and `bring_back` reactivates it under a row lock with the new invite's name, role and organisation, issues a FRESH temporary password onto the same login (only while one is owed or the login was never used — a password the person chose is never overwritten), and a new `Invitation` is opened; the 409 stays for an active account, one that has signed in, and another organisation's. The cancel itself now rotates the emailed password dead at Supabase (`staff_lifecycle.kill_for_cancel`). Tests: `TestInviteAgainAfterCancel` in `apps/scholarship/tests/test_staff_lifecycle.py`)** Cancelling switches the never-used account off (`is_active=False`) and keeps the `PartnerAdmin` row, so `AdminInviteView` refuses the same address with 409 "Admin with this email already exists" until somebody presses People → Restore — which brings back the OLD account rather than sending a fresh invitation. **Fix:** let the invite path reuse a switched-off account that has never signed in (`first_seen_at` NULL): reactivate it, issue a new temporary password and open a new invitation, exactly as a first invite. **Trigger:** the first wrong address corrected by cancel-then-reinvite. *(D · S)*
-- **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals for a super with no organisation who names no gift.** The same shape TD-334 closed on Payments and Spending, on a page with no gift gate: the Overview's money sections read "every gift the fence allows", which for an organisation-less super is the platform. **Fix:** the same `_gift_required_for_orgless_super` answer on the Overview's money reads (or its money sections withheld until a gift is named) — decide which, because the Overview, unlike Payments, is meant to read across gifts. *(C · S)*
+- ~~**TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals for a super with no organisation who names no gift.**~~ **RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: views_admin/overview.py withholds programme_overview.POOLED_MONEY (money, money_series) for an organisation-less super who names no gift and no round; the rest of the page still reads across gifts. Test: test_td334_orgless_super_names_a_gift.TestTD336TheOverviewWithholdsPooledMoney)** The same shape TD-334 closed on Payments and Spending, on a page with no gift gate: the Overview's money sections read "every gift the fence allows", which for an organisation-less super is the platform. **Fix:** the same `_gift_required_for_orgless_super` answer on the Overview's money reads (or its money sections withheld until a gift is named) — decide which, because the Overview, unlike Payments, is meant to read across gifts. *(C · S)*
 - ~~**TD-337 (raised 2026-10-05 by the apply-gift-clarity sprint's review, finding 2) - OWNER DECISION, eligibility: a student rejected, withdrawn or closed in one round cannot start an application in another round or gift from the form.**~~ **RESOLVED 2026-10-05 (the owner ruled — "One application in process, or one award, for each organisation." — and the one-application-per-organisation sprint built it: `apps/scholarship/services/apply_gate.py` is the one rule (in play → `application_in_progress` — in ANY organisation, deliberately stricter than the per-organisation ruling until M2, lead decision after the review, TD-353; a non-expired application in the same round → `already_applied`; otherwise allowed, so a finished application no longer blocks), judged on the student-facing status (`student_status.py`, shared with the serializer, so an embargoed decline still blocks). The submit refuses with it, `GET /api/v1/scholarship/apply-gate/` serves it, and the apply page obeys it — `mustLeaveApplyPage` is deleted. decisions.md 2026-10-05; tests `test_apply_gate.py`, `apply/page.gate.test.tsx`, `studentScreenDrift.test.ts`.)** `mustLeaveApplyPage` (`halatuju-web/src/lib/applyGate.ts`) sends away any student holding an application not `expired`, in ANY round; the server's duplicate check refuses only within the SAME round (`ApplicationListCreateView.post`, `filter(cohort=cohort, profile=profile).exclude(status='expired')`). The web is stricter on purpose — one application per student until M2–M4 of `docs/plans/2026-07-28-multi-programme-applications-roadmap.md` is approved (decisions.md 2026-10-05, item 1). **The question for the owner:** may a student declined (or withdrawn, or closed) in one round apply to the next round or to another gift — and if yes, is that M2, or a narrower "finished applications do not block" rule? **Trigger:** before any NEW round opens; a student declined in 2026 meets it on the 2027 link. *(B · M)*
 - **TD-338 (raised 2026-10-05 by the apply-gift-clarity sprint's review, finding 6) - low, student-visible: one programme with two cohorts open is a dead end.** `resolve_open_cohort(programme_code=…)` narrows to a programme, not a round, so two open cohorts of ONE programme stay ambiguous even on that programme's own link; `_open_round_choices` then lists the same programme code twice (React duplicate key; both radios tick together), and every submit answers 409 `programme_required` — which now re-asks the same chooser, for ever. **Fix:** either refuse a second open intake per programme at the admin door, or let a choice carry the cohort when one programme has two. **Trigger:** an organisation opening its next intake before closing the current one. *(C · M)*
 - **TD-339 (raised 2026-10-05 by the apply-gift-clarity sprint's review, finding 6) - low, student-visible: the chooser and the resolver disagree about an inactive programme.** `_open_round_choices` keeps only rounds whose `programme__is_active`, but the BARE `resolve_open_cohort()` counts every open, active cohort whatever its programme's state. With one live gift and one open round under a deactivated programme, the intake answers ambiguous with ONE choice: `needsProgrammeChoice` asks only when there are two, so the form shows, names nothing, and submit 409s. **Fix:** one definition of "open round" for both (filter the bare resolver the same way, or treat one choice as the answer). *(C · S)*
@@ -7190,7 +7198,7 @@ hidden today. **Fix when an ingest makes it real:** a drift test that every TVET
 `TVET_PATHWAYS` (fail the ingest's checks, not the picker), or group offerings by the institution's own category
 rather than the course's. *(B · S)*
 
-### [TD-435] A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low
+### ~~[TD-435] A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: reviewer_onboarding.reviewer_profile_complete answers True for a row without `review`, so the hold releases; the web reads the served flag. Test: test_admin_me)
 
 **Raised 2026-10-31 by common profile S1 (the builder).** The reviewer cards and `admin/reviewer-profile/` now
 follow the `review` PERMISSION, while the first-sign-in hold (`reviewer_onboarding.reviewer_profile_complete`,
@@ -7650,7 +7658,14 @@ chunk M5 touched (`StudentMenus` → `DisplaySegments`); not yet traced. **Fix:*
 lazy-load or trim it until the route has ≥ 0.25 kB of room; never raise the line. Do it before any change adds weight
 to the apply route. *(W · S)*
 
-### [TD-475] Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
+### ~~[TD-475] Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: the checker seat is the existing key `payments_approve`, credit_steps.CHECKER_KEY; payments_chain.credit_check_required asks for an active holder; staff_lifecycle.other_active_checker and staff_tables_admin.plan_table_change warn on the key, not the label)
+
+**How it was fixed (A1.10a).** `payments_approve` was chosen over `payments_check` because every live `finance`
+row holds it by its preset (the live database has one: organisation 11), so the seat keeps exactly today's holder
+and moves exactly as payment-run approval already does. Behaviour that moved: a finance -> admin switch keeps the
+key, so it no longer turns the check off; a `finance` label whose custom set dropped the key no longer arms or
+performs the check; an Admin given `payments_approve` now arms and performs it. Tests: `test_wallet_credit`
+`TestTD475TheCheckerSeatIsTheKey`, `test_team_tables_t2`, `test_staff_lifecycle`.
 
 **Raised 2026-11-03 by the Team tables T2 build.** Owner rulings 4 and 8 retire the "Finance" label: a finance person
 is now an Admin with `payments_approve`, invited as an Admin and ticked on Team. Payment RUNS read keys since #39 S2,
@@ -7660,7 +7675,7 @@ runs but neither arms nor performs the credit check; existing `finance` rows wor
 the credit chain onto a key (`payments_check` or a new `credits_check`), with its golden tests, or rule that the
 check stays role-bound. *(M · S)*
 
-### [TD-476] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
+### ~~[TD-476] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: reopen.reopen_decision refuses with reviewer_cannot_review when the case would stay put on an assignee without `review`; a reopen that steps back to QC or interviewing is unchanged, since that case can change hands. Test: test_decision_reopen)
 
 **Raised 2026-11-03 by the T2 adversarial review (item 4).** Every door that takes `review` away (the permission
 editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses while `staff_lifecycle.open_cases`
@@ -7857,7 +7872,14 @@ worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team table
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
 
-### [TD-497] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
+### ~~[TD-497] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: every caller has its own door in staff_tables.DOOR_KEYS - team_roster, mentors_read, credits_write, credits_sign, and Admin emails on sources_read; test_permission_catalogue_v2.test_no_door_calls_a_union_helper fails if app code calls may_read_org or may_do_admin_work again)
+
+**How it was ruled (A1.10a, lead's calls taken at the smallest change that keeps today's holders).** The Mentors
+list -> `mentoring.view` (not `team.view`, which finance holds); the roster -> `team.view` + `mentoring.view` (it
+names mentors; the same holders as the admin-work union). Credit record / cancel -> `sponsors.edit`; sign ->
+`sponsors.view`, the step still decided by the service. Nobody gains a door. The one visible change: finance and
+a person at Admins by a key are now refused record / cancel at the door (403) where the service answered 400
+`wrong_role`. Parity: `test_team_tables_t5c_doors`; HTTP: `test_team_tables_matrix`.
 
 **Raised 2026-11-04 by Team tables T5c P1 (branch t5c); P2 converted two of them the same day.** P1 put the v2 keys
 behind every door its modules own (decisions.md "Team tables T5c"), but some callers still ask a union door — now
@@ -7898,6 +7920,12 @@ sponsor terms and the sponsor emails each have ONE door that both reads and writ
 T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
 **Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
 *(A · S)*
+**Partly done 2026-11-07 (Sprint A1.10a).** Announcements, Surveys, Development, the scholar Mentoring tab and
+Sources (with Partner emails, the witness override and Team -> Admin emails) now read on their `.view` door
+(`announcements_read`, `surveys_read`, `development_read`, `mentoring_read`, `sources_read`) and write on `.edit`.
+**Left:** the sponsor terms and sponsor emails. Their `.view` key is `sponsors.view`, which finance and a person
+at Admins by a key already hold, so splitting their read would OPEN both pages to them today. Needs a ruling
+(accept the widening, or wait for T5g's own key) before it is split.
 
 ### [TD-499] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 
@@ -7944,7 +7972,7 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **Raised 2026-11-05 by the P5b adversarial review (NOT fixed).** Admins and organisation admins get no wallet_credits card (finance only), though admins can also sign a credit. Finance sees the sponsors_to_vet card but may only read the page. Admin-General sees the org-wide awaiting_qc count. **Fix:** owner rules who should see each card; then align the card door with the page door in `my_pending.py`. *(A · S)*
 
-### [TD-504] Overview invitations card needs org_read; the Invitations page needs team_read - low
+### ~~[TD-504] Overview invitations card needs org_read; the Invitations page needs team_read - low~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: my_pending.pending_for shows the invitations card on surface_gates.may_read_team, the page's own door; the payment_runs half was already one lookup per organisation, cached, so there was nothing left to batch)
 
 **Raised 2026-11-05 by the P5b review (NOT fixed).** The card is guarded by `org_read`, the page it counts by `team_read`, so a person can see a card whose page refuses them, or the reverse. Same door mismatch exists for multi-gift payment_runs (one round trip per gift). **Fix:** use the page's own door for the card and batch the payment_runs lookup. *(A · S)*
 
@@ -8297,3 +8325,11 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-569] Throttle and admin-login counters live in the database cache and can be culled - low
 
 **Raised 2026-11-07 by the A1.9a review (follow-up F3, not fixed).** The `take_slot` counters (admin sign-in lock, claim-code limits) and the DRF throttle histories are entries in the production DatabaseCache, whose `MAX_ENTRIES` is 300. When the table passes that, Django culls entries (a fraction of the oldest by expiry), and a cull can remove a counter early, so a lock can reset before its 15 minutes. Low: it needs a busy cache and an attacker who is lucky, and the throttles are best-effort. **Fix options (later):** raise `MAX_ENTRIES` and `CULL_FREQUENCY` for the throttle cache, or give counters their own cache alias or table. *(B · S)*
+
+### [TD-560] A `payments_approve` holder who has never signed in still arms the wallet credit check - low
+
+**Raised 2026-11-07 by the A1.10a review.** `payments_chain.py` (~126-131) counts every `payments_approve` holder when deciding whether the wallet credit check is armed, including one who has never signed in; payment runs skip such people (`_signed_in`). If the only holder is an invitee who never signs in, credits wait for them. The organisation admin can unstick it by removing the key or revoking the person. Pre-existing (the old finance rule behaved the same). **Fix:** apply the same `_signed_in` filter here. *(A · S)*
+
+### [TD-561] The credit sign view loads the credit without a row lock - medium
+
+**Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*

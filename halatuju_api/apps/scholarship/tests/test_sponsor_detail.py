@@ -436,6 +436,24 @@ class TestFinanceCheckFlag(SponsorDetailBase):
         self.assertEqual(res.data['programmes'], [])
         self.assertTrue(res.data['finance_check_required'])
 
+    def test_each_credit_says_whether_ITS_check_is_armed(self):
+        """A1.10a review fix: the sign service arms the check per credit (a holder who signed it does
+        not count), so the screen gets the same answer per credit, `check_required`."""
+        keyed = _admin(self.org_a, 'admin', 'Keyed Maker', 'keyedmaker@a.com')
+        keyed.permissions = ['see_all', 'payments_approve']
+        keyed.save(update_fields=['permissions'])
+        own = svc.record_admin_credit(
+            sponsor=self.sponsor, programme=self.prog_a, amount=Decimal('9000'),
+            external_reference='TRF-OWN', admin=keyed)
+        svc.sign_admin_credit(own, keyed, keyed.name)
+        svc.record_admin_credit(
+            sponsor=self.sponsor, programme=self.prog_a, amount=Decimal('5000'),
+            external_reference='TRF-OTHER', admin=self.maker_a)
+        res = self._get(self.approver_a)
+        self.assertTrue(res.data['finance_check_required'])
+        armed = {c['external_reference']: c['check_required'] for c in res.data['credits']}
+        self.assertEqual(armed, {'TRF-OWN': False, 'TRF-OTHER': True})
+
     def test_a_fenced_caller_never_reads_another_tenants_finance_setting(self):
         _admin(self.org_b, 'finance', 'B Finance', 'finance@b.com')
         # org_a has no finance admin; org_b does. An org_a admin must see its own chain.

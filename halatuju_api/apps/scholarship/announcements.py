@@ -59,6 +59,13 @@ def may_post(admin):
     return staff_tables.opens_door(admin, 'announcements')
 
 
+def may_read_announcements(admin):
+    """The READ of the staff announcement pages (A1.10a, TD-498): `announcements.view`. Today the same
+    holders as `may_post`; once T5g lets a lead tick `.view` alone, that person reads and cannot post."""
+    from apps.courses import staff_tables
+    return staff_tables.opens_door(admin, 'announcements_read')
+
+
 # ── What is live, and to whom ─────────────────────────────────────────────────────────────────────
 
 def live_q(now):

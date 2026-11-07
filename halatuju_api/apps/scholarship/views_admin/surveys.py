@@ -15,6 +15,7 @@ import logging
 
 from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import survey_emails, survey_results
@@ -47,7 +48,8 @@ class _SurveysBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not svc.may_make(admin):
+        # TD-498 (A1.10a): a read (the list, a result, the CSV) asks `surveys.view`, a write `surveys.edit`.
+        if not (svc.may_read_surveys if request.method in SAFE_METHODS else svc.may_make)(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -203,6 +205,6 @@ class AdminScholarSurveysView(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        if not svc.may_make(admin):
+        if not svc.may_read_surveys(admin):        # TD-498 (A1.10a): a read
             return self._deny_role()
         return Response(survey_results.scholar_file_payload(app))

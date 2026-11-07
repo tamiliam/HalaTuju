@@ -17,10 +17,11 @@ assigned cases; the QC self-check guard still stops anybody QC-ing a verdict the
 
 ⚠ **THE FINANCE PERSON CHANGES TWO CHAINS, LIVE** (#39 Sprint 2). Finance APPROVES payment runs
 (the preset holds `payments_approve`), so appointing the first one makes them the approver and the
-organisation admin stops approving (`payments.approver_fallback` goes off); and wallet credits keep
-the finance-ROLE rule (`payments.credit_check_required`), so the same appointment arms the credit
-check. Moving the last one reverses both. The plan names that consequence (`finance_check_on` /
-`finance_check_off`, codes kept for the screen) so it is said BEFORE the click.
+organisation admin stops approving (`payments.approver_fallback` goes off); and since TD-475 (A1.10a,
+2026-11-07) the wallet credit check turns on the same KEY (`payments.credit_check_required`: an active
+holder of `payments_approve`), so the same appointment arms the credit check. A switch KEEPS the keys
+(T2, below), so a switch no longer moves either chain; adding or removing the key on Team does, and
+`staff_tables_admin.plan_table_change` says so (`finance_check_off`, code kept for the screen).
 
 ⚠ **A SWITCH TO A ROLE THAT MAY NOT MENTOR ENDS MENTORING** (S7d, 2026-11-01): a staff member who also
 mentors and is switched Admin → Finance stops mentoring in the same transaction (`staff_mentor.leave`:
@@ -102,13 +103,14 @@ def runs_in_progress(admin):
         Q(created_by__iexact=email) | Q(admin_signed_email__iexact=email)).count()
 
 
-def _other_active_finance(target):
-    """Another ACTIVE `finance` person in the target's organisation? The finance ROLE is what both
-    consequences turn on today: the preset that approves runs, and the credit check's own rule."""
-    from apps.courses.models import PartnerAdmin
-    return (PartnerAdmin.objects.filter(owning_organisation_id=target.owning_organisation_id,
-                                        role='finance', is_active=True)
-            .exclude(pk=target.pk).exists())
+def other_active_checker(target):
+    """Another ACTIVE holder of the credit CHECKER key (`credit_steps.CHECKER_KEY`) in the target's
+    organisation? TD-475 (A1.10a): the credit check turns on the KEY now, not the finance ROLE."""
+    from apps.courses import staff_permissions
+    from .credit_steps import CHECKER_KEY
+    if target.owning_organisation_id is None:
+        return False
+    return any(a.pk != target.pk for a in staff_permissions.holders(target.owning_organisation, CHECKER_KEY))
 
 
 def plan_role_change(target, new_role):
@@ -149,16 +151,14 @@ def plan_role_change(target, new_role):
                 'run_in_progress', 409,
                 f'{target.name} made or signed a payment run that is not finished. A finance '
                 'admin approves runs and cannot approve their own, so finish it first.')
+    # TD-475 (A1.10a): the wallet credit check turns on the KEY `payments_approve`, which a switch KEEPS
+    # (T2), so no switch arms or disarms it any more: the consequence is always None. Kept in the plan
+    # (and `FINANCE_CHECK_ON` / `FINANCE_CHECK_OFF` kept as codes) because the screen reads it; a key
+    # change says it through `staff_tables_admin.plan_table_change` and the editor's consequences.
     consequence = None
-    if target.owning_organisation_id is not None:
-        if new_role == 'finance' and not _other_active_finance(target):
-            consequence = FINANCE_CHECK_ON
-        elif old == 'finance' and not _other_active_finance(target):
-            consequence = FINANCE_CHECK_OFF
     # #39 S4 review fix 4: what the switch does to the PERMISSIONS — the editor's own consequences,
     # from the set they hold now to the new role's preset (a reset included), so the approval
-    # fallback and the check step are said from the same rule. `consequence` above is now the WALLET
-    # CREDIT check only (a finance-ROLE rule), and is worded so.
+    # fallback and the check step are said from the same rule.
     from . import staff_permissions_admin
     from apps.courses.models import PartnerAdmin
     return {'from': old, 'to': new_role, 'consequence': consequence,

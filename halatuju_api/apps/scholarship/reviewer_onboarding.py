@@ -41,6 +41,10 @@ def reviewer_profile_complete(admin):
         return True
     if getattr(admin, 'role', '') != 'reviewer':
         return True
+    # TD-435 (A1.10a): a Reviewer whose custom set no longer holds `review` is refused the reviewer
+    # profile and shown no reviewer card, so the hold could never release. Nothing to fill: not held.
+    if not admin.has_perm('review'):
+        return True
     if not (getattr(admin, 'name', '') or '').strip():
         return False
     from .models import ReviewerProfile

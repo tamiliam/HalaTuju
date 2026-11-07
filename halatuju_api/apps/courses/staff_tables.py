@@ -137,6 +137,17 @@ DOOR_KEYS = {
     'sponsor_emails': ('sponsors.edit',),                       # _SponsorEmailsBase.may_open
     'sources':        ('sources.edit',),                        # _SourcesBase.may_open (P2)
     'credits_read':   ('sponsors.view',),                       # _CreditsBase.may_read (P2)
+    # ── A1.10a (TD-497, RD-03): the last union-door callers, each on its own keys, same holders. ──
+    'team_roster':    ('team.view', 'mentoring.view'),          # views_staff admin/admins/ (it names mentors)
+    'mentors_read':   ('mentoring.view',),                      # mentor_invite.may_read (the Mentors list)
+    'credits_write':  ('sponsors.edit',),                       # _CreditsBase record / cancel (money)
+    'credits_sign':   ('sponsors.view',),                       # _CreditsBase sign; the step is the service's
+    # ── A1.10a (TD-498): each page's READ on its `.view`; its writes stay on the `.edit` door above. ──
+    'announcements_read': ('announcements.view',),              # announcements.may_read_announcements
+    'surveys_read':       ('surveys.view',),                    # surveys.may_read_surveys
+    'development_read':   ('development.view',),                # development.may_read_development
+    'mentoring_read':     ('mentoring.view',),                  # mentoring.may_read_mentoring (the scholar tab's read)
+    'sources_read':       ('sources.view',),                    # _SourcesBase GET; Team -> Admin emails
 }
 
 
@@ -158,12 +169,11 @@ def page_keys(admin):
 
 # ── The two UNION gates (T1), now read from v2 keys (T5c P1). ─────────────────────────────────────────
 # Each opens only for someone holding EVERY key of its page set — today exactly the people the T1 role
-# rule opened (org_admin / admin / finance or the Admins table by a key; org_admin / admin). The pages
-# that have their own door (`surface_gates`, `announcements`, `surveys`, `development`, `mentoring`, the
-# sponsor terms and sponsor emails) no longer come through here; the callers still here (Sources, the
-# team roster `admin/admins/`, the Mentors list, Team -> Emails -> Admin emails, the credit screens) move
-# to their own keys in a later phase. ⚠ All-of, never any-of: holding ONE page key must never open a
-# union of pages.
+# rule opened (org_admin / admin / finance or the Admins table by a key; org_admin / admin).
+# ⚠ A1.10a (TD-497, RD-03): NO production door calls these two any more — every door asks its own
+# `opens_door(admin, '<door>')`. They stay as named sets for tests and the v2 module's
+# `ORG_READ_V2` / `ADMIN_WORK_V2`; `test_permission_catalogue_v2` FAILS if app code calls either again.
+# ⚠ All-of, never any-of: holding ONE page key must never open a union of pages.
 
 
 def may_read_org(admin):

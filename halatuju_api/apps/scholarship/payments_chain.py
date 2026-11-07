@@ -28,9 +28,10 @@ does today."*). It reads PERMISSIONS (`PartnerAdmin.has_perm`), not roles:
   everywhere until somebody is given it — a third signer is one permission away.
 * **Pairwise-distinct signers, unchanged:** nobody signs one run twice in any two slots; a super
   passes every permission and still fills only ONE slot.
-* **Wallet credits keep TODAY's rule** (question 6): `credit_check_required` below, a role rule,
-  deliberately NOT the re-keyed run predicate. The old shared predicate would otherwise have
-  silently switched OFF Finance's check on sponsor credits the day Finance stopped holding the check.
+* **Wallet credits keep their own rule** (question 6): `credit_check_required` below, deliberately
+  NOT the run's `payments_check` predicate. That shared predicate would have silently switched OFF
+  Finance's check on sponsor credits the day Finance stopped holding the check. Since TD-475 (A1.10a)
+  it reads the key every Finance preset holds, `payments_approve`, not the retired `finance` label.
 * `next_step_for` is the ONE predicate behind both the gate (`sign`) and the screen (`your_step`,
   the "Waiting for you" list, the menu badge), so the list and the gate cannot disagree.
 
@@ -101,20 +102,33 @@ def finance_check_required(organisation, cache=None):
 check_step_required = finance_check_required
 
 
-def credit_check_required(organisation):
-    """Does this organisation's WALLET-CREDIT chain include the finance check? TODAY's rule, unchanged.
+def credit_check_required(organisation, credit=None, holders=None):
+    """Does this organisation's WALLET-CREDIT chain include the finance check?
 
-    True iff it has at least one ACTIVE `finance` PartnerAdmin. Live, never stored. This is the body
-    `finance_check_required` had before #39 Sprint 2, split out so sponsor credits keep Admin
-    records -> Finance checks -> the organisation admin countersigns (owner question 6: accepting money
-    is the organisation's act). A DELIBERATE divergence from the 2026-07-26 "one chain" decision;
-    moving credits onto permissions later is about 3 h.
+    True iff it has at least one ACTIVE holder of the credit checker key (`credit_steps.CHECKER_KEY`,
+    `payments_approve`; a super is never a holder). Live, never stored. Split out at #39 Sprint 2 so
+    sponsor credits keep Admin records -> Finance checks -> the organisation admin countersigns (owner
+    question 6: accepting money is the organisation's act).
+
+    TD-475 (A1.10a): was "an active `finance` ROLE row". The Finance label is retired (owner rulings 4
+    and 8: a finance person is an Admin with `payments_approve`), so a new finance person never armed the
+    check. Every `finance` row holds `payments_approve` by its preset, so today's organisations keep it.
+
+    With `credit` (A1.10a review fix): only a holder who has NOT signed this credit counts — the same
+    guard `check_required_for` keeps on a run. A keyed Admin who recorded and signed a credit as maker
+    could otherwise be its only possible checker, refused as `same_signer`, and strand it. Signers stay
+    distinct either way (`credit_steps.step_refusal`). `holders` lets a list ask once per organisation.
     """
     if organisation is None:
         return False
-    from apps.courses.models import PartnerAdmin
-    return PartnerAdmin.objects.filter(
-        owning_organisation=organisation, role='finance', is_active=True).exists()
+    from apps.courses import staff_permissions
+    from .credit_steps import CHECKER_KEY, collected_signer_emails
+    if holders is None:
+        holders = staff_permissions.holders(organisation, CHECKER_KEY)
+    if credit is None:
+        return bool(holders)
+    signed = collected_signer_emails(credit)
+    return any(_email(a) not in signed for a in holders)
 
 
 def _collected_signer_emails(run):

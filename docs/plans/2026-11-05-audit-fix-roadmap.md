@@ -384,6 +384,11 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
 - **Model:** Opus.
 - **Gates:** Adversarial review. Owner phone check with a finance and a reviewer test account.
 - **Deploy:** G4.
+- **Progress (2026-11-07):** A1.10a (api doors) BUILT on branch a110a, not pushed, awaiting review. Closed:
+  TD-497 (no door calls a union helper; guard test in `test_permission_catalogue_v2`), TD-475 (checker seat =
+  `payments_approve`), TD-336, TD-476, TD-435, TD-504. TD-498 partly done (sponsor terms / sponsor emails left:
+  their `.view` key would widen access). TD-496 left (owner/lead ruling: no key keeps its holders). A1.10b
+  (web; TD-499, TD-064) not started.
 
 #### A1.11 QC separation and decision integrity
 

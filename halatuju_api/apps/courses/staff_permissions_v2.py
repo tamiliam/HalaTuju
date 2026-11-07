@@ -114,7 +114,9 @@ ALIASES = {
     'spending':         ('spending.view', 'spending.edit'),
     'payments_prepare': ('payments.view', 'payments.prepare'),
     'payments_check':   ('payments.view', 'payments.check'),
-    'payments_approve': ('payments.view', 'payments.approve'),
+    # TD-475 (A1.10a): `payments_approve` IS the wallet credit's checker seat (`credit_steps.CHECKER_KEY`),
+    # so it means the credit's middle check too (was the `finance` LABEL's grant).
+    'payments_approve': ('payments.view', 'payments.approve', 'sponsors.check'),
     'manage_team':      (),
 }
 
@@ -135,11 +137,12 @@ ADMIN_WORK_V2 = staff_tables.DOOR_KEYS['admin_work']
 TABLE_GRANTS = {staff_tables.ADMINS: ORG_READ_V2}
 
 #: What a ROLE LABEL still grants by itself today. `admin`: the admin-work pages (above), and it records,
-#: maker-signs and voids a wallet credit (`sponsorship.py:119,354,409`) — scholarship code this leaf
-#: cannot import; `finance` signs the credit's middle check (`sponsorship.py:366`, TD-475).
+#: maker-signs and voids a wallet credit (`sponsorship.py`, `credit_steps.step_refusal`) — scholarship
+#: code this leaf cannot import. TD-475 (A1.10a): `finance` grants nothing by itself any more — the
+#: credit's middle check is the KEY `payments_approve` (`ALIASES`), and `sponsors.view` comes with the
+#: Admins table seat the label (or the key) already gives (`TABLE_GRANTS`).
 LABEL_GRANTS = {
     'admin': (*ADMIN_WORK_V2,),
-    'finance': ('sponsors.view', 'sponsors.check'),
 }
 
 
