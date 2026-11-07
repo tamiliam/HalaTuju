@@ -157,6 +157,29 @@ export function clearStudentTab(): void {
   } catch { /* sessionStorage unavailable — nothing is held there */ }
 }
 
+/** TD-458: the user id whose student data this browser's `halatuju_` keys hold (`claimStudentData`). */
+export const KEY_OWNER = 'halatuju_owner'
+
+/**
+ * TD-458 (shared phone): bind this browser's student data to the signed-in account. Called with the
+ * user id of every real session the student auth stack sees, and with null for an anonymous session
+ * or a SIGNED_OUT. Data tagged to ANOTHER owner is that owner's (hydrated from, or synced into, their
+ * account, so the server holds it): it is wiped as the sign-out button would (`clearAll`, keeping
+ * only the language) before the sign-in sync could upload it into the next account. Untagged data
+ * is a signed-out visitor's own and is left alone, as before.
+ */
+export function claimStudentData(userId: string | null): void {
+  try {
+    const owner = localStorage.getItem(KEY_OWNER)
+    if (owner && owner !== userId) {
+      const locale = localStorage.getItem(KEY_LOCALE)
+      clearAll()
+      if (locale) localStorage.setItem(KEY_LOCALE, locale)
+    }
+    if (userId) localStorage.setItem(KEY_OWNER, userId)
+  } catch { /* storage unavailable: nothing is held */ }
+}
+
 /** Tab state that belongs to the OTHER user types (an admin's list navigation, a sponsor's
  *  half-finished registration) — a student's sign-out must not wipe it. */
 const SESSION_PRESERVE = ['halatuju_admin_', 'halatuju_sponsor_']

@@ -494,7 +494,7 @@ export async function getScholarshipApplications(
   if (filters.assigned) q.set('assigned', filters.assigned)
   if (filters.ready) q.set('ready', '1')
   if (filters.band) q.set('band', filters.band)
-  if (filters.q) q.set('q', filters.q)
+  // The search term goes in the X-Search-Term header, never the URL (TD-421; adminFetch).
   if (filters.sort) { q.set('sort', filters.sort); q.set('dir', filters.dir || 'asc') }
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))
   if (filters.pageSize && filters.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
@@ -502,7 +502,7 @@ export async function getScholarshipApplications(
   }
   const qs = q.toString()
   return adminFetch<AdminScholarshipListData>(
-    `/api/v1/admin/scholarship/applications/${qs ? `?${qs}` : ''}`, options
+    `/api/v1/admin/scholarship/applications/${qs ? `?${qs}` : ''}`, options, filters.q
   )
 }
 

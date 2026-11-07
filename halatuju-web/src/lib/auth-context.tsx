@@ -15,7 +15,10 @@ import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, rememberBursaryFile, clearStudentTab } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
+
+/** TD-458: the real (non-anonymous) user id of a session, else null. */
+const realUserId = (s: Session | null) => (s && !s.user?.is_anonymous && s.user?.id) || null
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -89,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { data } = await signInAnonymously()
           session = data?.session ?? null
         }
+        // TD-458: before anything reads or syncs it, data left by another account is wiped. Only on a
+        // definite session: none at all (offline) proves nothing about whose browser this is.
+        if (session) claimStudentData(realUserId(session))
         setSession(session ?? null)
 
         // Check identity (NRIC) for non-anonymous users
@@ -111,6 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = getSupabase().auth.onAuthStateChange((event, session) => {
+      // TD-458: a session that ended without the sign-out button (revoked, refreshed out) leaves its
+      // owner's grades and profile tagged; the next sign-in (or the anonymous visitor) drops them here,
+      // synchronously, before the auth gate's sync can upload them into the new account.
+      if (event === 'SIGNED_OUT' || (event === 'SIGNED_IN' && session)) claimStudentData(realUserId(session))
       setSession(session)
       // Student maintenance S3 (review L1): ANY sign-out path drops the header's "My Bursary" hint.
       // …and this tab's stashed apply form (Mobile M4 audit): a session revoked, refreshed out or
@@ -130,6 +140,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     return () => subscription.unsubscribe()
   }, [isPrivilegedConsole])
+
+  // TD-458 (1): the back button after a sign-out. Safari's back-forward cache can show a signed-in
+  // page, filled in, from memory; if the browser's data is no longer this session's (signed out:
+  // the tag is gone; another account: another tag), reload so the page is rebuilt for who is here.
+  useEffect(() => {
+    const uid = realUserId(session)
+    if (!uid) return
+    const onShow = (e: PageTransitionEvent) => {
+      try {
+        if (e.persisted && localStorage.getItem(KEY_OWNER) !== uid) window.location.reload()
+      } catch { /* storage unavailable: no tag was ever written, nothing to compare */ }
+    }
+    window.addEventListener('pageshow', onShow)
+    return () => window.removeEventListener('pageshow', onShow)
+  }, [session])
 
   const showAuthGate = useCallback(
     (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => {

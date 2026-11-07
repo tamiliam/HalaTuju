@@ -3,8 +3,35 @@ const path = require('path')
 /** NEXT_PUBLIC_ names the app reads that a build may leave unset — defined as '' then (TD-470, see `webpack`). */
 const EMPTY_WHEN_UNSET = ['NEXT_PUBLIC_ORG_CODE', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'NEXT_PUBLIC_APP_VERSION']
 
+/*
+ * SEC-12 (TD-520, A1.9b): security headers on every web response, a CONSERVATIVE set that restricts
+ * no load the site makes (the API, Supabase auth and storage, Turnstile's frame, the document viewer's
+ * frame and the contract previews' `srcDoc` frames are all unaffected):
+ *   - X-Content-Type-Options: nosniff — no MIME sniffing;
+ *   - Referrer-Policy: strict-origin-when-cross-origin — the browsers' default, now stated; other
+ *     sites see only our origin, never a path or a query string;
+ *   - X-Frame-Options: SAMEORIGIN + CSP `frame-ancestors 'self'` — no other site may frame our pages
+ *     (clickjacking); the only CSP directive set, and it restricts framing only, no loading;
+ *   - Permissions-Policy — camera, microphone, geolocation, payment and USB off for the page and every
+ *     frame in it; nothing here uses them (a document photo goes through a file input, which is not
+ *     governed by it). Clipboard and fullscreen are left alone (the referral-link copy uses the clipboard).
+ * No HSTS here (the API sends it; the web host's is the owner's call) and no loading CSP (a full one
+ * would need Report-Only first). `securityHeaders.test.ts` pins the set.
+ */
+const SECURITY_HEADERS = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }]
+  },
+
   // Enable React strict mode
   reactStrictMode: true,
 

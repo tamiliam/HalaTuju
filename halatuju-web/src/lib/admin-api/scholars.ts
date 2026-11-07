@@ -155,7 +155,7 @@ export function scholarsQuery(q: ScholarListQuery): string {
   if (q.programme) p.set('programme', q.programme)
   if (q.closed) p.set('closed', '1')
   if (q.substate) p.set('substate', q.substate)
-  if (q.search?.trim()) p.set('search', q.search.trim())
+  // `search` is NOT put in the URL: getScholars sends it in the X-Search-Term header (TD-421).
   if (q.sort) p.set('sort', q.sort)
   if (q.standing) p.set('standing', q.standing)
   if (q.mentoring) p.set('mentoring', q.mentoring)
@@ -166,7 +166,7 @@ export function scholarsQuery(q: ScholarListQuery): string {
 }
 
 export async function getScholars(q: ScholarListQuery, options?: ApiOptions) {
-  return adminFetch<ScholarList>(`${BASE}${scholarsQuery(q)}`, options)
+  return adminFetch<ScholarList>(`${BASE}${scholarsQuery(q)}`, options, q.search)
 }
 
 export async function getScholarFile(id: number, options?: ApiOptions) {

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.9b - PII and request hygiene, web and SQL half (2026-11-07)
+
+Branch a19b, on a19 (not pushed; web + two hand-apply SQL files; no migration, no model change). Deploy order: the A1.9a API FIRST (its CORS must allow `X-Search-Term` before the web sends it).
+- **TD-421 (web half):** staff people-search sends the term in `X-Search-Term`, percent-encoded (`encodeURIComponent`; the API's `unquote` decodes it, so a Tamil name survives), never in the URL. Applications, Scholars and the Students directory; other filters stay in the query string. No API change was needed.
+- **TD-458:** student data in localStorage is tagged with its owner (`halatuju_owner`, `storage.claimStudentData`). The auth listener wipes another account's tagged data (keeping the language and the admin / sponsor sessions) on a page load with a session, on `SIGNED_IN` and on `SIGNED_OUT`, before the sign-in sync could upload it into the next account. Untagged data (a signed-out visitor's own) is kept. A signed-in page restored from the back-forward cache reloads when its data is no longer on this browser.
+- **SEC-12 (TD-520, web):** `next.config.js` `headers()` on every path: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'` (framing only), `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()`. No loading CSP, no web HSTS.
+- **SEC-11 (TD-520):** `docs/security/2026-11-07-sec11-partner-organisations-read-policy.sql` drops the "Allow public read" policy (contact names, emails and phones readable with the browser key) and adds a `service_role` policy. NOT applied.
+- **SEC-14 (TD-549):** `docs/security/2026-11-07-sec14-service-role-policies.sql` adds a `service_role` policy to the 15 RLS tables with none. NOT applied.
+- Both SQL files: read-only pre-check, one transaction with `lock_timeout` 5 s, read-back, rollback. The app connects as `postgres` (owner, BYPASSRLS), so neither can affect it; nothing is granted to `anon` or `authenticated`.
+- **TD-550 (new):** the owner's steps: apply the two SQL files (suggested SEC-14 then SEC-11), check the five headers on the live web after G4, rule on web HSTS.
+- Tests: `searchTermHeader.test.ts`, `sharedPhoneOwner.test.tsx`, `securityHeaders.test.ts` (new).
+
 ### fix: Sprint A1.9a - PII and request hygiene, API half (2026-11-07)
 
 Branch a19 (not pushed; API only; no migration, no SQL, no model change). Safe to deploy with no new env var set: the shared `CRON_SECRET` still opens every job.

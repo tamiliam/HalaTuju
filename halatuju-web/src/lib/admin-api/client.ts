@@ -20,13 +20,21 @@ export interface ApiOptions {
   token?: string
 }
 
-export async function adminFetch<T>(path: string, options?: ApiOptions): Promise<T> {
+/**
+ * `searchTerm` (TD-421): a people-search term (a name, an IC, a phone) travels in the
+ * `X-Search-Term` header, never the URL, because Cloud Run logs the request line and not custom
+ * headers. Percent-encoded so a Tamil or Malay name survives HTTP's ASCII-only header rule; the
+ * API URI-decodes it (`apps.courses.search.people_search_term`). Blank sends no header.
+ */
+export async function adminFetch<T>(path: string, options?: ApiOptions, searchTerm?: string): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
   if (options?.token) {
     headers['Authorization'] = `Bearer ${options.token}`
   }
+  const term = searchTerm?.trim()
+  if (term) headers['X-Search-Term'] = encodeURIComponent(term)
 
   const res = await fetch(`${API_BASE}${path}`, { headers })
 
