@@ -157,7 +157,7 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    window), `read-outage-start` (`halatuju-read-outage-start`, hourly at :05 MYT, `--hourly` start-edge:
    mails once when an outage begins, ≥2 failures from ≥2 applications), `reprocess-ic-vision`
    (`halatuju-reprocess-ic-vision`, hourly: never-read docs + reads our outage deferred).
-   **Time budget (A2.2, TD-518):** the sweep stops cleanly after `REPROCESS_TIME_BUDGET_SECONDS` (default 100) with
+   **Time budget (A2.2, TD-518):** the sweep stops cleanly after `REPROCESS_TIME_BUDGET_SECONDS` (default 80) with
    at most `REPROCESS_BATCH_LIMIT` (100) documents a run; the next hour carries on (the cron output shows
    `STOPPED-AT-TIME-BUDGET`). Both are env-tunable on the service; nothing needs setting for the default.
    **Own timeout (SP-14):** met by the time budget; a separate Cloud Run Job was NOT adopted (it would bypass

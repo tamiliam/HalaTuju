@@ -12,7 +12,7 @@ Run via the internal cron endpoint job ``reprocess-ic-vision`` (Cloud Scheduler
 each doc is picked up only while it has no run, so the cost is bounded and one-off per doc.
 TD-151 (2026-10-02): the sweep also re-reads the slip, offer, income proofs and relationship
 documents stuck with no read at all (`services.blockers._SELF_HEAL_READ_TYPES`); `--dry-run` counts.
-A2.2 / TD-518 (2026-11-07): each run is capped by a TIME BUDGET (default 100 s) and a smaller batch (100), so
+A2.2 / TD-518 (2026-11-07): each run is capped by a TIME BUDGET (default 80 s) and a smaller batch (100), so
 it never meets the 300 s request limit; a stop leaves the unreached documents for the next run (the queue is
 the cursor). 2026-10-24: and documents whose stored read is OUR service failing (`services.read_retry`) —
 skipped while Gemini reads are down, at most 72 hours per document, never on a closed case.

@@ -101,7 +101,7 @@ def _stuck_unread_documents(limit):
                 .order_by('uploaded_at')[:limit])
 
 
-def reprocess_unread_ic_documents(limit=200, dry_run=False, time_budget=None):
+def reprocess_unread_ic_documents(limit=100, dry_run=False, time_budget=None):
     """Self-heal IC / parent_ic documents stuck UN-PROCESSED (``vision_run_at`` is NULL).
 
     ``run_vision_for_document`` never raises and ALWAYS stamps ``vision_run_at``, so a NULL
