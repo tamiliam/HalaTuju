@@ -386,6 +386,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 - **TD-587** - On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
 - **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+- **TD-589** - A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8439,3 +8440,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-588] A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
 
 **Raised 2026-11-07 by the A2.1 re-review (not fixed).** `supersede_pending` (`profile_finalise.py` ~82) clears only a PENDING row when a verdict is re-recorded without finalise. A row left FAILED from the old verdict keeps `finalise_state` failed, so the card still shows the failed note (and QC-Accept refuses with `profile_failed`) for a verdict that never asked for a new profile. **Fix:** have the supersede step clear a failed state too (same fields), with a test. *(A · S)*
+
+### [TD-589] A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
+
+**Raised 2026-11-07 by the A2.1 review (not fixed).** A finalise that fails because Gemini fails can only be cleared by a reopen, which `close_reopen_with_change` logs as a reviewer correction (`resulted_in_change=True`), so it counts against the reviewer though Gemini failed. **Fix:** a web control for the finalise-profile endpoint, or a reopen reason that does not count as a correction. *(A · S)*

@@ -5003,7 +5003,7 @@
           "self_interview_qc_forbidden": "Anda yang menemu duga pelajar ini — kes ini mesti disemak QC oleh orang lain.",
           "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain.",
           "profile_pending": "Profil penaja akhir masih sedang ditulis. Tunggu beberapa minit, muat semula halaman dan baca profil itu, kemudian terima.",
-          "profile_failed": "Profil penaja akhir tidak dapat ditulis. Jalankan pemuktamadan sekali lagi daripada kes ini, tunggu beberapa minit, muat semula halaman dan baca profil itu, kemudian terima."
+          "profile_failed": "Profil penaja akhir tidak dapat ditulis. Buka semula kes ini untuk penyemak, yang akan merekodkan verdik sekali lagi bersama profil akhir. Kemudian terima."
         },
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",

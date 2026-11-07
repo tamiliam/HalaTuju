@@ -19,7 +19,7 @@ export function qcRefusalText(code: string | null | undefined, t: T): string | n
   const known = ['self_qc_forbidden', 'self_verdict_qc_forbidden', 'self_assigned_qc_forbidden',
     'self_interview_qc_forbidden', 'self_review_qc_forbidden',
     'profile_pending',   // A2.1: the final profile is still being written
-    'profile_failed']    // A2.1: the final profile could not be written (run finalise again)
+    'profile_failed']    // A2.1: the final profile could not be written (reopen for the reviewer)
   return code && known.includes(code) ? t(`admin.scholarship.qcDecision.refusal.${code}`) : null
 }
 

@@ -69,8 +69,8 @@ def _accept_absolute_stop(app):
             status=status.HTTP_400_BAD_REQUEST)
     if finalise_state == 'failed':
         return Response(
-            {'error': 'The final sponsor profile could not be written. Run finalise again from '
-                      'the case, wait a few minutes, reload the page and read it, then accept.',
+            {'error': 'The final sponsor profile could not be written. Reopen the case for the '
+                      'reviewer, who records the verdict again with the final profile. Then accept.',
              'code': 'profile_failed'},
             status=status.HTTP_400_BAD_REQUEST)
     return None
