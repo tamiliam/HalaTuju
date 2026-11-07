@@ -254,22 +254,24 @@ class _ReviewersBase(_AdminBase):
         404 on a revoked account, and assignment reads its own `is_active=True` queryset
         (`AdminAssignableView`), so a revoked reviewer can still never be handed a case.
         """
-        from django.db.models import Q
         from apps.courses import staff_gift, staff_permissions
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
         # ⚠ #39 Sprint 3: the TEAM MEMBERS who hold `review` or `qc` (was the roles reviewer, qc —
         # exactly the presets holding either). The organisation admin's lead tier holds `qc` but
         # stays OFF this tab by its tier (owner, 2026-10-19: "yes"), which `team_holding` guarantees —
         # until Team -> Reviewers -> Add gives them `review` (Team tables T2, owner ruling 5).
+        # ⚠ NO SUPERS (owner, 2026-11-07: "I am listed as a reviewer. I am not really."). This read
+        # `Q(role='super') | ...` from the first reviewers surface onwards, so a super saw themselves
+        # on Team -> Reviewers; the table's own rule (`staff_tables.in_reviewers`) never counted them.
         qs = (PartnerAdmin.objects
-              .filter(Q(role='super')
-                      | staff_permissions.team_holding(('review', 'qc'), with_lead=True))
+              .filter(staff_permissions.team_holding(('review', 'qc'), with_lead=True))
+              .exclude(role='super')
               .select_related('reviewer_profile', 'mentor')
               .annotate(**staff_gift.gift_annotation()).order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)
         if org_id is not None:
-            qs = qs.filter(owning_organisation_id=org_id).exclude(role='super')
+            qs = qs.filter(owning_organisation_id=org_id)
         return qs
 
     def _gift_choices(self, admin):

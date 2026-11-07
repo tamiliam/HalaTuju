@@ -2,12 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Sheet from '@/components/Sheet'
-import { addStaffMentor, getStaffMentorCandidates, type MentorRow, type StaffCandidate } from '@/lib/admin-api'
+import { addStaffMentor, getStaffMentorCandidates, mentorAction, type MentorRow, type StaffCandidate } from '@/lib/admin-api'
 
 type T = (k: string, vars?: Record<string, string>) => string
 
 const K = 'admin.mentors'
-const REFUSALS = ['not_eligible', 'already_mentor', 'not_found']
+const REFUSALS = ['not_eligible', 'already_mentor', 'not_found', 'active', 'not_staff']
+
+/** One line of the sheet: a staff member who never mentored (`addStaffMentor`, keyed by login id), or one
+ *  removed from Mentors (`returning`: their own mentor row, brought back by `resume`, keyed by mentor id). */
+type Option = { key: string; name: string; email: string; role: string; before: boolean; run: (token: string) => Promise<MentorRow> }
 
 /**
  * "Add a staff member as mentor" (student maintenance S7d, 2026-11-01; the MentorsAddStaff board). The
@@ -15,18 +19,25 @@ const REFUSALS = ['not_eligible', 'already_mentor', 'not_found']
  * role chip — `GET admin/mentors/staff/`, the server's list), one pick, one button. NO EMAIL is sent:
  * the sheet says so ("tell them yourself"). The server re-checks everything (`staff_mentor.add`).
  * Super and org_admin only — the page opens it for them alone.
+ *
+ * `returning`: staff mentors removed from Mentors (Team -> Mentors no longer lists them; owner ruling
+ * 2026-11-08: Add Mentor brings them back). They keep their mentor record, so the server's list never
+ * offers them and `add` would refuse `already_mentor`: they are offered here and brought back with the
+ * existing `resume` door (`staff_mentor.resume`, which re-checks eligibility). Tagged "Mentored before".
  */
-export default function StaffMentorSheet({ open, token, t, onClose, onAdded }: {
+export default function StaffMentorSheet({ open, token, t, onClose, onAdded, returning = [] }: {
+  returning?: MentorRow[]
   open: boolean
   token: string | null
   t: T
   onClose: () => void
-  onAdded: (row: MentorRow) => void
+  /** `back`: a removed staff mentor brought back (`resume`), not a first-time add. */
+  onAdded: (row: MentorRow, back: boolean) => void
 }) {
   const [staff, setStaff] = useState<StaffCandidate[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [query, setQuery] = useState('')
-  const [picked, setPicked] = useState<number | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,18 +51,26 @@ export default function StaffMentorSheet({ open, token, t, onClose, onAdded }: {
     return () => { live = false }
   }, [open, token])
 
+  const options = useMemo<Option[] | null>(() => {
+    if (!staff) return null
+    const fresh = staff.map((s): Option => ({ key: `s-${s.id}`, name: s.name, email: s.email, role: s.role,
+      before: false, run: (tk) => addStaffMentor(s.id, { token: tk }) }))
+    const back = returning.map((m): Option => ({ key: `m-${m.id}`, name: m.name, email: m.email,
+      role: m.staff_role ?? '', before: true, run: (tk) => mentorAction(m.id, 'resume', { token: tk }) }))
+    return [...fresh, ...back].sort((a, b) => a.name.localeCompare(b.name))
+  }, [staff, returning])
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return (staff ?? []).filter((s) => !q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
-  }, [staff, query])
-  const chosen = (staff ?? []).find((s) => s.id === picked) ?? null
+    return (options ?? []).filter((s) => !q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
+  }, [options, query])
+  const chosen = (options ?? []).find((s) => s.key === picked) ?? null
 
   const add = async () => {
     if (!token || !chosen) return
     setBusy(true); setError(null)
     try {
-      const row = await addStaffMentor(chosen.id, { token })
-      onAdded(row)
+      const row = await chosen.run(token)
+      onAdded({ ...row, name: row.name || chosen.name }, chosen.before)
     } catch (err) {
       const code = (err as { code?: string })?.code ?? ''
       setError(t(`${K}.error.${REFUSALS.includes(code) ? code : 'generic'}`))
@@ -83,19 +102,26 @@ export default function StaffMentorSheet({ open, token, t, onClose, onAdded }: {
         {!staff && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
         {staff && (shown.length === 0 ? (
           <p className="text-sm text-ground-500" data-testid="staff-mentor-none">
-            {t(staff.length ? `${K}.staffSheet.noMatch` : `${K}.staffSheet.none`)}
+            {t(options?.length ? `${K}.staffSheet.noMatch` : `${K}.staffSheet.none`)}
           </p>
         ) : (
           <div role="listbox" aria-label={t(`${K}.staffSheet.search`)}
             className="divide-y rounded-lg border border-ground-200">
             {shown.map((s) => (
-              <button key={s.id} type="button" role="option" aria-selected={picked === s.id}
-                onClick={() => setPicked(s.id)} data-testid={`staff-candidate-${s.id}`}
-                className={`flex min-h-11 w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-left text-sm ${picked === s.id
+              <button key={s.key} type="button" role="option" aria-selected={picked === s.key}
+                onClick={() => setPicked(s.key)} data-testid={s.before ? `staff-returning-${s.key.slice(2)}` : `staff-candidate-${s.key.slice(2)}`}
+                className={`flex min-h-11 w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-left text-sm ${picked === s.key
                   ? 'bg-info-50 text-info-900' : 'text-ground-800 hover:bg-ground-50'}`}>
                 <span className="min-w-0 break-words"><strong>{s.name}</strong> · {s.email}</span>
-                <span className="rounded-full bg-ground-100 px-2.5 py-0.5 text-xs text-ground-700">
-                  {t(`admin.role.${s.role}`)}
+                <span className="flex flex-wrap gap-1">
+                  {s.before && (
+                    <span className="rounded-full bg-info-50 px-2.5 py-0.5 text-xs text-info-800">
+                      {t(`${K}.staffSheet.before`)}
+                    </span>
+                  )}
+                  <span className="rounded-full bg-ground-100 px-2.5 py-0.5 text-xs text-ground-700">
+                    {t(`admin.role.${s.role}`)}
+                  </span>
                 </span>
               </button>
             ))}

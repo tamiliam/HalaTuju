@@ -8,13 +8,12 @@ import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import {
-  listReviewers, type AdminItem, type AdminReviewer, type AdminReviewerGift, type ReviewerGiftTag,
+  listReviewers, type AdminItem, type AdminReviewer,
 } from '@/lib/admin-api'
-import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import { effectiveRole } from '@/lib/navigation'
 import { mayOpen, mayReadMentors } from '@/lib/pageGuard'
 import { lazySource } from '@/components/source/LazySource'
-import { orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
+import { turnaroundBand } from '@/lib/reviewerDetail'
 import {
   DEFAULT_SORT, REVIEWER_SORT_LABEL, firstDirFor, sortReviewers,
   type ReviewerSortKey,
@@ -67,9 +66,11 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // honoured rather than reversed. It is a line under the name, not a column: inventing a sort
 // key and a header for a fact most organisations never see is furniture.
 //
-// Multi-gift tagging (owner design, 2026-11-06): the line is now CHIPS — one grey chip per gift, or
-// one soft blue "Every gift" — with a pencil beside them (super / org_admin) that opens a pop-over
-// to change them in place (`components/admin/ReviewerGifts`).
+// Multi-gift tagging (owner design, 2026-11-06) made the line chips with an edit pencil.
+//
+// ⚠ GIFTS AND LANGUAGES ARE NOT ON THIS TABLE (owner, 2026-11-07): both are shown on the reviewer's
+// own page, and the gifts are edited there (`[id]/page.tsx`, `ReviewerGiftsCell`), never from the
+// table. Do not add either back as a column or a line under the name.
 
 // A caseload figure: grey at zero (normal, never a flag), bold otherwise.
 const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
@@ -125,6 +126,8 @@ export default function AdminReviewersList() {
   // page, Permissions tab (one section per table they sit in). The NAME opens it, as before.
   // T2: the Add sheet (which table) and the Remove confirm (who, from which table).
   const [adding, setAdding] = useState<TeamTableName | null>(null)
+  // Add Mentor's sheet lives in the Mentors chunk; its button is on the tab row with the other two.
+  const [addingMentor, setAddingMentor] = useState(false)
   const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName } | null>(null)
   const teamDone = (text: string) => {
     setAdding(null); setRemoving(null)
@@ -184,11 +187,6 @@ export default function AdminReviewersList() {
   }
 
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
-  // The gifts the pencil may offer. With ONE, every reviewer covers it and the chips would say the
-  // same thing on every row — the owner's own 2026-08-02 ruling, which still holds for a one-gift
-  // organisation — so the chips render only above one.
-  const [giftOptions, setGiftOptions] = useState<AdminReviewerGift[]>([])
-  const giftCount = giftOptions.length
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const { sort, setSort } = useSort<ReviewerSortKey>(DEFAULT_SORT)
@@ -197,7 +195,7 @@ export default function AdminReviewersList() {
     if (!token) return
     setLoading(true)
     listReviewers({ token })
-      .then((d) => { setReviewers(d.reviewers); setGiftOptions(d.programmes ?? []) })
+      .then((d) => setReviewers(d.reviewers))
       .catch(() => setError(t('admin.reviewers.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -220,12 +218,6 @@ export default function AdminReviewersList() {
     ? <span className="mt-0.5 block text-[11px] text-ground-500" data-testid="lead-no-self-qc">{t('admin.team.noSelfQc')}</span>
     : null
   const paged = usePagedRows(sorted)
-  // The chips and pencil, the same on the phone card and the desktop row. A save updates the row.
-  const giftsCell = (r: AdminReviewer) => (
-    <ReviewerGiftsCell reviewer={r} options={giftOptions} token={token} canEdit={canManage}
-      onSaved={(gifts: ReviewerGiftTag[]) => setReviewers((rs) =>
-        rs.map((x) => (x.id === r.id ? { ...x, gifts } : x)))} />
-  )
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
   // Below every hook on purpose — an early return above them would change the hook order between
@@ -241,6 +233,11 @@ export default function AdminReviewersList() {
           the roles that may edit the emails, which was harmless while Emails was the only other
           panel — but Admins is a READING tab, and hiding the bar would have left `finance` with no
           way to reach it at all. Each tab keeps its own gate instead. */}
+      {/* Owner 2026-11-08: Add sits on the TAB ROW, at its right end, sized like a tab — not on a row of
+          its own. It stays OUTSIDE the tablist (a button there is not a tab to a screen reader), so the
+          row is a flex pair: the tabs take the room, Add keeps its own width on the right. */}
+      <div className="flex items-start gap-3">
+      <div className="min-w-0 flex-1">
       <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
         onSelect={(k) => setPanel(k as Panel)}
         tabs={[
@@ -254,6 +251,18 @@ export default function AdminReviewersList() {
           // the page may read it (it says only what is coming).
           { key: 'terms', labelKey: 'admin.reviewers.tabTerms' },
         ]} />
+      </div>
+      {/* T2: Add Admin / Add Reviewer / Add Mentor — an EXISTING member only; new people are invited on
+          Invitations. Offered to whoever may edit permissions on Team (super, org_admin); the endpoint
+          re-checks. */}
+      {canManage && (panel === 'admins' || panel === 'reviewers' || (panel === 'mentors' && mayMentors)) && (
+        <button type="button" data-testid={`team-add-${panel}-open`}
+          onClick={() => (panel === 'mentors' ? setAddingMentor(true) : setAdding(panel))}
+          className="shrink-0 rounded-lg border border-transparent bg-brand-fill px-4 py-1.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
+          {t(panel === 'mentors' ? 'admin.mentors.addMentor' : `admin.team.add.${panel}`)}
+        </button>
+      )}
+      </div>
 
       {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an
           emails hiccup can never take the reviewers table down with it. T4: three sections — Admin
@@ -261,16 +270,6 @@ export default function AdminReviewersList() {
       {panel === 'emails' && mayEditEmails && <TeamEmails token={token} t={t} />}
       {panel === 'terms' && <TeamTerms t={t} />}
 
-      {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
-          Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}
-      {canManage && (panel === 'admins' || panel === 'reviewers') && (
-        <div className="mb-3 flex justify-end">
-          <button type="button" onClick={() => setAdding(panel)} data-testid={`team-add-${panel}-open`}
-            className="min-h-11 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
-            {t(`admin.team.add.${panel}`)}
-          </button>
-        </div>
-      )}
       <TeamAddSheet open={adding !== null} table={adding ?? 'admins'} token={token}
         onClose={() => setAdding(null)} onDone={teamDone} />
       <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}
@@ -278,7 +277,9 @@ export default function AdminReviewersList() {
 
       {/* T3: the Mentors table, its own chunk (the old Mentors page's, `lazySource`), handed this page's
           "Also in" chips so the chunk imports nothing the route already carries. */}
-      {panel === 'mentors' && mayMentors && <TeamMentors AlsoIn={AlsoIn} />}
+      {panel === 'mentors' && mayMentors && (
+        <TeamMentors AlsoIn={AlsoIn} adding={addingMentor} onAddClose={() => setAddingMentor(false)} />
+      )}
 
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
@@ -380,16 +381,6 @@ export default function AdminReviewersList() {
                   <AlsoIn row={r} here="reviewers" />
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
                     onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />}
-                  {orderedLanguages(r).map((code) => (
-                    <span key={code} className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600">
-                      {t(`admin.reviewers.lang.${code}`)}
-                    </span>
-                  ))}
-                  {r.other_language && (
-                    <span className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600"
-                      data-testid={`other-language-${r.id}`}>{r.other_language}</span>
-                  )}
-                  {giftCount > 1 && giftsCell(r)}
                 </div>
               </div>
             )
@@ -400,14 +391,10 @@ export default function AdminReviewersList() {
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
-                <SortHeader col="name" label={t(REVIEWER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
+                <SortHeader col="name" label={t('admin.nameHeader')} sort={sort} onSort={onSort} />
                 {/* T2: "Also in" replaces the Role column. T3: no permission column (the person's page). */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.team.colAlsoIn')}
-                </th>
-                {/* Languages is the one unsortable column — a set has no order to put it in. */}
-                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
-                  {t('admin.reviewers.colLanguages')}
                 </th>
                 <SortHeader col="awaitingReview" label={t(REVIEWER_SORT_LABEL.awaitingReview)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="interviewing" label={t(REVIEWER_SORT_LABEL.interviewing)} sort={sort} onSort={onSort} align="right" />
@@ -449,32 +436,8 @@ export default function AdminReviewersList() {
                           {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
-                      {/* Which gifts they cover (S-ASSIGN; chips since multi-gift, 2026-11-06).
-                          Under the name rather than as a column, so no sort key or header has to
-                          be invented for a fact most organisations never see; and shown only
-                          above one gift, per the ruling at the top of this file.
-                          ⚠ NO GIFT MEANS EVERY GIFT — the default; its chip reads as an answer. */}
-                      {giftCount > 1 && <div className="mt-1">{giftsCell(r)}</div>}
                     </td>
                     <td className="px-4 py-3"><AlsoIn row={r} here="reviewers" /></td>
-                    <td className="px-4 py-3 text-ground-700">
-                      {orderedLanguages(r).length === 0 && !r.other_language
-                        ? <span className="text-ground-400">—</span>
-                        : (
-                          <span className="flex flex-wrap gap-1">
-                            {orderedLanguages(r).map((code) => (
-                              <span key={code}
-                                className="px-1.5 py-0.5 rounded bg-ground-100 text-ground-600 text-xs">
-                                {t(`admin.reviewers.lang.${code}`)}
-                              </span>
-                            ))}
-                            {r.other_language && (
-                              <span className="px-1.5 py-0.5 rounded bg-ground-100 text-ground-600 text-xs"
-                                data-testid={`other-language-${r.id}`}>{r.other_language}</span>
-                            )}
-                          </span>
-                        )}
-                    </td>
                     {/* An empty figure is the normal state of a volunteer between assignments —
                         greyed, never flagged. A grey Awaiting review is the signal request #51
                         asked for: this person can take more, even while interviews run. */}

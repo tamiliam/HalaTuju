@@ -15,14 +15,15 @@ rulings and the lead's two data rulings in docs/decisions.md the same day). The 
   invitation; 7a's mentor doors refuse a staff mentor (`mentor_invite.is_staff_login`).
 - WAYS OUT, each ending every open assignment (reason "Mentor stopped mentoring", cause
   `mentor_stopped`, an activity line on each file, no email) and stamping the mentor deactivated:
-  `stop` (Mentors page "Stop mentoring") and `leave` — called by the staff doors: People → Revoke
+  `stop` (Team → Mentors "Remove from Mentors") and `leave` — called by the staff doors: People → Revoke
   (`courses.views_staff.AdminRevokeView`), a staff invitation's Cancel (it switches the account off,
   `views_admin/invitations.py`), People → Delete (`AdminDeleteView`; refused anyway once they have
   mentored anybody — `staff_footprint` counts it, lead ruling) and a role change to a role that may not
   mentor (Admin → Finance, `staff_lifecycle.change_role`). The LINK IS KEPT on every way out (lead ruling
   2026-11-01: the mentor's name lives on this login and every scholar's history reads it; courses 0091
   lets a finance row keep it). Nothing brings mentoring back by itself — not a Restore, not a role change
-  back: only `resume` ("Mentor again", Mentors page → Inactive), and only for an eligible, active login.
+  back: only `resume` (Team → Mentors → Add Mentor, which offers a removed staff mentor as "Mentored
+  before", 2026-11-08), and only for an eligible, active login.
 - A FINANCE ROW IS NEVER AN ACTIVE MENTOR: `add` and `resume` refuse it, the role change deactivates, and
   every reader asks `PartnerAdmin.mentors_now` (never "mentor_id is set").
 """
@@ -118,7 +119,7 @@ def stop(caller, mentor, login):
 
 
 def resume(caller, mentor, login):
-    """Mentors page → Inactive → "Mentor again". ``error`` or None: `not_staff`, `active` (not stopped),
+    """Team → Mentors → Add Mentor → a "Mentored before" staff member. ``error`` or None: `not_staff`, `active` (not stopped),
     `not_eligible` (the login is revoked, or its role may not mentor — finance). No email; the staff
     login untouched; no assignment comes back."""
     if login is None or not login.is_staff_mentor:

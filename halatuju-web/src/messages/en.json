@@ -8677,8 +8677,8 @@
         "generic": "That did not work. Try again.",
         "not_arrived": "This mentor never signed in. Invite them again from Invitations → Mentor.",
         "not_eligible": "This staff member cannot mentor (finance, revoked, or not a staff role).",
-        "already_mentor": "This staff member is already a mentor. If they stopped, use Mentor again.",
-        "staff_mentor": "This mentor is a staff member: use Stop mentoring or Mentor again.",
+        "already_mentor": "This staff member is already a mentor.",
+        "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
         "not_found": "That staff member was not found."
       },
@@ -8688,11 +8688,8 @@
         "inactive": "Inactive"
       },
       "col": {
-        "mentor": "Mentor",
         "area": "Area",
         "languages": "Languages",
-        "status": "Status",
-        "actions": "Actions",
         "scholarsNow": "Scholars now",
         "meetings90": "Meetings (90 days)",
         "lastMeeting": "Last meeting",
@@ -8702,17 +8699,17 @@
       "activeSeen": "Active · last signed in {date}",
       "inactiveOn": "Inactive since {date}",
       "action": {
-        "deactivate": "Deactivate",
-        "reactivate": "Reactivate",
+        "deactivate": "Revoke",
+        "reactivate": "Restore",
         "resend": "Resend",
         "revoke": "Revoke",
-        "stop": "Stop mentoring",
+        "stop": "Remove from Mentors",
         "resume": "Mentor again"
       },
       "confirm": {
-        "deactivate": "Deactivate {name}? They can no longer sign in. You can reactivate them later.",
+        "deactivate": "Revoke {name}? They can no longer sign in. You can restore them later.",
         "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later.",
-        "stop": "Stop {name} mentoring? Their scholars are left without a mentor, and it shows on each file. Their staff sign-in is not touched."
+        "stop": "Remove {name} from Mentors? Their scholars are left without a mentor, and it shows on each file. Their staff sign-in is not touched. Add Mentor brings them back."
       },
       "done": {
         "resend": "Invitation re-sent to {email}.",
@@ -8724,8 +8721,6 @@
         "resume": "{name} mentors again. Assign them to scholars on each file.",
         "added": "{name} is now a mentor too. No email was sent — tell them yourself."
       },
-      "note": "Assign a mentor on a scholar's file, Mentoring tab. New mentors are invited on Invitations → Mentor; Add Mentor adds someone already in your team. This table lists the mentors who have signed in and the staff who also mentor. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file. Click a name for the mentor's page.",
-      "empty": "No mentors in this list.",
       "loadError": "We could not load the mentors.",
       "profile": {
         "title": "Mentoring",
@@ -8740,27 +8735,25 @@
         "aboutSeen": "Your students see your About. Written for colleagues? Check it reads well for a student.",
         "accessMentor": "{role} · Mentor"
       },
-      "waiting": "{count} waiting to accept:",
-      "seeInvitations": "see Invitations",
       "emptyNone": "No mentors yet. Invite one on Invitations → Mentor, or add someone already in your team with \"Add Mentor\".",
       "emptyNoneRead": "No mentors yet.",
       "staffSheet": {
         "title": "Add a staff member as mentor",
         "intro": "They keep their role and everything they can do now. They gain \"My students\" and a Mentoring card on their profile. No email is sent — tell them yourself.",
         "search": "Find a staff member",
-        "shown": "Shown: organisation admins, admins, reviewers and QC of this organisation who are not mentors yet. Finance and super admins cannot mentor.",
+        "shown": "Shown: organisation admins, admins, reviewers and QC of this organisation who are not mentors now, including anyone removed from Mentors (\"Mentored before\"). Finance and super admins cannot mentor.",
         "none": "No staff member to add.",
         "noMatch": "Nobody matches that.",
         "add": "Add {name} as mentor",
         "choose": "Add as mentor",
-        "loadError": "We could not load the staff list."
+        "loadError": "We could not load the staff list.",
+        "before": "Mentored before"
       },
       "staffTag": "Staff · {role}",
-      "staffNote": "\"Stop mentoring\" ends a staff member's mentoring (their scholars are left without a mentor, and it shows on each file); their staff sign-in is not touched. If a staff member's account is revoked, their mentoring ends too. A staff mentor appears under Inactive after Stop mentoring, with \"Mentor again\".",
       "addMentor": "Add Mentor",
       "removeTitle": {
-        "stop": "Stop {name} mentoring?",
-        "deactivate": "Deactivate {name}?"
+        "stop": "Remove {name} from Mentors?",
+        "deactivate": "Revoke {name}?"
       },
       "detail": {
         "back": "Team · Mentors",
@@ -9367,8 +9360,7 @@
       "opensAdminPages": "They become an Admin and will open the admin work pages (Announcements, Surveys, Development, Sources, Mentors), which they may not open now.",
       "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
       "note": {
-        "last_table": "Only table: revoke instead",
-        "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead (they must have signed in to stay on as a mentor)",
+        "mentors_only": "Only Mentors would be left: revoke or remove from Mentors instead (they must have signed in to stay on as a mentor)",
         "has_open_cases": "Reassign their cases first"
       },
       "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join.",
