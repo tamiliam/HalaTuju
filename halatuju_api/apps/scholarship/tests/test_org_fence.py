@@ -640,6 +640,8 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminGuardianContactView': 'gate',
         # Request #26 consent reframe: "Record call" — the SAME gate (_guardian_gate) as the correction.
         'AdminGuardianCallView': 'gate',
+        # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
+        'AdminReviewerNotesView': 'gate+super/org_admin write',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

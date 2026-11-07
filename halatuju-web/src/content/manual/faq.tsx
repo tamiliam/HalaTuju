@@ -258,6 +258,13 @@ export const FAQ: Record<Audience, QA[]> = {
         heading to sort by it.</>,
     },
     {
+      q: <>How do I tell a reviewer what to look into on a case?</>,
+      a: <>Use <strong>Notes for the reviewer</strong> on the applicant&rsquo;s page, under Reviewer assigned.
+        You can add notes from Awaiting review until the reviewer records a decision, up to 2,000 characters
+        each. A note cannot be edited or deleted; to correct one, add another. They stay on the file
+        afterwards, and only staff who may open the file can read them.</>,
+    },
+    {
       q: <>Can one person be an admin and a reviewer?</>,
       a: <>Yes. On <strong>Team</strong>, <strong>Add Admin</strong> or <strong>Add Reviewer</strong> puts somebody
         already in your team into that table too, starting with that table&rsquo;s minimum permission

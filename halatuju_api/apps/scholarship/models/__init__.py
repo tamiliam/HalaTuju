@@ -125,3 +125,6 @@ from .surveys import Survey, SurveyAnswer, SurveyEmail, SurveyQuestion, SurveyRe
 # Student maintenance S10 (2026-11-02) — models 83 to 87, NEW: an organisation's development modules, their
 # lessons, each scholar's progress and lesson reads, and each scholar's copy of the module emails.
 from .development import DevelopmentModule, LessonRead, ModuleEmail, ModuleLesson, ModuleProgress
+# Request #55 (2026-11-07) — model 88, NEW: an organisation admin's notes for the reviewer of one
+# application. Points at ScholarshipApplication and `courses.PartnerAdmin` by string.
+from .reviewer_notes import ReviewerNote

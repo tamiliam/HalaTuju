@@ -4198,6 +4198,28 @@
           "gift_mismatch": "This reviewer covers a different gift, so this case cannot be given to them. Choose a reviewer for this gift, or one who covers every gift."
         }
       },
+      "reviewerNotes": {
+        "title": "Notes for the reviewer",
+        "introWriter": "What you would like the reviewer to explore. Seen by the assigned reviewer and QC only, never by the student or sponsors.",
+        "introReader": "From your org admin: points to explore with this student. Read-only.",
+        "empty": "No notes from your org admin.",
+        "addLabel": "Add a note",
+        "placeholder": "What should the reviewer look into?",
+        "counter": "{count} / {max}",
+        "appendOnly": "Notes can't be edited or deleted. To correct one, add another.",
+        "add": "Add note",
+        "adding": "Adding…",
+        "closedHint": "Notes can be added from Awaiting review until the reviewer records a decision. These stay on the file, read-only.",
+        "loadError": "Could not load the notes.",
+        "error": {
+          "writer_only": "Only an organisation admin can add a note for the reviewer.",
+          "notes_closed": "Notes can be added from Awaiting review until the reviewer records a decision.",
+          "bad_body": "This note contains characters that cannot be saved. Remove them and try again.",
+          "empty_body": "Write the note first.",
+          "too_long": "A note can be at most {max} characters.",
+          "generic": "Could not add the note. Please try again."
+        }
+      },
       "requestInfoError": "Could not send the request.",
       "requestsDocumentsStep": "The student is still completing their documents. What they still owe is listed under Blockers; they are already being asked for it.",
       "requestRefused": {

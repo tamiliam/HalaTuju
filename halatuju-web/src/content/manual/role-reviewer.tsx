@@ -118,6 +118,19 @@ export const roleReviewer: ManualChapter = {
       alt: 'The applicant review screen and details',
     },
     {
+      anchor: 'reviewer-notes-from-admin',
+      perm: 'review',
+      title: 'Notes from your org admin',
+      body: (
+        <>Before a case reaches you, your organisation admin may read it and write down what they would like
+        you to explore. Their notes sit on the student&rsquo;s page in <strong>Notes for the reviewer</strong>,
+        directly under <strong>Reviewer assigned</strong>, each with who wrote it and when, newest last. They
+        are read-only for you, and the card says <em>No notes from your org admin.</em> when there are none.
+        Read them before you plan your questions. The notes are for staff only: the student and sponsors
+        never see them, and they are never used in the AI-written profile or summary.</>
+      ),
+    },
+    {
       anchor: 'reviewer-profile-card',
       perm: 'review',
       title: 'The student profile',

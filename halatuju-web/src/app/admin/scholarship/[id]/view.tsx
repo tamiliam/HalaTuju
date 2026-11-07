@@ -112,6 +112,7 @@ import { QcPanel, qcRefusalText } from './view/QcPanel'
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
+import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
@@ -1070,6 +1071,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
+        notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
+          refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
       />
 
 
