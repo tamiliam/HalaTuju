@@ -45,9 +45,10 @@ REOPEN_MESSAGES = {
     'birth_state_rule_failed': BIRTH_STATE_RULE_FAILED,
     birth_state.IC_UNLOCKED: birth_state.IC_UNLOCKED_MESSAGE,
     'reviewer_cannot_review': (
-        'The reviewer named on this case no longer holds the review permission, so a reopened '
-        'decision would wait for somebody who cannot open it. Give them review again first '
-        '(Team, Reviewers), then reopen.'),
+        'The reviewer named on this case can no longer review (they lack the review permission, '
+        'or their access has been revoked), so a reopened decision would wait for somebody who '
+        'cannot open it. In Team, Reviewers, give them review again, or Restore them if they '
+        'were revoked, then reopen.'),
 }
 
 #: The statuses a reopen steps back (see `reopen_decision`): to AWAITING QC, which is the QC's, or

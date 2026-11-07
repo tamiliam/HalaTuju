@@ -111,7 +111,7 @@ def may_act(caller):
     return staff_tables.opens_door(caller, 'mentoring')
 
 
-def may_read(caller):
+def may_read_mentoring(caller):
     """Who READS a scholar's Mentoring tab and the mentor card on the file (A1.10a, TD-498): the v2 key
     `mentoring.view`. Today the same holders as `may_act`; the tab's `can_act` and every write still ask
     `may_act` (`may_assign`, `_check_caller`)."""

@@ -83,7 +83,7 @@ def may_make(admin):
     return staff_tables.opens_door(admin, 'surveys')
 
 
-def may_read(admin):
+def may_read_surveys(admin):
     """The READ of the staff survey pages and the scholar file's Surveys tab (A1.10a, TD-498):
     `surveys.view`. Today the same holders as `may_make`."""
     from apps.courses import staff_tables

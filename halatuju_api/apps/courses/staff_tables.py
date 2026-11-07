@@ -143,10 +143,10 @@ DOOR_KEYS = {
     'credits_write':  ('sponsors.edit',),                       # _CreditsBase record / cancel (money)
     'credits_sign':   ('sponsors.view',),                       # _CreditsBase sign; the step is the service's
     # ── A1.10a (TD-498): each page's READ on its `.view`; its writes stay on the `.edit` door above. ──
-    'announcements_read': ('announcements.view',),              # announcements.may_read
-    'surveys_read':       ('surveys.view',),                    # surveys.may_read
-    'development_read':   ('development.view',),                # development.may_read
-    'mentoring_read':     ('mentoring.view',),                  # mentoring.may_read (the scholar tab's read)
+    'announcements_read': ('announcements.view',),              # announcements.may_read_announcements
+    'surveys_read':       ('surveys.view',),                    # surveys.may_read_surveys
+    'development_read':   ('development.view',),                # development.may_read_development
+    'mentoring_read':     ('mentoring.view',),                  # mentoring.may_read_mentoring (the scholar tab's read)
     'sources_read':       ('sources.view',),                    # _SourcesBase GET; Team -> Admin emails
 }
 

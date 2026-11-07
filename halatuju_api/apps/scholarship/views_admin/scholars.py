@@ -94,8 +94,8 @@ class AdminScholarListView(_ScholarsBase):
         below, overdue = scholars.below_minimum_q(lines), scholars.overdue_q(lines)
         wanted = q.get('standing')
         # S7b: the mentor column, the two Mentoring pills and their counts are for the roles that
-        # see the Mentoring tab (`mentoring.may_read`, TD-498: a read); for the rest the keys are absent.
-        sees_mentors = mentoring.may_read(admin)
+        # see the Mentoring tab (`mentoring.may_read_mentoring`, TD-498: a read); for the rest the keys are absent.
+        sees_mentors = mentoring.may_read_mentoring(admin)
         qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1', search=q.get('search', ''),
                                   below=below if wanted == 'below_minimum' else None,
@@ -125,7 +125,7 @@ class AdminScholarFileView(_ScholarsBase):
             return err
         from .. import payments
         body = scholars.file_payload(app)
-        if not mentoring.may_read(admin):  # S7b: the mentor card is the Mentoring tab's readers' only
+        if not mentoring.may_read_mentoring(admin):  # S7b: the mentor card is the Mentoring tab's readers' only
             body = {k: v for k, v in body.items() if k not in ('mentor', 'asked_for_help')}
         return Response({**body, 'controls': scholars.controls(
             app, can_write=self._can_review_app(admin, app), can_hold=payments.may_prepare(admin))})
@@ -221,7 +221,7 @@ class AdminScholarActivityView(_ScholarsBase):
         if err:
             return err
         qs = StudentActivity.objects.filter(application=app).order_by('-created_at', '-id')
-        if not mentoring.may_read(admin):     # TD-498 (A1.10a): a read
+        if not mentoring.may_read_mentoring(admin):     # TD-498 (A1.10a): a read
             # S7b review fix 2: the mentoring lines name the mentor; a role outside the Mentoring
             # tab (a reviewer, QC) never receives them — the compact Overview list reads this too.
             qs = qs.exclude(event__in=mentoring.EVENTS)

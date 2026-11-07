@@ -40,7 +40,7 @@ class _AnnouncementsBase(_AdminBase):
         if not admin:
             return None, self._deny()
         # TD-498 (A1.10a): a read asks `announcements.view`, a write `announcements.edit`.
-        if not (svc.may_read if request.method in SAFE_METHODS else svc.may_post)(admin):
+        if not (svc.may_read_announcements if request.method in SAFE_METHODS else svc.may_post)(admin):
             return None, self._deny_role()
         return admin, None
 

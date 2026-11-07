@@ -49,7 +49,7 @@ class _MentoringBase(_ScholarsBase):
         if err:
             return None, None, err
         # TD-498 (A1.10a): the tab's GET asks `mentoring.view`; every action `mentoring.edit`.
-        if not (mentoring.may_read if request.method in SAFE_METHODS else mentoring.may_act)(admin):
+        if not (mentoring.may_read_mentoring if request.method in SAFE_METHODS else mentoring.may_act)(admin):
             return None, None, self._deny_role()
         return app, admin, None
 

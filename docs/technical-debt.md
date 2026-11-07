@@ -374,6 +374,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-541** - A non-super admin with no organisation reads every organisation's reviewers on the other reviewer endpoints - medium
 - **TD-542** - The case-assign picker greys by the application's gift only; the server also accepts the cohort's gift - low
 - **TD-543** - Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
+- **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
+- **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8231,3 +8233,11 @@ inside the locked block; the lock rule). *(A · S)*
 ### [TD-543] Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
 
 **Raised 2026-11-07 by the multi-gift adversarial review.** A successful set-gifts logs `AUDIT reviewer_programme_set`, but a refused request (foreign gift, wrong role) writes nothing, and gifts chosen on the invite form are stored with no audit line. **Fix:** log both, same shape as the existing line. *(A · S)*
+
+### [TD-560] A `payments_approve` holder who has never signed in still arms the wallet credit check - low
+
+**Raised 2026-11-07 by the A1.10a review.** `payments_chain.py` (~126-131) counts every `payments_approve` holder when deciding whether the wallet credit check is armed, including one who has never signed in; payment runs skip such people (`_signed_in`). If the only holder is an invitee who never signs in, credits wait for them. The organisation admin can unstick it by removing the key or revoking the person. Pre-existing (the old finance rule behaved the same). **Fix:** apply the same `_signed_in` filter here. *(A · S)*
+
+### [TD-561] The credit sign view loads the credit without a row lock - medium
+
+**Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*

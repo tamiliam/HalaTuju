@@ -237,10 +237,10 @@ def _doors():
         'sponsors_list': (surface_gates.may_read_sponsors, ('sponsors.view',)),
         'team_read': (surface_gates.may_read_team, ('team.view', 'invitations.view')),
         'mentors_read': (mentor_invite.may_read, ('mentoring.view',)),     # A1.10a: was the union door
-        'announcements_read': (announcements.may_read, ('announcements.view',)),    # A1.10a TD-498
-        'surveys_read': (surveys.may_read, ('surveys.view',)),
-        'development_read': (development.may_read, ('development.view',)),
-        'scholar_mentoring_read': (mentoring.may_read, ('mentoring.view',)),
+        'announcements_read': (announcements.may_read_announcements, ('announcements.view',)),    # A1.10a TD-498
+        'surveys_read': (surveys.may_read_surveys, ('surveys.view',)),
+        'development_read': (development.may_read_development, ('development.view',)),
+        'scholar_mentoring_read': (mentoring.may_read_mentoring, ('mentoring.view',)),
         'sources_and_terms_and_emails': (staff_tables.may_do_admin_work,
                                          ('sources.view', 'sources.edit', 'sponsors.edit')),
         'announcements': (announcements.may_post, ('announcements.view', 'announcements.edit')),

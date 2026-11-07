@@ -118,10 +118,10 @@ def _doors(app):
         'credits.may_write': (_CreditsBase.may_write, old_admin_work, ('sponsors.edit',)),
         'credits.may_sign': (_CreditsBase.may_sign, old_read_org, ('sponsors.view',)),
         # ── A1.10a (TD-498): each page's read on its `.view` (today held by exactly its `.edit` holders). ──
-        'announcements.may_read': (announcements.may_read, old_admin_work, ('announcements.view',)),
-        'surveys.may_read': (surveys.may_read, old_admin_work, ('surveys.view',)),
-        'development.may_read': (development.may_read, old_admin_work, ('development.view',)),
-        'mentoring.may_read': (mentoring.may_read, old_admin_work, ('mentoring.view',)),
+        'announcements.may_read': (announcements.may_read_announcements, old_admin_work, ('announcements.view',)),
+        'surveys.may_read': (surveys.may_read_surveys, old_admin_work, ('surveys.view',)),
+        'development.may_read': (development.may_read_development, old_admin_work, ('development.view',)),
+        'mentoring.may_read': (mentoring.may_read_mentoring, old_admin_work, ('mentoring.view',)),
         'sources.may_read': (_SourcesBase.may_read, old_admin_work, ('sources.view',)),
     }
 
