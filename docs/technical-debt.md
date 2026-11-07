@@ -7492,6 +7492,8 @@ signed in reloads when this browser's data is no longer that user's (the sign-ou
 account took it). (3) Left as accepted: a duplicated tab copies only the return marker and a programme code (no
 PII; the apply draft is already bound to the user id). Pinned by `src/lib/__tests__/sharedPhoneOwner.test.tsx`
 (11 tests, the real `AuthProvider`). No `no-store` header was added (a design change; the reload covers it).
+Review fix (same day): a wipe also re-keys the provider's children, so a page that copied the wiped grades into
+its state on mount (before the provider's effects ran) is rebuilt empty and cannot write them back (15 tests).
 
 ### [TD-460] The income wizard writes on open, and a failed answer save is silent - medium
 

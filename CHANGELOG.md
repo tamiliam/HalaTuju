@@ -15,6 +15,7 @@ Branch a19b, on a19 (not pushed; web + two hand-apply SQL files; no migration, n
 - Both SQL files: read-only pre-check, one transaction with `lock_timeout` 5 s, read-back, rollback. The app connects as `postgres` (owner, BYPASSRLS), so neither can affect it; nothing is granted to `anon` or `authenticated`.
 - **TD-550 (new):** the owner's steps: apply the two SQL files (suggested SEC-14 then SEC-11), check the five headers on the live web after G4, rule on web HSTS.
 - Tests: `searchTermHeader.test.ts`, `sharedPhoneOwner.test.tsx`, `securityHeaders.test.ts` (new).
+- **Review fix (TD-458, MEDIUM):** React mounts the pages before the provider's effects, so a page such as `/onboarding/grades` copied the last student's grades into its state before the wipe, and its Continue wrote them back untagged for the next sign-in to upload. `claimStudentData` now returns true when it wipes, and the provider then re-keys its children so every page is rebuilt from the wiped storage. Not a synchronous first-render check: a lapsed session still sits in storage as its owner's (expired) until the refresh fails, the same as a returning student's. Normal paths never wipe, so never rebuild. 4 tests added (15 in the file).
 
 ### fix: Sprint A1.9a - PII and request hygiene, API half (2026-11-07)
 

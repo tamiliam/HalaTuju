@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Fragment,
   createContext,
   useContext,
   useState,
@@ -64,6 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [authGateReason, setAuthGateReason] = useState<AuthGateReason>(null)
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
+  // TD-458: bumped when another account's data is wiped. React mounts the pages BEFORE this
+  // provider's effects learn whose session it is, so a page may already hold the old student's
+  // grades in its state; the new key rebuilds every page from the wiped storage. Not a synchronous
+  // check at first render: a lapsed session still sits in storage as its owner's (expired) until the
+  // refresh fails, exactly like a returning student's, and only the server can tell them apart.
+  const [epoch, setEpoch] = useState(0)
 
   const pathname = usePathname()
   // The STUDENT auth stack must not run on the privileged consoles. They have their own
@@ -84,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isPrivilegedConsole) { setIsLoading(false); return }
+    const claim = (s: Session | null) => { if (claimStudentData(realUserId(s))) setEpoch(n => n + 1) }
     getSession()
       .then(async ({ session: existingSession }) => {
         let session = existingSession
@@ -94,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // TD-458: before anything reads or syncs it, data left by another account is wiped. Only on a
         // definite session: none at all (offline) proves nothing about whose browser this is.
-        if (session) claimStudentData(realUserId(session))
+        if (session) claim(session)
         setSession(session ?? null)
 
         // Check identity (NRIC) for non-anonymous users
@@ -120,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // TD-458: a session that ended without the sign-out button (revoked, refreshed out) leaves its
       // owner's grades and profile tagged; the next sign-in (or the anonymous visitor) drops them here,
       // synchronously, before the auth gate's sync can upload them into the new account.
-      if (event === 'SIGNED_OUT' || (event === 'SIGNED_IN' && session)) claimStudentData(realUserId(session))
+      if (event === 'SIGNED_OUT' || (event === 'SIGNED_IN' && session)) claim(session)
       setSession(session)
       // Student maintenance S3 (review L1): ANY sign-out path drops the header's "My Bursary" hint.
       // …and this tab's stashed apply form (Mobile M4 audit): a session revoked, refreshed out or
@@ -321,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={value}><Fragment key={epoch}>{children}</Fragment></AuthContext.Provider>
   )
 }
 

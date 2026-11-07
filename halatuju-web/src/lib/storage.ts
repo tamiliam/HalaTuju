@@ -166,18 +166,21 @@ export const KEY_OWNER = 'halatuju_owner'
  * or a SIGNED_OUT. Data tagged to ANOTHER owner is that owner's (hydrated from, or synced into, their
  * account, so the server holds it): it is wiped as the sign-out button would (`clearAll`, keeping
  * only the language) before the sign-in sync could upload it into the next account. Untagged data
- * is a signed-out visitor's own and is left alone, as before.
+ * is a signed-out visitor's own and is left alone, as before. Returns true when it wiped, so the
+ * caller can rebuild any screen that already copied the wiped data into memory.
  */
-export function claimStudentData(userId: string | null): void {
+export function claimStudentData(userId: string | null): boolean {
   try {
     const owner = localStorage.getItem(KEY_OWNER)
-    if (owner && owner !== userId) {
+    const wipe = !!owner && owner !== userId
+    if (wipe) {
       const locale = localStorage.getItem(KEY_LOCALE)
       clearAll()
       if (locale) localStorage.setItem(KEY_LOCALE, locale)
     }
     if (userId) localStorage.setItem(KEY_OWNER, userId)
-  } catch { /* storage unavailable: nothing is held */ }
+    return wipe
+  } catch { return false /* storage unavailable: nothing is held */ }
 }
 
 /** Tab state that belongs to the OTHER user types (an admin's list navigation, a sponsor's

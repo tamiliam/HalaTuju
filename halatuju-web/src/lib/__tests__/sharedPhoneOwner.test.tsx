@@ -12,7 +12,8 @@
  *
  * Mounts the REAL AuthProvider, so the listener is the one every student route runs.
  */
-import { act, render, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useEffect, useState } from 'react'
 
 import { AuthProvider } from '@/lib/auth-context'
 import {
@@ -147,6 +148,74 @@ describe('AuthProvider', () => {
     await act(async () => { listener!('TOKEN_REFRESHED', real('user-a')) })
     await act(async () => { listener!('SIGNED_IN', real('user-a')) })
     expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()
+  })
+})
+
+describe('a page that copied the grades into its state before the wipe (review finding)', () => {
+  // Like onboarding/grades: reads storage into state ON MOUNT, which React runs BEFORE the provider's
+  // own effects; "Continue" writes the state back. Counts its mounts.
+  let mounts = 0
+  function GradesForm() {
+    const [grades, setGrades] = useState<Record<string, string>>({})
+    useEffect(() => {
+      mounts += 1
+      const saved = localStorage.getItem(KEY_GRADES)
+      if (saved) setGrades(JSON.parse(saved))
+    }, [])
+    return (
+      <button onClick={() => localStorage.setItem(KEY_GRADES, JSON.stringify(grades))}>
+        {grades.bm ? `bm:${grades.bm}` : 'empty'}
+      </button>
+    )
+  }
+  const app = () => render(<AuthProvider><GradesForm /></AuthProvider>)
+  beforeEach(() => { mounts = 0 })
+
+  it('a lapsed session (anonymous on load): the form is rebuilt empty, Continue cannot write A\'s grades back', async () => {
+    holdGradesOf('user-a')
+    mockSession = anon
+    app()
+    await waitFor(() => expect(screen.getByRole('button').textContent).toBe('empty'))
+    fireEvent.click(screen.getByRole('button'))
+    await act(async () => { listener!('SIGNED_IN', real('user-b')) })
+    expect(localStorage.getItem(KEY_GRADES)).not.toContain('"bm"')
+  })
+
+  it('a lapsed session (the refresh fails: SIGNED_OUT): the same', async () => {
+    holdGradesOf('user-a')
+    mockSession = real('user-a')
+    app()
+    await waitFor(() => expect(localStorage.getItem(KEY_OWNER)).toBe('user-a'))
+    expect(screen.getByRole('button').textContent).toBe('bm:A')
+    await act(async () => { listener!('SIGNED_OUT', null) })
+    expect(screen.getByRole('button').textContent).toBe('empty')
+    fireEvent.click(screen.getByRole('button'))
+    expect(localStorage.getItem(KEY_GRADES)).not.toContain('"bm"')
+  })
+
+  it('a signed-out visitor who signs up keeps her grades, and her form is never rebuilt', async () => {
+    holdGradesOf(null)
+    mockSession = anon
+    app()
+    await waitFor(() => expect(listener).not.toBeNull())
+    await act(async () => { await Promise.resolve() })
+    await act(async () => { listener!('SIGNED_IN', real('user-b')) })
+    expect(screen.getByRole('button').textContent).toBe('bm:A')
+    expect(localStorage.getItem(KEY_GRADES)).toContain('"bm"')
+    expect(localStorage.getItem(KEY_OWNER)).toBe('user-b')
+    expect(mounts).toBe(1)
+  })
+
+  it('the same student coming back keeps her grades and her form', async () => {
+    holdGradesOf('user-a')
+    mockSession = real('user-a')
+    app()
+    await waitFor(() => expect(localStorage.getItem(KEY_OWNER)).toBe('user-a'))
+    await act(async () => { listener!('SIGNED_IN', real('user-a')) })
+    await act(async () => { listener!('TOKEN_REFRESHED', real('user-a')) })
+    expect(screen.getByRole('button').textContent).toBe('bm:A')
+    expect(localStorage.getItem(KEY_GRADES)).toContain('"bm"')
+    expect(mounts).toBe(1)
   })
 })
 
