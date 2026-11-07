@@ -16,6 +16,7 @@ Branch a19 (not pushed; API only; no migration, no SQL, no model change). Safe t
 - **SEC-04 / TD-515:** the partner student CSV export guards every cell against spreadsheet formulas (`apps/courses/csv_safe.py`, the survey CSV's rule moved to one home) and writes `AUDIT partner_students_export admin=<id> org=<id|all> rows=<n>` (no PII).
 - **TD-421 (API half):** the people-search term is read from an `X-Search-Term` header first (URI-decoded), then `?q=` / `?search=`; Applications, Scholars and Students. CORS allows the header. The term leaves the URL only when the web sends the header (A1.9b).
 - **SEC-13 (TD-548):** documented, no gate: anonymous sessions are the designed browse flow and reach no one else's rows.
+- **Review follow-ups:** (F1) throttle and admin-login keys cut an IPv6 address to its /64 (`throttling.throttle_key_ip` / `throttle_ip`; IPv4 unchanged); signer_ip and audit logs keep the full address. (F2) Sentry's scrubber now also hides the `X-Search-Term` header (`halatuju/sentry_scrub.py`). (F3) TD-569 logged, not fixed: DatabaseCache MAX_ENTRIES 300 can cull throttle counters. `docs/deployment.md` warns that the IP rule assumes no proxy in front of the API.
 - **Left for A1.9b (web + SQL):** TD-421 web, TD-458, SEC-11 (`partner_organisations` read policy), SEC-12 web headers, SEC-14 (TD-549, service_role policies).
 
 ### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)

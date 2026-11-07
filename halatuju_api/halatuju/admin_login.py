@@ -11,7 +11,7 @@ header cannot buy a fresh bucket; the counter is the atomic `take_slot` (SEC-08)
 from django.contrib import admin
 from django.http import HttpResponse
 
-from .throttling import client_ip, take_slot
+from .throttling import take_slot, throttle_ip
 
 MAX_POSTS = 10
 WINDOW_SECONDS = 15 * 60
@@ -19,7 +19,7 @@ WINDOW_SECONDS = 15 * 60
 
 def throttled_login(request, extra_context=None):
     if request.method == 'POST' and not take_slot(
-            'admin-login:%s' % client_ip(request), MAX_POSTS, WINDOW_SECONDS):
+            'admin-login:%s' % throttle_ip(request), MAX_POSTS, WINDOW_SECONDS):
         return HttpResponse('Too many sign-in attempts. Please try again in 15 minutes.',
                             status=429, content_type='text/plain; charset=utf-8')
     return admin.site.login(request, extra_context)

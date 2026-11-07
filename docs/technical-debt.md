@@ -373,6 +373,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-547** - The Django admin sign-in on the API host has no throttle (SEC-06) - low - **FIXED (2026-11-07, A1.9a)**
 - **TD-548** - Anonymous sign-ins skip the NRIC gate (SEC-13) - low - **CLOSED (2026-11-07, documented, no gate)**
 - **TD-549** - 15 deny-all tables have no service_role policy (SEC-14) - low
+- **TD-569** - Throttle and admin-login counters live in the database cache (MAX_ENTRIES 300); a cull can wipe them and reset a lock early - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8235,3 +8236,7 @@ inside the locked block; the lock rule). *(A · S)*
 ### [TD-549] 15 deny-all tables have no service_role policy (SEC-14) - low
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-14, harmless today).** Fifteen tables have RLS on and no policy at all; the API reaches them as the table owner, so nothing fails, but the Security Advisor flags each one and a future move to a non-owner role would lock the API out. **Fix (A1.9b):** a hand-apply SQL file under `docs/security/` (pre-check list read-only first, one `BEGIN`/`COMMIT` with `SET LOCAL lock_timeout = '5s'`, read-back, rollback) adding an explicit `service_role` policy to each. *(A · S)*
+
+### [TD-569] Throttle and admin-login counters live in the database cache and can be culled - low
+
+**Raised 2026-11-07 by the A1.9a review (follow-up F3, not fixed).** The `take_slot` counters (admin sign-in lock, claim-code limits) and the DRF throttle histories are entries in the production DatabaseCache, whose `MAX_ENTRIES` is 300. When the table passes that, Django culls entries (a fraction of the oldest by expiry), and a cull can remove a counter early, so a lock can reset before its 15 minutes. Low: it needs a busy cache and an attacker who is lucky, and the throttles are best-effort. **Fix options (later):** raise `MAX_ENTRIES` and `CULL_FREQUENCY` for the throttle cache, or give counters their own cache alias or table. *(B · S)*

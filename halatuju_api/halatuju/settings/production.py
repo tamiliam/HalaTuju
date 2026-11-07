@@ -90,8 +90,11 @@ if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
 
+    from halatuju.sentry_scrub import build_event_scrubber
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        event_scrubber=build_event_scrubber(),  # also hides the X-Search-Term header
         integrations=[DjangoIntegration()],
         traces_sample_rate=0.1,
         send_default_pii=False,

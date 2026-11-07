@@ -20,6 +20,8 @@ from halatuju.throttling import (
     client_ip,
     forwarded_client_ip,
     take_slot,
+    throttle_ip,
+    throttle_key_ip,
 )
 
 LOCMEM = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -63,6 +65,51 @@ class ClientIpTests(TestCase):
         req = self.rf.get('/', REMOTE_ADDR='')
         self.assertEqual(client_ip(req), 'unknown')
         self.assertIsNone(forwarded_client_ip(req))
+
+
+class ThrottleKeyIpTests(TestCase):
+    """A1.9a follow-up F1: an IPv6 throttle key is the /64; evidence keeps the full address."""
+    def test_ipv4_is_unchanged(self):
+        self.assertEqual(throttle_key_ip('203.0.113.9'), '203.0.113.9')
+
+    def test_two_addresses_in_one_slash_64_share_a_key(self):
+        a = throttle_key_ip('2001:db8:1:2:aaaa:bbbb:cccc:dddd')
+        b = throttle_key_ip('2001:db8:1:2:1111:2222:3333:4444')
+        self.assertEqual(a, b)
+        self.assertEqual(a, '2001:db8:1:2::/64')
+
+    def test_different_slash_64_give_different_keys(self):
+        self.assertNotEqual(throttle_key_ip('2001:db8:1:2::1'), throttle_key_ip('2001:db8:1:3::1'))
+
+    def test_bad_or_empty_input_falls_back_to_the_raw_string(self):
+        self.assertEqual(throttle_key_ip('unknown'), 'unknown')
+        self.assertEqual(throttle_key_ip('junk'), 'junk')
+        self.assertEqual(throttle_key_ip(''), '')
+        self.assertIsNone(throttle_key_ip(None))
+
+    def test_throttle_ip_cuts_the_request_address_but_signer_ip_keeps_it(self):
+        from apps.scholarship.request_ip import signer_ip
+        req = RequestFactory().get('/', HTTP_X_FORWARDED_FOR='2001:db8:1:2:aaaa:bbbb:cccc:dddd')
+        self.assertEqual(throttle_ip(req), '2001:db8:1:2::/64')
+        self.assertEqual(client_ip(req), '2001:db8:1:2:aaaa:bbbb:cccc:dddd')
+        self.assertEqual(signer_ip(req), '2001:db8:1:2:aaaa:bbbb:cccc:dddd')
+
+    @override_settings(CACHES=LOCMEM)
+    def test_admin_login_lock_covers_the_whole_slash_64(self):
+        from unittest import mock
+
+        from django.http import HttpResponse
+
+        from halatuju.admin_login import MAX_POSTS, throttled_login
+        cache.clear()
+        rf = RequestFactory()
+        with mock.patch('halatuju.admin_login.admin.site.login',
+                        return_value=HttpResponse('form')):
+            for n in range(MAX_POSTS):
+                req = rf.post('/admin/login/', HTTP_X_FORWARDED_FOR='2001:db8:9:9::%x' % (n + 1))
+                self.assertEqual(throttled_login(req).status_code, 200)
+            req = rf.post('/admin/login/', HTTP_X_FORWARDED_FOR='2001:db8:9:9:ffff::1')
+            self.assertEqual(throttled_login(req).status_code, 429)
 
 
 @override_settings(CACHES=LOCMEM)

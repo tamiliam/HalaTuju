@@ -14,6 +14,8 @@ Limits are deliberately generous: the goal is to stop runaway scraping/abuse
 and protect the billable Vision-OCR upload path, NOT to police normal use
 (shared school/library NATs put many real students behind one IP).
 """
+import ipaddress
+
 from django.core.cache import cache
 from rest_framework.throttling import SimpleRateThrottle
 
@@ -43,6 +45,27 @@ def client_ip(request):
     return forwarded_client_ip(request) or 'unknown'
 
 
+def throttle_key_ip(ip):
+    """The address to use as a throttle / lockout KEY: an IPv6 address is cut to its /64 network
+    (one home link owns a whole /64, so rotating addresses inside it must not buy a fresh bucket);
+    IPv4 is unchanged. Bad or empty input comes back as given. Use ONLY for keys, never for
+    evidence (signer_ip and audit logs keep the full address)."""
+    try:
+        addr = ipaddress.ip_address((ip or '').strip())
+    except ValueError:
+        return ip
+    if addr.version == 6:
+        if addr.ipv4_mapped:
+            return str(addr.ipv4_mapped)
+        return str(ipaddress.ip_network('%s/64' % addr, strict=False))
+    return str(addr)
+
+
+def throttle_ip(request):
+    """``client_ip`` cut for use as a throttle key (see ``throttle_key_ip``)."""
+    return throttle_key_ip(client_ip(request))
+
+
 def take_slot(key, limit, seconds):
     """Use one of ``limit`` uses of ``key`` in a rolling ``seconds`` window. True = allowed.
 
@@ -66,7 +89,7 @@ def _ident(request):
     uid = getattr(request, 'user_id', None)
     if uid:
         return 'user:%s' % uid
-    return 'ip:%s' % client_ip(request)
+    return 'ip:%s' % throttle_ip(request)
 
 
 class ClientAnonRateThrottle(SimpleRateThrottle):
@@ -78,7 +101,7 @@ class ClientAnonRateThrottle(SimpleRateThrottle):
     def get_cache_key(self, request, view):
         if getattr(request, 'user_id', None):
             return None  # authenticated → this throttle does not apply
-        return self.cache_format % {'scope': self.scope, 'ident': client_ip(request)}
+        return self.cache_format % {'scope': self.scope, 'ident': throttle_ip(request)}
 
 
 class UploadRateThrottle(SimpleRateThrottle):
@@ -99,5 +122,5 @@ class PublicCountRateThrottle(SimpleRateThrottle):
     scope = 'public_count'
 
     def get_cache_key(self, request, view):
-        return self.cache_format % {'scope': self.scope, 'ident': client_ip(request)}
+        return self.cache_format % {'scope': self.scope, 'ident': throttle_ip(request)}
 
