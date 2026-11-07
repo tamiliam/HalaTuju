@@ -102,7 +102,7 @@ def service_error_documents(limit):
 _APPROVAL_SLIP_FAMILIES = ('informal', 'declaration', 'govt')
 
 
-def approval_unchecked_documents(limit):
+def approval_unchecked_documents(limit, use_cursor=True):
     """#374 / owner ruling 2A (2026-10-28): live income documents on open cases whose stored read PREDATES
     the approver fields — every `income_support_doc`, and a payslip read as informal / declaration / govt —
     so the hourly sweep re-reads them even if the lead's manual re-read misses one; until then they count
@@ -144,13 +144,46 @@ def approval_unchecked_documents(limit):
                          & ~Q(vision_fields__approval_read_until__gt=int(timezone.now().timestamp())))
                 .exclude(vision_fields__has_key='approval_read_error',
                          vision_fields__approval_read_until__lte=int(timezone.now().timestamp()))
-                .exclude(application__status__in=CASE_CLOSED_STATES)
-                .order_by('uploaded_at')[:limit])
+                .exclude(application__status__in=CASE_CLOSED_STATES))
+        after = _approval_cursor() if use_cursor else None
+        ordered = rows.order_by('uploaded_at', 'id')
+        picked = list(ordered.filter(Q(uploaded_at__gt=after[0]) | Q(uploaded_at=after[0], id__gt=after[1]))[:limit]
+                      ) if after else []
+        rows = picked or ordered[:limit]      # nothing after the cursor: wrap to the start
         return [d for d in rows if isinstance((d.vision_fields or {}).get('fields'), dict) and d.vision_fields['fields']
                 and ('has_stamp_or_signature' not in d.vision_fields['fields'] or approval_unchecked(d))]
     except Exception:                   # the rest of the sweep must still run
         logger.exception('approval re-read selection failed; the sweep continues')
         return []
+
+
+#: A2.2: where the last run stopped among the approval re-reads (`uploaded_at` ISO, id). In the shared cache
+#: (the DatabaseCache), so no migration; losing it only restarts at the oldest, which is the old behaviour.
+APPROVAL_CURSOR_KEY = 'reprocess_ic:approval_cursor'
+
+
+def _approval_cursor():
+    try:
+        from datetime import datetime
+        from django.core.cache import cache
+        raw = cache.get(APPROVAL_CURSOR_KEY)
+        return (datetime.fromisoformat(raw[0]), int(raw[1])) if raw else None
+    except Exception:
+        return None
+
+
+def approval_cursor_save(reached, stopped):
+    """After a run that STOPPED on its time budget, remember the last approval re-read it reached
+    (``reached``: those documents, in order); after a run that finished, forget it (start at the oldest)."""
+    try:
+        from django.core.cache import cache
+        if not stopped:
+            cache.delete(APPROVAL_CURSOR_KEY)
+        elif reached:
+            last = reached[-1]
+            cache.set(APPROVAL_CURSOR_KEY, (last.uploaded_at.isoformat(), last.id), None)
+    except Exception:
+        logger.exception('approval cursor not saved; the next run restarts at the oldest')
 
 
 def _reread_ic(doc):
@@ -185,14 +218,21 @@ def _reread(doc):
     return vf.get('error') or ''
 
 
-def run_service_retries(docs):
+def run_service_retries(docs, deadline=None, out=None):
     """Re-read ``docs`` in order → ``(scanned, processed, errored)``. Skips the batch while Gemini
-    reads are down, and stops at the first document that still fails on our side."""
+    reads are down, and stops at the first document that still fails on our side. A2.2: past
+    ``deadline`` (a ``time.monotonic()`` value) it stops between documents and sets ``out['stopped']``
+    and ``out['reached']`` (how many it got through)."""
+    import time
     from .outage import gemini_reads_down
     if not docs or gemini_reads_down():
         return 0, 0, 0
     scanned = processed = errored = 0
     for doc in docs:
+        if deadline is not None and time.monotonic() >= deadline:
+            if out is not None:
+                out.update(stopped=True, reached=scanned)
+            break
         scanned += 1
         try:
             err = _reread(doc)

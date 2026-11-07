@@ -140,6 +140,19 @@ steps:
     waitFor:
       - Deploy
 
+  # A2.2 / SP-14: the reprocess sweep's own Cloud Run Job (its own task timeout, not the service's 300 s).
+  # Non-fatal and a no-op until the owner creates the job (docs/deployment.md item 9).
+  - args:
+      - -c
+      - 'gcloud run jobs update reprocess-ic-vision --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+        --region=$_DEPLOY_REGION --quiet || echo "WARN: reprocess-ic-vision job image
+        sync skipped (job not created yet, or failed; non-fatal)"'
+    entrypoint: bash
+    id: SyncReprocessJob
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor:
+      - Deploy
+
 images:
   - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
 
