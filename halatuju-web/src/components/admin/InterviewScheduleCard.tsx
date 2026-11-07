@@ -118,10 +118,15 @@ export default function InterviewScheduleCard({
     } catch (e) {
       // An unassigned application can't have times proposed (slots are the assigned
       // reviewer's calendar) — surface the specific reason so the reviewer knows to assign first.
+      // A too-soon time names the notice that applies, never a bare "Could not save" (2026-11-07).
       const code = e instanceof Error ? e.message : ''
-      setError(t(code === 'not_assigned'
-        ? 'admin.scholarship.interview.schedule.notAssigned'
-        : 'admin.scholarship.interview.schedule.error'))
+      if (code === 'too_soon') {
+        setError(t('admin.scholarship.interview.schedule.tooSoon', { hours: String(leadHours) }))
+      } else {
+        setError(t(code === 'not_assigned'
+          ? 'admin.scholarship.interview.schedule.notAssigned'
+          : 'admin.scholarship.interview.schedule.error'))
+      }
     } finally { setBusy(false) }
   }
 

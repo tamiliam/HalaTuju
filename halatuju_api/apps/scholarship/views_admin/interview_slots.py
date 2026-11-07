@@ -58,7 +58,14 @@ class AdminInterviewSlotsView(_AdminBase):
         # first so a too-soon time reads as 'too_soon', not 'invalid_slot_time').
         from django.utils import timezone as _tz
         _org = app.owning_organisation
-        if any(s and not scheduling.meets_min_lead(s, _tz.now(), _org) for s in starts):
+        # reschedule=True: the reviewer is MOVING an already-booked interview — release the
+        # held booking, then offer the fresh menu (student is asked to re-pick). Only a BOOKED
+        # interview earns the short reschedule notice; a first proposal sent with the flag
+        # still meets the organisation's full notice.
+        reschedule = bool(request.data.get('reschedule'))
+        short_notice = reschedule and app.interview_status == 'booked'
+        if any(s and not scheduling.meets_min_lead(s, _tz.now(), _org, reschedule=short_notice)
+               for s in starts):
             return Response({'error': 'too_soon', 'code': 'too_soon'},
                             status=status.HTTP_400_BAD_REQUEST)
         # Enforce the interview-slot rule (MYT, on the organisation's step, inside its booking
@@ -67,9 +74,6 @@ class AdminInterviewSlotsView(_AdminBase):
         if any(s and not scheduling.slot_in_window(s, _org) for s in starts):
             return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
                             status=status.HTTP_400_BAD_REQUEST)
-        # reschedule=True: the reviewer is MOVING an already-booked interview — release the
-        # held booking, then offer the fresh menu (student is asked to re-pick).
-        reschedule = bool(request.data.get('reschedule'))
         try:
             scheduling.propose_slots(app, reviewer=admin, starts=starts, release_booking=reschedule)
         except scheduling.SchedulingError as e:
