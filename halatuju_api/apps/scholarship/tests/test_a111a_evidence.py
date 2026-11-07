@@ -118,6 +118,28 @@ class TestInterviewViewsRollBackWholly(TestCase):
         self.assertEqual(app.status, 'profile_complete')
         self.assertFalse(StaffActivity.objects.filter(subject_id=app.pk).exists())
 
+    @override_settings(CHECK2_AUTO_GENERATE=True)
+    def test_submit_view_autofinalises_at_the_callers_depth(self):
+        """Regression: no extra atomic around the view's submit, so the (Gemini) auto-finalise
+        holds no lock and a swallowed DB error cannot poison an outer transaction."""
+        from django.db import connection
+        app = make_application('profile_complete', cohort=self.cohort, reviewer=self.reviewer)
+        session = InterviewSession.objects.create(
+            application=app, status='draft',
+            findings={'motivation:motivation_grit': {'verdict': 'deleted'}})
+        depth = {}
+        with mock.patch.object(querying, '_maybe_autofinalise',
+                               side_effect=lambda *a: depth.setdefault(
+                                   'n', len(connection.savepoint_ids))) as finalise:
+            outer = len(connection.savepoint_ids)
+            r = authed_client(self.reviewer).post(self._url(app, 'submit/'), {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        finalise.assert_called_once()
+        self.assertEqual(depth['n'], outer)
+        session.refresh_from_db()
+        self.assertEqual(session.interviewer_id, self.reviewer.pk)
+        self.assertEqual(session.status, 'submitted')
+
     def test_draft_save_503_rolls_back_wholly(self):
         app = make_application('profile_complete', cohort=self.cohort, reviewer=self.reviewer)
         with _a_real_db_error():

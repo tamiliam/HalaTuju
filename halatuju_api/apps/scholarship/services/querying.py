@@ -114,7 +114,7 @@ def _maybe_autofinalise(application, session):
         pass  # never let auto-finalise break interview submission
 
 
-def submit_interview(session, actor=None):
+def submit_interview(session, actor=None, stamp_interviewer=None):
     """Phase C: finalise an interview session. Marks it submitted and moves the
     application into the reviewer's working state ('interviewing'). Idempotent on the
     session status. Returns True if it advanced the application.
@@ -129,8 +129,14 @@ def submit_interview(session, actor=None):
 
     ``actor`` — the admin who pressed Submit (the view passes it), who is NOT always the session's
     ``interviewer`` (lessons.md 2026-08-02) — gets an `interview_submitted` row on their own activity
-    list (common profile S3), once: a re-submit of a submitted session writes nothing."""
+    list (common profile S3), once: a re-submit of a submitted session writes nothing.
+
+    ``stamp_interviewer`` — if given and the session has no interviewer yet, it is stamped inside
+    the same transaction as the evidence write (so a failed write rolls the stamp back too)."""
     with transaction.atomic():   # TD-485: the guard's evidence holds with the submit, or neither
+        if stamp_interviewer is not None and session.interviewer_id is None:
+            session.interviewer = stamp_interviewer
+            session.save(update_fields=['interviewer'])
         advanced = _submit_interview_writes(session, actor)
     # Outside the transaction: the auto-finalise may call Gemini (never hold a lock across it).
     _maybe_autofinalise(session.application, session)
