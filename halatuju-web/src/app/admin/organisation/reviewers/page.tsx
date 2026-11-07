@@ -231,6 +231,11 @@ export default function AdminReviewersList() {
           the roles that may edit the emails, which was harmless while Emails was the only other
           panel — but Admins is a READING tab, and hiding the bar would have left `finance` with no
           way to reach it at all. Each tab keeps its own gate instead. */}
+      {/* Owner 2026-11-08: Add sits on the TAB ROW, at its right end, sized like a tab — not on a row of
+          its own. It stays OUTSIDE the tablist (a button there is not a tab to a screen reader), so the
+          row is a flex pair: the tabs take the room, Add keeps its own width on the right. */}
+      <div className="flex items-start gap-3">
+      <div className="min-w-0 flex-1">
       <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
         onSelect={(k) => setPanel(k as Panel)}
         tabs={[
@@ -244,6 +249,16 @@ export default function AdminReviewersList() {
           // the page may read it (it says only what is coming).
           { key: 'terms', labelKey: 'admin.reviewers.tabTerms' },
         ]} />
+      </div>
+      {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
+          Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}
+      {canManage && (panel === 'admins' || panel === 'reviewers') && (
+        <button type="button" onClick={() => setAdding(panel)} data-testid={`team-add-${panel}-open`}
+          className="shrink-0 rounded-lg border border-transparent bg-brand-fill px-4 py-1.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
+          {t(`admin.team.add.${panel}`)}
+        </button>
+      )}
+      </div>
 
       {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an
           emails hiccup can never take the reviewers table down with it. T4: three sections — Admin
@@ -251,16 +266,6 @@ export default function AdminReviewersList() {
       {panel === 'emails' && mayEditEmails && <TeamEmails token={token} t={t} />}
       {panel === 'terms' && <TeamTerms t={t} />}
 
-      {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
-          Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}
-      {canManage && (panel === 'admins' || panel === 'reviewers') && (
-        <div className="mb-3 flex justify-end">
-          <button type="button" onClick={() => setAdding(panel)} data-testid={`team-add-${panel}-open`}
-            className="min-h-11 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
-            {t(`admin.team.add.${panel}`)}
-          </button>
-        </div>
-      )}
       <TeamAddSheet open={adding !== null} table={adding ?? 'admins'} token={token}
         onClose={() => setAdding(null)} onDone={teamDone} />
       <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}

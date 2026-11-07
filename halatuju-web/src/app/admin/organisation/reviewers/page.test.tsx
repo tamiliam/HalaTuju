@@ -701,6 +701,14 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       'reviewers', 32, 'add', false, { token: 'tok' }))
   })
 
+  it('Add sits on the tab row, after the tabs and outside the tablist (owner 2026-11-08)', async () => {
+    await loaded()
+    const add = screen.getByTestId('team-add-reviewers-open')
+    const tablist = screen.getByRole('tablist')
+    expect(tablist.contains(add)).toBe(false)              // a button in a tablist is not a tab
+    expect(add.previousElementSibling?.contains(tablist)).toBe(true)   // same row, at its right end
+  })
+
   it('⚠ offers no Add and no Remove to a viewer who may not edit permissions (admin)', async () => {
     viewerRole = { role: 'admin' }
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], remove: { reviewers: null } }],

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Team's Add Admin / Add Reviewer button moves onto the tab row (2026-11-08)
+
+Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the button sat on a row of its own. On `admin/organisation/reviewers` it now sits at the right end of the tab row (Admins, Reviewers, Mentors, Emails, Terms), sized like a tab (44 px on a phone), and outside the tablist, because a button there is not a tab to a screen reader. `PanelTabs` is unchanged (19 pages use it). Test: `page.test.tsx` "Add sits on the tab row".
+
 ### fix: a super is no longer listed as a reviewer (2026-11-07)
 
 Branch chore-team-drop-last-table-note (not pushed; no migration, api only). Owner: "I am listed as a reviewer. I am not really." `_ReviewersBase._reviewers` (`views_admin/reviewers.py`) had included every `role='super'` row since the first reviewers surface, so a super saw themselves on Team -> Reviewers and had a reviewer page (`/admin/organisation/reviewers/<id>`). It now excludes supers for every viewer, which matches the Team table's own rule (`staff_tables.in_reviewers`). This also covers pause and set-gift, which read the same query, so a super can no longer be paused or gift-scoped as a reviewer. Case assignment (`AdminAssignableView`) is unchanged. Test: `test_reviewers_surface.test_a_super_is_not_a_reviewer`.
