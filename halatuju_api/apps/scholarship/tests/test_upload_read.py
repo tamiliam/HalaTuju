@@ -224,6 +224,23 @@ class TestUploadQueue(TestCase):
         self.assertIsNotNone(b.superseded_at)            # the mismatch is never promoted
         self.assertTrue(data['kept_previous'])
 
+    def test_a_planned_copy_moved_out_before_the_read_is_not_the_comparison(self):
+        # The upload saw a live copy; it was then moved out of the slot (collapse/dedupe), so the
+        # slot is empty at read time. The upload is judged against nothing and promotes, even as a
+        # mismatch, rather than against the dead copy (and staying staged over an empty slot).
+        with _Reads():
+            first = self._pending('ic', 'first')
+            self.assertEqual(upload_read.run_read(first.id)[0], 'done')
+        second = self._pending('ic', 'second')
+        self.assertEqual(second.read_plan['existing_live'], first.id)
+        ApplicantDocument.objects.filter(pk=first.id).update(superseded_at=timezone.now())
+        with _Reads(), patch('apps.scholarship.resolution.doc_match_verdict', return_value='mismatch'):
+            outcome, data = upload_read.run_read(second.id)
+        second.refresh_from_db()
+        self.assertEqual(outcome, 'done')
+        self.assertIsNone(second.superseded_at)          # promoted: nothing to compare against
+        self.assertFalse(data['kept_previous'])
+
     # --- the cron -------------------------------------------------------------
 
     def test_the_cron_reads_queued_uploads_oldest_first(self):

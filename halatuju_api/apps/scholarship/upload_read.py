@@ -321,7 +321,8 @@ def run_read(doc_id):
         # since (or a copy that replaced the plan's) may hold the slot, and should_promote(.., None)
         # always promotes, so a stale "nothing" would let a mismatch bury a good live copy. The
         # slot's live copies join the staged-against set; the pick is the tag guard's own
-        # (SNAPSHOT_ORDER over that set). The plan's copy is the fallback only for an empty slot.
+        # (SNAPSHOT_ORDER over that set).
+        # An empty slot is judged against nothing: the plan's copy was moved out or deleted.
         live_now = ApplicantDocument.objects.filter(
             application_id=doc.application_id, doc_type=doc.doc_type,
             household_member=doc.household_member, request_code=doc.request_code,
@@ -330,8 +331,6 @@ def run_read(doc_id):
         existing_live = (ApplicantDocument.objects.filter(
             id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
             .order_by(*SNAPSHOT_ORDER).first())
-    if existing_live is None and plan.get('existing_live'):
-        existing_live = ApplicantDocument.objects.filter(pk=plan['existing_live']).first()
     try:
         data = read_and_judge(doc.application, doc, staged=bool(plan.get('staged')),
                               stale_ids=stale_ids, existing_live=existing_live)
