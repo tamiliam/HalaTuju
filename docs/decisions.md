@@ -3569,6 +3569,10 @@ today's ranges and exist for that day.
 
 ## An officer closes a stalled application, from any in-play status; a close never cancels money — 2026-10-06 (owner's ruling on TD-352, option A; lead rulings in the build)
 
+> **Superseded in part 2026-11-07 (TD-488, Sprint A1.11b; see the 2026-11-07 owner-rulings entry).** Before an
+> award a close now works only at `submitted` and `recommended`; `CLOSEABLE_FROM` is no longer
+> `apply_gate.IN_PLAY_STATUSES`. Who may close, the reasons and everything after an award stand as written here.
+
 **Decision:** an application in process blocks a new one (2026-10-05), so a case that stops moving
 is released by an OFFICER closing it by hand — no clock, no age limit (revisit if cases pile up).
 `closure.close_application` now closes from EVERY in-play status: `CLOSEABLE_FROM` is
@@ -18978,3 +18982,37 @@ student with no higher results and SPM `grades` reads SPM — the route decision
 **Decision 2 (#262):** the cockpit's SPM grades tick (`fieldVerifications` → `grades`) needs BOTH the slip's `subjects` and `results` read as a clean match. A tick means every value checks out; a typed subject not on the slip (`subjects` mismatch) or a short read no longer shows it. Web only. The same for STPM: the ONE STPM tick also needs the slip's own whole-slip answer (`stpm_marks.all_subjects`, `student_higher_check.grades_status` == 'match'), so an STPM subject printed on the slip that she did not enter withholds it (before, only the subjects she entered were looked at). Owner: "STPM and SPM ticks only happen when both subjects and grades match exactly." The tertiary SPM prereq stays checked on the subjects she ENTERED (6 entered, 7 on the slip, the 6 match = tick).
 **Decision 3:** a Matriculation / Asasi / Diploma student's "CGPA entered" on the Academic card carries a tick when her live higher-results upload reads the same CGPA (`fieldVerifications` → `higherCgpa`, the drawer's own CGPA chip: `student_higher_check.cgpa_status` == 'match', within 0.05; STPM's own tick, within 0.01, is unchanged). Before, the check ran (drawer chip, Academic line) but the card showed no tick, so an officer could not tell it had been checked. Web only; source label `higherResults` in en/ms/ta (Tamil awaits language review).
 **Confirmed by design, no change (owner):** #106 (declared STPM, only SPM entered: reads SPM), #453 (post-SPM course: SPM slip + semester result), #132 / #133 (legacy, SPM-only intake D16c, ignore). #255's STPM slip sits in the SPM slot (scored by genuineness 1.7.0, pre-C3, so the wrong-slip witness cannot see it): a one-off team move, on the owner's word.
+
+## 2026-11-07 — Owner rulings: an interview decline always goes through QC; close only at submitted or recommended before an award; TD-216 left; TD-496 and TD-498 settled (Sprint A1.11b)
+
+**Ruling 1 (TD-487 / SEC-19, option A):** `POST .../reject/` refuses the `interview` bucket at every status, a super
+included: 400 `interview_decline_needs_qc`. A case AWAITING QC (`interviewed`) keeps TD-481's `awaiting_qc`. An
+interview decline goes record-verdict -> submit-decline -> QC, and only the QC's accept declines it. `contractual`
+at `/reject/` and the org admin's `org-reject` are unchanged. `services.decline.admin_reject` and
+`INTERVIEW_REJECT_FROM` are unchanged too, because the QC decision declines through them; the refusal sits at the
+door. This closes the two probes: a case QC reopened to `interviewing`, and a case a super reopened with
+reopen-decision, could each be declined at `/reject/` with no QC. Checked: a decline road remains at
+`profile_complete` (submit the interview, then the road above) and at `interviewing`; a stuck `shortlisted` case
+keeps `org-reject`. The cockpit never sent `interview`, so no web change.
+
+**Ruling 2 (TD-488, supersedes part of the 2026-10-06 TD-352 entry):** before an award, a close works only at
+`submitted` and `recommended` (reasons `stalled` and `withdrawn`). `shortlisted`, `profile_complete`,
+`interviewing` and `interviewed` refuse 400 `stage_not_closeable`, for a super too. `CLOSEABLE_FROM` is now
+`PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES` and no longer `apply_gate.IN_PLAY_STATUSES`; the part of TD-352 that
+said "from any in-play status" and "`CLOSEABLE_FROM` is `apply_gate.IN_PLAY_STATUSES` itself" is superseded. Who
+may close is unchanged; nothing changes after an award; emails are unchanged. The cockpit hides the Close card at
+the four refused stages (`closeOfferDrift` keeps the web in step with the API), and where the card shows before an
+award it carries the owner-approved explainer (a heading and short lines; no Stitch).
+**Owner's reason:** at interview stage, a student's lack of interest or silence is a finding. It goes in the
+interview findings and on to QC as a decline, not out by a close.
+
+**Ruling 3 (TD-216): left open.** The rest of the fix needs `InterviewSession.overall_note` split into findings and
+conclusion (a new column, so a migration) and a second labelled box on the Interview Stage (new UI, so Stitch
+first). Neither belonged in A1.11b. It moves to a sprint of its own.
+
+**Ruling 4 (TD-496 = B):** retire the graduation-messages list (`AdminGraduationMessageListView`,
+`views_admin/graduation.py`) after a check that nothing calls it. A later small job on the A1.11 branch does the
+removal; A1.11b recorded the ruling only.
+
+**Ruling 5 (TD-498 = B):** split each Engagement / sponsor door's GET onto `<page>.view` inside Sprint T5g, the
+same sprint that lets `view` be ticked alone, as a must-do item of the T5g plan; not in the audit fixes.

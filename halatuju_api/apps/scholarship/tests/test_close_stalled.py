@@ -1,7 +1,9 @@
 """TD-352 — an officer closes a stalled application; the student may then apply again.
 
-Owner ruling (option A, 2026-10-06): no clock. An officer closes the case by hand, from ANY in-play
-status, with a reason that fits the stage; a close REFUSES while a live sponsorship is attached (one
+Owner ruling (option A, 2026-10-06): no clock. An officer closes the case by hand, with a reason
+that fits the stage. TD-488 (owner ruling 2026-11-07) narrowed WHERE: before an award only at
+submitted and recommended; shortlisted / profile_complete / interviewing / interviewed refuse
+`stage_not_closeable` (the case is declined there instead). After an award nothing changed; a close REFUSES while a live sponsorship is attached (one
 door per job — cancel the offer first); the close writes one AUDIT line naming the status it left
 and, before an award, emails the student.
 """
@@ -22,14 +24,17 @@ from apps.scholarship.tests.test_endpoints_disbursements import fund_through_the
 API = '/api/v1/admin/scholarship/'
 SENDER = 'apps.scholarship.closure.send_application_closed_email'
 
-#: Each in-play status, and the factory stage that builds it.
+#: The pre-award statuses a close works at (TD-488), and the factory stage that builds each.
 PRE_AWARD = {
     'submitted': dict(stage='submitted'),
+    'recommended': dict(stage='recommended'),
+}
+#: The pre-award statuses a close REFUSES (TD-488): the case is declined there instead.
+PRE_AWARD_NOT_CLOSEABLE = {
     'shortlisted': dict(stage='shortlisted'),
     'profile_complete': dict(stage='profile_complete'),
     'interviewing': dict(stage='interviewing'),
     'interviewed': dict(stage='awaiting_qc', outcome='recommend'),
-    'recommended': dict(stage='recommended'),
 }
 FUNDED = {'active': dict(stage='active'), 'maintenance': dict(stage='maintenance')}
 
@@ -46,15 +51,25 @@ def _offer(app, status='offered'):
 
 
 class TestTheSetsAgree(TestCase):
-    def test_closeable_from_is_the_apply_gates_in_play_set(self):
-        self.assertIs(closure.CLOSEABLE_FROM, apply_gate.IN_PLAY_STATUSES)
+    def test_closeable_from_is_the_two_pre_award_stages_plus_post_award(self):
+        """TD-488 (owner 2026-11-07): CLOSEABLE_FROM is NO LONGER the apply gate's in-play set."""
+        self.assertEqual(closure.PRE_AWARD_CLOSEABLE, frozenset({'submitted', 'recommended'}))
+        self.assertEqual(closure.CLOSEABLE_FROM,
+                         closure.PRE_AWARD_CLOSEABLE | closure.POST_AWARD_STATUSES)
+        self.assertNotEqual(closure.CLOSEABLE_FROM, apply_gate.IN_PLAY_STATUSES)
+        self.assertLessEqual(closure.CLOSEABLE_FROM, apply_gate.IN_PLAY_STATUSES)
 
-    def test_every_in_play_status_has_reasons_and_stalled_is_always_one(self):
+    def test_every_pre_award_in_play_status_is_classified_closeable_or_not(self):
         self.assertEqual(closure.PRE_AWARD_STATUSES | closure.POST_AWARD_STATUSES,
                          apply_gate.IN_PLAY_STATUSES)
-        for status in apply_gate.IN_PLAY_STATUSES:
+        self.assertEqual(set(PRE_AWARD) | set(PRE_AWARD_NOT_CLOSEABLE), closure.PRE_AWARD_STATUSES)
+        self.assertFalse(set(PRE_AWARD) & set(PRE_AWARD_NOT_CLOSEABLE))
+        self.assertEqual(set(PRE_AWARD), closure.PRE_AWARD_CLOSEABLE)
+
+    def test_every_closeable_status_has_reasons_and_stalled_is_always_one(self):
+        for status in closure.CLOSEABLE_FROM:
             self.assertIn('stalled', closure.reasons_for(status), status)
-        for status in apply_gate.FINISHED_STATUSES:
+        for status in set(PRE_AWARD_NOT_CLOSEABLE) | set(apply_gate.FINISHED_STATUSES):
             self.assertEqual(closure.reasons_for(status), (), status)
 
     def test_pre_award_reasons_are_stalled_and_withdrawn_only(self):
@@ -76,6 +91,23 @@ class TestCloseFromEveryInPlayStatus(TestCase):
                     self.assertEqual((app.status, app.closure_reason, app.closed_by),
                                      ('closed', reason, 'o@x.my'))
                     self.assertIsNotNone(app.closed_at)
+
+    def test_the_other_pre_award_stages_refuse_stage_not_closeable(self, _send):
+        """TD-488: shortlisted / profile_complete / interviewing / interviewed are refused for
+        every reason; nothing is written and no email goes."""
+        for status, how in PRE_AWARD_NOT_CLOSEABLE.items():
+            for reason in ('stalled', 'withdrawn'):
+                with self.subTest(status=status, reason=reason):
+                    app = make_application(**how)
+                    self.assertEqual(app.status, status)
+                    with self.assertRaises(ClosureError) as ctx:
+                        closure.close_application(app, closure_reason=reason, by_email='o@x.my')
+                    self.assertEqual(ctx.exception.code, 'stage_not_closeable')
+                    self.assertIn('Submitted or Recommended', str(ctx.exception))
+                    app.refresh_from_db()
+                    self.assertEqual((app.status, app.closed_at, app.closure_reason),
+                                     (status, None, ''))
+        _send.assert_not_called()
 
     def test_a_post_award_reason_is_refused_before_an_award(self, _send):
         for status, how in PRE_AWARD.items():
@@ -197,7 +229,7 @@ class TestAuditAndEmail(TestCase):
                       f'from=recommended reason=stalled by=o@x.my', logs.output)
 
     def test_a_pre_award_close_emails_the_student(self):
-        app = make_application('interviewing')
+        app = make_application('submitted')
         with mock.patch(SENDER, return_value=True) as send:
             closure.close_application(app, closure_reason='stalled')
         send.assert_called_once()
@@ -237,7 +269,7 @@ class TestAuditAndEmail(TestCase):
         later = {'en': 'later round', 'ms': 'pusingan akan datang', 'ta': 'அடுத்த சுற்றில்'}
         for lang in ('en', 'ms', 'ta'):
             with self.subTest(lang=lang):
-                app = make_application('profile_complete', locale=lang)
+                app = make_application('recommended', locale=lang)
                 mail.outbox.clear()
                 closure.close_application(app, closure_reason='withdrawn')
                 body = mail.outbox[0].body
@@ -247,7 +279,7 @@ class TestAuditAndEmail(TestCase):
                 self.assertIn('/scholarship/application', body)
 
     def test_a_failed_email_is_a_warning_naming_the_application(self):
-        app = make_application('shortlisted')
+        app = make_application('submitted')
         with mock.patch(SENDER, return_value=False), \
                 self.assertLogs('apps.scholarship.closure', 'WARNING') as logs:
             closure.close_application(app, closure_reason='withdrawn')
@@ -339,7 +371,7 @@ class TestTheEndpoint(TestCase):
                                             {'closure_reason': reason}, format='json')
 
     def test_a_stalled_case_closes_and_answers_the_detail(self, _send):
-        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        app = make_application('submitted', cohort=self.cohort, reviewer=self.reviewer)
         r = self._close(app, 'stalled')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual((r.json()['status'], r.json()['closure_reason']), ('closed', 'stalled'))
@@ -353,11 +385,11 @@ class TestTheEndpoint(TestCase):
         qc = make_admin('qc', owning_org=self.cohort.owning_organisation)
         for who in (self.reviewer, qc):
             with self.subTest(role=who.role):
-                app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+                app = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
                 r = self._close(app, 'stalled', client=authed_client(who))
                 self.assertEqual(r.status_code, 403, r.content)
                 app.refresh_from_db()
-                self.assertEqual(app.status, 'interviewing')
+                self.assertEqual(app.status, 'recommended')
 
     def test_the_assigned_reviewer_may_still_close_a_funded_case(self, _send):
         app = make_application('active', cohort=self.cohort, reviewer=self.reviewer)
@@ -381,6 +413,19 @@ class TestTheEndpoint(TestCase):
         r = self._close(awarded, 'stalled')
         self.assertEqual((r.status_code, r.json()), (400, {'error': 'sponsorship_open'}))
 
+    def test_a_stage_that_cannot_close_answers_stage_not_closeable_even_for_a_super(self, _send):
+        """TD-488: the org admin and a super are refused at the four declined-not-closed stages."""
+        superuser = authed_client(make_admin('super', super_admin=True))
+        for status, how in PRE_AWARD_NOT_CLOSEABLE.items():
+            for client in (self.client, superuser):
+                with self.subTest(status=status, super=client is superuser):
+                    app = make_application(cohort=self.cohort, reviewer=self.reviewer, **how)
+                    r = self._close(app, 'stalled', client=client)
+                    self.assertEqual((r.status_code, r.json()),
+                                     (400, {'error': 'stage_not_closeable'}))
+                    app.refresh_from_db()
+                    self.assertEqual(app.status, status)
+
 
 #: The five review-track writes behind `_require_open_case` (test_closed_case_writes.REVIEW_WRITES).
 VERDICT_BODY = {
@@ -401,7 +446,7 @@ class TestAStalledCloseShutsTheReviewTrack(TestCase):
         self.reviewer = make_admin('reviewer', owning_org=self.cohort.owning_organisation)
         self.client = authed_client(self.reviewer)
 
-    def _closed(self, stage='interviewing'):
+    def _closed(self, stage='submitted'):
         app = make_application(stage, cohort=self.cohort, reviewer=self.reviewer)
         closure.close_application(app, closure_reason='stalled', by_email='o@x.my')
         return app
@@ -426,11 +471,11 @@ class TestAStalledCloseShutsTheReviewTrack(TestCase):
         from apps.scholarship.services import admin_reject, org_admin_reject
         for category in ('interview', 'contractual'):
             with self.subTest(category=category):
-                app = self._closed('profile_complete')
+                app = self._closed('recommended')
                 with self.assertRaises(ValueError) as ctx:
                     admin_reject(app, self.reviewer, category)
                 self.assertEqual(str(ctx.exception), 'bad_status')
-        app = self._closed('shortlisted')
+        app = self._closed('submitted')
         with self.assertRaises(ValueError):
             org_admin_reject(app, self.reviewer, 'A reason.')
         app.refresh_from_db()
@@ -472,7 +517,9 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
     is left alone (a booking stays 'booked' afterwards). The void runs AFTER COMMIT through the
     existing teardown (`scheduling.release_for_unassign`), without its student notice."""
 
-    def _booked(self, days=2, stage='interviewing', **kw):
+    # TD-488: a pre-award close works at submitted / recommended only, so the booking sits on a
+    # RECOMMENDED case (its interview behind it, in practice; a future one is the defensive path).
+    def _booked(self, days=2, stage='recommended', **kw):
         from datetime import timedelta
         from django.utils import timezone
         from apps.scholarship.models import InterviewSlot
@@ -518,8 +565,7 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
     def test_a_PAST_booked_interview_is_left_untouched(self, reviewer_notice, cancel_event, _send):
         """The blocker: closing a stalled `interviewed` case must not delete the calendar event of
         an interview that already happened, wipe its booking, or tell the reviewer "cancelled"."""
-        app, slot = self._booked(days=-3, stage='awaiting_qc', outcome='recommend',
-                                 interview_calendar_event_id='evt-past')
+        app, slot = self._booked(days=-3, interview_calendar_event_id='evt-past')
         with self.captureOnCommitCallbacks(execute=True) as pending:
             closure.close_application(app, closure_reason='stalled')
         self.assertEqual(pending, [])
@@ -546,7 +592,7 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
         self.assertEqual(pending, [])
         cancel_event.assert_not_called()
         app.refresh_from_db()
-        self.assertEqual((app.status, app.interview_status), ('interviewing', 'booked'))
+        self.assertEqual((app.status, app.interview_status), ('recommended', 'booked'))
 
     def test_proposed_times_are_withdrawn_so_she_cannot_book_after_the_close(self, _send):
         from datetime import timedelta
@@ -554,7 +600,7 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
         from apps.scholarship import scheduling
         from apps.scholarship.models import InterviewSlot
         reviewer = make_admin('reviewer')
-        app = make_application('interviewing', reviewer=reviewer)
+        app = make_application('recommended', reviewer=reviewer)
         slot = InterviewSlot.objects.create(application=app, reviewer=reviewer,
                                             start=timezone.now() + timedelta(days=3))
         closure.close_application(app, closure_reason='stalled')
@@ -593,10 +639,13 @@ class TestClosedBeforeQcIsNotRecommended(TestCase):
     def test_the_reviewer_figures(self, _send):
         from apps.scholarship.views_admin.reviewers import _reviewer_workloads
         reviewer = make_admin('reviewer')
-        declined = make_application('awaiting_qc', outcome='decline', reviewer=reviewer)
-        closure.close_application(declined, closure_reason='stalled')
-        accepted = make_application('awaiting_qc', outcome='recommend', reviewer=reviewer)
-        closure.close_application(accepted, closure_reason='stalled')
+        # Closed while AWAITING QC: possible under TD-352, refused since TD-488 (2026-11-07). These
+        # are the rows that rule left behind, so they are built closed, not closed by the service.
+        from django.utils import timezone as tz
+        was_closed = dict(status='closed', closure_reason='stalled', closed_at=tz.now())
+        declined = make_application('awaiting_qc', outcome='decline', reviewer=reviewer,
+                                    **was_closed)
+        make_application('awaiting_qc', outcome='recommend', reviewer=reviewer, **was_closed)
         make_application('closed', reviewer=reviewer)              # a funded close: recommended_at
         self.assertIsNone(declined.recommended_at)
         work = _reviewer_workloads([reviewer])[reviewer.id]
@@ -645,13 +694,13 @@ class TestAPendingDeclineRefusesTheClose(TestCase):
             # subTest kwargs travel to the xdist controller (the deploy gate runs `-n auto`), and
             # execnet cannot serialise a datetime — name the marker, do not pass its value.
             with self.subTest(marker=next(iter(marker))):
-                app = make_application('interviewing', **marker)
+                app = make_application('recommended', **marker)
                 Disbursement.objects.create(application=app, amount=Decimal('1'), status='released')
                 with self.assertRaises(ClosureError) as ctx:
                     closure.close_application(app, closure_reason='stalled')
                 self.assertEqual(ctx.exception.code, 'decline_pending')   # not sponsorship_open
                 app.refresh_from_db()
-                self.assertEqual(app.status, 'interviewing')
+                self.assertEqual(app.status, 'recommended')
         _send.assert_not_called()
 
 

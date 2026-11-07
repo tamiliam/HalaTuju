@@ -56,41 +56,47 @@ class _People(TestCase):
     def _interviewing(self):
         return make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
 
+    # TD-487 / SEC-19 (owner 2026-11-07): `/reject/` refuses the 'interview' bucket at every
+    # status, so the reason rules below are exercised on the bucket the door still takes:
+    # 'contractual', from a recommended case.
+    def _recommended(self):
+        return make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
+
 
 @override_settings(**API)
 class RejectNeedsAReason(_People):
 
     def test_no_reason_is_refused_and_nothing_moves(self):
-        for body in ({'category': 'interview'}, {'category': 'interview', 'comments': '   '},
-                     {'category': 'interview', 'comments': None},
-                     {'category': 'interview', 'comments': ['x']}):
+        for body in ({'category': 'contractual'}, {'category': 'contractual', 'comments': '   '},
+                     {'category': 'contractual', 'comments': None},
+                     {'category': 'contractual', 'comments': ['x']}):
             with self.subTest(body=body):
-                app = self._interviewing()
+                app = self._recommended()
                 mail.outbox.clear()
                 r = _reject(self.lead, app, body)
                 self.assertEqual(r.status_code, 400, r.content[:300])
                 self.assertEqual(r.json()['code'], 'comments_required')
                 app.refresh_from_db()
-                self.assertEqual(app.status, 'interviewing')
+                self.assertEqual(app.status, 'recommended')
                 self.assertIsNone(app.rejected_at)
                 self.assertEqual((app.rejected_by, app.rejection_comments), ('', ''))
                 self.assertEqual(mail.outbox, [])
                 self.assertFalse(StaffActivity.objects.filter(
                     subject_type='application', subject_id=app.pk).exists())
 
-    def test_contractual_needs_one_too(self):
-        app = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
+    def test_the_assignee_needs_one_too(self):
+        app = self._recommended()
         r = _reject(self.reviewer, app, {'category': 'contractual'})
         self.assertEqual((r.status_code, r.json()['code']), (400, 'comments_required'))
         app.refresh_from_db()
         self.assertEqual(app.status, 'recommended')
 
     def test_the_reason_is_stored_on_the_case(self):
-        app = self._interviewing()
-        r = _reject(self.lead, app, {'category': 'interview', 'comments': '  Did not attend twice.  '})
+        app = self._recommended()
+        r = _reject(self.lead, app, {'category': 'contractual', 'comments': '  Did not attend twice.  '})
         self.assertEqual(r.status_code, 200, r.content[:300])
         app.refresh_from_db()
-        self.assertEqual((app.status, app.rejection_category), ('rejected', 'interview'))
+        self.assertEqual((app.status, app.rejection_category), ('rejected', 'contractual'))
         self.assertEqual(app.rejection_comments, 'Did not attend twice.')
         self.assertEqual(app.rejected_by, self.lead.email)
         self.assertEqual(r.json()['rejection_comments'], 'Did not attend twice.')
@@ -102,15 +108,15 @@ class WhoDeclined(_People):
     def test_someone_other_than_the_assignee_is_named_as_such(self):
         for who in (self.lead, self.super):
             with self.subTest(who=who.role):
-                app = self._interviewing()
-                r = _reject(who, app, {'category': 'interview', 'comments': 'Not selected.'})
+                app = self._recommended()
+                r = _reject(who, app, {'category': 'contractual', 'comments': 'Not selected.'})
                 self.assertEqual(r.status_code, 200, r.content[:300])
                 self.assertIs(r.json()['rejected_by_unassigned'], True)
                 self.assertIs(_detail(self.super, app)['rejected_by_unassigned'], True)
 
     def test_the_assignee_is_not(self):
-        app = self._interviewing()
-        r = _reject(self.reviewer, app, {'category': 'interview', 'comments': 'Not selected.'})
+        app = self._recommended()
+        r = _reject(self.reviewer, app, {'category': 'contractual', 'comments': 'Not selected.'})
         self.assertEqual(r.status_code, 200, r.content[:300])
         self.assertIs(r.json()['rejected_by_unassigned'], False)
         self.assertIs(_detail(self.super, app)['rejected_by_unassigned'], False)

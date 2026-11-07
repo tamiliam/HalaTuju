@@ -316,11 +316,12 @@ export function PostAwardPanels({
         )
       })()}
 
-      {/* ── Manual closure (post-award S6; TD-352: from ANY in-play status) ──
+      {/* ── Manual closure (post-award S6; TD-352; TD-488: before an award, submitted /
+          recommended only) ──
           Close a file with a reason that fits the stage (`closeOffer` mirrors the api's table).
           Terminal. Shows the closed summary once closed (the graduation thank-you relay stays
-          open after closure). Before an award: no offboarding checklist, and the note says she
-          may apply again in a later round and is emailed. */}
+          open after closure). Before an award: no offboarding checklist, and the owner's
+          explainer says when close fits, what to use instead, and what the student is emailed. */}
       {/* Since maintenance S3 a POST-award close is on the scholar file; only a pre-award one here. */}
       {((closeOffer(app.status, orgSuper).show && closeOffer(app.status, orgSuper).preAward)
         || app.status === 'closed') && (
@@ -344,9 +345,23 @@ export function PostAwardPanels({
             </div>
           ) : canWrite ? (
             <>
-              <p className="text-xs text-ground-500">
-                {t(closeOffer(app.status, orgSuper).preAward ? 'admin.closure.notePreAward' : 'admin.closure.note')}
-              </p>
+              {closeOffer(app.status, orgSuper).preAward ? (
+                // TD-488 (owner-approved explainer, 2026-11-07): close is extraordinary — it shows
+                // at submitted / recommended only, and says when to use Reject or QC instead.
+                <div className="space-y-1 text-xs text-ground-500" data-testid="close-guide">
+                  <p className="text-sm font-medium text-ground-800">{t('admin.closure.guide.heading')}</p>
+                  <p>{t('admin.closure.guide.use')}</p>
+                  <p>{t('admin.closure.guide.stages')}</p>
+                  <ul className="list-disc ml-5 space-y-0.5">
+                    <li>{t('admin.closure.guide.submitted')}</li>
+                    <li>{t('admin.closure.guide.recommended')}</li>
+                  </ul>
+                  <p>{t('admin.closure.guide.otherStages')}</p>
+                  <p>{t('admin.closure.guide.email')}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-ground-500">{t('admin.closure.note')}</p>
+              )}
               {/* Offboarding checklist — informational guidance before closing a funded file. */}
               {!closeOffer(app.status, orgSuper).preAward && (
                 <ul className="list-disc ml-5 text-xs text-ground-500 space-y-0.5">

@@ -402,6 +402,7 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
   - Each owner-ruled item is built to the ruling, or left blocked with a pinned test.
 - **Readings moved:** td_open −10. Two medium security findings closed.
 - **Complexity:** L (split: A1.11a separation evidence, A1.11b decline and close gates after the owner rules TD-487 / 488).
+- **Status 2026-11-07:** A1.11b built on branch a111a, not deployed (owner rulings, decisions.md 2026-11-07). TD-487 / SEC-19 and TD-488 fixed. TD-216 left open: it needs a migration and a new box (Stitch), so it moves to its own sprint.
 - **Model:** Opus.
 - **Gates:** Adversarial review. Owner phone check: a decline and a QC on test cases.
 - **Deploy:** G4.
@@ -1043,7 +1044,7 @@ Each line names the sprint it blocks. Items marked (D-list) only need a yes, no 
 | D1 | Supabase "Confirm email" setting on (the SEC-02 residue: the code half ships in sec-a; the dashboard setting closes it) | Closing TD-513 (A0.1 follow-up) |
 | D2 | Cases already given RM3,000 with an unknown start year: review each, claw back, or leave | A1.13 |
 | D3 | TD-198: who may withdraw an award, and when (TD-252 closes into it) | A1.13 |
-| D4 | TD-487: may `/reject/` before AWAITING QC go straight through, or need a second check? Also TD-488 (org admin closes an AWAITING-QC case) | A1.11b |
+| D4 | TD-487: may `/reject/` before AWAITING QC go straight through, or need a second check? Also TD-488 (org admin closes an AWAITING-QC case) | A1.11b — RULED 2026-11-07 (option A; close at submitted / recommended only), built in A1.11b |
 | D5 | TD-501 existing NULL-gift staff rows: which gift each should have | A1.3 (data step) |
 | D6 | TD-523 / SP-08: minimum instances (cost per month) and build-minute changes | A2.5 |
 | D7 | TD-262: income rule option 4 (`income_support_doc`) yes or no | A3.4 (the consolidation part) |
@@ -1085,7 +1086,7 @@ Each line names the sprint it blocks. Items marked (D-list) only need a yes, no 
 | SEC-16 | medium | A1.2 |
 | SEC-17 / TD-501 | medium | A1.3 |
 | SEC-18 / TD-467 | medium | A1.7 |
-| SEC-19 / TD-487 | medium | A1.11b (D4) |
+| ~~SEC-19 / TD-487~~ | medium | A1.11b (D4) — fixed 2026-11-07 |
 | SEC-20 | low | A1.10, A1.11, A4.4 |
 | CO-01 / TD-521 | medium | A3.16b |
 | CO-02, CO-03 / TD-522 | medium | A0.3 |

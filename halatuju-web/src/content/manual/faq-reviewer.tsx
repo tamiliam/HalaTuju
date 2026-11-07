@@ -206,4 +206,11 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>They can <strong>reschedule or cancel</strong> up to a few hours before, and you&rsquo;ll see the
         change. If they cancel, just propose fresh times.</>,
     },
+    {
+      q: <>The student stops responding, or tells me they no longer want the scholarship. What do I do?</>,
+      a: <>Write it in your <strong>interview findings</strong> (one line is enough, such as &ldquo;Did not
+        attend twice&rdquo;), select <strong>Decline</strong> and save. The decline goes to <strong>Quality
+        check</strong> like any other. Nobody can decline a case at this stage without QC, and it cannot be
+        closed instead: Close works before an award only at Submitted and Recommended.</>,
+    },
 ]

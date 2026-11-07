@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.11b - decline and close gates (TD-487 / SEC-19, TD-488) (2026-11-07)
+
+Branch a111a (not pushed; no migration). Built to the owner's rulings of 2026-11-07 (decisions.md).
+- TD-487 / SEC-19 (option A): `/reject/` refuses the `interview` bucket at every status, a super included, 400 `interview_decline_needs_qc`; AWAITING QC keeps `awaiting_qc`. An interview decline goes record-verdict -> submit-decline -> QC. `contractual` and `org-reject` are unchanged. The cockpit never sent `interview`, so no web change. The decline road stays open at `profile_complete` and `interviewing`.
+- TD-488 (supersedes part of TD-352): before an award, a close works only at `submitted` and `recommended`; `shortlisted`, `profile_complete`, `interviewing` and `interviewed` refuse 400 `stage_not_closeable`. `CLOSEABLE_FROM` is `PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES`. The cockpit hides the Close card at those stages and shows the owner-approved explainer before an award (en / ms / ta); `closeOfferDrift` is in step. Who may close, everything after an award and the emails are unchanged.
+- Guide: a reviewer FAQ on a student who stops answering, and an org-admin FAQ on close versus decline.
+- TD-216 left open (needs a migration and a new box, Stitch first). TD-496 and TD-498 owner rulings recorded only.
+
+Tests: `test_a111b_decline_and_close_gates.py` (new), `test_close_stalled.py`, `test_reject_buckets.py`, `test_td481_awaiting_qc_decline.py`, `test_a111a_reject_reason_qc_refusal.py`, `test_staff_activity.py` updated; jest `closeOfferDrift.test.ts`, `view.close.test.tsx`.
+
 ### fix: Sprint A1.11a - QC separation evidence (TD-484, TD-443, TD-485, TD-486, TD-441 item 3) (2026-11-07)
 
 Branch a111a (not pushed). Migration `0204_decisionreopen_reopened_from` is written and NOT applied (additive, `db_default=''`). API only; no user-visible text change except the 503 `evidence_not_recorded` sentence.

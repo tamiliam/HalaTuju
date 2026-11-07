@@ -4091,7 +4091,15 @@
     "closure": {
       "title": "Tutup fail",
       "note": "Penutupan adalah muktamad. Pilih sebab yang paling sesuai dengan cara sokongan berakhir.",
-      "notePreAward": "Penutupan adalah muktamad. Pelajar boleh memohon semula pada pusingan akan datang. Dia akan dimaklumkan melalui e-mel.",
+      "guide": {
+        "heading": "Tutup permohonan ini",
+        "use": "Gunakan ini hanya apabila sesuatu kes tersekat dan Tolak tidak sesuai.",
+        "stages": "Tutup hanya berfungsi pada dua peringkat:",
+        "submitted": "Dihantar: kes ini tidak bergerak ke peringkat seterusnya.",
+        "recommended": "Disyorkan: contohnya, tiada penaja tampil, pelajar berhenti memberi maklum balas, atau pelajar menyatakan dia tidak lagi mahukan biasiswa itu.",
+        "otherStages": "Pada peringkat lain, gunakan Tolak, atau tuliskannya dalam penemuan temu duga untuk Semakan kualiti.",
+        "email": "Pelajar akan menerima e-mel. E-mel itu menyatakan sama ada ‘ditutup atas permintaan anda’ atau ‘ditutup oleh pasukan kami’. Kedua-duanya menyatakan pelajar boleh memohon semula pada pusingan akan datang."
+      },
       "reasonLabel": "Sebab penutupan",
       "reasonUnset": "Pilih sebab…",
       "close": "Tutup fail",
@@ -4114,6 +4122,7 @@
         "not_closeable": "Permohonan ini telah pun selesai.",
         "sponsorship_open": "Permohonan ini memegang tawaran penaja atau wang yang telah dibayar. Ia tidak boleh ditutup di sini. Tanya pemilik platform.",
         "decline_pending": "Penolakan sedang menunggu. Batalkannya dahulu.",
+        "stage_not_closeable": "Sebelum anugerah, kes hanya boleh ditutup pada peringkat Dihantar atau Disyorkan. Pada peringkat ini, gunakan Tolak, atau tuliskannya dalam penemuan temu duga untuk Semakan kualiti.",
         "generic": "Tidak dapat menutup fail. Anda mungkin tiada kebenaran."
       }
     },

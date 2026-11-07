@@ -228,7 +228,7 @@ class TestBestEffort(_Base):
     def test_a_close_still_succeeds_inside_its_row_lock(self):
         for label, failure in self._each_failure():
             with self.subTest(label):
-                app = self.app('interviewing', reviewer=self.reviewer)
+                app = self.app('recommended', reviewer=self.reviewer)   # TD-488: closeable
                 with failure():
                     resp = authed_client(self.superadmin).post(
                         _url(app, 'close/'), {'closure_reason': 'stalled'}, format='json')
@@ -283,7 +283,7 @@ class TestBestEffort(_Base):
         self.assertNoRows()
 
     def test_a_rolled_back_close_leaves_no_row(self):
-        app = self.app('interviewing', reviewer=self.reviewer)
+        app = self.app('recommended', reviewer=self.reviewer)   # TD-488: a closeable stage
 
         class Abandon(Exception):
             pass
@@ -422,12 +422,13 @@ class TestTheCaseActions(_Base):
         self.assertOneRow(V.DECLINE_SENT_TO_QC, self.reviewer, app)
 
     def test_declined_directly(self):
-        app = self.app('interviewing', reviewer=self.reviewer)
+        # TD-487 (2026-11-07): `/reject/` takes only the contractual bucket now.
+        app = self.app('recommended', reviewer=self.reviewer)
         resp = authed_client(self.superadmin).post(
-            _url(app, 'reject/'), {'category': 'interview', 'comments': 'Not selected.'}, format='json')
+            _url(app, 'reject/'), {'category': 'contractual', 'comments': 'Not selected.'}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
         row = self.assertOneRow(V.DECLINED, self.superadmin, app)
-        self.assertEqual(row.meta, {'category': 'interview'})
+        self.assertEqual(row.meta, {'category': 'contractual'})
 
     def test_declined_by_the_org_admin_keeps_no_copy_of_the_reason(self):
         app = self.app('shortlisted')
@@ -489,15 +490,15 @@ class TestTheCaseActions(_Base):
         self.assertEqual(row.meta, {'from_status': 'recommended'})
 
     def test_case_closed(self):
-        app = self.app('interviewing', reviewer=self.reviewer)
+        app = self.app('recommended', reviewer=self.reviewer)   # TD-488: a closeable stage
         resp = authed_client(self.superadmin).post(
             _url(app, 'close/'), {'closure_reason': 'stalled'}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
         row = self.assertOneRow(V.CASE_CLOSED, self.superadmin, app)
-        self.assertEqual(row.meta, {'reason': 'stalled', 'from_status': 'interviewing'})
+        self.assertEqual(row.meta, {'reason': 'stalled', 'from_status': 'recommended'})
 
     def test_a_close_from_management_code_writes_nothing(self):
-        closure.close_application(self.app('interviewing', reviewer=self.reviewer),
+        closure.close_application(self.app('submitted', reviewer=self.reviewer),
                                   closure_reason='stalled', by_email='ops@example.test')
         self.assertNoRows()
 

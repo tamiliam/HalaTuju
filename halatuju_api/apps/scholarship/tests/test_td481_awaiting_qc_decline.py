@@ -12,8 +12,11 @@ included (400 `awaiting_qc`); the case does not move.
                           (status, decline stamps, email, activity rows, reopen rows all as they were).
 - `TheQcGateDeclines`   — the same case declined through `qc-decision` by an unrelated QC and by a super (the
                           super loses nothing: `_require_qc` admits them, exempt from separation).
-- `EverythingElseAsBefore` — `/reject/` still declines from 'interviewing' (incl. a case QC reopened) and from
-                          'shortlisted'; `contractual` is unchanged (and at 'interviewed' still answers bad_status).
+- `EverythingElseAsBefore` — RE-POINTED by TD-487 / SEC-19 (owner 2026-11-07, option A): `/reject/` now
+                          refuses `interview` at 'interviewing' (incl. a case QC reopened) and 'shortlisted' too
+                          (400 interview_decline_needs_qc); the org admin's shortlisted drop is `org-reject`;
+                          `contractual` is unchanged (and at 'interviewed' still answers bad_status). The
+                          decline road that remains is in test_a111b_decline_and_close_gates.py.
 """
 from unittest import mock
 
@@ -155,28 +158,36 @@ class EverythingElseAsBefore(_People):
         app.refresh_from_db()
         self.assertEqual((app.status, app.rejection_category), ('rejected', category))
 
-    def test_the_assignee_declines_from_interviewing(self):
-        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
-        r = _reject(self.reviewer, app)
-        self.assertEqual(r.status_code, 200, r.content[:300])
-        self._declined(app)
-        self.assertEqual(len(mail.outbox), 1)                                   # no hold here
+    def _refused(self, r, app, was):
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'interview_decline_needs_qc'))
+        app.refresh_from_db()
+        self.assertEqual((app.status, app.rejection_category), (was, ''))
+        self.assertEqual(mail.outbox, [])
 
-    def test_a_case_qc_reopened_is_the_reviewers_again_and_declinable(self):
+    def test_the_assignee_is_refused_at_interviewing_too(self):
+        # TD-487: was a 200 decline with no QC; the reviewer's road is record-verdict -> QC.
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        mail.outbox.clear()
+        self._refused(_reject(self.reviewer, app), app, 'interviewing')
+
+    def test_a_case_qc_reopened_is_the_reviewers_again_but_not_declinable_here(self):
+        # TD-487 probe 1: QC reopen -> interviewing -> /reject/ interview used to decline, no QC.
         app = self._awaiting('decline')
         r = _qc(self.qc, app, 'reopen', comments='Ask for the payslip.')
         self.assertEqual(r.status_code, 200, r.content[:300])
         app.refresh_from_db()
         self.assertEqual(app.status, 'interviewing')
-        r = _reject(self.reviewer, app)
-        self.assertEqual(r.status_code, 200, r.content[:300])
-        self._declined(app)
+        mail.outbox.clear()
+        self._refused(_reject(self.reviewer, app), app, 'interviewing')
 
-    def test_shortlisted_declines(self):
+    def test_shortlisted_is_refused_here_and_drops_through_org_reject(self):
         app = make_application('shortlisted', cohort=self.cohort)
-        r = _reject(self.lead, app)                     # no assignee yet: the organisation admin
+        mail.outbox.clear()
+        self._refused(_reject(self.lead, app), app, 'shortlisted')
+        r = authed_client(self.lead).post(f'{APPS}{app.pk}/org-reject/',
+                                          {'comments': 'Never sent the documents.'}, format='json')
         self.assertEqual(r.status_code, 200, r.content[:300])
-        self._declined(app)
+        self._declined(app, 'incomplete')
 
     def test_contractual_is_unchanged(self):
         app = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)

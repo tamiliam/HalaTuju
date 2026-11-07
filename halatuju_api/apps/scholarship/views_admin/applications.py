@@ -378,9 +378,11 @@ class AdminVerifyAcceptView(_AdminBase):
 
 class AdminRejectView(_AdminBase):
     """POST .../<pk>/reject/ {category} — post-shortlist admin rejection (buckets 3 & 4).
-    'interview'  = reviewed but not selected (allowed from shortlisted/profile_complete/
-                   interviewing) → extra-thankful email. NOT from 'interviewed' (AWAITING QC):
-                   400 awaiting_qc, for everyone, super included (TD-481, below).
+    'interview'  = REFUSED HERE AT EVERY STATUS (TD-487 / SEC-19, owner ruling 2026-11-07,
+                   below). An interview decline goes record-verdict → submit-decline → QC; the
+                   QC decision calls `admin_reject(..., 'interview', ...)` itself. 'interviewed'
+                   keeps its TD-481 code `awaiting_qc`; every other status answers
+                   400 `interview_decline_needs_qc`. Super included.
     'contractual' = failed post-award steps (allowed from 'recommended'/'sponsored') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
@@ -402,6 +404,18 @@ class AdminRejectView(_AdminBase):
                 {'error': 'This case is awaiting QC. It is declined through the QC decision, '
                           'not here.',
                  'code': 'awaiting_qc'},
+                status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ TD-487 / SEC-19 (owner ruling 2026-11-07, option A): the 'interview' bucket is refused
+        # at THIS door at every other status too. Before, a case reopened back to 'interviewing'
+        # (QC reopen, or a super's reopen-decision) could be declined here with no QC at all. A
+        # reviewer's interview decline always goes record-verdict → submit-decline → QC, which is
+        # open at shortlisted / profile_complete / interviewing. The org admin's drop of a stuck
+        # SHORTLISTED case keeps its own door (`org-reject`); 'contractual' is unchanged.
+        if category == 'interview':
+            return Response(
+                {'error': 'An interview decline goes through Quality check. Record the decline '
+                          'verdict and send it to QC.',
+                 'code': 'interview_decline_needs_qc'},
                 status=status.HTTP_400_BAD_REQUEST)
         # TD-227 (A1.11a): every decline here carries its reason, stored on the case
         # (`rejection_comments`), so a decline by someone other than the assignee is never silent.

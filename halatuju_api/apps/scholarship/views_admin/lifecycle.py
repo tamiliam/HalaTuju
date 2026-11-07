@@ -140,11 +140,13 @@ class AdminDisbursementActionView(_AdminBase):
 
 
 class AdminCloseApplicationView(_AdminBase):
-    """Post-award S6, widened by TD-352: POST .../applications/<pk>/close/ {closure_reason} —
-    manually close an application from ANY in-play status, with a reason that fits the stage
+    """Post-award S6, widened by TD-352, narrowed by TD-488: POST .../applications/<pk>/close/
+    {closure_reason} — manually close an application, with a reason that fits the stage
     (``closure.close_application`` holds the reasons-by-stage table and the sponsorship refusal).
-    Access-scoped. Terminal. Returns the refreshed detail; a refusal answers 400 ``{error: code}``
-    — not_closeable / bad_reason / reason_not_allowed / decline_pending / sponsorship_open.
+    Before an award, only at submitted / recommended (owner ruling 2026-11-07); every other
+    pre-award stage answers ``stage_not_closeable``. Access-scoped. Terminal. Returns the
+    refreshed detail; a refusal answers 400 ``{error: code}`` — not_closeable /
+    stage_not_closeable / bad_reason / reason_not_allowed / decline_pending / sponsorship_open.
 
     WHO (lead decision, TD-352 review): a close from a PRE-award status releases the student from
     the programme before any decision was made, so it is gated like the org-admin reject

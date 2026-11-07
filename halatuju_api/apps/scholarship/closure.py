@@ -10,8 +10,14 @@ the negative ones (``withdrawn`` / ``lapsed`` / ``terminated`` / ``stalled``).
 
 TD-352 (owner ruling, option A, 2026-10-06): an application in play blocks a new one
 (``services/apply_gate.py``), so a case that has STALLED — the student stopped answering, or the
-case stopped moving — would hold her place for ever. An officer may now close it from ANY in-play
-status, and once closed she may apply again (``closed`` is a FINISHED status for the apply gate).
+case stopped moving — would hold her place for ever. An officer may close it, and once closed she
+may apply again (``closed`` is a FINISHED status for the apply gate).
+
+TD-488 (owner ruling 2026-11-07, supersedes the "from ANY in-play status" part of TD-352): close is
+an EXTRAORDINARY step. Before an award it works only at ``submitted`` and ``recommended``
+(``PRE_AWARD_CLOSEABLE``). From shortlisted / profile_complete / interviewing / interviewed the
+case is declined instead (Reject, or the interview findings sent to Quality check), so the close
+refuses with ``stage_not_closeable``. After an award nothing changed.
 
 Closure is terminal within this lifecycle (no reopen path here). The graduation thank-you relay is
 re-gated to remain available AFTER closure (see ``in_programme`` — ``submit_graduation_message``
@@ -32,16 +38,22 @@ from .services.apply_gate import IN_PLAY_STATUSES
 #: is part of what the tests pin, so it must not move if this file ever does.
 logger = logging.getLogger('apps.scholarship.closure')
 
-#: A close is valid from EVERY in-play status — the same set the apply gate treats as holding the
-#: student's place. ONE definition: it is imported, never copied (test_closure asserts the identity).
-CLOSEABLE_FROM = IN_PLAY_STATUSES
-
-#: Before a funder has committed. A close here frees the student to apply again and emails her.
+#: Before a funder has committed — the CLASSIFICATION (role gate, email, sweep). Every pre-award
+#: in-play status is here, closeable or not; PRE_AWARD | POST_AWARD == IN_PLAY (a test pins it).
 PRE_AWARD_STATUSES = frozenset({
     'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended',
 })
 #: A funder has committed (awarded) or the student is funded (active / maintenance).
 POST_AWARD_STATUSES = frozenset({'awarded', 'active', 'maintenance'})
+
+#: TD-488 (owner ruling 2026-11-07): the only pre-award stages a close works at. Submitted = the
+#: case did not move on; recommended = no sponsor comes, the student stops responding, or says she
+#: no longer wants the scholarship. Every other pre-award stage refuses ``stage_not_closeable``.
+PRE_AWARD_CLOSEABLE = frozenset({'submitted', 'recommended'})
+
+#: Where a close is valid. NO LONGER all of IN_PLAY_STATUSES (TD-488): the closeable pre-award
+#: stages plus every post-award one ('awarded' is in, refused in practice by ``sponsorship_open``).
+CLOSEABLE_FROM = PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES
 
 
 
@@ -82,6 +94,12 @@ SPONSORSHIP_OPEN_MESSAGE = (
     'Ask the platform owner.')   # releasing an awarded student is an owner decision (TD-366)
 
 
+#: The sentence for ``stage_not_closeable`` (TD-488; the web shows its own translated copy).
+STAGE_NOT_CLOSEABLE_MESSAGE = ('A case can be closed before an award only at Submitted or '
+                               'Recommended. At this stage, use Reject, or write it in the '
+                               'interview findings for Quality check.')
+
+
 #: The sentence for ``decline_pending`` (as `reopen.reopen_decision` refuses, TD-349).
 DECLINE_PENDING_MESSAGE = ('A decline is pending on this application. Cancel the pending decline '
                            'first; a close would otherwise race its email.')
@@ -89,8 +107,8 @@ DECLINE_PENDING_MESSAGE = ('A decline is pending on this application. Cancel the
 
 class ClosureError(Exception):
     """Raised by close_application with a machine code for the view: 'not_closeable',
-    'bad_reason', 'reason_not_allowed', 'decline_pending', 'sponsorship_open' or 'forbidden'
-    (the view answers that one 403, never as a code)."""
+    'stage_not_closeable', 'bad_reason', 'reason_not_allowed', 'decline_pending',
+    'sponsorship_open' or 'forbidden' (the view answers that one 403, never as a code)."""
     def __init__(self, code, message=''):
         self.code = code
         super().__init__(message or code)
@@ -98,7 +116,7 @@ class ClosureError(Exception):
 
 def reasons_for(status):
     """The closure reasons an officer may record from ``status`` — () when it cannot be closed."""
-    if status in PRE_AWARD_STATUSES:
+    if status in PRE_AWARD_CLOSEABLE:
         return PRE_AWARD_REASONS
     if status in POST_AWARD_STATUSES:
         return POST_AWARD_REASONS
@@ -167,18 +185,20 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
     """Manually close an application. Stamps closed_at / closed_by, flips status to 'closed' and
     returns the application. Checked in this order, each a ``ClosureError`` code:
 
-      1. ``not_closeable`` — the status is not in CLOSEABLE_FROM (every in-play status). A finished
-         application (rejected / withdrawn / closed / expired) cannot be closed again.
+      1. ``not_closeable`` — the status is not in play. A finished application (rejected /
+         withdrawn / closed / expired) cannot be closed again.
          ``forbidden`` — the LOCKED status is pre-award and ``pre_award_allowed`` is False. The
          view passes ``admin is super or org_admin`` (lead decision, review round 1) and answers
          403; judging it here, on the locked row, means a status that moved under the view cannot
          slip a pre-award close past the role gate. It defaults to True for in-process callers
          (management code, tests), which carry no role.
+         ``stage_not_closeable`` — TD-488 (owner 2026-11-07): an in-play pre-award stage that is
+         not in CLOSEABLE_FROM (shortlisted / profile_complete / interviewing / interviewed). The
+         case is declined there instead (Reject, or the interview findings sent to QC).
       2. ``bad_reason`` — blank, or not one of ``CLOSURE_REASONS``.
       3. ``reason_not_allowed`` — the reason does not fit the stage. The table:
 
-           from submitted / shortlisted / profile_complete / interviewing / interviewed /
-                recommended                       -> stalled, withdrawn
+           from submitted / recommended           -> stalled, withdrawn
            from awarded / active / maintenance    -> graduated, completed, withdrawn, lapsed,
                                                      terminated, stalled
 
@@ -225,11 +245,13 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
     with transaction.atomic():
         row = (ScholarshipApplication.objects.select_for_update()
                .filter(pk=application.pk).first())
-        if row is None or row.status not in CLOSEABLE_FROM:
+        if row is None or row.status not in IN_PLAY_STATUSES:
             raise ClosureError('not_closeable')
         closed_from = row.status
         if closed_from in PRE_AWARD_STATUSES and not pre_award_allowed:
             raise ClosureError('forbidden')
+        if closed_from not in CLOSEABLE_FROM:
+            raise ClosureError('stage_not_closeable', STAGE_NOT_CLOSEABLE_MESSAGE)
         if closure_reason not in VALID_REASONS:
             raise ClosureError('bad_reason')
         if closure_reason not in reasons_for(closed_from):

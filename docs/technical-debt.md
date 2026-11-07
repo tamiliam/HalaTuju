@@ -226,7 +226,7 @@ Class C at medium or large size, and class D that is small.
 - **TD-247** — Supplier bills reach the cost ledger only when someone imports them by hand. *(C · M)*
 - **TD-245** — We cannot tell spent-nothing from wallet-missing-in-the-export. *(C · M · looked at 2026-10-04: needs a table for the unmatched rows — a migration)*
 - **TD-228** — Picking an organisation in the crumb filters nothing on Sponsors and Sources (Requests narrows since 2026-10-05; Payments and Spending narrow through the gift — TD-246, closed). *(C · M · partly done 2026-10-05: the server door `_org_narrowing` and the `orgScope` context exist; two lists left)*
-- **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done · looked at 2026-10-04: needs the box split — a column, a second labelled box, Stitch)*
+- **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done · looked at 2026-10-04 and again 2026-11-07 in A1.11b: needs the box split — a column, a second labelled box, Stitch; moved to a later sprint)*
 - **TD-215** — The donor-pitch email exists only in English. *(C · M)*
 - **TD-155** — Partners have no Scholarship view of the students they referred. *(C · M · a planned feature)*
 - **TD-132** — Sponsor portal wording, English and Tamil, was never reviewed by the owner. *(C · M)*
@@ -330,8 +330,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-484** - A person deleted and re-invited with the same email escapes the QC separation guard - medium
 - **TD-485** - A failed activity write leaves the QC guard without its evidence - low
 - **TD-486** - A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
-- **TD-487** - A decline at `/reject/` before AWAITING QC has no second check - medium (owner's call)
-- **TD-488** - An organisation admin can close a case AWAITING QC, past the QC gate - low (owner's call)
+- ~~**TD-487**~~ - A decline at `/reject/` before AWAITING QC has no second check (SEC-19) - medium **Fixed 2026-11-07 (Sprint A1.11b).**
+- ~~**TD-488**~~ - An organisation admin can close a case AWAITING QC, past the QC gate - low **Fixed 2026-11-07 (Sprint A1.11b).**
 - **TD-489** - The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 - **TD-490** - The Programme Overview charts paint the desktop box first on a phone, then swap - low
 - **TD-491** - A scanned multi-page offer is genuineness-scored on page 1 only - medium
@@ -339,9 +339,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-493** - The agency-letterhead lift does not catch a private name with no organisation word - medium
 - **TD-494** - The agency lift's descriptor excuse can hide a company name - medium
 - **TD-495** - "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
-- **TD-496** - The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
+- **TD-496** - The graduation-messages list opens by role label; no v2 key reproduces its holders - low (owner 2026-11-07: retire it, B; removal is a later small job)
 - **TD-497** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
-- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+- **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (owner 2026-11-07: fix inside T5g)
 - **TD-499** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 - **TD-500** - Mentor My students list makes one alias query per mentee - low
 - **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
@@ -3686,6 +3686,7 @@ invited who would rather read Malay or Tamil.
 ### [TD-216] The interviewer label is stamped by the first click, not by the person who interviewed — medium
 **Status 2026-09-30:** partly done — still to do: findings and conclusion share one box, so a conclusion-only rewrite still takes the credit.
 **Status 2026-10-04 (Later-tier batch 4, left OPEN):** what remains is the split of `InterviewSession.overall_note` into findings and conclusion — a new column (a migration), a second box on the Interview Stage with its own label in three languages, Stitch first. Not a plain fix; `_is_authoring` cannot tell the two apart while they share one field.
+**Status 2026-11-07 (Sprint A1.11b, left OPEN; moved to a later sprint):** the owner allowed a fix in A1.11b only if it needed no migration and no new UI. It needs both: the `overall_note` split is a new column (a migration), and the conclusion needs a second labelled box on the Interview Stage (new UI, so Stitch first). Nothing in the stored data tells a conclusion-only rewrite from a findings rewrite until then, so no smaller fix exists. Plan it as its own sprint.
 
 
 **Status:** ✅ RESOLVED 2026-08-13 (commit `01cb0c77`) · **IN-HOUSE, NOT BILLABLE** (owner,
@@ -7851,7 +7852,18 @@ Super-only door, so no separation breach, but a declined case lands at sponsor-p
 reopened-from status on `DecisionReopen` and invert from it, or have `submit-decline` / `verify-accept` close (or
 refuse on) an open reopen; a regression test of the probe above. *(A · S)*
 
-### [TD-487] A decline at `/reject/` before AWAITING QC has no second check - medium (owner's call)
+### ~~[TD-487] A decline at `/reject/` before AWAITING QC has no second check - medium~~ — FIXED 2026-11-07 (Sprint A1.11b; SEC-19)
+
+**Fixed 2026-11-07 (Sprint A1.11b, owner ruling option A; decisions.md 2026-11-07).** `AdminRejectView` refuses the
+`interview` bucket at EVERY status, super included: 400 `interview_decline_needs_qc` ("An interview decline goes
+through Quality check. Record the decline verdict and send it to QC."); `interviewed` keeps TD-481's `awaiting_qc`.
+`services.decline.admin_reject` and `INTERVIEW_REJECT_FROM` are unchanged, because the QC decision declines through
+them. The decline road left is record-verdict -> submit-decline -> QC, open at `profile_complete` (once the interview
+is submitted the case is `interviewing`) and `interviewing`; a stuck `shortlisted` case keeps the org admin's
+`org-reject`; `contractual` is unchanged. The cockpit never sent `interview`, so no web change. Regression tests of
+both probes (QC reopen -> `interviewing` -> `/reject/`; a super's reopen-decision -> `/reject/`), every stage, and
+the road that remains: `test_a111b_decline_and_close_gates.py`.
+
 
 **Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed; proved by a scratch request test, then deleted).**
 TD-481 closed `/reject/ {category: 'interview'}` at `interviewed` only (the owner's ruling). At `shortlisted`,
@@ -7866,7 +7878,17 @@ it as a correction. A super can do the same in two steps (`reopen-decision` on `
 `/reject/` altogether (a reviewer's decline always goes record-verdict -> submit-decline -> QC), or keep it for the
 pre-interview statuses only and refuse it on a case with an open reopen; regression tests of the probe. *(A · S)*
 
-### [TD-488] An organisation admin can close a case AWAITING QC, past the QC gate - low (owner's call)
+### ~~[TD-488] An organisation admin can close a case AWAITING QC, past the QC gate - low~~ — FIXED 2026-11-07 (Sprint A1.11b)
+
+**Fixed 2026-11-07 (Sprint A1.11b, owner ruling; decisions.md 2026-11-07, supersedes part of TD-352).** Before an
+award a close works only at `submitted` and `recommended` (`closure.PRE_AWARD_CLOSEABLE`; reasons `stalled`,
+`withdrawn`). `shortlisted`, `profile_complete`, `interviewing` and `interviewed` refuse 400 `stage_not_closeable`,
+for a super too. `CLOSEABLE_FROM` is now `PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES`, no longer
+`IN_PLAY_STATUSES`; who may close and everything after an award are unchanged. The cockpit hides the Close card at
+the four refused stages (`lib/closeOffer.ts`, drift-tested), and the card carries the owner-approved explainer where
+it shows before an award. Emails unchanged. Tests: `test_close_stalled.py`, `closeOfferDrift.test.ts`,
+`view.close.test.tsx`.
+
 
 **Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed).** `POST .../close/ {closure_reason: 'stalled'}`
 (`views_admin/lifecycle.py` ~155, `closure.close_application` ~228) is open to a super or the organisation admin
@@ -7908,6 +7930,8 @@ is the `review` hat (7 active shapes move: the five `admin` shapes lose it; `fin
 gain it); every Engagement key moves 10 (all org-admin shapes gain; every reviewer shape loses); `students.view`
 moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
 `_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
+**Owner 2026-11-07: B, retire the list** after a check that nothing calls it (decisions.md 2026-11-07). A later
+small job on the A1.11 branch does the removal; A1.11b recorded the ruling only.
 
 ### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 
@@ -7917,6 +7941,7 @@ sponsor terms and the sponsor emails each have ONE door that both reads and writ
 T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
 **Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
 *(A · S)*
+owner 2026-11-07: fix inside T5g, must-do item of the T5g plan.
 
 ### [TD-499] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 

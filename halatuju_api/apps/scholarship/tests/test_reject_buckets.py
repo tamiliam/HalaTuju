@@ -175,16 +175,17 @@ class TestAdminRejectEndpoint(TestCase):
     # TD-227 (A1.11a): the door requires a reason; these tests are about the category rules.
     WHY = 'Not selected after review.'
 
-    def test_reviewer_interview_reject(self):
-        # RE-POINTED by TD-481 (2026-11-04): this declined from 'interviewed' (AWAITING QC), which
-        # is the hole — a case awaiting QC is declined only through the QC gate now (400
-        # awaiting_qc; test_td481_awaiting_qc_decline.py). The reviewer's own stage still declines.
+    def test_reviewer_interview_reject_is_refused(self):
+        # RE-POINTED by TD-481 (2026-11-04), then by TD-487 / SEC-19 (owner 2026-11-07, option A):
+        # the 'interview' bucket is refused at this door at EVERY status. An interview decline
+        # goes record-verdict -> submit-decline -> QC (test_a111b_decline_and_close_gates.py).
         app = self._app('interviewing')
         self._auth(REVIEWER)
         r = self.client.post(self._url(app), {'category': 'interview', 'comments': self.WHY}, format='json')
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'interview_decline_needs_qc')
         app.refresh_from_db()
-        self.assertEqual((app.status, app.rejection_category), ('rejected', 'interview'))
+        self.assertEqual((app.status, app.rejection_category), ('interviewing', ''))
 
     def test_viewer_forbidden(self):
         app = self._app('shortlisted')
@@ -196,7 +197,8 @@ class TestAdminRejectEndpoint(TestCase):
         self._auth(REVIEWER)
         r = self.client.post(self._url(app), {'category': 'interview', 'comments': self.WHY}, format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['code'], 'bad_status')
+        # TD-487: the bucket is refused at the door before the status is looked at.
+        self.assertEqual(r.json()['code'], 'interview_decline_needs_qc')
 
     def test_contractual_on_accepted_ok(self):
         app = self._app('recommended')
