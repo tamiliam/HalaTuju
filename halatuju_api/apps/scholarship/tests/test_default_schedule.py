@@ -86,6 +86,23 @@ class TestDefaultScheduleGovernsPayments(TestCase):
         self.assertEqual(_reasons(app, 2027, 4).count('schedule_complete'), 0)
         self.assertIn('schedule_complete', _reasons(app, 2027, 5))
 
+    def test_a_degree_student_under_a_stale_stpm_code_takes_the_university_row(self):
+        # #251 (owner 2026-11-07): the award is RM2,000, so the schedule must not be STPM's
+        # 15 payments (RM3,000) or its continuing 5 (RM1,000) — it is paid as a university student.
+        for reporting in (date(2026, 6, 8), date(2025, 6, 10)):
+            app = make_application('awarded', cohort=self.cohort, chosen_pathway='stpm',
+                                   reporting_date=reporting,
+                                   chosen_programme={'course_name': 'Ijazah Sarjana Muda Sejarah'})
+            row = payments._schedule_row(app)
+            self.assertEqual((row.pathway, row.variant, row.total),
+                             ('university', '', Decimal('2000.00')), reporting)
+
+    def test_a_form_six_student_keeps_the_stpm_row(self):
+        app = make_application('awarded', cohort=self.cohort, chosen_pathway='stpm',
+                               reporting_date=date(2026, 6, 8),
+                               chosen_programme={'course_name': 'Tingkatan Enam'})
+        self.assertEqual(payments._schedule_row(app).pathway, 'stpm')
+
     def test_an_unknown_pathway_takes_the_default_row(self):
         row = payments._schedule_row(self._app('something_new'))
         self.assertEqual((row.pathway, row.start_month, len(row.paid_offsets), row.total),

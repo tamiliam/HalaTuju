@@ -965,6 +965,8 @@ def schedule_row_for(template, application):
 def pick_schedule_row(rows, application):
     """The one row-choosing rule, shared with the no-template default (`default_schedule.py`)."""
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
+    if pathway == 'stpm' and not award._sized_as_stpm(application):
+        pathway = 'university'      # degree-bound under a stale code: paid as its RM2,000 (decision 7)
     variant = 'continuing' if award._stpm_continuing(application) else ''
     by_key = {(r.pathway, r.variant): r for r in rows}
     for key in [(pathway, variant), (pathway, ''), ('default', '')]:
