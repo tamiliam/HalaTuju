@@ -59,6 +59,7 @@ Branch a111a (not pushed; no migration). Built to the owner's rulings of 2026-11
 - TD-488 (supersedes part of TD-352): before an award, a close works only at `submitted` and `recommended`; `shortlisted`, `profile_complete`, `interviewing` and `interviewed` refuse 400 `stage_not_closeable`. `CLOSEABLE_FROM` is `PRE_AWARD_CLOSEABLE | POST_AWARD_STATUSES`. The cockpit hides the Close card at those stages and shows the owner-approved explainer before an award (en / ms / ta); `closeOfferDrift` is in step. Who may close, everything after an award and the emails are unchanged.
 - Guide: a reviewer FAQ on a student who stops answering, and an org-admin FAQ on close versus decline.
 - TD-216 left open (needs a migration and a new box, Stitch first). TD-498 owner ruling recorded only.
+- Review fix: the interviewer stamp now moves into `submit_interview` (`stamp_interviewer=`), so the submit view has no outer atomic and the auto-finalise (Gemini) again runs outside every transaction; regression test in `test_a111a_evidence.py`.
 - TD-496 closed (owner ruling B): retired the unused graduation-messages list (`AdminGraduationMessageListView`, route `admin/graduation-messages/`, its tests); the review POST is untouched. No hits in 30 days of logs, no web caller.
 
 Tests: `test_a111b_decline_and_close_gates.py` (new), `test_close_stalled.py`, `test_reject_buckets.py`, `test_td481_awaiting_qc_decline.py`, `test_a111a_reject_reason_qc_refusal.py`, `test_staff_activity.py` updated; jest `closeOfferDrift.test.ts`, `view.close.test.tsx`.
