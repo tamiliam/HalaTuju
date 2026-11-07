@@ -4316,6 +4316,7 @@
           "removeSlot": "Remove time",
           "error": "Could not save. Please try again.",
           "notAssigned": "Assign a reviewer to this application first — interview times go on the assigned reviewer's calendar.",
+          "tooSoon": "One or more of these times is too soon. Choose times at least {hours} hours from now.",
           "messagesHeading": "Messages from the student"
         }
       },

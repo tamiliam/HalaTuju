@@ -4316,6 +4316,7 @@
           "removeSlot": "Buang masa",
           "error": "Tidak dapat menyimpan. Sila cuba lagi.",
           "notAssigned": "Tugaskan penyemak kepada permohonan ini dahulu — masa temu duga masuk ke kalendar penyemak yang ditugaskan.",
+          "tooSoon": "Satu atau lebih masa ini terlalu awal. Pilih masa sekurang-kurangnya {hours} jam dari sekarang.",
           "messagesHeading": "Mesej daripada pelajar"
         }
       },

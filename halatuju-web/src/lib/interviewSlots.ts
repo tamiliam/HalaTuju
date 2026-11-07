@@ -55,7 +55,11 @@ export function slotRulesFrom(served?: {
 }
 // On a reviewer RESCHEDULE the candidate has already waited through the original notice, so the
 // 24h floor is relaxed to a short lead — the reviewer can offer nearer slots. (TD-137, owner 2026-06-21.)
-// The backend (`propose_slots`) already accepts any future slot, so this is a UI-only relaxation.
+// The SERVER enforces the same floor (`RESCHEDULE_MIN_LEAD_HOURS` in apps/scholarship/constants.py,
+// applied only when the interview is booked); this copy is mirrored so the picker draws the same grid.
+// It was once believed to be a UI-only relaxation; the server refused, and every same-day reschedule
+// failed with "Could not save" until 2026-11-07.
+// drift-test: halatuju-web/src/lib/__tests__/rescheduleLeadDrift.test.ts
 export const RESCHEDULE_MIN_LEAD_HOURS = 2
 
 const pad = (n: number) => String(n).padStart(2, '0')

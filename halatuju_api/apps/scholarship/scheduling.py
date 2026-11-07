@@ -58,7 +58,8 @@ _MYT = ZoneInfo('Asia/Kuala_Lumpur')
 # `apps.courses` reads them from `constants`, which imports nothing — so the back-edge no longer
 # pulls this module, and its scheduling machinery, in to read four integers.
 from .constants import (
-    SLOT_MIN_LEAD_HOURS, SLOT_STEP_MIN, SLOT_WINDOW_END_MIN, SLOT_WINDOW_START_MIN,
+    RESCHEDULE_MIN_LEAD_HOURS, SLOT_MIN_LEAD_HOURS, SLOT_STEP_MIN, SLOT_WINDOW_END_MIN,
+    SLOT_WINDOW_START_MIN,
 )
 
 
@@ -77,10 +78,10 @@ def slot_rules(organisation=None):
     }
 
 
-def meets_min_lead(dt, now, organisation=None) -> bool:
-    """True if a proposed start is at least the organisation's minimum notice ahead of ``now``."""
+def meets_min_lead(dt, now, organisation=None, *, reschedule=False) -> bool:
+    """True if ``dt`` meets the org's notice — or the short one when moving a BOOKED interview (TD-137)."""
     from apps.courses import org_config
-    hours = org_config.value(organisation, 'interview_min_lead_hours')
+    hours = RESCHEDULE_MIN_LEAD_HOURS if reschedule else org_config.value(organisation, 'interview_min_lead_hours')
     return dt >= now + timedelta(hours=hours)
 
 

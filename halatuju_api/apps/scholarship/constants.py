@@ -47,6 +47,11 @@ SLOT_STEP_MIN = 30
 # Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
 # has time to see + pick + prepare.
 SLOT_MIN_LEAD_HOURS = 24
+# A reviewer RESCHEDULE of an already-booked interview may offer times this close (TD-137, owner
+# 2026-06-21): the candidate already waited through the original notice. Platform-wide, not an
+# organisation setting. The web picker carries the same number — drift-tested by
+# `halatuju-web/src/lib/__tests__/rescheduleLeadDrift.test.ts`.
+RESCHEDULE_MIN_LEAD_HOURS = 2
 
 # The completion-reminder ladder, in DAYS from `reminder_anchor_at` (R1 +2, R2 +9, R3 +23,
 # R4/final +53), and the grace after R4 before the application auto-closes. MOVED here from
