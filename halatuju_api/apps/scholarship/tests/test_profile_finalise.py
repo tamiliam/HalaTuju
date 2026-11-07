@@ -207,6 +207,27 @@ class TestWorker(TestCase):
             pf.run_pending()
         self.assertNotEqual(getattr(_accept_absolute_stop(app), 'data', {}).get('code'), 'profile_pending')
 
+    def test_qc_accept_refuses_a_failed_profile(self, _down):
+        # A2.1 re-review (Med): a profile the cron gave up on must not be accepted either; an
+        # empty one would reach 'recommended' with nothing published, a reopened one its old text.
+        from apps.scholarship.views_admin.qc_checks import _accept_absolute_stop
+        app = make_application('verdict_recorded', outcome='recommend')
+        app.reporting_date = timezone.localdate()
+        app.award_amount = 1000
+        _queued(app)
+        with patch(REFINE, return_value={'error': 'boom'}):
+            for _ in range(pf.MAX_ATTEMPTS + 1):
+                pf.run_pending()
+        self.assertEqual(SponsorProfile.objects.get(application=app).finalise_state, 'failed')
+        refusal = _accept_absolute_stop(app)
+        self.assertEqual((refusal.status_code, refusal.data['code']), (400, 'profile_failed'))
+        # Running finalise again (re-queue) and a good run clear it.
+        _queued(app)
+        with patch(REFINE, return_value=FINAL), patch(BLURB, return_value=''):
+            pf.run_pending()
+        self.assertNotIn(getattr(_accept_absolute_stop(app), 'data', {}).get('code'),
+                         ('profile_pending', 'profile_failed'))
+
     def test_a_run_stops_claiming_after_its_time_budget(self, _down):
         # A2.1 review (L4): no new row is claimed once the budget is spent; the rest wait.
         apps = [make_application('verdict_recorded', outcome='recommend') for _ in range(3)]
@@ -245,6 +266,17 @@ class TestWorker(TestCase):
         SponsorProfile.objects.filter(pk=sp.pk).update(finalise_state='failed')
         row = profiles_row()
         self.assertEqual((row['status'], row['code'], row['params']), ('amber', 'failed', {'count': '1'}))
+
+    def test_system_health_ignores_failed_profiles_on_closed_cases(self, _down):
+        # A2.1 re-review (Low): a closed case's failed row needs no one; the light goes green.
+        from apps.scholarship.models import ScholarshipApplication
+        from apps.scholarship.services.system_health import profiles_row
+        app = make_application('verdict_recorded', outcome='recommend')
+        _, sp = _queued(app)
+        SponsorProfile.objects.filter(pk=sp.pk).update(finalise_state='failed')
+        self.assertEqual(profiles_row()['status'], 'amber')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(status='withdrawn')
+        self.assertEqual((profiles_row()['status'], profiles_row()['code']), ('green', 'ok'))
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

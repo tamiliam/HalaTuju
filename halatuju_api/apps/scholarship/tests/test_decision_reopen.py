@@ -238,6 +238,35 @@ class TestDecisionReopen(TestCase):
     @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
     @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
     @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_qc_accept_refuses_when_the_corrected_profile_failed(self, mock_refine, _blurb, _down):
+        # A2.1 re-review (Med): the corrected profile's job failed every attempt. QC-Accept must
+        # refuse, or it publishes the OLD '## Pool' text the reopen said was wrong.
+        mock_refine.return_value = {'error': 'boom'}
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))
+        self._auth(SUPER)
+        self.client.post(self._reopen_url(), {'reason': 'wrong income verdict'}, format='json')
+        r = self.client.post(self._record_url(), {
+            'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
+                                'pathway': 'pass', 'overall': 'accept'},
+            'reason': 'corrected', 'finalise': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+        from apps.scholarship import profile_finalise
+        for _ in range(profile_finalise.MAX_ATTEMPTS + 1):
+            profile_finalise.run_pending()
+        self.sp.refresh_from_db()
+        self.assertEqual(self.sp.finalise_state, 'failed')
+        qc_url = f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/'
+        with patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
+            qc = self.client.post(qc_url, {'decision': 'accept'}, format='json')
+        self.assertEqual((qc.status_code, qc.json()['code']), (400, 'profile_failed'))
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
+        self.assertEqual((self.app.status, self.sp.anon_published, self.sp.anon_markdown),
+                         ('interviewed', False, '## Pool'))
+
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_a_rerecord_without_finalise_supersedes_a_queued_profile(self, mock_refine, _b, _d):
         # A2.1 review (L3): a profile queued for the OLD verdict must never be written after the
         # verdict changed without asking for a new one.

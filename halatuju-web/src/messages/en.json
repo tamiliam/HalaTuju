@@ -5002,7 +5002,8 @@
           "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
           "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
           "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else.",
-          "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept."
+          "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept.",
+          "profile_failed": "The final sponsor profile could not be written. Run finalise again from the case, wait a few minutes, reload the page and read it, then accept."
         },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",

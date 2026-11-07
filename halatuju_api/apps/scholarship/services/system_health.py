@@ -17,6 +17,7 @@ from django.utils import timezone
 from ..cron_health import EXPECTED_CADENCE
 from ..models import ApplicantDocument, SponsorProfile
 from .. import system_health_store as store
+from .decline import CASE_CLOSED_STATES
 from .outage import (HOURLY_MIN_APPLICATIONS, HOURLY_MIN_FAILURES, _outage_stats,
                      gemini_read_outcome, ic_second_opinion_outcome, vision_outcome)
 
@@ -265,8 +266,10 @@ def cron_row(now, records):
 # ── Final sponsor profiles ─────────────────────────────────────────────────────────────────
 
 def profiles_row():
-    """Amber with the count of final profiles the `finalise-profiles` cron gave up on."""
-    failed = SponsorProfile.objects.filter(finalise_state='failed').count()
+    """Amber with the count of final profiles the `finalise-profiles` cron gave up on (on open
+    cases only: a closed case's failed row needs no one, so it must not keep the light amber)."""
+    failed = (SponsorProfile.objects.filter(finalise_state='failed')
+              .exclude(application__status__in=CASE_CLOSED_STATES).count())
     if failed:
         return _row('profiles', AMBER, 'failed', {'count': str(failed)})
     return _row('profiles', GREEN, 'ok')

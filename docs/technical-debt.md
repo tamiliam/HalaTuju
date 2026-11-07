@@ -384,6 +384,8 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
+- **TD-587** - On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+- **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8429,3 +8431,11 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-561] The credit sign view loads the credit without a row lock - medium
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
+
+### [TD-587] On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** On a profile that is already published (`anon_published`), `profile_finalise.py` (~160) writes the new text to `final_markdown` only and leaves `anon_markdown` (what sponsors read) as it was, by design. But `GeneratedProfile.tsx` shows `final_markdown || current_markdown`, so staff read the new text while sponsors still see the old one, with nothing on the card saying so. **Fix:** a one-line note on the card when `anon_published` is true and `anon_markdown` differs from `final_markdown` (en / ms / ta). *(A · S)*
+
+### [TD-588] A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** `supersede_pending` (`profile_finalise.py` ~82) clears only a PENDING row when a verdict is re-recorded without finalise. A row left FAILED from the old verdict keeps `finalise_state` failed, so the card still shows the failed note (and QC-Accept refuses with `profile_failed`) for a verdict that never asked for a new profile. **Fix:** have the supersede step clear a failed state too (same fields), with a test. *(A · S)*
