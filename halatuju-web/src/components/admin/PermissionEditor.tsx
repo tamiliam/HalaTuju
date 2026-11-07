@@ -34,7 +34,7 @@ import {
  * "Admin permissions" (`see_all`, `spending`, the three payment keys) only for somebody in Admins;
  * "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money groups,
  * which showed every key to everyone, are gone. "See all students" is an ADMIN permission; Quality check
- * still needs it (the server's `DEPENDS_ON`, unchanged), and its note says so.
+ * still needs it (the server's `IMPLIES`, since T5b), and its note says so.
  * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
  * server served, changed only by the switches on screen (and Quality check's own dependency).
  * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */

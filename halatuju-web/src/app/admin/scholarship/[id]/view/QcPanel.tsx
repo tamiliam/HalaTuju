@@ -13,6 +13,24 @@ import { hasPerm } from '@/lib/staffPermissions'
 
 import type { T, AdminRole } from './shared'
 
+/** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
+ * code it does not know (the caller then shows the server's English sentence). */
+export function qcRefusalText(code: string | null | undefined, t: T): string | null {
+  const known = ['self_qc_forbidden', 'self_verdict_qc_forbidden', 'self_assigned_qc_forbidden',
+    'self_interview_qc_forbidden', 'self_review_qc_forbidden']
+  return code && known.includes(code) ? t(`admin.scholarship.qcDecision.refusal.${code}`) : null
+}
+
+/** TD-483: why the QC door would refuse this viewer, or null. The server's answer (`qc_refusal`,
+ * the same separation rule the door asks) when it sent one; otherwise the old local check (a QC
+ * who is the current assignee), for a reply that carries no viewer. */
+export function qcRefusalFor(app: AdminScholarshipDetail, role: AdminRole): string | null {
+  if (app.qc_refusal !== undefined) return app.qc_refusal || null
+  const isSuper = !!role?.is_super_admin || role?.role === 'super'
+  return hasPerm(role, 'qc') && !isSuper && app.assigned_to_id === (role?.admin_id ?? null)
+    ? 'self_qc_forbidden' : null
+}
+
 export function QcPanel({
   app, t, busy, canQc, role, doQcDecision,
   qcReopenOpen, setQcReopenOpen, qcComments, setQcComments,
@@ -40,9 +58,15 @@ export function QcPanel({
 
       {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
             super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).
-            Self-QC guard: a `qc` who reviewed this case cannot QC it (hidden here; backend blocks it too). ── */}
-      {app.status === 'interviewed' && canQc
-        && !(hasPerm(role, 'qc') && !role?.is_super_admin && role?.role !== 'super' && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
+            Self-QC guard (TD-483): a `qc` the server's separation rule refuses (assigned, interviewed,
+            recorded the verdict, or other review work) sees a one-line note instead of the panel; the
+            backend blocks it too. ── */}
+      {app.status === 'interviewed' && canQc && qcRefusalFor(app, role) && (
+        <p data-testid="qc-refusal" className="border-b border-ground-100 py-4 text-xs text-ground-600 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5">
+          {qcRefusalText(qcRefusalFor(app, role), t) || t('admin.scholarship.qcDecision.refusal.self_review_qc_forbidden')}
+        </p>
+      )}
+      {app.status === 'interviewed' && canQc && !qcRefusalFor(app, role) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         // Request #31: the server adds the birth-state fact to the SAME floor when the current IC

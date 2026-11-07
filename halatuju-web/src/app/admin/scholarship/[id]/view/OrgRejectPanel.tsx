@@ -118,8 +118,10 @@ export function OrgRejectPanel({
       )}
 
       {/* The record of an org-admin reject, once made. The reason lives ONLY here (it is never
-          emailed), so this is the whole audit surface for an irreversible action. */}
-      {app.status === 'rejected' && app.rejection_category === 'incomplete' && app.rejection_comments && (
+          emailed), so this is the whole audit surface for an irreversible action. TD-227: the
+          `/reject/` door stores a reason too, so any decline with one shows it, and says when the
+          decliner was not the assigned reviewer. */}
+      {app.status === 'rejected' && app.rejection_comments && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.recordTitle')}
@@ -128,6 +130,7 @@ export function OrgRejectPanel({
           <p className="text-xs text-ground-400">
             {app.rejected_by_name || app.rejected_by || '—'}
             {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
+            {app.rejected_by_unassigned === true ? ` · ${t('admin.scholarship.reject.notAssigned')}` : ''}
           </p>
         </div>
       )}

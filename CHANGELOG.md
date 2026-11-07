@@ -11,7 +11,8 @@ Branch a111a (not pushed). Migration `0204_decisionreopen_reopened_from` is writ
 - TD-485: the five guard verbs are no longer best-effort; a lost write raises `EvidenceNotRecorded` (503) and submit-decline, the interview draft save and `submit_interview` roll back with it. Auto-finalise (Gemini) still runs after the commit. Pre-S3 / pre-F7 history gaps stay open.
 - TD-486: `cancel_reopen` restores from the recorded `reopened_from`, so a declined case QC sent back can no longer land at `recommended`.
 - TD-441 item 3: the first-sign-in link is a compare-and-set (`supabase_admin.link_login`).
-- Left for A1.11b: TD-227 (comment required on `/reject/`, who declined), TD-483 (web follows the server rule), TD-216.
+- Part 2: TD-227 (`/reject/` refuses a decline with no reason, 400 `comments_required`; the reason is stored on the case and the record says when the decliner was not the assigned reviewer, `rejected_by_unassigned`) and TD-483 (the detail read and the `/reject/` reply serve `qc_refusal` from the same separation rule; the QC panel hides with a one-line note; all five refusal codes in en / ms / ta). Tests: `test_a111a_reject_reason_qc_refusal.py`, `view.rejectReason.test.tsx` (6).
+- Left for A1.11b: TD-216.
 
 Tests: `test_a111a_footprint.py` (11), `test_a111a_evidence.py` (6), `test_a111a_cancel_reopen.py` (5), `courses/tests/test_a111a_link_cas.py` (4); 21 of these 26 and the changed verify-accept test in `test_staff_activity.py` fail on the old code (the other 5 are controls).
 

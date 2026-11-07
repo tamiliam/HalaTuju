@@ -4372,6 +4372,9 @@
         "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
         "running": "Menolak…",
         "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
+        "reasonPrompt": "Mengapa anda menolak? Sebabnya direkodkan pada kes ini. Pelajar tidak melihatnya.",
+        "reasonRequired": "Tulis sebab anda menolak. Sebabnya direkodkan pada kes ini.",
+        "notAssigned": "bukan penyemak yang ditugaskan",
         "category": {
           "incomplete": "Tidak lengkap",
           "merit": "Merit",
@@ -4968,7 +4971,13 @@
         "rejectPlaceholder": "Nyatakan sebab anda menolak calon ini",
         "rejectConfirm": "Tolak & maklum penyemak",
         "error": "Tidak dapat menghantar keputusan QC.",
-        "selfVerdictForbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
+        "refusal": {
+          "self_qc_forbidden": "Anda yang menyemak kes ini — ia mesti disemak QC oleh orang lain.",
+          "self_verdict_qc_forbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
+          "self_assigned_qc_forbidden": "Kes ini pernah ditugaskan kepada anda — ia mesti disemak QC oleh orang lain.",
+          "self_interview_qc_forbidden": "Anda yang menemu duga pelajar ini — kes ini mesti disemak QC oleh orang lain.",
+          "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain."
+        },
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
         "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",

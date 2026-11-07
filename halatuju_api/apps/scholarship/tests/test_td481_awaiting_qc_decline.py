@@ -33,7 +33,9 @@ API = dict(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET, DE
 
 
 def _reject(who, app, category='interview'):
-    return authed_client(who).post(f'{APPS}{app.pk}/reject/', {'category': category}, format='json')
+    # TD-227 (A1.11a): the door requires a reason; send one so these tests stay about the stage rule.
+    return authed_client(who).post(f'{APPS}{app.pk}/reject/',
+                                   {'category': category, 'comments': 'Not selected.'}, format='json')
 
 
 def _qc(who, app, decision, comments=''):

@@ -4372,6 +4372,9 @@
         "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them (after a short cool-off, if one is set).",
         "running": "Declining…",
         "error": "Couldn't decline this applicant. Please try again.",
+        "reasonPrompt": "Why are you declining? The reason is recorded on the case. The student does not see it.",
+        "reasonRequired": "Write why you are declining. The reason is recorded on the case.",
+        "notAssigned": "not the assigned reviewer",
         "category": {
           "incomplete": "Not completed",
           "merit": "Merit",
@@ -4968,7 +4971,13 @@
         "rejectPlaceholder": "State your reason for rejecting this candidate",
         "rejectConfirm": "Reject & inform reviewer",
         "error": "Could not submit the QC decision.",
-        "selfVerdictForbidden": "You recorded this verdict — it must be QC-checked by someone else.",
+        "refusal": {
+          "self_qc_forbidden": "You reviewed this case — it must be QC-checked by someone else.",
+          "self_verdict_qc_forbidden": "You recorded this verdict — it must be QC-checked by someone else.",
+          "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
+          "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
+          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else."
+        },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",

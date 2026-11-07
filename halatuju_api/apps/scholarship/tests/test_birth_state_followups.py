@@ -262,7 +262,7 @@ class TestAHeldDeclineHoldsTheIcLock(TestCase):
     def _held(self, states, nric=SABAH_IC):
         app = make_application('recommended', student=make_student(nric=nric),
                                cohort=make_cohort(**ONLY_BIRTH, allowed_birth_states=states))
-        self.assertEqual(self._post(app, 'reject', {'category': 'contractual'}).status_code, 200)
+        self.assertEqual(self._post(app, 'reject', {'category': 'contractual', 'comments': 'Did not register.'}).status_code, 200)
         app.refresh_from_db()
         self.assertEqual((app.status, app.pre_decline_status), ('rejected', 'recommended'))
         self.assertIsNotNone(app.decline_due_at)                     # held, the student not told
@@ -315,7 +315,7 @@ class TestAHeldDeclineHoldsTheIcLock(TestCase):
                 {'decision': 'accept', 'override_reason': 'Birth certificate shows Sandakan.'},
                 format='json')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(self._post(app, 'reject', {'category': 'contractual'}).status_code, 200)
+        self.assertEqual(self._post(app, 'reject', {'category': 'contractual', 'comments': 'Did not register.'}).status_code, 200)
         app.refresh_from_db()
         self.assertEqual((app.status, app.pre_decline_status), ('rejected', 'recommended'))
         self.assertEqual(self._release(app).status_code, 400)       # the IC cannot move …

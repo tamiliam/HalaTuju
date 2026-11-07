@@ -12,11 +12,12 @@ import type { AdminScholarshipDetail } from './applications'
 /** Post-shortlist admin rejection. category: 'interview' (reviewed, not selected — from
  * shortlisted onward) or 'contractual' (failed post-award steps — from accepted). Sends the
  * bucket's decline email. */
+/** TD-227 (A1.11a): `comments` is required (400 comments_required) and stored on the case. */
 export async function rejectApplication(
-  id: number, category: 'interview' | 'contractual', options?: ApiOptions
+  id: number, category: 'interview' | 'contractual', comments: string, options?: ApiOptions
 ) {
   return adminMutate<AdminScholarshipDetail>(
-    `/api/v1/admin/scholarship/applications/${id}/reject/`, 'POST', { category }, options
+    `/api/v1/admin/scholarship/applications/${id}/reject/`, 'POST', { category, comments }, options
   )
 }
 

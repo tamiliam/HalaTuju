@@ -290,8 +290,13 @@ export interface AdminScholarshipDetail {
   rejection_category: string
   rejected_at: string | null
   rejected_by: string
-  // The org-admin's verbatim reason ('incomplete' bucket only). Internal — never emailed.
+  // The decliner's verbatim reason ('incomplete', and `/reject/` since TD-227). Internal — never emailed.
   rejection_comments: string
+  // TD-227: a `/reject/` decline made by someone other than the assignee (null = the record cannot say).
+  rejected_by_unassigned?: boolean | null
+  // TD-483: the code the QC door would refuse THIS viewer with (null = may decide, or not a QC case).
+  // Only on the detail read and the `/reject/` reply; other replies omit it.
+  qc_refusal?: string | null
   // The stored reporting date (ISO). Read the COLUMN, not the offer document's raw string —
   // the two used to be able to disagree, which is how a case displayed a ticked date while the
   // field driving its bursary was empty. Null when neither the letter nor an officer supplied it.

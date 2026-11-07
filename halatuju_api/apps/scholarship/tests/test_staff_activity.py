@@ -424,7 +424,7 @@ class TestTheCaseActions(_Base):
     def test_declined_directly(self):
         app = self.app('interviewing', reviewer=self.reviewer)
         resp = authed_client(self.superadmin).post(
-            _url(app, 'reject/'), {'category': 'interview'}, format='json')
+            _url(app, 'reject/'), {'category': 'interview', 'comments': 'Not selected.'}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
         row = self.assertOneRow(V.DECLINED, self.superadmin, app)
         self.assertEqual(row.meta, {'category': 'interview'})

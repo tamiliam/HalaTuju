@@ -71,7 +71,8 @@ def review_writes_closed(application):
 
 def _record_reject(application, category, by_email, now=None, comments=''):
     """Flip the application to rejected NOW (the decision is immediate) — status + bucket +
-    when/who (+ the admin's verbatim reason, bucket 'incomplete'). Does NOT send the student
+    when/who (+ the admin's verbatim reason: bucket 'incomplete', and the `/reject/` door since
+    TD-227). Does NOT send the student
     email (that may be embargoed; see admin_reject).
     Snapshots the pre-decline status AND award_amount so cancel_pending_decline can restore
     them exactly.
@@ -163,8 +164,32 @@ def _finalise_reject(application, category, by_email):
     _send_decline_for(application)
 
 
-def admin_reject(application, admin, category, cooloff=None, *, activity=True, defer_email=False):
+def rejected_by_unassigned(application):
+    """TD-227 (A1.11a): was this decline made at the `/reject/` door by someone who was NOT the
+    assigned reviewer? True / False, or None when the record cannot say.
+
+    Only the `/reject/` door writes `rejection_comments` on an 'interview' or 'contractual' decline
+    (it requires one since A1.11a; the QC's two declines pass none), so a row with a reason in
+    those buckets IS a door decline. A rejected case cannot be reassigned
+    (`services.ASSIGNABLE_STATUSES`), so `assigned_to` is still the assignee of the moment. A
+    legacy door decline with no reason answers None: we cannot tell it from a QC decline."""
+    if (application.status != 'rejected'
+            or application.rejection_category not in ('interview', 'contractual')):
+        return None
+    by = (application.rejected_by or '').strip().lower()
+    if not by or not (application.rejection_comments or '').strip():
+        return None
+    assignee = application.assigned_to if application.assigned_to_id else None
+    return (getattr(assignee, 'email', '') or '').strip().lower() != by
+
+
+def admin_reject(application, admin, category, cooloff=None, *, activity=True, defer_email=False,
+                 comments=''):
     """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
+
+    ``comments``: the decliner's reason, recorded verbatim on ``rejection_comments`` (internal,
+    never emailed). The `/reject/` door requires one (TD-227); the QC's declines pass none — their
+    reason lives on the verdict or the DecisionReopen trail.
 
     ``activity``: the decline is a `declined` row on ``admin``'s own activity list (common profile
     S3). The QC's decision passes False — its click is ONE row, `qc_decision`, written by the view.
@@ -236,7 +261,7 @@ def admin_reject(application, admin, category, cooloff=None, *, activity=True, d
             lock_application_for(application, allowed)
         except StatusRefused:
             raise ValueError('bad_status')
-        _record_reject(application, category, by)        # the decision is immediate, either way
+        _record_reject(application, category, by, comments=comments)   # the decision is immediate
         if category == 'contractual':
             # Code-health S3 #6 (owner decision 2026-07-03): rejecting a funded/offered student
             # AUTO-LAPSES their sponsorship(s) — the held amount returns to the sponsor's

@@ -132,7 +132,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-143** — A birth certificate cropped above its header: treat as suspect, or as not a birth certificate? *(B · S)*
 - **TD-128** — Special-needs teaching courses match only a physical disability. Ask about other needs now? *(B · M)*
 - **TD-265** — Show the funding gift on each payment row, or once in the header, or not at all? *(C · S)*
-- **TD-227** — Should a rejection need a written reason, and show when the rejecter was not the assigned reviewer? *(C · S)*
+- ~~**TD-227**~~ — Should a rejection need a written reason, and show when the rejecter was not the assigned reviewer? *(C · S)* **Closed 2026-11-07: fixed in Sprint A1.11a (both guardrails).**
 - **TD-211** — The Reporting Date tick is green on any date read. Keep it, show it differently, or cross-check it? *(C · S)*
 - ~~**TD-066**~~ — The testing-only help box is still live with a personal mobile number. Keep (which number) or remove? *(C · S)* **Closed 2026-11-05: removed (owner ruling).**
 - **TD-225** — The logo half-disappears in dark mode. Commission a dark version, and let each organisation upload one? *(C · M)*
@@ -326,7 +326,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-477** - The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 - **TD-478** - A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
 - **TD-480** - Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
-- **TD-483** - The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low
+- ~~**TD-483**~~ - The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low **Fixed 2026-11-07 (Sprint A1.11a).**
 - **TD-484** - A person deleted and re-invited with the same email escapes the QC separation guard - medium
 - **TD-485** - A failed activity write leaves the QC guard without its evidence - low
 - **TD-486** - A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
@@ -4166,7 +4166,18 @@ whether `funding_envelope` is a real requirement or should follow it.
 
 ---
 
-### [TD-227] A rejection can be recorded by someone who was never assigned, with no reason — medium
+### ~~[TD-227] A rejection can be recorded by someone who was never assigned, with no reason — medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** Both guardrails. (1) `POST .../reject/` requires `comments` for every caller
+and both buckets (400 `comments_required`, nothing moves); `admin_reject(..., comments=)` stores it in
+`rejection_comments`. The cockpit asks for it in the decline prompt (Cancel still does nothing; a blank reason is
+refused before sending). (2) `services.decline.rejected_by_unassigned` (served on the detail read as
+`rejected_by_unassigned`) says whether a `/reject/` decline was made by someone other than the assignee; the
+record block shows the reason for any decline that has one and adds "not the assigned reviewer". Read from the
+record, so no migration: a rejected case cannot be reassigned, and only that door writes a reason on an
+`interview` / `contractual` decline (the QC paths write none, so they answer None, as do old reasonless rows).
+Tests: `tests/test_a111a_reject_reason_qc_refusal.py::RejectNeedsAReason`, `::WhoDeclined`,
+`view.rejectReason.test.tsx`.
 
 **Found:** Sabah S2 (2026-09-03), reconciling the owner's count of automatic rejections against
 production.
@@ -7751,7 +7762,15 @@ that a colleague later rewrote is no longer named anywhere the guard reads, and 
 `StaffActivity` row (`interview_drafted`, once per person per session) on an authoring save, added to
 `qc_separation.REVIEW_VERBS`; or a small authors list on the session. *(A · S)*
 
-### [TD-483] The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low
+### ~~[TD-483] The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** The detail read (and the `/reject/` reply) serves `qc_refusal`: the code the
+QC door would refuse THIS viewer with, from `qc_separation.for_viewer` (None unless the viewer holds `qc` and the case
+is `interviewed`; otherwise `qc_separation.refusal`, the door's own answer). `QcPanel` hides on it and shows a
+one-line note in en / ms / ta instead; a reply with no viewer falls back to the old current-assignee check. `view.tsx`
+now words all five refusal codes in en / ms / ta (`qcDecision.refusal.<code>`, replacing `selfVerdictForbidden`).
+The `PermissionEditor.tsx` comment says `IMPLIES`. Tests: `tests/test_a111a_reject_reason_qc_refusal.py::
+QcRefusalOnDetail`, `view.rejectReason.test.tsx`.
 
 **Raised 2026-11-03 by Team tables T5b.** `view/QcPanel.tsx` hides the QC box only when the caller is the CURRENT
 assignee. Since T5b the server also refuses a QC who was assigned before, interviewed, verify-accepted or recorded the
