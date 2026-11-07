@@ -8,6 +8,20 @@
  * keep honest.
  */
 import type { AdminSponsorCredit, AdminSponsorDetail } from './admin-api'
+import { hasPerm } from './staffPermissions'
+
+/** The credit chain's CHECKER seat — the server's `credit_steps.CHECKER_KEY` (TD-475, A1.10a). */
+export const CREDIT_CHECKER_KEY = 'payments_approve' as const
+
+/**
+ * Is the check step armed for THIS credit? The server answers it per credit (`check_required`:
+ * a holder of the key who has NOT signed this credit exists, A1.10a review fix), so a keyed Admin
+ * who signed as maker never shows their own credit as waiting for a check nobody can do. A payload
+ * without the per-credit field falls back to the screen-wide `finance_check_required`.
+ */
+export function creditArmed(credit: AdminSponsorCredit, financeCheckRequired: boolean): boolean {
+  return credit.check_required ?? financeCheckRequired
+}
 
 /** How long since a sponsor was last seen, as a band the screen can colour. */
 export type SeenBand = 'never' | 'today' | 'recent' | 'dormant'
@@ -112,16 +126,22 @@ export interface CreditActions {
  *   button is offered and the server's refusal is rendered.
  * - **`name_mismatch`** — the typed name is checked against `PartnerAdmin.name` server-side.
  *
- * `financeArmed` is read from the payload (`finance_check_required`), never derived, because
- * appointing a finance admin arms the middle step for a credit already in flight.
+ * `financeArmed` is read from the payload (`creditArmed`), never derived, because appointing a
+ * finance admin arms the middle step for a credit already in flight.
+ *
+ * A1.10a (TD-475): the CHECK step belongs to a holder of `payments_approve` (the server's
+ * `credit_steps.CHECKER_KEY`), read from the served `/admin/role/` `permissions` — not the retired
+ * `finance` label. An Admin given the key gets the button; a label without the key does not.
  */
 export function creditActions(
   credit: AdminSponsorCredit,
   financeArmed: boolean,
   viewerRole: string,
+  permissions?: readonly string[] | null,
 ): CreditActions {
   const isSuper = viewerRole === 'super'
   const may = (role: string) => isSuper || viewerRole === role
+  const holdsChecker = isSuper || hasPerm({ permissions }, CREDIT_CHECKER_KEY)
   // Void is the maker's or the approver's power, and only before the money is spendable.
   const voidable = canVoid(credit) && (may('admin') || may('org_admin'))
 
@@ -131,8 +151,9 @@ export function creditActions(
   if (credit.status === 'admin_signed' && financeArmed) {
     return {
       nextStep: 'checked',
-      canSign: may('finance'),
-      blocked: viewerRole === 'org_admin' ? 'awaiting_finance' : null,
+      canSign: holdsChecker,
+      // The server says `finance_check_required` to the organisation admin (who never holds the key).
+      blocked: viewerRole === 'org_admin' && !holdsChecker ? 'awaiting_finance' : null,
       canVoid: voidable,
     }
   }

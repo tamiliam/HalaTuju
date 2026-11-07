@@ -8232,7 +8232,8 @@
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
         "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
-        "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama."
+        "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama.",
+        "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan."
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
     },

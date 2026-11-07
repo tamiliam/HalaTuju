@@ -59,10 +59,11 @@ _STEPS_BACK = ('recommended', 'interviewed')
 def _strands_assignee(app):
     """TD-476 (A1.10a): would this reopen leave the case waiting on an assignee who no longer holds
     `review`? Only where the status stays put (a decline that has gone, a funded case): there the
-    case cannot change hands (`assignment.ASSIGNABLE_STATUSES`), so nobody could pick it up."""
+    case cannot change hands (`assignment.ASSIGNABLE_STATUSES`), so nobody could pick it up. A revoked
+    (inactive) assignee cannot review either, whatever keys their row still holds (review fix)."""
     assignee = app.assigned_to
     return (assignee is not None and app.status not in _STEPS_BACK
-            and not assignee.has_perm('review'))
+            and not (assignee.is_active and assignee.has_perm('review')))
 
 
 class ReopenError(Exception):

@@ -32,6 +32,10 @@ FILES_ALL = 'files_widened_all'            # gains `see_all`: EVERY student's fi
 FILES_ASSIGNED = 'files_widened_assigned'  # gains `review` from no file access: the assigned ones
 PREPARE_AND_APPROVE = 'prepare_and_approve'
 NOT_SIGNED_IN = 'not_signed_in'
+#: A1.10a (TD-475): gaining `payments_approve` (`credit_steps.CHECKER_KEY`) also ARMS the wallet-credit
+#: check when nobody else active in the organisation holds it. Counted as `credit_check_required`
+#: counts: every active holder, signed in or not, so it takes effect at once.
+CREDIT_CHECK_ON = 'credit_check_on'
 
 
 class PermissionChangeRefused(Exception):
@@ -134,6 +138,7 @@ def _others_hold(target, key):
 def consequences(target, before, after):
     """What saving ``after`` over ``before`` would do beyond the keys themselves — codes, in a stable
     order. Pure apart from reads."""
+    from apps.courses import staff_permissions as sp
     out = []
     gained, lost = set(after) - set(before), set(before) - set(after)
     signed_in = target.first_seen_at is not None
@@ -146,6 +151,10 @@ def consequences(target, before, after):
                 out.append(off)
         if not signed_in and gained & {'payments_check', 'payments_approve'}:
             out.append(NOT_SIGNED_IN)
+        from .credit_steps import CHECKER_KEY
+        if CHECKER_KEY in gained and not any(
+                a.pk != target.pk for a in sp.holders(target.owning_organisation_id, CHECKER_KEY)):
+            out.append(CREDIT_CHECK_ON)
     # #39 S4 review fix 3: say WHICH files. `see_all` opens every student's (a Reviewer or Finance
     # person given it, or Finance switched to Admin); `review` from no file access opens only the
     # students assigned to them.

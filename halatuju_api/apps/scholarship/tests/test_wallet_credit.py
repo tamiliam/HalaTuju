@@ -304,6 +304,60 @@ class TestTD475TheCheckerSeatIsTheKey(CreditMixin, TestCase):
         self.assertFalse(payments_chain.credit_check_required(self.org))
 
 
+class TestKeyedMakerNeverStrandsTheirCredit(CreditMixin, TestCase):
+    """A1.10a review fix: the check is armed PER CREDIT, only while a holder of the key who has NOT
+    signed this credit exists — the guard `check_required_for` keeps on a payment run. Signers stay
+    pairwise distinct: nobody signs two steps of one credit."""
+
+    def _keyed_maker(self):
+        m = _admin(self.org, 'admin', 'Keyed Maker', 'keyedmaker@x.com')
+        m.permissions = ['see_all', 'spending', 'payments_prepare', 'payments_approve']
+        m.save(update_fields=['permissions'])
+        return m
+
+    def test_the_sole_keyed_admin_as_maker_goes_straight_to_the_approver(self):
+        maker = self._keyed_maker()
+        self.assertTrue(payments_chain.credit_check_required(self.org))       # the org is armed…
+        c = self._record('10000', admin=maker)
+        self._sign(c, maker)
+        self.assertFalse(payments_chain.credit_check_required(self.org, c))   # …but not for THIS credit
+        with self.assertRaises(svc.CreditError) as ctx:                       # they still cannot sign twice
+            self._sign(c, maker)
+        self.assertEqual(ctx.exception.code, 'wrong_role')
+        self._sign(c, self.approver)
+        self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
+        self.assertEqual(c.finance_checked_by, '')
+
+    def test_with_a_different_keyed_checker_the_check_is_still_required_and_enforced(self):
+        maker = self._keyed_maker()
+        checker = _admin(self.org, 'finance', 'Sam Finance', 'sam@x.com')    # preset holds the key
+        c = self._record('10000', admin=maker)
+        self._sign(c, maker)
+        self.assertTrue(payments_chain.credit_check_required(self.org, c))
+        with self.assertRaises(svc.CreditError) as ctx:
+            self._sign(c, self.approver)
+        self.assertEqual(ctx.exception.code, 'finance_check_required')
+        with self.assertRaises(svc.CreditError) as ctx:                       # the maker may not check
+            self._sign(c, maker)
+        self.assertEqual(ctx.exception.code, 'same_signer')
+        self._sign(c, checker)
+        self.assertEqual(c.status, Donation.STATUS_FINANCE_CHECKED)
+        with self.assertRaises(svc.CreditError) as ctx:                       # nor the checker approve
+            self._sign(c, checker)
+        self.assertEqual(ctx.exception.code, 'wrong_role')
+        self._sign(c, self.approver)
+        self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
+
+    def test_the_overview_count_follows_the_same_rule(self):
+        from apps.scholarship import credit_steps
+        maker = self._keyed_maker()
+        c = self._record('10000', admin=maker)
+        self._sign(c, maker)
+        rows = list(Donation.objects.filter(pk=c.pk).select_related('programme__organisation'))
+        self.assertEqual(credit_steps.waiting_for(self.approver, rows), 1)
+        self.assertEqual(credit_steps.waiting_for(maker, rows), 0)
+
+
 class TestIdentityGates(CreditMixin, TestCase):
     """P4b — TD-176. Before this, the service took the signer as a free string: it
     enforced that two signatures differed, but not WHOSE they were."""

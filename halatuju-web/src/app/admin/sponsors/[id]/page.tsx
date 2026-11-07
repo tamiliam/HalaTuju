@@ -10,7 +10,7 @@ import TableFrame from '@/components/admin/TableFrame'
 import RecordState from '@/components/admin/RecordState'
 import { effectiveRole } from '@/lib/navigation'
 import {
-  canRecordCredit, canSetMembership, creditActions, creditableProgrammes, creditChain,
+  canRecordCredit, canSetMembership, creditActions, creditArmed, creditableProgrammes, creditChain,
   creditErrorKey, hasNoMoney, membershipErrorKey, membershipRows, pendingTotal, seenBand,
   studentStage,
 } from '@/lib/sponsorDetail'
@@ -383,7 +383,9 @@ export default function AdminSponsorDetailPage() {
               </thead>
               <tbody className="divide-y">
                 {pagedCredits.rows.map((c) => {
-                  const actions = creditActions(c, detail.finance_check_required, viewerRole)
+                  // A1.10a: armed per credit, and the check is the `payments_approve` key's.
+                  const armed = creditArmed(c, detail.finance_check_required)
+                  const actions = creditActions(c, armed, viewerRole, role?.permissions)
                   return (
                   <tr key={c.id} className="align-top">
                     <td className="px-4 py-3 whitespace-nowrap text-ground-600">{formatDate(c.created_at)}</td>
@@ -394,7 +396,7 @@ export default function AdminSponsorDetailPage() {
                         {t(`admin.sponsors.detail.creditStatus.${c.status}`)}
                       </span>
                       <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-ground-500">
-                        {creditChain(c, detail.finance_check_required).map((step) => (
+                        {creditChain(c, armed).map((step) => (
                           <span key={step.key}>
                             <span className={step.done ? 'text-positive-700 font-bold' : 'text-caution-700 font-bold'}>
                               {step.done ? '✓' : '◷'}

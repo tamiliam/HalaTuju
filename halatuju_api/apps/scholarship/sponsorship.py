@@ -332,7 +332,7 @@ def sign_admin_credit(credit, admin, typed_name):
     if not payments._name_matches(admin, typed_name):
         raise CreditError('name_mismatch')
     now = timezone.now()
-    needs_finance = payments.credit_check_required(_credit_org(credit))   # TD-475: the checker key
+    needs_finance = payments.credit_check_required(_credit_org(credit), credit)   # TD-475; per credit
     refusal = credit_steps.step_refusal(credit, admin, needs_finance)
     if refusal:
         raise CreditError(refusal)

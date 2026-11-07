@@ -21,7 +21,7 @@ jest.mock('next/link', () => ({
 jest.mock('next/navigation', () => ({ useParams: () => ({ id: '5' }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 
-let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'admin' }
+let viewerRole: { role: string; is_super_admin?: boolean; permissions?: string[] } = { role: 'admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -247,6 +247,40 @@ describe('signing a credit', () => {
     await open()
     expect(screen.getByText('admin.sponsors.detail.awaitingFinanceCheck')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /sign\./ })).toBeNull()
+  })
+
+  it('offers the CHECK to an Admin holding payments_approve (TD-475: the key, not the label)', async () => {
+    viewerRole = { role: 'admin', permissions: ['see_all', 'payments_approve'] }
+    mockApi.getSponsorDetail.mockResolvedValue(detail({
+      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z' })],
+      finance_check_required: true,
+    }))
+    await open()
+    expect(screen.getByRole('button', { name: /sign\.checked/ })).toBeTruthy()
+  })
+
+  it('offers no CHECK to a Finance label without the key', async () => {
+    viewerRole = { role: 'finance', permissions: ['see_all'] }
+    mockApi.getSponsorDetail.mockResolvedValue(detail({
+      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z' })],
+      finance_check_required: true,
+    }))
+    await open()
+    expect(screen.queryByRole('button', { name: /sign\./ })).toBeNull()
+  })
+
+  it('lets the approver countersign a credit whose only key holder signed it as maker', async () => {
+    // A1.10a review fix: the server arms the check PER CREDIT (`check_required`), so the screen-wide
+    // flag can be true while this credit goes straight to the organisation admin.
+    viewerRole = { role: 'org_admin' }
+    mockApi.getSponsorDetail.mockResolvedValue(detail({
+      credits: [credit({ status: 'admin_signed', recorded_by: 'Keyed Admin',
+                         recorded_at: '2026-07-27T02:30:00Z', check_required: false })],
+      finance_check_required: true,
+    }))
+    await open()
+    expect(screen.getByRole('button', { name: /sign\.approved/ })).toBeTruthy()
+    expect(screen.queryByText('admin.sponsors.detail.awaitingFinanceCheck')).toBeNull()
   })
 
   it('renders a mapped message for a server refusal, never a raw key path', async () => {

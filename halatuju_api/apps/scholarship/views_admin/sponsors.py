@@ -308,6 +308,24 @@ def _chain_organisations(programmes, credit_rows, membership_rows):
     return {o for o in orgs if o is not None}
 
 
+def _credits_armed(credit_rows):
+    """Per credit: is the check step armed FOR THIS CREDIT (`credit_check_required(org, credit)`, the
+    sign service's own question)? A1.10a review fix: a keyed Admin who signed a credit as maker is not
+    its checker, so with nobody else holding the key it goes straight to the organisation admin, and the
+    screen must draw it that way. Holders are read once per organisation."""
+    from apps.courses import staff_permissions
+    from .. import payments as payments_service
+    from ..credit_steps import CHECKER_KEY
+    held, out = {}, []
+    for c in credit_rows:
+        org = c.programme.organisation if c.programme_id else None
+        if org is not None and org.pk not in held:
+            held[org.pk] = staff_permissions.holders(org, CHECKER_KEY)
+        out.append(payments_service.credit_check_required(
+            org, c, held[org.pk]) if org is not None else False)
+    return out
+
+
 def _sponsor_detail_dict(sponsor, admin, base):
     """The one sponsor, built field-by-field — NEVER a ModelSerializer.
 
@@ -349,7 +367,8 @@ def _sponsor_detail_dict(sponsor, admin, base):
     # added to only one.
     # org-fence: fenced on programme→organisation via base.credits(), never all donations.
     credit_rows = list(base.credits())
-    credits = [_credit_dict(d) for d in credit_rows]
+    credits = [{**_credit_dict(d), 'check_required': armed}
+               for d, armed in zip(credit_rows, _credits_armed(credit_rows))]
 
     membership_rows = [
         m for m in sponsor.programme_memberships.select_related('programme__organisation')

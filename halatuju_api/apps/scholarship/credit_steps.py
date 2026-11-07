@@ -19,7 +19,9 @@ TD-475 (A1.10a, 2026-11-07): the CHECKER seat is the permission ``payments_appro
 longer the retired ``finance`` ROLE label. Owner rulings 4 and 8 made a finance person "an Admin with
 ``payments_approve``", so a new finance person now both arms and performs the credit check, as they
 already do for payment runs. Every existing ``finance`` row holds it by its preset, so today's checkers
-keep the seat; the maker and approver steps are unchanged.
+keep the seat; the maker and approver steps are unchanged. Review fix (same sprint): the check is armed
+PER CREDIT, only while a holder who has not signed it exists, so a keyed maker never strands their own
+credit (the guard `payments_chain.check_required_for` keeps on runs).
 """
 from apps.courses import staff_permissions
 from .models import Donation
@@ -55,7 +57,8 @@ def collected_signer_emails(credit):
 def step_refusal(credit, admin, needs_finance):
     """Why `admin` may NOT sign `credit`'s next step — ``'wrong_role'``, ``'finance_check_required'``,
     ``'same_signer'`` — or None when they may. `credit` must be in `SIGNING` (the caller checks
-    ``bad_state`` first); `needs_finance` is ``payments.credit_check_required(<the credit's org>)``."""
+    ``bad_state`` first); `needs_finance` is ``payments.credit_check_required(<the credit's org>,
+    credit)`` — armed only while a holder who has NOT signed this credit exists (A1.10a review fix)."""
     is_super = bool(getattr(admin, 'is_super', False))
     if credit.status == Donation.STATUS_DRAFT:
         return None if (is_super or admin.role == 'admin') else 'wrong_role'
@@ -77,15 +80,17 @@ def checks_credits(admin):
 
 def waiting_for(admin, credits):
     """How many of `credits` (in `SIGNING`, each with ``programme__organisation`` selected) wait for
-    `admin`'s signature now. ``credit_check_required`` is asked once per organisation."""
+    `admin`'s signature now. The checker holders are read once per organisation; whether the check is
+    armed is per credit (a holder who signed it does not count, `credit_check_required`)."""
     from . import payments
-    needs = {}
+    held = {}
     n = 0
     for credit in credits:
         org = credit.programme.organisation if credit.programme_id else None
         key = getattr(org, 'pk', None)
-        if key not in needs:
-            needs[key] = payments.credit_check_required(org)
-        if step_refusal(credit, admin, needs[key]) is None:
+        if key not in held:
+            held[key] = staff_permissions.holders(org, CHECKER_KEY) if org is not None else []
+        needs = payments.credit_check_required(org, credit, held[key])
+        if step_refusal(credit, admin, needs) is None:
             n += 1
     return n

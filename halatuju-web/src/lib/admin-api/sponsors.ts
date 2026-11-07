@@ -53,6 +53,9 @@ export interface AdminSponsorCredit {
   confirmed_by: string
   confirmed_at: string | null
   created_at: string
+  /** Sponsor detail only (A1.10a): is the check step armed for THIS credit — a holder of
+   *  `payments_approve` who has not signed it exists. Read verbatim (`sponsorDetail.creditArmed`). */
+  check_required?: boolean
 }
 
 export interface AdminSponsorStudent {

@@ -372,6 +372,29 @@ class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
         r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
         self.assertEqual(r.status_code, 200)
 
+    def _revoke(self):
+        self.reviewer.is_active = False
+        self.reviewer.save(update_fields=['is_active'])
+
+    def test_a_REVOKED_assignee_counts_as_unable_to_review(self):
+        # Review fix: a revoked reviewer still holds `review` on their row, but cannot open anything.
+        self._set_status('rejected')
+        self._revoke()
+        self._auth(SUPER)
+        r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'reviewer_cannot_review'))
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.decision_reopened_at)
+        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+
+    def test_a_reopen_back_to_qc_is_unrefused_with_a_revoked_assignee(self):
+        self._revoke()
+        self._auth(SUPER)
+        r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')
+
     def test_a_reopen_that_steps_back_is_unchanged(self):
         # recommended -> interviewed: AWAITING QC is the QC's, not the reviewer's.
         self._take_review_away()

@@ -102,7 +102,7 @@ def finance_check_required(organisation, cache=None):
 check_step_required = finance_check_required
 
 
-def credit_check_required(organisation):
+def credit_check_required(organisation, credit=None, holders=None):
     """Does this organisation's WALLET-CREDIT chain include the finance check?
 
     True iff it has at least one ACTIVE holder of the credit checker key (`credit_steps.CHECKER_KEY`,
@@ -113,12 +113,22 @@ def credit_check_required(organisation):
     TD-475 (A1.10a): was "an active `finance` ROLE row". The Finance label is retired (owner rulings 4
     and 8: a finance person is an Admin with `payments_approve`), so a new finance person never armed the
     check. Every `finance` row holds `payments_approve` by its preset, so today's organisations keep it.
+
+    With `credit` (A1.10a review fix): only a holder who has NOT signed this credit counts — the same
+    guard `check_required_for` keeps on a run. A keyed Admin who recorded and signed a credit as maker
+    could otherwise be its only possible checker, refused as `same_signer`, and strand it. Signers stay
+    distinct either way (`credit_steps.step_refusal`). `holders` lets a list ask once per organisation.
     """
     if organisation is None:
         return False
     from apps.courses import staff_permissions
-    from .credit_steps import CHECKER_KEY
-    return bool(staff_permissions.holders(organisation, CHECKER_KEY))
+    from .credit_steps import CHECKER_KEY, collected_signer_emails
+    if holders is None:
+        holders = staff_permissions.holders(organisation, CHECKER_KEY)
+    if credit is None:
+        return bool(holders)
+    signed = collected_signer_emails(credit)
+    return any(_email(a) not in signed for a in holders)
 
 
 def _collected_signer_emails(run):

@@ -1,5 +1,5 @@
 import {
-  canRecordCredit, canVoid, creditActions, creditableProgrammes, creditChain, creditErrorKey,
+  canRecordCredit, canVoid, creditActions, creditArmed, creditableProgrammes, creditChain, creditErrorKey,
   hasNoMoney, pendingTotal, seenBand, studentStage,
 } from '../sponsorDetail'
 import type { AdminSponsorCredit, AdminSponsorDetail } from '../admin-api'
@@ -155,9 +155,21 @@ describe('creditActions', () => {
     expect(creditActions(signed, false, 'admin').canSign).toBe(false)
   })
 
-  it('sends it to FINANCE instead once a finance admin is appointed', () => {
+  it('sends it to the CHECKER instead once a holder of payments_approve exists', () => {
     const signed = credit({ status: 'admin_signed' })
-    expect(creditActions(signed, true, 'finance')).toMatchObject({ nextStep: 'checked', canSign: true })
+    expect(creditActions(signed, true, 'finance', ['payments_approve']))
+      .toMatchObject({ nextStep: 'checked', canSign: true })
+  })
+
+  it('gives the check to the payments_approve KEY, not the finance label (TD-475)', () => {
+    // The server's checker seat is `credit_steps.CHECKER_KEY`: an Admin given the key checks; a
+    // Finance label without it does not.
+    const signed = credit({ status: 'admin_signed' })
+    expect(creditActions(signed, true, 'admin', ['see_all', 'payments_approve']))
+      .toMatchObject({ nextStep: 'checked', canSign: true, blocked: null })
+    expect(creditActions(signed, true, 'finance', ['see_all']).canSign).toBe(false)
+    expect(creditActions(signed, true, 'finance').canSign).toBe(false)
+    expect(creditActions(signed, true, 'admin', ['see_all', 'payments_prepare']).canSign).toBe(false)
   })
 
   it('tells an org_admin WHY they cannot countersign yet, rather than hiding the reason', () => {
@@ -172,7 +184,7 @@ describe('creditActions', () => {
   it('returns the credit to the approver after the finance check', () => {
     const checked = credit({ status: 'finance_checked' })
     expect(creditActions(checked, true, 'org_admin')).toMatchObject({ nextStep: 'approved', canSign: true })
-    expect(creditActions(checked, true, 'finance').canSign).toBe(false)
+    expect(creditActions(checked, true, 'finance', ['payments_approve']).canSign).toBe(false)
   })
 
   it('lets a super sign any step', () => {
@@ -205,6 +217,20 @@ describe('creditActions', () => {
       expect(a.canSign).toBe(false)
       expect(a.canVoid).toBe(false)
     }
+  })
+})
+
+describe('creditArmed', () => {
+  it('reads the per-credit flag when the server sends one (A1.10a review fix)', () => {
+    // The only key holder signed this credit as maker: the server says it is NOT armed for it,
+    // though the screen-wide flag is true, so it goes straight to the approver.
+    expect(creditArmed(credit({ status: 'admin_signed', check_required: false }), true)).toBe(false)
+    expect(creditArmed(credit({ status: 'admin_signed', check_required: true }), false)).toBe(true)
+  })
+
+  it('falls back to the screen-wide flag on a payload without it', () => {
+    expect(creditArmed(credit({ status: 'admin_signed' }), true)).toBe(true)
+    expect(creditArmed(credit({ status: 'admin_signed' }), false)).toBe(false)
   })
 })
 
