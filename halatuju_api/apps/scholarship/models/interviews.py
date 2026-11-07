@@ -51,6 +51,15 @@ class SponsorProfile(models.Model):
     # sponsor alert batch, so the hourly job never re-sends them. Reset to null on
     # (re)publish so a freshly-published student is alerted exactly once.
     realtime_notified_at = models.DateTimeField(null=True, blank=True)
+    # ⚠ A2.1 / TD-517: the final profile is written in the BACKGROUND (`profile_finalise`), not
+    # inside record-verdict. state: '' none, 'pending' queued or running, 'failed' retries spent.
+    # `finalise_requested_at` is the claim token: a re-record restamps it, so a run started for an
+    # older verdict drops its result. db_default keeps an older image's INSERT valid.
+    finalise_state = models.CharField(max_length=10, blank=True, default='', db_default='')
+    finalise_language = models.CharField(max_length=20, blank=True, default='', db_default='')
+    finalise_requested_at = models.DateTimeField(null=True, blank=True)
+    finalise_claimed_at = models.DateTimeField(null=True, blank=True)
+    finalise_attempts = models.PositiveSmallIntegerField(default=0, db_default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

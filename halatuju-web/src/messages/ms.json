@@ -4337,6 +4337,8 @@
       "profileFinalTitle": "Profil pelajar (akhir)",
       "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan keputusan anda. Buka semula keputusan untuk menyemaknya.",
+      "profileFinalising": "Profil akhir sedang ditulis. Ia akan dipaparkan di sini dalam masa kira-kira 15 minit; muat semula halaman untuk melihatnya.",
+      "profileFinaliseFailed": "Profil akhir tidak dapat ditulis selepas tiga kali cubaan. Draf ditunjukkan di bawah. Sila maklumkan kepada pentadbir utama.",
       "model": "Model",
       "interviewedRecommendedBy": "Ditemu duga dan disyorkan oleh",
       "interviewedDeclinedBy": "Ditemu duga dan ditolak oleh",
@@ -4969,6 +4971,7 @@
           "unsure": "tidak pasti"
         },
         "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
+        "finalisePending": "Keputusan disimpan. Profil akhir sedang ditulis dan akan dipaparkan pada kad profil dalam masa kira-kira 15 minit.",
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
@@ -8385,6 +8388,7 @@
         "issue-monthly-invoices": "Invois bulanan",
         "refresh-reminder": "Peringatan katalog kursus",
         "decision-emails": "E-mel keputusan",
+        "finalise-profiles": "Penulisan profil akhir",
         "announcement-emails": "E-mel pengumuman",
         "survey-emails": "E-mel tinjauan",
         "module-emails": "E-mel modul"

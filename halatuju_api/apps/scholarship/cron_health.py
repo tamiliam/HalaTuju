@@ -34,6 +34,7 @@ EXPECTED_CADENCE = {
     # every 15 minutes
     'application-nudges': EVERY_15_MIN,
     'decision-emails': EVERY_15_MIN,         # Scheduler: release-decisions-15m
+    'finalise-profiles': EVERY_15_MIN,       # ⚠ NEW in A2.1: create the Scheduler job
     'interview-reminders': EVERY_15_MIN,
     'notify-contact-submissions': EVERY_15_MIN,
     # hourly

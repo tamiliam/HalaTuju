@@ -40,6 +40,7 @@ _BY_FAMILY = {
         'autogenerate-profiles', 'backfill-assigned-profiles', 'refresh-profiles',
         'reextract-documents', 'reextract-offers', 'reprocess-ic-vision', 'backfill-anon-blurbs',
         'spending-ingest-report', 'spending-sort-report',
+        'finalise-profiles',  # A2.1: the verdict's final profile + blurb (Gemini)
     ),
     'email': (
         'vision-outage', 'read-outage-start', 'decision-emails', 'application-reminders',

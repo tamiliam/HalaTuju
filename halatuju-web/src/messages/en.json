@@ -4337,6 +4337,8 @@
       "profileFinalTitle": "Student profile (final)",
       "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
+      "profileFinalising": "The final profile is being written. It will appear here within about 15 minutes; reload the page to see it.",
+      "profileFinaliseFailed": "The final profile could not be written after three tries. The draft is shown below. Please tell a super admin.",
       "model": "Model",
       "interviewedRecommendedBy": "Interviewed and recommended by",
       "interviewedDeclinedBy": "Interviewed and declined by",
@@ -4969,6 +4971,7 @@
           "unsure": "unsure"
         },
         "finaliseOk": "Verdict saved and final profile generated.",
+        "finalisePending": "Verdict saved. The final profile is being written and will appear on the profile card within about 15 minutes.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
@@ -8385,6 +8388,7 @@
         "issue-monthly-invoices": "Monthly invoices",
         "refresh-reminder": "Course catalogue reminder",
         "decision-emails": "Decision emails",
+        "finalise-profiles": "Writing final profiles",
         "announcement-emails": "Announcement emails",
         "survey-emails": "Survey emails",
         "module-emails": "Module emails"

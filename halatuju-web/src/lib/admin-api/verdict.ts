@@ -154,7 +154,8 @@ export interface RecordVerdictPayload {
 }
 
 export interface RecordVerdictResult extends AdminScholarshipDetail {
-  finalise_result: { ok: boolean; code?: string } | null
+  // A2.1: `pending` = the final profile is queued; the `finalise-profiles` cron writes it.
+  finalise_result: { ok: boolean; code?: string; pending?: boolean } | null
 }
 
 /** Record the coordinator's verdict. May also trigger a final-profile

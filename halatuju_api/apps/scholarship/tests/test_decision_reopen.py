@@ -180,8 +180,10 @@ class TestDecisionReopen(TestCase):
         self.assertEqual(r.json()['code'], 'not_reopened')
 
     # ── re-record (real change → correction counts) ──────────────────────────
-    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
-    def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine):
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine, _blurb, _down):
         mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
         # TD-253: a REOPENED decision is the reviewer's again, so its interview must be complete.
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
@@ -207,6 +209,12 @@ class TestDecisionReopen(TestCase):
         self.assertTrue(row.resulted_in_change)                   # COUNTS
         self.assertIsNotNone(row.closed_at)
         self.assertEqual(self._corrections_for(self.reviewer.id), 1)
+        # A2.1: the request only queued the profile; the cron writes it (still unpublished).
+        mock_refine.assert_not_called()
+        from apps.scholarship import profile_finalise
+        profile_finalise.run_pending()
+        self.sp.refresh_from_db()
+        self.assertEqual((self.sp.anon_markdown, self.sp.anon_published), ('## Corrected', False))
         # QC clears the corrected case → NOW it publishes and returns to the pool. (This fixture
         # carries no documents, so the V5 QC gap floor would refuse on an all-gaps verdict; patch
         # the verdict seam to a clean read — the floor itself is covered in test_qc_gate.py.)

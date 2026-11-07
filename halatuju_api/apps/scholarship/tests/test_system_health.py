@@ -197,7 +197,7 @@ class CadenceRegistry(SimpleTestCase):
     def test_the_watched_set_is_exactly_the_live_scheduler_fleet(self):
         self.assertEqual(set(EXPECTED_CADENCE), {
             'application-nudges', 'decision-emails', 'interview-reminders', 'notify-contact-submissions',
-            'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
+            'finalise-profiles', 'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
             'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime', 'survey-emails', 'module-emails',
             'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
             'lapse-expired-offers', 'purge-referrals', 'query-reminders',

@@ -166,21 +166,31 @@ class TestRecordVerdictEndpoint(TestCase):
         self.assertIn('academic', r.json()['facts'])
         self.assertIsNone(ScholarshipApplication.objects.get(pk=self.app.id).verdict_decided_at)
 
-    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
-    def test_finalise_runs_when_draft_and_interview_exist(self, mock_refine):
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_finalise_queues_then_the_worker_writes(self, mock_refine, mock_blurb, _down):
+        # A2.1 / TD-517: the request only QUEUES the profile (no Gemini call); the cron writes it.
         mock_refine.return_value = {'markdown': '## Final v2', 'model_used': 'gemini-2.5-flash'}
         SponsorProfile.objects.create(application=self.app, draft_markdown='## Draft')
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now())
         self._auth(REVIEWER)
         r = self.client.post(self._url(), {'officer_verdict': self._verdict(), 'finalise': True}, format='json')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.json()['finalise_result']['ok'])
+        self.assertEqual(r.json()['finalise_result'], {'ok': True, 'pending': True, 'published': False})
+        mock_refine.assert_not_called()
+        mock_blurb.assert_not_called()
         sp = SponsorProfile.objects.get(application=self.app)
+        self.assertEqual((sp.finalise_state, sp.final_markdown), ('pending', ''))
+        from apps.scholarship import profile_finalise
+        profile_finalise.run_pending()
+        sp.refresh_from_db()
         self.assertEqual(sp.final_markdown, '## Final v2')
         # One profile: the final is mirrored onto the sponsor/pool field too.
         self.assertEqual(sp.anon_markdown, '## Final v2')
+        self.assertEqual(sp.finalise_state, '')
 
-    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_finalise_skipped_without_draft_but_verdict_still_recorded(self, mock_refine):
         # No draft profile → finalise can't run, but the verdict audit must still persist.
         self._auth(REVIEWER)
