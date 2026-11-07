@@ -92,13 +92,14 @@ export async function getPartnerStudents(
   if (params?.pageSize && params.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
     qs.set('page_size', String(params.pageSize))
   }
-  if (params?.q) qs.set('q', params.q)
+  // The search term goes in the X-Search-Term header, never the URL (TD-421; adminFetch).
   if (params?.exam) qs.set('exam', params.exam)
   if (params?.source) qs.set('source', params.source)
   const query = qs.toString()
   return adminFetch<StudentListData>(
     `/api/v1/admin/students/${query ? `?${query}` : ''}`,
     options,
+    params?.q,
   )
 }
 

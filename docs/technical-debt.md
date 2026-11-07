@@ -163,7 +163,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - ~~**TD-347**~~ — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)* **Fixed 2026-11-06 (Sprint A1.6): a clearing call re-arms the clock; the deadline email is TD-534; see the detail entry.**
-- **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)* API half done 2026-11-07 (A1.9a: X-Search-Term header); the web half is A1.9b.
+- **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)* - **FIXED (2026-11-07, A1.9a API + A1.9b web: the X-Search-Term header)**
 
 ### Next — a student or an officer can see it, and it is small — 25
 Class C, half a day each. Good small-change-lane work; several go together.
@@ -309,7 +309,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-455** - Saved courses: the remove / status toasts are English-only - low
 - **TD-456** - Course pages and cards: English-only labels and 9-11 px merit text - low
 - **TD-457** - The phone compare's sticky course-name row assumes the student header's height - low
-- **TD-458** - Shared phone: what a session that ends without the sign-out button still leaves behind - medium
+- **TD-458** - Shared phone: what a session that ends without the sign-out button still leaves behind - medium - **FIXED (2026-11-07, A1.9b)**
 - **TD-459** - The Gemini usage meter does not count thinking tokens - medium (money)
 - **TD-460** - The income wizard writes on open, and a failed answer save is silent - medium
 - **TD-461** - The post-shortlist step wizard still has the 10 px icon tab bar - low
@@ -361,7 +361,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-517** - record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
 - **TD-518** - reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
 - **TD-519** - Slow synchronous paths: document upload, assign, interview submit, income coach (SP-03 to SP-06) - medium
-- **TD-520** - Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low (SEC-08, SEC-09 and the API HSTS done in A1.9a; SEC-11 and web headers in A1.9b)
+- **TD-520** - Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; the SEC-11 SQL is the owner's step, TD-550)**
 - **TD-521** - No real sign-in per role on a local stack (CO-01) - medium
 - **TD-523** - Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
 - **TD-524** - A hold verdict can reach QC accept with no amount - medium
@@ -373,7 +373,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-546** - One shared CRON_SECRET opens every cron job (SEC-05) - low - **FIXED (2026-11-07, A1.9a)**
 - **TD-547** - The Django admin sign-in on the API host has no throttle (SEC-06) - low - **FIXED (2026-11-07, A1.9a)**
 - **TD-548** - Anonymous sign-ins skip the NRIC gate (SEC-13) - low - **CLOSED (2026-11-07, documented, no gate)**
-- **TD-549** - 15 deny-all tables have no service_role policy (SEC-14) - low
+- **TD-549** - 15 deny-all tables have no service_role policy (SEC-14) - low - **FIXED (2026-11-07, A1.9b: hand-apply SQL written; the owner applies it, TD-550)**
+- **TD-550** - A1.9b owner steps: apply the SEC-14 and SEC-11 SQL files, check the web's headers live after G4, rule on web HSTS - low
 - **TD-569** - Throttle and admin-login counters live in the database cache (MAX_ENTRIES 300); a cull can wipe them and reset a lock early - low
 
 ### Clusters worth doing as one job
@@ -6990,7 +6991,7 @@ check. *(B · S)*
 application (funded status, stored hold), then the tranche row, so a hold or a close committed after the page
 loaded, or a second press of Release, is refused (`on_hold`, `not_in_programme`, `bad_state`).
 
-### [TD-421] An IC typed into an admin list search lands in the request logs - low
+### [TD-421] An IC typed into an admin list search lands in the request logs - low - **FIXED (2026-11-07, A1.9b: the web sends the term in X-Search-Term, never in the URL)**
 
 **Raised 2026-10-29** by the student maintenance Sprint 2 adversarial review (finding 7). The Applications list
 (`?q=`) and the Scholars list (`?search=`) take the search text in the QUERY STRING, and an officer searching by
@@ -7006,6 +7007,14 @@ retention on the existing logs when this is fixed. *(B · S)*
 allows the header (`settings/base.py`). Pinned by `test_search_term_header.py` (the term is absent from the
 request line). **Left for A1.9b:** the web sends the header (`client.ts`, `applications.ts`, `scholars.ts`,
 `partners.ts`) and stops putting the term in the URL; this entry closes then. The API must deploy FIRST (CORS).
+
+**Fixed 2026-11-07 (A1.9b, web half).** `adminFetch` takes the search term as an optional third argument and
+sends it as `X-Search-Term`, percent-encoded with `encodeURIComponent` (a header is Latin-1 only, so a Tamil
+name could not travel raw; the API's `unquote` reads it back exactly). Applications (`q`), Scholars (`search`)
+and the Students directory (`q`) no longer put the term in the query string; every other filter stays there. A
+blank term sends no header. Pinned by `src/lib/__tests__/searchTermHeader.test.ts` (an IC in the header and not
+the URL; a Tamil name arrives as ASCII and decodes back; spaces survive). The API's `?q=` / `?search=` fallback
+stays until no older web bundle is live. Old request logs were not purged (owner's call on retention).
 
 ### [TD-422] The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
 
@@ -7455,7 +7464,7 @@ its safe area. If the header's height changes, the row either hides under it or 
 `AppHeader` publish its height as a CSS variable (the `--bottom-bar` pattern, `lib/bottomBarInset.ts`) and stick at
 `var(--header-height)`; a test pinning the two together. *(B · S)*
 
-### [TD-458] Shared phone: what a session that ends without the sign-out button still leaves behind - medium
+### [TD-458] Shared phone: what a session that ends without the sign-out button still leaves behind - medium - **FIXED (2026-11-07, A1.9b: owner-tagged localStorage, pageshow reload)**
 
 **Raised 2026-11-01 by the adversarial review of the apply-form privacy fix** (Mobile M4, part 0). The fix wipes the
 tab's stashed apply form on the sign-out button, on ANY `SIGNED_OUT` event and when the dashboard abandons the detour.
@@ -7473,6 +7482,20 @@ session that ends without the button, or a duplicated tab, can no longer hand th
 another user id reads nothing and the draft is gone; and the IC, the typed signature and the consent are never stored
 at all. Still open: (1) the back-forward cache (not touched by M4); (2) for the GRADES and profile in localStorage
 (not the form); (3) for anything else in the tab's sessionStorage (the return marker, the programme code — no PII).
+
+**Fixed 2026-11-07 (A1.9b).** (2) The student data in localStorage now has an owner: `storage.claimStudentData`
+tags it with the signed-in user id (`halatuju_owner`). The student `AuthProvider` calls it on a page load with a
+session, on every `SIGNED_IN` and on `SIGNED_OUT`; data tagged to ANOTHER account (or any account, for an
+anonymous session or a sign-out) is wiped as the sign-out button would (`clearAll`, keeping only the language and
+the admin / sponsor sessions) BEFORE the auth gate's sign-in sync could upload it into the next account. Untagged
+data is a signed-out visitor's own and still goes up with their sign-in, as before. A load with no session at all
+(offline) wipes nothing. (1) A page restored from the back-forward cache (`pageshow` with `event.persisted`) while
+signed in reloads when this browser's data is no longer that user's (the sign-out button cleared it, or another
+account took it). (3) Left as accepted: a duplicated tab copies only the return marker and a programme code (no
+PII; the apply draft is already bound to the user id). Pinned by `src/lib/__tests__/sharedPhoneOwner.test.tsx`
+(11 tests, the real `AuthProvider`). No `no-store` header was added (a design change; the reload covers it).
+Review fix (same day): a wipe also re-keys the provider's children, so a page that copied the wiped grades into
+its state on mount (before the provider's effects ran) is rebuilt empty and cannot write them back (15 tests).
 
 ### [TD-460] The income wizard writes on open, and a failed answer save is silent - medium
 
@@ -8088,11 +8111,24 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
 
-### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low
+### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; applying the SEC-11 SQL is the owner's step, TD-550)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-08 and 09 confirmed; SEC-11 and 12 read, not run).** (1) `profile_claim._within` does a cache get then set, not an atomic add. (2) `courses/views.py` ~1418 writes an email address into a WARNING line. (3) `public.partner_organisations` has an "Allow public read" policy (Security Advisor 0012) exposing contact names, emails and phones. (4) No CSP, X-Frame-Options or Referrer-Policy on the web; HSTS is 30 days on the API. **Fix:** atomic add; log the user id; tighten the policy; add a `headers()` block. *(A · S)*
 
 **Progress 2026-11-07 (A1.9a, API half).** (1) Done: `halatuju.throttling.take_slot` (`cache.add` per slot, atomic on the DatabaseCache) backs `profile_claim._within`. (2) Done: the WARNING names the profile id, never the address. (4) API part done: HSTS raised to one year (still no preload, no subdomains). **Left for A1.9b:** (3) the `partner_organisations` read policy (a hand-apply SQL file, after a read-only look at the policy and at who reads the table) and (4) the web `headers()` block in `next.config` plus the live-response headers test.
+
+**Fixed 2026-11-07 (A1.9b, web + SQL).** (3) `docs/security/2026-11-07-sec11-partner-organisations-read-policy.sql`
+drops "Allow public read" and adds a `service_role` policy (pre-check, one transaction with `lock_timeout`
+5 s, read-back, rollback). Read-only look first: the only reader is the Django model, as `postgres` (owner,
+BYPASSRLS, RLS not forced), so the API is unaffected; the web never reads the table through Supabase; nothing is
+granted to `anon` or `authenticated`. NOT applied: the owner runs it (TD-550). (4) `next.config.js` `headers()`
+sets, on every path: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+`X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'` (framing only, no loading
+directive) and `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()`. Every external
+origin was checked first (Supabase, Turnstile's frame, the API; YouTube only as links): none is restricted. No
+web HSTS and no loading CSP (a full CSP would go Report-Only first). Pinned by
+`src/lib/__tests__/securityHeaders.test.ts` (reads the config); the check against the LIVE response can only run
+after the G4 deploy (TD-550).
 
 ### [TD-521] No real sign-in per role on a local stack (CO-01) - medium
 
@@ -8238,9 +8274,25 @@ inside the locked block; the lock rule). *(A · S)*
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-13, no harmful door found).** `NricGateMiddleware` lets an `is_anonymous` Supabase session through to every endpoint. **Decision (recommendation, A1.9a): keep it, build no gate.** It is the designed "browse before you identify" flow (`docs/decisions.md`, NRIC hard gate; `docs/auth-onboarding-flow.md`): an anonymous visitor uses the course search and the quiz before giving an IC. What protects student data is that every student view reads by `request.user_id`, and an anonymous id owns no one else's rows: at most it gets an EMPTY profile of its own (`ProfileView` GET, the report view and the NRIC claim use `get_or_create`; the known source of empty profiles in `docs/auth-onboarding-flow.md`), holding only what that visitor types. `ProfileSyncView` refuses anonymous callers and the quiz-signal save skips them; staff and sponsor routes check their own rows. A gate here would break the anonymous browse flow and close no door. **Revisit if** a view ever lets an anonymous id reach a row it did not create (for example by an IC or an application id in the request without an owner check); a reviewer checklist line is enough. The empty profiles are a data-tidiness matter, not a security one.
 
-### [TD-549] 15 deny-all tables have no service_role policy (SEC-14) - low
+### [TD-549] 15 deny-all tables have no service_role policy (SEC-14) - low - **FIXED (2026-11-07, A1.9b: hand-apply SQL written; the owner applies it, TD-550)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-14, harmless today).** Fifteen tables have RLS on and no policy at all; the API reaches them as the table owner, so nothing fails, but the Security Advisor flags each one and a future move to a non-owner role would lock the API out. **Fix (A1.9b):** a hand-apply SQL file under `docs/security/` (pre-check list read-only first, one `BEGIN`/`COMMIT` with `SET LOCAL lock_timeout = '5s'`, read-back, rollback) adding an explicit `service_role` policy to each. *(A · S)*
+
+**Fixed 2026-11-07 (A1.9b).** `docs/security/2026-11-07-sec14-service-role-policies.sql`: a `"service_role all"`
+policy (FOR ALL TO service_role, USING true, WITH CHECK true) on each of the 15. The read-only pre-check returned
+exactly these 15 on the live project, all owned by `postgres`, RLS on, not forced; the app's role is `postgres`
+(BYPASSRLS), and `service_role` has BYPASSRLS too, so no one's access changes today. Nothing is granted or
+opened to `anon` or `authenticated`. NOT applied: the owner runs it (TD-550).
+
+### [TD-550] A1.9b owner steps: apply the two SQL files, check the web's headers live, rule on web HSTS - low
+
+**Raised 2026-11-07 by Sprint A1.9b.** The sprint wrote, and did not apply, two hand-apply SQL files; and the
+roadmap's "headers test against the live response" cannot run before the deploy. **Steps:** (1) run
+`docs/security/2026-11-07-sec14-service-role-policies.sql`, then `docs/security/2026-11-07-sec11-partner-organisations-read-policy.sql`
+(either order works), each part by part: pre-check, change, read-back; (2) after the G4 web deploy,
+`curl -sI https://halatuju.xyz/` must show the five headers pinned in `securityHeaders.test.ts`, and a sign-in
+plus a Turnstile check must still work; (3) owner's call: HSTS on the web host (the API sends one year; the web
+sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 ### [TD-569] Throttle and admin-login counters live in the database cache and can be culled - low
 
