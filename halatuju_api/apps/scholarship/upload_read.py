@@ -22,6 +22,9 @@ each pinned in ``tests/test_upload_read.py``:
 * **A decided newer upload wins.** A read that starts after a NEWER upload in the same slot has
   already been read and judged is dropped unread (no paid call): that newer decision stands, and an
   older read finishing last must never bury it. (A newer one still waiting is simply read after.)
+* **Judged against the slot as it is now.** The read compares with the slot's current live copy
+  (an earlier upload read in between may now hold it), not the one the upload saw; the plan's copy
+  is used only when the slot is empty.
 * **No read, no wait.** A document type with no paid read (a photo, a reference letter) is judged
   inside the request exactly as before — there is nothing slow to move.
 """
@@ -311,13 +314,27 @@ def run_read(doc_id):
         logger.info('AUDIT upload_read_superseded doc=%s app=%s', doc_id, doc.application_id)
         return 'superseded', None
     plan = doc.read_plan or {}
+    stale_ids = list(plan.get('stale_ids') or [])
     existing_live = None
-    if plan.get('existing_live'):
+    if plan.get('staged'):
+        # Judge against the slot AS IT IS NOW, not as the upload saw it: an earlier upload read
+        # since (or a copy that replaced the plan's) may hold the slot, and should_promote(.., None)
+        # always promotes, so a stale "nothing" would let a mismatch bury a good live copy. The
+        # slot's live copies join the staged-against set; the pick is the tag guard's own
+        # (SNAPSHOT_ORDER over that set). The plan's copy is the fallback only for an empty slot.
+        live_now = ApplicantDocument.objects.filter(
+            application_id=doc.application_id, doc_type=doc.doc_type,
+            household_member=doc.household_member, request_code=doc.request_code,
+            superseded_at__isnull=True).exclude(id=doc.id).values_list('id', flat=True)
+        stale_ids = list(dict.fromkeys(stale_ids + list(live_now)))
+        existing_live = (ApplicantDocument.objects.filter(
+            id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
+            .order_by(*SNAPSHOT_ORDER).first())
+    if existing_live is None and plan.get('existing_live'):
         existing_live = ApplicantDocument.objects.filter(pk=plan['existing_live']).first()
     try:
         data = read_and_judge(doc.application, doc, staged=bool(plan.get('staged')),
-                              stale_ids=list(plan.get('stale_ids') or []),
-                              existing_live=existing_live)
+                              stale_ids=stale_ids, existing_live=existing_live)
     except Exception:  # never raise into the cron or the student's call: one failed attempt
         logger.warning('upload read failed doc=%s attempt=%s', doc_id, doc.read_attempts,
                        exc_info=True)

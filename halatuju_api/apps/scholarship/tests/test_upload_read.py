@@ -206,6 +206,24 @@ class TestUploadQueue(TestCase):
             self.assertEqual(upload_read.run_read(older.id)[0], 'done')
             self.assertEqual(reads.ic.call_count, 1)
 
+    def test_a_later_read_is_judged_against_the_slot_as_it_is_now(self):
+        # A2.3 review: IC slot empty; A then B uploaded, both staged with no copy to compare; both
+        # web read calls lost. The cron reads A (good) → live. B (a mismatch) must be judged
+        # against A, not the "nothing" its plan saw, so A keeps the slot and B stays staged.
+        a = self._pending('ic', 'good')
+        b = self._pending('ic', 'bad')
+        self.assertEqual((a.read_plan['existing_live'], b.read_plan['existing_live']), (None, None))
+        verdict = lambda d: 'mismatch' if d.id == b.id else 'ok'  # noqa: E731
+        with _Reads(), patch('apps.scholarship.resolution.doc_match_verdict', side_effect=verdict):
+            self.assertEqual(upload_read.run_read(a.id)[0], 'done')
+            outcome, data = upload_read.run_read(b.id)
+        a.refresh_from_db()
+        b.refresh_from_db()
+        self.assertEqual(outcome, 'done')
+        self.assertIsNone(a.superseded_at)               # the good copy stays live
+        self.assertIsNotNone(b.superseded_at)            # the mismatch is never promoted
+        self.assertTrue(data['kept_previous'])
+
     # --- the cron -------------------------------------------------------------
 
     def test_the_cron_reads_queued_uploads_oldest_first(self):

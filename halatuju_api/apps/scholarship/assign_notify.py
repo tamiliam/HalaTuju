@@ -10,7 +10,8 @@ both, with the SAME gates and the SAME content (moved verbatim below):
 * **Who gets mail is unchanged.** The reviewer on every real assignment (never an unassign — that
   writes no queued row); the student only while ``STUDENT_ASSIGNMENT_EMAIL_ENABLED`` is on AND the
   organisation's own switch allows ``interviewer_assigned`` — both asked at SEND time, as late as
-  the gate can be asked.
+  the gate can be asked. An event whose reviewer no longer holds the case when the cron runs
+  (reassigned or unassigned since) is closed unsent: only the current reviewer is mailed.
 * **The review-by date is the assignment's.** It is computed from the case's ``assigned_at`` while
   this event is still the case's assignment, else from the event's own time — never from when the
   cron happened to run.
@@ -117,13 +118,21 @@ def _finish_notify(event_id, token, state=''):
 
 
 def send_one(event_id):
-    """Claim and send one event. Returns 'sent', 'retry', 'failed' or 'not_claimed'."""
+    """Claim and send one event. Returns 'sent', 'stale' (the case has another reviewer or none
+    now: closed unsent), 'retry', 'failed' or 'not_claimed'."""
     now = timezone.now()
     if not _claim_notify(event_id, now):
         return 'not_claimed'
     event = (AssignmentEvent.objects
              .select_related('application__cohort', 'application__profile', 'to_admin')
              .get(pk=event_id))
+    if event.application.assigned_to_id != event.to_admin_id:
+        # Reassigned or unassigned before the cron ran: this reviewer no longer has the case, so
+        # neither "new applicant" to them nor "your interviewer is ..." to the student. Closed as
+        # done ('') unsent; the current assignment's own event (if any) mails the current reviewer.
+        _finish_notify(event_id, now)
+        logger.info('AUDIT assign_email_stale event=%s app=%s', event_id, event.application_id)
+        return 'stale'
     try:
         send_assignment_emails(event)
     except Exception:  # never raise into the cron: one failed attempt
@@ -141,7 +150,7 @@ def send_one(event_id):
 
 def run_pending(limit=BATCH):
     """The cron body: send up to ``limit`` queued assignments' emails, oldest first. Never raises."""
-    counts = {'sent': 0, 'retry': 0, 'failed': 0, 'not_claimed': 0, 'error': 0}
+    counts = {'sent': 0, 'stale': 0, 'retry': 0, 'failed': 0, 'not_claimed': 0, 'error': 0}
     now = timezone.now()
     # A send killed mid-call on its LAST attempt can never be claimed again: close it as failed.
     counts['failed'] += AssignmentEvent.objects.filter(

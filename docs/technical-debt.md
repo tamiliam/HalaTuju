@@ -385,6 +385,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 - **TD-586** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
+- **TD-590** - A queued upload read that fails AFTER its paid call is retried in full, so the retry pays again - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -8434,3 +8435,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low
 
 **Raised 2026-11-07 by A2.3.** When `CHECK2_AUTO_GENERATE` is on, the first assign of a case still calls Gemini for the sponsor-profile draft before it replies, so that one assign can stay slow after A2.3 moved the emails out. Left as it is on purpose: the owner has not decided whether the draft should wait for the cron. **Fix (once decided):** queue the draft the same way as the assign emails, or keep it inline and accept the wait. *(B · S)*
+
+### [TD-590] A queued upload read that fails after its paid call pays again on the retry - low
+
+**Raised 2026-11-08 by the A2.3 adversarial review.** `upload_read.run_read` retries the whole `read_and_judge` when it raises (up to `MAX_ATTEMPTS` = 3). If the failure comes AFTER Vision OCR or Gemini extraction has run (say in the promote decision or the resolution sync), the retry makes the same paid call again: at worst three paid reads for one upload. No code change in A2.3 (the read must not change). **Fix:** on a retry, skip the paid step when the row already carries a read from this attempt's upload (for example `vision_run_at` / `vision_fields_run_at` set after `uploaded_at`) and go straight to the judge. *(B · S)*

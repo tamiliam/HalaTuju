@@ -99,13 +99,27 @@ class TestAssignNotifyQueue(TestCase):
             self.assertEqual(assign_notify.run_pending()['sent'], 0)
         rev.assert_not_called()
 
-    def test_a_reassignment_before_the_cron_mails_each_reviewer_once(self):
+    def test_a_reassignment_before_the_cron_mails_only_the_current_reviewer(self):
         self._assign(self.reviewer)
         self._assign(self.reviewer2)
-        with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL):
-            self.assertEqual(assign_notify.run_pending()['sent'], 2)
-        self.assertEqual(sorted(c.kwargs['to_email'] for c in rev.call_args_list),
-                         ['kavin@example.test', 'rohini@example.test'])
+        with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
+            counts = assign_notify.run_pending()
+        self.assertEqual((counts['sent'], counts['stale']), (1, 1))
+        self.assertEqual([c.kwargs['to_email'] for c in rev.call_args_list], ['kavin@example.test'])
+        self.assertEqual([c.kwargs['reviewer_name'] for c in stu.call_args_list], ['Kavin'])
+        self.assertEqual(list(AssignmentEvent.objects.filter(application=self.app)
+                              .values_list('notify_state', flat=True)), ['', ''])
+
+    def test_an_unassign_before_the_cron_sends_no_email(self):
+        self._assign(self.reviewer)
+        self.app.status = 'profile_complete'
+        self._assign(None)
+        with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
+            counts = assign_notify.run_pending()
+        self.assertEqual((counts['sent'], counts['stale']), (0, 1))
+        rev.assert_not_called()
+        stu.assert_not_called()
+        self.assertEqual(AssignmentEvent.objects.filter(notify_state='pending').count(), 0)
 
     def test_one_claim_wins_and_a_stale_claim_is_retried(self):
         self._assign(self.reviewer)
