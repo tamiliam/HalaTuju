@@ -124,8 +124,7 @@ DOC_SPECS = {
     # DEPRECATED (2026-07-04) memberless EPF asks (per-member above): kept ONLY so an open one auto-resolves.
     'unemployment_epf_missing': {'doc_type': 'epf'},
     'epf_statement_missing':    {'doc_type': 'epf'},
-    # V4 — promoted human ask-themes (audit §E). All soft doc-requests (uncapped), gap-detected in
-    # income_engine, auto-resolved when the gap clears.
+    # V4 — promoted ask-themes (audit §E): soft doc-requests (uncapped), gap in income_engine, auto-resolved.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
     **higher_owed.ASK_SPECS,  # #388 owed over a pre-S3 snapshot; 2026-11-07 declare + upload (higher_owed)
@@ -500,6 +499,7 @@ def sync_check2_queries(application):
         item = existing.get(code)
         if code in held:
             continue
+        higher_owed.refresh_params(application, item)   # the declare ask: is her document on file now?
         if code in proof_wanted:
             if item is None and higher_owed.may_raise(application, code, may_ask):   # Completed only, bar 2
                 try:

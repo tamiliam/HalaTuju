@@ -2449,7 +2449,11 @@
         },
         "higher_results_declare_requested": {
           "title": "Isi dan muat naik keputusan STPM, Matrikulasi, Asasi atau Diploma anda",
-          "desc": "Program ijazah universiti memerlukan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, tetapi permohonan anda hanya menunjukkan keputusan SPM. Isi keputusan tersebut di halaman keputusan anda, kemudian muat naik keputusan akhir rasmi dengan nama dan PNGK anda jelas kelihatan. Bagi Matrikulasi atau Diploma, itu ialah transkrip akademik akhir anda (slip keputusan semester tidak dikira)."
+          "desc": "Program ijazah universiti memerlukan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, tetapi permohonan anda hanya menunjukkan keputusan SPM. Isi keputusan tersebut di halaman keputusan anda, kemudian muat naik keputusan akhir rasmi dengan nama dan PNGK anda jelas kelihatan. Bagi Matrikulasi atau Diploma, itu ialah transkrip akademik akhir anda (slip keputusan semester tidak dikira).",
+          "onFile": {
+            "title": "Isi keputusan STPM, Matrikulasi, Asasi atau Diploma anda",
+            "desc": "Program ijazah universiti memerlukan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, tetapi permohonan anda hanya menunjukkan keputusan SPM. Kami sudah ada dokumen keputusan anda, jadi anda tidak perlu memuat naiknya semula: hanya isi keputusan tersebut di halaman keputusan anda."
+          }
         }
       },
       "vircle": {
@@ -4833,6 +4837,7 @@
           "higher_results_cgpa_mismatch": "PNGK dimasukkan {entered}, tetapi dokumen menunjukkan {slip}. Semak.",
           "higher_results_cgpa_unread": "Tiada PNGK dapat dibaca daripada dokumen — semak dengan mata.",
           "higher_results_subjects_missing": "Mata pelajaran STPM pada slip tetapi tidak dimasukkan: {subjects}.",
+          "higher_results_subjects_unrecognised": "Satu mata pelajaran pada keputusan tidak dapat dikenal pasti, jadi slip tidak dapat disahkan sepadan: {subjects}.",
           "higher_results_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip STPM menunjukkan {slip}. Semak.",
           "higher_results_not_checked": "Kesahihan keputusan pengajian tinggi BELUM disemak (tiada corak untuk dokumen ini) — semak dokumen dengan mata."
         }
@@ -4996,8 +5001,10 @@
         "subtitle": "Pertanyaan yang dibangkitkan dan/atau dokumen yang diminta oleh sistem/penyemak",
         "questionLabel": "Soalan",
         "uploadLabel": "Muat naik",
+        "enterLabel": "Isi",
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "lockedClosed": "Pertanyaan ditutup — permohonan ini tidak lagi dalam semakan. Ini kini rekod baca-sahaja.",
+        "lateAskOpen": "Permintaan keputusan pengajian tinggi di bawah masih terbuka: pelajar masih boleh menjawabnya.",
         "itemOne": "perkara",
         "itemMany": "perkara",
         "overflow": "{n} lagi soalan beratur — akan ditanya secara automatik sebaik yang semasa dijawab atau dikecualikan.",

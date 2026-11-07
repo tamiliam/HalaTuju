@@ -298,7 +298,7 @@ export function i18nKeyFor(code: string): string {
  * raw text.
  */
 export function titleSourceFor(
-  item: Pick<ResolutionItem, 'source' | 'code' | 'prompt'>,
+  item: Pick<ResolutionItem, 'source' | 'code' | 'prompt'> & Partial<Pick<ResolutionItem, 'params'>>,
 ):
   | { kind: 'raw'; text: string }
   | { kind: 'i18n'; titleKey: string; descKey: string } {
@@ -315,10 +315,14 @@ export function titleSourceFor(
   if (isOfficerItem(item)) {
     return { kind: 'raw', text: item.prompt || '' }
   }
+  // 2026-11-07 (app 278): her higher-results document is already on file (the server's
+  // `params.doc_on_file`, kept current by every Check-2 sync), so the ask is only to ENTER them.
+  const base = item.code === 'higher_results_declare_requested' && item.params?.doc_on_file === true
+    ? `${i18nKeyFor(item.code)}.onFile` : i18nKeyFor(item.code)
   return {
     kind: 'i18n',
-    titleKey: `${i18nKeyFor(item.code)}.title`,
-    descKey: `${i18nKeyFor(item.code)}.desc`,
+    titleKey: `${base}.title`,
+    descKey: `${base}.desc`,
   }
 }
 
@@ -366,6 +370,9 @@ const ONBOARDING_ASKS: Record<string, { path: string; buttonKey: string }> = {
   // (the same door as the higher-results card's "update results" link); the upload is on the card.
   higher_results_declare_requested: { path: '/onboarding/exam-type', buttonKey: 'scholarship.actionCentre.enterHigherResults' },
 }
+/** The two higher-results asks the server may raise or keep open after the interview
+ *  (`higher_owed.LATE_ASK_STATUSES`): the cockpit's "querying closed" line must not deny them. */
+export const LATE_HIGHER_ASKS: ReadonlySet<string> = new Set(['higher_results_requested', 'higher_results_declare_requested'])
 export function onboardingAskFor(code: string): { path: string; buttonKey: string } | null {
   return ONBOARDING_ASKS[code] ?? null
 }

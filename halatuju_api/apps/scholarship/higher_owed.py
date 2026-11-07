@@ -276,9 +276,31 @@ def owes_higher(application) -> bool:
 
 
 def ask_params(application, code) -> dict:
-    """The params frozen onto the ask at creation: the kind held, so the copy reads "Please upload
-    your STPM results." Every other Check-2 document request carries none ({})."""
+    """The params put on the ask at creation: the kind held, so the copy reads "Please upload your
+    STPM results"; the declare ask's ``doc_on_file`` (`refresh_params`). Every other one: none ({})."""
+    if code == DECLARE_ASK_CODE:
+        return {DOC_ON_FILE: True} if _live_higher(application) else {}
     return {'results_kind': _owed(application) or final_owed_kind(application)} if code == ASK_CODE else {}
+
+
+#: 2026-11-07 (app 278): the declare ask's flag that her higher-results DOCUMENT is already on file,
+#: so the card (and the cockpit's Check-2 line) asks her only to ENTER her results — copy
+#: `scholarship.actionCentre.item.higher_results_declare_requested.onFile`, chosen at render by this flag.
+DOC_ON_FILE = 'doc_on_file'
+
+
+def refresh_params(application, item) -> None:
+    """Keep the declare ask's ``doc_on_file`` true to the documents NOW — every Check-2 sync (the
+    cockpit's and the Action Centre's reads run one), so it is right when the upload arrives AFTER
+    the ask was raised, or is removed. Every other item is left untouched."""
+    if item is None or item.code != DECLARE_ASK_CODE:
+        return
+    params = dict(item.params or {})
+    params.pop(DOC_ON_FILE, None)
+    params.update(ask_params(application, DECLARE_ASK_CODE))
+    if params != (item.params or {}):
+        item.params = params
+        item.save(update_fields=['params'])
 
 
 def cap(fact, kind):
