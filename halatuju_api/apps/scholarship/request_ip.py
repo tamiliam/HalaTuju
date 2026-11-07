@@ -1,24 +1,25 @@
 """The caller's IP for a signature record — ONE home (review L4, source sign-in S4, 2026-10-30).
 
-`forwarded_ip` is the sponsor terms acceptance's rule, moved here unchanged from
-`views_sponsor._client_ip` (which now calls it): Cloud Run sits behind a proxy, so the FIRST
-`X-Forwarded-For` hop is the real client; with no header, `REMOTE_ADDR`.
+`forwarded_ip` is the address Cloud Run saw: since A1.9 (TD-429 / TD-514) the RIGHTMOST
+`X-Forwarded-For` hop, which is the only one our side writes (`halatuju.throttling.forwarded_client_ip`,
+shared with the throttles). It was the FIRST hop, which the caller types. With no header, `REMOTE_ADDR`.
 
-⚠ ONE ADDITION, for the columns that are `GenericIPAddressField` / Postgres `inet`: `valid_ip` turns a
-value that is not an address into None, because Django does not validate on `save()` and Postgres
-would refuse it — a forged header must not fail a signature. The sponsor acceptance does not call it
-(its behaviour is unchanged on purpose; see TD-429).
+⚠ For the columns that are `GenericIPAddressField` / Postgres `inet`: `valid_ip` turns a value that is
+not an address into None, because Django does not validate on `save()` and Postgres would refuse it —
+a forged header must not fail a signature.
 
-⚠ The student's and the guarantor's signing still record `REMOTE_ADDR` — the proxy's address behind
-Cloud Run (TD-429). Left alone here: changing it changes what the student's record says.
+Every signature now records `signer_ip` (TD-429, A1.9): the student's and the guarantor's signing, the
+consent, the onboarding and promotional consents, the source's witness and the sponsor terms acceptance.
+Before A1.9 the student's side recorded `REMOTE_ADDR` (the proxy's address behind Cloud Run).
 """
 import ipaddress
 
+from halatuju.throttling import forwarded_client_ip
+
 
 def forwarded_ip(request):
-    """Best-effort caller IP: the first `X-Forwarded-For` hop, else `REMOTE_ADDR`, else None."""
-    fwd = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip()
-    return fwd or request.META.get('REMOTE_ADDR') or None
+    """Best-effort caller IP: the rightmost `X-Forwarded-For` hop, else `REMOTE_ADDR`, else None."""
+    return forwarded_client_ip(request)
 
 
 def valid_ip(value):

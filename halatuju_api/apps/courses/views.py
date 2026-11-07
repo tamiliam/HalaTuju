@@ -1415,7 +1415,7 @@ class SendVerificationView(APIView):
                 recipient_list=[email],
             )
         except Exception:
-            logger.warning('Failed to send verification email to %s', email, exc_info=True)
+            logger.warning('Verification email failed for profile %s', profile.pk, exc_info=True)
 
         return Response({'status': 'sent'})
 

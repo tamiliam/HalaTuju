@@ -12,6 +12,7 @@ import io
 from django.db.models import Count
 from django.utils import timezone
 
+from apps.courses.csv_safe import csv_cell
 # The Sprint 8 audience rule, ONE home: the organisation's files in maintenance, in the gift.
 from .announcements import audience_apps
 from .models import Survey, SurveyEmail, SurveyResponse
@@ -112,10 +113,8 @@ def results(s):
             'can_remind': status == 'open' and any(not p['reminded'] for p in pending)}
 
 
-def _cell(value):
-    """A CSV cell that a spreadsheet cannot run: a leading = + - @ (or a tab / carriage return) gets a '."""
-    text = '' if value is None else str(value)
-    return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text
+# A CSV cell that a spreadsheet cannot run; its one home is apps.courses.csv_safe (TD-515, A1.9).
+_cell = csv_cell
 
 
 def _csv_value(q, value):

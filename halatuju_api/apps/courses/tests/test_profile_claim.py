@@ -531,6 +531,22 @@ class TestRateLimits(ClaimBase):
         self.assertEqual(resp.data['code'], 'rate_limited')
 
 
+class TestTheCounterIsAtomic(ClaimBase):
+    """SEC-08 (A1.9): the old counter read the count, then wrote count + 1, so two requests that
+    read together both passed. Each use is now a slot only one `cache.add` can win."""
+
+    def test_two_callers_that_read_together_cannot_both_take_the_last_use(self):
+        key = 'claim:race-test'
+        for _ in range(2):
+            self.assertTrue(profile_claim._within(key, 3))
+        # Both "parallel" callers saw the same free slot; the add lets exactly one through.
+        stale_view = cache.get_many(['%s:%d' % (key, n) for n in range(3)])
+        with unittest.mock.patch.object(cache, 'get_many', return_value=stale_view):
+            results = [profile_claim._within(key, 3), profile_claim._within(key, 3)]
+        self.assertEqual(sorted(results), [False, True])
+        self.assertFalse(profile_claim._within(key, 3))
+
+
 class TestRevocation(ClaimBase):
     """Deleting the alias row fully reverses a claim — that is the whole undo."""
 

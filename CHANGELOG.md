@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.9a - PII and request hygiene, API half (2026-11-07)
+
+Branch a19 (not pushed; API only; no migration, no SQL, no model change). Safe to deploy with no new env var set: the shared `CRON_SECRET` still opens every job.
+- **TD-514 / SEC-03 and TD-429:** one caller address everywhere, the RIGHTMOST `X-Forwarded-For` hop (Cloud Run writes it; the leftmost is typed by the caller). `throttling.client_ip` no longer trusts `CF-Connecting-IP` (no Cloudflare in front), so a forged header cannot buy a fresh throttle bucket. All four signing sites in `scholarship/views.py` and the sponsor terms acceptance now record `request_ip.signer_ip` (validated; junk is stored as NULL, never a 500), not the proxy's `REMOTE_ADDR`.
+- **SEC-05 (TD-546):** cron jobs are split into four families (`cron_auth.py`: money, paid, email, maintenance). A job opens with its family key (`CRON_SECRET_MONEY` / `_PAID` / `_EMAIL` / `_MAINTENANCE`) or, until retired, the shared `CRON_SECRET` (an INFO line names each job still using it). Constant-time compare; an unset key opens nothing.
+- **SEC-06 (TD-547):** the Django admin sign-in on the API host allows 10 POSTs per caller per 15 minutes, then answers 429.
+- **SEC-08 (TD-520):** the claim-code counters use `throttling.take_slot` (atomic `cache.add` per slot), so two parallel requests cannot both pass the last slot.
+- **SEC-09 (TD-520):** the failed verification-email WARNING names the profile id, not the email address.
+- **SEC-12 (TD-520, API part):** HSTS one year (was 30 days); still no preload, no subdomains.
+- **SEC-04 / TD-515:** the partner student CSV export guards every cell against spreadsheet formulas (`apps/courses/csv_safe.py`, the survey CSV's rule moved to one home) and writes `AUDIT partner_students_export admin=<id> org=<id|all> rows=<n>` (no PII).
+- **TD-421 (API half):** the people-search term is read from an `X-Search-Term` header first (URI-decoded), then `?q=` / `?search=`; Applications, Scholars and Students. CORS allows the header. The term leaves the URL only when the web sends the header (A1.9b).
+- **SEC-13 (TD-548):** documented, no gate: anonymous sessions are the designed browse flow and reach no one else's rows.
+- **Left for A1.9b (web + SQL):** TD-421 web, TD-458, SEC-11 (`partner_organisations` read policy), SEC-12 web headers, SEC-14 (TD-549, service_role policies).
+
 ### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)
 
 Not pushed; no migration. `income_engine/freshness.py` now logs under the written-out name `apps.scholarship.income_engine` instead of `getLogger(__name__)` (the audit-logger test refuses `__name__`). `uploadContentType.ts` keeps its extension table inside the function: a top-level const made the module count as having side effects, so the `@/lib/api` barrel could no longer drop the documents client from pages that never use it, adding about 2.8 kB to the median route's first-load JS. Median back to 156.631 kB (live 156.627; budget 157.6). Behaviour unchanged.

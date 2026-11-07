@@ -18,6 +18,8 @@ from halatuju.throttling import (
     PublicCountRateThrottle,
     UploadRateThrottle,
     client_ip,
+    forwarded_client_ip,
+    take_slot,
 )
 
 LOCMEM = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -32,21 +34,35 @@ def _capped(cls, num=2, dur=60):
 
 
 class ClientIpTests(TestCase):
+    """TD-514 / SEC-03: Cloud Run APPENDS the address it saw, so only the RIGHTMOST
+    X-Forwarded-For hop is ours; every hop to its left is typed by the caller."""
     def setUp(self):
         self.rf = RequestFactory()
 
-    def test_prefers_cf_then_xff_then_remote_addr(self):
-        req = self.rf.get('/', HTTP_CF_CONNECTING_IP='1.2.3.4',
-                          HTTP_X_FORWARDED_FOR='9.9.9.9, 10.0.0.1',
-                          REMOTE_ADDR='172.16.0.1')
-        self.assertEqual(client_ip(req), '1.2.3.4')
-
+    def test_rightmost_hop_then_remote_addr(self):
         req = self.rf.get('/', HTTP_X_FORWARDED_FOR='9.9.9.9, 10.0.0.1',
                           REMOTE_ADDR='172.16.0.1')
-        self.assertEqual(client_ip(req), '9.9.9.9')  # first hop = the real client
+        self.assertEqual(client_ip(req), '10.0.0.1')  # the hop Cloud Run wrote
 
         req = self.rf.get('/', REMOTE_ADDR='172.16.0.1')
         self.assertEqual(client_ip(req), '172.16.0.1')
+
+    def test_a_forged_leftmost_hop_is_ignored(self):
+        req = self.rf.get('/', HTTP_X_FORWARDED_FOR='1.2.3.4, 203.0.113.9',
+                          REMOTE_ADDR='172.16.0.1')
+        self.assertEqual(client_ip(req), '203.0.113.9')
+
+    def test_cloudflare_header_is_not_trusted(self):
+        req = self.rf.get('/', HTTP_CF_CONNECTING_IP='1.2.3.4',
+                          HTTP_X_FORWARDED_FOR='203.0.113.9', REMOTE_ADDR='172.16.0.1')
+        self.assertEqual(client_ip(req), '203.0.113.9')
+
+    def test_blank_hops_are_skipped_and_nothing_reads_unknown(self):
+        req = self.rf.get('/', HTTP_X_FORWARDED_FOR='203.0.113.9, ', REMOTE_ADDR='')
+        self.assertEqual(client_ip(req), '203.0.113.9')
+        req = self.rf.get('/', REMOTE_ADDR='')
+        self.assertEqual(client_ip(req), 'unknown')
+        self.assertIsNone(forwarded_client_ip(req))
 
 
 @override_settings(CACHES=LOCMEM)
@@ -57,11 +73,22 @@ class AnonThrottleTests(TestCase):
 
     def test_distinct_real_clients_get_distinct_buckets(self):
         """The safety property: two visitors behind the SAME proxy IP but with
-        different X-Forwarded-For first hops must NOT share a throttle bucket."""
+        different X-Forwarded-For (Cloud Run-written) hops must NOT share a throttle bucket."""
         t = ClientAnonRateThrottle()
         a = self.rf.get('/', HTTP_X_FORWARDED_FOR='1.1.1.1', REMOTE_ADDR='10.0.0.1')
         b = self.rf.get('/', HTTP_X_FORWARDED_FOR='2.2.2.2', REMOTE_ADDR='10.0.0.1')
         self.assertNotEqual(t.get_cache_key(a, None), t.get_cache_key(b, None))
+
+    def test_a_new_forged_hop_per_request_does_not_buy_a_new_bucket(self):
+        """TD-514: before, a caller who varied the leftmost hop skipped every anon limit."""
+        def hit(forged):
+            r = self.rf.get('/', HTTP_X_FORWARDED_FOR=f'{forged}, 203.0.113.9',
+                            REMOTE_ADDR='10.0.0.1')
+            return _capped(ClientAnonRateThrottle).allow_request(r, None)
+
+        self.assertTrue(hit('1.1.1.1'))
+        self.assertTrue(hit('2.2.2.2'))
+        self.assertFalse(hit('3.3.3.3'))  # same real caller -> same bucket -> blocked
 
     def test_authenticated_requests_skip_the_anon_throttle(self):
         t = ClientAnonRateThrottle()
@@ -126,3 +153,24 @@ class PublicCountThrottleTests(TestCase):
         self.assertTrue(hit('5.5.5.5'))
         self.assertFalse(hit('5.5.5.5'))  # 3rd from same IP → blocked
         self.assertTrue(hit('6.6.6.6'))   # different IP → ok
+
+
+@override_settings(CACHES=LOCMEM)
+class TakeSlotTests(TestCase):
+    """SEC-08: the shared atomic counter (profile_claim, the Django admin sign-in)."""
+    def setUp(self):
+        cache.clear()
+
+    def test_limit_uses_then_refused_and_a_refusal_consumes_nothing(self):
+        self.assertTrue(take_slot('k', 2, 60))
+        self.assertTrue(take_slot('k', 2, 60))
+        self.assertFalse(take_slot('k', 2, 60))
+        self.assertFalse(take_slot('k', 2, 60))
+        self.assertTrue(take_slot('other', 2, 60))
+
+    def test_a_freed_slot_is_reused(self):
+        take_slot('k', 2, 60)
+        take_slot('k', 2, 60)
+        cache.delete('k:0')  # as if its window had passed
+        self.assertTrue(take_slot('k', 2, 60))
+        self.assertFalse(take_slot('k', 2, 60))

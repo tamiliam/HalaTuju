@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from halatuju.pagination import FlexiblePageNumberPagination
-from apps.courses.search import apply_people_search
+from apps.courses.search import apply_people_search, people_search_term
 from .. import reopen as reopen_service
 from .. import staff_activity
 from ..document_snapshot import document_snapshot
@@ -99,7 +99,7 @@ class AdminApplicationListView(_AdminBase):
         # with the Students directory via apps.courses.search. notify_email is a direct column
         # here (no to-many join) → no distinct needed.
         qs = apply_people_search(
-            qs, request.GET.get('q'),
+            qs, people_search_term(request),  # header first (TD-421: never the URL)
             name='profile__name', nric='profile__nric',
             phone='profile__contact_phone', email='profile__contact_email',
             extra_email='notify_email')

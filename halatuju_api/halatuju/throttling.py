@@ -1,7 +1,7 @@
 """
 Proxy-aware rate throttles for HalaTuju.
 
-HalaTuju runs behind Google Cloud Run (and may sit behind Cloudflare), so
+HalaTuju runs behind Google Cloud Run, so
 ``request.META['REMOTE_ADDR']`` is the *proxy* IP, not the visitor's. DRF's
 stock throttles would therefore bucket every anonymous visitor under that one
 proxy IP and could rate-limit the whole public site as a single client. These
@@ -14,25 +14,51 @@ Limits are deliberately generous: the goal is to stop runaway scraping/abuse
 and protect the billable Vision-OCR upload path, NOT to police normal use
 (shared school/library NATs put many real students behind one IP).
 """
+from django.core.cache import cache
 from rest_framework.throttling import SimpleRateThrottle
 
 
-def client_ip(request):
-    """Best-effort real client IP behind the Cloudflare/Cloud Run proxy chain.
+def forwarded_client_ip(request):
+    """The caller's address as Cloud Run saw it: the RIGHTMOST ``X-Forwarded-For`` hop, else
+    ``REMOTE_ADDR``, else None. ONE home for every reader (TD-514 / SEC-03, TD-429).
 
-    Order: Cloudflare's ``CF-Connecting-IP`` (if ever fronted by CF) → the first
-    hop of ``X-Forwarded-For`` (Cloud Run sets ``client, proxy1, ...``) →
-    ``REMOTE_ADDR`` as a last resort. Throttling is best-effort abuse mitigation,
-    not an auth boundary, so an occasional imperfect read is acceptable — what
-    matters is that distinct real clients get distinct buckets (never lumped).
+    Cloud Run (domain mapping, no load balancer, no Cloudflare) APPENDS the address it received
+    the connection from to whatever ``X-Forwarded-For`` the client sent. So only the LAST hop is
+    written by our side; every hop to its left is whatever the caller typed. Reading the first
+    hop let a caller pick a new address per request (a fresh throttle bucket each time, and a
+    made-up address on a signature). ``CF-Connecting-IP`` is not trusted for the same reason:
+    nothing in front of us sets it, so only a caller could.
     """
-    cf = request.META.get('HTTP_CF_CONNECTING_IP')
-    if cf:
-        return cf.strip()
-    xff = request.META.get('HTTP_X_FORWARDED_FOR')
-    if xff:
-        return xff.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR') or 'unknown'
+    hops = [h.strip() for h in (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')]
+    hops = [h for h in hops if h]
+    if hops:
+        return hops[-1]
+    return request.META.get('REMOTE_ADDR') or None
+
+
+def client_ip(request):
+    """The throttle key's address (see ``forwarded_client_ip``), or 'unknown'. Throttling is
+    best-effort abuse mitigation, not an auth boundary; what matters is that a caller cannot
+    choose its own bucket and that distinct real clients are not lumped together."""
+    return forwarded_client_ip(request) or 'unknown'
+
+
+def take_slot(key, limit, seconds):
+    """Use one of ``limit`` uses of ``key`` in a rolling ``seconds`` window. True = allowed.
+
+    ATOMIC (SEC-08, A1.9): each use is its own cache entry ``<key>:<n>`` claimed with
+    ``cache.add``, which only one caller can win (a unique row in the production DatabaseCache).
+    A get-then-set counter let two parallel requests read the same count and both pass, and
+    ``incr`` on the DatabaseCache is the same get-then-set. Each slot frees itself ``seconds``
+    after it was taken, so no window ever holds more than ``limit`` uses. One read finds the free
+    slots; a refusal consumes nothing.
+    """
+    names = ['%s:%d' % (key, n) for n in range(limit)]
+    taken = cache.get_many(names)
+    for name in names:
+        if name not in taken and cache.add(name, 1, seconds):
+            return True
+    return False
 
 
 def _ident(request):

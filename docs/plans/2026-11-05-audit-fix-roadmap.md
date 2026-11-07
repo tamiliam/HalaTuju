@@ -358,6 +358,7 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
 - **Model:** Opus.
 - **Gates:** Adversarial review. Owner phone check: sign-in and a search.
 - **Deploy:** G4.
+- **Status (2026-11-07):** SPLIT. **A1.9a (API) built on branch a19, not pushed:** TD-514, TD-429, TD-515 fixed; SEC-05 (TD-546) and SEC-06 (TD-547) fixed; TD-520 SEC-08, SEC-09 and the API's HSTS done; SEC-13 documented, no gate (TD-548); TD-421 API half (the `X-Search-Term` header). **A1.9b (web + SQL) left:** TD-421 web half, TD-458, SEC-11 and SEC-14 (TD-549) hand-apply SQL files, SEC-12 web headers and the live-response headers test. Deploy order: the A1.9a API first (CORS must allow the header before the web sends it).
 
 #### A1.10 Permission doors
 
