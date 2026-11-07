@@ -9329,7 +9329,6 @@
       "opensAdminPages": "They become an Admin and will open the admin work pages (Announcements, Surveys, Development, Sources, Mentors), which they may not open now.",
       "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
       "note": {
-        "last_table": "Only table: revoke instead",
         "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead (they must have signed in to stay on as a mentor)",
         "has_open_cases": "Reassign their cases first"
       },

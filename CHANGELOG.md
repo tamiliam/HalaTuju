@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Team tables no longer show "Only table: revoke instead" (2026-11-07)
+
+Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the note added nothing — Revoke already sits beside it. `RemoveControl` (`components/admin/TeamTables.tsx`) now draws nothing for the `last_table` code; the API still serves the code and still refuses the remove. `admin.team.note.last_table` dropped from en / ms / ta. The other two notes (`mentors_only`, `has_open_cases`) are unchanged. Test: `reviewers/page.test.tsx` now asserts no note and no Remove link for a person's only table.
+
 ### fix: a reviewer can move a booked interview to later the same day (TD-137) (2026-11-07)
 
 Branch fix/reviewer-reschedule-lead (not pushed; no migration). Reported by an interviewer the same day: moving a booked 1:30 pm interview to 3, 5 and 6 pm failed with "Could not save. Please try again." The picker's 2-hour reschedule notice (TD-137, 2026-06-21) was UI-only on the belief that the server accepted any future slot; the propose door has checked the organisation's 24-hour notice since 2026-06-19, so every same-day reschedule was refused as `too_soon`. The propose door now applies `RESCHEDULE_MIN_LEAD_HOURS` (2, new in `constants.py`) only when `reschedule` is sent AND the interview is booked; a first proposal still meets the full notice. The card names a `too_soon` refusal ("…at least N hours from now", en/ms/ta) instead of the bare error. Tests: `test_reviewer_reschedule_lead.py` (6; the same-day move fails on the old code), web `InterviewScheduleCard.test.tsx` (3, rendered), `rescheduleLeadDrift.test.ts` (the picker's copy is the server's number, and the door reads it). Tamil string needs language review.

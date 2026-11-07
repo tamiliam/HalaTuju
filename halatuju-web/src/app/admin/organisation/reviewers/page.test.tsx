@@ -658,10 +658,10 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
   })
 
-  it('a person whose only table this is reads "revoke instead", with no Remove link', async () => {
+  it('a person whose only table this is shows no Remove link and no note (owner 2026-11-07)', async () => {
     await openAdmins()
     const row = rowOf('Kamala Devi')
-    expect(within(row).getByText('admin.team.note.last_table')).toBeTruthy()
+    expect(within(row).queryByTestId('remove-note-admins')).toBeNull()
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
     expect(within(row).queryByText('admin.perm.payments_approve.name')).toBeNull()  // T3: no chips here
     expect(within(row).queryByText('admin.role.finance')).toBeNull()               // label retired
