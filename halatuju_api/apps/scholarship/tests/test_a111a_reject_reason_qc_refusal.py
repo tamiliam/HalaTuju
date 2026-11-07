@@ -132,6 +132,13 @@ class QcRefusalOnDetail(_People):
         app.refresh_from_db()
         self.assertEqual(_detail(who, app)['qc_refusal'], expected)
         self.assertEqual(qc_separation.refusal(who, app), expected)
+        # The REAL door: a refused viewer gets that 403 code; an allowed one gets past the
+        # separation check (a bad decision then stops it before anything moves).
+        r = authed_client(who).post(f'{APPS}{app.pk}/qc-decision/', {'decision': 'nope'}, format='json')
+        if expected is None:
+            self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_decision'))
+        else:
+            self.assertEqual((r.status_code, r.json()['code']), (403, expected))
 
     def test_a_clean_qc_may_decide(self):
         self._assert_agrees(self.qc, self._awaiting(), None)
@@ -164,3 +171,24 @@ class QcRefusalOnDetail(_People):
         live = self._interviewing()
         AssignmentEvent.objects.create(application=live, from_admin=self.qc, to_admin=self.reviewer)
         self.assertIsNone(_detail(self.qc, live)['qc_refusal'])
+
+
+@override_settings(**API)
+class QcRefusalOnWriteReplies(_People):
+    """The replies that move a case to awaiting QC carry `qc_refusal` too, so the cockpit never has
+    to guess from "is this the assignee?" (an org admin who sends a decline on someone else's case
+    must not be offered a QC panel the door refuses)."""
+
+    def test_submit_decline_reply_carries_the_refusal_for_a_non_assignee_org_admin(self):
+        app = make_application('verdict_recorded', outcome='decline', cohort=self.cohort,
+                               reviewer=self.reviewer)
+        r = authed_client(self.lead).post(f'{APPS}{app.pk}/submit-decline/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+        code = r.json()['qc_refusal']
+        self.assertIsNotNone(code)
+        self.assertEqual(code, qc_separation.refusal(self.lead, app))
+        self.assertEqual(code, _detail(self.lead, app)['qc_refusal'])
+        d = authed_client(self.lead).post(f'{APPS}{app.pk}/qc-decision/', {'decision': 'accept'}, format='json')
+        self.assertEqual((d.status_code, d.json()['code']), (403, code))

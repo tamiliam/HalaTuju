@@ -15,9 +15,10 @@ from .. import staff_activity
 from ..anomaly_engine import detect_anomalies
 from ..interview_completeness import missing_agenda_items
 from ..models import InterviewSession
-from ..serializers_admin import AdminApplicationDetailSerializer, InterviewSessionSerializer
+from ..serializers_admin import InterviewSessionSerializer
 from ..services import submit_interview
 
+from .applications import _detail_payload
 from .base import _AdminBase
 
 
@@ -237,7 +238,7 @@ class AdminInterviewSubmitView(_AdminBase):
                 session.interviewer = admin
                 session.save(update_fields=['interviewer'])
             submit_interview(session, actor=admin)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminInterviewReopenView(_AdminBase):
@@ -264,4 +265,4 @@ class AdminInterviewReopenView(_AdminBase):
         if app.status == 'interviewed':   # back a step so Check 2 + the decision gate reopen
             app.status = 'interviewing'
             app.save(update_fields=['status'])
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
