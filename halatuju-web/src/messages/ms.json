@@ -8639,8 +8639,8 @@
         "generic": "Tindakan itu tidak berjaya. Cuba lagi.",
         "not_arrived": "Mentor ini tidak pernah log masuk. Jemput mereka sekali lagi dari Jemputan → Mentor.",
         "not_eligible": "Kakitangan ini tidak boleh menjadi mentor (kewangan, telah ditarik balik, atau bukan peranan kakitangan).",
-        "already_mentor": "Kakitangan ini sudah menjadi mentor. Jika mereka telah berhenti, gunakan Jadi mentor semula.",
-        "staff_mentor": "Mentor ini ialah kakitangan: gunakan Hentikan bimbingan atau Jadi mentor semula.",
+        "already_mentor": "Kakitangan ini sudah menjadi mentor.",
+        "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor. Tambah Mentor boleh menambah mereka semula.",
         "not_staff": "Hanya bimbingan kakitangan boleh dihentikan dengan cara ini.",
         "not_found": "Kakitangan itu tidak ditemui."
       },
@@ -8703,12 +8703,13 @@
         "title": "Tambah kakitangan sebagai mentor",
         "intro": "Mereka mengekalkan peranan dan semua yang boleh mereka lakukan sekarang. Mereka mendapat \"Pelajar saya\" dan kad Bimbingan pada profil mereka. Tiada e-mel dihantar — beritahu mereka sendiri.",
         "search": "Cari kakitangan",
-        "shown": "Ditunjukkan: pentadbir organisasi, pentadbir, penilai dan kawalan mutu organisasi ini yang belum menjadi mentor. Pentadbir kewangan dan pentadbir utama tidak boleh menjadi mentor.",
+        "shown": "Ditunjukkan: pentadbir organisasi, pentadbir, penilai dan kawalan mutu organisasi ini yang bukan mentor sekarang, termasuk sesiapa yang telah dikeluarkan daripada Mentor (\"Pernah menjadi mentor\"). Pentadbir kewangan dan pentadbir utama tidak boleh menjadi mentor.",
         "none": "Tiada kakitangan untuk ditambah.",
         "noMatch": "Tiada yang sepadan.",
         "add": "Tambah {name} sebagai mentor",
         "choose": "Tambah sebagai mentor",
-        "loadError": "Senarai kakitangan tidak dapat dimuatkan."
+        "loadError": "Senarai kakitangan tidak dapat dimuatkan.",
+        "before": "Pernah menjadi mentor"
       },
       "staffTag": "Kakitangan · {role}",
       "addMentor": "Tambah Mentor",
@@ -9321,7 +9322,7 @@
       "opensAdminPages": "Mereka menjadi Pentadbir dan akan dapat membuka halaman kerja pentadbir (Pengumuman, Tinjauan, Pembangunan, Sumber, Mentor) yang belum dapat mereka buka sekarang.",
       "financeCheckOff": "Mereka orang terakhir yang ditetapkan sebagai Kewangan: kredit dompet tidak lagi melalui semakan kewangan.",
       "note": {
-        "mentors_only": "Hanya Mentor yang tinggal: tarik balik akses atau hentikan bimbingan (mereka mesti telah log masuk untuk kekal sebagai mentor)",
+        "mentors_only": "Hanya Mentor yang tinggal: batalkan akses atau keluarkan daripada Mentor (mereka mesti telah log masuk untuk kekal sebagai mentor)",
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
       "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",

@@ -174,6 +174,45 @@ describe('Team → Mentors', () => {
     expect(await within(sheet).findByText('admin.mentors.error.not_eligible')).toBeTruthy()
   })
 
+  it('Add Mentor brings back a staff member removed from Mentors ("Mentored before"), through resume', async () => {
+    const onAddClose = jest.fn()
+    mockApi.mentorAction.mockResolvedValue({ ...STOPPED, status: 'active', deactivated_at: null, emailed: null })
+    render(<TeamMentors adding onAddClose={onAddClose} />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    const back = await within(sheet).findByTestId('staff-returning-6')
+    expect(back.textContent).toContain('admin.mentors.staffSheet.before')
+    expect(back.textContent).toContain('admin.role.reviewer')
+    // The never-mentored staff carry no tag; a revoked pure mentor (id 3) is Restore's, never offered here.
+    expect(within(sheet).getByTestId('staff-candidate-11').textContent).not.toContain('staffSheet.before')
+    expect(within(sheet).queryByTestId('staff-returning-3')).toBeNull()
+    // One list, name order: Ravi, Siti, Stopped.
+    expect(within(sheet).getAllByRole('option').map((o) => o.getAttribute('data-testid')))
+      .toEqual(['staff-candidate-12', 'staff-candidate-11', 'staff-returning-6'])
+    fireEvent.click(back)
+    fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
+    await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(6, 'resume', { token: 'tok' }))
+    expect(mockApi.addStaffMentor).not.toHaveBeenCalled()
+    expect(await screen.findByText('admin.mentors.done.resume {"name":"Stopped Staff"}')).toBeTruthy()
+    expect(onAddClose).toHaveBeenCalled()
+  })
+
+  it('a removed staff mentor this caller may not manage is not offered back', async () => {
+    mockApi.getMentors.mockResolvedValue(payload([ACTIVE, { ...STOPPED, manageable: false }]))
+    render(<TeamMentors adding />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    await within(sheet).findByTestId('staff-candidate-11')
+    expect(within(sheet).queryByTestId('staff-returning-6')).toBeNull()
+  })
+
+  it('bringing one back can be refused (e.g. their staff sign-in was revoked): the Sheet says so', async () => {
+    mockApi.mentorAction.mockRejectedValue(Object.assign(new Error('x'), { code: 'not_eligible' }))
+    render(<TeamMentors adding />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    fireEvent.click(await within(sheet).findByTestId('staff-returning-6'))
+    fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
+    expect(await within(sheet).findByText('admin.mentors.error.not_eligible')).toBeTruthy()
+  })
+
   it('an admin (read-only) sees the table, no action, and no Add sheet even if asked', async () => {
     mockRole = { role: 'admin' }
     mockApi.getMentors.mockResolvedValue(payload([ACTIVE, STAFF].map((m) => ({ ...m, manageable: false }))))

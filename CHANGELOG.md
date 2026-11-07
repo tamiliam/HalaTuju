@@ -4,9 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: Add Mentor brings back a staff member removed from Mentors (2026-11-08)
+
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration). This is a follow-up to the entry below. Removing a staff mentor (`stop`) keeps their mentor record, and Team -> Mentors no longer lists them, so the only "Mentor again" button had gone. The server's Add Mentor list offers only staff with no mentor record, so they could never mentor again. Now:
+- The Add Mentor sheet (`StaffMentorSheet`, new `returning` prop) also lists the manageable staff mentors removed from Mentors, tagged "Mentored before", in one list in name order. Choosing one calls the existing `resume` door (`staff_mentor.resume`, which re-checks eligibility), never `add`. The banner reads the `done.resume` text. A revoked pure mentor is not offered here (Restore is theirs).
+- API: no behaviour change. Only the `staff_mentor.py` docstrings now say where "Mentor again" lives.
+- Wording (en/ms/ta): new `staffSheet.before`; `staffSheet.shown` mentions people removed from Mentors; `error.already_mentor`, `error.staff_mentor` and `admin.team.note.mentors_only` no longer name the old "Stop mentoring" / "Mentor again" buttons.
+- The Malay and Tamil labels reuse the words the Admins and Reviewers tabs already use (Batalkan / Pulihkan, நீக்கு / மீட்டெடு), so the three tabs read alike in every language.
+
+Tests: `MentorsAdmin.test.tsx`, three new (offered and brought back through `resume`; not offered when not manageable; a refusal is shown).
+
 ### chore: Team's Admins, Reviewers and Mentors tables read alike; a mentor's page gets a details box (2026-11-08)
 
-Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the three Team tables were not consistent. On `admin/organisation/reviewers`:
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: the three Team tables were not consistent. On `admin/organisation/reviewers`:
 - **Admins** (`StaffTable`, only when the `team` prop is set; the platform's Organisations and Partners screens are unchanged): the email sits under the name, with no Email column. A Last seen column comes after Status ("Not recorded" when empty), and the headers use the shared `TH` style. The empty row's `colSpan` now counts every column (it was one short).
 - **Reviewers**: the first header reads "Name", not "Reviewer".
 - **Mentors** (`MentorsAdmin`):
@@ -17,23 +27,23 @@ Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Own
   - Add Mentor moved onto the tab row beside Add Admin / Add Reviewer. The page owns the open state; the sheet stays in the Mentors chunk.
 - **Mentor page** (`MentorDetail`): a labelled "About" box shows Email, Phone (with +60, via `displayPhone`), Area and Languages in full. Each row says "Not given" or "Not filled in yet" rather than disappearing. The header line keeps only "mentoring since … · last signed in …". An inactive pure mentor reads Revoked.
 
-Unused keys removed (en/ms/ta): `admin.mentors.note`, `staffNote`, `waiting`, `seeInvitations`, `empty`, `col.mentor`, `col.status`, `col.actions`. ⚠ The new Tamil strings (and the Malay ones) need a language review. Tests: `MentorsAdmin.test.tsx` (rewritten list block, plus two detail-box tests), `StaffAdmin.test.tsx` (four Team-layout tests), and `page.test.tsx` ("Name" header, Add Mentor on the tab row, none for a read-only admin).
+Unused keys removed (en/ms/ta): `admin.mentors.note`, `staffNote`, `waiting`, `seeInvitations`, `empty`, `col.mentor`, `col.status`, `col.actions`. The Malay and Tamil labels reuse the Team page's existing terms (see the entry above). Tests: `MentorsAdmin.test.tsx` (rewritten list block, plus two detail-box tests), `StaffAdmin.test.tsx` (four Team-layout tests), and `page.test.tsx` ("Name" header, Add Mentor on the tab row, none for a read-only admin).
 
 ### chore: Team's Add Admin / Add Reviewer button moves onto the tab row (2026-11-08)
 
-Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the button sat on a row of its own. On `admin/organisation/reviewers` it now sits at the right end of the tab row (Admins, Reviewers, Mentors, Emails, Terms), sized like a tab (44 px on a phone), and outside the tablist, because a button there is not a tab to a screen reader. `PanelTabs` is unchanged (19 pages use it). Test: `page.test.tsx` "Add sits on the tab row".
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: the button sat on a row of its own. On `admin/organisation/reviewers` it now sits at the right end of the tab row (Admins, Reviewers, Mentors, Emails, Terms), sized like a tab (44 px on a phone), and outside the tablist, because a button there is not a tab to a screen reader. `PanelTabs` is unchanged (19 pages use it). Test: `page.test.tsx` "Add sits on the tab row".
 
 ### fix: a super is no longer listed as a reviewer (2026-11-07)
 
-Branch chore-team-drop-last-table-note (not pushed; no migration, api only). Owner: "I am listed as a reviewer. I am not really." `_ReviewersBase._reviewers` (`views_admin/reviewers.py`) had included every `role='super'` row since the first reviewers surface, so a super saw themselves on Team -> Reviewers and had a reviewer page (`/admin/organisation/reviewers/<id>`). It now excludes supers for every viewer, which matches the Team table's own rule (`staff_tables.in_reviewers`). This also covers pause and set-gift, which read the same query, so a super can no longer be paused or gift-scoped as a reviewer. Case assignment (`AdminAssignableView`) is unchanged. Test: `test_reviewers_surface.test_a_super_is_not_a_reviewer`.
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, api only). Owner: "I am listed as a reviewer. I am not really." `_ReviewersBase._reviewers` (`views_admin/reviewers.py`) had included every `role='super'` row since the first reviewers surface, so a super saw themselves on Team -> Reviewers and had a reviewer page (`/admin/organisation/reviewers/<id>`). It now excludes supers for every viewer, which matches the Team table's own rule (`staff_tables.in_reviewers`). This also covers pause and set-gift, which read the same query, so a super can no longer be paused or gift-scoped as a reviewer. Case assignment (`AdminAssignableView`) is unchanged. Test: `test_reviewers_surface.test_a_super_is_not_a_reviewer`.
 
 ### chore: the Reviewers table drops the Languages column and the gift chips under a name (2026-11-07)
 
-Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: both are on the reviewer's own page, and a gift is edited there, never from the table. `admin/organisation/reviewers/page.tsx` loses the Languages column (desktop) and the language chips (phone card), and the gift chips with their pencil (both layouts); the list no longer keeps the gift choices. The reviewer page (`[id]/page.tsx`) is unchanged and still shows languages and edits gifts. Tests: the list asserts no Languages column, no language or fourth-language chip, and no gift chip or pencil even with two gifts; the four list gift-chip tests are replaced (the editor stays covered in `[id]/page.test.tsx`); a new profile test pins the languages line with the fourth language.
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: both are on the reviewer's own page, and a gift is edited there, never from the table. `admin/organisation/reviewers/page.tsx` loses the Languages column (desktop) and the language chips (phone card), and the gift chips with their pencil (both layouts); the list no longer keeps the gift choices. The reviewer page (`[id]/page.tsx`) is unchanged and still shows languages and edits gifts. Tests: the list asserts no Languages column, no language or fourth-language chip, and no gift chip or pencil even with two gifts; the four list gift-chip tests are replaced (the editor stays covered in `[id]/page.test.tsx`); a new profile test pins the languages line with the fourth language.
 
 ### chore: Team tables no longer show "Only table: revoke instead" (2026-11-07)
 
-Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the note added nothing — Revoke already sits beside it. `RemoveControl` (`components/admin/TeamTables.tsx`) now draws nothing for the `last_table` code; the API still serves the code and still refuses the remove. `admin.team.note.last_table` dropped from en / ms / ta. The other two notes (`mentors_only`, `has_open_cases`) are unchanged. Test: `reviewers/page.test.tsx` now asserts no note and no Remove link for a person's only table.
+Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: the note added nothing — Revoke already sits beside it. `RemoveControl` (`components/admin/TeamTables.tsx`) now draws nothing for the `last_table` code; the API still serves the code and still refuses the remove. `admin.team.note.last_table` dropped from en / ms / ta. The other two notes (`mentors_only`, `has_open_cases`) are unchanged. Test: `reviewers/page.test.tsx` now asserts no note and no Remove link for a person's only table.
 
 ### fix: a reviewer can move a booked interview to later the same day (TD-137) (2026-11-07)
 

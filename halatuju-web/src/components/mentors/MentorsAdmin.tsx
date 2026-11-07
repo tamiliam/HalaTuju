@@ -133,15 +133,18 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor switched
   // off before arriving is not listed: a re-invite on Invitations brings them back. `listed` has the rule.
   const rows = (data?.mentors ?? []).filter(listed)
+  // A staff mentor removed from Mentors drops off the list; Add Mentor offers them back (`resume`).
+  const returning = (data?.mentors ?? []).filter((m) => m.staff_role && m.status === 'inactive' && m.manageable)
   const removingAction = removing ? actionOf(removing) : null
 
   return (
     <div className="space-y-4" data-testid="team-mentors">
       {mayManage && (
         <StaffMentorSheet open={adding} token={token} t={t} onClose={() => onAddClose?.()}
-          onAdded={(row) => {
+          returning={returning}
+          onAdded={(row, back) => {
             onAddClose?.()
-            setBanner({ ok: true, text: t(`${K}.done.added`, { name: row.name }) })
+            setBanner({ ok: true, text: t(`${K}.done.${back ? 'resume' : 'added'}`, { name: row.name }) })
             void load()
           }} />
       )}

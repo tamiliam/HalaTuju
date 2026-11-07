@@ -8639,8 +8639,8 @@
         "generic": "That did not work. Try again.",
         "not_arrived": "This mentor never signed in. Invite them again from Invitations → Mentor.",
         "not_eligible": "This staff member cannot mentor (finance, revoked, or not a staff role).",
-        "already_mentor": "This staff member is already a mentor. If they stopped, use Mentor again.",
-        "staff_mentor": "This mentor is a staff member: use Stop mentoring or Mentor again.",
+        "already_mentor": "This staff member is already a mentor.",
+        "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
         "not_found": "That staff member was not found."
       },
@@ -8703,12 +8703,13 @@
         "title": "Add a staff member as mentor",
         "intro": "They keep their role and everything they can do now. They gain \"My students\" and a Mentoring card on their profile. No email is sent — tell them yourself.",
         "search": "Find a staff member",
-        "shown": "Shown: organisation admins, admins, reviewers and QC of this organisation who are not mentors yet. Finance and super admins cannot mentor.",
+        "shown": "Shown: organisation admins, admins, reviewers and QC of this organisation who are not mentors now, including anyone removed from Mentors (\"Mentored before\"). Finance and super admins cannot mentor.",
         "none": "No staff member to add.",
         "noMatch": "Nobody matches that.",
         "add": "Add {name} as mentor",
         "choose": "Add as mentor",
-        "loadError": "We could not load the staff list."
+        "loadError": "We could not load the staff list.",
+        "before": "Mentored before"
       },
       "staffTag": "Staff · {role}",
       "addMentor": "Add Mentor",
@@ -9321,7 +9322,7 @@
       "opensAdminPages": "They become an Admin and will open the admin work pages (Announcements, Surveys, Development, Sources, Mentors), which they may not open now.",
       "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
       "note": {
-        "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead (they must have signed in to stay on as a mentor)",
+        "mentors_only": "Only Mentors would be left: revoke or remove from Mentors instead (they must have signed in to stay on as a mentor)",
         "has_open_cases": "Reassign their cases first"
       },
       "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join.",
