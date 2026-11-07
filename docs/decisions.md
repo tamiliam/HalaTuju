@@ -19076,6 +19076,9 @@ any AI prompt; append-only with author and time; 2,000 characters; blank refused
   or blank verdict stamps it too and is not a decision (TD-253 review F1), and a decision a super reopens is handed
   back to the reviewer. Combined with the two statuses, a reopen back to Interviewing reopens the notes and a
   reopen that lands at awaiting QC does not. After that the notes stay, read-only, for good.
+  **Owner ruling, 2026-11-07 (after the review asked):** a reopened decision DOES reopen the notes while the
+  case is back at Interviewing — the org admin may guide the reviewer's second look; nothing is lost,
+  because notes are never edited or deleted and their dates show which came after the first decision.
 - **A separate endpoint**, not a key on the detail payload: the applicant-detail GET stays at its pinned 38
   queries, and the card re-reads when the case's status or verdict stamp changes.
 - **No activity row.** The note itself records who and when. This follows `merchant_flags`, whose log notes write
