@@ -160,13 +160,8 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    **Time budget (A2.2, TD-518):** the sweep stops cleanly after `REPROCESS_TIME_BUDGET_SECONDS` (default 100) with
    at most `REPROCESS_BATCH_LIMIT` (100) documents a run; the next hour carries on (the cron output shows
    `STOPPED-AT-TIME-BUDGET`). Both are env-tunable on the service; nothing needs setting for the default.
-   **Own timeout (SP-14), OPTIONAL owner step:** the service's 300 s is service-wide. To give this job its own,
-   create a Cloud Run Job from the api image (the `SyncReprocessJob` step in `cloudbuild.yaml` then keeps its image
-   current): `gcloud run jobs create reprocess-ic-vision --image <current api image> --region asia-southeast1
-   --task-timeout 900 --max-retries 0 --command python --args manage.py,reprocess_unread_ic,--time-budget,600
-   --set-env-vars/--env-vars-file <the service's DB + read flags, item 11>` and point the Scheduler job at the
-   Jobs run API. ⚠ A Job does NOT go through `cron_health.run_job`, so the System health light would read the
-   job as missed: keep the HTTP job unless that is solved first. The budget alone already keeps the HTTP job inside 300 s.
+   **Own timeout (SP-14):** met by the time budget; a separate Cloud Run Job was NOT adopted (it would bypass
+   `cron_health.run_job`, so the System health light would read it as missed). Optional later, not done.
    **System health light (2026-10-28):** every cron run's outcome is recorded (`cron_health.run_job`,
    the body of `CronRunView`) and every email send's (`EMAIL_BACKEND` is now
    `apps.scholarship.mail_backend.RecordingSMTPBackend`, the SMTP backend plus one bookkeeping line) in
