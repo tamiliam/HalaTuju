@@ -21,6 +21,12 @@ Branch a113 (not pushed; no migration, no model change beyond a new activity eve
   - F5: `cancel_offer` locks the application before the sponsorship.
   - Tests: `test_a113_review_fixes.py` (new; one per finding, plus the withdrawal of an accepted award, one in its hold period, and a payment run completed after a withdrawal); `test_staff_activity_money.py` fixture now countersigns a signed agreement.
   - New debt: TD-594 (`hold_pending_award` unlocked; `lapse_expired_offers` locks in reverse order).
+- **Re-review fixes (BLOCK on df17fa90e):**
+  - 1: the award-email job locks the case before the sponsorship (`status_lock.lock_case_of_sponsorship`, an order-only lock, now shared with `cancel_offer`), so it cannot deadlock with a withdrawal or a cancel and lose its stamp after the email has gone. TD-594 text corrected.
+  - 2: a held contractual decline lapses the sponsorship at once, so the witness exception also accepts a sponsorship lapsed at or after the decline; the test now goes through `admin_reject` from `active`.
+  - 3: the withdrawal's audit meta also keeps the Foundation signer, the witness organisation, name, signer, IP and admin, the agreement hash and the PDF path.
+  - 4: a voided agreement (unsigned, no sponsorship) serves no PDF link. The PDF path stays on the row on purpose: `cleanup_orphan_blobs` treats a path no row names as an orphan and would delete the signed contract.
+  - 5: tests for the email-job lock order, the source console's witness door answering 409, and the real held-decline flow.
 
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 

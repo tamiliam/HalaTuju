@@ -20,6 +20,7 @@ WHAT, using the agreement's EXISTING fields (no migration):
 LOCK ORDER (`status_lock.py`): the application row first, then the agreement row.
 """
 from django.db import transaction
+from django.db.models import Q
 
 #: The case statuses each step may act on. The Foundation countersigns an AWARDED case (its
 #: signature executes the contract → active). The witness is non-blocking and may come after the
@@ -41,6 +42,8 @@ UNSIGNED_COUNTERPARTS = {
 }
 _PARTY_STAMPS = ('student_signed_at', 'guarantor_signed_at', 'foundation_signed_at',
                  'witness_signed_at')
+_AUDIT_KEPT = ('foundation_signed_by', 'witness_org_id', 'witness_name', 'witness_signed_by',
+               'witness_ip', 'witness_admin_id', 'agreement_sha256', 'pdf_storage_path')
 
 
 class AgreementNotCurrent(Exception):
@@ -78,11 +81,22 @@ def lock_current(agreement, allowed_statuses):
                 setattr(agreement, f.attname, getattr(locked, f.attname))
         if not agreement.binds:
             raise AgreementNotCurrent('agreement_void')
+        current = Q(status__in=Sponsorship.HOLDING)
+        if app.status == 'rejected' and app.rejected_at:
+            # A contractual decline lapses the sponsorship at once (`decline.admin_reject`); while
+            # it is held, the one it lapsed still counts (re-review 2). Cancelling it reinstates.
+            current |= Q(status='lapsed', decided_at__gte=app.rejected_at)
         if agreement.sponsorship_id is not None and not Sponsorship.objects.filter(
-                pk=agreement.sponsorship_id, application_id=agreement.application_id,
-                status__in=Sponsorship.HOLDING).exists():
+                current, pk=agreement.sponsorship_id,
+                application_id=agreement.application_id).exists():
             raise AgreementNotCurrent('agreement_superseded')
     return agreement
+
+
+def is_void(agreement):
+    """Voided by a withdrawal: unsigned and linked to no sponsorship. Its old PDF is not shown (the
+    path stays on the row, so the orphan-blob sweep keeps the signed file; the audit has it too)."""
+    return not agreement.binds and agreement.sponsorship_id is None
 
 
 def void_on_withdrawal(application):
@@ -95,6 +109,9 @@ def void_on_withdrawal(application):
     was = {f: (getattr(agreement, f).isoformat() if getattr(agreement, f) else None)
            for f in _PARTY_STAMPS}
     was['sponsorship_id'] = agreement.sponsorship_id
+    for f in _AUDIT_KEPT:   # re-review 3: everything the void clears that the stamps do not carry
+        value = getattr(agreement, f)
+        was[f] = value if value is None or isinstance(value, (int, str)) else str(value)
     fields = {**UNSIGNED_COUNTERPARTS, 'student_signed_at': None, 'guarantor_signed_at': None,
               'sponsorship': None}
     for name, value in fields.items():

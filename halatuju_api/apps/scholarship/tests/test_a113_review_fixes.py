@@ -23,7 +23,9 @@ from django.db.models.query import QuerySet
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.scholarship import agreement_guard, bursary, payments, source_witness, status_lock
+from apps.scholarship import (
+    agreement_guard, bursary, payments, source_console, source_witness, status_lock,
+)
 from apps.scholarship import award_withdrawal as wd
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
@@ -37,6 +39,7 @@ from apps.scholarship.tests.test_bursary_agreement import (
     GUARANTOR_NAME, GUARANTOR_NRIC, _add_parent_ic, _cumig, _fund, _fundable_app, _mock_seams,
     _twin, _verify_guarantor_phone,
 )
+from apps.scholarship.tests import test_source_witness as _source_witness_tests
 from apps.scholarship.tests import test_status_lock as _status_lock_tests   # module, not the class:
 #                              a class imported by name would be collected (and run) twice here
 
@@ -172,20 +175,51 @@ class TestTheAgreementIsVoided(TestCase):
         self.assertIsNone(self.ag.foundation_signed_at)
         self.assertIsNone(self.ag.witness_signed_at)
 
-    def test_a_held_decline_keeps_the_witness_open_and_a_told_one_closes_it(self):
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(
-            status='rejected', pre_decline_status='awarded', pending_rejection_category='contractual')
-        with self.assertRaises(agreement_guard.AgreementNotCurrent):     # countersign stays strict
-            bursary.countersign_foundation(self.ag, by_name='The Super')
+    def test_a_real_held_decline_keeps_the_witness_open_and_a_told_one_closes_it(self):  # re-review 2
+        from apps.scholarship.services.decline import admin_reject
+        bursary.countersign_foundation(self.ag, by_name='The Super')     # executed: 'active'
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'active')
+        admin_reject(self.app, self.super, 'contractual', comments=REASON)   # held: email embargoed
+        self.app.refresh_from_db()
+        self.sp_a.refresh_from_db()
+        self.assertEqual((self.app.status, self.sp_a.status), ('rejected', 'lapsed'))
+        self.assertTrue(self.app.pending_rejection_category)
+        self.assertTrue(source_console.contract_live(self.app))          # the console offers it
         ScholarshipApplication.objects.filter(pk=self.app.pk).update(pending_rejection_category='')
-        with self.assertRaises(agreement_guard.AgreementNotCurrent) as cm:
+        with self.assertRaises(agreement_guard.AgreementNotCurrent) as cm:     # told: closed
             bursary.record_witness(self.ag, org=_twin(self.org), by_name='Officer')
         self.assertEqual(cm.exception.reason, 'case_status')
         ScholarshipApplication.objects.filter(pk=self.app.pk).update(
             pending_rejection_category='contractual')
-        bursary.record_witness(self.ag, org=_twin(self.org), by_name='Officer')
+        bursary.record_witness(self.ag, org=_twin(self.org), by_name='Officer')   # held: it may
         self.ag.refresh_from_db()
         self.assertIsNotNone(self.ag.witness_signed_at)
+
+    def test_the_audit_keeps_what_the_void_clears_and_the_old_pdf_is_hidden(self):  # re-review 3+4
+        from apps.scholarship.serializers import BursaryAgreementSerializer
+        bursary.record_witness(self.ag, org=_twin(self.org), by_name='Officer')
+        BursaryAgreement.objects.filter(pk=self.ag.pk).update(foundation_signed_by='Old Super')
+        self.ag.refresh_from_db()
+        old = {f: getattr(self.ag, f) for f in ('witness_org_id', 'witness_name', 'witness_signed_by',
+                                                 'agreement_sha256', 'pdf_storage_path')}
+        self.assertTrue(old['pdf_storage_path'] and old['agreement_sha256'] and old['witness_org_id'])
+        signed = patch('apps.scholarship.storage.create_signed_download_url',
+                       return_value='https://storage.example/signed')
+        anyorg = patch('apps.scholarship.storage.resolve_org_for_path', return_value=None)
+        with signed, anyorg:
+            self.assertEqual(BursaryAgreementSerializer(self.ag).data['pdf_url'],
+                             'https://storage.example/signed')
+            self._withdraw()
+            self.assertIsNone(BursaryAgreementSerializer(self.ag).data['pdf_url'])
+        self.assertEqual(self.ag.pdf_storage_path, old['pdf_storage_path'])  # kept: the sweep keeps it
+        was = StudentActivity.objects.get(application=self.app, event='award_withdrawn').meta[
+            'agreement_voided']
+        for f, v in old.items():
+            self.assertEqual(was[f], v, f)
+        self.assertEqual(was['foundation_signed_by'], 'Old Super')
+        for f in ('witness_ip', 'witness_admin_id'):
+            self.assertIn(f, was)
 
     def test_an_unwithdrawn_agreement_still_signs_as_before(self):
         bursary.record_witness(self.ag, org=_twin(self.org), by_name='Officer')
@@ -215,6 +249,23 @@ class TestASupersededAgreementIsRefused(TestCase):
         self.assertEqual(cm.exception.reason, 'agreement_superseded')
         ag.refresh_from_db()
         self.assertIsNone(ag.foundation_signed_at)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   BURSARY_AGREEMENT_ENABLED=True)
+class TestTheSourceConsoleDoorAnswers409(_source_witness_tests._Fixture):
+    """Re-review 5: the source's own witness door, through the view. The console's checks pass (an
+    awarded case, a signed agreement, no witness yet); the guard refuses a superseded contract."""
+
+    def test_a_superseded_agreement_is_refused_and_nothing_is_written(self):
+        app = self.ready
+        old_sp = Sponsorship.objects.create(sponsor=_sponsor(app.programme), application=app,
+                                            amount=Decimal('3000'), status='cancelled')
+        BursaryAgreement.objects.filter(application=app).update(sponsorship=old_sp)
+        resp = self.client.post(_source_witness_tests.witness_url(app), _source_witness_tests.GOOD,
+                                format='json')
+        self.assertEqual((resp.status_code, resp.json()['code']), (409, 'agreement_not_current'))
+        self.assertIsNone(self.agreement(app).witness_signed_at)
 
 
 # ── F2: an accept is locked and re-read ────────────────────────────────────────────────────────
@@ -342,6 +393,20 @@ class TestAwardEmailsReRead(TestCase):
                    if sp.offer_emailed_at is not None]
         self.assertEqual(len(stamped), 1)
         self.assertEqual(stamped[0].status, 'offered')
+
+    def test_the_case_is_locked_before_the_sponsorship(self):                     # re-review 1
+        app = make_application('recommended', award_amount=Decimal('3000'),
+                               notify_email='stu@a113.example')
+        sp = svc.fund_student(_sponsor(app.programme), app)
+        order, (p1, p2) = _order_spy()
+        with p1, p2, patch.object(svc, 'send_award_offer_email', return_value=True), \
+                patch.object(svc, 'raise_setup_task'), \
+                patch('apps.scholarship.parent_call.held_for_parent_call', return_value=False):
+            self.assertEqual(svc.release_award_offer_emails(now=timezone.now() + timedelta(days=30)), 1)
+        self.assertEqual(order[:3], ['lock_application', 'sfu:ScholarshipApplication',
+                                     'sfu:Sponsorship'])
+        sp.refresh_from_db()
+        self.assertIsNotNone(sp.offer_emailed_at)
 
 
 # ── F5: cancel_offer's lock order ──────────────────────────────────────────────────────────────

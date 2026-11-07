@@ -19,8 +19,9 @@ LOCK ORDER (one order everywhere, so two writers can never deadlock):
   3. the SPONSOR row (``lock_sponsor_wallet``, A1.5), before a wallet balance is read for a spend;
   4. the rows that hang off them (a Sponsorship, a Disbursement / tranche).
 A writer may skip a step, never reverse two. ``closure.close_application`` takes only the
-application row. ``sponsorship.cancel_offer`` (the APPLICATION first, then the Sponsorship — A1.13
-review finding 5, matching ``award_withdrawal.withdraw_award``) and the offer-lapse job
+application row. ``sponsorship.cancel_offer`` and the award-email job (the APPLICATION first, then
+the Sponsorship, via ``lock_case_of_sponsorship`` — A1.13 review, matching
+``award_withdrawal.withdraw_award``) and the offer-lapse job
 (``lapse_expired_offers``) never take the sponsor row, so they cannot wait on a fund that holds it.
 A bursary agreement row comes after its application (``agreement_guard``). The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
 foreign-key check (FOR KEY SHARE on the sponsor) does not wait on it.
@@ -95,6 +96,16 @@ def lock_applications_for(applications, allowed_statuses):
             if row.status not in allowed_statuses:
                 refused.append(app)
     return refused
+
+
+def lock_case_of_sponsorship(**sponsorship):
+    """Lock the APPLICATION of the Sponsorship matching ``sponsorship`` (filter kwargs), whatever its
+    status: a lock for ORDER only (step 2 before step 4), taken before the caller locks and re-reads
+    the Sponsorship; the caller's own checks decide. No match: nothing is locked (A1.13 review)."""
+    from .models import Sponsorship
+    app_id = Sponsorship.objects.filter(**sponsorship).values_list('application_id', flat=True).first()
+    if app_id is not None:
+        lock_application_for(app_id, tuple(c for c, _ in ScholarshipApplication.STATUS_CHOICES))
 
 
 def lock_sponsor_wallet(sponsor):

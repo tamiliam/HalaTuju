@@ -18,6 +18,7 @@ from django.utils import timezone
 from . import branding as _branding
 from . import money
 from . import pool
+from . import status_lock as _status_lock
 from .results_review import accepted_count
 from . import usage as _usage
 # An award that falls through lands back in the pool — or, on a failed "Born in" rule, at QC
@@ -649,9 +650,11 @@ def release_award_offer_emails(now=None, held=None):
                .order_by('pk').values_list('pk', flat=True))
     sent = 0
     for pk in due:
-        # A1.13 review finding 4: RE-READ each row under its lock and send + stamp under it, so a
-        # cancel / withdrawal that landed after the list was read stops the email.
+        # A1.13 review F4: RE-READ each row under its lock and send + stamp under it, so a cancel /
+        # withdrawal that landed after the list was read stops the email. Re-review 1: the case
+        # first (the usage / task rows below share-lock it), as the withdrawal and the cancel do.
         with transaction.atomic():
+            _status_lock.lock_case_of_sponsorship(pk=pk)
             sp = (Sponsorship.objects.select_for_update(of=('self',))
                   .select_related('application', 'application__profile')
                   .filter(pk=pk, status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True)
@@ -727,12 +730,7 @@ def cancel_offer(sponsor, sponsorship_id):
     the email. Locked FOR UPDATE so a cancel can't race ``release_award_offer_emails`` (it sends +
     stamps under the same row lock) and land on the wrong side of that line. A1.13 review F5: the
     APPLICATION is locked first, as the withdrawal does. Raises SponsorshipError on a bad state."""
-    from .models import ScholarshipApplication
-    from .status_lock import lock_application_for
-    app_id = (Sponsorship.objects.filter(id=sponsorship_id, sponsor=sponsor, status='offered')
-              .values_list('application_id', flat=True).first())
-    if app_id is not None:   # any status: this lock is for ORDER only; the checks are unchanged
-        lock_application_for(app_id, tuple(c for c, _ in ScholarshipApplication.STATUS_CHOICES))
+    _status_lock.lock_case_of_sponsorship(id=sponsorship_id, sponsor=sponsor, status='offered')
     sp = (Sponsorship.objects.select_for_update()
           .filter(id=sponsorship_id, sponsor=sponsor, status='offered')
           .select_related('application').first())
