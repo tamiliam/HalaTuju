@@ -44,8 +44,7 @@ const REVIEWERS = [
   },
 ] as unknown as api.AdminReviewer[]
 
-/** The organisation's gifts. Only the COUNT matters to this page — the gift line under a name
- *  renders above one, per the ruling at the top of `page.tsx`. */
+/** The organisation's gifts. The table never shows them (owner 2026-11-07: the profile does). */
 let giftChoices: api.AdminReviewerGift[] = []
 
 /** The staff behind the Admins tab (2026-09-09). ⚠ Deliberately mixed: an org_admin who is IN, a
@@ -90,10 +89,12 @@ const loaded = async () => {
 describe('what the table shows', () => {
   it('draws the columns the surface was approved with', async () => {
     await loaded()
-    for (const key of ['colName', 'colLanguages', 'colAwaiting', 'colInterviewing', 'colCompleted',
+    for (const key of ['colName', 'colAwaiting', 'colInterviewing', 'colCompleted',
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
+    // Owner 2026-11-07: no Languages column — the reviewer's own page shows them.
+    expect(ui().queryByText('admin.reviewers.colLanguages')).toBeNull()
     // Team tables T2: the Role column became "Also in". T3 (owner): no permission column on the Team
     // tables — permissions are set only on the person's page.
     expect(ui().getByText('admin.team.colAlsoIn')).toBeTruthy()
@@ -120,11 +121,10 @@ describe('what the table shows', () => {
       .toBe('/admin/organisation/reviewers/5')
   })
 
-  it('names the languages someone can actually interview in', async () => {
+  it('shows no languages on the table or the phone cards (owner 2026-11-07: on the profile)', async () => {
     await loaded()
-    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
-    expect(ui().getByText('admin.reviewers.lang.en')).toBeTruthy()
-    expect(screen.queryByText('admin.reviewers.lang.ms')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.lang.ta')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.lang.en')).toBeNull()
   })
 })
 
@@ -133,7 +133,7 @@ describe('the two figures that lie if you let them', () => {
   const turnaroundOf = (id: number) => {
     const row = screen.getAllByRole('row').slice(1).find((r) =>
       r.querySelector('a')!.getAttribute('href')!.endsWith(`/${id}`))!
-    return row.querySelectorAll('td')[6].textContent   // T2: Also in before it (T3: no permissions column)
+    return row.querySelectorAll('td')[5].textContent   // T2: Also in before it (T3: no permissions; 2026-11-07: no languages)
   }
 
   it('says "no reviews yet" rather than showing a turnaround of nothing', async () => {
@@ -165,48 +165,19 @@ describe('what must NOT be on this table', () => {
   })
 })
 
-/** Multi-gift (owner design, 2026-11-06): one grey chip per gift, or one "Every gift" chip, with a
- *  pencil for someone who manages staff. Only once the organisation runs more than one gift. */
-describe('the gift chips under a name', () => {
-  const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary' }
-  const twoGifts = (rows = REVIEWERS) => {
-    giftChoices = [...giftChoices, { ...SABAH, is_active: true }]
-    mockApi.listReviewers.mockResolvedValue({ reviewers: rows, programmes: giftChoices })
-  }
-
-  it('shows one chip per gift, and EVERY GIFT for none', async () => {
-    twoGifts([{ ...REVIEWERS[0], gifts: [SABAH] }, REVIEWERS[1]])
+/** Owner 2026-11-07: gifts are shown and edited on the reviewer's own page, never on the table —
+ *  even when the organisation runs several gifts. (The editor itself is tested in `[id]/page.test.tsx`.) */
+describe('no gift chips on the table', () => {
+  it('shows no gift chips and no pencil, on the table or the phone cards', async () => {
+    const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: true }
+    giftChoices = [...giftChoices, SABAH]
+    mockApi.listReviewers.mockResolvedValue({
+      reviewers: [{ ...REVIEWERS[0], gifts: [SABAH] }, REVIEWERS[1]], programmes: giftChoices })
     await loaded()
-    expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary')
-    expect(ui().getByTestId('gifts-6').textContent).toBe('admin.reviewers.gifts.every')
-  })
-
-  it('an old API response with no gifts key reads as EVERY GIFT and does not crash', async () => {
-    const { gifts: _omitted, ...old } = REVIEWERS[0]
-    twoGifts([old as unknown as typeof REVIEWERS[0], REVIEWERS[1]])
-    await loaded()
-    expect(ui().getByTestId('gifts-5').textContent).toBe('admin.reviewers.gifts.every')
-  })
-
-  it('saves from the pencil and patches only that row', async () => {
-    twoGifts()
-    mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [SABAH] })
-    await loaded()
-    fireEvent.click(ui().getByTestId('gifts-edit-5'))
-    fireEvent.click(ui().getByTestId('gifts-ticks-5-every'))
-    fireEvent.click(ui().getByTestId('gifts-ticks-5-gift-9'))
-    fireEvent.click(ui().getByTestId('gifts-save-5'))
-    await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [9], { token: 'tok' }))
-    await waitFor(() => expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary'))
-    expect(mockApi.listReviewers).toHaveBeenCalledTimes(1)
-  })
-
-  it('gives a plain admin the chips but no pencil', async () => {
-    viewerRole = { role: 'admin' }
-    twoGifts()
-    await loaded()
-    expect(ui().getByTestId('gifts-5')).toBeTruthy()
-    expect(ui().queryByTestId('gifts-edit-5')).toBeNull()
+    expect(screen.queryByTestId('gifts-5')).toBeNull()
+    expect(screen.queryByTestId('gifts-edit-5')).toBeNull()
+    expect(screen.queryByText('Sabah Bursary')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.gifts.every')).toBeNull()
   })
 })
 
@@ -596,14 +567,13 @@ describe('common profile S2: photo and a phone shown to the team', () => {
 })
 
 describe('common profile S2: the optional fourth language', () => {
-  it('shows as an extra chip by name, beside the en/ms/ta chips', async () => {
+  it('is not on the table either (owner 2026-11-07: languages live on the profile)', async () => {
     mockApi.listReviewers.mockResolvedValue({ programmes: giftChoices, reviewers: [
       { ...REVIEWERS[0], other_language: 'Kadazandusun' }, { ...REVIEWERS[1], other_language: '' },
     ] as unknown as api.AdminReviewer[] })
     await loaded()
-    expect(ui().getByTestId('other-language-5').textContent).toBe('Kadazandusun')
-    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
-    expect(ui().queryByTestId('other-language-6')).toBeNull()
+    expect(screen.queryByText('Kadazandusun')).toBeNull()
+    expect(screen.queryByTestId('other-language-5')).toBeNull()
   })
 })
 

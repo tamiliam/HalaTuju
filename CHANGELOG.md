@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: the Reviewers table drops the Languages column and the gift chips under a name (2026-11-07)
+
+Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: both are on the reviewer's own page, and a gift is edited there, never from the table. `admin/organisation/reviewers/page.tsx` loses the Languages column (desktop) and the language chips (phone card), and the gift chips with their pencil (both layouts); the list no longer keeps the gift choices. The reviewer page (`[id]/page.tsx`) is unchanged and still shows languages and edits gifts. Tests: the list asserts no Languages column, no language or fourth-language chip, and no gift chip or pencil even with two gifts; the four list gift-chip tests are replaced (the editor stays covered in `[id]/page.test.tsx`); a new profile test pins the languages line with the fourth language.
+
 ### chore: Team tables no longer show "Only table: revoke instead" (2026-11-07)
 
 Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: the note added nothing — Revoke already sits beside it. `RemoveControl` (`components/admin/TeamTables.tsx`) now draws nothing for the `last_table` code; the API still serves the code and still refuses the remove. `admin.team.note.last_table` dropped from en / ms / ta. The other two notes (`mentors_only`, `has_open_cases`) are unchanged. Test: `reviewers/page.test.tsx` now asserts no note and no Remove link for a person's only table.
