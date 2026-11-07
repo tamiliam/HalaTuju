@@ -286,7 +286,7 @@ Do one only when a sprint is already in that file.
 
 - **TD-166** — The What-you-agreed-to panel shows today's wording. Accepted knowingly by the owner on 2026-07-26. *(C · S)*
 
-### Raised since the 2026-10-28 index - listed, not yet tiered - 81
+### Raised since the 2026-10-28 index - listed, not yet tiered - 83
 Each is an open entry with a defining line in the register body (read it there). The owner/Now/Next/Later tiering of these is the first job of the next regeneration; until then they are listed so that the pointer count equals the tool.
 
 - **TD-422** - The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
@@ -384,6 +384,8 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
+- **TD-583** - The income wizard's `saveDeclared` builds the whole income map from a stale `ans`, so two quick entries for different members can overwrite each other - low
+- **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -7561,8 +7563,9 @@ and decide (owner) whether a pre-fill may be stored before the student confirms 
 
 **Status 2026-11-07 (A1.12): part (b) fixed, part (a) open.** (b) A failed answer save is kept by field with its
 value (`ScholarshipDocuments/failedSaves.tsx`); the alert (`scholarship.docs.income.wizard.notSaved` / `tryAgain`,
-en/ms/ta) stays until every failed field is saved, and Try again re-sends the exact values
-(`IncomeWizard.saveFailed.test.tsx`, 6). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
+en/ms/ta) stays until every failed field is saved, and Try again re-sends the exact values; it waits
+(disabled) while a newer save of a failed field is in flight, so it cannot overwrite that newer value
+(`IncomeWizard.saveFailed.test.tsx`, 9). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
 route / earner / working members when the page opens, before the student taps anything?
 
 ### [TD-461] The post-shortlist step wizard still has the 10 px icon tab bar - low
@@ -8384,6 +8387,14 @@ inside the locked block; the lock rule). *(A · S)*
 ### [TD-580] Read a SCANNED polytechnic transcript Exact - medium
 
 **Raised 2026-11-07 by the owner (queued AFTER the higher-owed fix; owner priority: next after it).** `poly_diploma_parse` reads only a digital PDF's text layer (by design: no scan of the two-column layout had been seen); a scanned or merged PDF goes to Gemini. Live: app 168, doc 5303, a Politeknik Kota Kinabalu provisional transcript (Gemini read the final CGPA 3.78 correctly). Polytechnic transcripts are one standard JPPKK layout, so build a word-box path with the same proofs (credits, GPA / CGPA recomputed). Note: doc 5303 sits in the higher-results card with `results_kind` 'stpm' (the team's split), so its card reads the kind as different once read. *(B · M)*
+
+### [TD-583] The income wizard's typed incomes can overwrite each other (stale `ans` in `saveDeclared`) - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed, on purpose: out of the sprint's scope).** `saveDeclared` in `halatuju-web/src/components/ScholarshipDocuments/IncomeWizard.tsx` builds the WHOLE `income_declared` map from the `ans` of the render it was created in, then saves that map. If two members' figures are saved before the wizard re-renders (two quick blurs), the second save is built from a map that does not yet hold the first figure, so the screen and the server both lose it. **Fix:** build the next map from the newest answers (a functional update, or a ref that `save` keeps current), with a jest test that saves two members back to back and expects both figures. *(B · S)*
+
+### [TD-584] Two course-catalogue commands call Gemini with no usage recorded - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed).** `apps/courses/management/commands/generate_stpm_headlines.py` (the `generate_content` call near line 89) and `apps/courses/management/commands/map_course_careers.py` (near line 88) call Gemini directly and write no `UsageEvent`, so their tokens are missing from the usage page and from any check of metered tokens against the Gemini bill (the same gap TD-459 closed for thinking tokens). These are admin-run, platform-side jobs, so no tenant's invoice is affected. **Fix:** wrap each call in `usage.usage_context(source=...)` and call `usage.record_usage('gemini', model=..., ...)` with the counts from `usage.gemini_tokens(response)` as the other Gemini callers do, with a mocked-client test per command. *(B · S)*
 
 ### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
 

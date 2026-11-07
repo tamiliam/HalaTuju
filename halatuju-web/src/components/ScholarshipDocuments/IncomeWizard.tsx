@@ -426,7 +426,7 @@ export default function IncomeWizard({
         </Question>
       )}
 
-      <SaveFailedAlert failed={saves.failed} fields={ANSWER_FIELDS} onRetry={save} iq={iq} />
+      <SaveFailedAlert saves={saves} fields={ANSWER_FIELDS} onRetry={save} iq={iq} />
       {/* Family burden (siblings in school / tertiary) lives on the Story tab's family card, captured once there. */}
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
@@ -545,7 +545,7 @@ export default function IncomeWizard({
               {strIcCard(m)}
             </div>
           ))}
-          <SaveFailedAlert failed={saves.failed} fields={['income_declared']} onRetry={save} iq={iq} />
+          <SaveFailedAlert saves={saves} fields={['income_declared']} onRetry={save} iq={iq} />
         </div>
       )}
 

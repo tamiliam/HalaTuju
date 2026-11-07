@@ -110,6 +110,52 @@ describe('TD-460(b) — the income wizard shows a failed save', () => {
     expect(screen.queryByText(NOT_SAVED)).toBeNull()
   })
 
+  it('Try again waits while a newer save of the same field is in flight, so the newer value wins', async () => {
+    let finishNewer: (ok: boolean) => void = () => {}
+    wizard(strApp)
+    offline()
+    await click('earner.mother')                            // A=1 fails
+    mockApi.updateScholarshipDetails.mockImplementationOnce(() => new Promise((res, rej) => {
+      finishNewer = (ok) => (ok ? res({} as never) : rej(new Error('offline')))
+    }) as never)
+    await click('earner.guardian')                          // A=2, still in flight
+    const callsBefore = mockApi.updateScholarshipDetails.mock.calls.length
+    expect((screen.getByText(`${W}.tryAgain`) as HTMLButtonElement).disabled).toBe(true)
+    await click('tryAgain')                                 // must NOT re-send the stale mother
+    expect(mockApi.updateScholarshipDetails.mock.calls.length).toBe(callsBefore)
+    await act(async () => { finishNewer(true) })
+    expect(lastPatch()).toEqual({ income_earner: 'guardian' })
+    expect(screen.queryByText(NOT_SAVED)).toBeNull()
+  })
+
+  it('if that newer save fails too, Try again re-sends the NEWER value', async () => {
+    let failNewer: (e: Error) => void = () => {}
+    wizard(strApp)
+    offline()
+    await click('earner.mother')
+    mockApi.updateScholarshipDetails.mockImplementationOnce(
+      () => new Promise((_res, rej) => { failNewer = rej }) as never)
+    await click('earner.guardian')
+    await act(async () => { failNewer(new Error('offline')) })
+    expect((screen.getByText(`${W}.tryAgain`) as HTMLButtonElement).disabled).toBe(false)
+    await click('tryAgain')
+    expect(lastPatch()).toEqual({ income_earner: 'guardian' })
+    expect(screen.queryByText(NOT_SAVED)).toBeNull()
+  })
+
+  it('a retry that fails again keeps the alert and the payload', async () => {
+    wizard(strApp)
+    offline()
+    await click('earner.mother')
+    offline()
+    await click('tryAgain')                                 // fails again
+    expect(lastPatch()).toEqual({ income_earner: 'mother' })
+    expect(screen.getByRole('alert').textContent).toContain(NOT_SAVED)
+    await click('tryAgain')                                 // now it works
+    expect(lastPatch()).toEqual({ income_earner: 'mother' })
+    expect(screen.queryByText(NOT_SAVED)).toBeNull()
+  })
+
   it('L3: a typed income that does not save shows the alert, and Try again re-sends the figure', async () => {
     wizard(salaryApp)
     const box = screen.getByPlaceholderText(`${W}.declared.placeholder`)
