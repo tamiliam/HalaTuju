@@ -19,6 +19,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
+from apps.scholarship import payments_chain
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     Donation, Programme, Sponsor, SponsorProgrammeMembership,
@@ -250,6 +251,57 @@ class TestSignOffChain(CreditMixin, TestCase):
         with self.assertRaises(svc.CreditError) as ctx:
             self._sign(c, fin)
         self.assertEqual(ctx.exception.code, 'wrong_role')
+
+
+class TestTD475TheCheckerSeatIsTheKey(CreditMixin, TestCase):
+    """TD-475 (A1.10a): the credit CHECKER seat is the permission `payments_approve`, not the retired
+    `finance` label — the same key that approves a payment run. Whoever holds it (active) arms the check
+    and performs it; a label without the key does neither."""
+
+    def _keyed(self, role, permissions, name, email, active=True):
+        a = _admin(self.org, role, name, email, active=active)
+        a.permissions = permissions
+        a.save(update_fields=['permissions'])
+        return a
+
+    def test_an_org_with_no_holder_is_two_step(self):
+        self._keyed('admin', ['see_all', 'spending'], 'Plain Admin', 'plain@x.com')
+        self.assertFalse(payments_chain.credit_check_required(self.org))
+        c = self._record('10000')
+        self._sign(c, self.maker)
+        self._sign(c, self.approver)
+        self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
+
+    def test_an_admin_given_payments_approve_arms_and_performs_the_check(self):
+        checker = self._keyed('admin', ['see_all', 'payments_approve'], 'Keyed Admin', 'keyed@x.com')
+        self.assertTrue(payments_chain.credit_check_required(self.org))
+        c = self._record('10000')
+        self._sign(c, self.maker)
+        with self.assertRaises(svc.CreditError) as ctx:
+            self._sign(c, self.approver)
+        self.assertEqual(ctx.exception.code, 'finance_check_required')
+        self._sign(c, checker)
+        self.assertEqual(c.status, Donation.STATUS_FINANCE_CHECKED)
+        self.assertEqual(c.finance_checked_by, 'Keyed Admin')
+        self._sign(c, self.approver)
+        self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
+
+    def test_a_finance_label_without_the_key_neither_arms_nor_performs_it(self):
+        fin = self._keyed('finance', ['see_all'], 'Keyless Finance', 'keyless@x.com')
+        self.assertFalse(payments_chain.credit_check_required(self.org))
+        armed = self._keyed('admin', ['payments_approve'], 'Real Checker', 'real@x.com')
+        self.assertTrue(payments_chain.credit_check_required(self.org))
+        c = self._record('10000')
+        self._sign(c, self.maker)
+        with self.assertRaises(svc.CreditError) as ctx:
+            self._sign(c, fin)
+        self.assertEqual(ctx.exception.code, 'wrong_role')
+        self._sign(c, armed)
+        self.assertEqual(c.status, Donation.STATUS_FINANCE_CHECKED)
+
+    def test_an_inactive_holder_arms_nothing(self):
+        self._keyed('admin', ['payments_approve'], 'Gone', 'gone@x.com', active=False)
+        self.assertFalse(payments_chain.credit_check_required(self.org))
 
 
 class TestIdentityGates(CreditMixin, TestCase):

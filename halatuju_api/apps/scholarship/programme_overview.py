@@ -712,7 +712,13 @@ def _overall_payload(overall):
     }
 
 
-def build(admin, org, programme, *, cohort=None, now=None):
+#: TD-336 (A1.10a): the sections a super with NO organisation of their own is not served until a
+#: gift (or a round) is named — the Overview's money, which would otherwise pool every
+#: organisation's figures. The rest of the page keeps reading across gifts, as it is meant to.
+POOLED_MONEY = ('money', 'money_series')
+
+
+def build(admin, org, programme, *, cohort=None, now=None, withhold=()):
     """The whole payload, shaped by role, narrowed and ordered by the organisation's layout,
     with every money value a STRING.
 
@@ -758,6 +764,7 @@ def build(admin, org, programme, *, cohort=None, now=None):
         else (None, None))
     sections = (overview_layout.apply(layout, role_sections)
                 if layout is not None else list(role_sections))
+    sections = [s for s in sections if s not in withhold]   # TD-336: never built, never listed
 
     newest = data_to(scope)
     # These keys are on EVERY payload whatever the role. `data_to` is here rather than inside

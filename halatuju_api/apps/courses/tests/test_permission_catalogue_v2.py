@@ -157,9 +157,11 @@ class Vocabulary(TestCase):
         self.assertEqual(set(v2.ALIASES), set(sp.CATALOGUE))
         self.assertEqual(v2.ALIASES['see_all'], ('students.view',))
         self.assertEqual(v2.ALIASES['spending'], ('spending.view', 'spending.edit'))
-        for old, new in (('payments_prepare', 'payments.prepare'), ('payments_check', 'payments.check'),
-                         ('payments_approve', 'payments.approve')):
+        for old, new in (('payments_prepare', 'payments.prepare'), ('payments_check', 'payments.check')):
             self.assertEqual(v2.ALIASES[old], ('payments.view', new))
+        # TD-475 (A1.10a): `payments_approve` is also the wallet credit's checker seat.
+        self.assertEqual(v2.ALIASES['payments_approve'], ('payments.view', 'payments.approve', 'sponsors.check'))
+        self.assertNotIn('finance', v2.LABEL_GRANTS)
         for targets in v2.ALIASES.values():
             self.assertTrue(set(targets) <= set(v2.V2_KEYS))
 
@@ -234,7 +236,11 @@ def _doors():
         'org_read': (staff_tables.may_read_org, _ORG_READ),
         'sponsors_list': (surface_gates.may_read_sponsors, ('sponsors.view',)),
         'team_read': (surface_gates.may_read_team, ('team.view', 'invitations.view')),
-        'mentors_read': (mentor_invite.may_read, ('team.view',)),
+        'mentors_read': (mentor_invite.may_read, ('mentoring.view',)),     # A1.10a: was the union door
+        'announcements_read': (announcements.may_read, ('announcements.view',)),    # A1.10a TD-498
+        'surveys_read': (surveys.may_read, ('surveys.view',)),
+        'development_read': (development.may_read, ('development.view',)),
+        'scholar_mentoring_read': (mentoring.may_read, ('mentoring.view',)),
         'sources_and_terms_and_emails': (staff_tables.may_do_admin_work,
                                          ('sources.view', 'sources.edit', 'sponsors.edit')),
         'announcements': (announcements.may_post, ('announcements.view', 'announcements.edit')),
@@ -454,7 +460,10 @@ V2_DOOR_MODULES = {
     'scholarship/views_admin/org_emails.py',      # sponsors.edit (sponsor emails)
     # T5c P2
     'scholarship/views_admin/sources.py',    # sources.edit (Sources, Partner emails, witness override)
-    'scholarship/views_admin/credits.py',    # sponsors.view (the ledger read; money writes stay, T5d)
+    'scholarship/views_admin/credits.py',    # sponsors.view (the ledger read); A1.10a: sponsors.edit (record,
+                                             # cancel), sponsors.view (sign; the step is credit_steps')
+    # A1.10a (TD-497): the Team roster (team.view + mentoring.view)
+    'courses/views_staff.py',
 }
 
 
@@ -498,6 +507,23 @@ class DoorKeysTable(TestCase):
             with self.subTest(module=rel):
                 self.assertNotIn('staff_tables.opens(', src, 'ask staff_tables.opens_door, keys in DOOR_KEYS')
 
+    def test_no_door_calls_a_union_helper(self):
+        """A1.10a (TD-497, RD-03): the union doors are retired. A new door that calls `may_read_org(` or
+        `may_do_admin_work(` (opening a whole union of pages on one question) fails here; ask
+        `staff_tables.opens_door(admin, '<door>')` with the door's own keys instead."""
+        for rel, src in _app_sources():
+            if rel == 'courses/staff_tables.py':
+                continue                                   # where the two named sets are defined
+            with self.subTest(module=rel):
+                for helper in ('may_read_org(', 'may_do_admin_work('):
+                    self.assertNotIn(helper, src, f'{rel} calls the retired union door {helper}')
+
+    def test_the_union_guard_is_not_vacuous(self):
+        # The guard reads real sources: the defining module does carry both names.
+        src = dict(_app_sources())['courses/staff_tables.py']
+        self.assertIn('def may_read_org(', src)
+        self.assertIn('def may_do_admin_work(', src)
+
     def test_every_door_call_names_a_door_of_the_table_as_a_literal(self):
         used = set()
         for rel, src in _app_sources():
@@ -540,6 +566,13 @@ class DoorKeysTable(TestCase):
             'invitations': ('invitations.edit',), 'sponsor_terms': ('sponsors.edit',),
             'sponsor_emails': ('sponsors.edit',), 'sources': ('sources.edit',),
             'credits_read': ('sponsors.view',),
+            # A1.10a (TD-497): the last union-door callers, each on its own keys.
+            'team_roster': ('team.view', 'mentoring.view'), 'mentors_read': ('mentoring.view',),
+            'credits_write': ('sponsors.edit',), 'credits_sign': ('sponsors.view',),
+            # A1.10a (TD-498): the reads on `.view`.
+            'announcements_read': ('announcements.view',), 'surveys_read': ('surveys.view',),
+            'development_read': ('development.view',), 'mentoring_read': ('mentoring.view',),
+            'sources_read': ('sources.view',),
         })
 
     def test_an_unknown_door_raises(self):

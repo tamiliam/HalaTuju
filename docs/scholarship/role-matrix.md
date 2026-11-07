@@ -60,7 +60,8 @@ work pages (said on the confirm); leaving Admins an `admin` / `finance` becomes 
 their team (`_staff_target_manageable`), plus the organisation admin on THEIR OWN row for Reviewers — the only way an
 org admin holds `review` (stored `['review']`; every other key on a lead row is ignored). A NEW invited Admin holds
 exactly `see_all`; org admins invite Admin / Reviewer only (no Finance / QC). The labels Finance / QC are retired on
-Team and Invitations; existing `finance` / `qc` rows are unchanged (TD-475: credits still read the finance role).
+Team and Invitations; existing `finance` / `qc` rows are unchanged (since A1.10a, TD-475, the credit check reads
+the key `payments_approve`, not the finance role).
 
 **Team tables T3 (2026-11-03, built, not live):** Team -> **Mentors** and the mentor detail page
 (`GET admin/mentors/<id>/`) are read by exactly who read the Mentors page (super, org_admin, admin; their own
@@ -164,7 +165,8 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
   **SUPERSEDED 2026-10-19 (#39 Sprint 2, owner option A):** the `finance` role APPROVES payment runs
   (the final signature, which completes the run and releases Vircle → students); the organisation
   admin funds Vircle outside HalaTuju and approves a run only when nobody else can. Finance still
-  can never create, edit, cancel or price a run. On wallet credits Finance still holds the CHECK.
+  can never create, edit, cancel or price a run. On wallet credits the holder of `payments_approve` holds
+  the CHECK (A1.10a, TD-475; every finance preset holds it).
 
 ## Programme Overview (`/admin/programme/overview`) — access
 
@@ -320,16 +322,23 @@ organisation (`AdminSponsorDetailView`, `_CreditsBase`).
 close it, and on production the person doing this work is a plain `admin`. VOID an unconfirmed
 credit: `admin` + `org_admin`. `reviewer` / `qc` / referral `partner` are refused everywhere.
 
+**The doors (A1.10a, TD-497).** Each credit door asks its own v2 keys (`staff_tables.DOOR_KEYS`): the ledger
+read `credits_read` = `sponsors.view`; record and cancel `credits_write` = `sponsors.edit` (super, org_admin, the
+`admin` label — finance and a person at Admins by a key are refused at the door, 403); sign `credits_sign` =
+`sponsors.view`, and the step rule below then decides (400 `wrong_role` / `finance_check_required`).
+
 **The chain has the payments chain's SHAPE but, since #39 Sprint 2, NOT its rules** (owner question
 6, 2026-10-19: credits keep today's chain; accepting money is the organisation's act):
 `draft → admin_signed → [finance_checked] → confirmed`, with the middle step required iff the
-organisation has ≥1 ACTIVE `finance` admin (`payments.credit_check_required`, the old predicate,
-split out so re-keying the run check could not switch this one off), evaluated live at every
-attempt. Roles, not permissions, gate every step here.
+organisation has ≥1 ACTIVE holder of `payments_approve` (`payments.credit_check_required`, split out
+so re-keying the run check could not switch this one off; until A1.10a, TD-475, an active `finance`
+ROLE row), evaluated live at every attempt. The maker and approver steps are role-gated; the check
+step is the key.
 
 - **maker** signs the draft (role `admin`) → `admin_signed`.
-- **finance check** (role `finance`) → `finance_checked`. An `org_admin` countersigning at
-  `admin_signed` while finance is active is refused with `finance_check_required`.
+- **finance check** (a holder of `payments_approve`, `credit_steps.CHECKER_KEY`) → `finance_checked`.
+  An `org_admin` countersigning at `admin_signed` while the check is armed is refused with
+  `finance_check_required`.
 - **approver** countersigns (role `org_admin`) → `confirmed`. **`confirmed` is the step that makes
   the money spendable** on a student (`Donation.is_spendable`).
 

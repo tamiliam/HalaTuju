@@ -240,7 +240,7 @@ GOLDEN = {
         'was': _t('finance'),
         'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
         's2': S2_RULING + ' — re-keyed to "an active member holds payments_check"; wallet credits '
-                          'keep the finance-role rule (credit_check_required).',
+                          'are armed by a payments_approve holder (credit_check_required, TD-475).',
     },
     'check_step_served_on_a_run': {
         'where': 'views_admin/payments.py _payment_run_detail finance_check_required (a run of an '
@@ -270,15 +270,15 @@ GOLDEN = {
         's2': S2_RULING + ' — goes to payments_check holders, when anybody holds it.',
     },
     'other_active_finance': {
-        'where': 'staff_lifecycle._other_active_finance (the role-change consequence: is X another '
-                 'active finance member of the target\'s organisation?)',
+        'where': 'staff_lifecycle.other_active_checker (TD-475, A1.10a; was _other_active_finance: is X '
+                 'another active payments_approve holder in the target\'s organisation?)',
         'keys': ('payments_approve',),
         'today': _t('finance'),
         'was': _t('finance'),
         'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_approve'))),
-        's2': S2_RULING + ' — the answer does not move: the finance ROLE is what both consequences '
-                          'turn on (the preset that now APPROVES runs, and the credit check, which '
-                          'keeps the finance-role rule); the rule now reads payments_approve.',
+        's2': S2_RULING + ' — the answer does not move: payments_approve is what both consequences '
+                          'turn on (the key that APPROVES runs, and since TD-475 the credit check); '
+                          'the finance preset holds it.',
     },
     'switch_refused_for_unfinished_run': {
         'where': 'staff_lifecycle.plan_role_change run_in_progress (X made / signed an unfinished '
@@ -566,11 +566,13 @@ class GoldenTable(TestCase):
         return a.email in self._recipients(send_payment_finance_check_email)
 
     def probe_other_active_finance(self, a):
-        from apps.scholarship.staff_lifecycle import _other_active_finance
+        # TD-475 (A1.10a): the function is `other_active_checker` (a payments_approve holder); the gate
+        # name is kept so the S2 table stays one list.
+        from apps.scholarship.staff_lifecycle import other_active_checker
 
         def ask(org):
             target = make_admin('admin', owning_org=org)
-            return _other_active_finance(target)
+            return other_active_checker(target)
         return self.alone(a, ask)
 
     def _plan_switch(self, a, open_cases, runs):

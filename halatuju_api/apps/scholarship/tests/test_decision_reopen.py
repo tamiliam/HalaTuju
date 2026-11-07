@@ -334,3 +334,49 @@ class TestDecisionTrailSerializer(TestCase):
             application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
             reason='second and latest')
         self.assertEqual(self._data()['last_decision_reopen']['reason'], 'second and latest')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
+    """TD-476 (A1.10a): a reopen that leaves the case WHERE IT IS (a decline that has gone, a
+    funded case) waits for the assigned officer, and such a case cannot change hands. If that
+    officer no longer holds `review`, the reopen is refused (400 `reviewer_cannot_review`) before
+    any write. A reopen that steps the case back (to AWAITING QC, or to 'interviewing', where it
+    may be reassigned) is unchanged."""
+    setUp = TestDecisionReopen.setUp
+    _auth = TestDecisionReopen._auth
+    _reopen_url = TestDecisionReopen._reopen_url
+
+    def _take_review_away(self):
+        self.reviewer.permissions = ['see_all']
+        self.reviewer.save(update_fields=['permissions'])
+
+    def _set_status(self, value):
+        self.app.status = value
+        self.app.save(update_fields=['status'])
+
+    def test_a_decided_decline_is_refused_and_nothing_moves(self):
+        self._set_status('rejected')
+        self._take_review_away()
+        self._auth(SUPER)
+        r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'reviewer_cannot_review'))
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
+        self.assertIsNone(self.app.decision_reopened_at)
+        self.assertTrue(self.sp.anon_published)
+        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+
+    def test_the_same_case_reopens_while_the_assignee_holds_review(self):
+        self._set_status('rejected')
+        self._auth(SUPER)
+        r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual(r.status_code, 200)
+
+    def test_a_reopen_that_steps_back_is_unchanged(self):
+        # recommended -> interviewed: AWAITING QC is the QC's, not the reviewer's.
+        self._take_review_away()
+        self._auth(SUPER)
+        r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')

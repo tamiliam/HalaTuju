@@ -182,8 +182,6 @@ ALLOWLIST = {
         'recipient routing: nudges escalate to the org admin'),
     'scholarship/mentor_invite.py::manageable': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
-    'scholarship/payments_chain.py::credit_check_required': ('GATE-LEFT', 'T5d',
-        'money: a Finance row decides whether a credit needs a check (maker / check / approve)'),
     'scholarship/payments_chain.py::fallback_approvers': ('GATE-LEFT', 'T5d',
         'money: fallback approvers are org admins by label (payments fallback rule)'),
     'scholarship/programme_overview.py::may_customise': ('GATE-LEFT', 'T5e',
@@ -209,12 +207,11 @@ ALLOWLIST = {
     'scholarship/sponsorship.py::record_admin_credit': ('GATE-LEFT', 'T5d',
         'money: recording a credit is gated by the label (getattr role)'),
     'scholarship/credit_steps.py::step_refusal': ('GATE-LEFT', 'T5d',
-        'money: credit signing by label (admin / finance / org_admin); moved out of '
-        'sponsorship.sign_admin_credit at T5c P5b so the Overview counts with the same rule'),
-    'scholarship/credit_steps.py::checks_credits': ('GATE-LEFT', 'T5d',
-        'money: the Overview wallet_credits card follows the finance CHECKER seat, a label today'),
-    'scholarship/staff_lifecycle.py::_other_active_finance': ('GATE-LEFT', 'T5d',
-        'money: the last-Finance guard counts by label'),
+        'money: credit signing by label (maker admin / approver org_admin); moved out of '
+        'sponsorship.sign_admin_credit at T5c P5b so the Overview counts with the same rule. '
+        'A1.10a (TD-475): the CHECKER step is the key payments_approve now, so finance is no label here'),
+    # A1.10a (TD-475): credit_check_required, checks_credits and the last-checker guard
+    # (staff_lifecycle.other_active_checker) read the key payments_approve now, not the finance label.
     'scholarship/staff_lifecycle.py::change_role': ('DISPLAY', 'T5a tables',
         'the role change itself (guards the row it rewrites)'),
     'scholarship/staff_mentor.py::candidates': ('DISPLAY', 'T5a tables',

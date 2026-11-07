@@ -91,12 +91,12 @@ def may_invite(caller):
 def may_read(caller):
     """Who may open the Mentors page: a super, an organisation admin, an admin (read-only).
 
-    ⚠ NOT on its own key yet (Team tables T5c P1): the catalogue puts the Mentors list under `team.view`
-    (ruling 2), which finance and a person at Admins by a key also hold — that would OPEN this page to
-    them. So it stays on the admin-work union door (all of `ADMIN_WORK_V2`, same holders as T1) until
-    the lead rules (decisions.md "Team tables T5c")."""
+    A1.10a (TD-497, lead's call): the door `mentors_read` = `mentoring.view`. NOT `team.view` (ruling 2's
+    filing): finance and a person at Admins by a key hold `team.view`, so it would OPEN the page to them.
+    `mentoring.view` is held by exactly T1's admin-work holders (super, org_admin, the `admin` label), so
+    nobody gains or loses the page."""
     from apps.courses import staff_tables
-    return staff_tables.may_do_admin_work(caller)
+    return staff_tables.opens_door(caller, 'mentors_read')
 
 
 def manageable(caller, mentor):

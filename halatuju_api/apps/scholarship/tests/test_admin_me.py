@@ -165,6 +165,17 @@ class TestReviewerProfileFollowsTheReviewPermission(TestCase):
                              ).get('/api/v1/admin/role/').json()
         self.assertIs(role['reviewer_profile_complete'], True)
 
+    def test_td435_a_reviewer_without_review_is_not_held(self):
+        """TD-435 (A1.10a): a Reviewer whose custom set dropped `review` before onboarding is
+        refused the reviewer cards, so the hold must release: nothing on the page to fill."""
+        me = make_admin('reviewer', owning_org=self.org, permissions=['see_all'])
+        self.assertTrue(reviewer_profile_complete(me))
+        role = authed_client(me).get('/api/v1/admin/role/').json()
+        self.assertIs(role['reviewer_profile_complete'], True)
+        # A Reviewer who still holds `review` with the same empty profile is still held.
+        self.assertFalse(reviewer_profile_complete(
+            make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all'])))
+
 
 class _Resp:
     def __init__(self, status_code, body=None):

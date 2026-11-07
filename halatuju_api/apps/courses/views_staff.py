@@ -424,7 +424,9 @@ class AdminListView(PartnerAdminMixin, APIView):
 
     def get(self, request):
         admin = self.get_admin(request)
-        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
+        # A1.10a (TD-497): its own door, `team.view` + `mentoring.view` (the roster names mentors), the
+        # same holders as T1's admin-work union: super, org_admin, the `admin` label.
+        if not staff_tables.opens_door(admin, 'team_roster'):
             return Response({'error': 'Super admin access required'}, status=403)
 
         # ⚠ A SOURCE USER IS NOT STAFF (source sign-in S1, C3), so not even a super's roster lists one;

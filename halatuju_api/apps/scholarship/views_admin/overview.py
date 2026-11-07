@@ -73,14 +73,21 @@ class AdminProgrammeOverviewView(_AdminBase):
         from .my_programmes import may_open_overview
         if not may_open_overview(admin, self._b40_scope(admin), programme, cohort):
             return Response({'error': 'not_found', 'code': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        withhold = ()
         if admin.is_super:
             org = spend_report.ALL_ORGS
+            # TD-336 (A1.10a): the TD-334 rule, Overview-shaped. A super with NO organisation who
+            # names no gift and no round would read every organisation's money pooled; the page
+            # still serves, across gifts, everything else — only the money waits for a gift.
+            if admin.owning_organisation_id is None and programme is None and cohort is None:
+                withhold = programme_overview.POOLED_MONEY
         else:
             org = admin.owning_organisation
             if org is None:
                 return Response({'error': 'no_org', 'code': 'no_org'},
                                 status=status.HTTP_400_BAD_REQUEST)
-        return Response(programme_overview.build(admin, org, programme, cohort=cohort))
+        return Response(programme_overview.build(admin, org, programme, cohort=cohort,
+                                                 withhold=withhold))
 
 
 class AdminOverviewLayoutView(_AdminBase):

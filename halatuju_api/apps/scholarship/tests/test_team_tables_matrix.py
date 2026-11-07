@@ -100,8 +100,8 @@ _ROHINI_GAINS = {
     'GET api/v1/admin/sponsors/<int:pk>/': (403, 404),
     'GET api/v1/admin/sponsors/pending-count/': (403, 200),
     'GET api/v1/admin/sponsorships/': (403, 200),
-    'POST api/v1/admin/scholarship/credits/': (403, 404),
-    'POST api/v1/admin/scholarship/credits/<int:pk>/cancel/': (403, 404),
+    # A1.10a (TD-497): record and cancel ask their own door (`credits_write`, sponsors.edit), so she stays
+    # 403 there; only the sign (`credits_sign`, sponsors.view — the step is the service's) still reaches it.
     'POST api/v1/admin/scholarship/credits/<int:pk>/sign/': (403, 404),
 }
 EXPECTED_CHANGES = {
@@ -179,6 +179,19 @@ T5C_P5B_ADDED = 'GET api/v1/admin/scholarship/my-pending/'
 
 def t5c_p5b_added_cells(shape, before):
     return {T5C_P5B_ADDED: t5c_p5_added_cells(shape, before)[T5C_P5_ADDED]}
+
+
+#: A1.10a (TD-497, RD-03): the wallet-credit RECORD and CANCEL ask `credits_write` (sponsors.edit — the
+#: `admin` label, the lead, a super) instead of the organisation-read union door. A Finance row reached the
+#: service there and was refused by role (the probe names no real sponsor / credit, so 404); now the door
+#: refuses it first (403). The same people are refused, one step earlier. Nobody gains.
+A110A_CREDIT_WRITES = ('POST api/v1/admin/scholarship/credits/',
+                       'POST api/v1/admin/scholarship/credits/<int:pk>/cancel/')
+A110A_SHUT_AT_THE_DOOR = ('finance', 'finance_custom')
+
+
+def a110a_moved_cells(shape, before):
+    return {p: 403 for p in A110A_CREDIT_WRITES} if shape in A110A_SHUT_AT_THE_DOOR else {}
 
 
 def admin_routes():
@@ -289,6 +302,13 @@ class AccessMatrix(TestCase):
                              person.is_super or (person.is_active and person.role in admin_work_roles), shape)
             declared = set(EXPECTED_CHANGES.get(shape, {}))
             self.assertEqual(declared, set(_ROHINI_GAINS) if gains_read else set(), shape)
+        # A1.10a: the credit-write shift is derived, not trusted — exactly the active shapes that reached the
+        # service before (not 403) and that `credits_write` now shuts.
+        before = _before()
+        shut = {shape for shape, person in self.people.items()
+                if person.is_active and before[shape][A110A_CREDIT_WRITES[0]] != 403
+                and not st.opens_door(person, 'credits_write')}
+        self.assertEqual(shut, set(A110A_SHUT_AT_THE_DOOR))
         # …and the mixed shapes sit where the derivation says.
         self.assertEqual(st.tables(self.people['qc_spending']), ('admins', 'reviewers'))
         self.assertEqual(st.tables(self.people['reviewer_payments_check']), ('admins', 'reviewers'))
@@ -333,7 +353,8 @@ def _shape_test(shape):
             return
         before = _before()[shape]
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
-                    **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before)}
+                    **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
+                    **a110a_moved_cells(shape, before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -354,7 +375,8 @@ def _expected_row(shape):
     """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
-           **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before)}
+           **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
+           **a110a_moved_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row
@@ -416,16 +438,18 @@ class CreditDoors(TestCase):
         client = authed_client(self.rohini)
         url = '/api/v1/admin/scholarship/credits/'
         self.assertEqual(client.get(url).status_code, 200)
+        # A1.10a (TD-497): record and cancel are refused at their own door (`credits_write`, 403) before the
+        # service; the sign still reaches the service, which refuses her by step (400 wrong_role).
         r = client.post(url, {'sponsor_id': self.sponsor.pk, 'programme_id': self.programme.pk,
                               'amount': '100', 'external_reference': 'T1-1'}, format='json')
-        self.assertEqual((r.status_code, r.json().get('code')), (400, 'wrong_role'))
+        self.assertEqual(r.status_code, 403)
         draft = credit_service.record_admin_credit(sponsor=self.sponsor, programme=self.programme,
                                                    amount=Decimal('100'), external_reference='T1-2',
                                                    admin=self.maker)
         r = client.post(f'{url}{draft.pk}/sign/', {'typed_name': self.rohini.name}, format='json')
         self.assertEqual((r.status_code, r.json().get('code')), (400, 'wrong_role'))
         r = client.post(f'{url}{draft.pk}/cancel/', {}, format='json')
-        self.assertEqual((r.status_code, r.json().get('code')), (400, 'wrong_role'))
+        self.assertEqual(r.status_code, 403)
         draft.refresh_from_db()
         self.assertEqual(draft.status, 'draft')
 

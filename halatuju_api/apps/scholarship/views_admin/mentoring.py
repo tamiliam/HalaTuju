@@ -15,6 +15,7 @@ the file is refused this tab (403) — mentors are the Mentors page's people. A 
 refuses every write (409 `file_closed`). One class per url shape (lessons, Billing 2026-10-29).
 """
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import mentoring, mentoring_read
@@ -47,7 +48,8 @@ class _MentoringBase(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return None, None, err
-        if not mentoring.may_act(admin):
+        # TD-498 (A1.10a): the tab's GET asks `mentoring.view`; every action `mentoring.edit`.
+        if not (mentoring.may_read if request.method in SAFE_METHODS else mentoring.may_act)(admin):
             return None, None, self._deny_role()
         return app, admin, None
 

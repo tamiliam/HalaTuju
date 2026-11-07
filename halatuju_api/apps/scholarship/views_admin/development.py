@@ -16,6 +16,7 @@ import logging
 
 from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import development as svc
@@ -53,7 +54,9 @@ class _DevelopmentBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not svc.may_make(admin):
+        # TD-498 (A1.10a): a read (lists, progress, CSV, a signed download link) asks `development.view`;
+        # a write `development.edit`.
+        if not (svc.may_read if request.method in SAFE_METHODS else svc.may_make)(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -300,6 +303,6 @@ class AdminScholarGrowthView(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        if not svc.may_make(admin):
+        if not svc.may_read(admin):        # TD-498 (A1.10a): a read
             return self._deny_role()
         return Response(development_progress.scholar_file_payload(app))

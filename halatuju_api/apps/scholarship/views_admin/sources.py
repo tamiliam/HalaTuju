@@ -5,6 +5,7 @@ package: every name below is re-exported from `views_admin/__init__.py`, so `url
 and every importer are unchanged.
 """
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from apps.courses import staff_tables
@@ -181,17 +182,27 @@ class _SourcesBase(_AdminBase):
     writes here (list + PATCH share it), so it asks `.edit`, which implies `.view` (P1's convention,
     TD-498 splits it). Same holders as T1's `may_do_admin_work`: super, org_admin, the `admin` label;
     finance and Admins-by-key refused (parity test `test_team_tables_t5c_doors`). Every subclass rides
-    this one door: Sources, Partner emails (`org_emails.py`) and the witness override (`lifecycle.py`)."""
+    this one door: Sources, Partner emails (`org_emails.py`) and the witness override (`lifecycle.py`).
+
+    A1.10a (TD-498): a READ (GET / HEAD / OPTIONS) asks `sources.view` (`may_read`); every write still
+    asks `sources.edit` (`may_open`). Today both keys have the same holders, so nobody moves; once T5g
+    lets a lead tick `sources.view` alone, that person reads the pages and is refused the writes."""
 
     @staticmethod
     def may_open(admin):
         return staff_tables.opens_door(admin, 'sources')
 
+    @staticmethod
+    def may_read(admin):
+        return staff_tables.opens_door(admin, 'sources_read')
+
     def _sources_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not _SourcesBase.may_open(admin):   # named, so no subclass's own `may_open` can replace it
+        # Named, so no subclass's own `may_open` can replace it.
+        door = _SourcesBase.may_read if request.method in SAFE_METHODS else _SourcesBase.may_open
+        if not door(admin):
             return None, self._deny_role()
         return admin, None
 

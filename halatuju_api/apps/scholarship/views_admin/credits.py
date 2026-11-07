@@ -34,13 +34,28 @@ class _CreditsBase(_AdminBase):
     # by an admin key (a READ: recording, signing and voiding stay on the role, in `sponsorship`).
     #
     # Team tables T5c (P2): the READ screen (the ledger, GET) asks the v2 key `sponsors.view` (`may_read`;
-    # same holders, parity test `test_team_tables_t5c_doors`). The three WRITE doors — record (POST
-    # credits/), sign, cancel — move money and stay on the union door `may_read_org` until T5d (money),
-    # TD-497.
+    # same holders, parity test `test_team_tables_t5c_doors`).
+    #
+    # A1.10a (TD-497, RD-03): the three WRITE doors leave the org-read union door. Record and cancel ask
+    # `credits_write` = `sponsors.edit` — exactly who the service admits (record: the `admin` label or a
+    # super; cancel: also the org admin; the lead tier holds every key). Sign asks `credits_sign` =
+    # `sponsors.view`: it admits every signer (maker, checker, approver) and `sponsorship.sign_admin_credit`
+    # refuses the wrong step, as before; `sponsors.view` has the same holders as the old union door (the
+    # Admins table, the lead, a super). Nobody who could act before is refused. Finance and a person at
+    # Admins by a key, whom the service always refused on record / cancel, now get 403 at the door
+    # instead of 400 `wrong_role`.
 
     @staticmethod
     def may_read(admin):
         return staff_tables.opens_door(admin, 'credits_read')
+
+    @staticmethod
+    def may_write(admin):
+        return staff_tables.opens_door(admin, 'credits_write')
+
+    @staticmethod
+    def may_sign(admin):
+        return staff_tables.opens_door(admin, 'credits_sign')
 
     def _credits_gate(self, request, door):
         admin = self.get_admin(request)
@@ -55,8 +70,12 @@ class _CreditsBase(_AdminBase):
         return self._credits_gate(request, _CreditsBase.may_read)
 
     def _credits_admin(self, request):
-        """The money-writing doors (record, sign, cancel): T1's union door, untouched until T5d."""
-        return self._credits_gate(request, staff_tables.may_read_org)
+        """Record and cancel: `sponsors.edit` (A1.10a, TD-497)."""
+        return self._credits_gate(request, _CreditsBase.may_write)
+
+    def _credits_signer(self, request):
+        """Sign: `sponsors.view`; the service decides the step (A1.10a, TD-497)."""
+        return self._credits_gate(request, _CreditsBase.may_sign)
 
     def _credit_qs(self, admin):
         """Every credit visible to this admin — fenced by the programme's organisation."""
@@ -154,7 +173,7 @@ class AdminWalletCreditSignView(_CreditsBase):
     and lets the service refuse the wrong step (exactly as AdminPaymentRunSignView does)."""
 
     def post(self, request, pk):
-        admin, err = self._credits_admin(request)
+        admin, err = self._credits_signer(request)
         if err:
             return err
         credit = self._credit_for(admin, pk)

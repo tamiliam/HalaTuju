@@ -12,6 +12,7 @@ One class per url shape. Each write leaves an AUDIT line; nothing is written on 
 import logging
 
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import announcements as svc
@@ -38,7 +39,8 @@ class _AnnouncementsBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not svc.may_post(admin):
+        # TD-498 (A1.10a): a read asks `announcements.view`, a write `announcements.edit`.
+        if not (svc.may_read if request.method in SAFE_METHODS else svc.may_post)(admin):
             return None, self._deny_role()
         return admin, None
 

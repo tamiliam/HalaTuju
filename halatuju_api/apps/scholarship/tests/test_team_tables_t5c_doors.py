@@ -3,8 +3,9 @@ answers exactly what its T1 rule answered, for every live shape the access matri
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T5c); decisions.md "Team tables T5c" (lead rulings
 R1-R6 and the door -> key table). P2 adds the Sources door (`_SourcesBase.may_open`, which Sources,
-Partner emails and the witness override all ride) and the credit ledger READ (`_CreditsBase.may_read`); the
-three credit doors that write money stay on the union door until T5d (asserted below). The HTTP proof is the access matrix (`test_team_tables_matrix`), run
+Partner emails and the witness override all ride) and the credit ledger READ (`_CreditsBase.may_read`). A1.10a
+(TD-497, TD-498) adds the last union-door callers (roster, Mentors list, Admin emails, credit record / cancel /
+sign) and each page's `.view` read door, every one at its T1 holders. The HTTP proof is the access matrix (`test_team_tables_matrix`), run
 UNCHANGED against its frozen fixture; this file proves each door FUNCTION, so a conversion that happens
 to be unreachable by the matrix's probes still cannot move.
 
@@ -100,23 +101,39 @@ def _doors(app):
         'mentoring.may_assign': (lambda a: mentoring.may_assign(a, app), assign(old_admin_work),
                                  ('mentoring.edit',)),
         'mentor_invite.may_invite': (mentor_invite.may_invite, old_lead_invite, ('invitations.edit',)),
-        'mentor_invite.may_read': (mentor_invite.may_read, old_admin_work, v2.ADMIN_WORK_V2),
+        # A1.10a (TD-497): the Mentors list on `mentoring.view`, NOT `team.view` (finance holds that).
+        'mentor_invite.may_read': (mentor_invite.may_read, old_admin_work, ('mentoring.view',)),
         'source_invite.may_invite': (source_invite.may_invite, old_lead_invite, ('invitations.edit',)),
         'sponsor_terms': (_SponsorTermsBase.may_author, old_admin_work, ('sponsors.edit',)),
         'sponsor_emails': (_SponsorEmailsBase.may_open, old_admin_work, ('sponsors.edit',)),
-        'team_admin_emails': (AdminTeamAdminEmailsView.may_open, old_admin_work, v2.ADMIN_WORK_V2),
+        'team_admin_emails': (AdminTeamAdminEmailsView.may_open, old_admin_work, ('sources.view',)),
         # P2 — T1's `_SourcesBase` asked `may_do_admin_work`; the credit screens asked `may_read_org`.
         'sources': (_SourcesBase.may_open, old_admin_work, ('sources.edit',)),
         'credits.may_read': (_CreditsBase.may_read, old_read_org, ('sponsors.view',)),
+        # ── A1.10a (TD-497): the last union-door callers, each on its own keys, the same holders. ──
+        'team_roster': (lambda a: st.opens_door(a, 'team_roster'), old_admin_work,
+                        ('team.view', 'mentoring.view')),
+        # Record / cancel: the DOOR now refuses whoever the service refused by role (T1's admin-work set);
+        # T1's door was `may_read_org` and the service answered 400 wrong_role to the rest.
+        'credits.may_write': (_CreditsBase.may_write, old_admin_work, ('sponsors.edit',)),
+        'credits.may_sign': (_CreditsBase.may_sign, old_read_org, ('sponsors.view',)),
+        # ── A1.10a (TD-498): each page's read on its `.view` (today held by exactly its `.edit` holders). ──
+        'announcements.may_read': (announcements.may_read, old_admin_work, ('announcements.view',)),
+        'surveys.may_read': (surveys.may_read, old_admin_work, ('surveys.view',)),
+        'development.may_read': (development.may_read, old_admin_work, ('development.view',)),
+        'mentoring.may_read': (mentoring.may_read, old_admin_work, ('mentoring.view',)),
+        'sources.may_read': (_SourcesBase.may_read, old_admin_work, ('sources.view',)),
     }
 
 
 #: The doors whose key is the ADMIN WORK set (R1): the `admin` preset opens each, finance none.
 ADMIN_WORK_DOORS = ('staff_tables.may_do_admin_work', 'announcements.may_post', 'surveys.may_make',
                     'development.may_make', 'mentoring.may_act', 'mentoring.may_assign',
-                    'mentor_invite.may_read', 'sponsor_terms', 'sponsor_emails', 'team_admin_emails', 'sources')
+                    'mentor_invite.may_read', 'sponsor_terms', 'sponsor_emails', 'team_admin_emails', 'sources',
+                    'team_roster', 'credits.may_write', 'announcements.may_read', 'surveys.may_read',
+                    'development.may_read', 'mentoring.may_read', 'sources.may_read')
 READ_DOORS = ('staff_tables.may_read_org', 'surface_gates.may_read_sponsors', 'surface_gates.may_read_team',
-              'credits.may_read')
+              'credits.may_read', 'credits.may_sign')
 LEAD_DOORS = ('mentor_invite.may_invite', 'source_invite.may_invite')
 
 
@@ -240,31 +257,43 @@ class DoorParity(TestCase):
         self.assertFalse(mentoring.may_assign(self.people['admin'], other_file))
         self.assertTrue(mentoring.may_assign(self.people['super'], other_file))
 
-    def test_the_credit_doors_that_write_money_stay_on_the_union_door(self):
-        # P2: only the ledger READ moved to `sponsors.view`; record / sign / cancel are T5d's (money).
+    def test_the_credit_doors_each_ask_their_own_key_never_the_union(self):
+        # A1.10a (TD-497): record / cancel ask `credits_write` (`sponsors.edit`), sign asks `credits_sign`
+        # (`sponsors.view`; the service then decides the step), the ledger read `credits_read`. None asks
+        # a union door.
         base = _CreditsBase()
-        with mock.patch.object(_CreditsBase, 'get_admin', return_value=self.people['finance']),                 mock.patch('apps.courses.staff_tables.may_read_org', return_value=False) as union:
-            admin, err = base._credits_admin(None)
-            self.assertIsNone(admin)
-            self.assertEqual(err.status_code, 403)
-            self.assertEqual(union.call_count, 1)
-            admin, err = base._credits_reader(None)
-            self.assertIsNone(err)
-            self.assertEqual(admin, self.people['finance'])
-            self.assertEqual(union.call_count, 1)    # the read never asked the union door
+        with mock.patch('apps.courses.staff_tables.may_read_org') as read_union, \
+                mock.patch('apps.courses.staff_tables.may_do_admin_work') as work_union:
+            for shape, write, sign in (('finance', False, True), ('reviewer_admin_keys', False, True),
+                                       ('admin', True, True), ('org_admin', True, True), ('super', True, True),
+                                       ('reviewer', False, False), ('qc', False, False)):
+                with self.subTest(shape=shape), \
+                        mock.patch.object(_CreditsBase, 'get_admin', return_value=self.people[shape]):
+                    self.assertEqual(base._credits_admin(None)[1] is None, write)
+                    self.assertEqual(base._credits_signer(None)[1] is None, sign)
+                    self.assertEqual(base._credits_reader(None)[1] is None, sign)
+            self.assertEqual((read_union.call_count, work_union.call_count), (0, 0))
 
     def test_every_source_surface_rides_the_one_sources_door(self):
+        # A1.10a (TD-498): a GET asks `sources_read` (`sources.view`), a write `sources` (`sources.edit`).
         from apps.scholarship.views_admin.lifecycle import AdminApplicationWitnessView
         from apps.scholarship.views_admin.org_emails import AdminPartnerEmailDetailView, AdminPartnerEmailsView
         from apps.scholarship.views_admin.sources import AdminSourceDetailView, AdminSourcesView
         for view in (AdminSourcesView, AdminSourceDetailView, AdminPartnerEmailsView,
                      AdminPartnerEmailDetailView, AdminApplicationWitnessView):
-            with self.subTest(view=view.__name__):
-                self.assertTrue(issubclass(view, _SourcesBase))
-                with mock.patch.object(view, 'get_admin', return_value=self.people['finance']):
-                    admin, err = view()._sources_admin(None)
-                self.assertIsNone(admin)
-                self.assertEqual(err.status_code, 403)
-                with mock.patch.object(view, 'get_admin', return_value=self.people['admin']):
-                    admin, err = view()._sources_admin(None)
-                self.assertIsNone(err)
+            for method in ('GET', 'POST', 'PATCH', 'DELETE'):
+                with self.subTest(view=view.__name__, method=method):
+                    self.assertTrue(issubclass(view, _SourcesBase))
+                    request = SimpleNamespace(method=method)
+                    with mock.patch.object(view, 'get_admin', return_value=self.people['finance']):
+                        admin, err = view()._sources_admin(request)
+                    self.assertIsNone(admin)
+                    self.assertEqual(err.status_code, 403)
+                    with mock.patch.object(view, 'get_admin', return_value=self.people['admin']):
+                        admin, err = view()._sources_admin(request)
+                    self.assertIsNone(err)
+                    expect = 'sources_read' if method == 'GET' else 'sources'
+                    with mock.patch('apps.courses.staff_tables.opens_door', return_value=False) as door, \
+                            mock.patch.object(view, 'get_admin', return_value=self.people['admin']):
+                        view()._sources_admin(request)
+                    self.assertEqual(door.call_args[0][1], expect)

@@ -29,6 +29,16 @@ export const DOOR_KEYS = {
   sponsor_emails: ['sponsors.edit'],
   sources: ['sources.edit'],
   credits_read: ['sponsors.view'],
+  // A1.10a (TD-497, TD-498): the last union-door callers, and each page's read on its `.view`.
+  team_roster: ['team.view', 'mentoring.view'],
+  mentors_read: ['mentoring.view'],
+  credits_write: ['sponsors.edit'],
+  credits_sign: ['sponsors.view'],
+  announcements_read: ['announcements.view'],
+  surveys_read: ['surveys.view'],
+  development_read: ['development.view'],
+  mentoring_read: ['mentoring.view'],
+  sources_read: ['sources.view'],
 } as const satisfies Record<string, readonly string[]>
 
 export type DoorName = keyof typeof DOOR_KEYS

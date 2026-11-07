@@ -88,3 +88,36 @@ class TestAnOrglessSuperNamesAGift(TestCase):
         # …and another organisation's gift is still a 404 for them, never a 400.
         self.assertEqual(self._get(self.org_admin, RUNS, f'?programme={self.gifts["b"].code}')
                          .status_code, 404)
+
+
+OVERVIEW = 'scholarship/programme-overview/'
+MONEY_KEYS = ('money', 'money_series')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   BURSARY_AGREEMENT_ENABLED=False)
+class TestTD336TheOverviewWithholdsPooledMoney(TestCase):
+    """TD-336 (A1.10a): the Programme Overview reads across gifts by design, so it is not a 400
+    like Payments: an organisation-less super who names no gift gets the page WITHOUT the money
+    sections (absent, never zeroed). Naming a gift brings them back; everybody else is unchanged."""
+    setUpTestData = classmethod(TestAnOrglessSuperNamesAGift.setUpTestData.__func__)
+    _get = TestAnOrglessSuperNamesAGift._get
+
+    def test_no_gift_serves_the_page_without_money(self):
+        body = self._get(self.platform, OVERVIEW).json()
+        for key in MONEY_KEYS:
+            self.assertNotIn(key, body)
+            self.assertNotIn(key, body['sections'])
+        self.assertIn('funnel', body['sections'])
+
+    def test_naming_a_gift_brings_the_money_back(self):
+        body = self._get(self.platform, OVERVIEW, f'?programme={self.gifts["a"].code}').json()
+        self.assertEqual(body['money']['students'], 1)
+        self.assertIn('money_series', body)
+
+    def test_a_super_with_an_organisation_and_an_org_admin_are_unchanged(self):
+        for admin in (self.org_super, self.org_admin):
+            with self.subTest(role=admin.role):
+                body = self._get(admin, OVERVIEW).json()
+                for key in MONEY_KEYS:
+                    self.assertIn(key, body)

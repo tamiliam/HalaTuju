@@ -88,15 +88,21 @@ class TestChangeRole(TestCase):
         target = make_admin('finance', owning_org=self.org)
         r = _role(self.org_admin, target, 'admin', dry_run=True)
         self.assertEqual(r.status_code, 200, r.content[:300])
-        self.assertEqual((r.json()['consequence'], r.json()['dry_run']), ('finance_check_off', True))
+        # TD-475 (A1.10a): the switch keeps payments_approve, so the credit check does not move.
+        self.assertEqual((r.json()['consequence'], r.json()['dry_run']), (None, True))
         target.refresh_from_db()
         self.assertEqual(target.role, 'finance')
 
-    def test_the_last_finance_admin_becoming_admin_switches_the_check_off(self):
+    def test_the_last_finance_admin_becoming_admin_keeps_the_check_armed(self):
+        # TD-475 (A1.10a): the credit check turns on the KEY payments_approve, which the switch KEEPS (T2),
+        # so the person stays the checker, exactly as they stay the payment-run approver. (While the
+        # finance ROLE was the rule, this switch disarmed the credit check but not the run approval.)
         target = make_admin('finance', owning_org=self.org)
         r = _role(self.org_admin, target, 'admin')
-        self.assertEqual(r.json()['consequence'], 'finance_check_off')
-        self.assertFalse(payments.credit_check_required(self.org))
+        self.assertIsNone(r.json()['consequence'])
+        target.refresh_from_db()
+        self.assertEqual(target.role, 'admin')
+        self.assertTrue(payments.credit_check_required(self.org))
 
     def test_with_another_finance_admin_there_is_no_consequence(self):
         make_admin('finance', owning_org=self.org)

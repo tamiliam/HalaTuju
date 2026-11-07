@@ -497,8 +497,8 @@ class TestReviewFixes(TestCase):
             f'/api/v1/admin/admins/{target.pk}/role/', {'role': role, 'dry_run': True}, format='json')
 
     def test_change_role_moves_no_key_so_names_no_approval_change(self):
-        # Team tables T2: the switch keeps the keys, so the payment chain does not move; only the CREDIT
-        # check (a finance-ROLE rule) still does, as before. Into finance is refused.
+        # Team tables T2: the switch keeps the keys, so the payment chain does not move; since TD-475
+        # (A1.10a) neither does the CREDIT check (the key payments_approve). Into finance is refused.
         adm = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
         self.assertEqual(self._role(adm, 'finance').json()['code'], 'label_retired')
         fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
@@ -511,7 +511,9 @@ class TestReviewFixes(TestCase):
         body = self._role(fin, 'admin').json()
         self.assertEqual(body['consequences'], [])                    # no key gained (no see_all)
         self.assertFalse(body['permissions_reset'])
-        self.assertEqual(body['consequence'], 'finance_check_off')   # the CREDIT check still moves
+        # TD-475 (A1.10a): a finance LABEL without payments_approve never armed the check, so leaving
+        # the label moves nothing (it said finance_check_off while the role was the rule).
+        self.assertIsNone(body['consequence'])
 
     # 5 (LOW) — a reopened decision is a held case.
     def test_a_reopened_decision_counts_as_a_held_case(self):

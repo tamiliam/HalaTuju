@@ -9,16 +9,33 @@ own because `sponsorship.py` sits at its `oversize_files` allowance.
 The chain (see `sign_admin_credit`'s docstring for the why):
 
   * DRAFT -> the MAKER (role ``admin``, or super);
-  * ADMIN_SIGNED with finance ACTIVE -> only the CHECKER (role ``finance``, or super); an org_admin is
-    told ``finance_check_required``;
+  * ADMIN_SIGNED with finance ACTIVE -> only the CHECKER (a holder of ``payments_approve``, or super); an
+    org_admin is told ``finance_check_required``;
   * ADMIN_SIGNED with finance dormant, or FINANCE_CHECKED -> the APPROVER (``org_admin``, or super);
   * and nobody signs twice (``same_signer``, by email) — except the maker's step, which has no earlier
     signature to collide with.
+
+TD-475 (A1.10a, 2026-11-07): the CHECKER seat is the permission ``payments_approve`` (`CHECKER_KEY`), no
+longer the retired ``finance`` ROLE label. Owner rulings 4 and 8 made a finance person "an Admin with
+``payments_approve``", so a new finance person now both arms and performs the credit check, as they
+already do for payment runs. Every existing ``finance`` row holds it by its preset, so today's checkers
+keep the seat; the maker and approver steps are unchanged.
 """
+from apps.courses import staff_permissions
 from .models import Donation
 
 #: The statuses still waiting for a signature (`sign_admin_credit`'s ``bad_state`` is everything else).
 SIGNING = (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED, Donation.STATUS_FINANCE_CHECKED)
+
+#: TD-475: the key that IS the credit checker seat, and whose ACTIVE holder in an organisation arms the
+#: check (`payments_chain.credit_check_required`). A super passes it but is never a holder.
+CHECKER_KEY = 'payments_approve'
+
+
+def holds_checker_seat(admin):
+    """True when `admin` (a team member, never a super) holds `CHECKER_KEY`."""
+    return (admin is not None and not getattr(admin, 'is_super', False)
+            and staff_permissions.holds(admin, CHECKER_KEY))
 
 
 def collected_signer_emails(credit):
@@ -43,7 +60,7 @@ def step_refusal(credit, admin, needs_finance):
     if credit.status == Donation.STATUS_DRAFT:
         return None if (is_super or admin.role == 'admin') else 'wrong_role'
     if credit.status == Donation.STATUS_ADMIN_SIGNED and needs_finance:
-        if not (is_super or admin.role == 'finance'):
+        if not (is_super or holds_checker_seat(admin)):        # TD-475: the key, not the role
             return 'finance_check_required' if admin.role == 'org_admin' else 'wrong_role'
     elif not (is_super or admin.role == 'org_admin'):
         return 'wrong_role'
@@ -53,9 +70,9 @@ def step_refusal(credit, admin, needs_finance):
 
 
 def checks_credits(admin):
-    """Does this person hold the credit chain's CHECKER seat (role ``finance``)? The Overview's
-    `wallet_credits` card is theirs (owner, 2026-11-05)."""
-    return getattr(admin, 'role', '') == 'finance'
+    """Does this person hold the credit chain's CHECKER seat (`CHECKER_KEY`, TD-475; was role
+    ``finance``)? The Overview's `wallet_credits` card is theirs (owner, 2026-11-05)."""
+    return holds_checker_seat(admin)
 
 
 def waiting_for(admin, credits):

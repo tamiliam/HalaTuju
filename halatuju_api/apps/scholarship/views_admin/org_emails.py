@@ -327,15 +327,15 @@ class AdminTeamAdminEmailsView(_SponsorEmailsBase):
 
     The list is `admin_email_catalogue.CATALOGUE` (keys only; the web words each row). It carries NO
     organisation data and no address — the same rows for every tenant — so there is nothing to fence; it is
-    gated to the people who read the reviewer templates beside it (`staff_tables.may_do_admin_work`, the
-    partner-emails gate), never wider.
+    gated to the people who read the partner emails beside it, never wider.
 
-    Team tables T5c P1: so it does NOT take the sponsor-email key above — it stays on the admin-work union
-    door, in lockstep with the partner emails (`_SourcesBase`), until those move to their own key.
+    A1.10a (TD-497): it does NOT take the sponsor-email key above (finance and Admins-by-key hold
+    `sponsors.view`). It asks `sources_read` = `sources.view`, the very door the partner emails' READ asks
+    (`_SourcesBase`, TD-498), so the two stay in lockstep. Same holders as T1's admin-work union door.
     """
     @staticmethod
     def may_open(admin):
-        return staff_tables.may_do_admin_work(admin)
+        return staff_tables.opens_door(admin, 'sources_read')
 
     def get(self, request):
         admin, err = self._emails_admin(request)

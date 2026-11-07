@@ -10,7 +10,8 @@ that rule, so the card and the page it opens can never disagree:
   Admins table (`staff_tables.in_admins`) with an Applications scope of 'all':
       `unassigned`, `overdue` (+ `due_soon`), `awaiting_qc`        <- `programme_overview.attention`
   `surface_gates.may_read_sponsors`:  `sponsors_to_vet`             <- `pending_sponsor_count`
-  the `org_read` door (`may_read_org`): `invitations`               <- `invitations.waiting_counts`
+  `surface_gates.may_read_team`:      `invitations`                 <- `invitations.waiting_counts`
+                                      (the Invitations page's own door, TD-504; was `org_read`)
   `payments_chain.may_read`:          `payment_runs` waiting for THIS person's step <- `next_step_for`
   the credit CHECKER seat:            `wallet_credits` waiting for THEIR signature  <- `credit_steps`
   Requests live + `requests_role`:    `requests`                    <- `org_requests_queue.needs_action_q`
@@ -141,7 +142,7 @@ def pending_for(admin, *, b40_scope, now=None):
             _qc_card(cards, scope, admin, now)
     if surface_gates.may_read_sponsors(admin):
         cards['sponsors_to_vet'] = {'count': pending_sponsor_count()}
-    if staff_tables.may_read_org(admin):
+    if surface_gates.may_read_team(admin):     # TD-504 (A1.10a): the Invitations page's own door
         cards['invitations'] = {'count': _invitations(admin)}
     if payments_chain.may_read(admin):
         cards['payment_runs'] = {'count': _payment_runs(admin)}

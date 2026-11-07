@@ -149,7 +149,7 @@ no access moving for any shape.
   |---|---|---|
   | `surface_gates.may_read_sponsors` (Sponsors list / detail, sponsorships) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
   | `surface_gates.may_read_team` (People / Reviewers / Invitations) | `team.view` + `invitations.view` | same |
-  | `staff_tables.may_read_org` (union; credit screens still call it) | `ORG_READ_V2` | same |
+  | `staff_tables.may_read_org` (union; no door calls it since A1.10a) | `ORG_READ_V2` | same |
   | `announcements.may_post` | `announcements.edit` | super, org_admin, admin |
   | `surveys.may_make` (+ scholar surveys tab) | `surveys.edit` | same |
   | `development.may_make` (+ scholar growth tab) | `development.edit` | same |
@@ -160,6 +160,12 @@ no access moving for any shape.
   | `mentor_invite.may_invite`, `source_invite.may_invite` | `invitations.edit` (lead-only) | super, org_admin |
   | **P2:** Sources, Partner emails, witness override (`_SourcesBase.may_open`) | `sources.edit` | super, org_admin, admin |
   | **P2:** credit ledger read, GET `credits/` (`_CreditsBase.may_read`) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
+  | **A1.10a:** team roster `admin/admins/` (`team_roster`) | `team.view` + `mentoring.view` | super, org_admin, admin |
+  | **A1.10a:** Mentors list (`mentor_invite.may_read`, `mentors_read`) | `mentoring.view` | super, org_admin, admin |
+  | **A1.10a:** Team -> Emails -> Admin emails (`sources_read`) | `sources.view` | super, org_admin, admin |
+  | **A1.10a:** credit record / cancel (`credits_write`) | `sponsors.edit` | super, org_admin, admin (finance, Admins-by-key now 403 at the door, was 400 `wrong_role`) |
+  | **A1.10a:** credit sign (`credits_sign`; the step is the service's) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
+  | **A1.10a (TD-498):** GET of Announcements / Surveys / Development / scholar Mentoring / Sources (`<page>_read`) | `<page>.view` | super, org_admin, admin (writes stay on `.edit`) |
 
 - **R1** each admin-work page opens by its own catalogue key, reproducing the `admin` preset exactly; finance holds
   `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-497):** the Mentors list
@@ -168,6 +174,13 @@ no access moving for any shape.
   -> Admin emails and the credit screens stay on the union doors too (their files are outside P1).
 - **P2 (same day):** Sources and the credit ledger read moved (table above). The credit doors that write money
   (record, sign, cancel) stay on `may_read_org` for T5d. Sources keeps ONE gate for read and write, so `.edit`.
+- **A1.10a (2026-11-07, audit RD-03, TD-497):** the union doors are retired as gates — no production door calls
+  `may_read_org` / `may_do_admin_work` (both kept as named sets; `test_no_door_calls_a_union_helper` refuses a new
+  call). Lead's calls, each the smallest that keeps today's holders: the Mentors list on `mentoring.view` (not
+  `team.view`, which would open it to finance); the roster on `team.view` + `mentoring.view`; credit writes on
+  `sponsors.edit`, sign on `sponsors.view`. TD-498 split the reads onto `.view` (table above) except the sponsor
+  terms / sponsor emails, whose `sponsors.view` would widen them. TD-475: the wallet-credit checker seat is the
+  existing key `payments_approve` (`credit_steps.CHECKER_KEY`), not the `finance` label.
 - **R2** the graduation-messages list: **not converted in P2** — it admits super + the `reviewer` / `admin` labels and
   refuses the org admin, who holds every key, so no single key reproduces it (closest: the `review` hat, 7 shapes
   move). Lead ruling needed (TD-496). **R3** requests, billing, contracts,
