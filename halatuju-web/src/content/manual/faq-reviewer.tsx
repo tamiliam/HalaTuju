@@ -208,8 +208,9 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>The student stops responding, or tells me they no longer want the scholarship. What do I do?</>,
-      a: <>Write it in your <strong>interview findings</strong> (one line is enough, such as &ldquo;Did not
-        attend twice&rdquo;), select <strong>Decline</strong> and save. The decline goes to <strong>Quality
+      a: <>Write it in your <strong>interview findings</strong>, such as &ldquo;Did not attend twice&rdquo;.
+        Answer or delete each agenda item, and mark the four facts Pass or Fail. Then select
+        <strong> Decline</strong> and submit. The decline goes to <strong>Quality
         check</strong> like any other. Nobody can decline a case at this stage without QC, and it cannot be
         closed instead: Close works before an award only at Submitted and Recommended.</>,
     },
