@@ -1,6 +1,7 @@
 # Invitations — five tabs that read alike (roadmap, 2026-11-08)
 
-Status: **DRAFT — awaiting owner approval.** Branch `invitations-consistency` (from main `6c58efae`), not pushed.
+Status: **APPROVED by the owner 2026-11-08** ("Proceed"), with open points A–D as recommended. Branch
+`invitations-consistency` (from main `6c58efae`); pushed to the branch only when built — never to main.
 
 ## Why
 The owner, on Organisation → Invitations (2026-11-08): *"There are a number of inconsistencies. Sponsor gift
@@ -41,7 +42,7 @@ accept in `views_admin/sponsors`). Reviewer gifts live in `reviewer_gifts` (`cou
    "Signed in" table leaves Invitations (the 2026-09-09 "waiting only" rule now holds on every tab).
 5. Differences 1–6 are tidied to one form and one waiting table (no ruling needed; the plan below says which way).
 
-## Open points (lead recommendations — confirm with the roadmap)
+## Open points (lead recommendations — approved with the roadmap, 2026-11-08)
 - **A. A source with a WAITING invitation** (ruling 3 names only "joined"). Recommend: the server refuses any second
   ACTIVE person (waiting or joined), so "one person" really is one; the dropdown hides joined sources and shows a
   waiting one greyed, "Invited, waiting — resend or cancel below". A switched-off person of the same source may still be
