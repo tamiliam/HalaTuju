@@ -4631,6 +4631,8 @@
         "variableNote": "Varies by institution and field — confirm at interview.",
         "practicalNote": "A practical/internship term may add travel costs.",
         "none": "Pathway not chosen yet — no estimate. Use the student's stated needs.",
+        "studyMonths": "study months",
+        "continuingNote": "Continuing student: estimated for the years left.",
         "pathway": {
           "stpm": "STPM (Form 6) — after free schooling. Covers travel, meals, tuition classes.",
           "matric": "Matrikulasi — after the BSHP allowance, hostel & teaching. Mostly meals + small fees.",
@@ -4638,6 +4640,13 @@
           "poly": "Politeknik diploma — after the PTPTN loan + cheap provided hostel. Mostly meals + misc.",
           "university": "Public-university diploma — after the PTPTN loan. Covers meals, hostel & fees.",
           "pismp": "PISMP — after the IPG allowance & hostel. Covers meals, hostel top-up, travel.",
+          "degree": "Public-university degree: after the PTPTN loan. Covers living costs (RM1,200 × 10 months a year) & fees.",
+          "mara_diploma": "MARA diploma, after the MARA education loan. Covers meals, hostel & fees.",
+          "ilkbs": "IKBN / IKTBN: free tuition & hostel, after the ~RM100 monthly allowance. Mostly meals + small costs.",
+          "iljtm": "ILJTM: free tuition & hostel, no allowance. Covers meals + small costs.",
+          "kkom": "Kolej Komuniti: free tuition & hostel, no allowance. Covers meals + small costs.",
+          "mara_cert": "MARA skills certificate: free tuition & hostel, no allowance assumed. Covers meals + small costs.",
+          "tvet": "TVET institute: free tuition & hostel, no allowance assumed. Covers meals + small costs.",
           "unknown": "Not chosen"
         }
       },

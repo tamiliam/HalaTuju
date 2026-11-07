@@ -140,12 +140,16 @@ export function RateAndEstimate({
                     ≈ RM {fe.total.toLocaleString('en-US')}
                   </p>
                   <p className="text-xs text-ground-500">
-                    ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t('admin.scholarship.estimate.months')}
+                    {/* A degree counts STUDY months (10 a year), not calendar months. */}
+                    ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t(fe.study_months ? 'admin.scholarship.estimate.studyMonths' : 'admin.scholarship.estimate.months')}
                   </p>
                 </div>
                 <p className="text-sm text-ground-600">
                   {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
                 </p>
+                {fe.continuing && (
+                  <p className="text-xs text-ground-500">{t('admin.scholarship.estimate.continuingNote')}</p>
+                )}
                 {fe.variable && (
                   <p className="mt-2 text-xs text-caution-700">{t('admin.scholarship.estimate.variableNote')}</p>
                 )}

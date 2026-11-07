@@ -48,7 +48,8 @@ an offer read as 'diploma' / 'pismp'), and an intake that asks no higher results
   card with a BLANK `results_kind` (a guessed kind would turn "cannot tell" into "kind matches").
   Once one is on file the card reads it but stays at best Unsure with `UNDECLARED_ON_FILE_CODE`
   (`cap_undeclared`) — also for an application frozen AFTER S3a that requires the upload.
-* **Degree-bound** (`_degree_bound`): `results_route.destination` DEGREE; or, with no catalogue
+* **Degree-bound** (`results_route.degree_bound`, promoted from here 2026-11-07 for the funding
+  estimate and the award rule): `results_route.destination` DEGREE; or, with no catalogue
   `course_id`, the chosen programme's name reads as a degree even under a post-SPM pathway code
   (#251: a stale 'stpm' code over a degree course). `destination()` itself is unchanged.
 """
@@ -114,24 +115,6 @@ def _spm_only(application) -> bool:
     return not is_tertiary(getattr(getattr(application, 'profile', None), 'exam_type', '') or '')
 
 
-def _degree_bound(application) -> bool:
-    """Bound for (or studying for) a university degree: `results_route.destination` DEGREE; or, with
-    no catalogue `course_id` (the catalogue decides when there is one), the chosen programme's NAME
-    reads as a degree even under a post-SPM pathway code (#251: a stale 'stpm' code; the name is the
-    offer's own, autofilled). A UA diploma / PISMP reads 'diploma' / 'pismp'. No document is read: the
-    offer letter's programme was assessed and adds nothing the autofilled name does not carry."""
-    from . import results_route
-    if results_route.destination(application) == results_route.DEGREE:
-        return True
-    prog = getattr(application, 'chosen_programme', None)
-    prog = prog if isinstance(prog, dict) else {}
-    if str(prog.get('course_id') or '').strip():
-        return False
-    name = (prog.get('course_name') or '').strip()
-    from .offer_pathway import detect_pathway_type
-    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
-
-
 def _needs_higher(application) -> bool:
     """SUBMITTED, on an intake that asks higher results (D16c), a programme that asks for results,
     degree-bound, and no higher result already sitting in the SPM card (S4's wrong slip, #43: they
@@ -143,7 +126,7 @@ def _needs_higher(application) -> bool:
         return False
     if requirements.resolve(application, 'document').get('results_slip', 'off') == 'off':
         return False
-    if not _degree_bound(application):
+    if not results_route.degree_bound(application):
         return False
     from .verdict_engine import _latest_doc
     from .wrong_slip import higher_kind

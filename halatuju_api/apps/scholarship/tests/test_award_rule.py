@@ -71,6 +71,32 @@ class TestProposedAmountRule(TestCase):
         app.save(update_fields=['reporting_date'])
         self.assertEqual(award.proposed_award_amount(app), Decimal('3000'))
 
+    def test_degree_bound_under_a_stale_stpm_code_is_2000(self):
+        # #251 (owner decision 7, 2026-11-07): chosen_pathway 'stpm' left over, programme a named
+        # degree, no start year. The bursary is sized by the FUNDED PERIOD: a degree-bound student
+        # is on the 12-month RM2,000 basis, never STPM's 18-month RM3,000 and never the
+        # course_start_unknown stop.
+        app = _app(self.cohort, pathway='stpm', suffix='deg')
+        app.chosen_programme = {'course_name': 'SARJANA MUDA SAINS GUNAAN (SAINS SUMBER ASLI) '
+                                               'DENGAN KEPUJIAN'}
+        app.save(update_fields=['chosen_programme'])
+        self.assertEqual(award.proposed_award_amount(app), Decimal('2000'))
+        self.assertFalse(award.course_start_unknown(app))
+
+    def test_degree_bound_continuing_is_still_2000(self):
+        app = _app(self.cohort, pathway='stpm', suffix='degc',
+                   reporting_date=datetime.date(2025, 6, 10))
+        app.chosen_programme = {'course_name': 'Ijazah Sarjana Muda Sejarah'}
+        app.save(update_fields=['chosen_programme'])
+        self.assertEqual(award.proposed_award_amount(app), Decimal('2000'))
+
+    def test_real_form_six_is_unchanged(self):
+        app = _app(self.cohort, pathway='stpm', suffix='f6', reporting_date=FRESH)
+        app.chosen_programme = {'course_name': 'Tingkatan Enam'}
+        app.save(update_fields=['chosen_programme'])
+        self.assertEqual(award.proposed_award_amount(app), Decimal('3000'))
+        self.assertTrue(award.course_start_unknown(_app(self.cohort, pathway='stpm', suffix='f6u')))
+
     def test_others_are_2000(self):
         for i, pw in enumerate(['matric', 'poly', 'university', 'asasi', 'pismp', '', 'unknown']):
             app = _app(self.cohort, pathway=pw, suffix=f'o{i}')

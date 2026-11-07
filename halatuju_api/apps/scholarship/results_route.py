@@ -110,6 +110,27 @@ def destination(application) -> str:
     return out
 
 
+def degree_bound(application) -> bool:
+    """Bound for (or studying for) a university degree: `destination` DEGREE; or, with no catalogue
+    `course_id` (the catalogue decides when there is one), the chosen programme's NAME reads as a
+    degree even under a post-SPM pathway code (#251: a stale 'stpm' code; the name is the offer's own,
+    autofilled). A UA diploma / PISMP reads 'diploma' / 'pismp'. No document is read: the offer
+    letter's programme was assessed and adds nothing the autofilled name does not carry.
+
+    Promoted from `higher_owed._degree_bound` (2026-11-07, moves only) so the funding estimate
+    (`funding_estimate.classify_pathway`) and the award rule (`award.proposed_award_amount`) ask the
+    same question the higher-results route does."""
+    if destination(application) == DEGREE:
+        return True
+    prog = getattr(application, 'chosen_programme', None)
+    prog = prog if isinstance(prog, dict) else {}
+    if str(prog.get('course_id') or '').strip():
+        return False
+    name = (prog.get('course_name') or '').strip()
+    from .offer_pathway import detect_pathway_type
+    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
+
+
 def _already_passed(application, code) -> bool:
     """A pre-U code (or her own held kind) recorded as the pathway of a TERTIARY holder."""
     from apps.courses.exam_questions import is_tertiary
