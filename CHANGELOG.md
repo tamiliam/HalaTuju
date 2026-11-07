@@ -33,6 +33,11 @@ Branch a113 (not pushed; no migration, no model change beyond a new activity eve
   - Low 1: `cleanup_orphan_blobs.known_paths()` also keeps the signed PDF path held in each `award_withdrawn` activity row's meta, so the withdrawn contract is not deleted as an orphan once a re-signing writes a new path. The log is read through `activity.withdrawn_agreement_pdfs()` (paths only), so `activity.py` stays the log's only reader outside the staff file (the `test_letters` guard).
   - Low 2 (left as it is): the award-email job sends over the network while holding the application lock. Logged as TD-595.
   - Tests: `test_a113_third_review.py` (new; lock-order spies for the lapse job and the parent call, the full withdraw, re-award, preview and sign path, and the orphan sweep).
+- **Fourth review fixes (on ea36e267e; no migration, no money rule changed):**
+  - Med: `contract_scope.template_for_application` still pinned a VOID agreement's template after a re-award. Every reader follows it (the preview, the quiz, `sign_agreement`, which re-pinned it, and `payments._schedule_row`), so a re-awarded student could be quizzed on, sign and be paid under a superseded, possibly archived template. A void agreement now pins nothing, and the gift's active template governs. A binding agreement keeps its pin as before.
+  - Low: the admin application file (`AdminApplicationDetailSerializer.get_bursary_agreement`) serialised the void row as a draft with the old amount. It now uses `agreement_guard.live_agreement`.
+  - Tests: in `test_a113_third_review.py`. Withdraw, archive v1 / activate v2, re-award: the preview and the quiz serve v2, signing refuses `comprehension_stale` until the quiz is retaken on v2, the signed row pins v2, and `_schedule_row` reads v2's row. A binding agreement keeps its pin through a later redeploy. The admin file shows no agreement for a void row. `test_contracts`' pinned-template fixture now signs its agreement, as every real row is (an unsigned, unlinked row is a void one).
+  - Docs: TD-591 raised to high (money) with the owner's ruling of 2026-11-08 (ruling A: the 409 `has_payments` refusal stays; the unpaid-part fix is a sprint of its own, with a required reason type: breach, or the Foundation's fault).
 
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 

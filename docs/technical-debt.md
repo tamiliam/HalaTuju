@@ -386,7 +386,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 - **TD-583** - The income wizard's `saveDeclared` builds the whole income map from a stale `ans`, so two quick entries for different members can overwrite each other - low
 - **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
-- **TD-591** - An award that has already paid money cannot be withdrawn; what happens to a paid case is the owner's call (links TD-366) - medium (money)
+- **TD-591** - An award that has already paid money cannot be withdrawn; owner ruling A (2026-11-08): the 409 stays, the unpaid-part fix is a sprint of its own (links TD-366) - **high (money)**
 - **TD-592** - Payments: a known course start year after the paid month's year still pays on the pathway floor; tightening it is the owner's call - medium (money)
 - **TD-593** - Loose ends after an award withdrawal: the Vircle task stays, no staff_activity verb (the countersign part was fixed by the A1.13 review) - low
 - **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low - **lapse part FIXED (2026-11-08, A1.13 third review); `hold_pending_award` still open**
@@ -8490,9 +8490,13 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
 
-### [TD-591] An award that has already paid money cannot be withdrawn - medium (money, owner decision)
+### [TD-591] An award that has already paid money cannot be withdrawn - high (money)
 
 **Raised 2026-11-08 by Sprint A1.13 (TD-198, lead ruling).** The new award withdrawal refuses any awarded case with a released or returned tranche (409 `has_payments`), checked under the same row lock as the withdrawal so a release cannot slip in between. Paid money is never clawed back, but what should happen to the case is a product question the build did not answer: does the paid part stay counted against the sponsor, do the unpaid tranches go back to the balance, does the student keep her file, and is she told? Related: TD-366 (an awarded student who stops answering after the offer email; who may lapse a held offer). **Needs:** the owner's ruling, then a sprint. Until then a paid case leaves `awarded` only through the existing routes (closure, the lapse rules). *(A · M)*
+
+**Owner ruling 2026-11-08 (ruling A): IMPORTANT, raised to high (money).** (1) A withdrawal of a part-paid award stays REFUSED (409 `has_payments`), as built. (2) The full fix is a sprint of its own: the sponsor gets back only the UNPAID part (award minus `paid_to_date`), and the next sponsor holds only the unpaid part. It needs a model change, owner-run SQL and an adversarial review before the push. (3) Build it when the first real case appears, or before the next cohort's payments start, whichever comes first. Related still: TD-366. *(A · M)*
+
+**Owner ruling 2026-11-08, addendum: the two cases the full fix must handle.** (1) A student breach of contract (the usual case): only the UNPAID part is withheld or withdrawn and goes back to the sponsor; the paid part stays paid. (2) The Foundation's own fault (rare): the Foundation may choose to make the sponsor whole IN FULL, including the part already paid. That top-up comes from the Foundation, never from the student. So the full-fix sprint needs a REQUIRED reason type on the withdrawal (breach, or our fault) and, for case (2) only, a super-only choice of the full refund. Both sit under the existing super-only withdrawal rule (owner ruling D3, TD-198). *(A · M)*
 
 ### [TD-592] Payments: a known course start year after the paid month's year still pays on the pathway floor - medium (money, owner decision)
 
