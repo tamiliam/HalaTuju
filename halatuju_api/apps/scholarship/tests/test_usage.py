@@ -86,6 +86,30 @@ class TestRecordUsage(TestCase):
         self.assertEqual(UsageEvent.objects.count(), 0)
 
 
+class TestGeminiTokensCountThinking(TestCase):
+    """TD-459: output = candidates + thoughts (thinking is billed at the output rate)."""
+
+    def _md(self, **kw):
+        return SimpleNamespace(usage_metadata=SimpleNamespace(**kw))
+
+    def test_thoughts_are_added_to_output(self):
+        self.assertEqual(usage.gemini_tokens(self._md(
+            prompt_token_count=10, candidates_token_count=5, thoughts_token_count=20)), (10, 25))
+
+    def test_no_thoughts_leaves_output_unchanged(self):
+        self.assertEqual(usage.gemini_tokens(self._md(
+            prompt_token_count=10, candidates_token_count=5)), (10, 5))
+
+    def test_thoughts_without_candidates_still_count(self):
+        self.assertEqual(usage.gemini_tokens(self._md(
+            prompt_token_count=10, thoughts_token_count=20)), (10, 20))
+
+    def test_a_non_int_thoughts_value_is_ignored(self):
+        self.assertEqual(usage.gemini_tokens(self._md(
+            prompt_token_count=10, candidates_token_count=5,
+            thoughts_token_count=mock.Mock())), (10, 5))
+
+
 class TestSeamMetering(TestCase):
     def setUp(self):
         self.org = PartnerOrganisation.objects.create(code='seam', name='Seam Org')
@@ -107,6 +131,21 @@ class TestSeamMetering(TestCase):
         self.assertEqual((ev.input_tokens, ev.output_tokens), (42, 13))
         self.assertEqual(ev.source, 'doc_extract')
         self.assertEqual(ev.organisation_id, self.org.id)
+
+    @override_settings(GEMINI_API_KEY='test-key')
+    def test_td459_gemini_seam_meters_thinking_as_output(self):
+        """TD-459: thinking tokens are billed at the output rate, so the meter counts them."""
+        resp = SimpleNamespace(
+            text='{"ok": 1}',
+            usage_metadata=SimpleNamespace(prompt_token_count=42, candidates_token_count=13,
+                                           thoughts_token_count=500))
+        client = mock.MagicMock()
+        client.models.generate_content.return_value = resp
+        with mock.patch('google.genai.Client', return_value=client):
+            with usage.usage_context(application=self.app, source='doc_extract'):
+                vision._call_gemini_json('prompt', {'type': 'object'})
+        ev = UsageEvent.objects.get()
+        self.assertEqual((ev.input_tokens, ev.output_tokens), (42, 513))
 
     def test_email_seam_meters_one_row_per_send(self):
         emails.send_acknowledgement_email('stu@example.com', 'Aisha', 'BrightPath', lang='en')

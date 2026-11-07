@@ -1494,6 +1494,8 @@
           "school": "Adik-beradik di sekolah",
           "tertiary": "Di kolej atau universiti",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
+          "notSaved": "Tidak disimpan. Semak sambungan anda, kemudian tekan Cuba lagi.",
+          "tryAgain": "Cuba lagi",
           "clusterDone": "Lengkap",
           "strTitle": {
             "father": "Dokumen STR Bapa",

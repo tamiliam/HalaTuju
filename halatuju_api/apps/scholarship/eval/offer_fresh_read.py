@@ -56,9 +56,9 @@ text at ~4 characters a token; output 300 and thinking 500 / 1,500 / 3,000 (low 
 roadmap's range). When fresh caches already exist it also projects from their MEASURED mean cost
 per letter — the figure to quote.
 
-THE LIVE METER (measured on the pilot): `usage.gemini_tokens` stores `prompt_token_count` and
-`candidates_token_count` only; `thoughts_token_count` (thinking, billed at the output rate) is NOT
-recorded — each cache's `meter` beside its `usage` shows the gap.
+THE LIVE METER: on the pilot `usage.gemini_tokens` stored prompt and candidate counts only, NOT
+`thoughts_token_count` (billed at the output rate); older caches' `meter` beside `usage` shows that
+gap. Since A1.12 (TD-459) the meter's output is candidates + thoughts.
 
 THE NEW READER (offer exact-read S4). Since S4 `extract_document_fields` hands an offer to
 `offer_reader.read_offer`: up to 3 pages, one image each at high media resolution, plus a digital

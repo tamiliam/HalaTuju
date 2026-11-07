@@ -364,6 +364,25 @@ def send_claim_code_email(to_email, code, lang='en'):
                'signoff': emails._P.team_signoff(lang)})
 
 
+def send_verification_email(to_email, subject, body):
+    """TD-428: the email-verification link, METERED (tenancy rule 6). It was a bare `send_mail`
+    in `SendVerificationView`, so it never wrote a usage row. Forward-only: no backfill.
+
+    The same plain message from the same `DEFAULT_FROM_EMAIL` as before. It does NOT go through
+    `emails._send`, whose failure line logs the ADDRESS (SEC-09): a failure is raised to the view,
+    which logs the profile id. ⚠ The NAME starts with `send_` because that is the usage source
+    `_meter_email` records (it looks past the primitive below to this frame)."""
+    _verification_send(_scholarship('emails'), to_email, subject, body)
+
+
+def _verification_send(emails, to_email, subject, body):
+    from django.core.mail import send_mail
+    emails._meter_email()
+    send_mail(subject=subject, message=body,
+              from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+              recipient_list=[to_email])
+
+
 # ── The three doors ─────────────────────────────────────────────────────────────────────────
 def handle_claim(caller_sub, acting_uid, data):
     """`POST /api/v1/profile/claim-nric/` — look the IC up. Returns `(payload, http_status)`.

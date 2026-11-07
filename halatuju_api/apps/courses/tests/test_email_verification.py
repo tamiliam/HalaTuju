@@ -107,6 +107,19 @@ class TestSendVerification(TestCase):
         self.assertNotIn('new@example.com', '\n'.join(logs.output))
         self.assertIn(str(self.profile.pk), logs.output[0])
 
+    @unittest.mock.patch('django.core.mail.send_mail')
+    def test_td428_the_verification_mail_is_metered(self, mock_send):
+        """TD-428: one email usage row, named by the sender, from the same address as before."""
+        from django.conf import settings
+        from apps.scholarship.models import UsageEvent
+        resp = self._post({'email': 'new@example.com'})
+        self.assertEqual(resp.status_code, 200)
+        mock_send.assert_called_once()
+        self.assertEqual(mock_send.call_args[1]['from_email'], settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(mock_send.call_args[1]['recipient_list'], ['new@example.com'])
+        rows = list(UsageEvent.objects.values_list('service', 'source', 'quantity'))
+        self.assertEqual(rows, [('email', 'send_verification_email', 1)])
+
     def test_send_creates_token(self):
         resp = self._post({'email': 'new@example.com'})
         self.assertEqual(resp.status_code, 200)

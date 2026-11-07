@@ -42,6 +42,7 @@ import { servedRefuses } from '@/lib/incomeShown'
 import IncomeClusterCoach from '../IncomeClusterCoach'
 import MemberIncomeGroup from '../scholarship/MemberIncomeGroup'
 import { docKey, CollapsibleSection } from './cards'
+import { useFailedSaves, SaveFailedAlert, ANSWER_FIELDS } from './failedSaves'
 
 // ── Income wizard (Check-1 item 3) ────────────────────────────────────────
 // A few questions → the dynamic document checklist (compulsory + optional),
@@ -144,19 +145,17 @@ export default function IncomeWizard({
   // respect their choice). Source of truth: the persisted income_working_members is non-empty
   // once they save, and `touchedMembers` covers the moment before that save round-trips.
   const [touchedMembers, setTouchedMembers] = useState(false)
-  // TD-262 F2: the cash/informal door is no longer a FALLBACK behind a text link — it is the
-  // third card, and each `MemberIncomeGroup` owns whether its own card is open (seeded from that
-  // member's saved figure). Nothing about it is the wizard's business any more.
 
+  const saves = useFailedSaves()   // TD-460(b): a failed save is SHOWN by field, never swallowed
   const save = async (patch: Record<string, unknown>) => {
     setAns((a) => ({ ...a, ...patch }))
     if (!token) return
+    const ticket = saves.begin(patch)
     try {
       await updateScholarshipDetails(app.id, patch, { token })
+      saves.settle(ticket, true)
       onChange?.()
-    } catch {
-      /* soft — local state already updated, save retries on the next change */
-    }
+    } catch { saves.settle(ticket, false) }
   }
 
   // Persist the prefilled route once (so the verdict reflects the declaration), AND — on the
@@ -427,8 +426,8 @@ export default function IncomeWizard({
         </Question>
       )}
 
-      {/* Family burden (siblings in school / tertiary) moved to the Story tab's
-          "About your family" card in the 2026-06 redesign — captured once there. */}
+      <SaveFailedAlert saves={saves} fields={ANSWER_FIELDS} onRetry={save} iq={iq} />
+      {/* Family burden (siblings in school / tertiary) lives on the Story tab's family card, captured once there. */}
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
@@ -516,9 +515,9 @@ export default function IncomeWizard({
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
-              {/* Income — shown ANY ONE way (owner 2026-07-25), and since TD-262 F2 the screen
-                  finally SAYS so: three cards of equal weight, the third opening in place to the
-                  cash/informal amount + its one letter. Green once any one is shown. */}
+              {/* Income — shown ANY ONE way (owner 2026-07-25); since TD-262 F2 the screen SAYS so:
+                  three equal cards, the third opening in place to the cash/informal amount + its one
+                  letter. Green once any one is shown. The group owns whether its cards are open. */}
               <MemberIncomeGroup
                 block={block}
                 t={t}
@@ -546,6 +545,7 @@ export default function IncomeWizard({
               {strIcCard(m)}
             </div>
           ))}
+          <SaveFailedAlert saves={saves} fields={['income_declared']} onRetry={save} iq={iq} />
         </div>
       )}
 

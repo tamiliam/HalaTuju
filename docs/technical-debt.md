@@ -286,7 +286,7 @@ Do one only when a sprint is already in that file.
 
 - **TD-166** — The What-you-agreed-to panel shows today's wording. Accepted knowingly by the owner on 2026-07-26. *(C · S)*
 
-### Raised since the 2026-10-28 index - listed, not yet tiered - 81
+### Raised since the 2026-10-28 index - listed, not yet tiered - 83
 Each is an open entry with a defining line in the register body (read it there). The owner/Now/Next/Later tiering of these is the first job of the next regeneration; until then they are listed so that the pointer count equals the tool.
 
 - **TD-422** - The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
@@ -384,6 +384,8 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
+- **TD-583** - The income wizard's `saveDeclared` builds the whole income map from a stale `ans`, so two quick entries for different members can overwrite each other - low
+- **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -2352,6 +2354,7 @@ gate (assignment-surfaces round, 2026-07-16).
 
 ### [TD-174] Billing usage: email `UsageEvent` rows are mostly org-NULL — senders aren't threaded to an org (low, v1-permitted)
 **Status 2026-09-30:** partly done — still to do: attribution is manual per sender; only scheduling is tested.
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision):** unchanged since 2026-10-04. Owner: for each of the about 58 `send_*` senders, does an organisation pay for it or the platform? The open ones are the payment-run mails, the org-request mails, staff and sponsor invitations, and the invoice itself.
 **Status 2026-10-04 (Later-tier batch 3, looked at, NOT built):** still open. A "tenant by default" rule for `emails/shared._meter_email` needs, first, a written classification of every `send_*` (58 today) as tenant or platform mail — and several have no obvious owner: the payment-run mails (`payments.py` opens no `usage_context`), the org-request mails (the organisation asks, the platform answers), staff and sponsor invitations, the invoice itself. Which of those an organisation pays for is a billing-policy call, and wiring the tenant ones is more than six files. A frame-walking default that guesses the application from a caller's locals was rejected: the partner and sponsor digests deliberately REFUSE to pick a tenant (`sole_organisation_id`), and a guess would put one tenant's cost on another's invoice.
 
 Sprint 13a's meter tags every logged usage row with the calling organisation where the seam already
@@ -4892,6 +4895,10 @@ A row whose `wallet_id` matches no student is **counted and reported, then disca
 
 **Status 2026-10-04 (Later-tier batch 4, left OPEN):** still needs the table. The export lists TRANSACTIONS, so "spent nothing" and "not in the export" are the same absence until the unmatched rows are stored; a tri-state reading needs those rows, which is a new table — a migration, and this batch carried exactly one (0164).
 
+**Status 2026-11-07 (A1.12, looked at, NOT built).** Still the same shape: a new table (migration), an importer
+change and new words on the Spending screen (Stitch first). The A1.12 brief allows a migration only when truly needed
+and this is a feature, not a metering bug. Owner: build it as its own sprint, or leave it until the trigger above?
+
 ### [TD-246] The organisation crumb cannot scope a page the way the gift crumb can — low — **RESOLVED 2026-10-04 (overtaken: since 2026-09-28 Payments and Spending draw nothing until ONE gift is chosen — `useGiftGate` on both pages — and a gift belongs to exactly one organisation, so the gift IS the organisation narrowing; an `?org=` beside it would be two controls answering one question on the screen that moves money (TD-241's ruling). Pinned for a super across two organisations: `test_td246_one_org_through_the_gift.py`. The crumb on Sponsors, Sources and Requests stays TD-228)**
 **Status 2026-10-04 (Later-tier batch 4 review):** the closure rests on the WEB gift gate. The server still pools every organisation for a super with no organisation of their own who sends no `?programme=` — unreachable from the console while two or more live gifts exist (the gate asks first; with one live gift the client resolves it). If that ever changes, the follow-up is a server-side `programme_required` for an organisation-less super: TD-334.
 
@@ -7053,6 +7060,11 @@ arrives:** compare per-SOURCE — the services this tenant's events used (`gemin
 mapping is a hand-kept list, which is why it was not written today: `supplier_missing` is deliberately
 self-maintaining, and a wrong hand-kept map would refuse good months. *(B · S)*
 
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision).** The per-source map is a policy, not a bug fix:
+(1) does a source count as "synced" when the month has a ledger row for it, or only when that row's money is above
+zero (Cloud Vision's free first 1,000 units give a real RM0 month, which a money test would refuse)? (2) Is email
+exempt (Brevo is free, so it never has metered money)? (3) Does the month-wide check stay beside the per-source one?
+
 ### [TD-423] A receipt whose email failed can only be re-sent by hand - low
 
 **Raised 2026-10-29** with the receipt email. `invoicing.email_receipt` is best-effort by design — money
@@ -7084,6 +7096,13 @@ screen says so. The readiness check cannot see it either, because it only ever a
 issued. **Fix:** report corrections whose `period_month` is older than the month being issued and which no
 live invoice carries — as a readiness WARNING (not a refusal; the owner may be deliberately holding one),
 and on the charge card as "carried forward from {month}". *(B · S)*
+
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision).** (1) Is a stranded correction ADDED to the next
+issued invoice by itself, or only shown until the owner moves it (the entry says the owner may be holding one on
+purpose)? (2) Readiness has no warning kind today; every overridable problem stops the issue and the monthly job never
+overrides. Should the warning stop the monthly job, or let it issue? (3) If it carries: the invoice freezes corrections
+without their ids, so carrying needs the carried ids recorded on the invoice (in the snapshot, or a new field, which is
+a migration), so a late invoice for the skipped month cannot apply it twice and a void puts it back.
 
 ### [TD-426] `hoursAnalysisId` and `closing_report` are one rule in two languages - low
 
@@ -7133,7 +7152,7 @@ against 148 (0.302 kB of room). The apply page's Plans step went behind the lazy
 `new Map()` in the new `lib/api/offerings.ts` first put ~3 kB on EVERY route (a side effect the bundler cannot
 drop from the `@/lib/api` barrel) until it was made on first use — the rule stands.
 
-### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low
+### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low - **FIXED (2026-11-07, A1.12: SendVerificationView sends through profile_claim.send_verification_email, which meters through the existing lazy _scholarship('emails') door before send_mail, so one usage row tagged send_verification_email, org NULL; catalogue entry follows; no new courses -> scholarship import; forward-only; test_td428_the_verification_mail_is_metered)**
 
 **Raised 2026-10-30 by the maintenance S6a inventory.** `courses/views.py` `SendVerificationView` sends with
 Django's `send_mail`, so it never passes `emails.shared._meter_email` — no `usage_events` row, nothing billed to
@@ -7542,6 +7561,13 @@ student who answers once on a bad connection sees her answer while the server ho
 household-income route engine (money: who is means-tested how). Fix: show "Not saved — tap again" on a failed save,
 and decide (owner) whether a pre-fill may be stored before the student confirms it. *(M · S)*
 
+**Status 2026-11-07 (A1.12): part (b) fixed, part (a) open.** (b) A failed answer save is kept by field with its
+value (`ScholarshipDocuments/failedSaves.tsx`); the alert (`scholarship.docs.income.wizard.notSaved` / `tryAgain`,
+en/ms/ta) stays until every failed field is saved, and Try again re-sends the exact values; it waits
+(disabled) while a newer save of a failed field is in flight, so it cannot overwrite that newer value
+(`IncomeWizard.saveFailed.test.tsx`, 9). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
+route / earner / working members when the page opens, before the student taps anything?
+
 ### [TD-461] The post-shortlist step wizard still has the 10 px icon tab bar - low
 
 **Raised 2026-11-01 by Mobile M4.** M4 replaced the APPLY form's 6 × 56 px bottom tab bar (10 px labels) with a step
@@ -7557,7 +7583,7 @@ Documents step from an Action Centre query, so it needs its own design (Stitch).
 (`lib/uploadCheck.ts`, the documents tab's rule). The post-award bank-statement card
 (`components/scholarship/PostAwardTasks.tsx`, a lazy chunk) still sends any file and lets the server refuse it.
 Fix: the same `uploadRefusal` call before `signUploadDocument`. *(B · S)*
-### [TD-459] The Gemini usage meter does not count thinking tokens - medium (money)
+### [TD-459] The Gemini usage meter does not count thinking tokens - medium (money) - **FIXED (2026-11-07, A1.12: usage.gemini_tokens adds thoughts_token_count to the output count, the one reader of usage_metadata for all four Gemini seams; forward-only, old rows not repaired; tests TestGeminiTokensCountThinking and test_td459_gemini_seam_meters_thinking_as_output in test_usage.py. Tenant cost shares split by event count, so no invoice amount changed; the under-count was in token totals. The count of old rows is a read-only query for the owner to run, in the A1.12 hand-back)**
 
 **Raised 2026-11-01 by the offer exact-read S3 run.** `usage.gemini_tokens` records the prompt and candidate token
 counts only. Gemini 2.5 bills its THINKING tokens at the output rate and reports them separately
@@ -8369,6 +8395,14 @@ inside the locked block; the lock rule). *(A · S)*
 ### [TD-582] Matriculation transcripts read or filed as STPM are compared as STPM subjects - low
 
 **Raised 2026-11-07 by the undeclared-higher-results follow-up (out of its scope, on the owner's brief).** Apps 306 and 340: a Matriculation transcript (rows "MATHEMATICS 1", "MATRICULATION GENERAL STUDIES", "KOKURIKULUM/ CO-CURRICULUM") sits in the higher-results card where the STPM subject comparison may read it. The 2026-11-07 typo tolerance and the "could not be recognised" item apply ONLY to a page read as STPM (`results_kind_detected == 'stpm'`), so these are not "corrected" into STPM subjects nor flagged; but the kind and the comparison still follow the card's STPM kind. **Fix:** when the read detects Matriculation under an STPM kind, compare as Matriculation (CGPA only) and say the kind differs, or route the upload to the right kind. Check each case's `results_kind` / detection first. *(B · S)*
+
+### [TD-583] The income wizard's typed incomes can overwrite each other (stale `ans` in `saveDeclared`) - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed, on purpose: out of the sprint's scope).** `saveDeclared` in `halatuju-web/src/components/ScholarshipDocuments/IncomeWizard.tsx` builds the WHOLE `income_declared` map from the `ans` of the render it was created in, then saves that map. If two members' figures are saved before the wizard re-renders (two quick blurs), the second save is built from a map that does not yet hold the first figure, so the screen and the server both lose it. **Fix:** build the next map from the newest answers (a functional update, or a ref that `save` keeps current), with a jest test that saves two members back to back and expects both figures. *(B · S)*
+
+### [TD-584] Two course-catalogue commands call Gemini with no usage recorded - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed).** `apps/courses/management/commands/generate_stpm_headlines.py` (the `generate_content` call near line 89) and `apps/courses/management/commands/map_course_careers.py` (near line 88) call Gemini directly and write no `UsageEvent`, so their tokens are missing from the usage page and from any check of metered tokens against the Gemini bill (the same gap TD-459 closed for thinking tokens). These are admin-run, platform-side jobs, so no tenant's invoice is affected. **Fix:** wrap each call in `usage.usage_context(source=...)` and call `usage.record_usage('gemini', model=..., ...)` with the counts from `usage.gemini_tokens(response)` as the other Gemini callers do, with a mocked-client test per command. *(B · S)*
 
 ### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
 
