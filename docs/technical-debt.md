@@ -127,7 +127,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-353** — Applications to two organisations at once stay blocked until M2–M4 (stricter than the per-organisation ruling, on purpose). **ON HOLD by owner ruling 2026-10-06 until a second organisation joins the platform.** *(B · L · raised 2026-10-05, same review)*
 
 - **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
-- **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)*
+- **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)* - **FIXED (2026-11-08, A1.13: owner ruling D3, super-only withdrawal with a required reason; a paid case is TD-591)**
 - **TD-192** — Sponsor vetting is one button. What checks do we require, for whom, and do they block money? *(A · L · parked with the sponsor module)*
 - **TD-152** — The agreement's donor is a named person until the Foundation is registered. Confirm the hand-over plan. *(A · L)*
 - **TD-142** — Payments are real but not tied to the signed agreement. This waits on TD-140. *(A · L · partly done)*
@@ -321,7 +321,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-462** - The bank-statement upload has no early size / format refusal - low
 - **TD-463** - The award page's payment schedule is served in English - low
 - **TD-464** - Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
-- **TD-465** - A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money)
+- **TD-465** - A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money) - part 2 done 2026-11-08 (A1.13: one read point, no behaviour change); the time-left ruling still open
 - **TD-466** - Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 - **TD-467** - The private bucket has no allowed_mime_types / file_size_limit; the older upload flows sign with upsert - medium (PART FIXED 2026-11-06 by A1.7: every upload now signs with upsert=False and the browsers no longer send x-upsert; the bucket limits are written in docs/security/2026-11-06-b40-documents-bucket-limits.sql, NOT applied - owner step)
 - **TD-469** - Mobile M5 leftovers: the sponsor desktop has no language control; admin-side sponsor labels - low
@@ -386,6 +386,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
 - **TD-583** - The income wizard's `saveDeclared` builds the whole income map from a stale `ans`, so two quick entries for different members can overwrite each other - low
 - **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
+- **TD-591** - An award that has already paid money cannot be withdrawn; what happens to a paid case is the owner's call (links TD-366) - medium (money)
+- **TD-592** - Payments: a known course start year after the paid month's year still pays on the pathway floor; tightening it is the owner's call - medium (money)
+- **TD-593** - Loose ends after an award withdrawal: countersign still works, the Vircle task stays, no staff_activity verb - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -1305,7 +1308,9 @@ Each is an open entry with a defining line in the register body (read it there).
 **File(s):** `halatuju-web/src/app/error.tsx`, `loading.tsx`, `not-found.tsx`
 **Resolution:** Three pages added with full i18n (EN/MS/TA via `useT()`), primary brand colour, consistent layout. 7 translation keys added to `errors` section in all message files.
 
-### [TD-198] No admin route out of `awarded` once the student has been emailed
+### [TD-198] No admin route out of `awarded` once the student has been emailed - **FIXED (2026-11-08, A1.13, CO-09, owner ruling D3: a super-only award withdrawal, `award_withdrawal.withdraw_award` + `POST admin/scholarship/applications/<id>/withdraw-award/`, with a required internal reason; an awarded case with a paid tranche is refused, TD-591)**
+
+**Done 2026-11-08 (Sprint A1.13, branch a113).** Owner ruling D3 (2026-11-08): only a super admin, at any time, with a required reason. `apps/scholarship/award_withdrawal.py` mirrors `cancel_offer` / `_revert_to_pool`: under the application row lock it refuses anything not `awarded` (409 `not_awarded`, which also makes a double click safe) and anything with a released or returned tranche (409 `has_payments`, TD-591, for the owner; the check and the withdrawal share the lock, so a release cannot slip in between); then it cancels every holding sponsorship (the amount goes back to the sponsor's balance), withholds scheduled and due tranches, and returns the case to the pool through `award_revert.revert_to_pool`. The reason (required, trimmed, at most 5,000 characters; 400 otherwise) is stored in the existing `student_activity` log as an internal `award_withdrawn` row with who and when; no migration. The student gets a new trilingual "offer withdrawn" email after the commit (`emails/award_withdrawn.py`, catalogue entry DRAFT for owner review), never with the reason, and only if she had been told of the award. Web: the super-only "Withdraw award" card in the case view reuses the decision reopen's reason box. Pinned by `tests/test_award_withdrawal.py` and `WithdrawAwardCard.test.tsx`. Loose ends: TD-593.
 
 **Note 2026-11-05:** the lapse-cron half of the old TD-252 shipped (cron_health.py:54); this entry is the remaining console withdrawal route, awaiting an owner decision. TD-252 is merged here.
 **File(s):** `apps/scholarship/sponsorship.py` (`cancel_offer`, `_revert_to_pool`), `views_sponsor.SponsorCancelOfferView`
@@ -1537,6 +1542,7 @@ Each is an open entry with a defining line in the register body (read it there).
   - **(d) Partial / multi-sponsor funding.** 1:1 full-or-nothing now (DB `uniq_holding_sponsorship_per_app`). The many-sponsor-to-a-target plumbing is in the shape (per-sponsor allocation amounts); opening it up means partial pledges + a target-vs-sum + a funding deadline + "what if some-but-not-enough" (the user deferred this to avoid the time-boxed wait).
   - **(e) Award / decline letters.** The "award letter" + "decline letter" are state transitions only right now — no emails yet. Add `send_award_email` / `send_award_lapsed_email` (reuse `emails.py`, best-effort) when the flow goes live.
   - **(f) Future:** the 2-year allocation window (then myNADI reallocates); and the E3 tables were created via raw MCP CREATE TABLE (migrate-first), so their FK **constraint names** differ from Django's — harmless, but a future migration that alters/drops one by Django's expected name would need the real name (same caveat as E1a/E2a). (Introduced v2.26.0, 2026-06-01; lawyer + gateway gate the real-money parts.)
+  **Status 2026-11-08 (Sprint A1.13, audit CO-05):** waits on the lawyer, the entity and TD-140; unchanged in A1.13.
 
 - ~~**TD-076**~~ **RESOLVED 2026-11-05 (MERGED INTO TD-041: the same stub; the version half is done at settings/page.tsx:67, account options still missing and tracked there)**: **The Settings page (`/settings`) is a minimal stub.** `halatuju-web/src/app/settings/page.tsx` (73 lines) does only three things: a language selector, a "clear local data" button (`clearAll()` localStorage wipe), and an About block. **No account settings** — no profile/contact edit, no password change, no notification preferences, no logout, no delete-account. For a logged-in student the page offers nothing tied to their account. Also the **version string is hardcoded** (`const VERSION` — manually bumped at release; set to `2.26.1` on 2026-06-01 after it had gone stale at `2.0.0`) with no central runtime version source. **To resolve (when account self-service matters):** decide the real scope (likely: edit contact details, change password via Supabase, notification opt-outs, logout) and prototype in Stitch first per the UI discipline; and either wire `VERSION` to a build-injected `NEXT_PUBLIC_APP_VERSION` or accept the manual bump as a release-checklist line. Low priority — nothing depends on it. (Logged 2026-06-01) **Status 2026-10-05 (Later-tier batch 5, partly done, left OPEN):** the VERSION half is done — `src/lib/appVersion.ts` reads the build-stamped `NEXT_PUBLIC_APP_VERSION` (Cloud Build passes `--build-arg COMMIT_SHA=$COMMIT_SHA`, the Dockerfile sets it before `npm run build`), so the page shows the serving commit's short SHA (`dev` locally) and can never drift (`settings/page.test.tsx`). The thin-page half stays open: account options need a scope decision and a Stitch mock-up first (TD-041).
 - **TD-077**: **Course `#` interview marker renders as raw text, not a badge.** A trailing/embedded `#` in a course name means "this course typically has an interview", but it's shown verbatim (e.g. `Diploma in Nursing #`) wherever course names render — looks like a typo to users. **To resolve:** strip the `#` from the display string and render a small "Interview" badge/indicator next to courses that carry it (needs a shared helper so every render site — eligibility results, course pickers, saved courses, admin — is consistent; new i18n label; prototype the badge in Stitch first). Was roadmap "Known Issues #5" with no TD number; promoted here so it's tracked. Low priority, cosmetic. (Logged 2026-06-01)
@@ -2060,6 +2066,7 @@ Each is an open entry with a defining line in the register body (read it there).
   suspension/withholding to `agreement.status == executed` + academic-progress signals so the stated schedule becomes
   operative. Until then the contract is a binding *instrument* on a mocked-money flow. (Logged 2026-06-26.)
   **Status 2026-09-30:** partly done — still to do: payments are real but not tied to the signed agreement; that gate waits on TD-140.
+  **Status 2026-11-08 (Sprint A1.13, audit CO-05):** waits on the lawyer, the entity and TD-140; unchanged in A1.13.
 - **TD-143**: **A birth certificate cropped ABOVE its header scores `not_birth_certificate`, not `suspect`.** The BC
   signature anchors live in the header block (`Sijil Kelahiran` / `Pendaftaran Kelahiran dan Kematian` / `Kerajaan
   Malaysia`); a screenshot cropped to the lower half (particulars only, e.g. corpus a27) loses them and the text score
@@ -7632,6 +7639,17 @@ start year stop for QC instead of an automatic RM3,000 (TD-465)"):** `award.prop
 payments read `reporting_date` directly) and the 2026-11-02 ruling that the reviewer sets the amount from the time
 left — the money sprint.
 
+**Part (2) done 2026-11-08 (Sprint A1.13, branch a113):** `apps/scholarship/course_start.py` (`recorded_date`) is
+now the ONE read point for the student's course start at both money sites: QC accept's absolute stop
+(`views_admin/qc_checks._accept_absolute_stop`, `reporting_date_required`) and the payment run
+(`payments._has_started`). NO change in behaviour at either site (lead ruling): QC stays strict (no relaxing to the
+intake year); the payments rule is unchanged (strict `<`, a missing date leaves the pathway floor as the only gate).
+Pinned by `tests/test_course_start.py`: both sites follow the helper (patched), golden cases pin today's answers, and
+a source check refuses a direct `reporting_date` read at either site. The proposed payments tightening (a known start
+year after the paid month's year) is NOT built; it is TD-592, for the owner. The read-only review of cases given
+RM3,000 with an unknown start year is closed by the owner (D2: no case list, no data change). **Still open:** the
+2026-11-02 ruling that the reviewer sets the amount from the time left.
+
 ### [TD-466] Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 
 **Raised 2026-11-02 at the Mobile M4c build.** (1) Both quizzes (`src/app/quiz/page.tsx`, `src/app/stpm/quiz/page.tsx`)
@@ -8469,3 +8487,15 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-561] The credit sign view loads the credit without a row lock - medium
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
+
+### [TD-591] An award that has already paid money cannot be withdrawn - medium (money, owner decision)
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-198, lead ruling).** The new award withdrawal refuses any awarded case with a released or returned tranche (409 `has_payments`), checked under the same row lock as the withdrawal so a release cannot slip in between. Paid money is never clawed back, but what should happen to the case is a product question the build did not answer: does the paid part stay counted against the sponsor, do the unpaid tranches go back to the balance, does the student keep her file, and is she told? Related: TD-366 (an awarded student who stops answering after the offer email; who may lapse a held offer). **Needs:** the owner's ruling, then a sprint. Until then a paid case leaves `awarded` only through the existing routes (closure, the lapse rules). *(A · M)*
+
+### [TD-592] Payments: a known course start year after the paid month's year still pays on the pathway floor - medium (money, owner decision)
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-465 part 2), NOT built on the lead's ruling.** `payments._has_started` (now reading through `course_start.recorded_date`) treats a case with no recorded reporting date as started from the pathway's floor month, so a month is payable on the floor alone. When `pathway_engine.course_start_year` already knows the course starts in a LATER year than the month being paid for, that month is still payable. **The idea:** refuse such a month (no recorded date, known start year after the paid month's year: not yet payable). It would stop paying a student for months before her course can have begun. **Why it is not built:** even a tightening is a change to who gets paid when, and the owner's rule for this sprint was fix only, do not change the design. It also needs care with a deferred intake and with continuing students. **Needs:** the owner's yes, then a small sprint at the one read point (`course_start.py`) with golden cases beside the ones in `tests/test_course_start.py`. *(A · S)*
+
+### [TD-593] Loose ends after an award withdrawal - low
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-198), out of scope.** (1) The Foundation countersignature on the bursary agreement still works on a case whose award was withdrawn. (2) The Vircle setup task in the student's Action Centre stays visible after a withdrawal. (3) There is no staff_activity verb for a withdrawal (one would need a migration); the record is the internal `student_activity` row with who, when and the reason. Also noted, existing behaviour: an open payment-run draft that already lists the case is refused as a whole run (`not_payable_in_run`) until it is rebuilt. **Fix:** refuse the countersignature unless the case is awarded or later, hide the Vircle task when the award is gone, and decide whether a staff_activity verb is worth a migration. *(A · S)*

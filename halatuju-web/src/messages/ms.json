@@ -4947,6 +4947,23 @@
         "notSubmittedStatus": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
         "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },
+      "withdrawAward": {
+        "title": "Tarik balik anugerah ini",
+        "hint": "Untuk super admin sahaja. Kes kembali ke kumpulan calon, baki anugerah yang belum dibayar kembali ke baki penaja dan bayaran yang dijadualkan dihentikan. Pelajar dimaklumkan bahawa tawaran telah ditarik balik.",
+        "action": "Tarik balik anugerah",
+        "dialogTitle": "Tarik balik anugerah ini?",
+        "dialogHint": "Tindakan ini tidak boleh dibatalkan di sini. Sebab anda disimpan pada kes bersama nama anda dan tarikhnya. Ia untuk kakitangan sahaja: pelajar tidak akan melihatnya.",
+        "placeholder": "Mengapa anugerah ini ditarik balik? (kakitangan sahaja)",
+        "confirm": "Tarik balik anugerah",
+        "paidNote": "Wang telah pun dibayar bagi anugerah ini, jadi ia tidak boleh ditarik balik di sini. Hubungi pemilik platform.",
+        "error": {
+          "reason_required": "Berikan sebab untuk menarik balik anugerah.",
+          "reason_too_long": "Sebab itu terlalu panjang. Pendekkan dan cuba lagi.",
+          "not_awarded": "Kes ini bukan lagi berstatus dianugerahkan. Muat semula halaman untuk melihat statusnya.",
+          "has_payments": "Wang telah pun dibayar bagi anugerah ini, jadi ia tidak boleh ditarik balik di sini. Hubungi pemilik platform.",
+          "generic": "Anugerah tidak dapat ditarik balik. Cuba lagi."
+        }
+      },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
         "factPass": "Lulus",
@@ -6650,7 +6667,8 @@
         "mentor_concern_raised": "{mentor} memberitahu pasukan tentang kebimbangan terhadap penerima biasiswa ini",
         "mentor_concern_handled": "Kebimbangan mentor ditandakan sebagai sudah ditangani",
         "session_logged_by_mentor": "Pertemuan direkodkan oleh mentor: {mode}, {minutes} min",
-        "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}"
+        "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}",
+        "award_withdrawn": "Anugerah ditarik balik (kakitangan sahaja) · {reason}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -8000,6 +8018,7 @@
           "award_confirmed": "Anugerah disahkan",
           "agreement_executed": "Perjanjian ditandatangani dan berkuat kuasa",
           "vircle_setup": "Sediakan dompet Vircle anda",
+          "award_withdrawn": "Tawaran anugerah anda telah ditarik balik",
           "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
           "letter_issued": "Surat telah dikeluarkan",
           "mentor_assigned": "Anda mempunyai mentor",
@@ -8036,6 +8055,7 @@
           "award_confirmed": "Apabila dia menerima anugerahnya (apabila tiada perjanjian ditandatangani di platform).",
           "agreement_executed": "Apabila semua pihak telah menandatangani. Salinan perjanjian yang ditandatangani dilampirkan.",
           "vircle_setup": "Apabila perjanjiannya berkuat kuasa: cara menyediakan dompet yang menerima bayaran bursari.",
+          "award_withdrawn": "Apabila super admin menarik balik anugerahnya sebelum sebarang wang dibayar. Ia tidak pernah membawa sebab kakitangan. Tidak dihantar jika dia belum pernah dimaklumkan tentang anugerah itu.",
           "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
           "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
           "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor.",

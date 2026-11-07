@@ -154,6 +154,7 @@ from .surveys import (   # S9: Programme -> Surveys, and the scholar file's Surv
     AdminScholarSurveysView, AdminSurveyActionView, AdminSurveyCsvView, AdminSurveyResultsView, AdminSurveyView,
     AdminSurveysView,
 )
+from .award_withdrawal import AdminWithdrawAwardView   # A1.13 (TD-198): a super withdraws an award
 from .development import (   # S10: Programme -> Development, a module's Progress, the scholar file's Growth tab
     AdminModuleActionView, AdminModuleCsvView, AdminModuleLessonFileSignView, AdminModuleLessonFileView,
     AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthView,

@@ -250,6 +250,8 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/views_admin/applications.py::AdminOrgRejectView.post': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
+    'scholarship/views_admin/award_withdrawal.py::AdminWithdrawAwardView.post': ('OVERRIDE', 'owner override',
+        'A1.13 (TD-198): withdrawing an award is super-only (owner ruling D3), like reopening a decision'),
     'scholarship/views_admin/base.py::_AdminBase._can_review_app': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/base.py::_AdminBase._intake_narrowing': ('OVERRIDE', 'owner override',

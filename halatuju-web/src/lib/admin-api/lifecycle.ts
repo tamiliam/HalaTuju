@@ -123,3 +123,20 @@ export async function closeApplication(
   )
 }
 
+// ── Award withdrawal (A1.13, TD-198): super-only, an awarded case with no paid tranche ──
+/** Withdraw an awarded case's award. `reason` is required and INTERNAL (the student never sees
+ *  it). Refusals carry `code`: reason_required / reason_too_long (400), not_awarded /
+ *  has_payments (409). Answers the refreshed case detail. */
+export async function withdrawAward(
+  id: number,
+  reason: string,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/withdraw-award/`,
+    'POST',
+    { reason },
+    options,
+  )
+}
+

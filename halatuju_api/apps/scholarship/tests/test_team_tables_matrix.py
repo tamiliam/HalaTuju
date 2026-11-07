@@ -194,6 +194,17 @@ def a110a_moved_cells(shape, before):
     return {p: 403 for p in A110A_CREDIT_WRITES} if shape in A110A_SHUT_AT_THE_DOOR else {}
 
 
+#: A1.13 (TD-198 / CO-09, owner ruling D3): withdraw an award (`AdminWithdrawAwardView`). A NEW route, so a
+#: NEW cell per shape, declared from the reopen-decision cell: the same super-only gate (`has_role super`),
+#: so a super gets 400 (the probe sends no reason) and everybody else gets the same refusal. Nobody gains.
+A113_ADDED = 'POST api/v1/admin/scholarship/applications/<int:pk>/withdraw-award/'
+A113_SAME_AS = 'POST api/v1/admin/scholarship/applications/<int:pk>/reopen-decision/'
+
+
+def a113_added_cells(before):
+    return {A113_ADDED: before[A113_SAME_AS]}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -361,7 +372,7 @@ def _shape_test(shape):
         before = _before()[shape]
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
                     **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-                    **a110a_moved_cells(shape, before)}
+                    **a110a_moved_cells(shape, before), **a113_added_cells(before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -383,7 +394,7 @@ def _expected_row(shape):
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-           **a110a_moved_cells(shape, before)}
+           **a110a_moved_cells(shape, before), **a113_added_cells(before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row

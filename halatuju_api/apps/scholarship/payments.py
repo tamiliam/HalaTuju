@@ -36,7 +36,7 @@ from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
-from . import activity, money
+from . import activity, course_start, money
 # The Vircle ID rules (D9) moved verbatim to vircle_ids.py (student maintenance S1, 2026-10-29);
 # re-exported so every caller keeps writing `payments.valid_vircle_id` / `payments.vircle_id_error`.
 from .vircle_ids import valid_vircle_id, vircle_id_band, vircle_id_error, vircle_id_prefix
@@ -192,7 +192,7 @@ def _has_started(application, period_month, row=None):
     lenient reading, unchanged from before, since we have no arrival fact to test."""
     if period_month < _pathway_payment_start(application, row):
         return False
-    reporting = application.reporting_date
+    reporting = course_start.recorded_date(application)   # TD-465 part 2: the one read point
     return reporting is None or reporting < period_month
 
 

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.13 - award withdrawal and the one course-start read point (TD-198 / CO-09, TD-465 part 2) (2026-11-08)
+
+Branch a113 (not pushed; no migration, no model change beyond a new activity event code). Owner ruling D3, 2026-11-08.
+- **TD-198 / CO-09, withdraw an award:** `apps/scholarship/award_withdrawal.py` + `POST /api/v1/admin/scholarship/applications/<id>/withdraw-award/` (`views_admin/award_withdrawal.py`, `urls_award.py`). Super admins only (403 otherwise), any time, with a required reason (400 `reason_required` when blank after trimming, 400 `reason_too_long` past 5,000 characters). Only an awarded case (409 `not_awarded`, which also covers a double click) with NO paid tranche: a released or returned tranche is refused with 409 `has_payments` (TD-591, for the owner). The paid check and the withdrawal run under the same application row lock, so a payment release cannot slip in between. Like a cancelled offer: every holding sponsorship is cancelled (the money goes back to the sponsor's balance), scheduled and due tranches are withheld, and the case returns to `recommended` through `award_revert.revert_to_pool` (or `interviewed` where that already applies). The reason is kept in the existing `student_activity` log (event `award_withdrawn`, internal, with who and when; meta has the sponsorships, the amount freed and the tranches stopped). The student gets a new trilingual "offer withdrawn" email after the commit, which never carries the reason, and only if she had been told of the award (not during the offer cool-off). The email is in the student email catalogue, marked DRAFT for owner review.
+- **Web:** a super-only "Withdraw award" card under the post-award panels (`view/WithdrawAwardCard.tsx`). It reuses the decision reopen's reason box, now lifted into `view/ReasonBox.tsx` (DecisionCard's markup and text are unchanged). A case with a paid tranche shows a note instead of the button. The scholar timeline reads the new event. en/ms/ta strings need language review.
+- **TD-465 part 2:** `apps/scholarship/course_start.py` (`recorded_date`) is the one read point for the student's course start, at QC accept and in the payment run. No change in behaviour at either site: QC stays strict, the payments rule is unchanged. The proposed payments tightening is logged as TD-592 for the owner.
+- **CO-05 / TD-075 / TD-142:** status only; dated notes in the register. They wait on the lawyer, the entity and TD-140.
+- Tests: `test_award_withdrawal.py` (24, new), `test_course_start.py` (8, new), `test_student_activity.py` (event list); jest `WithdrawAwardCard.test.tsx` (new).
+- New debt: TD-591 (withdrawing a paid award), TD-592 (payments start-year idea), TD-593 (loose ends after a withdrawal).
+
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 
 Branch a112 (not pushed; no migration, no model change). Goal: what we bill and report matches what was used. Forward-only; no back-billing.

@@ -34,11 +34,13 @@ EVENT_MENTOR_CONCERN_HANDLED = 'mentor_concern_handled'   # WIRED: mentoring.han
 EVENT_PAYMENT_RELEASED = 'payment_released'     # WIRED: payments.complete, disbursement.release_tranche
 EVENT_CLOSED = 'closed'                         # WIRED: closure.close_application
 EVENT_RESULTS_OVERDUE = 'results_overdue'       # WIRED: results_expectations.flag_overdue (S4b)
+EVENT_AWARD_WITHDRAWN = 'award_withdrawn'       # WIRED: award_withdrawal.withdraw_award (A1.13, internal)
 EVENTS = (
     EVENT_SUBSTATE_CHANGED, EVENT_RESULT_SUBMITTED, EVENT_RESULT_REVIEWED, EVENT_LETTER_ISSUED,
     EVENT_MENTOR_ASSIGNED, EVENT_SESSION_LOGGED, EVENT_PAYMENT_RELEASED, EVENT_CLOSED,
     EVENT_RESULTS_OVERDUE, EVENT_LETTER_WITHDRAWN, EVENT_LETTER_ACKNOWLEDGED,
     EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_MENTOR_CONCERN_RAISED, EVENT_MENTOR_CONCERN_HANDLED,
+    EVENT_AWARD_WITHDRAWN,
 )
 
 

@@ -165,7 +165,7 @@ export type { AdminResolutionItem } from './admin-api/resolution'
 // Post-award: the bursary signatures, award amount, tranches, maintenance, closure.
 export {
   adminCountersignBursary, adminWitnessBursary, setAwardAmount, scheduleTranche,
-  actOnDisbursement, setMaintenanceSubstate, closeApplication,
+  actOnDisbursement, setMaintenanceSubstate, closeApplication, withdrawAward,
 } from './admin-api/lifecycle'
 export type {
   MaintenanceSubstate, ClosureReason, AdminDisbursement, DisbursementAction,

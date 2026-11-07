@@ -124,6 +124,10 @@ CATALOGUE = (
        wording=('signing', 'AGREEMENT_EXECUTED_SUBJECTS', 'AGREEMENT_EXECUTED_BODIES')),
     _E('vircle_setup', 'award', ('send_vircle_install_email',), lock='wallet_task',
        wording=('vircle_install', 'VIRCLE_INSTALL_SUBJECTS', 'VIRCLE_INSTALL_BODIES')),
+    # A1.13 (TD-198, owner ruling D3 2026-11-08): a super withdraws an awarded case. LOCKED — it is
+    # how she learns the decision. ⚠ DRAFT wording, awaiting the owner's review.
+    _E('award_withdrawn', 'award', ('send_award_withdrawn_email',), lock='decision',
+       wording=('award_withdrawn', 'AWARD_WITHDRAWN_SUBJECTS', 'AWARD_WITHDRAWN_BODIES')),
     # ── Results (the organisation's own wording, `student_comms`) ───────────────────────────
     _E('results_due', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
     _E('results_overdue', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),

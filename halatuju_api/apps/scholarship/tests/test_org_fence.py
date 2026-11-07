@@ -656,6 +656,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminRequestInfoView': 'gate', 'AdminResolutionItemView': 'gate',
         'AdminRecordVerdictView': 'gate', 'AdminReopenDecisionView': 'gate',
         'AdminQcDecisionView': 'gate', 'AdminCancelReopenView': 'gate',
+        'AdminWithdrawAwardView': 'gate',   # A1.13 (TD-198): super-only, then _scoped_application
         'AdminSubmitDeclineView': 'gate',   # reviewer sends a decline verdict to QC (_require_app_write)
         'AdminAssignReviewerView': 'gate+super/org_admin', 'AdminInterviewSlotsView': 'gate',
         # list/aggregate fenced via _org_scoped

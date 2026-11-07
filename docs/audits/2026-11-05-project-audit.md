@@ -47,7 +47,7 @@ Severity is the verifier's, which overrides the lens where they differ. "Not re-
 | 12 | SP-02 | reprocess-ic-vision runs near the 300 s limit. | medium | M | Confirmed. TD-518. |
 | 13 | TD-459 | Usage meter misses Gemini "thinking" tokens (about 3-5x under-count); matters because BILLING_USAGE_ENABLED is on. | medium (money) | S | Confirmed. |
 | 14 | SEC-16 | Pillow, pypdf and pillow-heif advisories on student uploads. | medium | M | Confirmed; already registered (TD-506). |
-| 15 | CO-05 | Sponsor money is still a mock (TD-075) and not tied to the signed agreement (TD-142). | medium | L | Partly confirmed (see rejected). Owner or business items. |
+| 15 | CO-05 | Sponsor money is still a mock (TD-075) and not tied to the signed agreement (TD-142). | medium | L | Partly confirmed (see rejected). Owner or business items. Status 2026-11-08 (A1.13): waits on the lawyer, the entity and TD-140; unchanged in A1.13. |
 | 16 | SP-03 / SP-04 | Document upload (p50 11.6 s, max 57 s) and assign (p50 about 13 s) do heavy work in the request. | medium | M | Confirmed. TD-519. |
 | 17 | SP-05 to SP-07 | Interview submit, income coach GETs and applicant detail are slow. | medium | M | Not re-checked. |
 | 18 | CO-01 | No real sign-in per role on a local stack; sandbox returns canned JSON. | medium | M | Facts confirmed. TD-521. |
