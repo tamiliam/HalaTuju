@@ -13,7 +13,8 @@
 - **Decisions 10-12:** IKBN / IKTBN `ilkbs` RM350/month (after the ~RM100 allowance); ILJTM `iljtm`, Kolej Komuniti `kkom`, a MARA certificate `mara_cert` and every other TVET course `tvet` RM450/month, one shared spec (`_TVET_SPEC`). Length = `courses.semesters` × 6, else 24. RM350 / RM450 are the lead's derivation from the Matrikulasi basis (~RM450 living); the owner may adjust them. "No estimate" is left only for no pathway, no readable programme, or several pathways considered.
 - **`stream = 'both'`** (331 catalogue degrees; the brief said the column held two values) is read as unknown: the arts loan and 4 years.
 - **Medicine is matched as a phrase** ("Doktor Perubatan", "Sarjana Muda Perubatan", "Doktor / Pembedahan Pergigian"), so Bioperubatan and other allied-health degrees stay at 4 years.
-- **Not changed:** the contract payment schedule still picks its row by the stored `chosen_pathway` (`contracts.pick_schedule_row`); continuing post-SPM students still get the full length.
+- **Payment schedule (follow-up fix-degree-schedule, same day):** `contracts.pick_schedule_row` pays a degree-bound student under a stale 'stpm' code on the `university` row (10 × RM200 = RM2,000, as her award), **guarded (review 2026-11-07):** only while her stored `award_amount` is empty or the default RM2,000. The row is picked live but a stored award never resizes (record-verdict sizes only an empty amount), so a student already holding the STPM RM3,000 or continuing RM1,000 keeps the STPM row and her payments still add up to the award and the signed agreement. Latent at the time: none of the 22 awarded / interviewed 'stpm' cases read as degree-bound. A Form 6 student is unchanged.
+- **Not changed:** continuing post-SPM students still get the full length.
 
 ## Household income on the card: declared figure, tick on a ±10% match, documents' figure flagged (owner 2026-11-06) — request #54
 

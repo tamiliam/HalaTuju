@@ -956,16 +956,25 @@ def deploy(template, *, deployed_by_email='', is_super=False, actor=None):
 # ─────────────────────────────────────────────────────────────────────────────
 def schedule_row_for(template, application):
     """The schedule row for this application's pathway: pathway + 'continuing'
-    (via award._stpm_continuing), falling back to variant='' then ('default','')."""
+    (via award._stpm_continuing), falling back to variant='' then ('default','').
+    A degree-bound student under a stale 'stpm' code takes the 'university' row, but only while
+    her stored award is empty or the default RM2,000 (`pick_schedule_row`)."""
     if template is None:
         return None
     return pick_schedule_row(template.schedule_rows.all(), application)
 
 
 def pick_schedule_row(rows, application):
-    """The one row-choosing rule, shared with the no-template default (`default_schedule.py`)."""
+    """The one row-choosing rule, shared with the no-template default (`default_schedule.py`).
+
+    A degree-bound student under a stale 'stpm' code (`award._sized_as_stpm` false) is paid on the
+    'university' row, as her RM2,000 award is (decision 7, #251). Guard (review, 2026-11-07): the
+    row is picked live but a stored award never resizes, so the remap applies only while
+    ``award_amount`` is empty or the default RM2,000. A student already holding the STPM RM3,000 /
+    continuing RM1,000 keeps the STPM row, so the payments add up to her award and agreement."""
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
-    if pathway == 'stpm' and not award._sized_as_stpm(application):
+    if (pathway == 'stpm' and not award._sized_as_stpm(application)
+            and getattr(application, 'award_amount', None) in (None, award._DEFAULT_AMOUNT)):
         pathway = 'university'      # degree-bound under a stale code: paid as its RM2,000 (decision 7)
     variant = 'continuing' if award._stpm_continuing(application) else ''
     by_key = {(r.pathway, r.variant): r for r in rows}

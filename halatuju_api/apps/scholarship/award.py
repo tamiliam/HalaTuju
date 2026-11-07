@@ -122,8 +122,10 @@ def proposed_award_amount(application, verdict=None):
     Owner decision 2026-11-07 (decision 7): the amount follows the FUNDED PERIOD — STPM's RM3,000
     is Form 6's 18 months, everything else is 12 months at RM2,000. A DEGREE-BOUND student
     (``results_route.degree_bound``) gets RM2,000 whatever the stored code says (#251: a stale
-    'stpm' over a degree), never RM3,000 / RM1,000 and never None. A verdict already recorded keeps
-    its stored ``award_amount``; only a new or re-recorded verdict reads this."""
+    'stpm' over a degree), never RM3,000 / RM1,000 and never None. This only sizes an EMPTY
+    ``award_amount``: record-verdict applies it on an APPROVE when the amount is unset, so a stored
+    amount (an earlier verdict's, or a super's) is never resized by a re-recorded verdict. The
+    payment schedule follows the stored amount (`contracts.pick_schedule_row`'s guard)."""
     if _sized_as_stpm(application):
         if course_start_unknown(application):
             return None
