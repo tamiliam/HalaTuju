@@ -20,7 +20,77 @@ Counting is deliberately EXHAUSTIVE rather than clever: any single trace of work
 delete. A missed relation would be a silent deletion of somebody's record, so the failure has to
 land on the side of keeping people.
 """
-from django.db.models import Q
+from django.db.models import Func, IntegerField, Q, Subquery
+
+# ⚠ TD-443 (A1.11a): EVERY recorded-email stamp a staff member leaves, not only the payment and
+# verdict ones. Each was a quiet erasure: delete the person and the row keeps an address that no
+# longer resolves to anybody (who reassigned this case, who closed it, who signed this credit, who
+# vetted this membership, who wrote this template). `(key, app label, model, stamp fields)`; one
+# row counts once even when it carries the address in two of its stamps. The key is what the
+# People tooltip shows (underscores read as spaces). A test pins that every field here exists.
+EMAIL_STAMPS = (
+    ('assignments_made', 'scholarship', 'AssignmentEvent', ('by_email',)),
+    ('cases_closed', 'scholarship', 'ScholarshipApplication', ('closed_by',)),
+    ('cases_recommended', 'scholarship', 'ScholarshipApplication', ('recommended_by',)),
+    ('resolution_items', 'scholarship', 'ResolutionItem', ('created_by', 'resolved_by')),
+    ('decisions_reopened', 'scholarship', 'DecisionReopen', ('reopened_by',)),
+    ('permission_changes_made', 'scholarship', 'StaffPermissionChange', ('changed_by_email',)),
+    ('credits_signed', 'scholarship', 'Donation',
+     ('recorded_by_email', 'finance_checked_by_email', 'confirmed_by_email')),
+    ('tranches_actioned', 'scholarship', 'Disbursement', ('actioned_by',)),
+    ('invoices_handled', 'scholarship', 'Invoice',
+     ('issued_by_email', 'sent_by_email', 'voided_by_email')),
+    ('receipts_recorded', 'scholarship', 'InvoiceReceipt', ('recorded_by_email',)),
+    ('payment_declarations_handled', 'scholarship', 'InvoicePaymentDeclaration',
+     ('declared_by_email', 'confirmed_by_email', 'rejected_by_email')),
+    ('billing_corrections', 'scholarship', 'OrgBillingCorrection', ('set_by_email',)),
+    ('billing_adjustments', 'scholarship', 'OrgBillingAdjustment', ('set_by_email',)),
+    ('build_hours_recorded', 'scholarship', 'OrgBuildHours', ('recorded_by_email',)),
+    ('memberships_vetted', 'scholarship', 'SponsorProgrammeMembership', ('vetted_by',)),
+    ('merchant_flags', 'scholarship', 'MerchantFlag', ('opened_by_email', 'closed_by_email')),
+    ('merchant_notes', 'scholarship', 'MerchantFlagNote', ('author_email',)),
+    ('guardian_changes', 'scholarship', 'GuardianContactChange', ('changed_by_email',)),
+    ('partner_templates', 'scholarship', 'PartnerEmailTemplate', ('updated_by_email',)),
+    ('sponsor_templates', 'scholarship', 'SponsorEmailTemplate', ('updated_by_email',)),
+    ('sponsor_terms', 'scholarship', 'SponsorTermsVersion',
+     ('created_by_email', 'published_by_email')),
+    ('student_templates', 'scholarship', 'StudentEmailTemplate', ('updated_by_email',)),
+    ('student_email_switches', 'scholarship', 'StudentEmailSwitch', ('updated_by_email',)),
+    ('contract_templates', 'scholarship', 'ContractTemplate',
+     ('created_by_email', 'submitted_by_email', 'deployed_by_email',
+      'vetting_attested_by_email')),
+    ('letter_templates', 'scholarship', 'LetterTemplate', ('updated_by_email',)),
+    ('letters', 'scholarship', 'Letter', ('issued_by_email', 'withdrawn_by_email')),
+    ('announcements', 'scholarship', 'Announcement', ('created_by_email', 'withdrawn_by_email')),
+    ('surveys', 'scholarship', 'Survey', ('created_by_email',)),
+    ('development_modules', 'scholarship', 'DevelopmentModule', ('created_by_email',)),
+    ('mentors_added', 'scholarship', 'Mentor', ('created_by_email',)),
+    ('application_items', 'scholarship', 'ProgrammeApplicationItem', ('updated_by_email',)),
+    ('programme_aliases', 'scholarship', 'ProgrammeCodeAlias', ('created_by',)),
+)
+
+
+class _Count(Func):
+    """`COUNT(pk)` as a plain function, so the subquery stays ungrouped and returns ONE row."""
+    function = 'COUNT'
+    output_field = IntegerField()
+
+
+def _stamp_counts(admin, email):
+    """All of `EMAIL_STAMPS` in ONE query (the People list calls `footprint` for every row)."""
+    from django.apps import apps
+    from apps.courses.models import PartnerAdmin
+    subqueries = {}
+    for key, label, model_name, fields in EMAIL_STAMPS:
+        model = apps.get_model(label, model_name)
+        match = Q()
+        for field in fields:
+            match |= Q(**{f'{field}__iexact': email})
+        subqueries[key] = Subquery(
+            model.objects.filter(match).order_by().annotate(n=_Count('pk')).values('n')[:1],
+            output_field=IntegerField())
+    row = PartnerAdmin.objects.filter(pk=admin.pk).annotate(**subqueries).values(*subqueries).first()
+    return row or {}
 
 
 def footprint(admin):
@@ -34,8 +104,10 @@ def footprint(admin):
         nothing and erases nobody, which is exactly what makes them dangerous: the row keeps an
         address that no longer resolves to a person.
     """
-    from .models import (InterviewSession, InterviewSlot, OrgRequest, OrgRequestAttachment,
-                         PaymentRun, ScholarshipApplication, Sponsor)
+    from .models import (AssignmentEvent, InterviewSession, InterviewSlot, OrgRequest,
+                         OrgRequestAttachment, PaymentRun, ScholarshipApplication, Sponsor,
+                         StaffActivity)
+    from .qc_separation import REVIEW_VERBS
     email = (getattr(admin, 'email', '') or '').strip().lower()
     counts = {
         # By foreign key.
@@ -44,6 +116,14 @@ def footprint(admin):
         'interviews': InterviewSession.objects.filter(interviewer=admin).count(),
         'requests_raised': OrgRequest.objects.filter(submitted_by=admin).count(),
         'request_files': OrgRequestAttachment.objects.filter(uploaded_by=admin).count(),
+        # ⚠ TD-484 (A1.11a): the QC separation guard's own evidence. A reviewer reassigned off a
+        # case holds no `assigned_to` any more, so they used to be DELETABLE — and the delete
+        # SET_NULLs their `AssignmentEvent`s and CASCADEs their review `StaffActivity` rows, so a
+        # re-invited namesake could then QC the very case they reviewed. Either trace now keeps them.
+        'cases_held_before': AssignmentEvent.objects.filter(
+            Q(from_admin=admin) | Q(to_admin=admin)).count(),
+        'review_actions': StaffActivity.objects.filter(
+            actor=admin, verb__in=REVIEW_VERBS).count(),
     }
     if getattr(admin, 'mentor_id', None):
         # S7d (lead ruling 2026-11-01): a staff member who has MENTORED anybody has done work. Their
@@ -71,6 +151,8 @@ def footprint(admin):
                 Q(verified_by__iexact=email) | Q(rejected_by__iexact=email)
                 | Q(verdict_decided_by__iexact=email)).count(),
         })
+        if admin.pk is not None:
+            counts.update(_stamp_counts(admin, email))
     return {k: v for k, v in counts.items() if v}
 
 

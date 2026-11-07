@@ -267,9 +267,10 @@ class AdminSubmitDeclineView(_AdminBase):
             return Response(
                 {'error': 'Only a live in-review application can be sent to QC.',
                  'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
-        app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
-        app.save(update_fields=['status'])
-        staff_activity.record(admin, staff_activity.DECLINE_SENT_TO_QC, app)   # common profile S3
+        with transaction.atomic():   # TD-485: the guard's evidence holds with the move, or neither
+            app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
+            app.save(update_fields=['status'])
+            staff_activity.record(admin, staff_activity.DECLINE_SENT_TO_QC, app)   # common profile S3
         logger.info('AUDIT submit_decline admin_id=%s app_id=%s', admin.id, pk)
         return Response(AdminApplicationDetailSerializer(app).data)
 

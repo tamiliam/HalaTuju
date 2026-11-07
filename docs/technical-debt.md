@@ -7269,7 +7269,12 @@ chain. *(A · S)* **Narrowed 2026-10-31 (S7a follow-up):** `reissue_credential` 
 also a student profile, profile alias or sponsor (`staff_lifecycle.login_used_elsewhere`), on every Resend path. Left:
 an invitee whose own login is admin-only (no student or sponsor side).
 
-### [TD-441] An admin role on a student's or sponsor's own login has side effects - medium
+### [TD-441] An admin role on a student's or sponsor's own login has side effects - medium (item 3 FIXED 2026-11-07, Sprint A1.11a)
+
+**Item 3 fixed 2026-11-07 (Sprint A1.11a).** `_find_admin` now links through `supabase_admin.link_login`, a
+compare-and-set: `filter(pk=..., email__iexact=..., supabase_user_id__isnull=True, is_active=True).update(...)`. An
+email move, a revoke or another link committing during the network check leaves the row alone and the sign-in is not
+staff (`apps/courses/tests/test_a111a_link_cas.py`; 3 fail on the old code). Items 1 and 2 stay open.
 
 **Raised 2026-10-31 by the adversarial review of the S7a follow-up** (owner ruling: a student's or sponsor's
 address may be invited as a mentor, as it already could as staff). All three are pre-existing on the staff path.
@@ -7302,7 +7307,15 @@ The QC-accept branch saves before `publish_profile_to_pool`, with the same shape
 one `transaction.atomic()` (the decline email must then go `on_commit`), and test that a failing decline leaves the
 case exactly as it was. *(B · S)*
 
-### [TD-443] `staff_footprint` misses most of a staff member's history - medium
+### ~~[TD-443] `staff_footprint` misses most of a staff member's history - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `staff_footprint.EMAIL_STAMPS` lists every email stamp (assigner, closer,
+recommender, resolution, reopener, permission changer, credit signers, tranches, invoices, receipts, declarations,
+billing corrections / adjustments / hours, vetting, merchant flags and notes, guardian changes, every template kind,
+sponsor terms, letters, announcements, surveys, modules, mentors, application items, programme aliases), matched
+case-insensitively and counted in ONE query (`_stamp_counts`, subqueries on the staff row). Tests:
+`tests/test_a111a_footprint.py::TestEveryEmailStamp` (every listed field is real; keys unique; each family counted;
+a row with the address in two stamps counts once; one query).
 
 **Raised 2026-10-31 by the common profile S4 adversarial review (M1); pre-existing.** `staff_footprint.footprint`
 decides whether a staff row may be deleted, but it ignores most email stamps: assigner `by_email`, `closed_by`,
@@ -7752,7 +7765,13 @@ ta; fix the comment. *(W · S)* **Review round 1 adds:** `view.tsx`'s QC error h
 `self_verdict_qc_forbidden`; the three new codes (and the old `self_qc_forbidden`) reach the person as the server's
 English sentence in every language — each needs en / ms / ta words beside it.
 
-### [TD-484] A person deleted and re-invited with the same email escapes the QC separation guard - medium
+### ~~[TD-484] A person deleted and re-invited with the same email escapes the QC separation guard - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `staff_footprint.footprint` now also counts the guard's own sources:
+`cases_held_before` (any `AssignmentEvent` naming the person on either side) and `review_actions` (their
+`StaffActivity` rows in `qc_separation.REVIEW_VERBS`). Such a person is revoked, never deleted, so the row and its
+history survive a re-invite and the QC guard still refuses (`tests/test_a111a_footprint.py::
+TestGuardEvidenceKeepsThePerson`: assign, reassign, delete -> 409 `has_work`, QC -> 403 `self_assigned_qc_forbidden`).
 
 **Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `qc_separation.refusal` reads the person's
 history by ROW: `AssignmentEvent.to_admin` / `from_admin`, `InterviewSession.interviewer`, `InterviewSlot.reviewer`
@@ -7765,7 +7784,16 @@ same email, comes back as a new row the guard knows nothing about, and can QC th
 counts the guard's own sources (any `AssignmentEvent` either side, a review-verb activity row), so such a person is
 revoked, never deleted. A test: assign, reassign, delete, re-invite, QC -> 403. *(A · S)*
 
-### [TD-485] A failed activity write leaves the QC guard without its evidence - low
+### [TD-485] A failed activity write leaves the QC guard without its evidence - low (live writes FIXED 2026-11-07, Sprint A1.11a; history gaps open)
+
+**Live writes fixed 2026-11-07 (Sprint A1.11a).** `staff_activity.record` stays best-effort for every verb except
+`GUARD_EVIDENCE` (exactly `qc_separation.REVIEW_VERBS`): a failed write of one of those logs an ERROR and raises
+`EvidenceNotRecorded` (503 `evidence_not_recorded`, "Nothing was changed; try again."). Submit-decline, the interview
+draft save and `submit_interview` (new `_submit_interview_writes`) now write their status change and the evidence in
+one `transaction.atomic()`, so a lost row rolls the action back; the Gemini auto-finalise stays after the commit.
+Tests: `tests/test_a111a_evidence.py`; `test_staff_activity.py` verify-accept test now expects the refusal. **Still
+open:** the pre-S3 and pre-F7 history gaps (the 2026-11-04 extension below) cannot be rebuilt from data we do not
+have.
 
 **Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `staff_activity.record` is best-effort by
 contract (D9: it never raises; a failure is a WARNING log). Since T5b two of the guard's sources live ONLY there — a
@@ -7780,7 +7808,15 @@ verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)
 write leaves no trace; and a draft author re-pointed by `repair_interview_credit`, or one who drafted before T5b's
 `interview_drafted` verb, leaves no activity row. Same fix family.
 
-### [TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
+### ~~[TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium~~ — FIXED 2026-11-07 (Sprint A1.11a)
+
+**Fixed 2026-11-07 (Sprint A1.11a).** `DecisionReopen.reopened_from` (migration
+`0204_decisionreopen_reopened_from`, NOT applied; additive, `db_default=''`) records the status the reopen moved the
+case from. `cancel_reopen` restores that status only while the case still sits where the reopen put it; if a
+submit-decline or verify-accept already moved it on, the status stays (the QC decides). The birth-state checks run
+only for a restore to `recommended`. Rows from before the field (blank) keep the old inference; live had no open
+reopen rows on 2026-11-07. Tests: `tests/test_a111a_cancel_reopen.py` (the probe ends at `interviewed`, not
+`recommended`).
 
 **Raised 2026-11-04 by the TD-481 sprint's inventory (NOT fixed; proved by a scratch request test, then deleted).**
 `reopen.cancel_reopen` infers where a reopen came from by the CURRENT status (`reopen.py`, the "Mirror of reopen"

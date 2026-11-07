@@ -117,8 +117,8 @@ class PartnerAdminMixin:
         if email:
             admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org', 'owning_organisation').first()
             if admin and supabase_admin.link_refusal(user_id, email) is None:
-                admin.supabase_user_id = user_id
-                admin.save(update_fields=['supabase_user_id'])
+                if not supabase_admin.link_login(admin, user_id, email):   # TD-441: compare-and-set
+                    return None
                 if admin.mentor_id is not None:   # a mentor login, or (S7d) a staff mentor
                     _mentor_linked(admin)
                 return admin

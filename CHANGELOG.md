@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Sprint A1.11a - QC separation evidence (TD-484, TD-443, TD-485, TD-486, TD-441 item 3) (2026-11-07)
+
+Branch a111a (not pushed). Migration `0204_decisionreopen_reopened_from` is written and NOT applied (additive, `db_default=''`). API only; no user-visible text change except the 503 `evidence_not_recorded` sentence.
+- TD-484 / TD-443: `staff_footprint.footprint` now counts past assignments (`AssignmentEvent` either side), review-verb activity rows and every email stamp in the schema (`EMAIL_STAMPS`, one query), so a person the QC guard remembers is revoked, never deleted.
+- TD-485: the five guard verbs are no longer best-effort; a lost write raises `EvidenceNotRecorded` (503) and submit-decline, the interview draft save and `submit_interview` roll back with it. Auto-finalise (Gemini) still runs after the commit. Pre-S3 / pre-F7 history gaps stay open.
+- TD-486: `cancel_reopen` restores from the recorded `reopened_from`, so a declined case QC sent back can no longer land at `recommended`.
+- TD-441 item 3: the first-sign-in link is a compare-and-set (`supabase_admin.link_login`).
+- Left for A1.11b: TD-227 (comment required on `/reject/`, who declined), TD-483 (web follows the server rule), TD-216.
+
+Tests: `test_a111a_footprint.py` (11), `test_a111a_evidence.py` (6), `test_a111a_cancel_reopen.py` (5), `courses/tests/test_a111a_link_cas.py` (4); 21 of these 26 and the changed verify-accept test in `test_staff_activity.py` fail on the old code (the other 5 are controls).
+
 ### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)
 
 Not pushed; no migration. `income_engine/freshness.py` now logs under the written-out name `apps.scholarship.income_engine` instead of `getLogger(__name__)` (the audit-logger test refuses `__name__`). `uploadContentType.ts` keeps its extension table inside the function: a top-level const made the module count as having side effects, so the `@/lib/api` barrel could no longer drop the documents client from pages that never use it, adding about 2.8 kB to the median route's first-load JS. Median back to 156.631 kB (live 156.627; budget 157.6). Behaviour unchanged.

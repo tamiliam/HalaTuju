@@ -144,12 +144,36 @@ def reopen_decision(app, *, by_admin, reason, activity=True):
             reopened_by=getattr(by_admin, 'email', '') or '',
             reason=reason,
             was_published=was_published,
+            reopened_from=reopened_from,
         )
         if activity:
             from . import staff_activity
             staff_activity.record(by_admin, staff_activity.DECISION_REOPENED, app,
                                   meta={'from_status': reopened_from})
     return row
+
+
+# What `reopen_decision` did to the status, so a cancel can undo exactly that and nothing else.
+_REOPEN_MOVES = {'recommended': 'interviewed', 'interviewed': 'interviewing'}
+
+
+def _cancel_target(row, current):
+    """The status a cancel restores, or None to leave the status where it is.
+
+    ⚠ TD-486 (A1.11a): FROM THE RECORD, NOT THE CURRENT STATUS. A case QC sent back
+    (`interviewed -> interviewing`) can return to `interviewed` while the reopen stays open
+    (submit-decline, verify-accept). Read by the current status alone that looked like "a super
+    reopened a recommended case", and the cancel set `recommended` — a declined case in the
+    sponsor pool, past the QC decision. Now the status is restored only while it is still exactly
+    where the reopen put it; a case that has moved on since (back at AWAITING QC) stays put and
+    the QC decides it. A row written before `reopened_from` existed ('') keeps the old inference.
+    """
+    origin = row.reopened_from
+    if not origin:
+        return {'interviewed': 'recommended', 'interviewing': 'interviewed'}.get(current)
+    if _REOPEN_MOVES.get(origin) == current:
+        return origin
+    return None
 
 
 def cancel_reopen(app):
@@ -173,10 +197,11 @@ def cancel_reopen(app):
     row = open_reopen(app)
     if row is None:
         raise ReopenError('not_reopened')
-    if app.status == 'interviewed' and birth_state.ic_unlocked_for_rule(
+    target = _cancel_target(row, app.status)
+    if target == 'recommended' and birth_state.ic_unlocked_for_rule(
             app.profile, getattr(app.cohort, 'allowed_birth_states', None)):
         raise ReopenError(birth_state.IC_UNLOCKED)
-    if app.status == 'interviewed' and birth_state.meets_rule(
+    if target == 'recommended' and birth_state.meets_rule(
             getattr(app.profile, 'nric', '') if app.profile else '',
             getattr(app.cohort, 'allowed_birth_states', None)) is False:
         raise ReopenError('birth_state_rule_failed')
@@ -192,17 +217,12 @@ def cancel_reopen(app):
                                        'realtime_notified_at', 'updated_at'])
         app.decision_reopened_at = None
         restore = ['decision_reopened_at']
-        # Mirror of reopen (invert the two-step mapping by current status):
-        #   interviewed  → recommended  (undo a super reopen of a QC-cleared case)
-        #   interviewing → interviewed  (undo a QC 'reopen' — restore to AWAITING QC)
-        if app.status == 'interviewed':
-            app.status = 'recommended'
+        # Mirror of reopen — `_cancel_target` says where the case goes (None = it stays).
+        if target is not None:
+            app.status = target
             restore.append('status')
-            if app.stamp_first('recommended_at'):
+            if target == 'recommended' and app.stamp_first('recommended_at'):
                 restore.append('recommended_at')
-        elif app.status == 'interviewing':
-            app.status = 'interviewed'
-            restore.append('status')
         app.save(update_fields=restore)
         row.resulted_in_change = False
         row.closed_at = timezone.now()

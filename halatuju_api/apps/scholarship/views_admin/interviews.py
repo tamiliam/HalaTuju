@@ -7,6 +7,7 @@ and every importer are unchanged.
 ⚠ TWO SPANS of the old root (lines 138-143 and 735-952). They were not adjacent there, but
 they are one domain, and each span is byte-identical to the lines it came from.
 """
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -194,10 +195,11 @@ class AdminInterviewView(_AdminBase):
             # existing name: that is the case this exists to protect (A interviews, B submits →
             # the record must still read A).
             session.interviewer = admin
-        session.save()
-        if credit_moves:
-            staff_activity.record(admin, staff_activity.INTERVIEW_DRAFTED, app,
-                                  meta={'session': session.pk})
+        with transaction.atomic():   # TD-485: the guard's evidence holds with the save, or neither
+            session.save()
+            if credit_moves:
+                staff_activity.record(admin, staff_activity.INTERVIEW_DRAFTED, app,
+                                      meta={'session': session.pk})
         # A draft save does NOT advance the funnel. 'interviewing' means the interview
         # process is genuinely underway for an accountable reviewer — reached by proposing
         # times (scheduling.propose_slots) or submitting the session (offline fallback),

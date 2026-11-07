@@ -37,6 +37,7 @@ import logging
 import re
 
 from django.db import transaction
+from rest_framework.exceptions import APIException
 
 from .models.staff_activity import StaffActivity, StaffActivitySubject, StaffActivityVerb
 
@@ -61,6 +62,22 @@ INTERVIEW_DRAFTED = V.INTERVIEW_DRAFTED
 VERDICT_RECORDED = V.VERDICT_RECORDED
 VERIFY_ACCEPT = V.VERIFY_ACCEPT
 DECLINE_SENT_TO_QC = V.DECLINE_SENT_TO_QC
+class EvidenceNotRecorded(APIException):
+    """TD-485: a guard-evidence row could not be written, so the action is refused and rolled
+    back. An `APIException`, so a view answers 503 (DRF also marks the request's transaction for
+    rollback) instead of a 500."""
+    status_code = 503
+    default_detail = 'Could not save this just now. Nothing was changed; try again.'
+    default_code = 'evidence_not_recorded'
+
+    def __init__(self):
+        super().__init__({'error': self.default_detail, 'code': self.default_code})
+
+
+# TD-485 (A1.11a): the verbs `qc_separation.refusal` reads (its REVIEW_VERBS — a test pins the two
+# equal). A failed write of one of these RAISES (see `record`); every other verb stays D9.
+GUARD_EVIDENCE = frozenset({INTERVIEW_SUBMITTED, INTERVIEW_DRAFTED, VERDICT_RECORDED,
+                            VERIFY_ACCEPT, DECLINE_SENT_TO_QC})
 DECLINED = V.DECLINED
 QC_DECISION = V.QC_DECISION
 DECISION_REOPENED = V.DECISION_REOPENED
@@ -115,7 +132,7 @@ WIRED = {
                    'scholarship/views_admin/resolution.py:AdminRequestInfoView.post',
                    'scholarship/views_admin/resolution.py:AdminResolutionItemActionView.post'),
     QUERY_RESOLVED: ('scholarship/views_admin/resolution.py:AdminResolutionItemActionView.post',),
-    INTERVIEW_SUBMITTED: ('scholarship/services/querying.py:submit_interview',),
+    INTERVIEW_SUBMITTED: ('scholarship/services/querying.py:_submit_interview_writes',),
     INTERVIEW_DRAFTED: ('scholarship/views_admin/interviews.py:AdminInterviewView.post',),   # T5b
     VERDICT_RECORDED: ('scholarship/views_admin/verdict.py:_save_verdict',),
     VERIFY_ACCEPT: ('scholarship/views_admin/applications.py:AdminVerifyAcceptView.post',),
@@ -318,5 +335,13 @@ def record(actor, verb, subject=None, meta=None, *, organisation=None):
                 actor=actor, organisation_id=org_id, verb=str(verb), subject_type=kind,
                 subject_id=subject_id, meta=clean)
     except Exception:   # D9: the activity list never breaks the action (no `noqa`: budget full)
+        if str(verb) in GUARD_EVIDENCE:
+            # ⚠ TD-485 (A1.11a): the QC separation guard's own evidence is NOT best-effort. A lost
+            # row let the person QC the case they reviewed; the write raises instead, and every
+            # writer of these verbs records inside the action's transaction, so the action rolls
+            # back with it (one fails, both fail — never an action without its evidence).
+            logger.error('staff_activity: could not record guard evidence %r', verb,
+                         exc_info=True)
+            raise EvidenceNotRecorded() from None
         logger.warning('staff_activity: could not record %r', verb, exc_info=True)
         return None

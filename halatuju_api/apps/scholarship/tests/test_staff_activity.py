@@ -207,7 +207,9 @@ class TestBestEffort(_Base):
     def _each_failure(self):
         return (('db error', _a_real_db_error), ('writer raising', _the_writer_itself_raising))
 
-    def test_verify_accept_still_succeeds(self):
+    def test_verify_accept_is_refused_without_its_evidence(self):
+        # RE-POINTED by TD-485 (A1.11a): `verify_accept` is QC-guard evidence, so a lost row no
+        # longer lets the action through — the whole verify-accept rolls back with a 503.
         for label, failure in self._each_failure():
             with self.subTest(label):
                 app = self.app('verdict_recorded', outcome='recommend', reviewer=self.reviewer)
@@ -217,9 +219,10 @@ class TestBestEffort(_Base):
                     resp = authed_client(self.reviewer).post(
                         _url(app, 'verify-accept/'), {'checklist': factories.VERIFY_CHECKLIST},
                         format='json')
-                self.assertEqual(resp.status_code, 200, resp.content)
+                self.assertEqual((resp.status_code, resp.json().get('code')),
+                                 (503, 'evidence_not_recorded'), resp.content)
                 app.refresh_from_db()
-                self.assertEqual((app.status, app.verified_by), ('interviewed', self.reviewer.email))
+                self.assertEqual((app.status, app.verified_by or ''), ('interviewing', ''))
         self.assertNoRows()
 
     def test_a_close_still_succeeds_inside_its_row_lock(self):
