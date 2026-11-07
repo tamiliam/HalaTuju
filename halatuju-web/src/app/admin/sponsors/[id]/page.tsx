@@ -383,8 +383,7 @@ export default function AdminSponsorDetailPage() {
               </thead>
               <tbody className="divide-y">
                 {pagedCredits.rows.map((c) => {
-                  // A1.10a: armed per credit, and the check is the `payments_approve` key's.
-                  const armed = creditArmed(c, detail.finance_check_required)
+                  const armed = creditArmed(c, detail.finance_check_required) // A1.10a: per credit; payments_approve key
                   const actions = creditActions(c, armed, viewerRole, role?.permissions)
                   return (
                   <tr key={c.id} className="align-top">

@@ -6,7 +6,6 @@
  * a loading policy, or drops a header, fails here first. The live check after a deploy:
  *   curl -sI https://halatuju.xyz/ | grep -iE "x-content-type|referrer-policy|x-frame|content-security|permissions-policy"
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const nextConfig = require('../../../next.config.js')
 
 type Header = { key: string; value: string }
