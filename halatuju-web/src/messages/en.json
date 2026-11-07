@@ -4257,6 +4257,7 @@
         "interviewedBy": "Interviewed by",
         "reopenError": "Could not reopen the interview.",
         "unanswered": "Answer every question before you submit ({count} left): mark it Resolved, write a short note such as “See conclusion”, or delete it.",
+        "stillToAnswer": "Questions still to answer: {count}. Mark each one Resolved, write a short note such as “See conclusion”, or delete it.",
         "verdict": {
           "resolved": "Resolved"
         },

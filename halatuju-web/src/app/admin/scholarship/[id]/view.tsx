@@ -198,6 +198,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
+  // ⚠ AN INTERVIEW SAVE/SUBMIT FAILURE IS SHOWN BESIDE ITS OWN BUTTON (case 254, 2026-11-07).
+  // It used to go into the page `error`, which prints only in the Profile and Decision cards —
+  // off-screen from the Submit button, so a refused submit looked like nothing happened.
+  const [interviewError, setInterviewError] = useState('')
   // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
   // (app.decision_reopened_at) so it survives a reload; these only drive the reason input.
   const [reopenOpen, setReopenOpen] = useState(false)    // the "why are you reopening?" box is showing
@@ -241,6 +245,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
   }, [token, witnessCardVisible])
   useEffect(() => { setWitnessSel(app?.witness_org?.code || '') }, [app?.witness_org?.code])
+  // A refusal answers the findings as they WERE; once she answers or deletes an item it is stale,
+  // and the live "still to answer" line under the buttons takes over.
+  useEffect(() => { setInterviewError('') }, [findings])
 
   const doAssignWitness = async () => {
     if (!token || !app) return
@@ -488,7 +495,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
   const doSaveInterview = async () => {
     if (!token) return
-    setBusy('iv'); setError(''); setInterviewMsg('')
+    setBusy('iv'); setError(''); setInterviewError(''); setInterviewMsg('')
     try {
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       await refreshApp()
@@ -496,18 +503,18 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       // (the draft is still editable; re-saving overwrites it, until Submit).
       setInterviewMsg(t('admin.scholarship.interview.saved'))
       setTimeout(() => setInterviewMsg(''), 4000)
-    } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
+    } catch { setInterviewError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
   }
 
   const doSubmitInterview = async () => {
     if (!token) return
-    setBusy('ivs'); setError(''); setInterviewMsg('')
+    setBusy('ivs'); setError(''); setInterviewError(''); setInterviewMsg('')
     try {
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       const d = await submitInterview(id, { token })
       setApp(d); loadInterviewState(d)   // freeze to the read-only view
-    } catch (e) {   // TD-253: an unanswered agenda item is refused, in words
-      setError(interviewRefusalText(e, t) ?? t('admin.scholarship.interview.submitError'))
+    } catch (e) {   // TD-253: an unanswered agenda item is refused, in words — beside the button
+      setInterviewError(interviewRefusalText(e, t) ?? t('admin.scholarship.interview.submitError'))
     } finally { setBusy('') }
   }
 
@@ -914,6 +921,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
   ]
   const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
+  // The live count under Submit (case 254): the questions still unanswered in what she has typed
+  // so far — the same "answered" rule the api applies at submit, read from the UNSAVED findings,
+  // so she is told before she presses rather than after.
+  const interviewUnansweredCount = missingAgendaItems(agendaItems.map((it) => it.code), findings).length
 
   // #7: Approve/Decline activate only once the reviewer has (1) submitted interview findings that
   // answer EVERY agenda item (TD-253 — read from the SAVED session, which is what the api checks),
@@ -1009,6 +1020,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         app={app} t={t} busy={busy} canWrite={canWrite}
         decisionReopened={decisionReopened} decisionRecorded={decisionRecorded}
         interviewLocked={interviewLocked} interviewMsg={interviewMsg}
+        interviewError={interviewError} interviewUnansweredCount={interviewUnansweredCount}
         agendaItems={agendaItems} editableAgenda={editableAgenda}
         findings={findings} setFindings={setFindings} note={note} setNote={setNote}
         doSuggestGaps={doSuggestGaps} doReopenInterview={doReopenInterview}

@@ -250,10 +250,41 @@ describe('every interview question needs an answer before the reviewer decides',
     api.submitInterview.mockRejectedValue(Object.assign(new Error('x'), {
       code: 'findings_incomplete', body: { missing: ['motivation:motivation_grit'] } }))
     fireEvent.click(button('interview.submit'))
-    // The cockpit prints its one `error` in two places (the profile card and the decision card).
     expect((await screen.findAllByText('admin.scholarship.interview.unanswered')).length)
       .toBeGreaterThan(0)
     expect(screen.queryByText('admin.scholarship.interview.submitError')).toBeNull()
+  })
+
+  it('⚠ case 254: the submit refusal is printed IN the Interview card, beside its button',
+     async () => {
+    // A reviewer pressed Submit, the refusal printed only at the foot of the right-hand Decision
+    // card, and from where he stood nothing happened. It must be inside the interview section.
+    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+      interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
+    await loaded()
+    api.saveInterview.mockResolvedValue({} as never)
+    api.submitInterview.mockRejectedValue(Object.assign(new Error('x'), {
+      code: 'findings_incomplete', body: { missing: ['motivation:motivation_grit'] } }))
+    fireEvent.click(button('interview.submit'))
+    const refusal = await screen.findByRole('alert')
+    expect(refusal.textContent).toBe('admin.scholarship.interview.unanswered')
+    expect(document.getElementById('interview-section')?.contains(refusal)).toBe(true)
+    // …and once she answers, the stale refusal gives way (the answered agenda has nothing left).
+    fireEvent.change(screen.getByPlaceholderText('admin.scholarship.interview.rationalePlaceholder'),
+      { target: { value: 'See conclusion' } })
+    expect(screen.queryByText('admin.scholarship.interview.unanswered')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.interview.stillToAnswer')).toBeNull()
+  })
+
+  it('case 254: the live count under Submit says how many are left BEFORE she presses',
+     async () => {
+    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+      interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
+    await loaded()
+    expect(screen.getByText('admin.scholarship.interview.stillToAnswer')).toBeTruthy()
+    // Resolved is an answer on its own — the line goes as soon as nothing is left.
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.interview.verdict.resolved' }))
+    expect(screen.queryByText('admin.scholarship.interview.stillToAnswer')).toBeNull()
   })
 })
 

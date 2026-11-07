@@ -4257,6 +4257,7 @@
         "interviewedBy": "Ditemu duga oleh",
         "reopenError": "Tidak dapat membuka semula temu duga.",
         "unanswered": "Jawab setiap soalan sebelum menghantar ({count} lagi): tandakan Selesai, tulis nota ringkas seperti “Lihat kesimpulan”, atau padamkannya.",
+        "stillToAnswer": "Soalan yang belum dijawab: {count}. Tandakan setiap satu Selesai, tulis nota ringkas seperti “Lihat kesimpulan”, atau padamkannya.",
         "verdict": {
           "resolved": "Selesai"
         },
