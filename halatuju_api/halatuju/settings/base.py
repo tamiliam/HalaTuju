@@ -6,6 +6,8 @@ These settings are shared across all environments.
 import os
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -121,10 +123,8 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# Contract module — the SINGLE Gemini model used to draft comprehension-quiz
-# questions (contracts.generate_quiz). Owner decision 4: no silent downgrade to a
-# lesser model — if the configured model is unavailable/errors, raise, don't degrade.
-# (Deliberately NOT the reports MODEL_CASCADE.)
+# Contract module — the SINGLE Gemini model for comprehension-quiz questions (contracts.generate_quiz).
+# Owner decision 4: never downgrade silently; an unavailable model raises (NOT the MODEL_CASCADE).
 CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
 # "How it's advertised" — the model that DRAFTS a gift's Malay/Tamil apply-page copy from its own
 # English (`apply_copy_draft`). Flash by owner decision (2026-09-10): a few hundred words a press,
@@ -136,19 +136,19 @@ APPLY_COPY_DRAFT_MODEL = os.environ.get('APPLY_COPY_DRAFT_MODEL', 'gemini-2.5-fl
 # PDF is filed into (best-effort; mirrors VIRCLE_PAYMENTS_FOLDER). Env-overridable.
 CONTRACTS_DRIVE_FOLDER = os.environ.get('CONTRACTS_DRIVE_FOLDER', '04 Contracts')
 
-# Admin notifications. The env var was set on Cloud Run but never read into
-# settings, so getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') silently returned ''
-# and every admin-notify email (sponsor interest, profile-complete, Vision-outage
-# alert) no-op'd. Reading it here makes those actually send.
+# Admin notifications (sponsor interest, profile-complete, Vision-outage alert). Read here, or
+# getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') returns '' and every such email no-ops.
 ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
-# S$ → RM rate for the B40 means-test: a Singapore-employed parent's payslip is in Singapore
-# dollars, so income_engine converts it to ringgit before the B40 band. Env-overridable so the
-# rate can be updated without a deploy as FX drifts (spot ~3.15 at 2026-07). Applies only to
-# applications still in review — a decided case keeps its as-recorded figure.
+# S$ → RM rate for the B40 means-test (income_engine converts a Singapore payslip). Env so it can
+# follow FX without a deploy (~3.15 at 2026-07); a decided case keeps its as-recorded figure.
 SGD_TO_MYR_RATE = float(os.environ.get('SGD_TO_MYR_RATE', '3.15'))
-# Shared secret guarding the internal cron endpoint (Cloud Scheduler → the running
-# api service runs scheduled management commands without a separate Cloud Run Job).
+# Internal cron endpoint (CronRunView). SEC-05: one secret per job family (cron_auth.py); the
+# shared CRON_SECRET still opens every job while it is set. An unset secret opens nothing.
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
+CRON_FAMILY_SECRETS = {f: os.environ.get('CRON_SECRET_' + f.upper(), '')
+                       for f in ('money', 'paid', 'email', 'maintenance')}
+# TD-421: the admin people-search term travels in this header, never in the logged URL.
+CORS_ALLOW_HEADERS = (*default_headers, 'x-search-term')
 
 # Off-platform backup of the private document bucket (security hardening item A).
 # A GCS bucket (same GCP project) that `backup_documents` mirrors b40-documents into.

@@ -14,7 +14,6 @@ Endpoints:
 `views_staff.py` since request #39 Sprint 1, 2026-10-19; the role switch is
 `apps.scholarship.views_admin.staff`.)
 """
-import csv
 import json
 import logging
 import secrets
@@ -29,10 +28,10 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from . import (password_change_flag, referral_links, staff_activity_hook, staff_permissions,
-               staff_reinvite, staff_tables, supabase_admin)
+from . import (csv_safe, password_change_flag, referral_links, staff_activity_hook,
+               staff_permissions, staff_reinvite, staff_tables, supabase_admin)
 from .recovery_session import is_fresh_recovery_for
-from .search import apply_people_search
+from .search import apply_people_search, people_search_term
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
 from .models import StudentProfile, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
@@ -419,7 +418,7 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
         # for most). Shared with the B40 list via apps.courses.search. The notify_email path
         # crosses a to-many reverse FK → distinct() to avoid duplicate profile rows.
         students = apply_people_search(
-            students, request.GET.get('q'),
+            students, people_search_term(request),  # header first (TD-421: never the URL)
             name='name', nric='nric', phone='contact_phone', email='contact_email',
             extra_email='scholarship_applications__notify_email', needs_distinct=True)
         exam = request.GET.get('exam')
@@ -484,7 +483,7 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/students/export/ - CSV export of referred students."""
 
     def get(self, request):
-        students, org, _ = self.get_partner_students(request)
+        students, org, admin = self.get_partner_students(request)
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
@@ -494,7 +493,7 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
-        writer = csv.writer(response)
+        writer = csv_safe.writer(response)  # TD-515: no cell a spreadsheet can run
         writer.writerow([
             'Name', 'IC', 'Angka Giliran', 'Email', 'Phone', 'School',
             'Gender', 'Nationality',
@@ -527,7 +526,8 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
                 s.created_at.strftime('%Y-%m-%d'),
                 ad.get('last_sign_in', ''),
             ])
-
+        logger.info('AUDIT partner_students_export admin=%s org=%s rows=%s',  # TD-515: no PII
+                    admin.pk, org.pk if org else 'all', len(students))
         return response
 
 

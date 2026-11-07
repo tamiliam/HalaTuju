@@ -10,14 +10,31 @@ phone / email, with two robustness rules learned from real data:
 * **Email can live in more than one column.** Most applicants have an email only in the
   application's ``notify_email`` (captured at apply), not the profile's ``contact_email`` —
   so callers pass ``extra_email`` to cover the second home.
+
+**The term travels in a header, not the URL (TD-421, A1.9).** An officer searching by IC types the
+student's full NRIC; in a query string it lands in Cloud Run's request log, which records the URL
+and not custom headers. ``people_search_term`` reads ``X-Search-Term`` (URI-encoded by the web, so a
+Tamil name survives the header's Latin-1 rule) and falls back to the old query parameter, so an
+older web build keeps working until it is replaced.
 """
 import re
+from urllib.parse import unquote
 
 from django.db.models import F, Q, Value
 from django.db.models.functions import Replace
 
 # The separators that actually appear in our stored phone/NRIC values.
 _SEPARATORS = (' ', '-', '+', '(', ')', '.')
+
+SEARCH_HEADER = 'X-Search-Term'
+
+
+def people_search_term(request, param='q'):
+    """The people-search text: the ``X-Search-Term`` header when sent, else ``?<param>=``."""
+    raw = request.headers.get(SEARCH_HEADER)
+    if raw is not None:
+        return unquote(raw)
+    return request.GET.get(param, '')
 
 
 def _digits_expr(col):

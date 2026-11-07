@@ -119,6 +119,28 @@ class TestConsentApi(TestCase):
         self.assertEqual(resp.json()['version'], CONSENT_VERSION)
         self.assertEqual(resp.json()['granted_by'], 'self')
 
+    def test_consent_records_the_forwarded_caller_not_the_proxy(self):
+        """TD-429 (A1.9): the rightmost X-Forwarded-For hop (Cloud Run's), not REMOTE_ADDR;
+        a forged left hop is ignored, and a value that is not an address is stored as None."""
+        self._make_ready(self.app_adult, self.adult)
+        self._auth(ADULT)
+        self.client.post('/api/v1/scholarship/consent/', {'locale': 'en'}, format='json',
+                         HTTP_X_FORWARDED_FOR='1.2.3.4, 198.51.100.7', REMOTE_ADDR='10.0.0.1')
+        self.assertEqual(Consent.objects.filter(application=self.app_adult).latest('pk').ip_address,
+                         '198.51.100.7')
+        self.client.post('/api/v1/scholarship/consent/', {'locale': 'en'}, format='json',
+                         HTTP_X_FORWARDED_FOR='not-an-address', REMOTE_ADDR='10.0.0.1')
+        self.assertIsNone(Consent.objects.filter(application=self.app_adult).latest('pk').ip_address)
+
+    def test_every_signing_site_reads_the_signer_ip(self):
+        """TD-429: the four signing call sites in views.py (onboarding complete, promotional consent,
+        the data consent, the award acceptance) all go through `request_ip.signer_ip`."""
+        from pathlib import Path
+        from apps.scholarship import views
+        text = Path(views.__file__).read_text(encoding='utf-8')
+        self.assertNotIn('REMOTE_ADDR', text)
+        self.assertEqual(text.count('ip=request_ip.signer_ip(request)'), 4)
+
     def test_consent_blocked_until_profile_complete(self):
         """The new gate: an incomplete application cannot give consent, and the
         response lists every outstanding item at once."""

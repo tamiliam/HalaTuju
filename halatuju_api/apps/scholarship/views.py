@@ -34,7 +34,7 @@ from .serializers import (
     SignUploadSerializer,
     StudentAwardSerializer,
 )
-from . import apply_copy, gift_sources, results_route
+from . import apply_copy, gift_sources, request_ip, results_route
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
@@ -541,7 +541,7 @@ class ApplicationOnboardingCompleteView(APIView):
         try:
             complete_onboarding(
                 application, answers=answers, locale=application.locale,
-                ip=request.META.get('REMOTE_ADDR'),
+                ip=request_ip.signer_ip(request),
             )
         except OnboardingError as exc:
             return Response(
@@ -622,7 +622,7 @@ class PromotionalConsentView(_OwnInProgrammeView):
         try:
             in_programme_service.grant_promotional_consent(
                 application, locale=application.locale,
-                ip=request.META.get('REMOTE_ADDR'),
+                ip=request_ip.signer_ip(request),
             )
         except in_programme_service.InProgrammeError as exc:
             return Response({'error': exc.code, 'code': exc.code},
@@ -2029,7 +2029,7 @@ class ConsentView(APIView):
             guardian_name=d['guardian_name'],
             guardian_relationship=d['guardian_relationship'],
             guardian_nric=d.get('guardian_nric', ''),
-            ip=request.META.get('REMOTE_ADDR'),
+            ip=request_ip.signer_ip(request),
         )
         # Silently align the income route with whichever evidence actually cleared the gate (a
         # valid dispositive STR vs a complete salary cluster), so the officer's verdict reads the
@@ -2042,7 +2042,8 @@ class CronRunView(APIView):
     """Internal endpoint for Cloud Scheduler to run a whitelisted management command
     inside the already-running api service (which holds all DB/email config), so we
     avoid a separate Cloud Run Job that would have to replicate plain-env secrets.
-    Auth is a shared-secret header compared in constant time. Public route, but inert
+    Auth is a secret header compared in constant time, one key per job family (SEC-05,
+    cron_auth.py). Public route, but inert
     without the secret. Never 500s the scheduler (that just causes retries)."""
     permission_classes = [AllowAny]
 
@@ -2171,13 +2172,9 @@ class CronRunView(APIView):
     }
 
     def post(self, request, job):
-        import hmac
-        from django.conf import settings
-        from . import cron_health
-
-        secret = getattr(settings, 'CRON_SECRET', '') or ''
-        provided = request.headers.get('X-Cron-Secret', '') or ''
-        if not secret or not hmac.compare_digest(secret, provided):
+        from . import cron_auth, cron_health
+        # SEC-05: the job's FAMILY key, or the shared CRON_SECRET while it is set (cron_auth.py).
+        if not cron_auth.allowed(job, request.headers.get('X-Cron-Secret', '')):
             return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
         command = self.JOBS.get(job)
         if not command:
@@ -2403,7 +2400,7 @@ class StudentAwardView(APIView):
                 guardian_name=request.data.get('guardian_name', '') or '',
                 guardian_relationship=request.data.get('guardian_relationship', '') or '',
                 guardian_nric=request.data.get('guardian_nric', '') or '',
-                ip=request.META.get('REMOTE_ADDR'),
+                ip=request_ip.signer_ip(request),
                 student_signed_name=request.data.get('student_signed_name', '') or '',
                 student_signed_nric=request.data.get('student_signed_nric', '') or '',
                 guarantor_name=request.data.get('guarantor_name', '') or '',

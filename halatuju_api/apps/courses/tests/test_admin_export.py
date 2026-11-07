@@ -186,3 +186,44 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         for row in rows[1:]:
             self.assertEqual(row[EXPECTED_HEADER.index('Email')], '')
             self.assertEqual(row[EXPECTED_HEADER.index('Last Sign-In')], '')
+
+    def test_a_typed_formula_cannot_run_in_a_spreadsheet(self):
+        """TD-515 / SEC-04 (A1.9): a student-typed cell that starts a formula is shown as text."""
+        StudentProfile.objects.create(
+            supabase_user_id='student-uid-evil', nric='030303-03-3333', name='EVIL STUDENT',
+            school='=HYPERLINK("http://x.test","click")', address='@SUM(A1)', city='+1', referred_by_org=self.org,
+        )
+        with patch('apps.courses.views_admin._fetch_auth_data', return_value={}):
+            response = self.client.get('/api/v1/admin/students/export/')
+        evil = self._row_for(self._read_csv(response), 'EVIL STUDENT')
+        get = lambda col: evil[EXPECTED_HEADER.index(col)]
+        self.assertEqual(get('School'), '\'=HYPERLINK("http://x.test","click")')
+        self.assertEqual(get('Address'), "'@SUM(A1)")
+        self.assertEqual(get('City'), "'+1")
+
+    def test_the_export_leaves_an_audit_line_without_pii(self):
+        """TD-515 (A1.9): who exported, which org, how many rows; never a name or an IC."""
+        with patch('apps.courses.views_admin._fetch_auth_data', return_value={}), \
+                self.assertLogs('apps.courses.views_admin', level='INFO') as logs:
+            self.client.get('/api/v1/admin/students/export/')
+        audit = [line for line in logs.output if 'AUDIT partner_students_export' in line]
+        self.assertEqual(len(audit), 1)
+        admin_pk = PartnerAdmin.objects.get(supabase_user_id=SUPER_UID).pk
+        self.assertIn(f'admin={admin_pk} org=all rows=', audit[0])
+        self.assertNotIn('ANITA', audit[0])
+        self.assertNotIn('010101-01-1111', audit[0])
+
+
+class CsvSafeCellTest(TestCase):
+    """TD-515: the one formula guard, shared with the survey CSV (survey_results._cell)."""
+
+    def test_the_rule(self):
+        from apps.courses.csv_safe import csv_cell
+        for raw, out in [('=1+1', "'=1+1"), ('+60', "'+60"), ('-2', "'-2"), ('@x', "'@x"),
+                         ('\tx', "'\tx"), ('\rx', "'\rx"), ('Anita', 'Anita'), (None, ''), (5, '5')]:
+            self.assertEqual(csv_cell(raw), out)
+
+    def test_the_survey_csv_uses_the_same_rule(self):
+        from apps.courses.csv_safe import csv_cell
+        from apps.scholarship import survey_results
+        self.assertIs(survey_results._cell, csv_cell)

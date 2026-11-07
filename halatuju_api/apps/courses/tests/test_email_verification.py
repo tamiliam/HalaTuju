@@ -98,6 +98,15 @@ class TestSendVerification(TestCase):
         call_kwargs = mock_send.call_args
         self.assertEqual(call_kwargs[1]['subject'], 'HalaTuju — Verify your email')
 
+    @unittest.mock.patch('django.core.mail.send_mail', side_effect=RuntimeError('smtp down'))
+    def test_a_failed_send_logs_the_profile_not_the_address(self, _send):
+        """SEC-09 (A1.9): the WARNING line names the profile id, never the email address."""
+        with self.assertLogs('apps.courses.views', level='WARNING') as logs:
+            resp = self._post({'email': 'new@example.com'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn('new@example.com', '\n'.join(logs.output))
+        self.assertIn(str(self.profile.pk), logs.output[0])
+
     def test_send_creates_token(self):
         resp = self._post({'email': 'new@example.com'})
         self.assertEqual(resp.status_code, 200)

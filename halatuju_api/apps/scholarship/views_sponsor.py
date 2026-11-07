@@ -715,9 +715,7 @@ class SponsorTermsAcceptView(_TermsBase):
 
 
 def _client_ip(request):
-    """Best-effort caller IP for the acceptance record: the first X-Forwarded-For hop (Cloud Run
-    sits behind a proxy), else REMOTE_ADDR. Its one home is now `request_ip.forwarded_ip` (moved
-    unchanged, review L4, 2026-10-30), shared with the source's witness record. ⚠ A malformed header
-    is NOT turned into None here, whatever this used to say — TD-429."""
-    from .request_ip import forwarded_ip
-    return forwarded_ip(request)
+    """The caller's address for the acceptance record: `request_ip.signer_ip` (the rightmost
+    X-Forwarded-For hop, kept only when it parses as an address; TD-429, A1.9)."""
+    from .request_ip import signer_ip
+    return signer_ip(request)

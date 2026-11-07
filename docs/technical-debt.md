@@ -163,7 +163,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-356** — `cancel_reopen` turns ANY reopened case at `interviewing` into `interviewed` (AWAITING QC), though only a QC reopen moved it there; a reopen of a decided `interviewing` case then lands in the QC queue it never reached. Pre-existing; since the TD-349 refusal not reachable from a pending decline, and the cockpit offers no Reopen there (the stuck rule), so only a direct API call reaches it. *(B · M · raised 2026-10-06 by the TD-349 fix)*
 - ~~**TD-347**~~ — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)* **Fixed 2026-11-06 (Sprint A1.6): a clearing call re-arms the clock; the deadline email is TD-534; see the detail entry.**
-- **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)*
+- **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)* API half done 2026-11-07 (A1.9a: X-Search-Term header); the web half is A1.9b.
 
 ### Next — a student or an officer can see it, and it is small — 25
 Class C, half a day each. Good small-change-lane work; several go together.
@@ -290,7 +290,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-425** - A correction is carried by ONE named month, so a skipped month silently strands it - medium
 - **TD-426** - `hoursAnalysisId` and `closing_report` are one rule in two languages - low
 - **TD-428** - The email-verification mail is a bare `send_mail`: never metered, never billed - low
-- **TD-429** - The student's and the guarantor's signatures record the proxy's address, not theirs - low
+- **TD-429** - The student's and the guarantor's signatures record the proxy's address, not theirs - low - **FIXED (2026-11-07, A1.9a)**
 - **TD-430** - The weekly partner email counts a decline still in its cool-off as "Rejected" - medium
 - **TD-431** - An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
 - **TD-432** - Source users have no Guide or FAQ - low
@@ -355,13 +355,13 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-511** - A student can delete their own locked slip file through a second row (SEC-01 L5) - low
 - **TD-512** - A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
 - **TD-513** - Staff first-login link trusts user-writable user_metadata.email_verified (SEC-02) - medium (conditional)
-- **TD-514** - Throttle key comes from client-settable headers (SEC-03) - low
-- **TD-515** - Partner student CSV export has no audit line and no formula guard (SEC-04) - medium
+- **TD-514** - Throttle key comes from client-settable headers (SEC-03) - low - **FIXED (2026-11-07, A1.9a)**
+- **TD-515** - Partner student CSV export has no audit line and no formula guard (SEC-04) - medium - **FIXED (2026-11-07, A1.9a)**
 - **TD-516** - Python dependency bumps on the auth path: DRF 3.18.2, pyjwt 2.15.0 (SEC-10) - medium (quick win)
 - **TD-517** - record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
 - **TD-518** - reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
 - **TD-519** - Slow synchronous paths: document upload, assign, interview submit, income coach (SP-03 to SP-06) - medium
-- **TD-520** - Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low
+- **TD-520** - Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low (SEC-08, SEC-09 and the API HSTS done in A1.9a; SEC-11 and web headers in A1.9b)
 - **TD-521** - No real sign-in per role on a local stack (CO-01) - medium
 - **TD-523** - Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
 - **TD-524** - A hold verdict can reach QC accept with no amount - medium
@@ -370,6 +370,11 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-541** - A non-super admin with no organisation reads every organisation's reviewers on the other reviewer endpoints - medium
 - **TD-542** - The case-assign picker greys by the application's gift only; the server also accepts the cohort's gift - low
 - **TD-543** - Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
+- **TD-546** - One shared CRON_SECRET opens every cron job (SEC-05) - low - **FIXED (2026-11-07, A1.9a)**
+- **TD-547** - The Django admin sign-in on the API host has no throttle (SEC-06) - low - **FIXED (2026-11-07, A1.9a)**
+- **TD-548** - Anonymous sign-ins skip the NRIC gate (SEC-13) - low - **CLOSED (2026-11-07, documented, no gate)**
+- **TD-549** - 15 deny-all tables have no service_role policy (SEC-14) - low
+- **TD-569** - Throttle and admin-login counters live in the database cache (MAX_ENTRIES 300); a cull can wipe them and reset a lock early - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -6995,6 +7000,13 @@ Pre-existing on Applications; Scholars copied the shape. **Fix:** move people-se
 header), or log the path without its query string; a hashed IC would also serve an exact match. Check the
 retention on the existing logs when this is fixed. *(B · S)*
 
+**Progress 2026-11-07 (A1.9a, API half).** The API reads the term from an `X-Search-Term` header first
+(`apps.courses.search.people_search_term`, URI-decoded so a Tamil name survives), then falls back to `?q=` /
+`?search=` while an older web bundle is live. Wired on Applications, Scholars and the Students directory; CORS
+allows the header (`settings/base.py`). Pinned by `test_search_term_header.py` (the term is absent from the
+request line). **Left for A1.9b:** the web sends the header (`client.ts`, `applications.ts`, `scholars.ts`,
+`partners.ts`) and stops putting the term in the URL; this entry closes then. The API must deploy FIRST (CORS).
+
 ### [TD-422] The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
 
 **Raised 2026-10-29** by the sprint that built it. `metered_usage.metered_activity_without_cost` counts
@@ -7102,7 +7114,7 @@ way `profile_claim.send_claim_code_email` does (the existing lazy `_scholarship(
 in the budget), named `send_*` so the meter tags it; forward-only like every S6a billing fix, no backfill.
 *(B · S)*
 
-### [TD-429] The student's and the guarantor's signatures record the proxy's address, not theirs - low
+### [TD-429] The student's and the guarantor's signatures record the proxy's address, not theirs - low - **FIXED (2026-11-07, A1.9a: all four views.py signing sites and the sponsor acceptance use request_ip.signer_ip, the rightmost X-Forwarded-For hop, validated)**
 
 **Raised 2026-10-30 by the source sign-in adversarial review (L4).** `sponsorship.respond_to_award` stores
 `student_ip` / `guarantor_ip` (and the consent's `ip`) from `request.META['REMOTE_ADDR']` (`views.py`, four
@@ -8052,11 +8064,11 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (code flaw confirmed; hotfix on branch sec-a).** `middleware/supabase_auth.py` ~156 falls back to `user_metadata.email_verified`, which the user can write, and `get_admin` (`views_admin.py` ~115) uses it to link an invited PartnerAdmin row by email. Exploitable only if Supabase issues sessions for unconfirmed emails (Confirm email OFF); the owner is checking that setting. **Fix:** trust only the server-side `email_confirmed_at` claim; test with a forged metadata flag. *(A · S)*
 
-### [TD-514] Throttle key comes from client-settable headers (SEC-03) - low
+### [TD-514] Throttle key comes from client-settable headers (SEC-03) - low - **FIXED (2026-11-07, A1.9a: throttling.client_ip takes the rightmost hop; CF-Connecting-IP dropped)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `halatuju/throttling.py` trusts `CF-Connecting-IP` (no Cloudflare in front) and the LEFTMOST `X-Forwarded-For` hop; Cloud Run appends the real address as the RIGHTMOST hop. A new spoofed value per request gets a new bucket, so every anonymous limit can be skipped. Logged-in upload limits key on the user id and are unaffected. **Fix:** take the rightmost trusted hop, drop the Cloudflare header. *(A · S)*
 
-### [TD-515] Partner student CSV export has no audit line and no formula guard (SEC-04) - medium
+### [TD-515] Partner student CSV export has no audit line and no formula guard (SEC-04) - medium - **FIXED (2026-11-07, A1.9a: apps/courses/csv_safe.py guards every cell; AUDIT partner_students_export line with admin id, org and row count)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `courses/views_admin.py` ~483-531 exports name, NRIC, email, phone, address, household income and disability with no `AUDIT` line, and does not neutralise cells that start with `=`, `+`, `-` or `@`; fields students type themselves reach Excel as typed. The other CSV exports do both (`survey_results._cell`). Scope is fenced to the partner's own referred students. **Fix:** reuse `_cell` and write the AUDIT line; add tests for both. *(A · S)*
 
@@ -8079,6 +8091,8 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 ### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-08 and 09 confirmed; SEC-11 and 12 read, not run).** (1) `profile_claim._within` does a cache get then set, not an atomic add. (2) `courses/views.py` ~1418 writes an email address into a WARNING line. (3) `public.partner_organisations` has an "Allow public read" policy (Security Advisor 0012) exposing contact names, emails and phones. (4) No CSP, X-Frame-Options or Referrer-Policy on the web; HSTS is 30 days on the API. **Fix:** atomic add; log the user id; tighten the policy; add a `headers()` block. *(A · S)*
+
+**Progress 2026-11-07 (A1.9a, API half).** (1) Done: `halatuju.throttling.take_slot` (`cache.add` per slot, atomic on the DatabaseCache) backs `profile_claim._within`. (2) Done: the WARNING names the profile id, never the address. (4) API part done: HSTS raised to one year (still no preload, no subdomains). **Left for A1.9b:** (3) the `partner_organisations` read policy (a hand-apply SQL file, after a read-only look at the policy and at who reads the table) and (4) the web `headers()` block in `next.config` plus the live-response headers test.
 
 ### [TD-521] No real sign-in per role on a local stack (CO-01) - medium
 
@@ -8211,3 +8225,23 @@ inside the locked block; the lock rule). *(A · S)*
 ### [TD-543] Audit gaps: refused set-gifts requests and invite-time gifts write no audit line - low
 
 **Raised 2026-11-07 by the multi-gift adversarial review.** A successful set-gifts logs `AUDIT reviewer_programme_set`, but a refused request (foreign gift, wrong role) writes nothing, and gifts chosen on the invite form are stored with no audit line. **Fix:** log both, same shape as the existing line. *(A · S)*
+
+### [TD-546] One shared CRON_SECRET opens every cron job (SEC-05) - low - **FIXED (2026-11-07, A1.9a: one secret per job family, the shared secret still accepted until retired)**
+
+**Raised 2026-11-05 by the v3.1.0 project audit (SEC-05, not re-checked).** Every Cloud Scheduler job sent the same `X-Cron-Secret`, so a leak of one job's secret opened the money jobs too. **Fixed:** `apps/scholarship/cron_auth.py` puts every job in one family (`money`, `paid` for paid model calls, `email`, `maintenance`; a test fails if a new job has no family) and `CronRunView` accepts the family's own key (`CRON_SECRET_MONEY`, `CRON_SECRET_PAID`, `CRON_SECRET_EMAIL`, `CRON_SECRET_MAINTENANCE`) or, while it is still set, the shared `CRON_SECRET`, logging an INFO line naming the job each time the shared one is used. An unset key opens nothing; comparisons are constant-time. **Owner steps (no code):** set the four env vars with `--update-env-vars`, move each Scheduler job's header to its family's key, watch for the INFO line to stop, then `--remove-env-vars CRON_SECRET` (docs/deployment.md, Cron secrets).
+
+### [TD-547] The Django admin sign-in on the API host has no throttle (SEC-06) - low - **FIXED (2026-11-07, A1.9a: 10 POSTs per caller per 15 minutes, then 429)**
+
+**Raised 2026-11-05 by the v3.1.0 project audit (SEC-06, not re-checked).** `/admin/login/` took any number of password guesses: DRF throttles cover the API views only. **Fixed:** `halatuju/admin_login.py` wraps `admin.site.login` (same form, CSRF and session) and refuses the 11th POST from one caller (rightmost X-Forwarded-For hop) in 15 minutes with a 429; showing the form is never counted. Mounted before `admin/` in `halatuju/urls.py`.
+
+### [TD-548] Anonymous sign-ins skip the NRIC gate (SEC-13) - low - **CLOSED (2026-11-07, A1.9a: documented, no gate built; owner may overrule)**
+
+**Raised 2026-11-05 by the v3.1.0 project audit (SEC-13, no harmful door found).** `NricGateMiddleware` lets an `is_anonymous` Supabase session through to every endpoint. **Decision (recommendation, A1.9a): keep it, build no gate.** It is the designed "browse before you identify" flow (`docs/decisions.md`, NRIC hard gate; `docs/auth-onboarding-flow.md`): an anonymous visitor uses the course search and the quiz before giving an IC. What protects student data is that every student view reads by `request.user_id`, and an anonymous id owns no one else's rows: at most it gets an EMPTY profile of its own (`ProfileView` GET, the report view and the NRIC claim use `get_or_create`; the known source of empty profiles in `docs/auth-onboarding-flow.md`), holding only what that visitor types. `ProfileSyncView` refuses anonymous callers and the quiz-signal save skips them; staff and sponsor routes check their own rows. A gate here would break the anonymous browse flow and close no door. **Revisit if** a view ever lets an anonymous id reach a row it did not create (for example by an IC or an application id in the request without an owner check); a reviewer checklist line is enough. The empty profiles are a data-tidiness matter, not a security one.
+
+### [TD-549] 15 deny-all tables have no service_role policy (SEC-14) - low
+
+**Raised 2026-11-05 by the v3.1.0 project audit (SEC-14, harmless today).** Fifteen tables have RLS on and no policy at all; the API reaches them as the table owner, so nothing fails, but the Security Advisor flags each one and a future move to a non-owner role would lock the API out. **Fix (A1.9b):** a hand-apply SQL file under `docs/security/` (pre-check list read-only first, one `BEGIN`/`COMMIT` with `SET LOCAL lock_timeout = '5s'`, read-back, rollback) adding an explicit `service_role` policy to each. *(A · S)*
+
+### [TD-569] Throttle and admin-login counters live in the database cache and can be culled - low
+
+**Raised 2026-11-07 by the A1.9a review (follow-up F3, not fixed).** The `take_slot` counters (admin sign-in lock, claim-code limits) and the DRF throttle histories are entries in the production DatabaseCache, whose `MAX_ENTRIES` is 300. When the table passes that, Django culls entries (a fraction of the oldest by expiry), and a cull can remove a counter early, so a lock can reset before its 15 minutes. Low: it needs a busy cache and an attacker who is lucky, and the throttles are best-effort. **Fix options (later):** raise `MAX_ENTRIES` and `CULL_FREQUENCY` for the throttle cache, or give counters their own cache alias or table. *(B · S)*

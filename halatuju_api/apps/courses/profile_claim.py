@@ -38,6 +38,7 @@ from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.dateparse import parse_datetime
 
 from halatuju.middleware.supabase_auth import is_staff_or_sponsor_sub
+from halatuju.throttling import take_slot
 
 from .models import ProfileClaimEvent, ProfileLoginAlias, StudentProfile
 
@@ -247,13 +248,10 @@ def _twilio_verify():
 
 
 def _within(key, limit):
-    """True when this hit is inside `limit` for the hour, counting it. Best-effort, exactly like
-    the phone-verify counter next door: this is abuse mitigation, not an auth boundary."""
-    used = cache.get(key, 0)
-    if used >= limit:
-        return False
-    cache.set(key, used + 1, _WINDOW_SECONDS)
-    return True
+    """True when this hit is inside `limit` for the hour, counting it. Atomic since SEC-08 (A1.9):
+    one `cache.add` slot per use (`halatuju.throttling.take_slot`), so two parallel requests can
+    no longer both read the same count and both pass."""
+    return take_slot(key, limit, _WINDOW_SECONDS)
 
 
 def _record(event, *, caller_sub, target='', nric='', channel='', actor=''):

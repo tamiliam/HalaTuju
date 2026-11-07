@@ -151,7 +151,8 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    folder defaults are stale on purpose). The `release-decisions` Cloud Run Job follows the api image on
    every deploy (`SyncReleaseJob`) but NOT its env: mirror an env change onto the job by hand.
 9. Scheduled work runs as **Cloud Scheduler → `POST /api/v1/internal/cron/<job>/`** with
-   `X-Cron-Secret` (`CronRunView.JOBS`); a POST needs a body (`-d '{}'`) or the load balancer answers 411.
+   `X-Cron-Secret` (`CronRunView.JOBS`) set to the job FAMILY's key (`cron_auth.JOB_FAMILY`, A1.9a; a
+   new job must be given a family or `test_cron_auth.py` fails); a POST needs a body (`-d '{}'`) or the load balancer answers 411.
    Read-service health (2026-10-24): `vision-outage` (daily 02:00 UTC, Vision OCR + Gemini reads, 24 h
    window), `read-outage-start` (`halatuju-read-outage-start`, hourly at :05 MYT, `--hourly` start-edge:
    mails once when an outage begins, ≥2 failures from ≥2 applications), `reprocess-ic-vision`
@@ -225,8 +226,12 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 | `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` / `DEFAULT_FROM_EMAIL` | Brevo SMTP. ⚠ Rotating the Brevo key also means Supabase Auth's own SMTP setting |
 | `FRONTEND_URL` | Links in emails (`https://halatuju.xyz`) |
 | `ADMIN_NOTIFY_EMAIL`, `FOUNDATION_NOTIFY_EMAIL`, `COURSE_REFRESH_REMINDER_EMAIL` | Who internal notices go to |
-| `CRON_SECRET` | Guards `/api/v1/internal/cron/` |
-| `SENTRY_DSN` | Error tracking (no PII sent) |
+| `CRON_SECRET` | Guards `/api/v1/internal/cron/`: the OLD shared key, still accepted for every job while set (SEC-05 / TD-546). Retire it with `--remove-env-vars CRON_SECRET` once every Scheduler job sends its family key and the INFO line `opened by the shared CRON_SECRET` has stopped |
+| `CRON_SECRET_MONEY`, `CRON_SECRET_PAID`, `CRON_SECRET_EMAIL`, `CRON_SECRET_MAINTENANCE` | A1.9a: one key per job family (`apps/scholarship/cron_auth.py` lists which job is in which). A job opens with its own family's key only; an unset key opens nothing. Four DIFFERENT random values; set with `--update-env-vars` and put each in its Scheduler jobs' `X-Cron-Secret` header |
+
+> **Client IP warning (A1.9a).** The caller's address is the RIGHTMOST `X-Forwarded-For` hop (`halatuju/throttling.py`), which assumes the browser calls the API `run.app` URL directly. If a proxy or load balancer is ever put in front, every user will share one IP and the throttles (and the admin-login lock) must be changed first. IPv6 throttle keys use the /64 network; signing records keep the full address.
+
+| `SENTRY_DSN` | Error tracking (no PII sent; the `X-Search-Term` header is scrubbed, `halatuju/sentry_scrub.py`) |
 | `DOCUMENT_BACKUP_BUCKET` | GCS bucket `backup_documents` mirrors the private document bucket into |
 | `SGD_TO_MYR_RATE` | S$ → RM for Singapore payslips (in-review cases only) |
 | `MAX_DOC_SIZE_BYTES`, `MAX_DOCS_PER_APPLICATION`, `MAX_OTHER_DOCS`, `DOC_STAGE_MAX_ATTEMPTS` | Upload limits and the re-upload circuit-breaker |

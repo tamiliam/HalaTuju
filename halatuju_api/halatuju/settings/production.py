@@ -34,9 +34,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False  # Cloud Run handles this
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-# HSTS (code-health S5): browsers pin HTTPS for 30 days. Conservative — no preload, no
-# subdomain pinning (api/web live on their own hosts and are individually HTTPS-only).
-SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+# HSTS: browsers pin HTTPS for one year (SEC-12 / TD-520, A1.9; was 30 days since code-health S5).
+# Still no preload and no subdomain pinning (api/web live on their own hosts, each HTTPS-only).
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
@@ -90,8 +90,11 @@ if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
 
+    from halatuju.sentry_scrub import build_event_scrubber
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        event_scrubber=build_event_scrubber(),  # also hides the X-Search-Term header
         integrations=[DjangoIntegration()],
         traces_sample_rate=0.1,
         send_default_pii=False,

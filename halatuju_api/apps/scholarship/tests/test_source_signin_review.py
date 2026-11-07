@@ -272,8 +272,9 @@ class TestL4TheWitnessIpIsTheForwardedCaller(_Fixture):
         with patch.object(bursary, '_notify_foundation_countersign_pending'):
             return self.client.post(witness_url(self.ready), GOOD, format='json', **meta)
 
-    def test_the_first_forwarded_hop(self):
-        resp = self._post(HTTP_X_FORWARDED_FOR='198.51.100.7, 10.0.0.1', REMOTE_ADDR='10.0.0.1')
+    def test_the_rightmost_forwarded_hop(self):
+        # TD-429 / TD-514 (A1.9): Cloud Run appends the address it saw; the left hop is typed.
+        resp = self._post(HTTP_X_FORWARDED_FOR='1.2.3.4, 198.51.100.7', REMOTE_ADDR='10.0.0.1')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self.agreement(self.ready).witness_ip, '198.51.100.7')
 
@@ -283,13 +284,14 @@ class TestL4TheWitnessIpIsTheForwardedCaller(_Fixture):
         self.assertIsNone(self.agreement(self.ready).witness_ip)
 
 
-class TestL4TheSponsorHelperIsUnchanged(SimpleTestCase):
-    def test_it_reads_the_same_as_before(self):
+class TestL4TheSponsorHelperReadsTheSignerIp(SimpleTestCase):
+    """TD-429 (A1.9): the sponsor terms acceptance now records `request_ip.signer_ip` - the
+    rightmost hop, and None for a value that is not an address (an `inet` column)."""
+    def test_rightmost_hop_and_validated(self):
         from django.test import RequestFactory
         from apps.scholarship.views_sponsor import _client_ip
         rf = RequestFactory()
         self.assertEqual(_client_ip(rf.get('/', HTTP_X_FORWARDED_FOR='1.2.3.4, 5.6.7.8')),
-                         '1.2.3.4')
+                         '5.6.7.8')
         self.assertEqual(_client_ip(rf.get('/', REMOTE_ADDR='9.9.9.9')), '9.9.9.9')
-        # As before the move: a malformed header is passed through (TD-429), not cleaned.
-        self.assertEqual(_client_ip(rf.get('/', HTTP_X_FORWARDED_FOR='junk')), 'junk')
+        self.assertIsNone(_client_ip(rf.get('/', HTTP_X_FORWARDED_FOR='junk')))

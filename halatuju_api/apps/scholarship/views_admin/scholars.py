@@ -18,6 +18,8 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 
+from apps.courses.search import people_search_term
+
 from .. import activity, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import SemesterResult, StudentActivity
@@ -97,7 +99,8 @@ class AdminScholarListView(_ScholarsBase):
         # see the Mentoring tab (`mentoring.may_act`); for the rest the keys are absent.
         sees_mentors = mentoring.may_act(admin)
         qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
-                                  on_hold=q.get('on_hold') == '1', search=q.get('search', ''),
+                                  on_hold=q.get('on_hold') == '1',
+                                  search=people_search_term(request, 'search'),  # TD-421
                                   below=below if wanted == 'below_minimum' else None,
                                   overdue=overdue if wanted == 'results_overdue' else None,
                                   mentoring=q.get('mentoring', '') if sees_mentors else '')
