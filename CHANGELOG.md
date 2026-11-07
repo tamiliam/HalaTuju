@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: a super is no longer listed as a reviewer (2026-11-07)
+
+Branch chore-team-drop-last-table-note (not pushed; no migration, api only). Owner: "I am listed as a reviewer. I am not really." `_ReviewersBase._reviewers` (`views_admin/reviewers.py`) had included every `role='super'` row since the first reviewers surface, so a super saw themselves on Team -> Reviewers and had a reviewer page (`/admin/organisation/reviewers/<id>`). It now excludes supers for every viewer, which matches the Team table's own rule (`staff_tables.in_reviewers`). This also covers pause and set-gift, which read the same query, so a super can no longer be paused or gift-scoped as a reviewer. Case assignment (`AdminAssignableView`) is unchanged. Test: `test_reviewers_surface.test_a_super_is_not_a_reviewer`.
+
 ### chore: the Reviewers table drops the Languages column and the gift chips under a name (2026-11-07)
 
 Branch chore-team-drop-last-table-note (not pushed; no migration, web only). Owner: both are on the reviewer's own page, and a gift is edited there, never from the table. `admin/organisation/reviewers/page.tsx` loses the Languages column (desktop) and the language chips (phone card), and the gift chips with their pencil (both layouts); the list no longer keeps the gift choices. The reviewer page (`[id]/page.tsx`) is unchanged and still shows languages and edits gifts. Tests: the list asserts no Languages column, no language or fourth-language chip, and no gift chip or pencil even with two gifts; the four list gift-chip tests are replaced (the editor stays covered in `[id]/page.test.tsx`); a new profile test pins the languages line with the fourth language.

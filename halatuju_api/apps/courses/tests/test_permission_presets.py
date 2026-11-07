@@ -155,13 +155,14 @@ GOLDEN = {
                               and a.owning_organisation_id == c.org.id),
     },
     'reviewers_tab_lists': {
-        'where': 'views_admin/reviewers.py _reviewers (team members holding review or qc; + '
-                 'role super)',
+        'where': 'views_admin/reviewers.py _reviewers (team members holding review or qc; '
+                 'never a super)',
         'keys': ('review', 'qc'),
-        'today': _t('super', 'qc', 'reviewer'),
+        'today': _t('qc', 'reviewer'),
         # Owner 2026-10-19 ("yes"): org admins stay OFF the Reviewers list/tab, so it stays exactly
         # as today, even though the lead tier holds qc. The rule leaves the lead tier out.
-        'rule': lambda a, c: (not sp.is_lead_tier(a)
+        # Owner 2026-11-07 ("I am listed as a reviewer. I am not really."): supers are off it too.
+        'rule': lambda a, c: (not sp.is_lead_tier(a) and a.role != 'super'
                               and (a.has_perm('review') or a.has_perm('qc'))),
     },
     'read_assigned_file': {                                                   # S3
