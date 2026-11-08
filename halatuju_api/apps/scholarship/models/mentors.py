@@ -52,6 +52,8 @@ class MentorGift(models.Model):
     an open assignment (open point D) — an assignment is never ended because a gift was unticked.
     """
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name='gift_rows')
+    #: ⚠ CASCADE, but a gift that is a mentor's ONLY gift cannot be deleted: the delete refuses
+    #: `gift_limits_mentors` (`views_admin.gifts._delete_holders`), or the mentor would widen to every gift.
     programme = models.ForeignKey('Programme', on_delete=models.CASCADE, related_name='mentor_gift_rows')
     created_at = models.DateTimeField(auto_now_add=True)
 

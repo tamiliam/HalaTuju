@@ -7514,7 +7514,8 @@
         "hasPaymentRuns": "Hadiah ini telah membayar pelajar, jadi ia tidak boleh dipadam.",
         "inUse": "Terdapat rekod yang masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
         "confirmMismatch": "Ia tidak sepadan dengan frasa yang diperlukan. Tiada apa-apa dipadam.",
-        "hasContractTemplates": "Hadiah ini mempunyai perjanjian biasiswa yang telah ditandatangani, jadi ia tidak boleh dipadam."
+        "hasContractTemplates": "Hadiah ini mempunyai perjanjian biasiswa yang telah ditandatangani, jadi ia tidak boleh dipadam.",
+        "giftLimitsMentors": "{count} mentor hanya membimbing dalam hadiah ini. Berikan mereka hadiah lain, atau Semua hadiah, sebelum memadamnya."
       },
       "copyLink": "Salin pautan permohonan",
       "copied": "Pautan disalin",

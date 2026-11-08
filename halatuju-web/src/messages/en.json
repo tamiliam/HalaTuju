@@ -7514,7 +7514,8 @@
         "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
         "inUse": "A record still depends on this gift, so it cannot be deleted.",
         "confirmMismatch": "That does not match the required phrase. Nothing was deleted.",
-        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted."
+        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted.",
+        "giftLimitsMentors": "{count} mentor(s) mentor only in this gift. Give them another gift, or Every gift, before deleting it."
       },
       "copyLink": "Copy apply link",
       "copied": "Link copied",

@@ -150,8 +150,14 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
                     : c === 'has_payment_runs' ? 'hasPaymentRuns'
                     // TD-229: a template a student SIGNED holds the gift; unsigned ones go with it.
                     : c === 'has_contract_templates' ? 'hasContractTemplates'
+                    // I4 review: the gift is some mentor's ONLY gift; deleting it would widen them.
+                    : c === 'gift_limits_mentors' ? 'giftLimitsMentors'
                       : c === 'in_use' ? 'inUse'
                         : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
+  /** The sentence for a code; only `gift_limits_mentors` names how many (its `count`). */
+  const errText = (c?: string, count?: number) => c === 'gift_limits_mentors'
+    ? t('admin.programmes.error.giftLimitsMentors', { count: String(count ?? 0) })
+    : t(`admin.programmes.error.${errKey(c)}`)
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
@@ -160,7 +166,8 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
       await load()
       return true
     } catch (e) {
-      setError(t(`admin.programmes.error.${errKey((e as { code?: string })?.code)}`))
+      const err = e as { code?: string, body?: { count?: number } }
+      setError(errText(err?.code, err?.body?.count))
       return false
     } finally {
       setBusy(false)
@@ -397,7 +404,7 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
                     <MenuItem danger
                       disabled={busy || p.delete_blocked_by !== null}
                       reason={p.delete_blocked_by
-                        ? t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`) : undefined}
+                        ? errText(p.delete_blocked_by, p.delete_blocked_count) : undefined}
                       onClick={() => { setError(''); setDialog({ kind: 'delete', programme: p }) }}>
                       {t('admin.programmes.delete')}
                     </MenuItem>

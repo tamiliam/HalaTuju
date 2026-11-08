@@ -224,7 +224,14 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift" (the
         S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. A sponsor
         invitation's `InvitationGift` rows (I3) are CASCADE: it goes on naming the gifts that remain,
-        and one left naming none resolves as an unstated one does. (The old
+        and one left naming none resolves as an unstated one does. A REVIEWER's `reviewer_gifts`
+        rows CASCADE too and may fall back to every gift (the reviewer docstring accepts that).
+
+        ⚠ A MENTOR IS DIFFERENT (Invitations I4 review, 2026-11-08; owner ruling 2): a gift LIMITS
+        who a mentor mentors, and a mentor with no `mentor_gifts` rows mentors in EVERY gift. So the
+        delete is REFUSED `gift_limits_mentors` (with the count) while this gift is the ONLY gift of
+        any mentor — removing their last row would silently widen them. A mentor who holds other
+        gifts too loses just this row (CASCADE); their remaining gifts still limit them. (The old
         `partner_organisations.programme_id` left the model in sources Sprint B; until courses 0080
         drops it, a gift some row still names cannot be deleted — 500 — see that cutover note.)
 

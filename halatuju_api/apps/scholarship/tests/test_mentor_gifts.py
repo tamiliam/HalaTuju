@@ -15,6 +15,8 @@ Every door, driven through the real endpoints:
   gift choices); the Invitations Mentor tab names each waiting mentor's gifts and offers only the invite's
   own organisation's active gifts.
 - EXISTING MENTORS (no rows) are unaffected.
+- DELETING A GIFT (I4 review) never widens a mentor: refused `gift_limits_mentors` with the count while it is
+  some mentor's ONLY gift; a mentor holding other gifts just loses that row.
 """
 import datetime
 from unittest.mock import patch
@@ -289,3 +291,39 @@ class TestTheReaders(_Base):
         # A super naming the organisation is offered THAT organisation's gifts only.
         body = authed_client(self.super).get(INVITE + f'?kind=mentor&org={self.other_org.code}').json()
         self.assertEqual([p['code'] for p in body['mentor_programmes']], ['foreign'])
+
+
+class TestTheGiftDelete(_Base):
+    """I4 review: deleting a gift must never silently WIDEN a mentor to every gift. A gift that is some
+    mentor's ONLY gift is refused `gift_limits_mentors` with the count (the list row says so too); a mentor
+    who holds other gifts just loses that row; a gift no mentor holds deletes as before."""
+    GIFTS = '/api/v1/admin/scholarship/programmes/'
+
+    def spare(self):
+        return make_programme(organisation=self.org, code='spare-27', name_en='Sabah 2027', is_active=False)
+
+    def delete(self, gift):
+        return authed_client(self.lead).delete(f'{self.GIFTS}{gift.pk}/', {'confirm': f'delete {gift.code}'},
+                                               format='json')
+
+    def test_refused_while_it_is_a_mentors_only_gift_with_the_count(self):
+        spare = self.spare()
+        only_a, only_b = self.mentor(spare), self.mentor(spare)
+        self.mentor(spare, self.sabah)                      # holds another gift: not counted
+        r = self.delete(spare)
+        self.assertEqual((r.status_code, r.json()['code'], r.json()['count']), (400, 'gift_limits_mentors', 2))
+        self.assertEqual((self.gift_codes(only_a), self.gift_codes(only_b)), (['spare-27'], ['spare-27']))
+        row = next(p for p in authed_client(self.lead).get(self.GIFTS).json()['programmes'] if p['id'] == spare.pk)
+        self.assertEqual((row['delete_blocked_by'], row['delete_blocked_count']), ('gift_limits_mentors', 2))
+
+    def test_allowed_when_the_mentor_holds_other_gifts_and_those_rows_stay(self):
+        spare = self.spare()
+        m = self.mentor(spare, self.sabah, self.flagship)
+        self.assertEqual(self.delete(spare).status_code, 204)
+        self.assertEqual(self.gift_codes(m), ['flagship', 'sabah'])
+
+    def test_allowed_when_no_mentor_holds_it(self):
+        spare = self.spare()
+        m = self.mentor(self.sabah)
+        self.assertEqual(self.delete(spare).status_code, 204)
+        self.assertEqual(self.gift_codes(m), ['sabah'])

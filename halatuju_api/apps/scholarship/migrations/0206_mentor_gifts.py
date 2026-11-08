@@ -38,8 +38,12 @@ Post-check: `SELECT count(*) FROM mentor_gifts` is 0 (every existing mentor = Ev
 Advisor (0 errors).
 
 BETWEEN MIGRATE AND DEPLOY the image already serving never names the table, so the migration is safe first.
-Deploying BEFORE migrating is NOT safe: assigning a mentor, the assign picker and the Mentors list read the
-table (a 500). The API and the web deploy TOGETHER (the web sends `programme_ids` and reads `gifts` /
+Deploying BEFORE migrating is NOT safe — every one of these reads or writes the table and 500s: assigning a
+mentor, the assign picker, the Mentors list, a mentor's detail page, the Invitations page's Mentor tab, the
+mentor invite, and deleting a gift (its holder check counts `mentor_gifts`). ⚠ On a RE-INVITE the damage
+outlives the 500: `mentor_invite._reinvite` calls `reissue_credential` BEFORE its transaction, so a fresh
+temporary password is issued and then the request fails. Migrate first (no code guards this). The API and the
+web deploy TOGETHER (the web sends `programme_ids` and reads `gifts` /
 `every_gift`).
 
 ROLLBACK (the old image ignores the table; every mentor is then unlimited again, which is today's behaviour):
