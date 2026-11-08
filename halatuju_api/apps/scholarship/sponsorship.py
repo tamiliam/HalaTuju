@@ -239,11 +239,12 @@ def sync_account_membership(sponsor, programme, vetted_by=''):
             'vetted_at': timezone.now() if settled else None,
         },
     )
-    # ⚠ A REJECTED MEMBERSHIP IS NEVER CHANGED BY ACCOUNT VETTING (I3 review). It may be the
-    # organisation's own per-gift refusal (`set_programme_membership`), and re-approving the account
-    # must not overturn it. The rest of the cascade stays: the money gate (`record_admin_credit`)
-    # reads the membership, not the account, so suspending the account must suspend the gift too.
-    if not created and membership.status not in (sponsor.status, 'rejected'):
+    # ⚠ A GIFT REJECTED BY HAND IS NEVER CHANGED BY ACCOUNT VETTING (I3 review): it is the
+    # organisation's own refusal (`set_programme_membership` stamps `rejected_by_hand_at`). A
+    # rejection the account cascaded follows the account back. The rest of the cascade stays: the
+    # money gate (`record_admin_credit`) reads the membership, not the account.
+    by_hand = membership.status == 'rejected' and membership.rejected_by_hand_at is not None
+    if not created and membership.status != sponsor.status and not by_hand:
         membership.status = sponsor.status
         membership.vetted_by = vetted_by
         membership.vetted_at = timezone.now()
@@ -295,19 +296,24 @@ def set_programme_membership(sponsor, programme, status, vetted_by=''):
         raise MembershipError('account_not_approved')
 
     settled = status != 'pending'
+    # BY HAND: a rejection here is stamped, so account vetting never overturns it; any other status
+    # clears the stamp (`sync_account_membership`, I3 second review).
+    hand = timezone.now() if status == 'rejected' else None
     membership, created = SponsorProgrammeMembership.objects.get_or_create(
         sponsor=sponsor, programme=programme,
         defaults={
             'status': status,
             'vetted_by': vetted_by if settled else '',
             'vetted_at': timezone.now() if settled else None,
+            'rejected_by_hand_at': hand,
         },
     )
-    if not created and membership.status != status:
-        membership.status = status
+    if not created and (membership.status, membership.rejected_by_hand_at is None) != (status, hand is None):
+        membership.status, membership.rejected_by_hand_at = status, hand
         membership.vetted_by = vetted_by if settled else ''
         membership.vetted_at = timezone.now() if settled else None
-        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
+        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'rejected_by_hand_at',
+                                       'updated_at'])
     return membership
 
 

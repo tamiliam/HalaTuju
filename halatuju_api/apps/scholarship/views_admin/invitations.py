@@ -238,16 +238,19 @@ class AdminInvitationsView(_ReviewersBase):
         choice, refusal = sponsor_invite_gifts.choose(admin, request.data, email)
         if refusal is not None:
             return refusal
+        # A RESEND (`choice` None) keeps the row's organisation as well as its gifts: a super's
+        # Resend on another organisation's row must not move it to theirs (I3 second review).
         with transaction.atomic():
             inv = inv_service.create_or_refresh(
                 audience='sponsor', email=email, name=(request.data.get('name') or '').strip(),
-                organisation=org, invited_by=admin, ttl_days=inv_service.PII_RETENTION_DAYS)
+                organisation=None if choice is None else org, invited_by=admin,
+                ttl_days=inv_service.PII_RETENTION_DAYS)
             if choice is not None:
                 sponsor_invite_gifts.set_gifts(inv, *choice)
 
         from ..emails import send_sponsor_invitation_email
         ok, error = send_sponsor_invitation_email(
-            email, org_name=(org.name if org else ''), note=(request.data.get('note') or ''),
+            email, org_name=(inv.organisation.name if inv.organisation else ''), note=(request.data.get('note') or ''),
             code=inv.code, invited_by=admin.name)
         inv_service.record_send(inv, ok, error, actor=admin)
         return Response({'id': inv.id, 'emailed': ok},

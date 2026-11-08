@@ -58,10 +58,12 @@ def choose(admin, data, email):
       organisation-less super must name gifts (TD-334: Every gift has no organisation to mean),
       and their gifts must belong to ONE organisation.
     - ``programme_id`` (the one-gift form before I3, kept for the deploy window): that gift.
-    - Neither: a waiting invitation for this address is a RESEND and is never re-homed — but ONLY
-      when it is the inviter's own organisation's (or the inviter is organisation-less). Another
-      organisation's waiting invitation is not theirs to resend: their request is a fresh choice,
-      and `set_gifts` replaces the other organisation's gifts outright (I3 review). Otherwise the
+    - Neither: a waiting invitation for this address is a RESEND and is never re-homed: it keeps
+      its organisation AND its gifts. That holds for the inviter's own organisation's invitation
+      and for ANY super's bare invite (the web's Resend on a super's unfenced list, I3 second
+      review); the view then leaves the row's organisation alone. Only a non-super from ANOTHER
+      organisation makes a fresh choice, and `set_gifts` replaces that organisation's gifts
+      outright (I3 review; the row moving to them is an owner question). Otherwise the
       sole active gift, none when there are none, and 400 ``programme_required`` with the choices
       when there are several — never a silent pick (the P2b / PF-1 rule).
     """
@@ -91,7 +93,8 @@ def choose(admin, data, email):
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
         return ([gift], False), None
     waiting = inv_service.open_invitation('sponsor', email)
-    if waiting is not None and admin.owning_organisation_id in (None, waiting.organisation_id):
+    if waiting is not None and (admin.is_super
+                                or admin.owning_organisation_id in (None, waiting.organisation_id)):
         return None, None            # a resend: what was asked stays asked
     live = list(programmes.order_by('code')[:2])
     if len(live) > 1:

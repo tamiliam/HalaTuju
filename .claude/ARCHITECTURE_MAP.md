@@ -349,8 +349,9 @@ writes nothing rather than guessing. **Every gift resolves ONCE** — at registr
 `InvitationGift` rows with `Invitation.every_gift_resolved_at` stamped even when it resolved to
 none (`sponsor_invite_gifts.joined_on_registration`); account vetting reads the frozen rows and
 resolves only an invitation never frozen (old image, rollback). `sync_account_membership(sponsor,
-programme, …)` takes the programme REQUIRED and POSITIONAL, and **never changes a REJECTED
-membership** (it may be the organisation's own per-gift refusal).
+programme, …)` takes the programme REQUIRED and POSITIONAL, and **never changes a membership the
+organisation rejected by hand** (`rejected_by_hand_at`, stamped by `set_programme_membership`); a
+rejection the account cascaded follows the account back.
 
 ⚠ **A GIFT'S SOURCE CHOICES ARE THE STUDENT'S LIST** (per-gift sources Sprint 2, 2026-10-08;
 closes TD-230). The PUBLIC intake (`ScholarshipIntakeView`) serves `sources: [{code, name}]` —

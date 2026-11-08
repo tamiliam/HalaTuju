@@ -309,13 +309,15 @@ class TestTheI3Review(_Case):
         self.assertEqual(sponsorship.signup_programmes_for(sponsor), [])
         self.assertFalse(self._inv().gift_rows.exists())
 
-    def test_a_repeated_approve_never_resolves_again(self):
+    def test_a_gift_opened_after_an_empty_registration_is_never_joined_by_any_approve(self):
         self._invite(programme_ids=[])
-        sponsor = self._register()
+        Programme.objects.filter(organisation=self.org).update(is_active=False)
+        sponsor = self._register()                              # resolved to NO gift
+        Programme.objects.filter(pk=self.a.pk).update(is_active=True)
         self._review(sponsor, 'approve')
         make_programme(organisation=self.org, code='i3-later-2', is_active=True)
-        self._review(sponsor, 'approve')
-        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
+        self._review(sponsor, 'approve')                        # a second click, another gift open
+        self.assertEqual(self._memberships(sponsor), {})
 
     def test_an_every_gift_invitation_never_frozen_is_frozen_once_at_vetting(self):
         """Registered under the old image during a rollback: no rows, no stamp."""
@@ -330,13 +332,6 @@ class TestTheI3Review(_Case):
         self._review(sponsor, 'approve')
         self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
 
-    def test_choosing_again_clears_the_resolution(self):
-        self._invite(programme_ids=[])
-        inv = self._inv()
-        Invitation.objects.filter(pk=inv.pk).update(every_gift_resolved_at=timezone.now())
-        self._invite(programme_ids=[])                          # re-chosen: a fresh Every gift
-        self.assertIsNone(self._inv().every_gift_resolved_at)
-
     # Finding 3 — account vetting never changes a REJECTED gift membership.
     def test_a_gift_rejected_by_hand_stays_rejected_when_the_account_is_re_vetted(self):
         self._invite(programme_ids=[self.a.id, self.b.id])
@@ -350,6 +345,46 @@ class TestTheI3Review(_Case):
         self._review(sponsor, 'approve')                        # ...and reinstates, but not B
         self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'rejected'})
 
+    def test_a_rejected_account_gets_its_gifts_back_when_approved(self):
+        """I3 second review: a rejection the ACCOUNT cascaded is not the organisation's refusal."""
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        sponsor = self._register()
+        self._review(sponsor, 'reject')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'rejected', 'i3-b': 'rejected'})
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
+
+    def test_a_hand_rejected_gift_holds_while_the_other_follows_the_account(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        sponsor = self._register()
+        self._review(sponsor, 'approve')
+        sponsorship.set_programme_membership(sponsor, self.a, 'rejected', vetted_by='x@example.com')
+        self._review(sponsor, 'reject')
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'rejected', 'i3-b': 'approved'})
+
+    def test_a_hand_rejection_undone_by_hand_follows_the_account_again(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        sponsor = self._register()
+        self._review(sponsor, 'approve')
+        sponsorship.set_programme_membership(sponsor, self.a, 'rejected', vetted_by='x@example.com')
+        self.assertIsNotNone(SponsorProgrammeMembership.objects.get(
+            sponsor=sponsor, programme=self.a).rejected_by_hand_at)
+        sponsor.refresh_from_db()                               # the account is approved now
+        sponsorship.set_programme_membership(sponsor, self.a, 'approved', vetted_by='x@example.com')
+        self.assertIsNone(SponsorProgrammeMembership.objects.get(
+            sponsor=sponsor, programme=self.a).rejected_by_hand_at)
+        self._review(sponsor, 'suspend')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'suspended', 'i3-b': 'suspended'})
+
+    def test_a_hand_rejection_of_a_cascaded_rejection_is_stamped(self):
+        self._invite(programme_ids=[self.a.id])
+        sponsor = self._register()
+        self._review(sponsor, 'reject')                         # cascaded, unstamped
+        sponsorship.set_programme_membership(sponsor, self.a, 'rejected', vetted_by='x@example.com')
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'rejected'})
+
     # Finding 4 — a super with an organisation names only that organisation's gifts.
     def test_a_super_in_an_organisation_names_only_its_gifts(self):
         org_super = make_admin('super', super_admin=True, owning_org=self.org, uid='i3-org-super')
@@ -361,3 +396,23 @@ class TestTheI3Review(_Case):
         # The organisation-less super keeps every tenant's.
         offered = authed_client(self.super).get(f'{INVITE}?kind=sponsors').json()['programmes']
         self.assertIn('i3-theirs', [p['code'] for p in offered])
+
+    # I3 second review — ANY super's bare invite on a waiting row is a resend (the web's Resend).
+    def _org_super_resend(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])      # org A's row, two gifts
+        org_super = make_admin('super', super_admin=True, owning_org=self.other,
+                               uid='i3-other-super')
+        r = self._invite(org_super)                              # bare POST, as Resend sends
+        self.assertIn(r.status_code, (201, 502), r.content)
+        inv = self._inv()
+        self.assertEqual(inv.organisation_id, self.org.id)
+        self.assertEqual(sorted(inv.gift_rows.values_list('programme_id', flat=True)),
+                         sorted([self.a.id, self.b.id]))
+        self.assertEqual(Invitation.objects.filter(email=EMAIL).count(), 1)
+
+    def test_a_super_resend_on_another_organisations_row_changes_nothing_two_gifts(self):
+        make_programme(organisation=self.other, code='i3-theirs-3', is_active=True)
+        self._org_super_resend()
+
+    def test_a_super_resend_on_another_organisations_row_changes_nothing_one_gift(self):
+        self._org_super_resend()                                 # their org has ONE active gift
