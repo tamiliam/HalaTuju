@@ -12,6 +12,7 @@ it runs cleanly via the internal cron endpoint job 'backfill-assigned-profiles'.
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apps.scholarship.assign_draft import DRAFTING
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.profile_engine import PROMPT_VERSION
 from apps.scholarship.services import generate_ready_profile
@@ -27,9 +28,14 @@ class Command(BaseCommand):
         qs = (ScholarshipApplication.objects
               .filter(assigned_to__isnull=False)
               .select_related('sponsor_profile', 'profile').order_by('id'))
-        done, skipped_edited, skipped_current, failed = [], [], [], []
+        done, skipped_edited, skipped_current, skipped_queued, failed = [], [], [], [], []
         for app in qs:
             sp = getattr(app, 'sponsor_profile', None)
+            # A2.3b: a first-assign draft queued for the finalise-profiles cron belongs to that
+            # queue; drafting it here too could pay for it twice.
+            if sp is not None and sp.finalise_state == DRAFTING:
+                skipped_queued.append(app.id)
+                continue
             if sp is not None and sp.edited_markdown:
                 skipped_edited.append(app.id)        # never overwrite an officer's edits
                 continue
@@ -45,4 +51,5 @@ class Command(BaseCommand):
                 done.append(app.id)
         self.stdout.write(
             f'Backfill complete (prompt {PROMPT_VERSION}). generated={done} '
-            f'skipped_current={skipped_current} skipped_edited={skipped_edited} failed={failed}')
+            f'skipped_current={skipped_current} skipped_edited={skipped_edited} '
+            f'skipped_queued={skipped_queued} failed={failed}')

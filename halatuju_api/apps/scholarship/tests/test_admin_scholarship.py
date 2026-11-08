@@ -304,43 +304,7 @@ class TestAdminScholarship(TestCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.query_raised_notified_at, stamp)
 
-    # ── Check-2/Check-3 redesign S3: auto-draft the profile at the reviewer handoff ──
-    @override_settings(CHECK2_AUTO_GENERATE=True)
-    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
-    @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
-           return_value={'markdown': 'Draft profile.', 'model_used': 'test'})
-    def test_handoff_autodrafts_profile_when_flag_on(self, _gen, _ready):
-        from apps.scholarship.services import assign_reviewer
-        from apps.scholarship.models import SponsorProfile
-        self._submitted()   # assignable only during Completed / interviewing
-        assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
-        sp = SponsorProfile.objects.filter(application=self.app).first()
-        self.assertIsNotNone(sp)
-        self.assertEqual(sp.draft_markdown, 'Draft profile.')
-
-    @override_settings(CHECK2_AUTO_GENERATE=False)
-    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
-    @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
-           return_value={'markdown': 'Draft profile.', 'model_used': 'test'})
-    def test_handoff_no_autodraft_when_flag_off(self, _gen, _ready):
-        from apps.scholarship.services import assign_reviewer
-        from apps.scholarship.models import SponsorProfile
-        self._submitted()   # assignable only during Completed / interviewing
-        assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
-        self.assertFalse(SponsorProfile.objects.filter(application=self.app).exists())
-
-    @override_settings(CHECK2_AUTO_GENERATE=True)
-    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
-    @patch('apps.scholarship.profile_engine.generate_sponsor_profile')
-    def test_handoff_never_redrafts_existing_profile(self, gen, _ready):
-        from apps.scholarship.services import assign_reviewer
-        from apps.scholarship.models import SponsorProfile
-        SponsorProfile.objects.create(
-            application=self.app, draft_markdown='Existing.', generated_at=timezone.now())
-        self._submitted()   # assignable only during Completed / interviewing
-        assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
-        gen.assert_not_called()
-        self.assertEqual(SponsorProfile.objects.get(application=self.app).draft_markdown, 'Existing.')
+    # Check-2/Check-3 redesign S3, the handoff auto-draft: its one home is test_assign_draft.py (A2.3b).
 
     # ── Check-2/Check-3 redesign S4: querying locks once the interview is concluded ──
     def test_raise_query_blocked_after_interview_concluded(self):

@@ -71,8 +71,15 @@ export function GeneratedProfile({
           </p>
         )}
 
+        {/* A2.3b: the first-assign draft is written in the background after the assign is saved. */}
         {!profile || !(profile.final_markdown || profile.current_markdown) ? (
-          <p className="text-sm text-ground-400">{t('admin.scholarship.profilePending')}</p>
+          profile?.finalise_state === 'drafting' ? (
+            <p role="status" className="rounded-lg border border-ground-200 bg-ground-50 p-2 text-xs text-ground-700">
+              {t('admin.scholarship.profileDrafting')}
+            </p>
+          ) : (
+            <p className="text-sm text-ground-400">{t('admin.scholarship.profilePending')}</p>
+          )
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-ground-800">

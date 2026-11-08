@@ -87,14 +87,15 @@ def supersede_pending(app):
     return sp
 
 
-def _claimable(now):
+def claimable(now):
+    """Unclaimed, or claimed longer than STALE_CLAIM ago. Shared with ``assign_draft`` (A2.3b)."""
     return (Q(finalise_claimed_at__isnull=True) | Q(finalise_claimed_at__lt=now - STALE_CLAIM))
 
 
 def _claim_row(sp_id, now):
     """Atomically claim one pending row and count the attempt. True iff this caller won it."""
     return SponsorProfile.objects.filter(
-        _claimable(now), pk=sp_id, finalise_state=PENDING, finalise_attempts__lt=MAX_ATTEMPTS,
+        claimable(now), pk=sp_id, finalise_state=PENDING, finalise_attempts__lt=MAX_ATTEMPTS,
     ).update(finalise_claimed_at=now, finalise_attempts=F('finalise_attempts') + 1) == 1
 
 
@@ -210,7 +211,7 @@ def run_pending(limit=BATCH, budget=TIME_BUDGET_SECONDS, clock=time.monotonic):
     ).update(finalise_state=FAILED, finalise_claimed_at=None)
     if gemini_reads_down():
         return {**counts, 'skipped_outage': True}
-    ids = list(SponsorProfile.objects.filter(_claimable(now), finalise_state=PENDING)
+    ids = list(SponsorProfile.objects.filter(claimable(now), finalise_state=PENDING)
                .order_by('finalise_requested_at').values_list('pk', flat=True)[:limit])
     for sp_id in ids:
         if clock() - started >= budget:

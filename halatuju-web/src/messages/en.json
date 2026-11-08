@@ -4377,6 +4377,7 @@
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
       "profileFinalising": "The final profile is being written. It will appear here in a few minutes; reload the page to see it.",
       "profileFinaliseFailed": "The final profile could not be written after three tries. The draft is shown below. Please tell a super admin.",
+      "profileDrafting": "The profile draft is being written. It will appear here in a few minutes; reload the page to see it.",
       "model": "Model",
       "interviewedRecommendedBy": "Interviewed and recommended by",
       "interviewedDeclinedBy": "Interviewed and declined by",

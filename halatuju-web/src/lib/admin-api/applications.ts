@@ -98,8 +98,9 @@ export interface AdminSponsorProfile {
   final_model_used: string
   finalised_at: string | null
   // A2.1: '' none, 'pending' being written in the background, 'failed' after the retries.
+  // A2.3b: 'drafting' = the first-assign draft is being written in the background (no text yet).
   // Optional: an older API image does not send it.
-  finalise_state?: '' | 'pending' | 'failed'
+  finalise_state?: '' | 'pending' | 'failed' | 'drafting'
   // Phase E2 — the ANONYMOUS, sponsor-pool-facing profile (generate -> publish).
   anon_markdown: string
   anon_model_used: string
