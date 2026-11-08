@@ -1,6 +1,6 @@
-# Scholar file — the Activity box, learning from Podio (roadmap, 2026-11-08)
+# Activity box and Team pages (roadmap, 2026-11-08)
 
-Status: **DRAFT — awaiting the owner's further suggestions, then approval.** Branch `activity-box` (from main
+Status: **DRAFT — awaiting the owner's decisions D1–D9 and approval.** Branch `activity-box` (from main
 `0fec1c69`), docs only. Nothing is built, pushed or deployed until the owner approves; the audit agent sets the pace.
 
 ## Why
@@ -39,10 +39,98 @@ improvement. I want to bundle them as well."*
 
 Also found: the side panel shows 6 entries with no way to the full list — add **"See all (n)"** to the Activity tab.
 
-## Owner's further suggestions (to be added)
-*Waiting for the owner. Each will be placed into P1, P2 or a new sprint, with any ruling it needs.*
+## Owner's further suggestions — Team tables, person pages, the Assign picker (2026-11-08)
+The owner, with screenshots of Team → Admins, a reviewer's page and the applications list's Assign dropdown:
+1. *"Team member tables and profiles to be similar. Each must have Revoke and Delete. The delete however will be
+   greyed out if there is work on record. When hovered … it may say there is work on record. For org admins, the
+   delete button should be visible only to super admin."*
+2. *"Suresh has reviewer and QC permissions, but his entry is missing from reviewer table. It should be."*
+3. *"REMOVE Reviewer/Admin/Mentor from below the name. If they are in Reviewers table, they are reviewer."*
+4. *"Add Last Seen after Joined Date."*
+5. *"Admin doesn't have profile tab, whereas mentors do not have permissions tab."*
+6. *"Ve. Elanjelian and Poongulali are not Reviewers, but they show up in the Assignment drop down. Only those
+   assigned to the gift should show up and they also must be reviewers first, and be included in the Reviewer table."*
 
-1. …
+### What exists (measured 2026-11-08, code only)
+- **Tables** (`app/admin/organisation/reviewers/page.tsx`; Admins via `components/admin/StaffAdmin.tsx`; Mentors via
+  `components/mentors/MentorsAdmin.tsx`):
+  - Admins: Revoke; Delete only when the server says `deletable`, otherwise the grey words "Has work on record —
+    revoke instead" (counts on hover); Remove from Admins.
+  - Reviewers: Revoke (not for the org admin) and Remove from Reviewers. **Never Delete** — the server's
+    `_DELETABLE_ROLES` is `admin`, `finance`, `org_admin` only (`courses/views_admin.py:599`; owner 2026-09-09:
+    never a reviewer).
+  - Mentors: Revoke / Restore / Stop mentoring. No Delete.
+  - Delete of an org admin: the server already lets only a super do it (`_staff_target_manageable` — an org admin
+    may not act on a fellow org admin), so ruling 1's last part is already true on the server; the screen needs only
+    to match it.
+- **Person pages — three different pages for one kind of thing:**
+  - Reviewer (`reviewers/[id]`): Profile + Permissions tabs; header "Reviewer · Active · Joined …" (the role label
+    `admin.reviewers.role.<role>`), Pause new cases, Covers (gifts), case counts.
+  - Admin (`reviewers/admins/[id]`, 105 lines): **Permissions tab only**, no Profile.
+  - Mentor (`reviewers/mentors/[id]` → `MentorDetail`): **no Permissions tab**.
+  - None shows Last seen (the tables do).
+- **Suresh (item 2):** an organisation admin. The lead tier holds `qc` (`staff_permissions.LEAD_TIER`), but by the
+  owner's 2026-10-19 ruling that does NOT seat the lead in Reviewers; an org admin sits there only after
+  Team → Reviewers → **Add** stores `review` for them (`staff_permissions.lead_reviews`, Team tables T2). His Admins
+  row shows no "Reviewer" chip, so he has not been added. (His live row was not read: a named production read was
+  not allowed this session.)
+- **The Assign dropdown (item 6)** — applications list `app/admin/scholarship/page.tsx:436`, fed by
+  `AdminAssignableAdminsView` (`views_admin/lifecycle.py:299`), each row's `assignable` = `may_assign_to`
+  (`services/assignment.py:57`):
+  - **Caller is a super:** anyone `is_review_target` — `review`, OR role admin / qc / org_admin holding `see_all`
+    (the "R1 super override"). That is why an org admin and an admin who are not Reviewers are offered.
+  - Caller is an org admin: only own-organisation team members holding `review` (correct already).
+  - **The gift is ignored in this dropdown.** ✓ / ⚠ is the CALL LANGUAGE match, not the gift. The applicant page's
+    picker (`AssignAndWitness.tsx`) greys "Does not cover <gift>", and the server refuses `gift_mismatch` on save
+    (TD-501), so a wrong pick fails only after it is made.
+  - The same name listed twice (one ✓, one ⚠) is most likely two accounts with one name (e.g. a super login and an
+    org admin login) — to confirm during the build.
+
+### Decisions needed (Team)
+- **D5. Suresh.** Recommend: **no rule change — use Team → Reviewers → Add on his row** (works today, no code). Making
+  every org admin a Reviewer by their lead-tier `qc` would also make every org admin assignable, which item 6 asks
+  to narrow.
+- **D6. Delete for reviewers and mentors** (reverses 2026-09-09 "never a reviewer"). Recommend yes, under the same
+  test as admins: no work on record (`staff_footprint`: never assigned a case, never reviewed, never mentored).
+  Otherwise Delete shows greyed with the reason on hover/tap.
+- **D7. Retire the R1 super override.** Recommend: a case may be assigned only to someone in the Reviewers table
+  who covers the case's gift — for every caller, super included. Cases an admin holds today are kept and still
+  shown as the current assignee; only NEW assignments follow the rule. (Count of such open cases taken before build.)
+- **D8. A mentor's Permissions tab.** A pure mentor holds no keys (My students and Profile only). Recommend: the tab
+  shows that, read-only, with the same Add-to-table path the Team page offers.
+- **D9. The header under the name.** Recommend: Status · Joined · Last seen · Pause (reviewers), with the person's
+  tables shown as the existing "Also in"-style chips, not as a role word.
+
+### T1 — The Assign picker offers only Reviewers who cover the gift · complexity: high (who gets cases: Opus build + Opus review, phone check)
+- **Goal:** item 6 and D7.
+- **API:** `may_assign_to` / `is_review_target`: target must be `staff_tables.in_reviewers` and, when the case is
+  known, cover its gift (`staff_gift`); the R1 override goes; `assign_reviewer` refuses the same
+  (`not_a_reviewer`). The assignable list serves `gifts` already — the list page uses it.
+- **Web:** applications list dropdown hides anyone not assignable for THAT case's gift (the current assignee is
+  still shown); ✓ / ⚠ keep meaning the language, with a legend line.
+- **Files (≈10).** **Done when:** as a super, an org admin who is not in Reviewers and an admin are absent from the
+  list and refused by the server; a reviewer of another gift is absent for this case; a held case still shows
+  its assignee.
+
+### T2 — Revoke and Delete on every table and person page · complexity: medium-high (deleting people)
+- **Goal:** item 1 and D6.
+- **API:** `_DELETABLE_ROLES` gains reviewer and qc; a mentor's delete under the same footprint test (a mentor has
+  its own door — `MentorsAdmin` today has none); the payload carries `deletable` and `work` on every table.
+- **Web:** one action cell for all three tables and the person pages: Revoke/Restore, then Delete — enabled when
+  `deletable`, otherwise greyed with "Has work on record" and the counts on hover (and on tap on a phone); hidden
+  on an org admin's row unless the viewer is a super.
+- **Files (≈14).** **Done when:** a rendered test per table shows Revoke + Delete; a person with work shows Delete
+  greyed with the reason; an org admin viewer sees no Delete on a fellow org admin; the server refuses as before.
+
+### T3 — One person page for every team member · complexity: medium (Stitch first)
+- **Goal:** items 3, 4, 5 and D8, D9.
+- **Web:** the three pages become one layout: header (name, Status · Joined · Last seen, table chips, Pause for a
+  reviewer), the T2 actions, then **Profile** and **Permissions** tabs for everyone; reviewer-only parts (Covers,
+  case counts) and mentor-only parts (scholars) appear by table. The three routes stay (links keep working) and
+  render the one component.
+- **API:** the admin and mentor detail payloads gain the profile fields and `last_seen` where missing.
+- **Files (≈18).** **Done when:** a test per kind of person shows both tabs, Last seen after Joined, and no role
+  word under the name; mobile-check passes.
 
 ## Decisions needed from the owner
 - **D1. Which scholar edits are logged (P2)?** Recommend: bank details, phone, email, home address, guardian contact
@@ -89,6 +177,11 @@ on the diff, CHANGELOG + decisions.md. Nothing pushed without the owner.
   staff only; changing a field outside D1 produces none; the PII guard test passes.
 
 ## Order and rationale
-P1 first — no rules and no personal data, and it builds the row layout P2's entries drop into. P2 second, on its own,
-because it touches personal data and needs the owner's D1/D2 rulings and a phone check; bundling it with layout work
-would hide a privacy change inside a cosmetic diff. The owner's further suggestions are slotted in once received.
+1. **T1** — live harm: today the wrong people are offered cases and the gift is checked only after the pick.
+2. **T2** — a rule change about deleting people; small and separate so it is reviewed on its own.
+3. **T3** — the person page, built on T2's action cell. Stitch first.
+4. **P1** — the Activity box display; shares the avatar and name style with T3, so it follows it.
+5. **P2** — the scholar's own edits; personal data, its own sprint and phone check.
+
+Five sprints rather than fewer: T1, T2 and P2 each change a rule (who gets cases, who may be deleted, what is logged
+about a scholar), and none should be buried in layout work. T3 and P1 could merge if the owner wants fewer handoffs.
