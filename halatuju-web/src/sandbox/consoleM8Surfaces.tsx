@@ -369,6 +369,19 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     ),
   },
   {
+    slug: 'nudge-overdue-banner',
+    title: 'Admin — the overdue banner (staff nudges)',
+    note: 'Staff nudges Phase B: the red banner under the top bar, over the profile banner — the oldest overdue invoice, '
+      + 'what is owed, days late, "and 2 more", View invoice, a 44 px X; it wraps on a phone, the link under the text.',
+    routes: { ...ORG_ROUTES, '/api/v1/admin/scholarship/billing/usage/': () => ({}),
+      '/api/v1/admin/scholarship/billing/overdue/': () => ({ overdue: {
+        invoice_id: 3, number: 'INV-2026-0003', currency: 'MYR', balance_myr: '123456.78', due_on: '2026-10-15',
+        days_overdue: 25, count: 3, more: 2 } }) },
+    render: () => (
+      <Console path="/admin/organisation/programmes" role={ORG_ADMIN} completion={BANNER_COMPLETION}><ProgrammesPage /></Console>
+    ),
+  },
+  {
     slug: 'm8-set-password',
     title: 'Admin — set your password',
     note: 'Mobile M8: where an invite or reset e-mail lands — the account e-mail, two 48 px password fields and Set. '

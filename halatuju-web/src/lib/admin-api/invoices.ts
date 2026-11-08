@@ -92,6 +92,9 @@ export interface InvoiceRow {
   issued_on: string
   due_on: string
   status: InvoiceStatus
+  /** Overdue by the server's ONE rule (`invoice_overdue.py`): sent, not void, something owed, no open
+   *  declaration, and the Kuala Lumpur date after `due_on`. The chip reads this; never re-derive it. */
+  is_overdue: boolean
   currency: string
   subtotal_myr: string
   discount_pct: string
@@ -157,6 +160,25 @@ export async function getInvoices(
 ): Promise<InvoicesPayload> {
   const q = options?.month ? `?month=${encodeURIComponent(options.month)}` : ''
   return adminFetch(`/api/v1/admin/scholarship/billing/invoices/${q}`, options)
+}
+
+/** The caller's own organisation's overdue bill, for the console's red banner (staff nudges, sprint 3):
+ *  the OLDEST overdue invoice, what is still owed on it, how late it is, and how many more are late. */
+export interface OverdueSummary {
+  invoice_id: number
+  number: string
+  currency: string
+  balance_myr: string
+  due_on: string
+  days_overdue: number
+  count: number
+  more: number
+}
+
+/** `GET billing/overdue/` → `{ overdue: null }` when nothing is late (and always for a super); a 404
+ *  while billing is dark and a 403 for anyone who may not read invoices — both mean "no banner". */
+export async function getOverdueSummary(options?: ApiOptions): Promise<{ overdue: OverdueSummary | null }> {
+  return adminFetch('/api/v1/admin/scholarship/billing/overdue/', options)
 }
 
 /** Issue ONE invoice. A refusal is a 409 whose `body.problems` lists every reason.

@@ -9572,6 +9572,13 @@
       "and": "and",
       "link": "Complete profile",
       "hide7": "Hide for 7 days",
+      "overdueTitle": "Payment overdue.",
+      "overdueOne": "Invoice {number} for {amount} was due 1 day ago.",
+      "overdueMany": "Invoice {number} for {amount} was due {days} days ago.",
+      "overdueMoreOne": "1 more invoice is also overdue.",
+      "overdueMoreMany": "{count} more invoices are also overdue.",
+      "overdueLink": "View invoice",
+      "overdueHide": "Hide until next sign-in",
       "item": {
         "photo": "a photo",
         "phone": "a phone number",

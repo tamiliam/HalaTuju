@@ -10,7 +10,7 @@ import type { InvoiceProblem, InvoiceRow } from '@/lib/admin-api'
 function inv(over: Partial<InvoiceRow> = {}): InvoiceRow {
   return {
     id: 1, number: 'INV-2026-0001', organisation_id: 1, organisation: 'BrightPath',
-    period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued',
+    period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued', is_overdue: false,
     currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
     discount_reason: '', corrections_myr: null, corrections: [], total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BP', lines: [], receipts: [],
@@ -77,7 +77,9 @@ describe('what each invoice offers', () => {
   describe('the word depends on who is reading it (owner, 2026-10-29)', () => {
     /** The owner opened the ORGANISATION's own invoice list and it said "Sent" — true, and
      *  meaningless to the person it was sent TO. What a customer needs is whether they owe. */
-    const asOrg = { forOwner: false as const, today: '2026-10-29', dueOn: '2026-11-14' }
+    const asOrg = { forOwner: false as const }
+    /** The server's answer (`InvoiceRow.is_overdue`, drift-test: invoice_overdue.is_overdue). */
+    const lateOrg = { forOwner: false as const, overdue: true }
 
     it('reads Unpaid to the organisation and Sent to the owner', () => {
       expect(statusChip('sent', asOrg).key).toBe('admin.billing.invoice.status.unpaid')
@@ -85,27 +87,24 @@ describe('what each invoice offers', () => {
         .toBe('admin.billing.invoice.status.sent')
     })
 
-    it('turns Overdue the day AFTER the due date, not on it', () => {
-      // ⚠ The boundary is the whole point. An invoice due on the 14th is not late ON the 14th.
-      expect(statusChip('sent', { ...asOrg, today: '2026-11-14' }).key)
-        .toBe('admin.billing.invoice.status.unpaid')
-      expect(statusChip('sent', { ...asOrg, today: '2026-11-15' }).key)
-        .toBe('admin.billing.invoice.status.overdue')
+    it('says Overdue exactly when the SERVER says so (staff nudges sprint 3: the banner\'s rule)', () => {
+      // The boundary (the day AFTER the due date, Kuala Lumpur time) is the server's now, tested in
+      // test_invoice_overdue.py. The chip keeps no date compare of its own.
+      expect(statusChip('sent', asOrg).key).toBe('admin.billing.invoice.status.unpaid')
+      expect(statusChip('sent', { ...asOrg, overdue: false }).key).toBe('admin.billing.invoice.status.unpaid')
+      expect(statusChip('sent', lateOrg).key).toBe('admin.billing.invoice.status.overdue')
+      expect(statusChip('sent', lateOrg).className).toMatch(/critical/)
     })
 
-    it('never says Overdue when it cannot know', () => {
-      // No date is the safe direction: telling a customer they are late when they are not is a
-      // worse failure than not telling them at all.
-      expect(statusChip('sent', { forOwner: false }).key)
-        .toBe('admin.billing.invoice.status.unpaid')
-      expect(statusChip('sent', { forOwner: false, today: '2026-12-01', dueOn: null }).key)
-        .toBe('admin.billing.invoice.status.unpaid')
+    it('a late part-paid invoice reads Overdue to the organisation, as the banner says; Part paid to the owner', () => {
+      expect(statusChip('part_paid', lateOrg).key).toBe('admin.billing.invoice.status.overdue')
+      expect(statusChip('part_paid', asOrg).key).toBe('admin.billing.invoice.status.part_paid')
+      expect(statusChip('part_paid', { ...lateOrg, forOwner: true }).key)
+        .toBe('admin.billing.invoice.status.part_paid')
     })
 
     it('never says Overdue once the money has arrived', () => {
-      const late = { ...asOrg, today: '2026-12-01' }
-      expect(statusChip('paid', late).key).toBe('admin.billing.invoice.status.paid')
-      expect(statusChip('part_paid', late).key).toBe('admin.billing.invoice.status.part_paid')
+      expect(statusChip('paid', lateOrg).key).toBe('admin.billing.invoice.status.paid')
     })
 
     it('gives the owner a job and the organisation a wait when a payment is declared', () => {
@@ -120,14 +119,14 @@ describe('what each invoice offers', () => {
     it('never says Overdue while a declared payment is being checked', () => {
       // The customer has done their part. Turning their row red while we check our own bank
       // would be blaming them for our queue.
-      expect(statusChip('payment_declared', { ...asOrg, today: '2026-12-01' }).key)
+      expect(statusChip('payment_declared', lateOrg).key)
         .toBe('admin.billing.invoice.status.beingChecked')
     })
 
     describe('nothing owed is never late (owner, 2026-10-29)', () => {
       /** The owner read BrightPath's own list: July 2026 is fully discounted — shown in full,
        *  charged nothing — and its row said OVERDUE, in red, beside a balance of RM0.00. */
-      const longPast = { ...asOrg, today: '2026-12-01', dueOn: '2026-09-14' }
+      const longPast = lateOrg
 
       it('says Nothing to pay instead of Overdue when the balance is zero', () => {
         expect(statusChip('sent', { ...longPast, balanceMyr: '0.00' }).key)
@@ -148,7 +147,7 @@ describe('what each invoice offers', () => {
           .toBe('admin.billing.invoice.status.overdue')
       })
 
-      it('says nothing of the sort when the balance was not passed', () => {
+      it('says Overdue when the balance was not passed and the server says late', () => {
         // The safe direction: a customer who DOES owe must never be told otherwise.
         expect(statusChip('sent', longPast).key)
           .toBe('admin.billing.invoice.status.overdue')

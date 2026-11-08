@@ -9572,6 +9572,13 @@
       "and": "dan",
       "link": "Lengkapkan profil",
       "hide7": "Sembunyikan selama 7 hari",
+      "overdueTitle": "Bayaran tertunggak.",
+      "overdueOne": "Invois {number} berjumlah {amount} sepatutnya dijelaskan 1 hari yang lalu.",
+      "overdueMany": "Invois {number} berjumlah {amount} sepatutnya dijelaskan {days} hari yang lalu.",
+      "overdueMoreOne": "1 lagi invois juga tertunggak.",
+      "overdueMoreMany": "{count} lagi invois juga tertunggak.",
+      "overdueLink": "Lihat invois",
+      "overdueHide": "Sembunyikan hingga log masuk seterusnya",
       "item": {
         "photo": "foto",
         "phone": "nombor telefon",
