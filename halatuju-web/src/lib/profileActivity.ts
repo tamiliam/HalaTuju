@@ -37,6 +37,8 @@ export const ACTIVITY_VERBS = [
   'contract_countersigned', 'benefactor_vetted', 'invoice_issued', 'invoice_sent', 'invoice_voided',
   'payment_declared', 'payment_confirmed', 'payment_rejected', 'org_request_raised',
   'org_request_approved', 'org_request_declined', 'merchant_flag_opened', 'merchant_flag_closed',
+  // A1.13b: the award withdrawal's maker and checker.
+  'withdrawal_requested', 'withdrawal_approved', 'withdrawal_refused', 'withdrawal_cancelled',
 ] as const
 
 /** The verbs that are about nobody but the person: their sentence has no `{subject}`. An accepted

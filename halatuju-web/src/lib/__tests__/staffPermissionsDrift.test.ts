@@ -30,10 +30,10 @@ const presets = (() => {
 })()
 
 describe('parse sanity — the server catalogue was really found', () => {
-  test('eight keys, review first and manage_team last', () => {
-    expect(apiKeys).toHaveLength(8)
+  test('ten keys, review first and manage_team last', () => {
+    expect(apiKeys).toHaveLength(10)
     expect(apiKeys[0]).toBe('review')
-    expect(apiKeys[7]).toBe('manage_team')
+    expect(apiKeys[9]).toBe('manage_team')
   })
 
   test('four team presets and a lead tier', () => {

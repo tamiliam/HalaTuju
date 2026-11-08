@@ -1,8 +1,9 @@
 /**
  * @jest-environment jsdom
  *
- * Applications — the Overview cards' links (owner 2026-11-05): ?status=&assigned=&ready=1&band= are read
- * once on mount into the list request; ready / band show as a removable chip; hand changes drop or update the URL.
+ * Applications — the Overview cards' links (owner 2026-11-05): ?status=&assigned=&ready=1&band= (and, A1.13b,
+ * &withdrawal=pending) are read once on mount into the list request; ready / band / withdrawal show as a removable
+ * chip; hand changes drop or update the URL.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
@@ -75,6 +76,29 @@ describe('the address bar feeds the list request', () => {
     expect(f?.ready).toBeUndefined()
     expect(f?.band).toBeUndefined()
     expect(screen.queryByTestId('url-filter-chips')).toBeNull()
+  })
+})
+
+describe('the withdrawal checker card (A1.13b): ?withdrawal=pending', () => {
+  it('goes into the first request and shows a removable chip', async () => {
+    show('/admin/scholarship?withdrawal=pending')
+    expect(await firstRequest()).toMatchObject({ withdrawal: 'pending' })
+    expect(screen.getByTestId('chip-withdrawal').textContent).toContain('admin.scholarship.chip.withdrawalPending')
+  })
+
+  it('any other value is ignored', async () => {
+    show('/admin/scholarship?withdrawal=approved')
+    expect((await firstRequest())?.withdrawal).toBeUndefined()
+    expect(screen.queryByTestId('chip-withdrawal')).toBeNull()
+  })
+
+  it('removing the chip asks again without it and drops it from the address bar', async () => {
+    show('/admin/scholarship?withdrawal=pending')
+    await firstRequest()
+    fireEvent.click(screen.getByLabelText('admin.scholarship.chip.remove'))
+    await waitFor(() => expect(screen.queryByTestId('chip-withdrawal')).toBeNull())
+    await waitFor(() => expect(mockApi.getScholarshipApplications.mock.calls.at(-1)?.[0]?.withdrawal).toBeUndefined())
+    expect(window.location.search).toBe('')
   })
 })
 

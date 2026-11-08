@@ -53,6 +53,14 @@ describe('per-role views', () => {
     expect(c.textContent).toBe('admin.overview.qcAwaiting7')
   })
 
+  it('a withdrawal checker (A1.13b): the card opens the list of pending withdrawal requests', async () => {
+    serve([{ key: 'award_withdrawals', count: 2 }])
+    render(<PendingCards token="t" />)
+    const c = await screen.findByTestId('pending-award_withdrawals')
+    expect(c.getAttribute('href')).toBe('/admin/scholarship?withdrawal=pending')
+    expect(c.textContent).toBe('admin.overview.awardWithdrawals2')
+  })
+
   it('reviewer: due soon amber, overdue red', async () => {
     serve([{ key: 'my_open', count: 6 }, { key: 'my_due_soon', count: 2 }, { key: 'my_overdue', count: 1 }])
     render(<PendingCards token="t" />)

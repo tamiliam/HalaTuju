@@ -21,7 +21,7 @@ jest.mock('@/lib/admin-api/admins')
 const mockApi = api as jest.Mocked<typeof api>
 
 const KEYS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
-  'payments_approve']
+  'payments_approve', 'award_withdraw_request', 'award_withdraw_approve']
 const ROHINI: api.StaffPermissionsView = {
   id: 7, name: 'Rohini', role: 'reviewer', is_active: true, editable: true,
   preset: ['review'], permissions: ['review'], custom: false, keys: KEYS,
@@ -54,7 +54,8 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   const reviewers = screen.getByTestId('perm-section-reviewers')
   expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
-    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'].map((k) => `admin.perm.${k}.name`))
+    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'award_withdraw_request',
+      'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))
   expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['admin.perm.review.name', 'admin.perm.qc.name'])
   expect(screen.queryByText('admin.permEditor.students')).toBeNull()

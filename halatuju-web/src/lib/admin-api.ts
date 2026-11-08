@@ -129,6 +129,7 @@ export type {
   AdminScholarshipListItem, AdminCompleteness, AdminInterviewSession, AdminSponsorProfile,
   AdminNudge, AdminScholarshipDetail, AdminScholarshipListData, GuardianCallOutcome,
 } from './admin-api/applications'
+export type { AwardWithdrawalRequest } from './admin-api/awardWithdrawal'
 
 // Interview scheduling from the OFFICER's side, and the Check-3 session.
 export {
@@ -165,7 +166,8 @@ export type { AdminResolutionItem } from './admin-api/resolution'
 // Post-award: the bursary signatures, award amount, tranches, maintenance, closure.
 export {
   adminCountersignBursary, adminWitnessBursary, setAwardAmount, scheduleTranche,
-  actOnDisbursement, setMaintenanceSubstate, closeApplication, withdrawAward,
+  actOnDisbursement, setMaintenanceSubstate, closeApplication,
+  requestAwardWithdrawal, approveAwardWithdrawal, refuseAwardWithdrawal, cancelAwardWithdrawal,
 } from './admin-api/lifecycle'
 export type {
   MaintenanceSubstate, ClosureReason, AdminDisbursement, DisbursementAction,

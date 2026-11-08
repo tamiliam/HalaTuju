@@ -1089,7 +1089,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
-      <WithdrawAwardCard app={app} t={t} isSuper={isSuper} token={token} onWithdrawn={setApp} />
+      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

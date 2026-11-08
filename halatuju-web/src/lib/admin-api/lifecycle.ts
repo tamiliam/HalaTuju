@@ -123,19 +123,63 @@ export async function closeApplication(
   )
 }
 
-// ── Award withdrawal (A1.13, TD-198): super-only, an awarded case with no paid tranche ──
-/** Withdraw an awarded case's award. `reason` is required and INTERNAL (the student never sees
- *  it). Refusals carry `code`: reason_required / reason_too_long (400), not_awarded /
- *  has_payments (409). Answers the refreshed case detail. */
-export async function withdrawAward(
+// ── Award withdrawal (A1.13b, TD-198): MAKER and CHECKER (`award_withdrawal_chain`) ──
+// One person asks with an explanation; a DIFFERENT person approves (the withdrawal runs) or refuses;
+// the maker may cancel. A super reads but acts on none (`wrong_role`). Every call answers the refreshed
+// case detail; a refusal carries `code` (see `WithdrawAwardCard`'s KNOWN_ERRORS).
+
+/** The MAKER asks for case `id`'s award to be withdrawn. `explanation` is required (max 5000) and
+ *  internal. Nothing changes until a checker approves. */
+export async function requestAwardWithdrawal(
   id: number,
+  explanation: string,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/withdrawal-request/`,
+    'POST',
+    { explanation },
+    options,
+  )
+}
+
+/** A CHECKER approves withdrawal request `requestId`: the award is withdrawn at once. `note` optional. */
+export async function approveAwardWithdrawal(
+  requestId: number,
+  note: string,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/withdrawal-requests/${requestId}/approve/`,
+    'POST',
+    note ? { note } : {},
+    options,
+  )
+}
+
+/** A CHECKER refuses withdrawal request `requestId`, with a required `reason`; the award stands. */
+export async function refuseAwardWithdrawal(
+  requestId: number,
   reason: string,
   options?: ApiOptions,
 ): Promise<AdminScholarshipDetail> {
   return adminMutate<AdminScholarshipDetail>(
-    `/api/v1/admin/scholarship/applications/${id}/withdraw-award/`,
+    `/api/v1/admin/scholarship/withdrawal-requests/${requestId}/refuse/`,
     'POST',
     { reason },
+    options,
+  )
+}
+
+/** The MAKER takes back their own pending request `requestId`; the award stands. */
+export async function cancelAwardWithdrawal(
+  requestId: number,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/withdrawal-requests/${requestId}/cancel/`,
+    'POST',
+    {},
     options,
   )
 }

@@ -31,8 +31,8 @@ const mockApi = api as jest.Mocked<typeof api>
 /** Each role's RESOLVED permissions as the server serves them (staff_permissions.py presets). */
 const PRESET: Record<string, string[]> = {
   super: ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
-          'manage_team'],
-  org_admin: ['see_all', 'qc', 'spending', 'manage_team'],
+          'award_withdraw_request', 'award_withdraw_approve', 'manage_team'],
+  org_admin: ['see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'],
   admin: ['see_all', 'spending', 'payments_prepare'],
   finance: ['payments_approve'],
   reviewer: ['review'],
