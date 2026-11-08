@@ -269,6 +269,16 @@ class TestEveryTableSaysSoFirst(TestCase):
         self.assertEqual(page['mentor']['work'], {'mentoring_sessions': 1})
         self.assertFalse(page['mentor']['deletable'])
 
+    def test_the_admin_person_page(self):
+        fresh = make_admin('admin', owning_org=self.org)
+        busy = make_admin('finance', owning_org=self.org)
+        make_application('assigned', reviewer=busy)
+        url = '/api/v1/admin/admins/{}/permissions/'
+        page = authed_client(self.lead).get(url.format(fresh.pk)).json()
+        self.assertEqual((page['deletable'], page['work']), (True, {}))
+        page = authed_client(self.lead).get(url.format(busy.pk)).json()
+        self.assertEqual((page['deletable'], page['work']), (False, {'assigned_applications': 1}))
+
     def test_a_read_only_admin_is_offered_no_delete(self):
         viewer = make_admin('admin', owning_org=self.org)
         rows = self._rows(viewer, '/api/v1/admin/mentors/', 'mentors')
