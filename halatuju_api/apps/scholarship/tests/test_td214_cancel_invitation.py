@@ -74,16 +74,16 @@ class TestCancelAnInvitation(TestCase):
         self.assertEqual(body['waiting']['sponsors'], 0)
 
     def test_the_sponsor_link_no_longer_closes_or_files_into_the_gift(self):
-        from apps.scholarship.sponsorship import signup_programme_for
+        from apps.scholarship.sponsorship import signup_programmes_for
         from apps.scholarship.views_sponsor import _close_admin_invitation
         make_programme(organisation=self.other, code='td214-second')   # two live gifts
         inv = self._sponsor_inv()
         registrant = Sponsor.objects.create(
             supabase_user_id='td214-donor', name='Donor', email=inv.email, phone='0123',
             source='friend', consent_at=timezone.now(), status='pending')
-        self.assertEqual(signup_programme_for(registrant), self.gift)   # before: it files them
+        self.assertEqual(signup_programmes_for(registrant), [self.gift])  # before: it files them
         self._cancel(self.org_admin, inv)
-        self.assertIsNone(signup_programme_for(registrant))             # after: nothing on file
+        self.assertEqual(signup_programmes_for(registrant), [])          # after: nothing on file
         _close_admin_invitation(registrant)
         inv.refresh_from_db()
         self.assertIsNone(inv.accepted_at)

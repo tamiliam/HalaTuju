@@ -79,7 +79,7 @@ from .comms_templates import (
 )
 from .letters import LETTER_KINDS, LETTER_LANGUAGES, Letter, LetterTemplate
 from .items import (
-    ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,
+    ITEM_STATE_CHOICES, ApplicationItem, Invitation, InvitationGift, ProgrammeApplicationItem,
     ProgrammeReferralSource,
 )
 from .spending import (

@@ -19,7 +19,9 @@ import { FIELD_LABEL, InviteField, InviteFoot } from '@/components/admin/InviteF
 import PanelTabs from '@/components/admin/PanelTabs'
 import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
 import { GiftTickList } from '@/components/admin/ReviewerGifts'
-import { EVERY_GIFT, idsToSave, type GiftTicks } from '@/lib/reviewerGifts'
+import {
+  EVERY_GIFT, idsToSave, nothingTicked, sponsorStartTicks, type GiftTicks,
+} from '@/lib/reviewerGifts'
 import { lazySource } from '@/components/source/LazySource'
 
 // The Source tab's form and roster: their own chunk, fetched when the tab is first opened.
@@ -113,11 +115,12 @@ export default function OrganisationInvitationsPage() {
   const [sName, setSName] = useState('')
   const [sEmail, setSEmail] = useState('')
   const [note, setNote] = useState('')
-  // Which gift a sponsor is being invited into (S-ASSIGN). Starts BLANK and stays blank — the
-  // picker only appears when there is a real choice, and it must never default to one. Until
-  // now this form never asked, so a benefactor invited for Sabah would have registered
-  // straight into the flagship, silently.
-  const [sProgramme, setSProgramme] = useState('')
+  // Which gifts a sponsor is invited into (S-ASSIGN, then Invitations I3, 2026-11-08: several, or
+  // Every gift). Starts with NOTHING ticked — never a silent default, which is how a Sabah
+  // benefactor would otherwise have landed in the flagship — except with exactly ONE gift, which
+  // is pre-ticked because there is nothing to choose. With two or more a choice is required.
+  const [sGifts, setSGifts] = useState<GiftTicks>(sponsorStartTicks([]))
+  const [sGiftMissing, setSGiftMissing] = useState(false)
   // A REVIEWER invite names its gifts (TD-501, A1.3). Multi-gift (owner design, 2026-11-06): a tick
   // list with "Every gift" ticked BY DEFAULT — the owner's ruling replaces A1.3's "must be chosen".
   // Always sent as `programme_ids` (`[]` = every gift), so the server never sees a blank.
@@ -147,6 +150,14 @@ export default function OrganisationInvitationsPage() {
 
   useEffect(() => { void load() }, [load])
 
+  // The sponsor ticks start again only when the gift CHOICES change (a new payload with other
+  // gifts) — never on the reload after a resend or a cancel, which would wipe a half-made choice.
+  const giftKey = (data?.programmes ?? []).map((p) => p.id).join(',')
+  useEffect(() => {
+    setSGifts(sponsorStartTicks(giftKey ? giftKey.split(',').map(Number).map((id) => ({ id })) : []))
+    setSGiftMissing(false)
+  }, [giftKey])
+
   // `?kind=source` (the Sources page's "Invite a source") opens that tab. Read once, on mount, from
   // `window.location` — `useSearchParams` would need a Suspense boundary in a page file.
   useEffect(() => {
@@ -168,21 +179,26 @@ export default function OrganisationInvitationsPage() {
     e.preventDefault()
     let ok = false
     if (kind === 'sponsors') {
+      // I3: with two or more gifts a choice is REQUIRED — nothing is sent until one is made. With
+      // one (pre-ticked) or none, nothing ticked sends no gift and the server takes the sole one.
+      const choices = data?.programmes ?? []
+      if (nothingTicked(sGifts) && choices.length > 1) { setSGiftMissing(true); return }
       try {
-        // Omitted when blank, which is the ONE-GIFT case: the server takes the organisation's
-        // sole active gift. With several it refuses `programme_required` rather than picking,
-        // and the picker below is `required` so the form never reaches that refusal.
         await inviteSponsor({
           email: sEmail, name: sName, note,
-          ...(sProgramme ? { programme_id: Number(sProgramme) } : {}),
+          ...(nothingTicked(sGifts) ? {} : { programme_ids: idsToSave(sGifts) }),
         }, { token: token! })
         ok = true
-      } catch { ok = false }
+      } catch {
+        // Said, never silent: a refused or failed invite must not read as one that went.
+        setMessage({ type: 'warning', text: t('admin.invitations.inviteFailed') })
+      }
+      if (ok) setSGifts(sponsorStartTicks(choices))
     } else {
       const gift = subRole !== 'reviewer' ? {} : { programme_ids: idsToSave(rGifts) }
       ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole, ...gift })
     }
-    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme(''); setRGifts(EVERY_GIFT) }
+    if (ok) { setSName(''); setSEmail(''); setNote(''); setRGifts(EVERY_GIFT) }
     void load()
   }
 
@@ -217,9 +233,10 @@ export default function OrganisationInvitationsPage() {
    * nothing is the honest option; the letter stands on its own. Storing it would be a migration,
    * which is more than this is worth.
    *
-   * ⚠ NO `programme_id` EITHER, and that is load-bearing rather than an omission: `create_or_refresh`
-   * leaves the existing gift alone when none is named, and overwrites it when one is. A resend must
-   * not silently re-home a benefactor into whichever gift the form happens to be showing.
+   * ⚠ NO `programme_ids` (nor `programme_id`) EITHER, and that is load-bearing rather than an
+   * omission: the server keeps a waiting invitation's gifts when none are named, and replaces them
+   * when some are (I3). A resend must not silently re-home a benefactor into whichever gifts the
+   * form happens to be showing.
    */
   const resendSponsor = async (row: InvitationRow) => {
     if (!token) return
@@ -342,24 +359,33 @@ export default function OrganisationInvitationsPage() {
                     value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
                 </InviteField>
               </div>
-              {/* ⚠ ONE GIFT ASKS NOTHING. The picker appears only when the organisation runs
-                  more than one, so the form is unchanged for BrightPath today. With several it
-                  is REQUIRED and starts blank — never a silent default, which is exactly how a
-                  Sabah benefactor would otherwise have landed in the flagship. */}
-              {kind === 'sponsors' && giftChoices.length > 1 && (
-                <InviteField label={t('admin.invitations.giftLabel')}>
-                  <select className={inputCls} value={sProgramme} required
-                    onChange={(e) => setSProgramme(e.target.value)}>
-                    <option value="">{t('admin.invitations.giftChoose')}</option>
-                    {giftChoices.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </InviteField>
+              {/* I3 (owner ruling 1): the reviewer's tick list, ALWAYS shown — several gifts, or
+                  Every gift (= every gift open when they register; one pending request per gift,
+                  each approved on its own). Nothing ticked to start (one gift: pre-ticked); with
+                  two or more the form will not send until a choice is made. */}
+              {kind === 'sponsors' && (
+                <div className="text-sm" role="group" aria-labelledby="invite-sponsor-gift-label">
+                  <span id="invite-sponsor-gift-label" className={FIELD_LABEL}>
+                    {t('admin.invitations.sponsorGiftLabel')}
+                  </span>
+                  <div className={`rounded-lg border px-2 py-1 ${
+                    sGiftMissing ? 'border-critical-600' : 'border-ground-300'}`}>
+                    <GiftTickList ticks={sGifts} options={giftChoices} allowNone
+                      onChange={(next) => { setSGifts(next); setSGiftMissing(false) }}
+                      everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-sponsor-gift" />
+                  </div>
+                  {sGiftMissing && (
+                    <p role="alert" className="mt-1 text-xs text-critical-600">
+                      {t('admin.invitations.sponsorGiftRequired')}
+                    </p>
+                  )}
+                </div>
               )}
               {kind !== 'sponsors' && subRole === 'reviewer' && (
-                <div className="text-sm">
-                  <span className={FIELD_LABEL}>{t('admin.invitations.reviewerGiftLabel')}</span>
+                <div className="text-sm" role="group" aria-labelledby="invite-reviewer-gift-label">
+                  <span id="invite-reviewer-gift-label" className={FIELD_LABEL}>
+                    {t('admin.invitations.reviewerGiftLabel')}
+                  </span>
                   <div className="rounded-lg border border-ground-300 px-2 py-1">
                     <GiftTickList ticks={rGifts} options={reviewerGiftChoices} onChange={setRGifts}
                       everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-reviewer-gift" />
@@ -384,10 +410,11 @@ export default function OrganisationInvitationsPage() {
               )}
               {/* I1: the tab's note sits UNDER the fields, then Send Invite at the left. Admin's says
                   where an Admin starts (T2, owner ruling 4: one Admin, at the minimum); Reviewer's is
-                  the gift help; Sponsor has none. */}
+                  the gift help; Sponsor's (I3) says each gift is its own request. */}
               <InviteFoot busy={busy} label={t('admin.sendInvite')}
                 note={kind === 'admins' ? t('admin.team.inviteAdminNote')
-                  : kind !== 'sponsors' && subRole === 'reviewer' ? t('admin.invitations.reviewerGiftHelp')
+                  : kind === 'sponsors' ? t('admin.invitations.sponsorGiftHelp')
+                  : subRole === 'reviewer' ? t('admin.invitations.reviewerGiftHelp')
                   : undefined} />
             </form>
           ) : null}

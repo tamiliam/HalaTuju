@@ -8,6 +8,14 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import type { InvitationRow } from '@/lib/admin-api'
 import { teamLabelRole } from '@/lib/staffRole'
 
+/** The gift line under a SPONSOR invitation's name (I3): "Every gift", else the gifts' names, else
+ *  the one-gift `programme_name` (a payload from before I3); '' when it names none. */
+export function giftLine(r: InvitationRow, everyWord: string): string {
+  if (r.every_gift) return everyWord
+  if (r.gifts && r.gifts.length > 0) return r.gifts.map((g) => g.name).join(', ')
+  return r.programme_name || ''
+}
+
 /**
  * One kind's invitations. Same five columns as every other table on the console —
  * Name · Email · Role · Status · Action (owner's shape, 2026-08-03).
@@ -118,11 +126,13 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
                   <td className={`px-4 py-3 ${lead ? 'text-ground-900' : 'font-medium text-ground-900'}`}
                     data-label={lead ? word('nameHeader') : undefined}>
                     {r.name || '—'}
-                    {/* Which gift this invitation was for (S-ASSIGN). Rendered only when the row
-                        HAS one: a blank means every gift, and printing an empty line under a
-                        staff invitation would read as a missing value rather than as "n/a". */}
-                    {r.programme_name && (
-                      <div className="text-xs font-normal text-ground-500">{r.programme_name}</div>
+                    {/* Which gifts this invitation was for (S-ASSIGN; several or Every gift since I3).
+                        Rendered only when the row HAS some: a staff invitation's blank means every
+                        gift, and an empty line under it would read as a missing value. */}
+                    {giftLine(r, t('admin.invitations.reviewerGiftEvery')) && (
+                      <div className="text-xs font-normal text-ground-500">
+                        {giftLine(r, t('admin.invitations.reviewerGiftEvery'))}
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={word('emailHeader')}>{r.email}</td>

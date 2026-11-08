@@ -47,7 +47,7 @@ def _sole_batch_organisation(apps):
     Org Config Sprint B: the batch's organisation picks its `sponsor_email_max_cards` card
     cap. A mixed batch (or one carrying a NULL-org application) answers None — the platform
     default — because applying one tenant's cap to another tenant's students would be a
-    guess, and None is a real answer (the `signup_programme_for` rule)."""
+    guess, and None is a real answer (the `signup_programmes_for` rule)."""
     org_ids = {a.owning_organisation_id for a in apps}
     if len(org_ids) == 1 and None not in org_ids:
         return apps[0].owning_organisation

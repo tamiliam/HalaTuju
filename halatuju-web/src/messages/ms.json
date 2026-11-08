@@ -7391,11 +7391,13 @@
         "mentor": "Mentor"
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
-      "giftLabel": "Jemputan ini untuk pemberian yang mana?",
-      "giftChoose": "Pilih pemberian…",
       "reviewerGiftLabel": "Pemberian mana yang akan diliputi oleh penilai ini?",
       "reviewerGiftHelp": "Padankan penilai dengan pemberian mengikut kekuatan dan minat mereka.",
       "reviewerGiftEvery": "Semua pemberian",
+      "sponsorGiftLabel": "Pemberian mana yang penaja ini dijemput untuk disokong?",
+      "sponsorGiftRequired": "Tandakan sekurang-kurangnya satu pemberian, atau Semua pemberian.",
+      "sponsorGiftHelp": "Setiap pemberian ialah permohonan tersendiri: apabila mereka mendaftar, mereka menyertai setiap pemberian yang ditandakan di sini sebagai menunggu, dan anda meluluskan setiap satu. Semua pemberian bermaksud pemberian yang dibuka pada hari mereka mendaftar — pemberian yang dimulakan kemudian tidak ditambah.",
+      "inviteFailed": "Jemputan tidak dihantar. Sila semak butiran dan cuba lagi.",
       "noteLabel": "Nota peribadi",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {

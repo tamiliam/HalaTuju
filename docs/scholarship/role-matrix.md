@@ -157,6 +157,14 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
   The case's gifts are `application.programme` and `cohort.programme` read as one set; a new
   assignment outside the reviewer's list is still the `gift_mismatch` 400. QC is unchanged.
   `PartnerAdmin.programme` is no longer read (write-only mirror, TD-540).
+- **A sponsor INVITATION names a list of gifts, or Every gift (Invitations I3, 2026-11-08).** The
+  list is `InvitationGift` rows (`invitation_gifts`) plus the flag `Invitation.every_gift`;
+  `Invitation.programme` is the rollback mirror (one gift → that id, several / every → NULL).
+  `sponsor_invite_gifts.set_gifts` is the one writer. It GRANTS nothing: on registering they get
+  ONE PENDING `SponsorProgrammeMembership` per gift (`sponsorship.open_signup_memberships`,
+  create-only), and account vetting settles those (`settle_signup_memberships`). Every gift means
+  the gifts ACTIVE in the invitation's organisation when they register, frozen into rows then — a
+  gift started later is never joined by itself (unlike a reviewer's Every gift, which is live).
 - **Sponsors under multi-org (D-1 caveat):** sponsor ACCOUNTS are platform-level identities;
   when a second organisation exists, account-level approval may move platform-side while
   pool membership stays org-level. Revisit this cell at tenant #2.

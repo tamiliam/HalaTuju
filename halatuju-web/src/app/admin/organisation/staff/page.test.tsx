@@ -251,20 +251,109 @@ describe('which gift a sponsor is invited into', () => {
       { target: { value: 'donor@example.org' } })
   }
 
-  it('⚠ asks NOTHING when the organisation runs one gift — today’s BrightPath form', async () => {
+  const giftTick = (id: string) => screen.getByTestId(`invite-sponsor-gift-${id}`) as HTMLInputElement
+  const TWO_GIFTS = [
+    { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+    { id: 9, code: 'sabah', name: 'Sabah Bursary' },
+  ]
+
+  it('I3: shows the tick list even with ONE gift, and pre-ticks that gift', async () => {
     await loaded()
     await pick('sponsors')
-    expect(screen.queryByText('admin.invitations.giftLabel')).toBeNull()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift')).toBeTruthy())
+    expect(giftTick('every').checked).toBe(false)
+    expect(giftTick('gift-7').checked).toBe(true)
+    expect(screen.getByText('admin.invitations.sponsorGiftHelp')).toBeTruthy()
   })
 
-  it('sends no gift in that case, and the server takes the sole one', async () => {
+  it('sends that one gift by id — what the server would have taken anyway', async () => {
     mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
     await loaded()
     await pick('sponsors')
     inviteSponsorNamed()
+    await waitFor(() => expect(giftTick('gift-7').checked).toBe(true))
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor', note: '', programme_ids: [7] }, { token: 'tok' }))
+  })
+
+  it('with one gift UN-ticked, sends no gift and the server takes the sole one', async () => {
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(giftTick('gift-7').checked).toBe(true))
+    fireEvent.click(giftTick('gift-7'))
+    // allowNone: the last tick cleared is NOTHING, not a silent Every gift.
+    expect(giftTick('every').checked).toBe(false)
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
       { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
+  })
+
+  it('names the tick list for a screen reader (role=group, labelled by its heading)', async () => {
+    await loaded()
+    await pick('sponsors')
+    expect(await screen.findByRole('group', { name: 'admin.invitations.sponsorGiftLabel' })).toBeTruthy()
+  })
+
+  it('⚠ with two gifts starts with NOTHING ticked and refuses to send until a choice is made', async () => {
+    giftChoices = TWO_GIFTS
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-gift-9')).toBeTruthy())
+    expect(giftTick('every').checked).toBe(false)
+    expect(giftTick('gift-7').checked).toBe(false)
+    expect(giftTick('gift-9').checked).toBe(false)
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.invitations.sponsorGiftRequired')
+    expect(mockApi.inviteSponsor).not.toHaveBeenCalled()
+    // Ticking a gift clears the warning.
+    fireEvent.click(giftTick('gift-9'))
+    expect(screen.queryByText('admin.invitations.sponsorGiftRequired')).toBeNull()
+  })
+
+  it('sends several ticked gifts by id', async () => {
+    giftChoices = TWO_GIFTS
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-gift-9')).toBeTruthy())
+    fireEvent.click(giftTick('gift-9'))
+    fireEvent.click(giftTick('gift-7'))
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor', note: '', programme_ids: [7, 9] },
+      { token: 'tok' }))
+  })
+
+  it('sends Every gift as an empty list', async () => {
+    giftChoices = TWO_GIFTS
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-every')).toBeTruthy())
+    fireEvent.click(giftTick('every'))
+    expect(giftTick('gift-7').disabled).toBe(true)
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor', note: '', programme_ids: [] },
+      { token: 'tok' }))
+  })
+
+  it('⚠ says so when the invite is refused, rather than looking sent', async () => {
+    giftChoices = TWO_GIFTS
+    mockApi.inviteSponsor.mockRejectedValue(new Error('not_found'))
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-gift-9')).toBeTruthy())
+    fireEvent.click(giftTick('gift-9'))
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    expect(await screen.findByText('admin.invitations.inviteFailed')).toBeTruthy()
   })
 
   it('⚠ Resend on a donor row actually sends, and says so (BrightPath #16)', async () => {
@@ -347,42 +436,38 @@ describe('which gift a sponsor is invited into', () => {
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
       { email: 'donor@example.org', name: 'Donor',
-        note: 'Dear Ravi,\n\nWe would value your support.' }, { token: 'tok' }))
+        note: 'Dear Ravi,\n\nWe would value your support.', programme_ids: [7] }, { token: 'tok' }))
   })
 
-  it('asks once there are two, and starts BLANK — never a silent default', async () => {
-    giftChoices = [
-      { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
-      { id: 9, code: 'sabah', name: 'Sabah Bursary' },
-    ]
-    await loaded()
-    await pick('sponsors')
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    expect(select.value).toBe('')
-    expect(select.required).toBe(true)
-  })
-
-  it('sends the chosen gift', async () => {
-    giftChoices = [
-      { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
-      { id: 9, code: 'sabah', name: 'Sabah Bursary' },
-    ]
-    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
-    await loaded()
-    await pick('sponsors')
-    inviteSponsorNamed()
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
-    fireEvent.click(screen.getByText('admin.sendInvite'))
-    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
-      { email: 'donor@example.org', name: 'Donor', note: '', programme_id: 9 },
-      { token: 'tok' }))
-  })
-
-  it('shows which gift an existing invitation was for', async () => {
+  it('shows which gift an existing invitation was for (a payload from before I3)', async () => {
     await loaded()
     await pick('sponsors')
     await waitFor(() => expect(screen.getByText('Donor')).toBeTruthy())
-    expect(screen.getByText('BrightPath Bursary')).toBeTruthy()
+    const cell = screen.getByText('Donor').closest('td')!
+    expect(within(cell).getByText('BrightPath Bursary')).toBeTruthy()
+  })
+
+  it('I3: lists an invitation’s several gifts under the name, or Every gift', async () => {
+    const sponsorsPayload = payloadFor('sponsors')
+    mockApi.getInvitations.mockImplementation(async (kind) => (kind !== 'sponsors' ? payloadFor(kind) : {
+      ...sponsorsPayload,
+      invitations: [
+        row({ id: 3, name: 'Donor', role: '', status: 'invited', accepted_at: null, admin_id: null,
+              is_active: null, programme: '', programme_name: '', every_gift: false,
+              gifts: [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+                      { id: 9, code: 'sabah', name: 'Sabah Bursary' }] }),
+        row({ id: 4, name: 'Patron', email: 'p@example.org', role: '', status: 'invited',
+              accepted_at: null, admin_id: null, is_active: null, programme: '', programme_name: '',
+              every_gift: true, gifts: [] }),
+      ],
+    }))
+    await loaded()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.getByText('Patron')).toBeTruthy())
+    expect(within(screen.getByText('Donor').closest('td')!)
+      .getByText('BrightPath Bursary, Sabah Bursary')).toBeTruthy()
+    expect(within(screen.getByText('Patron').closest('td')!)
+      .getByText('admin.invitations.reviewerGiftEvery')).toBeTruthy()
   })
 
   it('⚠ prints nothing for a staff invitation, which carries no gift', async () => {
@@ -590,6 +675,7 @@ describe('a reviewer invite names its gifts', () => {
     expect(tick('gift-7').disabled).toBe(true)
     expect(tick('gift-9').disabled).toBe(true)
     expect(screen.getByText('admin.invitations.reviewerGiftHelp')).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'admin.invitations.reviewerGiftLabel' })).toBeTruthy()
   })
 
   it('offers only the gifts the server lists for the reviewer invite, never another organisation’s', async () => {
@@ -687,7 +773,7 @@ describe('I1: one form and one waiting table on every tab', () => {
     mentor: { nameLabel: 'admin.mentors.invite.name', note: 'admin.mentors.invite.note' },
     source: { nameLabel: 'admin.invitations.source.personName', note: 'admin.invitations.source.note',
               lead: 'admin.invitations.source.col.source' },
-    sponsors: { nameLabel: 'admin.name', note: null },
+    sponsors: { nameLabel: 'admin.name', note: 'admin.invitations.sponsorGiftHelp' },
   }
 
   beforeEach(() => {

@@ -142,44 +142,53 @@ def _is_accepted_into(sponsor, programme):
         sponsor=sponsor, programme=programme, status='approved').exists()
 
 
-def signup_programme_for(sponsor):
-    """WHICH GIFT a registering sponsor is joining, or None when we genuinely cannot say.
+def signup_programmes_for(sponsor, *, freeze=False):
+    """WHICH GIFTS a registering sponsor is joining — a list, empty when we genuinely cannot say.
 
-    ⚠ THIS REPLACES A TENANT LITERAL. Until 2026-09-04 the answer was the constant
-    ``DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`` — correct while the platform ran one gift
-    and a silent wrong answer the moment it ran two, because a benefactor invited into Sabah would
-    have been filed against the flagship and then refused their credit
-    (``record_admin_credit`` → ``sponsor_not_in_programme``). It is what blocked the second gift's
-    money.
+    ⚠ THIS REPLACED A TENANT LITERAL (``DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'``, until
+    2026-09-04), which filed a benefactor invited into Sabah against the flagship and then refused
+    their credit (``record_admin_credit`` → ``sponsor_not_in_programme``). Since Invitations I3
+    (2026-11-08) an invitation names several gifts or Every gift, so the answer is a list.
 
     Two sources, in order, and both are EVIDENCE rather than a guess:
 
-    1. **The invitation they answered.** An organisation that invites somebody states which gift,
-       and that statement is the whole point of asking. Matched on email — an admin sponsor
-       invitation deliberately creates no account and carries no credential, so the address is the
-       only thread between the asking and the arriving (the same key ``_close_admin_invitation``
-       uses).
-    2. **The platform's sole ACTIVE gift.** With one, there is nothing to get wrong, and this
-       reproduces the old constant exactly for BrightPath. Note ``is_active``: a gift that has been
-       created but not switched on is not taking anybody, so it must not make the answer ambiguous.
+    1. **The invitation they answered** (`sponsor_invite_gifts.stating_invitation`), matched on
+       email — a sponsor invitation creates no account, so the address is the only thread (the key
+       ``_close_admin_invitation`` uses). Its gifts, or for Every gift each gift active in its
+       organisation NOW; ``freeze`` (registration) records those, so vetting settles the same ones.
+    2. **The platform's sole ACTIVE gift.** With one there is nothing to get wrong. ``is_active``:
+       a gift created but not switched on takes nobody, so it must not make the answer ambiguous.
 
-    ⚠ NONE IS A REAL ANSWER AND MUST STAY ONE. Several active gifts and no invitation means a
-    stranger arrived off the public form and nothing on the platform knows which gift they meant.
-    Guessing files them — and their money — against the wrong one; returning None leaves them with
-    no membership, an empty pool, and an org_admin who accepts them by hand on the sponsor page.
-    That is PF-1's rule (``resolve_open_cohort`` raises rather than choosing) applied to the money.
+    ⚠ EMPTY IS A REAL ANSWER AND MUST STAY ONE. Several active gifts and no invitation means a
+    stranger off the public form: guessing files them — and their money — against the wrong gift;
+    ``[]`` leaves them with no membership and an org_admin who accepts them by hand. PF-1's rule.
     """
-    from .models import Invitation, Programme
-    email = (getattr(sponsor, 'email', '') or '').strip()
-    if email:
-        invited = (Invitation.objects
-                   .filter(audience='sponsor', email__iexact=email,
-                           programme__isnull=False, revoked_at__isnull=True)
-                   .order_by('-created_at').first())
-        if invited is not None:
-            return invited.programme
+    from .models import Programme
+    from . import sponsor_invite_gifts
+    invited = sponsor_invite_gifts.stating_invitation(getattr(sponsor, 'email', ''))
+    if invited is not None:
+        return sponsor_invite_gifts.joined_on_registration(invited, freeze=freeze)
     live = list(Programme.objects.filter(is_active=True)[:2])
-    return live[0] if len(live) == 1 else None
+    return live if len(live) == 1 else []
+
+
+def open_signup_memberships(sponsor):
+    """REGISTRATION: one membership per gift they are joining, opened at the account's status
+    (``pending`` for a newcomer). CREATE-ONLY: an existing row of any status is left alone, so a
+    registration can never downgrade an approved, rejected or suspended membership (I3)."""
+    from .models import SponsorProgrammeMembership
+    for programme in signup_programmes_for(sponsor, freeze=True):
+        settled = sponsor.status != 'pending'
+        SponsorProgrammeMembership.objects.get_or_create(
+            sponsor=sponsor, programme=programme,
+            defaults={'status': sponsor.status, 'vetted_at': timezone.now() if settled else None})
+
+
+def settle_signup_memberships(sponsor, vetted_by):
+    """ACCOUNT VETTING: settle each signup gift's membership to the account's status, exactly as
+    `sync_account_membership` does for one — the same gifts registration opened, and only those."""
+    for programme in signup_programmes_for(sponsor):
+        sync_account_membership(sponsor, programme, vetted_by=vetted_by)
 
 
 def sync_account_membership(sponsor, programme, vetted_by=''):
@@ -188,8 +197,8 @@ def sync_account_membership(sponsor, programme, vetted_by=''):
     ⚠ `programme` IS REQUIRED AND POSITIONAL, with no default. That is the P2a discipline the money
     model already uses (`sponsor_balance`, `payments.create_run`): a default would compile, pass
     every test written before a second gift existed, and quietly file somebody against the wrong
-    one. A caller that cannot answer passes the result of `signup_programme_for`, and **None is
-    handled here** — it writes nothing rather than falling back.
+    one. **None is handled here** — it writes nothing rather than falling back. Registration and
+    vetting call it through `open_signup_memberships` / `settle_signup_memberships` (I3).
 
     Migration ``0123`` gave every sponsor alive on 2026-07-25 a flagship membership copied from
     their account status — and **nothing was ever written to do the same for a sponsor who
@@ -207,11 +216,11 @@ def sync_account_membership(sponsor, programme, vetted_by=''):
     **Only the ONE gift passed in is touched, and that rule predates the parameter.** A membership
     of another gift is a separate acceptance decision by the organisation running it, and must
     never be flipped as a side-effect of platform-level account vetting. Vetting therefore passes
-    the SAME gift the registration resolved (`signup_programme_for` is stable — the invitation
-    outlives the registration), so the account's own row settles and nobody else's moves.
+    the SAME gifts the registration resolved (`signup_programmes_for` is stable — the invitation
+    outlives the registration), so the account's own rows settle and nobody else's moves.
 
-    Best-effort in the sense that an unresolvable programme (None from `signup_programme_for`, or
-    a bare test DB exactly as ``0123`` allows for) returns None rather than inventing an
+    Best-effort in the sense that an unresolvable programme (a bare test DB exactly as ``0123``
+    allows for) returns None rather than inventing an
     acceptance — but it does NOT swallow database errors: a registration that silently loses its
     membership is the bug this exists to fix.
     """

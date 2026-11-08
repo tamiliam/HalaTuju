@@ -7391,11 +7391,13 @@
         "mentor": "Mentor"
       },
       "noneInKind": "Nobody has been invited in this group yet.",
-      "giftLabel": "Which gift is this invitation for?",
-      "giftChoose": "Choose a gift…",
       "reviewerGiftLabel": "Which gifts will this reviewer cover?",
       "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
+      "sponsorGiftLabel": "Which gifts is this sponsor invited to support?",
+      "sponsorGiftRequired": "Tick at least one gift, or Every gift.",
+      "sponsorGiftHelp": "Each gift is its own request: when they register they join every gift ticked here as pending, and you approve each one. Every gift means the gifts open on the day they register — a gift started later is not added.",
+      "inviteFailed": "The invitation was not sent. Please check the details and try again.",
       "noteLabel": "Personal note",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {

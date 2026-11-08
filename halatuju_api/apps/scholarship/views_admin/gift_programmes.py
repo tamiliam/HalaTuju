@@ -222,7 +222,9 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         asks for, which sources its form lists), meaningless without it; the sources themselves
         stay. And `Invitation` and `PartnerAdmin.programme` are SET_NULL, which is exactly right:
         those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift" (the
-        S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. (The old
+        S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. A sponsor
+        invitation's `InvitationGift` rows (I3) are CASCADE: it goes on naming the gifts that remain,
+        and one left naming none resolves as an unstated one does. (The old
         `partner_organisations.programme_id` left the model in sources Sprint B; until courses 0080
         drops it, a gift some row still names cannot be deleted — 500 — see that cutover note.)
 
