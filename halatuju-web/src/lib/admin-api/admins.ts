@@ -40,6 +40,10 @@ export interface AdminItem {
    *  with NO recorded work. Reviewers and QC too since D6 (Sprint T2, 2026-11-08), which reversed
    *  2026-09-09's "never a reviewer". */
   deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
   /** What this person has DONE, `{what: count}`, empty when nothing. The reason a delete is
    *  refused, so the screen can name it instead of greying a button for no visible cause. */
   work?: Record<string, number>
@@ -131,7 +135,9 @@ export async function getAdmins(options?: ApiOptions) {
 
 /** Delete a staff account outright. ⚠ Only ever offered for a programme-staff role with NO recorded
  *  work; the server refuses everything else — 409 `has_work` carries the counts that stopped it,
- *  400 `not_deletable` means the role can never be deleted (a super, a partner, a mentor login). */
+ *  400 `not_deletable` means the role can never be deleted (a super, a partner), 400 `last_org_admin`
+ *  the organisation's only active admin, and 404 a row this caller may not manage (another
+ *  organisation's, a mentor or a source login — those have their own doors). */
 export async function deleteAdmin(adminId: number, options?: ApiOptions) {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
@@ -202,6 +208,10 @@ export interface StaffPermissionsView {
   /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
    *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
   deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
   work?: Record<string, number>
 }
 

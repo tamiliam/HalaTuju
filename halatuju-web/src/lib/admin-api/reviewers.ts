@@ -79,6 +79,10 @@ export interface AdminReviewer {
   /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
    *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
   deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
   work?: Record<string, number>
 }
 

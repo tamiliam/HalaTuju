@@ -13,11 +13,15 @@ type Bubble = typeof import(/* webpackChunkName: 'mi' */ '../InfoTipBubble').def
  * profiles to be similar. Each must have Revoke and Delete. The delete however will be greyed out if
  * there is work on record."
  *
- * ⚠ THE SERVER DECIDES DELETE. `deletable` is `_deletable_now` (D6: reviewers, QC and mentors too,
- * under the one no-work test) and `work` is the footprint that refused it. This only draws the answer:
+ * ⚠ THE SERVER DECIDES DELETE. `deletable`, `delete_never` and `work` come from one rule
+ * (`staff_delete_rules.delete_fields`; D6: reviewers, QC and mentors too, under the one no-work test).
+ * This only draws the answer:
  *   - `deletable`           → Delete, live;
+ *   - `deleteNever`         → no Delete at all (T2 review N2): nobody can delete this row here — a
+ *                             super, a partner or source login, a row this viewer may not touch, the
+ *                             sole organisation admin — so a greyed "work on record" would mislead;
  *   - work on record        → Delete, GREYED, and the reason on hover, on tap and on keyboard focus;
- *   - neither               → no Delete (a role nobody deletes, or a row this viewer may not touch);
+ *   - none of these         → no Delete (an older payload without the flag);
  *   - an organisation admin → Delete only for a SUPER viewer (owner: "For org admins, the delete
  *                             button should be visible only to super admin"). The server refuses an
  *                             org_admin caller anyway (404); this keeps the dead button off.
@@ -40,6 +44,8 @@ export interface StaffActionsProps {
   /** Delete. Absent = this viewer is offered no delete here at all. */
   onDelete?: () => void
   deletable?: boolean
+  /** The server's `delete_never`: nobody may ever delete this row here, so no Delete is drawn. */
+  deleteNever?: boolean
   work?: Record<string, number>
   /** The row is an organisation admin: Delete is drawn only for a super viewer. */
   orgAdmin?: boolean
@@ -55,13 +61,13 @@ export interface StaffActionsProps {
 }
 
 export default function StaffActions({
-  active, onToggle, onDelete, deletable = false, work, orgAdmin = false, viewerSuper = false,
+  active, onToggle, onDelete, deletable = false, deleteNever = false, work, orgAdmin = false, viewerSuper = false,
   busy = false, revokeKey = 'admin.revoke', restoreKey = 'admin.restore', toggleTestId, size = 'xs',
 }: StaffActionsProps) {
   const { t } = useT()
   const text = size === 'xs' ? 'text-xs' : 'text-sm'
   const hasWork = !!work && Object.keys(work).length > 0
-  const showDelete = !!onDelete && (!orgAdmin || viewerSuper) && (deletable || hasWork)
+  const showDelete = !!onDelete && !deleteNever && (!orgAdmin || viewerSuper) && (deletable || hasWork)
   return (
     <>
       {onToggle && (

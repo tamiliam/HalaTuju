@@ -126,3 +126,14 @@ describe('an organisation admin\'s row (owner: "visible only to super admin")', 
     expect(screen.getByTestId('staff-delete-greyed')).toBeTruthy()
   })
 })
+
+describe('a row nobody may ever delete (T2 review N2: `delete_never`)', () => {
+  it('draws no Delete at all, even with work on record — a greyed "work" reason would mislead', () => {
+    const { unmount } = render(<StaffActions active onToggle={() => {}} onDelete={() => {}} work={WORK} deleteNever viewerSuper />)
+    expect(screen.queryByText('admin.delete')).toBeNull()
+    expect(screen.getByText('admin.revoke')).toBeTruthy()
+    unmount()
+    render(<StaffActions active onDelete={() => {}} deletable deleteNever viewerSuper />)
+    expect(screen.queryByText('admin.delete')).toBeNull()
+  })
+})

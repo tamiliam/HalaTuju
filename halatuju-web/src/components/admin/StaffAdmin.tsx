@@ -146,9 +146,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             record gets it greyed, with the reason on hover, tap and focus. An organisation admin's
             Delete is drawn for a super viewer only. */}
         <StaffActions active={a.is_active} busy={busyId === a.id}
-          onToggle={onToggle && !(a.is_active && soleOrgAdmin?.(a)) ? () => onToggle(a) : undefined}
+          onToggle={onToggle && a.revocable !== false && !(a.is_active && soleOrgAdmin?.(a))
+            ? () => onToggle(a) : undefined}
           onDelete={onDelete ? () => onDelete(a) : undefined}
-          deletable={a.deletable} work={a.work} orgAdmin={a.role === 'org_admin'} viewerSuper={viewerSuper} />
+          deletable={a.deletable} deleteNever={a.delete_never} work={a.work} orgAdmin={a.role === 'org_admin'} viewerSuper={viewerSuper} />
         {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id}
           onRemove={() => team.onRemove(a)} />}
         {onChangeRole && switchableTo(a) && (

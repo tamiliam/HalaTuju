@@ -226,8 +226,8 @@ export default function AdminReviewersList() {
   // this table is Remove), and their Delete is drawn for a super only.
   const reviewerActions = (r: AdminReviewer) => (
     <StaffActions active={r.is_active} busy={busyId === r.id}
-      onToggle={r.lead ? undefined : () => toggleReviewer(r)}
-      onDelete={() => setDeleting(r)} deletable={r.deletable} work={r.work}
+      onToggle={r.lead || r.revocable === false ? undefined : () => toggleReviewer(r)}
+      onDelete={() => setDeleting(r)} deletable={r.deletable} deleteNever={r.delete_never} work={r.work}
       orgAdmin={!!r.lead || r.role === 'org_admin'} viewerSuper={viewerSuper} />
   )
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))

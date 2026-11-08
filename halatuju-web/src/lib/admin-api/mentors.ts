@@ -47,6 +47,8 @@ export interface MentorRow {
   /** Sprint T2 (D6): a pure mentor with no assignment, session or concern may be deleted
    *  (`DELETE admin/mentors/<id>/`); false for a staff mentor, deleted from their staff table. */
   deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
   work?: Record<string, number>
 }
 

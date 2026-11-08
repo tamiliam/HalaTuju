@@ -271,7 +271,8 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                                 toggleTestId={`mentor-action-${m.id}`}
                                 revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
                                 onToggle={() => (REMOVES.includes(action) ? setRemoving(m) : void act(m, action))}
-                                onDelete={() => setDeleting(m)} deletable={m.deletable} work={m.work}
+                                onDelete={() => setDeleting(m)} deletable={m.deletable}
+                                deleteNever={m.delete_never} work={m.work}
                                 orgAdmin={!!m.lead} viewerSuper={r === 'super'} />
                             </span>
                           )}
@@ -462,7 +463,8 @@ export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => 
             <StaffActions size="sm" active={m.status === 'active'} busy={busy}
               revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
               onToggle={() => void toggle(m)} onDelete={() => setDeleting(true)}
-              deletable={m.deletable} work={m.work} orgAdmin={!!m.lead} viewerSuper={isSuperRole(role)} />
+              deletable={m.deletable} deleteNever={m.delete_never} work={m.work} orgAdmin={!!m.lead}
+              viewerSuper={isSuperRole(role)} />
           </div>
         )}
       </div>

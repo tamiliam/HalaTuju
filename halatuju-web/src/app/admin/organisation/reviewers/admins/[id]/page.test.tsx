@@ -176,4 +176,18 @@ describe('Sprint T2: Revoke and Delete on an admin\'s own page (owner, 2026-11-0
     await loaded({ role: 'org_admin', deletable: true, work: {} })
     expect(actions().getByTestId('staff-delete')).toBeTruthy()
   })
+
+  // T2 review N2 / N3: the server's `revocable` and `delete_never`, drawn as it says.
+  it('offers no Revoke where the server says it would refuse (a super, yourself, the sole org admin)', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await loaded({ revocable: false, delete_never: true, deletable: false, work: { payment_runs: 2 } })
+    expect(actions().queryByText('admin.revoke')).toBeNull()
+    expect(actions().queryByText('admin.delete')).toBeNull()
+  })
+
+  it('offers Revoke and a greyed Delete when revocable and only work stops the delete', async () => {
+    await loaded({ revocable: true, delete_never: false, deletable: false, work: { payment_runs: 2 } })
+    expect(actions().getByText('admin.revoke')).toBeTruthy()
+    expect(actions().getByTestId('staff-delete-greyed')).toBeTruthy()
+  })
 })

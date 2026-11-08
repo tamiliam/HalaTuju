@@ -17,11 +17,14 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  *
  * ⚠ AN ORGANISATION ADMIN'S PAGE OFFERS NO REVOKE (the Reviewers table's rule: a super revokes them on
  * the Admins table) AND A DELETE ONLY TO A SUPER (owner, 2026-11-08). The server refuses either way.
+ * ⚠ T2 review N3: nor is Revoke offered where the server says `revocable: false` — a super's page, your
+ * own, the sole organisation admin's — and N2: no Delete where it says `delete_never`.
  */
 export default function StaffPersonActions({ person, token, viewerSuper, onDeleted, openNow = 0, onChanged }: {
   person: {
     id: number; name: string; email: string; role: string; is_active: boolean
-    lead?: boolean; deletable?: boolean; work?: Record<string, number>
+    lead?: boolean; deletable?: boolean; delete_never?: boolean; revocable?: boolean
+    work?: Record<string, number>
   }
   token: string
   viewerSuper: boolean
@@ -64,8 +67,9 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
     <div data-testid="person-actions">
       <div className="flex flex-wrap items-center gap-4">
         <StaffActions size="sm" active={person.is_active} busy={busy}
-          onToggle={orgAdmin ? undefined : () => void toggle()} onDelete={() => setDeleting(true)}
-          deletable={person.deletable} work={person.work} orgAdmin={orgAdmin} viewerSuper={viewerSuper} />
+          onToggle={orgAdmin || person.revocable === false ? undefined : () => void toggle()}
+          onDelete={() => setDeleting(true)} deletable={person.deletable} deleteNever={person.delete_never}
+          work={person.work} orgAdmin={orgAdmin} viewerSuper={viewerSuper} />
       </div>
       {error && <p className="mt-1.5 text-sm text-critical-600" role="alert">{error}</p>}
       {deleting && (
