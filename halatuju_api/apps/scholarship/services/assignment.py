@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from .errors import AssignmentError, PauseError
 from .queries_sla import is_ready_for_assignment
-from .ready_profiles import generate_ready_profile
 
 #: ⚠ THE PACKAGE NAME, WRITTEN OUT. Never `__name__`: in a submodule that reads
 #: `apps.scholarship.services.<module>`, and the one `assertLogs('apps.scholarship.services')`
@@ -326,15 +325,14 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     # gated behind the SAME CHECK2_AUTO_GENERATE flag as the sweep — so it stays dark (no
     # billable Gemini calls) until deliberately switched on, and never re-drafts an existing
     # profile. Best-effort: a generation failure or AI outage must never block the handoff.
+    # A2.3b / TD-586: the draft is QUEUED here, not written: the finalise-profiles cron calls the
+    # same generator after the request (`assign_draft`), so the assign replies without Gemini.
     if reviewer is not None and current is None:
-        from django.conf import settings as _settings
-        if getattr(_settings, 'CHECK2_AUTO_GENERATE', False):
-            sp = getattr(application, 'sponsor_profile', None)
-            if sp is None or sp.generated_at is None:
-                try:
-                    generate_ready_profile(application)
-                except Exception:
-                    pass  # never let profile drafting break the assignment
+        from .. import assign_draft
+        try:
+            assign_draft.queue_first_draft(application)
+        except Exception:
+            logger.exception('queue_first_draft failed for application %s', application.id)
     return application
 
 

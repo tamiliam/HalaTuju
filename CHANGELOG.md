@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### perf: A2.3b - the first-assign profile draft leaves the assign request (TD-586) (2026-11-08)
+
+Branch a23b (not pushed). With `CHECK2_AUTO_GENERATE` on, the first assignment of a case no longer calls Gemini for the sponsor-profile draft before it replies. `assign_reviewer` only queues it (`apps/scholarship/assign_draft.py::queue_first_draft`): `finalise_state` 'drafting' on the A2.1 queue columns of `sponsor_profiles`, so **no migration and no new Scheduler job**. The `finalise-profiles` cron (`run_pending_finalise`, every 5 minutes) writes it after the verdict finalises (`draft_pending`) with the same `generate_ready_profile`, so the stored draft is unchanged: claim before the paid call, 3 attempts then back to no draft (where a failed inline draft left it; Generate still works), skipped while Gemini reads are down, dropped while the flag is off, no row claimed once the run is 210 s old. A re-assign, or assign-unassign-assign, never queues twice; a draft written meanwhile (Generate) is never paid for twice; the finalise worker leaves a drafting row alone. The assign reply is unchanged. Web: the case's profile card says "The profile draft is being written..." while it waits (`admin.scholarship.profileDrafting`, en/ms/ta). Tests: `test_assign_draft.py` 13 (the three handoff tests move there from `test_admin_scholarship.py`), `GeneratedProfile.finalise.test.tsx` +2.
+
 ### chore: courses 0094 drops the retired is_super_admin column from fresh databases (TD-064 follow-up) (2026-11-08)
 
 `courses.0094_drop_partneradmin_is_super_admin`: state-only follow-up to 0093 (the field already left the state; `SeparateDatabaseAndState` with a database operation only, `DROP COLUMN IF EXISTS`). A no-op on production, where the column was dropped by hand; the owner records the ledger row only. `test_td064_role_only_super` now asserts the column is gone and a new row still inserts.

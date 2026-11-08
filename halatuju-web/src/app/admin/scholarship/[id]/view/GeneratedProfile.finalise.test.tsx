@@ -33,6 +33,18 @@ it('failed: the card says the retries ran out, and keeps the draft', () => {
   expect(screen.getByText('A determined SPM leaver.')).toBeTruthy()
 })
 
+it('drafting (A2.3b): no text yet, so the card says the first draft is on its way', () => {
+  renderCard(buildSponsorProfile({ final_markdown: '', current_markdown: '', finalise_state: 'drafting' }))
+  expect(screen.getByText('admin.scholarship.profileDrafting')).toBeTruthy()
+  expect(screen.queryByText('admin.scholarship.profilePending')).toBeNull()
+})
+
+it('drafting with a draft already there (Generate pressed meanwhile): the draft, no note', () => {
+  renderCard(buildSponsorProfile({ ...DRAFT, finalise_state: 'drafting' }))
+  expect(screen.queryByText('admin.scholarship.profileDrafting')).toBeNull()
+  expect(screen.getByText('A determined SPM leaver.')).toBeTruthy()
+})
+
 it('nothing queued (or an older API that sends no state): no note at all', () => {
   for (const state of ['', undefined] as const) {
     const { unmount } = renderCard(buildSponsorProfile({ ...DRAFT, finalise_state: state }))

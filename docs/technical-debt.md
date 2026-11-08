@@ -397,7 +397,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
 - **TD-589** - A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
 
-- **TD-586** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
+- ~~**TD-586**~~ **FIXED 2026-11-08 (Sprint A2.3b)** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
 - **TD-590** - A queued upload read that fails AFTER its paid call is retried in full, so the retry pays again - low
 
 ### Clusters worth doing as one job
@@ -8554,7 +8554,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 **Raised 2026-11-07 by the A2.1 review (not fixed).** A finalise that fails because Gemini fails can only be cleared by a reopen, which `close_reopen_with_change` logs as a reviewer correction (`resulted_in_change=True`), so it counts against the reviewer though Gemini failed. **Fix:** a web control for the finalise-profile endpoint, or a reopen reason that does not count as a correction. *(A · S)*
 
-### [TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low
+### ~~[TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low~~ — RESOLVED 2026-11-08 (FIXED, Sprint A2.3b, branch a23b, awaiting push: owner ruling, queue it. assign_reviewer only queues the draft (assign_draft.queue_first_draft, finalise_state 'drafting' on the A2.1 queue columns, no migration); the finalise-profiles cron writes it with the same generate_ready_profile after the finalises (assign_draft.draft_pending), with claim, 3-attempt cap, outage skip and a 210 s deadline; the card says the draft is being written; tests/test_assign_draft.py)
 
 **Raised 2026-11-07 by A2.3.** When `CHECK2_AUTO_GENERATE` is on, the first assign of a case still calls Gemini for the sponsor-profile draft before it replies, so that one assign can stay slow after A2.3 moved the emails out. Left as it is on purpose: the owner has not decided whether the draft should wait for the cron. **Fix (once decided):** queue the draft the same way as the assign emails, or keep it inline and accept the wait. *(B · S)*
 
