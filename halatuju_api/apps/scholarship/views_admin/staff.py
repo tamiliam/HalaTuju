@@ -116,6 +116,10 @@ class AdminStaffPermissionsView(_AdminBase):
         # so the card draws no dead switches; `is_active` lets it say "restore them first".
         editable = (not target.is_super and target.role in sp.TEAM_ROLES and target.pk != admin.pk
                     and target.is_active)
+        # Sprint T2: the person page offers Revoke and Delete as the Admins table does — by one rule.
+        from apps.courses.views_admin import _deletable_now
+        from .. import staff_footprint
+        work = staff_footprint.footprint(target)
         return Response({'id': target.pk, 'name': target.name, 'role': target.role,
                          'is_active': target.is_active, 'editable': editable,
                          # The person page's header (Team → a person → Permissions, 2026-10-22).
@@ -128,7 +132,8 @@ class AdminStaffPermissionsView(_AdminBase):
                          # Team tables T3 (owner): the Permissions tab shows one section per table the
                          # person sits in (Admin permissions, Reviewer permissions). Read-only.
                          'tables': list(staff_tables.tables(target)),
-                         'history': _permission_history(target, admin)})
+                         'history': _permission_history(target, admin),
+                         'work': work, 'deletable': _deletable_now(admin, target, work=work)})
 
 
     def patch(self, request, admin_id):

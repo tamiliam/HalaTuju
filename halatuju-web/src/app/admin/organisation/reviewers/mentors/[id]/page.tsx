@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { mayReadMentors } from '@/lib/pageGuard'
@@ -24,6 +24,7 @@ export default function MentorDetailPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
+  const router = useRouter()
   if (role && !mayReadMentors(role)) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
-  return <MentorDetail id={id} />
+  return <MentorDetail id={id} onDeleted={() => router.push('/admin/organisation/reviewers?tab=mentors')} />
 }

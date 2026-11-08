@@ -10,13 +10,15 @@ import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
 import { displayPhone } from '@/lib/reviewerDetail'
 import {
-  getMentorDetail, getMentors, mentorAction,
+  deleteMentor, getMentorDetail, getMentors, mentorAction,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
   type MentorsPayload, type ScholarStanding,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import Sheet from '@/components/Sheet'
 import StaffMentorSheet from './StaffMentorSheet'
+import StaffActions from '@/components/admin/StaffActions'
+import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 
 /**
  * Team → **Mentors** and the **mentor detail** page (Team tables T3, 2026-11-03; the TeamMentors board the
@@ -51,7 +53,7 @@ type Banner = { ok: boolean; text: string } | null
 
 const K = 'admin.mentors'
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
-  'not_staff']
+  'not_staff', 'has_work']
 const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
 /** The two actions that take a mentor OUT (the Sheet confirms them); the two that bring one back are direct. */
 const REMOVES: readonly MentorAction[] = ['stop', 'deactivate']
@@ -105,6 +107,8 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   const [banner, setBanner] = useState<Banner>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [removing, setRemoving] = useState<MentorRow | null>(null)
+  // Sprint T2 (D6): the pure mentor whose delete is being typed out (`TypedConfirmDialog`).
+  const [deleting, setDeleting] = useState<MentorRow | null>(null)
 
   const load = useCallback(async () => {
     if (!token) return
@@ -126,6 +130,21 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
       setBanner({ ok: false, text: t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`) })
     } finally {
       setBusyId(null); setRemoving(null)
+      void load()
+    }
+  }
+
+  const remove = async (m: MentorRow) => {
+    if (!token) return
+    setBusyId(m.id); setBanner(null)
+    try {
+      await deleteMentor(m.id, { token })
+      setBanner({ ok: true, text: t(`${K}.done.delete`, { name: m.name }) })
+    } catch (err) {
+      const code = codeOf(err)
+      setBanner({ ok: false, text: t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`) })
+    } finally {
+      setBusyId(null); setDeleting(null)
       void load()
     }
   }
@@ -168,6 +187,13 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
           {removing && removingAction ? t(`${K}.confirm.${removingAction}`, { name: removing.name }) : ''}
         </p>
       </Sheet>
+
+      {deleting && (
+        <TypedConfirmDialog busy={busyId !== null} phrase={deleting.email}
+          title={t('admin.programmes.deleteTitle', { name: deleting.name })}
+          body={t(`${K}.deleteBody`)} cta={t('admin.delete')}
+          onCancel={() => setDeleting(null)} onConfirm={() => void remove(deleting)} />
+      )}
 
       {banner && (
         <p role={banner.ok ? 'status' : 'alert'}
@@ -235,7 +261,21 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                             : <span className="text-ground-400">{t('admin.reviewers.lastSeenUnknown')}</span>}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          {m.manageable && (
+                          {/* Sprint T2: a pure mentor gets the Team pair — Revoke / Restore, then Delete
+                              (`StaffActions`; greyed with its reason when there is work on record). A
+                              staff mentor keeps Remove from Mentors / Mentor again only: their sign-in,
+                              and so their Delete, is the Admins or Reviewers table's. */}
+                          {m.manageable && !m.staff_role && (
+                            <span className="flex items-center gap-3">
+                              <StaffActions size="sm" active={active} busy={busyId === m.id}
+                                toggleTestId={`mentor-action-${m.id}`}
+                                revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
+                                onToggle={() => (REMOVES.includes(action) ? setRemoving(m) : void act(m, action))}
+                                onDelete={() => setDeleting(m)} deletable={m.deletable} work={m.work}
+                                orgAdmin={!!m.lead} viewerSuper={r === 'super'} />
+                            </span>
+                          )}
+                          {m.manageable && m.staff_role && (
                             <button type="button" disabled={busyId === m.id} data-testid={`mentor-action-${m.id}`}
                               className={REMOVES.includes(action)
                                 ? 'text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50' : LINK}
@@ -318,12 +358,39 @@ function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[
   )
 }
 
-/** Team → Mentors → a mentor: their work and how it is going (staff only; no meeting notes). */
-export function MentorDetail({ id }: { id: number }) {
-  const { token } = useAdminAuth()
+/** Team → Mentors → a mentor: their work and how it is going (staff only; no meeting notes). `onDeleted`:
+ *  the route's way back to the table after a delete (Sprint T2). */
+export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => void }) {
+  const { token, role } = useAdminAuth()
   const { t } = useT()
   const [data, setData] = useState<MentorDetailPayload | null>(null)
   const [failed, setFailed] = useState<'missing' | 'error' | null>(null)
+  // Sprint T2: the person page's Revoke / Restore and Delete — the table's pair, by the same rules.
+  const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [actionError, setActionError] = useState('')
+  const refusal = (err: unknown) => {
+    const code = codeOf(err)
+    setActionError(t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`))
+  }
+  const toggle = async (m: MentorRow) => {
+    const action = m.status === 'active' ? 'deactivate' : 'reactivate'
+    if (!token || (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name })))) return
+    setBusy(true); setActionError('')
+    try {
+      const row = await mentorAction(m.id, action, { token })
+      setData((d) => (d ? { ...d, mentor: { ...d.mentor, status: row.status, deactivated_at: row.deactivated_at } } : d))
+    } catch (err) { refusal(err) } finally { setBusy(false) }
+  }
+  const remove = async (m: MentorRow) => {
+    if (!token) return
+    setBusy(true); setActionError('')
+    try {
+      await deleteMentor(m.id, { token })
+      setDeleting(false)
+      onDeleted?.()
+    } catch (err) { refusal(err); setBusy(false); setDeleting(false) }
+  }
 
   useEffect(() => {
     if (!token || !id) return
@@ -388,7 +455,24 @@ export function MentorDetail({ id }: { id: number }) {
             </p>
           )}
         </div>
+        {/* Sprint T2: a pure mentor's Revoke / Restore and Delete, as on the table (a staff mentor's are
+            their staff page's). */}
+        {m.manageable && !m.staff_role && (
+          <div className="flex flex-wrap items-center gap-4" data-testid="mentor-person-actions">
+            <StaffActions size="sm" active={m.status === 'active'} busy={busy}
+              revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
+              onToggle={() => void toggle(m)} onDelete={() => setDeleting(true)}
+              deletable={m.deletable} work={m.work} orgAdmin={!!m.lead} viewerSuper={isSuperRole(role)} />
+          </div>
+        )}
       </div>
+      {actionError && <p className="text-sm text-critical-600" role="alert">{actionError}</p>}
+      {deleting && (
+        <TypedConfirmDialog busy={busy} phrase={m.email}
+          title={t('admin.programmes.deleteTitle', { name: m.name })}
+          body={t(`${K}.deleteBody`)} cta={t('admin.delete')}
+          onCancel={() => setDeleting(false)} onConfirm={() => void remove(m)} />
+      )}
       <section className="rounded-xl border bg-ground-0" data-testid="mentor-details">
         <h2 className="border-b px-4 py-3 text-sm font-semibold text-ground-900 sm:px-5">
           {t('admin.reviewers.detail.about')}</h2>

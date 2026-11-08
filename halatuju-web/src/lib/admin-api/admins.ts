@@ -36,8 +36,9 @@ export interface AdminItem {
   photo_url?: string | null
   /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
   phone?: string | null
-  /** Whether this account may be DELETED outright rather than only revoked: an admin-shaped role
-   *  with NO recorded work. Reviewers are never deletable (owner, 2026-09-09). */
+  /** Whether this account may be DELETED outright rather than only revoked: a programme-staff role
+   *  with NO recorded work. Reviewers and QC too since D6 (Sprint T2, 2026-11-08), which reversed
+   *  2026-09-09's "never a reviewer". */
   deletable?: boolean
   /** What this person has DONE, `{what: count}`, empty when nothing. The reason a delete is
    *  refused, so the screen can name it instead of greying a button for no visible cause. */
@@ -128,9 +129,9 @@ export async function getAdmins(options?: ApiOptions) {
   return adminFetch<{ admins: AdminItem[] }>('/api/v1/admin/admins/', options)
 }
 
-/** Delete a staff account outright. ⚠ Only ever offered for an admin-shaped role with NO recorded
+/** Delete a staff account outright. ⚠ Only ever offered for a programme-staff role with NO recorded
  *  work; the server refuses everything else — 409 `has_work` carries the counts that stopped it,
- *  400 `not_deletable` means the role can never be deleted (every reviewer). */
+ *  400 `not_deletable` means the role can never be deleted (a super, a partner, a mentor login). */
 export async function deleteAdmin(adminId: number, options?: ApiOptions) {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
@@ -198,6 +199,10 @@ export interface StaffPermissionsView {
   history?: StaffPermissionChangeRow[]
   /** Team tables T3: the tables the person sits in — the Permissions tab shows one section per table. */
   tables?: string[]
+  /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
+   *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
+  deletable?: boolean
+  work?: Record<string, number>
 }
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set

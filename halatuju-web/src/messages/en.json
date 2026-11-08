@@ -8318,7 +8318,7 @@
     },
     "delete": "Delete",
     "deleteStaffBody": "Their sign-in and invitation history are removed. This cannot be undone.",
-    "hasWorkRevoke": "Has work on record — revoke instead",
+    "deleteHasWork": "Has work on record ({work}), so they cannot be deleted. Revoke them instead.",
     "changeRole": "Change role",
     "roleChangeConfirm": "Change {name} to {role}?",
     "financeCheckOn": "Wallet credits will need a finance check.",
@@ -8768,7 +8768,8 @@
         "already_mentor": "This staff member is already a mentor.",
         "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
-        "not_found": "That staff member was not found."
+        "not_found": "That staff member was not found.",
+        "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead."
       },
       "status": {
         "active": "Active",
@@ -8807,7 +8808,8 @@
         "notEmailed": "The email could not be sent. Try Resend.",
         "stop": "{name} no longer mentors. Their staff sign-in is unchanged.",
         "resume": "{name} mentors again. Assign them to scholars on each file.",
-        "added": "{name} is now a mentor too. No email was sent — tell them yourself."
+        "added": "{name} is now a mentor too. No email was sent — tell them yourself.",
+        "delete": "{name} has been deleted."
       },
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8876,7 +8878,8 @@
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
         "notFound": "This mentor was not found.",
         "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
-      }
+      },
+      "deleteBody": "Their sign-in, their mentor record and their invitation history are removed. This cannot be undone."
     },
     "myStudents": {
       "title": "My students",

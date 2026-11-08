@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -14,6 +14,7 @@ import { teamLabelRole } from '@/lib/staffRole'
 import RecordState from '@/components/admin/RecordState'
 import PanelTabs from '@/components/admin/PanelTabs'
 import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
+import StaffPersonActions from '@/components/admin/StaffPersonActions'
 
 /**
  * Team → an ADMIN-side team member (Admin, Finance) → **Permissions** (2026-10-22, the owner's
@@ -36,6 +37,7 @@ export default function AdminPersonPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
+  const router = useRouter()
   // `?table=admins|reviewers` (T2's links) now only picks the Team tab the back link returns to: since T3
   // the card shows one section per table the person sits in, whichever link opened it.
   const asked = useSearchParams()?.get('table')
@@ -91,6 +93,15 @@ export default function AdminPersonPage() {
           </>)}
         </p>
         {view.email && <p className="text-sm text-ground-500 mt-1 break-all">{view.email}</p>}
+        {/* Sprint T2: Revoke / Restore, then Delete — the Admins table's pair, on their page too. */}
+        {token && (
+          <div className="mt-2">
+            <StaffPersonActions token={token} viewerSuper={viewerRole === 'super'}
+              person={{ ...view, name: who, email: view.email ?? '' }}
+              onDeleted={() => router.push(`/admin/organisation/reviewers?tab=${table ?? 'admins'}`)}
+              onChanged={(on) => setView({ ...view, is_active: on })} />
+          </div>
+        )}
       </section>
 
       {/* One tab today, drawn as a bar so this page and a reviewer's look alike. */}

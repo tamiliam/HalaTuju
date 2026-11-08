@@ -13,9 +13,10 @@ import { formatDate } from '@/lib/formatDate'
 import PermissionChips from '@/components/admin/PermissionChips'
 import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
-import { switchableTo, workSummary } from '@/lib/staffRole'
+import { switchableTo } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { AlsoIn, RemoveControl } from '@/components/admin/TeamTables'
+import StaffActions from '@/components/admin/StaffActions'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -59,7 +60,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team }: {
+                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, viewerSuper = false }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -68,6 +69,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   onToggle?: (a: AdminItem) => void
   /** Delete outright. Only ever called for a row the SERVER marked `deletable`. */
   onDelete?: (a: AdminItem) => void
+  /** Is the viewer a super? Only a super is offered an organisation admin's Delete (Sprint T2). */
+  viewerSuper?: boolean
   /** Switch within the pair (`lib/staffRole`). Offered only where a switch exists. */
   onChangeRole?: (a: AdminItem) => void
   /** Where the row's NAME links to, or null for plain text (2026-10-22: a team member's permissions
@@ -138,30 +141,14 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             {busyId === a.id ? t('admin.resending') : t('admin.resend')}
           </button>
         )}
-        {onToggle && !(a.is_active && soleOrgAdmin?.(a)) && (
-          <button disabled={busyId === a.id} onClick={() => onToggle(a)}
-            className={`text-xs font-medium disabled:opacity-50 ${
-              a.is_active ? 'text-critical-600 hover:text-critical-800'
-                          : 'text-primary-600 hover:text-primary-800'}`}>
-            {a.is_active ? t('admin.revoke') : t('admin.restore')}
-          </button>
-        )}
-        {/* ⚠ DELETE IS THE NARROW ACTION AND THE SERVER DECIDES. `deletable` is true only for an
-            admin-shaped role with NO recorded work — never a reviewer. Somebody who has done
-            anything keeps Revoke instead, and the line below says so. See `staff_footprint`. */}
-        {a.deletable && onDelete && (
-          <button disabled={busyId === a.id} onClick={() => onDelete(a)}
-            className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
-            {t('admin.delete')}
-          </button>
-        )}
-        {/* WHY THERE IS NO DELETE, said rather than left to be guessed (2026-10-09): the served
-            `work` footprint is what stops it, and its counts are on hover. */}
-        {onDelete && !a.deletable && a.work && Object.keys(a.work).length > 0 && (
-          <span className="text-[11px] text-ground-400" title={workSummary(a.work)}>
-            {t('admin.hasWorkRevoke')}
-          </span>
-        )}
+        {/* Sprint T2: Revoke / Restore, then Delete — the one pair every Team table and person page
+            draws (`StaffActions`). DELETE IS THE SERVER'S CALL (`deletable`); somebody with work on
+            record gets it greyed, with the reason on hover, tap and focus. An organisation admin's
+            Delete is drawn for a super viewer only. */}
+        <StaffActions active={a.is_active} busy={busyId === a.id}
+          onToggle={onToggle && !(a.is_active && soleOrgAdmin?.(a)) ? () => onToggle(a) : undefined}
+          onDelete={onDelete ? () => onDelete(a) : undefined}
+          deletable={a.deletable} work={a.work} orgAdmin={a.role === 'org_admin'} viewerSuper={viewerSuper} />
         {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id}
           onRemove={() => team.onRemove(a)} />}
         {onChangeRole && switchableTo(a) && (

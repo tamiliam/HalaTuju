@@ -8318,7 +8318,7 @@
     },
     "delete": "Padam",
     "deleteStaffBody": "Log masuk dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
-    "hasWorkRevoke": "Ada kerja yang direkodkan — tarik balik akses sahaja",
+    "deleteHasWork": "Ada kerja yang direkodkan ({work}), jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
     "financeCheckOn": "Kredit dompet akan memerlukan semakan kewangan.",
@@ -8768,7 +8768,8 @@
         "already_mentor": "Kakitangan ini sudah menjadi mentor.",
         "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor. Tambah Mentor boleh menambah mereka semula.",
         "not_staff": "Hanya bimbingan kakitangan boleh dihentikan dengan cara ini.",
-        "not_found": "Kakitangan itu tidak ditemui."
+        "not_found": "Kakitangan itu tidak ditemui.",
+        "has_work": "Kini ada kerja yang direkodkan untuk mereka, jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja."
       },
       "status": {
         "active": "Aktif",
@@ -8807,7 +8808,8 @@
         "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula.",
         "stop": "{name} tidak lagi membimbing. Log masuk kakitangan mereka tidak berubah.",
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
-        "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri."
+        "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri.",
+        "delete": "{name} telah dipadam."
       },
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8876,7 +8878,8 @@
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
         "notFound": "Mentor ini tidak ditemui.",
         "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
-      }
+      },
+      "deleteBody": "Log masuk, rekod mentor dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan."
     },
     "myStudents": {
       "title": "Pelajar saya",

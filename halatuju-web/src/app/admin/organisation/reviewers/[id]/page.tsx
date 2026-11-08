@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -15,6 +15,8 @@ import { mayOpen } from '@/lib/pageGuard'
 import RecordState from '@/components/admin/RecordState'
 import PanelTabs from '@/components/admin/PanelTabs'
 import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
+import StaffPersonActions from '@/components/admin/StaffPersonActions'
+import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import {
   credentialLines, displayPhone, hasNoHistory, orderedLanguages, outcomeSegments, phoneState,
   turnaroundBand, type OutcomeKey,
@@ -94,6 +96,7 @@ export default function AdminReviewerDetailPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
+  const router = useRouter()
   // The list route, not this one — `canAccess` resolves a detail page to its parent item, and the
   // two carry the same role set by construction. UX only; the endpoint is the fence.
   const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
@@ -174,9 +177,9 @@ export default function AdminReviewerDetailPage() {
             <p className="text-sm text-ground-500 mt-1 flex flex-wrap items-center gap-x-1.5">
               <span>{t(`admin.reviewers.role.${detail.role}`)}</span>
               <span aria-hidden>·</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                detail.paused ? 'bg-caution-100 text-caution-700' : 'bg-positive-100 text-positive-700'}`}>
-                {t(`admin.reviewers.status.${detail.paused ? 'paused' : 'active'}`)}
+              {/* Revoked beats paused (`lib/staffStatus`, the table's rule) — Revoke is on this page now. */}
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STAFF_STATUS_TONE[staffStatusKey(detail)]}`}>
+                {t(`admin.reviewers.status.${staffStatusKey(detail)}`)}
               </span>
               <span aria-hidden>·</span>
               <span>{t('admin.reviewers.detail.joined', { date: formatDate(detail.created_at) })}</span>
@@ -218,6 +221,14 @@ export default function AdminReviewerDetailPage() {
               </p>
             )}
             {pauseError && <p className="text-sm text-critical-600 mt-1.5">{pauseError}</p>}
+            {/* Sprint T2: Revoke / Restore, then Delete — the Reviewers table's pair, on their page too. */}
+            {mayManage && token && (
+              <div className="mt-2">
+                <StaffPersonActions person={detail} token={token} viewerSuper={viewerRole === 'super'}
+                  onDeleted={() => router.push('/admin/organisation/reviewers')} openNow={detail.open_now}
+                  onChanged={(on) => setDetail({ ...detail, is_active: on })} />
+              </div>
+            )}
 
             {/* ── which gifts they cover (S-ASSIGN; several since 2026-11-06) ──────────────────────────────────────
                 Sits with the role and the status because it is the same kind of fact about

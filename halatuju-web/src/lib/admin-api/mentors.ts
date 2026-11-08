@@ -44,6 +44,10 @@ export interface MentorRow {
   /** Concerns raised and not marked handled, on files still in maintenance. Null for a caller without
    *  the Scholars list's read key (`see_all`) — T3 review. */
   concerns_open?: number | null
+  /** Sprint T2 (D6): a pure mentor with no assignment, session or concern may be deleted
+   *  (`DELETE admin/mentors/<id>/`); false for a staff mentor, deleted from their staff table. */
+  deletable?: boolean
+  work?: Record<string, number>
 }
 
 export interface MentorsPayload {
@@ -93,6 +97,15 @@ export async function addStaffMentor(adminId: number, options?: ApiOptions) {
 export async function mentorAction(id: number, action: MentorAction, options?: ApiOptions) {
   return adminMutate<MentorRow & { emailed: boolean | null }>(
     `/api/v1/admin/mentors/${id}/${action}/`, 'POST', {}, options)
+}
+
+/** Sprint T2 (D6): delete a PURE mentor outright — their sign-in, mentor record and invitations, in
+ *  one transaction. Refusals arrive as `code`: `has_work` (409, with `work`), `staff_mentor` (400: a
+ *  staff member is deleted from their staff table), `not_found`, `login_cleanup_failed`,
+ *  `delete_failed`. */
+export async function deleteMentor(id: number, options?: ApiOptions) {
+  return adminMutate<{ message: string; login?: string }>(`/api/v1/admin/mentors/${id}/`, 'DELETE',
+    undefined, options)
 }
 
 /** Team tables T3: one scholar on the mentor detail page — never a meeting note. */

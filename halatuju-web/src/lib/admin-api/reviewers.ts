@@ -76,6 +76,10 @@ export interface AdminReviewer {
   admin_keys?: string[]
   reviewer_keys?: string[]
   remove?: TeamRemove
+  /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
+   *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
+  deletable?: boolean
+  work?: Record<string, number>
 }
 
 /** One gift a reviewer covers, as served (`staff_gift.gifts_payload`). */
