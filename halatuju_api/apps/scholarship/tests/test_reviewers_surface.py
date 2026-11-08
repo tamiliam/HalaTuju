@@ -172,7 +172,9 @@ class TestTheTable(_Base):
             'tables', 'lead', 'admin_keys', 'reviewer_keys', 'remove',
             # Sprint T2 (owner, 2026-11-08): the Admins list's Delete pair — the footprint counts
             # ({} for none) and whether THIS caller may delete the row now.
-            'work', 'deletable'})
+            'work', 'deletable',
+            # T2 review N2, N3: no Delete drawn at all, and whether Revoke is drawn.
+            'delete_never', 'revocable'})
 
     def test_the_gift_column_is_back_because_its_own_trigger_fired(self):
         """⚠ THIS TEST USED TO ASSERT THE OPPOSITE, and the reason it flipped is the point.

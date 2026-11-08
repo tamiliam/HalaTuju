@@ -259,7 +259,9 @@ class TestTheMentorsPage(_Base):
             # Team tables T3: the Team -> Mentors table's own columns (`mentor_rows(team=True)`).
             'tables', 'lead', 'meetings_90', 'last_meeting', 'concerns_open',
             # Sprint T2 (D6): the footprint counts and whether this caller may delete them now.
-            'work', 'deletable'})
+            'work', 'deletable',
+            # T2 review N2: no Delete drawn at all (a staff mentor, no login, or outside the caller's remit).
+            'delete_never'})
         self.assertIsNone(row['staff_role'])   # a mentor login, not a staff member
         self.assertEqual((row['work'], row['deletable']), ({}, True))   # invited, nothing on record
         self.assertEqual((row['name'], row['email'], row['phone'], row['area']),

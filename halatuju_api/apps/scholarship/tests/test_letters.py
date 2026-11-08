@@ -322,8 +322,10 @@ class TestNeverASponsorPartnerOrSourceReader(TestCase):
         readers = sorted(str(p.relative_to(root)).replace('\\', '/') for p in root.rglob('*.py')
                          if 'tests' not in p.parts and 'migrations' not in p.parts
                          and 'StudentActivity' in p.read_text(encoding='utf-8'))
+        # `staff_footprint.py` (Sprint T2 review B1) only COUNTS a staff member's own notes by
+        # `actor_email` for the Team tables' Delete rule; it never reads a body or a letter event.
         self.assertEqual(readers, ['activity.py', 'models/__init__.py', 'models/activity.py', 'scholars.py',
-                                   'views_admin/scholars.py'])
+                                   'staff_footprint.py', 'views_admin/scholars.py'])
 
 
 class TestLetterWording(TestCase):

@@ -19,9 +19,21 @@ run 34 has to keep saying who made it.
 Counting is deliberately EXHAUSTIVE rather than clever: any single trace of work refuses the
 delete. A missed relation would be a silent deletion of somebody's record, so the failure has to
 land on the side of keeping people.
+
+⚠ **THE NARROW WINDOW (T2 review N1).** A delete locks the login row, re-reads this footprint and
+deletes inside one transaction. The lock holds back a write that names the person by FOREIGN KEY
+(Postgres makes it wait on the locked row), but an EMAIL-ONLY stamp written by another request
+between the check and the delete takes no lock on the login, so it can land in that gap and be left
+naming an address with nobody behind it. The window is a few milliseconds and the person would have
+to be working while being deleted; it is accepted, not closed.
+
+⚠ **COVERAGE IS PINNED BY A DRIFT TEST** (`test_t2_footprint_drift.py`). Every foreign key or one-to-one
+to `PartnerAdmin` or `Mentor`, and every field named `*_by`, `*_by_email` or `actor_email`, anywhere in
+the project, is either counted here or allowlisted there with the reason it is not work. A new field
+fails that test until somebody classifies it.
 """
-from django.db.models import Func, IntegerField, OuterRef, Q, Subquery
-from django.db.models.functions import Lower
+from django.db.models import CharField, Count, F, Func, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Cast, Lower
 
 # ⚠ TD-443 (A1.11a): EVERY recorded-email stamp a staff member leaves, not only the payment and
 # verdict ones. Each was a quiet erasure: delete the person and the row keeps an address that no
@@ -83,6 +95,20 @@ EMAIL_STAMPS = (
     ('terms_exemptions_granted', 'scholarship', 'SponsorTermsAcceptance', ('granted_by_email',)),
     ('award_withdrawals', 'scholarship', 'AwardWithdrawalRequest',
      ('requested_by_email', 'decided_by_email')),
+    # T2 review B1 (2026-11-09): the stamps the first T2 pass missed. A QC user who had written one
+    # student note read as `{}` and deletable; every one of these is somebody's act on a record.
+    ('student_notes', 'scholarship', 'StudentActivity', ('actor_email',)),
+    ('results_reviewed', 'scholarship', 'SemesterResult', ('reviewed_by',)),
+    ('graduation_messages', 'scholarship', 'GraduationMessage', ('approved_by',)),
+    ('rounds_finished', 'scholarship', 'ScholarshipCohort', ('finished_by',)),
+    ('merchant_categories', 'scholarship', 'MerchantCategory', ('decided_by_email',)),
+    ('themes_published', 'courses', 'OrganisationTheme', ('published_by_email',)),
+    ('org_settings_changed', 'courses', 'OrganisationConfiguration', ('updated_by_email',)),
+    ('billing_details', 'scholarship', 'OrgBillingDetails', ('updated_by_email',)),
+    ('invoice_issuers', 'scholarship', 'InvoiceIssuer', ('updated_by_email',)),
+    ('billing_rates', 'scholarship', 'BillingRate', ('updated_by_email',)),
+    ('organisation_layouts', 'scholarship', 'OrganisationOverviewLayout', ('updated_by_email',)),
+    ('programme_layouts', 'scholarship', 'ProgrammeOverviewLayout', ('updated_by_email',)),
 )
 
 #: The email stamps older than TD-443, kept under their first keys (the People tooltip reads them).
@@ -115,10 +141,21 @@ FK_TRACES = (
     ('review_actions', 'scholarship', 'StaffActivity', ('actor',), 'review'),
     # Sprint T2 (D6): what a QC checker, a corrected reviewer and a request's commenter leave.
     ('qc_decisions', 'scholarship', 'StaffActivity', ('actor',), {'verb': 'qc_decision'}),
+    # T2 review B1: `StaffActivity.actor` is CASCADE, so EVERY act they did goes with a delete —
+    # a countersigned contract, a resolved query, a decline, an invitation sent, a withdrawal. All
+    # count but the three a person does only to themselves (`SELF_ONLY_VERBS`).
+    ('other_actions', 'scholarship', 'StaffActivity', ('actor',), 'other'),
     ('corrections_attributed', 'scholarship', 'DecisionReopen', ('reviewer',), None),
     ('request_comments', 'scholarship', 'OrgRequestComment', ('author_admin',), None),
     ('requests_approved', 'scholarship', 'OrgRequest', ('approved_by',), None),
+    # T2 review B1: SET_NULL foreign keys — the row survives a delete and forgets who acted.
+    ('invitations_sent', 'scholarship', 'Invitation', ('invited_by',), None),
+    ('analyses_approved', 'scholarship', 'OrgRequestAnalysis', ('approved_by',), None),
+    ('agreements_witnessed', 'scholarship', 'BursaryAgreement', ('witness_admin',), None),
 )
+
+#: The `StaffActivity` verbs a person does only to THEMSELVES: arriving is not work.
+SELF_ONLY_VERBS = ('first_sign_in', 'invitation_accepted', 'profile_updated')
 
 #: By the MENTOR record the login carries (a mentor login, or a staff member who also mentors —
 #: S7d, lead ruling 2026-11-01): a scholar they mentored, a meeting, a concern. Their name lives on
@@ -142,6 +179,27 @@ def _counted(qs):
                     output_field=IntegerField())
 
 
+def _narrow(qs, extra):
+    """A trace's own filter: the review verbs, every other act (`other`), or a plain lookup."""
+    from .qc_separation import REVIEW_VERBS
+    if extra == 'review':
+        return qs.filter(verb__in=REVIEW_VERBS)
+    if extra == 'other':
+        return qs.exclude(verb__in=(*REVIEW_VERBS, 'qc_decision', *SELF_ONLY_VERBS))
+    return qs.filter(**extra) if extra else qs
+
+
+def _staff_rows(label, model_name):
+    """Every row, whatever the model's default manager hides: counting is exhaustive."""
+    from django.apps import apps
+    return apps.get_model(label, model_name)._base_manager.all()
+
+
+def _keys():
+    return ([k for k, *_ in FK_TRACES] + [k for k, *_ in MENTOR_TRACES]
+            + [k for k, *_ in CORE_EMAIL_STAMPS + EMAIL_STAMPS])
+
+
 def _email_match(fields):
     """A row naming the outer login's address in ANY of ``fields`` (case-insensitive; a blank stamp
     never matches, so a login with no address matches nothing). One row counts once."""
@@ -152,67 +210,109 @@ def _email_match(fields):
 
 
 def annotations():
-    """``{key: Subquery}`` — the WHOLE footprint as correlated subqueries of a `PartnerAdmin` query.
-    ``.annotate(**staff_footprint.annotations())`` puts it on a list's own query, so a list pays NO
-    extra query for it (the Reviewers list is pinned at 6), and `from_row` reads it back."""
-    from django.apps import apps
-    from .qc_separation import REVIEW_VERBS
+    """``{key: Subquery}`` — the WHOLE footprint of ONE login as correlated subqueries, for the
+    single-person path (`footprint`: a person page, the delete's own re-check). ⚠ NOT FOR A TABLE
+    (T2 review S1): each row would carry one `Lower(field) = Lower(email)` subquery per source, and
+    none of them can use an index. A table reads `footprints`, a fixed number of queries per page."""
     out = {}
     for key, label, model_name, fields, extra in FK_TRACES:
-        model = apps.get_model(label, model_name)
         match = Q()
         for field in fields:
             match |= Q(**{field: OuterRef('pk')})
-        qs = model.objects.filter(match)
-        if extra == 'review':
-            qs = qs.filter(verb__in=REVIEW_VERBS)
-        elif extra:
-            qs = qs.filter(**extra)
-        out[key] = _counted(qs)
+        out[key] = _counted(_narrow(_staff_rows(label, model_name).filter(match), extra))
     for key, label, model_name, extra in MENTOR_TRACES:
-        qs = apps.get_model(label, model_name).objects.filter(mentor_id=OuterRef('mentor_id'))
-        out[key] = _counted(qs.filter(**extra) if extra else qs)
+        qs = _staff_rows(label, model_name).filter(mentor_id=OuterRef('mentor_id'))
+        out[key] = _counted(_narrow(qs, extra))
     for key, label, model_name, fields in CORE_EMAIL_STAMPS + EMAIL_STAMPS:
-        model = apps.get_model(label, model_name)
         lowered = {f'_fp{i}': Lower(field) for i, field in enumerate(fields)}
-        out[key] = _counted(model.objects.alias(**lowered).filter(_email_match(fields)))
+        out[key] = _counted(_staff_rows(label, model_name).alias(**lowered).filter(_email_match(fields)))
     return {f'fp_{k}': v for k, v in out.items()}
 
 
 def from_row(row):
     """The footprint of a `PartnerAdmin` fetched with `annotations()` (an instance or a values dict)."""
     get = row.get if isinstance(row, dict) else (lambda name: getattr(row, name, 0))
-    keys = ([k for k, *_ in FK_TRACES] + [k for k, *_ in MENTOR_TRACES]
-            + [k for k, *_ in CORE_EMAIL_STAMPS + EMAIL_STAMPS])
-    return {k: get(f'fp_{k}') for k in keys if get(f'fp_{k}')}
+    return {k: get(f'fp_{k}') for k in _keys() if get(f'fp_{k}')}
+
+
+def _first_holder(names, i):
+    """Branch ``i`` of a many-field source counts a row only where field ``i`` is the FIRST of
+    ``names`` to hold the person, so a row naming them in two fields still counts ONCE. ⚠ An earlier
+    field that is NULL holds nobody: `NOT (NULL = x)` is NULL in SQL, so it is let through by hand."""
+    q = Q()
+    for j in range(i):
+        q &= ~Q(**{names[j]: F(names[i])}) | Q(**{f'{names[j]}__isnull': True})
+    return q
+
+
+def _branches(pks, mentor_ids, emails):
+    """One grouped `SELECT key, who, COUNT(*)` per (source, field), for `footprints`' UNION ALL.
+    ``who`` is text throughout (an id is cast) so the branches line up."""
+    text = CharField()
+    for key, label, model_name, fields, extra in (FK_TRACES if pks else ()):
+        for i, field in enumerate(fields):
+            qs = _narrow(_staff_rows(label, model_name), extra).filter(**{f'{field}__in': pks})
+            yield (qs.filter(_first_holder(fields, i))
+                   .annotate(k=Value(key), who=Cast(F(field), text)))
+    for key, label, model_name, extra in (MENTOR_TRACES if mentor_ids else ()):
+        qs = _narrow(_staff_rows(label, model_name), extra).filter(mentor_id__in=mentor_ids)
+        yield qs.annotate(k=Value(key), who=Cast(F('mentor_id'), text))
+    for key, label, model_name, fields in (CORE_EMAIL_STAMPS + EMAIL_STAMPS if emails else ()):
+        names = [f'_fp{i}' for i in range(len(fields))]
+        lowered = _staff_rows(label, model_name).annotate(**{n: Lower(f) for n, f in zip(names, fields)})
+        for i, name in enumerate(names):
+            yield (lowered.filter(**{f'{name}__in': emails}).filter(_first_holder(names, i))
+                   .annotate(k=Value(key), who=F(name)))
 
 
 def footprints(admins):
-    """``{admin pk: footprint}`` for many logins in ONE query, whatever their number."""
-    from apps.courses.models import PartnerAdmin
-    pks = [a.pk for a in admins if a is not None and a.pk is not None]
-    if not pks:
+    """``{admin pk: footprint}`` for a whole TABLE in ONE query, whatever its number of rows.
+
+    T2 review S1: the page's ids, mentor ids and lowered addresses go into ONE `UNION ALL` of grouped
+    counts, a branch per (source, field), each `WHERE field IN (...)`, and the counts are merged here.
+    Same sources as `annotations` (one list feeds both), so the two paths cannot disagree."""
+    admins = [a for a in admins if a is not None and a.pk is not None]
+    if not admins:
         return {}
-    ann = annotations()
-    rows = PartnerAdmin.objects.filter(pk__in=pks).annotate(**ann).values('pk', *ann)
-    return {r['pk']: from_row(r) for r in rows}
+    out = {a.pk: {} for a in admins}
+    owners = {'fk': {}, 'mentor': {}, 'email': {}}
+    for a in admins:
+        owners['fk'].setdefault(str(a.pk), []).append(a.pk)
+        if getattr(a, 'mentor_id', None):
+            owners['mentor'].setdefault(str(a.mentor_id), []).append(a.pk)
+        if a.email:
+            owners['email'].setdefault(a.email.lower(), []).append(a.pk)
+    kind = {k: 'fk' for k, *_ in FK_TRACES}
+    kind.update({k: 'mentor' for k, *_ in MENTOR_TRACES})
+    branches = [b.values('k', 'who').annotate(n=Count('pk')).order_by() for b in _branches(
+        [a.pk for a in admins], [int(m) for m in owners['mentor']], list(owners['email']))]
+    rows = branches[0].union(*branches[1:], all=True) if len(branches) > 1 else branches[0]
+    for row in rows:
+        for pk in owners[kind.get(row['k'], 'email')].get(row['who'], ()):
+            out[pk][row['k']] = out[pk].get(row['k'], 0) + row['n']
+    order = {k: i for i, k in enumerate(_keys())}
+    return {pk: dict(sorted(w.items(), key=lambda kv: order[kv[0]])) for pk, w in out.items()}
 
 
 def footprint(admin):
     """`{what: count}` of everything this staff account has done, empty keys omitted. ONE query.
 
     Two kinds of trace, and both count:
-      * FOREIGN KEYS — assignments, interview slots, org requests, the QC guard's evidence, and the
-        scholars, meetings and concerns of the mentor record the login carries. Deleting would
-        cascade or be refused outright.
+      * FOREIGN KEYS — assignments, interview slots, org requests, invitations sent, the QC guard's
+        evidence, every act in their `StaffActivity` but arriving, and the scholars, meetings and
+        concerns of the mentor record the login carries. Deleting would cascade, SET_NULL or be
+        refused outright.
       * EMAIL STRINGS — payment runs (made, and each of the three signatures), verdicts, vetting,
         verify-and-accept and every stamp in `EMAIL_STAMPS`. Deleting breaks nothing and erases
         nobody, which is exactly what makes them dangerous: the row keeps an address that no longer
         resolves to a person.
     """
+    from apps.courses.models import PartnerAdmin
     if admin is None or admin.pk is None:
         return {}
-    return footprints([admin]).get(admin.pk, {})
+    ann = annotations()
+    row = PartnerAdmin.objects.filter(pk=admin.pk).annotate(**ann).values(*ann).first()
+    return from_row(row) if row else {}
 
 
 def has_footprint(admin) -> bool:

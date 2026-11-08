@@ -138,9 +138,10 @@ def mentor_rows(caller, mentors, *, team=False):
     from ..models import Invitation, ReviewerProfile
     from ..staff_contact import staff_screen_phone
     # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
-    # Sprint T2: each login's footprint rides on the same query (`staff_footprint.annotations`).
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)
-              .select_related('mentor').annotate(**staff_footprint.annotations())}
+              .select_related('mentor')}
+    # Sprint T2, review S1: every login's footprint in ONE query for the page (`footprints`).
+    footprints = staff_footprint.footprints(list(logins.values()))
     now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
         partner_admin__in=list(logins.values()))}
@@ -179,7 +180,7 @@ def mentor_rows(caller, mentors, *, team=False):
             'deactivated_at': _iso(m.deactivated_at),
             'manageable': mentor_invite.manageable(caller, m),
             'scholars_now': now.get(m.pk, 0),   # S7b
-            **_delete_fields(caller, m, login, staff),
+            **_delete_fields(caller, m, login, staff, footprints),
         })
     if team:
         from apps.courses import staff_permissions as sp
@@ -194,14 +195,16 @@ def mentor_rows(caller, mentors, *, team=False):
     return rows
 
 
-def _delete_fields(caller, mentor, login, staff):
-    """Sprint T2 (D6): `work` (the login's footprint, `{}` for none) and `deletable` — a PURE mentor
-    this caller manages with no work. A staff mentor is never deleted here (their row is deleted from
-    Team -> Admins / Reviewers, where mentoring counts as work), so `deletable` is false for them."""
-    from .. import mentor_invite, staff_footprint
-    work = staff_footprint.from_row(login) if login is not None else {}
-    return {'work': work, 'deletable': bool(login is not None and not staff and not work
-                                            and mentor_invite.manageable(caller, mentor))}
+def _delete_fields(caller, mentor, login, staff, footprints):
+    """Sprint T2 (D6): `work` (the login's footprint, `{}` for none), `deletable` — a PURE mentor
+    this caller manages with no work — and `delete_never` (review N2): no Delete is ever drawn for
+    a row nobody may delete here. A staff mentor is never deleted here (their row is deleted from
+    Team -> Admins / Reviewers, where mentoring counts as work); nor is a row with no login, or one
+    this caller does not manage."""
+    from .. import mentor_invite
+    work = footprints.get(login.pk, {}) if login is not None else {}
+    never = login is None or staff or not mentor_invite.manageable(caller, mentor)
+    return {'work': work, 'deletable': not never and not work, 'delete_never': never}
 
 
 def mentor_kind_extras(caller, mentor_ids):
