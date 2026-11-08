@@ -155,6 +155,7 @@ def _send_decline_for(application):
         application.decline_email_sent_at = now
         application.decision_email_sent_at = now
         application.save(update_fields=['decline_email_sent_at', 'decision_email_sent_at'])
+        application._decline_sent_stamp = now     # TD-359: the release loop can re-save it
     return bool(sent_decline)
 
 
@@ -340,6 +341,14 @@ def cancel_pending_decline(application, by_email=''):
         return _cancel_pending_decline_locked(application, by_email)
 
 
+#: TD-357: how long a decision email that will not go is retried — the one cap, read by the release
+#: cron below and the unsent-email sweep (`decision_mail`). No attempt counter exists (no column), so
+#: the cap is a TIME: the clock starts at `decline_due_at` (embargoed) or the decision (the sweep).
+#: After it the case is released as it stands and the officer's cockpit says "tell her another way"
+#: (`decision_mail.untold_reason`, TD-358). Long enough for a weekend of Brevo trouble.
+RETRY_CAP = timedelta(hours=72)
+
+
 #: What `cancel_pending_decline` decides on, re-read from the database (TD-349).
 _EMBARGO_FACTS = ('status', 'pending_rejection_category', 'decline_due_at',
                   'decline_email_sent_at', 'rejected_at')
@@ -449,15 +458,23 @@ def _release_one_decline(app):
     retry. Send first; clear only after the email has gone.
     Two edges, decided: an email already sent for THIS decline (`_told_of_this_decline`) is not
     sent again; a decline with no address at all is released without an email (nothing to retry;
-    kept masked she would see her old stage for ever) and logged for an officer."""
+    kept masked she would see her old stage for ever) and logged for an officer.
+
+    TD-357: a send that keeps failing is retried only for `RETRY_CAP` after `decline_due_at`; past it
+    the decline is released WITHOUT an email, like the no-address case, and the cockpit flags it
+    (`decision_mail.untold_reason`, TD-358) instead of the cron logging ERROR every run for ever."""
     if not _told_of_this_decline(app):
         if not _decline_address(app):
             logger.warning('release_pending_declines: app %s has no email address — decline '
                            'released WITHOUT an email; tell the student another way.', app.id)
         elif not _send_decline_for(app):
-            logger.error('release_pending_declines: app %s — the decline email did not go; the '
-                         'decline stays masked and the next run retries.', app.id)
-            return False
+            if app.decline_due_at is None or timezone.now() - app.decline_due_at < RETRY_CAP:
+                logger.error('release_pending_declines: app %s — the decline email did not go; the '
+                             'decline stays masked and the next run retries.', app.id)
+                return False
+            logger.error('release_pending_declines: app %s — the decline email still has not gone '
+                         'after %s; released WITHOUT an email, no more retries — tell the student '
+                         'another way.', app.id, RETRY_CAP)
     app.pending_rejection_category = ''
     app.decline_due_at = None
     app.pending_decline_by = ''
@@ -477,6 +494,7 @@ def release_pending_declines(now=None):
                .values_list('pk', flat=True))
     released = 0
     for pk in due:
+        app = None
         try:
             with transaction.atomic():      # one application, claimed, sent, cleared
                 app = _claim_due_decline(pk, now)
@@ -485,4 +503,20 @@ def release_pending_declines(now=None):
         except Exception:
             logger.error('release_pending_declines: app %s — the release raised; the decline '
                          'stays masked and the next run retries.', pk, exc_info=True)
+            _keep_sent_stamp(pk, getattr(app, '_decline_sent_stamp', None))
     return released
+
+
+def _keep_sent_stamp(pk, stamp):
+    """TD-359: the email went but the transaction around it rolled back, taking the stamp with it
+    (the next run would send it again, and a cancel could reverse a decline she was told of). Write
+    the stamp again in its OWN short transaction. Best effort: if the database is still down this
+    fails too, and that residual window stays open."""
+    if stamp is None:
+        return
+    try:
+        (ScholarshipApplication.objects.filter(pk=pk, status='rejected')
+         .update(decline_email_sent_at=stamp, decision_email_sent_at=stamp))
+    except Exception:
+        logger.error('release_pending_declines: app %s — the email went but its stamp could not be '
+                     'kept; it may be sent again.', pk, exc_info=True)

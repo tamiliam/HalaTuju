@@ -312,6 +312,8 @@ export interface AdminScholarshipDetail {
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
+  // TD-358: '' (told, or owed no email) | 'no_address' | 'unsent' — her decision email has not gone.
+  decision_mail?: '' | 'no_address' | 'unsent'
   pending_rejection_category: string
   decline_due_at: string | null
   award_due_at: string | null

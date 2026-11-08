@@ -41,6 +41,7 @@ from . import sponsorship as sponsorship_service
 from . import whatsapp
 # `_award_application` lives in signing_window.py (request #26): the guardian-contact freeze reads the SAME rule.
 from .signing_window import award_application as _award_application
+from .student_status import live_q
 from .serializers_admin import interview_schedule_payload
 from .services import apply_gate
 from .services import (
@@ -815,7 +816,7 @@ def _current_application(user_id):
     """
     live = list(
         ScholarshipApplication.objects
-        .filter(profile_id=user_id, status__in=POST_SHORTLIST_EDITABLE + _FUNDED_STATES)
+        .filter(live_q(POST_SHORTLIST_EDITABLE + _FUNDED_STATES), profile_id=user_id)
         .select_related('profile')
         .order_by('-submitted_at')[:2]
     )

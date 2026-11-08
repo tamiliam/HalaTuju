@@ -30,3 +30,15 @@ def student_facing_status(app):
         pre = app.pre_decline_status or 'interviewed'   # then rule 2 masks 'recommended'
         status = 'profile_complete' if pre == 'shortlisted' else pre
     return 'interviewed' if status == 'recommended' else status
+
+
+def live_q(statuses):
+    """A query for the applications whose STUDENT-FACING status is in `statuses` (TD-350).
+
+    The raw status alone is wrong for a decline in its cool-off: the row is `rejected`, the student
+    is shown her old stage, and a lookup on `status__in` drops her — every upload then answers 403
+    while the page says she may still add documents. So: those statuses, OR a `rejected` row that
+    still carries the pending marker (`student_facing_status` masks exactly those). The masked stage
+    is always one of the editable or funded ones, so no further test is needed."""
+    from django.db.models import Q
+    return Q(status__in=statuses) | (Q(status='rejected') & ~Q(pending_rejection_category=''))

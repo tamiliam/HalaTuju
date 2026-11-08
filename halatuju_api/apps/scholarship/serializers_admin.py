@@ -12,7 +12,7 @@ from . import pool, results_route as _notes, serializers_admin_family as _family
 # The Requests-space payloads live in their own file since 2026-10-29 (moves only).
 # Imported HERE, at the top, so the re-export below is not an E402; the bindings
 # themselves sit where the code used to be, so a reader finds them in place.
-from . import serializers_org_requests
+from . import serializers_org_requests, serializers_admin_decision_mail as _dmail
 from .sgd_conversion import AdminApplicantDocumentSerializer   # TD-157: + sgd_conversion
 from .serializers import (
     ConsentSerializer,
@@ -295,7 +295,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
 
-class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
+class AdminApplicationDetailSerializer(_gift.ServesTheGift, _dmail.ServesTheDecisionMail, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.

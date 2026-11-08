@@ -300,6 +300,16 @@ def release_decision(application):
     application.save(update_fields=['status', 'decision_released_at', 'shortlisted_at',
                                     'reminder_anchor_at'])
 
+    send_verdict_email(application, now)
+    return True
+
+
+def send_verdict_email(application, now=None):
+    """Send the verdict email of an engine reveal (invitation for shortlisted, warm decline for
+    rejected) and stamp `decision_email_sent_at` once it went. Returns True when it did. ONE home for
+    the send: `release_decision` calls it at the reveal, and `decision_mail.retry_unsent_decisions`
+    again when that send failed (TD-355). A failed send does not raise: the sender answers False."""
+    now = now or timezone.now()
     name = getattr(application.profile, 'name', '') if application.profile else ''
     common = dict(to_email=application.notify_email, applicant_name=name,
                   programme_name=application.cohort.name, lang=application.locale)
@@ -316,7 +326,7 @@ def release_decision(application):
     if sent:
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])
-    return True
+    return bool(sent)
 
 
 def rescore_pending_decisions():

@@ -4396,6 +4396,10 @@
       "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
       "genLang": "Bahasa output",
       "visionError": "Tidak dapat menjalankan semula Vision.",
+      "untold": {
+        "noAddress": "Pelajar ini tidak dapat dihantar e-mel keputusan: tiada alamat e-mel direkodkan. Sila maklumkan kepada pelajar dengan cara lain, seperti panggilan telefon atau WhatsApp.",
+        "unsent": "E-mel keputusan belum sampai kepada pelajar ini. Kami cuba semula selama tiga hari; jika masih gagal, sila maklumkan kepada pelajar dengan cara lain."
+      },
       "cooloff": {
         "declineScheduled": "Penolakan ini dijadualkan untuk dihantar pada",
         "awardScheduled": "Pengesahan pembiayaan ini dijadualkan untuk dihantar pada",

@@ -146,6 +146,14 @@ export function CockpitHeader({
         </div>
       </header>
 
+      {/* TD-358: the student has not been emailed her decision (no address, or the send keeps failing).
+          An officer must tell her another way; nothing else on the case says so. Admin-only. */}
+      {app.decision_mail && (
+        <div role="status" data-testid="decision-mail-banner"
+          className="mb-4 rounded-lg border border-critical-200 bg-critical-50 px-4 py-3 text-sm text-critical-700">
+          {t(app.decision_mail === 'no_address' ? 'admin.scholarship.untold.noAddress' : 'admin.scholarship.untold.unsent')}
+        </div>
+      )}
       {/* Cool-off (#13/#14): a decision recorded but held silently — the student sees nothing
           until the reveal date, so it can be cancelled/held in the window. Admin-only. */}
       {app.decline_due_at && (

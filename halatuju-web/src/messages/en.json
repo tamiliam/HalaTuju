@@ -4396,6 +4396,10 @@
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
       "visionError": "Could not re-run Vision.",
+      "untold": {
+        "noAddress": "This student could not be emailed their decision: there is no email address on file. Please tell them another way, such as a phone call or WhatsApp.",
+        "unsent": "The decision email has not reached this student yet. We keep retrying for three days; if it still has not gone, please tell them another way."
+      },
       "cooloff": {
         "declineScheduled": "This decline is scheduled to be sent on",
         "awardScheduled": "This funding confirmation is scheduled to be sent on",
