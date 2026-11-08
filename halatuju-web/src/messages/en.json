@@ -4981,6 +4981,10 @@
         "approveNote": "If you approve, the award is withdrawn at once. The money goes back to the sponsor's balance. The student gets an email if they were told of the award.",
         "refuseReasonLabel": "Reason for refusing (needed only if you refuse)",
         "approve": "Approve withdrawal",
+        "approveDialogTitle": "Approve this withdrawal?",
+        "approveDialogHint": "The award is withdrawn at once. This cannot be undone. You can add a note for the record (optional).",
+        "approvePlaceholder": "Note for the record (optional)",
+        "approveConfirm": "Approve and withdraw",
         "refuse": "Refuse",
         "selfNote": "You cannot approve a request you made yourself.",
         "someone": "a staff member",
@@ -8363,7 +8367,8 @@
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run.",
         "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded.",
         "withdraw_request_and_approve": "{name} can ask for award withdrawals and approve them, but never their own request.",
-        "withdraw_last_checker": "Taking this from {name} leaves nobody who can approve award withdrawals: requests in this organisation will wait with nobody to decide them."
+        "withdraw_last_checker": "Taking this from {name} leaves nobody who can approve award withdrawals: requests in this organisation will wait with nobody to decide them.",
+        "withdraw_approve_needs_view": "{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide."
       },
       "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
     },

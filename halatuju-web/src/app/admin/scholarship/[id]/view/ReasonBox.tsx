@@ -4,11 +4,12 @@
  * The cockpit's "why?" box — a required reason before an irreversible step. Lifted whole out of
  * `DecisionCard` (the decision reopen's prompt) at A1.13 so the award withdrawal (TD-198) reuses
  * the same dialog rather than a new design: a titled caution panel, a hint, a text box, and a
- * Confirm that stays disabled until the reason has text, beside Cancel.
+ * Confirm that stays disabled until the reason has text, beside Cancel. With `optional` (the award
+ * withdrawal's approval note) the text may stay empty and Confirm is ready at once.
  */
 export function ReasonBox({
   title, hint, placeholder, confirmLabel, workingLabel, cancelLabel, value, onChange, onConfirm,
-  onCancel, disabled, working, testId,
+  onCancel, disabled, working, testId, optional = false,
 }: {
   title: string
   hint: string
@@ -25,6 +26,8 @@ export function ReasonBox({
   /** THIS box's step is in flight: Confirm shows `workingLabel`. */
   working: boolean
   testId?: string
+  /** The text is optional: Confirm does not wait for it. */
+  optional?: boolean
 }) {
   return (
     <div className="rounded-lg border border-caution-200 bg-caution-50 p-3 space-y-2" data-testid={testId}>
@@ -34,7 +37,7 @@ export function ReasonBox({
         placeholder={placeholder}
         className="w-full border rounded-lg px-3 py-2 text-sm" />
       <div className="flex items-center gap-2">
-        <button onClick={onConfirm} disabled={disabled || !value.trim()}
+        <button onClick={onConfirm} disabled={disabled || (!optional && !value.trim())}
           className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
           {working ? workingLabel : confirmLabel}
         </button>

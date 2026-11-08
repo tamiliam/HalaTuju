@@ -84,9 +84,9 @@ class TestTheSeats(_Base):
     def test_the_maker_cannot_approve_even_with_a_different_email_case(self):
         row = self._request()
         twin = make_admin('admin', owning_org=self.org, email='maker.person@EXAMPLE.org',
-                          permissions=['award_withdraw_approve'], first_seen_at=timezone.now())
+                          permissions=['see_all', 'award_withdraw_approve'], first_seen_at=timezone.now())
         self.assertEqual(_refusal(chain.approve_withdrawal, row.pk, by_admin=twin), 'same_person')
-        self.maker.permissions = ['award_withdraw_request', 'award_withdraw_approve']
+        self.maker.permissions = ['see_all', 'award_withdraw_request', 'award_withdraw_approve']
         self.maker.save(update_fields=['permissions'])
         self.assertEqual(_refusal(chain.approve_withdrawal, row.pk, by_admin=self.maker), 'same_person')
         self.assertEqual(_refusal(chain.refuse_withdrawal, row.pk, by_admin=self.maker, reason='x'),
@@ -114,7 +114,7 @@ class TestTheSeats(_Base):
     def test_no_checker_other_than_the_maker(self):
         self.checker.is_active = False
         self.checker.save(update_fields=['is_active'])
-        self.maker.permissions = ['award_withdraw_request', 'award_withdraw_approve']
+        self.maker.permissions = ['see_all', 'award_withdraw_request', 'award_withdraw_approve']
         self.maker.save(update_fields=['permissions'])
         self.assertEqual(_refusal(self._request), 'no_checker')
         self.assertFalse(AwardWithdrawalRequest.objects.exists())
@@ -127,6 +127,42 @@ class TestTheSeats(_Base):
                          'wrong_role')
         self.assertNotIn(checker_in(other_org).pk, [a.pk for a in chain.eligible_checkers(self.org.pk, self.maker)])
         self._untouched()
+
+
+class TestTheCheckerReadsEveryCase(_Base):
+    """Review fix (A1.13b): the approve key without case read scope 'all' is no checker seat - a
+    Finance-preset person given the key cannot read the case, so is never emailed, counted or admitted."""
+
+    def _finance_with_the_key(self):
+        return make_admin('finance', owning_org=self.org, first_seen_at=timezone.now(),
+                          permissions=['payments_approve', 'award_withdraw_approve'])
+
+    def test_a_holder_who_cannot_see_all_cases_is_no_checker(self):
+        fin = self._finance_with_the_key()
+        self.assertTrue(fin.has_perm(chain.APPROVE_KEY))
+        self.assertFalse(chain.reads_every_case(fin))
+        self.assertNotIn(fin.pk, [a.pk for a in chain.eligible_checkers(self.org.pk, self.maker)])
+        with self.captureOnCommitCallbacks(execute=True):
+            row = chain.request_withdrawal(self.app, by_admin=self.maker, explanation=EXPLANATION)
+        self.assertEqual([m.to for m in mail.outbox], [[self.checker.email]])      # not the Finance person
+        self.assertEqual(_refusal(chain.approve_withdrawal, row.pk, by_admin=fin), 'wrong_role')
+        self.assertEqual(_refusal(chain.refuse_withdrawal, row.pk, by_admin=fin, reason='x'), 'wrong_role')
+        self.assertIsNone(chain.next_step_for(self.app, row, fin))
+        self.assertEqual(chain.waiting_for(fin), 0)
+        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', fin).exists())
+        self.assertNotIn('award_withdrawals', [c['key'] for c in my_pending.pending_for(fin, b40_scope='none')])
+        self._untouched()
+
+    def test_the_only_holder_who_cannot_see_all_cases_leaves_no_checker(self):
+        self.checker.is_active = False
+        self.checker.save(update_fields=['is_active'])
+        self._finance_with_the_key()
+        self.assertEqual(_refusal(self._request), 'no_checker')
+
+    def test_qc_reads_every_case_so_it_sits_in_the_seat(self):
+        qc = make_admin('qc', owning_org=self.org, first_seen_at=timezone.now(),
+                        permissions=['review', 'qc', 'award_withdraw_approve'])
+        self.assertIn(qc.pk, [a.pk for a in chain.eligible_checkers(self.org.pk, self.maker)])
 
 
 class TestTheRequest(_Base):
@@ -182,7 +218,7 @@ class TestTheDecision(_Base):
         row.refresh_from_db()
         self.assertEqual(chain.payload_for(self.app, self.checker)['status'], 'expired')
         self.assertEqual(chain.waiting_for(self.checker), 0)
-        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending').exists())
+        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', self.checker).exists())
         self.assertEqual(chain.next_step_for(self.app, row, self.checker), None)      # nothing to decide
         self.assertEqual(_refusal(chain.approve_withdrawal, row.pk, by_admin=self.checker), 'not_pending')
         row.refresh_from_db()
@@ -195,7 +231,7 @@ class TestTheDecision(_Base):
         AwardWithdrawalRequest.objects.filter(pk=row.pk).update(
             requested_at=timezone.now() - timedelta(days=chain.EXPIRY_DAYS) + timedelta(minutes=5))
         self.assertEqual(chain.waiting_for(self.checker), 1)
-        self.assertTrue(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending').exists())
+        self.assertTrue(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', self.checker).exists())
 
     def test_a_stale_snapshot_is_refused(self):
         row = self._request()
@@ -237,6 +273,18 @@ class TestTheDecision(_Base):
                                                                               self.checker.pk))
         self.assertEqual([m.to for m in mail.outbox][-1], [self.maker.email])
         self._untouched()
+
+    def test_refuse_or_cancel_on_a_case_gone_is_not_found_not_a_500(self):
+        row = self._request()
+
+        def gone(app, allowed):
+            raise status_lock.StatusRefused(None)
+        with patch.object(status_lock, 'lock_application_for', gone):
+            self.assertEqual(_refusal(chain.refuse_withdrawal, row.pk, by_admin=self.checker, reason='No.'),
+                             'not_found')
+            self.assertEqual(_refusal(chain.cancel_withdrawal, row.pk, by_admin=self.maker), 'not_found')
+        row.refresh_from_db()
+        self.assertEqual(row.status, 'pending')
 
     def test_only_the_maker_cancels(self):
         row = self._request()
@@ -342,10 +390,33 @@ class TestTheScreens(_Base):
         sup = make_admin(super_admin=True)
         self.assertNotIn('award_withdrawals', [c['key'] for c in my_pending.pending_for(sup, b40_scope='all')])
 
-    def test_the_list_filter(self):
-        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending').exists())
+    def test_a_case_that_has_moved_on_is_neither_counted_nor_listed(self):
         self._request()
-        qs = chain.narrow_list(ScholarshipApplication.objects.all(), 'pending')
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='active')
+        self.assertEqual(chain.waiting_for(self.checker), 0)
+        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', self.checker).exists())
+
+    def test_the_list_and_the_card_agree_never_your_own_request(self):
+        self._request()
+        both = make_admin('admin', owning_org=self.org, first_seen_at=timezone.now(),
+                          permissions=['see_all', 'award_withdraw_request', 'award_withdraw_approve'])
+        other_app = make_application('awarded', cohort=self.cohort, student=make_shortlistable_student(),
+                                     award_amount=AMOUNT)
+        Sponsorship.objects.create(sponsor=self.sponsor, application=other_app, amount=AMOUNT, status='offered')
+        with self.captureOnCommitCallbacks(execute=True):
+            chain.request_withdrawal(other_app, by_admin=both, explanation=EXPLANATION)
+        for person, want in ((both, [self.app.pk]), (self.checker, sorted([self.app.pk, other_app.pk])),
+                             (self.maker, [])):
+            with self.subTest(person=person.email):
+                listed = sorted(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', person)
+                                .values_list('pk', flat=True))
+                self.assertEqual(listed, want)
+                self.assertEqual(chain.waiting_for(person), len(want))
+
+    def test_the_list_filter(self):
+        self.assertFalse(chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', self.checker).exists())
+        self._request()
+        qs = chain.narrow_list(ScholarshipApplication.objects.all(), 'pending', self.checker)
         self.assertEqual(list(qs.values_list('pk', flat=True)), [self.app.pk])
-        self.assertEqual(chain.narrow_list(ScholarshipApplication.objects.all(), 'other').count(),
+        self.assertEqual(chain.narrow_list(ScholarshipApplication.objects.all(), 'other', self.checker).count(),
                          ScholarshipApplication.objects.count())

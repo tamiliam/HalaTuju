@@ -11,8 +11,8 @@
  * (`award_withdrawal_chain.payload_for`) and nothing else: `your_step` is the server's ONE predicate
  * (`next_step_for`) — 'request' (the ask form), 'cancel' (the maker, waiting), 'decide' (a checker), or
  * null (read only: an outcome, or a super, who sits in neither seat). Every button is re-checked on the
- * server; a refusal comes back as a code and is said in words. The ask prompt reuses the cockpit's
- * `ReasonBox`. The figures are the request's snapshot (`amount_freed`, `tranches_to_withhold`) plus the
+ * server; a refusal comes back as a code and is said in words. The ask prompt, and the approval's
+ * confirm (with an optional note for the record), reuse the cockpit's `ReasonBox`. The figures are the request's snapshot (`amount_freed`, `tranches_to_withhold`) plus the
  * case's own award amount and released tranches, added up in whole cents; nothing else is worked out.
  */
 import { useState } from 'react'
@@ -130,6 +130,10 @@ export function WithdrawAwardCard({
 }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
+  /** The checker's approve confirm (its optional note is `note`, kept apart from the refusal reason in
+   *  `text`, so neither is lost when the other is used). */
+  const [approving, setApproving] = useState(false)
+  const [note, setNote] = useState('')
   const [busy, setBusy] = useState<Busy>('')
   const [error, setError] = useState('')
 
@@ -145,6 +149,8 @@ export function WithdrawAwardCard({
       const next = await call()
       setOpen(false)
       setText('')
+      setApproving(false)
+      setNote('')
       onChanged(next)
     } catch (err) {
       const code = (err as { code?: string })?.code
@@ -166,7 +172,13 @@ export function WithdrawAwardCard({
     const value = checked('explanation')
     if (value !== null) void run('request', () => requestAwardWithdrawal(app.id, value, auth))
   }
-  const approve = () => { if (id != null) void run('approve', () => approveAwardWithdrawal(id, '', auth)) }
+  /** The approval's note is optional; past TEXT_MAX it is refused here (as the server would), never cut. */
+  const approve = () => {
+    const value = note.trim()
+    if (value.length > TEXT_MAX) { say('note_too_long'); return }
+    if (id != null) void run('approve', () => approveAwardWithdrawal(id, value, auth))
+  }
+  const closeApprove = () => { setApproving(false); setNote(''); setError('') }
   const refuse = () => {
     const value = checked('reason')
     if (value !== null && id != null) void run('refuse', () => refuseAwardWithdrawal(id, value, auth))
@@ -215,21 +227,33 @@ export function WithdrawAwardCard({
         </dl>
         {hasPaidTranche(app) && <p className="text-xs text-caution-800">{t(`${K}.paidNote`)}</p>}
         <p className="rounded-lg bg-info-50 p-3 text-xs text-info-800">{t(`${K}.approveNote`)}</p>
-        <label className="block text-xs font-medium text-ground-700">
-          {t(`${K}.refuseReasonLabel`)}
-          <textarea value={text} rows={2} onChange={(e) => setText(e.target.value)} data-testid="withdrawal-reason"
-            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal" />
-        </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={approve} disabled={!!busy} data-testid="withdrawal-approve"
-            className="min-h-11 rounded-lg bg-critical-fill px-4 text-sm font-medium text-critical-fill-ink disabled:opacity-50">
-            {busy === 'approve' ? t('common.loading') : t(`${K}.approve`)}
-          </button>
-          <button type="button" onClick={refuse} disabled={!!busy} data-testid="withdrawal-refuse"
-            className="min-h-11 rounded-lg border border-ground-300 px-4 text-sm font-medium text-ground-700 disabled:opacity-50">
-            {busy === 'refuse' ? t('common.loading') : t(`${K}.refuse`)}
-          </button>
-        </div>
+        {approving ? (
+          <ReasonBox optional testId="withdrawal-approve-box"
+            title={t(`${K}.approveDialogTitle`)} hint={t(`${K}.approveDialogHint`)}
+            placeholder={t(`${K}.approvePlaceholder`)} confirmLabel={t(`${K}.approveConfirm`)}
+            workingLabel={t('common.loading')} cancelLabel={t('common.cancel')}
+            value={note} onChange={setNote} onConfirm={approve} onCancel={closeApprove}
+            disabled={!!busy} working={busy === 'approve'} />
+        ) : (
+          <>
+            <label className="block text-xs font-medium text-ground-700">
+              {t(`${K}.refuseReasonLabel`)}
+              <textarea value={text} rows={2} onChange={(e) => setText(e.target.value)} data-testid="withdrawal-reason"
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal" />
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => { setError(''); setApproving(true) }} disabled={!!busy}
+                data-testid="withdrawal-approve"
+                className="min-h-11 rounded-lg bg-critical-fill px-4 text-sm font-medium text-critical-fill-ink disabled:opacity-50">
+                {t(`${K}.approve`)}
+              </button>
+              <button type="button" onClick={refuse} disabled={!!busy} data-testid="withdrawal-refuse"
+                className="min-h-11 rounded-lg border border-ground-300 px-4 text-sm font-medium text-ground-700 disabled:opacity-50">
+                {busy === 'refuse' ? t('common.loading') : t(`${K}.refuse`)}
+              </button>
+            </div>
+          </>
+        )}
         <p className="text-xs text-ground-500">{t(`${K}.selfNote`)}</p>
       </div>
     )

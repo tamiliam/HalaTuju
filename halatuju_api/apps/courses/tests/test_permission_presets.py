@@ -333,10 +333,11 @@ GOLDEN = {
     },
     'withdrawal_decide_seat': {
         'where': 'scholarship/award_withdrawal_chain.py decide_refusal (who may approve / refuse a '
-                 'request somebody else made)',
+                 'request somebody else made; the seat also needs case read scope all)',
         'keys': ('award_withdraw_approve',),
         'today': _t('org_admin'),
-        'rule': lambda a, c: a.has_perm('award_withdraw_approve') and not a.is_super,
+        'rule': lambda a, c: (a.has_perm('award_withdraw_approve') and not a.is_super
+                              and (a.has_perm('see_all') or a.has_perm('qc'))),
     },
     # ── G. the team (lead tier: stays on role in #39, so the key maps but never converts) ────────
     'may_invite_staff': {

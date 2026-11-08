@@ -150,7 +150,7 @@ def pending_for(admin, *, b40_scope, now=None):
         cards['payment_runs'] = {'count': _payment_runs(admin)}
     if credit_steps.checks_credits(admin):
         cards['wallet_credits'] = {'count': _wallet_credits(admin)}
-    if not admin.is_super and admin.has_perm(award_withdrawal_chain.APPROVE_KEY):
+    if award_withdrawal_chain.holds_decide_seat(admin):     # the seat incl. read scope 'all'
         # A1.13b: the award withdrawals waiting for THIS checker (web link /admin/scholarship?withdrawal=pending).
         cards['award_withdrawals'] = {'count': award_withdrawal_chain.waiting_for(admin, now)}
     if surface_gates.requests_live() and surface_gates.requests_role(admin):

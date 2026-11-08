@@ -13,6 +13,9 @@
   case-insensitively (`same_person`). A SUPER never sits in either seat (`wrong_role`): a super can read
   requests but holds neither seat. `staff_permissions.holders` never answers a super, and a holder who has
   never signed in cannot act (the payment chain's `_signed_in`), so neither is counted as a checker.
+* **A checker reads every case.** The approve seat needs case read scope ``all`` too (`reads_every_case`:
+  the case detail's own `views_admin.base.b40_scope`), so somebody holding the key without `see_all` (a
+  Finance person, say) is neither emailed, counted, nor admitted — they could not read the case they decide.
 * **Who holds the seats.** The two catalogue keys. NO preset holds either; the organisation admin's fixed
   lead tier holds the approve seat only. A request needs at least one eligible checker other than the maker
   (`no_checker`), so a request can never wait for nobody.
@@ -110,12 +113,30 @@ def _in_org(admin, organisation_id):
     return organisation_id is not None and getattr(admin, 'owning_organisation_id', None) == organisation_id
 
 
+def reads_every_case(admin):
+    """Does ``admin`` read every case of their organisation (case read scope ``all``)? The SAME helper the
+    case detail asks (`views_admin.base.b40_scope`). The checker's seat needs it: a decision on a case the
+    person cannot open is never theirs to take."""
+    from .views_admin.base import b40_scope
+    return b40_scope(admin) == 'all'
+
+
+def holds_decide_seat(admin):
+    """The checker's seat, before any request or organisation: not a super, holds `APPROVE_KEY`, reads
+    every case. (The Overview's card asks this; `decide_refusal` adds signed-in, the org and the maker.)"""
+    return (admin is not None and not getattr(admin, 'is_super', False)
+            and admin.has_perm(APPROVE_KEY) and reads_every_case(admin))
+
+
 def _seat_refusal(admin, key, organisation_id):
     """Why ``admin`` may not take the ``key`` seat in this organisation — ``wrong_role`` — or None. A super
-    never sits in a seat; a holder must have signed in and belong to the case's organisation."""
+    never sits in a seat; a holder must have signed in and belong to the case's organisation; the approve
+    seat also needs case read scope ``all`` (`reads_every_case`)."""
     if admin is None or getattr(admin, 'is_super', False):
         return 'wrong_role'
     if not (admin.has_perm(key) and _signed_in(admin) and _in_org(admin, organisation_id)):
+        return 'wrong_role'
+    if key == APPROVE_KEY and not reads_every_case(admin):
         return 'wrong_role'
     return None
 
@@ -130,13 +151,15 @@ def decide_refusal(row, admin):
 
 def eligible_checkers(organisation_id, maker):
     """The people who could decide a request made by ``maker`` in this organisation: active holders of
-    the approve seat (`staff_permissions.holders`: never a super), signed in, never the maker."""
+    the approve seat (`staff_permissions.holders`: never a super), signed in, reading every case
+    (`reads_every_case`), never the maker."""
     from apps.courses import staff_permissions
     if organisation_id is None:
         return []
     maker_email = _email_key(maker)
     return [a for a in staff_permissions.holders(organisation_id, APPROVE_KEY)
-            if _signed_in(a) and a.pk != getattr(maker, 'pk', None) and _email_key(a) != maker_email]
+            if _signed_in(a) and reads_every_case(a)
+            and a.pk != getattr(maker, 'pk', None) and _email_key(a) != maker_email]
 
 
 def may_request(application, admin):
@@ -191,24 +214,31 @@ def payload_for(application, admin, now=None):
     }
 
 
-def narrow_list(qs, value, now=None):
-    """The Applications list's ``?withdrawal=pending``: the cases with a live (unexpired) pending request.
-    Any other value leaves ``qs`` alone. It narrows INSIDE the caller's fence (an EXISTS, no extra rows)."""
+def _waiting_rows(admin, now=None):
+    """The live requests ``admin`` may decide NOW — the ONE rule behind the Overview's count
+    (`waiting_for`) and the list filter (`narrow_list`), so the two always agree. Pending and unexpired,
+    on a case still `award_withdrawal.WITHDRAWABLE` (a case that has moved on, e.g. to ``active``, has
+    nothing to decide), in ``admin``'s own organisation (org-fence), and passing `decide_refusal` (the
+    seat, the read scope, never their own request). A super decides none."""
+    if not holds_decide_seat(admin):
+        return []
+    rows = (_model().objects.filter(live_pending_q(now), application__status__in=wd.WITHDRAWABLE)
+            .filter(organisation_id=admin.owning_organisation_id))
+    return [r for r in rows if decide_refusal(r, admin) is None]
+
+
+def narrow_list(qs, value, admin, now=None):
+    """The Applications list's ``?withdrawal=pending``: the cases whose live request waits for ``admin``'s
+    decision (`_waiting_rows`, the Overview card's rule). Any other value leaves ``qs`` alone. It narrows
+    INSIDE the caller's fence (no extra rows)."""
     if value != 'pending':
         return qs
-    from django.db.models import Exists, OuterRef
-    live = _model().objects.filter(live_pending_q(now), application_id=OuterRef('pk'))
-    return qs.filter(Exists(live))
+    return qs.filter(pk__in=[r.application_id for r in _waiting_rows(admin, now)])
 
 
 def waiting_for(admin, now=None):
-    """How many live requests wait for ``admin``'s decision (the Overview's ``award_withdrawals`` card).
-    org-fence: the caller's own organisation only; a super decides none."""
-    if admin is None or getattr(admin, 'is_super', False) or not admin.has_perm(APPROVE_KEY):
-        return 0
-    rows = (_model().objects.filter(live_pending_q(now))
-            .filter(organisation_id=admin.owning_organisation_id))
-    return sum(1 for r in rows if decide_refusal(r, admin) is None)
+    """How many live requests wait for ``admin``'s decision (the Overview's ``award_withdrawals`` card)."""
+    return len(_waiting_rows(admin, now))
 
 
 # ── the locks ──────────────────────────────────────────────────────────────────────────────────
@@ -347,11 +377,14 @@ def _close(pk, *, by_admin, status, verb, note, refusal_of, mail_maker):
     """Refuse or cancel: the same lock order as the approval — (1) the application (whatever its status:
     a lock for ORDER only), (2) the request — and NEITHER touches the case."""
     from . import staff_activity
-    from .status_lock import lock_application_for
+    from .status_lock import StatusRefused, lock_application_for
     app_id = _application_id_of(pk)
     refusal = None
     with transaction.atomic():
-        application = lock_application_for(app_id, _every_status())          # (1)
+        try:
+            application = lock_application_for(app_id, _every_status())      # (1)
+        except StatusRefused:           # the case has gone (or holds a status no longer listed)
+            raise AwardWithdrawalError('not_found')
         row = _lock_row(pk)                                                  # (2)
         if row is None:
             raise AwardWithdrawalError('not_found')

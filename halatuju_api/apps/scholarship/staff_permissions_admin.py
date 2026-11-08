@@ -42,6 +42,11 @@ CREDIT_CHECK_ON = 'credit_check_on'
 #: in the organisation waiting with nobody to decide it.
 WITHDRAW_REQUEST_AND_APPROVE = 'withdraw_request_and_approve'
 WITHDRAW_LAST_CHECKER = 'withdraw_last_checker'
+#: A1.13b review fix: the approve seat also needs case read scope 'all' (`see_all`, or `qc` which brings
+#: it — `award_withdrawal_chain.reads_every_case`). Holding the key without it decides nothing, so the
+#: screen says so when a change leaves a person in that state.
+WITHDRAW_APPROVE_NEEDS_VIEW = 'withdraw_approve_needs_view'
+_READS_ALL = frozenset({'see_all', 'qc'})
 _WD_REQUEST, _WD_APPROVE = 'award_withdraw_request', 'award_withdraw_approve'
 
 
@@ -176,7 +181,14 @@ def consequences(target, before, after):
         out.append(PREPARE_AND_APPROVE)
     if {_WD_REQUEST, _WD_APPROVE} <= set(after) and not {_WD_REQUEST, _WD_APPROVE} <= set(before):
         out.append(WITHDRAW_REQUEST_AND_APPROVE)
+    if _approve_without_view(after) and not _approve_without_view(before):
+        out.append(WITHDRAW_APPROVE_NEEDS_VIEW)
     return out
+
+
+def _approve_without_view(keys):
+    keys = set(keys)
+    return _WD_APPROVE in keys and not (_READS_ALL & keys)
 
 
 def plan_change(target, asked, *, by=None):

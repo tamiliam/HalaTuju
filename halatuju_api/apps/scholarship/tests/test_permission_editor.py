@@ -356,6 +356,18 @@ class TestConsequences(TestCase):
         self.assertEqual(self._says(fin, ['payments_prepare', 'payments_approve']),
                          ['prepare_and_approve'])
 
+    def test_the_withdrawal_approve_seat_without_all_cases_is_named(self):
+        """A1.13b review fix: `award_withdraw_approve` decides nothing without case read scope 'all'."""
+        fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
+        self.assertIn('withdraw_approve_needs_view',
+                      self._says(fin, ['payments_approve', 'award_withdraw_approve']))
+        self.assertNotIn('withdraw_approve_needs_view',
+                         self._says(fin, ['see_all', 'payments_approve', 'award_withdraw_approve']))
+        admin = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        self.assertNotIn('withdraw_approve_needs_view',
+                         self._says(admin, ['see_all', 'spending', 'award_withdraw_approve']))
+        self.assertIn('withdraw_approve_needs_view', self._says(admin, ['spending', 'award_withdraw_approve']))
+
     def test_granting_approve_mid_run_moves_the_live_rule(self):
         """S2's live rule, door list: a run already at `admin_signed` changes approver the moment
         the grant lands — nothing is stored on the run."""

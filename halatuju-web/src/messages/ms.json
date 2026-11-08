@@ -4981,6 +4981,10 @@
         "approveNote": "Jika anda meluluskan, anugerah ditarik balik serta-merta. Wang kembali ke baki penaja. Pelajar menerima e-mel jika dia pernah dimaklumkan tentang anugerah itu.",
         "refuseReasonLabel": "Sebab menolak (perlu hanya jika anda menolak)",
         "approve": "Luluskan tarik balik",
+        "approveDialogTitle": "Luluskan tarik balik ini?",
+        "approveDialogHint": "Anugerah ditarik balik serta-merta. Tindakan ini tidak boleh dibatalkan. Anda boleh menambah nota untuk rekod (pilihan).",
+        "approvePlaceholder": "Nota untuk rekod (pilihan)",
+        "approveConfirm": "Luluskan dan tarik balik",
         "refuse": "Tolak",
         "selfNote": "Anda tidak boleh meluluskan permintaan yang anda buat sendiri.",
         "someone": "seorang kakitangan",
@@ -8363,7 +8367,8 @@
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama.",
         "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
         "withdraw_request_and_approve": "{name} boleh meminta tarik balik anugerah dan meluluskannya, tetapi tidak sekali-kali permintaannya sendiri.",
-        "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya."
+        "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
+        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
     },

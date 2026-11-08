@@ -36,6 +36,8 @@ const draw = (app: api.AdminScholarshipDetail) => {
 const ACTION = `${K}.action`
 const CONFIRM = `${K}.confirm`
 const PLACEHOLDER = `${K}.placeholder`
+const APPROVE_CONFIRM = `${K}.approveConfirm`
+const NOTE = `${K}.approvePlaceholder`
 const refusal = (code: string) => Object.assign(new Error('x'), { code, status: 409 })
 
 beforeEach(() => jest.clearAllMocks())
@@ -158,13 +160,56 @@ describe('state 3: a checker decides (your_step=decide)', () => {
     expect(screen.getByTestId('withdrawal-facts').textContent).not.toContain(`${K}.fact.award`)
   })
 
-  it('Approve calls the approve route with no note', async () => {
+  it('Approve opens a confirm first: one click withdraws nothing', () => {
+    draw(theirs())
+    fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    expect(mockApi.approveAwardWithdrawal).not.toHaveBeenCalled()
+    const box = screen.getByTestId('withdrawal-approve-box')
+    expect(box.textContent).toContain(`${K}.approveDialogTitle`)
+    expect(box.textContent).toContain(`${K}.approveDialogHint`)
+    // the note is optional: Confirm is ready with an empty box
+    expect((screen.getByRole('button', { name: APPROVE_CONFIRM }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('Approve with an empty note sends an empty note', async () => {
     const next = caseOf(null, { status: 'recommended' })
     mockApi.approveAwardWithdrawal.mockResolvedValue(next)
     const onChanged = draw(theirs())
     fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    fireEvent.click(screen.getByRole('button', { name: APPROVE_CONFIRM }))
     await waitFor(() => expect(onChanged).toHaveBeenCalledWith(next))
     expect(mockApi.approveAwardWithdrawal).toHaveBeenCalledWith(31, '', { token: 'tok' })
+  })
+
+  it('Approve sends the trimmed note for the record', async () => {
+    const next = caseOf(null, { status: 'recommended' })
+    mockApi.approveAwardWithdrawal.mockResolvedValue(next)
+    const onChanged = draw(theirs())
+    fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    fireEvent.change(screen.getByPlaceholderText(NOTE), { target: { value: '  Dummy note  ' } })
+    fireEvent.click(screen.getByRole('button', { name: APPROVE_CONFIRM }))
+    await waitFor(() => expect(onChanged).toHaveBeenCalledWith(next))
+    expect(mockApi.approveAwardWithdrawal).toHaveBeenCalledWith(31, 'Dummy note', { token: 'tok' })
+  })
+
+  it('a note over the limit is refused here and never sent', () => {
+    draw(theirs())
+    fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    fireEvent.change(screen.getByPlaceholderText(NOTE), { target: { value: 'x'.repeat(TEXT_MAX + 1) } })
+    fireEvent.click(screen.getByRole('button', { name: APPROVE_CONFIRM }))
+    expect(screen.getByRole('alert').textContent).toBe(`${K}.error.note_too_long`)
+    expect(mockApi.approveAwardWithdrawal).not.toHaveBeenCalled()
+  })
+
+  it('a typed refusal reason survives opening and cancelling the approve confirm', () => {
+    draw(theirs())
+    fireEvent.change(screen.getByTestId('withdrawal-reason'), { target: { value: 'Dummy reason' } })
+    fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    expect(screen.queryByTestId('withdrawal-reason')).toBeNull()       // the refuse box is for Refuse only
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+    expect(screen.queryByTestId('withdrawal-approve-box')).toBeNull()
+    expect((screen.getByTestId('withdrawal-reason') as HTMLTextAreaElement).value).toBe('Dummy reason')
+    expect(mockApi.approveAwardWithdrawal).not.toHaveBeenCalled()
   })
 
   it('Refuse needs a reason: blank is refused here and never sent', () => {
@@ -236,6 +281,7 @@ describe('refusals read as words', () => {
     mockApi.approveAwardWithdrawal.mockRejectedValue(refusal(code))
     const onChanged = draw(caseOf({ ...PENDING, your_step: 'decide' }))
     fireEvent.click(screen.getByTestId('withdrawal-approve'))
+    fireEvent.click(screen.getByRole('button', { name: APPROVE_CONFIRM }))
     expect((await screen.findByRole('alert')).textContent).toBe(`${K}.error.${code}`)
     expect(onChanged).not.toHaveBeenCalled()
   })

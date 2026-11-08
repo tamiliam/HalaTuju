@@ -155,7 +155,7 @@ class AdminApplicationListView(_AdminBase):
                 sla_org = programme.organisation
             qs = review_sla.in_band(qs, request.GET['band'], now=timezone.now(),
                                     clocks=review_sla.clocks(sla_org))
-        qs = withdrawal_chain.narrow_list(qs, request.GET.get('withdrawal'))   # A1.13b ?withdrawal=pending
+        qs = withdrawal_chain.narrow_list(qs, request.GET.get('withdrawal'), admin)   # A1.13b: the card's rule
         # TD-162: every row's first-assignment readiness, as one EXISTS column, not one query a row.
         from ..services.queries_sla import with_open_student_tasks
         qs = with_open_student_tasks(qs)
