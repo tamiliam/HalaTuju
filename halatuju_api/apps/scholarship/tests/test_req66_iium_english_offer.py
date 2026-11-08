@@ -45,6 +45,10 @@ IIUM_OFFER = _TOP + _DEAR + _SENTENCE + _REST
 _IIUM_HEAD = 'INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA\nAcademic Management and Admission Division\n'
 _ADDR = 'Jalan Contoh, 43000 Kajang\n'
 IIUM_TEXT_LETTERHEAD = _IIUM_HEAD + _ADDR + IIUM_OFFER
+# 5105's own close: "Wassalam", then "Director", then the office (no "Yours sincerely"), the signatory's name
+# between them.
+IIUM_WASSALAM = IIUM_OFFER.replace('Yours sincerely,\nDirector\n', 'Wassalam\n"Knowledge and Virtue"\n'
+                                   'DR. CONTOH BIN CONTOH\nDirector\n')
 IIUM_UNCONDITIONAL = _TOP + 'UNCONDITIONAL OFFER OF ADMISSION\n' + _DEAR + _SENTENCE + _REST
 IIUM_CONDITIONAL_UPON = IIUM_OFFER.replace('3. The University', '3. Registration is conditional upon the original '
                                            'documents.\n4. The University')
@@ -98,6 +102,13 @@ ATTACKS = {
     'a private signatory above the office': IIUM_OFFER.replace(
         'Director\nAcademic', 'Registrar, MERCU UNIVERSITY COLLEGE\nfor Academic'),
     'a campus above Dear': _TOP + 'MERCU CAMPUS\n' + _DEAR + _SENTENCE + _REST,
+    # Last round: IIUM closes with "Wassalam" (no "Yours …"); the signature check is anchored on the office.
+    'no closing, a private signatory': IIUM_WASSALAM.replace(
+        'Wassalam\n"Knowledge and Virtue"\nDR. CONTOH BIN CONTOH\nDirector\n', 'Registrar\nMERCU UNIVERSITY COLLEGE\n'),
+    'Wassalam, a private signatory': IIUM_WASSALAM.replace('Director\n', 'Registrar\nMERCU UNIVERSITY COLLEGE\n'),
+    'a private line after the office': IIUM_WASSALAM.replace(
+        'Academic Management and Admission Division\nTERMS',
+        'Academic Management and Admission Division\nfor MERCU UNIVERSITY COLLEGE\nTERMS'),
 }
 # IIUM's fee-paying arms, on IIUM's own sentence and office.
 IIUM_ACADEMY = IIUM_OFFER.replace('Director\n', 'Director\nIIUM Academy of Graduate & Professional Studies\n')
@@ -151,6 +162,12 @@ class IIUMEnglishOfferIsGenuine(SimpleTestCase):
         text = IIUM_OFFER.replace('ACCEPTANCE FORM', 'Payment to Bank Islam Malaysia Berhad, Mahallah Contoh, '
                                   'Kulliyyah of Contoh, Gombak Campus\nACCEPTANCE FORM')
         self.assertEqual(_g(text)['status'], 'genuine')
+
+    def test_iiums_own_wassalam_close_is_genuine(self):
+        self.assertIn('Wassalam', IIUM_WASSALAM)
+        self.assertNotIn('Yours', IIUM_WASSALAM)
+        self.assertNotIn('Wassalam', ATTACKS['no closing, a private signatory'])
+        self.assertEqual((_g(IIUM_WASSALAM)['status'], _g(IIUM_WASSALAM)['probability']), ('genuine', 0.9))
 
     def test_through_assess_as_production_calls_it(self):
         self.assertEqual(assess('offer_letter', ocr_text=IIUM_OFFER)['status'], 'genuine')

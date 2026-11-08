@@ -19109,9 +19109,13 @@ a company and a "campus" included), and no partner / tie-up word ANYWHERE on the
 "validated", "in association": "… at Mercu College, our teaching partner campus"); the organisation check is not
 page-wide, because a genuine letter's lower pages name banks, kulliyyahs and mahallahs; (4) no whole word
 CONDITIONAL / PROVISIONAL and no "NOTIFICATION OF ADMISSION" from the top of the page to the end of the
-sentence's line ("terms and conditions" and a later "conditional upon" are fine); (5) the signature block (from
-"Yours sincerely" to the office line, at most six lines) names no other organisation ("Registrar / MERCU
-UNIVERSITY COLLEGE"). Any other page, and
+sentence's line ("terms and conditions" and a later "conditional upon" are fine); (5) the signature block names no
+other institution or company: it is anchored on the FIRST office line after the sentence — five lines above it,
+two below, and from a closing ("Wassalam", "Yours …") down to it — because IIUM closes "Wassalam / Director /
+Academic Management and Admission Division" with no "Yours sincerely" (doc 5105). Its nouns are those an issuer
+signs for (college, university, institute, academy, polytechnic, Sdn Bhd / Berhad …), never a fee line ("Tuition
+Fee") or "the University" ("Registrar / MERCU UNIVERSITY COLLEGE" above the office, "for MERCU UNIVERSITY
+COLLEGE" below). Any other page, and
 every other UA letter, keeps the 1.25.0 call exactly; `_UA_NAMES` is untouched (still the 20 Malay names). The
 IIUM Academy (of Graduate & Professional Studies) is PRIVATE (owner ruling, 2026-11-08: "IIUM Academy is private"); it
 and CENPACE, IIUM's Centre for Professional and Continuing Education, join the private-arm veto
@@ -19132,8 +19136,8 @@ those now keeps its 1.25.0 call (not_offer_letter). The acronyms IIUM / UIAM are
 name stays OUT of the S6 BLOCK's public names, where it would let a company line below it escape the block.
 **Residual (accepted, as for the Malay family; final review 2026-11-08):** a forgery reproducing IIUM's own
 sentence and office with nothing else before it; a private body named only by an ACRONYM above "Dear"; a private
-name only in a FOOTER below the signature block (no safe rule: a genuine letter's lower pages name banks and
-campuses); one template sentence anchors the reading (a second IIUM template must be added by hand). A genuine
+name only in a FOOTER further below the signature block with no company suffix (no safe rule: a genuine letter's
+lower pages name banks and campuses; "Sdn Bhd" anywhere is the private-arm veto's); one template sentence anchors the reading (a second IIUM template must be added by hand). A genuine
 letter to a candidate addressed at a residential college ("Kolej Kediaman …") or anywhere naming an institution,
 or whose sentence wraps a "conditional" onto the next line, keeps the 1.25.0 call (p 0.3; a person decides).
 **Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).

@@ -3,9 +3,10 @@
 600-line standard). Pure data, no imports. ``results_doc`` re-exports every name, so
 ``from .results_doc import _UA_NAMES`` / ``UA_OFFER_SIGNATURES`` keep working; ``results_doc``'s
 ``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them. 1.26.0 (request
-#66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``; its one
-import, the letterhead reader, is lazy).
+#66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``): it imports
+only ``re``, and reads the page through ``offer_reading`` lazily.
 """
+import re
 
 
 # Offer letters — five standard public-issuer families, scored together, best fit wins (and names
@@ -157,10 +158,12 @@ UA_OFFER_SIGNATURES = [
 #      from the top of the page to the end of the sentence's line — a title or the sentence itself; a genuine
 #      letter's terms further down may say "conditional upon" (the owner's rule: an unconditional official
 #      offer only, decisions.md 2026-06-27);
-#   5. the SIGNATURE block (from "Yours sincerely" to the office line, at most six lines) names no other
-#      organisation: "Registrar / MERCU UNIVERSITY COLLEGE" signing under IIUM's sentence.
-# Accepted residuals (final review): a private body named only by an acronym above "Dear"; a private name
-# only in a FOOTER below the signature (no safe rule: a genuine letter's lower pages name banks and campuses);
+#   5. the SIGNATURE block — anchored on the first office line after the sentence: five lines above it, two
+#      below, and from a closing ("Wassalam", "Yours …") down to it — names no other organisation:
+#      "Registrar / MERCU UNIVERSITY COLLEGE" signing above IIUM's office, "for MERCU UNIVERSITY COLLEGE" below.
+# Accepted residuals (final review): a private body named only by an acronym; a private name only in a
+# FOOTER further below, with no company suffix (no safe rule: a genuine letter's lower pages name banks and
+# campuses; a "Sdn Bhd" anywhere is the private-arm veto's);
 # a candidate addressed at a residential college ("Kolej Kediaman …") keeps the 1.25.0 call; one template
 # sentence anchors the reading (a second IIUM template needs adding here).
 # Every other page, and every other UA letter, is scored by `UA_OFFER_SIGNATURES` exactly as under 1.25.0.
@@ -218,7 +221,8 @@ def _issued_by_iium(ocr_text: str) -> bool:
             break
         if _names_another(f' {page[pos:min(pos + len(ln.strip()), at)].strip()} ', campus=True):
             return False                                      # rule 3: another organisation named first
-    return not any(_names_another(ln) for ln in _signature_block(lines))      # rule 5
+    sentence_line = next(i for i, (pos, ln) in enumerate(_starts(lines)) if pos + len(ln.strip()) > at)
+    return not any(_signs_for_another(ln) for ln in _signature_block(lines, sentence_line))   # rule 5
 
 
 def _names_another(ln: str, campus: bool = False) -> bool:
@@ -230,23 +234,40 @@ def _names_another(ln: str, campus: bool = False) -> bool:
     return bool(_outside_orgs(ln, _allowed_spans(ln, allowed))) or (campus and ' CAMPUS ' in ln)
 
 
-#: Rule 5: the signature block — from the closing to IIUM's office line, at most this many lines.
-_CLOSINGS = (' YOURS SINCERELY ', ' YOURS FAITHFULLY ', ' YOURS TRULY ')
-_SIGNATURE_LINES = 6
+#: Rule 5: the nouns an issuer SIGNS for (an institution or a company). Narrower than the organisation nouns
+#: above the sentence: a signature's neighbours on a genuine letter are fee lines ("Tuition Fee") and "the
+#: University", which name no other body.
+_SIGNS_FOR = re.compile(r' (?:KOLEJ|COLLEGES?|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|AKADEMI|ACADEM(?:Y|IES)|'
+                        r'POLITEKNIK|POLYTECHNICS?|MAKTAB|SDN|BHD|BERHAD|PLT|LTD|LIMITED)(?= )')
 
 
-def _signature_block(lines):
-    """The lines from the first closing ("Yours sincerely") to the office line inclusive (at most
-    `_SIGNATURE_LINES`); none when the page has no closing."""
-    at = next((i for i, ln in enumerate(lines) if any(c in ln for c in _CLOSINGS)), None)
-    if at is None:
+def _signs_for_another(ln: str) -> bool:
+    """A signature-block line naming an institution or company other than IIUM and its office."""
+    from .offer_reading import _decontact, _unstreeted
+    ln = _unstreeted(_decontact(ln))
+    for n in (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ', ' THE UNIVERSITY ', ' THE UNIVERSITI '):
+        ln = ln.replace(n, ' ')
+    return bool(_SIGNS_FOR.search(ln))
+
+
+#: Rule 5: the signature block, anchored on IIUM's OFFICE — the first office line after the offer sentence,
+#: with up to `_BEFORE_OFFICE` lines above it and `_AFTER_OFFICE` below, and, when a closing ("Wassalam",
+#: "Yours sincerely") comes between the sentence and that line, every line from the closing down to it. IIUM
+#: closes with "Wassalam / Director / Academic Management and Admission Division" (doc 5105, no "Yours …").
+_CLOSINGS = (' WASSALAM ', ' WASSALAMUALAIKUM ', ' YOURS SINCERELY ', ' YOURS FAITHFULLY ', ' YOURS TRULY ')
+_BEFORE_OFFICE, _AFTER_OFFICE = 5, 2
+
+
+def _signature_block(lines, sentence_line):
+    """The signature block (above) — never the sentence's own line or anything above it; none when no office
+    line follows the sentence (then rule 2 holds only through an office line ABOVE it, on a letterhead)."""
+    first = sentence_line + 1
+    office = next((i for i in range(first, len(lines)) if f' {_IIUM_OFFICE} ' in lines[i]), None)
+    if office is None:
         return []
-    block = []
-    for ln in lines[at:at + _SIGNATURE_LINES]:
-        block.append(ln)
-        if f' {_IIUM_OFFICE} ' in ln:
-            break
-    return block
+    closing = next((i for i in range(first, office) if any(c in lines[i] for c in _CLOSINGS)), office)
+    start = max(first, min(office - _BEFORE_OFFICE, closing))
+    return lines[start:office + _AFTER_OFFICE + 1]
 
 
 def _starts(lines):
