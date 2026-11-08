@@ -3724,6 +3724,13 @@
         "invited": "Dijemput, menunggu",
         "joined": "Telah menyertai"
       },
+      "person": {
+        "remove": "Buang",
+        "removeConfirm": "Buang log masuk {name} bagi {source}? Mereka tidak lagi boleh log masuk. Anda boleh menjemput mereka semula kemudian.",
+        "removed": "Log masuk dibuang.",
+        "removeFailed": "Tidak dapat dibuang. Muat semula halaman dan cuba lagi.",
+        "notActive": "{name} sudah pun dimatikan. Muat semula halaman."
+      },
       "managed": "Diurus oleh sumber",
       "managedNote": "Sunting tersedia sehingga sumber log masuk. Selepas itu, hanya sumber yang mengubah butirannya sendiri. Anda masih boleh menghidupkan atau mematikan sumber untuk borang permohonan.",
       "managedRefused": "Sumber ini telah log masuk dan kini mengurus butirannya sendiri. Anda masih boleh menghidupkan atau mematikannya."
@@ -7021,7 +7028,8 @@
           "bad_mode": "Pilih cara pertemuan.",
           "bad_minutes": "Minit mestilah nombor bulat melebihi 0.",
           "notes_required": "Tulis sedikit tentang pertemuan itu.",
-          "generic": "Itu tidak berjaya. Sila cuba lagi."
+          "generic": "Itu tidak berjaya. Sila cuba lagi.",
+          "mentor_not_in_gift": "Mentor itu tidak meliputi pemberian penerima biasiswa ini. Pilih mentor lain, atau tambah pemberian itu kepada mentor tersebut di Pasukan · Mentor."
         },
         "concern": {
           "open": "Mentor bimbang tentang penerima biasiswa ini. Belum ditangani: {count} (terkini {date}).",
@@ -7481,11 +7489,14 @@
         "mentor": "Mentor"
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
-      "giftLabel": "Jemputan ini untuk pemberian yang mana?",
-      "giftChoose": "Pilih pemberian…",
       "reviewerGiftLabel": "Pemberian mana yang akan diliputi oleh penilai ini?",
       "reviewerGiftHelp": "Padankan penilai dengan pemberian mengikut kekuatan dan minat mereka.",
       "reviewerGiftEvery": "Semua pemberian",
+      "sponsorGiftLabel": "Penaja ini dijemput untuk menyokong pemberian yang mana?",
+      "sponsorGiftRequired": "Tandakan sekurang-kurangnya satu pemberian, atau Semua pemberian.",
+      "sponsorGiftHelp": "Setiap pemberian ialah permohonan tersendiri: apabila mereka mendaftar, mereka disertakan dalam setiap pemberian yang ditandakan di sini dengan status menunggu, dan anda meluluskan setiap satu. Semua pemberian bermaksud pemberian yang dibuka pada hari mereka mendaftar — pemberian yang dimulakan kemudian tidak ditambah.",
+      "inviteFailed": "Jemputan tidak dihantar. Sila semak butiran dan cuba lagi.",
+      "noteLabel": "Nota peribadi",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",
@@ -7522,7 +7533,7 @@
         "which": "Sumber yang mana?",
         "choose": "Pilih sumber…",
         "option": "{name} ({code}) — {state}",
-        "help": "Setiap sumber aktif dalam senarai anda — satu sumber boleh mempunyai lebih daripada seorang. Atau",
+        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan. Atau",
         "addNew": "tambah sumber baharu (nama dan kod ringkas)",
         "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
         "newName": "Nama sumber",
@@ -7533,22 +7544,13 @@
         "note": "Mereka hanya melihat pelajar mereka sendiri, baca sahaja, dan boleh menjadi saksi kontrak.",
         "chooseFirst": "Pilih sumber, atau tambah yang baharu.",
         "sent": "Jemputan dihantar.",
-        "signedIn": "Telah log masuk",
         "col": {
-          "source": "Sumber",
-          "person": "Orang",
-          "email": "E-mel",
-          "sent": "Dihantar",
-          "lastSeen": "Kali terakhir dilihat"
+          "source": "Sumber"
         },
         "noneWaiting": "Tiada sesiapa yang menunggu untuk menjawab.",
-        "noneSignedIn": "Belum ada sesiapa yang log masuk bagi sumber.",
-        "remove": "Buang",
-        "removeConfirm": "Buang log masuk {name} bagi {source}? Mereka tidak lagi boleh log masuk. Anda boleh menjemput mereka semula kemudian.",
-        "removed": "Log masuk dibuang.",
-        "removeFailed": "Tidak dapat dibuang. Muat semula halaman dan cuba lagi.",
         "error": {
           "already_staff": "Alamat e-mel ini sudah mempunyai log masuk kakitangan atau sumber HalaTuju, jadi tidak boleh dijemput bagi sumber. Hubungi sokongan HalaTuju.",
+          "source_has_person": "Sumber ini sudah mempunyai seseorang: seseorang telah menyertai, atau jemputan sedang menunggu. Hantar semula atau batalkan jemputan yang menunggu di bawah, atau buang orang itu di Sumber dahulu.",
           "code_taken": "Kod ringkas itu sudah digunakan.",
           "code_reserved": "Kod ringkas itu dikhaskan. Pilih yang lain.",
           "code_and_name_required": "Sumber baharu memerlukan nama dan kod ringkas.",
@@ -7562,7 +7564,7 @@
           "generic": "Jemputan tidak dapat dihantar. Cuba lagi."
         },
         "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi.",
-        "optionJoined": "{name} ({code}) — seseorang telah menyertai",
+        "optionWaiting": "{name} ({code}) — dijemput, menunggu: hantar semula atau batalkan di bawah",
         "refused": {
           "already_joined": "{name} telah pun log masuk.",
           "not_active": "{name} telah dimatikan. Untuk mengembalikannya, jemput semula."
@@ -7570,12 +7572,7 @@
       },
       "loadFailed": "Jemputan tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
       "mentor": {
-        "noneWaiting": "Tiada mentor yang menunggu untuk menerima.",
-        "col": {
-          "name": "Mentor",
-          "email": "E-mel",
-          "sent": "Dijemput"
-        }
+        "noneWaiting": "Tiada mentor yang menunggu untuk menerima."
       }
     },
     "soon": "Akan datang",
@@ -7614,7 +7611,8 @@
         "hasPaymentRuns": "Hadiah ini telah membayar pelajar, jadi ia tidak boleh dipadam.",
         "inUse": "Terdapat rekod yang masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
         "confirmMismatch": "Ia tidak sepadan dengan frasa yang diperlukan. Tiada apa-apa dipadam.",
-        "hasContractTemplates": "Hadiah ini mempunyai perjanjian biasiswa yang telah ditandatangani, jadi ia tidak boleh dipadam."
+        "hasContractTemplates": "Hadiah ini mempunyai perjanjian biasiswa yang telah ditandatangani, jadi ia tidak boleh dipadam.",
+        "giftLimitsMentors": "{count} mentor hanya membimbing dalam hadiah ini. Berikan mereka hadiah lain, atau ‘Semua pemberian’, sebelum memadamnya."
       },
       "copyLink": "Salin pautan permohonan",
       "copied": "Pautan disalin",
@@ -8747,9 +8745,10 @@
       "intro": "Orang yang membimbing penerima biasiswa anda — mentor jemputan yang telah log masuk, dan kakitangan yang juga membimbing. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
       "invite": {
         "name": "Nama",
-        "note": "Mentor akan menerima e-mel jemputan. Selepas log masuk, mereka mengisi bidang, bahasa, Tentang saya dan nombor telefon. Anda tidak boleh mengubah butiran itu; mentor sendiri yang mengemas kininya.",
+        "note": "Selepas log masuk, mentor mengisi sendiri bidang, bahasa, Tentang saya dan nombor telefon mereka.",
         "sent": "{name} telah dijemput. Butiran log masuk dihantar ke {email}.",
-        "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi."
+        "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi.",
+        "giftLabel": "Pemberian mana yang akan diliputi oleh mentor ini?"
       },
       "error": {
         "already_staff": "Alamat e-mel ini sudah mempunyai log masuk pentadbir HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
@@ -8768,7 +8767,9 @@
         "already_mentor": "Kakitangan ini sudah menjadi mentor.",
         "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor. Tambah Mentor boleh menambah mereka semula.",
         "not_staff": "Hanya bimbingan kakitangan boleh dihentikan dengan cara ini.",
-        "not_found": "Kakitangan itu tidak ditemui."
+        "not_found": "Kakitangan itu tidak ditemui.",
+        "gift_required": "Pilih Semua pemberian atau sekurang-kurangnya satu pemberian.",
+        "gift_not_found": "Pemberian itu tidak dibuka dalam organisasi ini. Muat semula halaman dan pilih sekali lagi."
       },
       "status": {
         "active": "Aktif",
@@ -8876,6 +8877,10 @@
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
         "notFound": "Mentor ini tidak ditemui.",
         "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
+      },
+      "gifts": {
+        "label": "Pemberian",
+        "outside": "Mentor ini mempunyai {count} penerima biasiswa semasa di luar pemberian tersebut. Tamatkan atau tukar mentor mereka dahulu. Tiada apa yang diubah."
       }
     },
     "myStudents": {

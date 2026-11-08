@@ -119,7 +119,8 @@ export interface AdminProgramme {
    */
   delete_blocked_by:
     | 'has_applications' | 'has_benefactors'
-    | 'has_money' | 'has_payment_runs' | 'has_contract_templates' | null
+    | 'has_money' | 'has_payment_runs' | 'has_contract_templates'
+    | 'gift_limits_mentors' | null
   delete_blocked_count: number
   /**
    * The whole link a student follows to apply to THIS gift.
@@ -228,7 +229,8 @@ export async function draftApplyCopy(
  * away from deleting somebody's gift.
  *
  * ⚠ IT REFUSES WITH A NAMED REASON rather than a generic failure: `has_applications`,
- * `has_benefactors`, `has_money`, `has_payment_runs`, `has_contract_templates` (TD-229). Those are the relations the model already
+ * `has_benefactors`, `has_money`, `has_payment_runs`, `has_contract_templates` (TD-229), and
+ * `gift_limits_mentors` (I4 review: the gift is some mentor's ONLY gift, with `count`). Those are the relations the model already
  * protects — a gift that has taken a student or a ringgit cannot be deleted.
  *
  * ⚠ THE GIFT'S EMPTY INTAKE YEARS ARE DELETED WITH IT (owner, 2026-09-07). A year is rules, not

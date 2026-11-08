@@ -10,12 +10,13 @@ import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
 import { displayPhone } from '@/lib/reviewerDetail'
 import {
-  getMentorDetail, getMentors, mentorAction,
+  getMentorDetail, getMentors, mentorAction, setMentorGifts,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
   type MentorsPayload, type ScholarStanding,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import Sheet from '@/components/Sheet'
+import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import StaffMentorSheet from './StaffMentorSheet'
 
 /**
@@ -318,6 +319,15 @@ function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[
   )
 }
 
+/** I4: the words for a refused gift edit — open point D names how many current scholars are outside. */
+function giftRefusal(t: T, err: unknown): string {
+  const e = err as { code?: string; body?: { count?: number } }
+  if (e?.code === 'mentor_has_scholars_outside') {
+    return t(`${K}.gifts.outside`, { count: String(e.body?.count ?? '') })
+  }
+  return t('admin.reviewers.detail.giftFailed')
+}
+
 /** Team → Mentors → a mentor: their work and how it is going (staff only; no meeting notes). */
 export function MentorDetail({ id }: { id: number }) {
   const { token } = useAdminAuth()
@@ -377,6 +387,17 @@ export function MentorDetail({ id }: { id: number }) {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-ground-900 sm:text-2xl">{m.name}</h1>
           <p className="mt-1 text-sm text-ground-600" data-testid="mentor-facts">{facts.join(' · ')}</p>
+          {/* Invitations I4: the gifts they mentor in (none named = every gift). The SERVER refuses a
+              narrowing that would leave a current scholar outside (409, with how many): nothing ends. */}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm" data-testid="mentor-gifts">
+            <span className="text-ground-500">{t(`${K}.gifts.label`)}</span>
+            <ReviewerGiftsCell reviewer={{ id: m.id, name: m.name, gifts: m.gifts ?? [] }}
+              options={data.programmes ?? []} token={token}
+              canEdit={m.manageable && data.programmes !== undefined}
+              save={async (ids, tok) => (await setMentorGifts(m.id, ids, { token: tok })).gifts}
+              errorOf={(err) => giftRefusal(t, err)}
+              onSaved={(gifts) => setData({ ...data, mentor: { ...m, gifts, every_gift: gifts.length === 0 } })} />
+          </div>
           {(m.staff_role || m.status === 'inactive') && (
             <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
               {m.staff_role && <span className="rounded-full bg-info-50 px-2 py-0.5 text-info-800">

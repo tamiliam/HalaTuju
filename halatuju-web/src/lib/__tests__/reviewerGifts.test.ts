@@ -3,7 +3,8 @@
  * No ticked gift means EVERY gift, and it is the default; "Every gift" and a gift are never both on.
  */
 import {
-  EVERY_GIFT, giftsForReviewer, idsToSave, tickEvery, tickGift, ticksFrom,
+  EVERY_GIFT, NO_GIFT, giftsForReviewer, idsToSave, nothingTicked, sponsorStartTicks, tickEvery,
+  tickGift, ticksFrom,
 } from '@/lib/reviewerGifts'
 
 describe('reviewerGifts', () => {
@@ -48,5 +49,25 @@ describe('reviewerGifts', () => {
     expect(giftsForReviewer(options, null).map((g) => g.id)).toEqual([7, 11])
     expect(giftsForReviewer(options, undefined).map((g) => g.id)).toEqual([7, 11])
     expect(giftsForReviewer(options, 2).map((g) => g.id)).toEqual([11])
+  })
+})
+
+/** The SPONSOR invite's variant (Invitations I3, 2026-11-08): nothing ticked is a real state, and
+ *  the starting one unless there is exactly one gift. */
+describe('the sponsor invite ticks', () => {
+  it('starts with nothing ticked, or the one gift when there is exactly one', () => {
+    expect(sponsorStartTicks([])).toEqual(NO_GIFT)
+    expect(sponsorStartTicks([{ id: 7 }])).toEqual({ every: false, picked: [7] })
+    expect(sponsorStartTicks([{ id: 7 }, { id: 9 }])).toEqual(NO_GIFT)
+    expect(nothingTicked(NO_GIFT)).toBe(true)
+    expect(nothingTicked(EVERY_GIFT)).toBe(false)
+    expect(nothingTicked({ every: false, picked: [9] })).toBe(false)
+  })
+
+  it('⚠ clearing the last tick leaves NOTHING ticked with allowNone — never a silent Every gift', () => {
+    expect(tickGift({ every: false, picked: [9] }, 9, true)).toEqual(NO_GIFT)
+    expect(tickGift(NO_GIFT, 9, true)).toEqual({ every: false, picked: [9] })
+    // The reviewer rule is unchanged: there, the last tick cleared IS Every gift.
+    expect(tickGift({ every: false, picked: [9] }, 9)).toEqual(EVERY_GIFT)
   })
 })

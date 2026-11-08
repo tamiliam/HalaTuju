@@ -512,6 +512,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMentorsView': 'mentor-scope-org-fenced (_in_scope)',
         'AdminMentorView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
         'AdminMentorActionView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
+        # Invitations I4 (2026-11-08): a mentor's gifts, through the same `_MentorsBase._target`; every
+        # gift must be the MENTOR's organisation's (`mentor_gift.choose`), else 404
+        # (`test_mentor_gifts.TestTheEdit`).
+        'AdminMentorGiftsView': 'mentor-fenced (_target: _in_scope + mentor_invite.manageable; gifts in its org)',
         # S7d (2026-11-01): "Add a staff member as mentor". The candidates and the target are cut to the
         # caller's own organisation (a super: any, narrowed by ?org=); another organisation's staff is
         # 404 (`test_staff_mentor.TestAdding.test_who_may_add`).

@@ -113,6 +113,11 @@ class SponsorProgrammeMembership(models.Model):
     # Who vetted this membership + when (the org admin acting for that programme).
     vetted_by = models.CharField(max_length=200, blank=True, default='')
     vetted_at = models.DateTimeField(null=True, blank=True)
+    #: I3 second review: set when the ORGANISATION rejected this gift by hand
+    #: (`sponsorship.set_programme_membership`), cleared when it sets any other status. Account
+    #: vetting (`sync_account_membership`) never changes a membership rejected by hand, but a
+    #: rejection the account cascaded (NULL here) follows the account back when it is approved.
+    rejected_by_hand_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

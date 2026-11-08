@@ -3724,6 +3724,13 @@
         "invited": "Invited, waiting",
         "joined": "Joined"
       },
+      "person": {
+        "remove": "Remove",
+        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
+        "removed": "Sign-in removed.",
+        "removeFailed": "We could not remove it. Reload the page and try again.",
+        "notActive": "{name} is already switched off. Reload the page."
+      },
       "managed": "Managed by the source",
       "managedNote": "Edit stays until the source signs in. After that, only the source changes its own details. You still switch a source on or off for the apply form.",
       "managedRefused": "This source has signed in and now keeps its own details. You can still switch it on or off."
@@ -7021,7 +7028,8 @@
           "bad_mode": "Choose how you met.",
           "bad_minutes": "Minutes must be a whole number above 0.",
           "notes_required": "Write a few words about the meeting.",
-          "generic": "That did not go through. Please try again."
+          "generic": "That did not go through. Please try again.",
+          "mentor_not_in_gift": "That mentor does not cover this scholar's gift. Choose another mentor, or add the gift to theirs on Team · Mentors."
         },
         "concern": {
           "open": "The mentor is worried about this scholar. Not yet handled: {count} (latest {date}).",
@@ -7481,11 +7489,14 @@
         "mentor": "Mentor"
       },
       "noneInKind": "Nobody has been invited in this group yet.",
-      "giftLabel": "Which gift is this invitation for?",
-      "giftChoose": "Choose a gift…",
       "reviewerGiftLabel": "Which gifts will this reviewer cover?",
       "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
+      "sponsorGiftLabel": "Which gifts is this sponsor invited to support?",
+      "sponsorGiftRequired": "Tick at least one gift, or Every gift.",
+      "sponsorGiftHelp": "Each gift is its own request: when they register they join every gift ticked here as pending, and you approve each one. Every gift means the gifts open on the day they register — a gift started later is not added.",
+      "inviteFailed": "The invitation was not sent. Please check the details and try again.",
+      "noteLabel": "Personal note",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
@@ -7522,7 +7533,7 @@
         "which": "Which source?",
         "choose": "Choose a source…",
         "option": "{name} ({code}) — {state}",
-        "help": "Every active source on your list — a source can have more than one person. Or",
+        "help": "One person per source, so a source someone has joined is not listed. Or",
         "addNew": "add a new source (name and short code)",
         "pickExisting": "Choose a source already on your list instead",
         "newName": "Source name",
@@ -7533,22 +7544,13 @@
         "note": "They will see only their own students, read only, and can witness contracts.",
         "chooseFirst": "Choose a source, or add a new one.",
         "sent": "Invitation sent.",
-        "signedIn": "Signed in",
         "col": {
-          "source": "Source",
-          "person": "Person",
-          "email": "Email",
-          "sent": "Sent",
-          "lastSeen": "Last seen"
+          "source": "Source"
         },
         "noneWaiting": "Nobody is waiting to reply.",
-        "noneSignedIn": "Nobody has signed in for a source yet.",
-        "remove": "Remove",
-        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
-        "removed": "Sign-in removed.",
-        "removeFailed": "We could not remove it. Reload the page and try again.",
         "error": {
           "already_staff": "This email address already has a HalaTuju staff or source sign-in, so it cannot be invited for a source. Ask HalaTuju support.",
+          "source_has_person": "This source already has a person: someone has joined, or an invitation is waiting. Resend or cancel the waiting invitation below, or remove the person on Sources first.",
           "code_taken": "That short code is already in use.",
           "code_reserved": "That short code is reserved. Choose another.",
           "code_and_name_required": "A new source needs a name and a short code.",
@@ -7562,7 +7564,7 @@
           "generic": "We could not send the invitation. Try again."
         },
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
-        "optionJoined": "{name} ({code}) — someone has already joined",
+        "optionWaiting": "{name} ({code}) — invited, waiting: resend or cancel below",
         "refused": {
           "already_joined": "{name} has already signed in.",
           "not_active": "{name} is switched off. To bring them back, invite them again."
@@ -7570,12 +7572,7 @@
       },
       "loadFailed": "We could not load the invitations. Reload the page to try again.",
       "mentor": {
-        "noneWaiting": "No mentor is waiting to accept.",
-        "col": {
-          "name": "Mentor",
-          "email": "Email",
-          "sent": "Invited"
-        }
+        "noneWaiting": "No mentor is waiting to accept."
       }
     },
     "soon": "Soon",
@@ -7614,7 +7611,8 @@
         "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
         "inUse": "A record still depends on this gift, so it cannot be deleted.",
         "confirmMismatch": "That does not match the required phrase. Nothing was deleted.",
-        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted."
+        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted.",
+        "giftLimitsMentors": "{count} mentor(s) mentor only in this gift. Give them another gift, or Every gift, before deleting it."
       },
       "copyLink": "Copy apply link",
       "copied": "Link copied",
@@ -8747,9 +8745,10 @@
       "intro": "The people who mentor your scholars — invited mentors who have signed in, and staff who also mentor. Invite a mentor from Invitations; each mentor fills in their own profile.",
       "invite": {
         "name": "Name",
-        "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
+        "note": "After signing in, the mentor fills in their own area, languages, About and phone.",
         "sent": "{name} invited. Sign-in details emailed to {email}.",
-        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
+        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
+        "giftLabel": "Which gifts will this mentor cover?"
       },
       "error": {
         "already_staff": "This email address already has a HalaTuju admin sign-in, so it cannot be invited as a mentor.",
@@ -8768,7 +8767,9 @@
         "already_mentor": "This staff member is already a mentor.",
         "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
-        "not_found": "That staff member was not found."
+        "not_found": "That staff member was not found.",
+        "gift_required": "Choose Every gift or at least one gift.",
+        "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again."
       },
       "status": {
         "active": "Active",
@@ -8876,6 +8877,10 @@
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
         "notFound": "This mentor was not found.",
         "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
+      },
+      "gifts": {
+        "label": "Gifts",
+        "outside": "This mentor has {count} current scholar(s) outside those gifts. End or change that mentoring first. Nothing was changed."
       }
     },
     "myStudents": {

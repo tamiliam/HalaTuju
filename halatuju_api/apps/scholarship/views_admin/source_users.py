@@ -38,6 +38,13 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 ALREADY_STAFF = ("This email address already has a HalaTuju staff or source sign-in, so it can't "
                  "be invited for a source. Ask HalaTuju support.")
 
+#: 409 for a source that already has an ACTIVE person, joined or waiting (one person per source,
+#: owner ruling 2026-11-08, Invitations I2). The source is the caller's own, so naming the way out
+#: confirms nothing they cannot already see on Sources.
+SOURCE_HAS_PERSON = ("This source already has a person who signs in for it, or one invited and "
+                     "waiting. Resend or cancel the waiting invitation, or remove the person on "
+                     "Sources, first.")
+
 
 def _error(code, http, message=None):
     return Response({'error': message or code, 'code': code}, status=http)
@@ -56,7 +63,8 @@ def invite_source(request, admin):
     `source` is the Sources row (with `sign_in` / `user_count`). Refusals: 403 not super /
     org_admin; 400 `bad_email`, `name_required`, `source_inactive`, `code_and_name_required`,
     `code_reserved`, `code_taken`, `organisation_required`; 404 `not_found` (a source outside the
-    caller's organisation); 409 `already_staff`; 500 `not_configured`; 502 `create_failed`.
+    caller's organisation); 409 `already_staff`, `source_has_person` (the source already has an
+    ACTIVE person, joined or waiting — one person per source, 2026-11-08); 500 `not_configured`; 502 `create_failed`.
     `source_id` wins when both shapes are sent.
     """
     from .. import source_invite
@@ -113,6 +121,8 @@ def invite_source(request, admin):
                                 make_source=make_source)
     if done.error == 'already_staff':
         return _error('already_staff', status.HTTP_409_CONFLICT, ALREADY_STAFF)
+    if done.error == 'source_has_person':
+        return _error('source_has_person', status.HTTP_409_CONFLICT, SOURCE_HAS_PERSON)
     if done.error == 'code_taken':
         return _error('code_taken', status.HTTP_400_BAD_REQUEST)
     if done.error:
@@ -164,7 +174,9 @@ def source_kind_extras(admin, org_id):
       newest invitation's status, and `manageable` (may this caller Resend / Revoke — computed by
       the same `source_invite.manageable` the endpoints enforce, so the screen cannot offer a
       button the server refuses). Admin and finance may read the tab, and act on nothing.
-    - `sources` — the ACTIVE sources the invite form may pick, with their sign-in state.
+    - `sources` — the ACTIVE sources the invite form may pick, with their sign-in state. One
+      person per source (I2, 2026-11-08): the form leaves `joined` out and greys `invited` (the
+      server refuses both, `source_has_person`).
 
     Fenced like the invitations: `org_id` is the caller's organisation, None for a super.
     """

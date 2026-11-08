@@ -79,7 +79,7 @@ from .comms_templates import (
 )
 from .letters import LETTER_KINDS, LETTER_LANGUAGES, Letter, LetterTemplate
 from .items import (
-    ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,
+    ITEM_STATE_CHOICES, ApplicationItem, Invitation, InvitationGift, ProgrammeApplicationItem,
     ProgrammeReferralSource,
 )
 from .spending import (
@@ -111,6 +111,9 @@ from .mentors import Mentor
 # Student maintenance S7b (2026-11-01) — models 73 and 74, NEW: a mentor's time with a scholar and
 # the meetings staff log. Point at ScholarshipApplication by string and at `Mentor`.
 from .mentors import MentorAssignment, MentoringSession
+# Invitations I4 (2026-11-08) — NEW: the gifts a mentor mentors in (no rows = every gift).
+# Points at `Mentor` and Programme.
+from .mentors import MentorGift
 # Common profile S3 (2026-10-31) — model 72, NEW: a staff member's own activity list. Points only at
 # `courses.PartnerAdmin` / `courses.PartnerOrganisation`, by string; the subject is an id, not an FK.
 from .staff_activity import StaffActivity, StaffActivitySubject, StaffActivityVerb

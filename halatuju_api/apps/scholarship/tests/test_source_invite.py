@@ -9,7 +9,10 @@ through the real endpoints:
   set-password opted in, the temp-password expiry job still sweeping a source user;
 - CHANGE ROLE: a staff invite of a source user's address never turns it into staff;
 - LOSE ACCESS: cancel, revoke, the source switched off;
-- the Sources API: Add retired (410), Edit locked once joined (409), `sign_in` / `user_count`;
+- the Sources API: Add retired (410), Edit locked once joined (409), `sign_in` / `user_count` /
+  `person` (Invitations I2);
+- one person per source (I2, 2026-11-08): a second invite while one is active is 409
+  `source_has_person`;
 - who may act: super and org_admin only; another organisation's source or user is 404.
 """
 import datetime
@@ -124,11 +127,9 @@ class TestInviteForAnExistingSource(_Base):
         self.assertFalse(Invitation.objects.get(pk=r.json()['id']).credential_issued)
         self.assertIn('You already have a HalaTuju account', mail.outbox[-1].body)
 
-    def test_several_people_may_sign_in_for_one_source(self):
-        self.invite()
-        r = self.invite(email='ravi@smc.example.org', name='Ravi', new_login=('uid-2', False, None))
-        self.assertEqual(r.status_code, 201, r.content)
-        self.assertEqual(r.json()['source']['user_count'], 2)
+    # ⚠ CHANGED ON PURPOSE (Invitations I2, owner ruling 2026-11-08): one person per source. Was
+    # `test_several_people_may_sign_in_for_one_source` (the 2026-10-30 S2 ruling); see
+    # `TestOnePersonPerSource` for the refusal.
 
     def test_a_super_invites_for_any_organisations_source(self):
         r = self.invite(self.super, source_id=self.other_source.pk)
@@ -519,3 +520,147 @@ class TestTheSourcesApi(_Base):
         self.assertEqual((r.status_code, r.json()['show_in_apply']), (200, False), r.content)
         self.source.refresh_from_db()
         self.assertEqual(self.source.phone, '012')
+
+
+class TestOnePersonPerSource(_Base):
+    """Invitations I2 (owner ruling 2026-11-08, open point A): a source with an ACTIVE person —
+    joined or still waiting — is refused a second invitation; a switched-off one holds nothing."""
+
+    def revoke(self, user):
+        with patch(KILL, return_value='killed'):
+            r = authed_client(self.lead).post(f'/api/v1/admin/source-users/{user.pk}/revoke/')
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def second(self, **body):
+        body.setdefault('email', 'ravi@smc.example.org')
+        body.setdefault('name', 'Ravi')
+        return self.invite(new_login=('uid-2', False, None), **body)
+
+    def assert_refused(self, r):
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'source_has_person'), r.content)
+        self.assertFalse(PartnerAdmin.objects.filter(email='ravi@smc.example.org').exists())
+        self.assertFalse(Invitation.objects.filter(email='ravi@smc.example.org').exists())
+
+    def test_a_waiting_person_holds_the_source(self):
+        self.invite()
+        self.assert_refused(self.second())
+        self.assert_refused(self.second(caller=self.super))
+
+    def test_a_joined_person_holds_the_source(self):
+        self.invite()
+        self.sign_in(self.user())
+        sent = len(mail.outbox)
+        self.assert_refused(self.second())
+        self.assertEqual(len(mail.outbox), sent)
+
+    def test_a_different_source_is_unaffected(self):
+        self.invite()
+        other = make_source(organisation=self.org, code='kovil', name='Kovil')
+        r = self.second(source_id=other.pk)
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(self.user('ravi@smc.example.org').source_id, other.pk)
+
+    def test_a_switched_off_joined_person_may_be_brought_back(self):
+        self.invite()
+        user = self.user()
+        self.sign_in(user)
+        self.revoke(user)
+        r = self.invite(name='Devi R')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual((r.json()['reactivated'], r.json()['admin_id']), (True, user.pk))
+        # …and, back, she holds the source again.
+        self.assert_refused(self.second())
+
+    def test_a_cancelled_waiting_person_may_be_invited_again(self):
+        self.invite()
+        user = self.user()
+        # As `test_a_cancelled_invitee_is_brought_back_with_a_fresh_password`: the login side's
+        # own reuse is not what this pins.
+        PartnerAdmin.objects.filter(pk=user.pk).update(supabase_user_id=None)
+        self.revoke(user)
+        r = self.invite(new_login=('uid-fresh', False, None))
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()['admin_id'], user.pk)
+
+    def test_a_different_address_may_be_invited_once_nobody_is_active(self):
+        self.invite()
+        user = self.user()
+        self.sign_in(user)
+        self.revoke(user)
+        r = self.second()
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()['source']['user_count'], 1)
+
+
+class TestTheSourcesPerson(_Base):
+    """Invitations I2: each Sources row names its ACTIVE person, with `manageable` for Remove."""
+
+    def rows(self, caller=None):
+        r = authed_client(caller or self.lead).get(SOURCES)
+        self.assertEqual(r.status_code, 200, r.content)
+        return {row['code']: row for row in r.json()['sources']}
+
+    def test_a_source_with_nobody_has_no_person(self):
+        self.assertIsNone(self.rows()['smc']['person'])
+
+    def test_a_waiting_person_then_a_joined_one(self):
+        self.invite()
+        user = self.user()
+        self.assertEqual(self.rows()['smc']['person'], {
+            'id': user.pk, 'name': 'Devi', 'email': 'devi@smc.example.org', 'joined_at': None,
+            'manageable': True, 'phone': None})
+        self.sign_in(user)
+        user.refresh_from_db()
+        person = self.rows()['smc']['person']
+        self.assertEqual(person['joined_at'], user.first_seen_at.isoformat())
+        self.assertEqual(self.rows()['smc']['sign_in'], 'joined')
+
+    def test_a_switched_off_person_is_not_the_sources_person(self):
+        make_admin('source_partner', owning_org=self.org, source=self.source, email='old@x.org',
+                   is_active=False, first_seen_at=timezone.now())
+        self.assertIsNone(self.rows()['smc']['person'])
+
+    def test_an_admin_sees_the_person_and_may_not_remove_them(self):
+        self.invite()
+        admin = make_admin('admin', owning_org=self.org)
+        person = self.rows(admin)['smc']['person']
+        self.assertEqual((person['email'], person['manageable']), ('devi@smc.example.org', False))
+
+    def test_a_super_may_manage_any_organisations_person(self):
+        self.invite(self.super, source_id=self.other_source.pk, email='far@far.example.org')
+        self.assertTrue(self.rows(self.super)['far']['person']['manageable'])
+        # …and the other organisation's lead never sees that source at all.
+        self.assertNotIn('far', self.rows())
+
+    def test_the_persons_own_phone_moved_here_with_them(self):
+        # Common profile S2 (owner, 2026-10-31): the inviting organisation sees it — on Sources now
+        # that the Invitations "Signed in" table is gone.
+        from apps.scholarship.models import StaffProfile
+        person = make_admin('source_partner', owning_org=self.org, source=self.source, name='Audrey')
+        StaffProfile.objects.create(partner_admin=person, phone='016-845 1270')
+        self.assertEqual(self.rows()['smc']['person']['phone'], '016-845 1270')
+
+    def test_the_patch_answer_carries_the_person_too(self):
+        self.invite()
+        r = authed_client(self.lead).patch(f'{SOURCES}{self.source.pk}/', {'show_in_apply': False},
+                                           format='json')
+        self.assertEqual(r.json()['person']['email'], 'devi@smc.example.org')
+
+    def test_one_query_for_every_rows_person(self):
+        from apps.scholarship.models import StaffProfile
+        for i in range(3):
+            src = make_source(organisation=self.org, code=f's{i}', name=f'S{i}')
+            p = make_admin('source_partner', owning_org=self.org, source=src, email=f'p{i}@x.org')
+            StaffProfile.objects.create(partner_admin=p, phone=f'011-000 000{i}')
+        client = authed_client(self.lead)
+        client.get(SOURCES)   # warm
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as few:
+            client.get(SOURCES)
+        src = make_source(organisation=self.org, code='s9', name='S9')
+        p = make_admin('source_partner', owning_org=self.org, source=src, email='p9@x.org')
+        StaffProfile.objects.create(partner_admin=p, phone='011-000 0009')
+        with CaptureQueriesContext(connection) as more:
+            client.get(SOURCES)
+        self.assertEqual(len(more), len(few))
