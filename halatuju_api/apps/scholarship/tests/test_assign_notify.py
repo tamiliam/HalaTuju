@@ -1,7 +1,7 @@
 """A2.3 / TD-519 — the assignment's two emails are sent after the request, by the assign-emails cron.
 
 ``assign_reviewer`` writes its AssignmentEvent queued (``notify_state='pending'``) and sends nothing;
-``assign_notify.run_pending`` sends the reviewer's and the student's emails with the same gates and
+``assign_notify.send_pending`` sends the reviewer's and the student's emails with the same gates and
 content. Every email function is mocked: no real mail is sent.
 """
 import io
@@ -49,7 +49,7 @@ class TestAssignNotifyQueue(TestCase):
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
             out = io.StringIO()
             call_command('send_pending_assign_emails', stdout=out)
-            assign_notify.run_pending()                     # a second run sends nothing more
+            assign_notify.send_pending()                     # a second run sends nothing more
         self.assertIn('sent=1', out.getvalue())
         rev.assert_called_once()
         kw = rev.call_args.kwargs
@@ -77,7 +77,7 @@ class TestAssignNotifyQueue(TestCase):
     def test_the_student_flag_is_still_asked(self):
         self._assign(self.reviewer)
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
-            assign_notify.run_pending()
+            assign_notify.send_pending()
         rev.assert_called_once()
         stu.assert_not_called()
 
@@ -88,7 +88,7 @@ class TestAssignNotifyQueue(TestCase):
         self._assign(None)
         self.assertEqual(AssignmentEvent.objects.filter(notify_state='pending').count(), 0)
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
-            self.assertEqual(assign_notify.run_pending()['sent'], 0)
+            self.assertEqual(assign_notify.send_pending()['sent'], 0)
         rev.assert_not_called()
         stu.assert_not_called()
 
@@ -96,14 +96,14 @@ class TestAssignNotifyQueue(TestCase):
         AssignmentEvent.objects.create(application=self.app, to_admin=self.reviewer,
                                        by_email='x@example.test')   # notify_state '' (sent inline)
         with patch(REVIEWER_MAIL) as rev:
-            self.assertEqual(assign_notify.run_pending()['sent'], 0)
+            self.assertEqual(assign_notify.send_pending()['sent'], 0)
         rev.assert_not_called()
 
     def test_a_reassignment_before_the_cron_mails_only_the_current_reviewer(self):
         self._assign(self.reviewer)
         self._assign(self.reviewer2)
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
-            counts = assign_notify.run_pending()
+            counts = assign_notify.send_pending()
         self.assertEqual((counts['sent'], counts['stale']), (1, 1))
         self.assertEqual([c.kwargs['to_email'] for c in rev.call_args_list], ['kavin@example.test'])
         self.assertEqual([c.kwargs['reviewer_name'] for c in stu.call_args_list], ['Kavin'])
@@ -115,7 +115,7 @@ class TestAssignNotifyQueue(TestCase):
         self.app.status = 'profile_complete'
         self._assign(None)
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL) as stu:
-            counts = assign_notify.run_pending()
+            counts = assign_notify.send_pending()
         self.assertEqual((counts['sent'], counts['stale']), (0, 1))
         rev.assert_not_called()
         stu.assert_not_called()
@@ -130,14 +130,14 @@ class TestAssignNotifyQueue(TestCase):
         AssignmentEvent.objects.filter(pk=event.id).update(
             notify_claimed_at=now - assign_notify.STALE_CLAIM - timedelta(minutes=1))
         with patch(REVIEWER_MAIL) as rev, patch(STUDENT_MAIL):
-            self.assertEqual(assign_notify.run_pending()['sent'], 1)
+            self.assertEqual(assign_notify.send_pending()['sent'], 1)
         rev.assert_called_once()
 
     def test_a_failed_email_is_logged_and_the_other_still_goes(self):
         self._assign(self.reviewer)
         with patch(REVIEWER_MAIL, side_effect=RuntimeError('brevo')), patch(STUDENT_MAIL) as stu:
-            self.assertEqual(assign_notify.run_pending()['sent'], 1)
-            self.assertEqual(assign_notify.run_pending()['sent'], 0)       # never re-sent
+            self.assertEqual(assign_notify.send_pending()['sent'], 1)
+            self.assertEqual(assign_notify.send_pending()['sent'], 0)       # never re-sent
         stu.assert_called_once()
 
     def test_a_failing_run_retries_then_is_marked_failed(self):
@@ -153,4 +153,4 @@ class TestAssignNotifyQueue(TestCase):
     def test_the_cron_never_raises(self):
         self._assign(self.reviewer)
         with patch('apps.scholarship.assign_notify.send_one', side_effect=RuntimeError('db')):
-            self.assertEqual(assign_notify.run_pending()['error'], 1)
+            self.assertEqual(assign_notify.send_pending()['error'], 1)

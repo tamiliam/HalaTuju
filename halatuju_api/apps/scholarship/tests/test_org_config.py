@@ -697,7 +697,7 @@ class TestPerOrgReviewClocks(TestCase):
         from apps.scholarship import assign_notify
         with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as sent:
             services.assign_reviewer(app, reviewer=other, by_admin=superadmin)
-            assign_notify.run_pending()   # A2.3: the assign-emails cron sends it
+            assign_notify.send_pending()   # A2.3: the assign-emails cron sends it
         expected = (timezone.now() + timedelta(days=7)).date().strftime('%d %b %Y')
         self.assertEqual(sent.call_args.kwargs['review_by'], expected)
 

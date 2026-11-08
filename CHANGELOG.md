@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: G6 merge - standards fixes (2026-11-08)
+
+Merge of a21, a22, a23 onto g6a (not pushed). The four `admin/me/` routes move unchanged from `urls.py` (602 lines) to the new `urls_me.py`; `assign_notify.run_pending` is renamed `send_pending` so `run_pending` has two homes, not three. No behaviour change.
+
 ### refactor: the sponsor signup memberships move out of sponsorship.py (2026-11-08)
 
 Branch invitations-consistency (not pushed). The merge of main put `apps/scholarship/sponsorship.py` at 1040 lines, over its `oversize_files` allowance (999 + 20). `signup_programmes_for(sponsor, *, freeze=False)`, `open_signup_memberships` and `settle_signup_memberships` move, unchanged, to the new `apps/scholarship/sponsor_signup.py` (65 lines); `sponsorship.py` is now 988. The per-gift writers (`sync_account_membership`, `set_programme_membership`, the `rejected_by_hand_at` stamp and their `select_for_update`) stay in `sponsorship.py`. No re-export: the callers (`views_sponsor.py` registration, `views_admin/sponsors.py` vetting) and three test files import `sponsor_signup`; comments, the role matrix and the architecture map name the new home. No behaviour change.

@@ -120,7 +120,7 @@ from .views_admin import (
     AdminInterviewSlotsView,
     AdminResolutionItemActionView,
     AdminRunVisionView, AdminVerdictMetricsView,
-    AdminMeActivityView, AdminMePasswordView, AdminMePhotoView, AdminMeView, ReviewerProfileView,
+    ReviewerProfileView,
     AdminSponsorListView,
     AdminSponsorPendingCountView,
     AdminSponsorDetailView,
@@ -214,6 +214,7 @@ from .views_admin import (
     AdminSponsorTermsValidateView, AdminSponsorTermsPublishView,
     AdminSponsorTermsPreviewView, AdminSponsorTermsImportDocxView, AdminApplicationWitnessView,
 )
+from .urls_me import urlpatterns as ME_URLS   # admin/me/… own account (common profile S1-S4)
 from .urls_source import urlpatterns as SOURCE_CONSOLE_URLS   # admin/source/… (source sign-in)
 from .urls_letters import urlpatterns as LETTERS_URLS   # letters (maintenance S6b)
 from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S7a)
@@ -594,9 +595,5 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
-    path('admin/me/', AdminMeView.as_view()),   # common profile S1: own account, every role
-    path('admin/me/password/', AdminMePasswordView.as_view()),   # own password, current one required
-    path('admin/me/photo/', AdminMePhotoView.as_view()),   # S2: own photo (multipart POST / DELETE)
-    path('admin/me/activity/', AdminMeActivityView.as_view()),   # S4: own activity list, every role
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),   # F9a: graduation thank-you moderation queue
-] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + AWARD_URLS
+] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + AWARD_URLS

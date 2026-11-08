@@ -80,7 +80,7 @@ class TestReviewerAssignment(TestCase):
         self._auth('super-uid')
         self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
         self.assertFalse(mock_send.called)          # A2.3: never inside the request
-        assign_notify.run_pending()                 # the assign-emails cron
+        assign_notify.send_pending()                 # the assign-emails cron
         self.assertTrue(mock_send.called)
         kw = mock_send.call_args.kwargs
         self.assertEqual(kw['reviewer_name'], 'Reviewer')
@@ -322,7 +322,7 @@ class TestReviewerAssignment(TestCase):
         with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
             self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
             m.assert_not_called()                   # A2.3: never inside the request
-            assign_notify.run_pending()             # the assign-emails cron
+            assign_notify.send_pending()             # the assign-emails cron
         m.assert_called_once_with(
             to_email='rev@example.com', reviewer_name='Reviewer',
             ref=pool_ref(self.app.id), programme='B40', review_by=ANY)

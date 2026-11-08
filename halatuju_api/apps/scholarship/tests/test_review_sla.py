@@ -141,7 +141,7 @@ class EveryCallerReadsTheOneClockTests(TestCase):
         # no longer escapes); what this pins is unchanged — the email ASKS the one clock.
         assign_reviewer(app, reviewer=self.other_reviewer, by_admin=self.super)
         with self._boom() as boom:
-            assign_notify.run_pending()
+            assign_notify.send_pending()
         self.assertTrue(boom.called)
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)

@@ -16,6 +16,6 @@ class Command(BaseCommand):
     help = "Send the reviewer + student emails for queued assignments (A2.3)."
 
     def handle(self, *args, **options):
-        counts = assign_notify.run_pending()
+        counts = assign_notify.send_pending()
         self.stdout.write(self.style.SUCCESS(
             'Assignment emails: ' + ', '.join(f'{k}={v}' for k, v in counts.items())))

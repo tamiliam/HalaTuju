@@ -176,7 +176,7 @@ class TestTheSendersFixedOn20260818(TestCase):
         app = self._app('assigned', reviewer=first)
         services.assign_reviewer(app, reviewer=second, by_admin=actor)
         from apps.scholarship import assign_notify
-        assign_notify.run_pending()   # A2.3: the assign-emails cron sends (and bills) it
+        assign_notify.send_pending()   # A2.3: the assign-emails cron sends (and bills) it
         rows = self._email_orgs()
         self.assertIn(('send_reviewer_assigned_email', self.org.id), rows)
         self.assertNotIn(None, [org for _, org in rows])

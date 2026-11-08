@@ -148,7 +148,7 @@ def send_one(event_id):
     return 'sent'
 
 
-def run_pending(limit=BATCH):
+def send_pending(limit=BATCH):
     """The cron body: send up to ``limit`` queued assignments' emails, oldest first. Never raises."""
     counts = {'sent': 0, 'stale': 0, 'retry': 0, 'failed': 0, 'not_claimed': 0, 'error': 0}
     now = timezone.now()
