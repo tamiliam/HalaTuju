@@ -1,13 +1,16 @@
 """Request #66 (MODEL_VERSION 1.26.0): IIUM / UIAM writes its offer letters in ENGLISH.
 
 Doc 5105's genuine IIUM letter read `not_offer_letter` ("1/10 polytechnic signatures") because the UA family
-knew IIUM only by its Malay name and Malay wording. Every letter below is SYNTHETIC, written in the standard
-English wording of an IIUM offer and of IIUM's public admission booklet: no name, IC, address or programme of
-any applicant. The private-arm and private-college letters are invented to prove the blocks still hold.
+knew IIUM only by its Malay name and Malay wording. Every page below is SYNTHETIC, built from the REAL fixed
+wording of that letter (its stored text layer, read by the review of fc7eef0b) and of IIUM's public admission
+booklet: no name, IC, address or programme of any applicant. The real letter has NO title; its offer is the
+sentence "... has accepted and approved your application for the following programme ...". The private and
+non-offer pages are invented to prove the English reading opens only on IIUM's own unconditional offer.
 """
 from django.test import SimpleTestCase, TestCase
 
 from apps.scholarship.genuineness import assess, signature_genuineness
+from apps.scholarship.genuineness.offer_reading import _folded_lines, private_proof
 from apps.scholarship.genuineness.offer_signatures import UA_OFFER_SIGNATURES_EN, english_ua_lists
 from apps.scholarship.genuineness.results_doc import (MODEL_VERSION, UA_OFFER_SIGNATURES, _OFFER_LISTS, _UA_NAMES,
                                                       _norm_fold_upper_alnum, _private_arm_offer)
@@ -15,38 +18,63 @@ from apps.scholarship.tests import test_corpus_gaps_c1 as c1
 from apps.scholarship.tests import test_corpus_gaps_c2 as c2
 from apps.scholarship.tests import test_doc_signatures as fixtures
 
+# ── IIUM's offer, in its real wording (page 1: letterhead + offer; page 3: terms + registration) ──
 _HEAD = """INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA
-ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)
-Jalan Gombak, 53100 Kuala Lumpur
-Our Ref : AMAD/UG/2024/0000
+Academic Management and Admission Division
+P.O. Box 10, 50728 Kuala Lumpur
+Our Ref : IIUM/AMAD/0000
 Date : 1 August 2024
 """
-_BODY = """Name : CALON CONTOH
-Assalamualaikum warahmatullahi wabarakatuh
-We are pleased to inform you that you have been offered a place in the following programme:
-Programme : BACHELOR OF HUMAN SCIENCES (HONOURS)
-Kulliyyah : Kulliyyah of Contoh Studies
-Mode of Study : Full Time
-Registration Date : 7 September 2024
-Registration Venue : IIUM GOMBAK
+_P1 = """Name : CALON CONTOH
+Dear Sir / Madam,
+We are pleased to inform you that the International Islamic University Malaysia (IIUM) has accepted and approved \
+your application for the following programme in Semester 1, 2024/2025:
+PROGRAMME : BACHELOR OF CONTOH STUDIES (HONOURS)
+KULLIYYAH : KULLIYYAH OF CONTOH
 Tuition Fee : RM510.00 per semester
-This offer is valid for one (1) year from the date of issuance.
+"""
+_P3 = """TERMS AND CONDITIONS OF THE OFFER
+1. This offer is valid for one (1) year only from the date of issuance.
+2. This offer has to be read together with the Terms and Conditions of the Admission Offer and Registration.
+3. The University reserves the right to revoke the Offer Letter.
+Registration Date : 7 September 2024
+We hope that you will accept this offer and join us.
 Yours sincerely,
 Director
 Academic Management and Admission Division
 """
-IIUM_OFFER = _HEAD + 'OFFER OF ADMISSION TO THE BACHELOR DEGREE PROGRAMME FOR SEMESTER 1, 2024/2025\n' + _BODY
-# The title alone on its line, the programme on the next (the fold joins them: "OFFER OF ADMISSION BACHELOR …").
-IIUM_BARE_TITLE = _HEAD + 'OFFER OF ADMISSION\n' + _BODY
-# The SMALLEST English letter that clears the band — what doc 5105's stored read is known to hold: the name,
-# AMAD (its stored issuer) and the offer title. 3 + 1 + 3 = 7 of 10.
-IIUM_MINIMAL = ('INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA\nACADEMIC MANAGEMENT AND ADMISSION DIVISION\n'
-                'OFFER OF ADMISSION FOR SEMESTER 1, 2024/2025\nProgramme : BACHELOR OF CONTOH (HONOURS)\n')
+IIUM_OFFER = _HEAD + _P1 + _P3
+IIUM_UNCONDITIONAL = _HEAD + 'UNCONDITIONAL OFFER OF ADMISSION\n' + _P1 + _P3
 # IIUM's own Centre for Foundation Studies (its public foundation, a unit of the university).
-IIUM_CFS = IIUM_OFFER.replace('ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)',
-                              'CENTRE FOR FOUNDATION STUDIES\nACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)')
+IIUM_CFS = IIUM_OFFER.replace('Academic Management and Admission Division\nP.O.',
+                              'Centre for Foundation Studies\nAcademic Management and Admission Division\nP.O.')
 
-# ── Not offers ────────────────────────────────────────────────────────────────────────────
+# ── IIUM's pages that are NOT its unconditional offer ─────────────────────────────────────
+_SENTENCE = 'has accepted and approved your application for the following programme'
+IIUM_CONDITIONAL = _HEAD + 'CONDITIONAL OFFER OF ADMISSION\n' + _P1 + _P3
+IIUM_CONDITIONAL_BRACKET = _HEAD + 'OFFER OF ADMISSION (CONDITIONAL)\n' + _P1 + _P3
+IIUM_CONDITIONAL_SPLIT = _HEAD + 'CONDITIONAL\nOFFER OF ADMISSION\n' + _P1 + _P3
+IIUM_CONDITIONAL_NO_SENTENCE = (_HEAD + 'CONDITIONAL OFFER OF ADMISSION\nName : CALON CONTOH\n'
+                                'PROGRAMME CODE : UY0000000\n' + _P3)
+IIUM_PROVISIONAL = _HEAD + 'PROVISIONAL OFFER OF ADMISSION\n' + _P1 + _P3
+IIUM_NOTIFICATION = _HEAD + 'NOTIFICATION OF ADMISSION\n' + _P1 + _P3
+IIUM_REJECTION_FORM = _HEAD + """REJECTION OF OFFER OF ADMISSION TO IIUM
+Name : CALON CONTOH
+I hereby reject the offer of admission to the programme stated in the Offer Letter.
+This offer is valid for one (1) year only from the date of issuance.
+Registration Date : 7 September 2024
+"""
+IIUM_ACCEPTANCE_FORM = _HEAD + """ACCEPTANCE FORM
+Name : CALON CONTOH
+I accept the offer of admission to the programme and will register on the Registration Date stated.
+This offer is valid for one (1) year only from the date of issuance.
+"""
+IIUM_UNSUCCESSFUL = _HEAD + """Name : CALON CONTOH
+Dear Sir / Madam,
+We regret to inform you that your application for offer of admission for Semester 1, 2024/2025 was unsuccessful.
+This offer is valid for one (1) year only from the date of issuance.
+Academic Management and Admission Division
+"""
 # IIUM's ADMISSION BOOKLET (sent with the offer): the name, AMAD and "offer of admission" in its sentences.
 IIUM_BOOKLET = """STUDENT ADMISSION BOOKLET
 UNDERGRADUATE PROGRAMME
@@ -56,38 +84,23 @@ Congratulations to all for being selected to join the International Islamic Univ
 You are required to fill the ONLINE acceptance form within the stipulated date as stated in the ONLINE
 OFFER LETTER webpage. Otherwise this offer of admission will be automatically revoked.
 PLEASE PRINT THE OFFER LETTER AND KEEP IT SAFE.
-Please refer to your offer letter to check the registration venue.
 """
-IIUM_CONDITIONAL = IIUM_OFFER.replace('OFFER OF ADMISSION TO', 'CONDITIONAL OFFER OF ADMISSION TO')
-IIUM_PROVISIONAL = IIUM_BARE_TITLE.replace('OFFER OF ADMISSION\n', 'PROVISIONAL OFFER OF ADMISSION\n')
-IIUM_NOTIFICATION = IIUM_OFFER.replace('OFFER OF ADMISSION TO THE BACHELOR DEGREE PROGRAMME',
-                                       'NOTIFICATION OF ADMISSION RESULT FOR THE BACHELOR DEGREE PROGRAMME')
 
-# ── Private letters that merely MENTION IIUM ──────────────────────────────────────────────
-_PRIVATE_BODY = """Our Ref : MC/ADM/2024/01
-Date : 1 August 2024
-Name : CALON CONTOH
-OFFER OF ADMISSION TO DIPLOMA IN BUSINESS STUDIES
-We are pleased to offer you a place. The programme is validated by International Islamic University Malaysia.
-Registration Date : 7 September 2024
-Programme Code : DBS01
-This offer is valid for one (1) year from the date of issuance.
-Yours sincerely,
-Registrar
-"""
-PRIVATE_MENTIONS_IIUM = 'MERCU INTERNATIONAL COLLEGE\nJalan Contoh, 43000 Kajang\n' + _PRIVATE_BODY
-PRIVATE_SDN_BHD = 'MERCU EDUCATION SDN BHD\nJalan Contoh, 43000 Kajang\n' + _PRIVATE_BODY
-PRIVATE_PARTNER = ('MERCU COLLEGE\nPartner of International Islamic University Malaysia\nJalan Contoh, 43000 Kajang\n'
-                   + _PRIVATE_BODY)
-# IIUM's fee-paying arms, on IIUM's own name and office.
-IIUM_ACADEMY = IIUM_OFFER.replace('ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)\n',
-                                  'IIUM ACADEMY OF GRADUATE & PROFESSIONAL STUDIES\n'
-                                  'ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)\n')
-IIUM_CENPACE = IIUM_OFFER.replace('ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)\n',
-                                  'CENTRE FOR PROFESSIONAL AND CONTINUING EDUCATION (CENPACE)\n'
-                                  'ACADEMIC MANAGEMENT AND ADMISSION DIVISION (AMAD)\n')
-IIUM_SDN_BHD = IIUM_OFFER.replace('Jalan Gombak', 'IIUM Contoh Services Sdn Bhd, Jalan Gombak')
-IIUM_SATU = IIUM_OFFER.replace('OFFER OF ADMISSION TO', 'SALURAN TERBUKA OFFER OF ADMISSION TO')
+# ── Private letters that cite IIUM, its office, or its sentence ───────────────────────────
+_PRIVATE_REF = 'Jalan Contoh, 43000 Kajang\nOur Ref : MUC/0000\nDate : 1 August 2024\n'
+PRIVATE_COLLABORATION = ('MERCU UNIVERSITY COLLEGE\nIn collaboration with International Islamic University '
+                         'Malaysia, Academic Management and Admission Division\n' + _PRIVATE_REF + _P1 + _P3)
+PRIVATE_PROCESSED_BY_AMAD = ('MERCU UNIVERSITY COLLEGE\n' + _PRIVATE_REF + 'Name : CALON CONTOH\nDear Sir / Madam,\n'
+                             'The International Islamic University Malaysia (IIUM) ' + _SENTENCE + ':\n'
+                             'PROGRAMME : DIPLOMA IN CONTOH\nAdmission is processed with the Academic Management '
+                             'and Admission Division of IIUM.\n' + _P3)
+PRIVATE_SDN_BHD = 'MERCU EDUCATION SDN BHD\n' + _PRIVATE_REF + _P1 + _P3
+# IIUM's fee-paying arms, on IIUM's own name, office and sentence.
+IIUM_ACADEMY = IIUM_OFFER.replace('P.O. Box 10', 'IIUM Academy of Graduate & Professional Studies\nP.O. Box 10')
+IIUM_CENPACE = IIUM_OFFER.replace('P.O. Box 10', 'Centre for Professional and Continuing Education (CENPACE)\n'
+                                                 'P.O. Box 10')
+IIUM_SDN_BHD = IIUM_OFFER.replace('P.O. Box 10', 'IIUM Contoh Services Sdn Bhd, P.O. Box 10')
+IIUM_SATU = IIUM_OFFER.replace('Semester 1', 'Saluran Terbuka, Semester 1')
 
 # The 1.25.0 UA family, frozen here, so "every Malay letter scores as before" is a diff, not a re-typed number.
 _UA_1_25_0 = [
@@ -111,19 +124,15 @@ def _g(text):
 
 class IIUMEnglishOfferIsGenuine(SimpleTestCase):
 
-    def test_an_english_iium_offer_is_genuine(self):
+    def test_iiums_real_wording_is_genuine(self):
+        """Name 3 + sentence 3 + office 1 + "This offer is valid for" 1 + "Registration Date" 1 = 9 of 10."""
         g = _g(IIUM_OFFER)
         self.assertEqual((g['status'], g['type'], g['probability'], g['model_version']),
                          ('genuine', 'ua_offer', 0.9, MODEL_VERSION))
-        self.assertEqual(set(g['missing']), {'Program / Kod Program'})
+        self.assertEqual(g['missing'], ['Program / Kod Program'])
 
-    def test_a_bare_title_line_still_reads_as_the_offer_line(self):
-        self.assertIn('offer/admission line', _g(IIUM_BARE_TITLE)['present'])
-        self.assertEqual(_g(IIUM_BARE_TITLE)['status'], 'genuine')
-
-    def test_the_smallest_english_letter_clears_the_band(self):
-        g = _g(IIUM_MINIMAL)
-        self.assertEqual((g['status'], g['probability']), ('genuine', 0.7))
+    def test_an_unconditional_offer_is_not_a_conditional_one(self):
+        self.assertEqual((_g(IIUM_UNCONDITIONAL)['status'], _g(IIUM_UNCONDITIONAL)['probability']), ('genuine', 0.9))
 
     def test_iiums_foundation_centre_is_iium(self):
         self.assertEqual(_g(IIUM_CFS)['status'], 'genuine')
@@ -135,39 +144,40 @@ class IIUMEnglishOfferIsGenuine(SimpleTestCase):
         self.assertEqual(MODEL_VERSION, '1.26.0')
 
 
-class EnglishNonOffersAreNotGenuine(SimpleTestCase):
+class IIUMNonOffersKeepThe1250Call(SimpleTestCase):
+    """The English reading stays CLOSED: each page scores exactly as under 1.25.0 (not_offer_letter)."""
 
-    def test_the_admission_booklet_is_not_the_offer(self):
-        g = _g(IIUM_BOOKLET)
-        self.assertNotIn('offer/admission line', g['present'])
-        self.assertEqual((g['status'], g['probability']), ('suspect', 0.4))
+    PAGES = {'conditional title': IIUM_CONDITIONAL, 'conditional in brackets': IIUM_CONDITIONAL_BRACKET,
+             'conditional split over two lines': IIUM_CONDITIONAL_SPLIT,
+             'conditional without the sentence': IIUM_CONDITIONAL_NO_SENTENCE, 'provisional': IIUM_PROVISIONAL,
+             'notification': IIUM_NOTIFICATION, 'rejection form': IIUM_REJECTION_FORM,
+             'acceptance form': IIUM_ACCEPTANCE_FORM, 'unsuccessful': IIUM_UNSUCCESSFUL, 'booklet': IIUM_BOOKLET}
 
-    def test_a_conditional_or_provisional_offer_is_not_the_offer_line(self):
-        for name, text in (('conditional', IIUM_CONDITIONAL), ('provisional', IIUM_PROVISIONAL)):
+    def test_none_is_genuine_and_none_reads_the_english_twins(self):
+        for name, text in self.PAGES.items():
             with self.subTest(name):
-                g = _g(text)
-                self.assertNotIn('offer/admission line', g['present'])
-                self.assertNotEqual(g['status'], 'genuine')
-
-    def test_a_notification_is_not_the_offer_line(self):
-        self.assertNotIn('offer/admission line', _g(IIUM_NOTIFICATION)['present'])
-        self.assertNotEqual(_g(IIUM_NOTIFICATION)['status'], 'genuine')
+                tn = _norm_fold_upper_alnum(text)
+                self.assertEqual(english_ua_lists(_OFFER_LISTS, tn, text), (_OFFER_LISTS, tn))
+                self.assertEqual(_g(text)['status'], 'not_offer_letter')
 
 
 class PrivateLettersStillRefused(SimpleTestCase):
 
-    def test_a_private_college_that_cites_iium_does_not_gain_its_name(self):
-        g = _g(PRIVATE_MENTIONS_IIUM)
+    def test_a_private_college_in_collaboration_with_iium_is_refused(self):
+        g = _g(PRIVATE_COLLABORATION)
         self.assertNotIn('public university (UA) name', g['present'])
-        self.assertNotEqual(g['status'], 'genuine')
-
-    def test_a_private_company_letter_naming_iium_is_vetoed(self):
-        g = _g(PRIVATE_SDN_BHD)
         self.assertEqual(g['status'], 'not_offer_letter')
 
-    def test_a_private_partner_letterhead_is_blocked(self):
-        g = _g(PRIVATE_PARTNER)
-        self.assertNotEqual(g['status'], 'genuine')
+    def test_collaboration_on_a_letterhead_is_tie_up_proof(self):
+        self.assertEqual(private_proof(_folded_lines(PRIVATE_COLLABORATION)), 'tie-up wording')
+
+    def test_a_private_college_whose_admission_amad_processes_is_refused(self):
+        g = _g(PRIVATE_PROCESSED_BY_AMAD)
+        self.assertNotIn('public university (UA) name', g['present'])
+        self.assertEqual(g['status'], 'not_offer_letter')
+
+    def test_a_private_company_with_iiums_sentence_is_vetoed(self):
+        self.assertEqual(_g(PRIVATE_SDN_BHD)['status'], 'not_offer_letter')
 
     def test_iiums_fee_paying_arms_stay_not_an_offer(self):
         for name, text in (('IIUM Academy', IIUM_ACADEMY), ('CENPACE', IIUM_CENPACE),
@@ -204,16 +214,16 @@ class EveryOtherLetterScoresAsUnder1250(SimpleTestCase):
         texts.update({'ILKBS_OFFER': c1.ILKBS_OFFER, 'FORGED_UNNAMED': c1.FORGED_UNNAMED,
                       'UITM_TEXT_LAYER': c1.UITM_TEXT_LAYER, 'KPTM': c1.KPTM, 'UNIKL': c1.UNIKL,
                       'UITM_OFFER': c2.UITM_OFFER, 'UM_PEMAKLUMAN': c2.UM_PEMAKLUMAN,
-                      'PRIVATE_MENTIONS_IIUM': PRIVATE_MENTIONS_IIUM, 'PRIVATE_PARTNER': PRIVATE_PARTNER,
+                      'PRIVATE_COLLABORATION': PRIVATE_COLLABORATION,
+                      'PRIVATE_PROCESSED_BY_AMAD': PRIVATE_PROCESSED_BY_AMAD,
                       **{f'probe {k}': v for k, v in c1.REVIEW_PROBES.items()}})
         for name, text in texts.items():
             with self.subTest(name):
                 tn = _norm_fold_upper_alnum(text)
-                self.assertEqual(english_ua_lists(_OFFER_LISTS, tn), (_OFFER_LISTS, tn))
+                self.assertEqual(english_ua_lists(_OFFER_LISTS, tn, text), (_OFFER_LISTS, tn))
 
     def test_a_private_english_letter_gains_nothing_from_english_wording(self):
-        """Private colleges write English: the English offer title / registration / finality words score
-        nothing on a page that is not IIUM's, so a private letter stays not_offer_letter (Swinburne)."""
+        """Private colleges write English: the English twins score nothing on a page that is not IIUM's."""
         from apps.scholarship.genuineness.results_doc import score_signatures
         self.assertEqual(_g(fixtures.PRIVATE_UNIV_OFFER)['status'], 'not_offer_letter')
         r = score_signatures(fixtures.PRIVATE_UNIV_OFFER, doc_type='offer_letter')
