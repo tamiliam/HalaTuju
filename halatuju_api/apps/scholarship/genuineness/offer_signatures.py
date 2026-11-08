@@ -238,7 +238,7 @@ def _names_another(ln: str, campus: bool = False) -> bool:
 #: above the sentence: a signature's neighbours on a genuine letter are fee lines ("Tuition Fee") and "the
 #: University", which name no other body.
 _SIGNS_FOR = re.compile(r' (?:KOLEJ|COLLEGES?|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|AKADEMI|ACADEM(?:Y|IES)|'
-                        r'POLITEKNIK|POLYTECHNICS?|MAKTAB|SDN|BHD|BERHAD|PLT|LTD|LIMITED)(?= )')
+                        r'POLITEKNIK|POLYTECHNICS?|MAKTAB|GROUP|KUMPULAN|SDN|BHD|BERHAD|PLT|LTD|LIMITED)(?= )')  # GROUP: final review 2026-11-08
 
 
 def _signs_for_another(ln: str) -> bool:

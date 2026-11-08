@@ -109,6 +109,8 @@ ATTACKS = {
     'a private line after the office': IIUM_WASSALAM.replace(
         'Academic Management and Admission Division\nTERMS',
         'Academic Management and Admission Division\nfor MERCU UNIVERSITY COLLEGE\nTERMS'),
+    # Final review (2026-11-08): a signatory naming a private GROUP carries no college/company noun.
+    'a private education group signs': IIUM_WASSALAM.replace('Director\n', 'Registrar\nMERCU EDUCATION GROUP\n'),
 }
 # IIUM's fee-paying arms, on IIUM's own sentence and office.
 IIUM_ACADEMY = IIUM_OFFER.replace('Director\n', 'Director\nIIUM Academy of Graduate & Professional Studies\n')

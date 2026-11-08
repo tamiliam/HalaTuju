@@ -19140,5 +19140,8 @@ name only in a FOOTER further below the signature block with no company suffix (
 lower pages name banks and campuses; "Sdn Bhd" anywhere is the private-arm veto's); one template sentence anchors the reading (a second IIUM template must be added by hand). A genuine
 letter to a candidate addressed at a residential college ("Kolej Kediaman …") or anywhere naming an institution,
 or whose sentence wraps a "conditional" onto the next line, keeps the 1.25.0 call (p 0.3; a person decides).
+Also residual (last review pass): a private signatory named as a "… Centre" (not refused: IIUM's own Centre for
+Foundation Studies would be caught too), and IIUM's office printed only ABOVE the sentence with a private
+signatory and no office line after it (rule 5 has no anchor). A "… Group" / "Kumpulan" signatory IS refused.
 **Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).
 **Revisit if:** a second English-letter public university appears.
