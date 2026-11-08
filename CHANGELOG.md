@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: courses 0094 drops the retired is_super_admin column from fresh databases (TD-064 follow-up) (2026-11-08)
+
+`courses.0094_drop_partneradmin_is_super_admin`: state-only follow-up to 0093 (the field already left the state; `SeparateDatabaseAndState` with a database operation only, `DROP COLUMN IF EXISTS`). A no-op on production, where the column was dropped by hand; the owner records the ledger row only. `test_td064_role_only_super` now asserts the column is gone and a new row still inserts.
+
+### docs: request #54 ruling - a declared_str informal wage counts toward the household documents total and the tick (2026-11-08)
+
+Owner ruling: KEEP, by design. No code change. Recorded in `docs/decisions.md`.
+
 ### chore: G6 merge - standards fixes (2026-11-08)
 
 Merge of a21, a22, a23 onto g6a (not pushed). The four `admin/me/` routes move unchanged from `urls.py` (602 lines) to the new `urls_me.py`; `assign_notify.run_pending` is renamed `send_pending` so `run_pending` has two homes, not three. No behaviour change.
