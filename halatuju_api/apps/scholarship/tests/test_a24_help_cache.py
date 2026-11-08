@@ -3,7 +3,7 @@
 The Gemini prose seam is mocked (no billable call). Pinned: a repeat open costs no model call; a
 different student, a different verdict and a failed call are never served from another's entry.
 """
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 
@@ -63,4 +63,24 @@ class TestTheCoachRepeatReadCostsNoModelCall(TestCase):
             doc.vision_fields = {**MISMATCH, 'student_verdict': 'unreadable'}
             doc.save(update_fields=['vision_fields'])
             client.get(url)
+        self.assertEqual(model.call_count, 2)
+
+    def test_a_failing_cache_still_answers_uncached(self):
+        _app, doc, client = self._case()
+        url = f'/api/v1/scholarship/documents/{doc.id}/help/'
+        broken = MagicMock()
+        broken.get.side_effect = RuntimeError('cache down')
+        broken.set.side_effect = RuntimeError('cache down')
+        with patch(SEAM, return_value=OK) as model, patch('apps.scholarship.help_cache.cache', broken):
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual((response.json()['source'], model.call_count), ('ai', 1))
+
+    def test_a_model_switch_misses_the_cache(self):
+        _app, doc, client = self._case()
+        url = f'/api/v1/scholarship/documents/{doc.id}/help/'
+        with patch(SEAM, return_value=OK) as model:
+            client.get(url)
+            with patch('apps.scholarship.profile_engine.MODEL_CASCADE', ['gemini-next']):
+                client.get(url)
         self.assertEqual(model.call_count, 2)

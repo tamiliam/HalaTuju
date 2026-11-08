@@ -13,14 +13,25 @@ never be served to another. Nothing but the engine's own reply is stored, and it
 `TTL_SECONDS`. Uses the existing Django cache backend (the database cache in production).
 """
 import hashlib
+import logging
 
 from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
 
 TTL_SECONDS = 6 * 3600
 
 
+def _models():
+    """The model cascade the coach call runs through, so a model switch changes the key and the old
+    wording is not served as the new model's. Read at call time (it is a module constant that a
+    deploy changes, and a test patches)."""
+    from . import profile_engine
+    return ','.join(profile_engine.MODEL_CASCADE)
+
+
 def cache_key(application_id, prompt):
-    digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()
+    digest = hashlib.sha256((_models() + '|' + prompt).encode('utf-8')).hexdigest()
     return f'help_coach_msg:{application_id}:{digest}'
 
 
@@ -37,12 +48,19 @@ def cached_help(application_id, doc_type, verdict, *, first_name='', target_lang
     prompt = help_engine._build_help_prompt(doc_type, verdict_clean, first_name, target_language,
                                             context, branding)
     key = cache_key(application_id, prompt)
-    hit = cache.get(key)
+    try:
+        hit = cache.get(key)
+    except Exception:   # soft surface: a cache fault means "uncached", never a 500
+        logger.warning('help cache read failed; answering uncached', exc_info=True)
+        hit = None
     if hit is not None:
         return dict(hit)
     result = help_engine.generate_document_help(doc_type, verdict, first_name=first_name,
                                                 target_language=target_language, context=context,
                                                 branding=branding)
     if result.get('source') == 'ai' and result.get('message'):
-        cache.set(key, dict(result), TTL_SECONDS)
+        try:
+            cache.set(key, dict(result), TTL_SECONDS)
+        except Exception:   # as above
+            logger.warning('help cache write failed; the reply is still returned', exc_info=True)
     return result

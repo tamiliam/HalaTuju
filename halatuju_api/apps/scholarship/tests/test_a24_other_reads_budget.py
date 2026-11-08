@@ -97,8 +97,12 @@ class TestTheOtherSlowReadsQueryBudget(TestCase):
             client.get(MENTOR_ROUTE)                                   # warm-up
             with CaptureQueriesContext(connection) as captured:
                 client.get(MENTOR_ROUTE)
-            return sum('profile_login_alias' in q['sql'] for q in captured.captured_queries)
-        self.assertEqual(alias_reads(2), alias_reads(5))   # flat (the login's own read is the other)
+            # the login's own one-row lookup is not the list's: count the `profile_id IN (...)` read
+            return sum('profile_login_alias' in q['sql'] and 'profile_id" IN' in q['sql']
+                       for q in captured.captured_queries)
+        two, five = alias_reads(2), alias_reads(5)
+        self.assertEqual(two, five)                        # flat in the number of mentees
+        self.assertEqual(five, 1)                          # and really ONE read: 0 == 0 must not pass
 
     def test_the_pending_cards_cost_the_same_for_more_mentees_or_organisations(self):
         self.assertEqual(self._reading('pending-mentor-2'), self._reading('pending-mentor-5'))
@@ -108,3 +112,38 @@ class TestTheOtherSlowReadsQueryBudget(TestCase):
         loose = [f'BUDGETS["{k}"]: budget {limit}, code {m} - LOWER it to {m}'
                  for k, limit in BUDGETS.items() for m in (self._reading(k),) if limit - 2 > m]
         self.assertEqual(loose, [], 'A budget may only go down:\n' + '\n'.join(loose))
+
+
+class TestTheSlaRangeFilterKeepsReviewBandsEdges(TestCase):
+    """`review_sla.in_band` (a range filter) and `review_band` (the sweep's own rule) must agree at
+    every edge: now == due is overdue; the due-soon window opens exactly `soon` days before due."""
+
+    CLOCKS = (10, 2, 1)
+
+    def test_each_edge_lands_in_the_band_review_band_names(self):
+        import datetime
+        from apps.scholarship.models import ScholarshipApplication
+        reviewer = make_admin('org_admin', owning_org=make_org())
+        sec = datetime.timedelta(seconds=1)
+        day = datetime.timedelta(days=1)
+        sla, soon = self.CLOCKS[0], self.CLOCKS[1]
+        cases = {                                  # age -> expected band
+            sla * day + sec: 'overdue',
+            sla * day: 'overdue',                  # now == due: the later band
+            sla * day - sec: 'due_soon',
+            (sla - soon) * day: 'due_soon',        # the window's first instant
+            (sla - soon) * day - sec: 'open',
+        }
+        from django.utils import timezone
+        from apps.scholarship import review_sla
+        now = timezone.now()
+        for age, expected in cases.items():
+            app = make_application('interviewing', cohort=make_cohort())
+            ScholarshipApplication.objects.filter(pk=app.pk).update(
+                assigned_to=reviewer, assigned_at=now - age)
+            qs = ScholarshipApplication.objects.filter(pk=app.pk)
+            by_rule = review_sla.review_band(now - age, now=now, clocks=self.CLOCKS)
+            self.assertEqual(by_rule, expected, f'review_band at age {age}')
+            for band in ('overdue', 'due_soon'):
+                held = review_sla.in_band(qs, band, now=now, clocks=self.CLOCKS).exists()
+                self.assertEqual(held, band == expected, f'in_band({band}) at age {age}')
