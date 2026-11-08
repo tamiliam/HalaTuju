@@ -90,7 +90,7 @@ class TestTheMerge(SimpleTestCase):
         self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('1 Jan 2031', 'Tarikh Pendaftaran'))
         self.assertEqual(f['offer_date'], '3 MAC 2031')                # read → it wins
         self.assertEqual(f['reporting_venue'], '')                     # an AI-only key: blank (review L2)
-        self.assertEqual(f['_offer_parser_version'], '2.0.0')
+        self.assertEqual(f['_offer_parser_version'], '2.0.1')
         self.assertNotIn('_family', f)
 
     def test_a_read_reporting_date_wins_with_its_label(self):

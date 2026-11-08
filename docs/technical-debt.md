@@ -7434,7 +7434,7 @@ effect depends on `token`, and `admin-auth-context` hands out a new `access_toke
 blank, "Loading", and page one again. No wrong data. **Fix:** read the token through a ref and keep it out of the
 effect's dependencies; a test that a token change does not refetch. *(B · S)*
 
-### [TD-447] Offer confirm can still store a hostel line when the stored course is stale - low
+### [TD-447] Offer confirm can still store a hostel line when the stored course is stale - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer realignment's round-2 review.** `services/confirmation.py::_confirmed_place` reads
 the letter's place through `letter_place` with the STORED course id. When a student confirms an offer for a
@@ -7442,6 +7442,9 @@ DIFFERENT course while the old course id is still stored, `letter_place(old id, 
 names no campus of the OLD course and keeps the hostel line, so a hostel can become the sponsor-facing institution
 until `_settle_stale_course_id` re-pins. Pre-existing; no live record has the shape. **Fix:** resolve the letter's
 course first (or re-run `_confirmed_place` after the re-pin) and test a stale-id confirm with a hostel line. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7a):** `_confirmed_place` resolves the LETTER's course first and falls back to the stored id;
+with no issuer it keeps the line at once. Test: `test_offer_pages_and_lines.ConfirmReadsTheLettersCourseTest`.
 
 ### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
 
@@ -7478,7 +7481,7 @@ renamed target silently stops being checked). (5) **Guards:** rule 10 reads only
 rule's text, not that its selector is valid. (6) The 16 px rule's `:is()` drops on Safari < 14 / Chrome < 88.
 **Trigger:** the first stacked overlay, M6 (admin shell), or the next mobile-check change. *(B · S)*
 
-### [TD-451] A short campus line can name a campus of another institution type - low
+### [TD-451] A short campus line can name a campus of another institution type - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer date-rule review (round 4), pre-existing.** Word matching either way round lets a
 short form cross institution types: "KK BAGAN DATUK" names Politeknik Bagan Datuk, "KK BETONG" names Politeknik
@@ -7487,13 +7490,23 @@ Politeknik Muadzam Shah. Full names are safe (the "names another institution out
 treat a leading type prefix ("KK", "POLY", "POLITEKNIK", "KOLEJ KOMUNITI") as a filter on the campus type in
 `offer_course_match.CampusReader`, with tests for the four lines. *(B · S)*
 
-### [TD-452] The town-word list decides whether a short campus form counts - low
+**FIXED 2026-11-09 (A2.7a):** `CampusReader` reads a leading "KK" / "POLY" / "METRO" as the type, and a line that opens
+with "Kolej Komuniti" or "Politeknik" names by words only a campus of that type (`_LEAD_TYPES`, `_same_type`); an
+apostrophe in a name is dropped, so the POLY line names Politeknik Sultan Abdul Halim Mu'adzam Shah by its whole name
+and never Politeknik Muadzam Shah. Tests: `test_offer_pages_and_lines.ShortLineCrossesNoTypeTest`.
+
+### [TD-452] The town-word list decides whether a short campus form counts - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer date-rule review (round 4).** `offer_course_match._TOWN_WORDS` is hand-written, so
 "KK KLANG" names nothing while "KK AMPANG" and "KK SELAYANG" still match, and the METrO short forms ("METRO
 KUANTAN") name nothing once "metro" is a type word. Every such miss is safe (no tick, no fill, nothing pinned) but
 inconsistent. **Fix:** derive the town words from the catalogue (institution towns/states) or add an alias per
 campus that letters name only by town; test each campus's short form. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7a):** neither option as written (deriving town words from the table would let a new row move a
+verdict, which the class rules out). The short type form is read as the type (`_SHORT_TYPES`), so "KK KLANG", "KK
+AMPANG", "KK SELAYANG" and "METRO KUANTAN" name their campus by its WHOLE name (tier 1), whatever `_TOWN_WORDS`
+holds; a bare town still names nothing. Tests: `test_offer_pages_and_lines.ShortTypeFormsTest`.
 
 ### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low
 
@@ -7809,7 +7822,7 @@ compare, reading the letter's INSTITUTION (matric college / Form-6 college / a s
 programme word ("lepasan STPM" on a degree letter); asasi untouched. 0 live letters change (2
 superseded: 187, 276). Tests `test_td473_pre_u_letter_level.py`.
 
-### [TD-474] An STPM school name followed by a one-word town line takes the town - low
+### [TD-474] An STPM school name followed by a one-word town line takes the town - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-03 by the offer exact-read S5 adversarial review (L3, left open).** `offer_parse._read_block` joins a
 long school name wrapped onto a second line (`wraps=('institution',)`, `_wrapped`: one capitalised word, not an
@@ -7818,6 +7831,11 @@ is not in `_NOT_WRAP`, would be read as part of the institution. Not seen in
 the corpus (every one-word line after a school there was a real wrap: 3 of 3), so the rule stays; a wrong
 institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
 postcode line below the town as the anchor), with a synthetic twin. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7a):** the postcode anchor — `offer_parse._town_above_postcode`: a one-word line straight above
+a postcode line is never joined (PARSER_VERSION 2.0.1). A town list was measured and rejected: it would break real
+wraps ("...SHAH", "...KLANG"). On the corpus no wrap sits above a postcode, so no read changes (offer_parse_check
+identical). Twin: `test_offer_pages_and_lines.TownAbovePostcodeTest`.
 
 ### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
 
@@ -8208,6 +8226,13 @@ registration slip on page 1: page 1 scores 0.07 (not_offer_letter), all pages 0.
 printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the offer page too — one Vision call per
 extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
 corpus first (owner's yes: a paid path). *(B · M)*
+
+**Measured 2026-11-09 (A2.7a), DEFERRED, still open.** Offline on the stored Vision pages (no call): 95 Vision
+letters, 9 of them multi-page; "score pages 1-3 when page 1 is not genuine" would cost 4 extra Vision calls across the
+corpus (about US$0.006) and changes ONE letter: the held-out e-Daftar printout above, which the owner ruled `suspect`
+(ruling 3) and which would then score `genuine` — a new eval miss. So the fix as written regresses an owner-ruled
+label, and the paid path still needs the owner's yes. Next step: the owner rules whether a printout with the real
+offer behind it should band genuine; then build it with that label. *(B · M)*
 
 ### [TD-492] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
 

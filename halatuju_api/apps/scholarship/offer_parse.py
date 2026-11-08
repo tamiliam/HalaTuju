@@ -218,6 +218,15 @@ def _wrapped(line, later):
             and not any(s(w) for s in later))
 
 
+_POSTCODE_LINE = re.compile(r'^\s*\d{5}\b')
+
+
+def _town_above_postcode(vals, i):
+    """TD-474 (A2.7a): the value line ``i`` sits straight above a postcode line, so it is the address's
+    town ("QELANG" / "12345 QELANG"), not the wrapped end of the name above it."""
+    return i + 1 < len(vals) and vals[i + 1][0] == vals[i][0] + 1 and bool(_POSTCODE_LINE.match(vals[i + 1][1]))
+
+
 def _read_block(lines, spec, fillers=(), wraps=(), max_skip=8):
     """{key: value} by SHAPE, in letter order: for each label (as the letter orders them), the next
     value line after it that has the label's shape. A line with the shape of a LATER label means this
@@ -246,7 +255,7 @@ def _read_block(lines, spec, fillers=(), wraps=(), max_skip=8):
             if shape[key](v):
                 cur = j + 1
                 if key in wraps and cur < len(vals) and vals[cur][0] == vals[j][0] + 1 \
-                        and _wrapped(vals[cur][1], later):
+                        and _wrapped(vals[cur][1], later) and not _town_above_postcode(vals, cur):
                     v, cur = f'{v} {vals[cur][1].strip()}', cur + 1
                 out[key] = v
                 break
@@ -305,7 +314,9 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # the intake keeps its words ("SEMESTER 1 TAHUN 2026", "SESI 2026/2027", "SESI I : 2026/2027"); a
 # range's FIRST day; the offer date never the registration date; dates carry no time; the offer
 # title is required; identity from page 1 (`page1_text`).
-PARSER_VERSION = '2.0.0'
+# 2.0.1 (A2.7a, 2026-11-09) — TD-474: a one-word line straight above a postcode line is the town, never
+# the wrapped end of the institution name.
+PARSER_VERSION = '2.0.1'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

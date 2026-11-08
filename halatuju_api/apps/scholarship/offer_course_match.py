@@ -316,8 +316,23 @@ _ALIASES = {
 }
 
 
+#: A letter's short TYPE form at the start of a campus line, read as the type it stands for (TD-452,
+#: A2.7a): "KK KLANG" is Kolej Komuniti Klang, "METRO KUANTAN" Politeknik METrO Kuantan. Whole word
+#: only, so POLYTECHNIC / METROPOLITAN are left alone.
+_SHORT_TYPE_RE = re.compile(r'^\s*(KK|POLY|METRO)\.?(?=[\s,]|$)', re.IGNORECASE)
+_SHORT_TYPES = {'kk': 'Kolej Komuniti', 'poly': 'Politeknik', 'metro': 'Politeknik METrO'}
+#: The types a line can OPEN with that filter the campus type (TD-451): a Kolej Komuniti line never
+#: names a polytechnic by words, nor a polytechnic line a community college.
+_LEAD_TYPES = ('kolej komuniti', 'politeknik')
+
+
 def _plain_words(s: str) -> str:
-    return ' '.join(re.findall(r'[a-z0-9]+', re.sub(r'\([^)]*\)', ' ', (s or '').lower())))
+    """Lower-case words; a bracketed part and an apostrophe dropped ("Mu'adzam" is "muadzam")."""
+    return ' '.join(re.findall(r'[a-z0-9]+', re.sub(r"['’]", '', re.sub(r'\([^)]*\)', ' ', (s or '').lower()))))
+
+
+def _lead_type(words: str) -> str:
+    return next((t for t in _LEAD_TYPES if f' {words} '.startswith(f' {t} ')), '')
 
 
 class CampusReader:
@@ -335,6 +350,9 @@ class CampusReader:
        tier 1: the institution's OWN words, two or more, all inside the line, and not only place words
        (states, the towns in ``_TOWN_WORDS``).
 
+    A short type form opening the line ("KK", "POLY", "METRO") is read as the type (``_SHORT_TYPES``),
+    and a line that opens with a type names by words only a campus of that type (A2.7a, TD-451 / 452).
+
     ``names(name, acronym)`` asks it of ONE campus of the course being checked: tier 1 or a listed
     alias (``_ALIASES``) names it; a line that names ANOTHER institution by tier 1 never names it
     (#168: "…, UMS Kota Kinabalu"); else the words, either way round as before, with at least one
@@ -344,8 +362,9 @@ class CampusReader:
 
     def __init__(self, hint, index=None):
         self.index = index if index is not None else catalogue_index()
-        h = school_name_core(hint or '')
+        h = _SHORT_TYPE_RE.sub(lambda m: _SHORT_TYPES[m.group(1).lower()], school_name_core(hint or ''), 1)
         self.ht, self.hn, self.hw = distinctive_tokens(h), _norm_inst_name(h), f' {_plain_words(h)} '
+        self.lead = _lead_type(self.hw.strip())
         live = bool(self.ht or self.hn)
         self._named = [(iid, n, a) for iid, n, a, _s in self.index.rows if live and self._tier1(n, a)]
         self.named = [(iid, n) for iid, n, _a in self._named]
@@ -364,7 +383,12 @@ class CampusReader:
         """The matcher's word tier: two or more of the institution's own words, all in the line, one
         of them neither a place nor a type word."""
         nt = distinctive_tokens(school_name_core(name or ''))
-        return len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place - _TYPE_WORDS)
+        return len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place - _TYPE_WORDS) \
+            and self._same_type(name)
+
+    def _same_type(self, name):
+        """A line that opens with a type (``_LEAD_TYPES``) names by words only a campus of that type."""
+        return not self.lead or _lead_type(_plain_words(name)) == self.lead
 
     def _aliased(self, name):
         for alias in _ALIASES.get(_norm_inst_name(name), ()):
@@ -385,6 +409,8 @@ class CampusReader:
             return any(_norm_inst_name(n) == nn or (acr and (a or '').strip().lower() == acr)
                        for _i, n, a in self._named)
         nt = distinctive_tokens(school_name_core(name))
+        if not self._same_type(name):
+            return False                              # TD-451: "KK BAGAN DATUK" is no polytechnic
         if not (self.ht - self.index.place - _TYPE_WORDS) or not _name_aligns(self.ht, nt):
             return False                              # a line of only place / type words names no campus
         return bool((nt if nt <= self.ht else self.ht) - self.index.place - _TYPE_WORDS)
