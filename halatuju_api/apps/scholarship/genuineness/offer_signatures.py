@@ -148,13 +148,21 @@ UA_OFFER_SIGNATURES = [
 #      (IIUM), has accepted …" is not it;
 #   2. the office anywhere on the page;
 #   3. NOTHING before the sentence names another organisation — no organisation noun at all outside IIUM's
-#      name and office (`offer_reading._outside_orgs`; a company is one), and no partner / tie-up word
-#      (`_PARTNER`, `_TIE_UP`, "validated"): a private college's own letterhead, an "affiliated college", "in
-#      association with", a "franchise programme", "IIUM Holdings Berhad" all sit above the sentence;
+#      name and office (`offer_reading._outside_orgs`; a company is one; a CAMPUS too, "MERCU CAMPUS"): a
+#      private college's own letterhead, an "affiliated college", "IIUM Holdings Berhad" sit above it; and
+#      no partner / tie-up word ANYWHERE on the page (`_PARTNER`, `_TIE_UP`, "validated", "in association"):
+#      "… the following programme at Mercu College, our teaching partner campus" (final review). The
+#      organisation check is NOT page-wide: a genuine letter names banks, kulliyyahs and mahallahs below;
 #   4. no CONDITIONAL / PROVISIONAL / "NOTIFICATION OF ADMISSION" (whole words; "UNCONDITIONAL" is not one)
 #      from the top of the page to the end of the sentence's line — a title or the sentence itself; a genuine
 #      letter's terms further down may say "conditional upon" (the owner's rule: an unconditional official
-#      offer only, decisions.md 2026-06-27).
+#      offer only, decisions.md 2026-06-27);
+#   5. the SIGNATURE block (from "Yours sincerely" to the office line, at most six lines) names no other
+#      organisation: "Registrar / MERCU UNIVERSITY COLLEGE" signing under IIUM's sentence.
+# Accepted residuals (final review): a private body named only by an acronym above "Dear"; a private name
+# only in a FOOTER below the signature (no safe rule: a genuine letter's lower pages name banks and campuses);
+# a candidate addressed at a residential college ("Kolej Kediaman …") keeps the 1.25.0 call; one template
+# sentence anchors the reading (a second IIUM template needs adding here).
 # Every other page, and every other UA letter, is scored by `UA_OFFER_SIGNATURES` exactly as under 1.25.0.
 # The acronyms "IIUM" / "UIAM" are never an anchor (`offer_issuers._UA_SHORT` keeps them for its reason).
 # `_UA_NAMES` (and so every block and reason that reads it) is untouched: adding the English name to the
@@ -184,7 +192,7 @@ UA_OFFER_SIGNATURES_EN = [(label, patterns + _ENGLISH_TWINS[label], weight, kind
 
 
 def english_ua_lists(lists: dict, text_norm: str, ocr_text: str = ''):
-    """``(lists, text_norm)`` for an offer: unchanged, unless the page is IIUM's own English offer (the four
+    """``(lists, text_norm)`` for an offer: unchanged, unless the page is IIUM's own English offer (the five
     rules above) — then the UA family reads its English twins (`UA_OFFER_SIGNATURES_EN`)."""
     if _IIUM_SUBJECT not in f' {text_norm} ' or _IIUM_OFFICE not in text_norm or not _issued_by_iium(ocr_text):
         return lists, text_norm
@@ -192,9 +200,8 @@ def english_ua_lists(lists: dict, text_norm: str, ocr_text: str = ''):
 
 
 def _issued_by_iium(ocr_text: str) -> bool:
-    """Rules 3 + 4, on the folded lines before the sentence (and, for rule 4, to the end of its line)."""
-    from .offer_reading import (_PARTNER, _TIE_UP, _allowed_spans, _decontact, _folded_lines, _outside_orgs,
-                                _page, _unstreeted)
+    """Rules 3-5 (rule 4 up to the end of the sentence's line)."""
+    from .offer_reading import _PARTNER, _TIE_UP, _folded_lines, _page
     lines = _folded_lines(ocr_text)
     page = _page(lines)
     at = page.find(_IIUM_SUBJECT)
@@ -204,17 +211,42 @@ def _issued_by_iium(ocr_text: str) -> bool:
     line_end = next((pos + len(ln.strip()) for pos, ln in _starts(lines) if pos + len(ln.strip()) >= end), len(page))
     if any(w in f'{page[:line_end]} ' for w in _NOT_YET):
         return False                                          # rule 4
-    before = page[:at + len(' THAT THE ')]
-    if any(w in before for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
-        return False                                          # rule 3: tie-up wording
-    allowed = (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ')
+    if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+        return False                                          # rule 3: tie-up wording, ANYWHERE on the page
     for pos, ln in _starts(lines):
         if pos >= at:
             break
-        ln = _unstreeted(_decontact(f' {page[pos:min(pos + len(ln.strip()), at)].strip()} '))
-        if _outside_orgs(ln, _allowed_spans(ln, allowed)):
+        if _names_another(f' {page[pos:min(pos + len(ln.strip()), at)].strip()} ', campus=True):
             return False                                      # rule 3: another organisation named first
-    return True
+    return not any(_names_another(ln) for ln in _signature_block(lines))      # rule 5
+
+
+def _names_another(ln: str, campus: bool = False) -> bool:
+    """The folded line names an organisation other than IIUM and its office (`offer_reading._outside_orgs`; a
+    company is one). Above the sentence a CAMPUS counts too ("MERCU CAMPUS")."""
+    from .offer_reading import _allowed_spans, _decontact, _outside_orgs, _unstreeted
+    ln = _unstreeted(_decontact(ln))
+    allowed = (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ')
+    return bool(_outside_orgs(ln, _allowed_spans(ln, allowed))) or (campus and ' CAMPUS ' in ln)
+
+
+#: Rule 5: the signature block — from the closing to IIUM's office line, at most this many lines.
+_CLOSINGS = (' YOURS SINCERELY ', ' YOURS FAITHFULLY ', ' YOURS TRULY ')
+_SIGNATURE_LINES = 6
+
+
+def _signature_block(lines):
+    """The lines from the first closing ("Yours sincerely") to the office line inclusive (at most
+    `_SIGNATURE_LINES`); none when the page has no closing."""
+    at = next((i for i, ln in enumerate(lines) if any(c in ln for c in _CLOSINGS)), None)
+    if at is None:
+        return []
+    block = []
+    for ln in lines[at:at + _SIGNATURE_LINES]:
+        block.append(ln)
+        if f' {_IIUM_OFFICE} ' in ln:
+            break
+    return block
 
 
 def _starts(lines):

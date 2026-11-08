@@ -90,6 +90,14 @@ ATTACKS = {
                          + 'Admission is processed with the Academic Management and Admission Division of IIUM.\n'
                          + _REST,
     'a private company': 'MERCU EDUCATION SDN BHD\n' + _ADDR + IIUM_OFFER,
+    # Final review: a tie-up word AFTER the sentence, a private signatory, a campus above "Dear".
+    'a teaching partner after the sentence': IIUM_OFFER.replace(
+        'in Semester 1, 2024/2025:', 'in Semester 1, 2024/2025 at Mercu College, our teaching partner campus:'),
+    'a private signatory': IIUM_OFFER.replace('Director\nAcademic Management and Admission Division\nTERMS',
+                                              'Registrar\nMERCU UNIVERSITY COLLEGE\nTERMS'),
+    'a private signatory above the office': IIUM_OFFER.replace(
+        'Director\nAcademic', 'Registrar, MERCU UNIVERSITY COLLEGE\nfor Academic'),
+    'a campus above Dear': _TOP + 'MERCU CAMPUS\n' + _DEAR + _SENTENCE + _REST,
 }
 # IIUM's fee-paying arms, on IIUM's own sentence and office.
 IIUM_ACADEMY = IIUM_OFFER.replace('Director\n', 'Director\nIIUM Academy of Graduate & Professional Studies\n')
@@ -136,6 +144,13 @@ class IIUMEnglishOfferIsGenuine(SimpleTestCase):
         for name, text in (('unconditional title', IIUM_UNCONDITIONAL), ('terms', IIUM_CONDITIONAL_UPON)):
             with self.subTest(name):
                 self.assertEqual(_g(text)['status'], 'genuine')
+
+    def test_the_real_signature_block_and_lower_pages_are_fine(self):
+        """5105's signature is "Director / Academic Management and Admission Division"; its lower pages name the
+        university, kulliyyahs and banks — no rule reads organisations below the signature block."""
+        text = IIUM_OFFER.replace('ACCEPTANCE FORM', 'Payment to Bank Islam Malaysia Berhad, Mahallah Contoh, '
+                                  'Kulliyyah of Contoh, Gombak Campus\nACCEPTANCE FORM')
+        self.assertEqual(_g(text)['status'], 'genuine')
 
     def test_through_assess_as_production_calls_it(self):
         self.assertEqual(assess('offer_letter', ocr_text=IIUM_OFFER)['status'], 'genuine')
