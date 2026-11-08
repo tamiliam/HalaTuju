@@ -66,7 +66,7 @@ export default function StaffActions({
     <>
       {onToggle && (
         <button type="button" disabled={busy} onClick={onToggle} data-testid={toggleTestId}
-          className={`${text} font-medium disabled:opacity-50 ${
+          className={`${text} ${TAP} font-medium disabled:opacity-50 ${
             active ? 'text-critical-600 hover:text-critical-800' : 'text-primary-600 hover:text-primary-800'}`}>
           {t(active ? revokeKey : restoreKey)}
         </button>
@@ -74,7 +74,7 @@ export default function StaffActions({
       {showDelete && (deletable
         ? (
           <button type="button" disabled={busy} onClick={onDelete} data-testid="staff-delete"
-            className={`${text} font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50`}>
+            className={`${text} ${TAP} font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50`}>
             {t('admin.delete')}
           </button>
         )
@@ -82,6 +82,9 @@ export default function StaffActions({
     </>
   )
 }
+
+/** Phone tap target (44px): the max-md pattern the person pages use on their own buttons. */
+const TAP = 'max-md:inline-flex max-md:min-h-11 max-md:items-center'
 
 /** Delete, greyed, with its reason on hover (a mouse), on tap or click (pinned), and on focus. */
 function GreyedDelete({ reason, text }: { reason: string; text: string }) {
@@ -118,7 +121,7 @@ function GreyedDelete({ reason, text }: { reason: string; text: string }) {
           const to = e.relatedTarget as Node | null
           if (to && !root.current?.contains(to)) setPinned(false)
         }}
-        className={`${text} cursor-not-allowed font-medium text-ground-400`}>
+        className={`${text} ${TAP} cursor-not-allowed font-medium text-ground-400`}>
         {t('admin.delete')}
       </button>
       <span id={id} className="sr-only">{reason}</span>
