@@ -3721,6 +3721,13 @@
         "invited": "Dijemput, menunggu",
         "joined": "Telah menyertai"
       },
+      "person": {
+        "remove": "Buang",
+        "removeConfirm": "Buang log masuk {name} bagi {source}? Mereka tidak lagi boleh log masuk. Anda boleh menjemput mereka semula kemudian.",
+        "removed": "Log masuk dibuang.",
+        "removeFailed": "Tidak dapat dibuang. Muat semula halaman dan cuba lagi.",
+        "notActive": "{name} sudah pun dimatikan. Muat semula halaman."
+      },
       "managed": "Diurus oleh sumber",
       "managedNote": "Sunting tersedia sehingga sumber log masuk. Selepas itu, hanya sumber yang mengubah butirannya sendiri. Anda masih boleh menghidupkan atau mematikan sumber untuk borang permohonan.",
       "managedRefused": "Sumber ini telah log masuk dan kini mengurus butirannya sendiri. Anda masih boleh menghidupkan atau mematikannya."
@@ -7426,7 +7433,7 @@
         "which": "Sumber yang mana?",
         "choose": "Pilih sumber…",
         "option": "{name} ({code}) — {state}",
-        "help": "Setiap sumber aktif dalam senarai anda — satu sumber boleh mempunyai lebih daripada seorang. Atau",
+        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan. Atau",
         "addNew": "tambah sumber baharu (nama dan kod ringkas)",
         "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
         "newName": "Nama sumber",
@@ -7437,21 +7444,13 @@
         "note": "Mereka hanya melihat pelajar mereka sendiri, baca sahaja, dan boleh menjadi saksi kontrak.",
         "chooseFirst": "Pilih sumber, atau tambah yang baharu.",
         "sent": "Jemputan dihantar.",
-        "signedIn": "Telah log masuk",
         "col": {
-          "source": "Sumber",
-          "person": "Orang",
-          "email": "E-mel",
-          "lastSeen": "Kali terakhir dilihat"
+          "source": "Sumber"
         },
         "noneWaiting": "Tiada sesiapa yang menunggu untuk menjawab.",
-        "noneSignedIn": "Belum ada sesiapa yang log masuk bagi sumber.",
-        "remove": "Buang",
-        "removeConfirm": "Buang log masuk {name} bagi {source}? Mereka tidak lagi boleh log masuk. Anda boleh menjemput mereka semula kemudian.",
-        "removed": "Log masuk dibuang.",
-        "removeFailed": "Tidak dapat dibuang. Muat semula halaman dan cuba lagi.",
         "error": {
           "already_staff": "Alamat e-mel ini sudah mempunyai log masuk kakitangan atau sumber HalaTuju, jadi tidak boleh dijemput bagi sumber. Hubungi sokongan HalaTuju.",
+          "source_has_person": "Sumber ini sudah mempunyai seorang: seseorang telah menyertai, atau jemputan sedang menunggu. Hantar semula atau batalkan jemputan yang menunggu di bawah, atau buang orang itu di Sumber dahulu.",
           "code_taken": "Kod ringkas itu sudah digunakan.",
           "code_reserved": "Kod ringkas itu dikhaskan. Pilih yang lain.",
           "code_and_name_required": "Sumber baharu memerlukan nama dan kod ringkas.",
@@ -7465,7 +7464,7 @@
           "generic": "Jemputan tidak dapat dihantar. Cuba lagi."
         },
         "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi.",
-        "optionJoined": "{name} ({code}) — seseorang telah menyertai",
+        "optionWaiting": "{name} ({code}) — dijemput, menunggu: hantar semula atau batalkan di bawah",
         "refused": {
           "already_joined": "{name} telah pun log masuk.",
           "not_active": "{name} telah dimatikan. Untuk mengembalikannya, jemput semula."

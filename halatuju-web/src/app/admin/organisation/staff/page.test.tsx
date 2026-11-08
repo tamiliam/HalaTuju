@@ -186,6 +186,28 @@ describe('what each kind can do', () => {
     expect(screen.queryByText('admin.invitations.sourceComingSoon')).toBeNull()
   })
 
+  // Invitations I2 (owner ruling 2026-11-08): the Source tab lists the WAITING only, like every
+  // tab — the "Signed in" table and its Remove moved to the Sources page.
+  it('I2: the Source tab has no "Signed in" table and no Remove — even with a joined person', async () => {
+    mockApi.getInvitations.mockImplementation(async (kind) => (kind === 'source' ? {
+      ...payloadFor(kind), invitations: [],
+      source_users: [{ id: 42, name: 'Audrey', email: 'muet@example.org', source_id: 3,
+        source_name: 'MUETMyWay', source_code: 'muet', organisation: 'harapan', is_active: true,
+        first_seen_at: '2026-10-20', last_seen_at: '2026-10-30', manageable: true, invitation: null }],
+      sources: [{ id: 3, code: 'muet', name: 'MUETMyWay', organisation: 'harapan', sign_in: 'joined', user_count: 1 }],
+    } as unknown as api.InvitationsPayload : payloadFor(kind)))
+    await loaded()
+    await pick('source')
+    await waitFor(() => expect(screen.getByTestId('source-roster')).toBeTruthy())
+    // Nobody waiting: the one table's empty state, and no second table at all.
+    expect(screen.getByText('admin.invitations.source.noneWaiting')).toBeTruthy()
+    expect(screen.getByTestId('source-roster').querySelectorAll('table')).toHaveLength(0)
+    expect(screen.queryByText('Audrey')).toBeNull()
+    expect(screen.queryByText('admin.invitations.source.signedIn')).toBeNull()
+    expect(screen.queryByText('admin.invitations.source.remove')).toBeNull()
+    expect(screen.queryByText('admin.sources.person.remove')).toBeNull()
+  })
+
   it('⚠ shows Finance the Source roster read-only — no form, no actions', async () => {
     viewerRole = { role: 'finance' }
     await loaded()

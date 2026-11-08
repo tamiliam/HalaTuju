@@ -15,14 +15,17 @@ LETTER differs (`emails.send_source_invitation_email`) and who may act (`managea
 with ONE exception: a switched-off source user of the SAME source, which is brought back. So a
 source can never be turned into staff, nor a staff row into a source, by inviting.
 
-⚠ SEVERAL PEOPLE PER SOURCE (decided 2026-10-30, like several reviewers per organisation). A source
-is an organisation with a team, and the roadmap's lock is "any JOINED user", not "the user".
+⚠ ONE PERSON PER SOURCE (owner ruling 2026-11-08, Invitations I2; revises the 2026-10-30 "several
+people per source"). A source with an ACTIVE source user — joined OR still waiting (open point A) —
+is refused a second invitation (`source_has_person`): Resend or Cancel the waiting one, or Remove
+the joined one on the Sources page, first. A switched-off person is nobody, so the source may be
+invited for again (the same address comes back, `reusable_row`; or a new address).
 """
 import logging
 from collections import namedtuple
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.utils import timezone
 
 from apps.courses import staff_reinvite
@@ -35,8 +38,8 @@ logger = logging.getLogger(__name__)
 SOURCE_ROLE = PartnerAdmin.SOURCE_ROLE
 AUDIENCE = 'source_partner'
 
-#: What `invite` did. ``error`` is None or one of `already_staff` / `code_taken` /
-#: `create_failed`; the rest describe the account, the invitation and the letter.
+#: What `invite` did. ``error`` is None or one of `already_staff` / `source_has_person` /
+#: `code_taken` / `create_failed`; the rest describe the account, the invitation and the letter.
 Invited = namedtuple('Invited', 'error account invitation source google already_registered '
                                 'reactivated emailed')
 
@@ -80,6 +83,26 @@ def sign_in_states(source_ids):
     return {r['source_id']: ('joined' if r['joined'] else 'invited', r['n']) for r in rows}
 
 
+def people_of(source_ids):
+    """`{source id: its ACTIVE source user}` in ONE query — the person the Sources page shows, and
+    the one a Remove switches off. One person per source since 2026-11-08 (I2); should an older
+    source still hold two, the joined one wins over a waiting one, then the earliest."""
+    rows = (PartnerAdmin.objects.filter(role=SOURCE_ROLE, is_active=True, source_id__in=source_ids)
+            # Their profile rides the same query, for the phone (`staff_photo.phones_of`).
+            .select_related('reviewer_profile')
+            .order_by('source_id', F('first_seen_at').asc(nulls_last=True), 'pk'))
+    people = {}
+    for row in rows:
+        people.setdefault(row.source_id, row)
+    return people
+
+
+def has_person(source):
+    """One person per source (owner ruling 2026-11-08, open point A): an ACTIVE source user, joined
+    or still waiting, holds the source. A switched-off one does not."""
+    return PartnerAdmin.objects.filter(role=SOURCE_ROLE, source=source, is_active=True).exists()
+
+
 def has_joined(source):
     """The lock on the Sources page (owner ruling 2026-10-30): an ACTIVE user of this source has
     signed in, so its details are now its own."""
@@ -103,7 +126,9 @@ def invite(caller, *, email, name, source=None, make_source=None):
     inside the same transaction, so a refused or failed invite leaves no source behind).
 
     The caller has already checked who may invite and which source they may name; this decides
-    the account, records the invitation and sends the letter. The source's `contact_email` is
+    the account, records the invitation and sends the letter. An existing source that already has
+    an ACTIVE person (joined or waiting) is refused `source_has_person` (one person per source,
+    2026-11-08) — checked under a lock on the source row, so two invites at once cannot both pass. The source's `contact_email` is
     filled with the invitee's address when it is blank (never overwritten), so the partner emails
     reach somebody from the start.
 
@@ -117,6 +142,12 @@ def invite(caller, *, email, name, source=None, make_source=None):
     if existing is not None and reuse is None:
         return _refused('already_staff')
     with transaction.atomic():
+        if source is not None:
+            # ONE PERSON PER SOURCE (I2): the source row is locked first, so two invites for it at
+            # once are taken in turn and the second sees the first's person. A NEW source has none.
+            type(source).objects.select_for_update().filter(pk=source.pk).first()
+            if has_person(source):
+                return _refused('source_has_person')
         if make_source is not None:
             try:
                 with transaction.atomic():

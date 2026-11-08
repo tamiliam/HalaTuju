@@ -6,8 +6,11 @@
  * Pinned: both shapes of the POST — an existing source (`source_id`) and a new one (`source_name` +
  * `source_code`, the old Add source's rules) — exactly as `source_users.invite_source` reads them;
  * every refusal code in plain words (and an unknown one in generic words); the roster's Resend /
- * Cancel / Remove, each only where the server says this caller may (`manageable`), Remove only
- * after a confirm.
+ * Cancel, each only where the server says this caller may (`manageable`).
+ *
+ * Invitations I2 (owner ruling 2026-11-08, one person per source): a joined source leaves the
+ * dropdown, a waiting one is greyed; the "Signed in" table and its Remove are gone (Remove is on the
+ * Sources page now — `app/admin/sources/page.test.tsx`).
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { SourceInviteForm, SourceRoster } from './SourceInvite'
@@ -42,6 +45,7 @@ const PAYLOAD = {
   ],
   sources: [
     { id: 1, code: 'hss', name: 'Hindu Sevai Sangam', organisation: 'harapan', sign_in: 'none', user_count: 0 },
+    { id: 2, code: 'learnifi', name: 'LearnifAI', organisation: 'harapan', sign_in: 'invited', user_count: 1 },
     { id: 3, code: 'muet', name: 'MUETMyWay', organisation: 'harapan', sign_in: 'joined', user_count: 1 },
   ],
 } as unknown as api.InvitationsPayload
@@ -59,8 +63,6 @@ describe('the Source invite form', () => {
   it('invites a person for a source already on the list, showing each source\'s sign-in state', async () => {
     render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
     expect(screen.getByText('admin.invitations.source.option|Hindu Sevai Sangam,hss,admin.sources.signIn.none')).toBeTruthy()
-    // L3: a joined source stays on offer (a source may have several people) and says it has joined.
-    expect(screen.getByText('admin.invitations.source.optionJoined|MUETMyWay,muet')).toBeTruthy()
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', ' Kavi Amutha ')
     type('admin.emailLabel', 'kavi@example.org')
@@ -68,6 +70,28 @@ describe('the Source invite form', () => {
     await waitFor(() => expect(mockApi.inviteSource).toHaveBeenCalledWith(
       { name: 'Kavi Amutha', email: 'kavi@example.org', source_id: 1 }, { token: 'tok' }))
     expect(onDone).toHaveBeenCalledWith({ type: 'success', text: 'admin.invitations.source.sent' })
+  })
+
+  // ⚠ CHANGED ON PURPOSE (I2, owner ruling 2026-11-08 + open point A): was "a joined source stays
+  // on offer" (2026-10-30, several people per source).
+  it('I2: one person per source — a joined source is not offered, a waiting one is greyed', () => {
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    const select = screen.getByLabelText('admin.invitations.source.which') as HTMLSelectElement
+    const options = Array.from(select.options)
+    expect(options.map((o) => o.value)).toEqual(['', '1', '2'])
+    expect(screen.queryByText(/MUETMyWay/)).toBeNull()
+    const waiting = options.find((o) => o.value === '2')!
+    expect(waiting.textContent).toBe('admin.invitations.source.optionWaiting|LearnifAI,learnifi')
+    expect(waiting.disabled).toBe(true)
+    expect(options.find((o) => o.value === '1')!.disabled).toBe(false)
+    expect(screen.getByText(/admin\.invitations\.source\.help/)).toBeTruthy()
+  })
+
+  it('I2: opens on "new source" when every source has someone who joined', () => {
+    const data = { ...PAYLOAD, sources: PAYLOAD.sources!.filter((s) => s.sign_in === 'joined') }
+    render(<SourceInviteForm data={data} token="tok" t={t} onDone={onDone} />)
+    expect(screen.getByLabelText('admin.invitations.source.newName')).toBeTruthy()
+    expect(screen.queryByText('admin.invitations.source.pickExisting')).toBeNull()
   })
 
   it('M4: an account made but a letter that failed says so, with the way out — never "sent"', async () => {
@@ -115,12 +139,12 @@ describe('the Source invite form', () => {
   })
 
   it.each([
-    'already_staff', 'code_taken', 'code_reserved', 'code_and_name_required', 'source_inactive',
+    'already_staff', 'source_has_person', 'code_taken', 'code_reserved', 'code_and_name_required', 'source_inactive',
     'bad_email', 'name_required', 'not_found', 'organisation_required', 'not_configured', 'create_failed',
   ])('shows the %s refusal in its own words', async (code) => {
     mockApi.inviteSource.mockRejectedValueOnce(Object.assign(new Error(code), { code }))
     render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
-    fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '3' } })
+    fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')
     fireEvent.click(screen.getByText('admin.sendInvite'))
@@ -140,7 +164,7 @@ describe('the Source invite form', () => {
   it('falls back to generic words for a refusal it does not know', async () => {
     mockApi.inviteSource.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'surprise' }))
     render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
-    fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '3' } })
+    fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')
     fireEvent.click(screen.getByText('admin.sendInvite'))
@@ -154,12 +178,15 @@ describe('the Source roster', () => {
   const roster = (canManage = true, data = PAYLOAD) => render(
     <SourceRoster data={data} token="tok" t={t} canManage={canManage} onCancel={onCancel} onDone={onDone} />)
 
-  it('lists who is waiting and who has signed in — a switched-off user in neither', () => {
+  // ⚠ CHANGED ON PURPOSE (I2, owner ruling 2026-11-08): the "Signed in" table and its Remove left
+  // Invitations for the Sources page — the Source tab lists the waiting only, like every tab.
+  it('I2: lists who is waiting only — no "Signed in" table, no Remove', () => {
     roster()
     expect(screen.getByTestId('source-waiting-31').textContent).toContain('LearnifAI')
-    expect(screen.getByTestId('source-user-42').textContent).toContain('Audrey Koh Sui Ean')
-    expect(screen.queryByTestId('source-user-41')).toBeNull()   // not signed in yet
-    expect(screen.queryByTestId('source-user-43')).toBeNull()   // switched off
+    expect(screen.queryByText('Audrey Koh Sui Ean')).toBeNull()   // joined: shown on Sources now
+    expect(screen.queryByText('admin.invitations.source.signedIn')).toBeNull()
+    expect(screen.queryByText('admin.invitations.source.remove')).toBeNull()
+    expect(screen.getAllByTestId('invitations-table')).toHaveLength(1)
   })
 
   it('Resend goes to the source-user endpoint; Cancel is the page\'s own', async () => {
@@ -187,54 +214,27 @@ describe('the Source roster', () => {
     expect(table.querySelector('[data-phone-rows]')).toBeTruthy()
   })
 
-  it('Remove asks first, and does nothing when the answer is no', async () => {
-    mockApi.revokeSourceUser.mockResolvedValue({ id: 42, is_active: false, message: '' })
-    const confirm = jest.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
-    roster()
-    fireEvent.click(screen.getByText('admin.invitations.source.remove'))
-    expect(mockApi.revokeSourceUser).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByText('admin.invitations.source.remove'))
-    await waitFor(() => expect(mockApi.revokeSourceUser).toHaveBeenCalledWith(42, { token: 'tok' }))
-    expect(confirm).toHaveBeenCalledWith(
-      'admin.invitations.source.removeConfirm|Audrey Koh Sui Ean,MUETMyWay')
-    expect(onDone).toHaveBeenCalledWith({ type: 'success', text: 'admin.invitations.source.removed' })
-    confirm.mockRestore()
-  })
-
   it.each([
     ['resend', 'already_joined', 'admin.resend', 'Shah Izzati Afzan'],
     ['resend', 'not_active', 'admin.resend', 'Shah Izzati Afzan'],
-    ['remove', 'not_active', 'admin.invitations.source.remove', 'Audrey Koh Sui Ean'],
   ])('L6: a %s refused %s reads in its own words', async (_what, code, button, name) => {
     mockApi.resendSourceUser.mockRejectedValue(Object.assign(new Error(code), { code }))
-    mockApi.revokeSourceUser.mockRejectedValue(Object.assign(new Error(code), { code }))
-    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
     roster()
     fireEvent.click(screen.getByText(button))
     await waitFor(() => expect(onDone).toHaveBeenCalledWith(
       { type: 'warning', text: `admin.invitations.source.refused.${code}|${name}` }))
-    confirm.mockRestore()
   })
 
   it('offers no action to a viewer who may not manage, nor on a row the server says is not theirs', () => {
     roster(false)
     expect(screen.queryByText('admin.resend')).toBeNull()
-    expect(screen.queryByText('admin.invitations.source.remove')).toBeNull()
+    expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
   })
 
   it('offers no action on a row the server marks not manageable', () => {
     const locked = { ...PAYLOAD, source_users: PAYLOAD.source_users!.map((u) => ({ ...u, manageable: false })) }
     roster(true, locked)
     expect(screen.queryByText('admin.resend')).toBeNull()
-    expect(screen.queryByText('admin.invitations.source.remove')).toBeNull()
-  })
-})
-
-describe('common profile S2: a source person\'s own phone', () => {
-  it('is shown to the organisation that invited them, beside the email', () => {
-    const data = { ...PAYLOAD, source_users: PAYLOAD.source_users!.map((u) =>
-      u.id === 42 ? { ...u, phone: '016-845 1270' } : u) }
-    render(<SourceRoster data={data} token="tok" t={t} canManage onCancel={jest.fn()} onDone={onDone} />)
-    expect(screen.getByTestId('source-user-phone-42').textContent).toContain('016-845 1270')
+    expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
   })
 })

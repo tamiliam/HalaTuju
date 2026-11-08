@@ -23,7 +23,37 @@ from .gift_programmes import AdminProgrammeListView
 # the caller's own organisation, else the sole tenant (`_new_source_owner`). The house organisation
 # is not a source and no longer appears in the list; a platform referral partner never did.
 
-def _source_dict(org, student_count=None, gift_count=0, gift_total=0, sign_in=('none', 0)):
+def _people_dicts(admin, source_ids):
+    """`{source id: _person_dict}` for the sources that have an ACTIVE person — ONE query for any
+    number of rows (the profile, for the phone, is joined in `people_of`)."""
+    from .. import source_invite, staff_photo
+    people = source_invite.people_of(source_ids)
+    phones = staff_photo.phones_of(list(people.values()))
+    return {sid: _person_dict(admin, p, phones.get(p.id)) for sid, p in people.items()}
+
+
+def _person_dict(admin, person, phone=None):
+    """The source's ACTIVE person for the Sources row (one person per source, Invitations I2,
+    2026-11-08), or None. `manageable` is `source_invite.manageable` — the same check the Remove
+    endpoint (`admin/source-users/<id>/revoke/`) enforces, so the row never offers a link the
+    server refuses. `joined_at` is their first sign-in; None while they are still waiting.
+    `phone` is the person's OWN (their Profile), which the inviting organisation sees (owner,
+    2026-10-31) — it moved here with them from the Invitations "Signed in" table."""
+    if person is None:
+        return None
+    from .. import source_invite
+    return {
+        'id': person.id,
+        'name': person.name,
+        'email': person.email,
+        'joined_at': person.first_seen_at.isoformat() if person.first_seen_at else None,
+        'manageable': source_invite.manageable(admin, person),
+        'phone': phone,
+    }
+
+
+def _source_dict(org, student_count=None, gift_count=0, gift_total=0, sign_in=('none', 0),
+                 person=None):
     return {
         'id': org.id,
         'code': org.code,
@@ -54,6 +84,10 @@ def _source_dict(org, student_count=None, gift_count=0, gift_total=0, sign_in=('
         # source's own details here (`AdminSourceDetailView`, 409 `managed_by_source`).
         'sign_in': sign_in[0],
         'user_count': sign_in[1],
+        # Invitations I2 (2026-11-08): WHO that is — `{id, name, email, joined_at, manageable,
+        # phone}` or
+        # None (`_person_dict`). The Sources row shows them, with Remove where `manageable`.
+        'person': person,
     }
 
 
@@ -79,7 +113,8 @@ def _one_source_dict(admin, org):
     return _source_dict(org, _source_application_counts().get(org.id, 0),
                         counted.gift_count if counted else 0,
                         _gift_totals(scope).get(org.organisation_id, 0),
-                        source_invite.sign_in_states([org.pk]).get(org.pk, ('none', 0)))
+                        source_invite.sign_in_states([org.pk]).get(org.pk, ('none', 0)),
+                        _people_dicts(admin, [org.pk]).get(org.pk))
 
 
 # The platform's own bursary programme — the "house" organisation. Its code is RESERVED: no source
@@ -248,7 +283,8 @@ class _SourcesBase(_AdminBase):
 
 class AdminSourcesView(_SourcesBase):
     """GET  .../admin/scholarship/sources/ — the caller's organisation's sources + student counts
-         and, since source sign-in S2, each one's `sign_in` and `user_count`.
+         and, since source sign-in S2, each one's `sign_in` and `user_count`; since Invitations
+         I2 (2026-11-08) its active `person` (`_person_dict`, or None).
     POST — RETIRED (410 `use_source_invitation`): a source is added by inviting its person."""
     def get(self, request):
         admin, err = self._sources_admin(request)
@@ -264,13 +300,16 @@ class AdminSourcesView(_SourcesBase):
         totals = _gift_totals(scope)
         # ONE query for every row's sign-in state, like the gift count below (never one per row).
         signed = source_invite.sign_in_states(sources.values('pk'))
+        # …and ONE for every row's person (Invitations I2).
+        people = _people_dicts(admin, sources.values('pk'))
         # ONE annotated query for every row's gift count (never one per row).
         rows = (gift_sources.gift_counts(sources, scope).select_related('organisation')
                 .order_by('name', 'pk'))
         return Response({
             'sources': [_source_dict(s, counts.get(s.id, 0), s.gift_count,
                                      totals.get(s.organisation_id, 0),
-                                     signed.get(s.id, ('none', 0))) for s in rows],
+                                     signed.get(s.id, ('none', 0)),
+                                     people.get(s.id)) for s in rows],
         })
 
     def post(self, request):

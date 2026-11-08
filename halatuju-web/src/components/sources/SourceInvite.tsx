@@ -2,16 +2,13 @@
 
 import { useState } from 'react'
 
-import { formatDate } from '@/lib/formatDate'
 import {
-  inviteSource, resendSourceUser, revokeSourceUser,
+  inviteSource, resendSourceUser,
   type InvitationRow, type InvitationsPayload, type SourceUserRow,
 } from '@/lib/admin-api'
-import TableFrame, { TH } from '@/components/admin/TableFrame'
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import { FIELD_LABEL as LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
 import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
-import { SignInBadge } from '@/components/sources/shared'
 
 // ⚠ THE MENTOR TAB RIDES THIS CHUNK (S7b follow-up review fix 5): Invitations loads its Mentor form and
 // roster through THIS module, so they share the Source tab's lazy chunk instead of adding one. Every
@@ -30,11 +27,15 @@ export { MentorInviteForm, MentorRoster } from '@/components/mentors/MentorInvit
  * `canManage`; the server refuses everyone else 403 regardless.
  * ⚠ Every refusal arrives as a code and is shown in plain words — `already_staff` deliberately says
  * nothing about WHOSE account the address holds (the server's own rule).
+ * ⚠ ONE PERSON PER SOURCE (owner ruling 2026-11-08, Invitations I2; revises 2026-10-30): a source
+ * someone has joined is not offered, and one with an invitation still waiting is offered greyed
+ * (resend or cancel it in the waiting table below). The server refuses both, `source_has_person`.
+ * The person who has joined is shown — and removed — on the Sources page, not here.
  */
 
 type T = (k: string, vars?: Record<string, string>) => string
 const K = 'admin.invitations.source'
-const REFUSALS = ['already_staff', 'code_taken', 'code_reserved', 'code_and_name_required',
+const REFUSALS = ['already_staff', 'source_has_person', 'code_taken', 'code_reserved', 'code_and_name_required',
   'source_inactive', 'bad_email', 'name_required', 'not_found', 'organisation_required',
   'not_configured', 'create_failed']
 const refusal = (t: T, err: unknown) => {
@@ -50,7 +51,8 @@ export function SourceInviteForm({ data, token, t, onDone }: {
   /** The banner to show, then reload the tab. */
   onDone: (message: Banner) => void
 }) {
-  const sources = data?.sources ?? []
+  // I2: a joined source is not offered at all; a waiting one is, greyed (see the docblock).
+  const sources = (data?.sources ?? []).filter((s) => s.sign_in !== 'joined')
   const [mode, setMode] = useState<'existing' | 'new'>('existing')
   const adding = mode === 'new' || (data !== null && sources.length === 0)
   const [sourceId, setSourceId] = useState('')
@@ -125,11 +127,9 @@ export function SourceInviteForm({ data, token, t, onDone }: {
                 onChange={(e) => setSourceId(e.target.value)}>
                 <option value="">{t(`${K}.choose`)}</option>
                 {sources.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {/* Every active source stays on offer — a source may sign in more than one
-                        person — but one that has joined says so (review L3). */}
-                    {s.sign_in === 'joined'
-                      ? t(`${K}.optionJoined`, { name: s.name, code: s.code })
+                  <option key={s.id} value={s.id} disabled={s.sign_in === 'invited'}>
+                    {s.sign_in === 'invited'
+                      ? t(`${K}.optionWaiting`, { name: s.name, code: s.code })
                       : t(`${K}.option`, { name: s.name, code: s.code,
                                            state: t(`admin.sources.signIn.${s.sign_in}`) })}
                   </option>
@@ -160,7 +160,8 @@ export function SourceInviteForm({ data, token, t, onDone }: {
   )
 }
 
-/** The Source tab's two tables: who has not replied yet, and who has signed in. */
+/** The Source tab's table: who has not replied yet — the one waiting table, as on every tab
+ *  (I2: the "Signed in" table and its Remove moved to the Sources page). */
 export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
   data: InvitationsPayload | null
   token: string | null
@@ -174,12 +175,12 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
   const users = data?.source_users ?? []
   const byId = new Map(users.map((u) => [u.id, u]))
   const waiting = data?.invitations ?? []
-  const joined = users.filter((u) => u.is_active && u.first_seen_at)
   const mayAct = (adminId: number | null | undefined) =>
     canManage && adminId != null && (byId.get(adminId)?.manageable ?? false)
 
   /** `known`: the refusal codes with words of their own (review L6) — the server's `already_joined`
-   *  and `not_active` say what to do next; anything else is the generic failure. */
+   *  and `not_active` say what to do next; anything else is the generic failure. Resend only now:
+   *  Remove moved to the Sources page (I2). */
   const act = async (id: number, run: () => Promise<unknown>, ok: string, failed: string,
                      who: SourceUserRow | undefined, known: string[]) => {
     setBusyId(id)
@@ -199,24 +200,13 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
       'admin.invitations.resent', 'admin.invitations.resendFailed', byId.get(adminId),
       ['already_joined', 'not_active'])
   }
-  const remove = (u: SourceUserRow) => {
-    if (!token || !window.confirm(t(`${K}.removeConfirm`, { name: u.name, source: u.source_name }))) return
-    void act(u.id, () => revokeSourceUser(u.id, { token }), `${K}.removed`, `${K}.removeFailed`, u,
-      ['not_active'])
-  }
-
-  const heading = (key: string, n: number) => (
-    <h2 className="mb-2 mt-6 text-sm font-semibold text-ground-900 first:mt-0">
-      {t(key)} <span className="font-normal text-ground-400">({n})</span>
-    </h2>
-  )
-  const empty = (key: string) => (
-    <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500">{t(key)}</div>
-  )
 
   return (
     <div data-testid="source-roster">
-      {heading('admin.invitations.waitingHeading', waiting.length)}
+      <h2 className="mb-2 text-sm font-semibold text-ground-900">
+        {t('admin.invitations.waitingHeading')}{' '}
+        <span className="font-normal text-ground-400">({waiting.length})</span>
+      </h2>
       {/* I1: the one waiting table every tab draws, with the source's name as its lead column.
           Resend is the source-user resend, Cancel the page's own; both only where `mayAct`. */}
       <InvitationsTable rows={waiting} canAct={canManage} busyId={busyId} showRole={false}
@@ -225,36 +215,6 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
         onResend={resend} onCancel={onCancel}
         canResend={(row) => mayAct(row.admin_id)} canCancel={(row) => mayAct(row.admin_id)}
         empty={t(`${K}.noneWaiting`)} />
-
-      {heading(`${K}.signedIn`, joined.length)}
-      {joined.length === 0 ? empty(`${K}.noneSignedIn`) : (
-        <TableFrame minWidth={720} label={t(`${K}.signedIn`)} phoneRows>
-          <table className="w-full text-sm">
-            <thead className="border-b bg-ground-50">
-              <tr>{['source', 'person', 'email', 'lastSeen'].map((c) => <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>)}<th className={TH} /></tr>
-            </thead>
-            <tbody className="divide-y">
-              {joined.map((u) => (
-                <tr key={u.id} data-testid={`source-user-${u.id}`}>
-                  <td className="px-4 py-3 font-medium text-ground-900">{u.source_name}
-                    <span className="ml-2"><SignInBadge state="joined" t={t} /></span></td>
-                  <td className="px-4 py-3" data-label={t(`${K}.col.person`)}>{u.name || '—'}</td>
-                  <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t(`${K}.col.email`)}>{u.email}
-                    {u.phone && <span className="block text-xs text-ground-600" data-testid={`source-user-phone-${u.id}`}>
-                      <span className="sr-only">{t('admin.reviewer.phone')}: </span>{u.phone}</span>}</td>
-                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap" data-label={t(`${K}.col.lastSeen`)}>{formatDate(u.last_seen_at ?? u.first_seen_at)}</td>
-                  <td className="px-4 py-3">
-                    {mayAct(u.id) && (
-                      <button type="button" className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50"
-                        disabled={busyId === u.id} onClick={() => remove(u)}>{t(`${K}.remove`)}</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableFrame>
-      )}
     </div>
   )
 }

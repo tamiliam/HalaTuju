@@ -77,8 +77,9 @@ const asStaffRow = (row: InvitationRow) =>
  *
  * ⚠ **SOURCE (source sign-in S2, 2026-10-30)** is its own form and roster
  * (`components/sources/SourceInvite`): pick a source or add a new one, name its person; then who
- * has not replied and who has signed in (Resend / Cancel / Remove). Super and org_admin invite;
- * the Sources page's "Invite a source" lands here with `?kind=source`.
+ * has not replied (Resend / Cancel). Super and org_admin invite; the Sources page's "Invite a
+ * source" lands here with `?kind=source`. One person per source (I2, 2026-11-08): a joined source
+ * leaves the dropdown, and its person — with Remove — is on the Sources page, not here.
  *
  * ⚠ **MENTOR (student maintenance S7b follow-up, 2026-11-01)** follows the source pattern exactly
  * (`components/mentors/MentorInvite`): name + email, then the mentors who have not signed in yet with

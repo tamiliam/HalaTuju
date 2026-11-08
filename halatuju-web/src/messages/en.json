@@ -3721,6 +3721,13 @@
         "invited": "Invited, waiting",
         "joined": "Joined"
       },
+      "person": {
+        "remove": "Remove",
+        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
+        "removed": "Sign-in removed.",
+        "removeFailed": "We could not remove it. Reload the page and try again.",
+        "notActive": "{name} is already switched off. Reload the page."
+      },
       "managed": "Managed by the source",
       "managedNote": "Edit stays until the source signs in. After that, only the source changes its own details. You still switch a source on or off for the apply form.",
       "managedRefused": "This source has signed in and now keeps its own details. You can still switch it on or off."
@@ -7426,7 +7433,7 @@
         "which": "Which source?",
         "choose": "Choose a source…",
         "option": "{name} ({code}) — {state}",
-        "help": "Every active source on your list — a source can have more than one person. Or",
+        "help": "One person per source, so a source someone has joined is not listed. Or",
         "addNew": "add a new source (name and short code)",
         "pickExisting": "Choose a source already on your list instead",
         "newName": "Source name",
@@ -7437,21 +7444,13 @@
         "note": "They will see only their own students, read only, and can witness contracts.",
         "chooseFirst": "Choose a source, or add a new one.",
         "sent": "Invitation sent.",
-        "signedIn": "Signed in",
         "col": {
-          "source": "Source",
-          "person": "Person",
-          "email": "Email",
-          "lastSeen": "Last seen"
+          "source": "Source"
         },
         "noneWaiting": "Nobody is waiting to reply.",
-        "noneSignedIn": "Nobody has signed in for a source yet.",
-        "remove": "Remove",
-        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
-        "removed": "Sign-in removed.",
-        "removeFailed": "We could not remove it. Reload the page and try again.",
         "error": {
           "already_staff": "This email address already has a HalaTuju staff or source sign-in, so it cannot be invited for a source. Ask HalaTuju support.",
+          "source_has_person": "This source already has a person: someone has joined, or an invitation is waiting. Resend or cancel the waiting invitation below, or remove the person on Sources first.",
           "code_taken": "That short code is already in use.",
           "code_reserved": "That short code is reserved. Choose another.",
           "code_and_name_required": "A new source needs a name and a short code.",
@@ -7465,7 +7464,7 @@
           "generic": "We could not send the invitation. Try again."
         },
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
-        "optionJoined": "{name} ({code}) — someone has already joined",
+        "optionWaiting": "{name} ({code}) — invited, waiting: resend or cancel below",
         "refused": {
           "already_joined": "{name} has already signed in.",
           "not_active": "{name} is switched off. To bring them back, invite them again."

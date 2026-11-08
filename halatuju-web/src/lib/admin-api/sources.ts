@@ -26,6 +26,19 @@ export async function getOrgs(options?: ApiOptions) {
 // The Sources registry reuses PartnerOrganisation.phone / contact_person / contact_email
 // (NOT a separate contact_phone column). super/org_admin only.
 
+/** The source's ACTIVE person on its Sources row (Invitations I2, 2026-11-08: one person per
+ *  source). `joined_at` is their first sign-in, null while still waiting. `manageable` is the
+ *  server's `source_invite.manageable` — the same check `revokeSourceUser` enforces. */
+export interface SourcePerson {
+  id: number
+  name: string
+  email: string
+  joined_at: string | null
+  manageable: boolean
+  /** Their OWN phone (their Profile), which the inviting organisation sees (owner, 2026-10-31). */
+  phone?: string | null
+}
+
 export interface SourceItem {
   id: number
   code: string
@@ -51,6 +64,9 @@ export interface SourceItem {
    *  ADDED here (POST is 410): it is created by inviting its person on Invitations → Source. */
   sign_in?: SourceSignIn
   user_count?: number
+  /** Invitations I2: who signs in for it (or is invited and waiting); null when nobody. Remove on
+   *  this row calls `revokeSourceUser(person.id)`. Absent from an older server. */
+  person?: SourcePerson | null
 }
 
 export async function getSources(options?: ApiOptions) {
