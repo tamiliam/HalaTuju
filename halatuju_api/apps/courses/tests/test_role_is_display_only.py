@@ -302,6 +302,9 @@ ALLOWLIST = {
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/guardian_contact.py::_guardian_gate': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
+    # Request #55: the owner named the writers by role (org admin + super); T5e moves lead powers to keys.
+    'scholarship/views_admin/reviewer_notes.py::_may_write': ('GATE-LEFT', 'T5e',
+        'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/views_admin/invitations.py::AdminInvitationCancelView.post': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/views_admin/invitations.py::AdminInvitationsView.post': ('GATE-LEFT', 'T5e',

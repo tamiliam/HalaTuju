@@ -120,6 +120,13 @@ class TestTheTable(_Base):
         names = {x['name'] for x in self.client.get(LIST).json()['reviewers']}
         self.assertIn('Intruder', names)
 
+    def test_a_super_is_not_a_reviewer(self):
+        # Owner 2026-11-07: the super was listed on Team -> Reviewers (and had a reviewer page).
+        self._auth('rv-su')
+        names = {x['name'] for x in self.client.get(LIST).json()['reviewers']}
+        self.assertNotIn('Super', names)
+        self.assertEqual(self.client.get(f'{LIST}{self.super.pk}/').status_code, 404)
+
     def test_a_revoked_reviewer_is_LISTED_and_marked(self):
         """⚠ THIS TEST ASSERTED THE OPPOSITE UNTIL 2026-09-09, and the reversal is deliberate.
 

@@ -135,6 +135,17 @@ describe('the outcome bar', () => {
   })
 })
 
+describe('languages live here, not on the Team table (owner 2026-11-07)', () => {
+  it('lists the interview languages and the optional fourth one by name', async () => {
+    await loaded({ other_language: 'Kadazandusun' } as Partial<api.AdminReviewerDetail>)
+    expect(screen.getByText('admin.reviewers.colLanguages')).toBeTruthy()
+    const line = screen.getByText('admin.reviewers.colLanguages').nextElementSibling!.textContent!
+    for (const part of ['admin.reviewers.lang.ta', 'admin.reviewers.lang.en', 'Kadazandusun']) {
+      expect(line).toContain(part)
+    }
+  })
+})
+
 describe('the honest empty states', () => {
   it('says "no reviews yet" instead of a turnaround of zero', async () => {
     await loaded({ turnaround_days: null })

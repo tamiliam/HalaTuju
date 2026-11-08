@@ -25,8 +25,11 @@ jest.mock('@/lib/admin-api')
 // T3: the Mentors tab's screen is its own chunk (`components/mentors/MentorsAdmin`, tested there).
 jest.mock('@/components/mentors/MentorsAdmin', () => ({
   __esModule: true,
-  default: ({ AlsoIn }: { AlsoIn: unknown }) =>
-    <div data-testid="team-mentors-screen">{typeof AlsoIn === 'function' ? 'chips' : ''}</div>,
+  default: ({ AlsoIn, adding, onAddClose }: { AlsoIn: unknown; adding?: boolean; onAddClose?: () => void }) =>
+    <div data-testid="team-mentors-screen" data-adding={adding ? 'yes' : 'no'}>
+      {typeof AlsoIn === 'function' ? 'chips' : ''}
+      <button type="button" data-testid="mock-mentor-sheet-close" onClick={() => onAddClose?.()} />
+    </div>,
 }))
 
 const mockApi = api as jest.Mocked<typeof api>
@@ -44,8 +47,7 @@ const REVIEWERS = [
   },
 ] as unknown as api.AdminReviewer[]
 
-/** The organisation's gifts. Only the COUNT matters to this page — the gift line under a name
- *  renders above one, per the ruling at the top of `page.tsx`. */
+/** The organisation's gifts. The table never shows them (owner 2026-11-07: the profile does). */
 let giftChoices: api.AdminReviewerGift[] = []
 
 /** The staff behind the Admins tab (2026-09-09). ⚠ Deliberately mixed: an org_admin who is IN, a
@@ -90,10 +92,15 @@ const loaded = async () => {
 describe('what the table shows', () => {
   it('draws the columns the surface was approved with', async () => {
     await loaded()
-    for (const key of ['colName', 'colLanguages', 'colAwaiting', 'colInterviewing', 'colCompleted',
+    // Owner 2026-11-08: the first header reads "Name", as on Admins and Mentors.
+    expect(ui().getByText('admin.nameHeader')).toBeTruthy()
+    expect(ui().queryByText('admin.reviewers.colName')).toBeNull()
+    for (const key of ['colAwaiting', 'colInterviewing', 'colCompleted',
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
+    // Owner 2026-11-07: no Languages column — the reviewer's own page shows them.
+    expect(ui().queryByText('admin.reviewers.colLanguages')).toBeNull()
     // Team tables T2: the Role column became "Also in". T3 (owner): no permission column on the Team
     // tables — permissions are set only on the person's page.
     expect(ui().getByText('admin.team.colAlsoIn')).toBeTruthy()
@@ -120,11 +127,10 @@ describe('what the table shows', () => {
       .toBe('/admin/organisation/reviewers/5')
   })
 
-  it('names the languages someone can actually interview in', async () => {
+  it('shows no languages on the table or the phone cards (owner 2026-11-07: on the profile)', async () => {
     await loaded()
-    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
-    expect(ui().getByText('admin.reviewers.lang.en')).toBeTruthy()
-    expect(screen.queryByText('admin.reviewers.lang.ms')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.lang.ta')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.lang.en')).toBeNull()
   })
 })
 
@@ -133,7 +139,7 @@ describe('the two figures that lie if you let them', () => {
   const turnaroundOf = (id: number) => {
     const row = screen.getAllByRole('row').slice(1).find((r) =>
       r.querySelector('a')!.getAttribute('href')!.endsWith(`/${id}`))!
-    return row.querySelectorAll('td')[6].textContent   // T2: Also in before it (T3: no permissions column)
+    return row.querySelectorAll('td')[5].textContent   // T2: Also in before it (T3: no permissions; 2026-11-07: no languages)
   }
 
   it('says "no reviews yet" rather than showing a turnaround of nothing', async () => {
@@ -165,48 +171,19 @@ describe('what must NOT be on this table', () => {
   })
 })
 
-/** Multi-gift (owner design, 2026-11-06): one grey chip per gift, or one "Every gift" chip, with a
- *  pencil for someone who manages staff. Only once the organisation runs more than one gift. */
-describe('the gift chips under a name', () => {
-  const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary' }
-  const twoGifts = (rows = REVIEWERS) => {
-    giftChoices = [...giftChoices, { ...SABAH, is_active: true }]
-    mockApi.listReviewers.mockResolvedValue({ reviewers: rows, programmes: giftChoices })
-  }
-
-  it('shows one chip per gift, and EVERY GIFT for none', async () => {
-    twoGifts([{ ...REVIEWERS[0], gifts: [SABAH] }, REVIEWERS[1]])
+/** Owner 2026-11-07: gifts are shown and edited on the reviewer's own page, never on the table —
+ *  even when the organisation runs several gifts. (The editor itself is tested in `[id]/page.test.tsx`.) */
+describe('no gift chips on the table', () => {
+  it('shows no gift chips and no pencil, on the table or the phone cards', async () => {
+    const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: true }
+    giftChoices = [...giftChoices, SABAH]
+    mockApi.listReviewers.mockResolvedValue({
+      reviewers: [{ ...REVIEWERS[0], gifts: [SABAH] }, REVIEWERS[1]], programmes: giftChoices })
     await loaded()
-    expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary')
-    expect(ui().getByTestId('gifts-6').textContent).toBe('admin.reviewers.gifts.every')
-  })
-
-  it('an old API response with no gifts key reads as EVERY GIFT and does not crash', async () => {
-    const { gifts: _omitted, ...old } = REVIEWERS[0]
-    twoGifts([old as unknown as typeof REVIEWERS[0], REVIEWERS[1]])
-    await loaded()
-    expect(ui().getByTestId('gifts-5').textContent).toBe('admin.reviewers.gifts.every')
-  })
-
-  it('saves from the pencil and patches only that row', async () => {
-    twoGifts()
-    mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [SABAH] })
-    await loaded()
-    fireEvent.click(ui().getByTestId('gifts-edit-5'))
-    fireEvent.click(ui().getByTestId('gifts-ticks-5-every'))
-    fireEvent.click(ui().getByTestId('gifts-ticks-5-gift-9'))
-    fireEvent.click(ui().getByTestId('gifts-save-5'))
-    await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [9], { token: 'tok' }))
-    await waitFor(() => expect(ui().getByTestId('gifts-5').textContent).toBe('Sabah Bursary'))
-    expect(mockApi.listReviewers).toHaveBeenCalledTimes(1)
-  })
-
-  it('gives a plain admin the chips but no pencil', async () => {
-    viewerRole = { role: 'admin' }
-    twoGifts()
-    await loaded()
-    expect(ui().getByTestId('gifts-5')).toBeTruthy()
-    expect(ui().queryByTestId('gifts-edit-5')).toBeNull()
+    expect(screen.queryByTestId('gifts-5')).toBeNull()
+    expect(screen.queryByTestId('gifts-edit-5')).toBeNull()
+    expect(screen.queryByText('Sabah Bursary')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.gifts.every')).toBeNull()
   })
 })
 
@@ -220,11 +197,11 @@ describe('sorting', () => {
 
   it('flips a column when its header is clicked, and says so to a screen reader', async () => {
     await loaded()
-    const header = screen.getByText('admin.reviewers.colName').closest('th')!
+    const header = screen.getByText('admin.nameHeader').closest('th')!
     expect(header.getAttribute('aria-sort')).toBe('none')
-    fireEvent.click(screen.getByText('admin.reviewers.colName'))
+    fireEvent.click(screen.getByText('admin.nameHeader'))
     await waitFor(() =>
-      expect(screen.getByText('admin.reviewers.colName').closest('th')!.getAttribute('aria-sort'))
+      expect(screen.getByText('admin.nameHeader').closest('th')!.getAttribute('aria-sort'))
         .toBe('ascending'))
     const names = screen.getAllByRole('row').slice(1)
       .map((r) => r.querySelector('a')!.textContent)
@@ -596,14 +573,13 @@ describe('common profile S2: photo and a phone shown to the team', () => {
 })
 
 describe('common profile S2: the optional fourth language', () => {
-  it('shows as an extra chip by name, beside the en/ms/ta chips', async () => {
+  it('is not on the table either (owner 2026-11-07: languages live on the profile)', async () => {
     mockApi.listReviewers.mockResolvedValue({ programmes: giftChoices, reviewers: [
       { ...REVIEWERS[0], other_language: 'Kadazandusun' }, { ...REVIEWERS[1], other_language: '' },
     ] as unknown as api.AdminReviewer[] })
     await loaded()
-    expect(ui().getByTestId('other-language-5').textContent).toBe('Kadazandusun')
-    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
-    expect(ui().queryByTestId('other-language-6')).toBeNull()
+    expect(screen.queryByText('Kadazandusun')).toBeNull()
+    expect(screen.queryByTestId('other-language-5')).toBeNull()
   })
 })
 
@@ -658,10 +634,10 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
   })
 
-  it('a person whose only table this is reads "revoke instead", with no Remove link', async () => {
+  it('a person whose only table this is shows no Remove link and no note (owner 2026-11-07)', async () => {
     await openAdmins()
     const row = rowOf('Kamala Devi')
-    expect(within(row).getByText('admin.team.note.last_table')).toBeTruthy()
+    expect(within(row).queryByTestId('remove-note-admins')).toBeNull()
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
     expect(within(row).queryByText('admin.perm.payments_approve.name')).toBeNull()  // T3: no chips here
     expect(within(row).queryByText('admin.role.finance')).toBeNull()               // label retired
@@ -731,6 +707,14 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       'reviewers', 32, 'add', false, { token: 'tok' }))
   })
 
+  it('Add sits on the tab row, after the tabs and outside the tablist (owner 2026-11-08)', async () => {
+    await loaded()
+    const add = screen.getByTestId('team-add-reviewers-open')
+    const tablist = screen.getByRole('tablist')
+    expect(tablist.contains(add)).toBe(false)              // a button in a tablist is not a tab
+    expect(add.previousElementSibling?.contains(tablist)).toBe(true)   // same row, at its right end
+  })
+
   it('⚠ offers no Add and no Remove to a viewer who may not edit permissions (admin)', async () => {
     viewerRole = { role: 'admin' }
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], remove: { reviewers: null } }],
@@ -744,6 +728,28 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     await loaded()
     fireEvent.click(screen.getByText('admin.team.tabMentors'))
     expect(await screen.findByTestId('team-mentors-screen')).toBeTruthy()
+  })
+
+  it('Add Mentor sits on the tab row too, and opens the Mentors screen\'s sheet (owner 2026-11-08)', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    const mentors = await screen.findByTestId('team-mentors-screen')
+    expect(mentors.getAttribute('data-adding')).toBe('no')
+    const add = screen.getByTestId('team-add-mentors-open')
+    expect(add.textContent).toBe('admin.mentors.addMentor')
+    expect(add.previousElementSibling?.contains(screen.getByRole('tablist'))).toBe(true)
+    fireEvent.click(add)
+    expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('yes')
+    fireEvent.click(screen.getByTestId('mock-mentor-sheet-close'))
+    expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('no')
+  })
+
+  it('⚠ no Add Mentor for a viewer who may not manage (admin)', async () => {
+    viewerRole = { role: 'admin' }
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    await screen.findByTestId('team-mentors-screen')
+    expect(screen.queryByTestId('team-add-mentors-open')).toBeNull()
   })
 
   it('T3: the Mentors tab is offered only to who read the old Mentors page (not finance)', async () => {

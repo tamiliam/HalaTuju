@@ -130,6 +130,10 @@ export type {
   AdminNudge, AdminScholarshipDetail, AdminScholarshipListData, GuardianCallOutcome,
 } from './admin-api/applications'
 
+// Request #55: an organisation admin's notes for the reviewer (append-only).
+export { getReviewerNotes, addReviewerNote } from './admin-api/reviewerNotes'
+export type { ReviewerNote, ReviewerNotes } from './admin-api/reviewerNotes'
+
 // Interview scheduling from the OFFICER's side, and the Check-3 session.
 export {
   getInterview, saveInterview, submitInterview, reopenInterview, proposeInterviewSlots,

@@ -190,3 +190,38 @@ describe('#39 Sprint 4: permission chips, and the name that opens the person pag
     expect(r.container.querySelector('a')).toBeNull()
   })
 })
+
+describe('Team → Admins reads like Reviewers and Mentors (owner 2026-11-08)', () => {
+  const team = { onRemove: jest.fn() }
+  const heads = () => ui().getAllByRole('columnheader').map((h) => h.textContent)
+
+  it('puts the email under the name, drops the Email column, and adds Last seen after Status', () => {
+    render(<StaffTable rows={[row({ id: 40, role: 'admin', last_seen_at: '2026-11-02T00:00:00Z' })]} canAct team={team} />)
+    expect(heads()).toEqual(['admin.nameHeader', 'admin.team.colAlsoIn', 'admin.statusHeader',
+      'admin.reviewers.colLastSeen', 'admin.actionHeader'])
+    expect(ui().getByTestId('team-email-40').textContent).toBe('s@example.org')
+    expect(ui().getByTestId('team-email-40').closest('td')?.textContent).toContain('Someone')
+    expect(ui().getByTestId('team-last-seen-40').textContent).toBe('02/11/2026')
+  })
+
+  it('says "Not recorded" where the server has no last seen', () => {
+    render(<StaffTable rows={[row({ id: 41, role: 'admin', last_seen_at: null })]} canAct team={team} />)
+    expect(ui().getByTestId('team-last-seen-41').textContent).toBe('admin.reviewers.lastSeenUnknown')
+  })
+
+  it('the shared header style on Team; the platform screens keep theirs, with the Email column', () => {
+    const { unmount } = render(<StaffTable rows={[row({ id: 42 })]} canAct team={team} />)
+    expect(ui().getAllByRole('columnheader')[0].className).toContain('uppercase')
+    unmount()
+    render(<StaffTable rows={[row({ id: 42 })]} canAct />)
+    expect(heads()).toEqual(['admin.nameHeader', 'admin.emailHeader', 'admin.roleHeader', 'admin.statusHeader',
+      'admin.actionHeader'])
+    expect(ui().getAllByRole('columnheader')[0].className).not.toContain('uppercase')
+    expect(ui().queryByTestId('team-last-seen-42')).toBeNull()
+  })
+
+  it('the empty row spans every column', () => {
+    render(<StaffTable rows={[]} canAct team={team} />)
+    expect(ui().getByText('admin.noAdmins').closest('td')?.getAttribute('colspan')).toBe('5')
+  })
+})

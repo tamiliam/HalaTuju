@@ -79,7 +79,8 @@ export function RemoveControl({ remove, table, busy, onRemove }: {
       </button>
     )
   }
-  if (code === 'last_table' || code === 'mentors_only' || code === 'has_open_cases') {
+  // 'last_table' (their only table) shows nothing: Revoke sits beside it (owner 2026-11-07).
+  if (code === 'mentors_only' || code === 'has_open_cases') {
     return <span className="text-[11px] text-ground-400" data-testid={`remove-note-${table}`}>
       {t(`admin.team.note.${code}`)}</span>
   }

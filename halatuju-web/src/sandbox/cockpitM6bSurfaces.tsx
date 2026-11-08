@@ -58,6 +58,16 @@ const routesFor = (app: AdminScholarshipDetail): Record<string, () => unknown> =
   '/api/v1/admin/scholarship/applications/1/interview/': () => ({ session: sandboxCockpitInterview, agenda: [] }),
   '/api/v1/admin/scholarship/assignable-admins/': () => ({ admins: [] }),
   '/api/v1/admin/scholarship/sources/': () => ({ sources: [] }),
+  // Request #55: two notes and the open box, so mobile-check measures the card as an org admin sees it.
+  '/api/v1/admin/scholarship/applications/1/reviewer-notes/': () => ({
+    window_open: true, can_add: true, max_length: 2000,
+    notes: [
+      { id: 1, author_name: 'Pentadbir Contoh', created_at: '2026-11-05T10:42:00+08:00',
+        body: 'Pendapatan bapa nampak rendah untuk pemandu lori. Sila tanya berapa trip sebulan.' },
+      { id: 2, author_name: 'Pentadbir Contoh', created_at: '2026-11-06T16:05:00+08:00',
+        body: 'Pembetulan kepada nota di atas: abang, bukan kakak.' },
+    ],
+  }),
 })
 
 function Case({ children }: { children?: ReactNode }) {
