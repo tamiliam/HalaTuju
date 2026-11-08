@@ -1366,8 +1366,8 @@ class SendVerificationView(APIView):
         import uuid
         from datetime import timedelta
         from django.utils import timezone
-        from django.core.mail import send_mail
         from django.conf import settings
+        from . import profile_claim
 
         email = request.data.get('email', '').strip()
         if not email:
@@ -1407,13 +1407,10 @@ class SendVerificationView(APIView):
         # Send verification email in the user's language
         frontend_url = getattr(settings, 'FRONTEND_URL', '')
         verify_url = f"{frontend_url}/verify-email?token={token}"
-        try:
-            send_mail(
-                subject=VERIFICATION_EMAIL_SUBJECTS[lang],
-                message=VERIFICATION_EMAIL_BODIES[lang].format(url=verify_url),
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-                recipient_list=[email],
-            )
+        try:   # TD-428: through the metered seam, not a bare send_mail
+            profile_claim.send_verification_email(
+                email, VERIFICATION_EMAIL_SUBJECTS[lang],
+                VERIFICATION_EMAIL_BODIES[lang].format(url=verify_url))
         except Exception:
             logger.warning('Verification email failed for profile %s', profile.pk, exc_info=True)
 

@@ -67,7 +67,7 @@ _FLAG_RESULTS = ('MAINTENANCE_REMINDERS_ENABLED', True)
 
 CATALOGUE = (
     # ── Account ─────────────────────────────────────────────────────────────────────────────
-    _E('verify_email', 'account', lock='credential', tracked=None),        # courses.views: bare send_mail
+    _E('verify_email', 'account', ('send_verification_email',), lock='credential', tracked=None),  # no org (TD-428: metered)
     _E('claim_code', 'account', ('send_claim_code_email',), lock='credential', tracked=None),  # no org
     _E('sign_in', 'account', lock='outside_platform', languages='en', tracked=None),          # Supabase Auth
     # ── Applying ────────────────────────────────────────────────────────────────────────────
