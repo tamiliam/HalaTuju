@@ -155,6 +155,7 @@ tags:
   - halatuju-api
 
 # The inline config set no timeout, so it inherited Cloud Build's 60-minute default. Thirty
-# minutes is explicit and tighter: room for the suite beside the image build, without letting a
-# hung build burn an hour of the free tier.
-timeout: 1800s
+# minutes was set first. By 2026-11-08 the suite alone took about 28 minutes, and build 5aad760c
+# timed out during Deploy after test, Build and Push were green. Forty-five minutes gives room for
+# the suite plus Deploy and SyncReleaseJob, and still stops a hung build before the hour.
+timeout: 2700s
