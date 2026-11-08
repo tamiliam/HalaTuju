@@ -63,7 +63,13 @@ def current_assignments(login):
             .select_related('application__profile', 'application__owning_organisation',
                             'application__cohort', 'mentor')
             .order_by('started_at', 'id'))
-    return [a for a in rows if not mentoring.is_the_student(login, a.application)]
+    rows = list(rows)
+    uid = (login.supabase_user_id or '').strip()
+    from apps.courses.models_claim import ProfileLoginAlias   # TD-500: every mentee's alias in ONE query
+    aliased = set(ProfileLoginAlias.objects.filter(
+        alias_uid=uid, profile_id__in=[a.application.profile_id for a in rows],
+    ).values_list('profile_id', flat=True)) if uid and rows else set()
+    return [a for a in rows if not mentoring.is_the_student(login, a.application, aliased)]
 
 
 def gifts_of_file(programme_id, cohort_programme_id):

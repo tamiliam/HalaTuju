@@ -285,18 +285,18 @@
     {
       "on": "2026-11-04",
       "by": "Team tables T5c P5 S1b",
-      "why": "The Programmes landing as a mentor with two current students in one gift: the cohort's gift rides on the assignments' own query (S1 spent one cohort query per mentee). It still grows by ONE per mentee, the self-mentoring guard's alias read in mentoring.is_the_student, shared with My students and older than the landing; this ceiling notices any more.",
+      "why": "The Programmes landing as a mentor with two current students in one gift: the cohort's gift rides on the assignments' own query (S1 spent one cohort query per mentee). A2.4 (TD-500) read every mentee's alias in one query, so the two mentor readings are now equal at 6; this ceiling notices any per-mentee read returning.",
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-programmes/::GET::mentor-2-students",
-      "value": 7
+      "value": 6
     },
     {
       "on": "2026-11-04",
       "by": "Team tables T5c P5 S1b",
-      "why": "The Programmes landing as a mentor with five current students: 10, three above the two-student reading, exactly the self-mentoring guard's one alias read per mentee (mentoring.is_the_student, pre-existing); nothing else grows.",
+      "why": "The Programmes landing as a mentor with five current students: 6, equal to the two-student reading: A2.4 (TD-500) reads the aliases once for the whole list.",
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-programmes/::GET::mentor-5-students",
-      "value": 10
+      "value": 6
     },
     {
       "on": "2026-11-05",
@@ -360,7 +360,7 @@
       "why": "The same, moving an assigned case to a second reviewer. Measured 15 on 2026-11-07, equal to the first assignment.",
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/applications/<int:pk>/assign/::POST::reassign",
-      "value": 15
+      "value": 14
     }
   ],
   "_history": [
@@ -834,8 +834,8 @@
       "apps/scholarship/tests/test_whatsapp.py": 1
     },
     "query_budgets": {
-      "api/v1/admin/scholarship/applications/<int:pk>/::GET::no-documents": 38,
-      "api/v1/admin/scholarship/applications/<int:pk>/::GET::three-documents": 38
+      "api/v1/admin/scholarship/applications/<int:pk>/::GET::no-documents": 33,
+      "api/v1/admin/scholarship/applications/<int:pk>/::GET::three-documents": 33
     }
   }
 }

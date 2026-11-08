@@ -147,9 +147,11 @@ def _login(mentor):
     return login_of(mentor)
 
 
-def is_the_student(login, application):
+def is_the_student(login, application, aliased=None):
     """True when this mentor LOGIN belongs to the student of ``application`` (see the module
-    docstring): the same Supabase UID as the profile or a claimed alias, or the same email."""
+    docstring): the same Supabase UID as the profile or a claimed alias, or the same email.
+    ``aliased`` (TD-500): the profile ids this login's UID is a claimed alias of, read for a whole
+    list in one query; None asks the database for this one application, as before."""
     if login is None or application is None:
         return False
     profile_id = application.profile_id
@@ -158,7 +160,8 @@ def is_the_student(login, application):
         if uid == profile_id:
             return True
         from apps.courses.models_claim import ProfileLoginAlias
-        if ProfileLoginAlias.objects.filter(alias_uid=uid, profile_id=profile_id).exists():
+        if (profile_id in aliased if aliased is not None
+                else ProfileLoginAlias.objects.filter(alias_uid=uid, profile_id=profile_id).exists()):
             return True
     email = (login.email or '').strip().lower()
     if not email:
