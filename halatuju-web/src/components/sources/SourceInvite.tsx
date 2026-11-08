@@ -8,6 +8,8 @@ import {
   type InvitationRow, type InvitationsPayload, type SourceUserRow,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
+import InvitationsTable from '@/components/admin/InvitationsTable'
+import { FIELD_LABEL as LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
 import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
 import { SignInBadge } from '@/components/sources/shared'
 
@@ -40,7 +42,6 @@ const refusal = (t: T, err: unknown) => {
   return t(`${K}.error.${code && REFUSALS.includes(code) ? code : 'generic'}`)
 }
 const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
-const LABEL = 'mb-1 block text-sm font-medium text-ground-700'
 
 export function SourceInviteForm({ data, token, t, onDone }: {
   data: InvitationsPayload | null
@@ -88,30 +89,27 @@ export function SourceInviteForm({ data, token, t, onDone }: {
       <div className="grid gap-4 sm:grid-cols-2">
         {adding ? (
           <>
-            <label className="block text-sm">
-              <span className={LABEL}>{t(`${K}.newName`)}</span>
+            <InviteField label={t(`${K}.newName`)}>
               <input className={inputCls} value={newSource.name} required
                 onChange={(e) => setNewSource({ ...newSource, name: e.target.value })} />
-            </label>
+            </InviteField>
             <div className="text-sm">
               <label htmlFor="source-invite-code" className={LABEL}>{t(`${K}.newCode`)}</label>
               <input id="source-invite-code" className={inputCls} value={newSource.code} required
                 onChange={(e) => setNewSource({ ...newSource, code: slugify(e.target.value) })} />
               <span className="mt-1 block text-xs text-ground-500">{t('admin.sources.codeHelp')}</span>
             </div>
-            <label className="block text-sm">
-              <span className={LABEL}>{t(`${K}.contactPerson`)}</span>
+            <InviteField label={t(`${K}.contactPerson`)}>
               <input className={inputCls} value={newSource.contact_person}
                 onChange={(e) => setNewSource({ ...newSource, contact_person: e.target.value })} />
-            </label>
-            <label className="block text-sm">
-              <span className={LABEL}>{t(`${K}.contactPhone`)}</span>
+            </InviteField>
+            <InviteField label={t(`${K}.contactPhone`)}>
               {/* Plain on purpose: the phone helpers live in `lib/scholarship`, whose words are a slice
                   this route does not load (TD-416). The source keeps its own phone, checked, in its
                   console Profile. */}
               <input className={inputCls} inputMode="tel" type="tel" autoComplete="off" value={newSource.phone}
                 onChange={(e) => setNewSource({ ...newSource, phone: e.target.value })} />
-            </label>
+            </InviteField>
             {sources.length > 0 && (
               <p className="text-xs text-ground-500 sm:col-span-2">
                 <button type="button" onClick={() => setMode('existing')}
@@ -146,25 +144,18 @@ export function SourceInviteForm({ data, token, t, onDone }: {
             <div className="hidden sm:block" />
           </>
         )}
-        <label className="block text-sm">
-          <span className={LABEL}>{t(`${K}.personName`)}</span>
+        <InviteField label={t(`${K}.personName`)}>
           <input className={inputCls} value={person.name} required
             onChange={(e) => setPerson({ ...person, name: e.target.value })} />
-        </label>
-        <label className="block text-sm">
-          <span className={LABEL}>{t('admin.emailLabel')}</span>
+        </InviteField>
+        <InviteField label={t('admin.emailLabel')}>
           <input className={inputCls} type="email" value={person.email} required
             onChange={(e) => setPerson({ ...person, email: e.target.value })} />
-        </label>
+        </InviteField>
       </div>
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-ground-500">{t(`${K}.note`)}</span>
-        <button type="submit" disabled={busy}
-          className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-          {t('admin.sendInvite')}
-        </button>
-      </div>
+      {/* I1: the one invite foot — note under the fields, Send Invite at the left. */}
+      <InviteFoot note={t(`${K}.note`)} busy={busy} label={t('admin.sendInvite')} />
     </form>
   )
 }
@@ -214,7 +205,6 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
       ['not_active'])
   }
 
-  const link = 'text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50'
   const heading = (key: string, n: number) => (
     <h2 className="mb-2 mt-6 text-sm font-semibold text-ground-900 first:mt-0">
       {t(key)} <span className="font-normal text-ground-400">({n})</span>
@@ -227,33 +217,14 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
   return (
     <div data-testid="source-roster">
       {heading('admin.invitations.waitingHeading', waiting.length)}
-      {waiting.length === 0 ? empty(`${K}.noneWaiting`) : (
-        <TableFrame minWidth={720} label={t('admin.invitations.waitingHeading')} phoneRows>
-          <table className="w-full text-sm">
-            <thead className="border-b bg-ground-50">
-              <tr>{['source', 'person', 'email', 'sent'].map((c) => <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>)}<th className={TH} /></tr>
-            </thead>
-            <tbody className="divide-y">
-              {waiting.map((row) => (
-                <tr key={row.id} data-testid={`source-waiting-${row.id}`}>
-                  <td className="px-4 py-3 font-medium text-ground-900">{row.source_name || '—'}</td>
-                  <td className="px-4 py-3" data-label={t(`${K}.col.person`)}>{row.name || '—'}</td>
-                  <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t(`${K}.col.email`)}>{row.email}</td>
-                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap" data-label={t(`${K}.col.sent`)}>{row.sent_at ? formatDate(row.sent_at) : '—'}
-                    {row.last_send_ok === false && <div className="text-xs text-critical-600">{t('admin.invitations.send.failed')}</div>}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {mayAct(row.admin_id) && (<>
-                      <button type="button" className={link} disabled={busyId === row.id} onClick={() => resend(row)}>{t('admin.resend')}</button>
-                      <button type="button" className={`ml-3 ${link}`} disabled={busyId === row.id} onClick={() => onCancel(row)}>{t('admin.invitations.cancel')}</button>
-                    </>)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableFrame>
-      )}
+      {/* I1: the one waiting table every tab draws, with the source's name as its lead column.
+          Resend is the source-user resend, Cancel the page's own; both only where `mayAct`. */}
+      <InvitationsTable rows={waiting} canAct={canManage} busyId={busyId} showRole={false}
+        lead={{ header: t(`${K}.col.source`), cell: (row) => row.source_name || '—' }}
+        rowTestId={(row) => `source-waiting-${row.id}`}
+        onResend={resend} onCancel={onCancel}
+        canResend={(row) => mayAct(row.admin_id)} canCancel={(row) => mayAct(row.admin_id)}
+        empty={t(`${K}.noneWaiting`)} />
 
       {heading(`${K}.signedIn`, joined.length)}
       {joined.length === 0 ? empty(`${K}.noneSignedIn`) : (

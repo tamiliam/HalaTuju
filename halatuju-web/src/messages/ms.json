@@ -7389,6 +7389,7 @@
       "reviewerGiftLabel": "Pemberian mana yang akan diliputi oleh penilai ini?",
       "reviewerGiftHelp": "Padankan penilai dengan pemberian mengikut kekuatan dan minat mereka.",
       "reviewerGiftEvery": "Semua pemberian",
+      "noteLabel": "Nota peribadi",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",
@@ -7441,7 +7442,6 @@
           "source": "Sumber",
           "person": "Orang",
           "email": "E-mel",
-          "sent": "Dihantar",
           "lastSeen": "Kali terakhir dilihat"
         },
         "noneWaiting": "Tiada sesiapa yang menunggu untuk menjawab.",
@@ -7473,12 +7473,7 @@
       },
       "loadFailed": "Jemputan tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
       "mentor": {
-        "noneWaiting": "Tiada mentor yang menunggu untuk menerima.",
-        "col": {
-          "name": "Mentor",
-          "email": "E-mel",
-          "sent": "Dijemput"
-        }
+        "noneWaiting": "Tiada mentor yang menunggu untuk menerima."
       }
     },
     "soon": "Akan datang",
@@ -8637,7 +8632,7 @@
       "intro": "Orang yang membimbing penerima biasiswa anda — mentor jemputan yang telah log masuk, dan kakitangan yang juga membimbing. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
       "invite": {
         "name": "Nama",
-        "note": "Mentor akan menerima e-mel jemputan. Selepas log masuk, mereka mengisi bidang, bahasa, Tentang saya dan nombor telefon. Anda tidak boleh mengubah butiran itu; mentor sendiri yang mengemas kininya.",
+        "note": "Selepas log masuk, mentor mengisi sendiri bidang, bahasa, Tentang saya dan nombor telefon mereka.",
         "sent": "{name} telah dijemput. Butiran log masuk dihantar ke {email}.",
         "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi."
       },

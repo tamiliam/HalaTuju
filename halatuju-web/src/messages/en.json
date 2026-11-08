@@ -7389,6 +7389,7 @@
       "reviewerGiftLabel": "Which gifts will this reviewer cover?",
       "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
+      "noteLabel": "Personal note",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
@@ -7441,7 +7442,6 @@
           "source": "Source",
           "person": "Person",
           "email": "Email",
-          "sent": "Sent",
           "lastSeen": "Last seen"
         },
         "noneWaiting": "Nobody is waiting to reply.",
@@ -7473,12 +7473,7 @@
       },
       "loadFailed": "We could not load the invitations. Reload the page to try again.",
       "mentor": {
-        "noneWaiting": "No mentor is waiting to accept.",
-        "col": {
-          "name": "Mentor",
-          "email": "Email",
-          "sent": "Invited"
-        }
+        "noneWaiting": "No mentor is waiting to accept."
       }
     },
     "soon": "Soon",
@@ -8637,7 +8632,7 @@
       "intro": "The people who mentor your scholars — invited mentors who have signed in, and staff who also mentor. Invite a mentor from Invitations; each mentor fills in their own profile.",
       "invite": {
         "name": "Name",
-        "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
+        "note": "After signing in, the mentor fills in their own area, languages, About and phone.",
         "sent": "{name} invited. Sign-in details emailed to {email}.",
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
       },

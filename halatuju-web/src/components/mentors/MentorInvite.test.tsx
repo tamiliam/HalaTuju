@@ -3,12 +3,13 @@
  *
  * Invitations → Mentor (student maintenance S7b follow-up), rendered: the form posts the ONE mentor
  * invite (`inviteMentor`) and says the server's refusals in plain words; the roster lists the waiting
- * mentor invitations, and its Resend / Revoke call the MENTOR actions (`admin/mentors/<id>/…`) —
+ * mentor invitations, and its Resend / Cancel invitation (= revoke) call the MENTOR actions (`admin/mentors/<id>/…`) —
  * never the generic Cancel — only where the mentor row is `manageable`.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import { MentorInviteForm, MentorRoster } from './MentorInvite'
+import { TH } from '@/components/admin/TableFrame'
 
 jest.mock('@/lib/admin-api')
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
@@ -58,17 +59,49 @@ it('a team member refused as a mentor invite is pointed to Mentors (request 57)'
   expect((await within(form).findByRole('alert')).textContent).toBe('admin.mentors.error.already_team')
 })
 
-it('Resend and Revoke call the mentor endpoints, never the generic Cancel', async () => {
+// ⚠ I1 (2026-11-08): the link reads "Cancel invitation" like every other tab's — only the WORD changed.
+// It still calls the mentor REVOKE, with its confirm; the generic Cancel refuses a mentor invitation.
+it('Resend and "Cancel invitation" call the mentor endpoints, never the generic Cancel', async () => {
   const onDone = jest.fn()
   mockApi.mentorAction.mockResolvedValue({ ...MENTOR, emailed: true })
   render(<MentorRoster data={DATA} token="tok" t={t} canManage onDone={onDone} />)
   const row = screen.getByTestId('mentor-waiting-41')
-  fireEvent.click(within(row).getByText('admin.mentors.action.resend'))
+  fireEvent.click(within(row).getByText('admin.resend'))
   await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(7, 'resend', { token: 'tok' }))
-  fireEvent.click(within(row).getByText('admin.mentors.action.revoke'))
-  expect(window.confirm).toHaveBeenCalled()
+  await waitFor(() => expect((within(row).getByText('admin.invitations.cancel') as HTMLButtonElement).disabled).toBe(false))
+  expect(within(row).queryByText('admin.mentors.action.revoke')).toBeNull()
+  fireEvent.click(within(row).getByText('admin.invitations.cancel'))
+  expect(window.confirm).toHaveBeenCalledWith('admin.mentors.confirm.revoke {"name":"Priya Devi"}')
   await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(7, 'revoke', { token: 'tok' }))
   expect(mockApi.cancelInvitation).not.toHaveBeenCalled()
+})
+
+it('a refused confirm revokes nothing', () => {
+  window.confirm = jest.fn(() => false)
+  render(<MentorRoster data={DATA} token="tok" t={t} canManage onDone={jest.fn()} />)
+  fireEvent.click(within(screen.getByTestId('mentor-waiting-41')).getByText('admin.invitations.cancel'))
+  expect(mockApi.mentorAction).not.toHaveBeenCalled()
+})
+
+it('I1: draws the one waiting table — TH headings, Waiting (date), a red Cancel invitation', () => {
+  render(<MentorRoster data={DATA} token="tok" t={t} canManage onDone={jest.fn()} />)
+  const heads = screen.getAllByRole('columnheader')
+  expect(heads.map((h) => h.textContent)).toEqual(
+    ['admin.nameHeader', 'admin.emailHeader', 'admin.statusHeader', 'admin.actionHeader'])
+  for (const h of heads) expect(h.className).toBe(TH)
+  const row = screen.getByTestId('mentor-waiting-41')
+  expect(within(row).getByText(/^admin\.invitations\.status\.invited \(/)).toBeTruthy()
+  expect(within(row).getByText('admin.invitations.cancel').className).toContain('text-critical-600')
+  expect(screen.getByTestId('invitations-table').querySelector('[data-phone-rows]')).toBeTruthy()
+})
+
+it('I1: the form wears the one layout — labels, the note under the fields, Send Invite at the left', () => {
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} />)
+  const foot = screen.getByTestId('invite-foot')
+  expect(screen.getByTestId('mentor-invite-form').contains(foot)).toBe(true)
+  expect(within(foot).getByTestId('invite-note').textContent).toBe('admin.mentors.invite.note')
+  expect(within(foot).getByText('admin.sendInvite').parentElement).toBe(foot)
+  expect(foot.className).not.toContain('justify-between')
 })
 
 it('offers no action on a row the caller may not manage, or to a reader', () => {

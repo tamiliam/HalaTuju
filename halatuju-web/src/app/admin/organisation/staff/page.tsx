@@ -15,6 +15,7 @@ import {
   MessageBanner, PageHeader, inputCls, useStaffAdmin,
 } from '@/components/admin/StaffAdmin'
 import InvitationsTable from '@/components/admin/InvitationsTable'
+import { FIELD_LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
 import PanelTabs from '@/components/admin/PanelTabs'
 import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
 import { GiftTickList } from '@/components/admin/ReviewerGifts'
@@ -83,6 +84,11 @@ const asStaffRow = (row: InvitationRow) =>
  * (`components/mentors/MentorInvite`): name + email, then the mentors who have not signed in yet with
  * the Mentors page's own Resend / Revoke. Shown to super and org_admin only (`mentor_invite.may_invite`);
  * the Mentors page's "Invite a mentor" lands here with `?kind=mentor`.
+ *
+ * ⚠ **ONE FORM AND ONE WAITING TABLE ON ALL FIVE TABS (I1, 2026-11-08).** Every tab's form wears
+ * `admin/InviteForm` (a label above every box, the tab's note under the fields, Send Invite at the
+ * left) and every waiting list is `admin/InvitationsTable` — Source and Mentor pass their own Resend /
+ * Cancel handlers into it rather than drawing a table of their own.
  */
 export default function OrganisationInvitationsPage() {
   const { token, role } = useAdminAuth()
@@ -325,27 +331,22 @@ export default function OrganisationInvitationsPage() {
                   ))}
                 </div>
               )}
-              {/* T2 (owner ruling 4): one Admin, starting at the minimum — no "View-only" or "Finance". */}
-              {kind === 'admins' && (
-                <p className="text-xs text-ground-500" data-testid="invite-admin-minimum">
-                  {t('admin.team.inviteAdminNote')}
-                </p>
-              )}
               <div className="grid gap-4 sm:grid-cols-2">
-                <input className={inputCls} placeholder={t('admin.name')} value={sName}
-                  onChange={(e) => setSName(e.target.value)} required />
-                <input className={inputCls} type="email" placeholder={t('admin.emailLabel')}
-                  value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
+                <InviteField label={t('admin.name')}>
+                  <input className={inputCls} value={sName}
+                    onChange={(e) => setSName(e.target.value)} required />
+                </InviteField>
+                <InviteField label={t('admin.emailLabel')}>
+                  <input className={inputCls} type="email"
+                    value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
+                </InviteField>
               </div>
               {/* ⚠ ONE GIFT ASKS NOTHING. The picker appears only when the organisation runs
                   more than one, so the form is unchanged for BrightPath today. With several it
                   is REQUIRED and starts blank — never a silent default, which is exactly how a
                   Sabah benefactor would otherwise have landed in the flagship. */}
               {kind === 'sponsors' && giftChoices.length > 1 && (
-                <label className="block text-sm">
-                  <span className="mb-1 block font-medium text-ground-700">
-                    {t('admin.invitations.giftLabel')}
-                  </span>
+                <InviteField label={t('admin.invitations.giftLabel')}>
                   <select className={inputCls} value={sProgramme} required
                     onChange={(e) => setSProgramme(e.target.value)}>
                     <option value="">{t('admin.invitations.giftChoose')}</option>
@@ -353,18 +354,15 @@ export default function OrganisationInvitationsPage() {
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
-                </label>
+                </InviteField>
               )}
               {kind !== 'sponsors' && subRole === 'reviewer' && (
                 <div className="text-sm">
-                  <span className="mb-1 block font-medium text-ground-700">
-                    {t('admin.invitations.reviewerGiftLabel')}
-                  </span>
+                  <span className={FIELD_LABEL}>{t('admin.invitations.reviewerGiftLabel')}</span>
                   <div className="rounded-lg border border-ground-300 px-2 py-1">
                     <GiftTickList ticks={rGifts} options={reviewerGiftChoices} onChange={setRGifts}
                       everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-reviewer-gift" />
                   </div>
-                  <p className="mt-1.5 text-xs text-ground-500">{t('admin.invitations.reviewerGiftHelp')}</p>
                 </div>
               )}
               {/* ⚠ A TEXTAREA, NOT AN INPUT, AND THE REASON IS NOT COSMETIC (BrightPath #17).
@@ -377,14 +375,19 @@ export default function OrganisationInvitationsPage() {
                   "tidy" this back to an <input> to match the two above it. The email carries the
                   line breaks through — it is plain text, and a backend test pins that. */}
               {kind === 'sponsors' && (
-                <textarea className={inputCls} rows={3}
-                  placeholder={t('admin.invitations.notePlaceholder')}
-                  value={note} onChange={(e) => setNote(e.target.value)} />
+                <InviteField label={t('admin.invitations.noteLabel')}>
+                  <textarea className={inputCls} rows={3}
+                    placeholder={t('admin.invitations.notePlaceholder')}
+                    value={note} onChange={(e) => setNote(e.target.value)} />
+                </InviteField>
               )}
-              <button type="submit" disabled={busy}
-                className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.sendInvite')}
-              </button>
+              {/* I1: the tab's note sits UNDER the fields, then Send Invite at the left. Admin's says
+                  where an Admin starts (T2, owner ruling 4: one Admin, at the minimum); Reviewer's is
+                  the gift help; Sponsor has none. */}
+              <InviteFoot busy={busy} label={t('admin.sendInvite')}
+                note={kind === 'admins' ? t('admin.team.inviteAdminNote')
+                  : kind !== 'sponsors' && subRole === 'reviewer' ? t('admin.invitations.reviewerGiftHelp')
+                  : undefined} />
             </form>
           ) : null}
         </div>

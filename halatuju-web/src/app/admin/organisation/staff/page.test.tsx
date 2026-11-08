@@ -10,6 +10,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import OrganisationInvitationsPage from './page'
 import * as api from '@/lib/admin-api'
+import { TH } from '@/components/admin/TableFrame'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
@@ -223,8 +224,8 @@ describe('what each kind can do', () => {
  */
 describe('which gift a sponsor is invited into', () => {
   const inviteSponsorNamed = () => {
-    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Donor' } })
-    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'),
+    fireEvent.change(screen.getByLabelText('admin.name'), { target: { value: 'Donor' } })
+    fireEvent.change(screen.getByLabelText('admin.emailLabel'),
       { target: { value: 'donor@example.org' } })
   }
 
@@ -518,8 +519,8 @@ describe('inviting an address that already has an account', () => {
   }
   const send = async (email: string) => {
     await loaded()
-    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Rohini' } })
-    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'), { target: { value: email } })
+    fireEvent.change(screen.getByLabelText('admin.name'), { target: { value: 'Rohini' } })
+    fireEvent.change(screen.getByLabelText('admin.emailLabel'), { target: { value: email } })
     fireEvent.click(screen.getByText('admin.sendInvite'))
   }
 
@@ -554,8 +555,8 @@ describe('a reviewer invite names its gifts', () => {
     mockApi.inviteAdmin.mockResolvedValue({ message: 'Sent' } as Awaited<ReturnType<typeof api.inviteAdmin>>)
   })
   const fill = () => {
-    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Asha' } })
-    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'), { target: { value: 'asha@example.org' } })
+    fireEvent.change(screen.getByLabelText('admin.name'), { target: { value: 'Asha' } })
+    fireEvent.change(screen.getByLabelText('admin.emailLabel'), { target: { value: 'asha@example.org' } })
   }
   const tick = (id: string) => screen.getByTestId(`invite-reviewer-gift-${id}`) as HTMLInputElement
 
@@ -648,5 +649,103 @@ describe('S7b follow-up: the Mentor kind, like Source', () => {
     render(<OrganisationInvitationsPage />)
     await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
     expect(mockApi.getInvitations).not.toHaveBeenCalledWith('mentor', expect.anything())
+  })
+})
+
+/**
+ * I1 (2026-11-08, roadmap `2026-11-08-invitations-consistency-roadmap.md`): the five Invite-as tabs
+ * wear ONE form layout (a label above every box, the tab's note under the fields, Send Invite at the
+ * left beneath it — never pushed right beside a note) and draw ONE waiting table (the same `TH`
+ * headings, "Waiting (date)", Resend + a red "Cancel invitation").
+ */
+describe('I1: one form and one waiting table on every tab', () => {
+  const TAB: Record<string, { nameLabel: string; note: string | null; lead?: string; role?: boolean }> = {
+    admins: { nameLabel: 'admin.name', note: 'admin.team.inviteAdminNote', role: true },
+    reviewers: { nameLabel: 'admin.name', note: 'admin.invitations.reviewerGiftHelp', role: true },
+    mentor: { nameLabel: 'admin.mentors.invite.name', note: 'admin.mentors.invite.note' },
+    source: { nameLabel: 'admin.invitations.source.personName', note: 'admin.invitations.source.note',
+              lead: 'admin.invitations.source.col.source' },
+    sponsors: { nameLabel: 'admin.name', note: null },
+  }
+
+  beforeEach(() => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    mockApi.getInvitations.mockImplementation(async (kind) => {
+      const base = payloadFor(kind)
+      if (kind === 'reviewers') {
+        return { ...base, invitations: [row({ id: 2, name: 'Asha', role: 'reviewer', status: 'invited',
+                                              accepted_at: null, admin_id: 11 })] }
+      }
+      if (kind === 'source') {
+        return { ...base, sources: [], invitations: [row({ id: 31, name: 'Shah', email: 'shah@example.org',
+          role: 'source_partner', status: 'invited', accepted_at: null, admin_id: 41,
+          source_name: 'LearnifAI' } as Partial<api.InvitationRow>)],
+          source_users: [{ id: 41, name: 'Shah', email: 'shah@example.org', source_id: 2, source_name: 'LearnifAI',
+            source_code: 'learnifi', organisation: 'harapan', is_active: true, first_seen_at: null,
+            last_seen_at: null, manageable: true, invitation: null }],
+        } as unknown as api.InvitationsPayload
+      }
+      if (kind === 'mentor') {
+        return { ...base, invitations: [row({ id: 51, name: 'Priya', email: 'priya@example.org', role: 'mentor',
+          status: 'invited', accepted_at: null, admin_id: 99, mentor_id: 7 } as Partial<api.InvitationRow>)],
+          mentors: [{ id: 7, name: 'Priya', email: 'priya@example.org', manageable: true }],
+        } as unknown as api.InvitationsPayload
+      }
+      return base
+    })
+    mockApi.mentorAction.mockResolvedValue({ emailed: true } as unknown as Awaited<ReturnType<typeof api.mentorAction>>)
+    window.confirm = jest.fn(() => true)
+  })
+
+  it.each(Object.keys(TAB))('%s: labels above the boxes, the note under them, Send Invite at the left', async (kind) => {
+    await loaded()
+    if (kind !== 'admins') await pick(kind)
+    const foot = await screen.findByTestId('invite-foot')
+    const form = foot.closest('form')!
+    const want = TAB[kind]
+    // A visible label names every box (no placeholder-only boxes).
+    expect(within(form).getByLabelText(want.nameLabel).tagName).toBe('INPUT')
+    expect((within(form).getByLabelText('admin.emailLabel') as HTMLInputElement).type).toBe('email')
+    // The button sits in the shared foot, under the note, never in a justify-between row beside it.
+    const button = within(foot).getByText('admin.sendInvite')
+    expect(button.parentElement).toBe(foot)
+    expect(foot.className).not.toContain('justify-between')
+    expect(button.closest('.justify-between')).toBeNull()
+    const note = within(foot).queryByTestId('invite-note')
+    if (want.note) {
+      expect(note?.textContent).toBe(want.note)
+      expect(note!.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    } else {
+      expect(note).toBeNull()
+    }
+  })
+
+  it.each(Object.keys(TAB))('%s: the one waiting table — same TH headings, Waiting (date), red Cancel invitation', async (kind) => {
+    await loaded()
+    if (kind !== 'admins') await pick(kind)
+    const table = await screen.findByTestId('invitations-table')
+    const want = TAB[kind]
+    const heads = within(table).getAllByRole('columnheader')
+    expect(heads.map((h) => h.textContent)).toEqual([
+      ...(want.lead ? [want.lead] : []), 'admin.nameHeader', 'admin.emailHeader',
+      ...(want.role ? ['admin.roleHeader'] : []), 'admin.statusHeader', 'admin.actionHeader'])
+    for (const h of heads) expect(h.className).toBe(TH)
+    // Phone cards: the frame restacks the rows below md.
+    expect(table.querySelector('[data-phone-rows]')).toBeTruthy()
+    // Admins' fixture row has had no reply; the rest are plain waiting.
+    expect(within(table).getByText(/^admin\.invitations\.status\.(invited|no_reply) \(/)).toBeTruthy()
+    expect(within(table).getByText('admin.resend')).toBeTruthy()
+    expect(within(table).getByText('admin.invitations.cancel').className).toContain('text-critical-600')
+    expect(within(table).queryByText('admin.mentors.action.revoke')).toBeNull()
+  })
+
+  it('Mentor: "Cancel invitation" still calls the mentor REVOKE (with its confirm), never the generic Cancel', async () => {
+    await loaded()
+    await pick('mentor')
+    const table = await screen.findByTestId('invitations-table')
+    fireEvent.click(within(table).getByText('admin.invitations.cancel'))
+    expect(window.confirm).toHaveBeenCalledWith('admin.mentors.confirm.revoke')
+    await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(7, 'revoke', { token: 'tok' }))
+    expect(mockApi.cancelInvitation).not.toHaveBeenCalled()
   })
 })

@@ -9,8 +9,9 @@
  * Cancel / Remove, each only where the server says this caller may (`manageable`), Remove only
  * after a confirm.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { SourceInviteForm, SourceRoster } from './SourceInvite'
+import { TH } from '@/components/admin/TableFrame'
 import * as api from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api')
@@ -128,6 +129,14 @@ describe('the Source invite form', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
+  it('I1: the form wears the one layout — the note under the fields, Send Invite at the left', () => {
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    const foot = screen.getByTestId('invite-foot')
+    expect(within(foot).getByTestId('invite-note').textContent).toBe('admin.invitations.source.note')
+    expect(within(foot).getByText('admin.sendInvite').parentElement).toBe(foot)
+    expect(foot.className).not.toContain('justify-between')
+  })
+
   it('falls back to generic words for a refusal it does not know', async () => {
     mockApi.inviteSource.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'surprise' }))
     render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
@@ -163,6 +172,19 @@ describe('the Source roster', () => {
     await waitFor(() => expect((screen.getByText('admin.invitations.cancel') as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByText('admin.invitations.cancel'))
     expect(onCancel).toHaveBeenCalledWith(PAYLOAD.invitations[0])
+  })
+
+  it('I1: the waiting list is the one table — source as its lead column, TH headings, red Cancel', () => {
+    roster()
+    const table = screen.getByTestId('invitations-table')
+    const heads = within(table).getAllByRole('columnheader')
+    expect(heads.map((h) => h.textContent)).toEqual(['admin.invitations.source.col.source',
+      'admin.nameHeader', 'admin.emailHeader', 'admin.statusHeader', 'admin.actionHeader'])
+    for (const h of heads) expect(h.className).toBe(TH)
+    const row = screen.getByTestId('source-waiting-31')
+    expect(within(row).getByText(/^admin\.invitations\.status\.invited \(/)).toBeTruthy()
+    expect(within(row).getByText('admin.invitations.cancel').className).toContain('text-critical-600')
+    expect(table.querySelector('[data-phone-rows]')).toBeTruthy()
   })
 
   it('Remove asks first, and does nothing when the answer is no', async () => {
