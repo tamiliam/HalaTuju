@@ -197,7 +197,7 @@ class TestPhoto(TestCase):
         self.assertNotEqual(first, second)
         self.assertEqual(self.deleted, [first])
         resp = authed_client(self.me).delete(PHOTO)
-        self.assertEqual(resp.json(), {'photo_url': None})
+        self.assertIsNone(resp.json()['photo_url'])   # staff nudges: it answers `completion` too
         self.assertEqual(self.deleted, [first, second])
         self.assertEqual(StaffProfile.objects.get(partner_admin=self.me).photo_path, '')
         self.assertIsNone(authed_client(self.me).get(ME).json()['photo_url'])

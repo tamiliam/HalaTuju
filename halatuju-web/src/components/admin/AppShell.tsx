@@ -21,6 +21,7 @@ import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
 import { BreadcrumbScopes } from '@/components/admin/ScopeSwitcher'
 import { SystemHealthLight } from '@/components/admin/SystemHealthLight'
+import { LazyShellBanners } from '@/components/admin/LazyShellBanners'
 import StaffAvatar from '@/components/admin/StaffAvatar'
 import { Icon } from '@/components/admin/icons'
 import { ThemeSegments } from '@/components/DisplaySegments'
@@ -136,7 +137,7 @@ function Chrome(
   { scopes, scopesLoaded, path, children }:
   { scopes: AdminScopes; scopesLoaded: boolean; path?: string; children: ReactNode },
 ) {
-  const { role, token, photoUrl } = useAdminAuth()
+  const { role, token, photoUrl, profileCompletion } = useAdminAuth()
   const { t } = useT()
   const routerPath = usePathname()
   const pathname = path ?? routerPath
@@ -392,6 +393,9 @@ function Chrome(
         phoneTitle={phoneTitle}
         phoneSub={phoneSub}
       />
+      {/* Staff nudges: the top-banner slot, one banner at a time, lazily loaded (`ShellBanners`). */}
+      <LazyShellBanners pathname={pathname} accountId={role?.admin_id} completion={profileCompletion}
+        profileHref={profileHref} />
 
       <div className="relative flex flex-1">
         {/*

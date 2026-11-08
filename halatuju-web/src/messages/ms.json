@@ -5548,6 +5548,34 @@
           "withdrawal_refused": "Menolak tarik balik {subject}",
           "withdrawal_cancelled": "Membatalkan permintaan tarik balik {subject}"
         }
+      },
+      "completion": {
+        "title": "Profil anda {percent}% lengkap",
+        "count": "{done} daripada {total} selesai",
+        "complete": "Profil anda lengkap",
+        "note": "Profil yang lengkap membantu pasukan dan pelajar anda mengenali anda.",
+        "done": {
+          "photo": "Foto",
+          "name": "Nama",
+          "job_title": "Jawatan",
+          "about": "Tentang saya",
+          "phone": "Telefon",
+          "qualifications": "Kelayakan",
+          "language": "Bahasa",
+          "address": "Alamat",
+          "mentoring_area": "Bidang bimbingan"
+        },
+        "todo": {
+          "photo": "Tambah foto",
+          "name": "Tambah nama anda",
+          "job_title": "Tambah jawatan anda",
+          "about": "Tulis ringkasan Tentang saya",
+          "phone": "Tambah nombor telefon",
+          "qualifications": "Tambah kelayakan anda",
+          "language": "Tambah bahasa yang anda tuturkan",
+          "address": "Tambah alamat anda",
+          "mentoring_area": "Tambah bidang bimbingan anda"
+        }
       }
     },
     "superAdmin": "Pentadbir Utama",
@@ -9519,6 +9547,19 @@
         "reviewerText": "Apa yang dipersetujui oleh penilai sebelum kes pertamanya akan ditetapkan di sini.",
         "mentorTitle": "Terma mentor",
         "mentorText": "Apa yang dipersetujui oleh mentor sebelum bertemu pelajar akan ditetapkan di sini."
+      }
+    },
+    "nudge": {
+      "missing": "Profil anda belum ada {items}.",
+      "helpOne": "Menambahkannya membantu pasukan anda menghubungi anda.",
+      "helpMany": "Menambahkannya membantu pasukan anda menghubungi anda.",
+      "and": "dan",
+      "link": "Lengkapkan profil",
+      "hide7": "Sembunyikan selama 7 hari",
+      "item": {
+        "photo": "foto",
+        "phone": "nombor telefon",
+        "mentoring_area": "bidang bimbingan anda"
       }
     }
   },

@@ -42,8 +42,8 @@ export default function YouCard({ state }: CardProps) {
     if (f.size > MAX_PHOTO_BYTES) { setMsg({ ok: false, text: t(`${P}.photo.tooLarge`) }); return }
     setBusy(true)
     try {
-      const { photo_url } = await uploadAdminPhoto(f, auth)
-      onPhoto(photo_url)
+      const { photo_url, completion } = await uploadAdminPhoto(f, auth)
+      onPhoto(photo_url, completion)
       setMsg({ ok: true, text: t(`${P}.photo.saved`) })
     } catch (err) {
       setMsg({ ok: false, text: t(photoRefusal(err as { code?: string; status?: number })) })
@@ -52,8 +52,8 @@ export default function YouCard({ state }: CardProps) {
   const remove = async () => {
     setMsg(null); setBusy(true)
     try {
-      await deleteAdminPhoto(auth)
-      onPhoto(null)
+      const { completion } = await deleteAdminPhoto(auth)
+      onPhoto(null, completion)
       setMsg({ ok: true, text: t(`${P}.photo.removed`) })
     } catch (err) {
       setMsg({ ok: false, text: t(photoRefusal(err as { code?: string; status?: number })) })

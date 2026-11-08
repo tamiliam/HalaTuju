@@ -10,6 +10,7 @@
  * `SourceProfile` chunk, so the runtime is the size it was. The cost: a person without `review`
  * fetches the university list with the other cards — after first load, never in the budgeted figure.
  */
+export { default as CompletionCard } from './CompletionCard'   // staff nudges: the completion bar
 export { default as YouCard } from './YouCard'
 export { default as ContactCard } from './ContactCard'
 export { default as MentoringCard } from './MentoringCard'   // S7a: a mentor's area

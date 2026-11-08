@@ -5548,6 +5548,34 @@
           "withdrawal_refused": "Refused withdrawing {subject}",
           "withdrawal_cancelled": "Cancelled the withdrawal request for {subject}"
         }
+      },
+      "completion": {
+        "title": "Your profile is {percent}% complete",
+        "count": "{done} of {total} done",
+        "complete": "Your profile is complete",
+        "note": "A complete profile helps your team and your students know who you are.",
+        "done": {
+          "photo": "Photo",
+          "name": "Name",
+          "job_title": "Job title",
+          "about": "About",
+          "phone": "Phone",
+          "qualifications": "Qualifications",
+          "language": "Language",
+          "address": "Address",
+          "mentoring_area": "Mentoring area"
+        },
+        "todo": {
+          "photo": "Add a photo",
+          "name": "Add your name",
+          "job_title": "Add your job title",
+          "about": "Write a short About",
+          "phone": "Add a phone number",
+          "qualifications": "Add your qualifications",
+          "language": "Add a language you speak",
+          "address": "Add your address",
+          "mentoring_area": "Add your mentoring area"
+        }
       }
     },
     "superAdmin": "Super Admin",
@@ -9519,6 +9547,19 @@
         "reviewerText": "What a reviewer agrees to before their first case will be set here.",
         "mentorTitle": "Mentor terms",
         "mentorText": "What a mentor agrees to before meeting a student will be set here."
+      }
+    },
+    "nudge": {
+      "missing": "Your profile is missing {items}.",
+      "helpOne": "Adding it helps your team reach you.",
+      "helpMany": "Adding them helps your team reach you.",
+      "and": "and",
+      "link": "Complete profile",
+      "hide7": "Hide for 7 days",
+      "item": {
+        "photo": "a photo",
+        "phone": "a phone number",
+        "mentoring_area": "your mentoring area"
       }
     }
   },

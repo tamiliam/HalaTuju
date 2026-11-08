@@ -51,7 +51,7 @@ export {
   changeOwnPassword, deleteAdminPhoto, getAdminMe, getAdminProfile, getMyActivity, updateAdminMe, uploadAdminPhoto, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
 } from './admin-api/profiles'
 export type {
-  ActivityItem, ActivityPage, ActivitySubject, AdminMe, AdminMeCard, AdminProfile, ReviewerProfile, LangFluency,
+  ActivityItem, ActivityPage, ActivitySubject, AdminMe, AdminMeCard, CompletionKey, ProfileCompletion, AdminProfile, ReviewerProfile, LangFluency,
 } from './admin-api/profiles'
 
 // Organisation → Mentors (student maintenance S7a).
