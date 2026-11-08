@@ -334,7 +334,8 @@ export default function OrganisationInvitationsPage() {
             // Source sign-in S2: inviting a source's person IS how a source is added now.
             canManage && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
           ) : kind === 'mentor' ? (
-            canManage && <MentorInviteForm token={token} t={t} onDone={sourceDone} />
+            canManage && <MentorInviteForm token={token} t={t} onDone={sourceDone}
+              options={mentorData?.mentor_programmes ?? []} />
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {invitable.length > 1 && (

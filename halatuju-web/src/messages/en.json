@@ -6931,7 +6931,8 @@
           "bad_mode": "Choose how you met.",
           "bad_minutes": "Minutes must be a whole number above 0.",
           "notes_required": "Write a few words about the meeting.",
-          "generic": "That did not go through. Please try again."
+          "generic": "That did not go through. Please try again.",
+          "mentor_not_in_gift": "That mentor does not cover this scholar's gift. Choose another mentor, or add the gift to theirs on Team · Mentors."
         },
         "concern": {
           "open": "The mentor is worried about this scholar. Not yet handled: {count} (latest {date}).",
@@ -8635,7 +8636,8 @@
         "name": "Name",
         "note": "After signing in, the mentor fills in their own area, languages, About and phone.",
         "sent": "{name} invited. Sign-in details emailed to {email}.",
-        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
+        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
+        "giftLabel": "Which gifts will this mentor cover?"
       },
       "error": {
         "already_staff": "This email address already has a HalaTuju admin sign-in, so it cannot be invited as a mentor.",
@@ -8654,7 +8656,9 @@
         "already_mentor": "This staff member is already a mentor. If they stopped, use Mentor again.",
         "staff_mentor": "This mentor is a staff member: use Stop mentoring or Mentor again.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
-        "not_found": "That staff member was not found."
+        "not_found": "That staff member was not found.",
+        "gift_required": "Choose Every gift or at least one gift.",
+        "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again."
       },
       "status": {
         "active": "Active",
@@ -8769,6 +8773,10 @@
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
         "notFound": "This mentor was not found.",
         "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
+      },
+      "gifts": {
+        "label": "Gifts",
+        "outside": "This mentor has {count} current scholar(s) outside those gifts. End or change that mentoring first. Nothing was changed."
       }
     },
     "myStudents": {

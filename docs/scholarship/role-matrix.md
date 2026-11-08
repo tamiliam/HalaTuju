@@ -524,4 +524,4 @@ Team → Mentors, the old route redirecting,
 mentor's own phone, area, languages, status); **invite / resend / revoke / deactivate / reactivate and the
 name/email correction before the first sign-in: `super` and `org_admin` only**. Staff never edit a
 mentor's profile. A mentor's home address is serialised nowhere but the mentor's own reviewer profile.
-Mentors and their meetings never reach sponsors or partners.
+Mentors and their meetings never reach sponsors or partners. **Gifts (Invitations I4, 2026-11-08):** a mentor's gifts limit who they mentor (no gifts = every gift, gifts started later included); **editing them (`POST admin/mentors/<id>/gifts/`) and naming them on the invite: `super` and `org_admin` only** (own organisation's mentors and gifts; another organisation's is 404); a narrowing that would leave a current scholar outside is refused with the count, never ended silently.

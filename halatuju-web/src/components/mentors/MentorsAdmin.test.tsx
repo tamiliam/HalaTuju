@@ -268,4 +268,77 @@ describe('the mentor detail page', () => {
     render(<MentorDetail id={9} />)
     expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.loadError')
   })
+
+  // ── Invitations I4 (2026-11-08): the details box shows and edits the gifts they mentor in ──
+  const PROGRAMMES = [
+    { id: 3, code: 'flagship', name: 'Flagship Bursary', is_active: true },
+    { id: 5, code: 'sabah', name: 'Sabah Bursary', is_active: true },
+  ]
+
+  it('I4: shows Every gift for a mentor with none named, and their gifts otherwise', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } })
+    const { unmount } = render(<MentorDetail id={1} />)
+    const box = await screen.findByTestId('mentor-gifts')
+    expect(within(box).getByText('admin.mentors.gifts.label')).toBeTruthy()
+    expect(within(box).getByText('admin.reviewers.gifts.every')).toBeTruthy()
+    unmount()
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [{ id: 5, code: 'sabah', name: 'Sabah Bursary' }], every_gift: false } })
+    render(<MentorDetail id={1} />)
+    expect(within(await screen.findByTestId('mentor-gifts')).getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('I4: an edit saves the ticked gifts through the mentor endpoint and shows them', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } })
+    mockApi.setMentorGifts.mockResolvedValue({ id: 1, every_gift: false,
+      gifts: [{ id: 5, code: 'sabah', name: 'Sabah Bursary' }] })
+    render(<MentorDetail id={1} />)
+    fireEvent.click(await screen.findByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-every'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-gift-5'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    await waitFor(() => expect(mockApi.setMentorGifts).toHaveBeenCalledWith(1, [5], { token: 'tok' }))
+    expect(mockApi.setReviewerGifts).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByTestId('gifts-pop-1')).toBeNull())
+    expect(within(screen.getByTestId('mentor-gifts')).getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('I4: a narrowing refused (current scholars outside) says how many, and changes nothing', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } })
+    mockApi.setMentorGifts.mockRejectedValue(Object.assign(new Error('x'),
+      { code: 'mentor_has_scholars_outside', body: { code: 'mentor_has_scholars_outside', count: 2 } }))
+    render(<MentorDetail id={1} />)
+    fireEvent.click(await screen.findByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-every'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-gift-5'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    const alert = await within(screen.getByTestId('gifts-pop-1')).findByRole('alert')
+    expect(alert.textContent).toBe('admin.mentors.gifts.outside {"count":"2"}')
+    expect(within(screen.getByTestId('mentor-gifts')).getByText('admin.reviewers.gifts.every')).toBeTruthy()
+  })
+
+  it('I4: any other refusal reads as the plain could-not-save line', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES })
+    mockApi.setMentorGifts.mockRejectedValue(Object.assign(new Error('x'), { code: 'not_found' }))
+    render(<MentorDetail id={1} />)
+    fireEvent.click(await screen.findByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.reviewers.detail.giftFailed')
+  })
+
+  it('I4: no pencil for a reader who may not manage the mentor, or on an older api', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, manageable: false } })
+    const { unmount } = render(<MentorDetail id={1} />)
+    await screen.findByTestId('mentor-gifts')
+    expect(screen.queryByTestId('gifts-edit-1')).toBeNull()
+    unmount()
+    mockApi.getMentorDetail.mockResolvedValue(DETAIL)   // no `programmes`
+    render(<MentorDetail id={1} />)
+    await screen.findByTestId('mentor-gifts')
+    expect(screen.queryByTestId('gifts-edit-1')).toBeNull()
+  })
 })

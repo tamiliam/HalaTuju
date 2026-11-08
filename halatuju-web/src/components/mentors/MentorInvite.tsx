@@ -7,7 +7,9 @@ import {
   type InvitationRow, type InvitationsPayload, type MentorRow,
 } from '@/lib/admin-api'
 import InvitationsTable from '@/components/admin/InvitationsTable'
-import { InviteField, InviteFoot } from '@/components/admin/InviteForm'
+import { FIELD_LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
+import { GiftTickList } from '@/components/admin/ReviewerGifts'
+import { EVERY_GIFT, idsToSave, type GiftTicks } from '@/lib/reviewerGifts'
 import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
 
 /**
@@ -22,23 +24,30 @@ import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
  * ⚠ I1 (2026-11-08): the form wears the one invite layout (`admin/InviteForm`) and the roster draws the
  * one waiting table (`admin/InvitationsTable`). Its red link reads "Cancel invitation" like every other
  * tab's, but STILL calls the mentor revoke, with its confirm — only the word changed.
+ * ⚠ I4 (2026-11-08; owner ruling 2): the form asks which gifts they will mentor in, the reviewer's tick
+ * list, starting at Every gift (sent as `programme_ids: []`). The choices are the payload's
+ * `mentor_programmes` — the invite's own organisation's active gifts, exactly what the POST checks. A
+ * gift LIMITS who they may be assigned; the server is the fence (`mentor_not_in_gift`).
  */
 
 type T = (k: string, vars?: Record<string, string>) => string
 const K = 'admin.mentors'
 const INVITE_REFUSALS = ['already_staff', 'already_team', 'bad_email', 'name_required', 'organisation_required',
-  'not_configured', 'create_failed']
+  'not_configured', 'create_failed', 'gift_required', 'gift_not_found']
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active']
 const codeOf = (err: unknown) => (err as { code?: string })?.code ?? ''
 
-export function MentorInviteForm({ token, t, onDone }: {
+export function MentorInviteForm({ token, t, onDone, options = [] }: {
   token: string | null
   t: T
   /** The banner to show, then reload the tab. */
   onDone: (message: Banner) => void
+  /** I4: the gifts they may be invited to mentor in (`mentor_programmes`); none = only Every gift. */
+  options?: ReadonlyArray<{ id: number; name: string }>
 }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [gifts, setGifts] = useState<GiftTicks>(EVERY_GIFT)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -47,13 +56,15 @@ export function MentorInviteForm({ token, t, onDone }: {
     if (!token) return
     setBusy(true); setError('')
     try {
-      const sent = await inviteMentor({ name: name.trim(), email: email.trim() }, { token })
+      const sent = await inviteMentor(
+        { name: name.trim(), email: email.trim(), programme_ids: idsToSave(gifts) }, { token })
       onDone(sent.emailed
         ? { type: 'success', text: t(`${K}.invite.sent`, { name: name.trim(), email: email.trim() }) }
         : { type: 'warning', text: t(`${K}.invite.notEmailed`, { name: name.trim() }) })
-      setName(''); setEmail('')
+      setName(''); setEmail(''); setGifts(EVERY_GIFT)
     } catch (err) {
-      const code = codeOf(err)
+      // I4: the invite's 404 is a GIFT it may not name (the staff-member `not_found` is another screen's).
+      const code = codeOf(err) === 'not_found' ? 'gift_not_found' : codeOf(err)
       setError(t(`${K}.error.${INVITE_REFUSALS.includes(code) ? code : 'generic'}`))
     } finally { setBusy(false) }
   }
@@ -67,6 +78,13 @@ export function MentorInviteForm({ token, t, onDone }: {
         <InviteField label={t('admin.emailLabel')}>
           <input className={inputCls} type="email" value={email} required onChange={(e) => setEmail(e.target.value)} />
         </InviteField>
+      </div>
+      <div className="text-sm" role="group" aria-labelledby="invite-mentor-gift-label">
+        <span id="invite-mentor-gift-label" className={FIELD_LABEL}>{t(`${K}.invite.giftLabel`)}</span>
+        <div className="rounded-lg border border-ground-300 px-2 py-1">
+          <GiftTickList ticks={gifts} options={options} onChange={setGifts}
+            everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-mentor-gift" />
+        </div>
       </div>
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
       <InviteFoot note={t(`${K}.invite.note`)} busy={busy} label={t('admin.sendInvite')} />

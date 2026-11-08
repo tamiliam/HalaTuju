@@ -2,8 +2,9 @@
 Sprint 7a, 2026-10-31). The rules are in `apps/scholarship/mentor_invite.py`; this module is only the
 HTTP shapes:
 
-- `invite_mentor` — `POST admin/invitations/` with `audience='mentor'` `{name, email}`, routed here by
-  `AdminInvitationsView.post` (the source invite's door; a super names the organisation with `?org=`);
+- `invite_mentor` — `POST admin/invitations/` with `audience='mentor'` `{name, email, programme_ids?}`,
+  routed here by `AdminInvitationsView.post` (the source invite's door; a super names the organisation
+  with `?org=`). I4: `programme_ids` are the gifts they mentor in (`[]` / absent = every gift);
 - `AdminMentorsView` — `GET admin/mentors/`: every mentor of the caller's organisation (a super:
   every organisation's, narrowed by `?org=`), with the status counts;
 - `AdminMentorView` — `PATCH admin/mentors/<id>/` `{name?, email?}`: staff correct a name or an
@@ -80,11 +81,12 @@ def _name_and_email(data, *, required):
 
 
 def invite_mentor(request, admin):
-    """`POST admin/invitations/` `{audience: 'mentor', name, email}` → 201 `{id, mentor, emailed,
-    google, already_registered, message}`. Refusals: 403 not super / org_admin; 400 `bad_email`,
-    `name_required`, `organisation_required`; 404 an `?org=` outside the fence; 409 `already_staff`;
+    """`POST admin/invitations/` `{audience: 'mentor', name, email, programme_ids?}` → 201 `{id, mentor,
+    emailed, google, already_registered, message}`. Refusals: 403 not super / org_admin; 400 `bad_email`,
+    `name_required`, `organisation_required`, `gift_required` (I4: not a list); 404 an `?org=` outside the
+    fence, or (I4) a gift that is not one of the organisation's ACTIVE gifts; 409 `already_staff`;
     500 `not_configured`; 502 `create_failed`."""
-    from .. import mentor_invite
+    from .. import mentor_gift, mentor_invite
     if not mentor_invite.may_invite(admin):
         return Response({'error': 'Your admin role cannot perform this action.'},
                         status=status.HTTP_403_FORBIDDEN)
@@ -99,11 +101,14 @@ def invite_mentor(request, admin):
             return err
         return _error('organisation_required', status.HTTP_400_BAD_REQUEST,
                       'Say which organisation this mentor belongs to.')
+    gifts, refusal = mentor_gift.choose(data.get('programme_ids'), owner, active_only=True)
+    if refusal is not None:
+        return refusal
     from apps.courses import supabase_admin
     if supabase_admin.supabase_config() is None:
         return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
                       'Supabase service role key not configured')
-    done = mentor_invite.invite(admin, organisation=owner, email=email, name=name)
+    done = mentor_invite.invite(admin, organisation=owner, email=email, name=name, gifts=gifts)
     if done.error == 'already_staff':
         if _is_addable_team_member(email, owner):
             return _error('already_team', status.HTTP_409_CONFLICT, ALREADY_TEAM)
@@ -111,8 +116,9 @@ def invite_mentor(request, admin):
     if done.error:
         return _error('create_failed', status.HTTP_502_BAD_GATEWAY,
                       'Could not create their sign-in just now. Nothing was saved; try again.')
-    logger.info('AUDIT mentor_invited mentor=%s account=%s org=%s by=%s',
-                done.mentor.pk, done.account.pk, owner.pk, admin.email or '')
+    logger.info('AUDIT mentor_invited mentor=%s account=%s org=%s gifts=%s by=%s',
+                done.mentor.pk, done.account.pk, owner.pk,
+                ','.join(g.code for g in gifts) or '(every gift)', admin.email or '')
     row = mentor_rows(admin, [done.mentor])[0]
     return Response({
         'id': done.invitation.id, 'mentor': row, 'emailed': done.emailed, 'google': done.google,
@@ -126,19 +132,21 @@ def mentor_rows(caller, mentors, *, team=False):
     """The Mentors page's rows for ``mentors`` — ONE query each for the logins, their profiles and
     their invitations, whatever the page size. An ALLOWLIST: name, email, the mentor's own phone (the
     profile tells them the inviting organisation sees it), status, area, languages, invited / signed-in
-    times, `manageable` (the endpoints' own rule, so the screen never offers a refused button) and
-    `scholars_now` (S7b: their open mentoring assignments).
+    times, `manageable` (the endpoints' own rule, so the screen never offers a refused button),
+    `scholars_now` (S7b: their open mentoring assignments) and (I4) `gifts` `[{id, code, name}]` with
+    `every_gift` (no gifts = every gift) — ONE more query (`mentor_gift.gifts_by_mentor`).
 
     ``team`` (Team tables T3, the Team -> Mentors table): also `tables` / `lead` (the "Also in" chips,
     `staff_tables.tables`) and the work columns `meetings_90`, `last_meeting`, `concerns_open`
     (`mentor_detail.team_columns`, ONE more query)."""
-    from .. import mentor_invite
+    from .. import mentor_gift, mentor_invite
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
     from ..staff_contact import staff_screen_phone
     # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors).select_related('mentor')}
     now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
+    gifts = mentor_gift.gifts_by_mentor([m.pk for m in mentors])   # I4: ONE query
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
         partner_admin__in=list(logins.values()))}
     newest = {}
@@ -176,6 +184,8 @@ def mentor_rows(caller, mentors, *, team=False):
             'deactivated_at': _iso(m.deactivated_at),
             'manageable': mentor_invite.manageable(caller, m),
             'scholars_now': now.get(m.pk, 0),   # S7b
+            'gifts': gifts.get(m.pk, []),        # I4: none = every gift
+            'every_gift': m.pk not in gifts,
         })
     if team:
         from apps.courses import staff_permissions as sp
@@ -289,7 +299,8 @@ class AdminMentorView(_MentorsBase):
     """GET admin/mentors/<id>/ — Team tables T3: the MENTOR DETAIL page (`mentor_detail.py`). The Mentors
     table's own readers (super, org_admin, admin — `_reader`; else 403), the organisation fence (`_in_scope`:
     another organisation's mentor 404), and only a mentor the table lists (one with a login; else 404).
-    `{mentor: <the table's row>, mentoring_since, figures, current, past}` — never a meeting note.
+    `{mentor: <the table's row>, mentoring_since, figures, current, past, programmes}` — never a meeting
+    note. I4: `programmes` are the organisation's gifts the details box may tick (`mentor_gift.choices`).
 
     PATCH admin/mentors/<id>/ `{name?, email?}` — staff correct a name or an address UNTIL the
     first sign-in. 200 the row; 400 `bad_email` / `name_required` / `not_active` / `bad_request`;
@@ -298,7 +309,7 @@ class AdminMentorView(_MentorsBase):
     is sent the invitation (`mentor_invite.edit`)."""
 
     def get(self, request, pk):
-        from .. import mentor_detail
+        from .. import mentor_detail, mentor_gift
         admin, err = self._reader(request)
         if err:
             return err
@@ -309,14 +320,15 @@ class AdminMentorView(_MentorsBase):
         if mentor is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
         row = mentor_rows(admin, [mentor], team=True)[0]
+        gifts = {'programmes': mentor_gift.choices(mentor.organisation_id)}   # I4
         if not self.sees_scholars(admin):
             # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).
             row['concerns_open'] = None
             return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at),
-                             'sees_scholars': False, 'figures': None, 'current': [], 'past': []})
+                             'sees_scholars': False, 'figures': None, 'current': [], 'past': [], **gifts})
         figures, current, past = mentor_detail.scholars_of(mentor)
         return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at), 'sees_scholars': True,
-                         'figures': figures, 'current': current, 'past': past})
+                         'figures': figures, 'current': current, 'past': past, **gifts})
 
     def patch(self, request, pk):
         from .. import mentor_invite

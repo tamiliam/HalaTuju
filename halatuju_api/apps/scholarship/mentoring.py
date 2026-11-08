@@ -18,6 +18,7 @@ HTTP shapes are `views_admin/mentoring.py` (staff) and `views_bursary.py` (the s
   student's login may hold a mentor role (owner, 2026-10-31), so a mentor whose login is the student's
   — the same Supabase UID as the profile or one of its claimed aliases, or the same email as the
   profile's contact email or the application's notify email, case-blind — is refused `own_application`.
+  I4 (2026-11-08): and a mentor whose GIFTS hold the scholar's (`mentor_gift`; no gifts = every gift).
 - A CLOSED FILE IS READ-ONLY (`maintenance_scope.is_in_maintenance`): no assign, end or meeting.
 - MEETINGS: only while an assignment is open, with that assignment's mentor; `met_on` neither in the
   future nor before the assignment started (local dates).
@@ -55,7 +56,7 @@ import logging
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from . import activity
+from . import activity, mentor_gift
 from .maintenance_scope import is_in_maintenance
 from .models import MentorAssignment, MentoringSession, Mentor, ScholarshipApplication
 from .models.activity import (
@@ -172,7 +173,8 @@ def refusal_for_mentor(application, mentor):
     """None when ``mentor`` may be assigned to ``application``, else the refusal code:
     `mentor_not_found` (unknown, another organisation's — one answer, so neither is confirmed — or, S7d,
     a mentor record with no login), `mentor_inactive` (deactivated or revoked; S7d: a login that is off,
-    or a staff member who may not mentor now), `own_application` (the mentor is the student)."""
+    or a staff member who may not mentor now), `own_application` (the mentor is the student), and (I4)
+    `mentor_not_in_gift` (the mentor's gifts do not include the scholar's — `mentor_gift.allows`)."""
     if mentor is None or mentor.organisation_id != application.owning_organisation_id:
         return 'mentor_not_found'
     if mentor.deactivated_at is not None:
@@ -184,7 +186,7 @@ def refusal_for_mentor(application, mentor):
         return 'mentor_inactive'
     if is_the_student(login, application):
         return 'own_application'
-    return None
+    return None if mentor_gift.allows(mentor, application) else 'mentor_not_in_gift'
 
 
 def _staff_not_mentoring(login):
@@ -201,13 +203,14 @@ def assignable_mentors(application):
                                          deactivated_at__isnull=True).order_by('id'))
     facts = mentor_facts(mentors)
     now = scholars_now([m.pk for m in mentors])
+    in_gift = mentor_gift.allowed_ids([m.pk for m in mentors], application)   # I4: one query
     out = []
     for m in mentors:
         f = facts.get(m.pk) or {}
         login = f.get('login')
         # S7d review fix 2: the picker offers what `refusal_for_mentor` accepts — a login that exists,
-        # is on, and (a staff member's) may mentor now.
-        if (login is None or not login.is_active or _staff_not_mentoring(login)
+        # is on, and (a staff member's) may mentor now; I4: and whose gifts hold the scholar's.
+        if (login is None or not login.is_active or _staff_not_mentoring(login) or m.pk not in in_gift
                 or is_the_student(login, application)):
             continue
         out.append({'id': m.pk, 'name': f.get('name', ''), 'area': m.area,
@@ -306,7 +309,7 @@ def assign(caller, application, mentor, *, reason='', email_student=True):
     ``email_student`` and the organisation's switch allow. Returns ``(assignment, emailed)``.
 
     Refusals (`MentoringError`): forbidden, not_found, file_closed, mentor_not_found,
-    mentor_inactive, own_application, already_assigned (the same mentor is already current),
+    mentor_inactive, own_application, mentor_not_in_gift, already_assigned (the same mentor is current),
     too_long, conflict (a racing request won)."""
     _check_caller(caller, application)
     refusal = refusal_for_mentor(application, mentor)

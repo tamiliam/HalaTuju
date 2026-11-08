@@ -43,6 +43,28 @@ class Mentor(models.Model):
         return f'Mentor {self.pk} org={self.organisation_id}'
 
 
+class MentorGift(models.Model):
+    """One gift a mentor mentors in (Invitations I4, 2026-11-08; owner ruling 2, open point C).
+
+    ⚠ NO ROWS = EVERY GIFT, including a gift started later — the reviewer rule (`reviewer_gifts`)
+    exactly. Rows LIMIT who the mentor may be assigned (`mentor_gift.allows`, asked by
+    `mentoring.refusal_for_mentor`). ONE writer: `mentor_gift.set_gifts`, which refuses narrowing past
+    an open assignment (open point D) — an assignment is never ended because a gift was unticked.
+    """
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name='gift_rows')
+    programme = models.ForeignKey('Programme', on_delete=models.CASCADE, related_name='mentor_gift_rows')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'mentor_gifts'
+        constraints = [
+            models.UniqueConstraint(fields=['mentor', 'programme'], name='mentor_gift_one_row_per_pair'),
+        ]
+
+    def __str__(self):
+        return f'MentorGift mentor={self.mentor_id} programme={self.programme_id}'
+
+
 class MentorAssignment(models.Model):
     """One mentor's time with one scholar (student maintenance S7b, 2026-11-01).
 

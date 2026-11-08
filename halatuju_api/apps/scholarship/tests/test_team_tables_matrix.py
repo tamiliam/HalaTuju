@@ -194,6 +194,18 @@ def a110a_moved_cells(shape, before):
     return {p: 403 for p in A110A_CREDIT_WRITES} if shape in A110A_SHUT_AT_THE_DOOR else {}
 
 
+#: Invitations I4 (2026-11-08): a mentor's gifts (`AdminMentorGiftsView`, `POST admin/mentors/<id>/gifts/`). A NEW
+#: route behind the Mentors page's ACTION fence (`_MentorsBase._target`, the one Resend / Revoke / Deactivate
+#: use: `mentor_invite.may_invite`). Only a super or an organisation admin passes it (the T2 knockers); the
+#: probe's empty body then gets 400 `gift_required`. Everybody else is 403 — a mentor, a reviewer, an admin
+#: viewer and anyone seated by keys gain NOTHING here.
+I4_ADDED = 'POST api/v1/admin/mentors/<int:pk>/gifts/'
+
+
+def i4_added_cells(shape):
+    return {I4_ADDED: 400 if shape in T2_KNOCKS else 403}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -361,7 +373,7 @@ def _shape_test(shape):
         before = _before()[shape]
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
                     **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-                    **a110a_moved_cells(shape, before)}
+                    **a110a_moved_cells(shape, before), **i4_added_cells(shape)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -379,11 +391,11 @@ for _shape in SHAPES:
 
 
 def _expected_row(shape):
-    """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
+    """A shape's BEFORE row plus the cells T2-T4 (and I4) added, as `_shape_test` expects it."""
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-           **a110a_moved_cells(shape, before)}
+           **a110a_moved_cells(shape, before), **i4_added_cells(shape)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row

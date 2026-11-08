@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-08 — Mentors have gifts, and a gift limits who they mentor (Invitations I4; owner ruling)
+
+Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner ruling 2 ("a mentor has gifts, and a gift limits who they mentor") and open points C and D (lead recommendations, approved with the roadmap).
+
+**The rule:** a mentor's gifts are `MentorGift` rows (table `mentor_gifts`, migration `scholarship.0206_mentor_gifts`, one row per (mentor, gift), unique pair, mirroring `reviewer_gifts`). A mentor may be assigned a scholar only when the scholar's gift is among the mentor's gifts. `apps/scholarship/mentor_gift.py` is the one home: `choose` (the form's list), `allows` / `allowed_ids` (the rule, one query for a roster), `gifts_by_mentor` / `choices` (the readers), `set_gifts` (the ONE writer) and `outside_refusal`. `mentoring.refusal_for_mentor` asks `allows`, so `mentoring.assign` refuses **400 `mentor_not_in_gift`** (before the lock and again under the Mentor row lock), and `assignable_mentors` (the assign picker) lists only mentors whose gifts hold the scholar's.
+
+**The scholar's gift** is `services.assignment.case_gifts(application)` — the application's own gift and its intake year's gift — the same answer the reviewer rule uses. A mentor matches when either is among their gifts. A scholar whose gift is not known is not refused (the reviewer rule, exactly).
+
+**Open point C — no rows means every gift, including a gift started later** (the reviewer rule). No backfill: the mentors who existed before I4 have no rows, so they are Every gift and nothing changes for them until someone ticks.
+
+**Open point D — narrowing never ends an assignment silently.** Editing a mentor's gifts so that a CURRENT (open) assignment's scholar would fall outside is refused **409 `mentor_has_scholars_outside`** with `count` (how many), and nothing is written. An ended assignment never blocks. The count and the write happen under the Mentor row's `select_for_update`, the lock `mentoring.assign` takes before it judges the mentor again, so an assign racing an edit cannot slip a scholar past it.
+
+**The invite (`POST admin/invitations/` with `audience='mentor'`, `views_admin/mentors.invite_mentor` → `mentor_invite.invite`):** takes `programme_ids` — `[]` or absent = Every gift; each id must be an ACTIVE gift of the inviting organisation (a super names it with `?org=<code>`), else **404 `not_found`** (one answer for unknown, ended and another organisation's); not a list → **400 `gift_required`**. A resend keeps the mentor's gifts; a re-invite after a revoke takes the new list. The mentor tab's waiting rows carry `gifts` and `every_gift`; the payload's `mentor_programmes` is the organisation's active gifts for the tick list.
+
+**The edit (`POST admin/mentors/<id>/gifts/` `{programme_ids}`, `AdminMentorGiftsView`):** the WHOLE list (`[]` = Every gift; the list is required, else 400 `gift_required`). Any of the MENTOR's organisation's gifts, ended ones too (as the reviewer edit allows); any other gift → 404 `not_found`, never 403, and a super cannot tag another organisation's gift either. **Who:** the Mentors page's acting fence (`_MentorsBase._target`) — `super` (any organisation) and `org_admin` (their own organisation's mentors); every other role 403 (admin, reviewer, the mentor itself); another organisation's mentor 404. Each change writes an `AUDIT mentor_gifts_set` line (ids and codes, the actor's email; no student data). The Mentors list and detail payloads carry `gifts` and `every_gift`; the detail adds `programmes` (the tick list's choices, own organisation only, ended ones marked).
+
+**Web:** the Mentor invite tab gets the reviewer's `GiftTickList` (Every gift to start; sends `programme_ids`). Team → Mentors' details box shows and edits the gifts with the reviewer details box's own component (`ReviewerGiftsCell`, now taking an optional `save` and `errorOf`), and shows the D refusal with its count. The assign picker is filtered by the server; a `mentor_not_in_gift` refusal reads in words.
+
+**Alternatives considered:** (A) narrowing ends the outside assignments — rejected (open point D): a scholar would lose a mentor without anyone deciding it. (B) backfill every existing mentor with today's gifts — rejected (open point C): a gift started later would then need a manual tick, and today's mentors would quietly stop covering it. (C) the gift as a soft filter on the picker only — rejected: the server must refuse, or a stale picker or a direct call slips through.
+**Trade-offs:** the Mentors list table itself does not show the gifts (the payload carries them; the details box shows and edits them). A staff member who mentors (S7d) has gifts too; they limit the mentoring only, not the staff work.
+
+**Before deploy:** migration 0206 is applied to production BY HAND, before the push (DDL, RLS + `service_role` policy, ledger row — all in the migration's docstring, with pre / post checks and a rollback; deploying before migrating 500s the assign path and the Mentors list), then the Supabase Security Advisor. **The owner's phone check before go-live** — this decides which mentors a scholar can be given.
+
 ## 2026-11-08 — A sponsor invitation names several gifts or Every gift (Invitations I3; owner ruling)
 
 Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner ruling 1 ("Sponsor invite: several gifts or Every gift, like a reviewer's — a true multi-gift invite, not only the look") and open point B (lead recommendation, approved with the roadmap).

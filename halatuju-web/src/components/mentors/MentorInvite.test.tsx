@@ -45,7 +45,7 @@ it('invites with a name and an email; a refusal reads in plain words', async () 
   expect((await within(form).findByRole('alert')).textContent).toBe('admin.mentors.error.already_staff')
   fireEvent.submit(form)
   await waitFor(() => expect(mockApi.inviteMentor).toHaveBeenLastCalledWith(
-    { name: 'Priya', email: 'p@example.org' }, { token: 'tok' }))
+    { name: 'Priya', email: 'p@example.org', programme_ids: [] }, { token: 'tok' }))   // I4: Every gift
   await waitFor(() => expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' })))
 })
 
@@ -116,4 +116,64 @@ it('offers no action on a row the caller may not manage, or to a reader', () => 
 it('says so when nobody is waiting', () => {
   render(<MentorRoster data={{ ...DATA, invitations: [], mentors: [] }} token="tok" t={t} canManage onDone={jest.fn()} />)
   expect(screen.getByText('admin.invitations.mentor.noneWaiting')).toBeTruthy()
+})
+
+// ── Invitations I4 (2026-11-08): the gifts they will mentor in ─────────────────────────────────────
+const GIFTS = [{ id: 3, code: 'flagship', name: 'Flagship Bursary' }, { id: 5, code: 'sabah', name: 'Sabah Bursary' }]
+
+function fill(form: HTMLElement) {
+  fireEvent.change(within(form).getByLabelText('admin.mentors.invite.name'), { target: { value: 'Asha' } })
+  fireEvent.change(within(form).getByLabelText('admin.emailLabel'), { target: { value: 'a@example.org' } })
+}
+
+it('I4: the tick list starts at Every gift, offers the served gifts, and sends the ticked ids', async () => {
+  mockApi.inviteMentor.mockResolvedValue({ id: 9, mentor: MENTOR, emailed: true, message: '' })
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} options={GIFTS} />)
+  const form = screen.getByTestId('mentor-invite-form')
+  expect(within(form).getByRole('group').getAttribute('aria-labelledby')).toBe('invite-mentor-gift-label')
+  expect(screen.getByText('admin.mentors.invite.giftLabel')).toBeTruthy()
+  const every = screen.getByTestId('invite-mentor-gift-every') as HTMLInputElement
+  const sabah = screen.getByTestId('invite-mentor-gift-gift-5') as HTMLInputElement
+  expect(every.checked).toBe(true)
+  expect(sabah.disabled).toBe(true)                     // greyed while Every gift is on
+  expect(screen.getByText('Flagship Bursary')).toBeTruthy()
+  fireEvent.click(every)                                // un-tick Every gift, then pick Sabah
+  fireEvent.click(screen.getByTestId('invite-mentor-gift-gift-5'))
+  fill(form)
+  fireEvent.submit(form)
+  await waitFor(() => expect(mockApi.inviteMentor).toHaveBeenCalledWith(
+    { name: 'Asha', email: 'a@example.org', programme_ids: [5] }, { token: 'tok' }))
+  // After a send the form is back at Every gift.
+  await waitFor(() => expect((screen.getByTestId('invite-mentor-gift-every') as HTMLInputElement).checked).toBe(true))
+})
+
+it('I4: with no gifts served it still offers (and sends) Every gift', async () => {
+  mockApi.inviteMentor.mockResolvedValue({ id: 9, mentor: MENTOR, emailed: true, message: '' })
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} />)
+  expect(screen.queryByTestId('invite-mentor-gift-gift-3')).toBeNull()
+  const form = screen.getByTestId('mentor-invite-form')
+  fill(form)
+  fireEvent.submit(form)
+  await waitFor(() => expect(mockApi.inviteMentor).toHaveBeenCalledWith(
+    expect.objectContaining({ programme_ids: [] }), { token: 'tok' }))
+})
+
+it('I4: a gift the server will not take reads as a gift refusal, not a missing staff member', async () => {
+  mockApi.inviteMentor.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'not_found' }))
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} options={GIFTS} />)
+  const form = screen.getByTestId('mentor-invite-form')
+  fill(form)
+  fireEvent.submit(form)
+  expect((await within(form).findByRole('alert')).textContent).toBe('admin.mentors.error.gift_not_found')
+})
+
+it('I4: the waiting table names each mentor invitation\'s gifts, or Every gift', () => {
+  const rows = [
+    { ...DATA.invitations[0], gifts: [GIFTS[1]], every_gift: false, programme: 'sabah', programme_name: 'Sabah Bursary' },
+    { ...DATA.invitations[0], id: 42, mentor_id: 8, gifts: [], every_gift: true },
+  ]
+  render(<MentorRoster data={{ ...DATA, invitations: rows } as api.InvitationsPayload} token="tok" t={t}
+    canManage onDone={jest.fn()} />)
+  expect(within(screen.getByTestId('mentor-waiting-41')).getByText('Sabah Bursary')).toBeTruthy()
+  expect(within(screen.getByTestId('mentor-waiting-42')).getByText('admin.invitations.reviewerGiftEvery')).toBeTruthy()
 })

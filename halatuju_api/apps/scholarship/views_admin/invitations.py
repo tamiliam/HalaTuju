@@ -129,8 +129,25 @@ class AdminInvitationsView(_ReviewersBase):
         elif kind == inv_service.KIND_MENTOR and reads_mentors:
             # The Mentor tab's roster (S7b follow-up): the Mentors page's own rows for the waiting
             # invitations' mentors, so the tab offers exactly the actions those endpoints take.
+            from .. import mentor_gift
             from .mentors import mentor_kind_extras
             extras = mentor_kind_extras(admin, [r['mentor_id'] for r in rows if r['mentor_id']])
+            # I4: a mentor invitation's gifts ARE its mentor's (`mentor_gifts`, written at the invite; no
+            # gifts = every gift), so the waiting row names them under the name, as a sponsor's does.
+            held = mentor_gift.gifts_by_mentor([r['mentor_id'] for r in rows if r['mentor_id']])
+            for r in rows:
+                if r['mentor_id']:
+                    named = held.get(r['mentor_id'], [])
+                    r.update(gifts=named, every_gift=not named,
+                             programme=named[0]['code'] if len(named) == 1 else '',
+                             programme_name=named[0]['name'] if len(named) == 1 else '')
+            # I4: the mentor invite's gift choices — the ACTIVE gifts of the organisation the invite binds
+            # to (`invite_mentor`'s own owner rule), so a super is never offered a gift the POST 404s.
+            from .sources import _SourcesBase
+            owner, _err = _SourcesBase()._new_source_owner(request, admin)
+            extras['mentor_programmes'] = [] if owner is None else [
+                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
+                for p in owner.programmes.filter(is_active=True).order_by('code')]
 
         return Response({
             'kind': kind,

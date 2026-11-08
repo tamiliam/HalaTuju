@@ -8,6 +8,8 @@
  *  - `GiftTickList`  "Every gift" plus a tick per gift, the gifts greyed while "Every gift" is ticked
  *                    (the pencil pop-over below, the reviewer invite form and the sponsor invite form);
  *  - `ReviewerGiftsCell` the chips with a pencil beside them that opens the pop-over (Cancel / Save).
+ *    Invitations I4 (2026-11-08): a MENTOR's gifts use the same cell (Team -> Mentors, the details box),
+ *    passing their own `save` (`setMentorGifts`) and `errorOf` (the refusal that names a count).
  *
  * The tick rules are pure and tested in `lib/reviewerGifts`. The server is the authority: it refuses a
  * gift from another organisation (404) and blocks a new case outside these gifts (`gift_mismatch`).
@@ -74,12 +76,16 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId, all
 }
 
 /** The chips, and for someone who may change them a pencil that opens the pop-over. */
-export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, onSaved }: {
+export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, onSaved, save: saveIds, errorOf }: {
   reviewer: { id: number; name: string; gifts: ReviewerGiftTag[]; organisation_id?: number | null }
   options: AdminReviewerGift[]
   token: string | null
   canEdit: boolean
   onSaved: (gifts: ReviewerGiftTag[]) => void
+  /** I4: who writes the ticks (default: the reviewer's `setReviewerGifts`). Answers the saved gifts. */
+  save?: (ids: number[], token: string) => Promise<ReviewerGiftTag[]>
+  /** I4: the words for a refusal (default: the generic "could not save"). */
+  errorOf?: (err: unknown) => string
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -93,10 +99,12 @@ export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, o
     if (!token) return
     setBusy(true); setError('')
     try {
-      const r = await setReviewerGifts(reviewer.id, idsToSave(ticks), { token })
-      onSaved(r.gifts); setOpen(false)
-    } catch {
-      setError(t('admin.reviewers.detail.giftFailed'))
+      const gifts = saveIds
+        ? await saveIds(idsToSave(ticks), token)
+        : (await setReviewerGifts(reviewer.id, idsToSave(ticks), { token })).gifts
+      onSaved(gifts); setOpen(false)
+    } catch (err) {
+      setError(errorOf ? errorOf(err) : t('admin.reviewers.detail.giftFailed'))
     } finally { setBusy(false) }
   }
 
