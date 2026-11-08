@@ -34,6 +34,12 @@ Branch t2-revoke-delete (not pushed; no migration, model comments only). Owner, 
 - **Tests:**
   - API: `test_t2_revoke_delete.py` (the matrix, the transaction, a refused delete leaves every row, the staff-mentor door, the lists and pages serve the keys).
   - Web: `StaffActions.test.tsx` (hover, tap, focus, the counts, the org-admin rule), plus T2 blocks in the Reviewers page, reviewer page, admin page, Mentors and `StaffAdmin` tests.
+- **Review round (2026-11-09):**
+  - The footprint now counts the stamps the first pass missed: a student note's `actor_email` (a QC user who had written one read as deletable), every remaining `*_by_email` stamp and FK, and any `StaffActivity` act except arriving (`SELF_ONLY_VERBS`). New guard `test_t2_footprint_drift.py` walks every model for an FK to `PartnerAdmin`/`Mentor` or a field named `*_by`, `*_by_email` or `actor_email`; each must be counted or excused in `NOT_WORK` with its reason.
+  - Tables read every footprint in ONE query (`staff_footprint.footprints`, a `UNION ALL` of grouped branches) on Admins and Mentors. The Reviewers list stays on the correlated subqueries: the batched read would make it 7 queries against its frozen budget of 6. A 2-vs-20 test pins each table's query count.
+  - Every row and person page also serves `delete_never` (no Delete drawn at all: a super, a partner or source login, a row outside the caller's remit, the sole org admin) and `revocable` (no Revoke for a super, for yourself or for the sole org admin). The rules live in `courses/staff_delete_rules.py`.
+  - Delete now refuses the SOLE active org admin of an organisation (400 `last_org_admin`), as Revoke already did.
+  - The footprint's docstring names the race window for email-only stamps (a stamp written after the check, before the delete).
 
 ### feat: Notes for the reviewer (request #55) (2026-11-07)
 

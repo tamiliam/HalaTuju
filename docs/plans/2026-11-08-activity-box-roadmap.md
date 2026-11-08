@@ -58,8 +58,8 @@ The owner, with screenshots of Team → Admins, a reviewer's page and the applic
     revoke instead" (counts on hover); Remove from Admins.
   - Reviewers: Revoke (not for the org admin) and Remove from Reviewers. **Never Delete** — the server's
     `_DELETABLE_ROLES` is `admin`, `finance`, `org_admin` only (`courses/views_admin.py:599`; owner 2026-09-09:
-    never a reviewer).
-  - Mentors: Revoke / Restore / Stop mentoring. No Delete.
+    never a reviewer). *Superseded by D6 in T2 (2026-11-08): no-work reviewers and QC may be deleted.*
+  - Mentors: Revoke / Restore / Stop mentoring. No Delete. *Superseded by D6 in T2: a no-work mentor may be deleted.*
   - Delete of an org admin: the server already lets only a super do it (`_staff_target_manageable` — an org admin
     may not act on a fellow org admin), so ruling 1's last part is already true on the server; the screen needs only
     to match it.
