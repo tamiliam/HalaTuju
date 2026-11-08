@@ -521,6 +521,10 @@ MAX_OTHER_DOCS = int(os.environ.get('MAX_OTHER_DOCS', '10'))
 # beyond it the upload still succeeds + Vision/deterministic feedback still run, but
 # the billable Gemini call is skipped (student sees a "we'll review manually" note).
 DOC_ASSIST_RATE_LIMIT_PER_HOUR = int(os.environ.get('DOC_ASSIST_RATE_LIMIT_PER_HOUR', '15'))
+# A2.2 / TD-518: the hourly reprocess-ic-vision sweep (cron request limit 300 s). It stops cleanly between
+# documents once the budget is spent and the next run carries on; the batch is the most it may pick per run.
+REPROCESS_TIME_BUDGET_SECONDS = int(os.environ.get('REPROCESS_TIME_BUDGET_SECONDS', '80'))
+REPROCESS_BATCH_LIMIT = int(os.environ.get('REPROCESS_BATCH_LIMIT', '100'))
 # When True, only call Gemini if the free deterministic presence check is uncertain
 # (saves cost). Default False = always extract (richer data for the admin).
 DOC_ASSIST_ONLY_WHEN_UNCERTAIN = os.environ.get('DOC_ASSIST_ONLY_WHEN_UNCERTAIN', '') == '1'
