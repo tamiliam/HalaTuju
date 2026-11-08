@@ -133,5 +133,6 @@ class TestTheCockpitIsServedTheMarks(TestCase):
         self.assertEqual(body['stpm_marks']['cgpa'], 'match')
         self.assertEqual(body['stpm_marks']['grades']['MATH_T'], {'status': 'match', 'doc': 'A-'})
         # The gift's key stays the serializer's last; the view's two A1.11a keys (_detail_payload:
-        # qc_refusal, rejected_by_unassigned) are appended after it.
-        self.assertEqual(list(body)[-3:], ['programme', 'qc_refusal', 'rejected_by_unassigned'])
+        # qc_refusal, rejected_by_unassigned) are appended after it, then A1.13b's withdrawal_request.
+        self.assertEqual(list(body)[-4:], ['programme', 'qc_refusal', 'rejected_by_unassigned',
+                                           'withdrawal_request'])
