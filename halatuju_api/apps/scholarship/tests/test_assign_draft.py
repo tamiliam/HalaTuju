@@ -15,7 +15,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import assign_draft
-from apps.scholarship.models import SponsorProfile
+from apps.scholarship.models import ScholarshipApplication, SponsorProfile
 from apps.scholarship.services import assignment
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application,
@@ -127,6 +127,43 @@ class TestFirstAssignDraft(TestCase):
             self.assertEqual(assign_draft.draft_pending(time.monotonic())['failed'], 1)
         gen.assert_not_called()
         self.assertEqual(SponsorProfile.objects.get(application=other).finalise_state, '')
+
+    def test_a_fresh_claim_blocks_a_second_worker(self, _down):
+        self._assign(self.reviewer)
+        sp_id = self._sp().pk
+        second = []
+
+        def first_worker_call(*_a, **_k):         # a second worker arrives mid-call
+            second.append(assign_draft.run_draft(sp_id))
+            return DRAFT
+        with patch(GENERATE, side_effect=first_worker_call) as gen:
+            self.assertEqual(assign_draft.run_draft(sp_id), 'done')
+        self.assertEqual(second, ['not_claimed'])
+        gen.assert_called_once()
+        # A claim older than STALE_CLAIM (a worker killed mid-call) can be taken again.
+        SponsorProfile.objects.filter(pk=sp_id).update(
+            finalise_state='drafting', generated_at=None, finalise_attempts=1,
+            finalise_claimed_at=timezone.now() - assign_draft.STALE_CLAIM - timedelta(minutes=1))
+        with patch(GENERATE, return_value=DRAFT) as gen:
+            self.assertEqual(assign_draft.run_draft(sp_id), 'done')
+        gen.assert_called_once()
+
+    def test_the_backfill_and_the_ready_sweep_leave_a_queued_draft_to_the_cron(self, _down):
+        from apps.scholarship.services import autogenerate_ready_profiles
+        self._assign(self.reviewer)
+        with patch(GENERATE) as gen:
+            out = io.StringIO()
+            call_command('backfill_assigned_profiles', stdout=out)
+            gen.assert_not_called()
+            self.assertIn(f'skipped_queued=[{self.app.id}]', out.getvalue())
+            ScholarshipApplication.objects.filter(pk=self.app.pk).update(
+                assigned_to=None, status='profile_complete', profile_completed_at=timezone.now())
+            self.assertEqual(autogenerate_ready_profiles()['generated'], 0)
+            gen.assert_not_called()
+        self.assertEqual(self._sp().finalise_state, 'drafting')
+        SponsorProfile.objects.filter(application=self.app).update(finalise_state='')
+        with patch(GENERATE, return_value=DRAFT) as gen:                       # the control
+            self.assertEqual(autogenerate_ready_profiles()['generated'], 1)
 
     def test_skipped_while_gemini_reads_are_down(self, down):
         self._assign(self.reviewer)

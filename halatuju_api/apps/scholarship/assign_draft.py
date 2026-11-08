@@ -33,7 +33,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from .models import SponsorProfile
-from .profile_finalise import MAX_ATTEMPTS, QUEUE_FIELDS, STALE_CLAIM, _claimable
+from .profile_finalise import MAX_ATTEMPTS, QUEUE_FIELDS, STALE_CLAIM, claimable
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def run_draft(sp_id):
     """Claim, draft, release. Returns 'done', 'retry', 'failed', 'superseded' or 'not_claimed'."""
     now = timezone.now()
     if not SponsorProfile.objects.filter(
-        _claimable(now), pk=sp_id, finalise_state=DRAFTING, finalise_attempts__lt=MAX_ATTEMPTS,
+        claimable(now), pk=sp_id, finalise_state=DRAFTING, finalise_attempts__lt=MAX_ATTEMPTS,
     ).update(finalise_claimed_at=now, finalise_attempts=F('finalise_attempts') + 1):
         return 'not_claimed'
     sp = SponsorProfile.objects.select_related('application').get(pk=sp_id)
@@ -116,7 +116,7 @@ def draft_pending(started, limit=BATCH, deadline=DEADLINE_SECONDS, clock=time.mo
     from .services.outage import gemini_reads_down
     if gemini_reads_down():
         return {**counts, 'dropped_flag_off': 0, 'skipped_outage': True}
-    ids = list(queued.filter(_claimable(now)).order_by('finalise_requested_at')
+    ids = list(queued.filter(claimable(now)).order_by('finalise_requested_at')
                .values_list('pk', flat=True)[:limit])
     for sp_id in ids:
         if clock() - started >= deadline:
