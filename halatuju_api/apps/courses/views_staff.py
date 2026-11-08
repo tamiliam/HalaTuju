@@ -121,9 +121,9 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
     have declared her safe to delete and left 25 runs naming an address with nobody behind it. See
     `apps.scholarship.staff_footprint`.
 
-    ⚠ **REVIEWERS ARE NEVER DELETABLE** (`_DELETABLE_ROLES`), however empty their record looks —
-    the owner scoped this to admins explicitly, and a reviewer is who a student's case passed
-    through.
+    ⚠ **REVIEWERS AND QC TOO, SINCE D6 (Sprint T2, 2026-11-08)** (`_DELETABLE_ROLES`), reversing the
+    2026-09-09 "admins only": under the same footprint test, so a reviewer a student's case has passed
+    through (held, reviewed, interviewed, QC'd, mentored) is still only ever revoked.
 
     ⚠ **THE LOGIN GOES TOO, BEFORE THE ROW** (2026-10-09). The row is the only record of which
     Supabase login is ours; deleting it and leaving the login made a re-invite of the same address
@@ -166,7 +166,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
                 return Response({'error': 'Cannot delete a super admin', 'code': 'not_deletable'},
                                 status=400)
             if target.role not in _DELETABLE_ROLES:
-                return Response({'error': 'Only an admin account can be deleted',
+                return Response({'error': 'Only a programme staff account can be deleted',
                                  'code': 'not_deletable'}, status=400)
             work = staff_footprint.footprint(target)
             if work:
@@ -459,6 +459,8 @@ class AdminListView(PartnerAdminMixin, APIView):
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
         seats = staff_lifecycle.team_table_fields(admin, admins)
         _dormant_cache = {}
+        # Sprint T2: every person's footprint in ONE query, not one per row.
+        works = staff_footprint.footprints(admins)
 
         def _dormant_for(a):
             org_id = a.owning_organisation_id
@@ -469,7 +471,7 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         data = []
         for a in admins:
-            work = staff_footprint.footprint(a)   # once per row: 'deletable' reuses it
+            work = works.get(a.id, {})   # 'deletable' reuses it
             data.append({
                 'id': a.id,
                 'name': a.name,

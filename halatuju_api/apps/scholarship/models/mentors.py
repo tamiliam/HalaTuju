@@ -10,8 +10,11 @@ reviewer's qualification, language and address cards and the `area` below. Staff
 their login row. Sprint 7b adds `MentorAssignment` / `MentoringSession` below (rules:
 `apps/scholarship/mentoring.py`).
 
-⚠ NEVER DELETED. A mentor is DEACTIVATED (`deactivated_at`), which also switches their login off;
-past meetings stay on each scholar's file (7b). Status is DERIVED (`mentor_invite.status_of`), never
+⚠ DELETED ONLY WITH NO WORK (D6, Sprint T2, 2026-11-08 — was "never deleted"). A mentor with no
+assignment, session or concern record may be deleted, with their login, in one transaction
+(`mentor_invite.delete_mentor`); anyone else is DEACTIVATED (`deactivated_at`), as before, which also
+switches their login off; past meetings stay on each scholar's file (7b). The PROTECT foreign keys
+below stay as the database's backstop — the footprint check refuses first. Status is DERIVED (`mentor_invite.status_of`), never
 stored: inactive when deactivated, invited until the login's first sign-in, else active.
 
 ⚠ MENTORS NEVER REACH SPONSORS OR PARTNERS. Nothing here is on a sponsor or partner serializer.
@@ -29,7 +32,8 @@ class Mentor(models.Model):
     #: The area of mentoring — written by the MENTOR (`PATCH admin/me/` `mentoring_area`), never by
     #: staff. Blank until the mentor fills in their profile.
     area = models.CharField(max_length=120, blank=True, default='')
-    #: NULL = active (or invited). Set by Deactivate, cleared by Reactivate — never a delete.
+    #: NULL = active (or invited). Set by Deactivate, cleared by Reactivate. Deactivate is not a delete:
+    #: a mentor with no assignment, session or concern record may be deleted instead (D6).
     deactivated_at = models.DateTimeField(null=True, blank=True)
     deactivated_by_email = models.CharField(max_length=254, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -49,7 +53,8 @@ class MentorAssignment(models.Model):
     ⚠ ONE OPEN ROW PER APPLICATION, held by the DATABASE (a partial unique index on
     `ended_at IS NULL`), not only by the code: two racing "assign" requests cannot both leave an
     open row. A CHANGE ends the open row (it stays, the history) and starts a new one, in one
-    transaction (`mentoring.assign`). Never deleted; never reopened.
+    transaction (`mentoring.assign`). Never deleted; never reopened. It is also WORK: a mentor with
+    one (ended or open) is never deleted, only deactivated (D6; PROTECT is the backstop).
 
     `end_reason` is STAFF ONLY (never on a student payload). `emailed_student` records whether the
     "You have a mentor" email actually went (set after the send).

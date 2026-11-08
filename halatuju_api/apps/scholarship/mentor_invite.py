@@ -445,3 +445,52 @@ def _drop_new_login(uid):
                      'made, and the login could not be removed - remove it by hand in Supabase Auth',
                      uid)
     return done
+
+
+# ── deleting (D6, Sprint T2, 2026-11-08) ─────────────────────────────────────────
+def delete_mentor(caller, mentor, login):
+    """DELETE a mentor who has NO work: their invitations, their login and the mentor record, in ONE
+    transaction; the Supabase login is retired after (`staff_lifecycle.retire_login`), as for staff.
+
+    ``(error, detail)``: on success ``(None, <the login word for the AUDIT line>)``; else `staff_mentor`
+    (a staff member who also mentors — deleted from Team -> Admins / Reviewers, where their mentoring
+    counts as work), `not_found`, `has_work` with the footprint counts, or `login_cleanup_failed`.
+
+    ⚠ THE FOOTPRINT REFUSES FIRST. Any mentoring assignment ever (ended too), any session, any concern —
+    `staff_footprint.MENTOR_TRACES`, keyed on the mentor itself — and every email stamp of the login.
+    `MentorAssignment.mentor` / `MentoringSession.mentor` stay PROTECT as the database's backstop. The
+    mentor row is LOCKED first: in Postgres a new assignment's foreign key waits on that lock, so work
+    landing between the check and the delete cannot slip through."""
+    from apps.courses import supabase_admin
+    from . import staff_footprint, staff_lifecycle
+    from .models import MentorAssignment, MentoringSession
+    if is_staff_login(login):
+        return 'staff_mentor', None
+    with transaction.atomic():
+        locked = Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+        if locked is None:
+            return 'not_found', None
+        row = PartnerAdmin.objects.select_for_update().filter(mentor=locked).order_by('id').first()
+        if is_staff_login(row):
+            return 'staff_mentor', None
+        work = staff_footprint.footprint(row) if row is not None else {}
+        if not work and (MentorAssignment.objects.filter(mentor=locked).exists()
+                         or MentoringSession.objects.filter(mentor=locked).exists()):
+            counts = {'scholars_mentored': MentorAssignment.objects.filter(mentor=locked).count(),
+                      'mentoring_sessions': MentoringSession.objects.filter(mentor=locked).count()}
+            work = {k: n for k, n in counts.items() if n}
+        if work:
+            return 'has_work', work
+        plan, account = (staff_lifecycle.plan_login_retirement(row) if row is not None
+                         else ('none', None))
+        if plan == supabase_admin.FAILED:
+            return 'login_cleanup_failed', None
+        uid = row.supabase_user_id if row is not None else None
+        Invitation.objects.filter(mentor=locked).delete()   # PROTECT on the mentor: theirs go first
+        if row is not None:
+            row.delete()
+        locked.delete()
+    done = staff_lifecycle.retire_login(uid, plan, account)
+    logger.info('AUDIT mentor_deleted mentor=%s account=%s login=%s by=%s', mentor.pk,
+                login.pk if login else '-', done, caller.email or '')
+    return None, done

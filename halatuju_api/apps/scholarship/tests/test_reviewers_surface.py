@@ -169,7 +169,10 @@ class TestTheTable(_Base):
             'other_language',
             # Team tables T2: the tables they sit in, each table's OWN keys, whether they are the
             # organisation admin, and where Remove is accepted — derived, never a stored column.
-            'tables', 'lead', 'admin_keys', 'reviewer_keys', 'remove'})
+            'tables', 'lead', 'admin_keys', 'reviewer_keys', 'remove',
+            # Sprint T2 (owner, 2026-11-08): the Admins list's Delete pair — the footprint counts
+            # ({} for none) and whether THIS caller may delete the row now.
+            'work', 'deletable'})
 
     def test_the_gift_column_is_back_because_its_own_trigger_fired(self):
         """⚠ THIS TEST USED TO ASSERT THE OPPOSITE, and the reason it flipped is the point.

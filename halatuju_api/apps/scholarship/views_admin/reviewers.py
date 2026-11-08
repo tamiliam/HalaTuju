@@ -223,6 +223,17 @@ def _reviewer_dict(admin, work):
     }
 
 
+def _with_footprint(caller, row, payload):
+    """Sprint T2: `work` (the footprint counts, `{}` for none) and `deletable` — the Admins list's
+    two keys, so all three tables offer Delete by one rule (`_deletable_now`). ``row`` carries the
+    `staff_footprint.annotations()`, so a person costs no query."""
+    from apps.courses.views_admin import _deletable_now
+    from .. import staff_footprint
+    work = staff_footprint.from_row(row)
+    payload.update(work=work, deletable=_deletable_now(caller, row, work=work))
+    return payload
+
+
 class _ReviewersBase(_AdminBase):
     """Shared gate + fence for the reviewers surface (Organisation → Reviewers).
 
@@ -300,7 +311,9 @@ class AdminReviewerListView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        rows = list(self._reviewers(org_id, include_revoked=True))
+        from .. import staff_footprint
+        rows = list(self._reviewers(org_id, include_revoked=True)
+                    .annotate(**staff_footprint.annotations()))
         work = _reviewer_workloads(rows, organisation_id=org_id)
         # Common profile S2: the photo, and the phone ONLY when its owner shows it to the team —
         # one query and one batch signing call for the page (`staff_photo.team_cards`).
@@ -311,7 +324,8 @@ class AdminReviewerListView(_ReviewersBase):
         seats = staff_tables_admin.row_fields(
             admin, rows, open_counts={i: w['_open_cases'] for i, w in work.items()})
         return Response({
-            'reviewers': [{**_reviewer_dict(r, work[r.id]), **seats[r.id], **cards[r.id]} for r in rows],
+            'reviewers': [_with_footprint(admin, r, {**_reviewer_dict(r, work[r.id]), **seats[r.id],
+                                                     **cards[r.id]}) for r in rows],
             # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
             # can offer the change wherever a reviewer is shown, without a second round trip.
             'programmes': self._gift_choices(admin),
@@ -334,13 +348,15 @@ class AdminReviewerDetailView(_ReviewersBase):
         # ⚠ 404, never 403 — a 403 would confirm that another tenant's staff member exists.
         # ⚠ `include_revoked`: a closed account's record must still OPEN, or Restore on the list
         # would send somebody to a 404 (2026-09-09).
-        target = self._reviewers(org_id, include_revoked=True).filter(pk=pk).first()
+        from .. import staff_footprint
+        target = (self._reviewers(org_id, include_revoked=True)
+                  .annotate(**staff_footprint.annotations()).filter(pk=pk).first())
         if target is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
         rp = getattr(target, 'reviewer_profile', None)
         from .. import reopen as reopen_service
-        payload = _reviewer_dict(target, work)
+        payload = _with_footprint(admin, target, _reviewer_dict(target, work))
         payload.update({
             # The four outcome bands. They partition the decided cases, so they sum to `completed`
             # — the bar and the figure above it can never disagree.

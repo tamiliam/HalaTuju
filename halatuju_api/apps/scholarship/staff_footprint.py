@@ -20,7 +20,8 @@ Counting is deliberately EXHAUSTIVE rather than clever: any single trace of work
 delete. A missed relation would be a silent deletion of somebody's record, so the failure has to
 land on the side of keeping people.
 """
-from django.db.models import Func, IntegerField, Q, Subquery
+from django.db.models import Func, IntegerField, OuterRef, Q, Subquery
+from django.db.models.functions import Lower
 
 # ⚠ TD-443 (A1.11a): EVERY recorded-email stamp a staff member leaves, not only the payment and
 # verdict ones. Each was a quiet erasure: delete the person and the row keeps an address that no
@@ -68,6 +69,65 @@ EMAIL_STAMPS = (
     ('mentors_added', 'scholarship', 'Mentor', ('created_by_email',)),
     ('application_items', 'scholarship', 'ProgrammeApplicationItem', ('updated_by_email',)),
     ('programme_aliases', 'scholarship', 'ProgrammeCodeAlias', ('created_by',)),
+    # Sprint T2 (D6, 2026-11-08): reviewers, QC and mentors become deletable under this test, so the
+    # stamps THEIR work leaves are counted too — a missed one would be a silent deletion of a record.
+    ('declines_scheduled', 'scholarship', 'ScholarshipApplication', ('pending_decline_by',)),
+    ('maintenance_changes', 'scholarship', 'ScholarshipApplication',
+     ('maintenance_substate_changed_by',)),
+    ('qc_overrides', 'scholarship', 'ScholarshipApplication', ('qc_override_by',)),
+    ('mentors_stopped', 'scholarship', 'Mentor', ('deactivated_by_email',)),
+    ('mentoring_changes', 'scholarship', 'MentorAssignment', ('started_by_email', 'ended_by_email')),
+    ('meetings_logged', 'scholarship', 'MentoringSession',
+     ('logged_by_email', 'concern_handled_by_email')),
+    ('module_reviews', 'scholarship', 'ModuleProgress', ('reviewed_by_email',)),
+    ('terms_exemptions_granted', 'scholarship', 'SponsorTermsAcceptance', ('granted_by_email',)),
+    ('award_withdrawals', 'scholarship', 'AwardWithdrawalRequest',
+     ('requested_by_email', 'decided_by_email')),
+)
+
+#: The email stamps older than TD-443, kept under their first keys (the People tooltip reads them).
+#: ⚠ The other two payment-run signatures (review M1, 2026-10-09): a checker or an approver who signed
+#: run 34 must keep meaning somebody exactly as its maker does. `payment_runs_countersigned` is, since
+#: #39 S2, the APPROVER's slot (Finance's approvals as well as an organisation admin's countersignatures).
+CORE_EMAIL_STAMPS = (
+    ('payment_runs_made', 'scholarship', 'PaymentRun', ('created_by',)),
+    ('payment_runs_signed', 'scholarship', 'PaymentRun', ('admin_signed_email',)),
+    ('payment_runs_checked', 'scholarship', 'PaymentRun', ('finance_signed_email',)),
+    ('payment_runs_countersigned', 'scholarship', 'PaymentRun', ('org_admin_signed_email',)),
+    ('benefactors_vetted', 'scholarship', 'Sponsor', ('reviewed_by',)),
+    ('applications_decided', 'scholarship', 'ScholarshipApplication',
+     ('verified_by', 'rejected_by', 'verdict_decided_by')),
+)
+
+#: By FOREIGN KEY to the login: `(key, app label, model, the fields naming them, extra filter)`.
+#: Deleting would cascade, SET_NULL or be refused outright.
+#: ⚠ TD-484 (A1.11a): `cases_held_before` and `review_actions` are the QC separation guard's own
+#: evidence. A reviewer reassigned off a case holds no `assigned_to` any more, so they used to be
+#: DELETABLE — and the delete SET_NULLs their `AssignmentEvent`s and CASCADEs their review
+#: `StaffActivity` rows, so a re-invited namesake could then QC the very case they reviewed.
+FK_TRACES = (
+    ('assigned_applications', 'scholarship', 'ScholarshipApplication', ('assigned_to',), None),
+    ('interview_slots', 'scholarship', 'InterviewSlot', ('reviewer',), None),
+    ('interviews', 'scholarship', 'InterviewSession', ('interviewer',), None),
+    ('requests_raised', 'scholarship', 'OrgRequest', ('submitted_by',), None),
+    ('request_files', 'scholarship', 'OrgRequestAttachment', ('uploaded_by',), None),
+    ('cases_held_before', 'scholarship', 'AssignmentEvent', ('from_admin', 'to_admin'), None),
+    ('review_actions', 'scholarship', 'StaffActivity', ('actor',), 'review'),
+    # Sprint T2 (D6): what a QC checker, a corrected reviewer and a request's commenter leave.
+    ('qc_decisions', 'scholarship', 'StaffActivity', ('actor',), {'verb': 'qc_decision'}),
+    ('corrections_attributed', 'scholarship', 'DecisionReopen', ('reviewer',), None),
+    ('request_comments', 'scholarship', 'OrgRequestComment', ('author_admin',), None),
+    ('requests_approved', 'scholarship', 'OrgRequest', ('approved_by',), None),
+)
+
+#: By the MENTOR record the login carries (a mentor login, or a staff member who also mentors —
+#: S7d, lead ruling 2026-11-01): a scholar they mentored, a meeting, a concern. Their name lives on
+#: this login and every scholar's mentoring history reads it. `MentorAssignment.mentor` and
+#: `MentoringSession.mentor` are PROTECT as the database's backstop; this refuses first.
+MENTOR_TRACES = (
+    ('scholars_mentored', 'scholarship', 'MentorAssignment', None),
+    ('mentoring_sessions', 'scholarship', 'MentoringSession', None),
+    ('concerns_raised', 'scholarship', 'MentoringSession', {'concern': True}),
 )
 
 
@@ -77,84 +137,82 @@ class _Count(Func):
     output_field = IntegerField()
 
 
-def _stamp_counts(admin, email):
-    """All of `EMAIL_STAMPS` in ONE query (the People list calls `footprint` for every row)."""
+def _counted(qs):
+    return Subquery(qs.order_by().annotate(n=_Count('pk')).values('n')[:1],
+                    output_field=IntegerField())
+
+
+def _email_match(fields):
+    """A row naming the outer login's address in ANY of ``fields`` (case-insensitive; a blank stamp
+    never matches, so a login with no address matches nothing). One row counts once."""
+    match = Q()
+    for i, field in enumerate(fields):
+        match |= Q(**{f'_fp{i}': Lower(OuterRef('email'))}) & ~Q(**{field: ''})
+    return match
+
+
+def annotations():
+    """``{key: Subquery}`` — the WHOLE footprint as correlated subqueries of a `PartnerAdmin` query.
+    ``.annotate(**staff_footprint.annotations())`` puts it on a list's own query, so a list pays NO
+    extra query for it (the Reviewers list is pinned at 6), and `from_row` reads it back."""
     from django.apps import apps
-    from apps.courses.models import PartnerAdmin
-    subqueries = {}
-    for key, label, model_name, fields in EMAIL_STAMPS:
+    from .qc_separation import REVIEW_VERBS
+    out = {}
+    for key, label, model_name, fields, extra in FK_TRACES:
         model = apps.get_model(label, model_name)
         match = Q()
         for field in fields:
-            match |= Q(**{f'{field}__iexact': email})
-        subqueries[key] = Subquery(
-            model.objects.filter(match).order_by().annotate(n=_Count('pk')).values('n')[:1],
-            output_field=IntegerField())
-    row = PartnerAdmin.objects.filter(pk=admin.pk).annotate(**subqueries).values(*subqueries).first()
-    return row or {}
+            match |= Q(**{field: OuterRef('pk')})
+        qs = model.objects.filter(match)
+        if extra == 'review':
+            qs = qs.filter(verb__in=REVIEW_VERBS)
+        elif extra:
+            qs = qs.filter(**extra)
+        out[key] = _counted(qs)
+    for key, label, model_name, extra in MENTOR_TRACES:
+        qs = apps.get_model(label, model_name).objects.filter(mentor_id=OuterRef('mentor_id'))
+        out[key] = _counted(qs.filter(**extra) if extra else qs)
+    for key, label, model_name, fields in CORE_EMAIL_STAMPS + EMAIL_STAMPS:
+        model = apps.get_model(label, model_name)
+        lowered = {f'_fp{i}': Lower(field) for i, field in enumerate(fields)}
+        out[key] = _counted(model.objects.alias(**lowered).filter(_email_match(fields)))
+    return {f'fp_{k}': v for k, v in out.items()}
+
+
+def from_row(row):
+    """The footprint of a `PartnerAdmin` fetched with `annotations()` (an instance or a values dict)."""
+    get = row.get if isinstance(row, dict) else (lambda name: getattr(row, name, 0))
+    keys = ([k for k, *_ in FK_TRACES] + [k for k, *_ in MENTOR_TRACES]
+            + [k for k, *_ in CORE_EMAIL_STAMPS + EMAIL_STAMPS])
+    return {k: get(f'fp_{k}') for k in keys if get(f'fp_{k}')}
+
+
+def footprints(admins):
+    """``{admin pk: footprint}`` for many logins in ONE query, whatever their number."""
+    from apps.courses.models import PartnerAdmin
+    pks = [a.pk for a in admins if a is not None and a.pk is not None]
+    if not pks:
+        return {}
+    ann = annotations()
+    rows = PartnerAdmin.objects.filter(pk__in=pks).annotate(**ann).values('pk', *ann)
+    return {r['pk']: from_row(r) for r in rows}
 
 
 def footprint(admin):
-    """`{what: count}` of everything this staff account has done, empty keys omitted.
+    """`{what: count}` of everything this staff account has done, empty keys omitted. ONE query.
 
     Two kinds of trace, and both count:
-      * FOREIGN KEYS — assignments, interview slots, org requests, and (S7d) the scholars they mentored.
-        Deleting would cascade or be refused outright.
+      * FOREIGN KEYS — assignments, interview slots, org requests, the QC guard's evidence, and the
+        scholars, meetings and concerns of the mentor record the login carries. Deleting would
+        cascade or be refused outright.
       * EMAIL STRINGS — payment runs (made, and each of the three signatures), verdicts, vetting,
-        verify-and-accept. Deleting breaks
-        nothing and erases nobody, which is exactly what makes them dangerous: the row keeps an
-        address that no longer resolves to a person.
+        verify-and-accept and every stamp in `EMAIL_STAMPS`. Deleting breaks nothing and erases
+        nobody, which is exactly what makes them dangerous: the row keeps an address that no longer
+        resolves to a person.
     """
-    from .models import (AssignmentEvent, InterviewSession, InterviewSlot, OrgRequest,
-                         OrgRequestAttachment, PaymentRun, ScholarshipApplication, Sponsor,
-                         StaffActivity)
-    from .qc_separation import REVIEW_VERBS
-    email = (getattr(admin, 'email', '') or '').strip().lower()
-    counts = {
-        # By foreign key.
-        'assigned_applications': ScholarshipApplication.objects.filter(assigned_to=admin).count(),
-        'interview_slots': InterviewSlot.objects.filter(reviewer=admin).count(),
-        'interviews': InterviewSession.objects.filter(interviewer=admin).count(),
-        'requests_raised': OrgRequest.objects.filter(submitted_by=admin).count(),
-        'request_files': OrgRequestAttachment.objects.filter(uploaded_by=admin).count(),
-        # ⚠ TD-484 (A1.11a): the QC separation guard's own evidence. A reviewer reassigned off a
-        # case holds no `assigned_to` any more, so they used to be DELETABLE — and the delete
-        # SET_NULLs their `AssignmentEvent`s and CASCADEs their review `StaffActivity` rows, so a
-        # re-invited namesake could then QC the very case they reviewed. Either trace now keeps them.
-        'cases_held_before': AssignmentEvent.objects.filter(
-            Q(from_admin=admin) | Q(to_admin=admin)).count(),
-        'review_actions': StaffActivity.objects.filter(
-            actor=admin, verb__in=REVIEW_VERBS).count(),
-    }
-    if getattr(admin, 'mentor_id', None):
-        # S7d (lead ruling 2026-11-01): a staff member who has MENTORED anybody has done work. Their
-        # name lives on this login and every scholar's mentoring history reads it, so they are revoked,
-        # never deleted. A mentor record that never had a scholar is no footprint.
-        from .models import MentorAssignment
-        counts['scholars_mentored'] = MentorAssignment.objects.filter(mentor_id=admin.mentor_id).count()
-    if email:
-        # By recorded email. These survive a delete and stop naming anybody — the quiet damage.
-        counts.update({
-            'payment_runs_made': PaymentRun.objects.filter(created_by__iexact=email).count(),
-            'payment_runs_signed': PaymentRun.objects.filter(
-                admin_signed_email__iexact=email).count(),
-            # ⚠ The other two signatures (review M1, 2026-10-09). `finance` and `org_admin` are
-            # deletable roles, and the delete now also removes the login — a checker or an approver
-            # who signed run 34 must keep meaning somebody exactly as its maker does.
-            'payment_runs_checked': PaymentRun.objects.filter(
-                finance_signed_email__iexact=email).count(),
-            # Key name kept (the People tooltip reads it): since #39 S2 this slot is the APPROVER's,
-            # i.e. Finance's approvals as well as an organisation admin's countersignatures.
-            'payment_runs_countersigned': PaymentRun.objects.filter(
-                org_admin_signed_email__iexact=email).count(),
-            'benefactors_vetted': Sponsor.objects.filter(reviewed_by__iexact=email).count(),
-            'applications_decided': ScholarshipApplication.objects.filter(
-                Q(verified_by__iexact=email) | Q(rejected_by__iexact=email)
-                | Q(verdict_decided_by__iexact=email)).count(),
-        })
-        if admin.pk is not None:
-            counts.update(_stamp_counts(admin, email))
-    return {k: v for k, v in counts.items() if v}
+    if admin is None or admin.pk is None:
+        return {}
+    return footprints([admin]).get(admin.pk, {})
 
 
 def has_footprint(admin) -> bool:

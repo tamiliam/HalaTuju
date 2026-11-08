@@ -723,13 +723,15 @@ class TestDeleteRemovesTheLogin(TestCase):
         gone.assert_not_called()
         put.assert_not_called()
 
-    def test_still_refused_for_work_and_for_reviewers(self):
+    def test_still_refused_for_work_including_a_reviewers(self):
+        # D6 (2026-11-08): a reviewer is deletable now, but one who has held a case is not.
         worked = make_admin('admin', owning_org=self.org)
         PaymentRun.objects.create(organisation=self.org, created_by=worked.email,
                                   payment_date=datetime.date(2026, 9, 1))
         rev = make_admin('reviewer', owning_org=self.org)
+        make_application('assigned', reviewer=rev)
         with patch(f'{REQ}.get') as get, patch(f'{REQ}.delete') as gone:
             self.assertEqual(self._delete(worked).json()['code'], 'has_work')
-            self.assertEqual(self._delete(rev).json()['code'], 'not_deletable')
+            self.assertEqual(self._delete(rev).json()['code'], 'has_work')
         get.assert_not_called()
         gone.assert_not_called()
