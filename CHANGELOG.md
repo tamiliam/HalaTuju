@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: the sponsor signup memberships move out of sponsorship.py (2026-11-08)
+
+Branch invitations-consistency (not pushed). The merge of main put `apps/scholarship/sponsorship.py` at 1040 lines, over its `oversize_files` allowance (999 + 20). `signup_programmes_for(sponsor, *, freeze=False)`, `open_signup_memberships` and `settle_signup_memberships` move, unchanged, to the new `apps/scholarship/sponsor_signup.py` (65 lines); `sponsorship.py` is now 988. The per-gift writers (`sync_account_membership`, `set_programme_membership`, the `rejected_by_hand_at` stamp and their `select_for_update`) stay in `sponsorship.py`. No re-export: the callers (`views_sponsor.py` registration, `views_admin/sponsors.py` vetting) and three test files import `sponsor_signup`; comments, the role matrix and the architecture map name the new home. No behaviour change.
+
 ### chore: the invitations migrations renumbered after main (0207, 0208) (2026-11-08)
 
 Branch invitations-consistency (not pushed), after merging main, which took `0205_reviewer_notes` and `0206_award_withdrawal_requests`. Ours move up, unchanged in what they do: `0205_invitation_gifts` is now `scholarship.0207_invitation_gifts` (depends on `0206_award_withdrawal_requests`) and `0206_mentor_gifts` is now `scholarship.0208_mentor_gifts` (depends on 0207). The hand-run SQL in each docstring names the new ledger rows; 0207's pre-check also confirms 0206 is applied. Neither of main's two migrations touches `invitations`, `sponsor_programme_memberships` or `mentors`, so the pre-checks still hold. The backfill tests load the migration by its new name.

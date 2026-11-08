@@ -268,7 +268,7 @@ class AdminInvitationCancelView(_ReviewersBase):
 
     ⚠ **THE LINK STOPS WORKING.** A SPONSOR invitation carries no credential: once withdrawn it no
     longer closes on their registration (`views_sponsor._close_admin_invitation`) nor files them
-    into its gifts (`sponsorship.signup_programmes_for`) — both skip withdrawn ones. A STAFF
+    into its gifts (`sponsor_signup.signup_programmes_for`) — both skip withdrawn ones. A STAFF
     invitation provisioned an account with a temporary password up front, so withdrawing it also
     switches that never-used account off (`is_active=False`, exactly People → Revoke): otherwise
     the password in the letter would still open the console. Refused if they have signed in.

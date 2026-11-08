@@ -20,6 +20,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import sponsorship as svc
+from apps.scholarship import sponsor_signup
 from apps.scholarship.models import (
     Invitation, Programme, Sponsor, SponsorProgrammeMembership,
 )
@@ -75,26 +76,26 @@ class TestWhichGiftARegistrationJoins(_Case):
 
     def test_one_active_gift_resolves_itself_which_is_production_today(self):
         # The old constant's behaviour, reproduced without naming a tenant.
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [self.flagship])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [self.flagship])
 
     def test_an_INACTIVE_second_gift_does_not_make_the_answer_ambiguous(self):
         # A gift created but not switched on is taking nobody, so it must not turn a resolvable
         # answer into a question. This is production the day the owner creates a draft gift.
         self._second_gift(active=False)
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [self.flagship])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [self.flagship])
 
     def test_TWO_ACTIVE_gifts_and_no_invitation_resolves_to_NOTHING(self):
         # ⚠ THE REFUSAL. A stranger off the public form: nothing on the platform knows which gift
         # they meant, and guessing files their money against the wrong one.
         self._second_gift()
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [])
 
     def test_the_invitation_they_answered_names_the_gift(self):
         sabah = self._second_gift()
         Invitation.objects.create(
             audience='sponsor', email='giver@example.com', organisation=self.org_a,
             programme=sabah, code='inv-1')
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [sabah])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [sabah])
 
     def test_the_invitation_wins_even_when_one_gift_would_have_resolved(self):
         # Otherwise an organisation that states a gift is overruled by the fallback whenever the
@@ -103,7 +104,7 @@ class TestWhichGiftARegistrationJoins(_Case):
         Invitation.objects.create(
             audience='sponsor', email='giver@example.com', organisation=self.org_a,
             programme=sabah, code='inv-2')
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [sabah])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [sabah])
 
     def test_a_REVOKED_invitation_states_nothing(self):
         from django.utils import timezone
@@ -111,7 +112,7 @@ class TestWhichGiftARegistrationJoins(_Case):
         Invitation.objects.create(
             audience='sponsor', email='giver@example.com', organisation=self.org_a,
             programme=self.flagship, code='inv-3', revoked_at=timezone.now())
-        self.assertEqual(svc.signup_programmes_for(_sponsor()), [])
+        self.assertEqual(sponsor_signup.signup_programmes_for(_sponsor()), [])
 
 
 class TestTheMembershipWriter(_Case):

@@ -6,7 +6,7 @@ the one home for that: `choose` reads the invite form, `set_gifts` is the ONE wr
 one reader, and `joined_on_registration` turns the invitation into the gifts a registration joins.
 
 ⚠ IT STILL GRANTS NOTHING. Each gift becomes ONE PENDING membership on registration, vetted as
-today (`sponsorship.open_signup_memberships`); the invitation is a prompt, never a way round the
+today (`sponsor_signup.open_signup_memberships`); the invitation is a prompt, never a way round the
 public registration, the terms or vetting.
 
 ⚠ EVERY GIFT IS NOT A LIVE RULE (open point B). A sponsor's acceptance is per gift, so Every gift

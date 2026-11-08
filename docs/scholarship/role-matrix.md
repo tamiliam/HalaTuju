@@ -171,7 +171,7 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
   list is `InvitationGift` rows (`invitation_gifts`) plus the flag `Invitation.every_gift`;
   `Invitation.programme` is the rollback mirror (one gift → that id, several / every → NULL).
   `sponsor_invite_gifts.set_gifts` is the one writer. It GRANTS nothing: on registering they get
-  ONE PENDING `SponsorProgrammeMembership` per gift (`sponsorship.open_signup_memberships`,
+  ONE PENDING `SponsorProgrammeMembership` per gift (`sponsor_signup.open_signup_memberships`,
   create-only), and account vetting settles those (`settle_signup_memberships`). Every gift means
   the gifts ACTIVE in the invitation's organisation when they register, frozen into rows then — a
   gift started later is never joined by itself (unlike a reviewer's Every gift, which is live).

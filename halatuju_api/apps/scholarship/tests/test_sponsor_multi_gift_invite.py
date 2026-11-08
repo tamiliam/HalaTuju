@@ -18,6 +18,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.scholarship import sponsorship
+from apps.scholarship import sponsor_signup
 from apps.scholarship.models import (
     Invitation, InvitationGift, Programme, Sponsor, SponsorProgrammeMembership,
 )
@@ -306,7 +307,7 @@ class TestTheI3Review(_Case):
         self.assertEqual(self._memberships(sponsor), {})
         self._review(sponsor, 'approve')                        # a repeated click
         self.assertEqual(self._memberships(sponsor), {})
-        self.assertEqual(sponsorship.signup_programmes_for(sponsor), [])
+        self.assertEqual(sponsor_signup.signup_programmes_for(sponsor), [])
         self.assertFalse(self._inv().gift_rows.exists())
 
     def test_a_gift_opened_after_an_empty_registration_is_never_joined_by_any_approve(self):

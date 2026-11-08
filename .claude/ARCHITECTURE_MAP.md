@@ -342,7 +342,7 @@ handed another gift's case still passes the fence and can still work it — deli
 dropdown cannot strand an in-flight review. Every list FLAGS a mismatch and never filters it out
 (the `paused` rule: the cockpit unions the current assignee in from that list — bug #66).
 
-⚠ `sponsorship.signup_programmes_for` (a list since I3) REPLACED the tenant literal
+⚠ `sponsor_signup.signup_programmes_for` (a list since I3) REPLACED the tenant literal
 `DEFAULT_PROGRAMME_CODE`. It answers from evidence — the invitation they answered, else the
 platform's sole ACTIVE gift — and **empty is a real answer**: several gifts open and no invitation
 writes nothing rather than guessing. **Every gift resolves ONCE** — at registration, frozen into

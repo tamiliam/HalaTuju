@@ -74,7 +74,7 @@ class TestCancelAnInvitation(TestCase):
         self.assertEqual(body['waiting']['sponsors'], 0)
 
     def test_the_sponsor_link_no_longer_closes_or_files_into_the_gift(self):
-        from apps.scholarship.sponsorship import signup_programmes_for
+        from apps.scholarship.sponsor_signup import signup_programmes_for
         from apps.scholarship.views_sponsor import _close_admin_invitation
         make_programme(organisation=self.other, code='td214-second')   # two live gifts
         inv = self._sponsor_inv()

@@ -16,6 +16,7 @@ from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from ..serializers_admin import AdminApplicationDetailSerializer
 from ..services.decline import held_decline_restore_target
 from .. import sponsorship as sponsorship_service
+from .. import sponsor_signup
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
@@ -279,7 +280,7 @@ class AdminSponsorReviewView(_AdminBase):
         # and any OTHER gift's membership, which is that organisation's separate acceptance
         # decision, is never flipped as a side-effect of account vetting. A REJECTED membership is
         # never changed by it at all (I3 review; `sync_account_membership`).
-        sponsorship_service.settle_signup_memberships(sponsor, admin.email)
+        sponsor_signup.settle_signup_memberships(sponsor, admin.email)
         from .. import staff_activity     # common profile S4: the vetter's own activity list
         if previous_status != new_status:  # S4 review L4: a re-click of the same decision is no act
             staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
