@@ -5,7 +5,8 @@ missed `StudentActivity.actor_email`, so a QC user who had written a student not
 deletable. This walks EVERY model and every field that can name a staff member's act:
 
   * a foreign key or one-to-one to `PartnerAdmin` or `Mentor`;
-  * any field named `*_by`, `*_by_email` or `actor_email`.
+  * any field named `*_by` or `*_email` (any email column, in every app, `courses` included: a
+    new `author_email`-style stamp is caught however it is named).
 
 Each must be COUNTED by `staff_footprint` or sit in `NOT_WORK` below with a one-line reason. A new
 field fails here until somebody decides which it is.
@@ -41,6 +42,14 @@ NOT_WORK = {
     'scholarship.ReviewerNote.author': 'the twin of author_email, which counts',
     'scholarship.AwardWithdrawalRequest.requested_by': 'the twin of requested_by_email, which counts',
     'scholarship.AwardWithdrawalRequest.decided_by': 'the twin of decided_by_email, which counts',
+    # Email columns that are an address to write to or about, never a staff member's act.
+    'courses.PartnerOrganisation.contact_email': "the organisation's own contact address",
+    'courses.StudentProfile.contact_email': "the student's own contact address",
+    'scholarship.ReferralSource.contact_email': "the referral source's contact address",
+    'scholarship.TrustContent.contact_email': 'the contact address shown on the public trust page',
+    'scholarship.ScholarshipApplication.notify_email': 'where the applicant asks to be told; never staff',
+    'scholarship.SponsorReferral.invitee_email': 'the person a SPONSOR invited (inviter is a Sponsor FK)',
+    'scholarship.StaffPermissionChange.target_email': 'about them, not by them; changed_by_email counts the doer',
 }
 
 
@@ -65,7 +74,7 @@ def _walked():
                 continue
             to_staff = (f.is_relation and (f.many_to_one or f.one_to_one)
                         and f.related_model in (PartnerAdmin, Mentor))
-            named = f.name.endswith(('_by', '_by_email')) or f.name == 'actor_email'
+            named = f.name.endswith(('_by', '_email'))
             if to_staff or named:
                 found.add(f'{model._meta.app_label}.{model.__name__}.{f.name}')
     return found
@@ -95,3 +104,9 @@ class TestTheFootprintCoversEveryField(SimpleTestCase):
         """The guard would have caught B1: the note's stamp is in the walk and is now counted."""
         self.assertIn('scholarship.StudentActivity.actor_email', _walked())
         self.assertIn('scholarship.StudentActivity.actor_email', _counted())
+
+    def test_the_walk_sees_any_email_column_and_the_courses_app(self):
+        """A stamp outside `*_by_email` (an `author_email`) and the `courses` models are walked too."""
+        walked = _walked()
+        self.assertIn('scholarship.ReviewerNote.author_email', walked)
+        self.assertIn('courses.PartnerOrganisation.contact_email', walked)
