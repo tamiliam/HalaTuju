@@ -323,6 +323,21 @@ GOLDEN = {
         'rule': lambda a, c: a.has_perm('review'),
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
+    # ── F2. the award withdrawal (A1.13b: maker and checker; NO preset holds either key, the lead
+    #        tier holds the approve key only, and a super never sits in either seat) ─────────────
+    'withdrawal_request_seat': {
+        'where': 'scholarship/award_withdrawal_chain.py _seat_refusal(REQUEST_KEY) (who may ASK)',
+        'keys': ('award_withdraw_request',),
+        'today': _t(),
+        'rule': lambda a, c: a.has_perm('award_withdraw_request') and not a.is_super,
+    },
+    'withdrawal_decide_seat': {
+        'where': 'scholarship/award_withdrawal_chain.py decide_refusal (who may approve / refuse a '
+                 'request somebody else made)',
+        'keys': ('award_withdraw_approve',),
+        'today': _t('org_admin'),
+        'rule': lambda a, c: a.has_perm('award_withdraw_approve') and not a.is_super,
+    },
     # ── G. the team (lead tier: stays on role in #39, so the key maps but never converts) ────────
     'may_invite_staff': {
         'where': 'courses/views_staff.py AdminInviteView (who may invite)',
@@ -621,6 +636,16 @@ class GoldenTable(TestCase):
 
     def probe_assignable_flag_for_super(self, a):
         return self._assignable_as_read_by(make_admin('super', super_admin=True), a)
+
+    def probe_withdrawal_request_seat(self, a):
+        from apps.scholarship import award_withdrawal_chain as chain
+        return chain._seat_refusal(a, chain.REQUEST_KEY, self.org.pk) is None
+
+    def probe_withdrawal_decide_seat(self, a):
+        from apps.scholarship import award_withdrawal_chain as chain
+        row = SimpleNamespace(organisation_id=self.org.pk, requested_by_id=None,
+                              requested_by_email='maker@elsewhere.test')
+        return chain.decide_refusal(row, a) is None
 
     def probe_may_invite_staff(self, a):
         # Name and email missing: an admitted caller gets 400, a refused one 403.

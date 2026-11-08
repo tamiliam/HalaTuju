@@ -39,6 +39,10 @@ CATALOGUE = (
     Entry('payment_check', ('send_payment_finance_check_email',)),
     # To VIRCLE, copied to the approver and the organisation's active org admins (`_instruction_cc`).
     Entry('payment_instruction', ('send_payment_run_email',)),
+    # A1.13b: the eligible checkers of an award withdrawal (`award_withdrawal_chain.eligible_checkers`:
+    # `award_withdraw_approve` holders, signed in, never the maker); then the MAKER when it is decided.
+    Entry('withdrawal_request', ('send_withdrawal_requested_email',)),
+    Entry('withdrawal_outcome', ('send_withdrawal_outcome_email',)),
     # To the org admin who SUBMITTED the request (`req.submitted_by`).
     Entry('request_question', ('send_org_request_questions_email',)),
     Entry('request_quote', ('send_org_request_quote_email',)),

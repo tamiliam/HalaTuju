@@ -219,8 +219,10 @@ def may_read_agreement(app, source):
 
 
 def contract_dict(app, source):
-    """The signing chain — dates only, never a name, an NRIC, an amount or the document."""
-    agreement = agreement_of(app)
+    """The signing chain — dates only, never a name, an NRIC, an amount or the document. A voided
+    agreement (an award withdrawn, A1.13) is no contract, so it shows none (A1.13b)."""
+    from .agreement_guard import live_agreement
+    agreement = live_agreement(app)
     if agreement is None:
         return None
     return {
@@ -307,7 +309,8 @@ def scholar_row(app, names=None):
     """One Scholars-list row. `status` is what the student sees (awarded / active / maintenance /
     closed); the officer's sub-state (on track, probation, on hold …) is never served."""
     from . import card_display
-    agreement = agreement_of(app)
+    from .agreement_guard import live_agreement
+    agreement = live_agreement(app)            # A1.13b: a voided agreement has no contract stage
     return {
         'id': app.id,
         'student_name': _name(app),

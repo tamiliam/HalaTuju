@@ -279,7 +279,7 @@ class OrgAdminJoinsReviewers(_Base):
         lead = self.fresh(self.lead)
         self.assertEqual(lead.permissions, ['review'])
         self.assertEqual(lead.role, 'org_admin')
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
         self.assertEqual(st.tables(lead), ('admins', 'reviewers'))
 
     def test_every_other_key_on_an_org_admin_row_is_ignored(self):
@@ -290,7 +290,7 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertFalse(st.in_reviewers(lead))
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['review', 'payments_approve'])
         lead = self.fresh(self.lead)
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
         self.assertFalse(lead.has_perm('payments_approve'))
 
     def test_the_generic_editor_still_refuses_the_lead(self):

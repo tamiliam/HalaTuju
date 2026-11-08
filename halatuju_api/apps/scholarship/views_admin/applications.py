@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from halatuju.pagination import FlexiblePageNumberPagination
 from apps.courses.search import apply_people_search, people_search_term
+from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
 from .. import staff_activity
 from ..document_snapshot import document_snapshot
@@ -50,6 +51,7 @@ def _detail_payload(app, admin):
     data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
     data['qc_refusal'] = qc_separation.for_viewer(admin, app)
     data['rejected_by_unassigned'] = rejected_by_unassigned(app)
+    data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
     return data
 
 
@@ -153,6 +155,7 @@ class AdminApplicationListView(_AdminBase):
                 sla_org = programme.organisation
             qs = review_sla.in_band(qs, request.GET['band'], now=timezone.now(),
                                     clocks=review_sla.clocks(sla_org))
+        qs = withdrawal_chain.narrow_list(qs, request.GET.get('withdrawal'))   # A1.13b ?withdrawal=pending
         # TD-162: every row's first-assignment readiness, as one EXISTS column, not one query a row.
         from ..services.queries_sla import with_open_student_tasks
         qs = with_open_student_tasks(qs)

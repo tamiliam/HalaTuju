@@ -21,11 +21,14 @@ LOCK ORDER (one order everywhere, so two writers can never deadlock):
 A writer may skip a step, never reverse two. ``closure.close_application`` takes only the
 application row. ``sponsorship.cancel_offer``, the award-email job and the offer-lapse job
 (``lapse_expired_offers``) take the APPLICATION first, then the Sponsorship (``of=('self',)``), via
-``lock_case_of_sponsorship`` — A1.13 reviews, matching ``award_withdrawal.withdraw_award``; the
+``lock_case_of_sponsorship`` — A1.13 reviews, matching the award withdrawal; the
 parent-call record (``parent_call.record_call``) locks the student's applications in pk order
 before her offer rows (A1.13 third review: until then the lapse job and the call took the
 Sponsorship first, the reverse of the withdrawal, and could deadlock it). None of these take the
 sponsor row, so they cannot wait on a fund that holds it.
+The award withdrawal (``award_withdrawal_chain``, A1.13b maker and checker) takes the APPLICATION,
+then its WITHDRAWAL REQUEST row, then (approval only) the holding Sponsorships in pk order — refuse
+and cancel take the application too, for order only, though they never touch the case.
 A bursary agreement row comes after its application (``agreement_guard``). The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
 foreign-key check (FOR KEY SHARE on the sponsor) does not wait on it.
 

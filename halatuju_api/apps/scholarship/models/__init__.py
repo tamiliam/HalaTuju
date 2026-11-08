@@ -125,3 +125,5 @@ from .surveys import Survey, SurveyAnswer, SurveyEmail, SurveyQuestion, SurveyRe
 # Student maintenance S10 (2026-11-02) — models 83 to 87, NEW: an organisation's development modules, their
 # lessons, each scholar's progress and lesson reads, and each scholar's copy of the module emails.
 from .development import DevelopmentModule, LessonRead, ModuleEmail, ModuleLesson, ModuleProgress
+# A1.13b (2026-11-08) — model 88, NEW: an award withdrawal REQUEST (maker and checker, TD-198).
+from .withdrawals import AwardWithdrawalRequest

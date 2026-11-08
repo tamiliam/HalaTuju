@@ -1,7 +1,9 @@
-"""A super admin withdraws an award — A1.13 (TD-198 / CO-09; owner ruling D3, 2026-11-08).
+"""Withdrawing an award: WHAT the withdrawal does — A1.13 (TD-198 / CO-09), maker and checker since A1.13b.
 
-The owner's rule: ONLY a super admin may withdraw an award, at any time, with a REQUIRED reason.
-The reason is stored with who and when, and it is INTERNAL — the student never sees it.
+WHO may withdraw is `award_withdrawal_chain` (owner rulings 2026-11-08): one person asks with a required
+explanation, a DIFFERENT person approves, and only the approval runs `_apply` here, under the locks the
+chain has taken. A super can read requests but never sits in either seat. (Until A1.13b a super withdrew
+alone, with a reason, through `withdraw-award/`; that route is gone.)
 
 It mirrors the sponsor's own withdrawal (`sponsorship.cancel_offer` → `award_revert.revert_to_pool`):
 the holding sponsorship is cancelled (so its whole amount returns to the sponsor's balance — the
@@ -14,14 +16,14 @@ model frees a cancelled sponsorship's FULL amount, so withdrawing a case that ha
 live cohort is paid by payment runs while still `awarded`) would hand the sponsor back money that
 has already gone to the student. Such a case answers ``has_payments`` (TD-591, with TD-366: the
 owner decides what a paid withdrawal means). The check runs UNDER THE APPLICATION ROW LOCK that the
-withdrawal holds, and both money writers (`payments.complete`, `disbursement.release_tranche`) take
+approval holds, and both money writers (`payments.complete`, `disbursement.release_tranche`) take
 that same lock first (lock order, `status_lock.py`), so a payment cannot slip in between the check
 and the withdrawal; a payment run completing after it sees the case no longer payable and refuses
 the whole run (`not_payable_in_run`).
 
-Where the reason lives: the student's activity log (the ``student_activity`` table, an existing audit table —
-no migration), as an INTERNAL row: ``event='award_withdrawn'``, ``body`` = the reason,
-``actor_email`` = the super, ``created_at`` = when.
+Where the texts live: the request row (`award_withdrawal_requests`) holds both people and both texts,
+and the student's activity log holds them again as an INTERNAL row: ``event='award_withdrawn'``,
+``body`` = the maker's explanation, ``actor_email`` = the checker, meta = both people and the note.
 """
 import logging
 from decimal import Decimal
@@ -30,7 +32,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import activity
-from . import usage as _usage
 from .agreement_guard import void_on_withdrawal
 from .award_revert import revert_to_pool
 from .models import Disbursement, Sponsorship
@@ -46,26 +47,11 @@ WITHDRAWABLE = ('awarded',)
 #: ('returned' — it WAS paid). Either refuses the withdrawal (TD-591).
 _PAID_OR_RETURNED = tuple(Disbursement.PAID) + ('returned',)
 
-#: The reason is stored whole in the activity row's body, never cut short.
-REASON_MAX = activity.BODY_MAX
-
-
 class AwardWithdrawalError(Exception):
-    """``reason_required`` / ``reason_too_long`` (the view answers 400), ``not_awarded`` /
-    ``has_payments`` (409)."""
+    """A stable refusal code; `award_withdrawal_chain` raises it, the view maps it to a status."""
     def __init__(self, code):
         self.code = code
         super().__init__(code)
-
-
-def clean_reason(reason):
-    """The reason, trimmed; refuses an empty or over-long one."""
-    text = (reason or '').strip() if isinstance(reason, str) else ''
-    if not text:
-        raise AwardWithdrawalError('reason_required')
-    if len(text) > REASON_MAX:
-        raise AwardWithdrawalError('reason_too_long')
-    return text
 
 
 def has_payments(application):
@@ -89,69 +75,69 @@ def _student_was_told(sponsorships):
 
 
 def _send_withdrawn_email(application):
-    """AFTER COMMIT, best-effort: the "award withdrawn" notice. Never carries the reason."""
-    from .branding import for_application
-    from .emails import send_award_withdrawn_email
-    name = getattr(application.profile, 'name', '') if application.profile else ''
+    """AFTER COMMIT, best-effort: the "award withdrawn" notice, in the organisation's wording (A1.13b:
+    `student_comms`, its log and meter). Never carries the explanation or the note."""
+    from . import student_comms
     try:
-        with _usage.usage_context(application=application):
-            sent = send_award_withdrawn_email(
-                to_email=application.notify_email, applicant_name=name,
-                lang=application.locale, branding=for_application(application))
+        sent = student_comms.send_student_email(application, 'award_withdrawn')
     except Exception:   # an email must never undo, or appear to undo, a committed withdrawal
-        logger.exception('withdraw_award: app %s withdrawn but the email raised', application.id)
+        logger.exception('award_withdrawal: app %s withdrawn but the email raised', application.id)
         return False
     if not sent:
-        logger.warning('withdraw_award: app %s is withdrawn but the email did not go (no address, '
+        logger.warning('award_withdrawal: app %s is withdrawn but the email did not go (no address, '
                        'or the send failed) — tell the student by hand.', application.id)
     return sent
 
 
-def withdraw_award(application, *, by_admin, reason):
-    """Withdraw ``application``'s award (the caller has checked that ``by_admin`` is a super).
+def holding_sponsorships(application, *, lock=False):
+    """The case's HOLDING sponsorships in pk order (``lock``: ``select_for_update``, step 4)."""
+    qs = Sponsorship.objects.filter(application=application, status__in=Sponsorship.HOLDING)
+    return list((qs.select_for_update() if lock else qs).order_by('pk'))
 
-    Returns the refreshed application. Raises ``AwardWithdrawalError``. Safe against a double
-    click: the second press finds the case no longer awarded under the lock (``not_awarded``)."""
+
+def snapshot_of(application):
+    """What a withdrawal of ``application`` would do NOW — the request's snapshot, compared again at
+    the approval (``stale``). Amounts as strings (JSON)."""
+    holding = holding_sponsorships(application)
+    unpaid = list(application.disbursements.filter(status__in=('scheduled', 'due'))
+                  .order_by('pk').values_list('pk', flat=True))
+    return {'sponsorships': [{'id': sp.pk, 'amount': str(sp.amount)} for sp in holding],
+            'amount_freed': str(sum((sp.amount for sp in holding), Decimal('0'))),
+            'tranches_to_withhold': unpaid}
+
+
+def _apply(application, holding, *, by_admin, explanation, meta):
+    """THE WITHDRAWAL ITSELF. ⚠ The caller holds the locks, in the house order, inside its transaction:
+    the application (re-read, ``awarded``, never paid), the request row, then ``holding`` — the case's
+    holding sponsorships, locked and in pk order. `award_withdrawal_chain.approve_withdrawal` is the one
+    caller. ``meta`` (both people, the note, the request id) is added to the activity row's meta."""
     from .disbursement import withhold_tranche
-    from .status_lock import StatusRefused, lock_application_for
-    text = clean_reason(reason)
     actor_email = getattr(by_admin, 'email', '') or ''
-    with transaction.atomic():
-        try:
-            lock_application_for(application, WITHDRAWABLE)
-        except StatusRefused:
-            raise AwardWithdrawalError('not_awarded')
-        # Under the SAME lock as the withdrawal (lead, A1.13): a release cannot slip in between.
-        if has_payments(application):
-            raise AwardWithdrawalError('has_payments')
-        now = timezone.now()
-        holding = list(Sponsorship.objects.select_for_update()
-                       .filter(application=application, status__in=Sponsorship.HOLDING)
-                       .order_by('pk'))
-        told = _student_was_told(holding)
-        freed = sum((sp.amount for sp in holding), Decimal('0'))
-        for sp in holding:
-            sp.status = 'cancelled'
-            sp.decided_at = now
-            sp.save(update_fields=['status', 'decided_at', 'updated_at'])
-        withheld = []
-        note = 'Award withdrawn (A1.13): this unpaid tranche stops.'
-        for tranche in application.disbursements.filter(status__in=('scheduled', 'due')).order_by('pk'):
-            withhold_tranche(tranche, by_email=actor_email, note=note, actor=by_admin)
-            withheld.append(tranche.pk)
-        # Review finding 1: the agreement dies with the award (signatures + sponsorship link
-        # cleared), so it can be neither countersigned nor paid on after a re-award.
-        agreement_was = void_on_withdrawal(application)
-        revert_to_pool(application)
-        activity.log_event(
-            application, EVENT_AWARD_WITHDRAWN, actor_email=actor_email, body=text, internal=True,
-            meta={'sponsorship_ids': [sp.pk for sp in holding], 'amount_freed': str(freed),
-                  'tranches_withheld': withheld, 'to': application.status,
-                  'student_emailed': told, 'agreement_voided': agreement_was})
-        if told:
-            pk = application.pk
-            transaction.on_commit(lambda: _send_withdrawn_email(_reload(pk)))
-    # No reason, name or IC in a log line (house rule); the activity row holds the reason.
+    now = timezone.now()
+    told = _student_was_told(holding)
+    freed = sum((sp.amount for sp in holding), Decimal('0'))
+    for sp in holding:
+        sp.status = 'cancelled'
+        sp.decided_at = now
+        sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+    withheld = []
+    note = 'Award withdrawn (A1.13): this unpaid tranche stops.'
+    for tranche in application.disbursements.filter(status__in=('scheduled', 'due')).order_by('pk'):
+        withhold_tranche(tranche, by_email=actor_email, note=note, actor=by_admin)
+        withheld.append(tranche.pk)
+    # Review finding 1: the agreement dies with the award (signatures + sponsorship link
+    # cleared), so it can be neither countersigned nor paid on after a re-award.
+    agreement_was = void_on_withdrawal(application)
+    revert_to_pool(application)
+    activity.log_event(
+        application, EVENT_AWARD_WITHDRAWN, actor_email=actor_email, body=explanation, internal=True,
+        meta={'sponsorship_ids': [sp.pk for sp in holding], 'amount_freed': str(freed),
+              'tranches_withheld': withheld, 'to': application.status,
+              'student_emailed': told, 'agreement_voided': agreement_was, **meta})
+    if told:
+        pk = application.pk
+        transaction.on_commit(lambda: _send_withdrawn_email(_reload(pk)))
+    # No explanation, name or IC in a log line (house rule); the activity row holds the texts.
     logger.info('AUDIT award_withdrawn app_id=%s to=%s sponsorships=%s tranches_withheld=%s by=%s',
                 application.id, application.status, len(holding), len(withheld),
                 getattr(by_admin, 'pk', '?'))

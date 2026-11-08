@@ -123,9 +123,8 @@ from .award_offer import (
     AWARD_OFFER_SIGN_SUBJECTS, AWARD_OFFER_SUBJECTS, _BOLD_PHRASES, _award_offer_html,
     send_award_offer_email, send_award_offer_sign_email
 )
-from .award_withdrawn import (
-    AWARD_WITHDRAWN_BODIES, AWARD_WITHDRAWN_SUBJECTS, send_award_withdrawn_email,
-)
+from .award_withdrawn import AWARD_WITHDRAWN_BODIES, AWARD_WITHDRAWN_SUBJECTS
+from .withdrawal_mail import send_withdrawal_outcome_email, send_withdrawal_requested_email
 from .invitation_mail import (
     build_mentor_invitation_email, build_source_invitation_email, build_sponsor_invitation_email,
     send_mentor_invitation_email, send_source_invitation_email, send_sponsor_invitation_email,

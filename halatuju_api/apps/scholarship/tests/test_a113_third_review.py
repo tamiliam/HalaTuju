@@ -18,7 +18,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import agreement_guard, parent_call
-from apps.scholarship import award_withdrawal as wd
+from apps.scholarship.tests.withdrawal_helpers import withdraw_now
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     BursaryAgreement, ScholarshipCohort, Sponsorship, StudentActivity,
@@ -142,7 +142,7 @@ class TestReAwardAfterWithdrawal(TestCase):
         self.ag = BursaryAgreement.objects.get(application=self.app)
         self.old_pdf = self.ag.pdf_storage_path
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(self.app, by_admin=self.super, reason=REASON)
+            withdraw_now(self.app)
         self.sp_b = svc.fund_student(_sponsor(self.app.programme), self.app)     # re-awarded
         self.student = authed_client(self.app.profile)
 
@@ -234,7 +234,7 @@ class TestReAwardUsesTheCurrentTemplate(TestCase):
         self.ag = BursaryAgreement.objects.get(application=self.app)
         self.v1 = self.ag.template
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(self.app, by_admin=self.super, reason=REASON)
+            withdraw_now(self.app)
         self.v2 = _deploy_next(self.app.programme, '2026-bursary-v2')
         self.v1.refresh_from_db()
         self.sp_b = svc.fund_student(_sponsor(self.app.programme), self.app)     # re-awarded

@@ -26,7 +26,7 @@ from django.utils import timezone
 from apps.scholarship import (
     agreement_guard, bursary, payments, source_console, source_witness, status_lock,
 )
-from apps.scholarship import award_withdrawal as wd
+from apps.scholarship.tests.withdrawal_helpers import withdraw_now
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     BursaryAgreement, Donation, ScholarshipApplication, ScholarshipCohort, Sponsor, Sponsorship,
@@ -102,7 +102,7 @@ class TestTheAgreementIsVoided(TestCase):
 
     def _withdraw(self):
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(self.app, by_admin=self.super, reason=REASON)
+            withdraw_now(self.app)
         self.ag.refresh_from_db()
 
     def test_an_accepted_sponsorship_is_withdrawn_and_its_agreement_voided(self):   # F6 + F1
@@ -281,7 +281,7 @@ class TestAcceptIsLocked(TestCase):
     def test_an_accept_from_a_copy_read_before_a_withdrawal_is_refused(self):
         stale = ScholarshipApplication.objects.get(pk=self.app.pk)     # the student's page
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(self.app, by_admin=self.super, reason=REASON)
+            withdraw_now(self.app)
         with self.assertRaises(svc.SponsorshipError) as cm:
             svc.respond_to_award(stale, action='accept')
         self.assertEqual(cm.exception.code, 'no_offer')
@@ -328,7 +328,7 @@ class TestReleasePendingAwardsIsLocked(TestCase):
     def test_a_withdrawal_in_the_hold_period_is_never_released(self):             # F6
         app, sp = self._held()
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(app, by_admin=self.super, reason=REASON)
+            withdraw_now(app)
         app.refresh_from_db()
         sp.refresh_from_db()
         self.assertEqual((app.status, sp.status, app.award_due_at), ('recommended', 'cancelled', None))
@@ -441,7 +441,7 @@ class TestARunDoesNotPayAWithdrawnStudent(_status_lock_tests.TestARunDoesNotPayA
 
     def _close(self):
         with self.captureOnCommitCallbacks(execute=True):
-            wd.withdraw_award(self.closing, by_admin=make_admin(super_admin=True), reason=REASON)
+            withdraw_now(self.closing)
         self.assertEqual(ScholarshipApplication.objects.get(pk=self.closing.pk).status,
                          'recommended')
         mail.outbox.clear()

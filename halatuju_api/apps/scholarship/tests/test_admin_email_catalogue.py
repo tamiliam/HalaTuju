@@ -44,11 +44,13 @@ class TestEveryAdminEmailIsListed(TestCase):
         for name, reason in cat.NOT_ADMIN_SENDERS.items():
             self.assertTrue(reason.strip(), name)
 
-    def test_the_rows_are_the_ten_read_off_the_senders(self):
+    def test_the_rows_are_the_twelve_read_off_the_senders(self):
         # T4: rows 1-10 of the builder's audit; the six HalaTuju-inbox senders and the three request /
         # profile / contact ones that only reach HalaTuju are NOT the organisation's (lead ruling).
+        # A1.13b adds the award withdrawal's two staff emails (to the checkers; back to the maker).
         self.assertEqual([e.key for e in cat.CATALOGUE], [
-            'payment_approval', 'payment_check', 'payment_instruction', 'request_question', 'request_quote',
+            'payment_approval', 'payment_check', 'payment_instruction', 'withdrawal_request',
+            'withdrawal_outcome', 'request_question', 'request_quote',
             'verdict_escalation', 'countersign_pending', 'agreement_executed', 'invoice', 'receipt'])
         for halatuju_only in ('send_org_request_submitted_email', 'send_profile_complete_admin_email',
                               'send_contact_submission_admin_email'):

@@ -1,15 +1,15 @@
-"""The "award withdrawn" notice (A1.13, TD-198 / CO-09; owner ruling D3, 2026-11-08).
+"""The "award withdrawn" notice (A1.13, TD-198 / CO-09; owner rulings 2026-11-08).
 
-Sent AFTER COMMIT when a super admin withdraws an awarded case (`award_withdrawal.withdraw_award`).
-It tells the student, in her language, that the award no longer stands and that her application stays
-with us. It NEVER carries the reason: the reason is internal (staff only). No amount, no sponsor
-identity (two-way anonymity).
+Sent AFTER COMMIT once a checker APPROVES somebody else's withdrawal request (A1.13b maker and checker,
+`award_withdrawal_chain.approve_withdrawal`). It tells the student, in her language, that the award no
+longer stands and that her application stays with us. It NEVER carries the explanation or the checker's
+note: those are internal (staff only). No amount, no sponsor identity (two-way anonymity).
 
-⚠ First-draft trilingual copy — owner to review (A1.13 hand-back lists the three texts).
+The text below is the owner-approved wording (EN, MS, TA; 2026-11-08). It is the PLATFORM DEFAULT of the
+organisation-worded family (`student_comms.DEFAULTS['award_withdrawn']`, A1.13b): an organisation may word
+it itself under Organisation -> Settings -> Student communications, and the send goes through
+`student_comms.send_student_email` (its log, its meter). It is LOCKED there (a decision: always sent).
 """
-from .sending import _html_email_shell, _send_html
-from .shared import _DEFAULT_NAME, _P
-from .student_decisions import normalise_lang
 
 AWARD_WITHDRAWN_SUBJECTS = {
     'en': 'An update about your {programme} award',
@@ -55,20 +55,3 @@ AWARD_WITHDRAWN_BODIES = {
     ),
 }
 
-
-def send_award_withdrawn_email(to_email, applicant_name, lang='en', branding=None):
-    """Tell the student her award has been withdrawn. Best-effort (False on no address or a failed
-    send; never raises). NO reason, NO amount, NO sponsor identity. From info@, reply-to help@."""
-    if not to_email:
-        return False
-    b = branding or _P
-    lang = normalise_lang(lang)
-    fmt = {'name': applicant_name or _DEFAULT_NAME[lang], 'support': b.email_support,
-           'programme': b.programme_name(lang), 'signoff': b.team_signoff(lang)}
-    import html as _h
-    body = AWARD_WITHDRAWN_BODIES[lang].format(**fmt)
-    para = '</p><p style="margin:0 0 14px;">'
-    html = _html_email_shell('<p style="margin:0 0 14px;">'
-                             + _h.escape(body).replace('\n\n', para).replace('\n', '<br>') + '</p>')
-    return _send_html(to_email, AWARD_WITHDRAWN_SUBJECTS[lang].format(**fmt), body, html,
-                      from_email=b.email_from, reply_to=[b.email_support])

@@ -57,7 +57,9 @@ def _org_id(run):
 
 
 def _holders(organisation_id, key, cache=None):
-    """`staff_permissions.holders`, memoised per call site (a list page asks once per organisation)."""
+    """`staff_permissions.holders`, memoised per call site (a list page asks once per organisation).
+    The organisation's staff is read ONCE per cache and filtered per key (A1.13b: the check and the
+    approve keys share one read, so the Overview's cards stay inside their query budget)."""
     if organisation_id is None:
         return []
     from apps.courses import staff_permissions
@@ -65,7 +67,10 @@ def _holders(organisation_id, key, cache=None):
         return staff_permissions.holders(organisation_id, key)
     slot = (organisation_id, key)
     if slot not in cache:
-        cache[slot] = staff_permissions.holders(organisation_id, key)
+        staff_slot = (organisation_id, None)
+        if staff_slot not in cache:
+            cache[staff_slot] = staff_permissions.org_staff(organisation_id)
+        cache[slot] = staff_permissions.holders(organisation_id, key, cache[staff_slot])
     return cache[slot]
 
 

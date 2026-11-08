@@ -1,6 +1,6 @@
 """Which bursary agreement may still be countersigned or witnessed — A1.13 review (finding 1).
 
-WHY. An award withdrawal (`award_withdrawal.withdraw_award`) cancels the sponsorship, but the
+WHY. An award withdrawal (`award_withdrawal._apply`, on an approved request) cancels the sponsorship, but the
 agreement row stayed live: its signatures stood, it still pointed at the cancelled sponsorship, and
 the countersign / witness writers (`bursary.countersign_foundation`, `bursary.record_witness`) had no
 status gate. The payments check D4-7 reads only ``foundation_signed_at``, so after a re-award to

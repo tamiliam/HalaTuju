@@ -53,7 +53,8 @@ REVIEWERS = 'reviewers'
 TABLES = (ADMINS, REVIEWERS)
 
 #: Each table's OWN keys — what its chips show and its editor edits (owner ruling 2).
-ADMIN_TABLE_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve')
+ADMIN_TABLE_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+                    'award_withdraw_request', 'award_withdraw_approve')   # A1.13b
 REVIEWER_TABLE_KEYS = ('review', 'qc')
 
 #: The key an Add gives.

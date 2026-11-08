@@ -36,6 +36,13 @@ NOT_SIGNED_IN = 'not_signed_in'
 #: check when nobody else active in the organisation holds it. Counted as `credit_check_required`
 #: counts: every active holder, signed in or not, so it takes effect at once.
 CREDIT_CHECK_ON = 'credit_check_on'
+#: A1.13b (owner ruling 2026-11-08): one person holding BOTH award-withdrawal seats (they still can
+#: never approve their own request — `award_withdrawal_chain` — but the screen says it, as for runs);
+#: and taking the approve seat from the last signed-in member who holds it, which leaves every request
+#: in the organisation waiting with nobody to decide it.
+WITHDRAW_REQUEST_AND_APPROVE = 'withdraw_request_and_approve'
+WITHDRAW_LAST_CHECKER = 'withdraw_last_checker'
+_WD_REQUEST, _WD_APPROVE = 'award_withdraw_request', 'award_withdraw_approve'
 
 
 class PermissionChangeRefused(Exception):
@@ -155,6 +162,8 @@ def consequences(target, before, after):
         if CHECKER_KEY in gained and not any(
                 a.pk != target.pk for a in sp.holders(target.owning_organisation_id, CHECKER_KEY)):
             out.append(CREDIT_CHECK_ON)
+        if signed_in and _WD_APPROVE in lost and not _others_hold(target, _WD_APPROVE):
+            out.append(WITHDRAW_LAST_CHECKER)
     # #39 S4 review fix 3: say WHICH files. `see_all` opens every student's (a Reviewer or Finance
     # person given it, or Finance switched to Admin); `review` from no file access opens only the
     # students assigned to them.
@@ -165,6 +174,8 @@ def consequences(target, before, after):
     if {'payments_prepare', 'payments_approve'} <= set(after) and not (
             {'payments_prepare', 'payments_approve'} <= set(before)):
         out.append(PREPARE_AND_APPROVE)
+    if {_WD_REQUEST, _WD_APPROVE} <= set(after) and not {_WD_REQUEST, _WD_APPROVE} <= set(before):
+        out.append(WITHDRAW_REQUEST_AND_APPROVE)
     return out
 
 
