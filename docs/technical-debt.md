@@ -392,6 +392,10 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low - **lapse part FIXED (2026-11-08, A1.13 third review); `hold_pending_award` still open**
 - **TD-595** - The award-email job sends the email over the network while it holds the application and sponsorship locks - low
 
+- **TD-587** - On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+- **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+- **TD-589** - A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
+
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
   awarded count (`a8ccea58`), four of ten small changes in one window: each was cured by serving the
@@ -8269,9 +8273,11 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `requirements.lock` has DRF 3.18.1 (CVE-2026-114136, an unauthenticated memory blow-up: about 108 bytes in costs about 97 MiB, enough to hurt a 2 GiB instance on a 3-instance service) and pyjwt 2.14.0 (PYSEC-2026-4141; the RecursionError escapes the middleware's except clauses and becomes a 500). Also flagged, exploitability not assessed: aiohttp, pyasn1, certifi, multidict, opentelemetry-api. Pillow, pillow-heif and pypdf stay under TD-506. **Fix:** bump DRF and pyjwt, run the full suite, then take the rest in one pass. *(A · S)*
 
-### [TD-517] record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
+### [TD-517] record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm) - **FIXED (2026-11-07, A2.1, branch a21, not pushed; needs migration 0205 and the `finalise-profiles` Scheduler job)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (reproduced on live logs: 17 of 23 real calls over 30 s in 30 days, worst 51.9 s).** With `finalise` set, `views_admin/verdict.py` ~159-212 runs `refine_sponsor_profile` and `generate_anon_blurb` inline, outside the transaction. Reviewers risk a timeout and a double submit; this caused org request 61. **Fix:** record the verdict at once and run refine and blurb as a background step (or a second request) with a progress state. *(A · M)*
+
+**Fixed 2026-11-07 (A2.1).** record-verdict now only QUEUES the final profile (`profile_finalise.queue_finalise`: `SponsorProfile.finalise_state='pending'`, migration 0205) and makes no Gemini call. The new cron job `finalise-profiles` (`run_pending_finalise`, every 5 minutes, `CronRunView.JOBS` + `cron_health`) claims up to 3 rows (a conditional update, so two runs never share one) and stops claiming after 150 s, runs refine and blurb with no lock held, then writes the result under the app-then-profile lock. A re-record while a run is in flight supersedes it (the `finalise_requested_at` token); a re-record without `finalise` drops a queued profile (`supersede_pending`). Up to 3 tries (a stale claim frees after 10 minutes), then `failed`; skipped while Gemini reads are down. Only QC-Accept publishes: it refuses while the profile is pending (`profile_pending`), and the worker never publishes and never writes `anon_*` on a published profile or one held by an open reopen. Retry: after `failed`, the finalise-profile endpoint re-queues (three fresh tries, a new token, only those fields saved); it has no button in the web yet, so a super POSTs it or re-records with finalise. Failed profiles show on System health (row `profiles`, amber with the count). The profile card shows "being written" / "could not be written". Tests: `test_profile_finalise.py` (22), `test_decision_reopen.py` (3 on this), `test_profile_refine.py`, web `GeneratedProfile.finalise.test.tsx` (3), one in `view.decision.test.tsx` and one in `SystemHealthLight.test.tsx`.
 
 ### [TD-518] reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
 
@@ -8523,3 +8529,15 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-595] The award-email job sends over the network while holding the locks - low
 
 **Raised 2026-11-08 by the A1.13 third review (Low 2), left as it is on the lead's ruling.** Since the A1.13 reviews, `sponsorship.release_award_offer_emails` locks the case (`lock_case_of_sponsorship`) and the sponsorship, then sends the award email and stamps `offer_emailed_at` inside the same transaction, so the stamp cannot be lost after the email has gone. The cost is that the SMTP / provider call runs while the application and sponsorship rows are locked. A slow or hanging send makes every other writer on that case wait (a withdrawal, a cancel, an accept, a payment release), up to the send timeout. It is a daily job and one case at a time, so the wait is short and rare. **Fix:** claim the row under the lock (stamp a claim, commit), send outside the transaction, then confirm or clear the claim in a second short transaction; decide what a crash between send and confirm should mean (a resend or a missed email). *(A · S)*
+
+### [TD-587] On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** On a profile that is already published (`anon_published`), `profile_finalise.py` (~160) writes the new text to `final_markdown` only and leaves `anon_markdown` (what sponsors read) as it was, by design. But `GeneratedProfile.tsx` shows `final_markdown || current_markdown`, so staff read the new text while sponsors still see the old one, with nothing on the card saying so. **Fix:** a one-line note on the card when `anon_published` is true and `anon_markdown` differs from `final_markdown` (en / ms / ta). *(A · S)*
+
+### [TD-588] A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** `supersede_pending` (`profile_finalise.py` ~82) clears only a PENDING row when a verdict is re-recorded without finalise. A row left FAILED from the old verdict keeps `finalise_state` failed, so the card still shows the failed note (and QC-Accept refuses with `profile_failed`) for a verdict that never asked for a new profile. **Fix:** have the supersede step clear a failed state too (same fields), with a test. *(A · S)*
+
+### [TD-589] A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
+
+**Raised 2026-11-07 by the A2.1 review (not fixed).** A finalise that fails because Gemini fails can only be cleared by a reopen, which `close_reopen_with_change` logs as a reviewer correction (`resulted_in_change=True`), so it counts against the reviewer though Gemini failed. **Fix:** a web control for the finalise-profile endpoint, or a reopen reason that does not count as a correction. *(A · S)*

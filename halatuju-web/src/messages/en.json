@@ -4374,6 +4374,8 @@
       "profileFinalTitle": "Student profile (final)",
       "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
+      "profileFinalising": "The final profile is being written. It will appear here in a few minutes; reload the page to see it.",
+      "profileFinaliseFailed": "The final profile could not be written after three tries. The draft is shown below. Please tell a super admin.",
       "model": "Model",
       "interviewedRecommendedBy": "Interviewed and recommended by",
       "interviewedDeclinedBy": "Interviewed and declined by",
@@ -5082,6 +5084,7 @@
           "unsure": "unsure"
         },
         "finaliseOk": "Verdict saved and final profile generated.",
+        "finalisePending": "Verdict saved. The final profile is being written and will appear on the profile card in a few minutes.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
@@ -5111,7 +5114,9 @@
           "self_verdict_qc_forbidden": "You recorded this verdict — it must be QC-checked by someone else.",
           "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
           "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
-          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else."
+          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else.",
+          "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept.",
+          "profile_failed": "The final sponsor profile could not be written. Reopen the case for the reviewer, who records the verdict again with the final profile. Then accept."
         },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
@@ -8434,7 +8439,8 @@
         "vision": "Text recognition (Google Vision)",
         "email": "Email sending",
         "cron": "Scheduled jobs",
-        "credit": "AI credit balance"
+        "credit": "AI credit balance",
+        "profiles": "Final sponsor profiles"
       },
       "line": {
         "read": {
@@ -8464,6 +8470,10 @@
           "ok": "No payment errors seen.",
           "payment_error": "A payment error at {time}: the AI credit may have run out.",
           "recovered": "A payment error at {time}; reads have worked since."
+        },
+        "profiles": {
+          "ok": "No final profile has failed.",
+          "failed": "Final profiles that could not be written after three tries: {count}."
         }
       },
       "unit": {
@@ -8472,6 +8482,7 @@
         "days": "{n} days"
       },
       "cadence": {
+        "every5": "every 5 minutes",
         "every15": "every 15 minutes",
         "hourly": "hourly",
         "daily": "daily",
@@ -8509,6 +8520,7 @@
         "issue-monthly-invoices": "Monthly invoices",
         "refresh-reminder": "Course catalogue reminder",
         "decision-emails": "Decision emails",
+        "finalise-profiles": "Writing final profiles",
         "announcement-emails": "Announcement emails",
         "survey-emails": "Survey emails",
         "module-emails": "Module emails"

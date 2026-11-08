@@ -180,8 +180,10 @@ class TestDecisionReopen(TestCase):
         self.assertEqual(r.json()['code'], 'not_reopened')
 
     # ── re-record (real change → correction counts) ──────────────────────────
-    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
-    def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine):
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine, _blurb, _down):
         mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
         # TD-253: a REOPENED decision is the reviewer's again, so its interview must be complete.
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
@@ -207,17 +209,106 @@ class TestDecisionReopen(TestCase):
         self.assertTrue(row.resulted_in_change)                   # COUNTS
         self.assertIsNotNone(row.closed_at)
         self.assertEqual(self._corrections_for(self.reviewer.id), 1)
-        # QC clears the corrected case → NOW it publishes and returns to the pool. (This fixture
-        # carries no documents, so the V5 QC gap floor would refuse on an all-gaps verdict; patch
-        # the verdict seam to a clean read — the floor itself is covered in test_qc_gate.py.)
+        # A2.1: the request only queued the profile; the cron writes it (still unpublished).
+        mock_refine.assert_not_called()
+        # (This fixture carries no documents, so the V5 QC gap floor would refuse on an all-gaps
+        # verdict; patch the verdict seam to a clean read — the floor is covered in test_qc_gate.py.)
+        qc_url = f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/'
+        # A2.1 review (M1): while the corrected profile is still being written, QC-Accept refuses —
+        # otherwise it would publish the STALE '## Pool' text and nobody would read the new one.
         with patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
-            qc = self.client.post(
-                f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
-                {'decision': 'accept'}, format='json')
+            early = self.client.post(qc_url, {'decision': 'accept'}, format='json')
+        self.assertEqual((early.status_code, early.json()['code']), (400, 'profile_pending'))
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
+        self.assertEqual((self.app.status, self.sp.anon_published, self.sp.anon_markdown),
+                         ('interviewed', False, '## Pool'))
+        from apps.scholarship import profile_finalise
+        profile_finalise.run_pending()
+        self.sp.refresh_from_db()
+        self.assertEqual((self.sp.anon_markdown, self.sp.anon_published), ('## Corrected', False))
+        # QC reads the corrected profile and clears the case → NOW it publishes, with that text.
+        with patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
+            qc = self.client.post(qc_url, {'decision': 'accept'}, format='json')
         self.assertEqual(qc.status_code, 200)
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
         self.assertTrue(self.sp.anon_published)                   # republished at QC-Accept
+        self.assertEqual(self.sp.anon_markdown, '## Corrected')   # the text QC read
+
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_qc_accept_refuses_when_the_corrected_profile_failed(self, mock_refine, _blurb, _down):
+        # A2.1 re-review (Med): the corrected profile's job failed every attempt. QC-Accept must
+        # refuse, or it publishes the OLD '## Pool' text the reopen said was wrong.
+        mock_refine.return_value = {'error': 'boom'}
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))
+        self._auth(SUPER)
+        self.client.post(self._reopen_url(), {'reason': 'wrong income verdict'}, format='json')
+        r = self.client.post(self._record_url(), {
+            'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
+                                'pathway': 'pass', 'overall': 'accept'},
+            'reason': 'corrected', 'finalise': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+        from apps.scholarship import profile_finalise
+        for _ in range(profile_finalise.MAX_ATTEMPTS + 1):
+            profile_finalise.run_pending()
+        self.sp.refresh_from_db()
+        self.assertEqual(self.sp.finalise_state, 'failed')
+        qc_url = f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/'
+        with patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
+            qc = self.client.post(qc_url, {'decision': 'accept'}, format='json')
+        self.assertEqual((qc.status_code, qc.json()['code']), (400, 'profile_failed'))
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
+        self.assertEqual((self.app.status, self.sp.anon_published, self.sp.anon_markdown),
+                         ('interviewed', False, '## Pool'))
+
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_a_rerecord_without_finalise_supersedes_a_queued_profile(self, mock_refine, _b, _d):
+        # A2.1 review (L3): a profile queued for the OLD verdict must never be written after the
+        # verdict changed without asking for a new one.
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))
+        self._auth(SUPER)
+        self.client.post(self._reopen_url(), {'reason': 'wrong income verdict'}, format='json')
+        from apps.scholarship import profile_finalise
+        self.app.refresh_from_db()
+        _, row = profile_finalise.queue_finalise(self.app, 'en')
+        row.save(update_fields=profile_finalise.QUEUE_FIELDS)
+        r = self.client.post(self._record_url(), {
+            'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
+                                'pathway': 'pass', 'overall': 'accept'},
+            'reason': 'corrected'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.sp.refresh_from_db()
+        self.assertEqual(self.sp.finalise_state, '')
+        self.assertEqual(profile_finalise.run_pending()['done'], 0)
+        mock_refine.assert_not_called()
+
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_a_profile_queued_during_a_reopen_never_rides_back_on_cancel(self, mock_refine, _b, _d):
+        # A2.1 review: a reopen holds the published profile back; cancelling republishes it as it
+        # stands. A worker run in between must not swap new, unread text in under it.
+        mock_refine.return_value = {'markdown': '## Unread', 'model_used': 'gemini-2.5-pro'}
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))
+        self._auth(SUPER)
+        self.client.post(self._reopen_url(), {'reason': 'check something'}, format='json')
+        from apps.scholarship import profile_finalise
+        self.app.refresh_from_db()
+        _, row = profile_finalise.queue_finalise(self.app, 'en')
+        row.save(update_fields=profile_finalise.QUEUE_FIELDS)
+        self.assertEqual(profile_finalise.run_pending()['done'], 1)
+        self.sp.refresh_from_db()
+        self.assertEqual((self.sp.final_markdown, self.sp.anon_markdown), ('## Unread', '## Pool'))
+        self.assertEqual(self.client.post(self._cancel_url(), {}, format='json').status_code, 200)
+        self.sp.refresh_from_db()
+        self.assertEqual((self.sp.anon_published, self.sp.anon_markdown), (True, '## Pool'))
 
     def test_reject_after_reopen_counts_correction_and_stays_unpublished(self):
         # RE-POINTED by TD-481 (2026-11-04): the decline used to go straight through `/reject/` at

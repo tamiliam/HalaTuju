@@ -4374,6 +4374,8 @@
       "profileFinalTitle": "Profil pelajar (akhir)",
       "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan keputusan anda. Buka semula keputusan untuk menyemaknya.",
+      "profileFinalising": "Profil akhir sedang ditulis. Ia akan dipaparkan di sini dalam beberapa minit; muat semula halaman untuk melihatnya.",
+      "profileFinaliseFailed": "Profil akhir tidak dapat ditulis selepas tiga kali cubaan. Draf ditunjukkan di bawah. Sila maklumkan kepada pentadbir utama.",
       "model": "Model",
       "interviewedRecommendedBy": "Ditemu duga dan disyorkan oleh",
       "interviewedDeclinedBy": "Ditemu duga dan ditolak oleh",
@@ -5082,6 +5084,7 @@
           "unsure": "tidak pasti"
         },
         "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
+        "finalisePending": "Keputusan disimpan. Profil akhir sedang ditulis dan akan dipaparkan pada kad profil dalam beberapa minit.",
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
@@ -5111,7 +5114,9 @@
           "self_verdict_qc_forbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
           "self_assigned_qc_forbidden": "Kes ini pernah ditugaskan kepada anda — ia mesti disemak QC oleh orang lain.",
           "self_interview_qc_forbidden": "Anda yang menemu duga pelajar ini — kes ini mesti disemak QC oleh orang lain.",
-          "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain."
+          "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain.",
+          "profile_pending": "Profil penaja akhir masih sedang ditulis. Tunggu beberapa minit, muat semula halaman dan baca profil itu, kemudian terima.",
+          "profile_failed": "Profil penaja akhir tidak dapat ditulis. Buka semula kes ini untuk penyemak, yang akan merekodkan verdik sekali lagi bersama profil akhir. Kemudian terima."
         },
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
@@ -8434,7 +8439,8 @@
         "vision": "Pengecaman teks (Google Vision)",
         "email": "Penghantaran e-mel",
         "cron": "Tugas berjadual",
-        "credit": "Baki kredit AI"
+        "credit": "Baki kredit AI",
+        "profiles": "Profil penaja akhir"
       },
       "line": {
         "read": {
@@ -8464,6 +8470,10 @@
           "ok": "Tiada ralat pembayaran dilihat.",
           "payment_error": "Ralat pembayaran pada {time}: kredit AI mungkin telah habis.",
           "recovered": "Ralat pembayaran pada {time}; bacaan berjaya sejak itu."
+        },
+        "profiles": {
+          "ok": "Tiada profil akhir yang gagal.",
+          "failed": "Profil akhir yang tidak dapat ditulis selepas tiga kali cubaan: {count}."
         }
       },
       "unit": {
@@ -8472,6 +8482,7 @@
         "days": "{n} hari"
       },
       "cadence": {
+        "every5": "setiap 5 minit",
         "every15": "setiap 15 minit",
         "hourly": "setiap jam",
         "daily": "setiap hari",
@@ -8509,6 +8520,7 @@
         "issue-monthly-invoices": "Invois bulanan",
         "refresh-reminder": "Peringatan katalog kursus",
         "decision-emails": "E-mel keputusan",
+        "finalise-profiles": "Penulisan profil akhir",
         "announcement-emails": "E-mel pengumuman",
         "survey-emails": "E-mel tinjauan",
         "module-emails": "E-mel modul"

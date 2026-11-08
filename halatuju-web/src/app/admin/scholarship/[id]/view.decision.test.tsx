@@ -281,6 +281,17 @@ describe('every interview question needs an answer before the reviewer decides',
     expect(screen.getAllByText('NRIC already in use').length).toBeGreaterThan(0)
   })
 
+  it('A2.1: a queued final profile says it is being written, not that it is done', async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app, completeness: { complete: true },
+      finalise_result: { ok: true, pending: true } } as never)
+    api.verifyAcceptApplication.mockRejectedValue(Object.assign(new Error('NRIC already in use'), {
+      code: 'nric_clash', status: 409 }))
+    press()
+    expect(await screen.findByText('admin.scholarship.recordVerdict.finalisePending')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.finaliseOk')).toBeNull()
+  })
+
   it('#61: a real server refusal of the save itself still shows its own message', async () => {
     const { api, press } = await pressSaveAndFinalise()
     api.recordVerdict.mockRejectedValue(Object.assign(new Error('Not your applicant.'), {

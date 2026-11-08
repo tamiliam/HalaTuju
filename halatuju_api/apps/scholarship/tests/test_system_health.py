@@ -1,4 +1,4 @@
-"""The admin System health light (2026-10-28): the five detectors, each threshold, and the endpoint.
+"""The admin System health light (2026-10-28): the detectors, each threshold, and the endpoint.
 
 The recorders (email backend, cron) have their own file, `test_system_health_recorders.py`.
 """
@@ -197,7 +197,7 @@ class CadenceRegistry(SimpleTestCase):
     def test_the_watched_set_is_exactly_the_live_scheduler_fleet(self):
         self.assertEqual(set(EXPECTED_CADENCE), {
             'application-nudges', 'decision-emails', 'interview-reminders', 'notify-contact-submissions',
-            'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
+            'finalise-profiles', 'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
             'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime', 'survey-emails', 'module-emails',
             'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
             'lapse-expired-offers', 'purge-referrals', 'query-reminders',
@@ -237,6 +237,7 @@ class CadenceRegistry(SimpleTestCase):
             'email': {'ok', 'no_record', 'recent_failure', 'failing', 'failing_stale', 'no_success'},
             'cron': {'ok', 'waiting', 'late', 'missed', 'never', 'errored', 'errored_twice'},
             'credit': {'ok', 'payment_error', 'recovered'},
+            'profiles': {'ok', 'failed'},
         }
         here = os.path.dirname(__file__)
         for locale in ('en', 'ms', 'ta'):
@@ -354,7 +355,7 @@ class ReadServiceRows(TestCase):
         self.gemini_read(self.apps[1], 60 * 30, _402)
         self.assertEqual(self.credit()['status'], 'green')
 
-    def test_snapshot_has_five_rows_and_the_worst_colour(self):
+    def test_snapshot_has_every_row_and_the_worst_colour(self):
         self.gemini_read(self.apps[1], 30, _402)
         self.gemini_read(self.apps[0], 60 * 3)
         snap = sh.snapshot(self.now)
@@ -377,7 +378,7 @@ class SystemHealthEndpoint(TestCase):
         r = authed_client(make_admin('super', super_admin=True)).get(self.URL)
         self.assertEqual(r.status_code, 200)
         body = r.json()
-        self.assertEqual(len(body['rows']), 5)
+        self.assertEqual(len(body['rows']), len(sh.ROW_KEYS))   # six since A2.1 (failed profiles)
         self.assertIn(body['overall'], ('green', 'amber', 'red'))
         self.assertIn('checked_at', body)
         for row in body['rows']:

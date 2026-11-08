@@ -13,12 +13,12 @@ from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import birth_state
 from .. import pool
+from .. import profile_finalise
 from .. import reopen as reopen_service
 from .. import staff_activity
 from ..interview_completeness import decision_gate_applies, decision_refusal
 from ..verdict_engine import build_verdict
-from ..models import ScholarshipApplication, SponsorProfile
-from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
+from ..models import ScholarshipApplication
 from ..services import AssignmentError, admin_reject, assign_reviewer, may_assign_to
 from ..status_lock import StatusRefused, lock_application_for
 
@@ -54,8 +54,8 @@ def _save_verdict(app, admin, verdict_fields, sp_to_save):
     `AdminRecordVerdictView.post` when the activity row joined, to keep it under 150 lines.)"""
     with transaction.atomic():
         app.save(update_fields=verdict_fields)
-        if sp_to_save is not None:
-            sp_to_save.save()
+        if sp_to_save is not None:   # A2.1: the queue columns only, never a stale full row
+            sp_to_save.save(update_fields=profile_finalise.QUEUE_FIELDS)
         # If this re-records a REOPENED decision, that's a real correction
         # (counting model B) — close the audit row + clear the reopened flag.
         # Publishing is NOT done here — it is bound to QC-Accept (the case re-enters
@@ -63,7 +63,7 @@ def _save_verdict(app, admin, verdict_fields, sp_to_save):
         reopen_service.close_reopen_with_change(app)
         staff_activity.record(admin, staff_activity.VERDICT_RECORDED, app, meta=lambda: {
             'overall': app.officer_verdict.get('overall') or 'blank',
-            'finalised': sp_to_save is not None})
+            'finalised': getattr(sp_to_save, 'finalise_state', '') == profile_finalise.PENDING})
 
 
 def _record_qc(admin, app, decision, outcome):
@@ -77,9 +77,9 @@ class AdminRecordVerdictView(_AdminBase):
     """POST .../<pk>/record-verdict/ — the officer records their four-fact verdict in
     the review cockpit. Snapshots the AI's verdict (build_verdict) as-decided + stores
     the officer's own decision + reason (the override-rate evidence). When ``finalise``
-    is truthy AND a draft profile + a submitted interview exist, it also runs the Phase-D
-    refine to produce the final profile in the same action (reusing AdminFinaliseProfileView's
-    preconditions; never duplicates the engine). Reviewer/super only."""
+    is truthy AND a draft profile + a submitted interview exist, it also QUEUES the Phase-D
+    refine (A2.1: the `finalise-profiles` cron writes the final profile; no Gemini call runs in
+    this request). Reviewer/super only."""
     def post(self, request, pk):
         app, admin, err = self._require_open_case(request, pk)
         if err:
@@ -158,58 +158,17 @@ class AdminRecordVerdictView(_AdminBase):
                 app.award_amount = None
                 verdict_fields.append('award_amount')
 
-        # Optionally finalise the sponsor profile from the interview. The Gemini refine call runs
-        # OUTSIDE the transaction (never hold a DB lock across a network call); its writes are then
-        # committed atomically WITH the verdict so the two can't half-apply (TD audit 2026-06-14).
+        # Optionally finalise the sponsor profile from the interview. ⚠ A2.1 / TD-517: NO Gemini call
+        # here (the refine + card blurb took up to ~50 s inside the request). The profile is only
+        # QUEUED, in the verdict's own transaction; the `finalise-profiles` cron writes it, with
+        # retry (`profile_finalise`). Publishing stays bound to QC-Accept.
         finalise_result = None
         sp_to_save = None
         if request.data.get('finalise'):
-            sp = SponsorProfile.objects.filter(application=app).first()
-            if sp is None or not sp.current_markdown.strip():
-                finalise_result = {'ok': False, 'code': 'no_draft'}
-            else:
-                session = (app.interview_sessions.filter(status='submitted')
-                           .order_by('-submitted_at').first())
-                if session is None:
-                    finalise_result = {'ok': False, 'code': 'no_interview'}
-                else:
-                    result = refine_sponsor_profile(
-                        app, draft=sp.current_markdown, session=session,
-                        language=request.data.get('language'))
-                    if 'error' in result:
-                        finalise_result = {'ok': False, 'code': 'engine_error'}
-                    else:
-                        sp.final_markdown = result['markdown']
-                        sp.final_model_used = result.get('model_used', '')
-                        sp.prompt_version = result.get('prompt_version', '')
-                        sp.finalised_at = timezone.now()
-                        # One profile: the final IS the sponsor/pool version. Mirror it onto the
-                        # pool fields so the (already PII-redacted) final is what a sponsor reads.
-                        sp.anon_markdown = result['markdown']
-                        sp.anon_model_used = result.get('model_used', '')
-                        sp.anon_generated_at = timezone.now()
-                        # PREPARE the pool card blurb now (ready for when QC clears the case)
-                        # but DO NOT publish here. Publishing — the single point a student
-                        # becomes sponsor-visible — is bound to the QC-Accept transition
-                        # (→ 'recommended', see AdminQcDecisionView + pool.publish_profile_to_pool);
-                        # a case AWAITING QC is never shown to sponsors. The blurb is still built
-                        # only for a clean APPROVE, so a declined/leaking profile builds nothing.
-                        leaks = pool.scan_profile_pii(
-                            result['markdown'], getattr(app, 'profile', None))
-                        if overall == 'accept' and not leaks:
-                            # The ≤20-word CARD blurb (card-strict — stricter than the
-                            # profile). Generated from the already-anonymous markdown, then
-                            # backstopped by the STRICT identifier scan; on any leak/empty
-                            # leave it blank so the card falls back to the course alone.
-                            blurb = generate_anon_blurb(app, result['markdown'])
-                            sp.anon_blurb = blurb if (
-                                blurb and not pool.scan_anon_for_identifiers(
-                                    blurb, getattr(app, 'profile', None))
-                            ) else ''
-                        sp_to_save = sp
-                        # published:False ALWAYS here — QC-Accept publishes. Kept in the payload
-                        # so the FE messages "ready for QC", never "published to sponsors".
-                        finalise_result = {'ok': True, 'published': False, 'leaks': leaks}
+            finalise_result, sp_to_save = profile_finalise.queue_finalise(
+                app, request.data.get('language'))
+        else:   # the verdict changed: drop a profile still queued for the old one
+            sp_to_save = profile_finalise.supersede_pending(app)
 
         _save_verdict(app, admin, verdict_fields, sp_to_save)
         if 'award_amount' in verdict_fields:

@@ -134,6 +134,11 @@ describe('the words', () => {
     expect(text).toContain('"cadence":"admin.systemHealth.cadence.hourly"')
   })
 
+  it('counts the final profiles that failed (A2.1)', () => {
+    expect(lineText(t, row('profiles', 'amber', 'failed', { count: '2' })))
+      .toBe('admin.systemHealth.line.profiles.failed{"count":"2"}')
+  })
+
   it('falls back to the code when a line has no string', () => {
     expect(lineText((k) => k, row('email', 'amber', 'brand_new_code'))).toBe('brand_new_code')
   })

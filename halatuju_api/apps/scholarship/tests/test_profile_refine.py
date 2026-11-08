@@ -1,4 +1,5 @@
 """Phase D profile refine: engine (mocked Gemini) + admin-on-demand finalise endpoint."""
+from datetime import timedelta
 from unittest.mock import patch
 
 import jwt
@@ -168,26 +169,48 @@ class TestFinaliseProfileEndpoint(TestCase):
     def _draft(self):
         return SponsorProfile.objects.create(application=self.app, draft_markdown='## Background\nDraft.')
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
-    def test_reviewer_stores_final(self, mock_refine):
+    @patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False)
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_reviewer_queues_then_the_cron_stores_final(self, mock_refine, _down):
+        # A2.1 review (L1): the endpoint QUEUES (no Gemini in the request); the cron writes it.
         mock_refine.return_value = {'markdown': '## Background\nFinal v2.', 'model_used': 'gemini-2.5-flash'}
         self._draft(); _submitted_session(self.app)
         self._auth(REVIEWER)
         r = self.client.post(self._url())
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['finalise_state'], 'pending')
+        mock_refine.assert_not_called()
+        from apps.scholarship import profile_finalise
+        profile_finalise.run_pending()
         sp = SponsorProfile.objects.get(application=self.app)
         self.assertEqual(sp.final_markdown, '## Background\nFinal v2.')
         self.assertEqual(sp.final_model_used, 'gemini-2.5-flash')
         self.assertIsNotNone(sp.finalised_at)
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_after_failed_it_requeues_with_a_new_token(self, mock_refine):
+        # The retry after 'failed': pending again, attempts 0, a new token, queue columns only.
+        sp = self._draft(); _submitted_session(self.app)
+        old = timezone.now() - timedelta(hours=1)
+        SponsorProfile.objects.filter(pk=sp.pk).update(
+            finalise_state='failed', finalise_attempts=3, finalise_requested_at=old,
+            final_markdown='kept by the worker')
+        self._auth(REVIEWER)
+        self.assertEqual(self.client.post(self._url()).status_code, 200)
+        sp.refresh_from_db()
+        self.assertEqual((sp.finalise_state, sp.finalise_attempts), ('pending', 0))
+        self.assertGreater(sp.finalise_requested_at, old)
+        self.assertEqual(sp.final_markdown, 'kept by the worker')   # never a stale full-row save
+        mock_refine.assert_not_called()
+
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_viewer_forbidden(self, mock_refine):
         self._draft(); _submitted_session(self.app)
         self._auth(VIEWER)
         self.assertEqual(self.client.post(self._url()).status_code, 403)
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_no_draft_400(self, mock_refine):
         _submitted_session(self.app)   # interview exists, but no draft profile
         self._auth(REVIEWER)
@@ -196,7 +219,7 @@ class TestFinaliseProfileEndpoint(TestCase):
         self.assertEqual(r.json()['code'], 'no_draft')
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_no_submitted_interview_400(self, mock_refine):
         self._draft()
         InterviewSession.objects.create(application=self.app, status='draft')  # draft only, not submitted
@@ -206,14 +229,16 @@ class TestFinaliseProfileEndpoint(TestCase):
         self.assertEqual(r.json()['code'], 'no_interview')
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
-    def test_engine_error_503(self, mock_refine):
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
+    def test_engine_down_never_reaches_the_request(self, mock_refine):
+        # Was a 503 while the refine ran inline; the request now only queues, so it is a 200.
         mock_refine.return_value = {'error': 'down'}
         self._draft(); _submitted_session(self.app)
         self._auth(REVIEWER)
-        self.assertEqual(self.client.post(self._url()).status_code, 503)
+        self.assertEqual(self.client.post(self._url()).status_code, 200)
+        mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
+    @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_get_detail_does_not_call_gemini(self, mock_refine):
         self._draft(); _submitted_session(self.app)
         self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id=REVIEWER)
