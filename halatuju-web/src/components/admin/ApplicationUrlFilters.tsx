@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * The Applications list's address-bar filters (`?status=&assigned=&ready=1&band=`), pulled out of the page
- * (owner 2026-11-05: the Overview's cards open the list already filtered). `ready` / `band` have no control of
+ * The Applications list's address-bar filters (`?status=&assigned=&ready=1&band=&withdrawal=pending`), pulled out
+ * of the page (owner 2026-11-05: the Overview's cards open the list already filtered; A1.13b: the checker's
+ * "Award withdrawals" card opens `?withdrawal=pending`). `ready` / `band` / `withdrawal` have no control of
  * their own, so they show as a removable chip. Read ONCE on mount, then the controls own the state and the
  * address bar follows (replace, no history entry; defaults left out).
  */
@@ -11,6 +12,8 @@ import { useT } from '@/lib/i18n'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 
 export type UrlBand = '' | 'overdue' | 'due_soon' | 'open'
+/** A1.13b: cases with a pending award-withdrawal request (the API's `withdrawal_chain.narrow_list`). */
+export type UrlWithdrawal = '' | 'pending'
 
 const BAND_LABEL: Record<Exclude<UrlBand, ''>, string> = {
   overdue: 'admin.scholarship.chip.overdue',
@@ -24,6 +27,7 @@ export function useApplicationUrlFilters(
 ) {
   const [readyF, setReadyF] = useState(false)
   const [bandF, setBandF] = useState<UrlBand>('')
+  const [withdrawalF, setWithdrawalF] = useState<UrlWithdrawal>('')
   const [urlFiltersRead, setUrlFiltersRead] = useState(false)
 
   // Same effect flush as the gift read, so the first list request already carries them.
@@ -36,6 +40,7 @@ export function useApplicationUrlFilters(
     if (p.get('ready') === '1') setReadyF(true)
     const b = p.get('band')
     if (b === 'overdue' || b === 'due_soon' || b === 'open') setBandF(b)
+    if (p.get('withdrawal') === 'pending') setWithdrawalF('pending')
     setUrlFiltersRead(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- read once on mount; the setters are state setters from the page
   }, [])
@@ -43,7 +48,8 @@ export function useApplicationUrlFilters(
   useEffect(() => {
     if (!urlFiltersRead) return
     const p = new URLSearchParams(window.location.search)
-    const want: Record<string, string> = { status: statusF, assigned: assignedF, ready: readyF ? '1' : '', band: bandF }
+    const want: Record<string, string> = { status: statusF, assigned: assignedF, ready: readyF ? '1' : '', band: bandF,
+      withdrawal: withdrawalF }
     let changed = false
     for (const [k, v] of Object.entries(want)) {
       if ((p.get(k) ?? '') !== v) { changed = true; if (v) p.set(k, v); else p.delete(k) }
@@ -51,12 +57,12 @@ export function useApplicationUrlFilters(
     if (!changed) return
     const qs = p.toString()
     window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : ''))
-  }, [urlFiltersRead, statusF, assignedF, readyF, bandF])
+  }, [urlFiltersRead, statusF, assignedF, readyF, bandF, withdrawalF])
 
-  return { readyF, setReadyF, bandF, setBandF, urlFiltersRead }
+  return { readyF, setReadyF, bandF, setBandF, withdrawalF, setWithdrawalF, urlFiltersRead }
 }
 
-/** A removable label for a filter that has no control of its own (ready / band). */
+/** A removable label for a filter that has no control of its own (ready / band / withdrawal). */
 function FilterChip({ label, remove, onRemove, testId }:
   { label: string; remove: string; onRemove: () => void; testId: string }) {
   return (
@@ -68,15 +74,18 @@ function FilterChip({ label, remove, onRemove, testId }:
   )
 }
 
-export function ApplicationUrlChips({ readyF, bandF, onClearReady, onClearBand }:
-  { readyF: boolean; bandF: UrlBand; onClearReady: () => void; onClearBand: () => void }) {
+export function ApplicationUrlChips({ readyF, bandF, onClearReady, onClearBand, withdrawalF = '', onClearWithdrawal }:
+  { readyF: boolean; bandF: UrlBand; onClearReady: () => void; onClearBand: () => void
+    withdrawalF?: UrlWithdrawal; onClearWithdrawal?: () => void }) {
   const { t } = useT()
-  if (!readyF && !bandF) return null
+  if (!readyF && !bandF && !withdrawalF) return null
   const remove = t('admin.scholarship.chip.remove')
   return (
     <div className="mb-3 flex flex-wrap gap-2" data-testid="url-filter-chips">
       {readyF && <FilterChip label={t('admin.scholarship.chip.ready')} remove={remove} onRemove={onClearReady} testId="chip-ready" />}
       {bandF && <FilterChip label={t(BAND_LABEL[bandF])} remove={remove} onRemove={onClearBand} testId="chip-band" />}
+      {withdrawalF && <FilterChip label={t('admin.scholarship.chip.withdrawalPending')} remove={remove}
+        onRemove={() => onClearWithdrawal?.()} testId="chip-withdrawal" />}
     </div>
   )
 }

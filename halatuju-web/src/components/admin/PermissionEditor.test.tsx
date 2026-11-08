@@ -10,6 +10,9 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import PermissionEditor from './PermissionEditor'
 import * as api from '@/lib/admin-api/admins'
 import { formatDateTime } from '@/lib/formatDate'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({
@@ -21,7 +24,7 @@ jest.mock('@/lib/admin-api/admins')
 const mockApi = api as jest.Mocked<typeof api>
 
 const KEYS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
-  'payments_approve']
+  'payments_approve', 'award_withdraw_request', 'award_withdraw_approve']
 const ROHINI: api.StaffPermissionsView = {
   id: 7, name: 'Rohini', role: 'reviewer', is_active: true, editable: true,
   preset: ['review'], permissions: ['review'], custom: false, keys: KEYS,
@@ -54,7 +57,8 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   const reviewers = screen.getByTestId('perm-section-reviewers')
   expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
-    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'].map((k) => `admin.perm.${k}.name`))
+    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'award_withdraw_request',
+      'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))
   expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['admin.perm.review.name', 'admin.perm.qc.name'])
   expect(screen.queryByText('admin.permEditor.students')).toBeNull()
@@ -130,6 +134,27 @@ it('names every consequence the server returns, and what is taken away', async (
   expect(line.textContent).toContain('admin.permEditor.takes(name=Suresh;list=“admin.perm.payments_approve.name”)')
   expect(line.textContent).toContain('admin.permEditor.effect.files_widened_assigned(name=Suresh)')
   expect(line.textContent).not.toContain('admin.permEditor.nothingElse')
+})
+
+it('says the withdrawal approve seat needs every case, in all three languages', async () => {
+  // A1.13b review fix: the server names `withdraw_approve_needs_view`; the line is worded per locale.
+  const fin = { ...ROHINI, name: 'Suresh', role: 'finance', preset: ['payments_approve'],
+                permissions: ['payments_approve'] }
+  mockApi.saveStaffPermissions.mockResolvedValue(plan({
+    added: ['award_withdraw_approve'], consequences: ['withdraw_approve_needs_view'],
+  }))
+  await open(fin)
+  fireEvent.click(toggle('award_withdraw_approve'))
+  const line = await screen.findByRole('status')
+  await waitFor(() => expect(line.textContent).toContain(
+    'admin.permEditor.effect.withdraw_approve_needs_view(name=Suresh)'))
+  for (const messages of [en, ms, ta]) {
+    const said = (messages as { admin: { permEditor: { effect: Record<string, string> } } })
+      .admin.permEditor.effect.withdraw_approve_needs_view
+    expect(said).toContain('{name}')
+  }
+  expect(en.admin.permEditor.effect.withdraw_approve_needs_view).toBe(
+    '{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide.')
 })
 
 it('shows the server\'s refusal as it is and will not save', async () => {

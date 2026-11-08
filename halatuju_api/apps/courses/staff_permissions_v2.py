@@ -118,6 +118,9 @@ ALIASES = {
     # so it means the credit's middle check too (was the `finance` LABEL's grant).
     'payments_approve': ('payments.view', 'payments.approve', 'sponsors.check'),
     'manage_team':      (),
+    # A1.13b: the award-withdrawal seats have no v2 key yet (like `manage_team`).
+    'award_withdraw_request': (),
+    'award_withdraw_approve': (),
 }
 
 #: The organisation READ pages (Organisation, Invitations, Team, Sponsors + credits ledger). A team

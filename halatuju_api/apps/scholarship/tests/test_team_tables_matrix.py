@@ -206,6 +206,27 @@ R55_SAME_AS = 'GET api/v1/admin/scholarship/applications/<int:pk>/'
 def r55_added_cells(shape, before):
     return {R55_GET: before[R55_SAME_AS], R55_POST: 400 if shape in T2_KNOCKS else 403}
 
+#: A1.13b (TD-198, owner rulings 2026-11-08): the award withdrawal is MAKER and CHECKER; A1.13's super-only
+#: `withdraw-award/` route is deleted (it was never in a BEFORE fixture). FOUR NEW routes, so new cells per
+#: shape, measured and explained. No shape here can act: the seats need `award_withdraw_request` /
+#: `award_withdraw_approve` (no preset holds the first; only the lead tier holds the second) AND a signed-in
+#: account (no probe shape has signed in), and a super is refused at the door (`wrong_role`).
+#: - the REQUEST names the real application: 403 (`wrong_role`) for every shape that may read it, the
+#:   application fence's 404 for the other organisation's shape;
+#: - APPROVE / REFUSE / CANCEL name request 999999: the shapes the admin door refuses get 403 (a super, an
+#:   inactive row, a mentor login, the source user), everyone else 404 (no such request). Nobody gains.
+A113B_REQUEST = 'POST api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/'
+A113B_DECIDE = tuple(f'POST api/v1/admin/scholarship/withdrawal-requests/<int:pk>/{step}/'
+                     for step in ('approve', 'refuse', 'cancel'))
+A113B_FENCED_OUT = ('reviewer_admin_keys_other_org',)
+A113B_DOOR_REFUSED = ('super', 'admin_inactive', 'mentor', 'mentor_inactive', 'source_partner')
+
+
+def a113b_added_cells(shape):
+    cells = {A113B_REQUEST: 404 if shape in A113B_FENCED_OUT else 403}
+    cells.update({p: 403 if shape in A113B_DOOR_REFUSED else 404 for p in A113B_DECIDE})
+    return cells
+
 
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
@@ -374,7 +395,8 @@ def _shape_test(shape):
         before = _before()[shape]
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
                     **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-                    **a110a_moved_cells(shape, before), **r55_added_cells(shape, before)}
+                    **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
+                    **a113b_added_cells(shape)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -396,7 +418,8 @@ def _expected_row(shape):
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-           **a110a_moved_cells(shape, before), **r55_added_cells(shape, before)}
+           **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
+           **a113b_added_cells(shape)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row

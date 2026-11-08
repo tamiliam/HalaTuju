@@ -5,7 +5,7 @@ Moved verbatim from `views_admin/verdict.py`, which imports them back; nothing e
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import birth_state
+from .. import birth_state, course_start
 
 
 def _overall(app):
@@ -34,7 +34,7 @@ def _accept_absolute_stop(app):
        (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
        accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
     """
-    if app.reporting_date is None:
+    if course_start.recorded_date(app) is None:   # TD-465 part 2: the one read point
         return Response(
             {'error': 'This student has no reporting date. Reopen the case so the reviewer can '
                       'record it and record the verdict again (which sets the proposed bursary), '

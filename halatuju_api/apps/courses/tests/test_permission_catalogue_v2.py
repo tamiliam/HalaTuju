@@ -75,8 +75,9 @@ GOLDEN_V2 = {
     'admin_inactive': (('see_all', 'spending', 'payments_prepare'), set()),
     'finance': (('payments_approve',),
                 {*_ORG_READ, 'sponsors.check', 'payments.view', 'payments.approve'}),
-    'org_admin': (('see_all', 'qc', 'spending', 'manage_team'), {*_EVERY_PAGE_KEY, 'qc'}),
-    'org_admin_reviews': (('review', 'see_all', 'qc', 'spending', 'manage_team'),
+    # A1.13b (owner 2026-11-08): the lead tier also holds `award_withdraw_approve` (a v1 seat key, no v2 page)
+    'org_admin': (('see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'), {*_EVERY_PAGE_KEY, 'qc'}),
+    'org_admin_reviews': (('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
                           {*_EVERY_PAGE_KEY, 'qc', 'review'}),
     'reviewer': (('review',), {'review'}),
     'reviewer_see_all_spending': (('review', 'see_all', 'spending'),

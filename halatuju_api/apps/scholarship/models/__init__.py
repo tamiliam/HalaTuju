@@ -128,3 +128,5 @@ from .development import DevelopmentModule, LessonRead, ModuleEmail, ModuleLesso
 # Request #55 (2026-11-07) — model 88, NEW: an organisation admin's notes for the reviewer of one
 # application. Points at ScholarshipApplication and `courses.PartnerAdmin` by string.
 from .reviewer_notes import ReviewerNote
+# A1.13b (2026-11-08) — model 89, NEW: an award withdrawal REQUEST (maker and checker, TD-198).
+from .withdrawals import AwardWithdrawalRequest

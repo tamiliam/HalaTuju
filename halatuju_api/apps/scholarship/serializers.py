@@ -376,15 +376,15 @@ class BursaryAgreementSerializer(serializers.Serializer):
     pdf_url = serializers.SerializerMethodField()
 
     def get_pdf_url(self, obj):
-        if not obj.pdf_storage_path:
+        from . import agreement_guard, storage
+        if not obj.pdf_storage_path or agreement_guard.is_void(obj):   # A1.13: not a withdrawn PDF
             return None
-        from .storage import create_signed_download_url, resolve_org_for_path
         # org-fence (Sprint 4, belt-and-braces) — see ApplicantDocumentSerializer.
         app = getattr(obj, 'application', None)
-        path_org = resolve_org_for_path(obj.pdf_storage_path)
+        path_org = storage.resolve_org_for_path(obj.pdf_storage_path)
         if path_org is not None and app is not None and path_org != app.owning_organisation_id:
             return None
-        return create_signed_download_url(obj.pdf_storage_path)
+        return storage.create_signed_download_url(obj.pdf_storage_path)
 
 
 class SemesterResultSerializer(serializers.ModelSerializer):

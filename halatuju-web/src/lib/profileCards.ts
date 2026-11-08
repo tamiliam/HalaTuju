@@ -87,7 +87,9 @@ export function cardsFor(ctx: ProfileCardContext): ProfileCardId[] {
 /** The filters of the My activity card — `?kind=` on `GET admin/me/activity/`. */
 export type ActivityFilter = 'all' | 'students' | 'money' | 'profile'
 
-const MONEY_PERMS = ['spending', 'payments_prepare', 'payments_check', 'payments_approve']
+// A1.13b: the award-withdrawal seats are money powers (their activity rows are `money`, `staff_activity`).
+const MONEY_PERMS = ['spending', 'payments_prepare', 'payments_check', 'payments_approve',
+  'award_withdraw_request', 'award_withdraw_approve']
 const CASE_PERMS = ['review', 'see_all', 'qc']
 
 /**
@@ -125,7 +127,7 @@ export function profileContext(role: {
 /** The permission keys that have a plain-word name (`admin.perm.<key>.name`). `manage_team` has
  *  none: it is the organisation admin's fixed power and is said by that role's own line. */
 const NAMED_PERMS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
-  'payments_approve'] as const
+  'payments_approve', 'award_withdraw_request', 'award_withdraw_approve'] as const
 
 /**
  * "You can" — the i18n keys of the plain-word lines for this person, from role + permissions.

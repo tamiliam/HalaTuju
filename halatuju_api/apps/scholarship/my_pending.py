@@ -14,7 +14,9 @@ that rule, so the card and the page it opens can never disagree:
                                       (the Invitations page's own door, TD-504; was `org_read`)
   `payments_chain.may_read`:          `payment_runs` waiting for THIS person's step <- `next_step_for`
   the credit CHECKER seat:            `wallet_credits` waiting for THEIR signature  <- `credit_steps`
-  Requests live + `requests_role`:    `requests`                    <- `org_requests_queue.needs_action_q`
+  holds `award_withdraw_approve` (never a super): `award_withdrawals` waiting for THEIR decision
+                                      <- `award_withdrawal_chain.waiting_for` (A1.13b)
+  Requests live + `requests_role`:    `requests`                  <- `org_requests_queue.needs_action_q`
   Reviewers table holding `review`:   `my_open`, `my_due_soon`, `my_overdue`        <- `programme_overview.mine`
   Reviewers table holding `qc`:       `qc_awaiting` (+ `oldest_days`) <- `qc_queue`, minus the cases
                                       `qc_separation` bars them from (`barred_ids`)
@@ -30,7 +32,7 @@ from django.utils import timezone
 
 from apps.courses import staff_tables
 
-from . import credit_steps, mentor_desk, mentoring_read, payments_chain, surface_gates
+from . import award_withdrawal_chain, credit_steps, mentor_desk, mentoring_read, payments_chain, surface_gates
 
 
 def pending_sponsor_count():
@@ -148,6 +150,9 @@ def pending_for(admin, *, b40_scope, now=None):
         cards['payment_runs'] = {'count': _payment_runs(admin)}
     if credit_steps.checks_credits(admin):
         cards['wallet_credits'] = {'count': _wallet_credits(admin)}
+    if award_withdrawal_chain.holds_decide_seat(admin):     # the seat incl. read scope 'all'
+        # A1.13b: the award withdrawals waiting for THIS checker (web link /admin/scholarship?withdrawal=pending).
+        cards['award_withdrawals'] = {'count': award_withdrawal_chain.waiting_for(admin, now)}
     if surface_gates.requests_live() and surface_gates.requests_role(admin):
         cards['requests'] = {'count': _requests(admin)}
     if mentor_desk.mentor_of(admin) is not None:

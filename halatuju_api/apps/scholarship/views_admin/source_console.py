@@ -36,6 +36,7 @@ from rest_framework.response import Response
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from .. import source_access, source_console, staff_activity
+from ..agreement_guard import AgreementNotCurrent
 from .base import _AdminBase
 from .sources import DETAIL_FIELDS, detail_values, text_of
 from .source_users import _bad_email
@@ -396,5 +397,7 @@ class AdminSourceWitnessView(_SourceConsoleBase):
             return _error('already_witnessed', status.HTTP_409_CONFLICT)
         except source_witness.WitnessChanged:
             return self._not_found()
+        except AgreementNotCurrent as exc:   # withdrawn / superseded (A1.13 review finding 1)
+            return _error(exc.code, status.HTTP_409_CONFLICT)
         app = _with_rows(source_access.applications_for(admin)).get(pk=app.pk)
         return Response(source_console.agreement_dict(app, source))

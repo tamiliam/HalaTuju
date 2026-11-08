@@ -3401,7 +3401,8 @@
       "myOverdue": "Overdue",
       "mentees": "Your mentees",
       "notMet": "Not yet met",
-      "askedHelp": "Asked for help"
+      "askedHelp": "Asked for help",
+      "awardWithdrawals": "Withdrawals to decide"
     },
     "orgPage": {
       "nav": "Overview",
@@ -4149,7 +4150,8 @@
         "dueSoon": "Due soon",
         "open": "Open",
         "remove": "Remove this filter",
-        "me": "Assigned to me"
+        "me": "Assigned to me",
+        "withdrawalPending": "Withdrawal waiting for a decision"
       },
       "showingRange": "Showing {start}–{end} of {total} applications",
       "allStatuses": "All statuses",
@@ -4969,6 +4971,72 @@
         "notSubmittedStatus": "Verdict saved, but NOT sent to QC — this case is past the stage where it can be submitted.",
         "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },
+      "withdrawAward": {
+        "title": "Withdraw this award",
+        "hint": "Ask for this award to be withdrawn. Nothing changes until a different staff member approves. If they do, the case goes back to the pool, the unpaid award returns to the sponsor's balance and any scheduled payments stop.",
+        "action": "Ask to withdraw award",
+        "dialogTitle": "Ask to withdraw this award?",
+        "dialogHint": "Explain why. A checker reads your explanation before deciding. It is kept on the case with your name and the date, for staff only: the student never sees it.",
+        "placeholder": "Why should the award be withdrawn? (staff only)",
+        "confirm": "Send request",
+        "paidNote": "Money has already been paid on this award, so it cannot be withdrawn here. Ask the platform owner.",
+        "pill": {
+          "pending": "Waiting for a checker",
+          "yourApproval": "Waiting for your approval",
+          "approved": "Withdrawn",
+          "refused": "Refused",
+          "cancelled": "Cancelled",
+          "expired": "Ended without a decision"
+        },
+        "askedOn": "You asked on {date}. Nothing changes until a checker approves.",
+        "yourExplanation": "Your explanation",
+        "checkersEmailed": "The checkers got an email. If nobody decides in 14 days, the request ends by itself.",
+        "cancelRequest": "Cancel request",
+        "requestedBy": "Requested by {name} on {date}",
+        "theirExplanation": "Their explanation",
+        "fact": {
+          "award": "Award",
+          "paid": "Paid so far",
+          "freed": "Back to sponsor balance",
+          "stopped": "Payments stopped"
+        },
+        "approveNote": "If you approve, the award is withdrawn at once. The money goes back to the sponsor's balance. The student gets an email if they were told of the award.",
+        "refuseReasonLabel": "Reason for refusing (needed only if you refuse)",
+        "approve": "Approve withdrawal",
+        "approveDialogTitle": "Approve this withdrawal?",
+        "approveDialogHint": "The award is withdrawn at once. This cannot be undone. You can add a note for the record (optional).",
+        "approvePlaceholder": "Note for the record (optional)",
+        "approveConfirm": "Approve and withdraw",
+        "refuse": "Refuse",
+        "selfNote": "You cannot approve a request you made yourself.",
+        "someone": "a staff member",
+        "decided": {
+          "approved": "Approved by {name} on {date}. The award was withdrawn.",
+          "refused": "Refused by {name} on {date}. The award stands.",
+          "cancelled": "Cancelled by {name} on {date}.",
+          "expired": "Nobody decided by {date}, so the request ended by itself."
+        },
+        "explanationHeading": "Explanation",
+        "refusedReasonHeading": "Reason for refusing",
+        "noteHeading": "Checker's note",
+        "error": {
+          "wrong_role": "You cannot do this on this case. Reload the page to see where the request stands.",
+          "same_person": "You cannot approve a request you made yourself. Another checker must decide.",
+          "no_checker": "Nobody else in this organisation who has signed in can approve award withdrawals. Ask the organisation admin to give someone that permission.",
+          "already_pending": "A request to withdraw this award is already waiting. Reload the page to see it.",
+          "not_pending": "This request has already been decided, cancelled or has ended. Reload the page to see where it stands.",
+          "not_awarded": "This case is no longer awarded. Reload the page to see where it stands.",
+          "stale": "The award has changed since this request was made, so it cannot be approved. Refuse it and ask for a new request.",
+          "has_payments": "Money has already been paid on this award, so it cannot be withdrawn here. Ask the platform owner.",
+          "explanation_required": "Give an explanation for withdrawing the award.",
+          "explanation_too_long": "The explanation is too long. Shorten it and try again.",
+          "reason_required": "Give a reason for refusing.",
+          "reason_too_long": "The reason is too long. Shorten it and try again.",
+          "note_too_long": "The note is too long. Shorten it and try again.",
+          "not_found": "This request no longer exists. Reload the page to see where the case stands.",
+          "generic": "Something went wrong. Reload the page to see where the request stands before you try again."
+        }
+      },
       "recordVerdict": {
         "title": "Record your verdict",
         "factPass": "Pass",
@@ -5467,7 +5535,11 @@
           "org_request_approved": "Approved {subject}",
           "org_request_declined": "Declined {subject}",
           "merchant_flag_opened": "Flagged {subject}",
-          "merchant_flag_closed": "Cleared the flag on {subject}"
+          "merchant_flag_closed": "Cleared the flag on {subject}",
+          "withdrawal_requested": "Asked to withdraw {subject}",
+          "withdrawal_approved": "Approved withdrawing {subject}",
+          "withdrawal_refused": "Refused withdrawing {subject}",
+          "withdrawal_cancelled": "Cancelled the withdrawal request for {subject}"
         }
       }
     },
@@ -6672,7 +6744,8 @@
         "mentor_concern_raised": "{mentor} told the team they are worried about this scholar",
         "mentor_concern_handled": "Mentor concern marked as handled",
         "session_logged_by_mentor": "Mentoring meeting logged by the mentor: {mode}, {minutes} min",
-        "session_logged_by_mentor_no_minutes": "Mentoring meeting logged by the mentor: {mode}"
+        "session_logged_by_mentor_no_minutes": "Mentoring meeting logged by the mentor: {mode}",
+        "award_withdrawn": "Award withdrawn (staff only) · {reason}"
       },
       "control": {
         "title": "Maintenance controls",
@@ -8022,6 +8095,7 @@
           "award_confirmed": "Award confirmed",
           "agreement_executed": "Agreement signed and in effect",
           "vircle_setup": "Set up your Vircle wallet",
+          "award_withdrawn": "Your award offer has been withdrawn",
           "closed_by_officer": "Application closed by our team",
           "letter_issued": "A letter has been issued",
           "mentor_assigned": "You have a mentor",
@@ -8058,6 +8132,7 @@
           "award_confirmed": "When she accepts her award (when no agreement is signed on the platform).",
           "agreement_executed": "When every party has signed. Her copy of the signed agreement is attached.",
           "vircle_setup": "When her agreement takes effect: how to set up the wallet the bursary is paid into.",
+          "award_withdrawn": "When a checker approves a request to withdraw the award, before any money is paid. It never carries the staff reason. Not sent if the student was never told of the award.",
           "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request.",
           "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date.",
           "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor.",
@@ -8276,6 +8351,14 @@
       "payments_approve": {
         "name": "Approve payment runs",
         "desc": "Releases payments from Vircle to students. Never on a run they prepared."
+      },
+      "award_withdraw_request": {
+        "name": "Ask to withdraw an award",
+        "desc": "Asks for an award to be withdrawn, with an explanation. A different staff member must approve before anything changes."
+      },
+      "award_withdraw_approve": {
+        "name": "Approve award withdrawals",
+        "desc": "Approves or refuses requests to withdraw an award. Never a request they made themselves."
       }
     },
     "permEditor": {
@@ -8304,7 +8387,10 @@
         "files_widened_all": "{name} will be able to read every student’s file in this organisation.",
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run.",
-        "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded."
+        "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded.",
+        "withdraw_request_and_approve": "{name} can ask for award withdrawals and approve them, but never their own request.",
+        "withdraw_last_checker": "Taking this from {name} leaves nobody who can approve award withdrawals: requests in this organisation will wait with nobody to decide them.",
+        "withdraw_approve_needs_view": "{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide."
       },
       "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
     },
@@ -9387,7 +9473,9 @@
           "countersign_pending": "An agreement is waiting for countersignature",
           "agreement_executed": "A copy of a fully signed agreement",
           "invoice": "Your invoice",
-          "receipt": "A receipt for your payment"
+          "receipt": "A receipt for your payment",
+          "withdrawal_request": "An award withdrawal is waiting for approval",
+          "withdrawal_outcome": "Your award withdrawal request was decided"
         },
         "when": {
           "payment_approval": "When a payment run is ready for its final signature.",
@@ -9399,7 +9487,9 @@
           "countersign_pending": "When the student and guarantor (and any witness) have signed; again as a reminder.",
           "agreement_executed": "When a student's agreement is fully signed.",
           "invoice": "When HalaTuju sends your organisation an invoice.",
-          "receipt": "When HalaTuju records your organisation's payment."
+          "receipt": "When HalaTuju records your organisation's payment.",
+          "withdrawal_request": "When a staff member asks for an award to be withdrawn.",
+          "withdrawal_outcome": "When a checker approves or refuses that request."
         },
         "to": {
           "payment_approval": "Whoever may approve payments and has not signed it; if nobody can, the organisation admins.",
@@ -9411,7 +9501,9 @@
           "countersign_pending": "The addresses named on the gift's agreement (Contracts); if none, HalaTuju.",
           "agreement_executed": "The addresses named on the gift's agreement (Contracts); if none, HalaTuju.",
           "invoice": "Your organisation's billing addresses.",
-          "receipt": "Your organisation's billing addresses."
+          "receipt": "Your organisation's billing addresses.",
+          "withdrawal_request": "Everyone in the organisation who can approve award withdrawals and has signed in, except the person who asked.",
+          "withdrawal_outcome": "The person who asked for the withdrawal."
         }
       },
       "terms": {

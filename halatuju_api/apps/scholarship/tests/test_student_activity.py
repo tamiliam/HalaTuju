@@ -124,7 +124,8 @@ class TestWriters(TestCase):
             'mentor_assigned', 'session_logged', 'payment_released', 'closed', 'results_overdue',
             'letter_withdrawn', 'letter_acknowledged',   # S6b
             'mentor_changed', 'mentor_ended',            # S7b
-            'mentor_concern_raised', 'mentor_concern_handled'})   # S7c
+            'mentor_concern_raised', 'mentor_concern_handled',    # S7c
+            'award_withdrawn'})                                    # A1.13 (TD-198)
 
     def test_add_entry_writes_a_manual_row(self):
         row = activity.add_entry(self.app, 'call', '  Rang her mother.  ',

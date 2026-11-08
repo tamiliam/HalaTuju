@@ -22,6 +22,7 @@ import type {
 import type { AdminApplicantDocument, AdminReferee } from './documents'
 import type { AdminResolutionItem } from './resolution'
 import type { AdminDisbursement, MaintenanceSubstate } from './lifecycle'
+import type { AwardWithdrawalRequest } from './awardWithdrawal'
 
 // ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
@@ -297,6 +298,9 @@ export interface AdminScholarshipDetail {
   // TD-483: the code the QC door would refuse THIS viewer with (null = may decide, or not a QC case).
   // Only on the detail read and the `/reject/` reply; other replies omit it.
   qc_refusal?: string | null
+  // A1.13b: the case's latest award-withdrawal request and this viewer's step (`award_withdrawal_chain.
+  // payload_for`). Null (or absent) unless the case is awarded or recommended and there is something to show.
+  withdrawal_request?: AwardWithdrawalRequest | null
   // The stored reporting date (ISO). Read the COLUMN, not the offer document's raw string —
   // the two used to be able to disagree, which is how a case displayed a ticked date while the
   // field driving its bursary was empty. Null when neither the letter nor an officer supplied it.
@@ -477,6 +481,8 @@ export async function getScholarshipApplications(
     /** Overview card links: only students ready to assign / in the overdue or due-soon band. */
     ready?: boolean
     band?: 'overdue' | 'due_soon' | 'open'
+    /** A1.13b, the Overview's award-withdrawals card: only cases with a live (unexpired) pending request. */
+    withdrawal?: 'pending'
     q?: string
     page?: number
     pageSize?: number
@@ -501,6 +507,7 @@ export async function getScholarshipApplications(
   if (filters.assigned) q.set('assigned', filters.assigned)
   if (filters.ready) q.set('ready', '1')
   if (filters.band) q.set('band', filters.band)
+  if (filters.withdrawal) q.set('withdrawal', filters.withdrawal)
   // The search term goes in the X-Search-Term header, never the URL (TD-421; adminFetch).
   if (filters.sort) { q.set('sort', filters.sort); q.set('dir', filters.dir || 'asc') }
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))

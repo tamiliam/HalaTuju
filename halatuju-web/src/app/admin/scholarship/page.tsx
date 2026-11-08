@@ -91,7 +91,7 @@ function StaffScholarshipList() {
   // Request #26 (owner ruling B): only the students whose parent phone needs a call — super/org_admin.
   const [parentCallF, setParentCallF] = useState(false)
   // The Overview's pending cards link here with ?status=&assigned=&ready=1&band= (ApplicationUrlFilters).
-  const { readyF, setReadyF, bandF, setBandF, urlFiltersRead } = useApplicationUrlFilters(statusF, setStatusF, assignedF, setAssignedF)
+  const { readyF, setReadyF, bandF, setBandF, withdrawalF, setWithdrawalF, urlFiltersRead } = useApplicationUrlFilters(statusF, setStatusF, assignedF, setAssignedF)
   const [search, setSearch] = useState('')
   const [q, setQ] = useState('') // debounced value actually sent to the API
   const [error, setError] = useState('')
@@ -144,6 +144,7 @@ function StaffScholarshipList() {
         assigned: assignedF || undefined,
         ready: readyF || undefined,
         band: bandF || undefined,
+        withdrawal: withdrawalF || undefined,
         parentCall: parentCallF ? 'needed' : undefined,
         q: q || undefined,
         page,
@@ -162,7 +163,7 @@ function StaffScholarshipList() {
       .finally(() => { if (current) setLoading(false) })
     return () => { current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, readyF, bandF, urlFiltersRead, parentCallF, q, page, pageSize, sort, sortDir])
+  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, readyF, bandF, withdrawalF, urlFiltersRead, parentCallF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 
@@ -307,7 +308,7 @@ function StaffScholarshipList() {
         )}
     </>
   )
-  const activeFilters = [source, bucket, statusF, assignedF, bandF].filter(Boolean).length + (parentCallF ? 1 : 0) + (readyF ? 1 : 0)
+  const activeFilters = [source, bucket, statusF, assignedF, bandF].filter(Boolean).length + (parentCallF ? 1 : 0) + (readyF ? 1 : 0) + (withdrawalF ? 1 : 0)
 
   return (
     <div>
@@ -321,7 +322,7 @@ function StaffScholarshipList() {
       </p>
 
       <ApplicationUrlChips readyF={readyF} bandF={bandF} onClearReady={() => { setReadyF(false); setPage(1) }}
-        onClearBand={() => { setBandF(''); setPage(1) }} />
+        onClearBand={() => { setBandF(''); setPage(1) }} withdrawalF={withdrawalF} onClearWithdrawal={() => { setWithdrawalF(''); setPage(1) }} />
 
       {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
 

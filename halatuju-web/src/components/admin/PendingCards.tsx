@@ -25,6 +25,8 @@ const META: Record<PendingKey, { href: string; label: string; small?: boolean; t
   // No page of its own for wallet credits: sponsors are where a credit is recorded and confirmed.
   wallet_credits: { href: '/admin/sponsors', label: 'admin.overview.walletCredits' },
   qc_awaiting: { href: '/admin/programme/overview', label: 'admin.overview.qcAwaiting' },
+  // A1.13b: the Applications list narrowed to cases with a pending withdrawal request (`?withdrawal=pending`).
+  award_withdrawals: { href: '/admin/scholarship?withdrawal=pending', label: 'admin.overview.awardWithdrawals' },
   my_open: { href: '/admin/scholarship?assigned=me&band=open', label: 'admin.overview.myOpen' },
   my_due_soon: { href: '/admin/scholarship?assigned=me&band=due_soon', label: 'admin.overview.myDueSoon', tone: 'caution' },
   my_overdue: { href: '/admin/scholarship?assigned=me&band=overdue', label: 'admin.overview.myOverdue', tone: 'critical' },

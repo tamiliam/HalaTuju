@@ -129,6 +129,7 @@ export type {
   AdminScholarshipListItem, AdminCompleteness, AdminInterviewSession, AdminSponsorProfile,
   AdminNudge, AdminScholarshipDetail, AdminScholarshipListData, GuardianCallOutcome,
 } from './admin-api/applications'
+export type { AwardWithdrawalRequest } from './admin-api/awardWithdrawal'
 
 // Request #55: an organisation admin's notes for the reviewer (append-only).
 export { getReviewerNotes, addReviewerNote } from './admin-api/reviewerNotes'
@@ -170,6 +171,7 @@ export type { AdminResolutionItem } from './admin-api/resolution'
 export {
   adminCountersignBursary, adminWitnessBursary, setAwardAmount, scheduleTranche,
   actOnDisbursement, setMaintenanceSubstate, closeApplication,
+  requestAwardWithdrawal, approveAwardWithdrawal, refuseAwardWithdrawal, cancelAwardWithdrawal,
 } from './admin-api/lifecycle'
 export type {
   MaintenanceSubstate, ClosureReason, AdminDisbursement, DisbursementAction,

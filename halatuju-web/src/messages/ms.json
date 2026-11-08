@@ -3401,7 +3401,8 @@
       "myOverdue": "Lewat",
       "mentees": "Mentee anda",
       "notMet": "Belum ditemui",
-      "askedHelp": "Meminta bantuan"
+      "askedHelp": "Meminta bantuan",
+      "awardWithdrawals": "Tarik balik untuk diputuskan"
     },
     "orgPage": {
       "nav": "Gambaran",
@@ -4149,7 +4150,8 @@
         "dueSoon": "Hampir tamat tempoh",
         "open": "Terbuka",
         "remove": "Buang penapis ini",
-        "me": "Ditugaskan kepada saya"
+        "me": "Ditugaskan kepada saya",
+        "withdrawalPending": "Tarik balik menunggu keputusan"
       },
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
       "allStatuses": "Semua status",
@@ -4969,6 +4971,72 @@
         "notSubmittedStatus": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
         "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },
+      "withdrawAward": {
+        "title": "Tarik balik anugerah ini",
+        "hint": "Minta anugerah ini ditarik balik. Tiada apa-apa berubah sehingga kakitangan lain meluluskannya. Jika diluluskan, kes kembali ke kumpulan calon, baki anugerah yang belum dibayar kembali ke baki penaja dan bayaran yang dijadualkan dihentikan.",
+        "action": "Minta tarik balik anugerah",
+        "dialogTitle": "Minta anugerah ini ditarik balik?",
+        "dialogHint": "Jelaskan sebabnya. Penyemak membaca penjelasan anda sebelum membuat keputusan. Ia disimpan pada kes bersama nama anda dan tarikhnya, untuk kakitangan sahaja: pelajar tidak akan melihatnya.",
+        "placeholder": "Mengapa anugerah ini patut ditarik balik? (kakitangan sahaja)",
+        "confirm": "Hantar permintaan",
+        "paidNote": "Wang telah pun dibayar bagi anugerah ini, jadi ia tidak boleh ditarik balik di sini. Hubungi pemilik platform.",
+        "pill": {
+          "pending": "Menunggu penyemak",
+          "yourApproval": "Menunggu kelulusan anda",
+          "approved": "Ditarik balik",
+          "refused": "Ditolak",
+          "cancelled": "Dibatalkan",
+          "expired": "Tamat tanpa keputusan"
+        },
+        "askedOn": "Anda meminta pada {date}. Tiada apa-apa berubah sehingga penyemak meluluskannya.",
+        "yourExplanation": "Penjelasan anda",
+        "checkersEmailed": "Para penyemak telah menerima e-mel. Jika tiada keputusan dalam 14 hari, permintaan ini tamat dengan sendirinya.",
+        "cancelRequest": "Batalkan permintaan",
+        "requestedBy": "Diminta oleh {name} pada {date}",
+        "theirExplanation": "Penjelasan peminta",
+        "fact": {
+          "award": "Anugerah",
+          "paid": "Dibayar setakat ini",
+          "freed": "Kembali ke baki penaja",
+          "stopped": "Bayaran dihentikan"
+        },
+        "approveNote": "Jika anda meluluskan, anugerah ditarik balik serta-merta. Wang kembali ke baki penaja. Pelajar menerima e-mel jika dia pernah dimaklumkan tentang anugerah itu.",
+        "refuseReasonLabel": "Sebab menolak (perlu hanya jika anda menolak)",
+        "approve": "Luluskan tarik balik",
+        "approveDialogTitle": "Luluskan tarik balik ini?",
+        "approveDialogHint": "Anugerah ditarik balik serta-merta. Tindakan ini tidak boleh dibatalkan. Anda boleh menambah nota untuk rekod (pilihan).",
+        "approvePlaceholder": "Nota untuk rekod (pilihan)",
+        "approveConfirm": "Luluskan dan tarik balik",
+        "refuse": "Tolak",
+        "selfNote": "Anda tidak boleh meluluskan permintaan yang anda buat sendiri.",
+        "someone": "seorang kakitangan",
+        "decided": {
+          "approved": "Diluluskan oleh {name} pada {date}. Anugerah telah ditarik balik.",
+          "refused": "Ditolak oleh {name} pada {date}. Anugerah kekal.",
+          "cancelled": "Dibatalkan oleh {name} pada {date}.",
+          "expired": "Tiada keputusan dibuat sebelum {date}, jadi permintaan tamat dengan sendirinya."
+        },
+        "explanationHeading": "Penjelasan",
+        "refusedReasonHeading": "Sebab menolak",
+        "noteHeading": "Catatan penyemak",
+        "error": {
+          "wrong_role": "Anda tidak boleh melakukan ini pada kes ini. Muat semula halaman untuk melihat status permintaan.",
+          "same_person": "Anda tidak boleh meluluskan permintaan yang anda buat sendiri. Penyemak lain mesti membuat keputusan.",
+          "no_checker": "Tiada orang lain dalam organisasi ini yang telah log masuk boleh meluluskan tarik balik anugerah. Minta pentadbir organisasi memberikan kebenaran itu kepada seseorang.",
+          "already_pending": "Permintaan untuk menarik balik anugerah ini sudah pun menunggu. Muat semula halaman untuk melihatnya.",
+          "not_pending": "Permintaan ini sudah diputuskan, dibatalkan atau tamat. Muat semula halaman untuk melihat statusnya.",
+          "not_awarded": "Kes ini bukan lagi berstatus dianugerahkan. Muat semula halaman untuk melihat statusnya.",
+          "stale": "Anugerah telah berubah sejak permintaan ini dibuat, jadi ia tidak boleh diluluskan. Tolaknya dan minta permintaan baharu dibuat.",
+          "has_payments": "Wang telah pun dibayar bagi anugerah ini, jadi ia tidak boleh ditarik balik di sini. Hubungi pemilik platform.",
+          "explanation_required": "Berikan penjelasan untuk menarik balik anugerah.",
+          "explanation_too_long": "Penjelasan itu terlalu panjang. Pendekkan dan cuba lagi.",
+          "reason_required": "Berikan sebab untuk menolak.",
+          "reason_too_long": "Sebab itu terlalu panjang. Pendekkan dan cuba lagi.",
+          "note_too_long": "Catatan itu terlalu panjang. Pendekkan dan cuba lagi.",
+          "not_found": "Permintaan ini tidak lagi wujud. Muat semula halaman untuk melihat status kes.",
+          "generic": "Sesuatu tidak kena. Muat semula halaman untuk melihat status permintaan sebelum mencuba lagi."
+        }
+      },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
         "factPass": "Lulus",
@@ -5467,7 +5535,11 @@
           "org_request_approved": "Meluluskan {subject}",
           "org_request_declined": "Menolak {subject}",
           "merchant_flag_opened": "Menanda {subject}",
-          "merchant_flag_closed": "Membuang tanda pada {subject}"
+          "merchant_flag_closed": "Membuang tanda pada {subject}",
+          "withdrawal_requested": "Meminta tarik balik {subject}",
+          "withdrawal_approved": "Meluluskan tarik balik {subject}",
+          "withdrawal_refused": "Menolak tarik balik {subject}",
+          "withdrawal_cancelled": "Membatalkan permintaan tarik balik {subject}"
         }
       }
     },
@@ -6672,7 +6744,8 @@
         "mentor_concern_raised": "{mentor} memberitahu pasukan tentang kebimbangan terhadap penerima biasiswa ini",
         "mentor_concern_handled": "Kebimbangan mentor ditandakan sebagai sudah ditangani",
         "session_logged_by_mentor": "Pertemuan direkodkan oleh mentor: {mode}, {minutes} min",
-        "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}"
+        "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}",
+        "award_withdrawn": "Anugerah ditarik balik (kakitangan sahaja) · {reason}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -8022,6 +8095,7 @@
           "award_confirmed": "Anugerah disahkan",
           "agreement_executed": "Perjanjian ditandatangani dan berkuat kuasa",
           "vircle_setup": "Sediakan dompet Vircle anda",
+          "award_withdrawn": "Tawaran anugerah anda telah ditarik balik",
           "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
           "letter_issued": "Surat telah dikeluarkan",
           "mentor_assigned": "Anda mempunyai mentor",
@@ -8058,6 +8132,7 @@
           "award_confirmed": "Apabila dia menerima anugerahnya (apabila tiada perjanjian ditandatangani di platform).",
           "agreement_executed": "Apabila semua pihak telah menandatangani. Salinan perjanjian yang ditandatangani dilampirkan.",
           "vircle_setup": "Apabila perjanjiannya berkuat kuasa: cara menyediakan dompet yang menerima bayaran bursari.",
+          "award_withdrawn": "Apabila penyemak meluluskan permintaan untuk menarik balik anugerah, sebelum sebarang wang dibayar. Ia tidak pernah membawa sebab kakitangan. Tidak dihantar jika pelajar belum pernah dimaklumkan tentang anugerah itu.",
           "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
           "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
           "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor.",
@@ -8276,6 +8351,14 @@
       "payments_approve": {
         "name": "Luluskan larian pembayaran",
         "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya."
+      },
+      "award_withdraw_request": {
+        "name": "Minta tarik balik anugerah",
+        "desc": "Meminta anugerah ditarik balik, dengan penjelasan. Kakitangan lain mesti meluluskannya sebelum apa-apa berubah."
+      },
+      "award_withdraw_approve": {
+        "name": "Luluskan tarik balik anugerah",
+        "desc": "Meluluskan atau menolak permintaan untuk menarik balik anugerah. Tidak sekali-kali bagi permintaan yang dibuatnya sendiri."
       }
     },
     "permEditor": {
@@ -8304,7 +8387,10 @@
         "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama.",
-        "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan."
+        "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
+        "withdraw_request_and_approve": "{name} boleh meminta tarik balik anugerah dan meluluskannya, tetapi tidak sekali-kali permintaannya sendiri.",
+        "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
+        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
     },
@@ -9387,7 +9473,9 @@
           "countersign_pending": "Perjanjian menunggu tandatangan balas",
           "agreement_executed": "Salinan perjanjian yang telah lengkap ditandatangani",
           "invoice": "Invois anda",
-          "receipt": "Resit untuk bayaran anda"
+          "receipt": "Resit untuk bayaran anda",
+          "withdrawal_request": "Tarik balik anugerah menunggu kelulusan",
+          "withdrawal_outcome": "Permintaan tarik balik anugerah anda telah diputuskan"
         },
         "when": {
           "payment_approval": "Apabila larian pembayaran sedia untuk tandatangan terakhirnya.",
@@ -9399,7 +9487,9 @@
           "countersign_pending": "Apabila pelajar dan penjamin (serta saksi, jika ada) telah menandatangani; sekali lagi sebagai peringatan.",
           "agreement_executed": "Apabila perjanjian pelajar telah lengkap ditandatangani.",
           "invoice": "Apabila HalaTuju menghantar invois kepada organisasi anda.",
-          "receipt": "Apabila HalaTuju merekodkan bayaran organisasi anda."
+          "receipt": "Apabila HalaTuju merekodkan bayaran organisasi anda.",
+          "withdrawal_request": "Apabila kakitangan meminta anugerah ditarik balik.",
+          "withdrawal_outcome": "Apabila penyemak meluluskan atau menolak permintaan itu."
         },
         "to": {
           "payment_approval": "Sesiapa yang boleh meluluskan pembayaran dan belum menandatanganinya; jika tiada, pentadbir organisasi.",
@@ -9411,7 +9501,9 @@
           "countersign_pending": "Alamat yang dinamakan pada perjanjian dana itu (Kontrak); jika tiada, HalaTuju.",
           "agreement_executed": "Alamat yang dinamakan pada perjanjian dana itu (Kontrak); jika tiada, HalaTuju.",
           "invoice": "Alamat pengebilan organisasi anda.",
-          "receipt": "Alamat pengebilan organisasi anda."
+          "receipt": "Alamat pengebilan organisasi anda.",
+          "withdrawal_request": "Semua dalam organisasi yang boleh meluluskan tarik balik anugerah dan telah log masuk, kecuali orang yang meminta.",
+          "withdrawal_outcome": "Orang yang meminta tarik balik itu."
         }
       },
       "terms": {

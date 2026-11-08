@@ -143,9 +143,12 @@ def record_call(profile, *, application, outcome, consent, number='', parent_nam
         # off record_call is exactly as before.
         signing_held = (getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False)
                         and needs_parent_call(locked))
-        # Lock order (A1.6 review): the offer rows are locked HERE, before the call row is
-        # inserted (that insert key-share-locks the application row), so this transaction takes
-        # offer before application — the same order as the lapse job — and cannot deadlock it.
+        # Lock order (A1.13 third review; `status_lock.py`): the profile, then this student's
+        # APPLICATION rows in pk order, then her offer rows — the house order (application before
+        # sponsorship) that the lapse job, the withdrawal and the cancel all take. The call-row
+        # insert below only key-share-locks an application this transaction already holds.
+        if signing_held:
+            _lock_applications_of(locked, application)
         armed_offers = _lock_armed_offers(locked) if signing_held else None
         old_name, old_phone = current_contact(locked)
         if outcome == 'parent_number_corrected':
@@ -175,10 +178,22 @@ def record_call(profile, *, application, outcome, consent, number='', parent_nam
         return row
 
 
+def _lock_applications_of(profile, application=None):
+    """Lock every application of this student (and the call's own ``application``, if another), in
+    pk order, BEFORE `_lock_armed_offers` — step 2 of the lock order in `status_lock.py`, ahead of
+    step 4 (the Sponsorship rows). A lock for order only; no status is judged."""
+    from django.db.models import Q
+    from .models import ScholarshipApplication
+    which = Q(profile_id=profile.pk) | Q(pk=getattr(application, 'pk', None) or 0)
+    list(ScholarshipApplication.objects.select_for_update().filter(which).order_by('pk')
+         .values_list('pk', flat=True))
+
+
 def _lock_armed_offers(profile):
     """Lock (FOR UPDATE OF the offer rows ONLY — `of=('self',)`, so the joined application rows
-    are not locked) every ARMED open offer of this student, in pk order. Returns their application
-    ids. Model instances, not `values_list`: Django drops the OF clause for a values query."""
+    are not locked here; `_lock_applications_of` has already locked them, in the house order)
+    every ARMED open offer of this student, in pk order. Returns their application ids. Model
+    instances, not `values_list`: Django drops the OF clause for a values query."""
     from .models import Sponsorship
     return {sp.application_id for sp in (
         Sponsorship.objects.select_for_update(of=('self',))

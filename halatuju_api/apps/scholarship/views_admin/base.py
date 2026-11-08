@@ -28,6 +28,33 @@ from ..models import ScholarshipApplication
 from ..services import review_writes_closed
 
 
+def b40_scope(admin):
+    """B40 Applications access by PERMISSION (request #39 Sprint 3; the presets give exactly
+    what the roles gave before — `apps/courses/tests/test_permission_presets.py`):
+      'all'      — `see_all` (super, admin, qc, org_admin): every application in scope, read
+      'assigned' — `review` without `see_all` (reviewer): only the applicants assigned to them
+      'none'     — neither (partner, finance): B40 is not their page
+    'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
+    see only their own org). `qc` holders are org-wide WRITERS via _can_review_app
+    (review-all within their org); a plain `see_all` stays assigned-only for writes.
+
+    The `finance` PRESET is 'none' BY DECISION (role matrix 2026-07-23): it never sees an
+    applicant file, document, income figure or verdict; its only student data is the
+    Payments funding-summary allowlist, which does not read this scope. ⚠ A Finance person
+    GIVEN `review` reads the files of the students ASSIGNED to them, and nothing else (owner,
+    2026-10-19, open question 1 — reachable only once a permission set is saved).
+    """
+    if admin is None:
+        return 'none'
+    # Team tables T5b: `qc` is self-sufficient — it reads ALL (`qc` brings `see_all` in `resolve`,
+    # `staff_permissions.IMPLIES`; named here too so this door never hangs on that one line).
+    if admin.has_perm('see_all') or admin.has_perm('qc'):
+        return 'all'
+    if admin.has_perm('review'):
+        return 'assigned'
+    return 'none'
+
+
 class _AdminBase(PartnerAdminMixin, APIView):
     """Shared 403-if-not-admin guard + own-application lookup."""
 
@@ -62,30 +89,9 @@ class _AdminBase(PartnerAdminMixin, APIView):
             'profile', 'cohort', 'programme', 'source').filter(pk=pk).first()
 
     def _b40_scope(self, admin):
-        """B40 Applications access by PERMISSION (request #39 Sprint 3; the presets give exactly
-        what the roles gave before — `apps/courses/tests/test_permission_presets.py`):
-          'all'      — `see_all` (super, admin, qc, org_admin): every application in scope, read
-          'assigned' — `review` without `see_all` (reviewer): only the applicants assigned to them
-          'none'     — neither (partner, finance): B40 is not their page
-        'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
-        see only their own org). `qc` holders are org-wide WRITERS via _can_review_app
-        (review-all within their org); a plain `see_all` stays assigned-only for writes.
-
-        The `finance` PRESET is 'none' BY DECISION (role matrix 2026-07-23): it never sees an
-        applicant file, document, income figure or verdict; its only student data is the
-        Payments funding-summary allowlist, which does not read this scope. ⚠ A Finance person
-        GIVEN `review` reads the files of the students ASSIGNED to them, and nothing else (owner,
-        2026-10-19, open question 1 — reachable only once a permission set is saved).
-        """
-        if admin is None:
-            return 'none'
-        # Team tables T5b: `qc` is self-sufficient — it reads ALL (`qc` brings `see_all` in `resolve`,
-        # `staff_permissions.IMPLIES`; named here too so this door never hangs on that one line).
-        if admin.has_perm('see_all') or admin.has_perm('qc'):
-            return 'all'
-        if admin.has_perm('review'):
-            return 'assigned'
-        return 'none'
+        """The B40 read scope — `b40_scope` (module level, so a non-view rule such as
+        `award_withdrawal_chain` asks the SAME question the case detail asks)."""
+        return b40_scope(admin)
 
     # ── Organisation fence (platform Sprint 3a) ────────────────────────────────
     # The tenant wall on the B40 admin surface. Access control keys off

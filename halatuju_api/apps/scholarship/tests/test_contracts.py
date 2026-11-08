@@ -295,7 +295,11 @@ class TestReaders(TestCase):
         profile = StudentProfile.objects.create(supabase_user_id='rd-1', grades={}, exam_type='spm')
         app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=profile, status='awarded', chosen_pathway='matric')
-        BursaryAgreement.objects.create(application=app, version='pinned', template=pinned)
+        # SIGNED by both parties, as `bursary.sign_agreement` always writes it (A1.13 fourth review:
+        # an unsigned, unlinked row is a withdrawal's VOID row, and that pins nothing).
+        signed = datetime.datetime(2026, 7, 1, tzinfo=datetime.timezone.utc)
+        BursaryAgreement.objects.create(application=app, version='pinned', template=pinned,
+                                        student_signed_at=signed, guarantor_signed_at=signed)
         # The signed agreement's pinned template wins over the gift's active one.
         self.assertEqual(contract_scope.active_template_for(app.programme), active)
         self.assertEqual(contract_scope.template_for_application(app), pinned)

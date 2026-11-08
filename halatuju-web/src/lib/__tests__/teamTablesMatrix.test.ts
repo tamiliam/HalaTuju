@@ -28,8 +28,9 @@ const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBef
 const WRITE = !!process.env.T1_WRITE_MATRIX
 
 const ALL = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
-  'payments_approve', 'manage_team']
-const LEAD = ['see_all', 'qc', 'spending', 'manage_team']
+  'payments_approve', 'award_withdraw_request', 'award_withdraw_approve', 'manage_team']
+// A1.13b: the lead tier gained award_withdraw_approve (the API's LEAD_TIER); no cell moves for it.
+const LEAD = ['see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team']
 
 interface Payload {
   role: string

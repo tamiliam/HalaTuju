@@ -42,7 +42,8 @@ TABLES = (ADMINS, REVIEWERS, MENTORS)
 
 #: The keys that put a TEAM member at the Admins table (owner ruling 2). `manage_team` is lead-tier only
 #: (`LEAD_TIER_ONLY`) and never resolves for a team member; it is named for completeness.
-ADMIN_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'manage_team')
+ADMIN_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+              'award_withdraw_request', 'award_withdraw_approve', 'manage_team')   # A1.13b: + the two seats
 #: The keys that put a TEAM member at the Reviewers table.
 REVIEWER_KEYS = ('review', 'qc')
 #: The preset labels that ARE a table by themselves (whatever a custom set later says).

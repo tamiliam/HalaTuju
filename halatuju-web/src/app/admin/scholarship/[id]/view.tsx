@@ -114,6 +114,7 @@ import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
+import { WithdrawAwardCard } from './view/WithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { closeErrorKey, stageStatus } from '@/lib/closeOffer'
@@ -1091,6 +1092,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
+      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

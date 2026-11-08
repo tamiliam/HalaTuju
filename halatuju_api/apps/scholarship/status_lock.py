@@ -19,9 +19,17 @@ LOCK ORDER (one order everywhere, so two writers can never deadlock):
   3. the SPONSOR row (``lock_sponsor_wallet``, A1.5), before a wallet balance is read for a spend;
   4. the rows that hang off them (a Sponsorship, a Disbursement / tranche).
 A writer may skip a step, never reverse two. ``closure.close_application`` takes only the
-application row. ``sponsorship.cancel_offer`` and the offer-lapse job (``lapse_expired_offers``)
-lock a Sponsorship together with its application and never take the sponsor row, so they cannot
-wait on a fund that holds it. The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
+application row. ``sponsorship.cancel_offer``, the award-email job and the offer-lapse job
+(``lapse_expired_offers``) take the APPLICATION first, then the Sponsorship (``of=('self',)``), via
+``lock_case_of_sponsorship`` — A1.13 reviews, matching the award withdrawal; the
+parent-call record (``parent_call.record_call``) locks the student's applications in pk order
+before her offer rows (A1.13 third review: until then the lapse job and the call took the
+Sponsorship first, the reverse of the withdrawal, and could deadlock it). None of these take the
+sponsor row, so they cannot wait on a fund that holds it.
+The award withdrawal (``award_withdrawal_chain``, A1.13b maker and checker) takes the APPLICATION,
+then its WITHDRAWAL REQUEST row, then (approval only) the holding Sponsorships in pk order — refuse
+and cancel take the application too, for order only, though they never touch the case.
+A bursary agreement row comes after its application (``agreement_guard``). The sponsor lock is FOR NO KEY UPDATE: a Sponsorship insert's
 foreign-key check (FOR KEY SHARE on the sponsor) does not wait on it.
 
 ⚠ SQLite (the test database) ignores ``select_for_update``. The tests therefore prove the RE-READ
@@ -94,6 +102,16 @@ def lock_applications_for(applications, allowed_statuses):
             if row.status not in allowed_statuses:
                 refused.append(app)
     return refused
+
+
+def lock_case_of_sponsorship(**sponsorship):
+    """Lock the APPLICATION of the Sponsorship matching ``sponsorship`` (filter kwargs), whatever its
+    status: a lock for ORDER only (step 2 before step 4), taken before the caller locks and re-reads
+    the Sponsorship; the caller's own checks decide. No match: nothing is locked (A1.13 review)."""
+    from .models import Sponsorship
+    app_id = Sponsorship.objects.filter(**sponsorship).values_list('application_id', flat=True).first()
+    if app_id is not None:
+        lock_application_for(app_id, tuple(c for c, _ in ScholarshipApplication.STATUS_CHOICES))
 
 
 def lock_sponsor_wallet(sponsor):

@@ -39,9 +39,14 @@ def active_template_for(programme):
 def template_for_application(application):
     """The template governing this application: the signed agreement's PINNED template if there
     is one (a signed document never changes under the student), else the ACTIVE template of the
-    application's own gift — or ``None`` when that gift has none."""
+    application's own gift — or ``None`` when that gift has none.
+
+    A1.13 fourth review: a VOID agreement (a withdrawal cleared its signatures) pins nothing. After
+    a re-award the student is quizzed on, signs and is paid under the gift's CURRENT template, never
+    the superseded (perhaps archived) one the dead row still names."""
+    from .agreement_guard import is_void
     agreement = getattr(application, 'bursary_agreement', None)
-    if agreement is not None and agreement.template_id:
+    if agreement is not None and agreement.template_id and not is_void(agreement):
         return agreement.template
     return active_template_for(getattr(application, 'programme', None))
 

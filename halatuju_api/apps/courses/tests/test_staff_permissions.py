@@ -101,8 +101,9 @@ class Resolve(TestCase):
         self.assertFalse(sp.is_custom(None))
         self.assertFalse(sp.is_lead_tier(None))
 
-    def test_the_catalogue_is_eight_keys_and_presets_use_only_them(self):
-        self.assertEqual(len(sp.CATALOGUE), 8)
+    def test_the_catalogue_is_ten_keys_and_presets_use_only_them(self):
+        # A1.13b adds the award withdrawal's two seat keys (award_withdraw_request / _approve).
+        self.assertEqual(len(sp.CATALOGUE), 10)
         for preset in list(sp.PRESETS.values()) + [sp.LEAD_TIER]:
             self.assertTrue(set(preset) <= set(sp.CATALOGUE))
         # no team preset holds a lead-tier-only key, and every preset keeps qc => see_all

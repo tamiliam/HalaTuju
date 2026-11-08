@@ -29,7 +29,7 @@ at 17), and nothing from `models*` at import time — `PartnerAdmin.has_perm` li
 delegates here, so scholarship callers write `admin.has_perm('qc')` with no new import statement.
 """
 
-#: The eight keys, in the order the screen will group them (Students, then Money, then the team).
+#: The ten keys, in the order the screen will group them (Students, then Money, then the team).
 CATALOGUE = (
     'review',            # can be ASSIGNED cases; works on the cases assigned to them (files included)
     'see_all',           # reads every application in the organisation (no writes unless assigned)
@@ -38,6 +38,10 @@ CATALOGUE = (
     'payments_prepare',  # create / edit / cancel runs; signs as MAKER
     'payments_check',    # the optional middle signature (armed while an active member holds it)
     'payments_approve',  # the final signature, which completes the run and releases the money
+    # A1.13b (owner ruling 2026-11-08): withdrawing an award is MAKER and CHECKER. NO preset holds either
+    # key; the lead tier holds only the approve seat (`award_withdrawal_chain`). Never a super.
+    'award_withdraw_request',  # asks for an award to be withdrawn, with an explanation (the MAKER)
+    'award_withdraw_approve',  # approves or refuses somebody else's request (the CHECKER)
     'manage_team',       # invite / resend / revoke / restore / delete / change role (lead tier only)
 )
 
@@ -81,7 +85,8 @@ PRESETS = {
 #: run under the FALLBACK when nobody else can) are not catalogue keys: they stay on
 #: `role == 'org_admin'` (`is_lead_tier`).
 LEAD_ROLE = 'org_admin'
-LEAD_TIER = ('see_all', 'qc', 'spending', 'manage_team')   # Sprint 2: payments_approve removed
+LEAD_TIER = ('see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team')   # Sprint 2: payments_approve
+# removed; A1.13b: the withdrawal CHECKER seat added (the org admin approves, never requests)
 
 #: Team tables T2 (owner ruling 5, lead ruling 2026-11-03): the ONE key an organisation admin may hold
 #: beyond the fixed tier — `review`, so they sit at the Reviewers table and can be assigned cases. It is
@@ -182,8 +187,17 @@ def preset_diff(admin):
     return [k for k in held if k not in preset], [k for k in preset if k not in held]
 
 
-def holders(organisation, key):
-    """The organisation's ACTIVE staff who hold `key`, as a list.
+def org_staff(organisation):
+    """The organisation's ACTIVE staff, never a super, in id order — the ONE read `holders` filters.
+    A caller asking for several keys of one organisation reads this once and passes it as `staff`."""
+    from .models_staff import PartnerAdmin
+    return list(PartnerAdmin.objects.filter(owning_organisation=organisation, is_active=True)
+                .exclude(role='super').order_by('id'))
+
+
+def holders(organisation, key, staff=None):
+    """The organisation's ACTIVE staff who hold `key`, as a list. `staff`, when given, is that
+    organisation's `org_staff` already read (A1.13b: one read for both payment keys).
 
     ⚠ IN PYTHON, NOT A QUERYSET LOOKUP, and on purpose: Django's JSONField `__contains` is not
     supported on SQLite, which the test suite runs on, so a lookup would pass on one database and
@@ -197,9 +211,8 @@ def holders(organisation, key):
     if organisation is None:
         return []
     holds(None, key)                       # validates the key, so a typo raises here too
-    from .models_staff import PartnerAdmin
-    staff = (PartnerAdmin.objects.filter(owning_organisation=organisation, is_active=True)
-             .exclude(role='super').order_by('id'))
+    if staff is None:
+        staff = org_staff(organisation)
     return [a for a in staff if key in resolve(a)]
 
 
