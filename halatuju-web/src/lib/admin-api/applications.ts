@@ -525,11 +525,21 @@ export async function getScholarshipApplications(
 
 // ── Phase C: assignment, interview capture, request-more-docs ───────────────
 
+/** The assign reply (A2.3, TD-519): who holds the case now, not the whole case. A page that shows
+ *  the case reloads it (`getScholarshipApplication`). */
+export interface AssignResult {
+  id: number
+  status: string
+  assigned_to_id: number | null
+  assigned_to_name: string | null
+  assigned_at: string | null
+}
+
 /** Assign (or unassign with null) a reviewer to an application. F7: super-only,
  *  audited, gated on readiness for the first assignment. Throws with the server's
  *  `code` (not_ready / not_reviewer / bad_assignee) on a 400. */
 export async function assignApplication(id: number, adminId: number | null, options?: ApiOptions) {
-  return adminMutate<AdminScholarshipDetail>(
+  return adminMutate<AssignResult>(
     `/api/v1/admin/scholarship/applications/${id}/assign/`, 'POST', { reviewer_id: adminId }, options)
 }
 

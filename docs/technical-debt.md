@@ -397,6 +397,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
 - **TD-589** - A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
 
+- **TD-586** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
+- **TD-590** - A queued upload read that fails AFTER its paid call is retried in full, so the retry pays again - low
+
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
   awarded count (`a8ccea58`), four of ten small changes in one window: each was cured by serving the
@@ -8294,6 +8297,8 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
 
+**Progress 2026-11-07 (A2.3, SP-03 and SP-04).** Upload: the read leaves the request (`upload_read.py`; the web asks `/read/` at once, the `read-documents` cron is the safety net). Assign: the emails go through the `assign-emails` cron (`assign_notify.py`) and the reply is slim, 15 queries, with a budget test (`test_assign_query_budget.py`). Migration 0205, not run. The first-assign Gemini draft is still inline (TD-586). **Left:** interview submit (SP-05) and the income coach cache (SP-06).
+
 ### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; applying the SEC-11 SQL is the owner's step, TD-550)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (SEC-08 and 09 confirmed; SEC-11 and 12 read, not run).** (1) `profile_claim._within` does a cache get then set, not an atomic add. (2) `courses/views.py` ~1418 writes an email address into a WARNING line. (3) `public.partner_organisations` has an "Allow public read" policy (Security Advisor 0012) exposing contact names, emails and phones. (4) No CSP, X-Frame-Options or Referrer-Policy on the web; HSTS is 30 days on the API. **Fix:** atomic add; log the user id; tighten the policy; add a `headers()` block. *(A · S)*
@@ -8548,3 +8553,11 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-589] A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
 
 **Raised 2026-11-07 by the A2.1 review (not fixed).** A finalise that fails because Gemini fails can only be cleared by a reopen, which `close_reopen_with_change` logs as a reviewer correction (`resulted_in_change=True`), so it counts against the reviewer though Gemini failed. **Fix:** a web control for the finalise-profile endpoint, or a reopen reason that does not count as a correction. *(A · S)*
+
+### [TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low
+
+**Raised 2026-11-07 by A2.3.** When `CHECK2_AUTO_GENERATE` is on, the first assign of a case still calls Gemini for the sponsor-profile draft before it replies, so that one assign can stay slow after A2.3 moved the emails out. Left as it is on purpose: the owner has not decided whether the draft should wait for the cron. **Fix (once decided):** queue the draft the same way as the assign emails, or keep it inline and accept the wait. *(B · S)*
+
+### [TD-590] A queued upload read that fails after its paid call pays again on the retry - low
+
+**Raised 2026-11-08 by the A2.3 adversarial review.** `upload_read.run_read` retries the whole `read_and_judge` when it raises (up to `MAX_ATTEMPTS` = 3). If the failure comes AFTER Vision OCR or Gemini extraction has run (say in the promote decision or the resolution sync), the retry makes the same paid call again: at worst three paid reads for one upload. No code change in A2.3 (the read must not change). **Fix:** on a retry, skip the paid step when the row already carries a read from this attempt's upload (for example `vision_run_at` / `vision_fields_run_at` set after `uploaded_at`) and go straight to the judge. *(B · S)*

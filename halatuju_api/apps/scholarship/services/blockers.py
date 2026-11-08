@@ -90,14 +90,28 @@ REPROCESS_ATTEMPTED = 'reprocess_attempted'
 
 
 def _stuck_unread_documents(limit):
-    from django.db.models import Q
+    from django.db.models import Exists, F, OuterRef, Q
     from ..results_review import SLIP_REQUEST_CODE
+    # A2.3 review: an IC that is superseded AND has a later document over it (it was replaced, or
+    # its read was dropped because a newer upload in the slot was decided) is not stuck — reading
+    # it would be a paid Vision call nobody's verdict uses. A staged IC still the slot's newest
+    # attempt keeps its sweep, as before.
+    later_in_slot = ApplicantDocument.objects.filter(
+        application_id=OuterRef('application_id'), doc_type=OuterRef('doc_type'),
+        household_member=OuterRef('household_member'), request_code=OuterRef('request_code'),
+        id__gt=OuterRef('id'))
+    replaced_ic = Q(doc_type__in=('ic', 'parent_ic'), superseded_at__isnull=False) & (
+        Q(superseded_by_id__gt=F('id')) | Q(Exists(later_in_slot)))
     return list(ApplicantDocument.objects
                 .filter(Q(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
                         | Q(doc_type__in=_SELF_HEAL_READ_TYPES, vision_run_at__isnull=True,
                             vision_fields_run_at__isnull=True, superseded_at__isnull=True,
                             vision_fields={}))
                 .exclude(request_code=SLIP_REQUEST_CODE)   # S4a: a results slip is never machine-read
+                # A2.3: a queued upload is not stuck — the read-documents queue owns it (a 'failed'
+                # one, read three times without finishing, is the sweep's again).
+                .exclude(read_state='pending')
+                .exclude(replaced_ic)
                 .order_by('uploaded_at')[:limit])
 
 

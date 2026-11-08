@@ -1573,6 +1573,7 @@
       },
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
       "uploadIncomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
+      "stillReading": "Kami masih membaca {count} muat naik anda. Anda boleh teruskan; muat semula halaman ini dalam beberapa minit untuk melihat hasilnya.",
       "deleteError": "Tidak dapat membuang dokumen.",
       "assist": {
         "ok": "Nampak baik — kami baca dokumen ini dan butirannya sepadan dengan anda.",
@@ -8499,6 +8500,8 @@
         "read-outage-start": "Amaran gangguan bacaan",
         "reprocess-ic-vision": "Bacaan semula dokumen tersekat",
         "notify-contact-submissions": "Makluman borang hubungan",
+        "read-documents": "Membaca dokumen yang dimuat naik",
+        "assign-emails": "E-mel penugasan",
         "interview-reminders": "Peringatan temu duga",
         "application-nudges": "Gesaan permohonan",
         "purge-referrals": "Pembersihan rujukan",

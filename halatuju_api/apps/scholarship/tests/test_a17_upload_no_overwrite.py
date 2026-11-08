@@ -22,6 +22,7 @@ from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship.models import ApplicantDocument, OrgRequest
 from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 STUDENT = 'a17-student'
@@ -146,7 +147,7 @@ class TestWrongTypeOrOversizeRefusedAtRecord(_Base):
                    'size': settings.MAX_DOC_SIZE_BYTES + 1}, 'file_too_large'))
         for extra, code in cases:
             with self.subTest(code=code, ct=extra['content_type']):
-                r = self.client.post('/api/v1/scholarship/documents/', {
+                r = post_doc(self.client, {
                     'doc_type': 'ic', 'storage_path': issued_key(self.app, 'ic', code), **extra,
                 }, format='json')
                 self.assertEqual(r.status_code, 400)

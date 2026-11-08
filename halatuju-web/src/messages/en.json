@@ -1573,6 +1573,7 @@
       },
       "uploadError": "Upload failed. Please try again.",
       "uploadIncomplete": "The file didn't finish uploading. Please try again.",
+      "stillReading": "We are still reading {count} of your uploads. You can carry on; refresh this page in a few minutes to see the result.",
       "deleteError": "Could not remove the document.",
       "assist": {
         "ok": "Looks good — we read this document and the details match you.",
@@ -8499,6 +8500,8 @@
         "read-outage-start": "Read outage alert",
         "reprocess-ic-vision": "Re-reading stuck documents",
         "notify-contact-submissions": "Contact form alerts",
+        "read-documents": "Reading uploaded documents",
+        "assign-emails": "Assignment emails",
         "interview-reminders": "Interview reminders",
         "application-nudges": "Application nudges",
         "purge-referrals": "Referral clean-up",

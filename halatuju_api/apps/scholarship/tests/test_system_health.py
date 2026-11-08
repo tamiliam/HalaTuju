@@ -205,6 +205,7 @@ class CadenceRegistry(SimpleTestCase):
             'spending-ingest', 'sync-vircle-sheet', 'vision-outage',
             'backup-documents', 'course-data-check', 'partner-digests', 'sponsor-digests',
             'issue-monthly-invoices', 'refresh-reminder',
+            'read-documents', 'assign-emails',   # A2.3
         })
         self.assertEqual(EXPECTED_CADENCE['decision-emails'], EVERY_15_MIN)
         self.assertEqual(EXPECTED_CADENCE['issue-monthly-invoices'], MONTHLY)

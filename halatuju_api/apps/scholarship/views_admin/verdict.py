@@ -536,4 +536,12 @@ class AdminAssignReviewerView(_AdminBase):
             assign_reviewer(app, reviewer=reviewer, by_admin=admin)
         except AssignmentError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(_detail_payload(app, admin))
+        # A2.3 / TD-519: a SLIM reply. The full case payload (`_detail_payload`, hundreds of queries)
+        # cost the officer seconds on every assign; the case page reloads the case itself.
+        assignee = app.assigned_to
+        return Response({
+            'id': app.id, 'status': app.status,
+            'assigned_to_id': assignee.id if assignee else None,
+            'assigned_to_name': assignee.name if assignee else None,
+            'assigned_at': app.assigned_at,
+        })

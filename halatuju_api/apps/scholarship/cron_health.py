@@ -39,6 +39,8 @@ EXPECTED_CADENCE = {
     'decision-emails': EVERY_15_MIN,         # Scheduler: release-decisions-15m
     'interview-reminders': EVERY_15_MIN,
     'notify-contact-submissions': EVERY_15_MIN,
+    'read-documents': EVERY_15_MIN,          # ⚠ NEW in A2.3: create the Scheduler job
+    'assign-emails': EVERY_15_MIN,           # ⚠ NEW in A2.3: create the Scheduler job
     # hourly
     'announcement-emails': HOURLY,           # ⚠ NEW in maintenance S8: create the Scheduler job
     'survey-emails': HOURLY,                 # ⚠ NEW in maintenance S9: create the Scheduler job
