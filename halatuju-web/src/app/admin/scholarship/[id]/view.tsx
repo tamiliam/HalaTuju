@@ -491,7 +491,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const doAssign = async (adminId: number | null) => {
     if (!token) return
     setBusy('assign'); setError('')
-    try { setApp(await assignApplication(id, adminId, { token })) }
+    // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page.
+    try { await assignApplication(id, adminId, { token }); setApp(await getScholarshipApplication(id, { token })) }
     catch (e) {
       const code = e instanceof Error ? e.message : ''
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
@@ -603,8 +604,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       } else if (finalise) {
         const fr = result.finalise_result
         if (fr && fr.ok) {
-          // The ONLY truly-complete outcome: verdict recorded AND final profile generated.
-          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseOk')); setVerdictMsgTone('ok')
+          // Verdict recorded and the final profile queued (A2.1: written in the background, `pending`).
+          setVerdictMsg(t(fr.pending ? 'admin.scholarship.recordVerdict.finalisePending' : 'admin.scholarship.recordVerdict.finaliseOk')); setVerdictMsgTone('ok')
         } else {
           // Saved, but NOT finalised — work is incomplete. Amber, not green.
           // `engine_error` = the AI step failed; it is not a missing draft (request #61).

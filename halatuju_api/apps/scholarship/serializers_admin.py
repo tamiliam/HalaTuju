@@ -189,7 +189,7 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
         fields = [
             'draft_markdown', 'edited_markdown', 'current_markdown', 'status',
             'model_used', 'generated_at', 'published_at', 'updated_at',
-            'final_markdown', 'final_model_used', 'finalised_at',
+            'final_markdown', 'final_model_used', 'finalised_at', 'finalise_state',  # A2.1: '' / pending / failed; A2.3b: drafting
             # Phase E2 anonymous (sponsor-pool) profile — admin-facing here.
             'anon_markdown', 'anon_model_used', 'anon_generated_at',
             'anon_published', 'anon_published_at',

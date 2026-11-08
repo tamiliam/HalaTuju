@@ -152,6 +152,16 @@ class ApplicantDocument(models.Model):
         'self', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='supersedes',
     )
+    # ── A2.3 / TD-519: the read queue (`upload_read.py`) ───────────────────
+    # An upload that needs a paid read (Vision / Gemini) is recorded at once and READ AFTERWARDS:
+    # 'pending' until the read and the promote decision have run, '' after (and for every row the
+    # old image wrote), 'failed' after MAX_ATTEMPTS. `read_plan` holds what the upload decided
+    # before the read ({staged, stale_ids, existing_live}), so the promote decision is the same one
+    # the request used to take. `db_default` keeps the still-serving old image able to insert.
+    read_state = models.CharField(max_length=10, blank=True, default='', db_default='')
+    read_plan = models.JSONField(null=True, blank=True)
+    read_claimed_at = models.DateTimeField(null=True, blank=True)
+    read_attempts = models.PositiveSmallIntegerField(default=0, db_default=0)
 
     class Meta:
         db_table = 'applicant_documents'

@@ -133,7 +133,12 @@ describe('assigning a reviewer', () => {
     const picker = assignPicker('assignTitle')
     expect(picker.value).toBe('')
 
-    api.assignApplication.mockResolvedValue(buildApplicationDetail('assigned', {
+    // A2.3: the assign reply is slim; the page reloads the case, and THAT names the reviewer.
+    api.assignApplication.mockResolvedValue({
+      id: 7, status: 'assigned', assigned_to_id: OTHER_ADMIN_ID,
+      assigned_to_name: 'Test Reviewer 05', assigned_at: '2026-11-07T00:00:00Z',
+    })
+    api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('assigned', {
       assigned_to_id: OTHER_ADMIN_ID, assigned_to_name: 'Test Reviewer 05',
     }))
     fireEvent.change(picker, { target: { value: String(OTHER_ADMIN_ID) } })

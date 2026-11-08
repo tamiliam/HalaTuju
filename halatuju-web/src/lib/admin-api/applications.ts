@@ -97,6 +97,10 @@ export interface AdminSponsorProfile {
   final_markdown: string
   final_model_used: string
   finalised_at: string | null
+  // A2.1: '' none, 'pending' being written in the background, 'failed' after the retries.
+  // A2.3b: 'drafting' = the first-assign draft is being written in the background (no text yet).
+  // Optional: an older API image does not send it.
+  finalise_state?: '' | 'pending' | 'failed' | 'drafting'
   // Phase E2 — the ANONYMOUS, sponsor-pool-facing profile (generate -> publish).
   anon_markdown: string
   anon_model_used: string
@@ -522,11 +526,21 @@ export async function getScholarshipApplications(
 
 // ── Phase C: assignment, interview capture, request-more-docs ───────────────
 
+/** The assign reply (A2.3, TD-519): who holds the case now, not the whole case. A page that shows
+ *  the case reloads it (`getScholarshipApplication`). */
+export interface AssignResult {
+  id: number
+  status: string
+  assigned_to_id: number | null
+  assigned_to_name: string | null
+  assigned_at: string | null
+}
+
 /** Assign (or unassign with null) a reviewer to an application. F7: super-only,
  *  audited, gated on readiness for the first assignment. Throws with the server's
  *  `code` (not_ready / not_reviewer / bad_assignee) on a 400. */
 export async function assignApplication(id: number, adminId: number | null, options?: ApiOptions) {
-  return adminMutate<AdminScholarshipDetail>(
+  return adminMutate<AssignResult>(
     `/api/v1/admin/scholarship/applications/${id}/assign/`, 'POST', { reviewer_id: adminId }, options)
 }
 
@@ -562,29 +576,6 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }
 
-/** Request #26: correct the parent/guardian contact of the student behind this application.
- *  Super + org_admin only (403 otherwise; 404 across organisations). Allowed at ANY time,
- *  including while the student is locked out because bursary signing is possible, and every
- *  real change is recorded server-side. `changed: false` means the values were already these. */
-export async function correctGuardianContact(
-  id: number, body: { name: string; phone: string }, options?: ApiOptions,
-) {
-  return adminMutate<{ name: string; phone: string; changed: boolean }>(
-    `/api/v1/admin/scholarship/applications/${id}/guardian-contact/`, 'POST', body, options)
-}
-
-export type GuardianCallOutcome =
-  'shared_confirmed' | 'parent_number_confirmed' | 'parent_number_corrected' | 'could_not_reach'
-
-/** Request #26 (consent framing): "Record call" — an admin's call to the parent, on the record.
- *  Super + org_admin only, the correction's fence. `parent_number_corrected` also STORES `number`
- *  as the parent phone; every other outcome is about the number on file (send `number: ''`).
- *  `consent` is null for could_not_reach. `needs_call` is the live flag after the call. */
-export async function recordGuardianCall(
-  id: number,
-  body: { outcome: GuardianCallOutcome; consent: boolean | null; number: string; parent_name: string; note: string },
-  options?: ApiOptions,
-) {
-  return adminMutate<{ id: number; outcome: GuardianCallOutcome; name: string; phone: string; needs_call: boolean }>(
-    `/api/v1/admin/scholarship/applications/${id}/guardian-call/`, 'POST', body, options)
-}
+// Request #26 guardian-contact calls live in ./guardianContactCalls (kept under the 600-line file rule);
+// re-exported here so every import path stays the same.
+export * from './guardianContactCalls'

@@ -993,6 +993,10 @@ class DocumentListCreateView(APIView):
         org = app.owning_organisation if app else None
         return Response({
             'documents': ApplicantDocumentSerializer(docs, many=True).data,
+            # A2.3: uploads still being read (staged ones too, which the list above does not show),
+            # so the page can say "we are still reading N" instead of looking finished.
+            'reading': (ApplicantDocument.objects.filter(application=app, read_state='pending').count()
+                        if app else 0),
             'limits': {
                 'max_doc_size_mb': org_config.value(org, 'max_doc_size_mb'),
                 'max_docs_per_application': org_config.value(org, 'max_docs_per_application'),
@@ -1022,9 +1026,6 @@ class DocumentListCreateView(APIView):
                                   serializer.validated_data.get('original_filename')):
             return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
                             status=status.HTTP_400_BAD_REQUEST)
-        # `_settings` is still needed further down this method (the doc-assist knobs at the
-        # extract step); only the three CAPS moved to the registry.
-        from django.conf import settings as _settings
         from apps.courses import org_config
         # Guardrail 1: per-file size cap (the bytes go client→Storage via signed
         # URL, so this validates the reported size). Org Config Sprint E: the cap is the
@@ -1131,197 +1132,23 @@ class DocumentListCreateView(APIView):
                          .order_by(*SNAPSHOT_ORDER).first() if staged else None)
         if new_doc_type == 'higher_results':   # S3a (D13) the results held; S4 a request's own kind
             serializer.validated_data['results_kind'] = results_route.upload_kind(app, new_request_code)
-        # A staged doc is created not-live; the promote decision below owns ALL slot mutation. A
-        # concurrent upload into the same slot is retried once, then answered 409 (TD-115, never a 500).
-        from . import slot_writes
+        # A staged doc is created not-live; the promote decision (upload_read) owns ALL slot mutation.
+        # A concurrent upload into the same slot is retried once, then answered 409 (TD-115, never a 500).
+        # A2.3 (TD-519): a type with a PAID read is recorded QUEUED (`read_plan` in the same insert)
+        # and answered at once; the web asks for the read straight after, and the read-documents cron
+        # catches any it never asks for. A type with no paid read is judged here, as before.
+        from . import slot_writes, upload_read
+        queued = upload_read.needs_read(new_doc_type)
+        if queued:
+            serializer.validated_data.update(upload_read.queue_plan(staged, stale_ids, existing_live))
         doc = slot_writes.create_in_slot(app, serializer.validated_data, staged=staged,
                                          existing_live=existing_live, stale_ids=stale_ids, slot_filter=slot_filter)
         if doc is None:
             return Response({'error': 'upload_conflict', 'code': 'upload_conflict'}, status=status.HTTP_409_CONFLICT)
-        # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
-        # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
-        from .imaging import convert_heic_to_jpeg
-        convert_heic_to_jpeg(doc)
-        # S13 + S17: auto-run Vision OCR on IC uploads (student's IC OR the
-        # parent/guardian IC for minor consent). Soft signal — never blocks.
-        if doc.doc_type in ('ic', 'parent_ic'):
-            from .vision import run_vision_for_document
-            run_vision_for_document(doc)
-        # Supporting docs: OCR once, then (a) the free name/address presence check
-        # and (b) automatic Gemini field-extraction with student feedback. Soft,
-        # never blocks. Gemini is guardrailed by the hourly per-application cap.
-        elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
-            from . import vision as _vision
-            profile = app.profile
-            names = _vision.reference_names(app)   # student + guardians + roster parents (#126)
-            postcode = getattr(profile, 'postal_code', '') or ''
-            city = getattr(profile, 'city', '') or ''
-            street = getattr(profile, 'address', '') or ''   # #3: street line for the bill fallback
-            check_address = doc.doc_type in BILL_DOC_TYPES
-            ocr = _vision.ocr_document_full(doc)   # ONE fetch + ONE Vision call, shared by every consumer
-            # RE-SLOT an EPF that arrived in the salary-slip slot (owner, 2026-07-14).
-            #
-            # The income-proof request says "his latest salary slip OR EPF (KWSP) statement", but it
-            # has ONE slot — `salary_slip` — and the Action Centre uploads into whatever the item's
-            # doc_type says. So an EPF landed in the payslip slot, scored `not_salary` ("no
-            # recognisable payslip fields"), failed usable_salary_slip(), never cleared the request,
-            # and looped the student into the circuit-breaker. We would have been inviting a document
-            # and then refusing it — the #126 trap again, this time written into our own copy.
-            #
-            # The engine already accepts EITHER doc as income evidence (_parent_has_income_evidence
-            # checks salary_slip OR epf). The ONLY broken link was the slot. So: file it where it
-            # belongs, keep the member tag, and everything downstream resolves itself.
-            _resloted = _reslot_income_doc(doc, ocr)
-            if _resloted:
-                check_address = doc.doc_type in BILL_DOC_TYPES
-            match = _vision.run_vision_match_for_document(
-                doc, names=names, postcode=postcode, city=city, street=street,
-                check_address=check_address, ocr=ocr)
-            if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
-                # force=True: this is the ONE document the student just uploaded in
-                # response to a request — always read it now, even if the hourly
-                # doc-assist cap is hit. A deferred read here is exactly what let an
-                # unscanned re-upload greenlight its task (see resolution.doc_match_verdict).
-                self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street,
-                                           check_address, match, _settings, force=True)
-        # P1 (Check 2): the letter of intent — OCR its plain text so the submission
-        # review can read motivation. No matching/extraction, just the text. Soft.
-        elif doc.doc_type in TEXT_READ_DOC_TYPES:
-            from . import vision as _vision
-            _vision.read_text_document(doc)
-        # ── Tag guard (the airtight last line): attribute an income doc (parent_ic / salary_slip /
-        # epf / str) to the household member by the NAME now read off it (Vision/Gemini has run above),
-        # in two cases:
-        #   (a) FILL a blank tag — a memberless request (income_doc_stale), a reviewer mis-classify,
-        #       a direct/legacy client left it untagged (lenient: first roster name-match wins).
-        #   (b) CORRECT a tag the NAME contradicts — the #80/#112 class, where a pre-consent STR-route
-        #       force-tag stamped the father's payslip onto the mother. Strict: only when the name
-        #       matches EXACTLY ONE member who isn't the current tag (see income_engine.name_contradicts_tag).
-        # STR is included so a salary-route STR (recipient may differ from the declared income_earner —
-        # #45) or a mis-selected STR-route STR files under its actual RECIPIENT (matched on recipient_name),
-        # keeping the docs box in step with the verdict's own recipient match.
-        # Either way the doc is never PERSISTED under the wrong person where the name is determinable;
-        # the verdict then reads it under the right member. A genuinely-unresolvable name leaves the
-        # tag untouched (the cockpit catch-all still shows a blank — never hidden).
-        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf', 'str'):
-            from .income_engine import (resolved_member_for, name_contradicts_tag,
-                                        implied_single_member)
-            has_tag = bool((doc.household_member or '').strip())
-            # (c) LAST RESORT, blank tag only — the name could not be read at all, but the household
-            #     admits exactly one candidate (the STR route's declared earner), so the document
-            #     cannot belong to anyone else. BrightPath #20: WITHOUT this, an unreadable untagged
-            #     income doc keeps its blank tag, and a blank tag is a slot of its own — permanently
-            #     empty, so the doc wins it by default and sits in the live documents beside the good
-            #     copy it was meant to replace. The worst-read documents were the ones that lingered.
-            #     Deliberately last: a readable name always decides first, and the salary route (where
-            #     several members may each hold documents) returns '' and leaves the blank alone.
-            #     Safe by construction — the re-tagged doc still goes through STAGE → JUDGE → PROMOTE
-            #     below, and an unreadable doc is not `usable`, so it can only land in Replaced.
-            derived = (name_contradicts_tag(app, doc) if has_tag
-                       else (resolved_member_for(app, doc) or implied_single_member(app)))
-            if derived and derived != (doc.household_member or '').strip():
-                doc.household_member = derived
-                doc.save(update_fields=['household_member'])
-                # The create-time replace ran with the OLD (blank or wrong) member and couldn't match
-                # this person's slot, so now that the correct member is known, supersede any prior live
-                # copy in the (doc_type, member, request_code) slot — the re-attributed doc REPLACES
-                # that member's existing doc instead of duplicating it. Retained as history (Phase 2),
-                # never hard-deleted.
-                prior = list(ApplicantDocument.objects.filter(
-                    application=app, doc_type=doc.doc_type, household_member=derived,
-                    request_code=doc.request_code, superseded_at__isnull=True,
-                ).exclude(id=doc.id).values_list('id', flat=True))
-                if staged:
-                    # The member changed → the promote decision must also supersede the DERIVED
-                    # member's live slot (e.g. a mother-tagged STR replacing a blank-tagged legacy
-                    # copy). Fold it into the staged-against set + recompute the doc to protect.
-                    stale_ids = list(dict.fromkeys(list(stale_ids) + list(prior)))
-                    existing_live = (ApplicantDocument.objects.filter(
-                        id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
-                        .order_by(*SNAPSHOT_ORDER).first())
-                elif prior:
-                    from django.utils import timezone as _tz2
-                    ApplicantDocument.objects.filter(id__in=prior).update(
-                        superseded_at=_tz2.now(), superseded_by=doc)
-        # JUDGE → PROMOTE (owner 2026-07-09): the staged doc has now been read. Decide whether it takes
-        # the prime slot. USABLE = doc_match_verdict 'ok' (not-fake ∧ right-type ∧ readable ∧ right-
-        # person); promote iff it is at least as good as the existing live doc (promotion.should_promote
-        # — quality is str_proof_quality for STR, else a readable+genuine+recency proxy). Otherwise it
-        # stays staged (Old / Replaced) and the existing proof KEEPS its slot — a worse/wrong re-upload
-        # can never bury a good live doc. This generalises the former STR-only keep-better swap-back to
-        # EVERY key type; the four TestStrKeepBetterGuard cases are now instances of it:
-        #   * #83 junk wrong_type re-upload → not usable → kept out;  * a real Ditolak (quality None)
-        #     → news → replaces;  * #30 Lulus dashboard (3,1) vs Lulus Semakan (3,2) → kept;  * #112 a
-        #     newer Lulus dashboard over a weaker semakan → currency dominates → replaces.
-        kept_previous = False
-        if staged:
-            from . import promotion, wrong_slip as _ws   # S4: a higher result never displaces an SPM slip
-            from .resolution import doc_match_verdict
-            # USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
-            # newest still wins, the task stays open, and the quality proxy keeps a pending doc from
-            # burying an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays
-            # staged so a wrong/blurry re-upload can't displace a good live proof.
-            usable = doc_match_verdict(doc) not in ('mismatch', 'unreadable') and _ws.fills_spm_slot(doc)
-            if promotion.should_promote(doc, existing_live, usable=usable):
-                # Promote: supersede everything this upload replaces — the staged-against set (the
-                # slot sweep, incl. any blank-tagged legacy copy) PLUS any other live copy in this
-                # doc's exact slot — then unstage this one into the prime slot.
-                # One transaction; a clash with a concurrent live copy keeps that copy (TD-115).
-                if not slot_writes.promote_into_slot(app, doc, stale_ids):
-                    # A clash: another copy went live in this slot first. Only an OLDER live copy
-                    # means "we kept your previous one"; a NEWER one is usually the student's own
-                    # double tap, so no kept_previous (the newest upload is live, nothing was refused).
-                    kept_previous = ApplicantDocument.objects.filter(
-                        application=app, doc_type=doc.doc_type, household_member=doc.household_member,
-                        request_code=doc.request_code, superseded_at__isnull=True, id__lt=doc.id).exists()
-                doc.refresh_from_db()
-            else:
-                kept_previous = True
-                # Circuit-breaker: don't trap a student forever on an unsatisfiable read. After K
-                # not-usable attempts, flag the open request for the officer (the existing best doc
-                # stays live — a HOLD for human review, never an auto-resolve).
-                if _stage_attempts_exhausted(app, doc, _settings):
-                    _flag_needs_officer_eye(app, doc)
-        # copies of THIS doc-type to the single newest (newest pay month / latest-dated STR); the
-        # rest drop to Old / Replaced (retained). Runs after the tag guard so the member is final.
-        from . import income_engine as _ie
-        if doc.doc_type in _ie._DEDUP_DOC_TYPES:
-            _ie.dedupe_income_proof(app, (doc.household_member or '').strip(), doc.doc_type)
-        # Academic single-per-person docs: an officer can request the same cert/slip twice, each
-        # request opening its own slot → two live copies survive the slot-scoped supersede. Collapse
-        # to the single best live copy across request codes (owner 2026-07-15, app #66).
-        elif doc.doc_type in _ACADEMIC_SINGLE_TYPES:
-            _collapse_duplicate_docs(app, doc.doc_type, (doc.household_member or '').strip())
-        # S3: a new upload may clear a verdict gap → auto-resolve its ticket
-        # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
-        from .resolution import sync_resolution_items, resolve_doc_items_for_upload
-        sync_resolution_items(app)
-        # A verified offer letter silently settles a pathway the student hadn't locked
-        # (undecided→decided) — no query; mirrors the apply form's storage shapes. A
-        # genuine clash with a specific declared pick is left for the pathway_confirm
-        # query. Soft + best-effort: never let it break the upload response.
-        if doc.doc_type == 'offer_letter':
-            try:
-                from .services import autofill_pathway_from_offer
-                autofill_pathway_from_offer(app)
-            except Exception:
-                logging.getLogger(__name__).warning(
-                    'autofill_pathway_from_offer failed for app %s', app.id, exc_info=True)
-        # Action Centre (post-submit): a clean upload also clears its OFFICER doc task,
-        # and the returned verdict tells the frontend whether to surface Cikgu Gopal's
-        # advice (mismatch/unreadable) or treat the task as done (ok).
-        match_verdict = resolve_doc_items_for_upload(app, doc)
-        # Human-aware re-ask (#83, owner 2026-07-08): students routinely re-send the SAME file, or a
-        # different-but-still-wrong one, without following the request's instruction. When this
-        # upload leaves its doc-request OPEN, stamp the attempt on the item so the Action Centre
-        # acknowledges what happened ("you re-sent the same document" / "we received it, but it
-        # isn't what we asked for") instead of repeating the original copy as if nothing arrived.
-        _note_unresolved_attempts(app, doc, stale_ids, kept_previous)
-        data = ApplicantDocumentSerializer(doc).data
-        data['match_verdict'] = match_verdict
-        # The STR keep-better guard fired: the previous (better) proof stays live; this upload is
-        # stored as history. The FE may surface this immediately; the Action Centre note persists.
-        data['kept_previous'] = kept_previous
+        if queued:
+            return Response(upload_read.pending_payload(doc), status=status.HTTP_201_CREATED)
+        data = upload_read.read_and_judge(app, doc, staged=staged, stale_ids=stale_ids,
+                                          existing_live=existing_live)
         return Response(data, status=status.HTTP_201_CREATED)
 
     @staticmethod
@@ -1355,6 +1182,28 @@ class DocumentListCreateView(APIView):
         _vision.run_field_extraction_for_document(
             doc, names=names, postcode=postcode, city=city, street=street,
             check_address=check_address, ocr=ocr)
+
+
+class DocumentReadView(APIView):
+    """POST documents/<pk>/read/ — run a queued upload's read now (A2.3, TD-519).
+
+    The web sends it straight after an upload answered ``reading: true``, so the student sees her
+    result in the time the read takes. Safe to repeat: the queue's claim lets one caller read, and
+    every other call (or a document already read) gets the row and its verdict as they stand. No
+    throttle: the claim means a document is read at most ``MAX_ATTEMPTS`` times, whoever asks."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        from . import upload_read
+        doc = ApplicantDocument.objects.filter(pk=pk, application__profile_id=request.user_id).first()
+        if doc is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if doc.read_state == upload_read.PENDING:
+            outcome, data = upload_read.run_read(doc.id)
+            if outcome == 'done':
+                return Response(data)
+            doc.refresh_from_db()
+        return Response(upload_read.answer_for(doc))
 
 
 class DocumentDetailView(APIView):
@@ -1785,15 +1634,15 @@ class DocumentHelpView(APIView):
 
         from .profile_engine import _resolve_language
         language = _resolve_language(doc.application, request.query_params.get('lang'))
-        from . import branding as _branding
+        from . import branding as _branding, help_cache
         from . import usage as _usage
         # Bill the coach's Gemini call to the tenant. The engine's OWN signature stays sealed
         # (see test_engine_signature_is_structurally_firewalled) — attribution rides the ambient
         # usage_context, which the engine's inner `usage_context(source='doc_help')` inherits.
         # An organisation id is a billing key, never student data, and never enters the prompt.
         with _usage.usage_context(application=doc.application):
-            result = help_engine.generate_document_help(
-                doc.doc_type, verdict,
+            result = help_cache.cached_help(   # A2.4 SP-06: a repeat open costs no model call
+                doc.application_id, doc.doc_type, verdict,
                 first_name=help_engine.first_name_of(doc), target_language=language,
                 branding=_branding.for_application(doc.application),
             )
@@ -1879,12 +1728,12 @@ class IncomeClusterHelpView(APIView):
             'income_proof_optional': (_route == 'str'
                                       and verdict == 'income_proof_person_mismatch'),
         }
-        from . import branding as _branding
+        from . import branding as _branding, help_cache
         from . import usage as _usage
         # Same billing seam as the per-document coach — ambient only, signature untouched.
         with _usage.usage_context(application=app):
-            result = help_engine.generate_document_help(
-                'income_cluster', verdict, first_name=first_name, target_language=language,
+            result = help_cache.cached_help(   # A2.4 SP-06: a repeat open costs no model call
+                app.id, 'income_cluster', verdict, first_name=first_name, target_language=language,
                 context=context, branding=_branding.for_application(app),
             )
         result['verdict'] = verdict
@@ -2051,6 +1900,8 @@ class CronRunView(APIView):
         'vision-outage': 'alert_vision_outage',
         'read-outage-start': ('alert_vision_outage', ('--hourly',)),  # hourly: mail a Vision/Gemini outage the hour it starts (2026-10-24)
         'decision-emails': 'send_pending_decision_emails',
+        'read-documents': 'run_pending_reads',  # EVERY 15 MIN (A2.3): the upload reads nobody asked for (upload_read)
+        'assign-emails': 'send_pending_assign_emails',  # EVERY 15 MIN (A2.3): the assignment emails assign queued (assign_notify)
         'application-reminders': 'send_application_reminders',
         'application-nudges': 'send_application_nudges',  # frequent (~15 min): one-time auto "you haven't submitted yet" nudge (shortlisted, consented, unsubmitted)
         'query-emails': 'send_due_query_emails',
@@ -2092,6 +1943,7 @@ class CronRunView(APIView):
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
         'reextract-offers': 'reextract_offers',  # one-off batches (20/run): re-score offers with missing/below-genuine (<0.70) authenticity under the current MODEL_VERSION
+        'finalise-profiles': 'run_pending_finalise',  # EVERY 5 MIN (A2.1): the final profile record-verdict queued (profile_finalise), then the first-assign drafts (A2.3b, assign_draft)
         'reprocess-ic-vision': 'reprocess_unread_ic',  # HOURLY (0 * * * *): self-heal reads stuck unprocessed or deferred by OUR outage (services.read_retry)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)

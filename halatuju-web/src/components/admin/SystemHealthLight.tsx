@@ -9,9 +9,10 @@ import { Icon } from '@/components/admin/icons'
 
 /**
  * The System health light (owner-approved Stitch design, 2026-10-28): a small round light in the top
- * bar and, on click, a panel of five rows — Gemini, Vision, email, the scheduled jobs and the AI
- * credit. SUPER ADMINS ONLY: `AppShell` mounts this for a super and for nobody else, so no other
- * admin's browser ever asks for it (the endpoint refuses them too).
+ * bar and, on click, a panel of six rows — Gemini, Vision, email, the scheduled jobs, the AI
+ * credit and the failed final profiles (A2.1). SUPER ADMINS ONLY: `AppShell` mounts this for a
+ * super and for nobody else, so no other admin's browser ever asks for it (the endpoint refuses
+ * them too).
  *
  * Two owner changes from the mock: the light shows the WORST row's colour (computed here, from the
  * rows), and there is NO "View logs" link.
@@ -36,10 +37,11 @@ export const HEALTH_LINE_CODES: Record<string, string[]> = {
   email: ['ok', 'no_record', 'recent_failure', 'failing', 'failing_stale', 'no_success'],
   cron: ['ok', 'waiting', 'late', 'missed', 'never', 'errored', 'errored_twice'],
   credit: ['ok', 'payment_error', 'recovered'],
+  profiles: ['ok', 'failed'],
 }
-export const HEALTH_ROW_KEYS = ['gemini', 'vision', 'email', 'cron', 'credit'] as const
+export const HEALTH_ROW_KEYS = ['gemini', 'vision', 'email', 'cron', 'credit', 'profiles'] as const
 export const HEALTH_UNITS = ['minutes', 'hours', 'days'] as const
-export const HEALTH_CADENCES = ['every15', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'] as const
+export const HEALTH_CADENCES = ['every5', 'every15', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'] as const
 
 const DOT: Record<HealthStatus | 'unknown', string> = {
   green: 'bg-positive-500',

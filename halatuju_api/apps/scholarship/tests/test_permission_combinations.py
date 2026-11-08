@@ -241,13 +241,12 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
         self.assertTrue(may_assign_to(self.approver, self.finance))
         # The endpoint answers the same: a non-holder is `bad_assignee`, as an unknown id is.
         from apps.scholarship.views_admin.verdict import AdminAssignReviewerView
-        case = SimpleNamespace(owning_organisation_id=self.org_a.id, status='profile_complete')
+        case = SimpleNamespace(id=1, owning_organisation_id=self.org_a.id, status='profile_complete',
+                               assigned_to=None, assigned_at=None)   # A2.3: the slim reply reads these
         self._auth('pe-ap')
         with mock.patch.object(AdminAssignReviewerView, '_scoped_application',
                                return_value=(case, None)), \
-                mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'), \
-                mock.patch('apps.scholarship.views_admin.verdict._detail_payload',
-                           return_value={}):
+                mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'):
             refused = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.maker.id},
                                        format='json')
             taken = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.finance.id},

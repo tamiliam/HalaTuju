@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .. import birth_state, course_start
+from ..models import SponsorProfile
 
 
 def _overall(app):
@@ -33,6 +34,12 @@ def _accept_absolute_stop(app):
     3. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
        (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
        accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
+    4. A2.1 review: the final profile is still being written (`profile_pending`, no override).
+       QC-Accept publishes the sponsor text, so QC must read the final one; the remedy is to wait
+       for the `finalise-profiles` cron (a few minutes) and reload. A FAILED one refuses too
+       (`profile_failed`, A2.1 re-review): accepting would publish the old text a reopen called
+       wrong, or move an empty profile to `recommended` with nothing published. The remedy is to
+       run finalise again from the case.
     """
     if course_start.recorded_date(app) is None:   # TD-465 part 2: the one read point
         return Response(
@@ -52,6 +59,20 @@ def _accept_absolute_stop(app):
         return Response({'error': birth_state.IC_UNLOCKED_MESSAGE,
                          'code': birth_state.IC_UNLOCKED},
                         status=status.HTTP_400_BAD_REQUEST)
+    finalise_state = (SponsorProfile.objects.filter(application=app)
+                      .values_list('finalise_state', flat=True).first())
+    if finalise_state == 'pending':
+        return Response(
+            {'error': 'The final sponsor profile is still being written. Wait a few minutes, '
+                      'reload the page and read it, then accept.',
+             'code': 'profile_pending'},
+            status=status.HTTP_400_BAD_REQUEST)
+    if finalise_state == 'failed':
+        return Response(
+            {'error': 'The final sponsor profile could not be written. Reopen the case for the '
+                      'reviewer, who records the verdict again with the final profile. Then accept.',
+             'code': 'profile_failed'},
+            status=status.HTTP_400_BAD_REQUEST)
     return None
 
 

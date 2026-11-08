@@ -30,6 +30,7 @@ from apps.scholarship.tests.factories import (
 from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
 from apps.scholarship.verdict_ladder import _academic_red_chips
 from apps.scholarship.tests.factories import create_document
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 SPM = {'bm': 'A+', 'eng': 'A', 'hist': 'A', 'math': 'A', 'phy': 'C+', 'chem': 'D', 'bio': 'C+',
        'addmath': 'D'}
@@ -404,7 +405,7 @@ class TestRequestsByName(TestCase):
              patch('apps.scholarship.vision.run_vision_match_for_document', return_value=None), \
              patch('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields',
                    side_effect=_extract):
-            return authed_client(app.profile).post('/api/v1/scholarship/documents/', {
+            return post_doc(authed_client(app.profile), {
                 'doc_type': item.doc_type, 'request_code': item.code,
                 'storage_path': issued_key(app, item.doc_type, item.code), 'original_filename': 'r.pdf',
                 'size': 1000}, format='json')
@@ -598,7 +599,7 @@ class TestReviewFindings(TestCase):
         with patch('apps.scholarship.vision.ocr_document_full', return_value={'text': '', 'error': None}), \
              patch('apps.scholarship.vision.run_vision_match_for_document', return_value=None), \
              patch('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields', side_effect=_extract):
-            r = authed_client(app.profile).post('/api/v1/scholarship/documents/', {
+            r = post_doc(authed_client(app.profile), {
                 'doc_type': 'results_slip', 'storage_path': issued_key(app, 'results_slip', 'stpm'),
                 'original_filename': 'stpm.pdf', 'size': 1000}, format='json')
         self.assertEqual(r.status_code, 201, r.content)

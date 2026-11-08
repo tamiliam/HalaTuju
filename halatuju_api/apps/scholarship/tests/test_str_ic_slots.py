@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 
 from apps.scholarship import income_engine
 from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 from apps.scholarship.income_str_ownership import (
     _latest_str_check, str_ic_slots, str_owner_ic_asks, student_str_payload)
 from apps.scholarship.tests.doc_keys import issued_key
@@ -234,7 +235,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
         for doc_type, want in (('parent_ic', 'mother'), ('str', 'father'),
                                ('salary_slip', 'father'), ('epf', 'father')):
             with self.subTest(doc_type=doc_type):
-                resp = client.post('/api/v1/scholarship/documents/', {
+                resp = post_doc(client, {
                     'doc_type': doc_type, 'household_member': 'mother',
                     'storage_path': issued_key(app, doc_type, 'm'), 'original_filename': 'm.pdf',
                     'size': 1000,
@@ -259,7 +260,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
         fathers_ic = app.documents.get(doc_type='parent_ic', household_member='father')
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
-        resp = client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(client, {
             'doc_type': 'parent_ic', 'household_member': 'mother',
             'storage_path': issued_key(app, 'parent_ic', 'mother'), 'original_filename': 'm.pdf', 'size': 1000,
         }, format='json')
@@ -268,7 +269,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
         fathers_ic.refresh_from_db()
         self.assertIsNone(fathers_ic.superseded_at)                   # his IC is untouched
         # ...and the earner's own card still force-tags as before (a blank tag lands on him)
-        resp = client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(client, {
             'doc_type': 'parent_ic', 'storage_path': issued_key(app, 'parent_ic', 'blank'),
             'original_filename': 'f.pdf', 'size': 1000,
         }, format='json')

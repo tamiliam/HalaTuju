@@ -96,6 +96,8 @@ def with_open_student_tasks(queryset):
     from django.db.models import Exists, OuterRef
 
     from ..models import ResolutionItem
+    if OPEN_STUDENT_TASKS_ANNOTATION in queryset.query.annotations:   # TD-505: annotate ONCE
+        return queryset
     return queryset.annotate(**{OPEN_STUDENT_TASKS_ANNOTATION: Exists(
         ResolutionItem.objects.filter(application=OuterRef('pk'), **_OPEN_STUDENT_TASK))})
 

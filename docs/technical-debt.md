@@ -270,7 +270,7 @@ Do one only when a sprint is already in that file.
 - **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
 - **TD-234** — Thirteen repair commands have no approved route to live data. *(D · M)*
 - **TD-212** — The email-template table is still named partner. *(D · M)*
-- **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module)*
+- **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
 - **TD-121** — The document test scorecard ignores the genuineness check. *(D · M)*
 - **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
@@ -305,7 +305,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-438** - The header photo's signed link expires after about an hour in a tab left open - low
 - **TD-447** - Offer confirm can still store a hostel line when the stored course is stale - low
 - **TD-448** - A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
-- **TD-449** - The offer check's catalogue queries sit outside every query budget - low
+- ~~**TD-449**~~ **FIXED 2026-11-08 (Sprint A2.4: the cockpit detail with a full offer letter is pinned at 51 queries)** - The offer check's catalogue queries sit outside every query budget - low
 - **TD-450** - Mobile M1 close review: overlay and guard loose ends - low
 - **TD-451** - A short campus line can name a campus of another institution type - low
 - **TD-452** - The town-word list decides whether a short campus form counts - low
@@ -349,12 +349,12 @@ Each is an open entry with a defining line in the register body (read it there).
 - ~~**TD-497**~~ **FIXED 2026-11-07 (Sprint A1.10a: no door calls a union gate; a guard test refuses a new one)** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 - **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (owner 2026-11-07: fix inside T5g) (partly done 2026-11-07, A1.10a: Announcements, Surveys, Development, scholar Mentoring and Sources split; sponsor terms and sponsor emails left)
 - ~~**TD-499**~~ **FIXED 2026-11-07 (Sprint A1.10b: Quality check brings See all students, which stays locked on while it is held)** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
-- **TD-500** - Mentor My students list makes one alias query per mentee - low
+- ~~**TD-500**~~ **FIXED 2026-11-08 (Sprint A2.4: one alias read for the whole list)** - Mentor My students list makes one alias query per mentee - low
 - **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
 - **TD-502** - Overview cards without a filtered action link - low
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
 - ~~**TD-504**~~ **FIXED 2026-11-07 (Sprint A1.10a)** - Overview invitations card needs org_read; the Invitations page needs team_read - low
-- **TD-505** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
+- ~~**TD-505**~~ **FIXED 2026-11-08 (Sprint A2.4)** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
 - **TD-506** - Dependency advisories: Pillow, pypdf (web half done 2026-11-06, A1.1: Next 15.5.29) - high (partly done)
 - **TD-510** - A request for an unlinked matching staff row makes a Supabase admin call of up to 15 s each time (SEC-02 L4) - low
 - **TD-511** - A student can delete their own locked slip file through a second row (SEC-01 L5) - low
@@ -365,6 +365,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-516** - Python dependency bumps on the auth path: DRF 3.18.2, pyjwt 2.15.0 (SEC-10) - medium (quick win)
 - **TD-517** - record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
 - **TD-518** - reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
+- **TD-585** - IC / document reprocess reads have no per-read timeout (Vision and Gemini clients use library defaults) - low
 - **TD-519** - Slow synchronous paths: document upload, assign, interview submit, income coach (SP-03 to SP-06) - medium
 - **TD-520** - Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; the SEC-11 SQL is the owner's step, TD-550)**
 - **TD-521** - No real sign-in per role on a local stack (CO-01) - medium
@@ -391,6 +392,13 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-593** - Loose ends after an award withdrawal: the Vircle task stays (the countersign part was fixed by the A1.13 review; the staff_activity verbs came with A1.13b, migration 0206) - low
 - **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low - **lapse part FIXED (2026-11-08, A1.13 third review); `hold_pending_award` still open**
 - **TD-595** - The award-email job sends the email over the network while it holds the application and sponsorship locks - low
+
+- **TD-587** - On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+- **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+- **TD-589** - A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
+
+- ~~**TD-586**~~ **FIXED 2026-11-08 (Sprint A2.3b)** - The first assign still writes the Gemini sponsor-profile draft inside the request - low
+- **TD-590** - A queued upload read that fails AFTER its paid call is retried in full, so the retry pays again - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -7443,7 +7451,7 @@ AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realig
 `realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
 add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
 
-### [TD-449] The offer check's catalogue queries sit outside every query budget - low
+### [TD-449] The offer check's catalogue queries sit outside every query budget - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-01 by the offer realignment build.** Each `student_offer_check` now runs about 3 to 6 more
 queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_institution`, a second
@@ -7451,6 +7459,8 @@ queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_in
 today, and `test_query_budgets` passes at 38, but its fixtures carry no offer fields, so this path is unmeasured.
 **Fix:** give the budget fixture an offer letter with programme, institution and issuer, and pin the cockpit
 detail's count. *(B · S)*
+
+**FIXED 2026-11-08 (A2.4):** `test_a24_other_reads_budget.py` opens a case whose offer letter carries a programme, code, institution, campus and issuer and pins the cockpit detail at 51 queries (32 without the letter), with a tightness test. The offer check's own extra reads were measured, not reduced.
 
 ### [TD-450] Mobile M1 close review: overlay and guard loose ends - low
 
@@ -8079,7 +8089,7 @@ access; but the editor and the server describe the rule differently. **Fix (with
 as implying `see_all` (`see_all` ticked and locked while `qc` is on), and correct the comment. Owner question raised
 with it: may a `finance` person also hold `qc` (they would then read every case)? *(W · S)*
 
-### [TD-500] Mentor My students list makes one alias query per mentee - low
+### [TD-500] Mentor My students list makes one alias query per mentee - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-04 by Team tables T5c P5 S1b (NOT fixed).** `admin/mentor/students/` (the mentor's My students
 list, also behind the Programmes card's `?programme=` filter) calls `mentoring.is_the_student` once per mentee, and
@@ -8088,6 +8098,8 @@ self-mentoring guard (a mentor must never see, or be, their own student), so it 
 sprint about landing pages. A mentor carries a handful of mentees, so it is cheap today. **Fix:** read the aliases
 of all the caller's mentees in one query and keep `is_the_student` as the single rule, with the existing
 self-mentoring tests as the guard. *(A · S)*
+
+**FIXED 2026-11-08 (A2.4):** `mentor_desk.current_assignments` reads the aliases of every mentee in one query and passes them to `mentoring.is_the_student(login, application, aliased)`, which stays the single rule (None still asks the database). The Programmes landing as a mentor is 6 queries for two or five students (was 7 and 10; budgets lowered). Not part of this fix: the mentor list still pays about five queries a mentee for the card's own reads (course, institution, latest result, standing, help flag); pinned at 17 (two) and 32 (five) in `test_a24_other_reads_budget.py`.
 
 ### [TD-501] Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0) - **FIXED (2026-11-06, A1.3)**
 
@@ -8118,9 +8130,11 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **Raised 2026-11-05 by the P5b review (NOT fixed).** The card is guarded by `org_read`, the page it counts by `team_read`, so a person can see a card whose page refuses them, or the reverse. Same door mismatch exists for multi-gift payment_runs (one round trip per gift). **Fix:** use the page's own door for the card and batch the payment_runs lookup. *(A · S)*
 
-### [TD-505] Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
+### [TD-505] Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-05 by the P5c review (NOT fixed).** `review_sla.in_band` builds an id list (fine at today's size); the ready-to-assign annotation runs the same EXISTS twice; the mentor and super (pooled) paths of `my_pending` have no query budget test (no N+1 found, budgets exist only for admin, finance and reviewer). Related: TD-500. **Fix:** push in_band into a subquery, annotate once, add budgets for the pooled paths. *(A · S)*
+
+**FIXED 2026-11-08 (A2.4):** `review_sla.in_band` is a range on `assigned_at` (overdue is `assigned_at <= now - sla`, due-soon the next `soon` days; same boundaries as `review_band`), no id list; `with_open_student_tasks` does nothing if the column is already there, so the list annotates once; the mentor (7 queries, flat in mentees) and super (9, flat in organisations) paths of `my_pending` are budgeted.
 
 ### [TD-506] Dependency advisories: Next.js (needs Next 15.5.28+), Pillow, pypdf - high (partly patched 2026-11-05)
 
@@ -8269,17 +8283,29 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `requirements.lock` has DRF 3.18.1 (CVE-2026-114136, an unauthenticated memory blow-up: about 108 bytes in costs about 97 MiB, enough to hurt a 2 GiB instance on a 3-instance service) and pyjwt 2.14.0 (PYSEC-2026-4141; the RecursionError escapes the middleware's except clauses and becomes a 500). Also flagged, exploitability not assessed: aiohttp, pyasn1, certifi, multidict, opentelemetry-api. Pillow, pillow-heif and pypdf stay under TD-506. **Fix:** bump DRF and pyjwt, run the full suite, then take the rest in one pass. *(A · S)*
 
-### [TD-517] record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
+### [TD-517] record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm) - **FIXED (2026-11-07, A2.1, branch a21, not pushed; needs migration 0209 and the `finalise-profiles` Scheduler job)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (reproduced on live logs: 17 of 23 real calls over 30 s in 30 days, worst 51.9 s).** With `finalise` set, `views_admin/verdict.py` ~159-212 runs `refine_sponsor_profile` and `generate_anon_blurb` inline, outside the transaction. Reviewers risk a timeout and a double submit; this caused org request 61. **Fix:** record the verdict at once and run refine and blurb as a background step (or a second request) with a progress state. *(A · M)*
 
-### [TD-518] reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
+**Fixed 2026-11-07 (A2.1).** record-verdict now only QUEUES the final profile (`profile_finalise.queue_finalise`: `SponsorProfile.finalise_state='pending'`, migration 0209) and makes no Gemini call. The new cron job `finalise-profiles` (`run_pending_finalise`, every 5 minutes, `CronRunView.JOBS` + `cron_health`) claims up to 3 rows (a conditional update, so two runs never share one) and stops claiming after 150 s, runs refine and blurb with no lock held, then writes the result under the app-then-profile lock. A re-record while a run is in flight supersedes it (the `finalise_requested_at` token); a re-record without `finalise` drops a queued profile (`supersede_pending`). Up to 3 tries (a stale claim frees after 10 minutes), then `failed`; skipped while Gemini reads are down. Only QC-Accept publishes: it refuses while the profile is pending (`profile_pending`), and the worker never publishes and never writes `anon_*` on a published profile or one held by an open reopen. Retry: after `failed`, the finalise-profile endpoint re-queues (three fresh tries, a new token, only those fields saved); it has no button in the web yet, so a super POSTs it or re-records with finalise. Failed profiles show on System health (row `profiles`, amber with the count). The profile card shows "being written" / "could not be written". Tests: `test_profile_finalise.py` (22), `test_decision_reopen.py` (3 on this), `test_profile_refine.py`, web `GeneratedProfile.finalise.test.tsx` (3), one in `view.decision.test.tsx` and one in `SystemHealthLight.test.tsx`.
+
+### [TD-518] reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium - **FIXED IN CODE 2026-11-07 (A2.2; live proof after G6: p95 under 120 s, 0 timeouts in 14 days; SP-14 met by the time budget)**
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Median about 200 s, p95 about 232 s; 5 runs hit the 300 s timeout (2 of 44 ended in a 504 in the earlier window). A document is stamped before it is read, so a killed run does not loop on the same file, but the batch is cut mid-way and shares the web service's three instances. **Fix:** cap the batch size or move it to a Cloud Run job; check the scanned and processed counts for repeated paid re-reads. *(A · M)*
+
+**Fixed in code 2026-11-07 (A2.2, branch a22).** `reprocess_unread_ic_documents(time_budget=)` stops cleanly BETWEEN documents once the budget is spent (default `REPROCESS_TIME_BUDGET_SECONDS` 80 s, env-tunable; command flag `--time-budget`, 0 = none), and the batch fell from 200 to `REPROCESS_BATCH_LIMIT` 100. A stop returns `stopped_early` and `left`; a full run returns the same three counts as before. **Cursor = the queue itself:** every document is stamped before it is read, so it leaves its pool and the next hourly run starts at the first one not reached (none skipped, none read twice). The one pool that could re-pick its own failures (approval re-reads inside their 72-hour window) resumes after the last document reached, kept in the shared cache (`reprocess_ic:approval_cursor`; no migration; losing it only restarts at the oldest). A single read is the only thing that can overshoot the budget (about 220 s of headroom to 300 s; neither the Vision nor the Gemini client sets a per-read timeout, see TD-585). No change to what is decided for any document, extraction, or `MODEL_VERSION`. Tests: `test_reprocess_time_budget.py` (5, fake clock, mocked reads). **SP-14** (own timeout): met by the time budget, which keeps the HTTP job inside 300 s; a separate Cloud Run Job was not adopted (it would bypass `cron_health`).
+
+### [TD-585] IC / document reprocess reads have no per-read timeout - low
+
+**Raised 2026-11-07 by the A2.2 review.** `vision.py` builds `vision.ImageAnnotatorClient` (~689, 717) and `genai.Client(api_key=...)` (~1613, the IC second opinion and every Gemini JSON read) and passes no timeout to `document_text_detection` or `generate_content`, so a read waits on the libraries' own defaults. The only explicit timeout nearby is `urlopen(..., timeout=10)` (~788, a different fetch). The A2.2 time budget (80 s) checks the clock BETWEEN documents, so one hung read can still run past it; 80 s leaves about 220 s to the 300 s limit. **Fix (not done: a timeout can change what a slow read returns, so it needs its own sprint and a corpus check):** an explicit per-read deadline on both clients, then re-measure. *(B · S)*
 
 ### [TD-519] Slow synchronous paths: document upload, assign, interview submit, income coach (SP-03 to SP-06) - medium
 
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
+
+**Progress 2026-11-07 (A2.3, SP-03 and SP-04).** Upload: the read leaves the request (`upload_read.py`; the web asks `/read/` at once, the `read-documents` cron is the safety net). Assign: the emails go through the `assign-emails` cron (`assign_notify.py`) and the reply is slim, 15 queries, with a budget test (`test_assign_query_budget.py`). Migration 0210, not run. The first-assign Gemini draft is still inline (TD-586). **Left:** interview submit (SP-05) and the income coach cache (SP-06).
+
+**Progress 2026-11-08 (A2.4, SP-05, SP-06, SP-07).** Interview submit, qc-decision and resolution-items now run inside a document snapshot (`snapshot_unless_open`): 334 to 41, 333 to 51 and 319 to 37 queries, budgets in `test_a24_slow_reads_budget.py`. Applicant detail 38 to 33. The income coach GETs (`DocumentHelpView`, `IncomeClusterHelpView`) cache a successful model message for 6 hours by application id and prompt hash (`help_cache.py`); a repeat makes no model call. Prod p95 not yet re-measured (local counts only).
 
 ### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; applying the SEC-11 SQL is the owner's step, TD-550)**
 
@@ -8523,3 +8549,23 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-595] The award-email job sends over the network while holding the locks - low
 
 **Raised 2026-11-08 by the A1.13 third review (Low 2), left as it is on the lead's ruling.** Since the A1.13 reviews, `sponsorship.release_award_offer_emails` locks the case (`lock_case_of_sponsorship`) and the sponsorship, then sends the award email and stamps `offer_emailed_at` inside the same transaction, so the stamp cannot be lost after the email has gone. The cost is that the SMTP / provider call runs while the application and sponsorship rows are locked. A slow or hanging send makes every other writer on that case wait (a withdrawal, a cancel, an accept, a payment release), up to the send timeout. It is a daily job and one case at a time, so the wait is short and rare. **Fix:** claim the row under the lock (stamp a claim, commit), send outside the transaction, then confirm or clear the claim in a second short transaction; decide what a crash between send and confirm should mean (a resend or a missed email). *(A · S)*
+
+### [TD-587] On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** On a profile that is already published (`anon_published`), `profile_finalise.py` (~160) writes the new text to `final_markdown` only and leaves `anon_markdown` (what sponsors read) as it was, by design. But `GeneratedProfile.tsx` shows `final_markdown || current_markdown`, so staff read the new text while sponsors still see the old one, with nothing on the card saying so. **Fix:** a one-line note on the card when `anon_published` is true and `anon_markdown` differs from `final_markdown` (en / ms / ta). *(A · S)*
+
+### [TD-588] A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
+
+**Raised 2026-11-07 by the A2.1 re-review (not fixed).** `supersede_pending` (`profile_finalise.py` ~82) clears only a PENDING row when a verdict is re-recorded without finalise. A row left FAILED from the old verdict keeps `finalise_state` failed, so the card still shows the failed note (and QC-Accept refuses with `profile_failed`) for a verdict that never asked for a new profile. **Fix:** have the supersede step clear a failed state too (same fields), with a test. *(A · S)*
+
+### [TD-589] A finalise that fails because Gemini fails can only be cleared by a reopen, which counts against the reviewer - low
+
+**Raised 2026-11-07 by the A2.1 review (not fixed).** A finalise that fails because Gemini fails can only be cleared by a reopen, which `close_reopen_with_change` logs as a reviewer correction (`resulted_in_change=True`), so it counts against the reviewer though Gemini failed. **Fix:** a web control for the finalise-profile endpoint, or a reopen reason that does not count as a correction. *(A · S)*
+
+### ~~[TD-586] The first assign still writes the Gemini sponsor-profile draft inside the request - low~~ — RESOLVED 2026-11-08 (FIXED, Sprint A2.3b, branch a23b, awaiting push: owner ruling, queue it. assign_reviewer only queues the draft (assign_draft.queue_first_draft, finalise_state 'drafting' on the A2.1 queue columns, no migration); the finalise-profiles cron writes it with the same generate_ready_profile after the finalises (assign_draft.draft_pending), with claim, 3-attempt cap, outage skip and a 210 s deadline; the card says the draft is being written; tests/test_assign_draft.py)
+
+**Raised 2026-11-07 by A2.3.** When `CHECK2_AUTO_GENERATE` is on, the first assign of a case still calls Gemini for the sponsor-profile draft before it replies, so that one assign can stay slow after A2.3 moved the emails out. Left as it is on purpose: the owner has not decided whether the draft should wait for the cron. **Fix (once decided):** queue the draft the same way as the assign emails, or keep it inline and accept the wait. *(B · S)*
+
+### [TD-590] A queued upload read that fails after its paid call pays again on the retry - low
+
+**Raised 2026-11-08 by the A2.3 adversarial review.** `upload_read.run_read` retries the whole `read_and_judge` when it raises (up to `MAX_ATTEMPTS` = 3). If the failure comes AFTER Vision OCR or Gemini extraction has run (say in the promote decision or the resolution sync), the retry makes the same paid call again: at worst three paid reads for one upload. No code change in A2.3 (the read must not change). **Fix:** on a retry, skip the paid step when the row already carries a read from this attempt's upload (for example `vision_run_at` / `vision_fields_run_at` set after `uploaded_at`) and go straight to the judge. *(B · S)*

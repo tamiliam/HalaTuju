@@ -1,5 +1,12 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-08 — A declared informal wage the STR vouches for counts toward the household documents total and the #54 tick (owner ruling, request #54: KEEP)
+
+Owner ruling on request #54: **keep** the behaviour as built. In `apps/scholarship/income_engine/amounts.py` (`earner_monthly_income`, about lines 87-89), a member's declared average monthly wage with no payslip or EPF statement is accepted as a real figure when the household has a valid STR (source `declared_str`). That figure counts toward the household documents total and satisfies the #54 tick.
+
+**Why:** the STR is itself the means-test, so a wage declared beside it is vouched for by it; an informal earner with a valid STR should not be marked as missing evidence. A declared wage with no STR and no supporting income document stays `declared_unproven` (no figure, headroom band Unsure), so an unbacked self-report never inflates income.
+**No code change.** By design.
+
 ## 2026-11-08 — Mentors have gifts, and a gift limits who they mentor (Invitations I4; owner ruling)
 
 Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner ruling 2 ("a mentor has gifts, and a gift limits who they mentor") and open points C and D (lead recommendations, approved with the roadmap).

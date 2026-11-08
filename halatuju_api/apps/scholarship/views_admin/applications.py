@@ -17,7 +17,7 @@ from apps.courses.search import apply_people_search, people_search_term
 from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
 from .. import staff_activity
-from ..document_snapshot import document_snapshot
+from ..document_snapshot import document_snapshot, snapshot_unless_open
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
 from ..serializers_admin import AdminApplicationDetailSerializer, AdminApplicationListSerializer
@@ -48,10 +48,11 @@ def _detail_payload(app, admin):
     the assigned reviewer."""
     from .. import qc_separation
     from ..services.decline import rejected_by_unassigned
-    data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
-    data['qc_refusal'] = qc_separation.for_viewer(admin, app)
-    data['rejected_by_unassigned'] = rejected_by_unassigned(app)
-    data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
+    with snapshot_unless_open(app):   # A2.4: the POSTs that answer with the case read documents once too
+        data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
+        data['qc_refusal'] = qc_separation.for_viewer(admin, app)
+        data['rejected_by_unassigned'] = rejected_by_unassigned(app)
+        data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
     return data
 
 
