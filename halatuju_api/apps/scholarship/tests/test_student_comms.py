@@ -43,6 +43,11 @@ def _due_in(exp, days):
     ResultsExpectation.objects.filter(pk=exp.pk).update(due_on=timezone.localdate() + timedelta(days=days))
 
 
+#: Kinds whose default wording has no `{link}`: A1.13b's `award_withdrawn` is the owner-approved text
+#: (2026-11-08), which sends her nowhere and may not change.
+LINKLESS = ('award_withdrawn',)
+
+
 class TestTheDefaults(TestCase):
     def test_every_kind_has_wording_in_every_language_using_only_its_tokens(self):
         for kind in student_comms.KINDS:
@@ -52,7 +57,8 @@ class TestTheDefaults(TestCase):
                     self.assertTrue(subject.strip() and body.strip())
                     self.assertEqual(email_templates.unknown_placeholders(
                         student_comms.PLACEHOLDERS[kind], subject, body), ())
-                    self.assertIn('{link}', body)
+                    if kind not in LINKLESS:
+                        self.assertIn('{link}', body)
                     self.assertEqual(email_templates.banned_phrases(student_comms.BANNED, subject, body), ())
 
 
@@ -250,7 +256,7 @@ class TestTheSettingsTab(TestCase):
     def test_fenced_to_the_callers_own_organisation(self):
         body = authed_client(self.admin).get(API).json()
         self.assertEqual(body['organisation']['code'], self.mine.code)
-        self.assertEqual(len(body['templates']), 24)   # 8 kinds x 3 (S6b letter, S7b mentor, S8, S9 survey, S10 module)
+        self.assertEqual(len(body['templates']), 27)   # 9 kinds x 3 (S6b, S7b, S8, S9, S10, A1.13b)
         self.assertNotIn('THEIRS', [t['subject'] for t in body['templates']])
         self.assertEqual(authed_client(self.admin).get(API, {'org': self.theirs.code}).status_code, 404)
         r = authed_client(self.admin).put(API, {'kind': 'results_due', 'language': 'en', 'subject': 'Mine',

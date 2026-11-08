@@ -3,23 +3,25 @@
  *
  * Team tables T3 (2026-11-03): Team → Mentors (the old Organisation → Mentors page's list, moved under Team)
  * and the mentor detail page, rendered.
- * - The list is the old page's, unchanged: only ARRIVED mentors plus every staff mentor, Active · n /
- *   Inactive · n, "n waiting to accept: see Invitations" from the Invitations payload.
- * - Columns: Mentor (the name links to the detail page) · Also in · Area · Languages · Scholars now ·
- *   Meetings (90 days) · Last meeting · Concerns open · the action.
- * - No "Invite a mentor" and no Emails tab here any more. Add Mentor = 7d's staff Sheet (no email).
- * - Remove = 7d: a staff mentor's Stop mentoring, a pure mentor's Deactivate — confirmed in the shared Sheet;
- *   under Inactive, Mentor again / Reactivate. Nothing offered where the row is not `manageable`.
+ * - Owner 2026-11-08: ONE list, read like Admins and Reviewers — ARRIVED mentors plus every staff mentor; a
+ *   revoked pure mentor stays (Revoked, with Restore), a staff mentor taken off drops off. No Active /
+ *   Inactive chips, no "waiting to accept" line, no footnotes.
+ * - Columns: Name (links to the detail page; the email and phone under it) · Also in · Scholars now · Meetings (90 days)
+ *   · Last meeting · Concerns open · Status · Last seen · Action. Area and languages are on the detail page.
+ * - Add Mentor = 7d's staff Sheet (no email); its button is on the Team page's tab row, which hands in `adding`.
+ * - Actions, in the other tabs' words: Remove from Mentors (staff, `stop`) and Revoke (`deactivate`), both
+ *   confirmed in the shared Sheet; Restore (`reactivate`) straight away. Nothing where not `manageable`.
  * - The detail page: figures, current and past scholars, standing and concern chips, '-' for no gap; never a
  *   meeting note (the payload carries none; the page draws only what it is given).
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
-import TeamMentorsScreen, { MentorDetail, actionOf, languagesLine, mentorHref } from './MentorsAdmin'
+import TeamMentorsScreen, { MentorDetail, actionOf, languagesLine, listed, mentorHref } from './MentorsAdmin'
 import { AlsoIn } from '@/components/admin/TeamTables'
 
-/** The screen as the Team page mounts it: its own "Also in" chips handed in. */
-const TeamMentors = () => <TeamMentorsScreen AlsoIn={AlsoIn} />
+/** The screen as the Team page mounts it: its own "Also in" chips handed in, and its Add Mentor state. */
+const TeamMentors = ({ adding = false, onAddClose = () => {} }: { adding?: boolean; onAddClose?: () => void }) =>
+  <TeamMentorsScreen AlsoIn={AlsoIn} adding={adding} onAddClose={onAddClose} />
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
@@ -53,7 +55,6 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockRole = { role: 'org_admin' }
   mockApi.getMentors.mockResolvedValue(payload())
-  mockApi.getInvitations.mockResolvedValue({ waiting: { mentor: 2 } } as unknown as api.InvitationsPayload)
   mockApi.getStaffMentorCandidates.mockResolvedValue({ staff: [
     { id: 11, name: 'Siti Nur Haliza', email: 'haliza@example.org', role: 'reviewer', organisation: 'BP' },
     { id: 12, name: 'Ravi Kumar', email: 'ravi@example.org', role: 'qc', organisation: 'BP' },
@@ -64,49 +65,64 @@ beforeEach(() => {
 })
 
 describe('Team → Mentors', () => {
-  it('lists only ARRIVED mentors and every staff mentor, Active and Inactive, no invited row', async () => {
+  it('one list: arrived mentors, staff mentors and a revoked pure mentor; no invited row, no stopped staff', async () => {
     render(<TeamMentors />)
-    const chip = await screen.findByTestId('mentor-chip-active')
-    expect(chip.getAttribute('aria-pressed')).toBe('true')
-    expect(chip.textContent).toContain('2')
-    expect(screen.getByTestId('mentor-row-1')).toBeTruthy()
+    expect(await screen.findByTestId('mentor-row-1')).toBeTruthy()
     expect(screen.getByTestId('mentor-row-5')).toBeTruthy()   // staff, not signed in: listed
+    expect(screen.getByTestId('mentor-row-3')).toBeTruthy()   // revoked pure mentor: listed, Revoked
     expect(screen.queryByTestId('mentor-row-2')).toBeNull()   // invited: on Invitations
-    fireEvent.click(screen.getByTestId('mentor-chip-inactive'))
-    expect(await screen.findByTestId('mentor-row-3')).toBeTruthy()
-    expect(screen.getByTestId('mentor-row-6')).toBeTruthy()
+    expect(screen.queryByTestId('mentor-row-6')).toBeNull()   // staff taken off Mentors: back via Add Mentor
+    expect(screen.queryByTestId('mentor-chip-active')).toBeNull()
+    expect(screen.queryByTestId('mentor-chip-inactive')).toBeNull()
+    expect(screen.queryByTestId('mentors-waiting')).toBeNull()
+    expect(mockApi.getInvitations).not.toHaveBeenCalled()
+    expect(screen.queryByText('admin.mentors.note')).toBeNull()
+    expect(screen.queryByText('admin.mentors.staffNote')).toBeNull()
   })
 
-  it('draws the board columns: the name links to the detail page, Also in, the work figures', async () => {
+  it('draws the columns like the other tabs: Name, the work figures, Status, Last seen, Action', async () => {
     render(<TeamMentors />)
     const r = await screen.findByTestId('mentor-row-1')
     expect(within(r).getByTestId('mentor-link-1').getAttribute('href')).toBe('/admin/organisation/reviewers/mentors/1')
     expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      'admin.mentors.col.mentor', 'admin.team.colAlsoIn', 'admin.mentors.col.area', 'admin.mentors.col.languages',
+      'admin.nameHeader', 'admin.team.colAlsoIn',
       'admin.mentors.col.scholarsNow', 'admin.mentors.col.meetings90', 'admin.mentors.col.lastMeeting',
-      'admin.mentors.col.concernsOpen', 'admin.mentors.col.actions'])
+      'admin.mentors.col.concernsOpen', 'admin.statusHeader', 'admin.reviewers.colLastSeen', 'admin.actionHeader'])
+    // The email and phone under the name, as on Admins and Reviewers; area and languages are on the detail page.
+    expect(within(r).getByText('kavitha@example.org')).toBeTruthy()
+    expect(within(r).queryByText('Accounting, finance')).toBeNull()
+    expect(within(r).getByTestId('mentor-phone-1').textContent).toBe('admin.reviewer.phone: 12-345 6789')
     expect(screen.getByTestId('mentor-scholars-1').textContent).toBe('4')
     expect(screen.getByTestId('mentor-meetings-1').textContent).toBe('9')
     expect(screen.getByTestId('mentor-concerns-1').textContent).toBe('1')
     expect(within(r).getByText('28/10/2026')).toBeTruthy()
+    expect(screen.getByTestId('mentor-status-1').textContent).toBe('admin.active')
+    expect(screen.getByTestId('mentor-status-3').textContent).toBe('admin.revoked')
+    expect(screen.getByTestId('mentor-last-seen-1').textContent).toBe('30/10/2026')
     // A pure mentor sits at no other table; the lead who mentors reads "Admin (lead)" and "Reviewer".
     expect(within(r).queryByTestId('also-in')).toBeNull()
     const staff = within(screen.getByTestId('mentor-row-5')).getByTestId('also-in')
     expect(staff.textContent).toBe('admin.team.chip.leadadmin.team.chip.reviewers')
   })
 
-  it('says how many are waiting, from the Invitations payload, and links there; no invite button', async () => {
+  it('Last seen reads "Not recorded" when the server has none', async () => {
+    mockApi.getMentors.mockResolvedValue(payload([{ ...ACTIVE, last_seen_at: null }]))
     render(<TeamMentors />)
-    const line = await screen.findByTestId('mentors-waiting')
-    expect(line.textContent).toContain('admin.mentors.waiting {"count":"2"}')
-    expect(within(line).getByRole('link').getAttribute('href')).toBe('/admin/organisation/staff?kind=mentor')
-    expect(screen.queryByTestId('mentor-invite-link')).toBeNull()
-    expect(screen.queryByRole('tab')).toBeNull()   // no Emails / Terms tabs here: Team's own bar
+    expect((await screen.findByTestId('mentor-last-seen-1')).textContent).toBe('admin.reviewers.lastSeenUnknown')
   })
 
-  it('Remove is 7d: Stop mentoring for staff, Deactivate for a mentor login — confirmed in the Sheet', async () => {
+  it('no invite button and no tabs of its own: Team has the bar', async () => {
+    render(<TeamMentors />)
+    await screen.findByTestId('mentor-row-1')
+    expect(screen.queryByTestId('mentor-invite-link')).toBeNull()
+    expect(screen.queryByTestId('team-add-mentors-open')).toBeNull()   // on the Team page's tab row now
+    expect(screen.queryByRole('tab')).toBeNull()
+  })
+
+  it('Remove from Mentors (staff) and Revoke (mentor login) — confirmed in the Sheet', async () => {
     render(<TeamMentors />)
     expect((await screen.findByTestId('mentor-action-1')).textContent).toBe('admin.mentors.action.deactivate')
+    expect(screen.getByTestId('mentor-action-5').textContent).toBe('admin.mentors.action.stop')
     fireEvent.click(screen.getByTestId('mentor-action-5'))
     const sheet = await screen.findByTestId('mentor-remove')
     expect(sheet.textContent).toContain('admin.mentors.confirm.stop {"name":"Suresh"}')
@@ -120,25 +136,24 @@ describe('Team → Mentors', () => {
     await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(1, 'deactivate', { token: 'tok' }))
   })
 
-  it('under Inactive: Mentor again (staff) and Reactivate (mentor login), straight away', async () => {
+  it('a revoked mentor login has Restore, straight away', async () => {
     render(<TeamMentors />)
-    fireEvent.click(await screen.findByTestId('mentor-chip-inactive'))
-    expect((await screen.findByTestId('mentor-action-3')).textContent).toBe('admin.mentors.action.reactivate')
-    fireEvent.click(screen.getByTestId('mentor-action-6'))
-    await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(6, 'resume', { token: 'tok' }))
+    const restore = await screen.findByTestId('mentor-action-3')
+    expect(restore.textContent).toBe('admin.mentors.action.reactivate')
+    fireEvent.click(restore)
+    await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(3, 'reactivate', { token: 'tok' }))
   })
 
   it('a refused action reads in its own words', async () => {
     mockApi.mentorAction.mockRejectedValue(Object.assign(new Error('x'), { code: 'active' }))
     render(<TeamMentors />)
-    fireEvent.click(await screen.findByTestId('mentor-chip-inactive'))
     fireEvent.click(await screen.findByTestId('mentor-action-3'))
     expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.error.active')
   })
 
-  it('Add Mentor is the 7d staff Sheet, with no email', async () => {
-    render(<TeamMentors />)
-    fireEvent.click(await screen.findByTestId('team-add-mentors-open'))
+  it('Add Mentor (opened from the tab row) is the 7d staff Sheet, with no email', async () => {
+    const onAddClose = jest.fn()
+    render(<TeamMentors adding onAddClose={onAddClose} />)
     const sheet = await screen.findByTestId('staff-mentor-sheet')
     expect(sheet.textContent).toContain('admin.mentors.staffSheet.intro')
     fireEvent.change(within(sheet).getByRole('searchbox'), { target: { value: 'ravi' } })
@@ -147,26 +162,64 @@ describe('Team → Mentors', () => {
     fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
     await waitFor(() => expect(mockApi.addStaffMentor).toHaveBeenCalledWith(12, { token: 'tok' }))
     expect(await screen.findByText('admin.mentors.done.added {"name":"Ravi Kumar"}')).toBeTruthy()
+    expect(onAddClose).toHaveBeenCalled()
   })
 
   it('the Sheet says the server refusal', async () => {
     mockApi.addStaffMentor.mockRejectedValue(Object.assign(new Error('x'), { code: 'not_eligible' }))
-    render(<TeamMentors />)
-    fireEvent.click(await screen.findByTestId('team-add-mentors-open'))
+    render(<TeamMentors adding />)
     const sheet = await screen.findByTestId('staff-mentor-sheet')
     fireEvent.click(await within(sheet).findByTestId('staff-candidate-11'))
     fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
     expect(await within(sheet).findByText('admin.mentors.error.not_eligible')).toBeTruthy()
   })
 
-  it('an admin (read-only) sees the table, no Add Mentor, no action, no waiting line', async () => {
+  it('Add Mentor brings back a staff member removed from Mentors ("Mentored before"), through resume', async () => {
+    const onAddClose = jest.fn()
+    mockApi.mentorAction.mockResolvedValue({ ...STOPPED, status: 'active', deactivated_at: null, emailed: null })
+    render(<TeamMentors adding onAddClose={onAddClose} />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    const back = await within(sheet).findByTestId('staff-returning-6')
+    expect(back.textContent).toContain('admin.mentors.staffSheet.before')
+    expect(back.textContent).toContain('admin.role.reviewer')
+    // The never-mentored staff carry no tag; a revoked pure mentor (id 3) is Restore's, never offered here.
+    expect(within(sheet).getByTestId('staff-candidate-11').textContent).not.toContain('staffSheet.before')
+    expect(within(sheet).queryByTestId('staff-returning-3')).toBeNull()
+    // One list, name order: Ravi, Siti, Stopped.
+    expect(within(sheet).getAllByRole('option').map((o) => o.getAttribute('data-testid')))
+      .toEqual(['staff-candidate-12', 'staff-candidate-11', 'staff-returning-6'])
+    fireEvent.click(back)
+    fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
+    await waitFor(() => expect(mockApi.mentorAction).toHaveBeenCalledWith(6, 'resume', { token: 'tok' }))
+    expect(mockApi.addStaffMentor).not.toHaveBeenCalled()
+    expect(await screen.findByText('admin.mentors.done.resume {"name":"Stopped Staff"}')).toBeTruthy()
+    expect(onAddClose).toHaveBeenCalled()
+  })
+
+  it('a removed staff mentor this caller may not manage is not offered back', async () => {
+    mockApi.getMentors.mockResolvedValue(payload([ACTIVE, { ...STOPPED, manageable: false }]))
+    render(<TeamMentors adding />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    await within(sheet).findByTestId('staff-candidate-11')
+    expect(within(sheet).queryByTestId('staff-returning-6')).toBeNull()
+  })
+
+  it('bringing one back can be refused (e.g. their staff sign-in was revoked): the Sheet says so', async () => {
+    mockApi.mentorAction.mockRejectedValue(Object.assign(new Error('x'), { code: 'not_eligible' }))
+    render(<TeamMentors adding />)
+    const sheet = await screen.findByTestId('staff-mentor-sheet')
+    fireEvent.click(await within(sheet).findByTestId('staff-returning-6'))
+    fireEvent.click(within(sheet).getByTestId('staff-mentor-add'))
+    expect(await within(sheet).findByText('admin.mentors.error.not_eligible')).toBeTruthy()
+  })
+
+  it('an admin (read-only) sees the table, no action, and no Add sheet even if asked', async () => {
     mockRole = { role: 'admin' }
     mockApi.getMentors.mockResolvedValue(payload([ACTIVE, STAFF].map((m) => ({ ...m, manageable: false }))))
-    render(<TeamMentors />)
+    render(<TeamMentors adding />)
     const r = await screen.findByTestId('mentor-row-1')
     expect(within(r).queryByRole('button')).toBeNull()
-    expect(screen.queryByTestId('team-add-mentors-open')).toBeNull()
-    expect(mockApi.getInvitations).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('staff-mentor-sheet')).toBeNull()
     expect(mockApi.getStaffMentorCandidates).not.toHaveBeenCalled()
   })
 
@@ -176,8 +229,8 @@ describe('Team → Mentors', () => {
     expect((await screen.findByTestId('mentor-concerns-1')).textContent).toBe('-')
   })
 
-  it('with nobody arrived yet, the empty state points at Invitations and Add Mentor', async () => {
-    mockApi.getMentors.mockResolvedValue(payload([INVITED]))
+  it('with nobody listed yet, the empty state points at Invitations and Add Mentor', async () => {
+    mockApi.getMentors.mockResolvedValue(payload([INVITED, STOPPED]))
     render(<TeamMentors />)
     expect((await screen.findByTestId('mentors-empty')).textContent).toBe('admin.mentors.emptyNone')
   })
@@ -186,16 +239,14 @@ describe('Team → Mentors', () => {
     const early = row({ id: 4, status: 'inactive', signed_in: false, deactivated_at: '2026-10-25T00:00:00Z' })
     mockApi.getMentors.mockResolvedValue(payload([ACTIVE, INACTIVE, early]))
     render(<TeamMentors />)
-    const chip = await screen.findByTestId('mentor-chip-inactive')
-    expect(chip.textContent).toContain('1')
-    fireEvent.click(chip)
     expect(await screen.findByTestId('mentor-row-3')).toBeTruthy()
     expect(screen.queryByTestId('mentor-row-4')).toBeNull()
   })
 
-  it('helpers: languages, the row action, the detail link', () => {
+  it('helpers: languages, who is listed, the row action, the detail link', () => {
     expect(languagesLine(ACTIVE)).toBe('EN · MS · TA')
     expect(languagesLine({ ...ACTIVE, languages: { en: '', ms: '', ta: '' }, other_language: 'Mandarin' })).toBe('Mandarin')
+    expect([ACTIVE, INVITED, INACTIVE, STAFF, STOPPED].map(listed)).toEqual([true, false, true, true, false])
     expect([ACTIVE, INACTIVE, STAFF, STOPPED].map(actionOf)).toEqual(['deactivate', 'reactivate', 'stop', 'resume'])
     expect(mentorHref(7)).toBe('/admin/organisation/reviewers/mentors/7')
   })
@@ -223,7 +274,7 @@ describe('the mentor detail page', () => {
     expect(mockApi.getMentorDetail).toHaveBeenCalledWith(1, { token: 'tok' })
     expect(screen.getByTestId('mentor-back').getAttribute('href')).toBe('/admin/organisation/reviewers?tab=mentors')
     const facts = screen.getByTestId('mentor-facts').textContent
-    expect(facts).toContain('Accounting, finance')
+    expect(facts).not.toContain('Accounting, finance')   // in the details box now
     expect(facts).toContain('admin.mentors.detail.since {"date":"02/09/2026"}')
     expect(facts).toContain('admin.mentors.detail.lastSeen {"date":"30/10/2026"}')
     expect(screen.getByTestId('tile-scholars').textContent).toContain('2')
@@ -237,6 +288,29 @@ describe('the mentor detail page', () => {
     const past = screen.getByTestId('mentor-past')
     expect(within(past).getByText('Old Scholar').tagName).not.toBe('A')   // no file to open
     expect(within(past).getByText('01/08/2026')).toBeTruthy()
+  })
+
+  it('owner 2026-11-08: a labelled details box — email, phone with +60, area, languages in full', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, mentor: { ...ACTIVE, other_language: 'Mandarin' } })
+    render(<MentorDetail id={1} />)
+    const box = await screen.findByTestId('mentor-details')
+    expect(within(box).getAllByRole('term').map((d) => d.textContent)).toEqual([
+      'admin.reviewers.detail.email', 'admin.reviewers.detail.phone', 'admin.mentors.col.area', 'admin.mentors.col.languages'])
+    expect(screen.getByTestId('mentor-detail-email').textContent).toBe('kavitha@example.org')
+    expect(screen.getByTestId('mentor-detail-phone').textContent).toBe('+60 12-345 6789')
+    expect(screen.getByTestId('mentor-detail-area').textContent).toBe('Accounting, finance')
+    expect(screen.getByTestId('mentor-detail-languages').textContent).toBe(
+      'admin.reviewers.lang.en, admin.reviewers.lang.ms, admin.reviewers.lang.ta, Mandarin')
+  })
+
+  it('an empty profile says so in each row, never hides the row; a revoked mentor login reads Revoked', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, mentor: { ...ACTIVE, phone: '', area: '',
+      languages: { en: '', ms: '', ta: '' }, status: 'inactive' } })
+    render(<MentorDetail id={1} />)
+    expect((await screen.findByTestId('mentor-detail-phone')).textContent).toBe('admin.reviewers.detail.phoneNone')
+    expect(screen.getByTestId('mentor-detail-area').textContent).toBe('admin.mentors.notFilled')
+    expect(screen.getByTestId('mentor-detail-languages').textContent).toBe('admin.mentors.notFilled')
+    expect(screen.getByText('admin.revoked')).toBeTruthy()
   })
 
   it("shows '-' for the gap when no scholar has had two meetings, and says when nobody is mentored now", async () => {

@@ -67,7 +67,7 @@ _FLAG_RESULTS = ('MAINTENANCE_REMINDERS_ENABLED', True)
 
 CATALOGUE = (
     # ── Account ─────────────────────────────────────────────────────────────────────────────
-    _E('verify_email', 'account', lock='credential', tracked=None),        # courses.views: bare send_mail
+    _E('verify_email', 'account', ('send_verification_email',), lock='credential', tracked=None),  # no org (TD-428: metered)
     _E('claim_code', 'account', ('send_claim_code_email',), lock='credential', tracked=None),  # no org
     _E('sign_in', 'account', lock='outside_platform', languages='en', tracked=None),          # Supabase Auth
     # ── Applying ────────────────────────────────────────────────────────────────────────────
@@ -124,6 +124,10 @@ CATALOGUE = (
        wording=('signing', 'AGREEMENT_EXECUTED_SUBJECTS', 'AGREEMENT_EXECUTED_BODIES')),
     _E('vircle_setup', 'award', ('send_vircle_install_email',), lock='wallet_task',
        wording=('vircle_install', 'VIRCLE_INSTALL_SUBJECTS', 'VIRCLE_INSTALL_BODIES')),
+    # A1.13 (TD-198): an awarded case is withdrawn — since A1.13b once a checker approves somebody else's
+    # request. LOCKED — it is how she learns the decision. The ORGANISATION's to word (owner, 2026-11-08:
+    # the `student_comms` family, like the letter notice); the default is the owner-approved text.
+    _E('award_withdrawn', 'award', lock='decision', tracked='log', editable=True),
     # ── Results (the organisation's own wording, `student_comms`) ───────────────────────────
     _E('results_due', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
     _E('results_overdue', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
@@ -180,6 +184,7 @@ NOT_STUDENT_SENDERS = frozenset({
     'send_mentor_invitation_email',     # a mentor (student maintenance S7a)
     'send_sponsor_new_student_email', 'send_sponsor_digest_email', 'send_invoice_email',
     'send_receipt_email', 'send_payment_declared_email', 'send_invoicing_alert_email',
+    'send_withdrawal_requested_email', 'send_withdrawal_outcome_email',   # staff (A1.13b)
     # `send_partner_email` is the shared partner sender. Its ONE student-facing use (the partner
     # access notice) is `partner_access` above, managed on Sources.
     'send_partner_email',

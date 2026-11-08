@@ -112,7 +112,9 @@ import { QcPanel, qcRefusalText } from './view/QcPanel'
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
+import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
+import { WithdrawAwardCard } from './view/WithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { closeErrorKey, stageStatus } from '@/lib/closeOffer'
@@ -1070,6 +1072,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
+        notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
+          refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
       />
 
 
@@ -1088,6 +1092,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
+      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

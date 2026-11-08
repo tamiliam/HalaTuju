@@ -15,6 +15,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { QcOverrideNote, type T } from './shared'
 import { ReopenHeaderControl } from './ReopenHeaderControl'
+import { ReasonBox } from './ReasonBox'
 import { decisionBarShows } from './DecisionBar'
 
 export function DecisionCard({
@@ -82,23 +83,15 @@ export function DecisionCard({
         {/* The "why are you reopening?" prompt — a reopen asserts a reviewer error, so a
             reason is required (logged + counted against the reviewer once a change is saved). */}
         {decisionLocked && isSuper && reopenOpen && (
-          <div className="rounded-lg border border-caution-200 bg-caution-50 p-3 space-y-2">
-            <p className="text-xs font-medium text-caution-900">{t('admin.scholarship.recordVerdict.reopenTitle')}</p>
-            <p className="text-xs md:text-[11px] text-caution-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
-            <textarea value={reopenReason} rows={2} onChange={(e) => setReopenReason(e.target.value)}
-              placeholder={t('admin.scholarship.recordVerdict.reopenPlaceholder')}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <div className="flex items-center gap-2">
-              <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
-                className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
-                {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
-              </button>
-              <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
-                className="px-3 py-1.5 border rounded-lg text-sm text-ground-600 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
+          <ReasonBox
+            title={t('admin.scholarship.recordVerdict.reopenTitle')}
+            hint={t('admin.scholarship.recordVerdict.reopenHint')}
+            placeholder={t('admin.scholarship.recordVerdict.reopenPlaceholder')}
+            confirmLabel={t('admin.scholarship.recordVerdict.reopenConfirm')}
+            workingLabel={t('common.loading')} cancelLabel={t('common.cancel')}
+            value={reopenReason} onChange={setReopenReason} onConfirm={doReopenDecision}
+            onCancel={() => { setReopenOpen(false); setReopenReason('') }}
+            disabled={!!busy} working={busy === 'reopen'} />
         )}
 
         {/* Reopened banner — the decision is editable again and the profile is held from

@@ -8,7 +8,8 @@ import {
   type AdminItem, type OrgItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
-import TableFrame from '@/components/admin/TableFrame'
+import TableFrame, { TH } from '@/components/admin/TableFrame'
+import { formatDate } from '@/lib/formatDate'
 import PermissionChips from '@/components/admin/PermissionChips'
 import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
@@ -83,7 +84,13 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   team?: { onRemove: (a: AdminItem) => void }
 }) {
   const { t } = useT()
-  const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
+  // Team (owner 2026-11-08): read like Reviewers and Mentors — the email under the name, a Last seen
+  // column after Status, the shared header style. The platform's staff screens keep their layout.
+  // Four base columns either way: Name, Email (Team: Last seen instead), Role / Also in, Status.
+  const cols = 4 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
+  const th = team ? TH : 'px-4 py-3 text-left font-medium text-ground-600'
+  const lastSeen = (a: AdminItem) => a.last_seen_at ? formatDate(a.last_seen_at)
+    : <span className="text-ground-400">{t('admin.reviewers.lastSeenUnknown')}</span>
   /** T2: the organisation admin reads "Organisation admin (lead)" on the Admins table (T3: no permission
    *  column any more; the lead's fixed tier is still said, beside "Also in"). */
   const leadCell = (a: AdminItem) => a.lead ? (
@@ -195,6 +202,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   <span className="block text-sm font-semibold text-ground-900">{a.name}</span>)}
                 <span className="block truncate text-[11px] text-ground-500">{a.email}</span>
                 {a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}
+                {team && <span className="block text-[11px] text-ground-500">{t('admin.reviewers.colLastSeen')}: {lastSeen(a)}</span>}
                 </div>
                 {showOrg && (
                   <span className="block text-[11px] text-ground-400">{a.owning_org_name || '—'}</span>
@@ -234,16 +242,13 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
       <table className="w-full text-sm">
         <thead className="border-b bg-ground-50">
           <tr>
-            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.nameHeader')}</th>
-            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.emailHeader')}</th>
-            {showOrg && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.orgHeader')}</th>}
-            {team ? (<>
-              <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.team.colAlsoIn')}</th>
-            </>) : (
-              <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.roleHeader')}</th>
-            )}
-            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.statusHeader')}</th>
-            {canAct && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.actionHeader')}</th>}
+            <th className={th}>{t('admin.nameHeader')}</th>
+            {!team && <th className={th}>{t('admin.emailHeader')}</th>}
+            {showOrg && <th className={th}>{t('admin.orgHeader')}</th>}
+            <th className={th}>{t(team ? 'admin.team.colAlsoIn' : 'admin.roleHeader')}</th>
+            <th className={th}>{t('admin.statusHeader')}</th>
+            {team && <th className={th}>{t('admin.reviewers.colLastSeen')}</th>}
+            {canAct && <th className={th}>{t('admin.actionHeader')}</th>}
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -252,10 +257,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               <td className="px-4 py-3">
                 <span className="flex items-start gap-2">
                   <StaffAvatar name={a.name} photoUrl={a.photo_url} size={28} />
-                  <span className="min-w-0">{nameOf(a, 'font-medium', a.name)}{a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}</span>
+                  <span className="min-w-0">{nameOf(a, 'font-medium', a.name)}{team && <span className="block text-xs text-ground-500" data-testid={`team-email-${a.id}`}>{a.email}</span>}{a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}</span>
                 </span>
               </td>
-              <td className="px-4 py-3 text-ground-500">{a.email}</td>
+              {!team && <td className="px-4 py-3 text-ground-500">{a.email}</td>}
               {showOrg && <td className="px-4 py-3 text-ground-500">{a.owning_org_name || '—'}</td>}
               {team ? (<>
                 <td className="px-4 py-3"><span className="flex flex-col gap-1">{leadCell(a)}<AlsoIn row={a} here="admins" /></span></td>
@@ -278,6 +283,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   {statusOf(a).label}
                 </span>
               </td>
+              {team && <td className="px-4 py-3 whitespace-nowrap" data-testid={`team-last-seen-${a.id}`}>{lastSeen(a)}</td>}
               {/* ⚠ `actionsFor`, NOT A SECOND COPY. This cell held its own inline duplicate of the
                   buttons until 2026-09-09 — the phone cards called the helper and the desktop
                   table did not — so fixing the Resend rule in one place fixed exactly half the

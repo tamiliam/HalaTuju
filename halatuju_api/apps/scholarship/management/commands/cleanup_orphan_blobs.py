@@ -21,7 +21,7 @@ from django.core.management.base import BaseCommand
 from apps.scholarship.models import (
     ApplicantDocument, BursaryAgreement, Letter, ModuleLesson, ModuleProgress, OrgRequestAttachment, StaffProfile,
 )
-from apps.scholarship import storage
+from apps.scholarship import activity, storage
 
 
 def known_paths():
@@ -46,7 +46,10 @@ def known_paths():
         ModuleLesson.objects.exclude(file_path='').values_list('file_path', flat=True),
         ModuleProgress.objects.exclude(task_file_path='').values_list('task_file_path', flat=True),
     )
-    return {path for qs in sources for path in qs}
+    # A1.13 third review: the signed PDF of a WITHDRAWN award, kept in the withdrawal's activity row
+    # (a re-signing overwrites the agreement row's own path). Read through activity.py, the log's
+    # only reader outside the staff file (test_letters pins it).
+    return {path for qs in sources for path in qs} | activity.withdrawn_agreement_pdfs()
 
 
 def _is_folder(item):

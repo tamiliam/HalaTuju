@@ -21,7 +21,7 @@ const emailsOf = (cat: unknown) =>
 
 describe('the admin-email registry and its words agree', () => {
   test('parse sanity: the catalogue was really read', () => {
-    expect(keys.length).toBe(10)
+    expect(keys.length).toBe(12)   // A1.13b: + withdrawal_request, withdrawal_outcome
     expect(keys[0]).toBe('payment_approval')
   })
 

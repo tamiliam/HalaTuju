@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState, type ComponentType } from 'react'
+import { Fragment, useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { isSuperRole } from '@/lib/superRole'
 import { STANDING_TONE } from '@/lib/scholars'
+import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
+import { displayPhone } from '@/lib/reviewerDetail'
 import {
-  getInvitations, getMentorDetail, getMentors, mentorAction, setMentorGifts,
+  getMentorDetail, getMentors, mentorAction, setMentorGifts,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
   type MentorsPayload, type ScholarStanding,
 } from '@/lib/admin-api'
@@ -24,18 +26,20 @@ import StaffMentorSheet from './StaffMentorSheet'
  * through their own `lazySource` loader with this literal specifier, so no new chunk joins the webpack
  * runtime every route downloads (the S7b follow-up review's lesson).
  *
- * ⚠ WHAT THE TABLE LISTS IS THE OLD PAGE'S LIST, UNCHANGED: the mentors who have ARRIVED (signed in) plus
- * every staff member who mentors (their sign-in is People's), split Active · n / Inactive · n. A mentor
- * invited and not signed in yet is on Invitations → Mentor; this table says how many ("n waiting to
- * accept: see Invitations" — the Invitations payload's own count, for the roles who see that tab).
+ * ⚠ ONE LIST, READ LIKE ADMINS AND REVIEWERS (owner 2026-11-08): the mentors who have ARRIVED (signed in)
+ * plus every staff member who mentors, with a Status (Active / Revoked) and Last seen column. No
+ * Active / Inactive chips and no "waiting to accept" line: a mentor invited and not signed in yet is
+ * Invitations → Mentor's business, as on the other tabs. A revoked pure mentor stays listed (Revoked,
+ * with Restore); a staff member taken off Mentors drops off the list and comes back through Add Mentor.
  * ⚠ "INVITE A MENTOR" IS GONE (ruling 6): new mentors are invited on Invitations → Mentor. **Add Mentor**
  * is 7d's "Add a staff member as mentor" (`StaffMentorSheet`, the shared Sheet): an existing team member,
- * no email, their sign-in untouched.
- * ⚠ REMOVE IS 7d's, UNCHANGED: a staff member's **Stop mentoring** (assignments end, the sign-in
- * untouched; under Inactive, **Mentor again**) and a pure mentor's **Deactivate** (their sign-in is
- * switched off; under Inactive, **Reactivate**). Offered only where the row's `manageable` says the
- * endpoint will take it; the confirm is the shared Sheet.
- * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own.
+ * no email, their sign-in untouched. Its button sits on the Team page's tab row (the page owns `adding`).
+ * ⚠ THE ACTIONS ARE 7d's, RENAMED TO THE OTHER TABS' WORDS: a staff member's **Remove from Mentors**
+ * (endpoint `stop`: assignments end, the sign-in untouched) and a pure mentor's **Revoke** / **Restore**
+ * (endpoints `deactivate` / `reactivate`: their sign-in is switched off and back on). Offered only where
+ * the row's `manageable` says the endpoint will take it; the confirm is the shared Sheet.
+ * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; they are shown on the
+ * mentor's page (the details box), not as table columns.
  * ⚠ THE DETAIL PAGE IS STAFF ONLY AND SHOWS NO MEETING NOTE: figures, scholars, dates, standing, concern
  * state. Notes stay on each scholar's file. Who reads it = who reads this table (`GET admin/mentors/<id>/`).
  * ⚠ `superRole` (a leaf), never `lib/navigation`: importing the route registry here split it into a shared
@@ -47,8 +51,6 @@ type T = (k: string, vars?: Record<string, string>) => string
 type Banner = { ok: boolean; text: string } | null
 
 const K = 'admin.mentors'
-const STATUSES = ['active', 'inactive'] as const
-type Arrived = typeof STATUSES[number]
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
   'not_staff']
 const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
@@ -57,14 +59,27 @@ const REMOVES: readonly MentorAction[] = ['stop', 'deactivate']
 
 const codeOf = (err: unknown) => (err as { code?: string })?.code ?? ''
 
+/** The codes of the languages spoken conversationally or better, in en · ms · ta order. */
+function spokenCodes(m: MentorRow): ('en' | 'ms' | 'ta')[] {
+  return (['en', 'ms', 'ta'] as const).filter((k) => m.languages[k] === 'conversational'
+    || m.languages[k] === 'fluent')
+}
+
 /** "EN · MS · TA (+ Mandarin)" — the languages spoken conversationally or better; '' when none. */
 export function languagesLine(m: MentorRow): string {
-  const codes = (['en', 'ms', 'ta'] as const).filter((k) => m.languages[k] === 'conversational'
-    || m.languages[k] === 'fluent').map((k) => k.toUpperCase())
+  const codes = spokenCodes(m).map((k) => k.toUpperCase())
   return [...codes, ...(m.other_language ? [m.other_language] : [])].join(' · ')
 }
 
-/** The row's one action: a staff mentor's Stop / Mentor again, a mentor login's Deactivate / Reactivate. */
+/** Who the table lists: arrived mentors and staff mentors, except a staff member taken off Mentors
+ *  (they come back through Add Mentor). A revoked pure mentor stays, marked Revoked. */
+export function listed(m: MentorRow): boolean {
+  if (m.status === 'invited' || !(m.staff_role || m.signed_in)) return false
+  return m.status === 'active' || !m.staff_role
+}
+
+/** The row's one action (endpoint names): a staff mentor's stop ("Remove from Mentors") / resume, a
+ *  mentor login's deactivate ("Revoke") / reactivate ("Restore"). */
 export function actionOf(m: MentorRow): MentorAction {
   return m.staff_role
     ? (m.status === 'active' ? 'stop' : 'resume')
@@ -76,18 +91,20 @@ export type AlsoInChips = ComponentType<{ row: { tables?: string[]; lead?: boole
 
 export const mentorHref = (id: number) => `/admin/organisation/reviewers/mentors/${id}`
 
-export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
+/** `adding` / `onAddClose`: the Team page's Add Mentor button (on its tab row) opens the sheet here. */
+export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
+  AlsoIn: AlsoInChips
+  adding?: boolean
+  onAddClose?: () => void
+}) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const r = isSuperRole(role) ? 'super' : (role?.role ?? '')
   const mayManage = ['super', 'org_admin'].includes(r)
   const [data, setData] = useState<MentorsPayload | null>(null)
-  const [waiting, setWaiting] = useState<number | null>(null)
   const [failed, setFailed] = useState(false)
-  const [filter, setFilter] = useState<Arrived>('active')
   const [banner, setBanner] = useState<Banner>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
-  const [adding, setAdding] = useState(false)
   const [removing, setRemoving] = useState<MentorRow | null>(null)
 
   const load = useCallback(async () => {
@@ -96,11 +113,7 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
       const d = await getMentors({ token })
       setData(d); setFailed(false)
     } catch { setFailed(true) }
-    // The waiting count is the Invitations page's own (its Mentor chip), for the roles who see it.
-    if (mayManage) {
-      getInvitations('mentor', { token }).then((p) => setWaiting(p.waiting?.mentor ?? 0)).catch(() => setWaiting(null))
-    }
-  }, [token, mayManage])
+  }, [token])
   useEffect(() => { void load() }, [load])
 
   const act = async (m: MentorRow, action: MentorAction) => {
@@ -119,31 +132,20 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
   }
 
   // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor switched
-  // off before arriving is not listed: a re-invite on Invitations brings them back. A staff mentor is
-  // listed either way (their sign-in is People's business). THE OLD MENTORS PAGE'S RULE, unchanged.
-  const arrived = (data?.mentors ?? []).filter((m) => (m.staff_role || m.signed_in) && m.status !== 'invited')
-  const rows = arrived.filter((m) => m.status === filter)
-  const counts: Record<Arrived, number> = {
-    active: arrived.filter((m) => m.status === 'active').length,
-    inactive: arrived.filter((m) => m.status === 'inactive').length,
-  }
+  // off before arriving is not listed: a re-invite on Invitations brings them back. `listed` has the rule.
+  const rows = (data?.mentors ?? []).filter(listed)
+  // A staff mentor removed from Mentors drops off the list; Add Mentor offers them back (`resume`).
+  const returning = (data?.mentors ?? []).filter((m) => m.staff_role && m.status === 'inactive' && m.manageable)
   const removingAction = removing ? actionOf(removing) : null
 
   return (
     <div className="space-y-4" data-testid="team-mentors">
       {mayManage && (
-        <div className="flex justify-end">
-          <button type="button" onClick={() => setAdding(true)} data-testid="team-add-mentors-open"
-            className="min-h-11 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
-            {t(`${K}.addMentor`)}
-          </button>
-        </div>
-      )}
-      {mayManage && (
-        <StaffMentorSheet open={adding} token={token} t={t} onClose={() => setAdding(false)}
-          onAdded={(row) => {
-            setAdding(false); setFilter('active')
-            setBanner({ ok: true, text: t(`${K}.done.added`, { name: row.name }) })
+        <StaffMentorSheet open={adding} token={token} t={t} onClose={() => onAddClose?.()}
+          returning={returning}
+          onAdded={(row, back) => {
+            onAddClose?.()
+            setBanner({ ok: true, text: t(`${K}.done.${back ? 'resume' : 'added'}`, { name: row.name }) })
             void load()
           }} />
       )}
@@ -176,62 +178,43 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
       {failed && <p className="text-sm text-critical-600" role="alert">{t(`${K}.loadError`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {mayManage && !!waiting && (
-        <p className="text-sm text-ground-700" data-testid="mentors-waiting">
-          {t(`${K}.waiting`, { count: String(waiting) })}{' '}
-          <Link href="/admin/organisation/staff?kind=mentor" className="font-medium text-primary-600 hover:underline">
-            {t(`${K}.seeInvitations`)}
-          </Link>
-        </p>
-      )}
-
       {data && (
         <>
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t(`${K}.col.status`)}>
-            {STATUSES.map((s) => (
-              <button key={s} type="button" aria-pressed={filter === s} onClick={() => setFilter(s)}
-                data-testid={`mentor-chip-${s}`}
-                className={`h-9 rounded-full border px-4 text-sm ${filter === s
-                  ? 'border-info-500 bg-info-50 font-medium text-info-900' : 'border-ground-300 bg-ground-0 text-ground-700'}`}>
-                {t(`${K}.status.${s}`)} · {counts[s]}
-              </button>
-            ))}
-          </div>
-
           {rows.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500"
               data-testid="mentors-empty">
-              {arrived.length === 0 ? t(mayManage ? `${K}.emptyNone` : `${K}.emptyNoneRead`) : t(`${K}.empty`)}
+              {t(mayManage ? `${K}.emptyNone` : `${K}.emptyNoneRead`)}
             </div>
           ) : (
-            <TableFrame minWidth={1100} label={t(`${K}.title`)} phoneRows>
+            <TableFrame minWidth={1000} label={t(`${K}.title`)} phoneRows>
               <table className="w-full text-sm">
                 <thead className="border-b bg-ground-50">
                   <tr>
-                    <th className={TH}>{t(`${K}.col.mentor`)}</th>
+                    <th className={TH}>{t('admin.nameHeader')}</th>
                     <th className={TH}>{t('admin.team.colAlsoIn')}</th>
-                    {['area', 'languages', 'scholarsNow', 'meetings90', 'lastMeeting', 'concernsOpen'].map((c) => (
+                    {['scholarsNow', 'meetings90', 'lastMeeting', 'concernsOpen'].map((c) => (
                       <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>
                     ))}
-                    <th className={TH}><span className="sr-only">{t(`${K}.col.actions`)}</span></th>
+                    <th className={TH}>{t('admin.statusHeader')}</th>
+                    <th className={TH}>{t('admin.reviewers.colLastSeen')}</th>
+                    <th className={TH}>{t('admin.actionHeader')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {rows.map((m) => {
-                    const langs = languagesLine(m)
                     const action = actionOf(m)
+                    const active = m.status === 'active'
                     return (
                       <tr key={m.id} data-testid={`mentor-row-${m.id}`} className="align-top">
                         <td className="px-4 py-3">
                           <Link href={mentorHref(m.id)} data-testid={`mentor-link-${m.id}`}
                             className="font-medium text-primary-600 hover:text-primary-800">{m.name}</Link>
-                          <span className="block text-xs text-ground-500">
-                            {m.email}{m.phone ? ` · ${m.phone}` : ''}
-                          </span>
+                          <span className="block text-xs text-ground-500">{m.email}</span>
+                          {/* The phone on its own line, as on Admins and Reviewers. */}
+                          {m.phone && <span className="block text-xs text-ground-600" data-testid={`mentor-phone-${m.id}`}>
+                            <span className="sr-only">{t('admin.reviewer.phone')}: </span>{m.phone}</span>}
                         </td>
                         <td className="px-4 py-3" data-label={t('admin.team.colAlsoIn')}><AlsoIn row={m} here="mentors" /></td>
-                        <td className={`px-4 py-3 ${m.area ? '' : 'text-ground-500'}`} data-label={t(`${K}.col.area`)}>{m.area || t(`${K}.notFilled`)}</td>
-                        <td className={`px-4 py-3 ${langs ? '' : 'text-ground-500'}`} data-label={t(`${K}.col.languages`)}>{langs || t(`${K}.notFilled`)}</td>
                         <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.scholarsNow`)} data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>
                         <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.meetings90`)} data-testid={`mentor-meetings-${m.id}`}>{m.meetings_90 ?? 0}</td>
                         <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.col.lastMeeting`)}>
@@ -241,6 +224,17 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
                         <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`} data-label={t(`${K}.col.concernsOpen`)}
                           data-testid={`mentor-concerns-${m.id}`}>
                           {m.concerns_open === null ? <span className="text-ground-400">-</span> : (m.concerns_open ?? 0)}</td>
+                        <td className="px-4 py-3" data-label={t('admin.statusHeader')}>
+                          <span data-testid={`mentor-status-${m.id}`}
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs ${STAFF_STATUS_TONE[active ? 'active' : 'revoked']}`}>
+                            {t(active ? 'admin.active' : 'admin.revoked')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap" data-label={t('admin.reviewers.colLastSeen')}
+                          data-testid={`mentor-last-seen-${m.id}`}>
+                          {m.last_seen_at ? formatDate(m.last_seen_at)
+                            : <span className="text-ground-400">{t('admin.reviewers.lastSeenUnknown')}</span>}
+                        </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           {m.manageable && (
                             <button type="button" disabled={busyId === m.id} data-testid={`mentor-action-${m.id}`}
@@ -258,8 +252,6 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
               </table>
             </TableFrame>
           )}
-          <p className="text-xs text-ground-500">{t(`${K}.note`)}</p>
-          <p className="text-xs text-ground-500">{t(`${K}.staffNote`)}</p>
         </>
       )}
     </div>
@@ -369,11 +361,19 @@ export function MentorDetail({ id }: { id: number }) {
 
   const m = data.mentor
   const f = data.figures
-  const langs = languagesLine(m)
+  const langs = [...spokenCodes(m).map((c) => t(`admin.reviewers.lang.${c}`)),
+    ...(m.other_language ? [m.other_language] : [])].join(', ')
   const sees = data.sees_scholars !== false && f !== null
+  const unset = (text: string) => <span className="text-ground-400">{text}</span>
+  // Owner 2026-11-08: the reviewer page's labelled fact sheet, not one unlabelled line.
+  const details: { key: string; label: string; value: ReactNode }[] = [
+    { key: 'email', label: t('admin.reviewers.detail.email'), value: m.email || unset('—') },
+    { key: 'phone', label: t('admin.reviewers.detail.phone'),
+      value: m.phone ? displayPhone(m.phone) : unset(t('admin.reviewers.detail.phoneNone')) },
+    { key: 'area', label: t(`${K}.col.area`), value: m.area || unset(t(`${K}.notFilled`)) },
+    { key: 'languages', label: t(`${K}.col.languages`), value: langs || unset(t(`${K}.notFilled`)) },
+  ]
   const facts = [
-    m.area || t(`${K}.notFilled`),
-    ...(langs ? [langs] : []),
     ...(data.mentoring_since ? [t(`${K}.detail.since`, { date: formatDate(data.mentoring_since) })] : []),
     m.last_seen_at ? t(`${K}.detail.lastSeen`, { date: formatDate(m.last_seen_at) }) : t(`${K}.detail.lastSeenUnknown`),
   ]
@@ -402,12 +402,26 @@ export function MentorDetail({ id }: { id: number }) {
             <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
               {m.staff_role && <span className="rounded-full bg-info-50 px-2 py-0.5 text-info-800">
                 {t(`${K}.staffTag`, { role: t(`admin.role.${m.staff_role}`) })}</span>}
-              {m.status === 'inactive' && <span className="rounded-full bg-ground-100 px-2 py-0.5 text-ground-600">
-                {t(`${K}.status.inactive`)}</span>}
+              {/* A pure mentor switched off reads Revoked, as on the table; a staff mentor taken off reads Inactive. */}
+              {m.status === 'inactive' && (m.staff_role
+                ? <span className="rounded-full bg-ground-100 px-2 py-0.5 text-ground-600">{t(`${K}.status.inactive`)}</span>
+                : <span className={`rounded-full px-2 py-0.5 ${STAFF_STATUS_TONE.revoked}`}>{t('admin.revoked')}</span>)}
             </p>
           )}
         </div>
       </div>
+      <section className="rounded-xl border bg-ground-0" data-testid="mentor-details">
+        <h2 className="border-b px-4 py-3 text-sm font-semibold text-ground-900 sm:px-5">
+          {t('admin.reviewers.detail.about')}</h2>
+        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2.5 px-4 py-4 sm:px-5">
+          {details.map((d) => (
+            <Fragment key={d.key}>
+              <dt className="whitespace-nowrap text-sm text-ground-500">{d.label}</dt>
+              <dd className="m-0 break-words text-sm text-ground-900" data-testid={`mentor-detail-${d.key}`}>{d.value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      </section>
       {/* T3 review: the scholar side needs the Scholars list's read key (`see_all`). */}
       {!sees || !f ? (
         <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">

@@ -99,6 +99,7 @@ from .credits import (
     AdminWalletCreditSignView,
 )
 from .guardian_contact import AdminGuardianCallView, AdminGuardianContactView
+from .reviewer_notes import AdminReviewerNotesView   # request #55
 from .graduation import (
     _BursaryAdminBase, AdminBursaryCountersignView, AdminBursaryWitnessView,
     AdminGraduationMessageReviewView,
@@ -154,6 +155,9 @@ from .announcements import (   # S8: Programme -> Announcements
 from .surveys import (   # S9: Programme -> Surveys, and the scholar file's Surveys tab
     AdminScholarSurveysView, AdminSurveyActionView, AdminSurveyCsvView, AdminSurveyResultsView, AdminSurveyView,
     AdminSurveysView,
+)
+from .award_withdrawal import (   # A1.13b (TD-198): award withdrawal, maker and checker
+    AdminWithdrawalApproveView, AdminWithdrawalCancelView, AdminWithdrawalRefuseView, AdminWithdrawalRequestView,
 )
 from .development import (   # S10: Programme -> Development, a module's Progress, the scholar file's Growth tab
     AdminModuleActionView, AdminModuleCsvView, AdminModuleLessonFileSignView, AdminModuleLessonFileView,

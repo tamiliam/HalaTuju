@@ -14,7 +14,9 @@ message are inserted as staff wrote them (`announcement_title`, `announcement_bo
 the reminder — the difference carried by `{survey_note}`, a line the code fills in her language
 (`survey_emails.NOTES`). S10 added ``module_published`` (switchable, sent by the hourly `module-emails` job): ONE
 wording for the "a new module is ready" email and the reminder before its due date, `{module_note}` saying which
-(`development_emails.NOTES`) and `{due_note}` the due date, or nothing.
+(`development_emails.NOTES`) and `{due_note}` the due date, or nothing. A1.13b added ``award_withdrawn`` (LOCKED, a
+decision: sent after a checker approves a withdrawal request, `award_withdrawal._apply`); its default wording is
+the owner-approved text kept in `emails.award_withdrawn`, read from there so it is written once.
 
 WHERE THE WORDS LIVE. The platform's default wording is HERE, in code (``DEFAULTS``). An organisation
 that edits a letter (Organisation → Settings → Student communications) gets its own
@@ -37,10 +39,11 @@ from django.conf import settings
 from django.db import transaction
 
 from . import email_templates
+from .emails.award_withdrawn import AWARD_WITHDRAWN_BODIES, AWARD_WITHDRAWN_SUBJECTS
 from .models import StudentEmailTemplate
 
 KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned', 'announcement',
-         'survey_open', 'module_published')
+         'survey_open', 'module_published', 'award_withdrawn')
 #: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
 #: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
 PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
@@ -64,6 +67,8 @@ PLACEHOLDERS = {
     # S10: the module as staff named it, the line that says "new" or "a reminder", and "please finish it by
     # …" (empty without a due date); `{link}` opens My Bursary on its Growth tab.
     'module_published': _COMMON + ('module_title', 'module_note', 'due_note'),
+    # A1.13b: no explanation, note, amount or sponsor — those are internal (and two-way anonymous).
+    'award_withdrawn': _COMMON,
 }
 
 DEFAULTS = {
@@ -208,6 +213,9 @@ DEFAULTS = {
                'எழுதுங்கள்.\n\n{signoff}'),
     },
 }
+# A1.13b: the owner-approved "award withdrawn" text (2026-11-08), as written in `emails.award_withdrawn`.
+DEFAULTS['award_withdrawn'] = {lang: (AWARD_WITHDRAWN_SUBJECTS[lang], AWARD_WITHDRAWN_BODIES[lang])
+                               for lang in ('en', 'ms', 'ta')}
 
 
 #: Month names for a date in a student's email, in her language ("31 January 2027").

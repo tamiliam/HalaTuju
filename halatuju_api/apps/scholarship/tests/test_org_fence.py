@@ -644,6 +644,8 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminGuardianContactView': 'gate',
         # Request #26 consent reframe: "Record call" — the SAME gate (_guardian_gate) as the correction.
         'AdminGuardianCallView': 'gate',
+        # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
+        'AdminReviewerNotesView': 'gate+super/org_admin write',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',
@@ -660,6 +662,11 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminRequestInfoView': 'gate', 'AdminResolutionItemView': 'gate',
         'AdminRecordVerdictView': 'gate', 'AdminReopenDecisionView': 'gate',
         'AdminQcDecisionView': 'gate', 'AdminCancelReopenView': 'gate',
+        # A1.13b (TD-198): the maker asks through _scoped_application; a decision / cancel loads the request
+        # and answers 404 unless ITS organisation is the caller's, then the chain's same-organisation seat.
+        '_WithdrawalBase': 'base — super refused at the door + org-fenced request lookup (_row, 404)',
+        'AdminWithdrawalRequestView': 'gate', 'AdminWithdrawalApproveView': 'gate',
+        'AdminWithdrawalRefuseView': 'gate', 'AdminWithdrawalCancelView': 'gate',
         'AdminSubmitDeclineView': 'gate',   # reviewer sends a decline verdict to QC (_require_app_write)
         'AdminAssignReviewerView': 'gate+super/org_admin', 'AdminInterviewSlotsView': 'gate',
         # list/aggregate fenced via _org_scoped

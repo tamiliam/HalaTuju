@@ -127,7 +127,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-353** — Applications to two organisations at once stay blocked until M2–M4 (stricter than the per-organisation ruling, on purpose). **ON HOLD by owner ruling 2026-10-06 until a second organisation joins the platform.** *(B · L · raised 2026-10-05, same review)*
 
 - **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
-- **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)*
+- **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)* - **FIXED (2026-11-08, A1.13: owner ruling D3, super-only withdrawal with a required reason; a paid case is TD-591; A1.13b 2026-11-08 replaced it with MAKER and CHECKER: one staff member asks, a different one approves or refuses, no super in either seat)**
 - **TD-192** — Sponsor vetting is one button. What checks do we require, for whom, and do they block money? *(A · L · parked with the sponsor module)*
 - **TD-152** — The agreement's donor is a named person until the Foundation is registered. Confirm the hand-over plan. *(A · L)*
 - **TD-142** — Payments are real but not tied to the signed agreement. This waits on TD-140. *(A · L · partly done)*
@@ -286,7 +286,7 @@ Do one only when a sprint is already in that file.
 
 - **TD-166** — The What-you-agreed-to panel shows today's wording. Accepted knowingly by the owner on 2026-07-26. *(C · S)*
 
-### Raised since the 2026-10-28 index - listed, not yet tiered - 81
+### Raised since the 2026-10-28 index - listed, not yet tiered - 83
 Each is an open entry with a defining line in the register body (read it there). The owner/Now/Next/Later tiering of these is the first job of the next regeneration; until then they are listed so that the pointer count equals the tool.
 
 - **TD-422** - The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
@@ -321,7 +321,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-462** - The bank-statement upload has no early size / format refusal - low
 - **TD-463** - The award page's payment schedule is served in English - low
 - **TD-464** - Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
-- **TD-465** - A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money)
+- **TD-465** - A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money) - part 2 done 2026-11-08 (A1.13: one read point, no behaviour change); the time-left ruling still open
 - **TD-466** - Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 - **TD-467** - The private bucket has no allowed_mime_types / file_size_limit; the older upload flows sign with upsert - medium (PART FIXED 2026-11-06 by A1.7: every upload now signs with upsert=False and the browsers no longer send x-upsert; the bucket limits are written in docs/security/2026-11-06-b40-documents-bucket-limits.sql, NOT applied - owner step)
 - **TD-469** - Mobile M5 leftovers: the sponsor desktop has no language control; admin-side sponsor labels - low
@@ -384,6 +384,13 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-560** - A `payments_approve` holder who has never signed in still arms the wallet credit check - low
 - **TD-561** - The credit sign view loads the credit without a row lock, so two simultaneous signers could both act - medium
+- **TD-583** - The income wizard's `saveDeclared` builds the whole income map from a stale `ans`, so two quick entries for different members can overwrite each other - low
+- **TD-584** - Two course-catalogue commands (`generate_stpm_headlines`, `map_course_careers`) call Gemini with no usage recorded - low
+- **TD-591** - An award that has already paid money cannot be withdrawn; owner ruling A (2026-11-08): the 409 stays, the unpaid-part fix is a sprint of its own (links TD-366) - **high (money)**
+- **TD-592** - Payments: a known course start year after the paid month's year still pays on the pathway floor; tightening it is the owner's call - medium (money)
+- **TD-593** - Loose ends after an award withdrawal: the Vircle task stays (the countersign part was fixed by the A1.13 review; the staff_activity verbs came with A1.13b, migration 0206) - low
+- **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low - **lapse part FIXED (2026-11-08, A1.13 third review); `hold_pending_award` still open**
+- **TD-595** - The award-email job sends the email over the network while it holds the application and sponsorship locks - low
 
 ### Clusters worth doing as one job
 - **A screen answering a server question for itself (2026-10-28)** — requests #40, #41, #45 and the
@@ -1303,7 +1310,11 @@ Each is an open entry with a defining line in the register body (read it there).
 **File(s):** `halatuju-web/src/app/error.tsx`, `loading.tsx`, `not-found.tsx`
 **Resolution:** Three pages added with full i18n (EN/MS/TA via `useT()`), primary brand colour, consistent layout. 7 translation keys added to `errors` section in all message files.
 
-### [TD-198] No admin route out of `awarded` once the student has been emailed
+### [TD-198] No admin route out of `awarded` once the student has been emailed - **FIXED (2026-11-08, A1.13 + A1.13b, CO-09: an award withdrawal by MAKER and CHECKER, `award_withdrawal_chain` + `POST admin/scholarship/applications/<id>/withdrawal-request/` and `withdrawal-requests/<id>/approve|refuse|cancel/`; an awarded case with a paid tranche is refused, TD-591)**
+
+**Status 2026-11-08 (A1.13b, owner rulings 2026-11-08): the super-only route is DELETED and replaced by maker and checker.** A staff member holding `award_withdraw_request` asks, with a required explanation (at most 5,000 characters); a DIFFERENT signed-in staff member of the same organisation holding `award_withdraw_approve` approves (the withdrawal below then runs, unchanged) or refuses with a required reason; the maker may cancel while it is pending. Nothing changes until approval. No preset holds either key; the organisation admin's lead tier holds approve only. A super can read a request but sits in neither seat (403 `wrong_role`); the maker cannot decide their own request, matched by account or by email in any case (403 `same_person`). A request nobody can decide is refused (409 `no_checker`); a pending request older than 14 days expires on its next read or action. Lock order: application, then the request row, then the sponsorships. New table `award_withdrawal_requests` (migration 0206, one pending request per case), four `staff_activity` verbs, two staff emails (`withdrawal_request` to the checkers, `withdrawal_outcome` to the maker), a `my-pending` card and a `?withdrawal=pending` list filter. The student's `award_withdrawn` email is unchanged and is now a Student comms kind. The web half (the card's four states, the editor warnings, the labels) is phase 2.
+
+**Done 2026-11-08 (Sprint A1.13, branch a113).** Owner ruling D3 (2026-11-08): only a super admin, at any time, with a required reason. `apps/scholarship/award_withdrawal.py` mirrors `cancel_offer` / `_revert_to_pool`: under the application row lock it refuses anything not `awarded` (409 `not_awarded`, which also makes a double click safe) and anything with a released or returned tranche (409 `has_payments`, TD-591, for the owner; the check and the withdrawal share the lock, so a release cannot slip in between); then it cancels every holding sponsorship (the amount goes back to the sponsor's balance), withholds scheduled and due tranches, and returns the case to the pool through `award_revert.revert_to_pool`. The reason (required, trimmed, at most 5,000 characters; 400 otherwise) is stored in the existing `student_activity` log as an internal `award_withdrawn` row with who and when; no migration. The student gets a new trilingual "offer withdrawn" email after the commit (`emails/award_withdrawn.py`, catalogue entry DRAFT for owner review), never with the reason, and only if she had been told of the award. Web: the super-only "Withdraw award" card in the case view reuses the decision reopen's reason box. Pinned by `tests/test_award_withdrawal.py` and `WithdrawAwardCard.test.tsx`. Loose ends: TD-593.
 
 **Note 2026-11-05:** the lapse-cron half of the old TD-252 shipped (cron_health.py:54); this entry is the remaining console withdrawal route, awaiting an owner decision. TD-252 is merged here.
 **File(s):** `apps/scholarship/sponsorship.py` (`cancel_offer`, `_revert_to_pool`), `views_sponsor.SponsorCancelOfferView`
@@ -1535,6 +1546,7 @@ Each is an open entry with a defining line in the register body (read it there).
   - **(d) Partial / multi-sponsor funding.** 1:1 full-or-nothing now (DB `uniq_holding_sponsorship_per_app`). The many-sponsor-to-a-target plumbing is in the shape (per-sponsor allocation amounts); opening it up means partial pledges + a target-vs-sum + a funding deadline + "what if some-but-not-enough" (the user deferred this to avoid the time-boxed wait).
   - **(e) Award / decline letters.** The "award letter" + "decline letter" are state transitions only right now — no emails yet. Add `send_award_email` / `send_award_lapsed_email` (reuse `emails.py`, best-effort) when the flow goes live.
   - **(f) Future:** the 2-year allocation window (then myNADI reallocates); and the E3 tables were created via raw MCP CREATE TABLE (migrate-first), so their FK **constraint names** differ from Django's — harmless, but a future migration that alters/drops one by Django's expected name would need the real name (same caveat as E1a/E2a). (Introduced v2.26.0, 2026-06-01; lawyer + gateway gate the real-money parts.)
+  **Status 2026-11-08 (Sprint A1.13, audit CO-05):** waits on the lawyer, the entity and TD-140; unchanged in A1.13.
 
 - ~~**TD-076**~~ **RESOLVED 2026-11-05 (MERGED INTO TD-041: the same stub; the version half is done at settings/page.tsx:67, account options still missing and tracked there)**: **The Settings page (`/settings`) is a minimal stub.** `halatuju-web/src/app/settings/page.tsx` (73 lines) does only three things: a language selector, a "clear local data" button (`clearAll()` localStorage wipe), and an About block. **No account settings** — no profile/contact edit, no password change, no notification preferences, no logout, no delete-account. For a logged-in student the page offers nothing tied to their account. Also the **version string is hardcoded** (`const VERSION` — manually bumped at release; set to `2.26.1` on 2026-06-01 after it had gone stale at `2.0.0`) with no central runtime version source. **To resolve (when account self-service matters):** decide the real scope (likely: edit contact details, change password via Supabase, notification opt-outs, logout) and prototype in Stitch first per the UI discipline; and either wire `VERSION` to a build-injected `NEXT_PUBLIC_APP_VERSION` or accept the manual bump as a release-checklist line. Low priority — nothing depends on it. (Logged 2026-06-01) **Status 2026-10-05 (Later-tier batch 5, partly done, left OPEN):** the VERSION half is done — `src/lib/appVersion.ts` reads the build-stamped `NEXT_PUBLIC_APP_VERSION` (Cloud Build passes `--build-arg COMMIT_SHA=$COMMIT_SHA`, the Dockerfile sets it before `npm run build`), so the page shows the serving commit's short SHA (`dev` locally) and can never drift (`settings/page.test.tsx`). The thin-page half stays open: account options need a scope decision and a Stitch mock-up first (TD-041).
 - **TD-077**: **Course `#` interview marker renders as raw text, not a badge.** A trailing/embedded `#` in a course name means "this course typically has an interview", but it's shown verbatim (e.g. `Diploma in Nursing #`) wherever course names render — looks like a typo to users. **To resolve:** strip the `#` from the display string and render a small "Interview" badge/indicator next to courses that carry it (needs a shared helper so every render site — eligibility results, course pickers, saved courses, admin — is consistent; new i18n label; prototype the badge in Stitch first). Was roadmap "Known Issues #5" with no TD number; promoted here so it's tracked. Low priority, cosmetic. (Logged 2026-06-01)
@@ -2058,6 +2070,7 @@ Each is an open entry with a defining line in the register body (read it there).
   suspension/withholding to `agreement.status == executed` + academic-progress signals so the stated schedule becomes
   operative. Until then the contract is a binding *instrument* on a mocked-money flow. (Logged 2026-06-26.)
   **Status 2026-09-30:** partly done — still to do: payments are real but not tied to the signed agreement; that gate waits on TD-140.
+  **Status 2026-11-08 (Sprint A1.13, audit CO-05):** waits on the lawyer, the entity and TD-140; unchanged in A1.13.
 - **TD-143**: **A birth certificate cropped ABOVE its header scores `not_birth_certificate`, not `suspect`.** The BC
   signature anchors live in the header block (`Sijil Kelahiran` / `Pendaftaran Kelahiran dan Kematian` / `Kerajaan
   Malaysia`); a screenshot cropped to the lower half (particulars only, e.g. corpus a27) loses them and the text score
@@ -2352,6 +2365,7 @@ gate (assignment-surfaces round, 2026-07-16).
 
 ### [TD-174] Billing usage: email `UsageEvent` rows are mostly org-NULL — senders aren't threaded to an org (low, v1-permitted)
 **Status 2026-09-30:** partly done — still to do: attribution is manual per sender; only scheduling is tested.
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision):** unchanged since 2026-10-04. Owner: for each of the about 58 `send_*` senders, does an organisation pay for it or the platform? The open ones are the payment-run mails, the org-request mails, staff and sponsor invitations, and the invoice itself.
 **Status 2026-10-04 (Later-tier batch 3, looked at, NOT built):** still open. A "tenant by default" rule for `emails/shared._meter_email` needs, first, a written classification of every `send_*` (58 today) as tenant or platform mail — and several have no obvious owner: the payment-run mails (`payments.py` opens no `usage_context`), the org-request mails (the organisation asks, the platform answers), staff and sponsor invitations, the invoice itself. Which of those an organisation pays for is a billing-policy call, and wiring the tenant ones is more than six files. A frame-walking default that guesses the application from a caller's locals was rejected: the partner and sponsor digests deliberately REFUSE to pick a tenant (`sole_organisation_id`), and a guess would put one tenant's cost on another's invoice.
 
 Sprint 13a's meter tags every logged usage row with the calling organisation where the seam already
@@ -4892,6 +4906,10 @@ A row whose `wallet_id` matches no student is **counted and reported, then disca
 
 **Status 2026-10-04 (Later-tier batch 4, left OPEN):** still needs the table. The export lists TRANSACTIONS, so "spent nothing" and "not in the export" are the same absence until the unmatched rows are stored; a tri-state reading needs those rows, which is a new table — a migration, and this batch carried exactly one (0164).
 
+**Status 2026-11-07 (A1.12, looked at, NOT built).** Still the same shape: a new table (migration), an importer
+change and new words on the Spending screen (Stitch first). The A1.12 brief allows a migration only when truly needed
+and this is a feature, not a metering bug. Owner: build it as its own sprint, or leave it until the trigger above?
+
 ### [TD-246] The organisation crumb cannot scope a page the way the gift crumb can — low — **RESOLVED 2026-10-04 (overtaken: since 2026-09-28 Payments and Spending draw nothing until ONE gift is chosen — `useGiftGate` on both pages — and a gift belongs to exactly one organisation, so the gift IS the organisation narrowing; an `?org=` beside it would be two controls answering one question on the screen that moves money (TD-241's ruling). Pinned for a super across two organisations: `test_td246_one_org_through_the_gift.py`. The crumb on Sponsors, Sources and Requests stays TD-228)**
 **Status 2026-10-04 (Later-tier batch 4 review):** the closure rests on the WEB gift gate. The server still pools every organisation for a super with no organisation of their own who sends no `?programme=` — unreachable from the console while two or more live gifts exist (the gate asks first; with one live gift the client resolves it). If that ever changes, the follow-up is a server-side `programme_required` for an organisation-less super: TD-334.
 
@@ -7053,6 +7071,11 @@ arrives:** compare per-SOURCE — the services this tenant's events used (`gemin
 mapping is a hand-kept list, which is why it was not written today: `supplier_missing` is deliberately
 self-maintaining, and a wrong hand-kept map would refuse good months. *(B · S)*
 
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision).** The per-source map is a policy, not a bug fix:
+(1) does a source count as "synced" when the month has a ledger row for it, or only when that row's money is above
+zero (Cloud Vision's free first 1,000 units give a real RM0 month, which a money test would refuse)? (2) Is email
+exempt (Brevo is free, so it never has metered money)? (3) Does the month-wide check stay beside the per-source one?
+
 ### [TD-423] A receipt whose email failed can only be re-sent by hand - low
 
 **Raised 2026-10-29** with the receipt email. `invoicing.email_receipt` is best-effort by design — money
@@ -7084,6 +7107,13 @@ screen says so. The readiness check cannot see it either, because it only ever a
 issued. **Fix:** report corrections whose `period_month` is older than the month being issued and which no
 live invoice carries — as a readiness WARNING (not a refusal; the owner may be deliberately holding one),
 and on the charge card as "carried forward from {month}". *(B · S)*
+
+**Status 2026-11-07 (A1.12, looked at, NOT built - owner decision).** (1) Is a stranded correction ADDED to the next
+issued invoice by itself, or only shown until the owner moves it (the entry says the owner may be holding one on
+purpose)? (2) Readiness has no warning kind today; every overridable problem stops the issue and the monthly job never
+overrides. Should the warning stop the monthly job, or let it issue? (3) If it carries: the invoice freezes corrections
+without their ids, so carrying needs the carried ids recorded on the invoice (in the snapshot, or a new field, which is
+a migration), so a late invoice for the skipped month cannot apply it twice and a void puts it back.
 
 ### [TD-426] `hoursAnalysisId` and `closing_report` are one rule in two languages - low
 
@@ -7133,7 +7163,7 @@ against 148 (0.302 kB of room). The apply page's Plans step went behind the lazy
 `new Map()` in the new `lib/api/offerings.ts` first put ~3 kB on EVERY route (a side effect the bundler cannot
 drop from the `@/lib/api` barrel) until it was made on first use — the rule stands.
 
-### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low
+### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low - **FIXED (2026-11-07, A1.12: SendVerificationView sends through profile_claim.send_verification_email, which meters through the existing lazy _scholarship('emails') door before send_mail, so one usage row tagged send_verification_email, org NULL; catalogue entry follows; no new courses -> scholarship import; forward-only; test_td428_the_verification_mail_is_metered)**
 
 **Raised 2026-10-30 by the maintenance S6a inventory.** `courses/views.py` `SendVerificationView` sends with
 Django's `send_mail`, so it never passes `emails.shared._meter_email` — no `usage_events` row, nothing billed to
@@ -7542,6 +7572,13 @@ student who answers once on a bad connection sees her answer while the server ho
 household-income route engine (money: who is means-tested how). Fix: show "Not saved — tap again" on a failed save,
 and decide (owner) whether a pre-fill may be stored before the student confirms it. *(M · S)*
 
+**Status 2026-11-07 (A1.12): part (b) fixed, part (a) open.** (b) A failed answer save is kept by field with its
+value (`ScholarshipDocuments/failedSaves.tsx`); the alert (`scholarship.docs.income.wizard.notSaved` / `tryAgain`,
+en/ms/ta) stays until every failed field is saved, and Try again re-sends the exact values; it waits
+(disabled) while a newer save of a failed field is in flight, so it cannot overwrite that newer value
+(`IncomeWizard.saveFailed.test.tsx`, 9). (a) is unchanged and waits on the owner: may the wizard store its pre-filled
+route / earner / working members when the page opens, before the student taps anything?
+
 ### [TD-461] The post-shortlist step wizard still has the 10 px icon tab bar - low
 
 **Raised 2026-11-01 by Mobile M4.** M4 replaced the APPLY form's 6 × 56 px bottom tab bar (10 px labels) with a step
@@ -7557,7 +7594,7 @@ Documents step from an Action Centre query, so it needs its own design (Stitch).
 (`lib/uploadCheck.ts`, the documents tab's rule). The post-award bank-statement card
 (`components/scholarship/PostAwardTasks.tsx`, a lazy chunk) still sends any file and lets the server refuse it.
 Fix: the same `uploadRefusal` call before `signUploadDocument`. *(B · S)*
-### [TD-459] The Gemini usage meter does not count thinking tokens - medium (money)
+### [TD-459] The Gemini usage meter does not count thinking tokens - medium (money) - **FIXED (2026-11-07, A1.12: usage.gemini_tokens adds thoughts_token_count to the output count, the one reader of usage_metadata for all four Gemini seams; forward-only, old rows not repaired; tests TestGeminiTokensCountThinking and test_td459_gemini_seam_meters_thinking_as_output in test_usage.py. Tenant cost shares split by event count, so no invoice amount changed; the under-count was in token totals. The count of old rows is a read-only query for the owner to run, in the A1.12 hand-back)**
 
 **Raised 2026-11-01 by the offer exact-read S3 run.** `usage.gemini_tokens` records the prompt and candidate token
 counts only. Gemini 2.5 bills its THINKING tokens at the output rate and reports them separately
@@ -7605,6 +7642,17 @@ start year stop for QC instead of an automatic RM3,000 (TD-465)"):** `award.prop
 `tests/test_td465_course_start_unknown.py`. Stored awards untouched (owner call). **Still open:** part (2) (QC and
 payments read `reporting_date` directly) and the 2026-11-02 ruling that the reviewer sets the amount from the time
 left — the money sprint.
+
+**Part (2) done 2026-11-08 (Sprint A1.13, branch a113):** `apps/scholarship/course_start.py` (`recorded_date`) is
+now the ONE read point for the student's course start at both money sites: QC accept's absolute stop
+(`views_admin/qc_checks._accept_absolute_stop`, `reporting_date_required`) and the payment run
+(`payments._has_started`). NO change in behaviour at either site (lead ruling): QC stays strict (no relaxing to the
+intake year); the payments rule is unchanged (strict `<`, a missing date leaves the pathway floor as the only gate).
+Pinned by `tests/test_course_start.py`: both sites follow the helper (patched), golden cases pin today's answers, and
+a source check refuses a direct `reporting_date` read at either site. The proposed payments tightening (a known start
+year after the paid month's year) is NOT built; it is TD-592, for the owner. The read-only review of cases given
+RM3,000 with an unknown start year is closed by the owner (D2: no case list, no data change). **Still open:** the
+2026-11-02 ruling that the reviewer sets the amount from the time left.
 
 ### [TD-466] Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 
@@ -8370,6 +8418,14 @@ inside the locked block; the lock rule). *(A · S)*
 
 **Raised 2026-11-07 by the undeclared-higher-results follow-up (out of its scope, on the owner's brief).** Apps 306 and 340: a Matriculation transcript (rows "MATHEMATICS 1", "MATRICULATION GENERAL STUDIES", "KOKURIKULUM/ CO-CURRICULUM") sits in the higher-results card where the STPM subject comparison may read it. The 2026-11-07 typo tolerance and the "could not be recognised" item apply ONLY to a page read as STPM (`results_kind_detected == 'stpm'`), so these are not "corrected" into STPM subjects nor flagged; but the kind and the comparison still follow the card's STPM kind. **Fix:** when the read detects Matriculation under an STPM kind, compare as Matriculation (CGPA only) and say the kind differs, or route the upload to the right kind. Check each case's `results_kind` / detection first. *(B · S)*
 
+### [TD-583] The income wizard's typed incomes can overwrite each other (stale `ans` in `saveDeclared`) - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed, on purpose: out of the sprint's scope).** `saveDeclared` in `halatuju-web/src/components/ScholarshipDocuments/IncomeWizard.tsx` builds the WHOLE `income_declared` map from the `ans` of the render it was created in, then saves that map. If two members' figures are saved before the wizard re-renders (two quick blurs), the second save is built from a map that does not yet hold the first figure, so the screen and the server both lose it. **Fix:** build the next map from the newest answers (a functional update, or a ref that `save` keeps current), with a jest test that saves two members back to back and expects both figures. *(B · S)*
+
+### [TD-584] Two course-catalogue commands call Gemini with no usage recorded - low
+
+**Raised 2026-11-07 by the A1.12 delta review (not fixed).** `apps/courses/management/commands/generate_stpm_headlines.py` (the `generate_content` call near line 89) and `apps/courses/management/commands/map_course_careers.py` (near line 88) call Gemini directly and write no `UsageEvent`, so their tokens are missing from the usage page and from any check of metered tokens against the Gemini bill (the same gap TD-459 closed for thinking tokens). These are admin-run, platform-side jobs, so no tenant's invoice is affected. **Fix:** wrap each call in `usage.usage_context(source=...)` and call `usage.record_usage('gemini', model=..., ...)` with the counts from `usage.gemini_tokens(response)` as the other Gemini callers do, with a mocked-client test per command. *(B · S)*
+
 ### [TD-545] The upload door leaves an orphan Storage file on 409 `upload_conflict` - low
 
 **Raised 2026-11-07 by the A1.8 adversarial review (not fixed).** `DocumentListCreateView.post` (`views.py`, the `if doc is None` branch after `slot_writes.create_in_slot`) answers 409 `upload_conflict` when two uploads clash twice in one slot. The student's file was already put in Storage by the signed-URL step, and no row records it, so the blob is orphaned (harmless to the student, a little wasted storage, and invisible to every reader).
@@ -8435,3 +8491,35 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-561] The credit sign view loads the credit without a row lock - medium
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
+
+### [TD-591] An award that has already paid money cannot be withdrawn - high (money)
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-198, lead ruling).** The new award withdrawal refuses any awarded case with a released or returned tranche (409 `has_payments`), checked under the same row lock as the withdrawal so a release cannot slip in between. Paid money is never clawed back, but what should happen to the case is a product question the build did not answer: does the paid part stay counted against the sponsor, do the unpaid tranches go back to the balance, does the student keep her file, and is she told? Related: TD-366 (an awarded student who stops answering after the offer email; who may lapse a held offer). **Needs:** the owner's ruling, then a sprint. Until then a paid case leaves `awarded` only through the existing routes (closure, the lapse rules). *(A · M)*
+
+**Owner ruling 2026-11-08 (ruling A): IMPORTANT, raised to high (money).** (1) A withdrawal of a part-paid award stays REFUSED (409 `has_payments`), as built. (2) The full fix is a sprint of its own: the sponsor gets back only the UNPAID part (award minus `paid_to_date`), and the next sponsor holds only the unpaid part. It needs a model change, owner-run SQL and an adversarial review before the push. (3) Build it when the first real case appears, or before the next cohort's payments start, whichever comes first. Related still: TD-366. *(A · M)*
+
+**Owner ruling 2026-11-08, addendum: the two cases the full fix must handle.** (1) A student breach of contract (the usual case): only the UNPAID part is withheld or withdrawn and goes back to the sponsor; the paid part stays paid. (2) The Foundation's own fault (rare): the Foundation may choose to make the sponsor whole IN FULL, including the part already paid. That top-up comes from the Foundation, never from the student. So the full-fix sprint needs a REQUIRED reason type on the withdrawal (breach, or our fault) and, for case (2) only, a super-only choice of the full refund. Both sit under the existing super-only withdrawal rule (owner ruling D3, TD-198). *(A · M)*
+
+**Owner ruling 2026-11-08, second addendum: maker and checker, NOT super. This replaces "super-only" in the addendum above for the paid-case withdrawal.** Build the paid-case withdrawal the way payments are built (`payments_chain.py`, the finance approval): two different people. One person makes the request (the maker); a second, different person checks and approves it (the checker). Nothing changes money until the checker approves. Who may be maker and who may be checker is set in the staff permissions (the permission editor), not hard-coded to a role; the owner's examples are an admin and a finance officer, or a finance officer and an org admin. A super admin is not the route. Owner ruling B (same day): the unpaid-case withdrawal built in A1.13 moves to the same maker and checker model before it ships (G5), so both withdrawals share one design. The maker must write a clear explanation (required, shown to the checker in full): what happened, which case it is (breach, or our fault), and, for our fault, why the Foundation pays the sponsor in full. The checker sees that explanation, the paid and unpaid amounts and the sponsor refund before approving, and can refuse with a reason. The full-fix sprint must state the exact role pairs in its plan, refuse the same person as maker and checker, and keep both people and both texts on the audit record. *(A · M)*
+
+### [TD-592] Payments: a known course start year after the paid month's year still pays on the pathway floor - medium (money, owner decision)
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-465 part 2), NOT built on the lead's ruling.** `payments._has_started` (now reading through `course_start.recorded_date`) treats a case with no recorded reporting date as started from the pathway's floor month, so a month is payable on the floor alone. When `pathway_engine.course_start_year` already knows the course starts in a LATER year than the month being paid for, that month is still payable. **The idea:** refuse such a month (no recorded date, known start year after the paid month's year: not yet payable). It would stop paying a student for months before her course can have begun. **Why it is not built:** even a tightening is a change to who gets paid when, and the owner's rule for this sprint was fix only, do not change the design. It also needs care with a deferred intake and with continuing students. **Needs:** the owner's yes, then a small sprint at the one read point (`course_start.py`) with golden cases beside the ones in `tests/test_course_start.py`. *(A · S)*
+
+### [TD-593] Loose ends after an award withdrawal - low
+
+**Raised 2026-11-08 by Sprint A1.13 (TD-198), out of scope.** (1) The Foundation countersignature on the bursary agreement still works on a case whose award was withdrawn. (2) The Vircle setup task in the student's Action Centre stays visible after a withdrawal. (3) There is no staff_activity verb for a withdrawal (one would need a migration); the record is the internal `student_activity` row with who, when and the reason. Also noted, existing behaviour: an open payment-run draft that already lists the case is refused as a whole run (`not_payable_in_run`) until it is rebuilt. **Fix:** refuse the countersignature unless the case is awarded or later, hide the Vircle task when the award is gone, and decide whether a staff_activity verb is worth a migration. *(A · S)*
+
+**Status 2026-11-08 (A1.13 adversarial review, finding 1): part (1) FIXED.** The withdrawal now voids the agreement (signatures, Foundation and witness stamps and the sponsorship link cleared; the old stamps kept in the activity row's meta), and `agreement_guard.lock_current` refuses the countersignature unless the case is awarded and the agreement is signed for the current holding sponsorship, and the witness unless the case is awarded, active or in maintenance. A re-signing never inherits an old Foundation or witness stamp. Parts (2) and (3) stay open, so this stays low. *(A · S)*
+
+**Status 2026-11-08 (A1.13b): part (3) FIXED.** Migration 0206 adds the `staff_activity` verbs `withdrawal_requested`, `withdrawal_approved`, `withdrawal_refused` and `withdrawal_cancelled`, written by `award_withdrawal_chain` (the internal `student_activity` row stays too). Only part (2), the Vircle task, stays open.
+
+### [TD-594] Two award paths still lock out of order - low
+
+**Raised 2026-11-08 by the A1.13 adversarial review fixes, out of scope.** The review made the accept, the hold-release job and the sponsor's cancel take the application lock first (the withdrawal's order). The award-email job did NOT at first: it locked only the sponsorship, then wrote rows that share-lock the application (a usage row, the Vircle task), the reverse of the withdrawal and the cancel, so the two could deadlock and the job's lost stamp would leave the student told but recorded as untold. The re-review (finding 1) fixed that with `status_lock.lock_case_of_sponsorship`, which the cancel now uses too. Two paths were not in the findings and are unchanged: `sponsorship.hold_pending_award` writes the sponsorship and the application with no lock at all, and `lapse_expired_offers` locks the sponsorship and then writes the application (the reverse order, so a deadlock with a withdrawal is possible, though Postgres would break it by failing one side). **Fix:** take `lock_application_for` first in both, then re-read the sponsorship under its lock, with a stale-copy test each as in `test_a113_review_fixes.py`. *(A · S)*
+
+**Status 2026-11-08 (A1.13 third review, Med 1): the lapse part FIXED.** `lapse_expired_offers` now takes `status_lock.lock_case_of_sponsorship` before it re-reads the offer, and re-reads it with `select_for_update(of=('self',))`. The review found a third writer in the reverse order: `parent_call.record_call` locked the student's armed offers and then inserted the call row, which share-locks the application. It now locks the student's applications in pk order first. Both have lock-order spy tests in `test_a113_third_review.py`. `hold_pending_award` (no lock at all) is still open, so this stays low. *(A · S)*
+
+### [TD-595] The award-email job sends over the network while holding the locks - low
+
+**Raised 2026-11-08 by the A1.13 third review (Low 2), left as it is on the lead's ruling.** Since the A1.13 reviews, `sponsorship.release_award_offer_emails` locks the case (`lock_case_of_sponsorship`) and the sponsorship, then sends the award email and stamps `offer_emailed_at` inside the same transaction, so the stamp cannot be lost after the email has gone. The cost is that the SMTP / provider call runs while the application and sponsorship rows are locked. A slow or hanging send makes every other writer on that case wait (a withdrawal, a cancel, an accept, a payment release), up to the send timeout. It is a daily job and one case at a time, so the wait is short and rare. **Fix:** claim the row under the lock (stamp a claim, commit), send outside the transaction, then confirm or clear the claim in a second short transaction; decide what a crash between send and confirm should mean (a resend or a missed email). *(A · S)*

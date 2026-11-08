@@ -28,6 +28,8 @@ export const STAFF_PERMISSIONS = [
   'payments_prepare',
   'payments_check',
   'payments_approve',
+  'award_withdraw_request',
+  'award_withdraw_approve',
   'manage_team',
 ] as const
 
@@ -100,7 +102,8 @@ export function adminKeysHeld(permissions: readonly string[]): string[] {
 
 /** The keys that seat a team member at the Admins table (`staff_tables.ADMIN_KEYS`). */
 export const ADMIN_KEYS: readonly StaffPermission[] =
-  ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'manage_team']
+  ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+    'award_withdraw_request', 'award_withdraw_approve', 'manage_team']
 
 /** Team tables T1: the organisation pages an Admin READS (Organisation, Invitations, People, Sponsors) —
  *  any admin key opens them for a person at the Admins table (T1's `staff_tables.ORG_READ_KEYS`). Since

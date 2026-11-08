@@ -179,12 +179,13 @@ class TestFreshRead(SimpleTestCase):
         self.assertEqual((usage.record_usage.__module__, usage.record_usage.__name__),
                          ('apps.scholarship.usage', 'record_usage'))           # patch undone
 
-    def test_the_meter_figures_are_kept_and_leave_out_thinking(self):
+    def test_the_meter_figures_are_kept_and_count_thinking(self):
+        # TD-459 (A1.12): the live meter's output is candidates + thinking (250 + 900).
         self._run(FakeGemini([_resp(prompt=1500, out=250, think=900)]), keys=['offer_letter__a1__d11'])
         rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11', NEW))
         self.assertEqual(rec['meter'], [{'service': 'gemini', 'model': 'gemini-2.5-flash',
-                                         'input_tokens': 1500, 'output_tokens': 250}])
-        self.assertEqual(rec['usage']['thinking_tokens'], 900)        # billed, not metered
+                                         'input_tokens': 1500, 'output_tokens': 1150}])
+        self.assertEqual(rec['usage']['thinking_tokens'], 900)        # billed, and now metered
 
     def test_a_database_query_inside_the_run_is_refused(self):
         from django.db import connections

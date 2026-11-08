@@ -232,7 +232,11 @@ class TestContracts(_Asserts, TestCase):
     def test_the_foundation_countersign(self, *_):
         super_ = make_admin('super', super_admin=True)
         app = make_application('awarded')
-        agreement = BursaryAgreement.objects.create(application=app, version='2026-v1')
+        # Signed by the student + guarantor: the Foundation countersigns a binding agreement only
+        # (A1.13 review finding 1 — an unsigned or withdrawn one is refused).
+        agreement = BursaryAgreement.objects.create(
+            application=app, version='2026-v1',
+            student_signed_at=timezone.now(), guarantor_signed_at=timezone.now())
         bursary.countersign_foundation(agreement, by_name='Super', actor=super_)
         self.assertRows([(V.CONTRACT_COUNTERSIGNED, super_, 'application', app.pk)])
         self.assertEqual(_rows()[0].meta, {'agreement': agreement.pk})

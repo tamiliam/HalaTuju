@@ -214,4 +214,10 @@ export const REVIEWER_FAQ: QA[] = [
         check</strong> like any other. Nobody can decline a case at this stage without QC, and it cannot be
         closed instead: Close works before an award only at Submitted and Recommended.</>,
     },
+    {
+      q: <>What is <strong>Notes for the reviewer</strong> on a student&rsquo;s page?</>,
+      a: <>Points your organisation admin would like you to explore with this student, written before or
+        while you review the case. They are read-only; if a note needs correcting, the org admin adds another.
+        The student and sponsors never see them, and they are not used in the AI-written profile.</>,
+    },
 ]

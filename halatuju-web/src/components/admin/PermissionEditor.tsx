@@ -40,7 +40,8 @@ import {
  * server served, changed only by the switches on screen (and the key Quality check brings).
  * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
 export const TABLE_KEYS = {
-  admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'],
+  admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+    'award_withdraw_request', 'award_withdraw_approve'],
   reviewers: ['review', 'qc'],
 } as const
 export type TeamTable = keyof typeof TABLE_KEYS

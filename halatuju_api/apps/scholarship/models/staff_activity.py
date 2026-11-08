@@ -79,6 +79,11 @@ class StaffActivityVerb(models.TextChoices):
     ORG_REQUEST_DECLINED = 'org_request_declined', 'Declined a request'
     MERCHANT_FLAG_OPENED = 'merchant_flag_opened', 'Flagged a shop'
     MERCHANT_FLAG_CLOSED = 'merchant_flag_closed', 'Closed a shop flag'
+    # A1.13b (TD-593 part 3): the award withdrawal's maker and checker steps.
+    WITHDRAWAL_REQUESTED = 'withdrawal_requested', 'Asked for an award to be withdrawn'
+    WITHDRAWAL_APPROVED = 'withdrawal_approved', 'Approved an award withdrawal'
+    WITHDRAWAL_REFUSED = 'withdrawal_refused', 'Refused an award withdrawal'
+    WITHDRAWAL_CANCELLED = 'withdrawal_cancelled', 'Cancelled an award withdrawal request'
 
 
 class StaffActivitySubject(models.TextChoices):

@@ -8,9 +8,16 @@ from rest_framework import status
 from rest_framework.response import Response
 from ..models import GraduationMessage
 from .. import in_programme as in_programme_service
+from ..agreement_guard import AgreementNotCurrent
 from ..serializers_admin import AdminGraduationMessageSerializer
 
 from .base import _AdminBase
+
+
+def _not_current(exc):
+    """409: the agreement was withdrawn / superseded, or the case is past this step (A1.13)."""
+    return Response({'error': exc.code, 'code': exc.code, 'reason': exc.reason},
+                    status=status.HTTP_409_CONFLICT)
 
 
 class AdminGraduationMessageReviewView(_AdminBase):
@@ -81,8 +88,11 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         from .. import bursary
         from ..serializers import BursaryAgreementSerializer
-        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '',
-                                       actor=admin)
+        try:
+            bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '',
+                                           actor=admin)
+        except AgreementNotCurrent as exc:
+            return _not_current(exc)
         return Response(BursaryAgreementSerializer(agreement).data)
 
 
@@ -128,4 +138,6 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             # The override moved between the read above and the row lock (review L2): ask again.
             return Response({'error': 'witness_changed', 'code': 'witness_changed'},
                             status=status.HTTP_409_CONFLICT)
+        except AgreementNotCurrent as exc:
+            return _not_current(exc)
         return Response(BursaryAgreementSerializer(agreement).data)

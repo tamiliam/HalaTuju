@@ -66,6 +66,9 @@ export function activityText(
       return t('admin.scholars.event.mentor_concern_raised', { mentor: str(m.mentor) || '—' })
     case 'mentor_concern_handled':
       return t('admin.scholars.event.mentor_concern_handled')
+    // A1.13 (TD-198): a super admin withdrew the award. The body is the internal reason (staff-only row).
+    case 'award_withdrawn':
+      return t('admin.scholars.event.award_withdrawn', { reason: a.body || '—' })
     default:
       return t('admin.scholars.event.other')
   }

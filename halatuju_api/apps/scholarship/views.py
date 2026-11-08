@@ -2346,9 +2346,9 @@ class StudentAwardView(APIView):
         # already signed — the agreement status + a signed PDF URL. Never a donor field.
         from django.conf import settings as _settings
         if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False) and app:
-            from . import bursary, contract_scope, contracts
+            from . import agreement_guard, bursary, contract_scope, contracts
             from .signing_progress import signing_progress
-            existing = getattr(app, 'bursary_agreement', None)
+            existing = agreement_guard.live_agreement(app)   # a voided row is no agreement (A1.13)
             template = contract_scope.template_for_application(app) if existing is None else None
             if existing is not None:
                 payload['bursary_agreement'] = BursaryAgreementSerializer(existing).data
@@ -2425,6 +2425,7 @@ class BursaryAgreementView(APIView):
         live = apply_gate.in_play_application(request.user_id)   # her CURRENT one first (TD-337)
         app = (ScholarshipApplication.objects.filter(profile_id=request.user_id, bursary_agreement__isnull=False)
                .filter(**({'pk': live.pk} if live else {})).select_related('bursary_agreement').order_by('-id').first())
-        if app is None:
+        from .agreement_guard import live_agreement   # a withdrawal's voided row is no agreement
+        if app is None or live_agreement(app) is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(BursaryAgreementSerializer(app.bursary_agreement).data)

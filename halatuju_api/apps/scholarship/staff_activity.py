@@ -109,6 +109,10 @@ ORG_REQUEST_APPROVED = V.ORG_REQUEST_APPROVED
 ORG_REQUEST_DECLINED = V.ORG_REQUEST_DECLINED
 MERCHANT_FLAG_OPENED = V.MERCHANT_FLAG_OPENED
 MERCHANT_FLAG_CLOSED = V.MERCHANT_FLAG_CLOSED
+WITHDRAWAL_REQUESTED = V.WITHDRAWAL_REQUESTED
+WITHDRAWAL_APPROVED = V.WITHDRAWAL_APPROVED
+WITHDRAWAL_REFUSED = V.WITHDRAWAL_REFUSED
+WITHDRAWAL_CANCELLED = V.WITHDRAWAL_CANCELLED
 
 #: EVERY verb and the function(s) that write it — `path:qualname`, paths under `apps/`. The drift
 #: test (`tests/test_staff_activity.py`) reads the source: the functions that name each verb must be
@@ -170,6 +174,10 @@ WIRED = {
     ORG_REQUEST_DECLINED: ('scholarship/views_admin/requests.py:AdminOrgRequestDeclineView.post',),
     MERCHANT_FLAG_OPENED: ('scholarship/merchant_flags.py:change_flag',),
     MERCHANT_FLAG_CLOSED: ('scholarship/merchant_flags.py:change_flag',),
+    WITHDRAWAL_REQUESTED: ('scholarship/award_withdrawal_chain.py:request_withdrawal',),
+    WITHDRAWAL_APPROVED: ('scholarship/award_withdrawal_chain.py:approve_withdrawal',),
+    WITHDRAWAL_REFUSED: ('scholarship/award_withdrawal_chain.py:refuse_withdrawal',),
+    WITHDRAWAL_CANCELLED: ('scholarship/award_withdrawal_chain.py:cancel_withdrawal',),
 }
 
 #: Which filter of the S5 card each verb belongs to (`?kind=` on `GET admin/me/activity/`). 'other'
@@ -189,6 +197,8 @@ KIND_OF_VERB = {
     CREDIT_CONFIRMED: MONEY, BENEFACTOR_VETTED: MONEY, INVOICE_ISSUED: MONEY, INVOICE_SENT: MONEY,
     INVOICE_VOIDED: MONEY, PAYMENT_DECLARED: MONEY, PAYMENT_CONFIRMED: MONEY, PAYMENT_REJECTED: MONEY,
     MERCHANT_FLAG_OPENED: MONEY, MERCHANT_FLAG_CLOSED: MONEY,
+    WITHDRAWAL_REQUESTED: MONEY, WITHDRAWAL_APPROVED: MONEY, WITHDRAWAL_REFUSED: MONEY,
+    WITHDRAWAL_CANCELLED: MONEY,
     CONTRACT_TEMPLATE_CREATED: OTHER, CONTRACT_TEMPLATE_VETTED: OTHER,
     CONTRACT_TEMPLATE_SUBMITTED: OTHER, CONTRACT_TEMPLATE_DEPLOYED: OTHER,
     ORG_REQUEST_RAISED: OTHER, ORG_REQUEST_APPROVED: OTHER, ORG_REQUEST_DECLINED: OTHER,
@@ -202,6 +212,7 @@ META_KEYS = {
     'from_admin': ID, 'to_admin': ID, 'target': ID, 'item': ID, 'session': ID,
     'agreement': ID, 'interviewer': ID, 'invitation': ID,
     'tranche': ID, 'declaration': ID, 'receipt': ID, 'programme': ID,
+    'withdrawal': ID,   # A1.13b: the AwardWithdrawalRequest row
     # booleans
     'emailed': BOOL, 'resend': BOOL, 'finalised': BOOL, 'override': BOOL, 'asked_again': BOOL,
     # numbers

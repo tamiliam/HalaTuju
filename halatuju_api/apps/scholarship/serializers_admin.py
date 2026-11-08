@@ -607,8 +607,8 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
         from django.conf import settings
         if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
             return None
-        agreement = getattr(obj, 'bursary_agreement', None)
-        if agreement is None:
+        from .agreement_guard import live_agreement     # A1.13: a withdrawal's voided row is none
+        if (agreement := live_agreement(obj)) is None:
             return None
         from .serializers import BursaryAgreementSerializer
         return BursaryAgreementSerializer(agreement).data

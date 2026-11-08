@@ -113,13 +113,22 @@ def record_usage(service, *, model='', source=None, quantity=1,
 
 def gemini_tokens(resp):
     """(input, output) token counts from a genai response's usage_metadata, or
-    (None, None). Never raises; a mocked response yields (None, None)."""
+    (None, None). Never raises; a mocked response yields (None, None).
+
+    ⚠ TD-459: OUTPUT INCLUDES THE THINKING TOKENS. Gemini 2.5 reports them apart
+    (`thoughts_token_count`) and bills them at the output rate; on 216 offer reads they were
+    ~84% of the billed output. So output = candidates + thoughts. A response with no thoughts
+    reads exactly as before; one with thoughts and no candidates still counts the thoughts.
+    Forward-only: rows written before this keep their old (candidates-only) count."""
     try:
         md = getattr(resp, 'usage_metadata', None)
         if md is None:
             return (None, None)
-        return (_int_or_none(getattr(md, 'prompt_token_count', None)),
-                _int_or_none(getattr(md, 'candidates_token_count', None)))
+        out = _int_or_none(getattr(md, 'candidates_token_count', None))
+        thoughts = _int_or_none(getattr(md, 'thoughts_token_count', None))
+        if thoughts is not None:
+            out = (out or 0) + thoughts
+        return (_int_or_none(getattr(md, 'prompt_token_count', None)), out)
     except Exception:  # noqa: BLE001
         return (None, None)
 

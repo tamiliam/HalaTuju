@@ -438,6 +438,7 @@ class StudentEmailTemplate(models.Model):
         ('announcement', 'An announcement'),             # S8: switchable; the post's own text inside
         ('survey_open', 'A survey for you'),             # S9: switchable; the opening email AND the reminder
         ('module_published', 'A new module'),            # S10: switchable; published email AND the reminder
+        ('award_withdrawn', 'An award was withdrawn'),   # A1.13b: always sent (locked: a decision)
     ]
     LANGUAGE_CHOICES = [('en', 'English'), ('ms', 'Malay'), ('ta', 'Tamil')]
     organisation = models.ForeignKey(

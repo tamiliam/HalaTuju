@@ -68,6 +68,7 @@ from .views_admin import (
     AdminApplicationDetailView,
     AdminGuardianCallView,
     AdminGuardianContactView,
+    AdminReviewerNotesView,
     AdminVerdictSummaryView,
     AdminApplicationListView,
     AdminBursaryCountersignView,
@@ -218,6 +219,7 @@ from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S
 from .urls_announcements import urlpatterns as ANNOUNCEMENT_URLS   # announcements (maintenance S8)
 from .urls_surveys import urlpatterns as SURVEY_URLS   # surveys (maintenance S9)
 from .urls_development import urlpatterns as DEVELOPMENT_URLS   # development modules (maintenance S10)
+from .urls_award import urlpatterns as AWARD_URLS   # a super withdraws an award (A1.13, TD-198)
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
@@ -543,6 +545,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/guardian-contact/', AdminGuardianContactView.as_view()),
     path('admin/scholarship/applications/<int:pk>/guardian-call/', AdminGuardianCallView.as_view()),
     path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/reviewer-notes/', AdminReviewerNotesView.as_view()),
     # Break-glass: release an IC lock so an orphaned claim stops blocking the number's real
     # owner. SUPER ONLY — narrower than the gate that takes the lock, on purpose.
     path('admin/scholarship/applications/<int:pk>/release-nric-lock/',
@@ -593,6 +596,5 @@ urlpatterns = [
     path('admin/me/password/', AdminMePasswordView.as_view()),   # own password, current one required
     path('admin/me/photo/', AdminMePhotoView.as_view()),   # S2: own photo (multipart POST / DELETE)
     path('admin/me/activity/', AdminMeActivityView.as_view()),   # S4: own activity list, every role
-    # F9a — graduation thank-you moderation queue
-    path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),
-] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS
+    path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),   # F9a: graduation thank-you moderation queue
+] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + AWARD_URLS

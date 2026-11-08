@@ -12,6 +12,7 @@ export type PendingKey =
   | 'unassigned' | 'overdue' | 'awaiting_qc' | 'sponsors_to_vet'
   | 'invitations' | 'payment_runs' | 'requests'
   | 'wallet_credits' | 'qc_awaiting'
+  | 'award_withdrawals'   // A1.13b: withdrawal requests waiting for THIS checker's decision
   | 'my_open' | 'my_due_soon' | 'my_overdue'
   | 'mentees' | 'not_met' | 'asked_help'
 
