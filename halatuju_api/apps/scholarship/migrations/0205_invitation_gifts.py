@@ -10,7 +10,13 @@ ADDITIVE, nothing rewritten:
   rows, stamped even when it resolved to none, so it resolves exactly once. NULL needs no default and no rewrite.
 - NEW COLUMN `sponsor_programme_memberships.rejected_by_hand_at` timestamptz NULL (I3 second review): set when the
   organisation rejects a gift by hand, so account vetting never overturns that rejection while a rejection the
-  account cascaded still follows the account back. NULL for every existing row: no backfill, no rewrite.
+  account cascaded still follows the account back. NULL needs no default and no rewrite.
+- BACKFILL THE STAMP (I3 third review; money): every EXISTING membership that is 'rejected' while its sponsor
+  ACCOUNT is not was rejected by hand (the cascade writes 'rejected' only when the account is rejected), so it
+  is stamped with its `vetted_at` (`now()` when NULL); unstamped, a suspend -> reinstate would re-approve it and
+  `record_admin_credit` would accept money for it. A rejected membership on a REJECTED account stays unstamped:
+  it reads as cascaded. Safe to run twice (it touches only unstamped rows); the reverse is a no-op. Production
+  on 2026-11-08 (counts only): 0 such rows (10 approved/approved, 1 rejected/rejected) — it guards the gap.
 - BACKFILL: every SPONSOR invitation with `programme_id` gets ONE row for that gift (accepted and withdrawn ones
   too — the history keeps naming its gift). `invitations.programme_id` is NOT dropped: it stays the rollback
   mirror (one gift -> that id, several or every -> NULL), written by `sponsor_invite_gifts.set_gifts`.
@@ -19,8 +25,8 @@ MIGRATE-FIRST, BY HAND, and ONLY WITH THE OWNER'S YES (scholarship ledger 0204 -
 the LOCAL backend (SQLite), so this is the Postgres DDL to run, verbatim — rendered offline with Django's
 postgresql schema editor from this migration — with the ledger row in the SAME transaction.
 
-Pre-check (read-only; expect bigint twice and none of the three new columns, then NULL, 0, and note the count the
-copy will write):
+Pre-check (read-only; expect bigint twice and none of the three new columns, then NULL, 0, and note the counts the
+copy and the stamp will write):
 
     SELECT table_name, column_name, data_type FROM information_schema.columns
      WHERE (table_name, column_name) IN (('invitations', 'id'), ('scholarship_programmes', 'id'),
@@ -29,6 +35,8 @@ copy will write):
     SELECT to_regclass('public.invitation_gifts');
     SELECT count(*) FROM django_migrations WHERE app = 'scholarship' AND name = '0205_invitation_gifts';
     SELECT count(*) FROM invitations WHERE audience = 'sponsor' AND programme_id IS NOT NULL;
+    SELECT count(*) FROM sponsor_programme_memberships m JOIN sponsors s ON s.id = m.sponsor_id
+     WHERE m.status = 'rejected' AND s.status <> 'rejected';
 
 Then:
 
@@ -47,16 +55,28 @@ Then:
     INSERT INTO invitation_gifts (invitation_id, programme_id, created_at)
         SELECT id, programme_id, now() FROM invitations
          WHERE audience = 'sponsor' AND programme_id IS NOT NULL;
+    UPDATE sponsor_programme_memberships m SET rejected_by_hand_at = COALESCE(m.vetted_at, now())
+      FROM sponsors s
+     WHERE s.id = m.sponsor_id AND m.status = 'rejected' AND s.status <> 'rejected'
+       AND m.rejected_by_hand_at IS NULL;
     INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0205_invitation_gifts', now());
     COMMIT;
 
-Post-check: `SELECT count(*) FROM invitation_gifts` equals the pre-check's last count;
+Post-check: `SELECT count(*) FROM invitation_gifts` equals the pre-check's copy count;
 `SELECT count(*) FROM invitations WHERE every_gift OR every_gift_resolved_at IS NOT NULL` is 0;
-`SELECT count(*) FROM sponsor_programme_memberships WHERE rejected_by_hand_at IS NOT NULL` is 0; re-run the Supabase Security Advisor (0 errors).
+`SELECT count(*) FROM sponsor_programme_memberships WHERE rejected_by_hand_at IS NOT NULL` equals the pre-check's
+stamp count; this is 0 (nothing rejected on an approved account is left unstamped):
+
+    SELECT count(*) FROM sponsor_programme_memberships m JOIN sponsors s ON s.id = m.sponsor_id
+     WHERE m.status = 'rejected' AND s.status <> 'rejected' AND m.rejected_by_hand_at IS NULL;
+
+and re-run the Supabase Security Advisor (0 errors).
 
 BETWEEN MIGRATE AND DEPLOY the image already serving never names the table and inserts without `every_gift`
 (the database default answers) or `every_gift_resolved_at` (NULL), and writes memberships without
-`rejected_by_hand_at` (NULL: a hand rejection made by the old image reads as cascaded and is not protected), so the migration is safe first. Deploying BEFORE migrating is NOT safe: the
+`rejected_by_hand_at` (NULL: a hand rejection the old image makes after the migration reads as cascaded and is
+not protected until decided again by hand — so re-run the stamp's UPDATE once after the deploy; it is safe to
+repeat), so the migration is safe first. Deploying BEFORE migrating is NOT safe: the
 Invitations list reads `every_gift` and the rows (a 500), and so does every sponsor registration. The API and
 the web deploy TOGETHER (the web sends `programme_ids` and reads `gifts` / `every_gift`).
 
@@ -88,6 +108,19 @@ def copy_one_gift_into_rows(apps, schema_editor):
         for pk, programme_id in (Invitation.objects.filter(audience='sponsor', programme__isnull=False)
                                  .values_list('pk', 'programme_id'))
     ], ignore_conflicts=True)
+
+
+def stamp_hand_rejections(apps, schema_editor):
+    """A membership REJECTED while its sponsor ACCOUNT is not was rejected by hand (the account cascade
+    writes 'rejected' only with the account): stamp it with `vetted_at`, else now. Only unstamped rows
+    are touched, so a re-run changes nothing; a rejection on a rejected account reads as cascaded."""
+    from django.db.models import F
+    from django.utils import timezone
+    Membership = apps.get_model('scholarship', 'SponsorProgrammeMembership')
+    hand = (Membership.objects.filter(status='rejected', rejected_by_hand_at__isnull=True)
+            .exclude(sponsor__status='rejected'))
+    hand.filter(vetted_at__isnull=False).update(rejected_by_hand_at=F('vetted_at'))
+    hand.filter(vetted_at__isnull=True).update(rejected_by_hand_at=timezone.now())
 
 
 class Migration(migrations.Migration):
@@ -127,4 +160,6 @@ class Migration(migrations.Migration):
         ),
         # Reverse: nothing to undo — the CreateModel's own reverse drops the table and its rows.
         migrations.RunPython(copy_one_gift_into_rows, migrations.RunPython.noop),
+        # Reverse: nothing to undo — the AddField's own reverse drops the column and its stamps.
+        migrations.RunPython(stamp_hand_rejections, migrations.RunPython.noop),
     ]

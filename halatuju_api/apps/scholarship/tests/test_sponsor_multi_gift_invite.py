@@ -416,3 +416,85 @@ class TestTheI3Review(_Case):
 
     def test_a_super_resend_on_another_organisations_row_changes_nothing_one_gift(self):
         self._org_super_resend()                                 # their org has ONE active gift
+
+
+class TestTheI3ThirdReview(_Case):
+    """The third review of I3 (2026-11-08): the stamp backfill, the waiting row's organisation, the lock."""
+
+    def _account(self, uid, status):
+        return Sponsor.objects.create(supabase_user_id=uid, name='Test Giver',
+                                      email=f'{uid}@example.com', status=status)
+
+    def _member(self, sponsor, status, **extra):
+        return SponsorProgrammeMembership.objects.create(sponsor=sponsor, programme=self.a,
+                                                         status=status, **extra)
+
+    # 1 — every existing hand rejection is stamped by 0205, so vetting never re-approves it.
+    def test_the_backfill_stamps_a_rejection_on_an_account_that_is_not_rejected(self):
+        then = timezone.now() - timezone.timedelta(days=3)
+        earlier = timezone.now() - timezone.timedelta(days=9)
+        dated = self._member(self._account('i3-bf-dated', 'approved'), 'rejected', vetted_at=then)
+        undated = self._member(self._account('i3-bf-undated', 'suspended'), 'rejected')
+        cascaded = self._member(self._account('i3-bf-cascaded', 'rejected'), 'rejected', vetted_at=then)
+        accepted = self._member(self._account('i3-bf-accepted', 'approved'), 'approved', vetted_at=then)
+        stamped = self._member(self._account('i3-bf-stamped', 'approved'), 'rejected',
+                               vetted_at=then, rejected_by_hand_at=earlier)
+        migration = import_module('apps.scholarship.migrations.0205_invitation_gifts')
+        migration.stamp_hand_rejections(django_apps, None)
+        first = {m.pk: m.rejected_by_hand_at for m in SponsorProgrammeMembership.objects.all()}
+        migration.stamp_hand_rejections(django_apps, None)       # re-runnable: changes nothing
+        again = {m.pk: m.rejected_by_hand_at for m in SponsorProgrammeMembership.objects.all()}
+        self.assertEqual(first, again)
+        self.assertEqual(first[dated.pk], then)
+        self.assertIsNotNone(first[undated.pk])
+        self.assertIsNone(first[cascaded.pk])                    # reads as cascaded
+        self.assertIsNone(first[accepted.pk])
+        self.assertEqual(first[stamped.pk], earlier)              # never re-stamped
+        # The money side: reinstating the account leaves the backfilled refusal alone.
+        sponsor = undated.sponsor
+        sponsor.status = 'approved'
+        sponsor.save(update_fields=['status'])
+        sponsorship.sync_account_membership(sponsor, self.a, vetted_by='x@example.com')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'rejected'})
+
+    # 2 — an organisation-less super's gifts must be the waiting row's organisation's.
+    def test_an_orgless_super_cannot_file_another_organisations_gift_on_a_waiting_row(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])      # org A's row
+        for body in ({'programme_ids': [self.theirs.id]}, {'programme_id': self.theirs.id}):
+            r = self._invite(self.super, **body)
+            self.assertEqual(r.status_code, 400, r.content)
+            self.assertEqual(r.json()['code'], 'gift_not_in_invitation_org')
+        inv = self._inv()
+        self.assertEqual(inv.organisation_id, self.org.id)
+        self.assertEqual(sorted(inv.gift_rows.values_list('programme_id', flat=True)),
+                         sorted([self.a.id, self.b.id]))
+
+    def test_an_orgless_super_may_correct_the_gifts_within_the_rows_organisation(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        r = self._invite(self.super, programme_ids=[self.b.id])
+        self.assertIn(r.status_code, (201, 502), r.content)
+        inv = self._inv()
+        self.assertEqual(inv.organisation_id, self.org.id)
+        self.assertEqual(list(inv.gift_rows.values_list('programme_id', flat=True)), [self.b.id])
+
+    def test_an_orgless_super_on_a_new_row_keeps_the_one_organisation_rule(self):
+        r = self._invite(self.super, programme_ids=[self.theirs.id])
+        self.assertIn(r.status_code, (201, 502), r.content)
+        r = self._invite(self.super, email='other.giver@example.com',
+                         programme_ids=[self.a.id, self.theirs.id])
+        self.assertEqual(r.json()['code'], 'gifts_span_organisations')
+
+    # 3 — both membership writers read the row FOR UPDATE (SQLite drops the clause, so pin the call).
+    def test_both_membership_writers_lock_the_row(self):
+        from unittest import mock
+        from django.db.models import QuerySet
+        sponsor = self._account('i3-lock', 'approved')
+        self._member(sponsor, 'approved')
+        real = QuerySet.select_for_update
+        with mock.patch.object(QuerySet, 'select_for_update', autospec=True,
+                               side_effect=real) as lock:
+            sponsorship.set_programme_membership(sponsor, self.a, 'rejected', vetted_by='x@example.com')
+            sponsorship.sync_account_membership(sponsor, self.a, vetted_by='x@example.com')
+        self.assertEqual([c.args[0].model for c in lock.call_args_list],
+                         [SponsorProgrammeMembership, SponsorProgrammeMembership])
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'rejected'})

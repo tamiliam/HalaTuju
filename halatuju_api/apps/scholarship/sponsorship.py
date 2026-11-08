@@ -222,33 +222,32 @@ def sync_account_membership(sponsor, programme, vetted_by=''):
     the SAME gifts the registration resolved (`signup_programmes_for` is stable — the invitation
     outlives the registration), so the account's own rows settle and nobody else's moves.
 
-    Best-effort in the sense that an unresolvable programme (a bare test DB exactly as ``0123``
-    allows for) returns None rather than inventing an
-    acceptance — but it does NOT swallow database errors: a registration that silently loses its
-    membership is the bug this exists to fix.
+    Best-effort: an unresolvable programme (a bare test DB, as ``0123`` allows) returns None rather
+    than inventing an acceptance — but database errors are NOT swallowed.
     """
     from .models import SponsorProgrammeMembership
     if programme is None:
         return None
     settled = sponsor.status != 'pending'
-    membership, created = SponsorProgrammeMembership.objects.get_or_create(
-        sponsor=sponsor, programme=programme,
-        defaults={
-            'status': sponsor.status,
-            'vetted_by': vetted_by if settled else '',
-            'vetted_at': timezone.now() if settled else None,
-        },
-    )
-    # ⚠ A GIFT REJECTED BY HAND IS NEVER CHANGED BY ACCOUNT VETTING (I3 review): it is the
-    # organisation's own refusal (`set_programme_membership` stamps `rejected_by_hand_at`). A
-    # rejection the account cascaded follows the account back. The rest of the cascade stays: the
-    # money gate (`record_admin_credit`) reads the membership, not the account.
-    by_hand = membership.status == 'rejected' and membership.rejected_by_hand_at is not None
-    if not created and membership.status != sponsor.status and not by_hand:
-        membership.status = sponsor.status
-        membership.vetted_by = vetted_by
-        membership.vetted_at = timezone.now()
-        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
+    # ⚠ LOCKED and decided under the lock, as in `set_programme_membership` (I3 third review): a
+    # concurrent Take back and account approval cannot end at `approved`. No savepoint, no query.
+    with transaction.atomic(savepoint=False):
+        membership, created = SponsorProgrammeMembership.objects.select_for_update().get_or_create(
+            sponsor=sponsor, programme=programme,
+            defaults={
+                'status': sponsor.status,
+                'vetted_by': vetted_by if settled else '',
+                'vetted_at': timezone.now() if settled else None,
+            },
+        )
+        # ⚠ A GIFT REJECTED BY HAND (`rejected_by_hand_at`) IS NEVER CHANGED BY ACCOUNT VETTING;
+        # a cascaded rejection follows the account back. `record_admin_credit` reads this row.
+        by_hand = membership.status == 'rejected' and membership.rejected_by_hand_at is not None
+        if not created and membership.status != sponsor.status and not by_hand:
+            membership.status = sponsor.status
+            membership.vetted_by = vetted_by
+            membership.vetted_at = timezone.now()
+            membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
     return membership
 
 
@@ -296,24 +295,26 @@ def set_programme_membership(sponsor, programme, status, vetted_by=''):
         raise MembershipError('account_not_approved')
 
     settled = status != 'pending'
-    # BY HAND: a rejection here is stamped, so account vetting never overturns it; any other status
-    # clears the stamp (`sync_account_membership`, I3 second review).
+    # BY HAND: a rejection is stamped, so account vetting never overturns it; any other status
+    # clears the stamp. Locked and decided under the lock (I3 reviews; `sync_account_membership`).
     hand = timezone.now() if status == 'rejected' else None
-    membership, created = SponsorProgrammeMembership.objects.get_or_create(
-        sponsor=sponsor, programme=programme,
-        defaults={
-            'status': status,
-            'vetted_by': vetted_by if settled else '',
-            'vetted_at': timezone.now() if settled else None,
-            'rejected_by_hand_at': hand,
-        },
-    )
-    if not created and (membership.status, membership.rejected_by_hand_at is None) != (status, hand is None):
-        membership.status, membership.rejected_by_hand_at = status, hand
-        membership.vetted_by = vetted_by if settled else ''
-        membership.vetted_at = timezone.now() if settled else None
-        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'rejected_by_hand_at',
-                                       'updated_at'])
+    with transaction.atomic(savepoint=False):
+        membership, created = SponsorProgrammeMembership.objects.select_for_update().get_or_create(
+            sponsor=sponsor, programme=programme,
+            defaults={
+                'status': status,
+                'vetted_by': vetted_by if settled else '',
+                'vetted_at': timezone.now() if settled else None,
+                'rejected_by_hand_at': hand,
+            },
+        )
+        stamped = membership.rejected_by_hand_at is not None
+        if not created and (membership.status, stamped) != (status, hand is not None):
+            membership.status, membership.rejected_by_hand_at = status, hand
+            membership.vetted_by = vetted_by if settled else ''
+            membership.vetted_at = timezone.now() if settled else None
+            membership.save(update_fields=['status', 'vetted_by', 'vetted_at',
+                                           'rejected_by_hand_at', 'updated_at'])
     return membership
 
 

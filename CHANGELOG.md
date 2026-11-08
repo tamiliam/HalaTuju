@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint I3 third review — existing hand rejections stamped, gifts fit the waiting row, memberships locked (2026-11-08)
+
+Branch invitations-consistency (not pushed). **Migration `scholarship.0205_invitation_gifts` gains a data step** (still unapplied): it stamps `rejected_by_hand_at` (with `vetted_at`, else now) on every membership REJECTED while its sponsor account is not; re-runnable, reverse a no-op; the hand SQL gains the UPDATE, a pre-check count and a post-check (0 rejected-without-stamp on a non-rejected account). Production today has no such row. **API:** an organisation-less super naming gifts on another organisation's waiting row is 400 `gift_not_in_invitation_org` (the row kept its organisation while taking the other tenant's gifts); `sync_account_membership` and `set_programme_membership` read the membership FOR UPDATE (no savepoint, so no extra query) and decide under the lock. Tests: `test_sponsor_multi_gift_invite.py` 39.
+
 ### fix: sprint I3 second review — cascaded rejections clear, a super's resend changes nothing (2026-11-08)
 
 Branch invitations-consistency, on the I4 fix (not pushed). **Migration `scholarship.0205_invitation_gifts` extended again** (still unapplied, still additive): new nullable column `sponsor_programme_memberships.rejected_by_hand_at`; the hand SQL, checks and rollback in its docstring are updated. **API:** `set_programme_membership` stamps it on a hand rejection and clears it on any other status; `sync_account_membership` holds back only a REJECTED membership with the stamp, so a rejected-then-approved account gets its gifts back (the first review's guard had kept every rejection). Any super's bare sponsor invite on a waiting row is a resend: the row keeps its organisation (the view no longer passes the super's organisation to `create_or_refresh` on a resend) and its gifts; the letter names the row's organisation. Tests: `test_sponsor_multi_gift_invite.py` 34 (two first-review tests reworked or dropped).

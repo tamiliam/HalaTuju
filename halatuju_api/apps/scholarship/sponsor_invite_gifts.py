@@ -56,7 +56,9 @@ def choose(admin, data, email):
       this admin may name (`nameable`). Not a list -> 400 ``gift_required``; an unknown,
       inactive or other-tenant id -> 404 ``not_found`` (one answer, nothing leaks). An
       organisation-less super must name gifts (TD-334: Every gift has no organisation to mean),
-      and their gifts must belong to ONE organisation.
+      and their gifts must belong to ONE organisation — and, on a WAITING invitation, to THAT
+      invitation's organisation, which their request leaves in place (400
+      ``gift_not_in_invitation_org``, I3 third review; `_fits_the_waiting_row`).
     - ``programme_id`` (the one-gift form before I3, kept for the deploy window): that gift.
     - Neither: a waiting invitation for this address is a RESEND and is never re-homed: it keeps
       its organisation AND its gifts. That holds for the inviter's own organisation's invitation
@@ -85,13 +87,13 @@ def choose(admin, data, email):
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
         if len({g.organisation_id for g in gifts}) > 1:
             return None, _gift_refusal('gifts_span_organisations', status.HTTP_400_BAD_REQUEST)
-        return (gifts, False), None
+        return _fits_the_waiting_row(admin, email, gifts)
     asked = data.get('programme_id')
     if asked not in (None, ''):
         gift = programmes.filter(pk=_as_id(asked)).first() if _as_id(asked) else None
         if gift is None:
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
-        return ([gift], False), None
+        return _fits_the_waiting_row(admin, email, [gift])
     waiting = inv_service.open_invitation('sponsor', email)
     if waiting is not None and (admin.is_super
                                 or admin.owning_organisation_id in (None, waiting.organisation_id)):
@@ -100,6 +102,24 @@ def choose(admin, data, email):
     if len(live) > 1:
         return None, _gift_refusal('programme_required', status.HTTP_400_BAD_REQUEST, programmes)
     return (live, False), None
+
+
+def _fits_the_waiting_row(admin, email, gifts):
+    """``((gifts, False), None)``, or the refusal when the gifts would land on a waiting invitation
+    of ANOTHER organisation.
+
+    An admin with an organisation names only its gifts and the invitation moves to it, so the two
+    always agree. An organisation-less super passes no organisation, so `create_or_refresh` KEEPS
+    the waiting row's: their gifts must be that organisation's, or its list would show another
+    tenant's gift names under a letter naming it (I3 third review). A new row, or a waiting one
+    with no organisation, keeps the one-organisation rule alone."""
+    from . import invitations as inv_service
+    if admin.owning_organisation_id is None and gifts:
+        waiting = inv_service.open_invitation('sponsor', email)
+        if (waiting is not None and waiting.organisation_id is not None
+                and any(g.organisation_id != waiting.organisation_id for g in gifts)):
+            return None, _gift_refusal('gift_not_in_invitation_org', status.HTTP_400_BAD_REQUEST)
+    return (gifts, False), None
 
 
 def set_gifts(inv, gifts, every):
