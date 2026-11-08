@@ -86,7 +86,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
         # org-fence: the shared lookup; every caller re-gates via _org_allows /
         # _scoped_application / _require_app_write / _require_qc before use.
         return ScholarshipApplication.objects.select_related(
-            'profile', 'cohort', 'programme', 'source').filter(pk=pk).first()
+            'profile', 'cohort', 'programme', 'source', 'assigned_to',
+            'owning_organisation').filter(pk=pk).first()
 
     def _b40_scope(self, admin):
         """The B40 read scope — `b40_scope` (module level, so a non-view rule such as

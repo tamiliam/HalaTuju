@@ -1634,15 +1634,15 @@ class DocumentHelpView(APIView):
 
         from .profile_engine import _resolve_language
         language = _resolve_language(doc.application, request.query_params.get('lang'))
-        from . import branding as _branding
+        from . import branding as _branding, help_cache
         from . import usage as _usage
         # Bill the coach's Gemini call to the tenant. The engine's OWN signature stays sealed
         # (see test_engine_signature_is_structurally_firewalled) — attribution rides the ambient
         # usage_context, which the engine's inner `usage_context(source='doc_help')` inherits.
         # An organisation id is a billing key, never student data, and never enters the prompt.
         with _usage.usage_context(application=doc.application):
-            result = help_engine.generate_document_help(
-                doc.doc_type, verdict,
+            result = help_cache.cached_help(   # A2.4 SP-06: a repeat open costs no model call
+                doc.application_id, doc.doc_type, verdict,
                 first_name=help_engine.first_name_of(doc), target_language=language,
                 branding=_branding.for_application(doc.application),
             )
@@ -1728,12 +1728,12 @@ class IncomeClusterHelpView(APIView):
             'income_proof_optional': (_route == 'str'
                                       and verdict == 'income_proof_person_mismatch'),
         }
-        from . import branding as _branding
+        from . import branding as _branding, help_cache
         from . import usage as _usage
         # Same billing seam as the per-document coach — ambient only, signature untouched.
         with _usage.usage_context(application=app):
-            result = help_engine.generate_document_help(
-                'income_cluster', verdict, first_name=first_name, target_language=language,
+            result = help_cache.cached_help(   # A2.4 SP-06: a repeat open costs no model call
+                app.id, 'income_cluster', verdict, first_name=first_name, target_language=language,
                 context=context, branding=_branding.for_application(app),
             )
         result['verdict'] = verdict

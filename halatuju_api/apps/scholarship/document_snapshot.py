@@ -192,6 +192,20 @@ def document_snapshot(application):
         _ACTIVE.reset(token)
 
 
+@contextlib.contextmanager
+def snapshot_unless_open(application):
+    """A2.4 (SP-05, SP-07): `document_snapshot`, but joining the one already open for this
+    application instead of reading the documents a second time. The detail payload opens it, so
+    every endpoint that answers with the whole case (interview submit, QC decision, resolution
+    items) pays the engines' document reads once, like the GET. Read-only builds only: open it
+    AFTER the endpoint's own writes, never around them."""
+    if is_open_for(application):
+        yield
+        return
+    with document_snapshot(application):
+        yield
+
+
 # ── the readers ─────────────────────────────────────────────────────────────────────────────
 # Each one is the same shape: answer from the snapshot's rows if there is one, else run the
 # query the caller used to run. The in-memory branch filters WITHOUT re-sorting, so it keeps

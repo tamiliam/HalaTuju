@@ -270,7 +270,7 @@ Do one only when a sprint is already in that file.
 - **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
 - **TD-234** — Thirteen repair commands have no approved route to live data. *(D · M)*
 - **TD-212** — The email-template table is still named partner. *(D · M)*
-- **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module)*
+- **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
 - **TD-121** — The document test scorecard ignores the genuineness check. *(D · M)*
 - **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
@@ -305,7 +305,7 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-438** - The header photo's signed link expires after about an hour in a tab left open - low
 - **TD-447** - Offer confirm can still store a hostel line when the stored course is stale - low
 - **TD-448** - A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
-- **TD-449** - The offer check's catalogue queries sit outside every query budget - low
+- ~~**TD-449**~~ **FIXED 2026-11-08 (Sprint A2.4: the cockpit detail with a full offer letter is pinned at 51 queries)** - The offer check's catalogue queries sit outside every query budget - low
 - **TD-450** - Mobile M1 close review: overlay and guard loose ends - low
 - **TD-451** - A short campus line can name a campus of another institution type - low
 - **TD-452** - The town-word list decides whether a short campus form counts - low
@@ -349,12 +349,12 @@ Each is an open entry with a defining line in the register body (read it there).
 - ~~**TD-497**~~ **FIXED 2026-11-07 (Sprint A1.10a: no door calls a union gate; a guard test refuses a new one)** - Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 - **TD-498** - Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (owner 2026-11-07: fix inside T5g) (partly done 2026-11-07, A1.10a: Announcements, Surveys, Development, scholar Mentoring and Sources split; sponsor terms and sponsor emails left)
 - ~~**TD-499**~~ **FIXED 2026-11-07 (Sprint A1.10b: Quality check brings See all students, which stays locked on while it is held)** - The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
-- **TD-500** - Mentor My students list makes one alias query per mentee - low
+- ~~**TD-500**~~ **FIXED 2026-11-08 (Sprint A2.4: one alias read for the whole list)** - Mentor My students list makes one alias query per mentee - low
 - **TD-501** - Staff invites take no gift; NULL gift means every gift - medium (FIXED 2026-11-06 by A1.3: the reviewer invite asks; the gift blocks assignment; every gift stays NULL by owner ruling; multi-gift tagging is a later sprint)
 - **TD-502** - Overview cards without a filtered action link - low
 - **TD-503** - Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
 - ~~**TD-504**~~ **FIXED 2026-11-07 (Sprint A1.10a)** - Overview invitations card needs org_read; the Invitations page needs team_read - low
-- **TD-505** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
+- ~~**TD-505**~~ **FIXED 2026-11-08 (Sprint A2.4)** - Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
 - **TD-506** - Dependency advisories: Pillow, pypdf (web half done 2026-11-06, A1.1: Next 15.5.29) - high (partly done)
 - **TD-510** - A request for an unlinked matching staff row makes a Supabase admin call of up to 15 s each time (SEC-02 L4) - low
 - **TD-511** - A student can delete their own locked slip file through a second row (SEC-01 L5) - low
@@ -7451,7 +7451,7 @@ AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realig
 `realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
 add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
 
-### [TD-449] The offer check's catalogue queries sit outside every query budget - low
+### [TD-449] The offer check's catalogue queries sit outside every query budget - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-01 by the offer realignment build.** Each `student_offer_check` now runs about 3 to 6 more
 queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_institution`, a second
@@ -7459,6 +7459,8 @@ queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_in
 today, and `test_query_budgets` passes at 38, but its fixtures carry no offer fields, so this path is unmeasured.
 **Fix:** give the budget fixture an offer letter with programme, institution and issuer, and pin the cockpit
 detail's count. *(B · S)*
+
+**FIXED 2026-11-08 (A2.4):** `test_a24_other_reads_budget.py` opens a case whose offer letter carries a programme, code, institution, campus and issuer and pins the cockpit detail at 51 queries (32 without the letter), with a tightness test. The offer check's own extra reads were measured, not reduced.
 
 ### [TD-450] Mobile M1 close review: overlay and guard loose ends - low
 
@@ -8087,7 +8089,7 @@ access; but the editor and the server describe the rule differently. **Fix (with
 as implying `see_all` (`see_all` ticked and locked while `qc` is on), and correct the comment. Owner question raised
 with it: may a `finance` person also hold `qc` (they would then read every case)? *(W · S)*
 
-### [TD-500] Mentor My students list makes one alias query per mentee - low
+### [TD-500] Mentor My students list makes one alias query per mentee - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-04 by Team tables T5c P5 S1b (NOT fixed).** `admin/mentor/students/` (the mentor's My students
 list, also behind the Programmes card's `?programme=` filter) calls `mentoring.is_the_student` once per mentee, and
@@ -8096,6 +8098,8 @@ self-mentoring guard (a mentor must never see, or be, their own student), so it 
 sprint about landing pages. A mentor carries a handful of mentees, so it is cheap today. **Fix:** read the aliases
 of all the caller's mentees in one query and keep `is_the_student` as the single rule, with the existing
 self-mentoring tests as the guard. *(A · S)*
+
+**FIXED 2026-11-08 (A2.4):** `mentor_desk.current_assignments` reads the aliases of every mentee in one query and passes them to `mentoring.is_the_student(login, application, aliased)`, which stays the single rule (None still asks the database). The Programmes landing as a mentor is 6 queries for two or five students (was 7 and 10; budgets lowered). Not part of this fix: the mentor list still pays about five queries a mentee for the card's own reads (course, institution, latest result, standing, help flag); pinned at 17 (two) and 32 (five) in `test_a24_other_reads_budget.py`.
 
 ### [TD-501] Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0) - **FIXED (2026-11-06, A1.3)**
 
@@ -8126,9 +8130,11 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **Raised 2026-11-05 by the P5b review (NOT fixed).** The card is guarded by `org_read`, the page it counts by `team_read`, so a person can see a card whose page refuses them, or the reverse. Same door mismatch exists for multi-gift payment_runs (one round trip per gift). **Fix:** use the page's own door for the card and batch the payment_runs lookup. *(A · S)*
 
-### [TD-505] Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
+### [TD-505] Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low - **FIXED (2026-11-08, A2.4)**
 
 **Raised 2026-11-05 by the P5c review (NOT fixed).** `review_sla.in_band` builds an id list (fine at today's size); the ready-to-assign annotation runs the same EXISTS twice; the mentor and super (pooled) paths of `my_pending` have no query budget test (no N+1 found, budgets exist only for admin, finance and reviewer). Related: TD-500. **Fix:** push in_band into a subquery, annotate once, add budgets for the pooled paths. *(A · S)*
+
+**FIXED 2026-11-08 (A2.4):** `review_sla.in_band` is a range on `assigned_at` (overdue is `assigned_at <= now - sla`, due-soon the next `soon` days; same boundaries as `review_band`), no id list; `with_open_student_tasks` does nothing if the column is already there, so the list annotates once; the mentor (7 queries, flat in mentees) and super (9, flat in organisations) paths of `my_pending` are budgeted.
 
 ### [TD-506] Dependency advisories: Next.js (needs Next 15.5.28+), Pillow, pypdf - high (partly patched 2026-11-05)
 
@@ -8298,6 +8304,8 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 **Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
 
 **Progress 2026-11-07 (A2.3, SP-03 and SP-04).** Upload: the read leaves the request (`upload_read.py`; the web asks `/read/` at once, the `read-documents` cron is the safety net). Assign: the emails go through the `assign-emails` cron (`assign_notify.py`) and the reply is slim, 15 queries, with a budget test (`test_assign_query_budget.py`). Migration 0210, not run. The first-assign Gemini draft is still inline (TD-586). **Left:** interview submit (SP-05) and the income coach cache (SP-06).
+
+**Progress 2026-11-08 (A2.4, SP-05, SP-06, SP-07).** Interview submit, qc-decision and resolution-items now run inside a document snapshot (`snapshot_unless_open`): 334 to 41, 333 to 51 and 319 to 37 queries, budgets in `test_a24_slow_reads_budget.py`. Applicant detail 38 to 33. The income coach GETs (`DocumentHelpView`, `IncomeClusterHelpView`) cache a successful model message for 6 hours by application id and prompt hash (`help_cache.py`); a repeat makes no model call. Prod p95 not yet re-measured (local counts only).
 
 ### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low - **FIXED (2026-11-07, A1.9a + A1.9b; applying the SEC-11 SQL is the owner's step, TD-550)**
 

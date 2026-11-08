@@ -254,15 +254,15 @@ Schedule first: TD-465, TD-459, TD-506, TD-501, TD-383 (with TD-367). Closing an
 | SP-02 | reprocess-ic-vision near 300 s | medium |
 | SP-03 | Document upload slow (p50 11.6 s, p95 27.2 s, max 57.4 s) | medium; all 201 calls succeeded |
 | SP-04 | Assign slow (email inline, heavy reply) | medium |
-| SP-05 | Interview submit, qc-decision, resolution-items slow | medium (not re-checked) |
-| SP-06 | Income coach GETs call a model (p95 14-21 s) | medium (not re-checked) |
-| SP-07 | Applicant detail p50 2.5 s, p95 5.1 s (query count hides round trips) | medium (not re-checked) |
+| SP-05 | Interview submit, qc-decision, resolution-items slow | medium (fixed in code 2026-11-08, A2.4: 334/333/319 to 41/51/37 queries; prod p95 not re-measured) |
+| SP-06 | Income coach GETs call a model (p95 14-21 s) | medium (fixed in code 2026-11-08, A2.4: cached by prompt hash, no model call on a repeat) |
+| SP-07 | Applicant detail p50 2.5 s, p95 5.1 s (query count hides round trips) | medium (reduced 2026-11-08, A2.4: 38 to 33 queries; prod p95 not re-measured) |
 | SP-08 | No minimum instances; heavy cold start | medium (owner's call) |
 | SP-09 | Bundle headroom 0.4 to 1.2 kB | medium |
 | SP-10 | Budget does not count layouts, CSS, lazy chunks (TD-304) | low |
 | SP-11 | 33 scheduled jobs, 13 at hourly or */15 | low |
 | SP-12 | Build minutes high (15-27 min, about 30 builds in 2.5 days) | medium |
-| SP-13 | N+1 on mentor and pending cards (TD-500, TD-505) | low |
+| SP-13 | N+1 on mentor and pending cards (TD-500, TD-505) | low (fixed in code 2026-11-08, A2.4) |
 | SP-14 | 300 s timeout applies to the whole service | low |
 
 All speed highs came down to medium: none of them failed requests. SP-01 stays at the top of the speed list because a real person on the other side was affected.

@@ -104,13 +104,21 @@ def in_band(queryset, band, *, now, clocks):
     """The cases of `queryset` whose verdict clock is in `band` (`'overdue'`, `'due_soon'` or `'open'`).
 
     ⚠ THE SAME POPULATION AND THE SAME `review_band` AS `programme_overview.attention` / `mine`,
-    so an Overview card's count equals the list it opens. Banded in Python (the clocks are
-    per-organisation settings), returned as an id filter on the caller's own queryset.
+    so an Overview card's count equals the list it opens. The clock is one organisation's
+    `(sla, soon)` pair, so each band is a plain range on `assigned_at` (TD-505: no id list, no
+    Python pass): overdue is `assigned_at + sla <= now`, due-soon is `assigned_at + sla - soon <= now`
+    but not overdue. The boundaries are `review_band`'s own, `now == due` being overdue.
 
     `band='open'` is the WHOLE awaiting-verdict population (the `my_open` card's count: every band
     is a subset of it), so it is the `AWAITING_VERDICT` filter itself, not a copy of it."""
+    qs = queryset.filter(AWAITING_VERDICT)
     if band == 'open':
-        return queryset.filter(AWAITING_VERDICT)
-    rows = queryset.filter(AWAITING_VERDICT).order_by().values_list('pk', 'assigned_at')
-    ids = [pk for pk, at in rows if review_band(at, now=now, clocks=clocks) == band]
-    return queryset.filter(pk__in=ids)
+        return qs
+    sla, soon = clocks[0], clocks[1]
+    overdue_at = now - timedelta(days=sla)
+    if band == 'overdue':
+        return qs.filter(assigned_at__lte=overdue_at)
+    if band == 'due_soon':
+        return qs.filter(assigned_at__gt=overdue_at,
+                         assigned_at__lte=now - timedelta(days=sla - soon))
+    return qs.none()
