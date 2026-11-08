@@ -249,3 +249,115 @@ class TestTheBackfill(_Case):
         self.assertEqual(
             sorted(InvitationGift.objects.values_list('invitation_id', 'programme_id')),
             sorted([(named.id, self.a.id), (withdrawn.id, self.b.id)]))
+
+
+class TestTheI3Review(_Case):
+    """The adversarial review of I3 (2026-11-08): four findings, each pinned here."""
+
+    # Finding 1 — another organisation's waiting invitation is not theirs to resend.
+    def test_another_organisations_bare_invite_is_a_fresh_choice_not_a_resend(self):
+        self._invite(programme_ids=[])                          # org A: Every gift, waiting
+        other_admin = make_admin('org_admin', owning_org=self.other, uid='i3-other-oa')
+        r = self._invite(other_admin)                           # org B: no gift field at all
+        self.assertIn(r.status_code, (201, 502), r.content)
+        inv = self._inv()
+        self.assertEqual(inv.organisation_id, self.other.id)    # B takes the row over (kept)
+        self.assertFalse(inv.every_gift)                        # A's Every gift does not survive
+        self.assertIsNone(inv.every_gift_resolved_at)
+        self.assertEqual(list(inv.gift_rows.values_list('programme_id', flat=True)),
+                         [self.theirs.id])                      # B's sole active gift
+        self.assertEqual(self._memberships(self._register()), {'i3-theirs': 'pending'})
+
+    def test_another_organisation_with_two_gifts_is_asked_and_A_rows_never_move(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        make_programme(organisation=self.other, code='i3-theirs-2', is_active=True)
+        other_admin = make_admin('org_admin', owning_org=self.other, uid='i3-other-oa2')
+        r = self._invite(other_admin)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'programme_required')
+        self.assertEqual(sorted(p['code'] for p in r.data['programmes']),
+                         ['i3-theirs', 'i3-theirs-2'])
+        inv = self._inv()
+        self.assertEqual(inv.organisation_id, self.org.id)
+        self.assertEqual(sorted(inv.gift_rows.values_list('programme_id', flat=True)),
+                         sorted([self.a.id, self.b.id]))
+
+    def test_a_named_re_invite_from_another_organisation_replaces_every_row(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        other_admin = make_admin('org_admin', owning_org=self.other, uid='i3-other-oa3')
+        self._invite(other_admin, programme_ids=[self.theirs.id])
+        inv = self._inv()
+        self.assertEqual(list(inv.gift_rows.values_list('programme_id', flat=True)),
+                         [self.theirs.id])
+        self.assertEqual(inv.programme_id, self.theirs.id)
+
+    # Finding 2 — Every gift resolves exactly once, even to none.
+    def test_every_gift_with_no_gift_open_at_registration_stays_empty_for_good(self):
+        self._invite(programme_ids=[])
+        Programme.objects.filter(organisation=self.org).update(is_active=False)
+        sponsor = self._register()
+        self.assertEqual(self._memberships(sponsor), {})
+        inv = self._inv()
+        self.assertIsNotNone(inv.every_gift_resolved_at)       # resolved: to none
+        self.assertFalse(inv.gift_rows.exists())
+        # Two gifts open afterwards. Vetting reads the frozen answer, on every click.
+        Programme.objects.filter(pk__in=[self.a.pk, self.b.pk]).update(is_active=True)
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {})
+        self._review(sponsor, 'approve')                        # a repeated click
+        self.assertEqual(self._memberships(sponsor), {})
+        self.assertEqual(sponsorship.signup_programmes_for(sponsor), [])
+        self.assertFalse(self._inv().gift_rows.exists())
+
+    def test_a_repeated_approve_never_resolves_again(self):
+        self._invite(programme_ids=[])
+        sponsor = self._register()
+        self._review(sponsor, 'approve')
+        make_programme(organisation=self.org, code='i3-later-2', is_active=True)
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
+
+    def test_an_every_gift_invitation_never_frozen_is_frozen_once_at_vetting(self):
+        """Registered under the old image during a rollback: no rows, no stamp."""
+        self._invite(programme_ids=[])
+        sponsor = Sponsor.objects.create(supabase_user_id='i3-rollback', name='Test Giver',
+                                         email=EMAIL, status='pending')
+        self.assertIsNone(self._inv().every_gift_resolved_at)
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
+        self.assertIsNotNone(self._inv().every_gift_resolved_at)
+        make_programme(organisation=self.org, code='i3-later-3', is_active=True)
+        self._review(sponsor, 'approve')
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'approved'})
+
+    def test_choosing_again_clears_the_resolution(self):
+        self._invite(programme_ids=[])
+        inv = self._inv()
+        Invitation.objects.filter(pk=inv.pk).update(every_gift_resolved_at=timezone.now())
+        self._invite(programme_ids=[])                          # re-chosen: a fresh Every gift
+        self.assertIsNone(self._inv().every_gift_resolved_at)
+
+    # Finding 3 — account vetting never changes a REJECTED gift membership.
+    def test_a_gift_rejected_by_hand_stays_rejected_when_the_account_is_re_vetted(self):
+        self._invite(programme_ids=[self.a.id, self.b.id])
+        sponsor = self._register()
+        self._review(sponsor, 'approve')
+        sponsorship.set_programme_membership(sponsor, self.b, 'rejected', vetted_by='x@example.com')
+        self._review(sponsor, 'approve')                        # a re-click
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'rejected'})
+        self._review(sponsor, 'suspend')                        # the cascade still suspends...
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'suspended', 'i3-b': 'rejected'})
+        self._review(sponsor, 'approve')                        # ...and reinstates, but not B
+        self.assertEqual(self._memberships(sponsor), {'i3-a': 'approved', 'i3-b': 'rejected'})
+
+    # Finding 4 — a super with an organisation names only that organisation's gifts.
+    def test_a_super_in_an_organisation_names_only_its_gifts(self):
+        org_super = make_admin('super', super_admin=True, owning_org=self.org, uid='i3-org-super')
+        r = self._invite(org_super, programme_ids=[self.theirs.id])
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(Invitation.objects.filter(email=EMAIL).exists())
+        offered = authed_client(org_super).get(f'{INVITE}?kind=sponsors').json()['programmes']
+        self.assertEqual([p['code'] for p in offered], ['i3-a', 'i3-b'])
+        # The organisation-less super keeps every tenant's.
+        offered = authed_client(self.super).get(f'{INVITE}?kind=sponsors').json()['programmes']
+        self.assertIn('i3-theirs', [p['code'] for p in offered])

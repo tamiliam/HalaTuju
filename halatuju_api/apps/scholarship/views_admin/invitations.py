@@ -13,8 +13,6 @@ from rest_framework.response import Response
 
 from apps.courses import staff_gift
 
-from .gift_programmes import AdminProgrammeListView
-
 from .reviewers import _ReviewersBase
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
@@ -166,10 +164,10 @@ class AdminInvitationsView(_ReviewersBase):
             # that is not open yet would invite somebody into a door that does not open. (The
             # accept panel on the sponsor detail page is the opposite case and takes inactive
             # ones, because a gift is staffed before it is switched on.)
+            # I3 review: `nameable` — an admin with an organisation is offered only its gifts.
             'programmes': [
                 {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
-                for p in AdminProgrammeListView()._programmes_for(admin)
-                                                 .filter(is_active=True).order_by('code')
+                for p in sponsor_invite_gifts.nameable(admin).order_by('code')
             ],
             # TD-501 (A1.3 review): the REVIEWER invite's gift choices — only the gifts of the
             # organisation the invite binds to, the same home `staff_gift.for_invite` checks, so

@@ -155,7 +155,8 @@ def signup_programmes_for(sponsor, *, freeze=False):
     1. **The invitation they answered** (`sponsor_invite_gifts.stating_invitation`), matched on
        email — a sponsor invitation creates no account, so the address is the only thread (the key
        ``_close_admin_invitation`` uses). Its gifts, or for Every gift each gift active in its
-       organisation NOW; ``freeze`` (registration) records those, so vetting settles the same ones.
+       organisation when first resolved — ONCE, by ``freeze`` (registration, or vetting for an
+       invitation never frozen), even to none; after that every read returns what was frozen.
     2. **The platform's sole ACTIVE gift.** With one there is nothing to get wrong. ``is_active``:
        a gift created but not switched on takes nobody, so it must not make the answer ambiguous.
 
@@ -186,8 +187,10 @@ def open_signup_memberships(sponsor):
 
 def settle_signup_memberships(sponsor, vetted_by):
     """ACCOUNT VETTING: settle each signup gift's membership to the account's status, exactly as
-    `sync_account_membership` does for one — the same gifts registration opened, and only those."""
-    for programme in signup_programmes_for(sponsor):
+    `sync_account_membership` does for one — the same gifts registration opened, and only those.
+    ``freeze``: Every gift is never resolved live here; it reads what registration froze, and only
+    an invitation registered unfrozen (the old image, in a rollback) is resolved — and frozen — now."""
+    for programme in signup_programmes_for(sponsor, freeze=True):
         sync_account_membership(sponsor, programme, vetted_by=vetted_by)
 
 
@@ -236,7 +239,11 @@ def sync_account_membership(sponsor, programme, vetted_by=''):
             'vetted_at': timezone.now() if settled else None,
         },
     )
-    if not created and membership.status != sponsor.status:
+    # ⚠ A REJECTED MEMBERSHIP IS NEVER CHANGED BY ACCOUNT VETTING (I3 review). It may be the
+    # organisation's own per-gift refusal (`set_programme_membership`), and re-approving the account
+    # must not overturn it. The rest of the cascade stays: the money gate (`record_admin_credit`)
+    # reads the membership, not the account, so suspending the account must suspend the gift too.
+    if not created and membership.status not in (sponsor.status, 'rejected'):
         membership.status = sponsor.status
         membership.vetted_by = vetted_by
         membership.vetted_at = timezone.now()

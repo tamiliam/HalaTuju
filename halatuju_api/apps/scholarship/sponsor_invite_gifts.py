@@ -10,9 +10,11 @@ today (`sponsorship.open_signup_memberships`); the invitation is a prompt, never
 public registration, the terms or vetting.
 
 ⚠ EVERY GIFT IS NOT A LIVE RULE (open point B). A sponsor's acceptance is per gift, so Every gift
-means *every gift active in the invitation's organisation when they register* — resolved then and
-FROZEN into rows, so account vetting later settles exactly those, and a gift started afterwards is
-never joined by itself.
+means *every gift active in the invitation's organisation when they register* — resolved ONCE then
+and FROZEN into rows, with `Invitation.every_gift_resolved_at` stamped even when it resolved to
+none, so account vetting later settles exactly those, and a gift started afterwards is never
+joined by itself. (I3 review: an empty resolution used to leave nothing frozen, so vetting resolved
+again against the gifts of the day.)
 
 `Invitation.programme` is kept as the ROLLBACK MIRROR (one gift -> that id; several or every ->
 NULL), exactly as `PartnerAdmin.programme` is for reviewers; the reader falls back to it only when
@@ -33,24 +35,38 @@ def _gift_refusal(code, http, programmes=None):
     return Response(body, status=http)
 
 
+def nameable(admin):
+    """The ACTIVE gifts a sponsor invite by ``admin`` may name — the form's choices and the POST's
+    check, one home. An admin with an organisation names only ITS gifts, even a super: the
+    invitation is filed under their organisation, so another tenant's gift would be a mismatch (I3
+    review; the reviewer invite's rule). Only an organisation-less super reaches every tenant's."""
+    from .views_admin.gift_programmes import AdminProgrammeListView
+    programmes = AdminProgrammeListView()._programmes_for(admin).filter(is_active=True)
+    if admin.owning_organisation_id is not None:
+        programmes = programmes.filter(organisation_id=admin.owning_organisation_id)
+    return programmes
+
+
 def choose(admin, data, email):
     """``(choice, refusal)`` for the sponsor invite form.
 
     ``choice`` is ``(gifts, every)`` to store, or None for a RESEND that keeps what is stored.
 
     - ``programme_ids`` (a list): ``[]`` = Every gift; otherwise each id must be an ACTIVE gift
-      this admin may name (`_programmes_for`). Not a list -> 400 ``gift_required``; an unknown,
+      this admin may name (`nameable`). Not a list -> 400 ``gift_required``; an unknown,
       inactive or other-tenant id -> 404 ``not_found`` (one answer, nothing leaks). An
       organisation-less super must name gifts (TD-334: Every gift has no organisation to mean),
       and their gifts must belong to ONE organisation.
     - ``programme_id`` (the one-gift form before I3, kept for the deploy window): that gift.
-    - Neither: a waiting invitation for this address is a RESEND and is never re-homed; otherwise
-      the sole active gift, none when there are none, and 400 ``programme_required`` with the
-      choices when there are several — never a silent pick (the P2b / PF-1 rule).
+    - Neither: a waiting invitation for this address is a RESEND and is never re-homed — but ONLY
+      when it is the inviter's own organisation's (or the inviter is organisation-less). Another
+      organisation's waiting invitation is not theirs to resend: their request is a fresh choice,
+      and `set_gifts` replaces the other organisation's gifts outright (I3 review). Otherwise the
+      sole active gift, none when there are none, and 400 ``programme_required`` with the choices
+      when there are several — never a silent pick (the P2b / PF-1 rule).
     """
     from . import invitations as inv_service
-    from .views_admin.gift_programmes import AdminProgrammeListView
-    programmes = AdminProgrammeListView()._programmes_for(admin).filter(is_active=True)
+    programmes = nameable(admin)
     if 'programme_ids' in data:
         raw = data.get('programme_ids')
         if not isinstance(raw, (list, tuple)):
@@ -74,7 +90,8 @@ def choose(admin, data, email):
         if gift is None:
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
         return ([gift], False), None
-    if inv_service.open_invitation('sponsor', email) is not None:
+    waiting = inv_service.open_invitation('sponsor', email)
+    if waiting is not None and admin.owning_organisation_id in (None, waiting.organisation_id):
         return None, None            # a resend: what was asked stays asked
     live = list(programmes.order_by('code')[:2])
     if len(live) > 1:
@@ -85,8 +102,10 @@ def choose(admin, data, email):
 def set_gifts(inv, gifts, every):
     """THE ONE WRITER: afterwards ``inv`` names exactly ``gifts``, or Every gift when ``every``.
 
-    Also writes the rollback mirror `Invitation.programme` (one gift -> that id, else NULL) and the
-    flag with a queryset update, so no `save` side effect runs."""
+    A FULL replacement: no earlier row, flag or Every-gift resolution survives (I3 review — another
+    organisation's invite may take the row over). Also writes the rollback mirror
+    `Invitation.programme` (one gift -> that id, else NULL) with a queryset update, so no `save`
+    side effect runs."""
     from .models import Invitation, InvitationGift
     wanted = set() if every else {g.pk for g in gifts}
     mirror = next(iter(wanted)) if len(wanted) == 1 else None
@@ -95,8 +114,9 @@ def set_gifts(inv, gifts, every):
         InvitationGift.objects.bulk_create(
             [InvitationGift(invitation=inv, programme_id=pk) for pk in sorted(wanted)],
             ignore_conflicts=True)
-        Invitation.objects.filter(pk=inv.pk).update(programme_id=mirror, every_gift=bool(every))
-    inv.programme_id, inv.every_gift = mirror, bool(every)
+        Invitation.objects.filter(pk=inv.pk).update(
+            programme_id=mirror, every_gift=bool(every), every_gift_resolved_at=None)
+    inv.programme_id, inv.every_gift, inv.every_gift_resolved_at = mirror, bool(every), None
     getattr(inv, '_prefetched_objects_cache', {}).pop('gift_rows', None)
 
 
@@ -141,20 +161,39 @@ def stating_invitation(email):
 def joined_on_registration(inv, *, freeze=False):
     """The gifts ``inv`` files its registrant into.
 
-    Named gifts -> those. Every gift -> each gift ACTIVE in the invitation's organisation right
-    now (none when it has no organisation — an org-less super cannot send Every gift); with
-    ``freeze`` (registration) they are written as rows, so later reads — account vetting — see the
-    gifts that were active when they registered, not the gifts active on the day of vetting."""
-    from .models import InvitationGift, Programme
+    Named gifts -> those. Every gift resolves EXACTLY ONCE: to each gift ACTIVE in the invitation's
+    organisation at that moment (none when it has no organisation — an org-less super cannot send
+    Every gift). With ``freeze`` the answer is written as rows and `every_gift_resolved_at` is
+    stamped, EVEN WHEN IT IS EMPTY; from then on every read returns those rows, possibly none, and
+    never resolves live again. Registration freezes; so does account vetting, which therefore only
+    ever resolves an invitation that was never frozen (registered under the old image during a
+    rollback) — every other vetting reads what registration froze. Without ``freeze`` an unresolved
+    invitation is only previewed."""
+    from django.utils import timezone
+    from .models import Invitation, InvitationGift, Programme
     gifts, every = stated(inv)
-    if gifts or not every:
+    if not every:
         return gifts
-    if inv.organisation_id is None:
-        return []
-    live = list(Programme.objects.filter(organisation_id=inv.organisation_id, is_active=True)
-                .order_by('code'))
-    if freeze and live:
-        InvitationGift.objects.bulk_create(
-            [InvitationGift(invitation=inv, programme=p) for p in live], ignore_conflicts=True)
-        getattr(inv, '_prefetched_objects_cache', {}).pop('gift_rows', None)
-    return live
+    if inv.every_gift_resolved_at is not None or gifts:
+        return gifts                                   # resolved: the frozen rows, possibly none
+
+    def live():
+        if inv.organisation_id is None:
+            return []
+        return list(Programme.objects.filter(organisation_id=inv.organisation_id, is_active=True)
+                    .order_by('code'))
+
+    if not freeze:
+        return live()
+    with transaction.atomic():
+        locked = Invitation.objects.select_for_update().get(pk=inv.pk)
+        if locked.every_gift_resolved_at is None:      # nobody resolved it while we waited
+            InvitationGift.objects.bulk_create(
+                [InvitationGift(invitation=inv, programme=p) for p in live()],
+                ignore_conflicts=True)
+            locked.every_gift_resolved_at = timezone.now()
+            Invitation.objects.filter(pk=inv.pk).update(
+                every_gift_resolved_at=locked.every_gift_resolved_at)
+    inv.every_gift_resolved_at = locked.every_gift_resolved_at
+    getattr(inv, '_prefetched_objects_cache', {}).pop('gift_rows', None)
+    return stated(inv)[0]

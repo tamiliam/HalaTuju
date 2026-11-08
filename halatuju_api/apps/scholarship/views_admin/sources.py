@@ -85,8 +85,8 @@ def _source_dict(org, student_count=None, gift_count=0, gift_total=0, sign_in=('
         'sign_in': sign_in[0],
         'user_count': sign_in[1],
         # Invitations I2 (2026-11-08): WHO that is — `{id, name, email, joined_at, manageable,
-        # phone}` or
-        # None (`_person_dict`). The Sources row shows them, with Remove where `manageable`.
+        # phone}`, or None (`_person_dict`). The Sources row shows them, with Remove where
+        # `manageable`.
         'person': person,
     }
 
@@ -258,7 +258,7 @@ class _SourcesBase(_AdminBase):
         """`(the organisation a NEW source belongs to, error)`: the caller's own organisation; a
         super may name another with `?org=`, and an organisation-less super who names none gets
         the platform's SOLE tenant when there is exactly one (evidence, not a guess — the
-        `signup_programme_for` rule; the Sources page sends no `?org=` today). It must be a
+        `signup_programmes_for` rule; the Sources page sends no `?org=` today). It must be a
         TENANT — never a referral partner or another source's old row. Otherwise 400
         `organisation_required`, never a pick between several."""
         from apps.courses.models import PartnerOrganisation

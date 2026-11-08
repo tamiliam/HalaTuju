@@ -277,7 +277,8 @@ class AdminSponsorReviewView(_AdminBase):
         # stable across both moments because the invitation outlives the registration (and Every
         # gift was frozen into rows when they registered, I3) — so the account's own rows settle
         # and any OTHER gift's membership, which is that organisation's separate acceptance
-        # decision, is never flipped as a side-effect of account vetting.
+        # decision, is never flipped as a side-effect of account vetting. A REJECTED membership is
+        # never changed by it at all (I3 review; `sync_account_membership`).
         sponsorship_service.settle_signup_memberships(sponsor, admin.email)
         from .. import staff_activity     # common profile S4: the vetter's own activity list
         if previous_status != new_status:  # S4 review L4: a re-click of the same decision is no act

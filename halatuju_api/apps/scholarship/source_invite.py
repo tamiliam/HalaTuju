@@ -126,11 +126,14 @@ def invite(caller, *, email, name, source=None, make_source=None):
     inside the same transaction, so a refused or failed invite leaves no source behind).
 
     The caller has already checked who may invite and which source they may name; this decides
-    the account, records the invitation and sends the letter. An existing source that already has
-    an ACTIVE person (joined or waiting) is refused `source_has_person` (one person per source,
-    2026-11-08) — checked under a lock on the source row, so two invites at once cannot both pass. The source's `contact_email` is
-    filled with the invitee's address when it is blank (never overwritten), so the partner emails
-    reach somebody from the start.
+    the account, records the invitation and sends the letter.
+
+    An existing source that already has an ACTIVE person (joined or waiting) is refused
+    `source_has_person` (one person per source, 2026-11-08) — checked under a lock on the source
+    row, so two invites at once cannot both pass.
+
+    The source's `contact_email` is filled with the invitee's address when it is blank (never
+    overwritten), so the partner emails reach somebody from the start.
 
     ⚠ A RE-INVITE OF SOMEBODY WHO HAD SIGNED IN (revoked since) is a REACTIVATION: their login is
     theirs, so nothing is issued, the letter says "sign in as you always do", and the invitation is

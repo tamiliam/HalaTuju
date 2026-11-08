@@ -262,6 +262,14 @@ class Invitation(models.Model):
         default=False, db_default=False,
         help_text='Sponsor invitations only: invited into every gift active when they register.',
     )
+    #: I3 review: WHEN Every gift was resolved into rows (`sponsor_invite_gifts.joined_on_registration`)
+    #: — stamped even when it resolved to NO gift, so it resolves exactly once and an empty answer is
+    #: never re-read live at vetting. NULL = not resolved yet (or not an Every-gift invitation);
+    #: `set_gifts` clears it with the rest.
+    every_gift_resolved_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Sponsor invitations only: when Every gift was resolved into rows (even to none).',
+    )
     #: WHICH SOURCE a `source_partner` invitation signs somebody in for (source sign-in S2,
     #: 2026-10-30, roadmap conflict C5). `organisation` above stays the TENANT, as for staff — the
     #: fence every Invitations reader cuts on — and this names the source inside it. NULL for every
