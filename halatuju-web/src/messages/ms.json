@@ -7395,9 +7395,9 @@
       "reviewerGiftLabel": "Pemberian mana yang akan diliputi oleh penilai ini?",
       "reviewerGiftHelp": "Padankan penilai dengan pemberian mengikut kekuatan dan minat mereka.",
       "reviewerGiftEvery": "Semua pemberian",
-      "sponsorGiftLabel": "Pemberian mana yang penaja ini dijemput untuk disokong?",
+      "sponsorGiftLabel": "Penaja ini dijemput untuk menyokong pemberian yang mana?",
       "sponsorGiftRequired": "Tandakan sekurang-kurangnya satu pemberian, atau Semua pemberian.",
-      "sponsorGiftHelp": "Setiap pemberian ialah permohonan tersendiri: apabila mereka mendaftar, mereka menyertai setiap pemberian yang ditandakan di sini sebagai menunggu, dan anda meluluskan setiap satu. Semua pemberian bermaksud pemberian yang dibuka pada hari mereka mendaftar — pemberian yang dimulakan kemudian tidak ditambah.",
+      "sponsorGiftHelp": "Setiap pemberian ialah permohonan tersendiri: apabila mereka mendaftar, mereka disertakan dalam setiap pemberian yang ditandakan di sini dengan status menunggu, dan anda meluluskan setiap satu. Semua pemberian bermaksud pemberian yang dibuka pada hari mereka mendaftar — pemberian yang dimulakan kemudian tidak ditambah.",
       "inviteFailed": "Jemputan tidak dihantar. Sila semak butiran dan cuba lagi.",
       "noteLabel": "Nota peribadi",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
@@ -7453,7 +7453,7 @@
         "noneWaiting": "Tiada sesiapa yang menunggu untuk menjawab.",
         "error": {
           "already_staff": "Alamat e-mel ini sudah mempunyai log masuk kakitangan atau sumber HalaTuju, jadi tidak boleh dijemput bagi sumber. Hubungi sokongan HalaTuju.",
-          "source_has_person": "Sumber ini sudah mempunyai seorang: seseorang telah menyertai, atau jemputan sedang menunggu. Hantar semula atau batalkan jemputan yang menunggu di bawah, atau buang orang itu di Sumber dahulu.",
+          "source_has_person": "Sumber ini sudah mempunyai seseorang: seseorang telah menyertai, atau jemputan sedang menunggu. Hantar semula atau batalkan jemputan yang menunggu di bawah, atau buang orang itu di Sumber dahulu.",
           "code_taken": "Kod ringkas itu sudah digunakan.",
           "code_reserved": "Kod ringkas itu dikhaskan. Pilih yang lain.",
           "code_and_name_required": "Sumber baharu memerlukan nama dan kod ringkas.",
@@ -7515,7 +7515,7 @@
         "inUse": "Terdapat rekod yang masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
         "confirmMismatch": "Ia tidak sepadan dengan frasa yang diperlukan. Tiada apa-apa dipadam.",
         "hasContractTemplates": "Hadiah ini mempunyai perjanjian biasiswa yang telah ditandatangani, jadi ia tidak boleh dipadam.",
-        "giftLimitsMentors": "{count} mentor hanya membimbing dalam hadiah ini. Berikan mereka hadiah lain, atau Semua hadiah, sebelum memadamnya."
+        "giftLimitsMentors": "{count} mentor hanya membimbing dalam hadiah ini. Berikan mereka hadiah lain, atau ‘Semua pemberian’, sebelum memadamnya."
       },
       "copyLink": "Salin pautan permohonan",
       "copied": "Pautan disalin",
