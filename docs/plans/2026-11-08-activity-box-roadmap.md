@@ -1,6 +1,6 @@
 # Activity box and Team pages (roadmap, 2026-11-08)
 
-Status: **DRAFT — awaiting the owner's decisions D1–D9 and approval.** Branch `activity-box` (from main
+Status: **APPROVED by the owner 2026-11-08** ("Good to go"), with D1–D9 as recommended. Branch `activity-box` (from main
 `0fec1c69`), docs only. Nothing is built, pushed or deployed until the owner approves; the audit agent sets the pace.
 
 ## Why
@@ -176,12 +176,21 @@ on the diff, CHANGELOG + decisions.md. Nothing pushed without the owner.
 - **Done when:** a scholar changing their bank account produces one row "Bank details changed (…1234)" visible to
   staff only; changing a field outside D1 produces none; the PII guard test passes.
 
-## Order and rationale
-1. **T1** — live harm: today the wrong people are offered cases and the gift is checked only after the pick.
-2. **T2** — a rule change about deleting people; small and separate so it is reviewed on its own.
-3. **T3** — the person page, built on T2's action cell. Stitch first.
-4. **P1** — the Activity box display; shares the avatar and name style with T3, so it follows it.
-5. **P2** — the scholar's own edits; personal data, its own sprint and phone check.
+## Order and rationale (revised 2026-11-08 for the audit agent's G6)
+The audit agent is building G6 (audit roadmap A2.1–A2.4, speed). Only **A2.3** touches what this plan touches: it
+moves the assign email to the background and slims the assign reply in `services/assignment.py` (lines ~286–306)
+and sets a query budget on the assign endpoint. T1 edits the same file (`may_assign_to`, lines ~57–72) and the same
+endpoint's refusals. A2.4 (applicant detail round trips, TD-500 mentor alias, TD-505) is near but not on our files.
+A2.1 and A2.2 do not overlap.
+
+1. **T2** — Revoke and Delete. No G6 file.
+2. **T3** — one person page. No G6 file. Stitch first.
+3. **P1** — the Activity box display. No G6 file.
+4. **T1** — the Assign picker, **after A2.3 is merged**, built on top of it (rebases kept local; the audit agent
+   sets the pace). ⚠ T1 changes `may_assign_to` only: `is_review_target` is also read by
+   `scheduling._can_review`, which guards work on cases already held, and must not narrow (it would strand a case an
+   admin holds today).
+5. **P2** — the scholar's own edits; after G6, since the scholar's save paths sit beside A2.3's upload change.
 
 Five sprints rather than fewer: T1, T2 and P2 each change a rule (who gets cases, who may be deleted, what is logged
 about a scholar), and none should be buried in layout work. T3 and P1 could merge if the owner wants fewer handoffs.
