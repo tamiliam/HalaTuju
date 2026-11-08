@@ -19090,3 +19090,32 @@ same sprint that lets `view` be ticked alone, as a must-do item of the T5g plan;
 
 `VERDICT_ENGINE_VERSION` 2026-11-07.2.
 
+
+
+## 2026-11-08 — IIUM's English offer letters read as the public-university offers they are (request #66, bug)
+
+**Decision:** an offer page naming "International Islamic University Malaysia" AND its admission office
+("Academic Management and Admission Division", AMAD) is read by the same `ua_offer` family with English
+twins added to each of its six rows (`offer_signatures.UA_OFFER_SIGNATURES_EN`, weights and rows unchanged):
+the English offer TITLE ("Offer of Admission" running into TO / INTO / FOR / BACHELOR / DIPLOMA / FOUNDATION /
+UNDERGRADUATE / SEMESTER, or alone on its own line), AMAD, "This offer is valid for" / "Change of programme is
+not allowed" / "Offer will be withdrawn", "Programme Code" / "Programme of Study", "Registration Date" / "Date
+of Registration". A conditional or provisional offer never reads as the title. Every other page is scored by
+the 1.25.0 family exactly (`_UA_NAMES` untouched, still the 20 Malay names). The IIUM Academy (of Graduate &
+Professional Studies) and CENPACE join the private-arm veto (`results_doc._PRIVATE_ARM_PHRASES`), so IIUM's
+fee-paying arms keep reading not_offer_letter. TD-145: `offer_course_match._ALIASES` gives UNIV-006 its
+English name and acronym IIUM, so the letter's English name compares as a MATCH (it read 'unknown').
+`MODEL_VERSION` 1.26.0; `VERDICT_ENGINE_VERSION` unchanged (no verdict rule moved).
+**Why:** IIUM is UNIV-006, an IPTA (2026-10-29), on a subsidised public fee; its genuine English letter (doc
+5105, app 523) read "1/10 polytechnic signatures" and so `offer_not_official`, "a private college". The one
+`ua_offer` family keyed off the university's name (2026-06-20) is kept; IIUM simply has two names.
+**Why gated on name + AMAD:** private colleges write English, so English offer wording scored on every page
+would lift a private letter from not_offer_letter to suspect; and a private letter citing "validated by
+International Islamic University Malaysia" carries no AMAD. The bare "offer of admission" and "offer letter"
+are refused because IIUM's own admission booklet prints them in sentences (the booklet reads suspect, 0.4, as
+the UPU Semakan does, 2026-06-27). The acronyms IIUM / UIAM are never an anchor (a partner cites them most).
+**Residual (accepted, as for the Malay family):** a forged letter copying both IIUM's English name and AMAD.
+The exact title wording of a live IIUM letter is not in any stored field (doc 5105 keeps no text); if its
+Re-run still reads below genuine, its title is a form these twins do not hold.
+**Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).
+**Revisit if:** a second English-letter public university appears, or the IIUM Academy is ruled public.

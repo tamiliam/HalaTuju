@@ -106,7 +106,7 @@ class TestTvetOffers(SimpleTestCase):
         out = signature_genuineness(IKM, doc_type='offer_letter')
         self.assertLess(out['probability'], 0.35)                  # scored "not an offer" before S6
         self.assertEqual((out['status'], out['type']), ('genuine', 'tvet_mara'))
-        self.assertEqual(out['model_version'], '1.25.0')
+        self.assertEqual(out['model_version'], MODEL_VERSION)
 
     def test_a_tvet_offer_slip_is_suspect_not_a_fail(self):
         out = signature_genuineness(IKBN_SLIP, doc_type='offer_letter')
@@ -202,7 +202,7 @@ class TestNothingElseMoves(SimpleTestCase):
     def test_a_genuine_band_offer_is_untouched_and_carries_the_new_version(self):
         out = signature_genuineness(POLY_OFFER_SDN.replace('Bayaran yuran boleh dibuat di Bank Contoh Sdn Bhd.', ''),
                                     doc_type='offer_letter')
-        self.assertEqual((out['status'], out['type'], out['model_version']), ('genuine', 'polytechnic', '1.25.0'))
+        self.assertEqual((out['status'], out['type'], out['model_version']), ('genuine', 'polytechnic', MODEL_VERSION))
 
     def test_a_junk_page_stays_not_an_offer(self):
         self.assertEqual(signature_genuineness('E-TICKET\nFlight XX123\nPassenger', doc_type='offer_letter')['status'],

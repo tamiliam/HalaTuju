@@ -2,7 +2,8 @@
 ``results_doc`` (offer exact-read S6, 2026-11-03, a moves-only split: ``results_doc.py`` stood at the
 600-line standard). Pure data, no imports. ``results_doc`` re-exports every name, so
 ``from .results_doc import _UA_NAMES`` / ``UA_OFFER_SIGNATURES`` keep working; ``results_doc``'s
-``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them.
+``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them. 1.26.0 (request
+#66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``; no imports).
 """
 
 
@@ -128,3 +129,56 @@ UA_OFFER_SIGNATURES = [
     ('registration date',           ['TARIKH PENDAFTARAN', 'TARIKH MENDAFTAR', 'TARIKH LAPOR DIRI',
                                      'HADIR MENDAFTAR PADA TARIKH'],               1, 'text'),
 ]
+
+
+# ── IIUM in ENGLISH (1.26.0, request #66) ──────────────────────────────────────────────────
+# IIUM (UNIV-006) writes its offers in English: "International Islamic University Malaysia", "Academic
+# Management and Admission Division (AMAD)", "Offer of Admission …". Doc 5105, a genuine one, read
+# not_offer_letter. The English reading is the SAME UA family — the same six rows and weights, each Malay
+# row with its English twins added — and it applies ONLY to a page carrying BOTH IIUM's English name and
+# its own admission office (`english_ua_lists`). Every other page, and every other UA letter, is scored by
+# `UA_OFFER_SIGNATURES` exactly as under 1.25.0. Why gated: private colleges write English, so English
+# offer wording scored on every page would lift a private letter from not_offer_letter to suspect; and a
+# private letter that cites "validated by International Islamic University Malaysia" carries no AMAD.
+# The full name only, never "IIUM" / "UIAM" (`offer_issuers._UA_SHORT` keeps those for its reason): a
+# partner's letter cites the acronym far more often than the full name. `_UA_NAMES` (and so every block
+# and reason that reads it) is untouched.
+_IIUM_EN = 'INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA'
+_IIUM_OFFICE = 'ACADEMIC MANAGEMENT AND ADMISSION DIVISION'
+#: The offer TITLE, by the Malay rules' care: never bare "OFFER OF ADMISSION" nor "OFFER LETTER" — IIUM's own
+#: admission booklet says "this offer of admission will be revoked" and "print the offer letter" three and
+#: ten times — only the title running into what is offered (folded: "OFFER OF ADMISSION TO THE …",
+#: "OFFER OF ADMISSION / BACHELOR OF …"). A notification ("Notification of Admission") never matches.
+_ENGLISH_OFFER_TAILS = ('TO', 'INTO', 'FOR', 'BACHELOR', 'DIPLOMA', 'FOUNDATION', 'UNDERGRADUATE', 'SEMESTER')
+#: A conditional / provisional offer is read without its "OFFER" (`english_ua_lists`), so it never reads as
+#: the title: the owner's rule is an unconditional official offer only (decisions.md 2026-06-27).
+_ENGLISH_NOT_YET = ('CONDITIONAL', 'PROVISIONAL')
+_ENGLISH_TWINS = {
+    'public university (UA) name': [_IIUM_EN],
+    'offer/admission line': [f'OFFER OF ADMISSION {w}' for w in _ENGLISH_OFFER_TAILS],
+    'academic office': [_IIUM_OFFICE],                                   # "Bahagian … Akademik"
+    'finality / no-change clause': ['THIS OFFER IS VALID FOR', 'CHANGE OF PROGRAMME IS NOT ALLOWED',
+                                    'OFFER WILL BE WITHDRAWN'],          # never "REVOKED": the booklet's
+    'Program / Kod Program': ['PROGRAMME CODE', 'PROGRAMME OF STUDY'],
+    'registration date': ['REGISTRATION DATE', 'DATE OF REGISTRATION'],
+}
+UA_OFFER_SIGNATURES_EN = [(label, patterns + _ENGLISH_TWINS[label], weight, kind)
+                          for label, patterns, weight, kind in UA_OFFER_SIGNATURES]
+#: ... and the same with the bare title, for a page that prints "OFFER OF ADMISSION" as a line of its OWN
+#: (the booklet's three are inside sentences).
+_TITLE_LINE = 'OFFER OF ADMISSION'
+UA_OFFER_SIGNATURES_EN_TITLED = [(label, patterns + ([_TITLE_LINE] if label == 'offer/admission line' else []),
+                                  weight, kind) for label, patterns, weight, kind in UA_OFFER_SIGNATURES_EN]
+
+
+def english_ua_lists(lists: dict, text_norm: str, folded_lines=()):
+    """``(lists, text_norm)`` for an offer: unchanged, unless the folded page names IIUM in English AND its
+    admission office (AMAD) — then the UA family reads its English twins (`UA_OFFER_SIGNATURES_EN`; with the
+    bare title when one of `folded_lines` is exactly "OFFER OF ADMISSION") and a "CONDITIONAL / PROVISIONAL
+    OFFER" is read without its "OFFER"."""
+    if _IIUM_EN not in text_norm or _IIUM_OFFICE not in text_norm:
+        return lists, text_norm
+    for w in _ENGLISH_NOT_YET:
+        text_norm = text_norm.replace(f'{w} OFFER', w)
+    titled = _TITLE_LINE in set(folded_lines)
+    return {**lists, 'ua_offer': UA_OFFER_SIGNATURES_EN_TITLED if titled else UA_OFFER_SIGNATURES_EN}, text_norm

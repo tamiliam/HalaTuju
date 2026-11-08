@@ -29,6 +29,7 @@ from .offer_signatures import POLY_OFFER_SIGNATURES as POLY_OFFER_SIGNATURES
 from .offer_signatures import STPM_OFFER_SIGNATURES as STPM_OFFER_SIGNATURES
 from .offer_signatures import UA_OFFER_SIGNATURES as UA_OFFER_SIGNATURES
 from .offer_signatures import _UA_NAMES as _UA_NAMES
+from .offer_signatures import english_ua_lists
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
 # identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a
@@ -106,7 +107,8 @@ from .offer_signatures import _UA_NAMES as _UA_NAMES
 #   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list. 1.17.1: letter-spaced headings around real prose keep the layer (doc 3919).
 #   1.18.0 (2026-10-29) — Bumi Sprint C: the 13 Islamic SPM subjects read by their slip names (`academic_engine._SUBJECT_BM`, e.g. "Manahij Al-'Ulum Al-Islamiah", was "Manahij"); an apostrophe is dropped, not spaced; the cert reader reads a subject's words together ("USUL AL-DIN", "AL - QURAN"); "&" = "dan"; old short names stay aliases. No family/weight change. Backfill: NONE BY DESIGN — 18 of 2,313 stored reads carry Islamic names (some the old short ones); the aliases and the code/band-tolerant slip key keep them matching without a re-read.
 #   1.25.0 (2026-11-04) — offer exact-read S6: the owner's bursary rulings on top of the UNCHANGED pre-S6 call (`baseline_genuineness`), only on clear proof (`offer_rulings`, round 7 the narrowing): BLOCK a private letterhead (Sdn Bhd / Berhad, GMI / UniKL / KPTM / UM SATU / UMS PPPL, tie-up words) not_offer_letter; LIFT a closed-list public TVET offer (JMTI / CIAST included) or a polytechnic / UMS / Form-6 confirmation of studies with the full letter shape and no private marker genuine, and a ministry family's letter vetoed only for an incidental 'Sdn Bhd'; a portal page / e-Daftar printout and a TVET slip suspect, not a fail. Everything else keeps its pre-S6 call. No family/weight change. Backfill: S7 (live re-score).
-MODEL_VERSION = '1.25.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse`; the S2 1.10.0 precedent). 1.20.0 (2026-10-29) M3: a polytechnic transcript read Exact (`poly_diploma_parse`). No family/weight/band change. 1.21.0 (2026-10-29) M4: the Matriculation + polytechnic transcript families (`matric_poly_doc`), higher-results slot. 1.22.0 (2026-10-29) M4b: the owner's rulings — only a FINAL transcript scores; a semester slip / the portal page / a transcript with no completion status reads not-final (no signal, the final transcript owed); a Matriculation offer letter not_matric_result. Backfill: M5 (live). 1.23.0 (2026-11-03) request #53: the approval read (`income_declaration.APPROVAL_PROMPT`) takes a rubber-stamped NAME BLOCK, bordered or not, as a stamp; text in the form's own print still is not; and asks `has_signature` (owner ruling 2026-11-03: a non-payslip informal document needs a hand signature). Backfill: live re-read of the affected list; stamped support reads lacking `has_signature` are re-read once by the hourly sweep. 1.24.0 (2026-11-03) #53 follow-up: the approval read asks the stamp as its own yes/no question (`has_stamp`, like `has_signature`) — the one-word mark had said "signature" for a signed AND stamped village form (docs 3023 / 3235 / 4185 / 4204); `has_stamp_or_signature` kept as a secondary summary. Rules unchanged. Backfill: owner-driven re-read of the affected list (no new sweep clause). 1.25.0 (2026-11-04) offer exact-read S6: the owner's rulings on the pre-S6 call (note above).
+#   1.26.0 (2026-11-08) — request #66: IIUM writes in ENGLISH. A page naming "International Islamic University Malaysia" AND its admission office (AMAD) reads the UA family with English twins added to each row (`offer_signatures.UA_OFFER_SIGNATURES_EN`: the offer TITLE — never bare "offer of admission", IIUM's booklet prints it — finality, programme, registration); same rows and weights; a conditional / provisional offer never reads as the title. Every other page scores as under 1.25.0. The IIUM Academy and CENPACE join the private-arm veto. Backfill: doc 5105, one cockpit Re-run (owner's yes).
+MODEL_VERSION = '1.26.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse`; the S2 1.10.0 precedent). 1.20.0 (2026-10-29) M3: a polytechnic transcript read Exact (`poly_diploma_parse`). No family/weight/band change. 1.21.0 (2026-10-29) M4: the Matriculation + polytechnic transcript families (`matric_poly_doc`), higher-results slot. 1.22.0 (2026-10-29) M4b: the owner's rulings — only a FINAL transcript scores; a semester slip / the portal page / a transcript with no completion status reads not-final (no signal, the final transcript owed); a Matriculation offer letter not_matric_result. Backfill: M5 (live). 1.23.0 (2026-11-03) request #53: the approval read (`income_declaration.APPROVAL_PROMPT`) takes a rubber-stamped NAME BLOCK, bordered or not, as a stamp; text in the form's own print still is not; and asks `has_signature` (owner ruling 2026-11-03: a non-payslip informal document needs a hand signature). Backfill: live re-read of the affected list; stamped support reads lacking `has_signature` are re-read once by the hourly sweep. 1.24.0 (2026-11-03) #53 follow-up: the approval read asks the stamp as its own yes/no question (`has_stamp`, like `has_signature`) — the one-word mark had said "signature" for a signed AND stamped village form (docs 3023 / 3235 / 4185 / 4204); `has_stamp_or_signature` kept as a secondary summary. Rules unchanged. Backfill: owner-driven re-read of the affected list (no new sweep clause). 1.25.0 (2026-11-04) offer exact-read S6: the owner's rulings on the pre-S6 call (note above). 1.26.0 (2026-11-08) request #66: IIUM's English offers (note above).
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -327,6 +329,9 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
     better-fitting list. Pure + deterministic for the text signatures."""
     tn = _norm_fold_upper_alnum(ocr_text)
     lists = _FAMILIES.get(doc_type, _LISTS)
+    if doc_type == 'offer_letter':
+        lines = [_norm_fold_upper_alnum(ln) for ln in (ocr_text or '').splitlines()]
+        lists, tn = english_ua_lists(lists, tn, lines)           # 1.26.0 (#66): IIUM's English letters
     scores = {name: _score_list(sig, tn, has_qr, has_crest, has_seal) for name, sig in lists.items()}
     scores.update(epf_app_scores(tn) if doc_type == 'epf' else {})     # 1.17.0 — only with an app anchor
     best = max(scores, key=lambda k: scores[k]['probability'])
@@ -372,7 +377,11 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # no question (owner, TD-145, 2026-10-04). Matched as the two-word phrases ONLY: the lone word
 # 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
 _PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD',
-                        'SALURAN TERBUKA', 'SALURAN SATU')
+                        'SALURAN TERBUKA', 'SALURAN SATU',
+                        'IIUM ACADEMY', 'ACADEMY OF GRADUATE', 'CENPACE')   # 1.26.0 (#66): IIUM's fee-paying arms
+# 1.26.0 (#66): IIUM's English name now anchors its letters, so its fee-paying, self-funded arms keep reading
+# not_offer_letter exactly as before: the IIUM Academy (of Graduate & Professional Studies; "&" folds away) and
+# CENPACE (its Centre for Professional and Continuing Education, also caught by "CONTINUING EDUCATION").
 # (S6, 1.25.0: unchanged — the pre-S6 veto IS the baseline; UMS PPPL / "Sendirian Berhad" on the letterhead
 # are the S6 BLOCK overlay's, `offer_rulings`.)
 

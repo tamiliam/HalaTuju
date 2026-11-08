@@ -311,6 +311,8 @@ _TYPE_WORDS = frozenset({
 #: "Universiti Malaysia Pahang" was UMPSA's name until 2023 ({pahang} is a state).
 _ALIASES = {
     'universiti malaysia pahang al-sultan abdullah': ('Universiti Malaysia Pahang', 'UMP'),
+    # Request #66: IIUM's own English name and acronym (the catalogue holds the Malay name, acronym UIAM).
+    'universiti islam antarabangsa malaysia': ('International Islamic University Malaysia', 'IIUM'),
 }
 
 
