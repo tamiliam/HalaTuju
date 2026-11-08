@@ -18,7 +18,7 @@ again against the gifts of the day.)
 
 `Invitation.programme` is kept as the ROLLBACK MIRROR (one gift -> that id; several or every ->
 NULL), exactly as `PartnerAdmin.programme` is for reviewers; the reader falls back to it only when
-an invitation has no rows and no flag (written before 0205, or by the old image in the deploy gap).
+an invitation has no rows and no flag (written before 0207, or by the old image in the deploy gap).
 """
 from django.db import transaction
 from rest_framework import status
@@ -145,7 +145,7 @@ def set_gifts(inv, gifts, every):
 
 def stated(inv):
     """``(gifts, every)`` — what ``inv`` asked for. Rows win; then the flag; then the mirror (an
-    invitation from before 0205); ``([], False)`` = nothing stated. Gifts are ordered by code."""
+    invitation from before 0207); ``([], False)`` = nothing stated. Gifts are ordered by code."""
     rows = [r.programme for r in inv.gift_rows.all()]
     if rows:
         return sorted(rows, key=lambda p: p.code), inv.every_gift

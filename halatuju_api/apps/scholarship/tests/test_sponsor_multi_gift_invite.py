@@ -155,7 +155,7 @@ class TestOneGiftIsUnchanged(_Case):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'programme_required')
 
-    def test_an_invitation_written_before_0205_with_only_the_mirror_still_counts(self):
+    def test_an_invitation_written_before_0207_with_only_the_mirror_still_counts(self):
         Invitation.objects.create(audience='sponsor', email=EMAIL, organisation=self.org,
                                   programme=self.b, code='i3-legacy')
         self.assertEqual(self._memberships(self._register()), {'i3-b': 'pending'})
@@ -243,7 +243,7 @@ class TestTheBackfill(_Case):
                                   organisation=self.org, code='i3-bf3')          # none named
         Invitation.objects.create(audience='staff', email='four@example.com', role='reviewer',
                                   organisation=self.org, programme=self.a, code='i3-bf4')
-        migration = import_module('apps.scholarship.migrations.0205_invitation_gifts')
+        migration = import_module('apps.scholarship.migrations.0207_invitation_gifts')
         migration.copy_one_gift_into_rows(django_apps, None)
         migration.copy_one_gift_into_rows(django_apps, None)       # re-runnable
         self.assertEqual(
@@ -429,7 +429,7 @@ class TestTheI3ThirdReview(_Case):
         return SponsorProgrammeMembership.objects.create(sponsor=sponsor, programme=self.a,
                                                          status=status, **extra)
 
-    # 1 — every existing hand rejection is stamped by 0205, so vetting never re-approves it.
+    # 1 — every existing hand rejection is stamped by 0207, so vetting never re-approves it.
     def test_the_backfill_stamps_a_rejection_on_an_account_that_is_not_rejected(self):
         then = timezone.now() - timezone.timedelta(days=3)
         earlier = timezone.now() - timezone.timedelta(days=9)
@@ -439,7 +439,7 @@ class TestTheI3ThirdReview(_Case):
         accepted = self._member(self._account('i3-bf-accepted', 'approved'), 'approved', vetted_at=then)
         stamped = self._member(self._account('i3-bf-stamped', 'approved'), 'rejected',
                                vetted_at=then, rejected_by_hand_at=earlier)
-        migration = import_module('apps.scholarship.migrations.0205_invitation_gifts')
+        migration = import_module('apps.scholarship.migrations.0207_invitation_gifts')
         migration.stamp_hand_rejections(django_apps, None)
         first = {m.pk: m.rejected_by_hand_at for m in SponsorProgrammeMembership.objects.all()}
         migration.stamp_hand_rejections(django_apps, None)       # re-runnable: changes nothing
