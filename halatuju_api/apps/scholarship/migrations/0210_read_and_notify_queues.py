@@ -2,8 +2,8 @@
 # seven columns are the two queues (`upload_read.py`, `assign_notify.py`). Additive, old-image safe:
 # `db_default` lets the still-serving old revision insert applicant_documents / assignment_events
 # rows during the rollout, and its rows read '' (not queued), so nothing is read or sent twice.
-# ⚠ Sibling branch a21 also adds a 0205 (sponsorprofile_finalise_queue). Whichever merges second
-# renumbers its file to 0206 and depends on the other's 0205.
+# NUMBERING: 0210, after `0209_sponsorprofile_finalise_queue` (a21). Renumbered from 0205 at the
+# G6 merge (2026-11-08); main took 0205 to 0208 meanwhile.
 
 from django.db import migrations, models
 
@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scholarship', '0204_decisionreopen_reopened_from'),
+        ('scholarship', '0209_sponsorprofile_finalise_queue'),
     ]
 
     operations = [
