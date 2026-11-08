@@ -133,23 +133,30 @@ UA_OFFER_SIGNATURES = [
 
 
 # ── IIUM in ENGLISH (1.26.0, request #66) ──────────────────────────────────────────────────
-# IIUM (UNIV-006) writes its offers in English. Doc 5105, a genuine one, read not_offer_letter. Its real
-# wording (review of fc7eef0b, read off the stored text layer): no title at all; the offer is the sentence
-# "... the International Islamic University Malaysia (IIUM) has accepted and approved your application for
-# the following programme in Semester 1, 2024/2025:"; the office "Academic Management and Admission
-# Division"; "This offer is valid for one (1) year only from the date of issuance"; "Registration Date".
-# The English reading is the SAME UA family — the same six rows and weights, each Malay row with ONLY those
-# real English twins added — and it opens ONLY on a page that is IIUM's own offer (`english_ua_lists`):
-#   1. IIUM's English name AND its admission office on the LETTERHEAD (`offer_reading._letterhead_lines`),
-#      with no other institution named before them — a private college "in collaboration with" IIUM, or one
-#      whose admission "is processed with" AMAD, names itself first or cites IIUM in the body;
-#   2. the offer SENTENCE on the page — IIUM's acceptance / rejection forms, an "unsuccessful" letter and the
-#      admission booklet carry the name, the office and "offer of admission" in other sentences, never it;
-#   3. no CONDITIONAL / PROVISIONAL word and no "NOTIFICATION OF ADMISSION" (whole words; "UNCONDITIONAL"
-#      is not "CONDITIONAL"): the owner's rule is an unconditional official offer only (decisions.md
-#      2026-06-27), and such a page keeps the 1.25.0 call.
+# IIUM (UNIV-006) writes its offers in English. Doc 5105, a genuine one, read not_offer_letter. Its REAL
+# layout (its stored text layer, read by review rounds 1-2): the letterhead is an IMAGE, so the text has no
+# letterhead at all — four lines (reference, date, the candidate's name and address), "Dear …", then the
+# offer SENTENCE "We are pleased to inform you that the International Islamic University Malaysia (IIUM) has
+# accepted and approved your application for the following programme in Semester 1, 2024/2025:"; the office
+# "Academic Management and Admission Division" only in the signature block and the acceptance form; "This
+# offer is valid for one (1) year only from the date of issuance"; "Registration Date". No title.
+# The English reading is the SAME UA family — the same six rows and weights, each Malay row with only those
+# real English twins added — and it opens ONLY on IIUM's own offer, anchored on its ISSUER, the sentence's
+# subject (`english_ua_lists`):
+#   1. the sentence with IIUM as its SUBJECT ("… THAT THE INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA (IIUM) HAS
+#      ACCEPTED AND APPROVED …"): "Mercu Academy, a partner of the International Islamic University Malaysia
+#      (IIUM), has accepted …" is not it;
+#   2. the office anywhere on the page;
+#   3. NOTHING before the sentence names another organisation — no organisation noun at all outside IIUM's
+#      name and office (`offer_reading._outside_orgs`; a company is one), and no partner / tie-up word
+#      (`_PARTNER`, `_TIE_UP`, "validated"): a private college's own letterhead, an "affiliated college", "in
+#      association with", a "franchise programme", "IIUM Holdings Berhad" all sit above the sentence;
+#   4. no CONDITIONAL / PROVISIONAL / "NOTIFICATION OF ADMISSION" (whole words; "UNCONDITIONAL" is not one)
+#      from the top of the page to the end of the sentence's line — a title or the sentence itself; a genuine
+#      letter's terms further down may say "conditional upon" (the owner's rule: an unconditional official
+#      offer only, decisions.md 2026-06-27).
 # Every other page, and every other UA letter, is scored by `UA_OFFER_SIGNATURES` exactly as under 1.25.0.
-# The full name only, never "IIUM" / "UIAM" (`offer_issuers._UA_SHORT` keeps those for its reason).
+# The acronyms "IIUM" / "UIAM" are never an anchor (`offer_issuers._UA_SHORT` keeps them for its reason).
 # `_UA_NAMES` (and so every block and reason that reads it) is untouched: adding the English name to the
 # BLOCK's public names would let a company line BELOW it ("IIUM HOLDINGS BERHAD") escape the block.
 _IIUM_EN = 'INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA'
@@ -158,7 +165,11 @@ _IIUM_OFFICE = 'ACADEMIC MANAGEMENT AND ADMISSION DIVISION'
 #: IIUM's pages it sits in "rejection of offer of admission", "I accept the offer of admission", "your
 #: application for offer of admission … was unsuccessful" and the booklet's "this offer of admission".
 _IIUM_OFFER_SENTENCE = 'HAS ACCEPTED AND APPROVED YOUR APPLICATION FOR THE FOLLOWING PROGRAMME'
-#: Whole words that make a page not yet an unconditional offer (rule 3).
+#: ... with IIUM as its subject (rule 1), folded: "(IIUM)" is a word.
+_IIUM_SUBJECT = f' THAT THE {_IIUM_EN} IIUM {_IIUM_OFFER_SENTENCE} '
+#: Rule 3: tie-up words beyond `offer_reading._PARTNER` / `_TIE_UP`.
+_TIE_UP_EXTRA = (' VALIDATED ', ' VALIDATION ', ' IN ASSOCIATION ', ' TIE UP ')
+#: Rule 4: whole words that make a page not yet an unconditional offer.
 _NOT_YET = (' CONDITIONAL ', ' PROVISIONAL ', ' NOTIFICATION OF ADMISSION ')
 _ENGLISH_TWINS = {
     'public university (UA) name': [_IIUM_EN],
@@ -173,17 +184,42 @@ UA_OFFER_SIGNATURES_EN = [(label, patterns + _ENGLISH_TWINS[label], weight, kind
 
 
 def english_ua_lists(lists: dict, text_norm: str, ocr_text: str = ''):
-    """``(lists, text_norm)`` for an offer: unchanged, unless the page is IIUM's own English offer (the three
+    """``(lists, text_norm)`` for an offer: unchanged, unless the page is IIUM's own English offer (the four
     rules above) — then the UA family reads its English twins (`UA_OFFER_SIGNATURES_EN`)."""
-    page = f' {text_norm} '
-    if _IIUM_OFFER_SENTENCE not in text_norm or any(w in page for w in _NOT_YET) or not _iium_letterhead(ocr_text):
+    if _IIUM_SUBJECT not in f' {text_norm} ' or _IIUM_OFFICE not in text_norm or not _issued_by_iium(ocr_text):
         return lists, text_norm
     return {**lists, 'ua_offer': UA_OFFER_SIGNATURES_EN}, text_norm
 
 
-def _iium_letterhead(ocr_text: str) -> bool:
-    """Rule 1: IIUM's English name and its office on the letterhead, no other institution before them."""
-    from .offer_reading import _first_institution, _folded_lines, _letterhead_lines, _page
-    head = _letterhead_lines(_folded_lines(ocr_text))
-    names = (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ')
-    return all(n in _page(head) for n in names) and _first_institution(head, names) == 'allowed'
+def _issued_by_iium(ocr_text: str) -> bool:
+    """Rules 3 + 4, on the folded lines before the sentence (and, for rule 4, to the end of its line)."""
+    from .offer_reading import (_PARTNER, _TIE_UP, _allowed_spans, _decontact, _folded_lines, _outside_orgs,
+                                _page, _unstreeted)
+    lines = _folded_lines(ocr_text)
+    page = _page(lines)
+    at = page.find(_IIUM_SUBJECT)
+    if at < 0:
+        return False
+    end = page.find(' ', at + len(_IIUM_SUBJECT))
+    line_end = next((pos + len(ln.strip()) for pos, ln in _starts(lines) if pos + len(ln.strip()) >= end), len(page))
+    if any(w in f'{page[:line_end]} ' for w in _NOT_YET):
+        return False                                          # rule 4
+    before = page[:at + len(' THAT THE ')]
+    if any(w in before for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+        return False                                          # rule 3: tie-up wording
+    allowed = (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ')
+    for pos, ln in _starts(lines):
+        if pos >= at:
+            break
+        ln = _unstreeted(_decontact(f' {page[pos:min(pos + len(ln.strip()), at)].strip()} '))
+        if _outside_orgs(ln, _allowed_spans(ln, allowed)):
+            return False                                      # rule 3: another organisation named first
+    return True
+
+
+def _starts(lines):
+    """(where each folded line starts in `offer_reading._page(lines)`, the line)."""
+    pos = 1
+    for ln in lines:
+        yield pos, ln
+        pos += len(ln.strip()) + 1

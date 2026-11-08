@@ -19099,26 +19099,34 @@ same sprint that lets `view` be ticked alone, as a must-do item of the T5g plan;
 genuine IIUM letter (doc 5105's stored text layer): its English name, its offer SENTENCE ("… has accepted and
 approved your application for the following programme …", weight 3, as UiTM's own sentence is in the Malay
 row), "Academic Management and Admission Division" (1), "This offer is valid for" (1), "Registration Date" (1).
-That letter has no title, so the English reading has no title pattern. The reading opens ONLY when all hold
-(`english_ua_lists`): (1) the English name AND the office on the letterhead (`offer_reading._letterhead_lines`)
-with no other institution named before them; (2) the offer sentence on the page; (3) no whole word
-CONDITIONAL / PROVISIONAL and no "NOTIFICATION OF ADMISSION". Any other page, and every other UA letter, keeps
-the 1.25.0 call exactly; `_UA_NAMES` is untouched (still the 20 Malay names). The IIUM Academy (of Graduate &
-Professional Studies) and CENPACE join the private-arm veto (`results_doc._PRIVATE_ARM_PHRASES`); "collaboration"
-joins the S6 tie-up words (`offer_reading._TIE_UP`, beside an institution noun on the letterhead block).
-TD-145: `offer_course_match._ALIASES` gives UNIV-006 its English name and acronym IIUM, so the letter's English
-name compares as a MATCH (it read 'unknown'). `MODEL_VERSION` 1.26.0; `VERDICT_ENGINE_VERSION` unchanged.
+The real letter has no title and its letterhead is an IMAGE: the text opens with four lines (reference, date,
+the candidate's name and address), "Dear …", then the sentence; the office appears only in the signature block
+and the acceptance form. So the reading is anchored on the ISSUER as the sentence's subject, not on a
+letterhead. It opens ONLY when all hold (`english_ua_lists`): (1) the sentence with IIUM as its subject ("…
+that the International Islamic University Malaysia (IIUM) has accepted …"); (2) the office anywhere on the page;
+(3) nothing before the sentence names another organisation (no organisation noun outside IIUM's name and office,
+a company included) and no partner / tie-up word (`_PARTNER`, `_TIE_UP`, "validated", "in association");
+(4) no whole word CONDITIONAL / PROVISIONAL and no "NOTIFICATION OF ADMISSION" from the top of the page to the
+end of the sentence's line ("terms and conditions" and a later "conditional upon" are fine). Any other page, and
+every other UA letter, keeps the 1.25.0 call exactly; `_UA_NAMES` is untouched (still the 20 Malay names). The
+IIUM Academy (of Graduate & Professional Studies) and CENPACE join the private-arm veto
+(`results_doc._PRIVATE_ARM_PHRASES`). "Collaboration" joins the S6 tie-up words (`offer_reading._TIE_UP`); that
+list is also the S6 BLOCK's for Malay letters, and no corpus fixture's call moved (the full suite's frozen
+fixtures). TD-145: `offer_course_match._ALIASES` gives UNIV-006 its English name and acronym IIUM, so the
+letter's English name compares as a MATCH (it read 'unknown'). `MODEL_VERSION` 1.26.0; `VERDICT_ENGINE_VERSION`
+unchanged.
 **Why:** IIUM is UNIV-006, an IPTA (2026-10-29), on a subsidised public fee; its genuine English letter (doc
 5105, app 523) read "1/10 polytechnic signatures" and so `offer_not_official`, "a private college". The one
 `ua_offer` family keyed off the university's name (2026-06-20) is kept; IIUM simply has two names.
-**Why so gated (review of the first cut, fc7eef0b):** private colleges write English, so English wording scored
-on any page lifts private letters; "offer of admission" sits in IIUM's rejection and acceptance forms, its
-"unsuccessful" letter and its booklet; a conditional or notification page reached genuine without any offer
-line; a private college "in collaboration with" IIUM, or whose admission "is processed with" AMAD, reached
-genuine on the office. Each of those now keeps its 1.25.0 call (not_offer_letter). The acronyms IIUM / UIAM are
-never an anchor. The English name stays OUT of the S6 BLOCK's public names: there it would let a company line
-below it ("IIUM HOLDINGS BERHAD") escape the block.
-**Residual (accepted, as for the Malay family):** a forgery copying IIUM's letterhead and sentence. A genuine
-IIUM letter that prints "conditional" anywhere keeps the 1.25.0 call (a person decides by the officer's request).
+**Why so gated (review rounds 1-2):** private colleges write English, so English wording scored on any page
+lifts private letters; "offer of admission" sits in IIUM's rejection and acceptance forms, its "unsuccessful"
+letter and its booklet; conditional and notification pages reached genuine without an offer line; a letterhead
+gate could never pass on IIUM's image letterhead, and a letterhead naming IIUM first let "Mercu College", an
+"affiliated college", "in association with", a "franchise programme" or "IIUM Holdings Berhad" through. Each of
+those now keeps its 1.25.0 call (not_offer_letter). The acronyms IIUM / UIAM are never an anchor. The English
+name stays OUT of the S6 BLOCK's public names, where it would let a company line below it escape the block.
+**Residual (accepted, as for the Malay family):** a forgery reproducing IIUM's own sentence and office with
+nothing else before it; a genuine letter to a candidate whose address names an institution, or whose sentence
+wraps a "conditional" onto the next line, keeps the 1.25.0 call (a person decides).
 **Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).
 **Revisit if:** a second English-letter public university appears, or the IIUM Academy is ruled public.
