@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: Sprint T2 - Revoke and Delete on every Team table and person page; reviewers, QC and mentors deletable with no work (D6) (2026-11-08)
+
+Branch t2-revoke-delete (not pushed; no migration, model comments only). Owner, 2026-11-08: the Team tables and person pages should be alike, each with Revoke and Delete; Delete greyed when there is work on record, with the reason on hover; on an organisation admin, Delete only for a super. Ruling D6 reverses 2026-09-09's "never delete a reviewer" (`docs/decisions.md`).
+- **API:**
+  - `_deletable_now` now allows reviewer and QC under the no-work footprint test.
+  - `staff_footprint` counts what reviewers, QC and mentors leave: QC decisions, corrections, request comments, mentoring, and the remaining email stamps. It is computed as correlated subqueries, so the Admins, Reviewers and Mentors lists serve `deletable` and `work` per row with no extra query (Reviewers stays at its pinned 6).
+  - A new `DELETE admin/mentors/<id>/` (pure mentors only) removes the login, its invitations and the mentor record in one transaction. It returns 409 `has_work` on any assignment, session or concern. `PROTECT` stays as a backstop.
+  - The reviewer page GET and the admin person page GET (`admin/admins/<id>/permissions/`) also serve `deletable` and `work`.
+  - A stricter footprint makes some admins revoke-only who were deletable before.
+- **Web:**
+  - One action cell, `components/admin/StaffActions.tsx`: Revoke / Restore, then Delete.
+    - With work on record, Delete is greyed (`aria-disabled`, so it can still take focus). It says "Has work on record (counts)..." on hover, on tap or click, and on keyboard focus. The bubble is InfoTip's (chunk `mi`, no new chunk), and the same text is the button's `aria-describedby`.
+    - On an organisation admin, Delete is drawn only for a super.
+  - Where the cell is used:
+    - The Admins table (`StaffAdmin`, replacing "Has work on record - revoke instead").
+    - The Reviewers table, desktop and phone cards. The phone cards had no Revoke before.
+    - The Mentors table (pure mentors; a staff mentor keeps Remove from Mentors / Mentor again).
+    - The reviewer, admin and mentor person pages (`StaffPersonActions.tsx` for staff; `MentorDetail` for a mentor). After a delete, each page goes back to its Team tab.
+  - Every delete uses `TypedConfirmDialog`. Resend and Remove-from-table are unchanged. The reviewer page's pill now reads Revoked over Paused.
+  - New client call: `deleteMentor`.
+- **Wording (en/ms/ta):**
+  - `admin.hasWorkRevoke` is replaced by `admin.deleteHasWork`.
+  - New strings: `admin.mentors.deleteBody`, `admin.mentors.done.delete` and `admin.mentors.error.has_work`.
+  - Tamil Revoke is now "திரும்பப் பெறு". It had been the same word as Delete ("நீக்கு").
+  - The work counts (`workSummary`) stay in English in all three languages.
+  - Malay and Tamil need language review.
+- **Guide:** the organisation admin's Team paragraph (`role-org-admin`) now says Delete sits beside Revoke on every table and page, works for anyone with no work, greys with its reason otherwise, and is a super admin's alone on an organisation admin.
+- **Tests:**
+  - API: `test_t2_revoke_delete.py` (the matrix, the transaction, a refused delete leaves every row, the staff-mentor door, the lists and pages serve the keys).
+  - Web: `StaffActions.test.tsx` (hover, tap, focus, the counts, the org-admin rule), plus T2 blocks in the Reviewers page, reviewer page, admin page, Mentors and `StaffAdmin` tests.
+
 ### feat: Notes for the reviewer (request #55) (2026-11-07)
 
 Branch req55 (not pushed to main; ⚠ MIGRATION `scholarship/0205_reviewer_notes`, MIGRATE-FIRST by hand: SQL in the migration docstring and in `docs/plans/2026-11-07-req55-reviewer-notes.md`). The org admin writes notes for the reviewer on the application page instead of texting them. New table `reviewer_notes` (model `ReviewerNote`: application, body ≤ 2,000, author + `author_email`, created_at; RLS on, `service_role` policy). New endpoint `GET/POST admin/scholarship/applications/<pk>/reviewer-notes/` through `_AdminBase`: read = the detail GET's fence (`_scoped_application`: super, org_admin, admin, qc, the assigned reviewer; unassigned reviewer / finance / partner 403, other organisation 404); write = super + org_admin (`writer_only` otherwise). Window: Awaiting review or Interviewing, until the reviewer records an Approve or Decline (`interview_completeness.decision_gate_applies`; a hold is not a decision; a reopen to Interviewing reopens it), else `notes_closed`; blank `empty_body`, over 2,000 `too_long`. Append-only: no edit or delete endpoint, `save()` refuses an update. Separate fetch, so the applicant-detail GET stays at 38 queries. No activity row (the note is its own record, as merchant-flag notes). `staff_footprint` counts the author's stamp. Web: `view/ReviewerNotesCard.tsx` directly under Reviewer assigned (a slot in `AssignAndWitness`): org admin sees the list, "Add a note", live counter ("97 / 2,000"), the append-only line and Add note; reviewer / QC a read-only list or "No notes from your org admin."; the box follows the served `can_add`. Guide (`role-org-admin`, `role-reviewer`, `role-qc`) and FAQ (org admin, reviewer) updated; role matrix and architecture schema list updated. Tests: `test_reviewer_notes.py` (permissions matrix, window, limit, append-only, never in student / sponsor / admin-detail payloads, only listed modules may name the model), web `ReviewerNotesCard.test.tsx`, `view.reviewerNotes.test.tsx`. Malay and Tamil strings need language review.

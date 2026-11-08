@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## Reviewers, QC and mentors may be deleted under the one no-work test; Revoke and Delete on every Team table and person page — 2026-11-08 (Sprint T2, ruling D6)
+
+**The ask (owner, 2026-11-08):** "I want the team member tables and profiles to be similar. Each must have Revoke and Delete. The delete however will be greyed out if there is work on record. When hovered above delete link/text, it may say there is work on record, etc. For org admins, the delete button should be visible only to super admin."
+
+**D6, the rule:** a reviewer, a QC member and a pure mentor may now be DELETED, under the same test as an admin: no work on record (`staff_footprint`). Anyone with work is revoked (a mentor: deactivated), as before. **This reverses 2026-09-09's "a reviewer may never be deleted at all"** (the entry "A staff delete is guarded by a FOOTPRINT, never by foreign keys") and point (4) of 2026-10-31's "Mentors are never deleted" ("Mentors sign in, on the source-partner pattern"). Everything else in those entries stands: the footprint, not foreign keys, decides; a super, a partner and anyone with work are never deleted.
+
+**Why the footprint widened:** a reviewer, QC member or mentor leaves traces an admin did not, so the footprint now counts them (QC decisions, corrections, request comments, mentor assignments, sessions and concerns, the remaining email stamps). Some admins who were deletable before are now revoke-only because of this. That is accepted: a delete that removed the name behind a recorded decision would be the fault the 2026-09-09 rule exists to prevent.
+
+**Mentors:** a pure mentor has their own door (`DELETE admin/mentors/<id>/`). It removes the login, its invitations and the `Mentor` row in one transaction, and refuses with 409 `has_work` on any assignment, session or concern. `MentorAssignment.mentor` and `MentoringSession.mentor` stay `on_delete=PROTECT` as a database backstop; the footprint refuses before PROTECT fires. A STAFF member who mentors is deleted at the staff door (Admins / Reviewers), where their mentoring counts as work, never through the mentor door.
+
+**The screen (one rule, one cell):** the server serves `deletable` and `work` on every row and person page (Admins, Reviewers, Mentors lists; reviewer, admin and mentor pages). The web draws them with one component (`StaffActions`): Revoke / Restore, then Delete. With work on record, Delete is greyed and `aria-disabled` (not `disabled`, which would take no hover or focus), and "Has work on record (counts)..." shows on hover, on tap and on keyboard focus. On an organisation admin's row or page, Delete is drawn only for a super (the server refuses an org_admin caller anyway). Resend and Remove-from-table are unchanged.
+
+**Revisit if:** the owner wants a person with work to be removable after a handover. That needs duties stored as assignments (see 2026-09-09's "Revisit if").
+
 ## A degree student gets a degree funding estimate; every skills / TVET course is estimated — 2026-11-07 (bug fix; owner decisions 1-12, app 278)
 
 **The bug:** the cockpit's "Estimated need & proposed bursary" card showed a post-STPM degree student the UA-diploma estimate (#278, *Ijazah Sarjana Muda Pendidikan*: "≈ RM6,600, ~RM220/month × 30 months"). `funding_estimate.py` assumed post-SPM only, but the Sabah / Ipoh gifts admit STPM-level students and the offer realignment (2026-10-31) stores an STPM degree as `university`. Same root, money: #251's stale `chosen_pathway='stpm'` on a degree made `award.proposed_award_amount` commit RM3,000 (or None and a QC start-year stop). Brief: `docs/plans/2026-11-07-degree-funding-estimate.md`.
@@ -1875,7 +1889,7 @@ mentor (entry above)*. (3) **The mentor fills in their own profile and staff can
 required), Qualifications and languages, Address, Your access (Role Mentor) and Sign-in; not Taking part
 (a mentor is never handed cases to pause). Photos stay staff-only. Staff may correct the NAME or EMAIL only
 until the first sign-in (409 `managed_by_mentor` after it); a new address is a new sign-in and is sent the
-invitation. (4) **Mentors are never deleted: Deactivate** (the login off, a waiting invitation withdrawn and
+invitation. (4) **Mentors are never deleted: Deactivate** (superseded 2026-11-08, D6: a mentor with no assignment, session or concern may be deleted) (the login off, a waiting invitation withdrawn and
 its password killed, `deactivated_at/_by_email` stamped) and Reactivate. Status is derived: inactive,
 invited (not yet signed in), active. (5) **The system never emails a mentor except the invitation and its
 resend** (Reactivate of a mentor who never signed in is that resend). (6) Mentors and meetings never reach
@@ -5720,6 +5734,9 @@ layout is an owner ruling (2026-09-07) and a destructive action hidden elsewhere
 rarely. Accepted: the recovery is retyping three languages of copy somebody wrote carefully.
 
 ## A staff delete is guarded by a FOOTPRINT, never by foreign keys — 2026-09-09
+**Superseded in part, 2026-11-08 (Sprint T2, D6):** reviewers, QC and mentors may now be deleted under
+the same no-work test. See the 2026-11-08 entry at the top. The rest of this entry stands.
+
 **Decision:** an admin account may be deleted only when it has done **no recorded work**
 (`apps.scholarship.staff_footprint`), and **a reviewer may never be deleted at all**. Everyone
 else is revoked, permanently. The footprint counts two kinds of trace: foreign keys (assignments,
