@@ -1193,22 +1193,66 @@ class Round13(SimpleTestCase):
 
     def test_the_accepted_gaps_after_the_stop_rule(self):
         """Owner's stop rule (decisions S6 item 10): these still lift and are on the TD list for S7 —
-        TD-493 (an OCR-misread noun, a lowercase name, a short brand on the institute's own letter) and TD-494
-        (a descriptor phrase that hides a company: "Technical Solutions", "Teknikal Vokasional Solutions")."""
+        TD-493 (an OCR-misread noun, a lowercase name, a short brand on the institute's own letter). The TD-494
+        cases (a descriptor phrase that hid a company) were closed in A2.7b and moved to the test below."""
         gaps = {
             'TD-493 Acaderny': _a11(_M, extra='Latihan amali di Mercu Acaderny.\n'),
             'TD-493 Kolei': _a11(_M, extra='Latihan amali di Mercu Kolei.\n'),
             'TD-493 lowercase name': _a11(_M, extra='latihan di mercu Technical Solutions.\n'),
             'TD-493 Edu360 on the institute lift': _a11(_IKBN11, venue='IKBN Pekan', extra='Kelas tambahan Edu360.\n'),
-            'TD-494 agency before descriptor': _a11(_M, extra='Latihan amali di MARA Technical Solutions.\n'),
-            'TD-494 TVET spelt + descriptor': _a11(_M, extra='Latihan di Teknikal Vokasional Solutions.\n'),
-            'TD-494 name on the line before': _a11(_M, extra='Penyedia latihan : Mercu\nTechnical Solutions\n'),
-            'TD-494 descriptor slogan, name below': _a11(_M, extra='Latihan Global\nMercu Jaya\n'),
-            'TD-494 TVET spelt + Skills': _a11(_M, extra='Latihan amali di Teknikal dan Vokasional Skills.\n'),
         }
         for name, text in gaps.items():
             with self.subTest(name):
                 self.assertEqual(self._ruling(text), 'tvet_offer')
+
+    def test_td494_a_descriptor_beside_a_name_no_longer_excuses_it(self):
+        """A2.7b, TD-494: the descriptor excuse ("& Pendidikan Global" is a slogan) no longer covers a brand whose
+        name is the agency, the sector spelt out, or a word on the line above / below."""
+        blocked = {
+            'agency before descriptor': _a11(_M, extra='Latihan amali di MARA Technical Solutions.\n'),
+            'TVET spelt + descriptor': _a11(_M, extra='Latihan di Teknikal Vokasional Solutions.\n'),
+            'name on the line before': _a11(_M, extra='Penyedia latihan : Mercu\nTechnical Solutions\n'),
+            'descriptor slogan, name below': _a11(_M, extra='Latihan Global\nMercu Jaya\n'),
+            'TVET spelt + Skills': _a11(_M, extra='Latihan amali di Teknikal dan Vokasional Skills.\n'),
+            'KBS agency before descriptor': _a11(_K, venue='IKBN Pekan', extra='Latihan di KBS Technical Skills.\n'),
+            'English sector spelt': _a11(_M, extra='Latihan di Technical and Vocational Skills.\n'),
+        }
+        for name, text in blocked.items():
+            with self.subTest(name):
+                self.assertNotIn(self._ruling(text), LIFTS)
+
+    def test_td494_the_slogans_still_lift(self):
+        """The a329 slogan and its shapes keep the excuse: no name beside the run, on the line, above or below."""
+        for extra in ('Keusahawanan & Pendidikan Global\n', 'Keusahawanan\n& Pendidikan Global\n',
+                      'Ke arah Pendidikan & Latihan Global.\n', 'Latihan Global.\nMercu Jaya hadir.\n'[:16],
+                      'Tempat : IKM Kuantan\nPendidikan & Latihan Global\n',
+                      'Pendidikan & Latihan Global\nTempat : IKM Kuantan\n',
+                      'pembangunan kemahiran teknikal dan vokasional skills.\n',
+                      'Keusahawanan & Pendidikan Global\nSurat ini cetakan komputer dan tidak perlu ditandatangani.\n',
+                      'Kursus : Sijil Kemahiran Contoh\nPendidikan & Latihan Global\n'):
+            with self.subTest(extra=extra):
+                self.assertIn(self._ruling(_a11(_M, extra=extra)), LIFTS)
+        signed = _a11(_M).replace('PENGARAH\n', 'PENGARAH\nPendidikan & Latihan Global\n')
+        self.assertIn(self._ruling(signed), LIFTS)                    # a closing line above is no name
+
+    def test_td495_a_residence_is_no_second_organisation(self):
+        """A2.7b, TD-495: "Kolej Kediaman" (a campus residence; OCR "Ko1ej") no longer stops the agency lift, unless
+        a name follows it; another agency's institute after it still stops the lift."""
+        letters = ((_M, 'Institut Kemahiran MARA Kuantan'), (_K, 'IKBN Pekan'), (_J, 'ADTEC Kulim'))
+        for head, venue in letters:
+            for extra in ('Penginapan di Kolej Kediaman.\n', 'Penginapan : Ko1ej Kediaman\n',
+                          'Penginapan di Kolej Kediaman 2.\n', 'Penginapan di KOLEJ KEDIAMAN yang disediakan.\n'):
+                with self.subTest(head=head, extra=extra):
+                    self.assertEqual(self._ruling(_a11(head, venue=venue, extra=extra)), 'tvet_offer')
+            with self.subTest(head=head, extra='a name after'):
+                self.assertNotIn(self._ruling(_a11(head, venue=venue, extra='Penginapan di Kolej Kediaman Mercu Jaya.\n')),
+                                 LIFTS)
+        self.assertEqual(self._ruling(_a11(_K, venue='IKBN Pekan', extra='Penginapan di KOLEJ KEDIAMAN IKBN Pekan.\n')),
+                         'tvet_offer')
+        for head, venue in letters[::2]:                               # an IKBN residence on a MARA / JTM letter
+            with self.subTest(head=head, extra='another agency'):
+                self.assertNotIn(self._ruling(_a11(head, venue=venue, extra='Penginapan di KOLEJ KEDIAMAN IKBN Pekan.\n')),
+                                 LIFTS)
 
 
 # ── Review round 14 (2026-11-04, the final check): real public letters round 13 had started to block ──

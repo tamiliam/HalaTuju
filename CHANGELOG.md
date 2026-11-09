@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint A2.7b - offer reader live gaps, agency rules (TD-448, TD-494, TD-495) (2026-11-09)
+
+Branch a27b (not pushed). MODEL_VERSION stays 1.27.0 (A2.7a's bump, nothing deployed since; the 1.27.0 history note now covers A2.7b). No migration, no new model. `offer_agency._after_descriptor`: a weak suffix after a descriptor ("Technical Solutions") is no longer excused when the agency stands before the run ("MARA Technical Solutions"), the run spells both TVET words ("Teknikal dan Vokasional Skills"), the line above ends in a bare name ("Penyedia latihan : Mercu" / "Technical Solutions"), or the next line is a name-only line ("Latihan Global" / "Mercu Jaya") (TD-494); the slogans, a329 included, still lift. `offer_agency.FACILITIES`: "Kolej Kediaman" (and "Ko1ej Kediaman") is a residence, not a second organisation, unless a capitalised name follows it (TD-495, residence part; the sibling-institute part stays open for an owner ruling). `rescore_unscored_documents --apply` now runs the Bumi-only realign (`offer_sync.realign_after_rescore`, same gates) for a newly scored live latest offer; a dry run counts `would_realign` (TD-448). TD-492 and TD-493 deferred (both need corpus growth; see technical-debt.md). Offline eval: 286 / 287 before and after; offer_parse_check identical (96 EXACT, 0 WRONG). Tests: `test_offer_s6_narrowing.py` (TD-494 pinned gaps now block; slogan and residence cases), `test_offer_realign.RescoreRunsTheRealignTest`.
+
 ### fix: sprint A2.7a - offer reader live gaps, lines (TD-451, TD-452, TD-474, TD-447) (2026-11-09)
 
 Review fix (Medium): the type filter rejects only a campus that opens with the OTHER type, so "KK PERWIRA, UNIVERSITI TUN HUSSEIN ONN" names UTHM again (it had stopped naming it, and the course went unmatched). Regression test added; the residual "KK" = Kolej Kediaman risk is recorded under TD-452.

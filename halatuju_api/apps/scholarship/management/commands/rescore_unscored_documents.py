@@ -26,6 +26,10 @@ Two counts per type (review F4c): `unscored` is every live never-scored row; `un
 the never-scored rows that are the LATEST live document of their type on their application — the
 one the verdict reads (`latest_doc`), so it is the number of facts that can no longer read Certain.
 
+TD-448: a newly scored offer that is its application's live latest offer then runs the owner's
+Bumiputera-only realignment (``offer_sync.realign_bumi_only_pick``, every gate unchanged), which the
+upload and re-read paths run after their own score; a dry run only counts ``would_realign``.
+
 Never overwrites an existing genuineness verdict and never clears anything, so a run without
 Storage or text access (a local checkout) cannot damage a row.
 """
@@ -36,6 +40,7 @@ from apps.scholarship.genuineness import assess, signature_genuineness
 from apps.scholarship.genuineness.bands import canonical_status, stored_status
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.services.offer_sync import realign_after_rescore
 
 ANCHOR_TYPES = ('ic', 'results_slip', 'offer_letter')
 #: The doc types this command can score from text with no paid call (see the module docstring).
@@ -90,6 +95,7 @@ class Command(BaseCommand):
         docs = (ApplicantDocument.live(ApplicantDocument.objects.filter(doc_type__in=ANCHOR_TYPES))
                 .order_by('application_id', 'doc_type', *SNAPSHOT_ORDER))
         seen = set()   # (application, type) whose LATEST row has been met — what the verdict reads
+        realigned = 0
         for doc in docs.only('id', 'application_id', 'doc_type', 'vision_fields').iterator():
             key = (doc.application_id, doc.doc_type)
             latest = key not in seen
@@ -115,6 +121,8 @@ class Command(BaseCommand):
             if apply:
                 doc.vision_fields = dict(vf, authenticity=auth)
                 doc.save(update_fields=['vision_fields'])
+            if doc.doc_type == 'offer_letter' and latest:   # TD-448: the score can open the realignment
+                realigned += realign_after_rescore(doc.id, doc.application_id, auth, apply)
         mode = 'APPLIED' if apply else 'DRY-RUN (nothing written; --apply to write)'
         self.stdout.write(f'rescore_unscored_documents: {mode}')
         for t in ANCHOR_TYPES:
@@ -124,3 +132,5 @@ class Command(BaseCommand):
                 f"scored={r['scored']} paid_read={r['paid_read']} "
                 f"no_stored_text={r['no_stored_text']} indeterminate={r['indeterminate']} "
                 f"no_signal={r['no_signal']}")
+        verb = 'realigned' if apply else 'would_realign'
+        self.stdout.write(f'  bumi_offer_realign: {verb}={realigned}')

@@ -7446,13 +7446,15 @@ course first (or re-run `_confirmed_place` after the re-pin) and test a stale-id
 **FIXED 2026-11-09 (A2.7a):** `_confirmed_place` resolves the LETTER's course first and falls back to the stored id;
 with no issuer it keeps the line at once. Test: `test_offer_pages_and_lines.ConfirmReadsTheLettersCourseTest`.
 
-### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
+### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low - **FIXED (2026-11-09, A2.7b)**
 
 **Raised 2026-11-01 by the offer realignment build.** `realign_bumi_only_pick` runs inside
 `autofill_pathway_from_offer`, which needs `offer_band == 'genuine'`. If an offer's genuineness score is stored
 AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realign until a re-read or
 `realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
 add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7b):** the upload and re-read paths already realign right after their own score; the only path that stored a score without one was `rescore_unscored_documents --apply`. It now calls `offer_sync.realign_after_rescore` for a newly scored offer that is its application's live latest offer, which runs the same `realign_bumi_only_pick` with every gate unchanged (genuine band, Bumi-only pick, pick not already the offer); a dry run only counts `would_realign` through `plan_bumi_realign`. Tests: `test_offer_realign.RescoreRunsTheRealignTest` (genuine score realigns; dry run writes nothing; a suspect score and an older offer never realign).
 
 ### [TD-449] The offer check's catalogue queries sit outside every query budget - low - **FIXED (2026-11-08, A2.4)**
 
@@ -8248,6 +8250,8 @@ lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tigh
 letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
 motto. *(S6 · S)*
 
+**Deferred 2026-11-09 (A2.7b):** not fixed. The fix needs a crest / motto list measured on more real confirmations; any list built today would drop the owner-ruled a123. Re-open when the corpus holds more confirmation letterheads.
+
 ### [TD-493] The agency-letterhead lift does not catch a private name with no organisation word - medium
 
 **Raised 2026-11-04 by the S6 round-10 review (lead's ruling 7).** The agency lift's closed-world condition 4
@@ -8266,7 +8270,9 @@ spell the noun ("ACAD3MY", "K0LEJ", "Ko1ej") ARE read since round 13. Pinned in
 **Fix:** a capitalised-name test that knows the letter's own words (people, places, course titles) - only once the
 corpus holds enough agency letters to measure it. *(S6 · M)*
 
-### [TD-494] The agency lift's descriptor excuse can hide a company name - medium
+**Deferred 2026-11-09 (A2.7b):** not fixed. The capitalised-name test needs agency letters to measure against, which the fixture corpus does not yet hold; a narrower OCR-misread fold ("Acaderny", "Kolei") was considered and left out, since a one-off spelling list would be a guess, not a measured rule. The pinned cases still lift as before.
+
+### [TD-494] The agency lift's descriptor excuse can hide a company name - medium - **FIXED (2026-11-09, A2.7b)**
 
 **Raised 2026-11-04 by the S6 round-13 review; left for S7 under the owner's stop rule (decisions S6 item 10).**
 Condition 4 excuses a weak suffix ("Solutions", "Technical") after a descriptor (`offer_agency._after_descriptor`)
@@ -8279,6 +8285,8 @@ pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus l
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*
 
+**FIXED 2026-11-09 (A2.7b):** `offer_agency._after_descriptor` no longer excuses the suffix when (a) the token before the descriptor run is an allowed span read in title case (the agency, "MARA Technical Solutions"), or the run itself spells both TVET words ("Teknikal Vokasional Solutions", "Teknikal dan Vokasional Skills"); (b) the run opens the line and the line above ends in a bare name; (c) the suffix ends the line and the next line is a name-only line. `_name_beside` reads a name line as 1-4 capitalised words with no punctuation, at least one not a descriptor, label, place or the agency's own word, and skips the addressee block, closing lines and course lines. The five pinned cases now block (`test_td494_a_descriptor_beside_a_name_no_longer_excuses_it`); the slogans still lift, a329 included (`test_td494_the_slogans_still_lift`). Offline genuineness eval unchanged at 286/287.
+
 ### [TD-495] "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
 
 **Raised 2026-11-04 at the S6 close (round-14 real-letter probes).** The agency-letterhead lift's closed-world
@@ -8288,6 +8296,8 @@ letter as another agency's institute; either line stops the lift. Safe: the lett
 call, never a new fail. Round 12 blocked the plain spellings the same way; round 14 only made the OCR spellings
 read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
 and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
+
+**Part fixed 2026-11-09 (A2.7b):** `offer_agency.FACILITIES` ("KOLEJ KEDIAMAN") is taken out as an allowed span, so a residence line ("Kolej Kediaman", "Ko1ej Kediaman 2", "KOLEJ KEDIAMAN yang disediakan") no longer stops the lift; a capitalised name right after it ("Kolej Kediaman Mercu Jaya") still blocks, and an institute after it is judged by the existing institute rule (`test_td495_a_residence_is_no_second_organisation`). **Still open:** the sibling-institute part ("IKM1 Kuantan" on a KBS / JTM letter). Letting one agency's letter name another agency's institute widens condition (2) of `offer_rulings._agency_lift`, which is a design change for the owner; until then such a letter keeps its baseline call.
 Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 ### [TD-512] A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
