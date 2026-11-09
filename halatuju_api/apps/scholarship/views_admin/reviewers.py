@@ -361,6 +361,7 @@ class AdminReviewerDetailView(_ReviewersBase):
         work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
         rp = getattr(target, 'reviewer_profile', None)
         from .. import reopen as reopen_service
+        from .. import staff_person
         payload = _with_footprint(admin, target, _reviewer_dict(target, work),
                                   work=staff_footprint.from_row(target))
         payload.update({
@@ -393,6 +394,8 @@ class AdminReviewerDetailView(_ReviewersBase):
             # endpoint takes it (a Finance + Review person is pausable; a set with no review power
             # is not). The CALLER side (super / org_admin) stays the page's.
             'pausable': is_review_target(target),
+            # Sprint T3: the ONE person page's header and Profile tab (`staff_person`, all three details).
+            'person': staff_person.person(target, rp),
         })
         return Response(payload)
 

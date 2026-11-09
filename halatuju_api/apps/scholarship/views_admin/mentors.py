@@ -326,14 +326,23 @@ class AdminMentorView(_MentorsBase):
         if mentor is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
         row = mentor_rows(admin, [mentor], team=True)[0]
+        # Sprint T3: the ONE person page's header and Profile tab (`staff_person`, the admin and reviewer
+        # details' own block), and — for a mentor's own login (D8) — the tables this viewer could add
+        # them to (`staff_tables_admin.addable_tables`, the Add sheet's own rule). ONE query: the login
+        # with its profile and mentor.
+        from .. import staff_person, staff_tables_admin
+        login = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
+                 .filter(mentor=mentor).order_by('id').first())
+        extra = {'person': staff_person.person(login),
+                 'may_add': staff_tables_admin.addable_tables(admin, login) if login.is_mentor else []}
         if not self.sees_scholars(admin):
             # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).
             row['concerns_open'] = None
             return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at),
-                             'sees_scholars': False, 'figures': None, 'current': [], 'past': []})
+                             'sees_scholars': False, 'figures': None, 'current': [], 'past': [], **extra})
         figures, current, past = mentor_detail.scholars_of(mentor)
         return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at), 'sees_scholars': True,
-                         'figures': figures, 'current': current, 'past': past})
+                         'figures': figures, 'current': current, 'past': past, **extra})
 
     def delete(self, request, pk):
         """DELETE admin/mentors/<id>/ — Sprint T2 (D6): a pure mentor with NO work (`mentor_invite.

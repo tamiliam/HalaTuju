@@ -99,7 +99,9 @@ class AdminStaffPermissionsView(_AdminBase):
             return None, None, self._deny()
         if not (admin.is_super or admin.role == 'org_admin'):
             return None, None, self._deny_role()
-        target = PartnerAdmin.objects.filter(pk=admin_id).first()
+        # T3: the profile and the mentor link ride on this query (the person page's `person` block).
+        target = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
+                  .filter(pk=admin_id).first())
         if target is None or not _staff_target_manageable(admin, target):
             return None, None, Response({'error': 'Admin not found', 'code': 'not_found'},
                                         status=status.HTTP_404_NOT_FOUND)
@@ -109,6 +111,7 @@ class AdminStaffPermissionsView(_AdminBase):
         from apps.courses import staff_permissions as sp
         from apps.courses import staff_tables
         from .. import staff_permissions_admin as spa
+        from .. import staff_person
         admin, target, err = self._target(request, admin_id)
         if err:
             return err
@@ -132,6 +135,9 @@ class AdminStaffPermissionsView(_AdminBase):
                          # person sits in (Admin permissions, Reviewer permissions). Read-only.
                          'tables': list(staff_tables.tables(target)),
                          'history': _permission_history(target, admin),
+                         # Sprint T3: the ONE person page's header and Profile tab (`staff_person`) —
+                         # Last seen, the lead flag and the profile, under the reviewer detail's PII rules.
+                         'person': staff_person.person(target),
                          **delete_fields(admin, target)})
 
 
