@@ -23,8 +23,6 @@ from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, mak
 
 API = dict(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 HOME = 'Lorong Contoh 7'          # a home address that must never reach any payload
-PERSON_KEYS = {'admin_id', 'mentor_id', 'tables', 'lead', 'joined_at', 'signed_in', 'last_seen_at',
-               'profile'}
 
 
 def _profile(admin, **kw):
@@ -85,7 +83,7 @@ class TestThePersonBlock(TestCase):
         for url in (self._admin_url(self.admin), self._reviewer_url(self.reviewer),
                     self._mentor_url(self.mentor)):
             body = self._get(self.super, url).json()
-            self.assertEqual(set(body['person']), PERSON_KEYS, url)
+            self.assertEqual(set(body['person']), set(staff_person.PERSON_KEYS), url)
             self.assertEqual(set(body['person']['profile']), set(staff_person.PROFILE_KEYS), url)
 
     def test_the_admin_detail_gains_last_seen_profile_and_tables(self):
@@ -115,6 +113,19 @@ class TestThePersonBlock(TestCase):
             self.assertEqual(p['tables'], ['reviewers', 'mentors'], url)
             self.assertEqual(p['mentor_id'], self.both.mentor_id, url)
             self.assertEqual(p['admin_id'], self.both.pk, url)
+
+    def test_the_header_fields_read_one_shape(self):
+        p = self._get(self.super, self._mentor_url(self.mentor)).json()['person']
+        self.assertEqual((p['name'], p['email']), ('Men Tor', 'men@example.org'))
+        self.assertTrue(p['mentor_only'])
+        self.assertEqual(p['tables'], ['mentors'])
+        PartnerAdmin.objects.filter(pk=self.reviewer.pk).update(paused_at='2026-11-01T08:00:00Z')
+        p = self._get(self.lead, self._reviewer_url(self.reviewer)).json()['person']
+        self.assertFalse(p['mentor_only'])
+        self.assertTrue(p['paused'])
+        self.assertTrue(p['is_active'])
+        PartnerAdmin.objects.filter(pk=self.mentor.pk).update(is_active=False)
+        self.assertFalse(self._get(self.super, self._mentor_url(self.mentor)).json()['person']['is_active'])
 
     # ── PII ─────────────────────────────────────────────────────────────────────────────────────
     def test_the_home_address_is_never_served(self):

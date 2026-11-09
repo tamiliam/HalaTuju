@@ -28,7 +28,11 @@ from .staff_contact import assigner_sees_phone, staff_screen_phone
 #: Conversational or better — the reviewer detail's own "speaks this" rule (`_REVIEW_FLUENCY`).
 SPOKEN = ('conversational', 'fluent')
 
-#: The exact keys of `profile`. An exact-key-set test pins it, so a new field is a decision.
+#: The exact keys of `person` and of its `profile`. An exact-key-set test pins both, so a new field is a
+#: decision.
+PERSON_KEYS = ('admin_id', 'mentor_id', 'name', 'email', 'tables', 'lead', 'mentor_only', 'is_active',
+               'paused', 'joined_at', 'signed_in', 'last_seen_at', 'profile')
+#: The exact keys of `profile`.
 PROFILE_KEYS = ('job_title', 'about', 'qualification', 'university', 'graduation_year',
                 'field_of_study', 'phone', 'languages', 'other_language')
 
@@ -66,14 +70,20 @@ def profile(target, rp=None):
 
 
 def person(target, rp=None):
-    """`{admin_id, mentor_id, tables, lead, joined_at, signed_in, last_seen_at, profile}` — the header and
-    Profile tab of `target`'s page. `mentor_id` is set only while they mentor (the Mentors table's link);
-    `signed_in` is False only when the console never recorded a visit (NULL is "not recorded")."""
+    """The header and Profile tab of `target`'s page (`PERSON_KEYS`). `mentor_id` is set only while they
+    mentor (the Mentors table's link); `mentor_only` is a mentor's own login (no staff role, so no
+    permissions to change); `signed_in` is False only when the console never recorded a visit (NULL is
+    "not recorded"). Name and email are what each of the three payloads already serves this viewer."""
     return {
         'admin_id': target.pk,
         'mentor_id': target.mentor_id if staff_tables.in_mentors(target) else None,
+        'name': target.name,
+        'email': target.email,
         'tables': list(staff_tables.tables(target)),
         'lead': sp.is_lead_tier(target),
+        'mentor_only': target.is_mentor,
+        'is_active': target.is_active,
+        'paused': target.is_paused,
         'joined_at': target.created_at,
         'signed_in': target.first_seen_at is not None,
         'last_seen_at': target.last_seen_at,
