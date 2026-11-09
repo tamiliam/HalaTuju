@@ -5652,7 +5652,7 @@
     "active": "Aktif",
     "revoked": "Dibatalkan",
     "actionFailed": "Tindakan gagal",
-    "revoke": "Batalkan",
+    "revoke": "Tarik balik",
     "restore": "Pulihkan",
     "resend": "Hantar semula",
     "resending": "Menghantar…",
@@ -8858,7 +8858,7 @@
       },
       "notFilled": "Belum diisi",
       "action": {
-        "deactivate": "Batalkan",
+        "deactivate": "Tarik balik",
         "reactivate": "Pulihkan",
         "resend": "Hantar semula",
         "revoke": "Tarik balik",
