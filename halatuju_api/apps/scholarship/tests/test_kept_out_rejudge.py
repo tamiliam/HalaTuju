@@ -42,6 +42,16 @@ class _KeptOut(TestCase):
             read_plan={'staged': staged, 'stale_ids': [keeper.id], 'existing_live': keeper.id},
             vision_fields={**_SERVICE_READ, **vf})
 
+    def _bulk(self, n, **kw):
+        old = timezone.now() - timedelta(days=5)
+        vf = {**_SERVICE_READ, **kw.pop('vf', {})}
+        ApplicantDocument.objects.bulk_create([ApplicantDocument(
+            application=self.app, doc_type='salary_slip', storage_path=f'test/slip/bulk{i}{kw.get("read_state", "")}',
+            content_type='image/jpeg', superseded_at=timezone.now(), superseded_by=self.live,
+            vision_fields_run_at=old, vision_fields=vf,
+            read_plan={'staged': True, 'stale_ids': [self.live.id], 'existing_live': self.live.id}, **kw)
+            for i in range(n)])
+
     def _sweep(self, gemini_answer, ocr=None):
         from apps.scholarship.services import reprocess_unread_ic_documents
         with patch('apps.scholarship.vision.ocr_document_full', return_value=ocr or self.full), \
@@ -116,16 +126,6 @@ class TheSweepJudgesAnUploadOurOutageKeptOut(_KeptOut):
 class TheReviewFixes(_KeptOut):
     """A2.8a adversarial review (FIX-FIRST): the selection admits only what it re-judges, only before QC
     accept, the judging re-checks the slot on a fresh row, and the re-read reslots like the upload."""
-
-    def _bulk(self, n, **kw):
-        old = timezone.now() - timedelta(days=5)
-        vf = {**_SERVICE_READ, **kw.pop('vf', {})}
-        ApplicantDocument.objects.bulk_create([ApplicantDocument(
-            application=self.app, doc_type='salary_slip', storage_path=f'test/slip/bulk{i}{kw.get("read_state", "")}',
-            content_type='image/jpeg', superseded_at=timezone.now(), superseded_by=self.live,
-            vision_fields_run_at=old, vision_fields=vf,
-            read_plan={'staged': True, 'stale_ids': [self.live.id], 'existing_live': self.live.id}, **kw)
-            for i in range(n)])
 
     def test_item1_old_rows_the_check_drops_never_fill_the_batch(self):
         from apps.scholarship.services.read_retry import service_error_documents
@@ -203,3 +203,70 @@ class TheReviewFixes(_KeptOut):
                 patch('apps.scholarship.vision._call_gemini_json', return_value=dict(self.good)):
             reextract_document(self.live)
         self.assertEqual(ApplicantDocument.objects.get(pk=self.live.pk).doc_type, 'salary_slip')
+
+
+@override_settings(GEMINI_API_KEY='test-key', DOC_GENUINENESS_CHECK_ENABLED=False)
+class TheReCheckFixes(_KeptOut):
+    """A2.8a re-check (FIX-FIRST): the query holds the whole kept-out rule, a reslotted copy is asked of
+    its old slot too, and only a kept-out copy's re-read is reslotted."""
+
+    def test_item1_copies_a_newer_finished_upload_followed_never_fill_the_batch(self):
+        """During an outage the family uploads B, then C in the same slot, and C's read finished: every B
+        is dropped by the Python check, and before the re-check they took the oldest-first places."""
+        from apps.scholarship.services.read_retry import service_error_documents
+        self._bulk(60)                                                # the Bs, oldest first
+        self._kept_out(student_verdict='ok', fields={'gross_income': '2700'}, error='', service_error=False)  # C
+        genuine = self._kept_out()
+        self.assertEqual([d.id for d in service_error_documents(50)], [genuine.id])
+
+    def test_item1_copies_with_stored_fields_never_fill_the_batch(self):
+        from apps.scholarship.services.read_retry import service_error_documents
+        self._bulk(60, request_code='officer_5', vf={'fields': {'gross_income': '1200'}})
+        genuine = self._kept_out()                                    # fields {} still qualifies
+        self.assertEqual([d.id for d in service_error_documents(50)], [genuine.id])
+
+    def test_item3_a_reslotted_copy_is_also_asked_of_its_old_slot(self):
+        from apps.scholarship.services import reprocess_unread_ic_documents
+        from apps.scholarship.tests.test_reslot_income_doc import _EPF_TEXT
+        new = self._kept_out()
+        made = {}
+
+        def ocr(*_a, **_k):                                           # a fresh payslip is decided meanwhile
+            if 'doc' not in made:                                     # read and judged in the payslip slot
+                made['doc'] = self._kept_out(student_verdict='ok', fields={'gross_income': '2800'}, error='',
+                                             service_error=False)
+            return {'text': _EPF_TEXT, 'words': None, 'image': _IMAGE, 'error': None}
+        with patch('apps.scholarship.vision.ocr_document_full', side_effect=ocr), \
+                patch('apps.scholarship.vision._call_gemini_json', return_value=dict(self.good)), \
+                patch('apps.scholarship.upload_read.judge') as judge:
+            reprocess_unread_ic_documents()
+        self.assertTrue(made)
+        self.assertEqual(ApplicantDocument.objects.get(pk=new.pk).doc_type, 'epf')   # reslotted ...
+        judge.assert_not_called()                                     # ... and not judged over the fresh one
+
+    def test_third_check_a_reslotted_unread_copy_a_newer_payslip_follows_is_never_picked(self):
+        """A kept-out copy the re-read moved to epf that stays unread, then a newer payslip is decided in
+        the keeper's salary_slip slot: it is dropped by the query and the check, never re-read hourly."""
+        from apps.scholarship.services.read_retry import service_error_documents
+        from apps.scholarship.upload_read import kept_out_by_outage
+        moved = self._kept_out()
+        ApplicantDocument.objects.filter(pk=moved.pk).update(doc_type='epf')
+        moved = ApplicantDocument.objects.get(pk=moved.pk)
+        self.assertTrue(kept_out_by_outage(moved))                    # reslotted, still kept out ...
+        self.assertEqual([d.id for d in service_error_documents(50)], [moved.id])
+        self._kept_out(student_verdict='ok', fields={'gross_income': '2700'}, error='', service_error=False)
+        self.assertFalse(kept_out_by_outage(ApplicantDocument.objects.get(pk=moved.pk)))   # ... until it is not
+        self.assertEqual(service_error_documents(50), [])
+        with patch('apps.scholarship.upload_read.kept_out_by_outage', return_value=True):
+            self.assertEqual(service_error_documents(50), [])        # the query alone drops it: no batch place
+
+    def test_item4_a_live_deferred_copy_is_not_reslotted(self):
+        from apps.scholarship.tests.test_reslot_income_doc import _EPF_TEXT
+        live = create_document(self.app, 'salary_slip', storage_path='test/slip/deferred', content_type='image/jpeg',
+                               request_code='officer_6', vision_run_at=timezone.now(),
+                               vision_fields_run_at=timezone.now() - timedelta(hours=3), vision_fields=dict(_SERVICE_READ))
+        _r, gem = self._sweep(dict(self.good), ocr={'text': _EPF_TEXT, 'words': None, 'image': _IMAGE, 'error': None})
+        self.assertGreaterEqual(gem.call_count, 1)
+        live.refresh_from_db()
+        self.assertNotEqual(live.vision_fields['student_verdict'], 'review_manually')   # it was re-read
+        self.assertEqual(live.doc_type, 'salary_slip')                # and left in its slot

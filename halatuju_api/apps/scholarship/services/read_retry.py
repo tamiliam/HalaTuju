@@ -102,17 +102,28 @@ def _kept_out_documents(errs, now, limit):
     A2.8a review: the query admits only what `kept_out_by_outage` keeps (a deferred read, not still
     queued, judged as STAGED), so older rows it would drop can never fill the batch; and only cases
     before QC accept (lead ruling A: `family.DECIDED_STATUSES` is Recommended or later) — a copy kept
-    out on a decided case is left for the officer."""
+    out on a decided case is left for the officer.
+    A2.8a re-check: the rest of that rule is in the query too — no newer decided upload in the slot
+    (`upload_read.newer_decided_uploads`, the one definition the Python check also asks) and no stored
+    fields (`deferred_by_us`) — so a row the Python check drops can never age into the batch's places.
+    A2.8a third check: a copy a re-read reslotted (salary_slip → epf) is asked of its keeper's slot too."""
     if limit <= 0:
         return []
     try:
-        from django.db.models import F
+        from django.db.models import Exists, F, OuterRef
         from ..family import DECIDED_STATUSES
         from ..results_review import SLIP_REQUEST_CODE
-        from ..upload_read import PENDING, kept_out_by_outage
+        from ..upload_read import PENDING, kept_out_by_outage, newer_decided_uploads
+        def no_newer(slot_type):           # its own slot, and its keeper's (a re-read reslotted it)
+            return ~Exists(newer_decided_uploads(OuterRef('application_id'), OuterRef(slot_type),
+                                                 OuterRef('household_member'), OuterRef('request_code'),
+                                                 OuterRef('id')))
+        no_fields = (Q(vision_fields__fields__isnull=True) | Q(vision_fields__fields=None)
+                     | Q(vision_fields__fields={}) | Q(vision_fields__fields=[]))
         rows = (ApplicantDocument.objects.select_related('superseded_by')
-                .filter(errs, doc_type__in=SERVICE_RETRY_TYPES, superseded_at__isnull=False,
-                        superseded_by__isnull=False, superseded_by_id__lt=F('id'),
+                .filter(errs, no_fields, no_newer('doc_type'), no_newer('superseded_by__doc_type'),
+                        doc_type__in=SERVICE_RETRY_TYPES,
+                        superseded_at__isnull=False, superseded_by__isnull=False, superseded_by_id__lt=F('id'),
                         superseded_by__superseded_at__isnull=True,
                         vision_fields__student_verdict='review_manually', read_plan__staged=True)
                 .exclude(read_state=PENDING)
@@ -255,7 +266,9 @@ def _reread(doc):
     doc.vision_fields = {**doc.vision_fields, RETRY_UNTIL: until, APPROVAL_TRIED: int(now.timestamp())}
     doc.vision_fields_run_at = now
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
-    reextract_document(doc, reslot=True)   # A2.8a review: the upload read's reslot step too
+    # A2.8a review: a kept-out copy's re-read runs the upload read's reslot step too; a live deferred copy
+    # and an approval re-read are not reslotted (re-check), as before.
+    reextract_document(doc, reslot=doc.superseded_at is not None)
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     if is_ai_service_error(vf.get('error')) and RETRY_UNTIL not in vf:   # still down: keep the window
         doc.vision_fields = {**vf, RETRY_UNTIL: until}
