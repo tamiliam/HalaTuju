@@ -125,6 +125,17 @@ class ConfirmReadsTheLettersCourseTest(_Base):
         self.assertEqual(letter_place('UP4310001', 'KK SRI RAJANG', 'Universiti Putra Malaysia'),
                          'Universiti Putra Malaysia')
 
+    def test_a_kk_hostel_line_still_names_the_university_after_it(self):
+        # Review of A2.7a (Medium): the type filter must reject only a campus of the OTHER type, never a
+        # university named after a "KK <hostel>," prefix (no issuer).
+        from apps.scholarship import offer_pathway as op
+        from apps.scholarship.offer_course_match import match_offer_course
+        line = 'KK PERWIRA, UNIVERSITI TUN HUSSEIN ONN'
+        self.assertTrue(CampusReader(line).names('Universiti Tun Hussein Onn Malaysia', 'UTHM'))
+        self.assertFalse(op.offer_contradicts_course_institution('UB6523001', line))
+        self.assertEqual(match_offer_course('SARJANA MUDA KEJURUTERAAN ELEKTRONIK DENGAN KEPUJIAN', line)['course_id'],
+                         'UB6523001')
+
     def test_no_issuer_keeps_the_line(self):
         from apps.scholarship.services.confirmation import confirm_pathway
         app = self._app(pick={'course_id': 'UP4310001', 'course_name': 'Diploma Pembangunan Manusia'})

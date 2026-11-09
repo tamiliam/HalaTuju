@@ -322,7 +322,7 @@ _ALIASES = {
 _SHORT_TYPE_RE = re.compile(r'^\s*(KK|POLY|METRO)\.?(?=[\s,]|$)', re.IGNORECASE)
 _SHORT_TYPES = {'kk': 'Kolej Komuniti', 'poly': 'Politeknik', 'metro': 'Politeknik METrO'}
 #: The types a line can OPEN with that filter the campus type (TD-451): a Kolej Komuniti line never
-#: names a polytechnic by words, nor a polytechnic line a community college.
+#: names a polytechnic by words, nor a polytechnic line a community college; other campuses are not filtered.
 _LEAD_TYPES = ('kolej komuniti', 'politeknik')
 
 
@@ -387,8 +387,10 @@ class CampusReader:
             and self._same_type(name)
 
     def _same_type(self, name):
-        """A line that opens with a type (``_LEAD_TYPES``) names by words only a campus of that type."""
-        return not self.lead or _lead_type(_plain_words(name)) == self.lead
+        """A line that opens with a type (``_LEAD_TYPES``) never names by words a campus that opens with the
+        OTHER type; a campus of no listed type (a university behind a "KK <hostel>," line) is not filtered."""
+        other = _lead_type(_plain_words(name))
+        return not self.lead or not other or other == self.lead
 
     def _aliased(self, name):
         for alias in _ALIASES.get(_norm_inst_name(name), ()):

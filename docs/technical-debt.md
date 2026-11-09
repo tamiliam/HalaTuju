@@ -7506,7 +7506,9 @@ campus that letters name only by town; test each campus's short form. *(B · S)*
 **FIXED 2026-11-09 (A2.7a):** neither option as written (deriving town words from the table would let a new row move a
 verdict, which the class rules out). The short type form is read as the type (`_SHORT_TYPES`), so "KK KLANG", "KK
 AMPANG", "KK SELAYANG" and "METRO KUANTAN" name their campus by its WHOLE name (tier 1), whatever `_TOWN_WORDS`
-holds; a bare town still names nothing. Tests: `test_offer_pages_and_lines.ShortTypeFormsTest`.
+holds; a bare town still names nothing. Tests: `test_offer_pages_and_lines.ShortTypeFormsTest`. Residual risk
+(A2.7a review, Low, left open): "KK" also means Kolej Kediaman, so a "KK X" hostel line now names a Kolej Komuniti X
+when one exists, which blocks the letterhead fallback and leaves the course unresolved (no wrong clash, nothing pinned).
 
 ### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low
 
