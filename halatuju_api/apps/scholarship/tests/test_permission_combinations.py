@@ -231,23 +231,30 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
         resp = self._sign('pe-mk', 'Maker One', run_id)
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'same_signer'))
 
-    def test_assignment_only_to_review_holders(self):
+    def test_assignment_only_to_reviewers(self):
+        # T1 (owner D7, 2026-11-09): an org admin assigns anyone in the Reviewers table of their own
+        # organisation. #39 S3 asked for `review`; QC people are Reviewers (owner ruling 8), so they
+        # are assignable now too.
         _grant(self.qc, ['see_all', 'qc'])                    # the qc preset, written out
-        _grant(self.maker, ['see_all', 'qc'])                  # an admin given QC, not Review
+        _grant(self.maker, ['see_all', 'qc'])                  # an admin given QC: a Reviewer by `qc`
         _grant(self.reviewer, ['spending'])                    # a reviewer with Review taken away
-        for target in (self.qc, self.maker, self.reviewer, self.finance):
+        for target in (self.qc, self.maker):
+            self.assertTrue(may_assign_to(self.approver, target), target.role)
+        # In Reviewers by label, but could not open the case (`is_review_target`): never offered.
+        for target in (self.reviewer, self.finance):
             self.assertFalse(may_assign_to(self.approver, target), target.role)
         _grant(self.finance, ['payments_approve', 'review'])
         self.assertTrue(may_assign_to(self.approver, self.finance))
-        # The endpoint answers the same: a non-holder is `bad_assignee`, as an unknown id is.
+        # The endpoint answers the same: a non-Reviewer is `bad_assignee`, as an unknown id is.
         from apps.scholarship.views_admin.verdict import AdminAssignReviewerView
         case = SimpleNamespace(id=1, owning_organisation_id=self.org_a.id, status='profile_complete',
-                               assigned_to=None, assigned_at=None)   # A2.3: the slim reply reads these
+                               assigned_to=None, assigned_to_id=None,
+                               assigned_at=None)   # A2.3: the slim reply reads these
         self._auth('pe-ap')
         with mock.patch.object(AdminAssignReviewerView, '_scoped_application',
                                return_value=(case, None)), \
                 mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'):
-            refused = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.maker.id},
+            refused = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.reviewer.id},
                                        format='json')
             taken = self.client.post(f'{APPS}1/assign/', {'reviewer_id': self.finance.id},
                                      format='json')
@@ -264,9 +271,10 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
 
 
 class TestTheR1OverrideNeedsSeeAll(pe._FinanceBase):
-    """Sprint 3 review fix 1: the super's R1 override (admin / qc / org_admin) admits only someone who
-    can still OPEN the case. A custom-set admin with neither `review` nor `see_all` would be handed a
-    case their `_b40_scope` ('none') cannot read — stranded, while nudges still name the student."""
+    """Sprint 3 review fix 1: the R1 roles (admin / qc / org_admin) may HOLD a case only when they can
+    still OPEN it (`is_review_target` asks `see_all`). A custom-set admin with neither `review` nor
+    `see_all` would hold a case their `_b40_scope` ('none') cannot read — stranded, while nudges still
+    name the student. T1 (2026-11-09): R1 no longer makes anyone ASSIGNABLE; it only keeps a holder."""
 
     def test_an_admin_without_see_all_or_review_is_no_target(self):
         _grant(self.maker, ['payments_prepare'])
@@ -282,11 +290,13 @@ class TestTheR1OverrideNeedsSeeAll(pe._FinanceBase):
         row = next(r for r in self.client.get(ASSIGNABLE).json()['admins'] if r['id'] == self.maker.id)
         self.assertFalse(row['assignable'])          # listed (bug #66), never offered
 
-    def test_an_admin_keeping_see_all_stays_a_super_s_target(self):
+    def test_an_admin_keeping_see_all_may_hold_but_is_no_longer_a_super_s_target(self):
+        # T1: was "stays a super's target" (R1). They can still HOLD a case (is_review_target), so a
+        # case they already have is not stranded; a NEW one goes to the Reviewers table only.
         _grant(self.maker, ['see_all', 'payments_prepare'])
         self.assertTrue(is_review_target(self.maker))
-        self.assertTrue(may_assign_to(self.super, self.maker))
-        self.assertFalse(may_assign_to(self.approver, self.maker))   # an org_admin: review only
+        self.assertFalse(may_assign_to(self.super, self.maker))
+        self.assertFalse(may_assign_to(self.approver, self.maker))
 
 
 class TestCustomSetsStayInsideTheirOrganisation(pe._FinanceBase):

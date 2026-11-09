@@ -189,7 +189,7 @@ ALLOWLIST = {
     'scholarship/scheduling.py::propose_slots': ('OVERRIDE', 'owner override',
         'super bypass of the assigned-reviewer rule (getattr role == super): a super holds every key'),
     'scholarship/services/assignment.py::is_review_target': ('GATE-LEFT', 'T5e',
-        'who may receive a case: R1_SUPER_TARGET_ROLES by label; T5e moves assignment targets to keys with may_assign_to'),
+        'who may HOLD a case: R1_SUPER_TARGET_ROLES by label (T1: no longer who may be GIVEN one); T5e moves it to keys'),
     'scholarship/services/assignment.py::may_assign_to': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/source_invite.py::_reactivate': ('DISPLAY', 'account kind',
