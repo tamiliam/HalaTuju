@@ -193,9 +193,9 @@ IC_UNLOCKED = 'birth_state_ic_unlocked'
 IC_UNLOCKED_MESSAGE = (
     'This intake has a "Born in" rule and the student\'s IC is not locked (the lock was '
     'released), so the case cannot reach Recommended on it — an unlocked IC can still be '
-    'changed before a sponsor funds. Have the reviewer verify-and-accept the IC again: that '
-    're-locks it and checks that no other account holds it verified. In the cockpit the '
-    'reviewer\'s Recommend does it (from Awaiting QC, reopen the case to the reviewer first). '
+    'changed before a sponsor funds. Verify-and-accept the IC again: that re-locks it and '
+    'checks that no other account holds it verified. In the cockpit, a case Awaiting QC shows '
+    'a "Re-verify IC" button (TD-378); on a reopened case the reviewer\'s Recommend does it. '
     'Then accept it through QC, or cancel the reopen.')
 
 

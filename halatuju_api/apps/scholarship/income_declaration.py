@@ -170,6 +170,20 @@ def approval_expired(doc) -> bool:
             and tried + APPROVAL_RETRY_WINDOW.total_seconds() <= time.time())
 
 
+def approval_sweep_gave_up(doc) -> bool:
+    """A2.8a (TD-397): the hourly sweep made its ONE approval re-read of this document (`APPROVAL_TRIED`) at
+    least `APPROVAL_RETRY_WINDOW` ago, and no approval-image retry window (`APPROVAL_UNTIL`) is still open,
+    so the sweep will not read it again (`read_retry.approval_unchecked_documents`). Read by Check 2's hold
+    only (`check2_deferred`): an unchecked document stops holding the income asks then, and the request
+    falls back to the ordinary ask or the officer. It does NOT change what the document counts for."""
+    import time
+    vf = _vf(doc)
+    tried = vf.get(APPROVAL_TRIED)
+    now = time.time()
+    return (isinstance(tried, (int, float)) and tried + APPROVAL_RETRY_WINDOW.total_seconds() <= now
+            and float(vf.get(APPROVAL_UNTIL) or 0) <= now)
+
+
 #: Stamped on a row by the hourly sweep before its approval re-read (`services.read_retry`, epoch seconds).
 APPROVAL_TRIED = 'approval_reread_at'
 

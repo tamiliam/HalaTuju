@@ -15,7 +15,7 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.throttling import UploadRateThrottle
 
 from .document_snapshot import SNAPSHOT_ORDER
-from .read_errors import is_ai_service_error
+from .read_errors import ic_second_opinion_deferred, is_ai_service_error
 from .results_review import SLIP_REQUEST_CODE, slip_locked
 from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication, ScholarshipCohort
 from .serializers import (
@@ -1782,6 +1782,8 @@ class ConsentView(APIView):
                  if d.doc_type == 'parent_ic' and d.vision_run_at and not d.vision_error),
                 None,
             )
+        if parent_ic is not None and ic_second_opinion_deferred(parent_ic):
+            parent_ic = None    # TD-400: half a read gives no live "doesn't match"; the POST says try later
         return Response({
             'is_minor': is_minor(profile) if profile else False,
             'consent_version': CONSENT_VERSION,
@@ -1846,25 +1848,19 @@ class ConsentView(APIView):
             # being able to type a fake parent name in someone else's session,
             # so this is now a 400 block. The FE pre-checks on the same data
             # so the toggle stays disabled — backend is defence-in-depth.
-            from .vision import nric_match, name_match
+            from .identity import GUARANTOR_IC_PENDING, guarantor_mismatch   # bursary's comparison too
             parent_ic = next(
                 (d2 for d2 in present_qs
                  if d2.doc_type == 'parent_ic' and d2.vision_run_at and not d2.vision_error),
                 None,
             )
-            if parent_ic and parent_ic.vision_nric and not nric_match(
-                    d['guardian_nric'], parent_ic.vision_nric):
+            why = parent_ic and guarantor_mismatch(parent_ic, d['guardian_name'], d['guardian_nric'])
+            if why:   # TD-400: a value differing from a card our outage left half-read is "try later"
                 return Response(
-                    {'error': 'parent_ic_nric_mismatch',
-                     'message': "The NRIC you typed doesn't match the IC you "
-                                "uploaded. Please check both."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            if (parent_ic and parent_ic.vision_name
-                    and name_match(parent_ic.vision_name, d['guardian_name']) != 'match'):
-                return Response(
-                    {'error': 'parent_ic_name_mismatch',
-                     'message': "The name you typed doesn't match the IC you "
+                    {'error': why,
+                     'message': "Our document-check service is temporarily unavailable. Please try again later."
+                                if why == GUARANTOR_IC_PENDING else
+                                f"The {'NRIC' if 'nric' in why else 'name'} you typed doesn't match the IC you "
                                 "uploaded. Please check both."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )

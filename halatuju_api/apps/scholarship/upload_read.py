@@ -77,14 +77,17 @@ def pending_payload(doc):
 def read_and_judge(app, doc, *, staged, stale_ids, existing_live):
     """Read ``doc`` and decide its slot. Returns the upload's response body. MOVED VERBATIM from
     ``DocumentListCreateView.post`` (A2.3); only ``self.`` became the view class and the module
-    helpers gained their ``views.`` prefix."""
+    helpers gained their ``views.`` prefix. A2.8a (TD-393): split, moves only, into the read
+    (``_read_copy``) and the judging (``judge``), so the hourly sweep can judge a copy it re-read."""
+    _read_copy(app, doc)
+    return judge(app, doc, staged=staged, stale_ids=stale_ids, existing_live=existing_live)
+
+
+def _read_copy(app, doc):
+    """The upload's reads: the HEIC fix, then the IC / supporting-document / text read by type."""
     from django.conf import settings as _settings
-    from . import slot_writes
-    from .serializers import ApplicantDocumentSerializer
     from .views import (BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES,
-                        _ACADEMIC_SINGLE_TYPES, DocumentListCreateView, _collapse_duplicate_docs,
-                        _flag_needs_officer_eye, _note_unresolved_attempts, _reslot_income_doc,
-                        _stage_attempts_exhausted)
+                        DocumentListCreateView, _reslot_income_doc)
     # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
     # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
     from .imaging import convert_heic_to_jpeg
@@ -137,6 +140,16 @@ def read_and_judge(app, doc, *, staged, stale_ids, existing_live):
     elif doc.doc_type in TEXT_READ_DOC_TYPES:
         from . import vision as _vision
         _vision.read_text_document(doc)
+
+
+def judge(app, doc, *, staged, stale_ids, existing_live):
+    """Decide the slot of a document that HAS been read: the tag guard, JUDGE → PROMOTE, the dedupe,
+    the resolution sync, the offer autofill and the re-ask notes. Returns the upload's response body."""
+    from django.conf import settings as _settings
+    from . import slot_writes
+    from .serializers import ApplicantDocumentSerializer
+    from .views import (_ACADEMIC_SINGLE_TYPES, _collapse_duplicate_docs, _flag_needs_officer_eye,
+                        _note_unresolved_attempts, _stage_attempts_exhausted)
     # ── Tag guard (the airtight last line): attribute an income doc (parent_ic / salary_slip /
     # epf / str) to the household member by the NAME now read off it (Vision/Gemini has run above),
     # in two cases:
@@ -302,6 +315,47 @@ def _newer_upload_decided(doc):
         id__gt=doc.id).exclude(read_state=PENDING).exists()
 
 
+def _slot_now(doc, stale_ids):
+    """``(stale_ids, existing_live)`` for judging a STAGED ``doc`` against its slot as it is now."""
+    # Judge against the slot AS IT IS NOW, not as the upload saw it: an earlier upload read
+    # since (or a copy that replaced the plan's) may hold the slot, and should_promote(.., None)
+    # always promotes, so a stale "nothing" would let a mismatch bury a good live copy. The
+    # slot's live copies join the staged-against set; the pick is the tag guard's own
+    # (SNAPSHOT_ORDER over that set).
+    # An empty slot is judged against nothing: the plan's copy was moved out or deleted.
+    live_now = ApplicantDocument.objects.filter(
+        application_id=doc.application_id, doc_type=doc.doc_type,
+        household_member=doc.household_member, request_code=doc.request_code,
+        superseded_at__isnull=True).exclude(id=doc.id).values_list('id', flat=True)
+    stale_ids = list(dict.fromkeys(list(stale_ids) + list(live_now)))
+    existing_live = (ApplicantDocument.objects.filter(
+        id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
+        .order_by(*SNAPSHOT_ORDER).first())
+    return stale_ids, existing_live
+
+
+def kept_out_by_outage(doc):
+    """A2.8a (TD-393): a STAGED upload kept out of its slot (it was judged against an OLDER live copy,
+    ``superseded_by_id < id``, the ``answer_for`` rule) whose read our outage deferred, while that
+    live copy still holds the slot and no newer upload in the slot has been decided."""
+    from .read_errors import deferred_by_us
+    keeper = doc.superseded_by
+    return (doc.superseded_at is not None and keeper is not None and keeper.id < doc.id
+            and keeper.superseded_at is None and doc.read_state != PENDING
+            and deferred_by_us(doc.vision_fields) and not _newer_upload_decided(doc))
+
+
+def judge_reread_copy(doc):
+    """A2.8a (TD-393): the hourly sweep re-read a staged copy our outage kept out
+    (``services.read_retry``); judge it now exactly as the upload would have, against its slot as it
+    is now: promote it if it is at least as good as the live copy, else it stays kept out. Returns
+    the upload's response body (unused by the sweep)."""
+    plan = doc.read_plan or {}
+    stale_ids, existing_live = _slot_now(doc, plan.get('stale_ids') or [])
+    logger.info('AUDIT upload_rejudged doc=%s app=%s', doc.id, doc.application_id)
+    return judge(doc.application, doc, staged=True, stale_ids=stale_ids, existing_live=existing_live)
+
+
 def run_read(doc_id):
     """Claim, read, judge. Returns ``(outcome, data)``: outcome 'done', 'retry', 'failed',
     'superseded' or 'not_claimed'; ``data`` is the upload's response body on 'done', else None."""
@@ -317,20 +371,7 @@ def run_read(doc_id):
     stale_ids = list(plan.get('stale_ids') or [])
     existing_live = None
     if plan.get('staged'):
-        # Judge against the slot AS IT IS NOW, not as the upload saw it: an earlier upload read
-        # since (or a copy that replaced the plan's) may hold the slot, and should_promote(.., None)
-        # always promotes, so a stale "nothing" would let a mismatch bury a good live copy. The
-        # slot's live copies join the staged-against set; the pick is the tag guard's own
-        # (SNAPSHOT_ORDER over that set).
-        # An empty slot is judged against nothing: the plan's copy was moved out or deleted.
-        live_now = ApplicantDocument.objects.filter(
-            application_id=doc.application_id, doc_type=doc.doc_type,
-            household_member=doc.household_member, request_code=doc.request_code,
-            superseded_at__isnull=True).exclude(id=doc.id).values_list('id', flat=True)
-        stale_ids = list(dict.fromkeys(stale_ids + list(live_now)))
-        existing_live = (ApplicantDocument.objects.filter(
-            id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
-            .order_by(*SNAPSHOT_ORDER).first())
+        stale_ids, existing_live = _slot_now(doc, stale_ids)
     try:
         data = read_and_judge(doc.application, doc, staged=bool(plan.get('staged')),
                               stale_ids=stale_ids, existing_live=existing_live)

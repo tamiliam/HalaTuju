@@ -39,7 +39,7 @@ from django.utils import timezone
 from ..income_declaration import APPROVAL_TRIED
 from ..models import ApplicantDocument
 from ..read_errors import (IC_SECOND_OPINION_ERROR, RATE_LIMITED, SERVICE_ERROR_PREFIXES,
-                           is_ai_service_error)
+                           SERVICE_RETRY_UNTIL, is_ai_service_error)
 from .blockers import _SELF_HEAL_READ_TYPES
 
 logger = logging.getLogger('apps.scholarship.services')   # the package's name: the log metric counts by it
@@ -52,8 +52,9 @@ logger = logging.getLogger('apps.scholarship.services')   # the package's name: 
 SERVICE_RETRY_TYPES = _SELF_HEAL_READ_TYPES + (
     'water_bill', 'electricity_bill', 'bank_statement', 'school_leaving_cert', 'semester_result')
 SERVICE_RETRY_WINDOW = timedelta(hours=72)
-#: Epoch seconds (a number, so the database compares it as one on SQLite and Postgres alike).
-RETRY_UNTIL = 'service_retry_until'
+#: Epoch seconds (a number, so the database compares it as one on SQLite and Postgres alike). Defined in
+#: `read_errors` (A2.8a) so Check 2's hold reads the same window.
+RETRY_UNTIL = SERVICE_RETRY_UNTIL
 
 
 def service_error_documents(limit):
@@ -88,10 +89,48 @@ def service_error_documents(limit):
                        vision_fields__ic_second_opinion_until__gt=int(now.timestamp()))
                .exclude(application__status__in=CASE_CLOSED_STATES)
                .order_by('vision_run_at')[:max(limit - len(fields), 0)])
-        return fields + list(ics)
+        return fields + list(ics) + _kept_out_documents(errs, now, max(limit - len(fields) - len(ics), 0))
     except Exception:                   # the never-read sweep must still run
         logger.exception('service-error retry selection failed; the never-read sweep continues')
         return []
+
+
+def _kept_out_documents(errs, now, limit):
+    """A2.8a (TD-393): in the room left, STAGED uploads our outage kept out of their slot
+    (`upload_read.kept_out_by_outage`) — same types, same window, same open-case and slip rules as
+    the live ones. After the re-read the sweep judges each one (`run_service_retries`)."""
+    if limit <= 0:
+        return []
+    try:
+        from django.db.models import F
+        from .decline import CASE_CLOSED_STATES
+        from ..results_review import SLIP_REQUEST_CODE
+        from ..upload_read import kept_out_by_outage
+        rows = (ApplicantDocument.objects.select_related('superseded_by')
+                .filter(errs, doc_type__in=SERVICE_RETRY_TYPES, superseded_at__isnull=False,
+                        superseded_by__isnull=False, superseded_by_id__lt=F('id'),
+                        superseded_by__superseded_at__isnull=True)
+                .exclude(application__status__in=CASE_CLOSED_STATES)
+                .exclude(request_code=SLIP_REQUEST_CODE)
+                .filter(~Q(vision_fields__has_key=RETRY_UNTIL)
+                        | Q(vision_fields__service_retry_until__gt=int(now.timestamp())))
+                .order_by('vision_fields_run_at')[:limit])
+        return [d for d in rows if kept_out_by_outage(d)]
+    except Exception:                   # the live re-reads must still run
+        logger.exception('kept-out retry selection failed; the rest of the sweep continues')
+        return []
+
+
+def _judge_if_kept_out(doc, err):
+    """TD-393: a STAGED copy whose re-read is no longer ours to finish (it read, or the read now
+    says something about the file) is judged as the upload would have judged it. Never raises."""
+    if doc.superseded_at is None or err == 'reprocess_failed' or is_ai_service_error(err):
+        return
+    try:
+        from ..upload_read import judge_reread_copy
+        judge_reread_copy(doc)
+    except Exception:
+        logger.exception('judging the re-read kept-out document %s failed', doc.id)
 
 
 #: #374 / ruling 2A: stamped on a row before its approval re-read, so the sweep tries each ONCE (a paid read);
@@ -239,6 +278,7 @@ def run_service_retries(docs, deadline=None, out=None):
         except Exception:               # one document must not stop the sweep
             logger.exception('service-error re-read failed for document %s', doc.id)
             err = 'reprocess_failed'
+        _judge_if_kept_out(doc, err)
         if err:
             errored += 1
         else:
