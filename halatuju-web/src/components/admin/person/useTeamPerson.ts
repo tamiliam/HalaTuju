@@ -17,7 +17,9 @@ import { getMentorDetail, type MentorDetail } from '@/lib/admin-api/mentors'
  *     reviewer detail carries the Revoke / Delete fields already — an admin or finance person.
  *
  * ⚠ A SECONDARY read that fails draws nothing for its part; only the route's own read can fail the
- * page (and then `RecordState` says "We could not find that" — never why: the fence answers 404).
+ * page. `failed` says which way (T3 review): `'missing'` — a 404 or an id that names nobody, and
+ * `RecordState` says "We could not find that", never why (the fence answers 404 across organisations);
+ * `'error'` — anything else (offline, a 500), which the page words as a load failure.
  */
 export type PersonEntry = 'reviewer' | 'admin' | 'mentor'
 
@@ -28,9 +30,11 @@ export interface TeamPersonData {
   mentor: MentorDetail | null
 }
 
+export type PersonLoadFailure = false | 'missing' | 'error'
+
 export interface TeamPersonState {
   data: TeamPersonData | null
-  failed: boolean
+  failed: PersonLoadFailure
   reload: () => void
   patch: (next: (d: TeamPersonData) => TeamPersonData) => void
 }
@@ -45,12 +49,12 @@ export function useTeamPerson({ entry, id, token, mayManage, mayMentors }: {
   mayMentors: boolean
 }): TeamPersonState {
   const [data, setData] = useState<TeamPersonData | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<PersonLoadFailure>(false)
   const [round, setRound] = useState(0)
 
   useEffect(() => {
     // A segment that is not a number can name nobody: "not found", never loading for ever.
-    if (!Number.isInteger(id) || id <= 0) { setFailed(true); return }
+    if (!Number.isInteger(id) || id <= 0) { setFailed('missing'); return }
     if (!token) return
     let live = true
     const opts = { token }
@@ -79,7 +83,7 @@ export function useTeamPerson({ entry, id, token, mayManage, mayMentors }: {
           ? await quiet(getStaffPermissions(p.admin_id, opts)) : null)
         if (live) { setData({ person: p, reviewer, staff, mentor }); setFailed(false) }
       })
-      .catch(() => { if (live) setFailed(true) })
+      .catch((e: { status?: number }) => { if (live) setFailed(e?.status === 404 ? 'missing' : 'error') })
     return () => { live = false }
   }, [entry, id, token, mayManage, mayMentors, round])
 

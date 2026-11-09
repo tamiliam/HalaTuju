@@ -3497,12 +3497,10 @@
         "outcomes": "Keputusan",
         "noOutcomes": "Belum ada keputusan direkodkan.",
         "declined": "Ditolak",
-        "credentials": "Kelayakan",
         "qualification": "Kelayakan tertinggi",
         "university": "Universiti",
         "graduationYear": "Tamat pengajian",
         "fieldOfStudy": "Bidang pengajian",
-        "contact": "Hubungan",
         "email": "E-mel",
         "phone": "Telefon",
         "phoneNone": "Tidak diberikan",
@@ -8419,7 +8417,9 @@
         "profile": "Profil: butiran mereka sendiri",
         "none": "Mentor tidak memegang kebenaran untuk diubah.",
         "more": "Untuk memberi {name} lebih, tambah mereka ke jadual Pasukan yang lain."
-      }
+      },
+      "revokeEndsMentoring": "Bimbingan mereka terhadap {n} penerima biasiswa juga tamat, dan Pulihkan tidak akan mengembalikannya.",
+      "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
     },
     "permHistory": {
       "title": "Perubahan",
@@ -8804,8 +8804,6 @@
         "concernsOpen": "Kebimbangan terbuka"
       },
       "notFilled": "Belum diisi",
-      "activeSeen": "Aktif · log masuk terakhir {date}",
-      "inactiveOn": "Tidak aktif sejak {date}",
       "action": {
         "deactivate": "Batalkan",
         "reactivate": "Pulihkan",

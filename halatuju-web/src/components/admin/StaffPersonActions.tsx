@@ -19,8 +19,11 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  * the Admins table) AND A DELETE ONLY TO A SUPER (owner, 2026-11-08). The server refuses either way.
  * ⚠ T2 review N3: nor is Revoke offered where the server says `revocable: false` — a super's page, your
  * own, the sole organisation admin's — and N2: no Delete where it says `delete_never`.
+ * ⚠ T3 review fix 3: a STAFF MENTOR's Revoke also ends their mentoring (`staff_mentor_leaves`), and
+ * Restore does not bring it back — so while they have scholars (`scholarsNow`) the confirm says so.
  */
-export default function StaffPersonActions({ person, token, viewerSuper, onDeleted, openNow = 0, onChanged }: {
+export default function StaffPersonActions({ person, token, viewerSuper, onDeleted, openNow = 0, scholarsNow = 0,
+  onChanged }: {
   person: {
     id: number; name: string; email: string; role: string; is_active: boolean
     lead?: boolean; deletable?: boolean; delete_never?: boolean; revocable?: boolean
@@ -32,6 +35,8 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
   onDeleted: () => void
   /** Their open cases, for the revoke warning (a reviewer's page). */
   openNow?: number
+  /** A staff mentor's scholars now, for the revoke warning: Revoke ends that mentoring for good. */
+  scholarsNow?: number
   /** After a revoke or restore: their new `is_active`. */
   onChanged: (active: boolean) => void
 }) {
@@ -44,9 +49,11 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
 
   const toggle = async () => {
     const going = person.is_active
-    const warn = going && openNow > 0
+    const base = going && openNow > 0
       ? t('admin.reviewers.revokeConfirmOpen', { name: person.name, n: String(openNow) })
       : t(going ? 'admin.reviewers.revokeConfirm' : 'admin.reviewers.restoreConfirm', { name: person.name })
+    const warn = going && scholarsNow > 0
+      ? `${base} ${t('admin.person.revokeEndsMentoring', { n: String(scholarsNow) })}` : base
     if (!window.confirm(warn)) return
     setBusy(true); setError('')
     try {

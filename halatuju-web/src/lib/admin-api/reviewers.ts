@@ -156,7 +156,7 @@ export interface AdminReviewerDetail extends AdminReviewer {
   share_phone_with_students: boolean
   reopens: AdminReviewerReopen[]
   /** #39 S4: would the pause endpoint ACCEPT this person (`set_paused`'s own target rule)? Absent
-   *  on an older payload, which is read as "yes" — what the page assumed before it existed. */
+   *  on an older payload, which is read as "no" since the T3 review: no Pause is offered. */
   pausable?: boolean
   /** Sprint T3: the person page's header and Profile tab. */
   person?: TeamPersonBlock

@@ -28,9 +28,13 @@ import { useTeamPerson, type PersonEntry } from './useTeamPerson'
  * WHO SEES WHAT (UX only — every GET is its own fence, and answers 404 across organisations):
  *   * the reviewer route: whoever opens Team; the admin route: a super or an organisation admin
  *     (`admin.person.notAllowed` otherwise); the mentor route: whoever reads the Mentors table;
- *   * the Permissions tab: whoever may manage, and for a PURE mentor anybody who opens the page (it is
- *     read-only, D8). With one tab there is no bar: an `admin` or `finance` reader of a staff
- *     person's page sees the Profile exactly as before.
+ *   * the Permissions tab: for everybody. A PURE mentor's is read-only (D8); a staff person's is the
+ *     editor for whoever may manage, and for an `admin` or `finance` reader only the line "Only an
+ *     organisation admin can open a team member's permissions." — nothing fetched (architect, Q1);
+ *   * the background profile fields: as the server serves them (`profile_full`, T3 review fix 1).
+ *
+ * A STAFF MENTOR's page also offers Remove from Mentors (the Mentors table's `stop`), and their Revoke
+ * says it ends their scholars' mentoring for good (T3 review fix 3).
  *
  * `#permissions` opens the tab directly, read after mount (the hash does not exist on the server pass).
  */
@@ -79,6 +83,7 @@ export default function TeamPersonPage({ entry, id, backTable }: {
 
   if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (role && entry === 'admin' && !mayManage) return <p className="text-critical-600">{t('admin.person.notAllowed')}</p>
+  if (!data && failed === 'error') return <p className="text-sm text-critical-600" role="alert">{t('admin.person.loadFailed')}</p>
   if (!data) return <RecordState loading={!failed} />
 
   const { person: p, reviewer, staff, mentor } = data
@@ -87,20 +92,23 @@ export default function TeamPersonPage({ entry, id, backTable }: {
   const leave = () => router.push(backHref)
   const staffRow = reviewer ?? staff
   // M5: the same actions, in the same place, on every page — a staff person's or a pure mentor's.
+  // A staff mentor's Revoke ends their mentoring too, so the page reads itself again afterwards.
+  const staffActs = mayManage && token && staffRow ? (
+    <StaffPersonActions token={token} viewerSuper={viewerRole === 'super'} onDeleted={leave}
+      person={{ ...staffRow, name: who, email: staffRow.email ?? p.email }} openNow={reviewer?.open_now}
+      scholarsNow={mentor?.mentor.scholars_now ?? 0}
+      onChanged={(on) => (mentor ? reload() : patch((d) => ({ ...d, person: { ...d.person, is_active: on },
+        reviewer: d.reviewer && { ...d.reviewer, is_active: on }, staff: d.staff && { ...d.staff, is_active: on } })))} />
+  ) : null
+  const stop = mentors && mentor && mentor.mentor.manageable && mentor.mentor.status === 'active'
+    ? <mentors.StaffMentorRemove mentor={mentor.mentor} onRemoved={reload} /> : null
   const actions = !p.mentor_only
-    ? (mayManage && token && staffRow ? (
-      <StaffPersonActions token={token} viewerSuper={viewerRole === 'super'} onDeleted={leave}
-        person={{ ...staffRow, name: who, email: staffRow.email ?? p.email }} openNow={reviewer?.open_now}
-        onChanged={(on) => patch((d) => ({ ...d, person: { ...d.person, is_active: on },
-          reviewer: d.reviewer && { ...d.reviewer, is_active: on }, staff: d.staff && { ...d.staff, is_active: on } }))} />
-    ) : null)
+    ? (staffActs || stop ? <>{staffActs}{stop}</> : null)
     : (mentors && mentor && mentor.mentor.manageable ? (
       <mentors.MentorActions mentor={mentor.mentor} onDeleted={leave}
         onChanged={(row) => patch((d) => ({ ...d, person: { ...d.person, is_active: row.status !== 'inactive' },
           mentor: d.mentor && { ...d.mentor, mentor: { ...d.mentor.mentor, ...row } } }))} />
     ) : null)
-  const tabbed = mayManage || p.mentor_only
-  const shown = tabbed ? tab : 'profile'
 
   return (
     <div className="space-y-3.5" data-testid="team-person">
@@ -110,21 +118,21 @@ export default function TeamPersonPage({ entry, id, backTable }: {
       </Link>
       <PersonHeader data={data} token={token} mayManage={mayManage} actions={actions} onPatch={patch}
         mentorFigures={mentors && mentor ? <mentors.MentorFigures data={mentor} /> : null} />
-      {tabbed && (
-        <PanelTabs ariaLabelKey="admin.person.tabsAria" active={shown}
-          onSelect={(k) => selectTab(k as 'profile' | 'permissions')}
-          tabs={[
-            { key: 'profile', labelKey: 'admin.person.tabProfile' },
-            { key: 'permissions', labelKey: 'admin.person.tabPermissions' },
-          ]} />
-      )}
-      {shown === 'permissions' && (p.mentor_only ? (
+      <PanelTabs ariaLabelKey="admin.person.tabsAria" active={tab}
+        onSelect={(k) => selectTab(k as 'profile' | 'permissions')}
+        tabs={[
+          { key: 'profile', labelKey: 'admin.person.tabProfile' },
+          { key: 'permissions', labelKey: 'admin.person.tabPermissions' },
+        ]} />
+      {tab === 'permissions' && (p.mentor_only ? (
         <MentorOnlyPermissions adminId={p.admin_id} name={who} mayAdd={mentor?.may_add ?? []} token={token}
           onAdded={reload} />
+      ) : !mayManage ? (
+        <p className="text-sm text-ground-500" data-testid="person-perm-not-allowed">{t('admin.person.notAllowed')}</p>
       ) : token && (
         <PermissionEditor adminId={p.admin_id} name={who} token={token} initial={staff ?? undefined} onSaved={reload} />
       ))}
-      {shown === 'profile' && (
+      {tab === 'profile' && (
         <PersonProfile data={data} mentorWork={mentors && mentor ? <mentors.MentorWork data={mentor} /> : null} />
       )}
     </div>

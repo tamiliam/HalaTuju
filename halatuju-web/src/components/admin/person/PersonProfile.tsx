@@ -18,6 +18,8 @@ import type { TeamPersonData } from './useTeamPerson'
  * "not filled in" from "not shown to you". The HOME ADDRESS is never in the payload and never here
  * (role-matrix.md): assigning a case is not a reason to read where somebody lives.
  * ⚠ The phone is the server's to give (`staff_person.phone_of`): '' reads "Not given" as well.
+ * ⚠ T3 review fix 1: `profile_full === false` (the mentor route, a viewer who opens this person by no
+ * admin or reviewer route) draws NO row for the background fields — they were withheld, not left empty.
  */
 export default function PersonProfile({ data, mentorWork }: { data: TeamPersonData; mentorWork: ReactNode }) {
   const { t } = useT()
@@ -28,9 +30,12 @@ export default function PersonProfile({ data, mentorWork }: { data: TeamPersonDa
   const languages = [...pr.languages.map((c) => t(`admin.reviewers.lang.${c}`)),
     ...(pr.other_language ? [pr.other_language] : [])].join(', ')
   const phone = reviewer ? phoneState(reviewer) : null
+  const full = p.profile_full !== false
   const rows: { key: string; label: string; value: ReactNode }[] = [
-    { key: 'jobTitle', label: t('admin.myProfile.jobTitle'), value: text(pr.job_title) },
-    { key: 'about', label: t('admin.person.aboutField'), value: text(pr.about) },
+    ...(full ? [
+      { key: 'jobTitle', label: t('admin.myProfile.jobTitle'), value: text(pr.job_title) },
+      { key: 'about', label: t('admin.person.aboutField'), value: text(pr.about) },
+    ] : []),
     { key: 'email', label: t('admin.reviewers.detail.email'), value: text(p.email) },
     { key: 'phone', label: t('admin.reviewers.detail.phone'), value: pr.phone ? (<>
       {/* ⚠ The country code is added HERE: it is stored without one, so this is display only. */}
@@ -40,10 +45,13 @@ export default function PersonProfile({ data, mentorWork }: { data: TeamPersonDa
       )}
     </>) : none },
     { key: 'languages', label: t('admin.reviewers.colLanguages'), value: text(languages) },
-    { key: 'qualification', label: t('admin.reviewers.detail.qualification'), value: text(pr.qualification) },
-    { key: 'university', label: t('admin.reviewers.detail.university'), value: text(pr.university) },
-    { key: 'fieldOfStudy', label: t('admin.reviewers.detail.fieldOfStudy'), value: text(pr.field_of_study) },
-    { key: 'graduationYear', label: t('admin.reviewers.detail.graduationYear'), value: text(pr.graduation_year) },
+    ...(full ? [
+      { key: 'qualification', label: t('admin.reviewers.detail.qualification'), value: text(pr.qualification) },
+      { key: 'university', label: t('admin.reviewers.detail.university'), value: text(pr.university) },
+      { key: 'fieldOfStudy', label: t('admin.reviewers.detail.fieldOfStudy'), value: text(pr.field_of_study) },
+      { key: 'graduationYear', label: t('admin.reviewers.detail.graduationYear'),
+        value: text(pr.graduation_year) },
+    ] : []),
     ...(mentor ? [
       { key: 'area', label: t('admin.person.areaField'), value: text(mentor.mentor.area) },
       { key: 'mentoringSince', label: t('admin.person.mentoringSince'),

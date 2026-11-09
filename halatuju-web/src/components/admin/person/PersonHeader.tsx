@@ -42,8 +42,9 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
   const [pauseError, setPauseError] = useState('')
   const status = staffStatusKey(p)
   // ⚠ The target side is the server's (#39 S4): `pausable` is the pause endpoint's own rule. D9: only
-  // a reviewer is offered Pause.
-  const mayPause = !!reviewer && mayManage && !!token && reviewer.pausable !== false
+  // a reviewer is offered Pause. T3 review: a payload without `pausable` (an older api) offers none — a
+  // switch the endpoint might refuse is worse than one that is missing for a few minutes.
+  const mayPause = !!reviewer && mayManage && !!token && reviewer.pausable === true
   const seen = p.signed_in && p.last_seen_at ? seenAgo(p.last_seen_at) : null
 
   const pause = async () => {

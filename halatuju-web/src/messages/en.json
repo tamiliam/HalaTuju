@@ -3497,12 +3497,10 @@
         "outcomes": "Outcomes",
         "noOutcomes": "No decisions recorded yet.",
         "declined": "Declined",
-        "credentials": "Credentials",
         "qualification": "Highest qualification",
         "university": "University",
         "graduationYear": "Graduated",
         "fieldOfStudy": "Field of study",
-        "contact": "Contact",
         "email": "Email",
         "phone": "Phone",
         "phoneNone": "Not given",
@@ -8419,7 +8417,9 @@
         "profile": "Profile: their own details",
         "none": "A mentor holds no permissions to change.",
         "more": "To give {name} more, add them to another Team table."
-      }
+      },
+      "revokeEndsMentoring": "Their mentoring of {n} scholars ends too, and Restore will not bring it back.",
+      "loadFailed": "We could not load this page. Please try again."
     },
     "permHistory": {
       "title": "Changes",
@@ -8804,8 +8804,6 @@
         "concernsOpen": "Concerns open"
       },
       "notFilled": "Not filled in yet",
-      "activeSeen": "Active · last signed in {date}",
-      "inactiveOn": "Inactive since {date}",
       "action": {
         "deactivate": "Revoke",
         "reactivate": "Restore",

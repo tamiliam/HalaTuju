@@ -181,9 +181,6 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
                    stops_mentoring?: boolean }
 }
 
-/** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
- *  the editor may show, in the server's catalogue order; `editable` is false for a row nobody edits
- *  (an organisation admin, a super, a partner, your own). */
 /**
  * Sprint T3 (2026-11-09): ONE person page for every team member. The admin, reviewer and mentor detail
  * payloads each carry this same block (`apps/scholarship/staff_person.py`), so the page's header and
@@ -223,8 +220,16 @@ export interface TeamPersonBlock {
     languages: string[]
     other_language: string
   }
+  /** T3 review fix 1: false = the mentor route withheld the background fields (job title, about,
+   *  qualification, university, graduation year, field of study) — this viewer opens the person by no
+   *  admin or reviewer route. The page then draws no row for them (not "Not given": they are not shown
+   *  to you, which is not the same as not filled in). Missing (an older api) = served. */
+  profile_full?: boolean
 }
 
+/** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
+ *  the editor may show, in the server's catalogue order; `editable` is false for a row nobody edits
+ *  (an organisation admin, a super, a partner, your own). */
 export interface StaffPermissionsView {
   id: number
   name: string

@@ -417,6 +417,37 @@ export function MentorActions({ mentor: m, onChanged, onDeleted }: {
   )
 }
 
+/** T3 review fix 3: a STAFF mentor's **Remove from Mentors** (`stop`) on their person page — the table's
+ *  action and words: their scholars lose this mentor, the staff sign-in is untouched. Drawn only while they
+ *  mentor and the row's `manageable` says the endpoint will take it (their Revoke is `StaffPersonActions`). */
+export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow; onRemoved: () => void }) {
+  const { token } = useAdminAuth()
+  const { t } = useT()
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
+  if (!m.manageable || !m.staff_role || m.status !== 'active') return null
+  const stop = async () => {
+    if (!token || !window.confirm(t(`${K}.confirm.stop`, { name: m.name }))) return
+    setBusy(true); setActionError('')
+    try {
+      await mentorAction(m.id, 'stop', { token })
+      onRemoved()
+    } catch (err) {
+      const code = codeOf(err)
+      setActionError(t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`))
+    } finally { setBusy(false) }
+  }
+  return (
+    <div>
+      <button type="button" disabled={busy} data-testid="mentor-person-stop" onClick={() => void stop()}
+        className="max-md:inline-flex max-md:min-h-11 max-md:items-center text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+        {t(`${K}.action.stop`)}
+      </button>
+      {actionError && <p className="mt-1.5 text-sm text-critical-600" role="alert">{actionError}</p>}
+    </div>
+  )
+}
+
 /** Sprint T3 (M4): a mentor's figures, in the person page's header card. Nothing for a caller without
  *  the Scholars list's read key (`see_all`) — the Profile tab says why. */
 export function MentorFigures({ data }: { data: MentorDetailPayload }) {
