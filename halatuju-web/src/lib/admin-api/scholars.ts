@@ -113,6 +113,9 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'asked_for_help
   last_activity_at: string | null
   /** Maintenance S3: what the header may OFFER this officer (the server judges every request again). */
   controls?: ScholarControls
+  /** Sprint S1 (S1-h): this reader reads the file as its MENTOR — every tab, read-only (the server's
+   *  `scholars_scope` 'mentor'). Absent on an older payload: not a mentor view. */
+  mentor_view?: boolean
 }
 
 export interface ScholarControls {

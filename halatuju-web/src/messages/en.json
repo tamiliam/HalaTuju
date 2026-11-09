@@ -9467,7 +9467,7 @@
         "has_open_cases": "Reassign their cases first"
       },
       "inviteAdminNote": "An invited Admin starts with Applications and Scholars. Tick more admin permissions on Team after they join.",
-      "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students and their Profile.",
+      "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students, the files of their own students on Scholars (read-only) and their Profile.",
       "emails": {
         "aria": "Team emails",
         "adminTitle": "Admin emails",

@@ -148,7 +148,8 @@ class AdminScholarListView(_ScholarsBase):
 
 class AdminScholarFileView(_ScholarsBase):
     """GET admin/scholarship/scholars/<pk>/ — the file header + Overview cards. A mentor (S1-h) reads it
-    with every control off: the file is read-only to them."""
+    with every control off: the file is read-only to them, and `mentor_view` says so (the screen draws
+    every tab and no write from it, rather than working the scope out for itself)."""
     mentor_methods = ('get',)
 
     def get(self, request, pk):
@@ -161,7 +162,7 @@ class AdminScholarFileView(_ScholarsBase):
         if not (as_mentor or mentoring.may_read_mentoring(admin)):  # S7b: the Mentoring tab's readers' only
             body = {k: v for k, v in body.items() if k not in ('mentor', 'asked_for_help')}
         writes = not as_mentor
-        return Response({**body, 'controls': scholars.controls(
+        return Response({**body, 'mentor_view': as_mentor, 'controls': scholars.controls(
             app, can_write=writes and self._can_review_app(admin, app),
             can_hold=writes and payments.may_prepare(admin),
             can_review_results=writes and self._may_write_file(admin, app))})

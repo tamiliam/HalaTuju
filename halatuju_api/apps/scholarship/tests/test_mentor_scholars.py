@@ -91,7 +91,10 @@ class TestTheMentorReadsTheirStudents(_Base):
 
     def test_the_file_is_read_only_to_them(self):
         client = self.client_for()
-        controls = client.get(f'{API}{self.app.id}/').json()['controls']
+        body = client.get(f'{API}{self.app.id}/').json()
+        controls = body['controls']
+        self.assertIs(body['mentor_view'], True)
+        self.assertIs(authed_client(self.lead).get(f'{API}{self.app.id}/').json()['mentor_view'], False)
         self.assertFalse(controls['can_review_results'])
         self.assertFalse(controls['can_set_substate'])
         self.assertFalse(controls['can_hold'])

@@ -9467,7 +9467,7 @@
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
       "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Permohonan dan Penerima biasiswa. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
-      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka.",
+      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya, fail pelajar mereka sendiri dalam Penerima biasiswa (baca sahaja) dan Profil mereka.",
       "emails": {
         "aria": "E-mel pasukan",
         "adminTitle": "E-mel pentadbir",

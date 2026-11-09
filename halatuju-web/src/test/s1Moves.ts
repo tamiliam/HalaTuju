@@ -8,6 +8,10 @@
  * read it by one of those lose the row from every menu, and its page guard answers false. Nothing else moves:
  * the landing, the Guide, the Applications row and every other row answer as before.
  *
+ * S1-h (S1b): a MENTOR reads Scholars — its current students, read-only. A mentor login gains the row (its role,
+ * placed before My students) and its page guard; a reviewer who mentors keeps the row it held by `review`, now by
+ * its mentor record (`staffMentors`), so it moves nowhere.
+ *
  * S1-a / S1-g: the payload the server serves after S1 carries `scholars` for the super, the lead tier, the admin
  * preset and every saved list that held `see_all` (named, or brought by `qc`) — the data migration, courses 0095.
  * `s1Served` gives a BEFORE payload that key, so the shapes that keep the row are measured as the server serves
@@ -19,7 +23,10 @@ export const S1_HREF = '/admin/scholars'
 
 /** The shapes the Scholars row now refuses (they held it by `review`, `qc` or `see_all`). */
 export const S1_SHUT = ['qc', 'qc_alone', 'reviewer', 'reviewer_incomplete', 'reviewer_payments_check',
-  'finance_custom', 'reviewer_mentor']
+  'finance_custom']
+
+/** The shapes the Scholars row now OPENS that never had it (S1-h: a mentor login, by its role). */
+export const S1_MENTOR_OPENS = ['mentor']
 
 /** The shapes whose served `permissions` gain `scholars` (the preset or lead tier, or the migration). */
 export const S1_GAIN = ['super', 'reviewer_super', 'org_admin', 'org_admin_mentor', 'org_admin_reviews', 'admin',
@@ -30,10 +37,16 @@ const MENUS = ['menu', 'menuNoGift', 'menuNothingProbed'] as const
 
 /** The cells after S1 for `shape`, from the cells it would have without S1. */
 export function s1Moves(cells: Record<string, unknown>, shape: string): Record<string, unknown> {
-  if (!S1_SHUT.includes(shape)) return cells
   const out: Record<string, unknown> = { ...cells }
-  for (const m of MENUS) out[m] = (cells[m] as string[]).filter((id) => !id.startsWith('scholars:'))
-  out[`open ${S1_HREF}`] = false
+  if (S1_SHUT.includes(shape)) {
+    for (const m of MENUS) out[m] = (cells[m] as string[]).filter((id) => !id.startsWith('scholars:'))
+    out[`open ${S1_HREF}`] = false
+  } else if (S1_MENTOR_OPENS.includes(shape)) {
+    for (const m of MENUS) {
+      out[m] = (cells[m] as string[]).flatMap((id) => (id === 'myStudents:show' ? ['scholars:show', id] : [id]))
+    }
+    out[`open ${S1_HREF}`] = true
+  }
   return out
 }
 

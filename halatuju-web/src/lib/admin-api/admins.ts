@@ -107,7 +107,7 @@ export interface TeamTablePlan {
    *  Development, Sources, Mentors): a Remove from Reviewers (lead ruling Q2b) or a mentor login added to
    *  Admins. Said in plain words on the confirm (review 2026-11-03). */
   opens_admin_pages: boolean
-  /** T3: leaving their last staff table, they stay on as a mentor login (My students and Profile only). */
+  /** T3: leaving their last staff table, they stay on as a mentor login (My students, their own students on Scholars read-only, and Profile; S1). */
   becomes_mentor?: boolean
 }
 

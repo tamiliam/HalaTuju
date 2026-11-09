@@ -14,6 +14,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarsPage from './page'
 import * as api from '@/lib/admin-api'
+import { ProgrammeScopeProvider } from '@/lib/programmeScope'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
@@ -167,4 +168,30 @@ it('S7c: a role that does not see mentors gets no Mentor concerned pill', async 
   render(<ScholarsPage />)
   await screen.findAllByText(/NUR AISYAH/)
   expect(screen.queryByRole('tab', { name: /admin\.scholars\.filter\.mentorConcerned/ })).toBeNull()
+})
+
+it('sprint S1 (S1-h): a mentor login and staff who mentor open the list (the server lists their students)', async () => {
+  for (const who of [{ role: 'mentor', permissions: [] }, { role: 'reviewer', permissions: ['review'], mentoring: true }]) {
+    mockRole = { ...who, owning_org_id: 11 }
+    const { unmount } = render(<ScholarsPage />)
+    expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
+    expect(screen.queryByText('apiErrors.superAdminRequired')).toBeNull()
+    unmount()
+  }
+  mockApi.getScholars.mockClear()
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'], mentoring: false }
+  render(<ScholarsPage />)
+  expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+  expect(mockApi.getScholars).not.toHaveBeenCalled()
+})
+
+it('sprint S1 (S1-h): a mentor login never waits on the gift gate (the shell asks it no scopes)', async () => {
+  for (const r of ['mentor', 'org_admin']) {
+    mockRole = { role: r, owning_org_id: 11, permissions: [] }
+    const { unmount } = render(
+      <ProgrammeScopeProvider choices={[]} settled={false}><ScholarsPage /></ProgrammeScopeProvider>)
+    if (r === 'mentor') expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
+    else expect(screen.getByTestId('gift-wait')).toBeTruthy()      // staff still wait for the scopes
+    unmount()
+  }
 })

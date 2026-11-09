@@ -53,10 +53,14 @@ export default function ScholarsPage() {
 function StaffScholarsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)
+  // Sprint S1 (S1-h): staff who mentor open it by their mentor record, as My students.
+  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
   const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)   // T5c P4: the server's door
   const programme = useProgrammeParam()
-  const gate = useGiftGate(role)
+  // A MENTOR login has no gift to choose (S1-h: the server lists its own students; the shell asks no
+  // scopes for it, `AppShell`), so it never waits on the gift gate.
+  const giftGate = useGiftGate(role)
+  const gate = role?.role === 'mentor' ? 'open' : giftGate
 
   const [filter, setFilter] = useState<Filter>('all')
   const [typed, setTyped] = useState('')

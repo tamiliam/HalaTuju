@@ -148,8 +148,9 @@ describe('visibleNav per role', () => {
     // both are written for staff, and there is no source section in either yet.
     source_partner: ['programmeOverview', 'applications', 'scholars', 'profile'],
     // Student maintenance S7a (2026-10-31): a mentor has their Profile (the MentorProfile board); S7c
-    // adds My students, their landing. Nothing else. NO Guide / FAQ: both are written for staff.
-    mentor: ['programmes', 'myStudents', 'profile'],
+    // adds My students, their landing. Sprint S1 (S1-h) adds Scholars: their current students, read-only.
+    // Nothing else. NO Guide / FAQ: both are written for staff.
+    mentor: ['programmes', 'scholars', 'myStudents', 'profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -243,15 +244,19 @@ describe('visibleNav per role', () => {
     expect(canAccess('/admin/profile', 'mentor', [])).toBe(true)
     expect(canAccess('/admin/my-students', 'mentor', [])).toBe(true)
     expect(canAccess('/admin/my-students/104', 'mentor', [])).toBe(true)
+    // Sprint S1 (S1-h): Scholars, its current students only (the server narrows; 404 for anyone else's).
+    expect(canAccess('/admin/scholars', 'mentor', [])).toBe(true)
+    expect(canAccess('/admin/scholars/104', 'mentor', [])).toBe(true)
     // No staff role sees or opens it (the server refuses them too).
     for (const role of ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner'] as const) {
       expect(canAccess('/admin/my-students', role, [])).toBe(false)
     }
     for (const href of ['/admin', '/admin/organisation/mentors',
-      '/admin/programme/overview', '/admin/scholarship', '/admin/scholars', '/admin/guide', '/admin/faq']) {
+      '/admin/programme/overview', '/admin/scholarship', '/admin/scholarship/104', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'mentor', [])).toBe(false)
     }
-    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['organisation', 'mentoring', 'utility'])
+    expect(visibleNav(ctx('mentor')).map((g) => g.scope))
+      .toEqual(['organisation', 'programme', 'mentoring', 'utility'])
   })
 
   it('S7d: a staff member who mentors now gains My students and keeps their own menu and landing', () => {
@@ -259,8 +264,13 @@ describe('visibleNav per role', () => {
       const plain = visibleNav({ ...ctx(role), permissions: null })
       const mentoring = visibleNav({ ...ctx(role), permissions: null, mentoring: true })
       const ids = (gs: typeof plain) => gs.flatMap((g) => g.items.map((i) => i.id))
-      expect(ids(mentoring)).toEqual([...ids(plain).filter((id) => !['profile', 'guide', 'faq'].includes(id)),
+      // Sprint S1 (S1-h): and Scholars, after Applications, when their own keys do not open it already.
+      const before = ids(plain).filter((id) => !['profile', 'guide', 'faq'].includes(id))
+      const withScholars = before.includes('scholars') ? before
+        : before.flatMap((id) => (id === 'applications' ? [id, 'scholars'] : [id]))
+      expect(ids(mentoring)).toEqual([...withScholars,
         'myStudents', ...ids(plain).filter((id) => ['profile', 'guide', 'faq'].includes(id))])
+      expect(canAccess('/admin/scholars', role, ['review'], true)).toBe(true)
       expect(mentoring.find((g) => g.scope === 'mentoring')?.items.map((i) => i.id)).toEqual(['myStudents'])
       expect(canAccess('/admin/my-students', role, null, true)).toBe(true)
       expect(canAccess('/admin/my-students/7', role, null, true)).toBe(true)

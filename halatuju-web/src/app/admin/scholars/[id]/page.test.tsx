@@ -220,3 +220,34 @@ it('S10: a reviewer or QC sees no Growth tab', async () => {
   }
   expect(mockDev.getScholarGrowth).not.toHaveBeenCalled()
 })
+
+it('sprint S1 (S1-h): a mentor reads every tab of its student\'s file and is offered no write', async () => {
+  for (const who of [{ role: 'mentor', permissions: [] }, { role: 'reviewer', permissions: ['review'], mentoring: true }]) {
+    mockRole = { ...who, owning_org_id: 11 }
+    mockApi.getScholarFile.mockResolvedValue({ ...FILE, mentor_view: true, controls: { can_review_results: false,
+      can_set_substate: false, can_hold: false, close_reasons: [], close_refusal: 'sponsorship_open' } })
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    expect(mockApi.getScholarFile).toHaveBeenCalledWith(104, { token: 'tok' })
+    for (const tab of ['results', 'money', 'contract', 'letters', 'mentoring', 'surveys', 'growth', 'activity']) {
+      expect(screen.getByRole('tab', { name: `admin.scholars.tab.${tab}` })).toBeTruthy()
+    }
+    expect(screen.queryByTestId('scholar-controls')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'admin.scholars.file.viewApplication' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'admin.scholars.money.openPayments' })).toBeNull()
+    expect(await screen.findByTestId('activity-read-only')).toBeTruthy()
+    expect(screen.queryByPlaceholderText('admin.scholars.activity.placeholder')).toBeNull()
+    unmount()
+  }
+})
+
+it('sprint S1 (S1-h): staff who mentor open the page by their mentor record; without it, no key, no page', async () => {
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'] }
+  const { unmount } = render(<ScholarFilePage />)
+  expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+  expect(mockApi.getScholarFile).not.toHaveBeenCalled()
+  unmount()
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'], mentoring: true }
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+})

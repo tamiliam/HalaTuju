@@ -183,3 +183,13 @@ it('a refusal from the server is said in words', async () => {
   fireEvent.click(within(dialog).getByText(`${P}.dialog.issueAndEmail`))
   expect(await within(dialog).findByText(`${P}.error.confirm_mismatch`)).toBeTruthy()
 })
+
+it('sprint S1 (S1-h): read-only for a mentor — the letters show, no Resend, no Issue, no Withdraw', async () => {
+  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_issue: [], can_withdraw: false }))
+  mount({ readOnly: true, canClose: false })
+  const line = await screen.findByTestId('letter-not-emailed-2')
+  expect(line.textContent).toContain(`${P}.notEmailed`)
+  expect(within(line).queryByText(`${P}.resend`)).toBeNull()
+  expect(screen.queryByText(`${P}.issue`)).toBeNull()
+  expect(screen.queryByText(`${P}.withdraw`)).toBeNull()
+})
