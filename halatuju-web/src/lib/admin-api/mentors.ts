@@ -5,6 +5,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { TeamPersonBlock, TeamTableName } from './admins'
 
 export type MentorStatus = 'active' | 'invited' | 'inactive'
 export type MentorFluency = '' | 'conversational' | 'fluent'
@@ -142,6 +143,11 @@ export interface MentorDetail {
   }
   current: MentorScholarRow[]
   past: MentorScholarRow[]
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
+  /** Sprint T3 (D8): the tables THIS viewer may add a mentor's own login to — the Add endpoint's own rule
+   *  (`staff_tables_admin.addable_tables`). [] for a staff mentor and for a viewer who may not add. */
+  may_add?: TeamTableName[]
 }
 
 /** Team tables T3: the mentor detail page (super, org_admin, admin; org-fenced — 404 otherwise). */

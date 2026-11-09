@@ -35,7 +35,7 @@ export {
   changeAdminRole, changeTeamTable, getTeamCandidates,
 } from './admin-api/admins'
 export type {
-  AdminItem, TeamCandidate, TeamRemove, TeamTableName, TeamTablePlan,
+  AdminItem, TeamCandidate, TeamPersonBlock, TeamRemove, TeamTableName, TeamTablePlan,
 } from './admin-api/admins'
 
 // Every invitation this organisation has sent, of every kind.

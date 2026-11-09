@@ -1,16 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { Fragment, useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ComponentType } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { isSuperRole } from '@/lib/superRole'
 import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
-import { displayPhone } from '@/lib/reviewerDetail'
 import {
-  deleteMentor, getMentorDetail, getMentors, mentorAction,
+  deleteMentor, getMentors, mentorAction,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
   type MentorsPayload, type ScholarStanding,
 } from '@/lib/admin-api'
@@ -21,11 +20,12 @@ import StaffActions from '@/components/admin/StaffActions'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 
 /**
- * Team → **Mentors** and the **mentor detail** page (Team tables T3, 2026-11-03; the TeamMentors board the
- * owner approved; roadmap ruling 6). Before T3 this file was the Organisation → Mentors page (S7a–S7d); that
- * route now redirects here. ONE CHUNK for both screens: the Team page and the detail route each load it
- * through their own `lazySource` loader with this literal specifier, so no new chunk joins the webpack
- * runtime every route downloads (the S7b follow-up review's lesson).
+ * Team → **Mentors** and the mentor parts of a **person page** (Team tables T3, 2026-11-03; the TeamMentors
+ * board the owner approved; roadmap ruling 6). Before T3 this file was the Organisation → Mentors page
+ * (S7a–S7d); that route now redirects here. ONE CHUNK for both screens: the Team page and the person page
+ * (sprint T3 person page, 2026-11-09: `MentorFigures`, `MentorWork`, `MentorActions`) each load it with this
+ * literal specifier, so no new chunk joins the webpack runtime every route downloads (the S7b follow-up
+ * review's lesson).
  *
  * ⚠ ONE LIST, READ LIKE ADMINS AND REVIEWERS (owner 2026-11-08): the mentors who have ARRIVED (signed in)
  * plus every staff member who mentors, with a Status (Active / Revoked) and Last seen column. No
@@ -40,9 +40,11 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  * (endpoints `deactivate` / `reactivate`: their sign-in is switched off and back on). Offered only where
  * the row's `manageable` says the endpoint will take it; the confirm is the shared Sheet.
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; they are shown on the
- * mentor's page (the details box), not as table columns.
- * ⚠ THE DETAIL PAGE IS STAFF ONLY AND SHOWS NO MEETING NOTE: figures, scholars, dates, standing, concern
- * state. Notes stay on each scholar's file. Who reads it = who reads this table (`GET admin/mentors/<id>/`).
+ * mentor's person page (its Profile tab), not as table columns.
+ * ⚠ THE MENTOR PARTS OF A PERSON PAGE (Sprint T3: `MentorActions`, `MentorFigures`, `MentorWork`, drawn by
+ * `components/admin/person/TeamPersonPage`) ARE STAFF ONLY AND SHOW NO MEETING NOTE: figures, scholars,
+ * dates, standing, concern state. Notes stay on each scholar's file. Who reads them = who reads this table
+ * (`GET admin/mentors/<id>/`).
  * ⚠ `superRole` (a leaf), never `lib/navigation`: importing the route registry here split it into a shared
  * chunk once — one more runtime entry every route pays for (S7b follow-up review fix 5). The Team page
  * decides who sees the tab (`pageGuard.mayReadMentors`) and hands in its own "Also in" chips.
@@ -298,7 +300,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   )
 }
 
-// ── The mentor detail page ───────────────────────────────────────────────────────────────────────────
+// ── The mentor parts of a person page ───────────────────────────────────────────────────────────────────────────
 
 const CONCERN_TONE: Record<string, string> = {
   open: 'bg-caution-100 text-caution-800',
@@ -359,14 +361,16 @@ function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[
   )
 }
 
-/** Team → Mentors → a mentor: their work and how it is going (staff only; no meeting notes). `onDeleted`:
- *  the route's way back to the table after a delete (Sprint T2). */
-export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => void }) {
+/** Sprint T3: a PURE mentor's Revoke / Restore and Delete on their person page — the table's pair, by the
+ *  same rules (Sprint T2), in the place a staff person's `StaffPersonActions` sits (M5). Drawn only where
+ *  the row's `manageable` says the endpoint will take it; a staff mentor's are their staff actions. */
+export function MentorActions({ mentor: m, onChanged, onDeleted }: {
+  mentor: MentorRow
+  onChanged: (row: Pick<MentorRow, 'status' | 'deactivated_at'>) => void
+  onDeleted?: () => void
+}) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const [data, setData] = useState<MentorDetailPayload | null>(null)
-  const [failed, setFailed] = useState<'missing' | 'error' | null>(null)
-  // Sprint T2: the person page's Revoke / Restore and Delete — the table's pair, by the same rules.
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -374,16 +378,16 @@ export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => 
     const code = codeOf(err)
     setActionError(t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`))
   }
-  const toggle = async (m: MentorRow) => {
+  const toggle = async () => {
     const action = m.status === 'active' ? 'deactivate' : 'reactivate'
     if (!token || (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name })))) return
     setBusy(true); setActionError('')
     try {
       const row = await mentorAction(m.id, action, { token })
-      setData((d) => (d ? { ...d, mentor: { ...d.mentor, status: row.status, deactivated_at: row.deactivated_at } } : d))
+      onChanged({ status: row.status, deactivated_at: row.deactivated_at })
     } catch (err) { refusal(err) } finally { setBusy(false) }
   }
-  const remove = async (m: MentorRow) => {
+  const remove = async () => {
     if (!token) return
     setBusy(true); setActionError('')
     try {
@@ -392,114 +396,59 @@ export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => 
       onDeleted?.()
     } catch (err) { refusal(err); setBusy(false); setDeleting(false) }
   }
-
-  useEffect(() => {
-    if (!token || !id) return
-    let live = true
-    setData(null); setFailed(null)
-    getMentorDetail(id, { token })
-      .then((d) => { if (live) setData(d) })
-      .catch((e: { status?: number }) => { if (live) setFailed(e?.status === 404 ? 'missing' : 'error') })
-    return () => { live = false }
-  }, [token, id])
-
-  const back = (
-    <Link href="/admin/organisation/reviewers?tab=mentors" data-testid="mentor-back"
-      className="text-sm font-medium text-primary-600 hover:text-primary-800">← {t(`${K}.detail.back`)}</Link>
-  )
-  if (failed) {
-    return (
-      <div className="space-y-3">{back}
-        <p className="text-sm text-critical-600" role="alert">
-          {t(failed === 'missing' ? `${K}.detail.notFound` : `${K}.loadError`)}</p>
-      </div>
-    )
-  }
-  if (!data) return <div className="space-y-3">{back}<p className="text-sm text-ground-500">{t('common.loading')}</p></div>
-
-  const m = data.mentor
-  const f = data.figures
-  const langs = [...spokenCodes(m).map((c) => t(`admin.reviewers.lang.${c}`)),
-    ...(m.other_language ? [m.other_language] : [])].join(', ')
-  const sees = data.sees_scholars !== false && f !== null
-  const unset = (text: string) => <span className="text-ground-400">{text}</span>
-  // Owner 2026-11-08: the reviewer page's labelled fact sheet, not one unlabelled line.
-  const details: { key: string; label: string; value: ReactNode }[] = [
-    { key: 'email', label: t('admin.reviewers.detail.email'), value: m.email || unset('—') },
-    { key: 'phone', label: t('admin.reviewers.detail.phone'),
-      value: m.phone ? displayPhone(m.phone) : unset(t('admin.reviewers.detail.phoneNone')) },
-    { key: 'area', label: t(`${K}.col.area`), value: m.area || unset(t(`${K}.notFilled`)) },
-    { key: 'languages', label: t(`${K}.col.languages`), value: langs || unset(t(`${K}.notFilled`)) },
-  ]
-  const facts = [
-    ...(data.mentoring_since ? [t(`${K}.detail.since`, { date: formatDate(data.mentoring_since) })] : []),
-    m.last_seen_at ? t(`${K}.detail.lastSeen`, { date: formatDate(m.last_seen_at) }) : t(`${K}.detail.lastSeenUnknown`),
-  ]
-  const gap = !f || f.average_gap_days === null ? '-'
-    : t(f.average_gap_days === 1 ? `${K}.detail.oneDay` : `${K}.detail.days`, { n: String(f.average_gap_days) })
-
+  if (!m.manageable || m.staff_role) return null
   return (
-    <div className="space-y-5" data-testid="mentor-detail">
-      {back}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-ground-900 sm:text-2xl">{m.name}</h1>
-          <p className="mt-1 text-sm text-ground-600" data-testid="mentor-facts">{facts.join(' · ')}</p>
-          {(m.staff_role || m.status === 'inactive') && (
-            <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
-              {m.staff_role && <span className="rounded-full bg-info-50 px-2 py-0.5 text-info-800">
-                {t(`${K}.staffTag`, { role: t(`admin.role.${m.staff_role}`) })}</span>}
-              {/* A pure mentor switched off reads Revoked, as on the table; a staff mentor taken off reads Inactive. */}
-              {m.status === 'inactive' && (m.staff_role
-                ? <span className="rounded-full bg-ground-100 px-2 py-0.5 text-ground-600">{t(`${K}.status.inactive`)}</span>
-                : <span className={`rounded-full px-2 py-0.5 ${STAFF_STATUS_TONE.revoked}`}>{t('admin.revoked')}</span>)}
-            </p>
-          )}
-        </div>
-        {/* Sprint T2: a pure mentor's Revoke / Restore and Delete, as on the table (a staff mentor's are
-            their staff page's). */}
-        {m.manageable && !m.staff_role && (
-          <div className="flex flex-wrap items-center gap-4" data-testid="mentor-person-actions">
-            <StaffActions size="sm" active={m.status === 'active'} busy={busy}
-              revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
-              onToggle={() => void toggle(m)} onDelete={() => setDeleting(true)}
-              deletable={m.deletable} deleteNever={m.delete_never} work={m.work} orgAdmin={!!m.lead}
-              viewerSuper={isSuperRole(role)} />
-          </div>
-        )}
+    <div>
+      <div className="flex flex-wrap items-center gap-4" data-testid="mentor-person-actions">
+        <StaffActions size="sm" active={m.status === 'active'} busy={busy}
+          revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
+          onToggle={() => void toggle()} onDelete={() => setDeleting(true)}
+          deletable={m.deletable} deleteNever={m.delete_never} work={m.work} orgAdmin={!!m.lead}
+          viewerSuper={isSuperRole(role)} />
       </div>
-      {actionError && <p className="text-sm text-critical-600" role="alert">{actionError}</p>}
+      {actionError && <p className="mt-1.5 text-sm text-critical-600" role="alert">{actionError}</p>}
       {deleting && (
         <TypedConfirmDialog busy={busy} phrase={m.email}
           title={t('admin.programmes.deleteTitle', { name: m.name })}
           body={t(`${K}.deleteBody`)} cta={t('admin.delete')}
-          onCancel={() => setDeleting(false)} onConfirm={() => void remove(m)} />
+          onCancel={() => setDeleting(false)} onConfirm={() => void remove()} />
       )}
-      <section className="rounded-xl border bg-ground-0" data-testid="mentor-details">
-        <h2 className="border-b px-4 py-3 text-sm font-semibold text-ground-900 sm:px-5">
-          {t('admin.reviewers.detail.about')}</h2>
-        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2.5 px-4 py-4 sm:px-5">
-          {details.map((d) => (
-            <Fragment key={d.key}>
-              <dt className="whitespace-nowrap text-sm text-ground-500">{d.label}</dt>
-              <dd className="m-0 break-words text-sm text-ground-900" data-testid={`mentor-detail-${d.key}`}>{d.value}</dd>
-            </Fragment>
-          ))}
-        </dl>
-      </section>
-      {/* T3 review: the scholar side needs the Scholars list's read key (`see_all`). */}
-      {!sees || !f ? (
-        <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">
-          {t(`${K}.detail.needSeeAll`)}</p>
-      ) : (<>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Tile testId="tile-scholars" label={t(`${K}.detail.tile.scholarsNow`)} value={String(f.scholars_now)} />
-        <Tile testId="tile-meetings" label={t(`${K}.detail.tile.meetings90`)} value={String(f.meetings_90)} />
-        <Tile testId="tile-gap" label={t(`${K}.detail.tile.averageGap`)} value={gap} />
-        <Tile testId="tile-concerns" label={t(`${K}.detail.tile.concerns`)}
-          value={`${f.concerns_raised} / ${f.concerns_open}`} />
-      </div>
+    </div>
+  )
+}
 
+/** Sprint T3 (M4): a mentor's figures, in the person page's header card. Nothing for a caller without
+ *  the Scholars list's read key (`see_all`) — the Profile tab says why. */
+export function MentorFigures({ data }: { data: MentorDetailPayload }) {
+  const { t } = useT()
+  const f = data.figures
+  if (data.sees_scholars === false || !f) return null
+  const gap = f.average_gap_days === null ? '-'
+    : t(f.average_gap_days === 1 ? `${K}.detail.oneDay` : `${K}.detail.days`, { n: String(f.average_gap_days) })
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="mentor-figures">
+      <Tile testId="tile-scholars" label={t(`${K}.detail.tile.scholarsNow`)} value={String(f.scholars_now)} />
+      <Tile testId="tile-meetings" label={t(`${K}.detail.tile.meetings90`)} value={String(f.meetings_90)} />
+      <Tile testId="tile-gap" label={t(`${K}.detail.tile.averageGap`)} value={gap} />
+      <Tile testId="tile-concerns" label={t(`${K}.detail.tile.concerns`)}
+        value={`${f.concerns_raised} / ${f.concerns_open}`} />
+    </div>
+  )
+}
+
+/** Sprint T3 (M6): the mentor parts of a person's Profile tab — beside the reviewer parts for somebody
+ *  in both tables: their scholars now and past. Staff only; never a meeting note. */
+export function MentorWork({ data }: { data: MentorDetailPayload }) {
+  const { t } = useT()
+  // T3 review: the scholar side needs the Scholars list's read key (`see_all`).
+  if (data.sees_scholars === false || !data.figures) {
+    return (
+      <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">
+        {t(`${K}.detail.needSeeAll`)}</p>
+    )
+  }
+  return (
+    <div className="space-y-5" data-testid="mentor-work">
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-ground-900">{t(`${K}.detail.currentTitle`)}</h2>
         {data.current.length === 0
@@ -513,7 +462,6 @@ export function MentorDetail({ id, onDeleted }: { id: number; onDeleted?: () => 
         </section>
       )}
       <p className="text-xs text-ground-500">{t(`${K}.detail.note`)}</p>
-      </>)}
     </div>
   )
 }

@@ -7,7 +7,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
-import type { TeamRemove } from './admins'
+import type { TeamPersonBlock, TeamRemove } from './admins'
 
 /**
  * Step a reviewer back from NEW work, or bring them back — the admin's route (super/org_admin).
@@ -158,6 +158,8 @@ export interface AdminReviewerDetail extends AdminReviewer {
   /** #39 S4: would the pause endpoint ACCEPT this person (`set_paused`'s own target rule)? Absent
    *  on an older payload, which is read as "yes" — what the page assumed before it existed. */
   pausable?: boolean
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
 }
 
 export async function listReviewers(

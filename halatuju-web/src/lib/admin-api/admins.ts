@@ -184,6 +184,47 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
 /** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
  *  the editor may show, in the server's catalogue order; `editable` is false for a row nobody edits
  *  (an organisation admin, a super, a partner, your own). */
+/**
+ * Sprint T3 (2026-11-09): ONE person page for every team member. The admin, reviewer and mentor detail
+ * payloads each carry this same block (`apps/scholarship/staff_person.py`), so the page's header and
+ * Profile tab read one shape whichever link opened it. Optional on each payload: an api a few minutes
+ * behind this page omits it.
+ *
+ * ⚠ THE HOME ADDRESS IS NEVER IN IT; the phone only under the screen's existing rule (role-matrix.md).
+ */
+export interface TeamPersonBlock {
+  admin_id: number
+  /** Their Mentors-table record while they mentor (the mentor detail's id), else null. */
+  mentor_id: number | null
+  name: string
+  email: string
+  /** The tables they sit in (`staff_tables.tables`) — the "Also in" chips' own source. */
+  tables: string[]
+  /** The organisation admin ("Admin (lead)"). */
+  lead: boolean
+  /** A mentor's own login: no staff role, so no permissions to change (D8). */
+  mentor_only: boolean
+  is_active: boolean
+  paused: boolean
+  joined_at: string | null
+  /** False = no sign-in RECORDED yet, never proof they have not come. */
+  signed_in: boolean
+  last_seen_at: string | null
+  /** '' / null / [] = not filled in ("Not given"). */
+  profile: {
+    job_title: string
+    about: string
+    qualification: string
+    university: string
+    graduation_year: number | null
+    field_of_study: string
+    phone: string
+    /** Spoken conversationally or better, in en · ms · ta order. */
+    languages: string[]
+    other_language: string
+  }
+}
+
 export interface StaffPermissionsView {
   id: number
   name: string
@@ -213,6 +254,8 @@ export interface StaffPermissionsView {
   /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
   revocable?: boolean
   work?: Record<string, number>
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
 }
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set

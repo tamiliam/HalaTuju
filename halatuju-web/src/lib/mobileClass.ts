@@ -193,7 +193,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m8-reviewer-detail'] },
   '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7' },   // T3: the mentor detail page
+  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7', surfaces: ['t3-mentor-person'] },   // T3: one person page
   '/admin/programme': {
     cls: 'can', sprint: 'M7',
     surfaces: ['programme-config', 'programme-config-lean', 'programme-config-two-gifts'],
