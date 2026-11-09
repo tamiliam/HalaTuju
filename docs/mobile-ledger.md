@@ -136,7 +136,6 @@ Component galleries — measured, but no single route is "them".
 | `header-signed-in-menu-bursary` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `header-signed-out` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `header-signed-out-menu` | 6 | 0 | 0 | 0 | 0 | ✅ |
-| `m8-organisation` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `onboarding-stepper` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `pieces` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `sheet-locked-confirm` | 6 | 0 | 0 | 0 | 0 | ✅ |

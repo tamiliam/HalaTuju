@@ -2634,42 +2634,6 @@
       "smallTargets": 0,
       "spills": 0
     },
-    "sandbox:m8-organisation @360 en": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
-    "sandbox:m8-organisation @360 ms": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
-    "sandbox:m8-organisation @360 ta": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
-    "sandbox:m8-organisation @390 en": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
-    "sandbox:m8-organisation @390 ms": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
-    "sandbox:m8-organisation @390 ta": {
-      "overflow": 0,
-      "smallInputs": 0,
-      "smallTargets": 0,
-      "spills": 0
-    },
     "sandbox:m8-overview-org-admin @360 en": {
       "overflow": 0,
       "smallInputs": 0,

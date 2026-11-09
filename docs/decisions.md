@@ -16,6 +16,9 @@
 - **P1-g, composer.** One line until focused; then three rows, the Staff only `Toggle` (never a checkbox), Cancel and Save. Save, Cancel, or Esc on an empty box closes it. A closed file stays read-only, with no composer.
 - **P1-h:** the roadmap's "See all (n)" is dropped; "Show older" replaces it.
 - **Cost:** one login query and one batch photo-signing call per request, whatever the page holds (`activity_people.Actors`). The photo links last about an hour and are never kept beyond the page.
+- **Review fixes (same day):** the API sends `actor_email` only for a writer who matches nobody (`kind == 'unknown'`); a known login or the scholar gets it blank. A failed photo signing never fails the read (initials, one PII-free warning). The side panel and "Show older" send `?counts=0`; the GET is pinned at 6 queries. "Show older" follows the server's paging (`page × size < count`, and stops when the server clamps the page), and every reply is checked for staleness so a filter switch, a Save and a "Show older" never lose or repeat a row. A Save under System switches to All. The scroller is a labelled, keyboard-reachable region; `overscroll-contain` only from `md` up (Mobile rule 15); the phone height stays 55dvh until the owner decides.
+- ⚠ **Across organisations (left as is; owner asked):** the writer's login is matched by email across organisations, so a super admin or another organisation's admin who wrote a row is shown by name and photo to this organisation's reviewer or QC. Recorded in `docs/scholarship/role-matrix.md`.
+- **Revisit if** officers work outside Malaysia or the box must show the viewer's own time zone: "Yesterday" and the dates are fixed to Asia/Kuala_Lumpur, and the relative words are computed from the browser's clock.
 
 ## A degree student gets a degree funding estimate; every skills / TVET course is estimated — 2026-11-07 (bug fix; owner decisions 1-12, app 278)
 
