@@ -100,7 +100,7 @@ from apps.scholarship.eval.offer_fresh_gemini import (
     IMAGE_TOKENS_HIGH_A4, IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
     StopRun, _refuse_db, call_cost_usd, error_code, guarded_production_read,
     bootstrap_django, image_tokens_estimate, load_gemini_key, price_for, print_costs, prompt_of,
-    sha256_text, usage_of, usd_to_myr)
+    package_sha, sha256_text, usage_of, usd_to_myr)
 
 __all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
            'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code',
@@ -178,17 +178,6 @@ def _file_sha(path):
         return hashlib.sha256(fh.read()).hexdigest()
 
 
-def _package_sha(module):
-    """One sha over every .py file of a package, in name order (the vision package is many files)."""
-    h = hashlib.sha256()
-    pkg_dir = os.path.dirname(module.__file__)
-    for name in sorted(n for n in os.listdir(pkg_dir) if n.endswith('.py')):
-        h.update(name.encode('utf-8'))
-        with open(os.path.join(pkg_dir, name), 'rb') as fh:
-            h.update(fh.read())
-    return h.hexdigest()
-
-
 def code_versions():
     """What identifies the reader run: git, file and schema hashes, and (S4) the offer reader version."""
     from apps.scholarship import offer_reader, vision
@@ -198,7 +187,7 @@ def code_versions():
     except ImportError:
         sdk = None
     schema = vision._FIELD_SCHEMAS.get(DOC_TYPE)
-    return {'git_head': _git_head(), 'vision_py_sha256': _package_sha(vision),
+    return {'git_head': _git_head(), 'vision_py_sha256': package_sha(vision),
             'schema_sha256': sha256_text(json.dumps(schema, sort_keys=True, default=str)),
             'genai_sdk': sdk, 'offer_reader_version': offer_reader.OFFER_READER_VERSION,
             'offer_reader_py_sha256': _file_sha(offer_reader.__file__)}
