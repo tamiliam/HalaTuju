@@ -202,7 +202,8 @@ export interface StaffPermissionsView {
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set
  *  back to the new role's preset. ⚠ `by_super` with a blank `by` is a change made by the HalaTuju
- *  team: the server never hands a super's address to an organisation, so the screen names the team. */
+ *  team: the server never hands a super's address to an organisation, so the screen names the team.
+ *  `by_migration` = a data migration made it (nobody clicked); `by` is blank and the screen says so. */
 export interface StaffPermissionChangeRow {
   kind: 'edit' | 'role_change' | string
   role: string
@@ -213,6 +214,8 @@ export interface StaffPermissionChangeRow {
   at: string
   by: string
   by_super: boolean
+  /** Absent from an older api. */
+  by_migration?: boolean
 }
 
 /** The server's answer to a save or a dry run: the set it would hold, what differs from the set it

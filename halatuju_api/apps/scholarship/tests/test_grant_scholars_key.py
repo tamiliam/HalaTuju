@@ -8,11 +8,11 @@ audit truthful, and reverses cleanly, touching no audit row it did not write. Ru
 from importlib import import_module
 
 from django.apps import apps as live_apps
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import StaffPermissionChange
-from apps.scholarship.tests.factories import make_admin, make_org
+from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
 
 MIGRATION = import_module('apps.courses.migrations.0095_grant_scholars_key')
 
@@ -96,3 +96,13 @@ class GrantScholarsKey(TestCase):
         self.assertEqual(sorted(undone), sorted(p.pk for p in self.gain.values()))
         self.assertEqual(StaffPermissionChange.objects.filter(pk__in=[other.pk, unrelated.pk]).count(), 2)
         self.assertEqual(self._stored()[self.keep['already'].pk], ['see_all', 'scholars'])
+
+    @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+    def test_the_persons_changes_say_a_migration_made_it(self):
+        MIGRATION.grant_scholars(live_apps, None)
+        target = self.gain['admin_see_all']
+        res = authed_client(self.keep['lead']).get(f'/api/v1/admin/admins/{target.pk}/permissions/')
+        self.assertEqual(res.status_code, 200, res.content)
+        row = res.json()['history'][0]
+        self.assertEqual((row['by'], row['by_super'], row['by_migration'], row['added']),
+                         ('', False, True, ['scholars']))

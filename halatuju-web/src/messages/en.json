@@ -8424,6 +8424,7 @@
       "roleReset": "Reset to the {role} set by a role change",
       "byAt": "By {by}, {at}",
       "team": "the HalaTuju team",
+      "migration": "a system migration",
       "empty": "No changes yet. {name} has the {role} set."
     },
     "permissionsReset": "Their custom permissions go back to the new role’s set.",

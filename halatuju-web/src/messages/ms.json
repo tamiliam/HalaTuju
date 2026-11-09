@@ -8424,6 +8424,7 @@
       "roleReset": "Diset semula kepada set {role} oleh perubahan peranan",
       "byAt": "Oleh {by}, {at}",
       "team": "pasukan HalaTuju",
+      "migration": "migrasi sistem",
       "empty": "Belum ada perubahan. {name} mempunyai set {role}."
     },
     "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu.",

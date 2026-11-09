@@ -252,15 +252,18 @@ describe('Changes', () => {
     await open({ ...ROHINI, history: [
       change({ added: ['spending'], removed: ['payments_approve'] }),
       change({ kind: 'role_change', role: 'qc', by: '', by_super: true }),
+      change({ added: ['scholars'], by: '', by_migration: true }),
     ] })
     const items = within(screen.getByTestId('permission-history')).getAllByRole('listitem')
-    expect(items).toHaveLength(2)
+    expect(items).toHaveLength(3)
     expect(items[0].textContent).toContain(
       'admin.permHistory.on(perm=admin.perm.spending.name) · admin.permHistory.off(perm=admin.perm.payments_approve.name)')
     expect(items[0].textContent).toContain(`admin.permHistory.byAt(by=Priya Lead;at=${formatDateTime(AT)})`)
     expect(items[1].textContent).toContain('admin.permHistory.roleReset(role=admin.role.qc)')
     // A super's change names the team, never an address.
     expect(items[1].textContent).toContain('by=admin.permHistory.team')
+    // A data migration's change (sprint S1) says so, never a blank "by".
+    expect(items[2].textContent).toContain('by=admin.permHistory.migration')
   })
 
   it('says there is nothing yet, naming the set the person holds', async () => {
