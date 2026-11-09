@@ -107,7 +107,7 @@ TD-465 (high), CO-09 (medium), TD-459 (medium), CO-05 (medium), SP-01 and SP-02 
 | CO-07 | "Coming soon" screens (billing card, sponsor portal, trust hub, guide) | low | Not re-checked. |
 | CO-08 | WhatsApp STOP inert until Twilio webhook set (TD-318) | medium | Owner action. Not re-checked. |
 | CO-09 | No award withdrawal | medium (money) | Confirmed. |
-| CO-10 | Document-reading gaps (corpus brief, S7 frozen, TD-114, TD-399) | medium | Not re-checked. |
+| CO-10 | Document-reading gaps (corpus brief, S7 frozen, TD-114, TD-399) | medium | Re-checked 2026-11-09 (Sprint A2.8b). The corpus brief and its roadmap are done (C1-C4 live 2026-10-26); the TVET families stay data-gated, and the S6 owner ruling (Q2) already reads closed-list public TVET offers as genuine. S7 (the paid live re-score) stays frozen and was not touched: the eval now scores offer letters from their stored scores, which match the owner rulings (286/287; the one miss, a391, predates this sprint). TD-114 and TD-399 stay with the owner. |
 | CO-11 | About 92 plan files, most with no Status line | medium | Not re-checked. |
 | CO-12 | Vocabularies that are not yet a gate | medium | Not re-checked. |
 | CO-13 | 25 owner-decision TDs waiting | medium | Not re-checked. |

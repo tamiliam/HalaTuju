@@ -136,7 +136,15 @@ def student_income_ic_check(doc):
 
     # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
     # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.
-    proof_kind, p_name, p_nric = _cluster_proof_identity(app, member) if member else ('', '', '')
+    # TD-119 (A2.8b): on the STR route the STR is the DECLARED EARNER's document, so only the earner's
+    # card is checked against it (architecture doc section 4: a non-earner parent's IC has no proof to
+    # match, so it is not flagged) - the same rule ``parent_ic_reference`` keeps. Comparing a father's
+    # card with the mother's STR raised a false name/number mismatch.
+    earner = (getattr(app, 'income_earner', '') or '').strip()
+    non_earner_on_str = ((getattr(app, 'income_route', '') or '').strip() == 'str'
+                         and bool(earner) and member != earner)
+    proof_kind, p_name, p_nric = (_cluster_proof_identity(app, member) if member and not non_earner_on_str
+                                  else ('', '', ''))
     proof_name_status = _name_bucket(name, p_name)
     proof_nric_status = _nric_bucket(nric, p_nric)
 

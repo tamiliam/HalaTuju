@@ -236,8 +236,8 @@ Class C at medium or large size, and class D that is small.
 - **TD-215** — The donor-pitch email exists only in English. *(C · M)*
 - **TD-155** — Partners have no Scholarship view of the students they referred. *(C · M · a planned feature)*
 - **TD-132** — Sponsor portal wording, English and Tamil, was never reviewed by the owner. *(C · M)*
-- **TD-119** — Eight genuine family documents are still wrongly flagged in the test set. *(C · M · partly done)*
-- **TD-111** — Some detected anomalies are never put to the student as questions. *(C · M · partly done)*
+- ~~**TD-119**~~ **FIXED 2026-11-09 (Sprint A2.8b: the STR non-earner rule fixed; every other miss relabelled by owner ruling or explained in labels.json; a16 left as an owner design case)** — Eight genuine family documents are still wrongly flagged in the test set. *(C · M)*
+- ~~**TD-111**~~ **FIXED 2026-11-09 (Sprint A2.8b: a routing critic test fails on any anomaly with no officer line or decision path; widening the student bridge stays an owner ruling)** — Some detected anomalies are never put to the student as questions. *(C · M)*
 - **TD-077** — Course names show a bare # where an Interview label is meant. *(C · M · looked at 2026-10-04: needs new copy in three languages and a Stitch-approved badge)*
 - **TD-068** — A contractual decline sends the generic email. *(C · M · partly done · same ruling as TD-227)*
 - **TD-141** — A parent surety can sign only on the student's device. *(C · L · rides with TD-140)*
@@ -272,7 +272,7 @@ Do one only when a sprint is already in that file.
 - **TD-212** — The email-template table is still named partner. *(D · M)*
 - **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
-- **TD-121** — The document test scorecard ignores the genuineness check. *(D · M)*
+- ~~**TD-121**~~ **FIXED 2026-11-09 (Sprint A2.8b: the corpus scorecard reads the stored genuineness score)** — The document test scorecard ignores the genuineness check. *(D · M)*
 - **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)* **Fixed in code 2026-11-07 (Sprint A1.10b): every reader uses the role; migration courses 0093; open until the owner applies STEP 1 before the push and drops the column after the deploy. See the detail entry.**
@@ -1796,7 +1796,11 @@ Each is an open entry with a defining line in the register body (read it there).
   returns a `'pending'` (not-yet-scanned → hold the task) state that the consent-gate blockers don't have — by design
   (the pre-submit gate's wizard is still open), but a future shared helper must keep the `'pending'` branch on the
   Action-Centre side only.
-- **TD-111**: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
+- **TD-111**: ✅ **FIXED 2026-11-09** — Sprint A2.8b: tests/test_anomaly_coverage_critic.py discovers every flag from
+  anomaly_engine (AST, no list to keep) and FAILS if one has no officer reason line in en/ms/ta, no decision path (the
+  two vision identity flags go to ic_identity_blockers) or a dead Check-2 bridge. All 19 flags were already routed.
+  Putting more flags to the STUDENT (e.g. funding_other_without_note) is a design change left for the owner.
+  Original entry: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
   student-answerable issues are silently dropped.** Check-2's student clarify questions come from a FIXED 4-item list
   (`check2_queries.CLARIFY_SPECS`: course/sibling/device/transport) tied to STEP-1 completeness gaps; the
   `anomaly_engine` detects more (`funding_other_without_note`, `device_in_funding`, …) but those stay OFFICER-only
@@ -1899,7 +1903,12 @@ Each is an open entry with a defining line in the register body (read it there).
   some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
   them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
   2026-06-15.)
-- **TD-119**: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
+- **TD-119**: ✅ **FIXED 2026-11-09** — Sprint A2.8b: the one rule defect (on the STR route a non-earner parent's IC
+  was cross-checked against an STR that names only the earner) is fixed in identity_checks.student_income_ic_check,
+  with tests/test_td119_non_earner_str_card.py. a5 (two docs) is relabelled red by the owner's IC-chain ruling; the
+  rest are explained in labels.json corpus_known (stale snapshots, never-read docs, applicant typos). Left open: a16
+  parent IC is a design case (a proof match vs a relationship gap, needs Layer-1 gating first; owner decision).
+  Original entry: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
   `birth_certificate`, 1 `epf`, 1 `str`, 1 `offer_letter` (mismatch), 1 `offer_letter` (unreadable) as genuine-docs-
   wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of
   the same class as the results-slip ones. **To resolve:** run the diagnose → fix → test loop per type (the
@@ -1927,7 +1936,10 @@ Each is an open entry with a defining line in the register body (read it there).
   `docsDrawer.*` — so a naive bulk delete would break the UI), removes only the confirmed-dead, and keeps en/ms/ta parity.
   Worth pairing with a guardrail (an i18n orphan-key check) so the set stops regrowing. (Logged 2026-06-16. NB: the
   unmerged `feature/doc-eval-harness` branch reserves TD-119 for its own corpus-flag debt — hence this is TD-120.)
-- **TD-121**: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
+- **TD-121**: ✅ **FIXED 2026-11-09** — Sprint A2.8b: eval_doc_recognition --auto-ok now reads each document's STORED
+  genuineness (never re-scored), counts a counter-example caught by genuineness alone, walks only doc-type folders,
+  and reads the owner's offer rulings from offer_genuineness_expect.json.
+  Original entry: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
   `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
   `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
   shows as a content false-negative even though the new signature scorer + cap would flag it `suspect` in production.
