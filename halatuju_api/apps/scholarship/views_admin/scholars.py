@@ -135,7 +135,9 @@ class AdminScholarListView(_ScholarsBase):
         # S7b: the mentor column, the two Mentoring pills and their counts are for the roles that
         # see the Mentoring tab (`mentoring.may_read_mentoring`, TD-498: a read); for the rest the keys are absent.
         sees_mentors = scope == 'mentor' or mentoring.may_read_mentoring(admin)
-        qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
+        staff = scope != 'mentor'                   # a mentor's "last activity" skips Staff-only rows
+        qs = scholars.filter_rows(scholars.annotate(scoped(closed), with_internal=staff),
+                                  substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1',
                                   search=people_search_term(request, 'search'),  # TD-421
                                   below=below if wanted == 'below_minimum' else None,
@@ -147,7 +149,7 @@ class AdminScholarListView(_ScholarsBase):
         size = _int(q.get('page_size'), 25, 1, scholars.MAX_PAGE_SIZE)
         page = _int(q.get('page'), 1, 1, max(1, -(-count // size)))
         page_rows = list(qs[(page - 1) * size:page * size])
-        summary = scholars.summary(scholars.annotate(scoped(None)), below, overdue)
+        summary = scholars.summary(scholars.annotate(scoped(None), with_internal=staff), below, overdue)
         results = scholars.rows(page_rows)
         if not sees_mentors:
             summary = {k: v for k, v in summary.items() if k not in scholars.MENTORING_KEYS}
@@ -167,8 +169,8 @@ class AdminScholarFileView(_ScholarsBase):
         if err:
             return err
         from .. import payments
-        body = scholars.file_payload(app)
         as_mentor = self._as_mentor(admin)
+        body = scholars.file_payload(app, with_internal=not as_mentor)
         if not (as_mentor or mentoring.may_read_mentoring(admin)):  # S7b: the Mentoring tab's readers' only
             body = {k: v for k, v in body.items() if k not in ('mentor', 'asked_for_help')}
         writes = not as_mentor

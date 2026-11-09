@@ -11,6 +11,7 @@ Brief `docs/plans/2026-11-09-s1-scholars-access.md`; decisions.md "S1". Pinned t
   * a mentor who also holds `scholars` reads the whole organisation (`scholars_scope` 'all' wins).
 The sweep of every other admin route is `test_mentor_denied_everywhere.py`.
 """
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.core import mail
@@ -19,7 +20,7 @@ from django.utils import timezone
 
 from apps.courses.models_claim import ProfileLoginAlias
 from apps.scholarship import activity, mentoring
-from apps.scholarship.models import Mentor, MentorAssignment, ModuleProgress
+from apps.scholarship.models import Mentor, MentorAssignment, ModuleProgress, StudentActivity
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_student
 from apps.scholarship.tests.test_development import _module
 from apps.scholarship.tests.test_mentoring import _scholar, make_mentor
@@ -154,6 +155,21 @@ class TestStaffOnlyRowsStayWithStaff(_Base):
         self.assertEqual(side['count'], len([r for r in side['results']]))
         # P1: a known person is served by name, never by email
         self.assertTrue(all(r['actor_email'] == '' for r in mine['results'] if r['actor']))
+
+    def test_a_staff_only_row_never_moves_their_last_activity(self):
+        StudentActivity.objects.filter(application=self.app).delete()
+        seen = activity.add_entry(self.app, 'note', 'Called the student.', actor_email=self.lead.email)
+        hidden = activity.add_entry(self.app, 'note', 'For the team only.', actor_email=self.lead.email,
+                                    internal=True)
+        StudentActivity.objects.filter(pk=seen.pk).update(created_at=timezone.now() - timedelta(days=3))
+        seen.refresh_from_db()
+
+        def dates(client):
+            listed = {r['id']: r['last_activity_at'] for r in client.get(API).json()['results']}
+            return listed[self.app.id], client.get(f'{API}{self.app.id}/').json()['last_activity_at']
+        mine, staff = dates(self.client_for()), dates(authed_client(self.lead))
+        self.assertEqual({d[:19] for d in mine}, {seen.created_at.isoformat()[:19]})
+        self.assertEqual({d[:19] for d in staff}, {hidden.created_at.isoformat()[:19]})
 
 
 class TestStaffWhoMentor(_Base):

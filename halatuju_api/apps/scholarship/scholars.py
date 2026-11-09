@@ -97,15 +97,23 @@ def base_queryset(*, closed=False):
     return ScholarshipApplication.objects.filter(q)
 
 
-def annotate(qs):
-    """The per-row facts a list needs, as subqueries on ONE query (no per-row read)."""
+def _activity(application, with_internal):
+    """A file's log rows for `last_activity_at`. A mentor (`with_internal=False`) never reads a
+    Staff-only (`internal`) row, so its date never moves their "last activity" (sprint S1)."""
+    rows = StudentActivity.objects.filter(application=application)
+    return rows if with_internal else rows.filter(internal=False)
+
+
+def annotate(qs, *, with_internal=True):
+    """The per-row facts a list needs, as subqueries on ONE query (no per-row read). A mentor's list
+    passes `with_internal=False`: the same subquery, filtered, so still no per-row read."""
     return (qs.select_related('profile', 'programme', 'owning_organisation__configuration')
             .annotate(latest_cgpa=_latest('cgpa'), latest_semester=_latest('semester'),
                       latest_result_at=_latest('created_at'), latest_graduated=_latest('graduated'),
                       pending_review=Exists(SemesterResult.objects.filter(
                           application=OuterRef('pk'), review_status=PENDING)),
                       last_activity_at=Subquery(
-                          StudentActivity.objects.filter(application=OuterRef('pk'))
+                          _activity(OuterRef('pk'), with_internal)
                           .order_by('-created_at', '-id').values('created_at')[:1]),
                       # S4b: her earliest OPEN result term — its due date (past = late) and start.
                       next_due=Subquery(_open_term(OuterRef('pk')).values('due_on')[:1]),
@@ -313,8 +321,9 @@ def _asked(app):
     return h['university'] or h['scholarship'] or h['flagged']
 
 
-def file_payload(app):
-    """The file header + Overview cards for ONE application the view has fenced."""
+def file_payload(app, *, with_internal=True):
+    """The file header + Overview cards for ONE application the view has fenced. A mentor's file
+    passes `with_internal=False` (its "last activity" ignores Staff-only rows)."""
     from . import results_expectations
     from .payments import _remaining, paid_to_date
     latest = latest_accepted(app)
@@ -324,7 +333,7 @@ def file_payload(app):
     last = (Disbursement.objects.filter(application=app, status__in=Disbursement.PAID)
             .order_by('-released_at', '-id').values('amount', 'released_at').first())
     agreement = BursaryAgreement.objects.filter(application=app).first()
-    last_activity = (StudentActivity.objects.filter(application=app)
+    last_activity = (_activity(app, with_internal)
                      .order_by('-created_at', '-id').values_list('created_at', flat=True).first())
     result = _result(latest['cgpa'], latest['semester'], latest['created_at']) if latest else None
     return {
