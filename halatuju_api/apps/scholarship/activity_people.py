@@ -18,7 +18,20 @@ blank row is the system's.
 drops the mentoring rows for them). A pure mentor login (``role='mentor'``) on any row such a viewer
 still receives comes back with no name, no photo and no email (``kind`` stays ``mentor``). A staff
 member who also mentors is staff: their name is a staff name every reader of the file already sees.
+
+⚠ ``actor_email`` IS SERVED ONLY FOR AN UNKNOWN WRITER (P1 review, 2026-11-09): a known person (staff,
+mentor, the scholar) is served by name, with ``actor_email`` blank, so "never an email for a known
+person" holds at the API and not only in the web. An email that matches nobody keeps it (shown as written).
+
+⚠ LOGINS ARE MATCHED ACROSS ORGANISATIONS: a super, or another organisation's staff member, who wrote a
+row on this file is named (and pictured) to this organisation's reviewer or QC. Recorded in
+``docs/scholarship/role-matrix.md``; the owner is asked whether to keep it.
+
+⚠ A FAILED PHOTO SIGNING NEVER FAILS THE READ: any error falls back to no photos (initials) and one
+warning line with a count only.
 """
+import logging
+
 from django.db.models import Count
 from django.db.models.functions import Lower
 
@@ -26,6 +39,8 @@ from . import staff_photo, storage
 from .models.activity import (
     EVENT_LETTER_ACKNOWLEDGED, EVENT_RESULT_SUBMITTED, KIND_SYSTEM, MANUAL_KINDS,
 )
+
+logger = logging.getLogger(__name__)
 
 KIND_STAFF, KIND_MENTOR, KIND_SCHOLAR, KIND_UNKNOWN = 'staff', 'mentor', 'scholar', 'unknown'
 
@@ -86,23 +101,34 @@ class Actors:
             profile = getattr(login, 'reviewer_profile', None)
             path = (profile.photo_path or '') if profile is not None and not hidden else ''
             self._people[login.email.lower()] = {
-                'name': '' if hidden else (login.name or ''), 'kind': kind, 'hidden': hidden,
+                'name': '' if hidden else (login.name or ''), 'kind': kind,
                 'path': path if staff_photo.is_photo_key(path) else ''}
-        paths = [p['path'] for p in self._people.values() if p['path']]
-        self._urls = (storage.create_signed_download_urls(paths, expires_in=staff_photo.SIGNED_FOR)
-                      if paths else {})
+        self._urls = _signed([p['path'] for p in self._people.values() if p['path']])
 
     def of(self, row):
-        """``(actor or None, the email to serve)`` for one row. The email is blanked only for a
-        mentor this viewer may not know about; the web never prints it for a known person."""
+        """``(actor or None, the email to serve)`` for one row. The email is served only for an
+        UNKNOWN writer (shown as written); a known person is served by name, never by email."""
         email = (row.actor_email or '').strip()
         if not email:
-            return (dict(self._scholar) if _by_the_scholar(row) else None), row.actor_email
+            return (dict(self._scholar) if _by_the_scholar(row) else None), ''
         person = self._people.get(email.lower())
         if person is not None:
-            actor = {'name': person['name'], 'photo_url': self._urls.get(person['path']) if person['path'] else None,
-                     'kind': person['kind']}
-            return actor, ('' if person['hidden'] else row.actor_email)
+            return {'name': person['name'], 'kind': person['kind'],
+                    'photo_url': self._urls.get(person['path']) if person['path'] else None}, ''
         if email.lower() in self._scholar_emails:
-            return dict(self._scholar), row.actor_email
-        return {'name': email, 'photo_url': None, 'kind': KIND_UNKNOWN}, row.actor_email
+            return dict(self._scholar), ''
+        return {'name': email, 'photo_url': None, 'kind': KIND_UNKNOWN}, email
+
+
+def _signed(paths):
+    """``{path: url}`` for the page's photos in ONE call; ``{}`` (initials) on ANY failure."""
+    if not paths:
+        return {}
+    try:
+        urls = storage.create_signed_download_urls(paths, expires_in=staff_photo.SIGNED_FOR)
+    except Exception as e:  # a photo must never fail the read: the log falls back to initials
+        # The class name and a count only: no path, no name, no traceback (a path can carry a name).
+        logger.warning('activity log: photo signing failed (%s) for %d photo(s); showing initials',
+                       type(e).__name__, len(paths))
+        return {}
+    return urls if isinstance(urls, dict) else {}

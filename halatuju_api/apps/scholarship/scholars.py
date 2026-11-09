@@ -410,8 +410,8 @@ def result_dict(row):
 
 def activity_dict(row, actors=None):
     """One log row for the officer. ``actors`` (`activity_people.Actors`, built once per page) adds
-    ``actor: {name, photo_url, kind} | None`` (sprint P1) and may blank the email of a mentor the
-    viewer may not know about; without it the row carries ``actor: None`` and its email as stored."""
+    ``actor: {name, photo_url, kind} | None`` (sprint P1) and serves ``actor_email`` only for an unknown
+    writer (P1 review); without it the row carries ``actor: None`` and its email as stored."""
     actor, email = actors.of(row) if actors is not None else (None, row.actor_email)
     return {
         'id': row.id, 'kind': row.kind, 'event': row.event, 'body': row.body,

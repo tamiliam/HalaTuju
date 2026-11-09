@@ -7,15 +7,18 @@ Pinned through the real endpoint (`admin/scholarship/scholars/<pk>/activity/`):
     grow with the rows or the people on the page;
   * ``?show=all|notes|system`` and ``counts`` (filtered on the server, so paging stays right);
   * THE MENTOR RULE — a viewer without the Mentoring tab never receives a mentoring row under any
-    filter, nor the name, photo or email of a mentor on a row they do receive.
+    filter, nor the name, photo or email of a mentor on a row they do receive;
+  * (P1 review) ``actor_email`` only for an unknown writer; a failed photo signing never fails the
+    read (initials instead); ``?counts=0`` for the side panel.
 """
+import http.client
 from unittest import mock
 
 from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
-from apps.scholarship import activity, mentoring
+from apps.scholarship import activity, mentoring, storage
 from apps.scholarship.models import ReviewerProfile, StudentActivity
 from apps.scholarship.models.activity import (
     EVENT_LETTER_ACKNOWLEDGED, EVENT_RESULT_SUBMITTED, EVENT_SESSION_LOGGED, EVENT_SUBSTATE_CHANGED,
@@ -26,6 +29,8 @@ from apps.scholarship.tests.factories import (
 
 API = '/api/v1/admin/scholarship/scholars/'
 SIGN = 'apps.scholarship.storage.create_signed_download_urls'
+#: The activity GET for a signed-in officer with rows from three writers (see `test_the_query_count_is_pinned`).
+PINNED_QUERIES = 6
 
 
 def _signed(paths, expires_in=3600):
@@ -155,6 +160,33 @@ class TestTheCost(_Log):
                     activity.log_event(self.app, EVENT_SUBSTATE_CHANGED)
         self.assertEqual(self._queries(self.officer), small)
 
+    def test_the_query_count_is_pinned(self):
+        """Absolute pin beside the relative check above: the auth and fence reads, the grouped
+        counts, the page of rows and ONE login lookup. A new query per request fails here."""
+        for who in (self.org_admin.email, self.officer.email, 'nobody@example.org'):
+            self._note(who)
+        with mock.patch(SIGN, side_effect=_signed):
+            client = authed_client(self.officer)
+            with self.assertNumQueries(PINNED_QUERIES):
+                r = client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+
+    def test_the_side_panel_skips_the_grouped_counts(self):
+        self._note(self.officer.email)
+        activity.log_event(self.app, EVENT_SUBSTATE_CHANGED)
+        payload, _ = self._read(self.officer, counts='0')
+        self.assertNotIn('counts', payload)
+        self.assertEqual(payload['count'], 2)
+        with_counts, _ = self._read(self.officer)
+        self.assertEqual(with_counts['counts'], {'all': 2, 'notes': 1, 'system': 1})
+        self.assertEqual((self._grouped(counts='0'), self._grouped()), (0, 1))
+
+    def _grouped(self, **params):
+        """How many grouped queries over the log one read runs."""
+        with CaptureQueriesContext(connection) as ctx:
+            self._read(self.officer, **params)
+        return sum('GROUP BY' in q['sql'] and '"student_activity"' in q['sql'] for q in ctx.captured_queries)
+
 
 class TestTheFilter(_Log):
     @classmethod
@@ -219,3 +251,52 @@ class TestTheMentorRule(_Log):
         self.assertEqual(self._actor(payload, self.session)['kind'], 'mentor')
         self.assertEqual(StudentActivity.objects.filter(application=self.app).count(),
                          payload['counts']['all'])
+
+
+class TestTheEmailIsServedOnlyForAnUnknownWriter(_Log):
+    def test_a_known_person_has_no_email_in_the_payload(self):
+        staff = self._note(self.org_admin.email)
+        scholar = self._note('julia.scholar@example.org')
+        unknown = self._note('former.officer@example.org')
+        payload, _ = self._read(self.officer)
+        by_id = {r['id']: r for r in payload['results']}
+        self.assertEqual(by_id[staff.id]['actor_email'], '')
+        self.assertEqual(by_id[scholar.id]['actor_email'], '')
+        self.assertEqual(by_id[unknown.id]['actor_email'], 'former.officer@example.org')
+        self.assertNotIn(self.org_admin.email, str(payload))
+        self.assertNotIn('julia.scholar@example.org', str(payload))
+
+
+class TestAFailedSigningNeverFailsTheRead(_Log):
+    """The photo is a nicety: the signer raising, or answering with nothing, gives initials."""
+
+    def _both(self, **patch):
+        self._note(self.org_admin.email)
+        with mock.patch(SIGN, **patch):
+            got = authed_client(self.officer).get(self._url())
+            made = authed_client(self.org_admin).post(self._url(), {'kind': 'note', 'body': 'Hi.'},
+                                                      format='json')
+        self.assertEqual((got.status_code, made.status_code), (200, 201), (got.content, made.content))
+        self.assertEqual([r['actor']['photo_url'] for r in got.json()['results']], [None])
+        self.assertEqual(made.json()['actor'], {'name': 'Farah Officer', 'photo_url': None, 'kind': 'staff'})
+
+    def test_the_signer_raises(self):
+        with self.assertLogs('apps.scholarship.activity_people', 'WARNING') as logs:
+            self._both(side_effect=RuntimeError('storage down'))
+        self.assertTrue(all('farah' not in line.lower() and '@' not in line for line in logs.output),
+                        logs.output)
+
+    def test_the_signer_returns_nothing(self):
+        self._both(return_value={})
+
+
+@override_settings(SUPABASE_URL='https://storage.example.org', SUPABASE_SERVICE_ROLE_KEY='not-a-key')
+class TestStorageCatchesAConnectionFailure(TestCase):
+    """`storage._post` answers None (never raises) on a reset connection or a malformed reply."""
+
+    def test_each_failure_is_none(self):
+        for exc in (ConnectionResetError('reset'), http.client.RemoteDisconnected('gone'),
+                    http.client.IncompleteRead(b''), TimeoutError('slow')):
+            with self.subTest(exc=type(exc).__name__):
+                with mock.patch('urllib.request.urlopen', side_effect=exc):
+                    self.assertEqual(storage.create_signed_download_urls(['staff-photos/1/a.webp']), {})

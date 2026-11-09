@@ -216,7 +216,8 @@ class AdminScholarActivityView(_ScholarsBase):
 
     GET — the timeline, newest first, `?page=` `?page_size=` (≤ 100) `?show=all|notes|system`
     (sprint P1: filtered ON THE SERVER, so "Show older" pages the filter): `{count, page, page_size,
-    counts: {all, notes, system}, results}`. Each row carries `actor` (`activity_people`).
+    counts: {all, notes, system}, results}`; `?counts=0` leaves `counts` out (the side panel). Each
+    row carries `actor` (`activity_people`); `actor_email` only for an unknown writer.
     POST `{kind: note|call|meeting|email, body, internal}` — a manual entry by this officer
     (`activity.add_entry`). 400 `{code}` on bad_kind / empty_body / too_long; 409 `file_closed` on
     a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student."""
@@ -234,15 +235,21 @@ class AdminScholarActivityView(_ScholarsBase):
         show = request.query_params.get('show') or activity_people.SHOW_ALL
         if show not in (activity_people.SHOW_NOTES, activity_people.SHOW_SYSTEM):
             show = activity_people.SHOW_ALL
-        counts = activity_people.counts(qs)
-        count = counts[show]
+        # `?counts=0` (the side panel, which has no filter): the plain count of the rows shown instead
+        # of the grouped per-filter count, and no `counts` in the reply.
+        want_counts = request.query_params.get('counts') != '0'
+        counts = activity_people.counts(qs) if want_counts else None
         qs = activity_people.filtered(qs, show)
+        count = counts[show] if want_counts else qs.count()
         size = _int(request.query_params.get('page_size'), 50, 1, scholars.MAX_PAGE_SIZE)
         page = _int(request.query_params.get('page'), 1, 1, max(1, -(-count // size)))
         rows = list(qs[(page - 1) * size:page * size])
         actors = activity_people.Actors(rows, app, may_see_mentors=may_mentoring)
-        return Response({'count': count, 'page': page, 'page_size': size, 'counts': counts,
-                         'results': [scholars.activity_dict(r, actors) for r in rows]})
+        body = {'count': count, 'page': page, 'page_size': size,
+                'results': [scholars.activity_dict(r, actors) for r in rows]}
+        if want_counts:
+            body['counts'] = counts
+        return Response(body)
 
     def post(self, request, pk):
         app, admin, err = self._file_for(request, pk)
