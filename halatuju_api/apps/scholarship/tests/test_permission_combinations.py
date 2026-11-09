@@ -240,7 +240,9 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
         _grant(self.reviewer, ['spending'])                    # a reviewer with Review taken away
         for target in (self.qc, self.maker):
             self.assertTrue(may_assign_to(self.approver, target), target.role)
-        # In Reviewers by label, but could not open the case (`is_review_target`): never offered.
+        # Never offered: the reviewer is in Reviewers by label but, with Review taken away, could not
+        # open the case (`is_review_target`); finance is not in Reviewers at all (its label is not a
+        # Reviewer role and it holds neither `review` nor `qc`).
         for target in (self.reviewer, self.finance):
             self.assertFalse(may_assign_to(self.approver, target), target.role)
         _grant(self.finance, ['payments_approve', 'review'])

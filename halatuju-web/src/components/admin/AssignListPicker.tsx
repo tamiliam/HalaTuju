@@ -9,15 +9,27 @@
 import { useT } from '@/lib/i18n'
 import { listAssignees, orderReviewersFor, SPECIFIC_CALL_LANGS, type AssignRow, type Reviewer } from '@/lib/assignOptions'
 
-/** "Prefers <language>" and, under it, what ✓ and ⚠ mean. Nothing when the student named no single
- *  language ('mixed' / unset), because then no option carries either mark. */
-export function AssignLangNote({ lang, className }: { lang: string; className: string }) {
+/** The id a row's `<select>` names in `aria-describedby`: the legend's, but only when the student
+ *  named a single language, because otherwise no option carries ✓ or ⚠. */
+export function legendIdFor(lang: string, legendId: string): string | undefined {
+  return SPECIFIC_CALL_LANGS.has(lang) ? legendId : undefined
+}
+
+/** What ✓ and ⚠ mean, once. The desktop table shows it under the table; every select points at it. */
+export function AssignLegend({ id, className }: { id: string; className: string }) {
+  const { t } = useT()
+  return <p id={id} className={className} data-assign-legend>{t('admin.scholarship.assignLangLegend')}</p>
+}
+
+/** "Prefers <language>" and, with `legendId` (the phone rows), the legend under it. Nothing when the
+ *  student named no single language ('mixed' / unset), because then no option carries either mark. */
+export function AssignLangNote({ lang, className, legendId }: { lang: string; className: string; legendId?: string }) {
   const { t } = useT()
   if (!SPECIFIC_CALL_LANGS.has(lang)) return null
   return (
     <p className={className}>
       {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${lang}`) })}
-      <span className="block" data-assign-legend>{t('admin.scholarship.assignLangLegend')}</span>
+      {legendId && <span id={legendId} className="block" data-assign-legend>{t('admin.scholarship.assignLangLegend')}</span>}
     </p>
   )
 }

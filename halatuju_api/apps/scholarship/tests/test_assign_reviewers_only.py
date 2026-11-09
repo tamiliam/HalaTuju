@@ -14,9 +14,10 @@ No real people: every name and address here is synthetic.
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses import staff_tables
-from apps.courses.models import PartnerOrganisation
+from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import scheduling
 from apps.scholarship.models import AssignmentEvent, ScholarshipApplication
 from apps.scholarship.services.assignment import is_review_target, may_assign_to
@@ -146,7 +147,8 @@ class TestAnOrgAdminWhoJoinedReviewers(_Base):
 
 class TestACaseHeldBeforeT1IsKept(_Base):
     """T1-d. A case an admin (or a super) held before T1 is not taken away: the holder is still
-    listed, may still work it, and re-picking them is accepted and writes nothing."""
+    listed and may still work it. Re-picking an ACTIVE holder is the existing no-op and writes
+    nothing; a paused or revoked holder is refused as before (the web never sends a same-value pick)."""
 
     def _held_by(self, holder):
         app = self._case()
@@ -181,11 +183,49 @@ class TestACaseHeldBeforeT1IsKept(_Base):
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(r.json()['assigned_to_id'], self.other_super.id)
 
+    def test_a_paused_holder_re_picked_is_refused_as_before(self):
+        app = self._held_by(self.seer)
+        PartnerAdmin.objects.filter(pk=self.seer.pk).update(paused_at=timezone.now())
+        r = self._post(self.boss, app, self.seer)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'reviewer_paused'))
+        self.assertFalse(AssignmentEvent.objects.filter(application=app).exists())
+
     def test_the_holder_may_be_replaced_by_a_reviewer(self):
         app = self._held_by(self.seer)
         r = self._post(self.oa, app, self.reviewer)
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(r.json()['assigned_to_id'], self.reviewer.id)
+
+
+class TestTheHolderSkipIsOnlyForTheHolder(_Base):
+    """T1-d's skip (`assign_reviewer` and the org admin's gate) spares the CURRENT holder alone. On a
+    case an admin with `see_all` holds, every other target outside the rule is still refused — this
+    fails if the skip ever widens to "any case somebody holds"."""
+
+    def _held_by_the_seer(self):
+        self.assertFalse(staff_tables.in_reviewers(self.seer))
+        app = self._case()
+        ScholarshipApplication.objects.filter(pk=app.pk).update(assigned_to=self.seer)
+        app.refresh_from_db()
+        return app
+
+    def _still_held(self, app, r, code):
+        self.assertEqual((r.status_code, r.json()['code']), (400, code))
+        app.refresh_from_db()
+        self.assertEqual(app.assigned_to_id, self.seer.id)
+        self.assertFalse(AssignmentEvent.objects.filter(application=app).exists())
+
+    def test_a_super_still_may_not_pick_an_org_admin_outside_reviewers(self):
+        app = self._held_by_the_seer()
+        self._still_held(app, self._post(self.boss, app, self.lead), 'not_reviewer')
+
+    def test_a_super_still_may_not_pick_another_super(self):
+        app = self._held_by_the_seer()
+        self._still_held(app, self._post(self.boss, app, self.other_super), 'not_reviewer')
+
+    def test_an_org_admin_still_may_not_pick_another_organisation_s_reviewer(self):
+        app = self._held_by_the_seer()
+        self._still_held(app, self._post(self.oa, app, self.far_reviewer), 'bad_assignee')
 
 
 class TestTheListRowsCarryTheCaseGifts(_Base):
@@ -197,3 +237,14 @@ class TestTheListRowsCarryTheCaseGifts(_Base):
         rows = rows['applications']
         row = next(r for r in rows if r['id'] == app.id)
         self.assertEqual(row['gift_ids'], [self.gift.id])
+
+    def test_a_moved_case_names_both_gifts_sorted(self):
+        # A case moved to another gift keeps its old cohort: its own `programme` and its cohort's
+        # differ, and either one lets a reviewer of that gift take it (`case_gifts`).
+        moved_to = make_programme(organisation=self.bp, name_en='Gift T1 moved')
+        app = self._case()
+        ScholarshipApplication.objects.filter(pk=app.pk).update(programme=moved_to)
+        rows = authed_client(self.boss).get('/api/v1/admin/scholarship/applications/').json()
+        row = next(r for r in rows['applications'] if r['id'] == app.id)
+        self.assertEqual(row['gift_ids'], sorted([self.gift.id, moved_to.id]))
+        self.assertEqual(len(row['gift_ids']), 2)

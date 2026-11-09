@@ -12,7 +12,7 @@
  */
 import { render, screen } from '@testing-library/react'
 
-import { AssigneeOptions, AssignLangNote } from '../AssignListPicker'
+import { AssigneeOptions, AssignLangNote, AssignLegend, legendIdFor } from '../AssignListPicker'
 import { listAssignees, type Reviewer } from '@/lib/assignOptions'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -76,9 +76,34 @@ describe('who the list offers for one case', () => {
 })
 
 describe('the ✓ / ⚠ legend', () => {
-  it('renders under the preferred language', () => {
+  it('renders under the preferred language on a phone row, with the id its select names', () => {
+    const { container } = render(<AssignLangNote lang="ta" className="x" legendId="assign-legend-7" />)
+    const legend = container.querySelector('[data-assign-legend]')
+    expect(legend?.textContent).toBe('admin.scholarship.assignLangLegend')
+    expect(legend?.id).toBe('assign-legend-7')
+  })
+
+  it('is not repeated in a desktop row, which shows only the preferred language', () => {
     const { container } = render(<AssignLangNote lang="ta" className="x" />)
-    expect(container.querySelector('[data-assign-legend]')?.textContent).toBe('admin.scholarship.assignLangLegend')
+    expect(container.textContent).not.toBe('')
+    expect(container.querySelector('[data-assign-legend]')).toBeNull()
+  })
+
+  it('describes the select it is pointed at (one legend for the whole table)', () => {
+    render(
+      <>
+        <select aria-label="assigned" aria-describedby={legendIdFor('ta', 'assign-legend-table')}><option>x</option></select>
+        <AssignLegend id="assign-legend-table" className="x" />
+      </>,
+    )
+    const described = screen.getByRole('combobox', { name: 'assigned' }).getAttribute('aria-describedby')
+    expect(described).toBe('assign-legend-table')
+    expect(document.getElementById(described as string)?.textContent).toBe('admin.scholarship.assignLangLegend')
+  })
+
+  it('is not named by a select whose student named no single language', () => {
+    expect(legendIdFor('mixed', 'assign-legend-table')).toBeUndefined()
+    expect(legendIdFor('', 'assign-legend-table')).toBeUndefined()
   })
 
   it('is not shown when the student named no single language', () => {

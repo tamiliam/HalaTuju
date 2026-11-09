@@ -14,7 +14,7 @@ import { ApplicationUrlChips, useApplicationUrlFilters } from '@/components/admi
 import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
 import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
-import { AssigneeOptions, AssignLangNote } from '@/components/admin/AssignListPicker'
+import { AssigneeOptions, AssignLangNote, AssignLegend, legendIdFor } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
@@ -417,12 +417,13 @@ function StaffScholarshipList() {
 
                 {canAssign && (
                   <div className="pb-3">
-                    <AssignLangNote lang={a.call_language} className="mb-1 text-xs text-ground-500" />
+                    <AssignLangNote lang={a.call_language} className="mb-1 text-xs text-ground-500" legendId={`assign-legend-${a.id}`} />
                     <select
                       value={a.assigned_to_id ?? ''}
                       onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
                       disabled={blocked}
                       aria-label={t('admin.scholarship.assigned')}
+                      aria-describedby={legendIdFor(a.call_language, `assign-legend-${a.id}`)}
                       className="min-h-11 w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
                     >
                       <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
@@ -518,6 +519,7 @@ function StaffScholarshipList() {
                       <select
                         value={a.assigned_to_id ?? ''}
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
+                        aria-describedby={legendIdFor(a.call_language, 'assign-legend-table')}
                         // A case may only change hands while there IS a review to do (Completed /
                         // interviewing). Shortlisted and rejected aren't ready; awaiting-QC and
                         // beyond are over. AND a FIRST assignment waits until the app is ready — all
@@ -546,6 +548,7 @@ function StaffScholarshipList() {
             </tbody>
           </table>
         </TableFrame>
+        {canAssign && <AssignLegend id="assign-legend-table" className="hidden md:block mt-2 text-xs text-ground-500" />}
         {data && (
           <Pagination
             page={data.page}
