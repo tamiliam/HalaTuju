@@ -8340,8 +8340,12 @@
         "desc": "Temu duga dan buat keputusan bagi pelajar yang ditugaskan kepadanya."
       },
       "see_all": {
-        "name": "Lihat semua pelajar",
-        "desc": "Baca fail setiap pelajar dalam organisasi ini."
+        "name": "Permohonan",
+        "desc": "Baca setiap permohonan dalam organisasi ini."
+      },
+      "scholars": {
+        "name": "Penerima biasiswa",
+        "desc": "Baca fail setiap penerima biasiswa dalam organisasi ini."
       },
       "qc": {
         "name": "Kawalan mutu",
@@ -8395,7 +8399,7 @@
         "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya, kecuali larian yang {name} sediakan atau telah tandatangani.",
         "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
-        "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
+        "files_widened_all": "{name} akan dapat membaca setiap permohonan dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama.",
         "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
@@ -8403,7 +8407,7 @@
         "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
         "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
       },
-      "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
+      "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Permohonan”, jadi ia dihidupkan bersamanya."
     },
     "person": {
       "back": "Pasukan",
@@ -8886,7 +8890,7 @@
         "noneNow": "Tiada penerima biasiswa buat masa ini.",
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
         "notFound": "Mentor ini tidak ditemui.",
-        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
+        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Penerima biasiswa” untuk melihat penerima biasiswa mentor ini."
       }
     },
     "myStudents": {
@@ -9411,7 +9415,7 @@
         "reviewers": "Tambah Penilai"
       },
       "addIntro": {
-        "admins": "Pilih seseorang yang sudah dalam pasukan. Mereka bermula dengan kebenaran minimum, Lihat semua pelajar, dan anda boleh menanda kebenaran pentadbir lain selepas itu. Log masuk mereka tidak diusik dan tiada e-mel dihantar.",
+        "admins": "Pilih seseorang yang sudah dalam pasukan. Mereka bermula dengan kebenaran minimum, Permohonan, dan anda boleh menanda kebenaran pentadbir lain selepas itu. Log masuk mereka tidak diusik dan tiada e-mel dihantar.",
         "reviewers": "Pilih seseorang yang sudah dalam pasukan: pentadbir, mentor atau pentadbir organisasi. Mereka bermula dengan Menilai pelajar yang ditugaskan; tanda Kawalan mutu selepas itu jika perlu. Tiada sesiapa menyemak mutu kes yang dinilainya sendiri. Log masuk mereka tidak diusik dan tiada e-mel dihantar."
       },
       "addCta": {
@@ -9462,7 +9466,7 @@
         "mentors_only": "Hanya Mentor yang tinggal: batalkan akses atau keluarkan daripada Mentor (mereka mesti telah log masuk untuk kekal sebagai mentor)",
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
-      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
+      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Permohonan dan Penerima biasiswa. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
       "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka.",
       "emails": {
         "aria": "E-mel pasukan",

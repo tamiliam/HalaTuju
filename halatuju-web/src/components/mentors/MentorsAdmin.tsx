@@ -219,7 +219,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                         <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.col.lastMeeting`)}>
                           {m.last_meeting ? formatDate(m.last_meeting) : <span className="text-ground-400">-</span>}
                         </td>
-                        {/* T3 review: null for a caller without `see_all` (no scholar data) — a dash. */}
+                        {/* T3 review: null for a caller without `scholars` (sprint S1; no scholar data) — a dash. */}
                         <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`} data-label={t(`${K}.col.concernsOpen`)}
                           data-testid={`mentor-concerns-${m.id}`}>
                           {m.concerns_open === null ? <span className="text-ground-400">-</span> : (m.concerns_open ?? 0)}</td>
@@ -401,7 +401,7 @@ export function MentorDetail({ id }: { id: number }) {
           ))}
         </dl>
       </section>
-      {/* T3 review: the scholar side needs the Scholars list's read key (`see_all`). */}
+      {/* T3 review: the scholar side needs the Scholars list's read key (`scholars`, sprint S1). */}
       {!sees || !f ? (
         <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">
           {t(`${K}.detail.needSeeAll`)}</p>

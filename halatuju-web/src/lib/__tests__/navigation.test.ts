@@ -139,8 +139,9 @@ describe('visibleNav per role', () => {
     ],
     // Maintenance S2 (2026-10-29): `scholars` carries exactly the Applications roles and keys —
     // a scholar file is a view of an application the reader can already open (server: same rule).
-    qc: ['programmes', 'programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
-    reviewer: ['programmes', 'programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
+    // Sprint S1: the qc and reviewer presets carry no `scholars` key, so the Scholars row is gone.
+    qc: ['programmes', 'programmeOverview', 'applications', 'profile', 'guide', 'faq'],
+    reviewer: ['programmes', 'programmeOverview', 'applications', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
     // Source sign-in (2026-10-30): the three Programme rows reviewers use — their pages render the
     // source console (`components/source/*`, `admin/source/` only) — and Profile. NO Guide / FAQ:
@@ -704,8 +705,8 @@ describe('visibleNav groups', () => {
       const scopes = visibleNav(noGift('reviewer')).map((g) => g.scope)
       expect(scopes).toContain('programme')
       const prog = visibleNav(noGift('reviewer')).find((g) => g.scope === 'programme')!
-      // Scholars stays too: a reviewer has no door to the gifts, so the page itself asks.
-      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'applications', 'scholars'])
+      // Sprint S1: the reviewer preset has no `scholars` key, so Scholars is not in the queue's group.
+      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'applications'])
     })
 
     it('leaves every other scope untouched', () => {

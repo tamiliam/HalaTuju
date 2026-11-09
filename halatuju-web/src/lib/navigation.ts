@@ -236,14 +236,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
         perms: ['see_all', 'review'], gate: { mode: 'always' } },
       // ⚠ SCHOLARS (student maintenance S2, 2026-10-29): every funded student from award acceptance
-      // to closure. SAME roles and keys as Applications, on purpose — a scholar file is a view of an
-      // application the reader can already open, and the server fences it by the same rule
-      // (`views_admin/scholars.py`: see_all reads the organisation, a reviewer only their assigned
-      // scholars, finance never). `needsProgramme`: a list of one gift's scholars. 'M' for
-      // maintenance — 'S' is Students. No badge yet (the shell's badge needs its own count endpoint).
+      // to closure. Sprint S1 (owner 2026-11-09): ITS OWN KEY, `scholars` — no longer the Applications
+      // rule. The server (`base.scholars_scope`) opens it to a super and a `scholars` holder (the admin
+      // preset, the lead tier, a saved set naming it); `review`, `qc` and `see_all` alone are refused.
+      // A team member is admitted by `perms` whatever their label (`admitsRow`), so a reviewer whose
+      // saved set names `scholars` keeps the row. `source_partner` keeps its row: the page renders the
+      // source's own `SourceScholars` (`components/source/*`, its own endpoint). `needsProgramme`: a
+      // list of one gift's scholars. 'M' for maintenance — 'S' is Students. No badge yet.
       { id: 'scholars', href: '/admin/scholars', labelKey: 'admin.scholars.nav', chord: 'M',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
-        perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'source_partner'],
+        perms: ['scholars'], gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ ANNOUNCEMENTS (S8), SURVEYS (S9), DEVELOPMENT (S10): super / org_admin / admin, each endpoint's own rule (`may_post` / `may_make`); no `needsProgramme` — each belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'announcements', gate: { mode: 'always' } },

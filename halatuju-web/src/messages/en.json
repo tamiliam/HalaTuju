@@ -8340,8 +8340,12 @@
         "desc": "Interview and decide on the students assigned to them."
       },
       "see_all": {
-        "name": "See all students",
-        "desc": "Read every student's file in this organisation."
+        "name": "Applications",
+        "desc": "Read every application in this organisation."
+      },
+      "scholars": {
+        "name": "Scholars",
+        "desc": "Read every scholar's file in this organisation."
       },
       "qc": {
         "name": "Quality check",
@@ -8395,7 +8399,7 @@
         "approver_fallback_off": "{name} becomes an approver of payment runs; the organisation admin stops approving them, except runs {name} prepared or already signed.",
         "approver_fallback_on": "{name} is the only approver: the organisation admin approves payment runs again.",
         "not_signed_in": "{name} has never signed in, so the payment change takes effect at their first sign-in.",
-        "files_widened_all": "{name} will be able to read every student’s file in this organisation.",
+        "files_widened_all": "{name} will be able to read every application in this organisation.",
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run.",
         "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded.",
@@ -8403,7 +8407,7 @@
         "withdraw_last_checker": "Taking this from {name} leaves nobody who can approve award withdrawals: requests in this organisation will wait with nobody to decide them.",
         "withdraw_approve_needs_view": "{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide."
       },
-      "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
+      "qcBrings": "Quality check needs the Admin permission “Applications”, so it is switched on with it."
     },
     "person": {
       "back": "Team",
@@ -8886,7 +8890,7 @@
         "noneNow": "No scholars at the moment.",
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
         "notFound": "This mentor was not found.",
-        "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
+        "needSeeAll": "You need the Admin permission “Scholars” to see this mentor's scholars."
       }
     },
     "myStudents": {
@@ -9411,7 +9415,7 @@
         "reviewers": "Add Reviewer"
       },
       "addIntro": {
-        "admins": "Pick someone already in the team. They start with the minimum, See all students, and you tick more admin permissions after. Their sign-in is not touched and no email is sent.",
+        "admins": "Pick someone already in the team. They start with the minimum, Applications, and you tick more admin permissions after. Their sign-in is not touched and no email is sent.",
         "reviewers": "Pick someone already in the team: an admin, a mentor or the organisation admin. They start with Review assigned students; tick Quality check after if wanted. Nobody ever quality-checks a case they reviewed. Their sign-in is not touched and no email is sent."
       },
       "addCta": {
@@ -9462,7 +9466,7 @@
         "mentors_only": "Only Mentors would be left: revoke or remove from Mentors instead (they must have signed in to stay on as a mentor)",
         "has_open_cases": "Reassign their cases first"
       },
-      "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join.",
+      "inviteAdminNote": "An invited Admin starts with Applications and Scholars. Tick more admin permissions on Team after they join.",
       "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students and their Profile.",
       "emails": {
         "aria": "Team emails",

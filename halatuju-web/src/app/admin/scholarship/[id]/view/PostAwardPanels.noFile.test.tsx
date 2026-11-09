@@ -13,7 +13,7 @@ const t = (k: string) => k
 const props = (app: Partial<AdminScholarshipDetail>, over: Record<string, unknown> = {}) => ({
   app: { id: 5, status: 'awarded', maintenance_substate: 'on_track', disbursements: [],
     closure_reason: '', closed_at: null, ...app } as unknown as AdminScholarshipDetail,
-  t: t as never, busy: '', isSuper: false, canWrite: true, orgSuper: true,
+  t: t as never, busy: '', isSuper: false, canWrite: true, orgSuper: true, mayOpenFile: true,
   bursary: null, bursaryMsg: '', doCountersignBursary: jest.fn(), doWitnessBursary: jest.fn(),
   disbAmount: '', setDisbAmount: jest.fn(), disbLabel: '', setDisbLabel: jest.fn(), disbMsg: '',
   doScheduleTranche: jest.fn(), doDisbursementAction: jest.fn(), doSetSubstate: jest.fn(),
@@ -51,4 +51,10 @@ it('nothing for a case that takes no sub-state, or a reader who cannot write', (
   render(<PostAwardPanels {...props({ has_file: false,
     maintenance_controls: { can_set_substate: true, can_hold: true } }, { canWrite: false })} />)
   expect(screen.queryByTestId('no-file-substate')).toBeNull()
+})
+
+it('sprint S1: no "Open scholar file" for a reader the Scholars page refuses (no `scholars` key)', () => {
+  render(<PostAwardPanels {...props({ has_file: true,
+    maintenance_controls: { can_set_substate: true, can_hold: true } }, { mayOpenFile: false })} />)
+  expect(screen.queryByTestId('open-scholar-file')).toBeNull()
 })

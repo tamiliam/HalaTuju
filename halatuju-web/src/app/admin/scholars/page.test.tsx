@@ -78,7 +78,7 @@ it('S7b: the Mentor column, the two Mentoring pills with their counts, and the A
 })
 
 it('S7b: a role that does not see mentors gets no Mentor column and no Mentoring pills', async () => {
-  mockRole = { role: 'qc', owning_org_id: 11 }
+  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['qc', 'scholars'] }   // S1: Scholars asks its own key
   const { mentor: _m, asked_for_help: _a, ...bare } = ROW
   mockApi.getScholars.mockResolvedValue({ ...LIST, results: [bare] })
   render(<ScholarsPage />)
@@ -163,7 +163,7 @@ it('S7c: "Mentor concerned" — the row chip, and the pill with the server\'s co
 })
 
 it('S7c: a role that does not see mentors gets no Mentor concerned pill', async () => {
-  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['see_all'] }
+  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['see_all', 'scholars'] }   // S1: Scholars asks its own key
   render(<ScholarsPage />)
   await screen.findAllByText(/NUR AISYAH/)
   expect(screen.queryByRole('tab', { name: /admin\.scholars\.filter\.mentorConcerned/ })).toBeNull()

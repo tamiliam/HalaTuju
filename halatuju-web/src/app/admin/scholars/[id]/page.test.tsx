@@ -118,7 +118,7 @@ it('the Money and Contract tabs read their own endpoints (S5a)', async () => {
 })
 
 it('a reviewer gets no money links (Payments and Spending are not theirs)', async () => {
-  mockRole = { role: 'reviewer', owning_org_id: 11 }
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review', 'scholars'] }   // S1: the key opens it
   render(<ScholarFilePage />)
   await screen.findByRole('heading', { name: 'NUR AISYAH' })
   expect(screen.queryByRole('link', { name: 'admin.scholars.money.openPayments' })).toBeNull()
@@ -165,7 +165,7 @@ it('S7b: the mentor card, the Asked-for-help chip and the lazy Mentoring tab', a
 
 it('S7b: a reviewer or QC sees no Mentoring tab and no mentor card', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.mentoring' })).toBeNull()
@@ -188,7 +188,7 @@ it('S9: the Surveys tab reads the answers of this scholar, for super / org_admin
 
 it('S9: a reviewer or QC sees no Surveys tab and no Surveys card', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.surveys' })).toBeNull()
@@ -212,7 +212,7 @@ it('S10: the Growth tab reads the modules of this scholar, for super / org_admin
 
 it('S10: a reviewer or QC sees no Growth tab', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.growth' })).toBeNull()

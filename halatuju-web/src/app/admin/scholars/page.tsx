@@ -3,8 +3,8 @@
 // Design of record: the owner-approved canvas, 2026-10-29 (list artboard).
 //
 // ⚠ WHO IS LISTED, AND WHO MAY SEE IT, ARE THE SERVER'S (`views_admin/scholars.py`): the maintenance
-// predicate decides the population, and the Applications rule decides the reader — see_all reads the
-// organisation, a reviewer only their assigned scholars, finance never. This page draws what it is
+// predicate decides the population, and the reader is the `scholars` key's (sprint S1, `base.scholars_scope`;
+// no longer the Applications rule): a holder reads the organisation, everyone else is refused. This page draws what it is
 // handed and filters on the server, so a page of 25 is the right 25 of the whole list.
 //
 // ⚠ NO STANDING IS JUDGED HERE. The server's `standing` (S4a, `standing.py`: the latest ACCEPTED

@@ -1,8 +1,8 @@
 /**
  * Student maintenance Sprint 2: the officer's Scholars list, maintenance file and activity log.
  *
- * ⚠ Who may read is the SERVER's (`views_admin/scholars.py` — the Applications rule: see_all reads the
- * organisation, a reviewer only their assigned scholars, finance never). Nothing here decides it.
+ * ⚠ Who may read is the SERVER's (`views_admin/scholars.py`, `base.scholars_scope` — since sprint S1 the
+ * `scholars` key, no longer the Applications rule). Nothing here decides it.
  * ⚠ Money arrives as a STRING and stays one (the Payments rule) — format at the edge.
  * ⚠ `standing` is the SERVER's (S4a `standing.py`: the latest ACCEPTED result against the
  * organisation's thresholds); the screen must never judge a CGPA itself.

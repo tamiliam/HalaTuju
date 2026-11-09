@@ -110,7 +110,7 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>Open <strong>Invitations</strong> from the menu to bring new people in. You invite an
         <strong> Admin</strong>, a <strong>Reviewer</strong>, a <strong>Mentor</strong>, a <strong>Source</strong> or
-        a <strong>Sponsor</strong>. A new Admin starts with the minimum, <em>See all students</em>; you tick
+        a <strong>Sponsor</strong>. A new Admin starts with <em>Applications</em> and <em>Scholars</em>; you tick
         more admin permissions on Team once they have joined. There is no separate &ldquo;View-only
         admin&rdquo;, &ldquo;Finance&rdquo; or &ldquo;QC&rdquo; any more: a finance person is an Admin with
         <em> Approve payment runs</em>, and a QC person is a Reviewer with <em>Quality check</em>.
@@ -166,7 +166,7 @@ export const roleOrgAdmin: ManualChapter = {
         <>What somebody can do is their <strong>permissions</strong>, and you can change them. On
         <strong> Team</strong>, click the person&rsquo;s name and open the <strong>Permissions</strong> tab on their
         page (the Team tables themselves show no permissions). The card <strong>What &hellip; can do</strong> has one
-        section for each table they sit in &mdash; <strong>Admin permissions</strong> (See all students, Spending,
+        section for each table they sit in &mdash; <strong>Admin permissions</strong> (Applications, Scholars, Spending,
         Prepare, Check and Approve payment runs) if they are in Admins, <strong>Reviewer permissions</strong> (Review
         assigned students and Quality check) if they are in Reviewers. Switch one on or off and the line underneath says what saving would do
         &mdash; for example that giving someone <em>Approve payment runs</em> makes them the approver, so you
@@ -174,10 +174,10 @@ export const roleOrgAdmin: ManualChapter = {
         puts the role&rsquo;s usual set back. A person whose set differs from their role shows a
         <strong> Custom</strong> chip on Team, with what was added or taken away.
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li><strong>Quality check</strong> needs the Admin permission <em>See all students</em>: a checker
+            <li><strong>Quality check</strong> needs the Admin permission <em>Applications</em>: a checker
             reads every decision. For somebody who is only a Reviewer, it is switched on with Quality check.</li>
             <li>Somebody who still has cases assigned keeps <em>Review assigned students</em> (and an admin
-            holding cases keeps <em>See all students</em>) until the cases are handed to someone else.</li>
+            holding cases keeps <em>Applications</em>) until the cases are handed to someone else.</li>
             <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
             same run &mdash; and nobody checks or approves a run they created.</li>
             <li>Somebody who is only a Reviewer keeps <em>Review assigned students</em> or <em>Quality
