@@ -74,14 +74,16 @@ def untold_reason(app, now=None):
     if owed is None:
         return ''
     decided, address = owed
-    if now - decided > NOT_TOLD_LOOKBACK:
+    # An embargoed decline still unsent is never aged out: it stays hidden from her, so the officer's
+    # banner must not vanish while it does.
+    if not app.pending_rejection_category and now - decided > NOT_TOLD_LOOKBACK:
         return ''
     return UNSENT if address else NO_ADDRESS
 
 
 def _owed_pks(now):
     """Pks that MAY be owed an email inside the retry window (the rule re-checks each, locked)."""
-    low, high = now - RETRY_CAP - RETRY_SLOT, now - RETRY_GRACE
+    low, high = now - RETRY_CAP - RETRY_SLOT / 2, now - RETRY_SLOT / 2
     qs = ScholarshipApplication.objects
     declines = qs.filter(status='rejected', rejected_at__gte=low, rejected_at__lte=high,
                          pending_rejection_category='', decline_due_at__isnull=True)
@@ -94,7 +96,8 @@ def _owed_pks(now):
 
 def retry_unsent_decisions(now=None):
     """Send each decision email that failed, on the `decline.retry_slot` schedule (15 min, 1 h, 6 h, 24 h,
-    48 h, 72 h after the decision, so a failing send is metered about six times), then stop.
+    48 h, 72 h after the decision, each slot centred on its offset, so a failing send is metered
+    about six times), then stop.
     Returns `{'sent': n, 'failed': n}`. One application's trouble never stops the rest: each is
     claimed under a row lock and RE-READ (a cancel, a reopen or another run may have moved it)."""
     now = now or timezone.now()

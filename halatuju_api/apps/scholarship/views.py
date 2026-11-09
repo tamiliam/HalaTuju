@@ -812,22 +812,22 @@ def _current_application(user_id):
     Refusing is not the end state. `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`
     M2 gives the client a way to NAME the application; until something can choose, refusing is the
     honest answer and the safe one — a locked-out upload is recoverable, a document filed under
-    another foundation is not.
+    another foundation is not. TD-350 (lead ruling): an embargoed decline counts as one of the two, so it plus a live application elsewhere still refuses.
     """
     live = list(
         ScholarshipApplication.objects
         .filter(live_q(POST_SHORTLIST_EDITABLE + _FUNDED_STATES), profile_id=user_id)
         .select_related('profile')
-        .order_by('-submitted_at')
+        .order_by('-submitted_at')[:2]
     )
-    if len(live) > 1:   # TD-350: an embargoed decline (live_q's only 'rejected') is no second answer
-        live = [a for a in live if a.status != 'rejected'] or live
+    if not live:
+        return None
     if len(live) > 1:
         logger.error(
             'Ambiguous live application for profile %s — multi-programme roadmap M1', user_id,
         )
         raise AmbiguousApplication()
-    return live[0] if live else None
+    return live[0]
 
 
 class DocumentSignUploadView(APIView):
