@@ -13,7 +13,8 @@ import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import { ApplicationUrlChips, useApplicationUrlFilters } from '@/components/admin/ApplicationUrlFilters'
 import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
-import { bucketBadge, orderReviewersFor, SPECIFIC_CALL_LANGS, type Reviewer } from '@/lib/assignOptions'
+import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
+import { AssigneeOptions, AssignLangNote } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
@@ -173,7 +174,7 @@ function StaffScholarshipList() {
     if (!token || !canAssign) return
     getAssignableAdmins({ token })
       .then((r) => {
-        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable })))
+        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable, gifts: a.gifts })))
         setPastAssignees(r.past_assignees ?? [])
       })
       .catch(() => {})
@@ -416,11 +417,7 @@ function StaffScholarshipList() {
 
                 {canAssign && (
                   <div className="pb-3">
-                    {SPECIFIC_CALL_LANGS.has(a.call_language) && (
-                      <p className="mb-1 text-xs text-ground-500">
-                        {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
-                      </p>
-                    )}
+                    <AssignLangNote lang={a.call_language} className="mb-1 text-xs text-ground-500" />
                     <select
                       value={a.assigned_to_id ?? ''}
                       onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
@@ -428,18 +425,7 @@ function StaffScholarshipList() {
                       aria-label={t('admin.scholarship.assigned')}
                       className="min-h-11 w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
                     >
-                      <option value="">{t('admin.scholarship.unassigned')}</option>
-                      {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
-                        <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
-                      )}
-                      {orderReviewersFor(
-                        reviewers.filter((rv) => rv.id === a.assigned_to_id || (rv.assignable ?? (isSuper || rv.role === 'reviewer'))),
-                        a.call_language,
-                      ).map(({ rv, match, specific }) => (
-                        <option key={rv.id} value={rv.id}>
-                          {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
-                        </option>
-                      ))}
+                      <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
                     </select>
                     {/* Why it is asleep: the SAME two reasons the table's title gives, written out. */}
                     {blocked && (
@@ -528,11 +514,7 @@ function StaffScholarshipList() {
                   <td className="px-4 py-3 text-ground-500">{formatDate(a.submitted_at)}</td>
                   {canAssign && (
                     <td className="px-4 py-3">
-                      {SPECIFIC_CALL_LANGS.has(a.call_language) && (
-                        <p className="mb-1 text-[11px] text-ground-500">
-                          {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
-                        </p>
-                      )}
+                      <AssignLangNote lang={a.call_language} className="mb-1 text-[11px] text-ground-500" />
                       <select
                         value={a.assigned_to_id ?? ''}
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
@@ -552,23 +534,9 @@ function StaffScholarshipList() {
                             : undefined}
                         className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-placeholder disabled:cursor-not-allowed"
                       >
-                        <option value="">{t('admin.scholarship.unassigned')}</option>
-                        {/* keep the current assignee selectable even if not in the reviewer list */}
-                        {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
-                          <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
-                        )}
-                        {/* Mirror the cockpit's offer rule (= the server's bad_assignee rule):
-                            the served `assignable` (#39 S3), else a super any review-capable
-                            staff and a non-super (org_admin) only reviewers. The row's CURRENT assignee always
-                            renders even when not offerable (owner 2026-07-16). */}
-                        {orderReviewersFor(
-                          reviewers.filter((rv) => rv.id === a.assigned_to_id || (rv.assignable ?? (isSuper || rv.role === 'reviewer'))),
-                          a.call_language,
-                        ).map(({ rv, match, specific }) => (
-                          <option key={rv.id} value={rv.id}>
-                            {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
-                          </option>
-                        ))}
+                        {/* The holder always; else the served `assignable` (T1: the Reviewers table)
+                            who covers this case's gift (`listAssignees`). */}
+                        <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
                       </select>
                       {assignNote[a.id] && <p className="text-xs text-critical-600 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
                     </td>

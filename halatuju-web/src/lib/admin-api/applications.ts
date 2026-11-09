@@ -57,6 +57,7 @@ export interface AdminScholarshipListItem {
   // its own payload (`firstAssignBlocked = !assigned_to_id && !ready_for_assignment`). Neither
   // screen re-derives readiness, which is why there is nothing here for a drift test to hold.
   ready_for_assignment: boolean
+  gift_ids?: number[]   // T1-e: the case's gifts; the dropdown hides a Reviewer of another gift
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
 

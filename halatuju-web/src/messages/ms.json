@@ -5312,6 +5312,7 @@
         "title": "Profil akhir (v2 — dengan temu duga)"
       },
       "prefersLang": "Suka {lang}",
+      "assignLangLegend": "✓ bertutur dalam bahasa pelajar · ⚠ tidak",
       "bursary": {
         "title": "Perjanjian biasiswa",
         "student": "Pelajar",
