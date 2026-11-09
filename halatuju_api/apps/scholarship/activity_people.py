@@ -81,7 +81,7 @@ class Actors:
                           .only('id', 'email', 'name', 'role', 'reviewer_profile__photo_path'))
         self._people = {}
         for login in logins:
-            kind = KIND_MENTOR if login.role == PartnerAdmin.MENTOR_ROLE else KIND_STAFF
+            kind = KIND_MENTOR if login.is_mentor else KIND_STAFF
             hidden = kind == KIND_MENTOR and not self._may_see_mentors
             profile = getattr(login, 'reviewer_profile', None)
             path = (profile.photo_path or '') if profile is not None and not hidden else ''
