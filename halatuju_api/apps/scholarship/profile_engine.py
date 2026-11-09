@@ -18,20 +18,35 @@ institution, occupations) may be used.
 The student's own words may be in Malay, English, or Tamil; the model understands all
 three and writes in the requested target language. Mocked in tests; degrades gracefully
 to an error dict when the AI is unavailable.
+
+The prompt TEXT lives in `profile_prompts.py` and the per-line INPUT readers in
+`profile_inputs.py` (audit sprint A3.6, moved verbatim); both are re-exported below, so every
+`from apps.scholarship.profile_engine import ...` and every `mock.patch` of a name here still
+works. The prose seam, the cascades, `PROMPT_VERSION`, the claim gates, `_build_prompt` and the
+entry points stay here.
 """
 import logging
-import re
 import time
 
 from django.conf import settings
 
-from apps.courses.exam_questions import held_summary, spm_grades_for, spm_grades_none_label
+from apps.courses.exam_questions import held_summary
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure
 from .read_errors import UNPARSEABLE_RESPONSE, model_rejected_document
-from .models import FundingNeed
 from .shortlisting import count_spm_a_grades
+from .profile_inputs import (  # noqa: F401  (re-exports)
+    _GROUP_ORDER, _OFFICER_FACT_LABELS, _SIGNAL_CATEGORIES, _SIGNAL_LABELS, _SUBJECT_GROUP,
+    _VERDICT_LABELS, _alias, _deliberation, _funding, _grades_summary, _help_wanted,
+    _income_evidence, _join_human, _merit, _other_scholarships, _pathway, _pronouns,
+    _quiz_interests, _region, _render_interview, _render_officer_decision, _render_qa,
+    _reporting_date, _siblings_studying_display, _today_str, _top_choices, _yesno,
+)
+from .profile_prompts import (  # noqa: F401  (re-exports)
+    PROFILE_PROMPT, REFINE_PROMPT, _ABOVE_LINE_EMPHASIS, _ASSISTANCE_NATURE, _BELOW_LINE_AFFIRM,
+    _BUCKET_LABELS, _BUCKET_ORDER, _COVERAGE, _EVERGREEN, _REDACTION, _STYLE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,202 +112,6 @@ DEFAULT_LANGUAGE = 'English'
 #   2026-10-28.1 — STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28)
 PROMPT_VERSION = '2026-10-28.1'   # ⚠ A BUMP RE-DRAFTS EVERY ASSIGNED UNEDITED PROFILE via the daily 04:00 backfill (paid calls) - ask the owner first. 28.1 STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28); #62 (2026-11-06) changed the tertiary `SPM grades:` line (the SPM prereq only) WITHOUT a bump, by owner decision
 
-# Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
-_STYLE = (
-    "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
-    "words, with NO section headings and NO bullet lists. Tell the story so a reader "
-    "understands, in turn: the family's situation and why the assistance is genuinely "
-    "needed; the student's academic standing and the commitment and resilience behind it; "
-    "and the pathway ahead, including the confirmed place, when the student is due to report, "
-    "and how ready and committed they are to take it up. Refer to the student as 'he' or 'she' "
-    "using the pronouns given "
-    "below; NEVER use 'they' for the student (most people write he/she). Use em-dashes very "
-    "sparingly, at most one in the whole profile; prefer commas, full stops or brackets. Let "
-    "the facts carry the case: do NOT use fundraising clichés such as 'breaking the cycle', "
-    "'ripple effect' or 'pioneering spirit', and do NOT invent specifics (an age, a "
-    "relationship, a figure) not given below. Where a fact is missing, leave it out rather "
-    "than guess. "
-    "Do NOT state any monetary amount or recommended sum — that figure is shown separately to "
-    "the reader; instead describe concretely and factually what the support would help the "
-    "student with. Do NOT advocate or editorialise (no 'strongly recommended', 'a deserving "
-    "candidate', 'we urge you to support'); the reader reviews many profiles, so let the facts "
-    "speak for themselves."
-)
-
-_REDACTION = (
-    "PRIVACY — this single profile is read by the reviewer AND, once the student is "
-    "approved, by external sponsors, so it must never expose contact or identity details. "
-    "Refer to the student ONLY by the alias \"{alias}\"; never invent or include a name. For "
-    "the student AND any parent or guardian, NEVER include their name, NRIC/IC number, "
-    "photograph, phone number, email address, or street address — if any appears in the "
-    "inputs below, omit it. Everything else may be used: the school or college name, the "
-    "town and state, the institution, and occupations. "
-    "ETHNICITY — do NOT reveal or imply the student's ethnicity, race or religion, even when "
-    "the student's own words do. KEEP the meaning but GENERALISE any ethnic/cultural specific: "
-    "write \"her mother tongue\" or \"her community's language and culture\" rather than naming "
-    "a language (e.g. Tamil, Mandarin/Chinese), and \"a teacher who inspired her\" rather than "
-    "\"her Tamil teacher\". Never name a vernacular-language or literature subject. A culturally "
-    "specific aspiration (e.g. to teach her mother tongue) is kept as a motivation, just "
-    "without the ethnic label."
-)
-
-# The sponsor's three "need to know" areas — the same buckets gap_engine tags interview gaps
-# with. The profile must answer all three; the refine groups interview findings under these so
-# each lands in the matching part of the narrative. Output stays prose (no headings/lists) — this
-# is a COVERAGE instruction, not a layout one.
-_BUCKET_LABELS = {
-    'financial_need': 'Financial need',
-    'academic_resilience': 'Academic commitment & resilience',
-    'pathway_confidence': 'Pathway & enrolment confidence',
-    'other': 'Other points raised',
-}
-_BUCKET_ORDER = ['financial_need', 'academic_resilience', 'pathway_confidence', 'other']
-
-_COVERAGE = (
-    "WHAT A SPONSOR NEEDS TO KNOW — this profile must answer, across its flowing paragraphs "
-    "(still NO headings and NO lists), the three things a sponsor weighs. Give EACH its due and "
-    "weave it into the story rather than labelling it:\n"
-    "1. FINANCIAL NEED — the family's circumstances and why the assistance genuinely matters: who "
-    "earns and who does not, the reported and any documented household income, the dependants, and "
-    "the specific costs the support would meet.\n"
-    "2. ACADEMIC COMMITMENT & RESILIENCE — how the student has performed and persevered: the "
-    "results, the effort and obstacles behind them, and the drive they show.\n"
-    "3. PATHWAY & ENROLMENT CONFIDENCE — that the next step is clear and within reach: the "
-    "programme and institution, whether a place is held, the reporting date if known, and how ready "
-    "and committed the student is to take it up.\n"
-    "Where the inputs leave one area thin, state honestly what IS known and do not invent — but do "
-    "not silently drop a whole area the sponsor is counting on."
-)
-
-# Owner 2026-07-08 (#110) — the profile must not imply our assistance buys a laptop / covers fees.
-_ASSISTANCE_NATURE = (
-    "WHAT THE ASSISTANCE IS — the support is a MODEST, FIXED monthly living-cost bursary (a small "
-    "top-up toward the student's living costs), NOT a fund that buys equipment or pays fees, and its "
-    "amount is fixed. You MAY describe the student's needs and circumstances (for example that they "
-    "lack a laptop, or face accommodation and transport costs) as CONTEXT for why support matters. "
-    "But NEVER state or imply that the assistance will BUY, SECURE, or PAY FOR a laptop or any other "
-    "item, or COVER fees or the full cost of study — do not write that the support 'enables her to "
-    "secure a laptop' or 'is needed for a laptop'. Frame the support as easing / contributing toward "
-    "the student's living costs, never as funding a specific purchase in full."
-)
-
-# Owner 2026-07-21 — the profile must not go STALE as months pass (a sponsor may read it long after
-# it was written). Gemini has no innate sense of "now" — it read mid-2026 as the future and wrote a
-# live countdown + wrong relative timing ("is due to report on 12 July 2026"; "applications open only
-# after her course begins"). So (a) we give it TODAY'S date to fix tense/ordering, and (b) require
-# evergreen phrasing. Templated on {today}.
-_EVERGREEN = (
-    "TIME & DATES — write so this profile does NOT age; a sponsor may read it months after it was "
-    "written. Today's date is {today}; use it ONLY to keep your tenses and any before/after reasoning "
-    "correct — never quote it, and never say how long until or since something happens. State a "
-    "confirmed reporting or intake date as a plain fact of WHEN the place begins (for example 'with a "
-    "confirmed place beginning in July 2026'), NOT as a live countdown ('is due to report on 12 July "
-    "2026') and NOT as still-upcoming or already-past. Do NOT reason about the timing of one event "
-    "relative to another (avoid 'applications open only after her course begins') — state each plainly "
-    "(for example 'plans to apply for a PTPTN loan once applications open'). Do NOT anchor the reader "
-    "to 'this year' or 'next month'. Prefer evergreen, tenseless phrasing that stays true whenever it "
-    "is read."
-)
-
-
-def _today_str():
-    """Today's date as a plain 'DD Month YYYY' string, fed to the prompt so the model reasons about
-    time correctly (it has no innate 'now'). MALAYSIAN date — `timezone.now()` is an aware UTC
-    instant that `strftime` prints without converting, so a profile drafted after 8pm local time
-    used to be stamped with YESTERDAY. Harmless for the model's purposes, which is why the old
-    comment called UTC good enough; corrected with TD-209 because it is the same one-word mistake
-    and there is no reason to keep an off-by-a-day date in a document. Windows-safe (no %-d)."""
-    from django.utils import timezone
-    return timezone.localtime().strftime('%d %B %Y')
-
-
-PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
-financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
-and later by a prospective sponsor.
-
-{redaction}
-
-LANGUAGE — the student's own words below may be in Malay, English, or Tamil (or a mix); \
-understand their meaning whichever language they are in, and write the profile in {target_language}.
-
-{style}
-
-{evergreen}
-
-{coverage}
-
-{assistance_nature}
-
-VERIFICATION — do not over-claim:
-- Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
-- ACADEMICS — give a brief SUMMARY only, never a list. State the number of A-grade subjects, the \
-band mix, and the broad subject GROUPS they span exactly as provided below (e.g. "ten A-grade \
-subjects across A+/A/A−, spanning the sciences, mathematics and languages"). Do NOT enumerate \
-individual subjects or per-subject grades — a reader skips a long list. NEVER name a specific \
-language or literature subject (e.g. Bahasa Tamil, Bahasa Cina, Kesusasteraan Tamil/Cina), and do \
-NOT state or imply the student's ethnicity or race. Never round up or imply a uniform top grade. If \
-a merit score is given, you may cite it.
-- INCOME & WELFARE — DOCUMENTED is certain; everything self-reported is a CLAIM. If "Documented \
-income (payslip/EPF)" below lists one or more figures, you MUST state them AUTHORITATIVELY as the \
-documented income, naming the document and whose income it is — do NOT omit a documented figure or \
-bury it behind the softer reported household figure. EVERY other income figure — including the \
-household income below — is only what the family REPORTS: present it as such (e.g. "the family \
-reports about RM…") and you MAY give it as context alongside the documented figure (e.g. base pay \
-vs a month with overtime), but never as "confirmed", and do NOT attribute a reported figure to a \
-specific earner or invent a breakdown. STR/JKM are gated the SAME way: a value of "yes" means a welfare DOCUMENT is on file, so \
-you MAY state the family receives it (this confirms B40 status, NOT an income figure). Any other \
-value ("no" or "not established — do not claim") means there is NO proof on file — do NOT mention \
-STR/JKM at all and do NOT use it to affirm B40 status. If who earns what is unclear, describe the \
-situation (a single earner, a parent unable to work) without inventing numbers. Do not make up a \
-story to reconcile the figures.
-
-THE STUDENT (alias {alias})
-Pronouns (use these for the student, never "they"): {pronouns}
-School / college: {school}
-Qualification: {qualification}    Merit score (out of 100): {merit}
-SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
-Home town / state: {region}
-Household income (RM/month, as reported): {household_income}    Household size: {household_size}
-Documented income (payslip/EPF — use authoritatively if present): {income_evidence}
-Receives STR ('yes' only when a current STR document is on file; else do not claim): {receives_str}    Receives JKM (same rule): {receives_jkm}
-First in family to university: {first_in_family}
-Parents'/guardians' occupation: {parents_occupation}
-Siblings currently studying: {siblings_studying}
-
-Pathway / programme (use the confirmed place when present): {pathway}
-Reporting / enrolment date (WHEN the place begins — if given, state it as a plain fact per the TIME & DATES rule, never as a countdown): {reporting_date}
-Top course choices (student's ranking): {top_choices}
-While still deciding (student's words): {deliberation}
-Other scholarships applied for / held: {other_scholarships}
-Help the student asked us for: {help_wanted}
-Interest-quiz signals (the student's strongest interests + work style): {quiz_interests}
-
-Aspirations (student's words): {aspirations}
-Plan to get there (student's words): {plans}
-Why assistance is needed (student's words): {justification}
-Worries / concerns (student's words): {fears}
-Family situation (student's words): {family_context}
-Daily life & responsibilities (student's words): {daily_life}
-Anything else the student wants us to know (student's words): {anything_else}
-Statement of Intent letter (student's uploaded letter, OCR'd — distil its substance): {statement_of_intent}
-
-Funding — what the support would help with: {funding_categories}
-Anything else about funding (student's words): {funding_note}
-
-The student's answers to our clarifying questions:
-{qa}
-
-Draw on ALL of the student's own words above and distil them into the narrative where they add \
-meaning — their aspirations, plan, reasons, worries, deliberation and anything-else. Do not ignore \
-a field the student took the trouble to fill in; equally, do not pad with a field left blank \
-("not provided"/"none"/"not applicable" means say nothing about it).
-
-The interest-quiz signals are ACCRETIVE ONLY: use them to add positive colour about the student's \
-interests and strengths (e.g. how their pathway plays to what energises them). NEVER use the quiz to \
-question, doubt, cast as a mismatch, or otherwise weaken the student's chosen pathway or case. If the \
-quiz does not obviously add something supportive, simply leave it out.
-"""
-
 
 def _call_gemini_text(prompt, target_language, models=None):
     """Shared seam: run ``prompt`` through a model cascade and return
@@ -337,35 +156,6 @@ def _resolve_language(application, language):
     if language:
         return LANGUAGE_NAMES.get(language, language)
     return LANGUAGE_NAMES.get(getattr(application, 'locale', '') or '', DEFAULT_LANGUAGE)
-
-
-def _yesno(v):
-    if v is None:
-        return 'not provided'
-    return 'yes' if v else 'no'
-
-
-def _alias(application):
-    """The stable, non-identifying handle used everywhere this profile is read (the
-    same alias the sponsor pool uses), e.g. 'S-A3F9C1'."""
-    from .pool import pool_ref
-    return pool_ref(application.id)
-
-
-def _pronouns(application):
-    """'she/her' or 'he/him' for the student, from the recorded gender (falling back to
-    the Malaysian NRIC last digit: odd = male, even = female). 'not provided' if unknown —
-    the model is told to avoid 'they', so it picks a sensible default rather than hedge."""
-    profile = getattr(application, 'profile', None)
-    g = (getattr(profile, 'gender', '') or '').strip().lower() if profile else ''
-    if g in ('female', 'f', 'perempuan'):
-        return 'she/her'
-    if g in ('male', 'm', 'lelaki'):
-        return 'he/him'
-    nric = re.sub(r'\D', '', getattr(profile, 'nric', '') or '') if profile else ''
-    if nric:
-        return 'he/him' if int(nric[-1]) % 2 else 'she/her'
-    return 'not provided'
 
 
 # ── Check 2 §6: claim-gating ─────────────────────────────────────────────────
@@ -417,201 +207,6 @@ def _gated_jkm(application):
     return _DO_NOT_CLAIM
 
 
-def _pathway(application):
-    """Describe the pathway, preferring the CONCRETE chosen programme + institution and
-    whether it's confirmed (an offer the student holds), so the profile can name the real
-    place rather than a vague 'pre-university'."""
-    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
-    bits = []
-    programme = (cp.get('course_name') or '').strip()
-    if programme:
-        bits.append(programme)
-    elif application.field_of_study:
-        bits.append(str(application.field_of_study))
-    institution = (cp.get('institution') or getattr(application, 'pre_u_institution', '') or '').strip()
-    if institution:
-        bits.append(f'at {institution}')
-    if getattr(application, 'pathway_confirmed_at', None) or cp.get('source', '').startswith('offer_letter'):
-        bits.append('(confirmed place — the student holds the offer)')
-    track = (getattr(application, 'pre_u_track', '') or '').strip()
-    if track:
-        bits.append(f'stream/track: {track}')
-    pc = application.pathways_considered
-    if not programme and isinstance(pc, list) and pc:
-        bits.append('pathways considered: ' + ', '.join(str(x) for x in pc))
-    return ' '.join(bits).strip() or 'not specified'
-
-
-def _reporting_date(application):
-    """The offer's normalised reporting/enrolment date (S3 `reporting_date`), as
-    '13 May 2026'. Lets the profile state when the student is due to report — part of the
-    pathway & enrolment-confidence picture a sponsor weighs. 'not provided' when unknown."""
-    d = getattr(application, 'reporting_date', None)
-    if not d:
-        return 'not provided'
-    try:
-        return f'{d.day} {d:%B %Y}'
-    except (AttributeError, ValueError):
-        return 'not provided'
-
-
-def _siblings_studying_display(application):
-    count = getattr(application, 'siblings_studying_count', None)
-    return str(count) if count is not None else ''
-
-
-def _income_evidence(application):
-    """Documented monthly income read from any salary slip / EPF on file — usable
-    authoritatively even on the STR track (a student may submit payslips/EPF as extra
-    proof). Covers the salary-route members AND the STR-route earner. 'none on file' when
-    no readable income document exists, so the model falls back to the reported figure."""
-    # Code-health S4 #16: use effective_working_members — the #90 fix (prefill accepted
-    # but never persisted leaves income_working_members empty while the docs exist) was
-    # applied to verdict_engine + the blockers but this call site was missed, so the
-    # sponsor/reviewer profile said "Documented income: none on file" over a readable slip.
-    from .income_engine import effective_working_members, earner_monthly_income
-    members = list(effective_working_members(application))
-    earner = (getattr(application, 'income_earner', '') or '').strip()
-    if earner and earner not in members:
-        members.append(earner)
-    lines = []
-    for m in members:
-        amt, src = earner_monthly_income(application, m)
-        if amt:
-            label = {'salary': 'salary slip', 'epf_estimate': 'EPF statement'}.get(src, 'document')
-            lines.append(f"{m}'s {label} shows about RM{int(round(amt))}/month")
-    return '; '.join(lines) if lines else 'none on file'
-
-
-def _merit(application):
-    """The merit on ONE 0-100 scale for every route (`exam_questions.merit_100`; STPM = overall
-    CGPA / 4 x 100 since third results route S1), or 'not provided'."""
-    from .serializers_admin import _application_merit_score
-    m = _application_merit_score(application)
-    return 'not provided' if m in (None, '') else str(m)
-
-
-# Subject key → broad GROUP. We summarise results by group, never by individual subject:
-# it keeps the profile readable AND avoids revealing ethnicity via a vernacular-language or
-# literature subject (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina all fold into "languages"/
-# "humanities"). Keys mirror the canonical list in halatuju-web/src/lib/subjects.ts. Any key
-# not listed falls back to the generic "other subjects" — a raw key can never reach the prompt.
-_SUBJECT_GROUP = {
-    'math': 'mathematics', 'addmath': 'mathematics',
-    'sci': 'sciences', 'science': 'sciences', 'addsci': 'sciences', 'phy': 'sciences',
-    'chem': 'sciences', 'bio': 'sciences', 'comp_sci': 'sciences', 'sports_sci': 'sciences',
-    'srt': 'sciences',
-    'bm': 'languages', 'eng': 'languages', 'b_cina': 'languages', 'b_tamil': 'languages',
-    'bahasa_cina': 'languages', 'bahasa_tamil': 'languages', 'bahasa_arab': 'languages',
-    'bahasa_arab_tinggi': 'languages', 'bahasa_iban': 'languages',
-    'bahasa_kadazandusun': 'languages', 'bahasa_semai': 'languages',
-    'bahasa_punjabi': 'languages', 'bahasa_perancis': 'languages', 'bahasa_jepun': 'languages',
-    'bahasa_jerman': 'languages',
-    'hist': 'humanities', 'history': 'humanities', 'moral': 'humanities',
-    'lit_bm': 'humanities', 'lit_eng': 'humanities', 'lit_cina': 'humanities',
-    'lit_tamil': 'humanities', 'sejarah_seni': 'humanities', 'islam': 'humanities',
-    'agama': 'humanities', 'pqs': 'humanities', 'psi': 'humanities',
-    'tasawwur_islam': 'humanities', 'usul_aldin': 'humanities', 'al_syariah': 'humanities',
-    'manahij': 'humanities', 'bible_knowledge': 'humanities',
-    'geo': 'social sciences', 'ekonomi': 'social sciences', 'econ': 'social sciences',
-    'poa': 'social sciences', 'acc': 'social sciences', 'business': 'social sciences',
-    'keusahawanan': 'social sciences',
-    'psv': 'the arts', 'music': 'the arts', 'lukisan': 'the arts', 'multimedia': 'the arts',
-    'digital_gfx': 'the arts', 'reka_cipta': 'the arts', 'gkt': 'the arts',
-    'eng_civil': 'technical subjects', 'eng_mech': 'technical subjects',
-    'eng_elec': 'technical subjects', 'eng_draw': 'technical subjects',
-    'lukisan_kejuruteraan': 'technical subjects', 'kelestarian': 'technical subjects',
-    'pertanian': 'technical subjects',
-}
-_GROUP_ORDER = ['sciences', 'mathematics', 'languages', 'social sciences', 'humanities',
-                'the arts', 'technical subjects', 'other subjects']
-
-
-def _join_human(items):
-    """['a','b','c'] -> 'a, b and c'."""
-    items = list(items)
-    if not items:
-        return ''
-    if len(items) == 1:
-        return items[0]
-    return ', '.join(items[:-1]) + ' and ' + items[-1]
-
-
-def _grades_summary(profile):
-    """Summarise SPM results (`spm_grades_for`: a tertiary holder's SPM prereq only) WITHOUT naming
-    subjects: the A-grade count, the band mix and the broad subject GROUPS they span (no ethnicity
-    via vernacular subjects). None: 'not provided', or `spm_grades_none_label` for tertiary."""
-    grades = spm_grades_for(profile)
-    if not grades:
-        return spm_grades_none_label(profile, 'not provided')
-    bands = {'A+': 0, 'A': 0, 'A-': 0}
-    total = 0
-    groups_seen = set()
-    for key, grade in grades.items():
-        if not grade:
-            continue
-        total += 1
-        g = str(grade).strip().upper().replace('−', '-')   # normalise unicode minus
-        if g in bands:
-            bands[g] += 1
-            groups_seen.add(_SUBJECT_GROUP.get(str(key).lower(), 'other subjects'))
-    a_count = bands['A+'] + bands['A'] + bands['A-']
-    if a_count == 0:
-        return f'{total} subjects sat; no A-grade subjects recorded'
-    band_bits = [f'{bands[b]} {b.replace("-", "−")}' for b in ('A+', 'A', 'A-') if bands[b]]
-    groups = _join_human([g for g in _GROUP_ORDER if g in groups_seen])
-    spanning = f' spanning {groups}' if groups else ''
-    return f'{a_count} A-grade subjects out of {total} ({", ".join(band_bits)}){spanning}'
-
-
-def _region(profile):
-    """Town + state where available (both allowed under the redaction policy)."""
-    if not profile:
-        return 'not provided'
-    city = (getattr(profile, 'city', '') or '').strip()
-    state = (getattr(profile, 'preferred_state', '') or '').strip()
-    region = ', '.join(p for p in (city, state) if p)
-    return region or 'not provided'
-
-
-# Human labels for the interest-quiz signals (profile.student_signals). Only the two most
-# communicative categories — what FIELDS interest the student, and their WORK STYLE.
-_SIGNAL_LABELS = {
-    'field_mechanical': 'building & fixing', 'field_digital': 'technology & digital',
-    'field_business': 'business', 'field_health': 'health & care',
-    'field_creative': 'creative & design', 'field_hospitality': 'hospitality & service',
-    'field_agriculture': 'agriculture', 'field_heavy_industry': 'heavy industry',
-    'field_electrical': 'electrical', 'field_civil': 'civil & construction',
-    'field_aero_marine': 'aeronautical & marine', 'field_oil_gas': 'oil & gas',
-    'hands_on': 'hands-on work', 'problem_solving': 'problem-solving',
-    'people_helping': 'helping people', 'creative': 'creative work',
-}
-_SIGNAL_CATEGORIES = ('field_interest', 'work_preference_signals')
-
-
-def _quiz_interests(application):
-    """A short, POSITIVE read of the student's interest-quiz result (profile.student_signals):
-    their strongest field interests + work-style. Accretive context only — never used to doubt
-    a pathway. '' when no quiz on file."""
-    profile = application.profile
-    signals = getattr(profile, 'student_signals', None) if profile else None
-    if not isinstance(signals, dict) or not signals:
-        return 'not provided'
-    labels = []
-    for cat in _SIGNAL_CATEGORIES:
-        bucket = signals.get(cat)
-        if not isinstance(bucket, dict):
-            continue
-        # strongest first (score desc), keep the meaningful ones (score >= 1), cap at 3/category
-        ranked = sorted(((s, sc) for s, sc in bucket.items() if isinstance(sc, (int, float)) and sc > 0),
-                        key=lambda kv: kv[1], reverse=True)
-        for sig, _score in ranked[:3]:
-            lbl = _SIGNAL_LABELS.get(sig)
-            if lbl and lbl not in labels:
-                labels.append(lbl)
-    return ', '.join(labels) if labels else 'not provided'
-
-
 def _statement_of_intent(application):
     """The OCR'd plain text of the student's uploaded Statement of Intent letter, if any
     (read on upload into vision_fields['text']). Capped so it informs the draft without
@@ -625,90 +220,6 @@ def _statement_of_intent(application):
         return 'not provided'
     cap = 2000
     return text if len(text) <= cap else text[:cap].rstrip() + ' …'
-
-
-def _render_qa(application):
-    """The student's answers to clarifying questions — the answered Check-2 + reviewer
-    resolution items (those carrying a typed response). Question = the officer-written
-    prompt if present, else the item code; answer = the student's resolution_text.
-    Empty marker when none, so the prompt block is never blank."""
-    lines = []
-    items = (application.resolution_items
-             .exclude(resolution_text='')
-             .order_by('resolved_at', 'created_at'))
-    for it in items:
-        ans = (it.resolution_text or '').strip()
-        if not ans:
-            continue
-        q = (it.prompt or '').strip() or it.code
-        lines.append(f'- Q ({it.fact}): {q}\n  A: {ans}')
-    return '\n'.join(lines) if lines else 'none recorded'
-
-
-def _funding(application):
-    """(categories_str, programme_months, funding_note) from the simplified FundingNeed.
-    (programme_months is unused by the profile prose but kept in the tuple — gap_engine
-    shares this helper.)"""
-    try:
-        fn = application.funding_need
-    except FundingNeed.DoesNotExist:
-        return 'not provided', 'not provided', 'not provided'
-    cats = fn.categories if isinstance(fn.categories, list) else []
-    cats_str = ', '.join(str(c) for c in cats) if cats else 'not provided'
-    months = fn.programme_months if fn.programme_months else 'not provided'
-    note = fn.funding_note.strip() if fn.funding_note else 'not provided'
-    return cats_str, months, note
-
-
-def _top_choices(application):
-    """The student's ranked top course choices (apply form) — 'Course at Institution (choice 1)'."""
-    tc = application.top_choices if isinstance(application.top_choices, list) else []
-    bits = []
-    for c in tc:
-        if not isinstance(c, dict):
-            continue
-        name = (c.get('course_name') or '').strip()
-        if not name:
-            continue
-        inst = (c.get('institution') or '').strip()
-        rank = c.get('rank')
-        label = name + (f' at {inst}' if inst else '')
-        if rank:
-            label += f' (choice {rank})'
-        bits.append(label)
-    return '; '.join(bits) if bits else 'not provided'
-
-
-def _other_scholarships(application):
-    """Other scholarships the student has applied for / holds (keys + their free text)."""
-    keys = application.other_scholarships if isinstance(application.other_scholarships, list) else []
-    parts = [str(k) for k in keys if k]
-    txt = (getattr(application, 'other_scholarships_text', '') or '').strip()
-    if txt:
-        parts.append(txt)
-    return ', '.join(parts) if parts else 'none mentioned'
-
-
-def _help_wanted(application):
-    """What support the student asked us for on the apply form ('help with…')."""
-    wants = []
-    if (getattr(application, 'help_university', '') or '') == 'yes':
-        wants.append('university applications')
-    if (getattr(application, 'help_scholarship', '') or '') == 'yes':
-        wants.append('scholarship applications & interviews')
-    return ', '.join(wants) if wants else 'none indicated'
-
-
-def _deliberation(application):
-    """When the student is still deciding their pathway — their reasons + their own words."""
-    reasons = application.uncertainty_reasons if isinstance(application.uncertainty_reasons, list) else []
-    note = (getattr(application, 'uncertainty_note', '') or '').strip()
-    bits = []
-    if reasons:
-        bits.append('reasons: ' + ', '.join(str(r) for r in reasons))
-    if note:
-        bits.append(note)
-    return ' — '.join(bits) if bits else 'not applicable'
 
 
 def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
@@ -771,172 +282,12 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     )
 
 
-REFINE_PROMPT = """You are writing the FINAL profile of a B40 student applying for education \
-financial assistance in Malaysia — the conclusive version a sponsor will read.
-
-You are given (1) a DRAFT written from the application, (2) the student's answers to our \
-clarifying questions, (3) the officer's interview findings, and (4) the officer's decision. \
-Produce ONE coherent final profile that folds them all together.
-
-{redaction}
-
-LANGUAGE — the inputs may be in Malay, English, or Tamil (or a mix); understand their meaning \
-and write the profile in {target_language}.
-
-{style}
-
-{evergreen}
-
-{coverage}
-
-{assistance_nature}
-
-Pronouns (use these for the student, never "they"): {pronouns}
-
-Rules:
-- INCOME: documented = certain, self-reported = a claim. When the draft or the officer's findings
-state a DOCUMENTED income (payslip/EPF), keep it and state it as documented — do not soften it into a
-mere report. State any OTHER income figure as confirmed ONLY if the officer's verdict verified it;
-otherwise present it as what the family reports, and never invent who earns what. Do NOT assert the
-family receives STR/JKM unless the DRAFT or the officer's findings establish it from a document —
-never re-introduce a welfare claim the draft omitted.
-- Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
-CONCERN honestly and proportionately — do not hide it, do not exaggerate it. The interview findings \
-below are grouped under the three sponsor areas (financial need / academic commitment & resilience / \
-pathway & enrolment confidence) — weave each finding into the matching part of the narrative.
-- The officer's decision is the considered outcome of a real review. Present each area with \
-confidence matching the four-fact verdict; weave the officer's written conclusion into the close. \
-Do NOT state any monetary amount or recommended sum — that figure is shown separately to the sponsor; \
-instead describe concretely what the support would help the student with. Do NOT advocate or use \
-recommendation language ("strongly recommended", "a deserving candidate"). Do NOT print a raw \
-pass/fail list and never contradict the verdict.
-- If the draft states a reporting / enrolment date, keep it in the pathway part — but as a plain \
-fact of when the place begins, per the TIME & DATES rule (never a live countdown or relative timing).
-- Use ONLY the inputs below; do not invent facts. It must read as one final profile, not a draft \
-with notes bolted on.
-
-{income_context}
-
-=== DRAFT PROFILE ===
-{draft}
-
-=== THE STUDENT'S ANSWERS TO OUR QUESTIONS ===
-{qa}
-
-=== OFFICER'S INTERVIEW FINDINGS ===
-{findings}
-Interviewer's rubric scores (1-5): {rubric}
-Interviewer's overall note: {overall_note}
-
-=== OFFICER'S DECISION ===
-{officer_decision}
-"""
-
-_VERDICT_LABELS = {
-    'resolved': 'resolved at interview',
-    'still_unclear': 'still unclear after interview',
-    'new_concern': 'new concern raised at interview',
-}
-
-
-def _render_interview(application, session):
-    """Render a submitted InterviewSession's findings/rubric/note as plain text for the
-    refine prompt, GROUPED under the sponsor's three areas (the S4 gap `bucket`) so each
-    finding lands in the matching part of the narrative. The interviewer's free-text
-    rationale carries the meaning; a finding whose gap has no bucket falls under 'other'."""
-    gaps_by_code, bucket_by_code = {}, {}
-    for g in (application.interview_gaps or []):
-        if isinstance(g, dict) and g.get('code'):
-            gaps_by_code[g['code']] = g.get('question', '')
-            bucket_by_code[g['code']] = (g.get('bucket') or 'other')
-
-    grouped = {}
-    for code, val in (session.findings or {}).items():
-        if not isinstance(val, dict):
-            continue
-        verdict = _VERDICT_LABELS.get(val.get('verdict', ''), val.get('verdict', '') or 'noted')
-        rationale = (val.get('rationale') or '').strip()
-        context = gaps_by_code.get(code, '')
-        prefix = f'On "{context}" — ' if context else ''
-        bucket = bucket_by_code.get(code, 'other')
-        if bucket not in _BUCKET_LABELS:
-            bucket = 'other'
-        grouped.setdefault(bucket, []).append(f'- [{verdict}] {prefix}{rationale}'.rstrip())
-
-    if grouped:
-        sections = [f'{_BUCKET_LABELS[b]}:\n' + '\n'.join(grouped[b])
-                    for b in _BUCKET_ORDER if grouped.get(b)]
-        findings_str = '\n'.join(sections)
-    else:
-        findings_str = 'No specific findings recorded.'
-
-    rubric = session.rubric if isinstance(session.rubric, dict) else {}
-    rubric_str = ', '.join(f'{k}: {v}' for k, v in rubric.items()) or 'not scored'
-    note = (session.overall_note or '').strip() or 'none'
-    return findings_str, rubric_str, note
-
-
-_OFFICER_FACT_LABELS = {
-    'identity': 'Identity',
-    'academic': 'Academic record',
-    'pathway': 'Pathway / offer',
-    'income': 'Household income (B40 need)',
-}
-
-
-def _render_officer_decision(application):
-    """Render the officer's four-fact verdict and written conclusion as plain text — so the
-    FINAL reflects the actual decision. The monetary amount is deliberately NOT included: the
-    recommended sum is shown to the sponsor separately (a header figure), and the profile prose
-    must not state it or advocate (owner decision 2026-06-29)."""
-    ov = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
-    lines = []
-    for fact in ('identity', 'academic', 'pathway', 'income'):
-        val = (ov.get(fact) or '').strip()
-        if val:
-            lines.append(f'- {_OFFICER_FACT_LABELS[fact]}: {val}')
-    verdict_str = '\n'.join(lines) if lines else '- not recorded'
-
-    conclusion = (getattr(application, 'verdict_reason', '') or '').strip() or 'none recorded'
-
-    return (
-        f'Four-fact verification verdict:\n{verdict_str}\n'
-        f"Officer's conclusion: {conclusion}"
-    )
-
-
 def _with_version(result):
     """Tag a successful generation result with the current PROMPT_VERSION so callers can
     persist it on the SponsorProfile (stale-draft detection)."""
     if isinstance(result, dict) and 'error' not in result:
         result['prompt_version'] = PROMPT_VERSION
     return result
-
-
-# When the deterministic verdict flags household income ABOVE the B40 line yet the officer has
-# recommended the student anyway, the FINAL profile must not read cut-and-dry: it should
-# acknowledge the income honestly and foreground the EXTENUATING CIRCUMSTANCES that make the case
-# exceptional — grounded ONLY in the officer's written conclusion + the student's own account,
-# never invented (owner decision 2026-07-08). The QC's own note is deliberately NOT relied upon
-# here: a QC often simply endorses the reviewer's view without adding detail.
-_BELOW_LINE_AFFIRM = (
-    "NOTE ON INCOME — this household has been VERIFIED as B40-eligible under the programme's means "
-    "test; its income is WITHIN the B40 range. Do NOT claim or imply the income is ABOVE the B40 "
-    "threshold, do NOT call the case borderline or exceptional on income grounds, and do NOT invent a "
-    "threshold comparison (you are not given the cut-off figure). Present the reported / documented "
-    "income plainly as a B40 household's income."
-)
-
-_ABOVE_LINE_EMPHASIS = (
-    "NOTE ON INCOME — this household's income reads ABOVE the usual B40 line, yet the officer has "
-    "recommended the student. Do NOT present this as a clean-cut B40 case and do NOT hide or "
-    "contradict the income. Acknowledge it honestly, then FOREGROUND the extenuating circumstances "
-    "that make the case exceptional — drawing ONLY on the officer's conclusion and the student's own "
-    "account below (e.g. a large household, a single or irregular earner, medical or caregiving "
-    "costs, recent loss of income, debt). Explain, grounded in those inputs, why the support still "
-    "matters here. Invent nothing: if the inputs give no such circumstances, state the position "
-    "plainly without embellishment."
-)
 
 
 def _income_above_line(application):
