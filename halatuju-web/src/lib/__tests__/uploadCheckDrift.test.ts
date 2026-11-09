@@ -10,7 +10,8 @@
 import { isAcceptedUpload } from '@/lib/uploadCheck'
 import { readApi } from '@/test/apiSource'
 
-const VIEWS = 'apps/scholarship/views.py'
+// A3.2: views.py became the package views/; the allowlist lives in document_rules.py.
+const VIEWS = 'apps/scholarship/views/document_rules.py'
 const src = readApi(VIEWS)
 
 const serverExts = (() => {
