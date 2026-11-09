@@ -230,7 +230,7 @@ class TestMatricBlockShift(SimpleTestCase):
         r = parse_govt_offer(MATRIC)
         self.assertIsNotNone(r)
         self.assertEqual(r['stream'], 'SAINS')
-        self.assertEqual(r['_offer_parser_version'], '2.0.0')
+        self.assertEqual(r['_offer_parser_version'], '2.0.1')
 
     def test_no_text_slot_may_ever_hold_a_date(self):
         # The general rule, stated once: whatever the layout, a date never belongs in any of these.

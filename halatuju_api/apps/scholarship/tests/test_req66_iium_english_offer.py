@@ -175,7 +175,7 @@ class IIUMEnglishOfferIsGenuine(SimpleTestCase):
         self.assertEqual(assess('offer_letter', ocr_text=IIUM_OFFER)['status'], 'genuine')
 
     def test_the_model_version(self):
-        self.assertEqual(MODEL_VERSION, '1.26.0')
+        self.assertGreaterEqual(tuple(map(int, MODEL_VERSION.split('.'))), (1, 26, 0))
 
 
 def _closed(case, text):

@@ -7446,7 +7446,7 @@ effect depends on `token`, and `admin-auth-context` hands out a new `access_toke
 blank, "Loading", and page one again. No wrong data. **Fix:** read the token through a ref and keep it out of the
 effect's dependencies; a test that a token change does not refetch. *(B · S)*
 
-### [TD-447] Offer confirm can still store a hostel line when the stored course is stale - low
+### [TD-447] Offer confirm can still store a hostel line when the stored course is stale - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer realignment's round-2 review.** `services/confirmation.py::_confirmed_place` reads
 the letter's place through `letter_place` with the STORED course id. When a student confirms an offer for a
@@ -7455,13 +7455,18 @@ names no campus of the OLD course and keeps the hostel line, so a hostel can bec
 until `_settle_stale_course_id` re-pins. Pre-existing; no live record has the shape. **Fix:** resolve the letter's
 course first (or re-run `_confirmed_place` after the re-pin) and test a stale-id confirm with a hostel line. *(B · S)*
 
-### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
+**FIXED 2026-11-09 (A2.7a):** `_confirmed_place` resolves the LETTER's course first and falls back to the stored id;
+with no issuer it keeps the line at once. Test: `test_offer_pages_and_lines.ConfirmReadsTheLettersCourseTest`.
+
+### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low - **FIXED (2026-11-09, A2.7b)**
 
 **Raised 2026-11-01 by the offer realignment build.** `realign_bumi_only_pick` runs inside
 `autofill_pathway_from_offer`, which needs `offer_band == 'genuine'`. If an offer's genuineness score is stored
 AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realign until a re-read or
 `realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
 add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7b):** the upload and re-read paths already realign right after their own score; the only path that stored a score without one was `rescore_unscored_documents --apply`. It now calls `offer_sync.realign_after_rescore` for a newly scored offer that is its application's live latest offer, which runs the same `realign_bumi_only_pick` with every gate unchanged (genuine band, Bumi-only pick, pick not already the offer); a dry run only counts `would_realign` through `plan_bumi_realign`. Best-effort like the upload path: a realign that raises is logged and counted (`failed=N`), and the run goes on. Tests: `test_offer_realign.RescoreRunsTheRealignTest` (genuine score realigns; dry run writes nothing; a suspect score and an older offer never realign; a raising realign is counted and the other offers are still scored).
 
 ### [TD-449] The offer check's catalogue queries sit outside every query budget - low - **FIXED (2026-11-08, A2.4)**
 
@@ -7490,7 +7495,7 @@ renamed target silently stops being checked). (5) **Guards:** rule 10 reads only
 rule's text, not that its selector is valid. (6) The 16 px rule's `:is()` drops on Safari < 14 / Chrome < 88.
 **Trigger:** the first stacked overlay, M6 (admin shell), or the next mobile-check change. *(B · S)*
 
-### [TD-451] A short campus line can name a campus of another institution type - low
+### [TD-451] A short campus line can name a campus of another institution type - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer date-rule review (round 4), pre-existing.** Word matching either way round lets a
 short form cross institution types: "KK BAGAN DATUK" names Politeknik Bagan Datuk, "KK BETONG" names Politeknik
@@ -7499,13 +7504,25 @@ Politeknik Muadzam Shah. Full names are safe (the "names another institution out
 treat a leading type prefix ("KK", "POLY", "POLITEKNIK", "KOLEJ KOMUNITI") as a filter on the campus type in
 `offer_course_match.CampusReader`, with tests for the four lines. *(B · S)*
 
-### [TD-452] The town-word list decides whether a short campus form counts - low
+**FIXED 2026-11-09 (A2.7a):** `CampusReader` reads a leading "KK" / "POLY" / "METRO" as the type, and a line that opens
+with "Kolej Komuniti" or "Politeknik" names by words only a campus of that type (`_LEAD_TYPES`, `_same_type`); an
+apostrophe in a name is dropped, so the POLY line names Politeknik Sultan Abdul Halim Mu'adzam Shah by its whole name
+and never Politeknik Muadzam Shah. Tests: `test_offer_pages_and_lines.ShortLineCrossesNoTypeTest`.
+
+### [TD-452] The town-word list decides whether a short campus form counts - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer date-rule review (round 4).** `offer_course_match._TOWN_WORDS` is hand-written, so
 "KK KLANG" names nothing while "KK AMPANG" and "KK SELAYANG" still match, and the METrO short forms ("METRO
 KUANTAN") name nothing once "metro" is a type word. Every such miss is safe (no tick, no fill, nothing pinned) but
 inconsistent. **Fix:** derive the town words from the catalogue (institution towns/states) or add an alias per
 campus that letters name only by town; test each campus's short form. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7a):** neither option as written (deriving town words from the table would let a new row move a
+verdict, which the class rules out). The short type form is read as the type (`_SHORT_TYPES`), so "KK KLANG", "KK
+AMPANG", "KK SELAYANG" and "METRO KUANTAN" name their campus by its WHOLE name (tier 1), whatever `_TOWN_WORDS`
+holds; a bare town still names nothing. Tests: `test_offer_pages_and_lines.ShortTypeFormsTest`. Residual risk
+(A2.7a review, Low, left open): "KK" also means Kolej Kediaman, so a "KK X" hostel line now names a Kolej Komuniti X
+when one exists, which blocks the letterhead fallback and leaves the course unresolved (no wrong clash, nothing pinned).
 
 ### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low
 
@@ -7821,7 +7838,7 @@ compare, reading the letter's INSTITUTION (matric college / Form-6 college / a s
 programme word ("lepasan STPM" on a degree letter); asasi untouched. 0 live letters change (2
 superseded: 187, 276). Tests `test_td473_pre_u_letter_level.py`.
 
-### [TD-474] An STPM school name followed by a one-word town line takes the town - low
+### [TD-474] An STPM school name followed by a one-word town line takes the town - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-03 by the offer exact-read S5 adversarial review (L3, left open).** `offer_parse._read_block` joins a
 long school name wrapped onto a second line (`wraps=('institution',)`, `_wrapped`: one capitalised word, not an
@@ -7830,6 +7847,11 @@ is not in `_NOT_WRAP`, would be read as part of the institution. Not seen in
 the corpus (every one-word line after a school there was a real wrap: 3 of 3), so the rule stays; a wrong
 institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
 postcode line below the town as the anchor), with a synthetic twin. *(B · S)*
+
+**FIXED 2026-11-09 (A2.7a):** the postcode anchor — `offer_parse._town_above_postcode`: a one-word line straight above
+a postcode line is never joined (PARSER_VERSION 2.0.1). A town list was measured and rejected: it would break real
+wraps ("...SHAH", "...KLANG"). On the corpus no wrap sits above a postcode, so no read changes (offer_parse_check
+identical). Twin: `test_offer_pages_and_lines.TownAbovePostcodeTest`.
 
 ### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
 
@@ -8221,6 +8243,13 @@ printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the off
 extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
 corpus first (owner's yes: a paid path). *(B · M)*
 
+**Measured 2026-11-09 (A2.7a), DEFERRED, still open.** Offline on the stored Vision pages (no call): 95 Vision
+letters, 9 of them multi-page; "score pages 1-3 when page 1 is not genuine" would cost 4 extra Vision calls across the
+corpus (about US$0.006) and changes ONE letter: the held-out e-Daftar printout above, which the owner ruled `suspect`
+(ruling 3) and which would then score `genuine` — a new eval miss. So the fix as written regresses an owner-ruled
+label, and the paid path still needs the owner's yes. Next step: the owner rules whether a printout with the real
+offer behind it should band genuine; then build it with that label. *(B · M)*
+
 ### [TD-492] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
 
 **Raised 2026-11-04 by the S6 round-10 review (lead's ruling on M4 for confirmations).** A confirmation of studies
@@ -8232,6 +8261,8 @@ short line, so "MERCU JAYA / POLITEKNIK CONTOH" still lifts (probe in `tests/tes
 lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tightening would drop an owner-ruled
 letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
 motto. *(S6 · S)*
+
+**Deferred 2026-11-09 (A2.7b):** not fixed. The fix needs a crest / motto list measured on more real confirmations; any list built today would drop the owner-ruled a123. Re-open when the corpus holds more confirmation letterheads.
 
 ### [TD-493] The agency-letterhead lift does not catch a private name with no organisation word - medium
 
@@ -8251,6 +8282,8 @@ spell the noun ("ACAD3MY", "K0LEJ", "Ko1ej") ARE read since round 13. Pinned in
 **Fix:** a capitalised-name test that knows the letter's own words (people, places, course titles) - only once the
 corpus holds enough agency letters to measure it. *(S6 · M)*
 
+**Deferred 2026-11-09 (A2.7b):** not fixed. The capitalised-name test needs agency letters to measure against, which the fixture corpus does not yet hold; a narrower OCR-misread fold ("Acaderny", "Kolei") was considered and left out, since a one-off spelling list would be a guess, not a measured rule. The pinned cases still lift as before.
+
 ### [TD-494] The agency lift's descriptor excuse can hide a company name - medium
 
 **Raised 2026-11-04 by the S6 round-13 review; left for S7 under the owner's stop rule (decisions S6 item 10).**
@@ -8264,6 +8297,8 @@ pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus l
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*
 
+**Deferred 2026-11-09 (A2.7b, adversarial review):** a fix was built (a name read on the line above / below, the agency or the spelt TVET sector before the run) and reverted before shipping: the name-line test blocked genuine slogan letters the baseline lifts. A future fix must be measured on the corpus and must hold both lists. **Must still lift** (a descriptor slogan beside): "Unit Kemasukan"; "Tarikh Pendaftaran"; "MALAYSIA MADANI"; a course-title line; a signatory name ("NOR AZLINA BINTI AHMAD" style); a street line; "MARA Keusahawanan & Pendidikan Global" on one line; a329 itself. **Must block** (the five pinned shapes): "MARA Technical Solutions", "Teknikal Vokasional Solutions", "Teknikal dan Vokasional Skills", "Penyedia latihan : Mercu" / "Technical Solutions", "Latihan Global" / "Mercu Jaya". The pinned gaps stay as accepted in `Round13.test_the_accepted_gaps_after_the_stop_rule`.
+
 ### [TD-495] "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
 
 **Raised 2026-11-04 at the S6 close (round-14 real-letter probes).** The agency-letterhead lift's closed-world
@@ -8273,6 +8308,8 @@ letter as another agency's institute; either line stops the lift. Safe: the lett
 call, never a new fail. Round 12 blocked the plain spellings the same way; round 14 only made the OCR spellings
 read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
 and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
+
+**Deferred 2026-11-09 (A2.7b, adversarial review):** a residence span ("KOLEJ KEDIAMAN" taken out as an allowed span) was built and reverted before shipping: removing KOLEJ from the general checks let private names through. The sibling-institute part ("IKM1 Kuantan" on a KBS / JTM letter) also stays open; it widens condition (2) of `offer_rulings._agency_lift` and needs an owner ruling. A future fix must be measured on the corpus. **Must block:** "Kolej Kediaman 21 Mercu"; "Mercu Kolej Kediaman"; "Kolej Kediaman Kuantan Mercu"; "Kolej Kediaman" with a name on the NEXT line; "Kolej Kediaman Mercu Jaya". **Must lift:** a bare "Kolej Kediaman" / "Ko1ej Kediaman" line. Note: the common phrasings "Kolej Kediaman Pelajar", "Kolej Kediaman Lelaki" and "Kolej Kediaman Blok A" stay BLOCKED today (the letter keeps its baseline call) and should lift under a measured fix.
 Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 ### [TD-512] A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
