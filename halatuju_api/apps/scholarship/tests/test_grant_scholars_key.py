@@ -1,7 +1,9 @@
-"""Sprint S1 (decision S1-g): courses 0095 adds `scholars` to every saved list that holds `see_all`.
+"""Sprint S1 (decision S1-g): courses 0095 adds `scholars` to every ACTIVE saved list that NAMES `see_all`.
 
-Done-when: it adds the key to every such row, touches nothing else, keeps the permission-change audit
-truthful, and reverses cleanly. Run on the live app registry (the functions take `apps`).
+Done-when: it adds the key to every such row — not a `qc`-only list (owner ruling 2026-11-10: Quality
+check carries no Scholars role), not a deactivated row — touches nothing else, keeps the permission-change
+audit truthful, and reverses cleanly, touching no audit row it did not write. Run on the live app registry
+(the functions take `apps`).
 """
 from importlib import import_module
 
@@ -26,8 +28,8 @@ class GrantScholarsKey(TestCase):
         cls.gain = {
             'admin_see_all': person('admin', ['see_all', 'spending']),
             'reviewer_see_all': person('reviewer', ['review', 'see_all', 'spending']),
-            'qc_alone': person('qc', ['qc']),                      # `qc` brings `see_all` (IMPLIES)
             'finance_see_all': person('finance', ['payments_approve', 'see_all']),
+            'qc_see_all': person('qc', ['qc', 'see_all']),        # names `see_all`: it gains
         }
         cls.keep = {
             'preset_admin': person('admin'),                       # NULL: the preset carries the key
@@ -35,6 +37,9 @@ class GrantScholarsKey(TestCase):
             'review_only': person('reviewer', ['review']),
             'spending_only': person('admin', ['spending']),
             'already': person('admin', ['see_all', 'scholars']),
+            'qc_alone': person('qc', ['qc']),                      # `qc` implies `see_all`, never Scholars
+            'reviewer_qc': person('reviewer', ['review', 'qc']),
+            'inactive_see_all': person('admin', ['see_all', 'spending'], is_active=False),
             'lead': person('org_admin'),
             'super': make_admin('super', super_admin=True),
         }
@@ -76,3 +81,18 @@ class GrantScholarsKey(TestCase):
         self.assertEqual(self._stored(), before)
         self.assertEqual(StaffPermissionChange.objects.count(), audit_before)
         self.assertEqual(self._stored()[self.keep['already'].pk], ['see_all', 'scholars'])  # not its key
+
+    def test_the_reverse_leaves_every_other_migration_row_alone(self):
+        other = StaffPermissionChange.objects.create(        # `before` already held the key: not 0095's
+            target_id=self.keep['already'].pk, target_email='', organisation_id=None, kind='edit',
+            role='admin', before=['see_all', 'scholars'], after=['see_all', 'scholars'],
+            changed_by_email='', changed_by_role='migration')
+        unrelated = StaffPermissionChange.objects.create(
+            target_id=self.keep['spending_only'].pk, target_email='', organisation_id=None, kind='edit',
+            role='admin', before=['see_all'], after=['spending'], changed_by_email='',
+            changed_by_role='migration')
+        MIGRATION.grant_scholars(live_apps, None)
+        undone = MIGRATION.withdraw_scholars(live_apps, None)
+        self.assertEqual(sorted(undone), sorted(p.pk for p in self.gain.values()))
+        self.assertEqual(StaffPermissionChange.objects.filter(pk__in=[other.pk, unrelated.pk]).count(), 2)
+        self.assertEqual(self._stored()[self.keep['already'].pk], ['see_all', 'scholars'])

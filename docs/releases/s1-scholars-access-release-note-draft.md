@@ -21,14 +21,18 @@ Decisions: `docs/decisions.md` (2026-11-09, S1). Brief: `docs/plans/2026-11-09-s
 `scholarship` 0175; main has `courses` 0094, so the merge author re-points the first dependency to
 `0094_drop_partneradmin_is_super_admin` before the push. The ledger row name below is unchanged by that.
 
+The rule: an ACTIVE team member (`is_active`) whose SAVED list NAMES `see_all` and lacks `scholars`. A `qc`-only
+list does not gain it (owner ruling 2026-11-10: Quality check carries no Scholars role), nor does a deactivated
+row. The pre-check and the apply use the same WHERE, word for word.
+
 ### 1. Pre-check (read-only). Expect exactly 4 rows. Any other number: STOP and ask.
 
 ```sql
 BEGIN READ ONLY;
 SELECT count(*)
   FROM partner_admins
- WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND jsonb_typeof(permissions) = 'array'
-   AND (permissions ? 'see_all' OR permissions ? 'qc') AND NOT permissions ? 'scholars';
+ WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND is_active
+   AND jsonb_typeof(permissions) = 'array' AND permissions ? 'see_all' AND NOT permissions ? 'scholars';
 SELECT count(*) FROM django_migrations WHERE app = 'courses' AND name = '0095_grant_scholars_key';   -- expect 0
 COMMIT;
 ```
@@ -42,11 +46,11 @@ INSERT INTO staff_permission_changes (target_id, target_email, organisation_id, 
 SELECT id, COALESCE(email, ''), owning_organisation_id, 'edit', role, permissions,
        permissions || '["scholars"]'::jsonb, '', 'migration', now()
   FROM partner_admins
- WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND jsonb_typeof(permissions) = 'array'
-   AND (permissions ? 'see_all' OR permissions ? 'qc') AND NOT permissions ? 'scholars';
+ WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND is_active
+   AND jsonb_typeof(permissions) = 'array' AND permissions ? 'see_all' AND NOT permissions ? 'scholars';
 UPDATE partner_admins SET permissions = permissions || '["scholars"]'::jsonb
- WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND jsonb_typeof(permissions) = 'array'
-   AND (permissions ? 'see_all' OR permissions ? 'qc') AND NOT permissions ? 'scholars';
+ WHERE role IN ('admin', 'finance', 'qc', 'reviewer') AND is_active
+   AND jsonb_typeof(permissions) = 'array' AND permissions ? 'see_all' AND NOT permissions ? 'scholars';
 INSERT INTO django_migrations (app, name, applied) VALUES ('courses', '0095_grant_scholars_key', now());
 COMMIT;
 ```
