@@ -9566,7 +9566,7 @@
       }
     },
     "nudge": {
-      "missing": "Profil anda belum ada {items}.",
+      "missing": "Profil anda belum mempunyai {items}.",
       "helpOne": "Menambahkannya akan melengkapkan profil anda.",
       "helpMany": "Menambahkan semuanya akan melengkapkan profil anda.",
       "and": "dan",
