@@ -23,8 +23,8 @@ async function fillAndSubmit(code: string) {
   mockApi.listDocuments.mockResolvedValue({ documents: [{ doc_type: 'parent_ic' }] } as never)
   mockApi.recordConsent.mockRejectedValueOnce(Object.assign(new Error('400'), { code }))
   render(<ScholarshipConsent token="tok" locale="en" />)
-  await screen.findByRole('switch')
-  const [name, nric] = screen.getAllByRole('textbox')
+  // The switch renders before the status loads; wait for the minor-only textboxes (slow under load).
+  const [name, nric] = await screen.findAllByRole('textbox')
   fireEvent.change(name, { target: { value: 'IBU CONTOH' } })
   fireEvent.change(nric, { target: { value: '750101145678' } })
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'mother' } })
