@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
 import {
   fetchSurveyCsv, getSurveyResults, remindSurvey,
   type AnswerValue, type SurveyQuestionRow, type SurveyResults as Payload, type SurveySummaryItem, type SurveyWho,
@@ -32,17 +32,23 @@ export function valueText(t: T, q: SurveyQuestionRow | undefined, v: AnswerValue
   return String(v)
 }
 
-function Who({ who }: { who: SurveyWho[] }) {
+/** A scholar's name: a link to their file for a reader of every file (`readsAllScholars`, sprint S1),
+ *  plain text for anyone else — never a link to a 404. */
+function Name({ id, name, opens, className = LINK }: { id: number; name: string; opens: boolean; className?: string }) {
+  return opens
+    ? <Link href={`/admin/scholars/${id}`} className={className}>{name || '—'}</Link>
+    : <span>{name || '—'}</span>
+}
+
+function Who({ who, opens }: { who: SurveyWho[]; opens: boolean }) {
   return (
     <span className="flex flex-wrap gap-x-3">
-      {who.map((w) => (
-        <Link key={w.application_id} href={`/admin/scholars/${w.application_id}`} className={LINK}>{w.name || '—'}</Link>
-      ))}
+      {who.map((w) => <Name key={w.application_id} id={w.application_id} name={w.name} opens={opens} />)}
     </span>
   )
 }
 
-function OptionBars({ item, q, t }: { item: SurveySummaryItem; q: SurveyQuestionRow; t: T }) {
+function OptionBars({ item, q, t, opens }: { item: SurveySummaryItem; q: SurveyQuestionRow; t: T; opens: boolean }) {
   const [open, setOpen] = useState<string | null>(null)
   const max = Math.max(1, ...(item.options ?? []).map((o) => o.count))
   return (
@@ -66,7 +72,7 @@ function OptionBars({ item, q, t }: { item: SurveySummaryItem; q: SurveyQuestion
                 )}
               </span>
             </div>
-            {open === key && <div className="mt-1 pl-1 text-sm"><Who who={o.who} /></div>}
+            {open === key && <div className="mt-1 pl-1 text-sm"><Who who={o.who} opens={opens} /></div>}
           </div>
         )
       })}
@@ -74,7 +80,7 @@ function OptionBars({ item, q, t }: { item: SurveySummaryItem; q: SurveyQuestion
   )
 }
 
-function Written({ item, t }: { item: SurveySummaryItem; t: T }) {
+function Written({ item, t, opens }: { item: SurveySummaryItem; t: T; opens: boolean }) {
   const [all, setAll] = useState(false)
   const list = item.written ?? []
   const shown = all ? list : list.slice(0, SHOW)
@@ -83,7 +89,7 @@ function Written({ item, t }: { item: SurveySummaryItem; t: T }) {
     <div className="space-y-2">
       {shown.map((w) => (
         <p key={w.application_id} className="whitespace-pre-line break-words text-sm text-ground-800">
-          “{w.text}” — <Link href={`/admin/scholars/${w.application_id}`} className={LINK}>{w.name || '—'}</Link>
+          “{w.text}” — <Name id={w.application_id} name={w.name} opens={opens} />
         </p>
       ))}
       {list.length > SHOW && !all && (
@@ -102,12 +108,13 @@ function Written({ item, t }: { item: SurveySummaryItem; t: T }) {
  *
  * ⚠ STAFF ONLY, THE SERVER'S FENCE: the same roles and organisation as the Surveys page; another
  * organisation's survey is 404 here and on the CSV. Names link to the scholar's file, whose Surveys tab
- * shows the same answers. The Remind button is the job's own reminder, once per scholar (never twice).
+ * shows the same answers — for a reader of every file only (sprint S1); anyone else reads plain names. The Remind button is the job's own reminder, once per scholar (never twice).
  */
 export default function SurveyResults({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = opensDoorOr(role, 'surveys', MAKER_ROLES)   // T5c P4: the server's door
+  const opens = readsAllScholars(role)
   const [data, setData] = useState<Payload | null>(null)
   const [failed, setFailed] = useState(false)
   const [view, setView] = useState<View>('summary')
@@ -210,8 +217,8 @@ export default function SurveyResults({ id, programme }: { id: number; programme
                 {item.average == null ? t(`${K}.noneYet`) : t(`${K}.average`, { avg: String(item.average) })}
               </p>
             )}
-            {item.options && <OptionBars item={item} q={q} t={t} />}
-            {item.written && <Written item={item} t={t} />}
+            {item.options && <OptionBars item={item} q={q} t={t} opens={opens} />}
+            {item.written && <Written item={item} t={t} opens={opens} />}
           </section>
         )
       })}
@@ -222,7 +229,7 @@ export default function SurveyResults({ id, programme }: { id: number; programme
             {data.responses.map((resp) => (
               <article key={resp.application_id} className={CARD} data-testid={`response-${resp.application_id}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <Link href={`/admin/scholars/${resp.application_id}`} className={`${LINK} font-medium`}>{resp.name || '—'}</Link>
+                  <Name id={resp.application_id} name={resp.name} opens={opens} className={`${LINK} font-medium`} />
                   <span className="text-xs text-ground-600">{t(`${K}.sent`, { date: formatDate(resp.updated_at) })}</span>
                 </div>
                 <dl className="space-y-2">
@@ -248,7 +255,7 @@ export default function SurveyResults({ id, programme }: { id: number; programme
               {data.not_answered.map((p) => (
                 <li key={p.application_id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm"
                   data-testid={`pending-${p.application_id}`}>
-                  <Link href={`/admin/scholars/${p.application_id}`} className={LINK}>{p.name || '—'}</Link>
+                  <Name id={p.application_id} name={p.name} opens={opens} />
                   {p.reminded && <span className="text-xs text-ground-600">{t(`${K}.remindedOne`)}</span>}
                 </li>
               ))}

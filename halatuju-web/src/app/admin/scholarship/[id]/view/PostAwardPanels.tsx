@@ -8,14 +8,16 @@
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
 import Link from 'next/link'
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useContext, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import {
   isFunded,
   disbursementTone,
   actionsFor,
   totalReleased,
 } from '@/lib/disbursement'
+import { AdminAuthContext } from '@/lib/adminAuthCore'
 import { formatDate } from '@/lib/formatDate'
+import { readsAllScholars } from '@/lib/pageGuard'
 import { closeOffer } from '@/lib/closeOffer'
 import type {
   AdminScholarshipDetail,
@@ -43,7 +45,9 @@ export function PostAwardPanels({
   /** super or org_admin — the only roles the api lets close a PRE-award case (TD-352). */
   orgSuper: boolean
   /** Sprint S1: whether the reader may open the Scholars page (`mayOpen('/admin/scholars')`, the menu's
-   *  rule): the `scholars` key, not this cockpit's Applications rule. Without it, no "Open scholar file". */
+   *  rule): the `scholars` key, not this cockpit's Applications rule. Without it, no "Open scholar file".
+   *  ⚠ The menu rule also admits staff who mentor, and this payload does not say whether the viewer
+   *  mentors THIS student, so the link also asks `readsAllScholars` (below): never a link to a 404. */
   mayOpenFile: boolean
   bursary: BursaryAgreement | null
   bursaryMsg: string
@@ -70,6 +74,8 @@ export function PostAwardPanels({
   const holdRight = useRef(false)
   if (app.maintenance_controls?.can_hold != null) holdRight.current = app.maintenance_controls.can_hold
   const noFileControl = !app.has_file && canWrite && !!app.maintenance_controls?.can_set_substate
+  const viewer = useContext(AdminAuthContext)?.role
+  const opensFile = mayOpenFile && readsAllScholars(viewer)
   return (<>
 
       {/* Student maintenance S2: the scholar's maintenance file, when the SERVER says there is one
@@ -111,7 +117,7 @@ export function PostAwardPanels({
         </div>
       )}
 
-      {app.has_file && mayOpenFile && (
+      {app.has_file && opensFile && (
         <Link href={`/admin/scholars/${app.id}`} data-testid="open-scholar-file"
           className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50 max-md:min-h-11 max-md:min-w-11 max-md:justify-center">
           {t('admin.scholars.file.openFile')} →

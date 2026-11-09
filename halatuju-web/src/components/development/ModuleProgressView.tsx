@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { mayOpen, opensDoorOr } from '@/lib/pageGuard'
+import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
 import {
   fetchModuleCsv, getModuleProgress, remindModule, reviewTask, taskFileLink,
   type ModuleProgress, type ProgressBucket, type ProgressRow,
@@ -74,7 +74,7 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = opensDoorOr(role, 'development', MAKER_ROLES)   // T5c P4: the server's door
-  const opensFile = mayOpen('/admin/scholars', role)   // sprint S1: the name links only for a `scholars` reader
+  const opensFile = readsAllScholars(role)   // sprint S1: the name links only for a reader of every file
   const [data, setData] = useState<ModuleProgress | null>(null)
   const [failed, setFailed] = useState(false)
   const [tab, setTab] = useState<ProgressBucket>('to_review')
