@@ -28,8 +28,9 @@ naming an address with nobody behind it. The window is a few milliseconds and th
 to be working while being deleted; it is accepted, not closed.
 
 ⚠ **COVERAGE IS PINNED BY A DRIFT TEST** (`test_t2_footprint_drift.py`). Every foreign key or one-to-one
-to `PartnerAdmin` or `Mentor`, and every field named `*_by`, `*_by_email` or `actor_email`, anywhere in
-the project, is either counted here or allowlisted there with the reason it is not work. A new field
+to `PartnerAdmin` or `Mentor`, and every field named `*_by`, `*_email`, `actor`, `author`, `*_actor` or
+`*_author`, anywhere in the project, is either counted here or allowlisted there with the reason it is
+not work. `test_t2_footprint_sources.py` builds one row per source and checks both paths agree. A new field
 fails that test until somebody classifies it.
 """
 from django.db.models import CharField, Count, F, Func, IntegerField, OuterRef, Q, Subquery, Value

@@ -6,7 +6,8 @@ deletable. This walks EVERY model and every field that can name a staff member's
 
   * a foreign key or one-to-one to `PartnerAdmin` or `Mentor`;
   * any field named `*_by` or `*_email` (any email column, in every app, `courses` included: a
-    new `author_email`-style stamp is caught however it is named).
+    new `author_email`-style stamp is caught however it is named);
+  * any field named `actor` or `author`, or ending `_actor` / `_author`.
 
 Each must be COUNTED by `staff_footprint` or sit in `NOT_WORK` below with a one-line reason. A new
 field fails here until somebody decides which it is.
@@ -35,13 +36,17 @@ NOT_WORK = {
     'scholarship.Donation.finance_checked_by': 'a display name; finance_checked_by_email counts the person',
     'scholarship.Donation.confirmed_by': 'a display name; confirmed_by_email counts the person',
     'scholarship.OrgRequestAnalysis.authored_by': 'the author label (a model name such as claude-opus)',
-    'scholarship.BursaryAgreement.foundation_signed_by': 'a typed name; the act is a counted '
-                                                         'StaffActivity (contract_countersigned)',
+    'scholarship.BursaryAgreement.foundation_signed_by': 'a typed name. Countersigns since S4 are a '
+                                                         'counted StaffActivity; ones BEFORE S4 are not '
+                                                         'in StaffActivity at all. Harmless only because '
+                                                         'the countersigner is a super, never deleted',
     'scholarship.BursaryAgreement.witness_signed_by': 'a typed name; witness_admin counts the person',
     'scholarship.StaffPermissionChange.target': 'about them, not by them; changed_by_email counts the doer',
     'scholarship.ReviewerNote.author': 'the twin of author_email, which counts',
     'scholarship.AwardWithdrawalRequest.requested_by': 'the twin of requested_by_email, which counts',
     'scholarship.AwardWithdrawalRequest.decided_by': 'the twin of decided_by_email, which counts',
+    'courses.ProfileClaimEvent.actor': 'an operator label typed at the shell (revoke_alias(by=...) '
+                                       'has no caller in the app); no staff action writes it',
     # Email columns that are an address to write to or about, never a staff member's act.
     'courses.PartnerOrganisation.contact_email': "the organisation's own contact address",
     'courses.StudentProfile.contact_email': "the student's own contact address",
@@ -74,7 +79,8 @@ def _walked():
                 continue
             to_staff = (f.is_relation and (f.many_to_one or f.one_to_one)
                         and f.related_model in (PartnerAdmin, Mentor))
-            named = f.name.endswith(('_by', '_email'))
+            named = (f.name.endswith(('_by', '_email', '_actor', '_author'))
+                     or f.name in ('actor', 'author'))
             if to_staff or named:
                 found.add(f'{model._meta.app_label}.{model.__name__}.{f.name}')
     return found
