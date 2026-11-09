@@ -31,8 +31,8 @@ def _app(status='rejected', email='s@x.com', **kw):
                             notify_email=email, **kw)
 
 
-def _declined(hours_ago=2, **kw):
-    when = timezone.now() - timedelta(hours=hours_ago)
+def _declined(hours_ago=2, minutes_ago=None, **kw):
+    when = timezone.now() - (timedelta(minutes=minutes_ago) if minutes_ago else timedelta(hours=hours_ago))
     return _app(rejected_at=when, rejection_category='interview', **kw)
 
 
@@ -60,7 +60,7 @@ class TestUntoldReason(TestCase):
 
 class TestRetrySweep(TestCase):
     def test_failed_send_is_retried_then_stamped(self):
-        app = _declined()
+        app = _declined(minutes_ago=20)
         with mock.patch(DECLINE_SEND, return_value=False):
             self.assertEqual(retry_unsent_decisions(), {'sent': 0, 'failed': 1})
         with mock.patch(DECLINE_SEND, return_value=True):
@@ -78,8 +78,8 @@ class TestRetrySweep(TestCase):
         send.assert_not_called()
 
     def test_one_raise_does_not_stop_the_rest(self):
-        _declined()
-        _declined()
+        _declined(minutes_ago=20)
+        _declined(minutes_ago=20)
         with mock.patch(DECLINE_SEND, side_effect=[RuntimeError('x'), True]):
             self.assertEqual(retry_unsent_decisions(), {'sent': 1, 'failed': 1})
 
@@ -97,13 +97,34 @@ class TestReleaseCap(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.pending_rejection_category, 'interview')
 
-    def test_past_the_cap_released_without_email_and_flagged(self):
-        app = self._embargoed(73)
+    def test_past_the_cap_it_is_never_released_without_its_email(self):
+        # Lead ruling: a decline whose email keeps failing must NEVER become visible to her.
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        from apps.scholarship.student_status import student_facing_status
+        app = self._embargoed(80)                       # due 80 h ago: past RETRY_CAP
         with mock.patch(DECLINE_SEND, return_value=False):
-            self.assertEqual(decline.release_pending_declines(), 1)
+            for _ in range(3):
+                decline.release_pending_declines()
+            decline.release_pending_declines(now=timezone.now() + timedelta(days=9))
         app.refresh_from_db()
-        self.assertEqual(app.pending_rejection_category, '')
+        self.assertEqual(app.pending_rejection_category, 'interview')       # still embargoed
+        self.assertEqual(student_facing_status(app), 'interviewed')         # she sees no decline
+        self.assertEqual(untold_reason(app), UNSENT)                        # the officer is told
+        self.assertEqual(AdminApplicationDetailSerializer(app).data['decision_mail'], UNSENT)
+
+    def test_the_officer_sees_it_from_the_moment_the_release_is_due(self):
+        app = self._embargoed(1)
         self.assertEqual(untold_reason(app), UNSENT)
+        app.decline_due_at = timezone.now() - timedelta(minutes=5)           # inside the grace
+        self.assertEqual(untold_reason(app), '')
+        app.decline_due_at = timezone.now() + timedelta(days=1)              # still cooling off
+        self.assertEqual(untold_reason(app), '')
+
+    def test_a_failing_release_is_tried_in_slots_not_on_every_run(self):
+        self._embargoed(8)                                                    # between two slots
+        with mock.patch(DECLINE_SEND, return_value=False) as send:
+            decline.release_pending_declines()
+        send.assert_not_called()
 
     def test_sent_stamp_can_be_kept_on_its_own(self):
         app = self._embargoed(1)
@@ -112,6 +133,43 @@ class TestReleaseCap(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.decline_email_sent_at, stamp)
         self.assertEqual(app.decision_email_sent_at, stamp)
+
+
+class TestRetrySchedule(TestCase):
+    def test_a_failing_send_is_metered_about_six_times_in_the_window(self):
+        t0 = timezone.now().replace(microsecond=0)
+        _app(rejected_at=t0, rejection_category='interview')
+        with mock.patch(DECLINE_SEND, return_value=False) as send:
+            for k in range(0, 4 * 76):                                       # 15-minute cron, 76 hours
+                retry_unsent_decisions(now=t0 + timedelta(minutes=15 * k))
+        self.assertEqual(send.call_count, 6)    # 15 min, 1 h, 6 h, 24 h, 48 h, 72 h after the decision
+
+    def test_slot_boundaries(self):
+        h = timedelta(hours=1)
+        self.assertTrue(decline.retry_slot(timedelta(minutes=16)))
+        self.assertFalse(decline.retry_slot(timedelta(minutes=40)))
+        self.assertTrue(decline.retry_slot(6 * h))
+        self.assertFalse(decline.retry_slot(73 * h))                        # the sweep stops
+        self.assertTrue(decline.retry_slot(96 * h + timedelta(minutes=5), forever=True))  # daily
+
+
+class TestLockQueryIsSelfOnly(TestCase):
+    def test_the_sweep_locks_its_own_row_only(self):
+        # PostgreSQL refuses FOR UPDATE over a nullable outer join; SQLite cannot show the error.
+        from django.db.models import QuerySet
+        _declined(minutes_ago=20)
+        real = QuerySet.select_for_update
+        seen = {}
+
+        def spy(qs, **kwargs):
+            seen.update(kwargs)
+            return real(qs, **kwargs)
+
+        with mock.patch.object(QuerySet, 'select_for_update', spy), \
+                mock.patch(DECLINE_SEND, return_value=True):
+            retry_unsent_decisions()
+        self.assertEqual(seen.get('of'), ('self',))
+        self.assertTrue(seen.get('skip_locked'))
 
 
 class TestCommandSurvivesOneFailure(TestCase):
@@ -172,6 +230,46 @@ class TestDetailPayload(TestCase):
         self.assertEqual(AdminApplicationDetailSerializer(_app('submitted')).data['decision_mail'], '')
 
 
+class TestCurrentApplicationTwoCohorts(TestCase):
+    def _two(self):
+        from apps.scholarship.tests.factories import make_cohort
+        p = StudentProfile.objects.create(supabase_user_id=f'a26-two-{StudentProfile.objects.count()}')
+        a = make_application('shortlisted', cohort=_cohort(), student=p)
+        ScholarshipApplication.objects.filter(pk=a.pk).update(
+            status='rejected', pending_rejection_category='interview',
+            pre_decline_status='shortlisted', rejected_at=timezone.now(),
+            decline_due_at=timezone.now() + timedelta(days=3))
+        b = make_application('shortlisted', cohort=make_cohort(code='a26-b'), student=p)
+        return p, b
+
+    def test_an_embargoed_decline_does_not_block_the_other_cohort(self):
+        from apps.scholarship.views import _current_application
+        p, b = self._two()
+        self.assertEqual(_current_application(p.pk).pk, b.pk)
+
+    def test_two_live_ones_still_refuse(self):
+        from apps.scholarship.tests.factories import make_cohort
+        from apps.scholarship.views import AmbiguousApplication, _current_application
+        p, _b = self._two()
+        make_application('shortlisted', cohort=make_cohort(code='a26-c'), student=p)
+        with self.assertRaises(AmbiguousApplication):
+            _current_application(p.pk)
+
+
+class TestCancelReopenFromAnUnmovedCase(TestCase):
+    """TD-356: a reopen recorded from 'interviewing' (a decided case QC never saw) cancels in place."""
+
+    def test_the_target_leaves_interviewing_alone(self):
+        from apps.scholarship import reopen
+        from apps.scholarship.models import DecisionReopen
+        row = DecisionReopen(reopened_from='interviewing')
+        self.assertIsNone(reopen._cancel_target(row, 'interviewing'))
+        # ...while a QC reopen (recorded from 'interviewed') still returns to AWAITING QC.
+        row.reopened_from = 'interviewed'
+        self.assertEqual(reopen._cancel_target(row, 'interviewing'), 'interviewed')
+
+
+
 class TestNotCheckedHold(TestCase):
     """TD-406: a later non-closing offer upload lifts the not-checked hold, and only that hold."""
 
@@ -187,9 +285,20 @@ class TestNotCheckedHold(TestCase):
         self.hold = self._item({'needs_officer_eye': True, 'held_by': NOT_CHECKED_HOLD}, 'a')
         self.breaker = self._item({'needs_officer_eye': True}, 'b')
 
+    def test_an_upload_lifts_only_the_request_it_answers(self):
+        from apps.scholarship.genuineness.offer_issuers import (
+            NOT_CHECKED_HOLD, release_not_checked_holds)
+        other = self._item({'needs_officer_eye': True, 'held_by': NOT_CHECKED_HOLD}, 'c')
+        release_not_checked_holds(
+            self.app, mock.Mock(doc_type='offer_letter', vision_fields={}, request_code='a'))
+        self.hold.refresh_from_db()
+        other.refresh_from_db()
+        self.assertNotIn('needs_officer_eye', self.hold.params)
+        self.assertTrue(other.params.get('needs_officer_eye'))
+
     def test_later_unreadable_offer_lifts_only_the_not_checked_hold(self):
         from apps.scholarship.genuineness.offer_issuers import release_not_checked_holds
-        doc = mock.Mock(doc_type='offer_letter', vision_fields={})
+        doc = mock.Mock(doc_type='offer_letter', vision_fields={}, request_code='')
         release_not_checked_holds(self.app, doc)
         self.hold.refresh_from_db()
         self.breaker.refresh_from_db()

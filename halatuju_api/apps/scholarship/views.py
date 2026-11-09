@@ -818,16 +818,16 @@ def _current_application(user_id):
         ScholarshipApplication.objects
         .filter(live_q(POST_SHORTLIST_EDITABLE + _FUNDED_STATES), profile_id=user_id)
         .select_related('profile')
-        .order_by('-submitted_at')[:2]
+        .order_by('-submitted_at')
     )
-    if not live:
-        return None
+    if len(live) > 1:   # TD-350: an embargoed decline (live_q's only 'rejected') is no second answer
+        live = [a for a in live if a.status != 'rejected'] or live
     if len(live) > 1:
         logger.error(
             'Ambiguous live application for profile %s — multi-programme roadmap M1', user_id,
         )
         raise AmbiguousApplication()
-    return live[0]
+    return live[0] if live else None
 
 
 class DocumentSignUploadView(APIView):

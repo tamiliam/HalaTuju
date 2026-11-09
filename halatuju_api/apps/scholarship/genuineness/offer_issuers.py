@@ -235,8 +235,11 @@ def release_not_checked_holds(application, doc) -> None:
     circuit breaker's — and never while THIS upload is itself an offer the officer must close."""
     if getattr(doc, 'doc_type', '') != 'offer_letter':
         return
-    for item in application.resolution_items.filter(status='open', kind='doc', source='officer',
-                                                    doc_type='offer_letter'):
+    items = application.resolution_items.filter(status='open', kind='doc', source='officer',
+                                                doc_type='offer_letter')
+    if getattr(doc, 'request_code', ''):
+        items = items.filter(code=doc.request_code)     # only the request THIS upload answers
+    for item in items:
         if (item.params or {}).get('held_by') != NOT_CHECKED_HOLD or officer_must_close(doc, item):
             continue
         item.params = released_from_officer(item.params)

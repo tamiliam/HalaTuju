@@ -347,6 +347,22 @@ def cancel_pending_decline(application, by_email=''):
 #: After it the case is released as it stands and the officer's cockpit says "tell her another way"
 #: (`decision_mail.untold_reason`, TD-358). Long enough for a weekend of Brevo trouble.
 RETRY_CAP = timedelta(hours=72)
+#: Where in that window a failing send is tried again (time since the decision / the release came
+#: due), so it is metered about six times, not on every 15-minute cron run. Each slot is one cron
+#: period wide (`RETRY_SLOT`); no column holds an attempt count, so the schedule is read off the clock.
+RETRY_AT = tuple(timedelta(minutes=m) for m in (0, 15, 60, 360, 1440, 2880, 4320))
+RETRY_SLOT = timedelta(minutes=15)
+DAY = timedelta(hours=24)
+RELEASE_EAGER = timedelta(hours=1)   # the embargoed release retries on every run this long
+
+
+def retry_slot(elapsed, forever=False):
+    """Is `elapsed` (time since the decision, or since the release fell due) inside a retry slot?
+    `forever`: the embargoed release has no end (it must never unmask without an email), so after
+    `RETRY_CAP` it goes on at one slot a day instead of stopping."""
+    if any(at <= elapsed < at + RETRY_SLOT for at in RETRY_AT):
+        return True
+    return forever and elapsed >= RETRY_CAP and (elapsed - RETRY_CAP) % DAY < RETRY_SLOT
 
 
 #: What `cancel_pending_decline` decides on, re-read from the database (TD-349).
@@ -460,21 +476,25 @@ def _release_one_decline(app):
     sent again; a decline with no address at all is released without an email (nothing to retry;
     kept masked she would see her old stage for ever) and logged for an officer.
 
-    TD-357: a send that keeps failing is retried only for `RETRY_CAP` after `decline_due_at`; past it
-    the decline is released WITHOUT an email, like the no-address case, and the cockpit flags it
-    (`decision_mail.untold_reason`, TD-358) instead of the cron logging ERROR every run for ever."""
+    TD-357: a send that keeps failing is tried on the `retry_slot` schedule and NEVER released without
+    its email (lead ruling): she stays shown her old stage, however long it takes, and the cockpit says
+    so to an officer from the moment the release is due (`decision_mail.untold_reason`, TD-358) so
+    they can tell her another way. Past `RETRY_CAP` it is tried, and logged, once a day."""
     if not _told_of_this_decline(app):
         if not _decline_address(app):
             logger.warning('release_pending_declines: app %s has no email address — decline '
                            'released WITHOUT an email; tell the student another way.', app.id)
-        elif not _send_decline_for(app):
-            if app.decline_due_at is None or timezone.now() - app.decline_due_at < RETRY_CAP:
-                logger.error('release_pending_declines: app %s — the decline email did not go; the '
-                             'decline stays masked and the next run retries.', app.id)
+        else:
+            elapsed = timezone.now() - (app.decline_due_at or timezone.now())
+            # Every run for the first hour (a cron that was down must still send her email at once),
+            # then the slot schedule.
+            try_now = elapsed < RELEASE_EAGER or retry_slot(elapsed, forever=True)
+            if not try_now or not _send_decline_for(app):
+                if try_now:                                  # logged per attempt, not every run
+                    logger.error('release_pending_declines: app %s — the decline email did not go; '
+                                 'the decline stays masked and is retried (daily after %s).',
+                                 app.id, RETRY_CAP)
                 return False
-            logger.error('release_pending_declines: app %s — the decline email still has not gone '
-                         'after %s; released WITHOUT an email, no more retries — tell the student '
-                         'another way.', app.id, RETRY_CAP)
     app.pending_rejection_category = ''
     app.decline_due_at = None
     app.pending_decline_by = ''
