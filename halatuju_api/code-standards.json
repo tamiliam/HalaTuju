@@ -656,7 +656,6 @@
       "apps/scholarship/spending_import.py": 749,
       "apps/scholarship/sponsorship.py": 999,
       "apps/scholarship/verdict_engine.py": 941,
-      "apps/scholarship/views.py": 2281,
       "apps/scholarship/views_sponsor.py": 718,
       "apps/scholarship/vision.py": 2321,
       "halatuju/settings/base.py": 611

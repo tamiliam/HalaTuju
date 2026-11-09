@@ -133,11 +133,12 @@ class TestConsentApi(TestCase):
         self.assertIsNone(Consent.objects.filter(application=self.app_adult).latest('pk').ip_address)
 
     def test_every_signing_site_reads_the_signer_ip(self):
-        """TD-429: the four signing call sites in views.py (onboarding complete, promotional consent,
+        """TD-429: the four signing call sites in the views package (onboarding complete, promotional consent,
         the data consent, the award acceptance) all go through `request_ip.signer_ip`."""
         from pathlib import Path
         from apps.scholarship import views
-        text = Path(views.__file__).read_text(encoding='utf-8')
+        # views is a package since A3.2: read every module of it, as the one file was read before.
+        text = ''.join(f.read_text(encoding='utf-8') for f in sorted(Path(views.__file__).parent.glob('*.py')))
         self.assertNotIn('REMOTE_ADDR', text)
         self.assertEqual(text.count('ip=request_ip.signer_ip(request)'), 4)
 

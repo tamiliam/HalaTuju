@@ -72,7 +72,6 @@ EXPORTED_NAMES = [
     '_BYPASS_JUDGE_TYPES', '_FUNDED_STATES', '_collapse_duplicate_docs', '_current_application',
     '_flag_needs_officer_eye', '_is_allowed_upload', '_note_unresolved_attempts',
     '_open_doc_request_items', '_reslot_income_doc', '_stage_attempts_exhausted',
-    'consent_blockers', 'is_minor', 'logger',
 ]
 
 
