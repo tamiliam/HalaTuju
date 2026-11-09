@@ -4,16 +4,21 @@ A super's lock release on a ruled intake leaves an AWAITING-QC case that QC acce
 (`birth_state_ic_unlocked`). The cockpit's new "Re-verify IC" card (`ReverifyIcCard.tsx`) calls the
 EXISTING verify-accept door directly, as a QC holder could already do through the API. These tests pin
 what the card relies on: a QC may press it at AWAITING QC; it re-locks the IC and leaves the case at
-AWAITING QC with no reopen, no "returned for revision" email and no verdict re-record; the presser is
-then the IC's verifier, so the separation rule sends the QC to someone else; and the cockpit is served
-what it needs to show the card. Synthetic data only.
+AWAITING QC with no reopen, no "returned for revision" email and no verdict re-record; the reviewer's
+verify stamp and checklist are KEPT (A2.8a review) while the presser's re-lock is recorded as their own
+activity row, so the separation rule still sends the QC to someone else; and the cockpit is served what
+it needs to show the card. Synthetic data only.
 """
+from datetime import timedelta
 from unittest import mock
 
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.scholarship import birth_state
+from apps.scholarship.models import StaffActivity
+from apps.scholarship.staff_activity import VERIFY_ACCEPT
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_student,
 )
@@ -40,6 +45,12 @@ class TheReverifyAtAwaitingQc(TestCase):
                                     student=make_student(nric=SABAH_IC))
         self.app.profile.nric_verified = False            # a super released the lock
         self.app.profile.save(update_fields=['nric_verified'])
+        self.reviewer = make_admin('reviewer', owning_org=cohort.owning_organisation)
+        self.stamped_at = timezone.now() - timedelta(days=2)
+        self.checklist = {'nric': True, 'name': True, 'results': True, 'document': True}
+        type(self.app).objects.filter(pk=self.app.pk).update(   # the reviewer's verify-accept
+            verified_by=self.reviewer.email, verified_at=self.stamped_at, verify_checklist=self.checklist)
+        self.app.refresh_from_db()
         self.qc = make_admin('qc', owning_org=cohort.owning_organisation)
         self.other_qc = make_admin('qc', owning_org=cohort.owning_organisation)
 
@@ -72,7 +83,11 @@ class TheReverifyAtAwaitingQc(TestCase):
         self.assertFalse(self.app.decision_reopens.exists())        # … so no false correction
         self.assertEqual(self.app.verdict_decided_at, decided_at)   # the verdict is not re-recorded
         self.assertEqual(mail.outbox, [])                           # no "returned for revision"
-        self.assertEqual(self.app.verified_by, self.qc.email)
+        # The reviewer's stamp is kept; the re-lock is the presser's own activity row.
+        self.assertEqual((self.app.verified_by, self.app.verified_at, self.app.verify_checklist),
+                         (self.reviewer.email, self.stamped_at, self.checklist))
+        self.assertTrue(StaffActivity.objects.filter(actor=self.qc, subject_type='application',
+                                                     subject_id=self.app.pk, verb=VERIFY_ACCEPT).exists())
 
         r = self._post(self.qc, 'qc-decision', {'decision': 'accept'})
         self.assertEqual((r.status_code, r.json()['code']), (403, 'self_review_qc_forbidden'))
@@ -80,3 +95,13 @@ class TheReverifyAtAwaitingQc(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
+
+    def test_a_first_verify_accept_before_awaiting_qc_still_stamps_the_case(self):
+        type(self.app).objects.filter(pk=self.app.pk).update(status='interviewing', verified_by='',
+                                                             verified_at=None, verify_checklist={})
+        r = self._post(self.qc, 'verify-accept', {'checklist': self.checklist})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.status, self.app.verified_by, self.app.verify_checklist),
+                         ('interviewed', self.qc.email, self.checklist))
+        self.assertIsNotNone(self.app.verified_at)

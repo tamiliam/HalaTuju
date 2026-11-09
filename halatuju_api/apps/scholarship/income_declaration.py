@@ -173,9 +173,10 @@ def approval_expired(doc) -> bool:
 def approval_sweep_gave_up(doc) -> bool:
     """A2.8a (TD-397): the hourly sweep made its ONE approval re-read of this document (`APPROVAL_TRIED`) at
     least `APPROVAL_RETRY_WINDOW` ago, and no approval-image retry window (`APPROVAL_UNTIL`) is still open,
-    so the sweep will not read it again (`read_retry.approval_unchecked_documents`). Read by Check 2's hold
-    only (`check2_deferred`): an unchecked document stops holding the income asks then, and the request
-    falls back to the ordinary ask or the officer. It does NOT change what the document counts for."""
+    so the sweep will not read it again (`read_retry.approval_unchecked_documents`). Lead ruling B (A2.8a
+    review): the family is NOT asked again for what she sent — the document stays "still checking" for her
+    and Check 2 keeps holding its income asks — and the officer's drawer reason says to check it by eye
+    (`missing_reason` → `UNREADABLE_REASON`). It does NOT change what the document counts for."""
     import time
     vf = _vf(doc)
     tried = vf.get(APPROVAL_TRIED)
@@ -379,9 +380,10 @@ UNREADABLE_REASON = 'approval_unreadable'        # round 3: the image read faile
 
 
 def missing_reason(doc) -> str:
-    """The drawer reason for an informal document the approver rule refuses, '' otherwise."""
+    """The drawer reason for an informal document the approver rule refuses, '' otherwise. An unchecked one
+    the sweep gave up on (`approval_sweep_gave_up`) is the officer's to check by eye (ruling B, A2.8a)."""
     if approval_unchecked(doc):
-        return UNCHECKED_REASON
+        return UNREADABLE_REASON if approval_sweep_gave_up(doc) else UNCHECKED_REASON
     return UNREADABLE_REASON if approval_expired(doc) else _REASON.get(approval_missing(doc), '')
 
 

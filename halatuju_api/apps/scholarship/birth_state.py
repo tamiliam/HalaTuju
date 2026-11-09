@@ -211,6 +211,25 @@ def ic_unlocked_for_rule(profile, allowed):
     return bool(stored_keys(allowed)) and not getattr(profile, 'nric_verified', False)
 
 
+def stamp_verify_accept(app, admin, checklist):
+    """Verify-accept's stamp on the case (``AdminVerifyAcceptView``): the case goes to Awaiting QC
+    (`interviewed`) carrying who verified the IC, when, and the checklist they confirmed.
+
+    TD-378 (A2.8a review): a case ALREADY Awaiting QC with a reviewer's stamp is a RE-LOCK — a QC
+    holder pressing "Re-verify IC" after a released lock. It keeps the reviewer's `verified_by`,
+    `verified_at` and `verify_checklist` (the reviewer's audit, and the QC separation that reads
+    them, are not overwritten); the re-lock itself is recorded by the presser's `VERIFY_ACCEPT`
+    activity row, which the view writes for every press."""
+    from django.utils import timezone
+    relock = app.status == 'interviewed' and bool((app.verified_by or '').strip())
+    app.status = 'interviewed'
+    if not relock:
+        app.verified_at = timezone.now()
+        app.verified_by = admin.email
+        app.verify_checklist = checklist or {}
+    app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+
+
 def check(nric, allowed):
     """``(ok, reason)`` for the intake's birth-state rule. An EMPTY list is the rule switched off
     and passes without reading the IC at all; otherwise only a STATE reading inside the list

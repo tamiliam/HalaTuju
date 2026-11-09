@@ -1,7 +1,8 @@
 """Audit sprint A2.8a — Check 2's holds on documents our outage left unread end, and never block a
 resolve a read letter already earned. Synthetic data only, no real applicant.
 
-* TD-397: a hold stays only while the hourly sweep will still read the document.
+* TD-397: a deferred copy's hold stays only while the hourly sweep will still read it; an unchecked
+  informal one past the sweep goes to the officer, never back to the family (lead ruling B).
 * TD-398: one deferred letter does not delay resolving a member's request another live letter answered.
 """
 import time
@@ -100,16 +101,26 @@ class AHoldEndsWhenTheSweepGivesUp(_Sync):
         letter.save(update_fields=['vision_fields'])
         self.assertEqual(self._status(app, 'mother_income_proof_missing'), 'open')
 
-    def test_an_unchecked_letter_holds_until_its_one_approval_re_read_is_past_its_window(self):
+    def test_an_unchecked_slip_past_its_approval_re_read_goes_to_the_officer_not_the_family(self):
+        """Lead ruling B (A2.8a review): when the one approval re-read is past its 72 hours the family is
+        NOT asked again for what she sent; the officer's drawer reason says to check it by eye."""
+        from apps.scholarship.income_declaration import member_approval_state, missing_reason
         app = self._two_earners()
         slip = _doc(app, 'salary_slip', _slip('informal', status='suspect', gross_income='RM400'), member='mother')
         self.assertIsNone(self._status(app, 'mother_income_proof_missing'))  # never re-read yet: held
+        self.assertEqual(missing_reason(slip), 'approval_unchecked')
         slip.vision_fields = {**slip.vision_fields, APPROVAL_TRIED: int(time.time())}
         slip.save(update_fields=['vision_fields'])
         self.assertIsNone(self._status(app, 'mother_income_proof_missing'))  # just tried: still held
+        self.assertEqual(missing_reason(slip), 'approval_unchecked')
         slip.vision_fields = {**slip.vision_fields, APPROVAL_TRIED: _LONG_AGO}
         slip.save(update_fields=['vision_fields'])
-        self.assertEqual(self._status(app, 'mother_income_proof_missing'), 'open')
+        # The family side: no ordinary income ask; her gate still says "we are still checking" (the
+        # blocker's 'unchecked' state), never "show their income".
+        self.assertIsNone(self._status(app, 'mother_income_proof_missing'))
+        self.assertEqual(member_approval_state(app, 'mother'), 'unchecked')
+        # The officer side: check it by eye.
+        self.assertEqual(missing_reason(ApplicantDocument.objects.get(pk=slip.pk)), 'approval_unreadable')
 
     def test_an_open_approval_image_window_keeps_the_hold(self):
         from apps.scholarship.income_declaration import APPROVAL_ERROR, APPROVAL_UNTIL

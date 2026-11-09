@@ -337,11 +337,14 @@ def _slot_now(doc, stale_ids):
 def kept_out_by_outage(doc):
     """A2.8a (TD-393): a STAGED upload kept out of its slot (it was judged against an OLDER live copy,
     ``superseded_by_id < id``, the ``answer_for`` rule) whose read our outage deferred, while that
-    live copy still holds the slot and no newer upload in the slot has been decided."""
+    live copy still holds the slot and no newer upload in the slot has been decided. Only a copy the
+    upload judged as STAGED (its ``read_plan``): one the dedupe or the academic collapse pushed out
+    was never kept out by the judging, so it is not re-judged (A2.8a review)."""
     from .read_errors import deferred_by_us
     keeper = doc.superseded_by
     return (doc.superseded_at is not None and keeper is not None and keeper.id < doc.id
             and keeper.superseded_at is None and doc.read_state != PENDING
+            and bool((doc.read_plan or {}).get('staged'))
             and deferred_by_us(doc.vision_fields) and not _newer_upload_decided(doc))
 
 
@@ -349,7 +352,16 @@ def judge_reread_copy(doc):
     """A2.8a (TD-393): the hourly sweep re-read a staged copy our outage kept out
     (``services.read_retry``); judge it now exactly as the upload would have, against its slot as it
     is now: promote it if it is at least as good as the live copy, else it stays kept out. Returns
-    the upload's response body (unused by the sweep)."""
+    the upload's response body (unused by the sweep), or None when it is skipped.
+    A2.8a review: the slot is re-checked on a FRESH row first. A newer upload decided while the sweep
+    was reading, or the older live copy no longer holding the slot, means the copy is not kept out by
+    our outage any more: it is left as it is, so it can never push a newer decision out."""
+    doc = ApplicantDocument.objects.select_related('application', 'superseded_by').get(pk=doc.pk)
+    keeper = doc.superseded_by
+    if (doc.superseded_at is None or keeper is None or keeper.id > doc.id or keeper.superseded_at is not None
+            or _newer_upload_decided(doc)):
+        logger.info('AUDIT upload_rejudge_skipped doc=%s app=%s', doc.id, doc.application_id)
+        return None
     plan = doc.read_plan or {}
     stale_ids, existing_live = _slot_now(doc, plan.get('stale_ids') or [])
     logger.info('AUDIT upload_rejudged doc=%s app=%s', doc.id, doc.application_id)

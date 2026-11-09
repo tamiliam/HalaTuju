@@ -97,20 +97,26 @@ def service_error_documents(limit):
 
 def _kept_out_documents(errs, now, limit):
     """A2.8a (TD-393): in the room left, STAGED uploads our outage kept out of their slot
-    (`upload_read.kept_out_by_outage`) — same types, same window, same open-case and slip rules as
-    the live ones. After the re-read the sweep judges each one (`run_service_retries`)."""
+    (`upload_read.kept_out_by_outage`) — same types, same window and slip rules as the live ones.
+    After the re-read the sweep judges each one (`run_service_retries`).
+    A2.8a review: the query admits only what `kept_out_by_outage` keeps (a deferred read, not still
+    queued, judged as STAGED), so older rows it would drop can never fill the batch; and only cases
+    before QC accept (lead ruling A: `family.DECIDED_STATUSES` is Recommended or later) — a copy kept
+    out on a decided case is left for the officer."""
     if limit <= 0:
         return []
     try:
         from django.db.models import F
-        from .decline import CASE_CLOSED_STATES
+        from ..family import DECIDED_STATUSES
         from ..results_review import SLIP_REQUEST_CODE
-        from ..upload_read import kept_out_by_outage
+        from ..upload_read import PENDING, kept_out_by_outage
         rows = (ApplicantDocument.objects.select_related('superseded_by')
                 .filter(errs, doc_type__in=SERVICE_RETRY_TYPES, superseded_at__isnull=False,
                         superseded_by__isnull=False, superseded_by_id__lt=F('id'),
-                        superseded_by__superseded_at__isnull=True)
-                .exclude(application__status__in=CASE_CLOSED_STATES)
+                        superseded_by__superseded_at__isnull=True,
+                        vision_fields__student_verdict='review_manually', read_plan__staged=True)
+                .exclude(read_state=PENDING)
+                .exclude(application__status__in=DECIDED_STATUSES)
                 .exclude(request_code=SLIP_REQUEST_CODE)
                 .filter(~Q(vision_fields__has_key=RETRY_UNTIL)
                         | Q(vision_fields__service_retry_until__gt=int(now.timestamp())))
@@ -249,7 +255,7 @@ def _reread(doc):
     doc.vision_fields = {**doc.vision_fields, RETRY_UNTIL: until, APPROVAL_TRIED: int(now.timestamp())}
     doc.vision_fields_run_at = now
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
-    reextract_document(doc)
+    reextract_document(doc, reslot=True)   # A2.8a review: the upload read's reslot step too
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     if is_ai_service_error(vf.get('error')) and RETRY_UNTIL not in vf:   # still down: keep the window
         doc.vision_fields = {**vf, RETRY_UNTIL: until}

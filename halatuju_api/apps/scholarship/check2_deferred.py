@@ -16,10 +16,12 @@ Owner ruling 2A (2026-10-28, #374): an INFORMAL income document read before the 
 the income asks wait for its live re-read rather than ask the family again for what she sent.
 
 A2.8a (2026-11-09):
-* TD-397 — a hold ENDS when the sweep gives up: a deferred copy holds only while the sweep's window is
-  open (`read_errors.service_retry_open`), an unchecked one only until the sweep's one approval re-read
-  is past its window (`income_declaration.approval_sweep_gave_up`). After that the request falls back
-  to the ordinary ask or the officer, exactly as if the copy were any other unjudged document.
+* TD-397 — a deferred copy's hold ENDS when the sweep gives up: it holds only while the sweep's window
+  is open (`read_errors.service_retry_open`). After that the request falls back to the ordinary ask or
+  the officer, exactly as if the copy were any other unjudged document. An UNCHECKED informal document
+  keeps holding (lead ruling B, A2.8a review): once the sweep's one approval re-read is past its window
+  (`income_declaration.approval_sweep_gave_up`) the family is not asked again for what she sent; the
+  officer's drawer reason says to check it by eye instead.
 * TD-398 — an income ask's RESOLVE is not held when a live letter in its slots (that member's, for a
   member's ask) READ FINE (`_read_fine`): the income readers count only read documents, so the resolve
   comes from that letter, and the deferred one can only add to it. A raise or re-open is still held.
@@ -52,7 +54,7 @@ def held_doc_requests(application, doc_specs, existing, wanted):
         if code in wanted:
             return item is None or item.status == 'resolved'
         return item is not None and item.status == 'open'
-    from .income_declaration import approval_sweep_gave_up, approval_unchecked
+    from .income_declaration import approval_unchecked
     codes = [c for c in HELD_WHILE_DEFERRED if changes(c)]
     if not codes:
         return set()
@@ -64,7 +66,7 @@ def held_doc_requests(application, doc_specs, existing, wanted):
         vf = getattr(d, 'vision_fields', None)
         if deferred_by_us(vf):                       # TD-397: only while the sweep will still read it
             return service_retry_open(vf)
-        return approval_unchecked(d) and not approval_sweep_gave_up(d)
+        return approval_unchecked(d)                 # ruling B: past the sweep, the officer, not the family
 
     def _read_fine(d):
         vf = getattr(d, 'vision_fields', None)
