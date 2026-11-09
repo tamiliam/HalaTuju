@@ -1,7 +1,8 @@
 /**
  * @jest-environment jsdom
  *
- * One reviewer, rendered (request #10, 2026-08-02).
+ * One reviewer, rendered (request #10, 2026-08-02; one person page since Sprint T3, 2026-11-09 — the
+ * per-kind T3 checks are in `components/admin/person/TeamPersonPage.test.tsx`).
  *
  * The block that matters most is the reopens list. A reopened decision is not by itself a mistake
  * by the reviewer — several of BrightPath's were caused by our own defects — so the reason
@@ -25,16 +26,16 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
 jest.mock('@/lib/admin-api')
-// The permission editor is its own chunk with its own request (#39 Sprint 4) and its own test
-// (`PermissionEditor.test.tsx`); here only WHETHER the page shows it matters.
-jest.mock('@/components/admin/LazyPermissionEditor', () => ({
+// The permission editor has its own request (#39 Sprint 4) and its own test (`PermissionEditor.test.tsx`);
+// here only WHETHER the page shows it matters. (T3: it rides in the person page's own chunk.)
+jest.mock('@/components/admin/PermissionEditor', () => ({
   __esModule: true,
   default: ({ adminId }: { adminId: number }) => <div data-testid="perm-editor">{adminId}</div>,
 }))
 
 const mockApi = api as jest.Mocked<typeof api>
 
-const DETAIL = {
+const BASE = {
   id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
   languages: ['ta', 'en'], open_now: 3, awaiting_review: 1, interviewing: 2, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
   recommended: 6, declined: 0, rejected_after_review: 2, awaiting_qc: 0,
@@ -55,6 +56,28 @@ const DETAIL = {
   ],
 } as unknown as api.AdminReviewerDetail
 
+/** Sprint T3: the `person` block the server builds from the same record (`staff_person.person_block`). */
+const withPerson = (d: api.AdminReviewerDetail): api.AdminReviewerDetail => {
+  const r = d as api.AdminReviewerDetail & Record<string, unknown>
+  const order = ['en', 'ms', 'ta']
+  return {
+    ...d,
+    person: d.person ?? {
+      admin_id: d.id, mentor_id: null, name: d.name, email: d.email, tables: ['reviewers'], lead: !!r.lead,
+      mentor_only: false, is_active: r.is_active !== false, paused: !!d.paused, joined_at: String(r.created_at),
+      signed_in: true, last_seen_at: '2026-11-01T00:00:00Z',
+      profile: {
+        job_title: '', about: '', qualification: String(r.qualification ?? ''),
+        university: String(r.university ?? ''), field_of_study: String(r.field_of_study ?? ''),
+        graduation_year: (r.graduation_year as number | null) ?? null, phone: String(r.phone ?? ''),
+        languages: order.filter((c) => ((r.languages as string[]) ?? []).includes(c)),
+        other_language: String(r.other_language ?? ''),
+      },
+    },
+  }
+}
+const DETAIL = withPerson(BASE)
+
 beforeEach(() => {
   jest.clearAllMocks()
   mockParamId = '5'
@@ -63,7 +86,7 @@ beforeEach(() => {
 })
 
 const loaded = async (over: Partial<api.AdminReviewerDetail> = {}) => {
-  mockApi.getReviewerDetail.mockResolvedValue({ ...DETAIL, ...over } as api.AdminReviewerDetail)
+  mockApi.getReviewerDetail.mockResolvedValue(withPerson({ ...BASE, ...over } as api.AdminReviewerDetail))
   render(<AdminReviewerDetailPage />)
   await waitFor(() => expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy())
 }
@@ -153,10 +176,12 @@ describe('the honest empty states', () => {
     expect(screen.getByText('admin.reviewers.noTurnaround')).toBeTruthy()
   })
 
-  it('drops the credential rows a reviewer never filled in', async () => {
+  it('T3 (M3): keeps the credential rows a reviewer never filled in, each reading Not given', async () => {
     await loaded({ qualification: '', university: '', graduation_year: null, field_of_study: '' })
-    expect(screen.getByText('admin.reviewers.detail.noCredentials')).toBeTruthy()
-    expect(screen.queryByText('admin.reviewers.detail.university')).toBeNull()
+    for (const k of ['qualification', 'university', 'graduationYear', 'fieldOfStudy']) {
+      expect(screen.getByTestId(`person-field-${k}`).textContent).toBe('admin.reviewers.detail.phoneNone')
+    }
+    expect(screen.getByText('admin.reviewers.detail.university')).toBeTruthy()
   })
 
   it('says nothing has ever been assigned when that is the case', async () => {
@@ -252,10 +277,10 @@ describe('the role gate and failure', () => {
     expect(mockApi.getReviewerDetail).not.toHaveBeenCalled()
   })
 
-  it('links back to the list it came from', async () => {
+  it('links back to the tab it came from', async () => {
     await loaded()
-    expect(screen.getByText('← admin.reviewers.detail.back').closest('a')!
-      .getAttribute('href')).toBe('/admin/organisation/reviewers')
+    expect(screen.getByText('← admin.person.backTo.reviewers').closest('a')!
+      .getAttribute('href')).toBe('/admin/organisation/reviewers?tab=reviewers')
   })
 })
 
@@ -448,7 +473,7 @@ describe('Sprint T2: Revoke and Delete on the reviewer\'s own page (owner, 2026-
     fireEvent.click(actions().getByTestId('staff-delete'))
     fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'kavitha@example.org' } })
     fireEvent.click(screen.getByTestId('typed-confirm-go'))
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/organisation/reviewers'))
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/organisation/reviewers?tab=reviewers'))
     expect(mockApi.deleteAdmin).toHaveBeenCalledWith(5, { token: 'tok' })
   })
 

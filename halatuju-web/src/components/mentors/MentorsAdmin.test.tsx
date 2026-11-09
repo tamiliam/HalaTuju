@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * Team tables T3 (2026-11-03): Team → Mentors (the old Organisation → Mentors page's list, moved under Team)
- * and the mentor detail page, rendered.
+ * and the mentor parts of a person page (Sprint T3: `MentorActions`, `MentorFigures`, `MentorWork`), rendered.
  * - Owner 2026-11-08: ONE list, read like Admins and Reviewers — ARRIVED mentors plus every staff mentor; a
  *   revoked pure mentor stays (Revoked, with Restore), a staff mentor taken off drops off. No Active /
  *   Inactive chips, no "waiting to accept" line, no footnotes.
@@ -11,12 +11,15 @@
  * - Add Mentor = 7d's staff Sheet (no email); its button is on the Team page's tab row, which hands in `adding`.
  * - Actions, in the other tabs' words: Remove from Mentors (staff, `stop`) and Revoke (`deactivate`), both
  *   confirmed in the shared Sheet; Restore (`reactivate`) straight away. Nothing where not `manageable`.
- * - The detail page: figures, current and past scholars, standing and concern chips, '-' for no gap; never a
- *   meeting note (the payload carries none; the page draws only what it is given).
+ * - The mentor parts: figures, current and past scholars, standing and concern chips, '-' for no gap; never a
+ *   meeting note (the payload carries none; the parts draw only what they are given). The header, the
+ *   profile and the page's gates are `components/admin/person/TeamPersonPage.test.tsx`'s.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
-import TeamMentorsScreen, { MentorDetail, actionOf, languagesLine, listed, mentorHref } from './MentorsAdmin'
+import TeamMentorsScreen, {
+  MentorActions, MentorFigures, MentorWork, actionOf, languagesLine, listed, mentorHref,
+} from './MentorsAdmin'
 import { AlsoIn } from '@/components/admin/TeamTables'
 
 /** The screen as the Team page mounts it: its own "Also in" chips handed in, and its Add Mentor state. */
@@ -252,7 +255,7 @@ describe('Team → Mentors', () => {
   })
 })
 
-describe('the mentor detail page', () => {
+describe('the mentor parts of a person page (Sprint T3)', () => {
   const scholar = (over: Partial<api.MentorScholarRow>): api.MentorScholarRow => ({
     application_id: 104, name: 'Nur Aisyah', since: '2026-09-02T00:00:00Z', ended: null, meetings: 3,
     last_meeting: '2026-10-28', standing: 'performing', has_file: true, concern: 'open', ...over,
@@ -267,20 +270,16 @@ describe('the mentor detail page', () => {
       standing: null, has_file: false })],
   }
 
-  it('shows the header, the four figures, current and past scholars', async () => {
-    mockApi.getMentorDetail.mockResolvedValue(DETAIL)
-    render(<MentorDetail id={1} />)
-    expect(await screen.findByText('Dr Kavitha Raman')).toBeTruthy()
-    expect(mockApi.getMentorDetail).toHaveBeenCalledWith(1, { token: 'tok' })
-    expect(screen.getByTestId('mentor-back').getAttribute('href')).toBe('/admin/organisation/reviewers?tab=mentors')
-    const facts = screen.getByTestId('mentor-facts').textContent
-    expect(facts).not.toContain('Accounting, finance')   // in the details box now
-    expect(facts).toContain('admin.mentors.detail.since {"date":"02/09/2026"}')
-    expect(facts).toContain('admin.mentors.detail.lastSeen {"date":"30/10/2026"}')
+  it('the figures: four tiles, from what the server counted', () => {
+    render(<MentorFigures data={DETAIL} />)
     expect(screen.getByTestId('tile-scholars').textContent).toContain('2')
     expect(screen.getByTestId('tile-meetings').textContent).toContain('9')
     expect(screen.getByTestId('tile-gap').textContent).toContain('admin.mentors.detail.days {"n":"18"}')
     expect(screen.getByTestId('tile-concerns').textContent).toContain('3 / 1')
+  })
+
+  it('the work: current and past scholars, standing and concern chips, a file link only where there is one', () => {
+    render(<MentorWork data={DETAIL} />)
     const current = screen.getByTestId('mentor-current')
     expect(within(current).getByText('Nur Aisyah').getAttribute('href')).toBe('/admin/scholars/104')
     expect(within(current).getByText('admin.scholars.standing.performing')).toBeTruthy()
@@ -288,59 +287,24 @@ describe('the mentor detail page', () => {
     const past = screen.getByTestId('mentor-past')
     expect(within(past).getByText('Old Scholar').tagName).not.toBe('A')   // no file to open
     expect(within(past).getByText('01/08/2026')).toBeTruthy()
+    expect(screen.getByText('admin.mentors.detail.note')).toBeTruthy()
   })
 
-  it('owner 2026-11-08: a labelled details box — email, phone with +60, area, languages in full', async () => {
-    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, mentor: { ...ACTIVE, other_language: 'Mandarin' } })
-    render(<MentorDetail id={1} />)
-    const box = await screen.findByTestId('mentor-details')
-    expect(within(box).getAllByRole('term').map((d) => d.textContent)).toEqual([
-      'admin.reviewers.detail.email', 'admin.reviewers.detail.phone', 'admin.mentors.col.area', 'admin.mentors.col.languages'])
-    expect(screen.getByTestId('mentor-detail-email').textContent).toBe('kavitha@example.org')
-    expect(screen.getByTestId('mentor-detail-phone').textContent).toBe('+60 12-345 6789')
-    expect(screen.getByTestId('mentor-detail-area').textContent).toBe('Accounting, finance')
-    expect(screen.getByTestId('mentor-detail-languages').textContent).toBe(
-      'admin.reviewers.lang.en, admin.reviewers.lang.ms, admin.reviewers.lang.ta, Mandarin')
-  })
-
-  it('an empty profile says so in each row, never hides the row; a revoked mentor login reads Revoked', async () => {
-    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, mentor: { ...ACTIVE, phone: '', area: '',
-      languages: { en: '', ms: '', ta: '' }, status: 'inactive' } })
-    render(<MentorDetail id={1} />)
-    expect((await screen.findByTestId('mentor-detail-phone')).textContent).toBe('admin.reviewers.detail.phoneNone')
-    expect(screen.getByTestId('mentor-detail-area').textContent).toBe('admin.mentors.notFilled')
-    expect(screen.getByTestId('mentor-detail-languages').textContent).toBe('admin.mentors.notFilled')
-    expect(screen.getByText('admin.revoked')).toBeTruthy()
-  })
-
-  it("shows '-' for the gap when no scholar has had two meetings, and says when nobody is mentored now", async () => {
-    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, current: [], past: [],
-      figures: { ...DETAIL.figures!, average_gap_days: null } })
-    render(<MentorDetail id={1} />)
-    expect((await screen.findByTestId('tile-gap')).textContent).toContain('-')
+  it("shows '-' for the gap when no scholar has had two meetings, and says when nobody is mentored now", () => {
+    const quiet = { ...DETAIL, current: [], past: [], figures: { ...DETAIL.figures!, average_gap_days: null } }
+    render(<><MentorFigures data={quiet} /><MentorWork data={quiet} /></>)
+    expect(screen.getByTestId('tile-gap').textContent).toContain('-')
     expect(screen.getByTestId('mentor-current-none')).toBeTruthy()
     expect(screen.queryByTestId('mentor-past')).toBeNull()
   })
 
-  it('T3 review: without See all students, the mentor only — a plain line, no figures or scholars', async () => {
-    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, sees_scholars: false, figures: null, current: [], past: [],
-      mentor: { ...ACTIVE, concerns_open: null } })
-    render(<MentorDetail id={1} />)
-    expect((await screen.findByTestId('mentor-needs-see-all')).textContent).toBe('admin.mentors.detail.needSeeAll')
-    expect(screen.getByText('Dr Kavitha Raman')).toBeTruthy()
-    expect(screen.queryByTestId('tile-scholars')).toBeNull()
+  it('T3 review: without See all students — a plain line, no figures or scholars', () => {
+    const blind = { ...DETAIL, sees_scholars: false, figures: null, current: [], past: [] }
+    render(<><MentorFigures data={blind} /><MentorWork data={blind} /></>)
+    expect(screen.getByTestId('mentor-needs-see-all').textContent).toBe('admin.mentors.detail.needSeeAll')
+    expect(screen.queryByTestId('mentor-figures')).toBeNull()
     expect(screen.queryByTestId('mentor-current')).toBeNull()
     expect(screen.queryByTestId('mentor-current-none')).toBeNull()
-  })
-
-  it('a 404 says not found; anything else says it could not load', async () => {
-    mockApi.getMentorDetail.mockRejectedValue(Object.assign(new Error('x'), { status: 404 }))
-    const { unmount } = render(<MentorDetail id={9} />)
-    expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.detail.notFound')
-    unmount()
-    mockApi.getMentorDetail.mockRejectedValue(Object.assign(new Error('x'), { status: 500 }))
-    render(<MentorDetail id={9} />)
-    expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.loadError')
   })
 })
 
@@ -403,19 +367,16 @@ describe('Sprint T2 (D6): Revoke and Delete for a pure mentor, on the table and 
     })
   })
 
-  describe('their page', () => {
-    const detail = (mentor: api.MentorRow): api.MentorDetail => ({
-      mentor, mentoring_since: null, sees_scholars: true,
-      figures: { scholars_now: 0, meetings_90: 0, average_gap_days: null, concerns_raised: 0, concerns_open: 0,
-        last_meeting: null }, current: [], past: [],
-    })
+  describe('their page (MentorActions, in the person page\'s actions row)', () => {
+    const Actions = ({ m, onDeleted, onChanged = () => {} }: {
+      m: api.MentorRow; onDeleted?: () => void; onChanged?: (r: Pick<api.MentorRow, 'status' | 'deactivated_at'>) => void
+    }) => <MentorActions mentor={m} onDeleted={onDeleted} onChanged={onChanged} />
 
     it('offers Revoke and Delete, and leaves after a delete', async () => {
-      mockApi.getMentorDetail.mockResolvedValue(detail(FREE))
       mockApi.deleteMentor.mockResolvedValue({ message: 'ok' })
       const onDeleted = jest.fn()
-      render(<MentorDetail id={1} onDeleted={onDeleted} />)
-      const box = within(await screen.findByTestId('mentor-person-actions'))
+      render(<Actions m={FREE} onDeleted={onDeleted} />)
+      const box = within(screen.getByTestId('mentor-person-actions'))
       expect(box.getByText('admin.mentors.action.deactivate')).toBeTruthy()
       fireEvent.click(box.getByTestId('staff-delete'))
       fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: FREE.email } })
@@ -424,30 +385,37 @@ describe('Sprint T2 (D6): Revoke and Delete for a pure mentor, on the table and 
       expect(mockApi.deleteMentor).toHaveBeenCalledWith(1, { token: 'tok' })
     })
 
-    it('revokes from the page after a confirm, and then offers Restore', async () => {
-      mockApi.getMentorDetail.mockResolvedValue(detail(FREE))
+    it('revokes after a confirm and hands the page the new standing', async () => {
       mockApi.mentorAction.mockResolvedValue({ ...FREE, status: 'inactive', deactivated_at: '2026-11-08T00:00:00Z', emailed: null })
-      render(<MentorDetail id={1} />)
-      fireEvent.click(within(await screen.findByTestId('mentor-person-actions')).getByText('admin.mentors.action.deactivate'))
+      const onChanged = jest.fn()
+      render(<Actions m={FREE} onChanged={onChanged} />)
+      fireEvent.click(within(screen.getByTestId('mentor-person-actions')).getByText('admin.mentors.action.deactivate'))
       expect(window.confirm).toHaveBeenCalled()
-      await waitFor(() => expect(screen.getByText('admin.mentors.action.reactivate')).toBeTruthy())
+      await waitFor(() => expect(onChanged).toHaveBeenCalledWith({ status: 'inactive', deactivated_at: '2026-11-08T00:00:00Z' }))
       expect(mockApi.mentorAction).toHaveBeenCalledWith(1, 'deactivate', { token: 'tok' })
     })
 
-    it('greys the Delete of a mentor with work, with the reason', async () => {
-      mockApi.getMentorDetail.mockResolvedValue(detail(BUSY))
-      render(<MentorDetail id={3} />)
-      const box = within(await screen.findByTestId('mentor-person-actions'))
+    it('says why in words when the server refuses', async () => {
+      mockApi.mentorAction.mockRejectedValue(Object.assign(new Error('x'), { status: 409, code: 'not_active' }))
+      render(<Actions m={FREE} />)
+      fireEvent.click(within(screen.getByTestId('mentor-person-actions')).getByText('admin.mentors.action.deactivate'))
+      expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.error.not_active')
+    })
+
+    it('greys the Delete of a mentor with work, with the reason', () => {
+      render(<Actions m={BUSY} />)
+      const box = within(screen.getByTestId('mentor-person-actions'))
       expect(box.getByText('admin.mentors.action.reactivate')).toBeTruthy()
       const b = within(box.getByTestId('staff-delete-greyed')).getByText('admin.delete')
       expect(b.getAttribute('aria-disabled')).toBe('true')
       expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe(REASON)
     })
 
-    it('offers nothing on a staff mentor who is an organisation admin (their staff page has it)', async () => {
-      mockApi.getMentorDetail.mockResolvedValue(detail(LEAD))
-      render(<MentorDetail id={5} />)
-      expect(await screen.findByText('Suresh')).toBeTruthy()
+    it('offers nothing on a staff mentor (their staff actions have it) or where not manageable', () => {
+      const { unmount } = render(<Actions m={LEAD} />)
+      expect(screen.queryByTestId('mentor-person-actions')).toBeNull()
+      unmount()
+      render(<Actions m={{ ...FREE, manageable: false }} />)
       expect(screen.queryByTestId('mentor-person-actions')).toBeNull()
       expect(screen.queryByText('admin.delete')).toBeNull()
     })

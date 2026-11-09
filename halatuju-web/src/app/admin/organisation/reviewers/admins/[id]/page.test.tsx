@@ -1,10 +1,12 @@
 /**
  * @jest-environment jsdom
  *
- * Team → an Admin or Finance person → Permissions (2026-10-22, the owner's option A): their own
- * page, with a header drawn from the permissions GET and ONE tab, "Permissions". The card itself is
- * `PermissionEditor.test.tsx`'s subject; here what matters is the header, the gate, the single
- * request (the page hands its GET to the card), and the way back to the Admins tab.
+ * Team → an Admin or Finance person (2026-10-22, the owner's option A; one person page since Sprint T3,
+ * 2026-11-09). The header is the `person` block on the permissions GET; the page has the same two tabs
+ * as everybody's, Profile and Permissions. The card itself is `PermissionEditor.test.tsx`'s subject;
+ * here what matters is the header (no role word, D9), the gate, the single request (the page hands its
+ * GET to the card), and the way back to the Admins tab. The per-kind checks are in
+ * `components/admin/person/TeamPersonPage.test.tsx`.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import AdminPersonPage from './page'
@@ -32,7 +34,7 @@ jest.mock('@/lib/admin-auth-context', () => ({
 }))
 jest.mock('@/lib/admin-api/admins')
 let handed: api.StaffPermissionsView | undefined
-jest.mock('@/components/admin/LazyPermissionEditor', () => ({
+jest.mock('@/components/admin/PermissionEditor', () => ({
   __esModule: true,
   default: ({ adminId, initial }: { adminId: number; initial?: api.StaffPermissionsView }) => {
     handed = initial
@@ -46,6 +48,13 @@ const ARUN: api.StaffPermissionsView = {
   preset: ['see_all', 'spending', 'payments_prepare'], permissions: ['see_all'], custom: true,
   keys: [], email: 'arun@example.org', created_at: '2026-03-01T00:00:00Z', signed_in: true,
   paused: false, history: [],
+  person: {
+    admin_id: 14, mentor_id: null, name: 'Arun Pillai', email: 'arun@example.org', tables: ['admins'],
+    lead: false, mentor_only: false, is_active: true, paused: false, joined_at: '2026-03-01T00:00:00Z',
+    signed_in: true, last_seen_at: '2026-11-01T00:00:00Z',
+    profile: { job_title: 'Programme officer', about: '', qualification: '', university: '', graduation_year: null,
+      field_of_study: '', phone: '', languages: ['en', 'ms'], other_language: '' },
+  },
 }
 
 beforeEach(() => {
@@ -55,31 +64,36 @@ beforeEach(() => {
   mockApi.getStaffPermissions.mockResolvedValue(ARUN)
 })
 
-const loaded = async (over: Partial<api.StaffPermissionsView> = {}) => {
-  mockApi.getStaffPermissions.mockResolvedValue({ ...ARUN, ...over })
+const loaded = async (over: Partial<api.StaffPermissionsView> = {}, person: Partial<api.TeamPersonBlock> = {}) => {
+  mockApi.getStaffPermissions.mockResolvedValue({ ...ARUN, ...over, person: { ...ARUN.person!, ...person } })
   render(<AdminPersonPage />)
   await waitFor(() => expect(screen.getByText('Arun Pillai')).toBeTruthy())
 }
 
-it('draws the header: name, role, status, joined date and email', async () => {
+it('draws the header: name, email, the table chip, status, joined date — and no role word (D9)', async () => {
   await loaded()
-  expect(screen.getByText('admin.role.admin')).toBeTruthy()
+  expect(screen.queryByText('admin.role.admin')).toBeNull()
+  expect(screen.getByTestId('person-tables').textContent).toBe('admin.team.chip.admins')
   expect(screen.getByText('admin.reviewers.status.active')).toBeTruthy()
   expect(screen.getByText(`admin.reviewers.detail.joined(date=${formatDate(ARUN.created_at)})`))
     .toBeTruthy()
-  expect(screen.getByText('arun@example.org')).toBeTruthy()
+  expect(screen.getByTestId('person-email').textContent).toBe('arun@example.org')
   expect(screen.queryByTestId('person-invited')).toBeNull()
 })
 
 it('says Invited when no sign-in is recorded, and Revoked over everything', async () => {
-  await loaded({ signed_in: false, is_active: false })
+  await loaded({}, { signed_in: false, is_active: false })
   expect(screen.getByTestId('person-invited').textContent).toBe('admin.person.invited')
   expect(screen.getByText('admin.reviewers.status.revoked')).toBeTruthy()
 })
 
-it('has ONE tab, Permissions, and hands the card the GET it already made', async () => {
+it('has the two tabs, opens on Profile, and hands the card the GET it already made', async () => {
   await loaded()
-  expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual(['admin.person.tabPermissions'])
+  expect(screen.getAllByRole('tab').map((b) => b.textContent))
+    .toEqual(['admin.person.tabProfile', 'admin.person.tabPermissions'])
+  expect(screen.getByTestId('person-field-jobTitle').textContent).toBe('Programme officer')
+  expect(screen.queryByTestId('perm-editor')).toBeNull()
+  fireEvent.click(screen.getByText('admin.person.tabPermissions'))
   expect(screen.getByTestId('perm-editor').textContent).toBe('14')
   expect(handed?.id).toBe(14)
   expect(mockApi.getStaffPermissions).toHaveBeenCalledTimes(1)
@@ -88,7 +102,7 @@ it('has ONE tab, Permissions, and hands the card the GET it already made', async
 
 it('goes back to the Admins tab of Team', async () => {
   await loaded()
-  expect(screen.getByText('← admin.person.back').closest('a')!.getAttribute('href'))
+  expect(screen.getByText('← admin.person.backTo.admins').closest('a')!.getAttribute('href'))
     .toBe('/admin/organisation/reviewers?tab=admins')
 })
 
@@ -96,16 +110,16 @@ it('tells an admin or finance viewer they may not, and asks the server nothing',
   for (const r of ['admin', 'finance']) {
     viewerRole = { role: r }
     const { unmount } = render(<AdminPersonPage />)
-    expect(screen.getByText('admin.person.notAllowed')).toBeTruthy()
+    expect(await screen.findByText('admin.person.notAllowed')).toBeTruthy()
     unmount()
   }
   expect(mockApi.getStaffPermissions).not.toHaveBeenCalled()
 })
 
-it('refuses a reviewer the way the Team page does', () => {
+it('refuses a reviewer the way the Team page does', async () => {
   viewerRole = { role: 'reviewer' }
   render(<AdminPersonPage />)
-  expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+  expect(await screen.findByText('apiErrors.superAdminRequired')).toBeTruthy()
 })
 
 it('shows the shared not-found state on a 404 (another organisation, or nobody)', async () => {
@@ -118,6 +132,7 @@ it('shows the shared not-found state on a 404 (another organisation, or nobody)'
 it('lets a super open it too', async () => {
   viewerRole = { role: 'reviewer', is_super_admin: true }
   await loaded()
+  fireEvent.click(screen.getByText('admin.person.tabPermissions'))
   expect(screen.getByTestId('perm-editor')).toBeTruthy()
 })
 
