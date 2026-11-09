@@ -3,13 +3,12 @@
 Build hours left for `build_hours.py` on 2026-10-28, moves only: this file had reached 591 of the
 600-line standard, and hours were never invoices — they are what a development line is BUILT from.
 
-Part of the `views_admin` package. Every name below is re-exported from
-`views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
+Part of `views_admin`; every name is re-exported from `views_admin/__init__.py` (importers unchanged).
 """
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import money
+from .. import invoice_overdue, money
 from .base import _AdminBase, _MONTH_RE, _org_or_none
 
 
@@ -63,6 +62,7 @@ def _invoice_payload(inv, *, for_super):
         'issued_on': inv.issued_on.isoformat(),
         'due_on': inv.due_on.isoformat(),
         'status': inv.status,
+        'is_overdue': invoice_overdue.is_overdue(inv),   # the ONE rule; the chip reads it (nudges)
         'currency': inv.currency,
         'subtotal_myr': _invoice_money(inv.subtotal_myr),
         'discount_pct': _invoice_money(inv.discount_pct),

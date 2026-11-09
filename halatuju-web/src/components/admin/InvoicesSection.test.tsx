@@ -24,7 +24,7 @@ const t = (k: string, vars?: Record<string, string>) => (vars ? `${k}:${Object.v
 function inv(over: Partial<api.InvoiceRow> = {}): api.InvoiceRow {
   return {
     id: 7, number: 'INV-2026-0003', organisation_id: 1, organisation: 'BrightPath',
-    period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued',
+    period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued', is_overdue: false,
     currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
     discount_reason: '', corrections_myr: null, corrections: [], total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BrightPath Bursary',
@@ -199,6 +199,21 @@ describe('what a tenant is offered', () => {
       'admin.billing.invoice.recordPayment', 'admin.billing.invoice.void']) {
       expect(within(container).queryByText(control)).toBeNull()
     }
+  })
+
+  it('the chip says Overdue exactly when the server flag does — the red banner\'s rule, not a date compare', async () => {
+    // Staff nudges sprint 3 (drift-test: invoice_overdue.is_overdue). A due date long past with the flag
+    // off reads Unpaid; a part-paid invoice with the flag on reads Overdue, as the banner says.
+    const sent = { status: 'sent' as const, sent_at: '2026-09-15T01:00:00Z', due_on: '2020-01-01' }
+    mockApi.getInvoices.mockResolvedValue({ invoices: [
+      inv({ ...sent, id: 7, is_overdue: false }),
+      inv({ ...sent, id: 8, number: 'INV-2026-0004', status: 'part_paid', is_overdue: true }),
+    ] })
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    await waitFor(() => within(container).getAllByText('INV-2026-0004'))
+    expect(within(container).getAllByText('admin.billing.invoice.status.unpaid').length).toBeGreaterThan(0)
+    expect(within(container).getAllByText('admin.billing.invoice.status.overdue').length).toBeGreaterThan(0)
+    expect(within(container).queryAllByText('admin.billing.invoice.status.part_paid')).toHaveLength(0)
   })
 
   it('says plainly when nothing has been sent yet', async () => {

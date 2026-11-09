@@ -253,6 +253,23 @@ class Invitation(models.Model):
         help_text='Sponsor invitations only: the gift the organisation is inviting them into. '
                   'NULL = not stated, and registration resolves it if it can.',
     )
+    #: Invitations I3 (2026-11-08): a sponsor invitation names SEVERAL gifts (`InvitationGift`
+    #: rows) or EVERY gift (this flag). Since I3 `programme` above is only the rollback MIRROR —
+    #: the one gift when exactly one is named, else NULL — written by `sponsor_invite_gifts.set_gifts`.
+    #: Every gift is NOT a live rule (open point B): it means every gift active in the invitation's
+    #: organisation when they register, frozen into rows then. False with no rows = not stated.
+    every_gift = models.BooleanField(
+        default=False, db_default=False,
+        help_text='Sponsor invitations only: invited into every gift active when they register.',
+    )
+    #: I3 review: WHEN Every gift was resolved into rows (`sponsor_invite_gifts.joined_on_registration`)
+    #: — stamped even when it resolved to NO gift, so it resolves exactly once and an empty answer is
+    #: never re-read live at vetting. NULL = not resolved yet (or not an Every-gift invitation);
+    #: `set_gifts` clears it with the rest.
+    every_gift_resolved_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Sponsor invitations only: when Every gift was resolved into rows (even to none).',
+    )
     #: WHICH SOURCE a `source_partner` invitation signs somebody in for (source sign-in S2,
     #: 2026-10-30, roadmap conflict C5). `organisation` above stays the TENANT, as for staff — the
     #: fence every Invitations reader cuts on — and this names the source inside it. NULL for every
@@ -312,3 +329,30 @@ class Invitation(models.Model):
 
     def __str__(self):
         return f'Invitation {self.audience}:{self.email or "(purged)"} [{self.code}]'
+
+
+class InvitationGift(models.Model):
+    """One gift a sponsor invitation names (Invitations I3, 2026-11-08; owner ruling 1).
+
+    The `reviewer_gifts` pattern: one row per (invitation, gift), written only by
+    `sponsor_invite_gifts.set_gifts`, which also keeps `Invitation.programme` as the mirror.
+    It grants nothing: on registration each row opens one PENDING membership, vetted as today.
+    CASCADE both ways — a deleted gift (only possible with no applications) leaves the invitation
+    naming the gifts that remain.
+    """
+    invitation = models.ForeignKey(Invitation, on_delete=models.CASCADE, related_name='gift_rows')
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.CASCADE, related_name='invitation_gift_rows',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'invitation_gifts'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['invitation', 'programme'], name='invitation_gift_one_row_per_pair',
+            ),
+        ]
+
+    def __str__(self):
+        return f'invitation={self.invitation_id} programme={self.programme_id}'

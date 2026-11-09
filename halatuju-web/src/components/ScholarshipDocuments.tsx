@@ -77,6 +77,8 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   // here (Org Config Sprint E). Starts at the platform default so the very first render, before
   // the list lands, still refuses an absurd file rather than letting it upload unchecked.
   const [limits, setLimits] = useState<ResolvedDocumentLimits>(() => limitsFrom(null))
+  // A2.3: how many uploads the server is still reading (served with the list).
+  const [reading, setReading] = useState(0)
 
   const refresh = useCallback(async () => {
     if (!token) return
@@ -84,6 +86,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       const r = await listDocuments({ token })
       setDocs(r.documents)
       setLimits(limitsFrom(r.limits))
+      setReading(r.reading || 0)
     } catch { /* ignore */ }
   }, [token])
 
@@ -261,6 +264,11 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
 
   return (
     <div className="space-y-6">
+      {reading > 0 && (
+        <p role="status" className="rounded-lg bg-primary-50 px-3 py-2 text-sm text-ground-900">
+          {t('scholarship.docs.stillReading', { count: String(reading) })}
+        </p>
+      )}
       {section('identity', 'ic', { showVisionChip: true })}
       {academic}
       {section('pathway', 'offer_letter')}

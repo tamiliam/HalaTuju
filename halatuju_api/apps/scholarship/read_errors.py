@@ -127,6 +127,23 @@ def ic_second_opinion_deferred(doc) -> bool:
     return isinstance(until, (int, float)) and until > timezone.now().timestamp()
 
 
+#: The hourly sweep's window on a deferred read (`services.read_retry`): epoch seconds, stamped on the row
+#: the first time the sweep tries it. Once it has passed only an officer's Re-run reads the document again.
+SERVICE_RETRY_UNTIL = 'service_retry_until'
+
+
+def service_retry_open(vision_fields) -> bool:
+    """True while the hourly sweep will still re-read a deferred document: it has not tried it yet (no
+    window on the row), or its window has not passed. A2.8a (TD-397): Check 2 holds a request for a
+    deferred document only while this is true, so a hold ends when the sweep gives up."""
+    from django.utils import timezone
+    vf = vision_fields if isinstance(vision_fields, dict) else {}
+    if SERVICE_RETRY_UNTIL not in vf:
+        return True
+    until = vf.get(SERVICE_RETRY_UNTIL)
+    return isinstance(until, (int, float)) and until > timezone.now().timestamp()
+
+
 def deferred_by_us(vision_fields) -> bool:
     """The narrower case: a read was ATTEMPTED and our service deferred it (`review_manually`, no
     fields) — the state the hourly sweep re-reads. Check 2 HOLDS its document requests while such a

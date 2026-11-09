@@ -17,7 +17,7 @@ from apps.courses.search import apply_people_search, people_search_term
 from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
 from .. import staff_activity
-from ..document_snapshot import document_snapshot
+from ..document_snapshot import document_snapshot, snapshot_unless_open
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
 from ..serializers_admin import AdminApplicationDetailSerializer, AdminApplicationListSerializer
@@ -48,10 +48,11 @@ def _detail_payload(app, admin):
     the assigned reviewer."""
     from .. import qc_separation
     from ..services.decline import rejected_by_unassigned
-    data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
-    data['qc_refusal'] = qc_separation.for_viewer(admin, app)
-    data['rejected_by_unassigned'] = rejected_by_unassigned(app)
-    data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
+    with snapshot_unless_open(app):   # A2.4: the POSTs that answer with the case read documents once too
+        data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
+        data['qc_refusal'] = qc_separation.for_viewer(admin, app)
+        data['rejected_by_unassigned'] = rejected_by_unassigned(app)
+        data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
     return data
 
 
@@ -367,12 +368,9 @@ class AdminVerifyAcceptView(_AdminBase):
             # QC (2026-07): the reviewer's verify-accept ("submit verdict") lands the case in
             # 'interviewed' = AWAITING QC (was 'recommended'). QC then clears it to 'recommended'
             # (qc-decision accept) or reopens it (qc-decision reopen). The reviewer still owns
-            # identity verification (nric_verified + checklist) here.
-            app.status = 'interviewed'
-            app.verified_at = timezone.now()
-            app.verified_by = admin.email
-            app.verify_checklist = request.data.get('checklist', {}) or {}
-            app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+            # identity verification (nric_verified + checklist) here; TD-378: a QC re-lock keeps that stamp.
+            from ..birth_state import stamp_verify_accept
+            stamp_verify_accept(app, admin, request.data.get('checklist', {}))
             # Common profile S3: the reviewer's own activity list, in this transaction. The only
             # writer of `verified_at`, so the only door.
             staff_activity.record(admin, staff_activity.VERIFY_ACCEPT, app)

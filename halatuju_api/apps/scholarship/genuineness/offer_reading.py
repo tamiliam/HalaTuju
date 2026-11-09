@@ -109,7 +109,7 @@ _PRIVATE_BODIES = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ', 
                    ' PROFESSIONAL AND CONTINUING ',
                    ' CENTRE FOR PROFESSIONAL ', ' CENTER FOR PROFESSIONAL ')
 #: EXPLICIT partner / tie-up words — the BLOCK overlay's (a private institution trading on a public name).
-_TIE_UP = (' RAKAN ', ' KERJASAMA ', ' PARTNER ')        # round 9 (Low): only beside an institution noun
+_TIE_UP = (' RAKAN ', ' KERJASAMA ', ' PARTNER ', ' COLLABORATION ')   # round 9 (Low): beside an institution noun; #66
 _TIE_UP_NOUN = re.compile(r' (?:KOLEJ|INSTITUT|UNIVERSITI|COLLEGES?|UNIVERSIT(?:Y|IES)|ACADEM(?:Y|IES))(?= )')
 #: A company on a letterhead line (the BLOCK overlay's proof).
 _COMPANY_HEAD = (' SDN BHD ', ' SENDIRIAN BERHAD ', ' BHD ', ' BERHAD ', ' SDNBHD ')   # round 8 (M3); S/B: _SB

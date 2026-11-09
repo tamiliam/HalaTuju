@@ -143,6 +143,8 @@ export default function ScholarshipAwardPage() {
     // Request #26: existing sentences, honestly reused — a new string would ride on /profile's first
     // load via the catalogue. A number changed after the PIN → verify again; a parent call still
     // needed (owner ruling A) → the agreement is not ready to sign yet, and we will say when it is.
+    // TD-400: a parent IC our outage left half-read — the consent screen's existing "try later" words.
+    if (code === 'parent_ic_service_down') return t('scholarship.consent.blocker.ic_service_down')
     const key = REUSED_WORDS[code] || code
     return known.includes(key)
       ? t(`scholarship.award.error.${key}`)

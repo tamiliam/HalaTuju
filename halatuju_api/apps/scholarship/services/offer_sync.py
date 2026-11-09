@@ -510,6 +510,27 @@ def realign_bumi_only_pick(application, offer, chk):
     return True
 
 
+def realign_after_rescore(offer_id, application_id, authenticity, apply):
+    """TD-448: a genuineness score stored WITHOUT a re-read (``rescore_unscored_documents``) runs
+    the same gated realignment the upload / re-read path runs, instead of waiting for one. Only when
+    the scored row is still the application's live latest offer (the one the autofill reads). With
+    ``apply`` False nothing is written: the plan is read against ``authenticity`` held in memory.
+    Returns True when the realignment applies (applied, or would apply on a dry run)."""
+    from ..models import ApplicantDocument
+    from ..pathway_engine import student_offer_check
+    offer = (ApplicantDocument.objects.select_related('application')
+             .filter(application_id=application_id, doc_type='offer_letter', superseded_at__isnull=True)
+             .order_by(*SNAPSHOT_ORDER).first())
+    if offer is None or offer.pk != offer_id:
+        return False
+    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
+    offer.vision_fields = dict(vf, authenticity=authenticity)   # already saved on --apply; in memory otherwise
+    chk = student_offer_check(offer)
+    if not apply:
+        return not plan_bumi_realign(offer.application, offer, chk)[0]
+    return realign_bumi_only_pick(offer.application, offer, chk)
+
+
 def revert_if_profile_incomplete(application):
     """Honest-funnel guard: if a ``profile_complete`` application is edited back
     into an incomplete state (e.g. the student deletes a compulsory document, or

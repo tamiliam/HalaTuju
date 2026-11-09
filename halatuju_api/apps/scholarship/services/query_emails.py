@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from .. import student_email_catalogue, usage as _usage
 from ..models import ScholarshipApplication
-from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_reminder_lead_days, query_sla
+from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_reminder_is_due, query_sla
 
 
 # How long after submission to hold the "we have a few questions" email, so it reads as
@@ -142,7 +142,7 @@ def send_query_reminders(now=None):
         # PER-ITEM deadline (the latest open query's own clock, from query_sla), not the submit
         # clock — so a query raised late still gets its reminder instead of being born past a
         # submit-anchored window (the "notified but reminder-less" bug).
-        if sla['days_left'] is None or sla['days_left'] > query_reminder_lead_days(app):
+        if not query_reminder_is_due(app, sla):
             continue
         # S6a: the organisation may switch this reminder off. Off = no send AND no stamp, so
         # switching it back on still reaches a student whose questions are still open.

@@ -3,6 +3,7 @@ Drafting the sponsor-facing profile at the reviewer handoff.
 
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
+A2.3b (2026-11-08): the sweep skips a row queued for the first-assign draft (``assign_draft``).
 """
 from django.utils import timezone
 
@@ -41,6 +42,7 @@ def autogenerate_ready_profiles(now=None):
     calls, so it stays a manual admin action until deliberately switched on. Idempotent:
     an application with a generated profile is skipped. Returns ``{'generated': n}``."""
     from django.conf import settings as _settings
+    from ..assign_draft import DRAFTING
     if not getattr(_settings, 'CHECK2_AUTO_GENERATE', False):
         return {'generated': 0}
     now = now or timezone.now()
@@ -53,6 +55,8 @@ def autogenerate_ready_profiles(now=None):
         sp = getattr(app, 'sponsor_profile', None)
         if sp is not None and sp.generated_at is not None:
             continue  # already drafted — never regenerate automatically
+        if sp is not None and sp.finalise_state == DRAFTING:
+            continue  # A2.3b: queued for the finalise-profiles cron; never paid for twice
         if not is_ready_for_assignment(app, now):
             continue
         _, error = generate_ready_profile(app)

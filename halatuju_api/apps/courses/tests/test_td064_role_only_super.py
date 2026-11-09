@@ -27,16 +27,14 @@ class TheFlagIsGone(TestCase):
             with self.subTest(role=role):
                 self.assertFalse(PartnerAdmin(role=role).is_super)
 
-    def test_a_new_row_inserts_while_the_column_is_still_in_the_database(self):
-        """Step 1 keeps the column (the old image reads it); the migration gives it a DB default,
-        so an INSERT that no longer names it passes its NOT NULL."""
+    def test_a_new_row_inserts_once_the_column_is_dropped(self):
+        """0094 drops the retired column from a database built from the migrations (production dropped
+        it by hand), and a new row still inserts without it."""
         with connection.cursor() as cur:
             cols = [c.name for c in connection.introspection.get_table_description(cur, 'partner_admins')]
-        self.assertIn('is_super_admin', cols)
+        self.assertNotIn('is_super_admin', cols)
         a = PartnerAdmin.objects.create(email='td064-new@x.com', name='New', role='reviewer')
-        with connection.cursor() as cur:
-            cur.execute('SELECT is_super_admin FROM partner_admins WHERE id = %s', [a.pk])
-            self.assertFalse(cur.fetchone()[0])
+        self.assertTrue(PartnerAdmin.objects.filter(pk=a.pk).exists())
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

@@ -1,4 +1,5 @@
-"""The admin System health light: five rows, each green / amber / red, for super admins (2026-10-28).
+"""The admin System health light: six rows, each green / amber / red, for super admins (2026-10-28;
+the sixth, failed final profiles, A2.1).
 
 Read-only and free — it calls no API. Gemini and Vision are judged from the outcomes already stamped
 on documents (the same rules as the outage alert, `services/outage.py`); email and the scheduled
@@ -14,8 +15,9 @@ from zoneinfo import ZoneInfo
 from django.utils import timezone
 
 from ..cron_health import EXPECTED_CADENCE
-from ..models import ApplicantDocument
+from ..models import ApplicantDocument, SponsorProfile
 from .. import system_health_store as store
+from .decline import CASE_CLOSED_STATES
 from .outage import (HOURLY_MIN_APPLICATIONS, HOURLY_MIN_FAILURES, _outage_stats,
                      gemini_read_outcome, ic_second_opinion_outcome, vision_outcome)
 
@@ -60,7 +62,11 @@ CRON_RED_ERRORS = 2
 _BILLING_ERROR = re.compile(r'\b402\b|prepay|credit|billing', re.IGNORECASE)
 CREDIT_WINDOW = timedelta(hours=24)
 
-ROW_KEYS = ('gemini', 'vision', 'email', 'cron', 'credit')
+# ── Final sponsor profiles (A2.1) ──────────────────────────────────────────────────────────
+#: Amber while any profile's background write has spent its tries ('failed'): the case still has
+#: its draft, but someone has to re-queue it. Never red: nothing is down, one case waits.
+
+ROW_KEYS = ('gemini', 'vision', 'email', 'cron', 'credit', 'profiles')
 
 
 def _row(key, status, code, params=None, last_ok_at=None):
@@ -196,7 +202,8 @@ def _grace(cadence):
 
 
 def cadence_word(cadence):
-    for word, td in (('every15', timedelta(minutes=15)), ('hourly', timedelta(hours=1)),
+    for word, td in (('every5', timedelta(minutes=5)), ('every15', timedelta(minutes=15)),
+                     ('hourly', timedelta(hours=1)),
                      ('daily', timedelta(days=1)), ('weekly', timedelta(days=7)),
                      ('monthly', timedelta(days=31)), ('yearly', timedelta(days=366))):
         if cadence <= td:
@@ -256,14 +263,26 @@ def cron_row(now, records):
     return _row('cron', status, code, params, last_ok)
 
 
-# ── All five ───────────────────────────────────────────────────────────────────────────────
+# ── Final sponsor profiles ─────────────────────────────────────────────────────────────────
+
+def profiles_row():
+    """Amber with the count of final profiles the `finalise-profiles` cron gave up on (on open
+    cases only: a closed case's failed row needs no one, so it must not keep the light amber)."""
+    failed = (SponsorProfile.objects.filter(finalise_state='failed')
+              .exclude(application__status__in=CASE_CLOSED_STATES).count())
+    if failed:
+        return _row('profiles', AMBER, 'failed', {'count': str(failed)})
+    return _row('profiles', GREEN, 'ok')
+
+
+# ── All six ────────────────────────────────────────────────────────────────────────────────
 
 def overall(rows):
     return max((r['status'] for r in rows), key=_RANK.__getitem__, default=GREEN)
 
 
 def snapshot(now=None):
-    """The light's whole payload: the five rows, the worst colour, and when it was checked."""
+    """The light's whole payload: the six rows, the worst colour, and when it was checked."""
     now = now or timezone.now()
     records = store.load_all()
     gemini_events = _gemini_events(now)
@@ -273,5 +292,6 @@ def snapshot(now=None):
         email_row(now, records.get(store.EMAIL_KEY)),
         cron_row(now, records),
         credit_row(now, gemini_events),
+        profiles_row(),
     ]
     return {'overall': overall(rows), 'checked_at': _iso(now), 'rows': rows}

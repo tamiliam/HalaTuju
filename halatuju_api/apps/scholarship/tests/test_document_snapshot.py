@@ -77,6 +77,23 @@ from apps.scholarship.tests.factories import (
 from apps.scholarship.views_admin import applications as applications_view
 
 
+def _off_switch():
+    """Turns BOTH doors off: the GET's own `document_snapshot` and the `snapshot_unless_open`
+    that `_detail_payload` uses (A2.4), so OFF really means no snapshot."""
+    first = mock.patch.object(applications_view, 'document_snapshot', _null_snapshot)
+    second = mock.patch.object(applications_view, 'snapshot_unless_open', _null_snapshot)
+
+    class _Both:
+        def start(self):
+            first.start()
+            second.start()
+
+        def stop(self):
+            second.stop()
+            first.stop()
+    return _Both()
+
+
 def _null_snapshot(_application):
     """The OFF switch: what the view does when there is no snapshot — nothing at all."""
     class _Null:
@@ -246,8 +263,7 @@ class TheSnapshotChangesNoResponseByte(TestCase):
 
     def _read(self, client, url, *, snapshot):
         """One GET, with the snapshot on or off, returning (status, bytes, query count)."""
-        patcher = (mock.patch.object(applications_view, 'document_snapshot', _null_snapshot)
-                   if not snapshot else None)
+        patcher = _off_switch() if not snapshot else None
         if patcher:
             patcher.start()
         try:
@@ -442,8 +458,7 @@ class TheGarbageThatCrashedTheEndpointNowAnswers(TestCase):
                 f'/api/v1/admin/scholarship/applications/{app.id}/')
 
     def _raised(self, client, url, *, snapshot):
-        patcher = (mock.patch.object(applications_view, 'document_snapshot', _null_snapshot)
-                   if not snapshot else None)
+        patcher = _off_switch() if not snapshot else None
         if patcher:
             patcher.start()
         try:

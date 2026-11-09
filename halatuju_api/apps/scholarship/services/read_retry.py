@@ -39,7 +39,7 @@ from django.utils import timezone
 from ..income_declaration import APPROVAL_TRIED
 from ..models import ApplicantDocument
 from ..read_errors import (IC_SECOND_OPINION_ERROR, RATE_LIMITED, SERVICE_ERROR_PREFIXES,
-                           is_ai_service_error)
+                           SERVICE_RETRY_UNTIL, is_ai_service_error)
 from .blockers import _SELF_HEAL_READ_TYPES
 
 logger = logging.getLogger('apps.scholarship.services')   # the package's name: the log metric counts by it
@@ -52,8 +52,9 @@ logger = logging.getLogger('apps.scholarship.services')   # the package's name: 
 SERVICE_RETRY_TYPES = _SELF_HEAL_READ_TYPES + (
     'water_bill', 'electricity_bill', 'bank_statement', 'school_leaving_cert', 'semester_result')
 SERVICE_RETRY_WINDOW = timedelta(hours=72)
-#: Epoch seconds (a number, so the database compares it as one on SQLite and Postgres alike).
-RETRY_UNTIL = 'service_retry_until'
+#: Epoch seconds (a number, so the database compares it as one on SQLite and Postgres alike). Defined in
+#: `read_errors` (A2.8a) so Check 2's hold reads the same window.
+RETRY_UNTIL = SERVICE_RETRY_UNTIL
 
 
 def service_error_documents(limit):
@@ -88,10 +89,65 @@ def service_error_documents(limit):
                        vision_fields__ic_second_opinion_until__gt=int(now.timestamp()))
                .exclude(application__status__in=CASE_CLOSED_STATES)
                .order_by('vision_run_at')[:max(limit - len(fields), 0)])
-        return fields + list(ics)
+        return fields + list(ics) + _kept_out_documents(errs, now, max(limit - len(fields) - len(ics), 0))
     except Exception:                   # the never-read sweep must still run
         logger.exception('service-error retry selection failed; the never-read sweep continues')
         return []
+
+
+def _kept_out_documents(errs, now, limit):
+    """A2.8a (TD-393): in the room left, STAGED uploads our outage kept out of their slot
+    (`upload_read.kept_out_by_outage`) — same types, same window and slip rules as the live ones.
+    After the re-read the sweep judges each one (`run_service_retries`).
+    A2.8a review: the query admits only what `kept_out_by_outage` keeps (a deferred read, not still
+    queued, judged as STAGED), so older rows it would drop can never fill the batch; and only cases
+    before QC accept (lead ruling A: `family.DECIDED_STATUSES` is Recommended or later) — a copy kept
+    out on a decided case is left for the officer.
+    A2.8a re-check: the rest of that rule is in the query too — no newer decided upload in the slot
+    (`upload_read.newer_decided_uploads`, the one definition the Python check also asks) and no stored
+    fields (`deferred_by_us`) — so a row the Python check drops can never age into the batch's places.
+    A2.8a third check: a copy a re-read reslotted (salary_slip → epf) is asked of its keeper's slot too."""
+    if limit <= 0:
+        return []
+    try:
+        from django.db.models import Exists, F, OuterRef
+        from ..family import DECIDED_STATUSES
+        from ..results_review import SLIP_REQUEST_CODE
+        from ..upload_read import PENDING, kept_out_by_outage, newer_decided_uploads
+        def no_newer(slot_type):           # its own slot, and its keeper's (a re-read reslotted it)
+            return ~Exists(newer_decided_uploads(OuterRef('application_id'), OuterRef(slot_type),
+                                                 OuterRef('household_member'), OuterRef('request_code'),
+                                                 OuterRef('id')))
+        no_fields = (Q(vision_fields__fields__isnull=True) | Q(vision_fields__fields=None)
+                     | Q(vision_fields__fields={}) | Q(vision_fields__fields=[]))
+        rows = (ApplicantDocument.objects.select_related('superseded_by')
+                .filter(errs, no_fields, no_newer('doc_type'), no_newer('superseded_by__doc_type'),
+                        doc_type__in=SERVICE_RETRY_TYPES,
+                        superseded_at__isnull=False, superseded_by__isnull=False, superseded_by_id__lt=F('id'),
+                        superseded_by__superseded_at__isnull=True,
+                        vision_fields__student_verdict='review_manually', read_plan__staged=True)
+                .exclude(read_state=PENDING)
+                .exclude(application__status__in=DECIDED_STATUSES)
+                .exclude(request_code=SLIP_REQUEST_CODE)
+                .filter(~Q(vision_fields__has_key=RETRY_UNTIL)
+                        | Q(vision_fields__service_retry_until__gt=int(now.timestamp())))
+                .order_by('vision_fields_run_at')[:limit])
+        return [d for d in rows if kept_out_by_outage(d)]
+    except Exception:                   # the live re-reads must still run
+        logger.exception('kept-out retry selection failed; the rest of the sweep continues')
+        return []
+
+
+def _judge_if_kept_out(doc, err):
+    """TD-393: a STAGED copy whose re-read is no longer ours to finish (it read, or the read now
+    says something about the file) is judged as the upload would have judged it. Never raises."""
+    if doc.superseded_at is None or err == 'reprocess_failed' or is_ai_service_error(err):
+        return
+    try:
+        from ..upload_read import judge_reread_copy
+        judge_reread_copy(doc)
+    except Exception:
+        logger.exception('judging the re-read kept-out document %s failed', doc.id)
 
 
 #: #374 / ruling 2A: stamped on a row before its approval re-read, so the sweep tries each ONCE (a paid read);
@@ -102,7 +158,7 @@ def service_error_documents(limit):
 _APPROVAL_SLIP_FAMILIES = ('informal', 'declaration', 'govt')
 
 
-def approval_unchecked_documents(limit):
+def approval_unchecked_documents(limit, use_cursor=True):
     """#374 / owner ruling 2A (2026-10-28): live income documents on open cases whose stored read PREDATES
     the approver fields — every `income_support_doc`, and a payslip read as informal / declaration / govt —
     so the hourly sweep re-reads them even if the lead's manual re-read misses one; until then they count
@@ -144,13 +200,46 @@ def approval_unchecked_documents(limit):
                          & ~Q(vision_fields__approval_read_until__gt=int(timezone.now().timestamp())))
                 .exclude(vision_fields__has_key='approval_read_error',
                          vision_fields__approval_read_until__lte=int(timezone.now().timestamp()))
-                .exclude(application__status__in=CASE_CLOSED_STATES)
-                .order_by('uploaded_at')[:limit])
+                .exclude(application__status__in=CASE_CLOSED_STATES))
+        after = _approval_cursor() if use_cursor else None
+        ordered = rows.order_by('uploaded_at', 'id')
+        picked = list(ordered.filter(Q(uploaded_at__gt=after[0]) | Q(uploaded_at=after[0], id__gt=after[1]))[:limit]
+                      ) if after else []
+        rows = picked or ordered[:limit]      # nothing after the cursor: wrap to the start
         return [d for d in rows if isinstance((d.vision_fields or {}).get('fields'), dict) and d.vision_fields['fields']
                 and ('has_stamp_or_signature' not in d.vision_fields['fields'] or approval_unchecked(d))]
     except Exception:                   # the rest of the sweep must still run
         logger.exception('approval re-read selection failed; the sweep continues')
         return []
+
+
+#: A2.2: where the last run stopped among the approval re-reads (`uploaded_at` ISO, id). In the shared cache
+#: (the DatabaseCache), so no migration; losing it only restarts at the oldest, which is the old behaviour.
+APPROVAL_CURSOR_KEY = 'reprocess_ic:approval_cursor'
+
+
+def _approval_cursor():
+    try:
+        from datetime import datetime
+        from django.core.cache import cache
+        raw = cache.get(APPROVAL_CURSOR_KEY)
+        return (datetime.fromisoformat(raw[0]), int(raw[1])) if raw else None
+    except Exception:
+        return None
+
+
+def approval_cursor_save(reached, stopped):
+    """After a run that STOPPED on its time budget, remember the last approval re-read it reached
+    (``reached``: those documents, in order); after a run that finished, forget it (start at the oldest)."""
+    try:
+        from django.core.cache import cache
+        if not stopped:
+            cache.delete(APPROVAL_CURSOR_KEY)
+        elif reached:
+            last = reached[-1]
+            cache.set(APPROVAL_CURSOR_KEY, (last.uploaded_at.isoformat(), last.id), None)
+    except Exception:
+        logger.exception('approval cursor not saved; the next run restarts at the oldest')
 
 
 def _reread_ic(doc):
@@ -177,7 +266,9 @@ def _reread(doc):
     doc.vision_fields = {**doc.vision_fields, RETRY_UNTIL: until, APPROVAL_TRIED: int(now.timestamp())}
     doc.vision_fields_run_at = now
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
-    reextract_document(doc)
+    # A2.8a review: a kept-out copy's re-read runs the upload read's reslot step too; a live deferred copy
+    # and an approval re-read are not reslotted (re-check), as before.
+    reextract_document(doc, reslot=doc.superseded_at is not None)
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     if is_ai_service_error(vf.get('error')) and RETRY_UNTIL not in vf:   # still down: keep the window
         doc.vision_fields = {**vf, RETRY_UNTIL: until}
@@ -185,20 +276,28 @@ def _reread(doc):
     return vf.get('error') or ''
 
 
-def run_service_retries(docs):
+def run_service_retries(docs, deadline=None, out=None):
     """Re-read ``docs`` in order → ``(scanned, processed, errored)``. Skips the batch while Gemini
-    reads are down, and stops at the first document that still fails on our side."""
+    reads are down, and stops at the first document that still fails on our side. A2.2: past
+    ``deadline`` (a ``time.monotonic()`` value) it stops between documents and sets ``out['stopped']``
+    and ``out['reached']`` (how many it got through)."""
+    import time
     from .outage import gemini_reads_down
     if not docs or gemini_reads_down():
         return 0, 0, 0
     scanned = processed = errored = 0
     for doc in docs:
+        if deadline is not None and time.monotonic() >= deadline:
+            if out is not None:
+                out.update(stopped=True, reached=scanned)
+            break
         scanned += 1
         try:
             err = _reread(doc)
         except Exception:               # one document must not stop the sweep
             logger.exception('service-error re-read failed for document %s', doc.id)
             err = 'reprocess_failed'
+        _judge_if_kept_out(doc, err)
         if err:
             errored += 1
         else:

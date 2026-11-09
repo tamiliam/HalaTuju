@@ -27,6 +27,7 @@ from . import referrals as referral_service
 from . import sponsor_feed
 from . import sponsor_notify
 from . import sponsorship as sponsorship_service
+from . import sponsor_signup
 from . import sponsor_terms
 from . import trust as trust_service
 from .emails import send_sponsor_interest_admin_email
@@ -184,11 +185,10 @@ class SponsorRegisterView(SponsorMixin, APIView):
             _attribute_referral(data, existing)
             # Also called here, not just on create: this path serves a sponsor whose row already
             # exists, so it heals a missing membership rather than assuming create ran first.
-            # ⚠ The gift is RESOLVED, never assumed — `signup_programme_for` reads the invitation
-            # they answered, else the platform's sole active gift, else None (and None writes
-            # nothing rather than filing them against a gift nobody named).
-            sponsorship_service.sync_account_membership(
-                existing, sponsorship_service.signup_programme_for(existing))
+            # ⚠ The gifts are RESOLVED, never assumed — `signup_programmes_for` reads the
+            # invitation they answered, else the platform's sole active gift, else none (and none
+            # writes nothing). Create-only: an existing membership is never downgraded (I3).
+            sponsor_signup.open_signup_memberships(existing)
             sponsor_notify.send_welcome(existing)
             return Response(SponsorSerializer(existing).data)
 
@@ -205,15 +205,14 @@ class SponsorRegisterView(SponsorMixin, APIView):
             status='pending',
         )
         _attribute_referral(data, sponsor)
-        # Onboard them into the gift they registered for, PENDING — vetting settles it. Without
+        # Onboard them into the gifts they registered for, PENDING — vetting settles them. Without
         # this the account exists but belongs to no gift, so the pool reads empty and no credit
         # can be recorded (the 2026-07-28 gap; see sponsorship.sync_account_membership).
         #
         # ⚠ RESOLVED AFTER `_attribute_referral`, and the ORDER MATTERS: that call closes the
-        # admin invitation and links it to this sponsor, and the invitation is where the gift is
+        # admin invitation and links it to this sponsor, and the invitation is where the gifts are
         # stated. Resolving first would read an invitation that had not been matched yet.
-        sponsorship_service.sync_account_membership(
-            sponsor, sponsorship_service.signup_programme_for(sponsor))
+        sponsor_signup.open_signup_memberships(sponsor)   # one PENDING row per gift (I3)
         # S3: the first thing we have ever said to a sponsor. Dark until the template is switched
         # on; best-effort either way, so a mail problem can never cost someone their registration.
         sponsor_notify.send_welcome(sponsor)

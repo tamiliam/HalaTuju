@@ -154,10 +154,30 @@ def _delete_holders(p):
         # template is written for ONE gift. Only a template a BursaryAgreement REFERENCES holds the
         # gift — a document somebody signed can never go, so the gift under it cannot either. A
         # template nobody signed (draft, active or archived) goes WITH the gift, in the delete
-        # handler's transaction, exactly as an empty intake year does. Last in the list.
+        # handler's transaction, exactly as an empty intake year does. Last of the money holders.
         ('has_contract_templates',
          ContractTemplate.objects.filter(programme=p, agreements__isnull=False).distinct()),
+        # org-fence: as above. Invitations I4 review (2026-11-08; owner ruling 2): a MENTOR whose ONLY
+        # gift this is. `mentor_gifts` rows CASCADE with the gift, and a mentor left with no rows
+        # mentors in EVERY gift (open point C) — so deleting it would silently WIDEN that mentor,
+        # the opposite of "a gift limits who they mentor". The count is how many such mentors (one
+        # row each). A mentor who holds other gifts too does not hold it: their remaining gifts
+        # still limit them. Last, because the holders above can never be undone, and naming them
+        # first spares a pointless edit of a mentor's gifts.
+        ('gift_limits_mentors', _sole_gift_rows(p)),
     )
+
+
+def _sole_gift_rows(p):
+    """The `mentor_gifts` rows that are their mentor's ONLY row and name gift ``p`` (a gift or
+    ``OuterRef('pk')``). The inner query does not refer to ``p``, so it nests inside the list's
+    one-query form (``programme_delete_blockers``) unchanged."""
+    from django.db.models import Count
+
+    from ..models import Mentor, MentorGift
+    # org-fence: narrowed by the already-fenced `p`; the inner query only selects mentor ids.
+    one_row = Mentor.objects.annotate(n_gifts=Count('gift_rows')).filter(n_gifts=1).values('pk')
+    return MentorGift.objects.filter(programme=p, mentor_id__in=one_row)
 
 
 def _apply_copy_terms(p):

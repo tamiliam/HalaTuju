@@ -26,7 +26,7 @@ with the user 2026-06-02):
 from django.db import IntegrityError
 from django.utils import timezone
 
-from .genuineness.offer_issuers import hold_for_officer, officer_must_close
+from .genuineness.offer_issuers import hold_for_officer, officer_must_close, release_not_checked_holds
 from .income_str_ownership import hold_if_str_unmatched, str_check_names_a_stranger, str_upload_unmatched
 from .higher_results import TICKETS as _HIGHER_TICKETS, match_verdict as _higher_match_verdict  # S3a
 from .models import ResolutionItem
@@ -488,6 +488,8 @@ def resolve_doc_items_for_upload(application, doc):
     # "our team is checking" card, never "still checking — refresh"), and the upload answers 'ok'.
     held_str = verdict == 'pending' and doc.doc_type == 'str' and str_upload_unmatched(doc)
     held_any = False
+    if verdict != 'ok' and not held_str:
+        release_not_checked_holds(application, doc)    # TD-406
     if verdict == 'ok' or held_str:
         qs = application.resolution_items.filter(status='open', kind='doc')
         rc = getattr(doc, 'request_code', '') or ''

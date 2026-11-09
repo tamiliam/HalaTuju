@@ -21,7 +21,9 @@ KEYS = {'id', 'name', 'email', 'role', 'is_super', 'organisation', 'source', 're
         'programmes', 'permissions', 'first_seen_at', 'last_seen_at',
         # Common profile S2: the person's own card.
         'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students',
-        'photo_url'}
+        'photo_url',
+        # Staff nudges (2026-11-08): how complete the profile is (`profile_completion`).
+        'completion'}
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

@@ -16,6 +16,7 @@ from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from ..serializers_admin import AdminApplicationDetailSerializer
 from ..services.decline import held_decline_restore_target
 from .. import sponsorship as sponsorship_service
+from .. import sponsor_signup
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
@@ -273,12 +274,13 @@ class AdminSponsorReviewView(_AdminBase):
         # what migration 0123 did for every sponsor who predates the programme layer. Without it
         # an approved sponsor sees no students and can hold no wallet.
         #
-        # ⚠ THE SAME GIFT THE REGISTRATION RESOLVED, AND ONLY THAT ONE. `signup_programme_for` is
-        # stable across both moments because the invitation outlives the registration — so the
-        # account's own row settles and a SECOND gift's membership, which is that organisation's
-        # separate acceptance decision, is never flipped as a side-effect of account vetting.
-        sponsorship_service.sync_account_membership(
-            sponsor, sponsorship_service.signup_programme_for(sponsor), vetted_by=admin.email)
+        # ⚠ THE SAME GIFTS THE REGISTRATION RESOLVED, AND ONLY THOSE. `signup_programmes_for` is
+        # stable across both moments because the invitation outlives the registration (and Every
+        # gift was frozen into rows when they registered, I3) — so the account's own rows settle
+        # and any OTHER gift's membership, which is that organisation's separate acceptance
+        # decision, is never flipped as a side-effect of account vetting. A REJECTED membership is
+        # never changed by it at all (I3 review; `sync_account_membership`).
+        sponsor_signup.settle_signup_memberships(sponsor, admin.email)
         from .. import staff_activity     # common profile S4: the vetter's own activity list
         if previous_status != new_status:  # S4 review L4: a re-click of the same decision is no act
             staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,

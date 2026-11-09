@@ -380,15 +380,38 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
   if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
 }
 
+type RecordedDocument = ApplicantDocument & {
+  match_verdict?: 'ok' | 'mismatch' | 'unreadable' | 'pending' | 'insufficient'
+  kept_previous?: boolean
+  /** A2.3: true while the document's read has not run yet. */
+  reading?: boolean
+}
+
+/** A2.3 (TD-519): run a just-recorded document's read now. Safe to repeat — the server reads it
+ *  once, and any other call gets the document and its verdict as they stand. */
+export async function readDocument(id: number, options?: ApiOptions): Promise<RecordedDocument> {
+  return apiRequest(`/api/v1/scholarship/documents/${id}/read/`, { method: 'POST', ...options })
+}
+
+/** Record an uploaded file. Since A2.3 the upload answers at once with `reading: true` and the read
+ *  is asked for straight after, so callers still get the read's verdict. If that second call fails
+ *  (a dropped line), the upload stands and the server reads it within 15 minutes: the caller gets
+ *  the recorded document with `match_verdict: 'pending'` (the "still checking" state). */
 export async function recordDocument(
   payload: { doc_type: string; storage_path: string; household_member?: string; request_code?: string; original_filename?: string; content_type?: string; size?: number },
   options?: ApiOptions
-): Promise<ApplicantDocument & { match_verdict?: 'ok' | 'mismatch' | 'unreadable' | 'pending' | 'insufficient' }> {
-  return apiRequest('/api/v1/scholarship/documents/', {
+): Promise<RecordedDocument> {
+  const recorded: RecordedDocument = await apiRequest('/api/v1/scholarship/documents/', {
     method: 'POST',
     body: JSON.stringify(payload),
     ...options,
   })
+  if (!recorded?.reading || recorded.id == null) return recorded
+  try {
+    return await readDocument(recorded.id, options)
+  } catch {
+    return recorded
+  }
 }
 
 /** The organisation's upload limits, SERVED with the document list (Org Config Sprint E).
@@ -402,7 +425,7 @@ export interface DocumentLimits {
 
 export async function listDocuments(
   options?: ApiOptions,
-): Promise<{ documents: ApplicantDocument[]; limits?: DocumentLimits }> {
+): Promise<{ documents: ApplicantDocument[]; limits?: DocumentLimits; reading?: number }> {
   return apiRequest('/api/v1/scholarship/documents/', options)
 }
 

@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.scholarship import assign_notify
 from apps.scholarship.models import (
     AssignmentEvent, ReviewerProfile, ScholarshipApplication, ScholarshipCohort,
 )
@@ -78,6 +79,8 @@ class TestReviewerAssignment(TestCase):
         self._set_student_email()
         self._auth('super-uid')
         self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
+        self.assertFalse(mock_send.called)          # A2.3: never inside the request
+        assign_notify.send_pending()                 # the assign-emails cron
         self.assertTrue(mock_send.called)
         kw = mock_send.call_args.kwargs
         self.assertEqual(kw['reviewer_name'], 'Reviewer')
@@ -318,6 +321,8 @@ class TestReviewerAssignment(TestCase):
         from apps.scholarship.pool import pool_ref
         with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
             self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
+            m.assert_not_called()                   # A2.3: never inside the request
+            assign_notify.send_pending()             # the assign-emails cron
         m.assert_called_once_with(
             to_email='rev@example.com', reviewer_name='Reviewer',
             ref=pool_ref(self.app.id), programme='B40', review_by=ANY)

@@ -12,9 +12,12 @@ Run via the internal cron endpoint job ``reprocess-ic-vision`` (Cloud Scheduler
 each doc is picked up only while it has no run, so the cost is bounded and one-off per doc.
 TD-151 (2026-10-02): the sweep also re-reads the slip, offer, income proofs and relationship
 documents stuck with no read at all (`services.blockers._SELF_HEAL_READ_TYPES`); `--dry-run` counts.
-2026-10-24: and documents whose stored read is OUR service failing (`services.read_retry`) —
+A2.2 / TD-518 (2026-11-07): each run is capped by a TIME BUDGET (default 80 s) and a smaller batch (100), so
+it never meets the 300 s request limit; a stop leaves the unreached documents for the next run (the queue is
+the cursor). 2026-10-24: and documents whose stored read is OUR service failing (`services.read_retry`) —
 skipped while Gemini reads are down, at most 72 hours per document, never on a closed case.
 """
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.reextract import reread_preflight
@@ -25,21 +28,27 @@ class Command(BaseCommand):
     help = 'Re-run Vision on IC/parent_ic documents stuck unprocessed (silent upload failures).'
 
     def add_arguments(self, parser):
-        parser.add_argument('--limit', type=int, default=200,
-                            help='Max documents to re-process in one run.')
+        parser.add_argument('--limit', type=int, default=None,
+                            help='Max documents to re-process in one run (default settings.REPROCESS_BATCH_LIMIT).')
+        parser.add_argument('--time-budget', type=int, default=None,
+                            help='Seconds after which the run stops cleanly between documents and the next run '
+                                 'resumes (default settings.REPROCESS_TIME_BUDGET_SECONDS; 0 = no budget).')
         parser.add_argument('--dry-run', action='store_true',
                             help='Count the stuck documents per type and read nothing (TD-151).')
 
     def handle(self, *args, **opts):
+        limit = opts['limit'] or settings.REPROCESS_BATCH_LIMIT
+        budget = settings.REPROCESS_TIME_BUDGET_SECONDS if opts['time_budget'] is None else opts['time_budget']
         if opts['dry_run']:
-            r = reprocess_unread_ic_documents(limit=opts['limit'], dry_run=True)
+            r = reprocess_unread_ic_documents(limit=limit, dry_run=True)
             self.stdout.write(f"reprocess_unread_ic DRY-RUN: would re-read {r['scanned']} "
                               f"(by type {r['by_type']}); nothing was read")
             return
         # TD-407 review: HOURLY via the cron endpoint, which swallows a raised error — so WARN and run
         # (a flag-off re-read keeps stored scores) rather than stop the self-heal quietly.
         reread_preflight(self, opts, refuse=False)
-        r = reprocess_unread_ic_documents(limit=opts['limit'])
+        r = reprocess_unread_ic_documents(limit=limit, time_budget=budget or None)
+        stop = f" STOPPED-AT-TIME-BUDGET({budget}s) left={r['left']} (next run resumes)" if r.get('stopped_early') else ''
         self.stdout.write(self.style.SUCCESS(
             f"reprocess_unread_ic: scanned={r['scanned']} processed={r['processed']} "
-            f"errored={r['errored']}"))
+            f"errored={r['errored']}{stop}"))

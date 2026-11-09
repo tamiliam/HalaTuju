@@ -31,6 +31,7 @@ from apps.scholarship.results_review import SLIP_REQUEST_CODE
 from apps.scholarship.tests.doc_keys import issued_key as _key
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 from apps.scholarship.tests.test_split_combined_results import SplitCase
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER = 'td115-user'
@@ -122,7 +123,7 @@ class TestUploadDoor(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(USER)}')
 
     def _post(self, doc_type, name):
-        return self.client.post('/api/v1/scholarship/documents/', {
+        return post_doc(self.client, {
             'doc_type': doc_type, 'storage_path': _key(self.app, doc_type, name),
             'original_filename': f'{name}.pdf', 'size': 1000}, format='json')
 

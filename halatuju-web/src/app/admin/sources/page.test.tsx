@@ -8,7 +8,7 @@
  * be MOUNTED until its badge is chosen (so each reveal re-reads the send log), and the registry
  * must be HIDDEN rather than unmounted (so a half-typed inline edit survives a trip and back).
  */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import SourcesPage from './page'
 import * as api from '@/lib/admin-api'
 
@@ -266,6 +266,89 @@ describe('inviting a source, and the edit lock once it has joined', () => {
     await waitFor(() => expect(screen.getByText('admin.sources.managedRefused')).toBeTruthy())
     // It reads the list again, so the row shows its lock instead of a form.
     await waitFor(() => expect(mockApi.getSources).toHaveBeenCalledTimes(2))
+  })
+})
+
+/**
+ * Invitations I2 (owner ruling 2026-11-08): one person per source, shown on its row beside the
+ * sign-in badge — and Remove for that person lives here now (it left the Invitations "Signed in"
+ * table): the same confirm wording, the same endpoint (`revokeSourceUser`), a banner, then a re-read.
+ */
+describe('the source\'s person, and Remove (I2)', () => {
+  const AUDREY = { id: 42, name: 'Audrey Koh', email: 'muet@example.org', joined_at: '2026-10-20T00:00:00Z',
+    manageable: true, phone: '016-845 1270' }
+  const rows = (person: Partial<api.SourcePerson> | null = AUDREY) => [
+    { ...SOURCES[0], sign_in: 'none', user_count: 0, person: null },
+    { ...SOURCES[0], id: 3, code: 'muet', name: 'MUETMyWay', sign_in: 'joined', user_count: 1,
+      person: person && { ...AUDREY, ...person } },
+  ] as unknown as api.SourceItem[]
+  let confirm: jest.SpyInstance
+
+  beforeEach(() => {
+    mockApi.getSources.mockResolvedValue({ sources: rows() })
+    mockApi.revokeSourceUser.mockResolvedValue({ id: 42, is_active: false, message: '' })
+    confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+  afterEach(() => confirm.mockRestore())
+
+  const shown = async () => {
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('source-person-row-muet')).toBeTruthy())
+  }
+  const removeLink = () => within(screen.getByTestId('source-person-row-muet')).getByText('admin.sources.person.remove')
+
+  it('names the person beside the badge — in the table row and the phone card — and nobody where none', async () => {
+    await shown()
+    for (const where of ['row', 'card']) {
+      const block = screen.getByTestId(`source-person-${where}-muet`)
+      expect(block.textContent).toContain('Audrey Koh')
+      expect(block.textContent).toContain('muet@example.org')
+      expect(block.textContent).toContain('016-845 1270')
+      expect(within(block).getByText('admin.sources.person.remove').className).toContain('text-critical-600')
+    }
+    expect(screen.getByTestId('sign-in-muet').textContent).toContain('admin.sources.signIn.joined')
+    expect(screen.queryByTestId('source-person-row-smc')).toBeNull()
+    expect(screen.queryByTestId('source-person-card-smc')).toBeNull()
+  })
+
+  it('Remove asks first with the same words, and does nothing when the answer is no', async () => {
+    confirm.mockReturnValueOnce(false)
+    await shown()
+    fireEvent.click(removeLink())
+    expect(confirm).toHaveBeenCalledWith('admin.sources.person.removeConfirm|Audrey Koh,MUETMyWay')
+    expect(mockApi.revokeSourceUser).not.toHaveBeenCalled()
+  })
+
+  it('Remove after a yes calls the source-user revoke, says so, and reads the list again', async () => {
+    await shown()
+    fireEvent.click(removeLink())
+    await waitFor(() => expect(mockApi.revokeSourceUser).toHaveBeenCalledWith(42, { token: 'tok' }))
+    expect(await screen.findByText('admin.sources.person.removed')).toBeTruthy()
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalledTimes(2))
+  })
+
+  it.each([
+    ['not_active', 'admin.sources.person.notActive|Audrey Koh'],
+    ['surprise', 'admin.sources.person.removeFailed'],
+  ])('a Remove refused %s says so in plain words, and re-reads', async (code, words) => {
+    mockApi.revokeSourceUser.mockRejectedValueOnce(Object.assign(new Error(code), { code }))
+    await shown()
+    fireEvent.click(removeLink())
+    expect(await screen.findByText(words)).toBeTruthy()
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalledTimes(2))
+  })
+
+  it('offers no Remove where the server says the person is not this viewer\'s to manage', async () => {
+    mockApi.getSources.mockResolvedValue({ sources: rows({ manageable: false }) })
+    await shown()
+    expect(screen.getByTestId('source-person-row-muet').textContent).toContain('Audrey Koh')
+    expect(screen.queryByText('admin.sources.person.remove')).toBeNull()
+  })
+
+  it('offers Admin — who does not invite sources — the person but no Remove', async () => {
+    mockRole = { role: 'admin', is_super_admin: false }
+    await shown()
+    expect(screen.queryByText('admin.sources.person.remove')).toBeNull()
   })
 })
 

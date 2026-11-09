@@ -392,6 +392,18 @@ class ADeferredReadAsksTheStudentForNothing(TestCase):
         offer.save(update_fields=['vision_fields'])
         self.assertIn('offer_unreadable', self._asks(app))
 
+    def test_a_deferred_offer_gives_the_officer_a_reason_line_and_the_student_no_ticket(self):
+        """TD-396 (A2.8a): the Pathway review used to carry no unresolved item at all."""
+        from apps.scholarship.resolution import CODE_TO_TICKET, _ticketable_unresolved
+        from apps.scholarship.verdict_engine import build_verdict
+        app = make_application('profile_complete')
+        _doc(app, 'offer_letter', vision_fields=dict(_SERVICE_READ))
+        pathway = next(f for f in build_verdict(app) if f['fact'] == 'pathway')
+        self.assertEqual(pathway['status'], 'review')
+        self.assertEqual([i['code'] for i in pathway['unresolved']], ['offer_not_read_yet'])
+        self.assertNotIn('offer_not_read_yet', CODE_TO_TICKET)
+        self.assertNotIn('offer_not_read_yet', _ticketable_unresolved(app))
+
     def test_a_deferred_birth_certificate_is_not_unreadable_anywhere(self):
         from apps.scholarship.income_engine import relationship_doc_unreadable, student_bc_check
         app = make_application('profile_complete', income_route='str', income_earner='mother')

@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { AdminMe, ReviewerProfile } from '@/lib/admin-api'
+import type { AdminMe, ProfileCompletion, ReviewerProfile } from '@/lib/admin-api'
 import { formatMyMobile } from '@/lib/sponsorAuth'
 
 /**
@@ -75,7 +75,10 @@ export interface ProfileState {
   /** The photo now on the profile (a signed URL), and how a card changes it — straight away,
    *  not through Save (`admin/me/photo/`). */
   photoUrl: string | null
-  onPhoto: (url: string | null) => void
+  /** `completion` is the photo answer's (staff nudges), so the completion card follows at once. */
+  onPhoto: (url: string | null, completion?: ProfileCompletion | null) => void
+  /** Staff nudges (2026-11-08): `admin/me/` `completion` — the server's ONE rule; null for a super. */
+  completion: ProfileCompletion | null
   /** A card says one of its fields would be refused (Save sleeps while any is). */
   report: (key: string, bad: boolean) => void
   /** A referral partner's organisation name (from `admin/profile/`), or the source's organisation. */
@@ -101,7 +104,8 @@ export function CardFrame({ title, subtitle, icon, children, testId, className }
   title: string; subtitle?: string; icon?: string; children: ReactNode; testId: string; className?: string
 }) {
   return (
-    <section className={className ? `${CARD} ${className}` : CARD} data-testid={`profile-card-${testId}`} aria-label={title}>
+    <section id={`profile-card-${testId}`} className={`${className ? `${CARD} ${className}` : CARD} scroll-mt-20`}
+      data-testid={`profile-card-${testId}`} aria-label={title}>
       <h2 className="font-semibold flex items-center gap-2">
         {icon && <span aria-hidden>{icon}</span>}{title}
       </h2>

@@ -281,6 +281,17 @@ describe('every interview question needs an answer before the reviewer decides',
     expect(screen.getAllByText('NRIC already in use').length).toBeGreaterThan(0)
   })
 
+  it('A2.1: a queued final profile says it is being written, not that it is done', async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app, completeness: { complete: true },
+      finalise_result: { ok: true, pending: true } } as never)
+    api.verifyAcceptApplication.mockRejectedValue(Object.assign(new Error('NRIC already in use'), {
+      code: 'nric_clash', status: 409 }))
+    press()
+    expect(await screen.findByText('admin.scholarship.recordVerdict.finalisePending')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.finaliseOk')).toBeNull()
+  })
+
   it('#61: a real server refusal of the save itself still shows its own message', async () => {
     const { api, press } = await pressSaveAndFinalise()
     api.recordVerdict.mockRejectedValue(Object.assign(new Error('Not your applicant.'), {
@@ -398,5 +409,18 @@ describe('reopening a recorded decision', () => {
     await loaded()
     expect(button('recordVerdict.reopen')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' })).toBeNull()
+  })
+
+  // TD-358: an officer sees the student who was never emailed her decision.
+  it('shows the no-email banner only when the decision email has not gone', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: 'no_address' } })
+    await loaded()
+    expect(screen.getByTestId('decision-mail-banner').textContent).toBe('admin.scholarship.untold.noAddress')
+  })
+
+  it('shows no banner when she was told', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: '' } })
+    await loaded()
+    expect(screen.queryByTestId('decision-mail-banner')).toBeNull()
   })
 })

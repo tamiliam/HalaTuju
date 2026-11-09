@@ -18,11 +18,8 @@ from django.utils import timezone
 
 from apps.scholarship import student_email_catalogue
 from apps.scholarship.models import ScholarshipApplication
-from apps.scholarship.services import (
-    QUERY_SLA_ACTIVE_STATUSES, query_sla, query_sla_days, send_query_reminders,
-    _elapsed_days_local,
-)
-from apps.scholarship.services.queries_sla import query_reminder_lead_days
+from apps.scholarship.services import QUERY_SLA_ACTIVE_STATUSES, query_sla, send_query_reminders
+from apps.scholarship.services.queries_sla import query_reminder_is_due
 
 
 class Command(BaseCommand):
@@ -49,8 +46,7 @@ class Command(BaseCommand):
                 sla = query_sla(app, now)
                 if not sla['active'] or sla['lapsed']:
                     continue
-                lead = query_reminder_lead_days(app)
-                if _elapsed_days_local(now, app.profile_completed_at) < max(query_sla_days(app) - lead, 0):
+                if not query_reminder_is_due(app, sla):   # TD-370: the live sweep's own rule
                     continue
                 # S6a review L6: the dry run asks the organisation's switch, as the live run does.
                 if not student_email_catalogue.may_send(app, 'question_reminder'):

@@ -51,12 +51,13 @@ export {
   changeOwnPassword, deleteAdminPhoto, getAdminMe, getAdminProfile, getMyActivity, updateAdminMe, uploadAdminPhoto, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
 } from './admin-api/profiles'
 export type {
-  ActivityItem, ActivityPage, ActivitySubject, AdminMe, AdminMeCard, AdminProfile, ReviewerProfile, LangFluency,
+  ActivityItem, ActivityPage, ActivitySubject, AdminMe, AdminMeCard, CompletionKey, ProfileCompletion, AdminProfile, ReviewerProfile, LangFluency,
 } from './admin-api/profiles'
 
 // Organisation → Mentors (student maintenance S7a).
 export {
   addStaffMentor, getMentorDetail, getMentors, getStaffMentorCandidates, inviteMentor, mentorAction,   // + S7d, T3
+  setMentorGifts,   // Invitations I4
 } from './admin-api/mentors'
 export type {
   MentorAction, MentorDetail, MentorFluency, MentorRow, MentorScholarRow, MentorStatus, MentorsPayload,
@@ -97,7 +98,7 @@ export type { MyMeeting, MyStudent, MyStudentCard, MyStudentResult, MyStudents }
 
 // The referral organisations a student arrives through, and witness assignment.
 export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'
-export type { OrgItem, SourceItem } from './admin-api/sources'
+export type { OrgItem, SourceItem, SourcePerson } from './admin-api/sources'
 
 // The partner, reviewer, invitation and sponsor e-mail templates an officer authors.
 export {

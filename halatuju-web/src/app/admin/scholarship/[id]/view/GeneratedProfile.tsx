@@ -59,8 +59,27 @@ export function GeneratedProfile({
           <span>{t(profile?.final_markdown ? 'admin.scholarship.profileFinalHint' : 'admin.scholarship.profileDraftHint')}</span>
         </div>
 
+        {/* A2.1: the final profile is written in the background after the verdict is saved. */}
+        {profile?.finalise_state === 'pending' && (
+          <p role="status" className="rounded-lg border border-ground-200 bg-ground-50 p-2 text-xs text-ground-700">
+            {t('admin.scholarship.profileFinalising')}
+          </p>
+        )}
+        {profile?.finalise_state === 'failed' && (
+          <p role="status" className="rounded-lg border border-caution-200 bg-caution-50 p-2 text-xs text-caution-800">
+            {t('admin.scholarship.profileFinaliseFailed')}
+          </p>
+        )}
+
+        {/* A2.3b: the first-assign draft is written in the background after the assign is saved. */}
         {!profile || !(profile.final_markdown || profile.current_markdown) ? (
-          <p className="text-sm text-ground-400">{t('admin.scholarship.profilePending')}</p>
+          profile?.finalise_state === 'drafting' ? (
+            <p role="status" className="rounded-lg border border-ground-200 bg-ground-50 p-2 text-xs text-ground-700">
+              {t('admin.scholarship.profileDrafting')}
+            </p>
+          ) : (
+            <p className="text-sm text-ground-400">{t('admin.scholarship.profilePending')}</p>
+          )
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-ground-800">

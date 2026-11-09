@@ -59,13 +59,14 @@ const SCOPES: Record<string, () => unknown> = {
   }),
 }
 
-function Console({ path, role, params, children }: {
-  path: string; role: Record<string, unknown>; params?: Record<string, string>; children: ReactNode
+function Console({ path, role, params, completion, children }: {
+  path: string; role: Record<string, unknown>; params?: Record<string, string>; completion?: unknown; children: ReactNode
 }) {
   const inner = (
     <AdminAuthContext.Provider value={{
       session: null, token: TOKEN, isLoading: false, isAdminAuthenticated: true, role: role as never,
       refreshRole: async () => {}, photoUrl: null, setPhotoUrl: () => {},
+      profileCompletion: completion ?? null, setProfileCompletion: () => {},
     } as never}>
       <AppShell path={path}>{children}</AppShell>
     </AdminAuthContext.Provider>
@@ -150,6 +151,14 @@ const MY_PROGRAMMES_MENTOR = { every_gift: false, programmes: [
 
 // ── The common Profile ──────────────────────────────────────────────────────────────────────────
 
+// Staff nudges: a reviewer's profile 6 of 8 done — the photo and the address missing (the bar, ticks, links).
+const COMPLETION = {
+  items: ['photo', 'name', 'job_title', 'about', 'phone', 'qualifications', 'language', 'address']
+    .map((key) => ({ key, done: key !== 'photo' && key !== 'address' })),
+  done: 6, total: 8, percent: 75, important_missing: ['photo'],
+}
+// The blue profile banner with every important item missing (a mentor's three), the longest text.
+const BANNER_COMPLETION = { ...COMPLETION, important_missing: ['photo', 'phone', 'mentoring_area'] }
 const me = (role: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
   id: role.admin_id, name: role.admin_name, email: 'staf.contoh@contoh.invalid', role: role.role, is_super: false,
   organisation: { id: 1, name: 'Yayasan Contoh' }, source: null, referral_partner: null,
@@ -157,7 +166,8 @@ const me = (role: Record<string, unknown>, extra: Record<string, unknown> = {}) 
   first_seen_at: '2026-02-01T08:00:00Z', last_seen_at: '2026-11-03T08:00:00Z',
   job_title: 'தன்னார்வ மதிப்பாய்வாளர், உயர்கல்வி உதவித்தொகைக் குழு',
   about: 'நான் இருபது ஆண்டுகளாகக் கணக்காய்வாளராகப் பணியாற்றுகிறேன்; மாணவர்களின் விண்ணப்பங்களைப் படிப்பதில் மகிழ்ச்சி.',
-  phone: '123456789', share_phone_with_team: true, share_phone_with_students: false, photo_url: null, ...extra,
+  phone: '123456789', share_phone_with_team: true, share_phone_with_students: false, photo_url: null,
+  completion: COMPLETION, ...extra,
 })
 const REVIEWER_PROFILE = {
   highest_qualification: "Bachelor's Degree", university: 'Universiti Malaya', graduation_year: 2004,
@@ -346,6 +356,29 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     routes: { ...SCOPES, '/api/v1/admin/reviewers/7/': () => REVIEWER_DETAIL },
     render: () => (
       <Console path="/admin/organisation/reviewers/7" role={ORG_ADMIN} params={{ id: '7' }}><ReviewerDetailPage /></Console>
+    ),
+  },
+  {
+    slug: 'nudge-profile-banner',
+    title: 'Admin — the profile banner (staff nudges)',
+    note: 'Staff nudges Phase A: the blue banner under the top bar — what is missing (a photo, a phone, the mentoring '
+      + 'area), Complete profile, a 44 px X; it wraps on a phone, the link under the text.',
+    routes: { ...SCOPES, '/api/v1/admin/mentor/students/': () => MY_STUDENTS },
+    render: () => (
+      <Console path="/admin/my-students" role={MENTOR} completion={BANNER_COMPLETION}><MyStudentsPage /></Console>
+    ),
+  },
+  {
+    slug: 'nudge-overdue-banner',
+    title: 'Admin — the overdue banner (staff nudges)',
+    note: 'Staff nudges Phase B: the red banner under the top bar, over the profile banner — the oldest overdue invoice, '
+      + 'what is owed, days late, "and 2 more", View invoice, a 44 px X; it wraps on a phone, the link under the text.',
+    routes: { ...ORG_ROUTES, '/api/v1/admin/scholarship/billing/usage/': () => ({}),
+      '/api/v1/admin/scholarship/billing/overdue/': () => ({ overdue: {
+        invoice_id: 3, number: 'INV-2026-0003', currency: 'MYR', balance_myr: '123456.78', due_on: '2026-10-15',
+        days_overdue: 25, count: 3, more: 2 } }) },
+    render: () => (
+      <Console path="/admin/organisation/programmes" role={ORG_ADMIN} completion={BANNER_COMPLETION}><ProgrammesPage /></Console>
     ),
   },
   {

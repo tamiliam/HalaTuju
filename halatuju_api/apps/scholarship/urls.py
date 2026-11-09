@@ -24,6 +24,7 @@ from .views import (
     VircleAirtableUpdateView,
     DocumentDetailView,
     DocumentHelpView,
+    DocumentReadView,
     IncomeRouteSwitchView,
     GraduationMessageView,
     IncomeClusterHelpView,
@@ -119,7 +120,7 @@ from .views_admin import (
     AdminInterviewSlotsView,
     AdminResolutionItemActionView,
     AdminRunVisionView, AdminVerdictMetricsView,
-    AdminMeActivityView, AdminMePasswordView, AdminMePhotoView, AdminMeView, ReviewerProfileView,
+    ReviewerProfileView,
     AdminSponsorListView,
     AdminSponsorPendingCountView,
     AdminSponsorDetailView,
@@ -213,13 +214,14 @@ from .views_admin import (
     AdminSponsorTermsValidateView, AdminSponsorTermsPublishView,
     AdminSponsorTermsPreviewView, AdminSponsorTermsImportDocxView, AdminApplicationWitnessView,
 )
+from .urls_me import urlpatterns as ME_URLS   # admin/me/… own account (common profile S1-S4)
 from .urls_source import urlpatterns as SOURCE_CONSOLE_URLS   # admin/source/… (source sign-in)
 from .urls_letters import urlpatterns as LETTERS_URLS   # letters (maintenance S6b)
 from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S7a)
 from .urls_announcements import urlpatterns as ANNOUNCEMENT_URLS   # announcements (maintenance S8)
 from .urls_surveys import urlpatterns as SURVEY_URLS   # surveys (maintenance S9)
 from .urls_development import urlpatterns as DEVELOPMENT_URLS   # development modules (maintenance S10)
-from .urls_award import urlpatterns as AWARD_URLS   # a super withdraws an award (A1.13, TD-198)
+from . import urls_award, urls_billing   # award withdrawal (A1.13, TD-198); overdue banner (nudges)
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
@@ -251,6 +253,7 @@ urlpatterns = [
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
+    path('scholarship/documents/<int:pk>/read/', DocumentReadView.as_view()),   # A2.3: run a queued read now
     # Third results route S3b (D13): the higher-results card's SPM-slip note.
     path('scholarship/results/refile-to-spm/', RefileToSpmView.as_view()),
     path('scholarship/results/spm-only/', SpmOnlyView.as_view()),
@@ -592,9 +595,5 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
-    path('admin/me/', AdminMeView.as_view()),   # common profile S1: own account, every role
-    path('admin/me/password/', AdminMePasswordView.as_view()),   # own password, current one required
-    path('admin/me/photo/', AdminMePhotoView.as_view()),   # S2: own photo (multipart POST / DELETE)
-    path('admin/me/activity/', AdminMeActivityView.as_view()),   # S4: own activity list, every role
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),   # F9a: graduation thank-you moderation queue
-] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + AWARD_URLS
+] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + urls_award.urlpatterns + urls_billing.urlpatterns

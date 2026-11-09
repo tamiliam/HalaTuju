@@ -46,6 +46,30 @@ python manage.py eval_doc_recognition --json           # machine-readable
 ```
 Typical output: `9/10 correct · 1 regression: water_bill_other_name expected 'ok', got 'mismatch'`.
 
+### The corpus scorecard (`--auto-ok`, A2.8b)
+`python manage.py eval_doc_recognition --auto-ok [--labels <path>]` scores the whole real
+corpus: `fixtures/<doc_type>/` should read clean and `counter_examples/<doc_type>/` should be
+flagged. Only real doc-type folders are walked; the nested corpora (`results_split/`,
+`offer_letters_*/`) are listed under `skipped_folders`, not scored. `--labels` reads the notes
+from another labels.json (e.g. the tracked one in a worktree while `--eval-dir` points at the
+main checkout's corpus).
+- **Genuineness (TD-121).** Each document's STORED genuineness score is read (never re-scored,
+  no model call). A counter-example counts as caught if the content check OR the stored score
+  flags it; the `genuineness` block reports both sides and `counter_caught_by_genuineness_only`.
+  The two layers are NOT combined for genuine documents: a genuine document passes on its content
+  verdict alone, so a genuineness false positive (a genuine document whose stored score reads
+  `suspect` / `not_<type>`) is counted only in the separate genuineness count
+  (`genuineness.genuine_docs.flagged`, "genuine docs: … flagged"), never in the content pass figure
+  (`genuine_passed` / "N passed"). Read both numbers when judging false positives.
+- **Owner rulings.** Offer letters the owner ruled `suspect` or `not_offer_letter` in
+  `offer_genuineness_expect.json` (next to labels.json) are expected flagged. That file is the
+  one home; do not copy them into labels.json.
+- **`corpus_relabels`** (labels.json) moves one key's expectation by an owner ruling
+  (`{"expect": "flag" | "ok", "why": ...}`).
+- **`corpus_known`** explains a miss that is not a rule defect (stale snapshot, never-read
+  document, applicant typo, design case). It is still counted; the report shows how many misses
+  are explained (`false_positives_explained`).
+
 ## The results_split corpus (STPM exact-read, S1)
 `fixtures/results_split/<folder>/` holds results documents sorted by the owner and split by page:
 `stpm_cert`, `stpm_slip` (the STPM corpus) and the controls `spm_cert`, `spm_slip`, `fake`,
