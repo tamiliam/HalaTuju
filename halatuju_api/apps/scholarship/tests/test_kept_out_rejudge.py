@@ -244,6 +244,22 @@ class TheReCheckFixes(_KeptOut):
         self.assertEqual(ApplicantDocument.objects.get(pk=new.pk).doc_type, 'epf')   # reslotted ...
         judge.assert_not_called()                                     # ... and not judged over the fresh one
 
+    def test_third_check_a_reslotted_unread_copy_a_newer_payslip_follows_is_never_picked(self):
+        """A kept-out copy the re-read moved to epf that stays unread, then a newer payslip is decided in
+        the keeper's salary_slip slot: it is dropped by the query and the check, never re-read hourly."""
+        from apps.scholarship.services.read_retry import service_error_documents
+        from apps.scholarship.upload_read import kept_out_by_outage
+        moved = self._kept_out()
+        ApplicantDocument.objects.filter(pk=moved.pk).update(doc_type='epf')
+        moved = ApplicantDocument.objects.get(pk=moved.pk)
+        self.assertTrue(kept_out_by_outage(moved))                    # reslotted, still kept out ...
+        self.assertEqual([d.id for d in service_error_documents(50)], [moved.id])
+        self._kept_out(student_verdict='ok', fields={'gross_income': '2700'}, error='', service_error=False)
+        self.assertFalse(kept_out_by_outage(ApplicantDocument.objects.get(pk=moved.pk)))   # ... until it is not
+        self.assertEqual(service_error_documents(50), [])
+        with patch('apps.scholarship.upload_read.kept_out_by_outage', return_value=True):
+            self.assertEqual(service_error_documents(50), [])        # the query alone drops it: no batch place
+
     def test_item4_a_live_deferred_copy_is_not_reslotted(self):
         from apps.scholarship.tests.test_reslot_income_doc import _EPF_TEXT
         live = create_document(self.app, 'salary_slip', storage_path='test/slip/deferred', content_type='image/jpeg',

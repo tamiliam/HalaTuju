@@ -323,6 +323,13 @@ def _newer_upload_decided(doc, doc_type=None):
                                  doc.request_code, doc.id).exists()
 
 
+def _newer_upload_decided_in_either_slot(doc, keeper):
+    """A copy the re-read reslotted (salary_slip → epf) is asked of BOTH slots: its own and its
+    keeper's (A2.8a third check). The sweep's query asks the same two through ``OuterRef``s."""
+    return _newer_upload_decided(doc) or (
+        keeper.doc_type != doc.doc_type and _newer_upload_decided(doc, doc_type=keeper.doc_type))
+
+
 def _slot_now(doc, stale_ids):
     """``(stale_ids, existing_live)`` for judging a STAGED ``doc`` against its slot as it is now."""
     # Judge against the slot AS IT IS NOW, not as the upload saw it: an earlier upload read
@@ -353,7 +360,7 @@ def kept_out_by_outage(doc):
     return (doc.superseded_at is not None and keeper is not None and keeper.id < doc.id
             and keeper.superseded_at is None and doc.read_state != PENDING
             and bool((doc.read_plan or {}).get('staged'))
-            and deferred_by_us(doc.vision_fields) and not _newer_upload_decided(doc))
+            and deferred_by_us(doc.vision_fields) and not _newer_upload_decided_in_either_slot(doc, keeper))
 
 
 def judge_reread_copy(doc):
@@ -368,7 +375,7 @@ def judge_reread_copy(doc):
     doc = ApplicantDocument.objects.select_related('application', 'superseded_by').get(pk=doc.pk)
     keeper = doc.superseded_by
     if (doc.superseded_at is None or keeper is None or keeper.id > doc.id or keeper.superseded_at is not None
-            or _newer_upload_decided(doc) or _newer_upload_decided(doc, doc_type=keeper.doc_type)):
+            or _newer_upload_decided_in_either_slot(doc, keeper)):
         logger.info('AUDIT upload_rejudge_skipped doc=%s app=%s', doc.id, doc.application_id)
         return None
     plan = doc.read_plan or {}

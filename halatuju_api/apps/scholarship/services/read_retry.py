@@ -105,7 +105,8 @@ def _kept_out_documents(errs, now, limit):
     out on a decided case is left for the officer.
     A2.8a re-check: the rest of that rule is in the query too — no newer decided upload in the slot
     (`upload_read.newer_decided_uploads`, the one definition the Python check also asks) and no stored
-    fields (`deferred_by_us`) — so a row the Python check drops can never age into the batch's places."""
+    fields (`deferred_by_us`) — so a row the Python check drops can never age into the batch's places.
+    A2.8a third check: a copy a re-read reslotted (salary_slip → epf) is asked of its keeper's slot too."""
     if limit <= 0:
         return []
     try:
@@ -113,12 +114,15 @@ def _kept_out_documents(errs, now, limit):
         from ..family import DECIDED_STATUSES
         from ..results_review import SLIP_REQUEST_CODE
         from ..upload_read import PENDING, kept_out_by_outage, newer_decided_uploads
-        newer = newer_decided_uploads(OuterRef('application_id'), OuterRef('doc_type'),
-                                      OuterRef('household_member'), OuterRef('request_code'), OuterRef('id'))
+        def no_newer(slot_type):           # its own slot, and its keeper's (a re-read reslotted it)
+            return ~Exists(newer_decided_uploads(OuterRef('application_id'), OuterRef(slot_type),
+                                                 OuterRef('household_member'), OuterRef('request_code'),
+                                                 OuterRef('id')))
         no_fields = (Q(vision_fields__fields__isnull=True) | Q(vision_fields__fields=None)
                      | Q(vision_fields__fields={}) | Q(vision_fields__fields=[]))
         rows = (ApplicantDocument.objects.select_related('superseded_by')
-                .filter(errs, no_fields, ~Exists(newer), doc_type__in=SERVICE_RETRY_TYPES,
+                .filter(errs, no_fields, no_newer('doc_type'), no_newer('superseded_by__doc_type'),
+                        doc_type__in=SERVICE_RETRY_TYPES,
                         superseded_at__isnull=False, superseded_by__isnull=False, superseded_by_id__lt=F('id'),
                         superseded_by__superseded_at__isnull=True,
                         vision_fields__student_verdict='review_manually', read_plan__staged=True)
