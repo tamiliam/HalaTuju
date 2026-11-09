@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getAdminMe, getAdminProfile, updateAdminMe, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
   getSourceProfile, updateSourceProfile,
-  type AdminMe, type AdminMeCard, type ReviewerProfile, type SourceProfile,
+  type AdminMe, type AdminMeCard, type ProfileCompletion, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
 import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import { SIDE_CARDS, cardsFor, mentorsNow, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
@@ -24,6 +24,8 @@ import type { ComponentType } from 'react'
 // second chunk for the heavy card: each chunk is an entry in the webpack runtime EVERY route
 // downloads — eight put the median 0.127 kB under its line, two still cost 0.04 kB (see `cards.tsx`).
 const loadCards = () => import('@/components/adminProfile/cards')
+// Staff nudges (2026-11-08): the completion bar, in the same chunk, above every card.
+const CompletionCard = lazySource(() => loadCards().then((m) => m.CompletionCard))
 const CARDS: Record<ProfileCardId, ComponentType<CardProps>> = {
   you: lazySource(() => loadCards().then((m) => m.YouCard)),
   contact: lazySource(() => loadCards().then((m) => m.ContactCard)),
@@ -81,7 +83,7 @@ const OTHER_REFUSALS = ['not_reviewable']
  * holder of `review` in any other role sees a reminder, never a block.
  */
 export default function AdminProfilePage() {
-  const { token, role, session, refreshRole, setPhotoUrl: setHeaderPhoto } = useAdminAuth()
+  const { token, role, session, refreshRole, setPhotoUrl: setHeaderPhoto, setProfileCompletion } = useAdminAuth()
   const router = useRouter()
   const { t, locale } = useT()
   const ctx = profileContext(role)
@@ -99,6 +101,13 @@ export default function AdminProfilePage() {
 
   const [me, setMe] = useState<AdminMe | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  // Staff nudges: the server's completion (`admin/me/`), here and in the console's banner at once.
+  const [completion, setCompletion] = useState<ProfileCompletion | null>(null)
+  const applyCompletion = useCallback((c: ProfileCompletion | null | undefined) => {
+    if (c === undefined) return
+    setCompletion(c)
+    setProfileCompletion?.(c)
+  }, [setProfileCompletion])
   const [orgName, setOrgName] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [draft, setDraft] = useState<ProfileDraft | null>(null)
@@ -144,7 +153,7 @@ export default function AdminProfilePage() {
         reviewer: rev, source: src ? sourceFormOf(src) : null, mentoringArea: m.mentoring_area ?? '',
       }
       meLocale.current = lang
-      setMe(m); setPhotoUrl(m.photo_url); setEmail(m.email)
+      setMe(m); setPhotoUrl(m.photo_url); setEmail(m.email); setCompletion(m.completion ?? null)
       setOrgName(prof?.org_name ?? (src?.source.organisation || null))
       setDraft(base); setSaved(base)
     }).catch(() => { if (live) setFailed(true) })
@@ -157,10 +166,11 @@ export default function AdminProfilePage() {
     setDraft((prev) => (prev ? { ...prev, reviewer: { ...(prev.reviewer ?? blankReviewer()), ...patch } } : prev)), [])
   const setCard = useCallback((patch: Partial<MeCard>) =>
     setDraft((prev) => (prev ? { ...prev, card: { ...prev.card, ...patch } } : prev)), [])
-  const onPhoto = useCallback((url: string | null) => {
+  const onPhoto = useCallback((url: string | null, c?: ProfileCompletion | null) => {
     setPhotoUrl(url)
     setHeaderPhoto?.(url)                 // the header's avatar follows at once
-  }, [setHeaderPhoto])
+    applyCompletion(c)
+  }, [setHeaderPhoto, applyCompletion])
   const report = useCallback((key: string, bad: boolean) =>
     setInvalid((prev) => (!!prev[key] === bad ? prev : { ...prev, [key]: bad })), [])
 
@@ -210,9 +220,10 @@ export default function AdminProfilePage() {
     let step: 'me' | 'source' | 'other' = 'me'
     try {
       let next: ProfileDraft = draft
+      let lastMe: AdminMe | null = null
       if (nameDirty || cardDirty) {
         const m = await updateAdminMe({ ...(nameDirty ? { name: draft.name.trim() } : {}), ...cardChanges }, { token })
-        setMe(m)
+        setMe(m); lastMe = m
         next = { ...next, name: m.name, card: cardOf(m), mentoringArea: m.mentoring_area ?? next.mentoringArea }
       }
       step = 'source'
@@ -241,6 +252,10 @@ export default function AdminProfilePage() {
       }
       setDraft(next); setSaved(next)
       setMessage({ ok: true, text: t('admin.profileUpdated') })
+      // Staff nudges: the completion after this save, from the server. The reviewer cards save after
+      // `admin/me/`, so when they changed, `admin/me/` is read once more; a failure keeps the old bar.
+      if (revDirty) void getAdminMe(locale, { token }).then((m) => applyCompletion(m.completion ?? null)).catch(() => {})
+      else applyCompletion(lastMe?.completion)
       // Onboarding: this save completed a held Reviewer's profile — refresh the role flag and send
       // them on to their workspace (the layout guard releases once the flag flips).
       if (gated && reviewerProfileComplete(next.name, withPhone(next.reviewer, next.card.phone))) {
@@ -268,7 +283,7 @@ export default function AdminProfilePage() {
   const state: ProfileState = {
     t, token, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
     draft, saved, set, setRev, setCard, report, orgName, providers, reviews, withStudents, photoUrl,
-    onPhoto, mentoring: isMentor, staffMentor,
+    onPhoto, mentoring: isMentor, staffMentor, completion,
   }
 
   const main = cards.filter((id) => !SIDE_CARDS.has(id))
@@ -287,6 +302,7 @@ export default function AdminProfilePage() {
       <h1 className="text-2xl font-bold text-ground-900">{t('admin.profile')}</h1>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <form onSubmit={save} className="min-w-0 space-y-6" data-testid="admin-profile">
+          {completion && <CompletionCard state={state} />}
           {gated && (
             <div className={`rounded-lg p-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
               <p className={`text-sm font-medium ${missing.length ? 'text-caution-900' : 'text-positive-800'}`}>

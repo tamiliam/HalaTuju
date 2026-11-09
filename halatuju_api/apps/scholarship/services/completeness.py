@@ -11,7 +11,7 @@ Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from .. import requirements
-from ..document_snapshot import SNAPSHOT_ORDER
+from ..document_snapshot import SNAPSHOT_ORDER, present_doc_types
 from ..models import FundingNeed
 from .blockers import income_doc_blockers
 
@@ -70,8 +70,7 @@ def application_completeness(application):
             funding_done = bool(fn.categories) and fn.programme_months is not None
         except FundingNeed.DoesNotExist:
             funding_done = False
-    present = set(application.documents.filter(superseded_at__isnull=True)
-                  .values_list('doc_type', flat=True))
+    present = present_doc_types(application)   # A2.4: from the open snapshot, else the same query
     # Gate v2 (2026-06-05): the documents bar is route-aware and STRICT for a not-yet-
     # submitted application — ic + results_slip + offer_letter (now compulsory for all)
     # + the route's compulsory income docs (income_doc_blockers, sourced from the wizard

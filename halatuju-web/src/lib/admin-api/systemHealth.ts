@@ -6,7 +6,7 @@ import { adminFetch, type ApiOptions } from './client'
  * `admin.systemHealth.line.<group>.<code>` in the reader's language.
  */
 export type HealthStatus = 'green' | 'amber' | 'red'
-export type HealthRowKey = 'gemini' | 'vision' | 'email' | 'cron' | 'credit'
+export type HealthRowKey = 'gemini' | 'vision' | 'email' | 'cron' | 'credit' | 'profiles'
 
 export interface HealthRow {
   key: HealthRowKey

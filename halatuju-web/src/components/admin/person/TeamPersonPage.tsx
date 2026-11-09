@@ -117,7 +117,11 @@ export default function TeamPersonPage({ entry, id, backTable }: {
         ← {t(`admin.person.backTo.${backTable}`)}
       </Link>
       <PersonHeader data={data} token={token} mayManage={mayManage} actions={actions} onPatch={patch}
-        mentorFigures={mentors && mentor ? <mentors.MentorFigures data={mentor} /> : null} />
+        mentorFigures={mentors && mentor ? <mentors.MentorFigures data={mentor} /> : null}
+        mentorGifts={mentors && mentor ? (
+          <mentors.MentorGifts data={mentor} onSaved={(gifts) => patch((d) => ({ ...d,
+            mentor: d.mentor && { ...d.mentor, mentor: { ...d.mentor.mentor, gifts, every_gift: gifts.length === 0 } } }))} />
+        ) : null} />
       <PanelTabs ariaLabelKey="admin.person.tabsAria" active={tab}
         onSelect={(k) => selectTab(k as 'profile' | 'permissions')}
         tabs={[

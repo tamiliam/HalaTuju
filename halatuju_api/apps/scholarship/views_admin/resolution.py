@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from .. import staff_activity
+from ..document_snapshot import snapshot_unless_open
 from ..emails import send_request_info_email
 from ..serializers_admin import AdminApplicationDetailSerializer
 
@@ -36,7 +37,8 @@ class AdminRequestInfoView(_AdminBase):
         with _usage.usage_context(application=app):   # S6a: billed to her organisation
             send_request_info_email(to_email=app.notify_email, applicant_name=name,
                                     programme_name=app.cohort.name, note=note, lang=app.locale)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        with snapshot_unless_open(app):   # A2.4: one document read, as the GET does
+            return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminResolutionItemView(_AdminBase):
@@ -90,7 +92,8 @@ class AdminResolutionItemView(_AdminBase):
                 and app.query_raised_notified_at is not None):
             app.query_raised_notified_at = None
             app.save(update_fields=['query_raised_notified_at'])
-        return Response(AdminApplicationDetailSerializer(app).data)
+        with snapshot_unless_open(app):   # A2.4: one document read, as the GET does
+            return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminResolutionItemActionView(_AdminBase):

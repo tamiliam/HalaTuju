@@ -18,6 +18,7 @@ import type { TeamPersonData } from './useTeamPerson'
  *   email
  *   [Admin] [Reviewer] [Mentor]          ← the tables they sit in: the "Also in" chips' own labels
  *   (Status) · Joined 3 Mar 2026 · Last seen 2 days ago
+ *   Covers: … / Gifts: …                 ← a reviewer's gifts; a mentor's (Invitations I4)
  *   [Pause new cases] [Revoke] [Delete]  ← one actions row, the same place on every page (M5)
  *   figures                              ← a reviewer's and a mentor's (M4), above the tabs
  *
@@ -26,7 +27,7 @@ import type { TeamPersonData } from './useTeamPerson'
  * ⚠ LAST SEEN IS RELATIVE (M1), the exact date and time in `title`. A NULL `last_seen_at` is "not
  * recorded", never "never signed in"; somebody with no sign-in recorded reads the Invited wording.
  */
-export default function PersonHeader({ data, token, mayManage, actions, mentorFigures, onPatch }: {
+export default function PersonHeader({ data, token, mayManage, actions, mentorFigures, mentorGifts, onPatch }: {
   data: TeamPersonData
   token: string | null
   mayManage: boolean
@@ -34,6 +35,8 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
   actions: ReactNode
   /** A mentor's figures (the Mentors table's chunk), or null. */
   mentorFigures: ReactNode
+  /** Invitations I4: the gifts a mentor mentors in (the Mentors table's chunk), or null. */
+  mentorGifts?: ReactNode
   onPatch: (next: (d: TeamPersonData) => TeamPersonData) => void
 }) {
   const { t } = useT()
@@ -96,6 +99,7 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
                 onSaved={(gifts) => onPatch((d) => ({ ...d, reviewer: d.reviewer && { ...d.reviewer, gifts } }))} />
             </div>
           )}
+          {mentorGifts}
           {(mayPause || actions) && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-testid="person-action-row">
               {mayPause && (

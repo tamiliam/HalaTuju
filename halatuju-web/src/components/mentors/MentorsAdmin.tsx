@@ -9,12 +9,13 @@ import { isSuperRole } from '@/lib/superRole'
 import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
 import {
-  deleteMentor, getMentors, mentorAction,
+  deleteMentor, getMentors, mentorAction, setMentorGifts,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
-  type MentorsPayload, type ScholarStanding,
+  type MentorsPayload, type ReviewerGiftTag, type ScholarStanding,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import Sheet from '@/components/Sheet'
+import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import StaffMentorSheet from './StaffMentorSheet'
 import StaffActions from '@/components/admin/StaffActions'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
@@ -358,6 +359,40 @@ function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[
         </tbody>
       </table>
     </TableFrame>
+  )
+}
+
+/** I4: the words for a refused gift edit — open point D names how many current scholars are outside. */
+function giftRefusal(t: T, err: unknown): string {
+  const e = err as { code?: string; body?: { count?: number } }
+  if (e?.code === 'mentor_has_scholars_outside') {
+    return t(`${K}.gifts.outside`, { count: String(e.body?.count ?? '') })
+  }
+  return t('admin.reviewers.detail.giftFailed')
+}
+
+/** Invitations I4 on the person page (merged with Sprint T3, 2026-11-09): the gifts a mentor mentors in
+ *  (none named = every gift), in the header card under a reviewer's own gifts — where the old mentor
+ *  detail page drew them. The SERVER refuses a narrowing that would leave a current scholar outside (409,
+ *  with how many): nothing ends. A pencil only where the row's `manageable` says so and the payload
+ *  carries the organisation's `programmes` (an older api offers no edit). */
+export function MentorGifts({ data, onSaved }: {
+  data: MentorDetailPayload
+  onSaved: (gifts: ReviewerGiftTag[]) => void
+}) {
+  const { token } = useAdminAuth()
+  const { t } = useT()
+  const m = data.mentor
+  return (
+    <div className="text-sm text-ground-500 flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="mentor-gifts">
+      <span>{t(`${K}.gifts.label`)}</span>
+      <ReviewerGiftsCell reviewer={{ id: m.id, name: m.name, gifts: m.gifts ?? [] }}
+        options={data.programmes ?? []} token={token}
+        canEdit={m.manageable && data.programmes !== undefined}
+        save={async (ids, tok) => (await setMentorGifts(m.id, ids, { token: tok })).gifts}
+        errorOf={(err) => giftRefusal(t, err)}
+        onSaved={onSaved} />
+    </div>
   )
 }
 

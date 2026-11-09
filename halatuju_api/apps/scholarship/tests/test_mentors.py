@@ -261,7 +261,8 @@ class TestTheMentorsPage(_Base):
             # Sprint T2 (D6): the footprint counts and whether this caller may delete them now.
             'work', 'deletable',
             # T2 review N2: no Delete drawn at all (a staff mentor, no login, or outside the caller's remit).
-            'delete_never'})
+            'delete_never',
+            'gifts', 'every_gift'})   # Invitations I4: the gifts they mentor in ([] + True = every gift)
         self.assertIsNone(row['staff_role'])   # a mentor login, not a staff member
         self.assertEqual((row['work'], row['deletable']), ({}, True))   # invited, nothing on record
         self.assertEqual((row['name'], row['email'], row['phone'], row['area']),

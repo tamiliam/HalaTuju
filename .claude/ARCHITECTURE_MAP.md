@@ -279,7 +279,7 @@ which is now two verbs — Settings and Delete.
   open on an inactive gift and an active gift cannot be switched off while a round is open, so
   *(off + open)* is unreachable and the ROUND decides whether students may apply. The gift's state
   decides whether it is a gift the organisation runs at all — read by payment-run creation, the
-  sponsor-invitation picker, the source picker and `signup_programme_for`.
+  sponsor-invitation picker, the source picker and `signup_programmes_for`.
 - **Red is not in the palette here.** Green / grey / blue; `critical` means something is wrong, and a
   gift being set up is the normal state of every gift on its first day.
 - ⚠ **Archiving a gift blocks creating a payment run for it.** Existing runs are unaffected. Not
@@ -323,9 +323,9 @@ carries:
 
 | Column | Narrows | Set from |
 |---|---|---|
-| `SponsorProgrammeMembership` (existing) | which gift's students a benefactor sees, and where their money may be credited | the accept panel on `/admin/sponsors/<id>`, or `signup_programme_for` at registration |
+| `SponsorProgrammeMembership` (existing) | which gift's students a benefactor sees, and where their money may be credited | the accept panel on `/admin/sponsors/<id>`, or `signup_programmes_for` at registration (one PENDING row per gift) |
 | `ReviewerGift` (`reviewer_gifts`; no rows = every gift; multi-gift 2026-11-07) | who is OFFERED a case in the assignment dropdown (`services/assignment.gift_allows`) | `POST admin/reviewers/<pk>/programme/` `{programme_ids}`, the pencil on Team -> Reviewers, the reviewer invite tick list. `PartnerAdmin.programme` is a write-only mirror, dropped by TD-540 |
-| `Invitation.programme` | which gift a sponsor invitation was for | the sponsor invite form |
+| `InvitationGift` (`invitation_gifts`) + `Invitation.every_gift` (Invitations I3, 2026-11-08) | which gifts a sponsor invitation names, or Every gift | the sponsor invite tick list, through `sponsor_invite_gifts.set_gifts` (the one writer; `stated` the one reader). `Invitation.programme` is the rollback mirror (one gift -> that id, else NULL) |
 
 **Referral sources are NOT on this table any more** (per-gift sources, 2026-10-08): each gift
 CHOOSES its sources — `ProgrammeReferralSource` (programme, source) rows, set by the "Who referred
@@ -342,10 +342,16 @@ handed another gift's case still passes the fence and can still work it — deli
 dropdown cannot strand an in-flight review. Every list FLAGS a mismatch and never filters it out
 (the `paused` rule: the cockpit unions the current assignee in from that list — bug #66).
 
-⚠ `sponsorship.signup_programme_for` REPLACED the tenant literal `DEFAULT_PROGRAMME_CODE`. It
-answers from evidence — the invitation they answered, else the platform's sole ACTIVE gift — and
-**None is a real answer**: several gifts open and no invitation writes nothing rather than guessing.
-`sync_account_membership(sponsor, programme, …)` takes the programme REQUIRED and POSITIONAL.
+⚠ `sponsor_signup.signup_programmes_for` (a list since I3) REPLACED the tenant literal
+`DEFAULT_PROGRAMME_CODE`. It answers from evidence — the invitation they answered, else the
+platform's sole ACTIVE gift — and **empty is a real answer**: several gifts open and no invitation
+writes nothing rather than guessing. **Every gift resolves ONCE** — at registration, frozen into
+`InvitationGift` rows with `Invitation.every_gift_resolved_at` stamped even when it resolved to
+none (`sponsor_invite_gifts.joined_on_registration`); account vetting reads the frozen rows and
+resolves only an invitation never frozen (old image, rollback). `sync_account_membership(sponsor,
+programme, …)` takes the programme REQUIRED and POSITIONAL, and **never changes a membership the
+organisation rejected by hand** (`rejected_by_hand_at`, stamped by `set_programme_membership`); a
+rejection the account cascaded follows the account back.
 
 ⚠ **A GIFT'S SOURCE CHOICES ARE THE STUDENT'S LIST** (per-gift sources Sprint 2, 2026-10-08;
 closes TD-230). The PUBLIC intake (`ScholarshipIntakeView`) serves `sources: [{code, name}]` —

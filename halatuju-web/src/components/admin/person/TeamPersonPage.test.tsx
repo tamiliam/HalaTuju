@@ -187,6 +187,8 @@ describe('one page per kind of person', () => {
     expect(screen.getByTestId('person-back').getAttribute('href')).toBe('/admin/organisation/reviewers?tab=mentors')
     expect(mA.getStaffPermissions).not.toHaveBeenCalled()      // a mentor holds no permissions
     expect(mR.getReviewerDetail).not.toHaveBeenCalled()
+    // Invitations I4 (merged with T3): the gifts they mentor in sit in the header card.
+    expect(within(screen.getByTestId('person-header')).getByTestId('mentor-gifts')).toBeTruthy()
   })
 
   it('somebody in two tables (a reviewer who mentors): both chips and both tables\' parts (M6)', async () => {

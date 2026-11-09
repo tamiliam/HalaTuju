@@ -2,7 +2,8 @@
  * @jest-environment jsdom
  *
  * Team tables T3 (2026-11-03): Team → Mentors (the old Organisation → Mentors page's list, moved under Team)
- * and the mentor parts of a person page (Sprint T3: `MentorActions`, `MentorFigures`, `MentorWork`), rendered.
+ * and the mentor parts of a person page (Sprint T3: `MentorActions`, `MentorFigures`, `MentorWork`; I4: `MentorGifts`),
+ * rendered.
  * - Owner 2026-11-08: ONE list, read like Admins and Reviewers — ARRIVED mentors plus every staff mentor; a
  *   revoked pure mentor stays (Revoked, with Restore), a staff mentor taken off drops off. No Active /
  *   Inactive chips, no "waiting to accept" line, no footnotes.
@@ -15,10 +16,11 @@
  *   meeting note (the payload carries none; the parts draw only what they are given). The header, the
  *   profile and the page's gates are `components/admin/person/TeamPersonPage.test.tsx`'s.
  */
+import { useState } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import TeamMentorsScreen, {
-  MentorActions, MentorFigures, MentorWork, actionOf, languagesLine, listed, mentorHref,
+  MentorActions, MentorFigures, MentorGifts, MentorWork, actionOf, languagesLine, listed, mentorHref,
 } from './MentorsAdmin'
 import { AlsoIn } from '@/components/admin/TeamTables'
 
@@ -419,5 +421,95 @@ describe('Sprint T2 (D6): Revoke and Delete for a pure mentor, on the table and 
       expect(screen.queryByTestId('mentor-person-actions')).toBeNull()
       expect(screen.queryByText('admin.delete')).toBeNull()
     })
+  })
+})
+
+// ── Invitations I4 (2026-11-08): the gifts a mentor mentors in, shown and edited. Merged with Sprint T3
+// (2026-11-09): the old mentor detail page's gifts line is now `MentorGifts`, in the person page's header;
+// the page's `patch` is stood in for by local state here (`TeamPersonPage.test.tsx` has the page). ──
+describe('Invitations I4: a mentor\'s gifts on their person page (MentorGifts)', () => {
+  const DETAIL: api.MentorDetail = {
+    mentor: ACTIVE, mentoring_since: '2026-09-02T00:00:00Z', sees_scholars: true,
+    figures: { scholars_now: 0, meetings_90: 0, average_gap_days: null, concerns_raised: 0, concerns_open: 0,
+      last_meeting: null },
+    current: [], past: [],
+  }
+  let detail: api.MentorDetail = DETAIL
+  const Gifts = ({ data }: { data: api.MentorDetail }) => {
+    const [d, setD] = useState(data)
+    return <MentorGifts data={d}
+      onSaved={(gifts) => setD({ ...d, mentor: { ...d.mentor, gifts, every_gift: gifts.length === 0 } })} />
+  }
+
+  const PROGRAMMES = [
+    { id: 3, code: 'flagship', name: 'Flagship Bursary', is_active: true },
+    { id: 5, code: 'sabah', name: 'Sabah Bursary', is_active: true },
+  ]
+
+  it('I4: shows Every gift for a mentor with none named, and their gifts otherwise', async () => {
+    detail = { ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } }
+    const { unmount } = render(<Gifts data={detail} />)
+    const box = screen.getByTestId('mentor-gifts')
+    expect(within(box).getByText('admin.mentors.gifts.label')).toBeTruthy()
+    expect(within(box).getByText('admin.reviewers.gifts.every')).toBeTruthy()
+    unmount()
+    detail = { ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [{ id: 5, code: 'sabah', name: 'Sabah Bursary' }], every_gift: false } }
+    render(<Gifts data={detail} />)
+    expect(within(screen.getByTestId('mentor-gifts')).getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('I4: an edit saves the ticked gifts through the mentor endpoint and shows them', async () => {
+    detail = { ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } }
+    mockApi.setMentorGifts.mockResolvedValue({ id: 1, every_gift: false,
+      gifts: [{ id: 5, code: 'sabah', name: 'Sabah Bursary' }] })
+    render(<Gifts data={detail} />)
+    fireEvent.click(screen.getByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-every'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-gift-5'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    await waitFor(() => expect(mockApi.setMentorGifts).toHaveBeenCalledWith(1, [5], { token: 'tok' }))
+    expect(mockApi.setReviewerGifts).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByTestId('gifts-pop-1')).toBeNull())
+    expect(within(screen.getByTestId('mentor-gifts')).getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('I4: a narrowing refused (current scholars outside) says how many, and changes nothing', async () => {
+    detail = { ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, gifts: [], every_gift: true } }
+    mockApi.setMentorGifts.mockRejectedValue(Object.assign(new Error('x'),
+      { code: 'mentor_has_scholars_outside', body: { code: 'mentor_has_scholars_outside', count: 2 } }))
+    render(<Gifts data={detail} />)
+    fireEvent.click(screen.getByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-every'))
+    fireEvent.click(screen.getByTestId('gifts-ticks-1-gift-5'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    const alert = await within(screen.getByTestId('gifts-pop-1')).findByRole('alert')
+    expect(alert.textContent).toBe('admin.mentors.gifts.outside {"count":"2"}')
+    expect(within(screen.getByTestId('mentor-gifts')).getByText('admin.reviewers.gifts.every')).toBeTruthy()
+  })
+
+  it('I4: any other refusal reads as the plain could-not-save line', async () => {
+    detail = { ...DETAIL, programmes: PROGRAMMES }
+    mockApi.setMentorGifts.mockRejectedValue(Object.assign(new Error('x'), { code: 'not_found' }))
+    render(<Gifts data={detail} />)
+    fireEvent.click(screen.getByTestId('gifts-edit-1'))
+    fireEvent.click(screen.getByTestId('gifts-save-1'))
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.reviewers.detail.giftFailed')
+  })
+
+  it('I4: no pencil for a reader who may not manage the mentor, or on an older api', async () => {
+    detail = { ...DETAIL, programmes: PROGRAMMES,
+      mentor: { ...ACTIVE, manageable: false } }
+    const { unmount } = render(<Gifts data={detail} />)
+    screen.getByTestId('mentor-gifts')
+    expect(screen.queryByTestId('gifts-edit-1')).toBeNull()
+    unmount()
+    detail = DETAIL   // no `programmes`
+    render(<Gifts data={detail} />)
+    screen.getByTestId('mentor-gifts')
+    expect(screen.queryByTestId('gifts-edit-1')).toBeNull()
   })
 })

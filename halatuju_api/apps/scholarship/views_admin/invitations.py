@@ -13,8 +13,6 @@ from rest_framework.response import Response
 
 from apps.courses import staff_gift
 
-from .gift_programmes import AdminProgrammeListView
-
 from .reviewers import _ReviewersBase
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
@@ -54,6 +52,7 @@ class AdminInvitationsView(_ReviewersBase):
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
         qs = Invitation.objects.select_related(
             'partner_admin', 'invited_by', 'programme', 'referral_source').all()
+        from .. import sponsor_invite_gifts
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
 
@@ -83,8 +82,9 @@ class AdminInvitationsView(_ReviewersBase):
             listed = inv_service.open_only(listed)
 
         rows = []
-        for i in listed.order_by('-created_at'):
+        for i in listed.order_by('-created_at').prefetch_related('gift_rows__programme'):
             pa = i.partner_admin
+            gifts = sponsor_invite_gifts.row_payload(i)
             rows.append({
                 'id': i.id,
                 'name': i.name or (pa.name if pa else ''),
@@ -102,12 +102,13 @@ class AdminInvitationsView(_ReviewersBase):
                 'admin_id': pa.id if pa else None,
                 'is_active': pa.is_active if pa else None,
                 'paused': (pa.paused_at is not None) if pa else None,
-                # Which gift this invitation was for (S-ASSIGN). NULL means EVERY gift — the
-                # honest reading for every row written before the column existed, and for a
-                # staff invitation, which carries none. Never render a blank as a gift name.
-                'programme': i.programme.code if i.programme_id else '',
-                'programme_name': (i.programme.name_en or i.programme.code)
-                                  if i.programme_id else '',
+                # Which gifts a sponsor invitation names (I3): `gifts` [{id, code, name}] and
+                # `every_gift`. `programme` / `programme_name` stay for ONE gift (blank for
+                # several, Every gift, none stated, and every staff invitation). Never render a
+                # blank as a gift name.
+                **gifts,
+                'programme': gifts['gifts'][0]['code'] if len(gifts['gifts']) == 1 else '',
+                'programme_name': gifts['gifts'][0]['name'] if len(gifts['gifts']) == 1 else '',
                 # Which SOURCE a source invitation signs somebody in for (source sign-in S2). None
                 # for every other kind.
                 'source_id': i.referral_source_id,
@@ -126,8 +127,25 @@ class AdminInvitationsView(_ReviewersBase):
         elif kind == inv_service.KIND_MENTOR and reads_mentors:
             # The Mentor tab's roster (S7b follow-up): the Mentors page's own rows for the waiting
             # invitations' mentors, so the tab offers exactly the actions those endpoints take.
+            from .. import mentor_gift
             from .mentors import mentor_kind_extras
             extras = mentor_kind_extras(admin, [r['mentor_id'] for r in rows if r['mentor_id']])
+            # I4: a mentor invitation's gifts ARE its mentor's (`mentor_gifts`, written at the invite; no
+            # gifts = every gift), so the waiting row names them under the name, as a sponsor's does.
+            held = mentor_gift.gifts_by_mentor([r['mentor_id'] for r in rows if r['mentor_id']])
+            for r in rows:
+                if r['mentor_id']:
+                    named = held.get(r['mentor_id'], [])
+                    r.update(gifts=named, every_gift=not named,
+                             programme=named[0]['code'] if len(named) == 1 else '',
+                             programme_name=named[0]['name'] if len(named) == 1 else '')
+            # I4: the mentor invite's gift choices — the ACTIVE gifts of the organisation the invite binds
+            # to (`invite_mentor`'s own owner rule), so a super is never offered a gift the POST 404s.
+            from .sources import _SourcesBase
+            owner, _err = _SourcesBase()._new_source_owner(request, admin)
+            extras['mentor_programmes'] = [] if owner is None else [
+                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
+                for p in owner.programmes.filter(is_active=True).order_by('code')]
 
         return Response({
             'kind': kind,
@@ -146,10 +164,10 @@ class AdminInvitationsView(_ReviewersBase):
             # that is not open yet would invite somebody into a door that does not open. (The
             # accept panel on the sponsor detail page is the opposite case and takes inactive
             # ones, because a gift is staffed before it is switched on.)
+            # I3 review: `nameable` — an admin with an organisation is offered only its gifts.
             'programmes': [
                 {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
-                for p in AdminProgrammeListView()._programmes_for(admin)
-                                                 .filter(is_active=True).order_by('code')
+                for p in sponsor_invite_gifts.nameable(admin).order_by('code')
             ],
             # TD-501 (A1.3 review): the REVIEWER invite's gift choices — only the gifts of the
             # organisation the invite binds to, the same home `staff_gift.for_invite` checks, so
@@ -210,43 +228,29 @@ class AdminInvitationsView(_ReviewersBase):
 
         org = admin.owning_organisation
 
-        # ⚠ WHICH GIFT ARE YOU INVITING THEM INTO? (S-ASSIGN, 2026-09-04.) Until now this form
-        # asked for an email, a name and a note, derived the organisation, and never asked — so a
-        # benefactor invited for Sabah would have registered straight into the flagship, silently,
-        # and their credit would then have been refused `sponsor_not_in_programme`.
-        #
-        # ⚠ ONE GIFT ASKS NOTHING. Omitted + the organisation runs exactly one → that one, so the
-        # existing form is unchanged for BrightPath and nothing is sent. More than one and none
-        # named → 400 `programme_required` carrying the choices, never a silent pick (the P2b /
-        # PF-1 rule). A gift outside the caller's organisation is 404, never 403.
-        #
-        # It GRANTS nothing either way: a sponsor invitation creates no account and is a prompt to
-        # the ordinary public registration, where they still consent, sign the terms and are
-        # vetted. This only records which gift the organisation meant.
-        programmes = AdminProgrammeListView()._programmes_for(admin).filter(is_active=True)
-        asked = request.data.get('programme_id')
-        if asked:
-            programme = programmes.filter(pk=asked).first()
-            if programme is None:
-                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            live = list(programmes.order_by('code')[:2])
-            if len(live) > 1:
-                return Response(
-                    {'error': 'programme_required', 'code': 'programme_required',
-                     'programmes': [{'id': p.id, 'code': p.code, 'name': p.name_en}
-                                    for p in programmes.order_by('code')]},
-                    status=status.HTTP_400_BAD_REQUEST)
-            programme = live[0] if live else None
-
-        inv = inv_service.create_or_refresh(
-            audience='sponsor', email=email, name=(request.data.get('name') or '').strip(),
-            organisation=org, invited_by=admin, programme=programme,
-            ttl_days=inv_service.PII_RETENTION_DAYS)
+        # ⚠ WHICH GIFTS ARE YOU INVITING THEM INTO? (S-ASSIGN 2026-09-04; several or Every gift
+        # since Invitations I3, 2026-11-08.) `sponsor_invite_gifts.choose` is the one rule: the
+        # gifts named, Every gift (`[]`), the old one-gift `programme_id`, or nothing — the sole
+        # active gift, or 400 `programme_required` with several. A RESEND (nothing named, already
+        # waiting) keeps what was asked: never re-homed. A gift outside the caller's reach is 404.
+        # It GRANTS nothing either way: they still register, consent, sign the terms and are vetted.
+        from .. import sponsor_invite_gifts
+        choice, refusal = sponsor_invite_gifts.choose(admin, request.data, email)
+        if refusal is not None:
+            return refusal
+        # A RESEND (`choice` None) keeps the row's organisation as well as its gifts: a super's
+        # Resend on another organisation's row must not move it to theirs (I3 second review).
+        with transaction.atomic():
+            inv = inv_service.create_or_refresh(
+                audience='sponsor', email=email, name=(request.data.get('name') or '').strip(),
+                organisation=None if choice is None else org, invited_by=admin,
+                ttl_days=inv_service.PII_RETENTION_DAYS)
+            if choice is not None:
+                sponsor_invite_gifts.set_gifts(inv, *choice)
 
         from ..emails import send_sponsor_invitation_email
         ok, error = send_sponsor_invitation_email(
-            email, org_name=(org.name if org else ''), note=(request.data.get('note') or ''),
+            email, org_name=(inv.organisation.name if inv.organisation else ''), note=(request.data.get('note') or ''),
             code=inv.code, invited_by=admin.name)
         inv_service.record_send(inv, ok, error, actor=admin)
         return Response({'id': inv.id, 'emailed': ok},
@@ -264,7 +268,7 @@ class AdminInvitationCancelView(_ReviewersBase):
 
     ⚠ **THE LINK STOPS WORKING.** A SPONSOR invitation carries no credential: once withdrawn it no
     longer closes on their registration (`views_sponsor._close_admin_invitation`) nor files them
-    into its gift (`sponsorship.signup_programme_for`) — both read open invitations only. A STAFF
+    into its gifts (`sponsor_signup.signup_programmes_for`) — both skip withdrawn ones. A STAFF
     invitation provisioned an account with a temporary password up front, so withdrawing it also
     switches that never-used account off (`is_active=False`, exactly People → Revoke): otherwise
     the password in the letter would still open the console. Refused if they have signed in.

@@ -64,6 +64,7 @@ from apps.scholarship.tests.factories import (
     make_org, make_programme, make_shortlistable_student, make_source,
 )
 from apps.scholarship.tests.test_income_whose_str_vouches import WhoseStrBase
+from apps.scholarship.tests.test_assign_query_budget import ASSIGN_BUDGETS
 
 #: `…/halatuju_api`. Four levels up from `apps/scholarship/tests/this_file.py`. Derived, never
 #: hard-coded — `test_code_standards.py` does the same, for the same reason: a file that changes
@@ -819,8 +820,8 @@ class TestTheScholarsListQueryBudget(TestCase):
 
 #: Team tables T5c P5 S1b (2026-11-04): the Programmes LANDING (`views_admin/my_programmes.py`). An
 #: org admin's card counts are grouped queries, so its two readings are EQUAL: a gift costs nothing extra.
-#: A mentor's gifts ride on the assignments' query; the mentor pair still differs by ONE query per mentee,
-#: the self-mentoring guard's alias read (`mentoring.is_the_student`, older than the landing).
+#: A mentor's gifts ride on the assignments' query; the mentor pair is EQUAL too (A2.4 / TD-500:
+#: the self-mentoring guard's alias read is one query for the whole list).
 LANDING_ROUTE = 'api/v1/admin/scholarship/my-programmes/'
 LANDING_BUDGETS = {key: RECORD.get(key) for key in (
     f'{LANDING_ROUTE}::GET::1-gift', f'{LANDING_ROUTE}::GET::4-gifts',
@@ -957,6 +958,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **SCHOLARS_BUDGETS,
         **LANDING_BUDGETS,
         **PENDING_BUDGETS,
+        **ASSIGN_BUDGETS,      # A2.3: measured in test_assign_query_budget.py
     }
 
     def test_every_measured_key_has_a_budget(self):

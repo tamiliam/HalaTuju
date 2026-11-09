@@ -150,8 +150,10 @@ export default function ScholarshipConsent({
       }, { token })
       setStatus(await getConsentStatus({ token }))
       onChange?.()   // refresh the parent's status/completeness (consent_done flips)
-    } catch {
-      setError(t('scholarship.consent.error'))
+    } catch (err) {
+      // TD-400: the parent's IC was only half read during our outage — "try later", not "check both".
+      const pending = (err as { code?: string })?.code === 'parent_ic_service_down'
+      setError(t(pending ? 'scholarship.consent.blocker.ic_service_down' : 'scholarship.consent.error'))
       // Re-fetch so a backend "not ready" rejection refreshes the blocker checklist
       // (e.g. if the readiness state changed since the tab was opened).
       getConsentStatus({ token }).then(setStatus).catch(() => { /* ignore */ })

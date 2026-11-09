@@ -293,6 +293,29 @@ describe('deleting a gift', () => {
     expect(item.textContent).toContain('admin.programmes.error.hasMoney')
   })
 
+  it('names HOW MANY mentors a gift is the only gift of (I4 review)', async () => {
+    // Deleting a mentor's ONLY gift would widen them to every gift, so the server refuses it and
+    // serves the count; the reason carries it.
+    await show(programme({ delete_blocked_by: 'gift_limits_mentors', delete_blocked_count: 2 }))
+    openMore()
+    const item = deleteItem()
+    expect(isAsleep(item)).toBe(true)
+    expect(item.textContent).toContain('admin.programmes.error.giftLimitsMentors|2')
+  })
+
+  it('says the same, with the count, when the delete itself is refused (I4 review)', async () => {
+    mockApi.deleteAdminProgramme.mockRejectedValue(
+      Object.assign(new Error('refused'), { code: 'gift_limits_mentors', body: { count: 3 } }))
+    await show(programme({ intake_years: 0 }))
+    openMore()
+    fireEvent.click(deleteItem())
+    const confirm = await screen.findByTestId('delete-confirm') as HTMLButtonElement
+    fireEvent.change(document.getElementById('p-confirm') as HTMLInputElement,
+      { target: { value: 'delete test3' } })
+    fireEvent.click(confirm)
+    expect(await screen.findByText('admin.programmes.error.giftLimitsMentors|3')).toBeTruthy()
+  })
+
   it('keeps the menu OPEN when an asleep Delete is pressed', async () => {
     // ⚠ The panel closes on its own click, so without `stopPropagation` pressing an asleep item
     // would shut the menu — taking the reason off the screen at the moment it was being read.

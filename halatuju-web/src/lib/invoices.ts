@@ -12,17 +12,22 @@ import type { InvoiceProblem, InvoiceRow, InvoiceStatus } from '@/lib/admin-api'
  * ⚠ **THE WORD DEPENDS ON WHO IS READING IT.** The owner read the organisation's own invoice list
  * on 2026-10-29 and found it said "Sent" — true, and meaningless to the person it was sent TO, who
  * can see it in front of them. What a customer needs to know is whether they owe anything, so the
- * same `sent` row reads "Unpaid" on their side, and "Overdue" once the due date has passed.
+ * same `sent` row reads "Unpaid" on their side, and "Overdue" once the server says it is late.
  *
- * `today` and `dueOn` are passed in rather than read from the clock here: this module is pure, and
- * an overdue chip that depends on a hidden `new Date()` cannot be tested at a boundary. Omit them
- * and nothing is ever overdue, which is the safe direction — a customer wrongly told they are late
- * is a worse failure than one not told at all.
+ * ⚠ OVERDUE IS SERVED, NEVER DERIVED HERE (staff nudges sprint 3, 2026-11-09). This chip used to
+ * compare today with the due date itself; the console's red banner now answers the same question, so
+ * both read the server's ONE rule (`apps/scholarship/invoice_overdue.py`) through `overdue`
+ * (`InvoiceRow.is_overdue`). A part-paid invoice that is late reads "Overdue" to the tenant too, as the
+ * banner says. Omit it and nothing is ever overdue — the safe direction.
  */
+const OVERDUE_CHIP = { key: 'admin.billing.invoice.status.overdue', className: 'bg-critical-100 text-critical-700' }
+
 export function statusChip(
   status: InvoiceStatus,
   opts: {
-    forOwner?: boolean; today?: string; dueOn?: string | null
+    forOwner?: boolean
+    /** `InvoiceRow.is_overdue`, the server's answer (drift-test: invoice_overdue.is_overdue). */
+    overdue?: boolean
     /** The balance as the server sends it — a STRING, truthy at '0.00'. Left out, the chip never
      *  says "Nothing to pay", which is the safe direction: a customer who does owe something must
      *  not be told otherwise. */
@@ -34,6 +39,7 @@ export function statusChip(
     case 'paid':
       return { key: 'admin.billing.invoice.status.paid', className: 'bg-positive-100 text-positive-700' }
     case 'part_paid':
+      if (!owner && opts.overdue) return OVERDUE_CHIP
       return { key: 'admin.billing.invoice.status.part_paid', className: 'bg-caution-100 text-caution-700' }
     case 'payment_declared':
       // ⚠ TWO DIFFERENT SENTENCES, not one word dressed twice. The owner has something to DO
@@ -59,11 +65,7 @@ export function statusChip(
       if (opts.balanceMyr !== undefined && !(Number(opts.balanceMyr) > 0)) {
         return { key: 'admin.billing.invoice.status.nothingToPay', className: 'bg-ground-100 text-ground-700' }
       }
-      // ⚠ STRING compare on two ISO dates, never `new Date()`: the same reason `todayIso` exists
-      // in this file. A timezone shift must not make a customer's invoice turn red a day early.
-      if (opts.today && opts.dueOn && opts.today > opts.dueOn) {
-        return { key: 'admin.billing.invoice.status.overdue', className: 'bg-critical-100 text-critical-700' }
-      }
+      if (opts.overdue) return OVERDUE_CHIP
       return { key: 'admin.billing.invoice.status.unpaid', className: 'bg-info-100 text-info-700' }
     case 'void':
       return {

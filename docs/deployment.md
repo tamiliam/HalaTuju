@@ -157,6 +157,15 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    window), `read-outage-start` (`halatuju-read-outage-start`, hourly at :05 MYT, `--hourly` start-edge:
    mails once when an outage begins, ≥2 failures from ≥2 applications), `reprocess-ic-vision`
    (`halatuju-reprocess-ic-vision`, hourly: never-read docs + reads our outage deferred).
+   **Time budget (A2.2, TD-518):** the sweep stops cleanly after `REPROCESS_TIME_BUDGET_SECONDS` (default 80) with
+   at most `REPROCESS_BATCH_LIMIT` (100) documents a run; the next hour carries on (the cron output shows
+   `STOPPED-AT-TIME-BUDGET`). Both are env-tunable on the service; nothing needs setting for the default.
+   **G6 queues (A2.1, A2.3), MIGRATE-FIRST:** migrations `scholarship` `0209_sponsorprofile_finalise_queue` and
+   `0210_read_and_notify_queues` are applied by hand BEFORE the API push. Three Scheduler jobs exist BEFORE the API
+   push: `finalise-profiles` (every 5 min, `paid` secret family), `read-documents` (every 15 min, `paid`) and
+   `assign-emails` (every 15 min, `email` family). `scholarship/urls.py` is at 599 of 600 lines: add no routes there.
+   **Own timeout (SP-14):** met by the time budget; a separate Cloud Run Job was NOT adopted (it would bypass
+   `cron_health.run_job`, so the System health light would read it as missed). Optional later, not done.
    **System health light (2026-10-28):** every cron run's outcome is recorded (`cron_health.run_job`,
    the body of `CronRunView`) and every email send's (`EMAIL_BACKEND` is now
    `apps.scholarship.mail_backend.RecordingSMTPBackend`, the SMTP backend plus one bookkeeping line) in

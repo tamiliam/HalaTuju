@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from .. import staff_activity
 from ..anomaly_engine import detect_anomalies
+from ..document_snapshot import snapshot_unless_open
 from ..interview_completeness import missing_agenda_items
 from ..models import InterviewSession
 from ..serializers_admin import InterviewSessionSerializer
@@ -226,7 +227,8 @@ class AdminInterviewSubmitView(_AdminBase):
             return Response({'error': err, 'code': 'bad_findings'},
                             status=status.HTTP_400_BAD_REQUEST)
         # TD-253 (owner, 2026-09-18): every agenda item answered or deleted — silence is refused.
-        missing = missing_agenda_items(app, session.findings)
+        with snapshot_unless_open(app):   # A2.4: the agenda reads the documents once
+            missing = missing_agenda_items(app, session.findings)
         if missing:
             return Response({'error': 'Every interview question needs an answer before you submit.',
                              'code': 'findings_incomplete', 'missing': missing},

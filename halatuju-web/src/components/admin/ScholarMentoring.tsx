@@ -17,7 +17,7 @@ const K = 'admin.scholars.mentoring'
 const MODES: MeetingMode[] = ['in_person', 'video', 'phone']
 const REFUSALS = ['mentor_not_found', 'mentor_inactive', 'own_application', 'already_assigned', 'file_closed',
   'conflict', 'too_long', 'no_mentor', 'bad_date', 'future_date', 'before_assignment', 'bad_mode', 'bad_minutes',
-  'notes_required']
+  'notes_required', 'mentor_not_in_gift']   // I4: the server's gift fence
 const CARD = PHONE_CARD_XL   // Mobile M7a (rule 15): a section on a phone, this card from md
 const FIELD = 'h-11 w-full rounded-lg border border-ground-300 px-3 text-base md:h-10 md:text-sm focus:border-info-500 focus:ring-2 focus:ring-info-500'
 const PRIMARY = 'h-11 rounded-lg bg-brand-fill px-4 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 md:h-10'

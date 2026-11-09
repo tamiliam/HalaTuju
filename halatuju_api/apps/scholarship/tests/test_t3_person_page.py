@@ -282,5 +282,8 @@ class TestThePersonBlock(TestCase):
         # selects the profile and the mentor with the row (the two-table person fell 6 -> 5); the reviewer
         # detail already had both; the mentor detail reads the login once more for `person` / `may_add`
         # (+1). ⚠ A rise here is a decision, not a re-record.
+        # Merged with main (2026-11-09): Invitations I4, already live, reads a mentor's gifts
+        # (`mentor_gift.gifts_by_mentor`) and the organisation's gift choices (`mentor_gift.choices`) on the
+        # mentor detail — two queries main added (its mentor detail 11 -> 13, unpinned there); 12 + 2 = 14.
         self.assertEqual(measured, {'admin': 5, 'admin_two_tables': 5, 'reviewer': 7,
-                                    'reviewer_two_tables': 7, 'mentor': 12, 'mentor_two_tables': 12})
+                                    'reviewer_two_tables': 7, 'mentor': 14, 'mentor_two_tables': 14})

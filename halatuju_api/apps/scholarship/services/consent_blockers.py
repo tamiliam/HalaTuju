@@ -12,6 +12,7 @@ from .blockers import (
     _offer_blocks, document_red_blockers, document_unreadable_blockers,
     ic_identity_blockers, income_doc_blockers,
 )
+from ..document_snapshot import present_doc_types
 from .completeness import application_completeness
 
 def consent_blockers(application):
@@ -36,8 +37,7 @@ def consent_blockers(application):
         blockers.append('address_incomplete')
     if not c['funding_done']:
         blockers.append('funding_incomplete')
-    present = set(application.documents.filter(superseded_at__isnull=True)
-                  .values_list('doc_type', flat=True))
+    present = present_doc_types(application)   # A2.4: from the open snapshot, else the same query
     # Layer 0: only chase what this programme actually asks for. A document that is not asked for
     # must not appear as outstanding — the student would be looking for something nobody wants.
     # The default catalogue makes all three required, so this reads identically today.

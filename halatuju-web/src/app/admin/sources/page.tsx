@@ -4,7 +4,7 @@ import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getSources, updateSource, type SourceItem } from '@/lib/admin-api'
+import { getSources, revokeSourceUser, updateSource, type SourceItem } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
@@ -21,7 +21,12 @@ import { SignInBadge, Toggle } from '@/components/sources/shared'
 // there — for super and org_admin only, who are the roles that may invite (owner: Admin does not).
 // ⚠ EDIT LOCKS ONCE THE SOURCE HAS SIGNED IN (owner ruling 2026-10-30): its name and contact
 // details are then its own (its console's Profile) and a change is refused 409 `managed_by_source`.
-// The Active toggle stays the organisation's. Reuses PartnerOrganisation.phone /
+// The Active toggle stays the organisation's.
+// ⚠ THE SOURCE'S PERSON IS SHOWN — AND REMOVED — HERE (owner ruling 2026-11-08, Invitations I2): one
+// person per source, named beside the sign-in badge, with a red Remove for super / org_admin where
+// the server says `manageable`. Same confirm and same endpoint (`revokeSourceUser`) the Invitations
+// "Signed in" table used; that table is gone, so Invitations lists the waiting only on every tab.
+// Reuses PartnerOrganisation.phone /
 // contact_person / contact_email (NOT a separate contact_phone column). The active-in-apply
 // toggle decides which sources a gift's Configuration may OFFER; each gift then switches its own
 // on (2026-10-08), and this page shows "On N of M gifts". Referral attribution is unaffected.
@@ -137,6 +142,42 @@ export default function SourcesPage() {
     setBusy(null)
   }
 
+  // I2: Remove the source's person — the same confirm and endpoint the Invitations table used.
+  // Re-read either way: a refusal means the row on screen was stale.
+  const removePerson = async (s: SourceItem) => {
+    const p = s.person
+    if (!p || !token
+        || !window.confirm(t('admin.sources.person.removeConfirm', { name: p.name, source: s.name }))) return
+    setBusy(s.id); setMessage(null)
+    try {
+      await revokeSourceUser(p.id, { token })
+      setMessage({ type: 'success', text: t('admin.sources.person.removed') })
+    } catch (err) {
+      setMessage({ type: 'error', text: (err as { code?: string })?.code === 'not_active'
+        ? t('admin.sources.person.notActive', { name: p.name }) : t('admin.sources.person.removeFailed') })
+    }
+    setBusy(null)
+    load()
+  }
+
+  /** Who signs in for the source (or is invited and waiting), beside its badge; Remove where the
+   *  viewer may invite AND the server says this row is theirs to manage. `where` keeps the phone
+   *  card's and the table row's test ids apart (both are rendered; CSS picks one). */
+  const personBlock = (s: SourceItem, where: 'card' | 'row') => s.person ? (
+    <span className="mt-1 block text-xs text-ground-600" data-testid={`source-person-${where}-${s.code}`}>
+      <span className="block">{s.person.name}</span>
+      <span className="block break-all text-ground-500">{s.person.email}</span>
+      {s.person.phone && <span className="block text-ground-500">
+        <span className="sr-only">{t('admin.sources.phone')}: </span>{s.person.phone}</span>}
+      {canInvite && s.person.manageable && (
+        <button type="button" disabled={busy === s.id} onClick={() => removePerson(s)}
+          className="mt-0.5 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+          {t('admin.sources.person.remove')}
+        </button>
+      )}
+    </span>
+  ) : null
+
   /** Edit is offered until somebody has signed in for the source; then the source keeps it. */
   const managed = (s: SourceItem) => s.sign_in === 'joined'
 
@@ -222,6 +263,7 @@ export default function SourcesPage() {
                   {t(managed(s) ? 'admin.sources.managed' : 'admin.sources.editOnDesktop')}
                 </span>
               </div>
+              {personBlock(s, 'card')}
             </div>
           ))}
         </div>
@@ -301,7 +343,10 @@ export default function SourcesPage() {
                 <td className="px-4 py-3 text-ground-600">{s.contact_person || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500">{s.contact_email || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</td>
-                <td className="px-4 py-3" data-testid={`sign-in-${s.code}`}><SignInBadge state={s.sign_in} t={t} /></td>
+                <td className="px-4 py-3 max-w-[16rem]" data-testid={`sign-in-${s.code}`}>
+                  <SignInBadge state={s.sign_in} t={t} />
+                  {personBlock(s, 'row')}
+                </td>
                 <td className="px-4 py-3"><Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} /></td>
                 <td className="px-4 py-3">
                   <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-ground-100 text-ground-600">{s.student_count ?? 0}</span>

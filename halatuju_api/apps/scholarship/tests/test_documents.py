@@ -10,6 +10,7 @@ from apps.scholarship.tests.doc_keys import issued_key as _key   # audit SEC-01:
 from apps.scholarship.tests.factories import (
     make_application, make_cohort, make_student,
 )
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER_A = 'doc-user-a'
@@ -61,6 +62,10 @@ class TestDocumentApi(TestCase):
         self.assertEqual(resp.status_code, 503)
 
     def test_sign_upload_no_shortlisted_403(self):
+        # TD-350: a decline still in its email embargo is NOT final to her (she is shown her old
+        # stage), so it resolves; the 403 is for a decline she has been told of (markers cleared).
+        ScholarshipApplication.objects.filter(pk=self.rejected_c.pk).update(
+            pending_rejection_category='', decline_due_at=None, pending_decline_by='')
         self._auth(USER_C)
         resp = self.client.post('/api/v1/scholarship/documents/sign-upload/', {'doc_type': 'ic'}, format='json')
         self.assertEqual(resp.status_code, 403)
@@ -70,7 +75,7 @@ class TestDocumentApi(TestCase):
         """If the file never landed in Storage (confirmed missing), the row is NOT created —
         no orphan record with a dead view link (app #80 EPF, 2026-06-27)."""
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'epf',
             'storage_path': _key(self.app_a, 'epf', 'ghost'),
             'original_filename': 'SUMATHY.pdf', 'size': 1000,
@@ -87,7 +92,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         ApplicantDocument.objects.create(application=self.app_a, doc_type='ic',
                                          storage_path=_key(self.app_a, 'ic', 'good'))
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'ic',
             'storage_path': _key(self.app_a, 'ic', 'ghost'),
             'original_filename': 'ic.pdf', 'size': 1000,
@@ -101,7 +106,7 @@ class TestDocumentApi(TestCase):
     @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
     def test_create_and_list_document(self, _mock):
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'results_slip',
             'storage_path': _key(self.app_a, 'results_slip', 'abc'),
             'original_filename': 'results.pdf', 'size': 1000,
@@ -143,7 +148,7 @@ class TestDocumentApi(TestCase):
         )
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'ic',
             'storage_path': _key(self.app_a, 'ic', 'new'),
             'original_filename': 'NRICF.jpeg', 'size': 200_000,
@@ -174,7 +179,7 @@ class TestDocumentApi(TestCase):
         ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic', storage_path=_key(self.app_a, 'ic', 'old'))
         self._auth(USER_A)
-        self.client.post('/api/v1/scholarship/documents/', {
+        post_doc(self.client, {
             'doc_type': 'ic', 'storage_path': _key(self.app_a, 'ic', 'new'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
@@ -199,7 +204,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         with patch.object(ApplicantDocument.objects, 'create', side_effect=RuntimeError('db boom')):
             try:
-                self.client.post('/api/v1/scholarship/documents/', {
+                post_doc(self.client, {
                     'doc_type': 'ic',
                     'storage_path': _key(self.app_a, 'ic', 'new'),
                     'original_filename': 'NRICF.jpeg', 'size': 200_000,
@@ -225,7 +230,7 @@ class TestDocumentApi(TestCase):
             storage_path=_key(self.app_a, 'salary_slip', 'jan'),
         )
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'salary_slip',
             'storage_path': _key(self.app_a, 'salary_slip', 'feb'),
             'original_filename': 'feb.pdf', 'size': 50_000,
@@ -256,7 +261,7 @@ class TestDocumentApi(TestCase):
             application=self.app_a, doc_type='salary_slip', household_member='mother',
             storage_path=_key(self.app_a, 'salary_slip', 'mother-keep'))
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'salary_slip', 'household_member': 'father',
             'storage_path': _key(self.app_a, 'salary_slip', 'father-new'),
             'original_filename': 'f.pdf', 'size': 50_000,
@@ -281,7 +286,7 @@ class TestDocumentApi(TestCase):
             application=self.app_a, doc_type='parent_ic', household_member='father',
             storage_path=_key(self.app_a, 'parent_ic', 'father'))
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic',  # no household_member → blank
             'storage_path': _key(self.app_a, 'parent_ic', 'str-earner'),
             'original_filename': 'ic.jpg', 'size': 50_000,
@@ -304,7 +309,7 @@ class TestDocumentApi(TestCase):
             application=self.app_a, doc_type='parent_ic', household_member='',
             storage_path=_key(self.app_a, 'parent_ic', 'legacy-blank'))
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic',  # client sends NO member
             'storage_path': _key(self.app_a, 'parent_ic', 'new'),
             'original_filename': 'ic.png', 'size': 1000,
@@ -333,7 +338,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic',                       # NO household_member sent
             'storage_path': _key(self.app_a, 'parent_ic', 'blank'),
             'original_filename': 'ic.jpg', 'size': 1000,
@@ -362,7 +367,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic',                       # blank member → derived to father
             'storage_path': _key(self.app_a, 'parent_ic', 'new'),
             'original_filename': 'ic.jpg', 'size': 1000,
@@ -416,7 +421,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'salary_slip',       # NO household_member, and no name to derive one from
             'storage_path': _key(self.app_a, 'salary_slip', 'blurry'),
             'original_filename': 'IMG-blurry.jpg', 'size': 1000,
@@ -466,7 +471,7 @@ class TestDocumentApi(TestCase):
         self.app_a.profile_completed_at = timezone.now()          # consent given → post-consent
         self.app_a.save(update_fields=['income_route', 'income_earner', 'profile_completed_at'])
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'salary_slip', 'household_member': 'father',
             'storage_path': _key(self.app_a, 'salary_slip', 'father'),
             'original_filename': 'f.pdf', 'size': 1000,
@@ -501,7 +506,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic', 'household_member': 'mother',   # WRONG tag
             'storage_path': _key(self.app_a, 'parent_ic', 'mis'),
             'original_filename': 'ic.jpg', 'size': 1000,
@@ -530,7 +535,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic', 'household_member': 'mother',
             'storage_path': _key(self.app_a, 'parent_ic', 'ok'),
             'original_filename': 'ic.jpg', 'size': 1000,
@@ -558,7 +563,7 @@ class TestDocumentApi(TestCase):
         mock_vision.side_effect = _read
 
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'parent_ic', 'household_member': 'father',
             'storage_path': _key(self.app_a, 'parent_ic', 'nric'),
             'original_filename': 'ic.jpg', 'size': 1000,
@@ -851,7 +856,7 @@ class TestDocumentApi(TestCase):
         """All four S4 doc types can be recorded via the document API."""
         self._auth(USER_A)
         for doc_type in ('salary_slip', 'water_bill', 'electricity_bill', 'offer_letter'):
-            resp = self.client.post('/api/v1/scholarship/documents/', {
+            resp = post_doc(self.client, {
                 'doc_type': doc_type,
                 'storage_path': _key(self.app_a, doc_type, 'abc'),
                 'original_filename': f'{doc_type}.pdf',
@@ -877,7 +882,7 @@ class TestDocumentApi(TestCase):
         """Recording an IC document triggers run_vision_for_document; response carries the fields."""
         mock_vision.side_effect = self._mock_vision_call
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'ic',
             'storage_path': _key(self.app_a, 'ic', 'abc'),
             'original_filename': 'mykad.jpg', 'size': 50_000,
@@ -895,7 +900,7 @@ class TestDocumentApi(TestCase):
     def test_non_ic_upload_does_not_run_vision(self, mock_vision, _dl):
         """Vision is gated on doc_type='ic' — other types must not trigger a call."""
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'results_slip',
             'storage_path': _key(self.app_a, 'results_slip', 'abc'),
             'original_filename': 'results.pdf', 'size': 1000,
@@ -911,7 +916,7 @@ class TestDocumentApi(TestCase):
         vision_fields['text'] so the submission review can read motivation."""
         mock_ocr.return_value = {'text': 'I have taught my younger cousins for years.', 'error': ''}
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'statement_of_intent',
             'storage_path': _key(self.app_a, 'statement_of_intent', 'abc'),
             'original_filename': 'letter.pdf', 'size': 2000,
@@ -936,7 +941,7 @@ class TestDocumentApi(TestCase):
             return {'nric': '', 'name': '', 'error': 'AI module not installed'}
         mock_vision.side_effect = boom
         self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'ic',
             'storage_path': _key(self.app_a, 'ic', 'zzz'),
             'original_filename': 'mykad.jpg', 'size': 50_000,
@@ -1027,7 +1032,7 @@ class TestRequestOwnedSlots(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.USER)}')
 
     def _upload(self, doc_type, suffix, request_code='', household_member=''):
-        return self.client.post('/api/v1/scholarship/documents/', {
+        return post_doc(self.client, {
             'doc_type': doc_type, 'storage_path': _key(self.app, doc_type, suffix),
             'request_code': request_code, 'household_member': household_member,
             'original_filename': f'{suffix}.jpg', 'size': 1000,
@@ -1158,7 +1163,7 @@ class TestStrKeepBetterGuard(TestCase):
              patch('apps.scholarship.vision.run_vision_match_for_document', return_value=None), \
              patch('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields',
                    side_effect=_extract):
-            return self.client.post('/api/v1/scholarship/documents/', {
+            return post_doc(self.client, {
                 'doc_type': 'str', 'storage_path': _key(self.app, 'str', f'{filename}-{size}'),
                 'original_filename': filename, 'size': size,
             }, format='json')
@@ -1263,7 +1268,7 @@ class TestStrKeepBetterGuard(TestCase):
         old = ApplicantDocument.objects.create(
             application=self.app, doc_type='income_support_doc',
             storage_path=_key(self.app, 'income_support_doc', 'old'), original_filename='old.pdf', size=100)
-        resp = self.client.post('/api/v1/scholarship/documents/', {
+        resp = post_doc(self.client, {
             'doc_type': 'income_support_doc', 'storage_path': _key(self.app, 'income_support_doc', 'new'),
             'original_filename': 'new.pdf', 'size': 200}, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)

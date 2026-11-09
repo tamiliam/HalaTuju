@@ -64,6 +64,28 @@ class TestReprocessUnreadIc(TestCase):
         rx.assert_not_called()
         self.assertEqual(r['scanned'], 0)
 
+    def test_an_unread_ic_with_a_later_document_over_it_is_not_swept(self):
+        # A2.3 review: a replaced IC, or one whose queued read was dropped because a newer upload
+        # in the slot was decided, never costs a Vision call. The slot's newest staged attempt
+        # (superseded, nothing later) and the live one are still swept, as before.
+        from apps.scholarship.services.blockers import _stuck_unread_documents
+        now = timezone.now()
+        mk = lambda path, **kw: ApplicantDocument.objects.create(  # noqa: E731
+            application=self.app, doc_type='ic', storage_path=path, vision_run_at=None, **kw)
+        dropped = mk('ic-dropped', superseded_at=now)               # staged, never read
+        replaced = mk('ic-replaced', superseded_at=now)
+        live = mk('ic-live', read_state='failed')                   # the slot's live copy
+        ApplicantDocument.objects.filter(pk=replaced.pk).update(superseded_by=live)
+        mother_old = ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic', household_member='mother',
+            storage_path='m-old', vision_run_at=None, superseded_at=now)
+        mother_newest = ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic', household_member='mother',
+            storage_path='m-new', vision_run_at=None, superseded_at=now, read_state='failed')
+        ids = {d.id for d in _stuck_unread_documents(50)}
+        self.assertEqual(ids, {live.id, mother_newest.id})
+        self.assertFalse({dropped.id, replaced.id, mother_old.id} & ids)
+
     def test_a_non_ic_read_that_raises_is_stamped_so_it_cannot_loop(self):
         doc = self._doc('offer_letter')
         with patch('apps.scholarship.reextract.reextract_document',

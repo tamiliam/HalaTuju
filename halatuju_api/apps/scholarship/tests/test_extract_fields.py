@@ -11,6 +11,7 @@ from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import create_document
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER = 'extract-user'
@@ -244,7 +245,7 @@ class TestUploadGuardrails(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(USER)}')
 
     def _post(self, doc_type='salary_slip', size=1000):
-        return self.client.post('/api/v1/scholarship/documents/', {
+        return post_doc(self.client, {
             'doc_type': doc_type, 'storage_path': issued_key(self.app, doc_type, 'x'),
             'original_filename': 'f.pdf', 'size': size}, format='json')
 

@@ -451,11 +451,11 @@ class GoldenTable(TestCase):
 
     def probe_org_admin_may_assign_to(self, a):
         from apps.scholarship.views_admin.verdict import AdminAssignReviewerView
+        # A2.3: the assign reply is slim and reads these off the case.
+        case = self._case(status='profile_complete', id=1, assigned_to=None, assigned_at=None)
         with mock.patch.object(AdminAssignReviewerView, '_scoped_application',
-                               return_value=(self._case(status='profile_complete'), None)), \
-                mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'), \
-                mock.patch('apps.scholarship.views_admin.verdict._detail_payload',
-                           return_value={}):
+                               return_value=(case, None)), \
+                mock.patch('apps.scholarship.views_admin.verdict.assign_reviewer'):
             r = self._http(self.people['org_admin'], 'post',
                            '/api/v1/admin/scholarship/applications/1/assign/',
                            {'reviewer_id': a.id})

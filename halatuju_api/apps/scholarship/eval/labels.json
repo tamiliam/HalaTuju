@@ -18,6 +18,24 @@
     }
   },
   "docs": {},
+  "_corpus_README": "TD-119 / TD-121, A2.8b (2026-11-09). Notes for `eval_doc_recognition --auto-ok`, keyed by the corpus file stem. 'corpus_relabels' moves a key's expectation when the folder it sits in is wrong by an owner ruling ({\"expect\": \"flag\" | \"ok\", \"why\": ...}); offer letters need no entry here, the harness reads the owner's offer rulings from offer_genuineness_expect.json (one home). 'corpus_known' explains a miss that is NOT a rule defect (a stale snapshot, a never-read document, an applicant's typo, a case waiting on a design decision); the scorecard still counts it, and prints how many misses are explained. PII-free: keys and reasons only.",
+  "corpus_relabels": {
+    "parent_ic__a5__d770": {"expect": "flag", "why": "Owner ruling (IC-number chain, retro 2026-06-29): #5 stays red. The card's number does not match the chain, so the flag is right."},
+    "birth_certificate__a5__d771": {"expect": "flag", "why": "Owner ruling (IC-number chain, retro 2026-06-29): #5 stays red, the birth certificate with it."}
+  },
+  "corpus_known": {
+    "birth_certificate__a10__d797": {"why": "Stale snapshot: cached before the Item-B birth-certificate extraction fix. Clears on a re-capture or a real re-upload (a paid read; never re-extracted locally)."},
+    "birth_certificate__a86__d843": {"why": "Stale snapshot: cached before the Item-B birth-certificate extraction fix. Clears on a re-capture or a real re-upload (a paid read)."},
+    "parent_ic__a10__d225": {"why": "Downstream of the stale a10 birth-certificate snapshot: the child link reads from that certificate, so it clears when the certificate is re-captured."},
+    "salary_slip__a51__d1269": {"why": "Never read in the corpus (no cached content read), so the verdict is pending. Corpus gap, the TD-116/117 class; needs a paid read."},
+    "salary_slip__a104__d1380": {"why": "Never read in the corpus (no cached content read), so the verdict is pending. Corpus gap; needs a paid read."},
+    "salary_slip__a84__d954": {"why": "Never read in the corpus (no cached content read), so the verdict is pending. Corpus gap; needs a paid read."},
+    "guardianship_letter__a61__d569": {"why": "Never read in the corpus (no cached content read), so the verdict is pending. Corpus gap; needs a paid read."},
+    "results_slip__a71__d1049": {"why": "Application data, not a rule defect: one typed grade is one step off the slip. The check is right to ask."},
+    "results_slip__a48__d1449": {"why": "Application data, not a rule defect: one typed grade is one step off the slip. The check is right to ask."},
+    "parent_ic__a16__d376": {"why": "Design case, not fixed (A2.8b stopped on it): architecture doc section 4 says a proof match outweighs a relationship gap, but a16 is the typed-fake folder (TD-114), so softening this needs the Layer-1 gating of Layer-2 first. Owner ruling 2026-11-09: a16 stays red; no softening until TD-114 Layer-1 gating exists."},
+    "str__a23__d340": {"why": "False negative noted 2026-06-29 as a likely stale label (the read is unreadable, so nothing flags it). No owner ruling yet, so it is not relabelled."}
+  },
   "_regressions_README": "TD-151 (1), 2026-10-02. The PROBLEM-DOCUMENT corpus: every document that once caused a misread fix, with a PII-free assertion about the corrected reading. Keyed by the snapshot stem. Replayed by hand with `python apps/scholarship/eval/regression_check.py` (never collected by pytest - the snapshots are gitignored PII); the committed tests run the same checks on synthetic twins (tests/test_regression_corpus.py). An entry with `\"local\": false` names a case not yet in the local corpus: capture it (fetch_corpus.py / capture_ocr.py) and switch the flag. Add a case here whenever a document drives a fix.",
   "regressions": {
     "results_slip__a66__d912": {

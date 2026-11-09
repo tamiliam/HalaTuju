@@ -1573,6 +1573,7 @@
       },
       "uploadError": "Upload failed. Please try again.",
       "uploadIncomplete": "The file didn't finish uploading. Please try again.",
+      "stillReading": "We are still reading {count} of your uploads. You can carry on; refresh this page in a few minutes to see the result.",
       "deleteError": "Could not remove the document.",
       "assist": {
         "ok": "Looks good — we read this document and the details match you.",
@@ -3714,6 +3715,13 @@
         "invited": "Invited, waiting",
         "joined": "Joined"
       },
+      "person": {
+        "remove": "Remove",
+        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
+        "removed": "Sign-in removed.",
+        "removeFailed": "We could not remove it. Reload the page and try again.",
+        "notActive": "{name} is already switched off. Reload the page."
+      },
       "managed": "Managed by the source",
       "managedNote": "Edit stays until the source signs in. After that, only the source changes its own details. You still switch a source on or off for the apply form.",
       "managedRefused": "This source has signed in and now keeps its own details. You can still switch it on or off."
@@ -4357,6 +4365,9 @@
       "profileFinalTitle": "Student profile (final)",
       "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
+      "profileFinalising": "The final profile is being written. It will appear here in a few minutes; reload the page to see it.",
+      "profileFinaliseFailed": "The final profile could not be written after three tries. The draft is shown below. Please tell a super admin.",
+      "profileDrafting": "The profile draft is being written. It will appear here in a few minutes; reload the page to see it.",
       "model": "Model",
       "interviewedRecommendedBy": "Interviewed and recommended by",
       "interviewedDeclinedBy": "Interviewed and declined by",
@@ -4375,6 +4386,10 @@
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
       "visionError": "Could not re-run Vision.",
+      "untold": {
+        "noAddress": "This student could not be emailed their decision: there is no email address on file. Please tell them another way, such as a phone call or WhatsApp.",
+        "unsent": "The decision email has not reached this student. It is retried automatically for three days after the decision; if this notice is still showing after that, please tell them another way."
+      },
       "cooloff": {
         "declineScheduled": "This decline is scheduled to be sent on",
         "awardScheduled": "This funding confirmation is scheduled to be sent on",
@@ -4816,6 +4831,7 @@
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
           "offer_not_official": "Scored not an offer letter (a private / IPTS offer, a private wing, or not an offer at all) — a fail; the student is asked for a public institution's offer letter.",
           "offer_issuer_not_checked": "Offer from {issuer} — a public TVET issuer we don't have a pattern for yet, so it was NOT checked. Check the letter by eye.",
+          "offer_not_read_yet": "The offer letter has not been read yet — our document check has not run on it or was unavailable. It is not the student's fault, so do not ask for a clearer copy. If it stays unread, check the letter by eye.",
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",
@@ -5065,6 +5081,7 @@
           "unsure": "unsure"
         },
         "finaliseOk": "Verdict saved and final profile generated.",
+        "finalisePending": "Verdict saved. The final profile is being written and will appear on the profile card in a few minutes.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
@@ -5094,13 +5111,18 @@
           "self_verdict_qc_forbidden": "You recorded this verdict — it must be QC-checked by someone else.",
           "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
           "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
-          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else."
+          "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else.",
+          "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept.",
+          "profile_failed": "The final sponsor profile could not be written. Reopen the case for the reviewer, who records the verdict again with the final profile. Then accept."
         },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",
         "overridePlaceholder": "Why is it safe to recommend this case despite the red fact?",
-        "overrideConfirm": "Record reason & accept"
+        "overrideConfirm": "Record reason & accept",
+        "reverifyTitle": "The IC lock was released",
+        "reverifyHint": "This intake has a \"Born in\" rule and the student's IC is no longer locked, so Accept is refused. Re-verify the IC here: it locks the IC again and checks that no other account holds it verified. The case stays awaiting QC and the reviewer is not told. Unless you are a super admin, someone else then does the QC.",
+        "reverifyButton": "Re-verify IC"
       },
       "caveats": {
         "studentAnswer": "Student's answer",
@@ -5530,6 +5552,34 @@
           "withdrawal_approved": "Approved withdrawing {subject}",
           "withdrawal_refused": "Refused withdrawing {subject}",
           "withdrawal_cancelled": "Cancelled the withdrawal request for {subject}"
+        }
+      },
+      "completion": {
+        "title": "Your profile is {percent}% complete",
+        "count": "{done} of {total} done",
+        "complete": "Your profile is complete",
+        "note": "A complete profile helps your team and your students know who you are.",
+        "done": {
+          "photo": "Photo",
+          "name": "Name",
+          "job_title": "Job title",
+          "about": "About",
+          "phone": "Phone",
+          "qualifications": "Qualifications",
+          "language": "Language",
+          "address": "Address",
+          "mentoring_area": "Mentoring area"
+        },
+        "todo": {
+          "photo": "Add a photo",
+          "name": "Add your name",
+          "job_title": "Add your job title",
+          "about": "Write a short About",
+          "phone": "Add a phone number",
+          "qualifications": "Add your qualifications",
+          "language": "Add a language you speak",
+          "address": "Add your address",
+          "mentoring_area": "Add your mentoring area"
         }
       }
     },
@@ -7011,7 +7061,8 @@
           "bad_mode": "Choose how you met.",
           "bad_minutes": "Minutes must be a whole number above 0.",
           "notes_required": "Write a few words about the meeting.",
-          "generic": "That did not go through. Please try again."
+          "generic": "That did not go through. Please try again.",
+          "mentor_not_in_gift": "That mentor does not cover this scholar's gift. Choose another mentor, or add the gift to theirs on Team · Mentors."
         },
         "concern": {
           "open": "The mentor is worried about this scholar. Not yet handled: {count} (latest {date}).",
@@ -7471,11 +7522,14 @@
         "mentor": "Mentor"
       },
       "noneInKind": "Nobody has been invited in this group yet.",
-      "giftLabel": "Which gift is this invitation for?",
-      "giftChoose": "Choose a gift…",
       "reviewerGiftLabel": "Which gifts will this reviewer cover?",
       "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
+      "sponsorGiftLabel": "Which gifts is this sponsor invited to support?",
+      "sponsorGiftRequired": "Tick at least one gift, or Every gift.",
+      "sponsorGiftHelp": "Each gift is its own request: when they register they join every gift ticked here as pending, and you approve each one. Every gift means the gifts open on the day they register — a gift started later is not added.",
+      "inviteFailed": "The invitation was not sent. Please check the details and try again.",
+      "noteLabel": "Personal note",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
@@ -7512,7 +7566,7 @@
         "which": "Which source?",
         "choose": "Choose a source…",
         "option": "{name} ({code}) — {state}",
-        "help": "Every active source on your list — a source can have more than one person. Or",
+        "help": "One person per source, so a source someone has joined is not listed. Or",
         "addNew": "add a new source (name and short code)",
         "pickExisting": "Choose a source already on your list instead",
         "newName": "Source name",
@@ -7523,22 +7577,13 @@
         "note": "They will see only their own students, read only, and can witness contracts.",
         "chooseFirst": "Choose a source, or add a new one.",
         "sent": "Invitation sent.",
-        "signedIn": "Signed in",
         "col": {
-          "source": "Source",
-          "person": "Person",
-          "email": "Email",
-          "sent": "Sent",
-          "lastSeen": "Last seen"
+          "source": "Source"
         },
         "noneWaiting": "Nobody is waiting to reply.",
-        "noneSignedIn": "Nobody has signed in for a source yet.",
-        "remove": "Remove",
-        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
-        "removed": "Sign-in removed.",
-        "removeFailed": "We could not remove it. Reload the page and try again.",
         "error": {
           "already_staff": "This email address already has a HalaTuju staff or source sign-in, so it cannot be invited for a source. Ask HalaTuju support.",
+          "source_has_person": "This source already has a person: someone has joined, or an invitation is waiting. Resend or cancel the waiting invitation below, or remove the person on Sources first.",
           "code_taken": "That short code is already in use.",
           "code_reserved": "That short code is reserved. Choose another.",
           "code_and_name_required": "A new source needs a name and a short code.",
@@ -7552,7 +7597,7 @@
           "generic": "We could not send the invitation. Try again."
         },
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
-        "optionJoined": "{name} ({code}) — someone has already joined",
+        "optionWaiting": "{name} ({code}) — invited, waiting: resend or cancel below",
         "refused": {
           "already_joined": "{name} has already signed in.",
           "not_active": "{name} is switched off. To bring them back, invite them again."
@@ -7560,12 +7605,7 @@
       },
       "loadFailed": "We could not load the invitations. Reload the page to try again.",
       "mentor": {
-        "noneWaiting": "No mentor is waiting to accept.",
-        "col": {
-          "name": "Mentor",
-          "email": "Email",
-          "sent": "Invited"
-        }
+        "noneWaiting": "No mentor is waiting to accept."
       }
     },
     "soon": "Soon",
@@ -7604,7 +7644,8 @@
         "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
         "inUse": "A record still depends on this gift, so it cannot be deleted.",
         "confirmMismatch": "That does not match the required phrase. Nothing was deleted.",
-        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted."
+        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted.",
+        "giftLimitsMentors": "{count} mentor(s) mentor only in this gift. Give them another gift, or Every gift, before deleting it."
       },
       "copyLink": "Copy apply link",
       "copied": "Link copied",
@@ -8455,7 +8496,8 @@
         "vision": "Text recognition (Google Vision)",
         "email": "Email sending",
         "cron": "Scheduled jobs",
-        "credit": "AI credit balance"
+        "credit": "AI credit balance",
+        "profiles": "Final sponsor profiles"
       },
       "line": {
         "read": {
@@ -8485,6 +8527,10 @@
           "ok": "No payment errors seen.",
           "payment_error": "A payment error at {time}: the AI credit may have run out.",
           "recovered": "A payment error at {time}; reads have worked since."
+        },
+        "profiles": {
+          "ok": "No final profile has failed.",
+          "failed": "Final profiles that could not be written after three tries: {count}."
         }
       },
       "unit": {
@@ -8493,6 +8539,7 @@
         "days": "{n} days"
       },
       "cadence": {
+        "every5": "every 5 minutes",
         "every15": "every 15 minutes",
         "hourly": "hourly",
         "daily": "daily",
@@ -8509,6 +8556,8 @@
         "read-outage-start": "Read outage alert",
         "reprocess-ic-vision": "Re-reading stuck documents",
         "notify-contact-submissions": "Contact form alerts",
+        "read-documents": "Reading uploaded documents",
+        "assign-emails": "Assignment emails",
         "interview-reminders": "Interview reminders",
         "application-nudges": "Application nudges",
         "purge-referrals": "Referral clean-up",
@@ -8530,6 +8579,7 @@
         "issue-monthly-invoices": "Monthly invoices",
         "refresh-reminder": "Course catalogue reminder",
         "decision-emails": "Decision emails",
+        "finalise-profiles": "Writing final profiles",
         "announcement-emails": "Announcement emails",
         "survey-emails": "Survey emails",
         "module-emails": "Module emails"
@@ -8766,9 +8816,10 @@
       "intro": "The people who mentor your scholars — invited mentors who have signed in, and staff who also mentor. Invite a mentor from Invitations; each mentor fills in their own profile.",
       "invite": {
         "name": "Name",
-        "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
+        "note": "After signing in, the mentor fills in their own area, languages, About and phone.",
         "sent": "{name} invited. Sign-in details emailed to {email}.",
-        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
+        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again.",
+        "giftLabel": "Which gifts will this mentor cover?"
       },
       "error": {
         "already_staff": "This email address already has a HalaTuju admin sign-in, so it cannot be invited as a mentor.",
@@ -8788,7 +8839,9 @@
         "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
         "not_found": "That staff member was not found.",
-        "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead."
+        "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead.",
+        "gift_required": "Choose Every gift or at least one gift.",
+        "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again."
       },
       "status": {
         "active": "Active",
@@ -8890,7 +8943,11 @@
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
         "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
       },
-      "deleteBody": "Their sign-in, their mentor record and their invitation history are removed. This cannot be undone."
+      "deleteBody": "Their sign-in, their mentor record and their invitation history are removed. This cannot be undone.",
+      "gifts": {
+        "label": "Gifts",
+        "outside": "This mentor has {count} current scholar(s) outside those gifts. End or change that mentoring first. Nothing was changed."
+      }
     },
     "myStudents": {
       "title": "My students",
@@ -9528,6 +9585,26 @@
         "reviewerText": "What a reviewer agrees to before their first case will be set here.",
         "mentorTitle": "Mentor terms",
         "mentorText": "What a mentor agrees to before meeting a student will be set here."
+      }
+    },
+    "nudge": {
+      "missing": "Your profile is missing {items}.",
+      "helpOne": "Adding it completes your profile.",
+      "helpMany": "Adding them completes your profile.",
+      "and": "and",
+      "link": "Complete profile",
+      "hide7": "Hide for 7 days",
+      "overdueTitle": "Payment overdue.",
+      "overdueOne": "Invoice {number} for {amount} was due 1 day ago.",
+      "overdueMany": "Invoice {number} for {amount} was due {days} days ago.",
+      "overdueMoreOne": "1 more invoice is also overdue.",
+      "overdueMoreMany": "{count} more invoices are also overdue.",
+      "overdueLink": "View invoice",
+      "overdueHide": "Hide until next sign-in",
+      "item": {
+        "photo": "a photo",
+        "phone": "a phone number",
+        "mentoring_area": "your mentoring area"
       }
     }
   },

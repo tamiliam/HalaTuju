@@ -6,8 +6,10 @@
  * Three pieces, one look:
  *  - `GiftChips`     one grey chip per gift, or one soft blue "Every gift" chip (`[]`, the default);
  *  - `GiftTickList`  "Every gift" plus a tick per gift, the gifts greyed while "Every gift" is ticked
- *                    (the pencil pop-over below and the reviewer invite form share it);
+ *                    (the pencil pop-over below, the reviewer invite form and the sponsor invite form);
  *  - `ReviewerGiftsCell` the chips with a pencil beside them that opens the pop-over (Cancel / Save).
+ *    Invitations I4 (2026-11-08): a MENTOR's gifts use the same cell (Team -> Mentors, the details box),
+ *    passing their own `save` (`setMentorGifts`) and `errorOf` (the refusal that names a count).
  *
  * The tick rules are pure and tested in `lib/reviewerGifts`. The server is the authority: it refuses a
  * gift from another organisation (404) and blocks a new case outside these gifts (`gift_mismatch`).
@@ -38,13 +40,15 @@ export function GiftChips({ gifts, testId }: { gifts: ReviewerGiftTag[]; testId?
 }
 
 /** "Every gift" and one tick per gift. Gifts are greyed (and cannot be ticked) while "Every gift" is on. */
-export function GiftTickList({ ticks, options, onChange, everyLabel, testId }: {
+export function GiftTickList({ ticks, options, onChange, everyLabel, testId, allowNone = false }: {
   ticks: GiftTicks
   /** `is_active: false` = a gift not open yet; it may still be staffed before it opens. */
   options: ReadonlyArray<{ id: number; name: string; is_active?: boolean }>
   onChange: (next: GiftTicks) => void
   everyLabel: string
   testId: string
+  /** The sponsor invite (I3): clearing the last tick leaves NOTHING ticked, not "Every gift". */
+  allowNone?: boolean
 }) {
   const { t } = useT()
   const row = 'flex min-h-11 items-center gap-2.5 rounded-md px-1 text-sm'
@@ -60,7 +64,7 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId }: {
         <label key={g.id} className={`${row} ${ticks.every ? 'cursor-not-allowed text-ground-400' : 'text-ground-700'}`}>
           <input type="checkbox" className="h-4 w-4 accent-primary-600" disabled={ticks.every}
             checked={ticks.picked.includes(g.id)} data-testid={`${testId}-gift-${g.id}`}
-            onChange={() => onChange(tickGift(ticks, g.id))} />
+            onChange={() => onChange(tickGift(ticks, g.id, allowNone))} />
           {g.name}
           {g.is_active === false && (
             <span className="text-xs text-ground-400">{t('admin.reviewers.detail.giftNotOpen')}</span>
@@ -72,12 +76,16 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId }: {
 }
 
 /** The chips, and for someone who may change them a pencil that opens the pop-over. */
-export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, onSaved }: {
+export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, onSaved, save: saveIds, errorOf }: {
   reviewer: { id: number; name: string; gifts: ReviewerGiftTag[]; organisation_id?: number | null }
   options: AdminReviewerGift[]
   token: string | null
   canEdit: boolean
   onSaved: (gifts: ReviewerGiftTag[]) => void
+  /** I4: who writes the ticks (default: the reviewer's `setReviewerGifts`). Answers the saved gifts. */
+  save?: (ids: number[], token: string) => Promise<ReviewerGiftTag[]>
+  /** I4: the words for a refusal (default: the generic "could not save"). */
+  errorOf?: (err: unknown) => string
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -91,10 +99,12 @@ export default function ReviewerGiftsCell({ reviewer, options, token, canEdit, o
     if (!token) return
     setBusy(true); setError('')
     try {
-      const r = await setReviewerGifts(reviewer.id, idsToSave(ticks), { token })
-      onSaved(r.gifts); setOpen(false)
-    } catch {
-      setError(t('admin.reviewers.detail.giftFailed'))
+      const gifts = saveIds
+        ? await saveIds(idsToSave(ticks), token)
+        : (await setReviewerGifts(reviewer.id, idsToSave(ticks), { token })).gifts
+      onSaved(gifts); setOpen(false)
+    } catch (err) {
+      setError(errorOf ? errorOf(err) : t('admin.reviewers.detail.giftFailed'))
     } finally { setBusy(false) }
   }
 
