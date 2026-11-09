@@ -484,12 +484,19 @@ class TestDeletingAStaffAccount(_Base):
         self.assertFalse(rows['worked@x.com']['deletable'])
         self.assertEqual(rows['worked@x.com']['work']['payment_runs_made'], 1)
 
-    def test_a_REVIEWER_is_never_deletable_however_empty(self):
-        # Owner, 2026-09-09: "I am only talking about admin, and not reviewers."
-        r = self._delete(self.own_rev)
-        self.assertEqual(r.status_code, 400, r.content)
-        self.assertEqual(r.json()['code'], 'not_deletable')
-        self.assertTrue(PartnerAdmin.objects.filter(id=self.own_rev.id).exists())
+    def test_a_REVIEWER_with_no_work_can_be_deleted_since_D6(self):
+        # D6 (Sprint T2, 2026-11-08) REVERSES the 2026-09-09 "I am only talking about admin, and
+        # not reviewers": a reviewer with nothing on record is deleted like an admin.
+        unused = MagicMock(status_code=200, json=lambda: {
+            'id': 'del-own-rev', 'email': 'delrev@x.com', 'last_sign_in_at': None,
+            'identities': [{'provider': 'email'}],
+            'app_metadata': {'must_change_password': True}})
+        with patch('apps.courses.views_admin.http_requests.get', return_value=unused), \
+                patch('apps.courses.views_admin.http_requests.delete',
+                      return_value=MagicMock(status_code=200)):
+            r = self._delete(self.own_rev)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertFalse(PartnerAdmin.objects.filter(id=self.own_rev.id).exists())
 
     def test_another_organisations_admin_404s_rather_than_refusing(self):
         # No existence leak: the same answer as a row that does not exist.

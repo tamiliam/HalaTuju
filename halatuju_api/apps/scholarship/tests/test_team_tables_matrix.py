@@ -195,6 +195,18 @@ def a110a_moved_cells(shape, before):
     return {p: 403 for p in A110A_CREDIT_WRITES} if shape in A110A_SHUT_AT_THE_DOOR else {}
 
 
+#: Invitations I4 (2026-11-08): a mentor's gifts (`AdminMentorGiftsView`, `POST admin/mentors/<id>/gifts/`). A NEW
+#: route behind the Mentors page's ACTION fence (`_MentorsBase._target`, the one Resend / Revoke / Deactivate
+#: use: `mentor_invite.may_invite`). Only a super or an organisation admin passes it (the T2 knockers); the
+#: probe's empty body then gets 400 `gift_required`. Everybody else is 403 — a mentor, a reviewer, an admin
+#: viewer and anyone seated by keys gain NOTHING here.
+I4_ADDED = 'POST api/v1/admin/mentors/<int:pk>/gifts/'
+
+
+def i4_added_cells(shape):
+    return {I4_ADDED: 400 if shape in T2_KNOCKS else 403}
+
+
 #: Request #55 (2026-11-07): Notes for the reviewer (`AdminReviewerNotesView`). A NEW route, so NEW cells. Its GET
 #: is the applicant-detail GET's own fence (`_scoped_application`), so each shape reads exactly what it reads there.
 #: Its POST is the lead tier only: a super or an organisation admin passes the gate and the empty body is refused
@@ -227,6 +239,17 @@ def a113b_added_cells(shape):
     cells = {A113B_REQUEST: 404 if shape in A113B_FENCED_OUT else 403}
     cells.update({p: 403 if shape in A113B_DOOR_REFUSED else 404 for p in A113B_DECIDE})
     return cells
+
+
+#: Staff nudges sprint 3 (2026-11-09): the red banner's overdue summary (`AdminInvoiceOverdueView`). A NEW route,
+#: so NEW cells. It is the invoices screen's own door (`_InvoiceBase._caller`, `may_read_invoices`), so each shape
+#: reads exactly what it reads on the invoices list GET: a super and an organisation admin 200, the rest refused.
+NUDGE_OVERDUE = 'GET api/v1/admin/scholarship/billing/overdue/'
+NUDGE_SAME_AS = 'GET api/v1/admin/scholarship/billing/invoices/'
+
+
+def nudges_added_cells(row):
+    return {NUDGE_OVERDUE: row[NUDGE_SAME_AS]}
 
 
 def admin_routes():
@@ -397,10 +420,11 @@ def _shape_test(shape):
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
                     **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
                     **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-                    **a113b_added_cells(shape), **s1_moved_cells(shape, before)}
+                    **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
+        expected.update(nudges_added_cells(expected))
         new = sorted(set(cells) - set(expected))
         self.assertEqual(new, [], f'{shape}: endpoints with no BEFORE cell (a route added since T1?)')
         moved = {p: (expected[p], cells[p]) for p in cells if cells[p] != expected[p]}
@@ -415,14 +439,15 @@ for _shape in SHAPES:
 
 
 def _expected_row(shape):
-    """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
+    """A shape's BEFORE row plus the cells T2-T4 (and I4) added, as `_shape_test` expects it."""
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-           **a113b_added_cells(shape), **s1_moved_cells(shape, before)}
+           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
+    row.update(nudges_added_cells(row))
     return row
 
 

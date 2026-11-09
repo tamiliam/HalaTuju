@@ -23,6 +23,7 @@ from . import system_health_store as store
 
 log = logging.getLogger(__name__)
 
+EVERY_5_MIN = timedelta(minutes=5)
 EVERY_15_MIN = timedelta(minutes=15)
 HOURLY = timedelta(hours=1)
 DAILY = timedelta(days=1)
@@ -31,11 +32,15 @@ MONTHLY = timedelta(days=31)     # the 15th of each month; 31 days so no month r
 YEARLY = timedelta(days=366)
 
 EXPECTED_CADENCE = {
+    # every 5 minutes
+    'finalise-profiles': EVERY_5_MIN,        # ⚠ NEW in A2.1: create the Scheduler job (*/5)
     # every 15 minutes
     'application-nudges': EVERY_15_MIN,
     'decision-emails': EVERY_15_MIN,         # Scheduler: release-decisions-15m
     'interview-reminders': EVERY_15_MIN,
     'notify-contact-submissions': EVERY_15_MIN,
+    'read-documents': EVERY_15_MIN,          # ⚠ NEW in A2.3: create the Scheduler job
+    'assign-emails': EVERY_15_MIN,           # ⚠ NEW in A2.3: create the Scheduler job
     # hourly
     'announcement-emails': HOURLY,           # ⚠ NEW in maintenance S8: create the Scheduler job
     'survey-emails': HOURLY,                 # ⚠ NEW in maintenance S9: create the Scheduler job

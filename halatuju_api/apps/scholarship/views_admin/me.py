@@ -23,8 +23,10 @@ programme list is the same one its scope switcher already serves (`AdminScopeLis
 
 Common profile S2 (2026-10-31): the GET also serves the person's card — `job_title`, `about`, `phone`,
 `share_phone_with_team`, `share_phone_with_students`, `photo_url` (signed, ~1 h, only when a photo
-exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes it
-(`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`).
+exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes the card
+(`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`). Staff
+nudges (2026-11-08): both GET and PATCH also serve `completion` (`profile_completion.py`, the ONE rule
+for the Profile page's completion card and the console's profile banner; None for a super).
 
 Student maintenance S7a (2026-10-31): a MENTOR is opted in to all three (`mentor_methods`), and only a
 mentor reads and writes `mentoring_area` — their own `Mentor.area`, required, at most 120 characters.
@@ -40,7 +42,7 @@ from apps.courses import staff_gift, supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
-from .. import staff_activity, staff_activity_read, staff_photo
+from .. import profile_completion, staff_activity, staff_activity_read, staff_photo
 from ..staff_contact import new_profile_defaults, phone_refusal, works_with_students
 from ..models import Mentor, StaffProfile
 from .base import _AdminBase
@@ -88,6 +90,18 @@ def _mentors(admin):
 
 def _profile_of(admin):
     return StaffProfile.objects.filter(partner_admin=admin).first()
+
+
+def _mentoring_area(admin):
+    """The mentor's own `Mentor.area` (fresh read), '' for somebody who does not mentor."""
+    if not _mentors(admin):
+        return ''
+    return Mentor.objects.filter(pk=admin.mentor_id).values_list('area', flat=True).first() or ''
+
+
+def _completion_of(admin, profile):
+    """Staff nudges: `completion` for the photo answers, so the page's card follows at once."""
+    return profile_completion.completion(admin, profile, _mentoring_area(admin))
 
 
 def _card(profile, admin):
@@ -196,6 +210,8 @@ class AdminMeView(_AdminBase):
         if lang not in ('en', 'ms', 'ta'):
             lang = 'en'
         org = admin.owning_organisation if admin.owning_organisation_id else None
+        profile = _profile_of(admin)
+        area = _mentoring_area(admin)
         return {
             'id': admin.id,
             'name': admin.name,
@@ -210,11 +226,13 @@ class AdminMeView(_AdminBase):
             'permissions': list(admin.permission_set),
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
-            **_card(_profile_of(admin), admin),
+            **_card(profile, admin),
             # S7a: a mentor's own area of mentoring — for a mentor only (fresh read: a PATCH just
             # wrote it with an UPDATE). S7d: a staff member who mentors now too.
-            **({'mentoring_area': Mentor.objects.filter(pk=admin.mentor_id)
-                .values_list('area', flat=True).first() or ''} if _mentors(admin) else {}),
+            **({'mentoring_area': area} if _mentors(admin) else {}),
+            # Staff nudges (2026-11-08): how complete the profile is — the ONE rule
+            # (`profile_completion`); None for a super. The Profile page and the console banner read it.
+            'completion': profile_completion.completion(admin, profile, area),
         }
 
 
@@ -226,7 +244,8 @@ class AdminMePhotoView(_AdminBase):
     old object. Refusals (400): `no_file`, `one_file`, `too_large`, `not_an_image`,
     `unsupported_type`; 503 `storage_unavailable` when the bucket cannot take it (nothing changes).
     Throttled like a document upload (`UploadRateThrottle`). DELETE removes the object, then the
-    path (503 and nothing changes if the object cannot be deleted). Both answer `{photo_url}`.
+    path (503 and nothing changes if the object cannot be deleted). Both answer `{photo_url,
+    completion}` (staff nudges: the completion after the change).
     Opted in for a source user, and for a mentor (S7a)."""
     source_partner_methods = ('post', 'delete')
     mentor_methods = ('post', 'delete')
@@ -254,7 +273,7 @@ class AdminMePhotoView(_AdminBase):
         if key is None:
             return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
         staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['photo']})
-        return Response({'photo_url': staff_photo.signed_url(key)})
+        return Response({'photo_url': staff_photo.signed_url(key), 'completion': _completion_of(admin, profile)})
 
     def delete(self, request):
         admin = self.get_admin(request)
@@ -266,7 +285,7 @@ class AdminMePhotoView(_AdminBase):
             return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
         if had_photo:       # common profile S3: only a photo that was there and is now gone
             staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['photo']})
-        return Response({'photo_url': None})
+        return Response({'photo_url': None, 'completion': _completion_of(admin, profile)})
 
 
 class AdminMeActivityView(_AdminBase):

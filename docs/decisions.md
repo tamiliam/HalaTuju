@@ -46,6 +46,116 @@
 - ⚠ **Across organisations (left as is; owner asked):** the writer's login is matched by email across organisations, so a super admin or another organisation's admin who wrote a row is shown by name and photo to this organisation's reviewer or QC. Recorded in `docs/scholarship/role-matrix.md`.
 - **Revisit if** officers work outside Malaysia or the box must show the viewer's own time zone: "Yesterday" and the dates are fixed to Asia/Kuala_Lumpur, and the relative words are computed from the browser's clock.
 
+## One person page for every team member: the same header, Profile and Permissions tabs, no role word — 2026-11-09 (Sprint T3, rulings D8, D9, M1-M6)
+
+**The ask (owner, 2026-11-09, items 3, 4 and 5; mockup approved the same day):** the reviewer, admin and mentor pages should be one page. "If they are in the Reviewers table, they are a reviewer": the tables say what somebody is, so a role word under the name only repeats them, or contradicts them.
+
+**The rulings:**
+
+| | Ruling |
+|---|---|
+| D9 | Under the name go the table chips (the Team page's own "Also in" labels), then the Status pill · Joined · Last seen. There is no role word. Pause new cases is offered for a reviewer only (`pausable`, the pause endpoint's own rule). |
+| D8 | A pure mentor's Permissions tab is read-only. It says what a mentor sees (My students and Profile; since S1, merged 2026-11-10, also Scholars: their current students' files, read-only) and offers the Team page's Add-to-table path, and only to a viewer who may add them (`may_add`, served by the mentor detail under the Add endpoint's own rule). |
+| M1 | Last seen is relative ("2 days ago"; the date itself from 30 days back), with the exact date and time in `title`. Somebody who never signed in reads "Invited". A missing time with a recorded sign-in reads "not recorded", never "never". |
+| M2 | An organisation admin's Permissions tab (not editable) shows their keys as locked switches under one line saying they cannot be changed here. There is no Save. |
+| M3 | A Profile field nobody filled in reads "Not given", never hidden, so a reader can tell "empty" from "not shown to you". The home address is never shown, nor served. |
+| M4 | The reviewer's Covers and figures, and a mentor's figures, stay in the header card above the tabs. |
+| M5 | Revoke / Restore / Delete keep T2's behaviour (`StaffPersonActions`; a pure mentor's own actions) and sit in the same place on every page. |
+| M6 | A person in several tables sees every part that applies: a reviewer who mentors gets the reviewer parts and the mentor parts on either route. |
+
+**How:** the three routes stay, so no link breaks. Each renders one `TeamPersonPage`, and each detail GET serves one `person` block (`staff_person.py`), so the header and Profile read one shape whichever door the viewer came in by. Each GET keeps its own fence; across organisations it answers 404.
+
+**The cost, accepted:** the admin and mentor details now serve the profile fields the reviewer detail already served. This is a PII widening, recorded in `docs/scholarship/role-matrix.md`: same fields, same phone rule, never the address. The mentor detail reads one more query (11 to 12) for `may_add`.
+
+**Review round (same day):** (1) the mentor detail serves a staff mentor's background fields (job title, about, qualification, university, graduation year, field of study) only when the viewer could already open that person by the admin or reviewer route under those fences (`staff_person.opens_elsewhere`); otherwise exactly what the Mentors page served before T3. So the mentor door widens nothing. (2) Q1, architect: an `admin` or `finance` viewer gets the Permissions tab on a staff person, holding only the line that an organisation admin opens permissions; no data is fetched. (3) Left alone: an org admin's OWN page through Reviewers still cannot load Permissions, because the permissions GET answers 404 on an org_admin target by design; M2's locked switches there need a fence change.
+
+**Revisit if:** an admin or finance reader should see a staff person's permissions (today they see only the not-allowed line); or the owner wants an org admin to see their own keys on their own page.
+
+## 2026-11-09 — An invoice with a payment declaration being checked is not "overdue", even part-paid (owner ruling, staff nudges)
+
+Owner ruling (2026-11-09): **keep as built.** In `apps/scholarship/invoice_overdue.py`, an invoice counts as overdue when it is sent, not void, its balance is above zero and today (Asia/Kuala_Lumpur) is past `due_on`. Part-paid counts. But an invoice with an OPEN tenant payment declaration (`has_open_payment_declaration()`) does not count, and that includes a part-paid invoice. So neither the red banner nor the Billing chip shows it while the declaration is being checked. If the declaration is rejected, the invoice counts again.
+
+**Why:** the organisation has already told us it paid. Showing a red "payment overdue" banner while we check its claim reads as an accusation. A rejected claim no longer shields the invoice, so this cannot hide a real debt for good.
+**Revisit if:** declarations start to sit unchecked for long. The answer then is a review deadline on the claim, not a banner.
+
+## Reviewers, QC and mentors may be deleted under the one no-work test; Revoke and Delete on every Team table and person page — 2026-11-08 (Sprint T2, ruling D6)
+
+**The ask (owner, 2026-11-08):** "I want the team member tables and profiles to be similar. Each must have Revoke and Delete. The delete however will be greyed out if there is work on record. When hovered above delete link/text, it may say there is work on record, etc. For org admins, the delete button should be visible only to super admin."
+
+**D6, the rule:** a reviewer, a QC member and a pure mentor may now be DELETED, under the same test as an admin: no work on record (`staff_footprint`). Anyone with work is revoked (a mentor: deactivated), as before. **This reverses 2026-09-09's "a reviewer may never be deleted at all"** (the entry "A staff delete is guarded by a FOOTPRINT, never by foreign keys") and point (4) of 2026-10-31's "Mentors are never deleted" ("Mentors sign in, on the source-partner pattern"). Everything else in those entries stands: the footprint, not foreign keys, decides; a super, a partner and anyone with work are never deleted.
+
+**Why the footprint widened:** a reviewer, QC member or mentor leaves traces an admin did not, so the footprint now counts them (QC decisions, corrections, request comments, mentor assignments, sessions and concerns, the remaining email stamps). Some admins who were deletable before are now revoke-only because of this. That is accepted: a delete that removed the name behind a recorded decision would be the fault the 2026-09-09 rule exists to prevent.
+
+**Mentors:** a pure mentor has their own door (`DELETE admin/mentors/<id>/`). It removes the login, its invitations and the `Mentor` row in one transaction, and refuses with 409 `has_work` on any assignment, session or concern. `MentorAssignment.mentor` and `MentoringSession.mentor` stay `on_delete=PROTECT` as a database backstop; the footprint refuses before PROTECT fires. A STAFF member who mentors is deleted at the staff door (Admins / Reviewers), where their mentoring counts as work, never through the mentor door.
+
+**The screen (one rule, one cell):** the server serves `deletable` and `work` on every row and person page (Admins, Reviewers, Mentors lists; reviewer, admin and mentor pages). The web draws them with one component (`StaffActions`): Revoke / Restore, then Delete. With work on record, Delete is greyed and `aria-disabled` (not `disabled`, which would take no hover or focus), and "Has work on record (counts)..." shows on hover, on tap and on keyboard focus. On an organisation admin's row or page, Delete is drawn only for a super (the server refuses an org_admin caller anyway). Resend and Remove-from-table are unchanged.
+
+**Revisit if:** the owner wants a person with work to be removable after a handover. That needs duties stored as assignments (see 2026-09-09's "Revisit if").
+
+## 2026-11-08 — A declared informal wage the STR vouches for counts toward the household documents total and the #54 tick (owner ruling, request #54: KEEP)
+
+Owner ruling on request #54: **keep** the behaviour as built. In `apps/scholarship/income_engine/amounts.py` (`earner_monthly_income`, about lines 87-89), a member's declared average monthly wage with no payslip or EPF statement is accepted as a real figure when the household has a valid STR (source `declared_str`). That figure counts toward the household documents total and satisfies the #54 tick.
+
+**Why:** the STR is itself the means-test, so a wage declared beside it is vouched for by it; an informal earner with a valid STR should not be marked as missing evidence. A declared wage with no STR and no supporting income document stays `declared_unproven` (no figure, headroom band Unsure), so an unbacked self-report never inflates income.
+**No code change.** By design.
+
+## 2026-11-08 — Mentors have gifts, and a gift limits who they mentor (Invitations I4; owner ruling)
+
+Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner ruling 2 ("a mentor has gifts, and a gift limits who they mentor") and open points C and D (lead recommendations, approved with the roadmap).
+
+**The rule:** a mentor's gifts are `MentorGift` rows (table `mentor_gifts`, migration `scholarship.0208_mentor_gifts`, one row per (mentor, gift), unique pair, mirroring `reviewer_gifts`). A mentor may be assigned a scholar only when the scholar's gift is among the mentor's gifts. `apps/scholarship/mentor_gift.py` is the one home: `choose` (the form's list), `allows` / `allowed_ids` (the rule, one query for a roster), `gifts_by_mentor` / `choices` (the readers), `set_gifts` (the ONE writer) and `outside_refusal`. `mentoring.refusal_for_mentor` asks `allows`, so `mentoring.assign` refuses **400 `mentor_not_in_gift`** (before the lock and again under the Mentor row lock), and `assignable_mentors` (the assign picker) lists only mentors whose gifts hold the scholar's.
+
+**The scholar's gift** is `services.assignment.case_gifts(application)` — the application's own gift and its intake year's gift — the same answer the reviewer rule uses. A mentor matches when either is among their gifts. A scholar whose gift is not known is not refused (the reviewer rule, exactly).
+
+**Open point C — no rows means every gift, including a gift started later** (the reviewer rule). No backfill: the mentors who existed before I4 have no rows, so they are Every gift and nothing changes for them until someone ticks.
+
+**Open point D — narrowing never ends an assignment silently.** Editing a mentor's gifts so that a CURRENT (open) assignment's scholar would fall outside is refused **409 `mentor_has_scholars_outside`** with `count` (how many), and nothing is written. An ended assignment never blocks. The count and the write happen under the Mentor row's `select_for_update`, the lock `mentoring.assign` takes before it judges the mentor again, so an assign racing an edit cannot slip a scholar past it.
+
+**The invite (`POST admin/invitations/` with `audience='mentor'`, `views_admin/mentors.invite_mentor` → `mentor_invite.invite`):** takes `programme_ids` — `[]` or absent = Every gift; each id must be an ACTIVE gift of the inviting organisation (a super names it with `?org=<code>`), else **404 `not_found`** (one answer for unknown, ended and another organisation's); not a list → **400 `gift_required`**. A resend keeps the mentor's gifts; a re-invite after a revoke takes the new list. The mentor tab's waiting rows carry `gifts` and `every_gift`; the payload's `mentor_programmes` is the organisation's active gifts for the tick list.
+
+**The edit (`POST admin/mentors/<id>/gifts/` `{programme_ids}`, `AdminMentorGiftsView`):** the WHOLE list (`[]` = Every gift; the list is required, else 400 `gift_required`). Any of the MENTOR's organisation's gifts, ended ones too (as the reviewer edit allows); any other gift → 404 `not_found`, never 403, and a super cannot tag another organisation's gift either. **Who:** the Mentors page's acting fence (`_MentorsBase._target`) — `super` (any organisation) and `org_admin` (their own organisation's mentors); every other role 403 (admin, reviewer, the mentor itself); another organisation's mentor 404. Each change writes an `AUDIT mentor_gifts_set` line (ids and codes, the actor's email; no student data). The Mentors list and detail payloads carry `gifts` and `every_gift`; the detail adds `programmes` (the tick list's choices, own organisation only, ended ones marked).
+
+**Web:** the Mentor invite tab gets the reviewer's `GiftTickList` (Every gift to start; sends `programme_ids`). Team → Mentors' details box shows and edits the gifts with the reviewer details box's own component (`ReviewerGiftsCell`, now taking an optional `save` and `errorOf`), and shows the D refusal with its count. The assign picker is filtered by the server; a `mentor_not_in_gift` refusal reads in words.
+
+**Deleting a gift never widens a mentor (I4 review, same day).** `mentor_gifts` rows CASCADE with the gift, and a mentor left with no rows is Every gift — so a gift that is some mentor's ONLY gift cannot be deleted: the gift delete (and the list row's served `delete_blocked_by`) refuses **400 `gift_limits_mentors`** with `count` (how many such mentors), last in `programme_delete_blocker`'s holder table. A mentor who holds other gifts too just loses that row; their remaining gifts still limit them. Reviewers are unchanged (their fallback to every gift is accepted).
+
+**Alternatives considered:** (A) narrowing ends the outside assignments — rejected (open point D): a scholar would lose a mentor without anyone deciding it. (B) backfill every existing mentor with today's gifts — rejected (open point C): a gift started later would then need a manual tick, and today's mentors would quietly stop covering it. (C) the gift as a soft filter on the picker only — rejected: the server must refuse, or a stale picker or a direct call slips through.
+**Trade-offs:** the Mentors list table itself does not show the gifts (the payload carries them; the details box shows and edits them). A staff member who mentors (S7d) has gifts too; they limit the mentoring only, not the staff work.
+
+**Before deploy:** migration 0208 is applied to production BY HAND, before the push (DDL, RLS + `service_role` policy, ledger row — all in the migration's docstring, with pre / post checks and a rollback; deploying before migrating 500s the assign path and the Mentors list), then the Supabase Security Advisor. **The owner's phone check before go-live** — this decides which mentors a scholar can be given.
+
+## 2026-11-08 — A sponsor invitation names several gifts or Every gift (Invitations I3; owner ruling)
+
+Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner ruling 1 ("Sponsor invite: several gifts or Every gift, like a reviewer's — a true multi-gift invite, not only the look") and open point B (lead recommendation, approved with the roadmap).
+
+**The rule:** a sponsor invitation names a LIST of gifts (`InvitationGift` rows, table `invitation_gifts`, migration `scholarship.0207_invitation_gifts`) or Every gift (`Invitation.every_gift`). `Invitation.programme` stays as the ROLLBACK MIRROR (one gift → that id; several or every → NULL), as `PartnerAdmin.programme` is for reviewers; it is read only for an invitation with no rows and no flag (written before 0207, or by the old image during the deploy gap). `apps/scholarship/sponsor_invite_gifts.py` is the one home: `choose` (the form), `set_gifts` (the ONE writer, mirror included), `stated` (the reader), `joined_on_registration`.
+
+**The invite (`POST admin/invitations/`, sponsor):** `programme_ids` — `[]` = Every gift; otherwise each id must be an ACTIVE gift this admin may name (`sponsor_invite_gifts.nameable`: an admin with an organisation — a super too — names only ITS gifts, as the reviewer invite does; only an organisation-less super reaches every tenant's), else 404 `not_found` (one answer for unknown, inactive and other-tenant); not a list → 400 `gift_required`. An organisation-less super must name gifts (Every gift has no organisation to mean, TD-334: 400 `programme_required`), and gifts spanning two organisations are 400 `gifts_span_organisations`. The old one-gift `programme_id` still works. Neither sent: a WAITING invitation for that address is a resend and keeps its gifts AND its organisation (**a resend never re-homes**; this also ends the old 400 on a resend when two gifts are active) — when it is the inviter's own organisation's, or the inviter is ANY super (the web's Resend sends a bare POST from a super's unfenced list, so a super with an organisation resending another organisation's row must change nothing; second review). An organisation-less super who NAMES gifts on a waiting row leaves its organisation in place, so every gift must be that organisation's, else 400 `gift_not_in_invitation_org` (third review: the row would list another tenant's gift names under a letter naming the first); a new row keeps the one-organisation rule alone. Only a non-super from another organisation gets a fresh choice. For that non-super, another organisation's waiting invitation is not theirs to resend: their request is a fresh choice, and `set_gifts` replaces the gifts, the flag and the resolution outright, so none of the first organisation's choice survives into theirs (the row still moves to them, as before — an owner question raised separately); otherwise the sole active gift, or 400 `programme_required` with several — never a silent pick. The waiting rows carry `gifts` [{id, code, name}] and `every_gift`; `programme` / `programme_name` stay for exactly one gift.
+
+**Open point B — Every gift is not a live rule for a sponsor.** A sponsor's acceptance is per gift and vetted per gift, so Every gift means *every gift ACTIVE in the invitation's organisation when they register*: one PENDING membership per gift, each vetted as today; a gift started later is not joined automatically. The gifts are resolved EXACTLY ONCE, at registration, and FROZEN into `InvitationGift` rows with `Invitation.every_gift_resolved_at` stamped — **even when the answer is no gift** (`joined_on_registration(freeze=True)`). Every later read returns the frozen rows, possibly none, and never resolves live again, so account vetting settles exactly those, not the gifts active on the day of vetting, on every click. The one exception: an Every-gift invitation that reaches vetting never frozen (registered under the old image during a rollback) is resolved and frozen then. (I3 review: an empty resolution used to freeze nothing, so vetting resolved again against the gifts of the day.)
+
+**Registration and vetting (the three callers of the old `signup_programme_for`):** `sponsorship.signup_programmes_for(sponsor)` returns a LIST — the latest non-withdrawn invitation's gifts, else `[sole active gift]`, else `[]`; the stranger rule is unchanged (no invitation and two active gifts → none). Both registration paths in `views_sponsor` call `open_signup_memberships`: **create-only**, one PENDING `SponsorProgrammeMembership` per gift, an existing row (any status) never touched — idempotent, never a downgrade. Account vetting in `views_admin/sponsors` calls `settle_signup_memberships`: each invited gift follows the account's decision, as the one gift did before, **except that a gift the ORGANISATION REJECTED BY HAND is never changed by account vetting** (`sync_account_membership`; I3 review, made exact in the second review) — approving or reinstating the account would otherwise overturn an organisation's own per-gift refusal, now across the whole organisation under Every gift. The source is recorded: `set_programme_membership` stamps `SponsorProgrammeMembership.rejected_by_hand_at` when it sets REJECTED and clears it when it sets any other status; account vetting refuses to change only a membership that is REJECTED with the stamp set. A rejection the account cascaded carries no stamp, so rejecting an account and later approving it brings its gifts back APPROVED. **Existing rows are backfilled by 0207** (third review; money): a membership REJECTED while its account is NOT rejected can only have been rejected by hand (the cascade writes 'rejected' only with the account), so it is stamped with its `vetted_at` (else now) — otherwise suspend → reinstate would re-approve it and `record_admin_credit` would take money for it. A rejected membership on a REJECTED account is left unstamped and reads as cascaded: it comes back with the account. (Production, counts only, 2026-11-08: no such row.) Both writers read the membership FOR UPDATE and decide under the lock, so a concurrent Take back and account approval cannot end at `approved`. Why the rest of the cascade stays (suspend → suspended, reinstate → approved) rather than vetting only promoting PENDING rows: the account status does block every sponsor-facing channel (browse and detail through `require_approved_sponsor`, alerts and digests filter `status='approved'`, standing gifts `sponsor__status='approved'`), but the money gate does not — `record_admin_credit` checks only for an APPROVED membership (`_is_accepted_into`), so a suspended account whose gifts stayed approved could still be credited.; the organisation then changes any single gift on the sponsor's page (`set_programme_membership`), which is "each vetted on its own". Named gifts are joined even if switched off since the invite (as before).
+
+**Web:** the Sponsor tab uses the reviewer's `GiftTickList`, always shown, with Every gift; NOTHING ticked to start (`NO_GIFT`, `allowNone` — clearing the last tick leaves nothing, never a silent Every gift), except one gift, which is pre-ticked. With two or more gifts the form refuses to send until a choice is made. It sends `programme_ids`; a failed send says so. The waiting table shows each invitation's gifts, or "Every gift", under the name. Both tick lists are `role="group"` labelled by their heading.
+
+**Alternatives considered:** (A) Every gift as a live rule (no rows = every gift, later ones included), as for reviewers — rejected (open point B): a sponsor would be filed into a gift nobody asked them to fund, and each gift's acceptance is a separate decision. (B) an `Invitation.programmes` M2M — rejected for an explicit table with its own unique pair, mirroring `reviewer_gifts`. (C) registration keeps calling `sync_account_membership` (overwrite to the account status) — rejected: a re-registration could downgrade an approved gift; registration is now create-only.
+**Trade-offs:** account vetting still settles every invited gift together (per-gift changes afterwards on the sponsor's page), a rejected gift excepted. A gift SUSPENDED by hand is not protected the same way: reinstating the account approves it again (no stamp records a hand suspension). A hand rejection written by the old image after the migration carries no stamp and reads as cascaded (re-run the stamp's UPDATE once after the deploy; it is safe to repeat). A hand rejection of a gift whose account was ALSO rejected at backfill time cannot be told from a cascade and comes back with the account. Supers cannot send Every gift without an organisation, and a super with an organisation names only its gifts. Known and left (I3 review): `stating_invitation` ignores `expires_at` (an expired, unwithdrawn invitation still files its registrant), and deleting a gift does not update the `Invitation.programme` mirror.
+
+**Before deploy:** migration 0207 is applied to production BY HAND, before the push (DDL, RLS + `service_role` policy, backfill of one row per sponsor invitation with a gift, ledger row — all in the migration's docstring, with pre / post checks and a rollback), then the Supabase Security Advisor. **The owner's phone check before go-live** — this decides which students a sponsor may browse.
+
+## 2026-11-08 — One person per source (Invitations I2; owner ruling)
+
+**Revises the 2026-10-30 S2 ruling "several people may sign in for one source"** (entry "2026-10-30 — Sources sign in", its "Also decided in S2"; alternative B there, "one person per source", was rejected then and is now the rule). Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, owner rulings 3 and 4.
+
+**The rule:** a source has at most ONE active source user, joined or waiting. `source_invite.invite` refuses an existing source that already has one with `source_has_person` (409 at `admin/invitations/source/`). The check runs inside the invite's transaction after a `select_for_update` on the source row, so two invites at once for the same source cannot both pass (on Postgres; the SQLite test database ignores the lock). A new source added in the same invite is never refused. Order of refusals is unchanged otherwise: an address that already holds any `PartnerAdmin` row is still `already_staff` first.
+
+**Open point A (lead recommendation, approved with the roadmap):** ruling 3 names only "joined"; a WAITING invitation counts too, so "one person" really is one. The Source dropdown hides a joined source and shows a waiting one greyed, "{name} ({code}) — invited, waiting: resend or cancel below". A switched-off person of the same source may still be re-invited (S2's rule, unchanged), and once nobody is active a different address may be invited for that source (a cancelled waiting invitation or a removed person frees the source).
+
+**Remove moved to the Sources page (ruling 4):** the Invitations → Source tab lists only the waiting table (the 2026-09-09 "waiting only" rule now holds on every tab); its "Signed in" table and Remove are gone. The Sources list (and the PATCH / invite responses that return a source) carries `person: {id, name, email, joined_at, manageable, phone}` or null — the source's active source user, the joined one first, fenced by organisation like the rest of the list, read in one query. `manageable` is `source_invite.manageable` (super, or the lead of the source's own organisation). The Sources row and phone card show the person beside the Joined badge, with a red Remove for super / org_admin when `manageable`: the same confirm and the same `admin/source-users/<id>/revoke/` as before. **The person's own phone moved with them** (the 2026-10-31 rule that the inviting organisation sees it); it was on the Signed-in table.
+
+**Alternatives considered:** (A) refuse only a joined source, as ruling 3 reads literally — rejected: two waiting invitations for one source would both be able to join. (B) a unique database constraint — rejected: "active" is a flag on a shared table, and older data may already hold two people for one source; the lock gives the same guarantee for new invites without a migration.
+**Trade-offs:** a source that already has two active people from before this ruling keeps both (no clean-up); the Sources page shows one of them (joined first, then the earliest), and the other appears once that one is removed. The roadmap's production count (2026-11-08) found no source with more than one active person, so nobody is affected today.
+
 ## A degree student gets a degree funding estimate; every skills / TVET course is estimated — 2026-11-07 (bug fix; owner decisions 1-12, app 278)
 
 **The bug:** the cockpit's "Estimated need & proposed bursary" card showed a post-STPM degree student the UA-diploma estimate (#278, *Ijazah Sarjana Muda Pendidikan*: "≈ RM6,600, ~RM220/month × 30 months"). `funding_estimate.py` assumed post-SPM only, but the Sabah / Ipoh gifts admit STPM-level students and the offer realignment (2026-10-31) stores an STPM degree as `university`. Same root, money: #251's stale `chosen_pathway='stpm'` on a degree made `award.proposed_award_amount` commit RM3,000 (or None and a QC start-year stop). Brief: `docs/plans/2026-11-07-degree-funding-estimate.md`.
@@ -1927,7 +2037,7 @@ mentor (entry above)*. (3) **The mentor fills in their own profile and staff can
 required), Qualifications and languages, Address, Your access (Role Mentor) and Sign-in; not Taking part
 (a mentor is never handed cases to pause). Photos stay staff-only. Staff may correct the NAME or EMAIL only
 until the first sign-in (409 `managed_by_mentor` after it); a new address is a new sign-in and is sent the
-invitation. (4) **Mentors are never deleted: Deactivate** (the login off, a waiting invitation withdrawn and
+invitation. (4) **Mentors are never deleted: Deactivate** (superseded 2026-11-08, D6: a mentor with no assignment, session or concern may be deleted) (the login off, a waiting invitation withdrawn and
 its password killed, `deactivated_at/_by_email` stamped) and Reactivate. Status is derived: inactive,
 invited (not yet signed in), active. (5) **The system never emails a mentor except the invitation and its
 resend** (Reactivate of a mentor who never signed in is that resend). (6) Mentors and meetings never reach
@@ -5776,6 +5886,9 @@ layout is an owner ruling (2026-09-07) and a destructive action hidden elsewhere
 rarely. Accepted: the recovery is retyping three languages of copy somebody wrote carefully.
 
 ## A staff delete is guarded by a FOOTPRINT, never by foreign keys — 2026-09-09
+**Superseded in part, 2026-11-08 (Sprint T2, D6):** reviewers, QC and mentors may now be deleted under
+the same no-work test. See the 2026-11-08 entry at the top. The rest of this entry stands.
+
 **Decision:** an admin account may be deleted only when it has done **no recorded work**
 (`apps.scholarship.staff_footprint`), and **a reviewer may never be deleted at all**. Everyone
 else is revoked, permanently. The footprint counts two kinds of trace: foreign keys (assignments,
@@ -19174,3 +19287,58 @@ any AI prompt; append-only with author and time; 2,000 characters; blank refused
 
 `VERDICT_ENGINE_VERSION` 2026-11-07.2.
 
+
+
+## 2026-11-08 — IIUM's English offer letters read as the public-university offers they are (request #66, bug)
+
+**Decision:** IIUM's own English offer reads the same `ua_offer` family with English twins added to its rows
+(`offer_signatures.UA_OFFER_SIGNATURES_EN`, rows and weights unchanged), taken only from the REAL wording of a
+genuine IIUM letter (doc 5105's stored text layer): its English name, its offer SENTENCE ("… has accepted and
+approved your application for the following programme …", weight 3, as UiTM's own sentence is in the Malay
+row), "Academic Management and Admission Division" (1), "This offer is valid for" (1), "Registration Date" (1).
+The real letter has no title and its letterhead is an IMAGE: the text opens with four lines (reference, date,
+the candidate's name and address), "Dear …", then the sentence; the office appears only in the signature block
+and the acceptance form. So the reading is anchored on the ISSUER as the sentence's subject, not on a
+letterhead. It opens ONLY when all hold (`english_ua_lists`): (1) the sentence with IIUM as its subject ("…
+that the International Islamic University Malaysia (IIUM) has accepted …"); (2) the office anywhere on the page;
+(3) nothing before the sentence names another organisation (no organisation noun outside IIUM's name and office,
+a company and a "campus" included), and no partner / tie-up word ANYWHERE on the page (`_PARTNER`, `_TIE_UP`,
+"validated", "in association": "… at Mercu College, our teaching partner campus"); the organisation check is not
+page-wide, because a genuine letter's lower pages name banks, kulliyyahs and mahallahs; (4) no whole word
+CONDITIONAL / PROVISIONAL and no "NOTIFICATION OF ADMISSION" from the top of the page to the end of the
+sentence's line ("terms and conditions" and a later "conditional upon" are fine); (5) the signature block names no
+other institution or company: it is anchored on the FIRST office line after the sentence — five lines above it,
+two below, and from a closing ("Wassalam", "Yours …") down to it — because IIUM closes "Wassalam / Director /
+Academic Management and Admission Division" with no "Yours sincerely" (doc 5105). Its nouns are those an issuer
+signs for (college, university, institute, academy, polytechnic, Sdn Bhd / Berhad …), never a fee line ("Tuition
+Fee") or "the University" ("Registrar / MERCU UNIVERSITY COLLEGE" above the office, "for MERCU UNIVERSITY
+COLLEGE" below). Any other page, and
+every other UA letter, keeps the 1.25.0 call exactly; `_UA_NAMES` is untouched (still the 20 Malay names). The
+IIUM Academy (of Graduate & Professional Studies) is PRIVATE (owner ruling, 2026-11-08: "IIUM Academy is private"); it
+and CENPACE, IIUM's Centre for Professional and Continuing Education, join the private-arm veto
+(`results_doc._PRIVATE_ARM_PHRASES`). "Collaboration" joins the S6 tie-up words (`offer_reading._TIE_UP`); that
+list is also the S6 BLOCK's for Malay letters, and no corpus fixture's call moved (the full suite's frozen
+fixtures). TD-145: `offer_course_match._ALIASES` gives UNIV-006 its English name and acronym IIUM, so the
+letter's English name compares as a MATCH (it read 'unknown'). `MODEL_VERSION` 1.26.0; `VERDICT_ENGINE_VERSION`
+unchanged.
+**Why:** IIUM is UNIV-006, an IPTA (2026-10-29), on a subsidised public fee; its genuine English letter (doc
+5105, app 523) read "1/10 polytechnic signatures" and so `offer_not_official`, "a private college". The one
+`ua_offer` family keyed off the university's name (2026-06-20) is kept; IIUM simply has two names.
+**Why so gated (review rounds 1-2):** private colleges write English, so English wording scored on any page
+lifts private letters; "offer of admission" sits in IIUM's rejection and acceptance forms, its "unsuccessful"
+letter and its booklet; conditional and notification pages reached genuine without an offer line; a letterhead
+gate could never pass on IIUM's image letterhead, and a letterhead naming IIUM first let "Mercu College", an
+"affiliated college", "in association with", a "franchise programme" or "IIUM Holdings Berhad" through. Each of
+those now keeps its 1.25.0 call (not_offer_letter). The acronyms IIUM / UIAM are never an anchor. The English
+name stays OUT of the S6 BLOCK's public names, where it would let a company line below it escape the block.
+**Residual (accepted, as for the Malay family; final review 2026-11-08):** a forgery reproducing IIUM's own
+sentence and office with nothing else before it; a private body named only by an ACRONYM above "Dear"; a private
+name only in a FOOTER further below the signature block with no company suffix (no safe rule: a genuine letter's
+lower pages name banks and campuses; "Sdn Bhd" anywhere is the private-arm veto's); one template sentence anchors the reading (a second IIUM template must be added by hand). A genuine
+letter to a candidate addressed at a residential college ("Kolej Kediaman …") or anywhere naming an institution,
+or whose sentence wraps a "conditional" onto the next line, keeps the 1.25.0 call (p 0.3; a person decides).
+Also residual (last review pass): a private signatory named as a "… Centre" (not refused: IIUM's own Centre for
+Foundation Studies would be caught too), and IIUM's office printed only ABOVE the sentence with a private
+signatory and no office line after it (rule 5 has no anchor). A "… Group" / "Kumpulan" signatory IS refused.
+**Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).
+**Revisit if:** a second English-letter public university appears.

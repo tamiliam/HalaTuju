@@ -706,7 +706,7 @@ def _verdict_pathway(application):
     # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
     elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
         if read_deferred(offer.vision_fields):   # not read yet / our outage: no claim, no ask (2026-10-24)
-            return _fact('pathway', 'review', evidence, [])
+            return _fact('pathway', 'review', evidence, [_item('offer_not_read_yet')])  # TD-396: officer-only
         if chk['programme'] or chk['institution']:
             return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])

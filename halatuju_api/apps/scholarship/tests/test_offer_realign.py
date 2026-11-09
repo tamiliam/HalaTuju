@@ -362,3 +362,85 @@ class ConfirmStoresTheCampusNotTheHostelTest(_Base):
         self.assertTrue(confirm_pathway(app))
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['institution'], 'Universiti Putra Malaysia')
+
+
+class RescoreRunsTheRealignTest(_Base):
+    """TD-448: a genuineness score stored by ``rescore_unscored_documents`` (after an AI outage, a late
+    scorer) used to leave a genuine Bumiputera-only offer un-realigned until a re-read or a manual
+    ``realign_bumi_offers --apply``. The rescore now runs the same gated realignment."""
+
+    def _unscored_offer(self, app):
+        offer = _offer(app, UITM_LETTER)
+        vf = dict(offer.vision_fields, text='synthetic offer text')
+        vf.pop('authenticity')
+        ApplicantDocument.objects.filter(id=offer.id).update(vision_fields=vf)
+        return offer
+
+    def _rescore(self, status, *args):
+        from unittest import mock
+        from apps.scholarship.management.commands import rescore_unscored_documents as cmd
+        out = StringIO()
+        with mock.patch.object(cmd, 'score_from_text', return_value=({'status': status}, None)):
+            call_command('rescore_unscored_documents', *args, stdout=out)
+        return out.getvalue()
+
+    def test_an_unscored_offer_does_not_realign_at_upload(self):
+        app = self._app()
+        self._unscored_offer(app)
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UM6343002')   # the gap's starting point
+
+    def test_apply_scores_genuine_then_realigns(self):
+        app = self._app()
+        self._unscored_offer(app)
+        out = self._rescore('genuine', '--apply')
+        self.assertIn('bumi_offer_realign: realigned=1', out)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme, {**UITM_COURSE, 'institution_id': 'RA-UITM'})
+        self.assertEqual(app.pathway_certainty, 'sure')
+
+    def test_a_dry_run_counts_and_writes_nothing(self):
+        app = self._app()
+        offer = self._unscored_offer(app)
+        out = self._rescore('genuine')
+        self.assertIn('bumi_offer_realign: would_realign=1', out)
+        app.refresh_from_db(); offer.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UM6343002')
+        self.assertNotIn('authenticity', offer.vision_fields)
+
+    def test_a_suspect_score_never_realigns(self):
+        app = self._app()
+        self._unscored_offer(app)
+        out = self._rescore('suspect', '--apply')
+        self.assertIn('bumi_offer_realign: realigned=0', out)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UM6343002')
+
+    def test_an_older_offer_scored_genuine_never_realigns(self):
+        # Only the live latest offer is what the autofill reads; an older row's score moves nothing.
+        from datetime import timedelta
+        app = self._app()
+        old = self._unscored_offer(app)
+        ApplicantDocument.objects.filter(id=old.id).update(uploaded_at=timezone.now() - timedelta(days=2))
+        _offer(app, UITM_LETTER, status='suspect')                          # newest, already scored
+        out = self._rescore('genuine', '--apply')
+        self.assertIn('bumi_offer_realign: realigned=0', out)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UM6343002')
+
+    def test_a_realign_that_raises_is_counted_and_the_run_goes_on(self):
+        # Best-effort like the upload path: one failing realign never stops the other offers.
+        from unittest import mock
+        from apps.scholarship.management.commands import rescore_unscored_documents as cmd
+        first, second = self._app(), self._app()
+        a, b = self._unscored_offer(first), self._unscored_offer(second)
+        out = StringIO()
+        score = mock.patch.object(cmd, 'score_from_text', return_value=({'status': 'genuine'}, None))
+        realign = mock.patch.object(cmd, 'realign_after_rescore', side_effect=[RuntimeError('boom'), True])
+        with score, realign, self.assertLogs(cmd.logger, level='WARNING'):
+            call_command('rescore_unscored_documents', '--apply', stdout=out)
+        self.assertIn('bumi_offer_realign: realigned=1 failed=1', out.getvalue())
+        a.refresh_from_db(); b.refresh_from_db()
+        self.assertEqual(a.vision_fields['authenticity'], {'status': 'genuine'})
+        self.assertEqual(b.vision_fields['authenticity'], {'status': 'genuine'})

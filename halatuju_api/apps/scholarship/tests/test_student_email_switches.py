@@ -132,8 +132,7 @@ class TestQuestionReminder(TestCase):
         out = StringIO()
         _off(self.app, 'question_reminder')
         cmd = 'apps.scholarship.management.commands.send_query_reminders'
-        with patch(f'{cmd}.query_sla', return_value=self.SLA), \
-                patch(f'{cmd}._elapsed_days_local', return_value=100):
+        with patch(f'{cmd}.query_sla', return_value=self.SLA):
             call_command('send_query_reminders', '--dry-run', stdout=out)
         self.assertIn(f'would skip app #{self.app.pk}', out.getvalue())
         self.assertIn('0 would be sent', out.getvalue())
@@ -156,14 +155,19 @@ class TestInterviewerAssigned(TestCase):
 
     @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
     def test_off(self, send):
+        from apps.scholarship import assign_notify
         _off(self.app, 'interviewer_assigned')
         assignment.assign_reviewer(self.app, reviewer=self.reviewer, by_admin=self.super)
+        assign_notify.send_pending()                 # A2.3: the gate is asked at send time
         send.assert_not_called()
         self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).assigned_to_id, self.reviewer.id)
 
     @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
     def test_on(self, send):
+        from apps.scholarship import assign_notify
         assignment.assign_reviewer(self.app, reviewer=self.reviewer, by_admin=self.super)
+        send.assert_not_called()                    # A2.3: never inside the request
+        assign_notify.send_pending()                 # the assign-emails cron
         send.assert_called_once()
 
 

@@ -79,7 +79,7 @@ class AdminScholarMentoringActionView(_MentoringBase):
     """POST .../mentoring/assign/ and .../mentoring/end/ — 200 with the tab's payload (plus
     `emailed` on an assign). Refusals as `mentoring.MentoringError` codes: 403 forbidden; 404;
     409 file_closed / already_assigned / conflict / no_mentor; 400 mentor_not_found /
-    mentor_inactive / own_application / too_long / bad_request."""
+    mentor_inactive / own_application / mentor_not_in_gift (I4) / too_long / bad_request."""
     ACTIONS = ('assign', 'end', 'handle-concern')
 
     def post(self, request, pk, action):

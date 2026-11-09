@@ -28,6 +28,7 @@ from apps.scholarship.storage import build_doc_key
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, record_result,
 )
+from apps.scholarship.tests.doc_upload import post_doc   # A2.3: upload, then the read
 
 API = '/api/v1/admin/scholarship/scholars/'
 
@@ -352,7 +353,7 @@ class TestTheSlipIsEvidence(TestCase):
     def test_it_is_not_in_her_documents_list_and_its_slot_cannot_be_written(self):
         docs = self.client.get('/api/v1/scholarship/documents/').json()['documents']
         self.assertNotIn(self.doc.id, [d['id'] for d in docs])
-        r = self.client.post('/api/v1/scholarship/documents/', {
+        r = post_doc(self.client, {
             'doc_type': 'semester_result', 'request_code': results_review.SLIP_REQUEST_CODE,
             'storage_path': self.doc.storage_path, 'original_filename': 'new.pdf',
             'content_type': 'application/pdf', 'size': 10}, format='json')

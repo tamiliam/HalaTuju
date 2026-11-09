@@ -58,6 +58,7 @@ from .invoices import (
 from .invoice_declarations import (
     AdminInvoiceDeclarationView,
 )
+from .invoice_overdue import AdminInvoiceOverdueView
 from .payments import (
     _PAYMENTS_READ, _PAYMENTS_WRITE, _PaymentsBase, _payment_item_dict,
     _payment_run_detail, _payment_run_summary, _run_programme, _sig,
@@ -145,6 +146,7 @@ from .me import (AdminMeActivityView, AdminMePasswordView, AdminMePhotoView, Adm
 from .mentors import (   # S7a; S7d the staff-mentor door
     AdminMentorActionView, AdminMentorView, AdminMentorsView, AdminStaffMentorsView,
 )
+from .mentor_gifts import AdminMentorGiftsView   # Invitations I4: a mentor's gifts
 from .mentoring import (   # S7b: the scholar file's Mentoring tab
     AdminScholarMentoringActionView, AdminScholarMentoringSessionsView, AdminScholarMentoringView,
 )

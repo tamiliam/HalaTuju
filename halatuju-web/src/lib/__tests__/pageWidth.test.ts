@@ -206,9 +206,6 @@ describe('every table sits in the shared frame', () => {
       'has its own cards (data-testid="payment-cards"); this file also holds the skipped-list table',
     'src/app/admin/sponsors/[id]/page.tsx':
       'two short tables INSIDE a detail card, four columns each',
-    'src/components/admin/InvitationsTable.tsx':
-      'five columns and the next in line — TD raised rather than done blind, because the actions '
-      + 'differ per kind and the owner reviews each list',
     'src/app/admin/students/page.tsx':
       'already had cards before this work (the pattern everything else copied)',
   }

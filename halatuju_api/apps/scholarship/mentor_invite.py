@@ -62,7 +62,7 @@ from django.utils import timezone
 from apps.courses import staff_reinvite
 from apps.courses.models import PartnerAdmin
 
-from . import invitations
+from . import invitations, mentor_gift
 from .models import Invitation, Mentor
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
@@ -167,7 +167,7 @@ def reusable_row(existing, organisation):
     return existing
 
 
-def _reinvite(caller, login, *, organisation, email, name):
+def _reinvite(caller, login, *, organisation, email, name, gifts=()):
     """Bring ``login``'s switched-off, never-signed-in mentor back: a fresh credential where we issued
     one (never onto a login the person brought — `reissue_credential`), the mentor and login switched
     on, a fresh invitation, the letter. Nothing is written when the credential cannot be issued."""
@@ -183,6 +183,9 @@ def _reinvite(caller, login, *, organisation, email, name):
         PartnerAdmin.objects.filter(pk=login.pk).update(is_active=True, paused_at=None, name=name)
         login.refresh_from_db()
         mentor.refresh_from_db()
+        # I4: the new invite's gifts. A switched-off mentor holds no open assignment (`_switch_off`
+        # ended them), so nothing can stand outside the new gifts.
+        mentor_gift.set_gifts(mentor, gifts, check_open=False)
         inv = invitations.create_or_refresh(
             audience=AUDIENCE, email=login.email, name=name, role=MENTOR_ROLE,
             organisation=organisation, invited_by=caller, partner_admin=login,
@@ -192,23 +195,28 @@ def _reinvite(caller, login, *, organisation, email, name):
     return Invited(None, mentor, login, inv, google, temp_password is None and not google, emailed)
 
 
-def invite(caller, *, organisation, email, name):
+def invite(caller, *, organisation, email, name, gifts=()):
     """Make ``organisation``'s new mentor, their login and their invitation, then send the letter.
 
     The caller has already checked who may invite and resolved the organisation (inside its fence).
     Nothing is left behind by a refusal or a failure: the mentor, the login row and the invitation
     are written in ONE transaction, and the letter goes only after it commits. A switched-off mentor
-    of this organisation who never signed in is brought back instead (`reusable_row`)."""
+    of this organisation who never signed in is brought back instead (`reusable_row`).
+
+    I4 (2026-11-08): ``gifts`` are the gifts they will mentor in (``[]`` = every gift), already chosen
+    inside ``organisation`` (`mentor_gift.choose`); written on the mentor in the same transaction. A
+    resend never touches them."""
     existing = PartnerAdmin.objects.select_related('mentor').filter(email__iexact=email).order_by('id').first()
     if existing is not None:
         reuse = reusable_row(existing, organisation)
         if reuse is None:
             return Invited('already_staff', None, None, None, False, False, False)
-        return _reinvite(caller, reuse, organisation=organisation, email=email, name=name)
+        return _reinvite(caller, reuse, organisation=organisation, email=email, name=name, gifts=gifts)
     try:
         with transaction.atomic():
             mentor = Mentor.objects.create(organisation=organisation,
                                            created_by_email=caller.email or '')
+            mentor_gift.set_gifts(mentor, gifts, check_open=False)   # I4: a new mentor mentors nobody yet
             made = staff_reinvite.provision_for_invite(
                 None, email=email, name=name, role=MENTOR_ROLE, org=None,
                 owning_org=organisation, mentor=mentor)
@@ -445,3 +453,52 @@ def _drop_new_login(uid):
                      'made, and the login could not be removed - remove it by hand in Supabase Auth',
                      uid)
     return done
+
+
+# ── deleting (D6, Sprint T2, 2026-11-08) ─────────────────────────────────────────
+def delete_mentor(caller, mentor, login):
+    """DELETE a mentor who has NO work: their invitations, their login and the mentor record, in ONE
+    transaction; the Supabase login is retired after (`staff_lifecycle.retire_login`), as for staff.
+
+    ``(error, detail)``: on success ``(None, <the login word for the AUDIT line>)``; else `staff_mentor`
+    (a staff member who also mentors — deleted from Team -> Admins / Reviewers, where their mentoring
+    counts as work), `not_found`, `has_work` with the footprint counts, or `login_cleanup_failed`.
+
+    ⚠ THE FOOTPRINT REFUSES FIRST. Any mentoring assignment ever (ended too), any session, any concern —
+    `staff_footprint.MENTOR_TRACES`, keyed on the mentor itself — and every email stamp of the login.
+    `MentorAssignment.mentor` / `MentoringSession.mentor` stay PROTECT as the database's backstop. The
+    mentor row is LOCKED first: in Postgres a new assignment's foreign key waits on that lock, so work
+    landing between the check and the delete cannot slip through."""
+    from apps.courses import supabase_admin
+    from . import staff_footprint, staff_lifecycle
+    from .models import MentorAssignment, MentoringSession
+    if is_staff_login(login):
+        return 'staff_mentor', None
+    with transaction.atomic():
+        locked = Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+        if locked is None:
+            return 'not_found', None
+        row = PartnerAdmin.objects.select_for_update().filter(mentor=locked).order_by('id').first()
+        if is_staff_login(row):
+            return 'staff_mentor', None
+        work = staff_footprint.footprint(row) if row is not None else {}
+        if not work and (MentorAssignment.objects.filter(mentor=locked).exists()
+                         or MentoringSession.objects.filter(mentor=locked).exists()):
+            counts = {'scholars_mentored': MentorAssignment.objects.filter(mentor=locked).count(),
+                      'mentoring_sessions': MentoringSession.objects.filter(mentor=locked).count()}
+            work = {k: n for k, n in counts.items() if n}
+        if work:
+            return 'has_work', work
+        plan, account = (staff_lifecycle.plan_login_retirement(row) if row is not None
+                         else ('none', None))
+        if plan == supabase_admin.FAILED:
+            return 'login_cleanup_failed', None
+        uid = row.supabase_user_id if row is not None else None
+        Invitation.objects.filter(mentor=locked).delete()   # PROTECT on the mentor: theirs go first
+        if row is not None:
+            row.delete()
+        locked.delete()
+    done = staff_lifecycle.retire_login(uid, plan, account)
+    logger.info('AUDIT mentor_deleted mentor=%s account=%s login=%s by=%s', mentor.pk,
+                login.pk if login else '-', done, caller.email or '')
+    return None, done

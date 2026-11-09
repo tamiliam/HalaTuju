@@ -90,18 +90,32 @@ REPROCESS_ATTEMPTED = 'reprocess_attempted'
 
 
 def _stuck_unread_documents(limit):
-    from django.db.models import Q
+    from django.db.models import Exists, F, OuterRef, Q
     from ..results_review import SLIP_REQUEST_CODE
+    # A2.3 review: an IC that is superseded AND has a later document over it (it was replaced, or
+    # its read was dropped because a newer upload in the slot was decided) is not stuck — reading
+    # it would be a paid Vision call nobody's verdict uses. A staged IC still the slot's newest
+    # attempt keeps its sweep, as before.
+    later_in_slot = ApplicantDocument.objects.filter(
+        application_id=OuterRef('application_id'), doc_type=OuterRef('doc_type'),
+        household_member=OuterRef('household_member'), request_code=OuterRef('request_code'),
+        id__gt=OuterRef('id'))
+    replaced_ic = Q(doc_type__in=('ic', 'parent_ic'), superseded_at__isnull=False) & (
+        Q(superseded_by_id__gt=F('id')) | Q(Exists(later_in_slot)))
     return list(ApplicantDocument.objects
                 .filter(Q(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
                         | Q(doc_type__in=_SELF_HEAL_READ_TYPES, vision_run_at__isnull=True,
                             vision_fields_run_at__isnull=True, superseded_at__isnull=True,
                             vision_fields={}))
                 .exclude(request_code=SLIP_REQUEST_CODE)   # S4a: a results slip is never machine-read
+                # A2.3: a queued upload is not stuck — the read-documents queue owns it (a 'failed'
+                # one, read three times without finishing, is the sweep's again).
+                .exclude(read_state='pending')
+                .exclude(replaced_ic)
                 .order_by('uploaded_at')[:limit])
 
 
-def reprocess_unread_ic_documents(limit=200, dry_run=False):
+def reprocess_unread_ic_documents(limit=100, dry_run=False, time_budget=None):
     """Self-heal IC / parent_ic documents stuck UN-PROCESSED (``vision_run_at`` is NULL).
 
     ``run_vision_for_document`` never raises and ALWAYS stamps ``vision_run_at``, so a NULL
@@ -121,12 +135,24 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
     2026-10-24: the remaining batch room also re-reads live documents whose stored read is OUR
     service failing (``read_retry``: same Re-run core, each at most once per run — the list is
     taken BEFORE any read, so a read that fails in this run is not retried in it).
+
+    A2.2 / TD-518 (2026-11-07): ``time_budget`` (seconds; None = no budget) stops the run CLEANLY between
+    documents once it is spent, so one run never meets the service's 300 s request limit. The queue IS the
+    cursor: every document is stamped BEFORE it is read (above; ``read_retry`` stamps its own), so a stamped
+    one leaves its pool and the next run starts at the first one not yet reached — none skipped, none read
+    twice. The one pool that could re-pick its own failures (approval reads inside their 72-hour window)
+    resumes after the last document it reached (``read_retry.approval_cursor``). A stop adds
+    ``stopped_early`` and ``left`` to the result; a full run returns the three counts as before.
     """
+    import time
     from ..vision import run_vision_for_document
     from ..reextract import reextract_document
-    from .read_retry import approval_unchecked_documents, run_service_retries, service_error_documents
+    from .read_retry import (approval_unchecked_documents, run_service_retries, service_error_documents,
+                             approval_cursor_save)
+    deadline = None if time_budget is None else time.monotonic() + time_budget
     stuck = _stuck_unread_documents(limit)
     retry = service_error_documents(limit - len(stuck))
+    n_service = len(retry)
     retry += approval_unchecked_documents(limit - len(stuck) - len(retry))   # #374 / ruling 2A
     if dry_run:
         by_type = {}
@@ -134,7 +160,11 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
             by_type[doc.doc_type] = by_type.get(doc.doc_type, 0) + 1
         return {'scanned': len(stuck) + len(retry), 'by_type': by_type}
     scanned = processed = errored = 0
+    stopped = False
     for doc in stuck:
+        if deadline is not None and time.monotonic() >= deadline:
+            stopped = True
+            break
         scanned += 1
         # STAMP BEFORE READING (2026-10-02). A memory kill is not an exception: one 2 MB PDF took
         # the instance past 2 GiB mid-read, nothing below ran, and the same row was re-picked every
@@ -160,8 +190,20 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
                 doc.vision_error = 'reprocess_failed'
             doc.vision_run_at = timezone.now()
             doc.save(update_fields=['vision_error', 'vision_run_at'])
-    s, p, e = run_service_retries(retry)
-    return {'scanned': scanned + s, 'processed': processed + p, 'errored': errored + e}
+    left = len(stuck) - scanned
+    if stopped:
+        s = p = e = 0                    # out of time: the retries wait for the next run, untouched
+        left += len(retry)
+    else:
+        out = {}
+        s, p, e = run_service_retries(retry, deadline=deadline, out=out)
+        if out.get('stopped'):
+            stopped, left = True, left + len(retry) - out['reached']
+        approval_cursor_save(retry[n_service:][:max(s - n_service, 0)], stopped)
+    result = {'scanned': scanned + s, 'processed': processed + p, 'errored': errored + e}
+    if stopped:
+        result.update(stopped_early=True, left=left)
+    return result
 
 
 def income_doc_blockers(application):

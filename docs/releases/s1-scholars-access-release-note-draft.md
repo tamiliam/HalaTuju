@@ -17,9 +17,9 @@ Decisions: `docs/decisions.md` (2026-11-09, S1). Brief: `docs/plans/2026-11-09-s
 
 ## Migration — MIGRATE-FIRST, by hand, before the push
 
-`courses` `0095_grant_scholars_key` (data only, reversible). ⚠ On this branch it depends on `courses` 0093 and
-`scholarship` 0175; main has `courses` 0094, so the merge author re-points the first dependency to
-`0094_drop_partneradmin_is_super_admin` before the push. The ledger row name below is unchanged by that.
+`courses` `0095_grant_scholars_key` (data only, reversible). It depends on `courses`
+`0094_drop_partneradmin_is_super_admin` (re-pointed from 0093 at the merge with `activity-release`, 2026-11-10)
+and `scholarship` 0175. It reads no dropped column. The ledger row name below is unchanged by that.
 
 The rule: an ACTIVE team member (`is_active`) whose SAVED list NAMES `see_all` and lacks `scholars`. A `qc`-only
 list does not gain it (owner ruling 2026-11-10: Quality check carries no Scholars role), nor does a deactivated

@@ -107,7 +107,7 @@ TD-465 (high), CO-09 (medium), TD-459 (medium), CO-05 (medium), SP-01 and SP-02 
 | CO-07 | "Coming soon" screens (billing card, sponsor portal, trust hub, guide) | low | Not re-checked. |
 | CO-08 | WhatsApp STOP inert until Twilio webhook set (TD-318) | medium | Owner action. Not re-checked. |
 | CO-09 | No award withdrawal | medium (money) | Confirmed. |
-| CO-10 | Document-reading gaps (corpus brief, S7 frozen, TD-114, TD-399) | medium | Not re-checked. |
+| CO-10 | Document-reading gaps (corpus brief, S7 frozen, TD-114, TD-399) | medium | Re-checked 2026-11-09 (Sprint A2.8b). The corpus brief and its roadmap are done (C1-C4 live 2026-10-26); the TVET families stay data-gated, and the S6 owner ruling (Q2) already reads closed-list public TVET offers as genuine. S7 (the paid live re-score) stays frozen and was not touched: the eval now scores offer letters from their stored scores, which match the owner rulings (286/287; the one miss, a391, predates this sprint). TD-114 and TD-399 stay with the owner. |
 | CO-11 | About 92 plan files, most with no Status line | medium | Not re-checked. |
 | CO-12 | Vocabularies that are not yet a gate | medium | Not re-checked. |
 | CO-13 | 25 owner-decision TDs waiting | medium | Not re-checked. |
@@ -254,15 +254,15 @@ Schedule first: TD-465, TD-459, TD-506, TD-501, TD-383 (with TD-367). Closing an
 | SP-02 | reprocess-ic-vision near 300 s | medium |
 | SP-03 | Document upload slow (p50 11.6 s, p95 27.2 s, max 57.4 s) | medium; all 201 calls succeeded |
 | SP-04 | Assign slow (email inline, heavy reply) | medium |
-| SP-05 | Interview submit, qc-decision, resolution-items slow | medium (not re-checked) |
-| SP-06 | Income coach GETs call a model (p95 14-21 s) | medium (not re-checked) |
-| SP-07 | Applicant detail p50 2.5 s, p95 5.1 s (query count hides round trips) | medium (not re-checked) |
+| SP-05 | Interview submit, qc-decision, resolution-items slow | medium (fixed in code 2026-11-08, A2.4: 334/333/319 to 41/51/37 queries; prod p95 not re-measured) |
+| SP-06 | Income coach GETs call a model (p95 14-21 s) | medium (fixed in code 2026-11-08, A2.4: cached by prompt hash, no model call on a repeat) |
+| SP-07 | Applicant detail p50 2.5 s, p95 5.1 s (query count hides round trips) | medium (reduced 2026-11-08, A2.4: 38 to 33 queries; prod p95 not re-measured) |
 | SP-08 | No minimum instances; heavy cold start | medium (owner's call) |
 | SP-09 | Bundle headroom 0.4 to 1.2 kB | medium |
 | SP-10 | Budget does not count layouts, CSS, lazy chunks (TD-304) | low |
 | SP-11 | 33 scheduled jobs, 13 at hourly or */15 | low |
 | SP-12 | Build minutes high (15-27 min, about 30 builds in 2.5 days) | medium |
-| SP-13 | N+1 on mentor and pending cards (TD-500, TD-505) | low |
+| SP-13 | N+1 on mentor and pending cards (TD-500, TD-505) | low (fixed in code 2026-11-08, A2.4) |
 | SP-14 | 300 s timeout applies to the whole service | low |
 
 All speed highs came down to medium: none of them failed requests. SP-01 stays at the top of the speed list because a real person on the other side was affected.

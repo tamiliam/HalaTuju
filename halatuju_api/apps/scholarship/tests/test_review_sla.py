@@ -133,11 +133,16 @@ class EveryCallerReadsTheOneClockTests(TestCase):
             call_command('send_review_nudges')
 
     def test_the_assignment_email_reads_it(self):
+        from apps.scholarship import assign_notify
         from apps.scholarship.services import assign_reviewer
         app = self._app()
         # A REASSIGNMENT, so the first-assignment readiness gate is not in the way.
-        with self._boom(), self.assertRaises(RuntimeError):
-            assign_reviewer(app, reviewer=self.other_reviewer, by_admin=self.super)
+        # A2.3: the email is sent by the assign-emails cron, which fences each row (so the error
+        # no longer escapes); what this pins is unchanged — the email ASKS the one clock.
+        assign_reviewer(app, reviewer=self.other_reviewer, by_admin=self.super)
+        with self._boom() as boom:
+            assign_notify.send_pending()
+        self.assertTrue(boom.called)
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
     def test_the_interview_reminder_reads_it(self):

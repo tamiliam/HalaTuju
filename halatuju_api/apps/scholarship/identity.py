@@ -104,6 +104,28 @@ def compare(doc, profile):
     }
 
 
+#: TD-400 (A2.8a): the refusal when a parent's typed name / NRIC differs from a parent IC whose read
+#: our outage left half done (TD-390). "Try later", never "doesn't match": it is not the family's slip.
+GUARANTOR_IC_PENDING = 'parent_ic_service_down'
+
+
+def guarantor_mismatch(parent_ic, name, nric):
+    """Why the typed parent/guardian name and NRIC fail the parent IC that was read, or ``''``.
+
+    The one comparison behind the minor's consent (``ConsentView.post``) and the bursary guarantor
+    (``bursary.guarantor_identity_check``). Exact NRIC, ``name_match == 'match'``, as before. Within
+    the TD-390 window a DIFFERING value read off half a read answers ``GUARANTOR_IC_PENDING`` instead
+    of a mismatch — the same rule as ``compare``: it delays a signal, never passes one, and a match
+    still passes. After the window the stored read counts as complete again."""
+    if parent_ic.vision_nric and not nric_match(nric, parent_ic.vision_nric):
+        why = 'parent_ic_nric_mismatch'
+    elif parent_ic.vision_name and name_match(parent_ic.vision_name, name) != 'match':
+        why = 'parent_ic_name_mismatch'
+    else:
+        return ''
+    return GUARANTOR_IC_PENDING if ic_second_opinion_deferred(parent_ic) else why
+
+
 def locks_now(comparison):
     """Should the IC lock, given ``compare()``'s answer? Genuine card, exact number, same person.
 

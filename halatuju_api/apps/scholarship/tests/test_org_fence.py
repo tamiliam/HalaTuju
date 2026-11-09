@@ -513,6 +513,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMentorsView': 'mentor-scope-org-fenced (_in_scope)',
         'AdminMentorView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
         'AdminMentorActionView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
+        # Invitations I4 (2026-11-08): a mentor's gifts, through the same `_MentorsBase._target`; every
+        # gift must be the MENTOR's organisation's (`mentor_gift.choose`), else 404
+        # (`test_mentor_gifts.TestTheEdit`).
+        'AdminMentorGiftsView': 'mentor-fenced (_target: _in_scope + mentor_invite.manageable; gifts in its org)',
         # S7d (2026-11-01): "Add a staff member as mentor". The candidates and the target are cut to the
         # caller's own organisation (a super: any, narrowed by ?org=); another organisation's staff is
         # 404 (`test_staff_mentor.TestAdding.test_who_may_add`).
@@ -621,6 +625,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminInvoiceDeclarationView':
             'invoice-fenced (org_admin declares on its own sent invoice; super confirms/rejects)',
         'AdminInvoicePdfView': 'invoice-fenced (org_admin own sent invoice or its receipt)',
+        # Staff nudges sprint 3 (2026-11-09): the red banner's summary, the caller's OWN organisation
+        # only (never a parameter), sent invoices only; a super answers None. Same `_caller` gate.
+        'AdminInvoiceOverdueView': 'invoice-fenced (org_admin own org overdue summary; super None)',
         'AdminInvoiceIssuerView': 'super-only (who is billing: one platform-wide row)',
         # The ONE invoice surface a tenant may write. Not what it is billed FOR (build hours,
         # super-only) nor AT (rates, super-only) — only WHERE its own bill is addressed and
@@ -816,6 +823,8 @@ class TestOrgFenceStaticGuard(TestCase):
                # Requests list R1 (2026-11-03) — the list's tabs, filters and row tags, whose
                # `Exists` subqueries read OrgRequestComment / OrgRequestAnalysis; on the day written.
                'org_requests_queue.py',
+               # Staff nudges sprint 3 (2026-11-09) — the overdue rule's org summary, on the day written.
+               'invoice_overdue.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')

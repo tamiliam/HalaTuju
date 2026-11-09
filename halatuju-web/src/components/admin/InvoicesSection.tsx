@@ -64,13 +64,13 @@ async function downloadPdf(kind: 'invoice' | 'receipt', id: number, name: string
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-function Chip({ status, t, isSuper, dueOn, balanceMyr }: {
-  status: InvoiceRow['status']; t: T; isSuper: boolean; dueOn?: string | null; balanceMyr?: string
+function Chip({ status, t, isSuper, overdue, balanceMyr }: {
+  status: InvoiceRow['status']; t: T; isSuper: boolean; overdue?: boolean; balanceMyr?: string
 }) {
   // The owner sees what they DID ("Sent"); the organisation sees what it OWES ("Unpaid",
-  // "Overdue" once the due date has passed, or "Nothing to pay" when it owes nothing at all).
+  // "Overdue" when the SERVER says so — the red banner's rule — or "Nothing to pay").
   // See `statusChip`.
-  const c = statusChip(status, { forOwner: isSuper, today: todayIso(), dueOn, balanceMyr })
+  const c = statusChip(status, { forOwner: isSuper, overdue, balanceMyr })
   return (
     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.className}`}>
       {t(c.key)}
@@ -362,7 +362,7 @@ function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onRec
                   {isSuper ? `${inv.organisation} · ` : ''}{formatMonth(inv.period_month)}
                 </p>
               </div>
-              <Chip status={inv.status} t={t} isSuper={isSuper} dueOn={inv.due_on} balanceMyr={inv.balance_myr} />
+              <Chip status={inv.status} t={t} isSuper={isSuper} overdue={inv.is_overdue} balanceMyr={inv.balance_myr} />
             </div>
             <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               <dt className="text-ground-500">{t('admin.billing.invoice.col.total')}</dt>
@@ -448,7 +448,7 @@ function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token,
         <td className="px-4 py-2">{formatDay(inv.due_on)}</td>
         <td className="px-4 py-2 text-right tabular-nums">{formatMyr(inv.total_myr)}</td>
         <td className="px-4 py-2 text-right tabular-nums">{isVoid ? '—' : formatMyr(inv.balance_myr)}</td>
-        <td className="px-4 py-2"><Chip status={inv.status} t={t} isSuper={isSuper} dueOn={inv.due_on} balanceMyr={inv.balance_myr} /></td>
+        <td className="px-4 py-2"><Chip status={inv.status} t={t} isSuper={isSuper} overdue={inv.is_overdue} balanceMyr={inv.balance_myr} /></td>
       </tr>
       {isOpen && (
         <tr className="border-b bg-ground-50/60">

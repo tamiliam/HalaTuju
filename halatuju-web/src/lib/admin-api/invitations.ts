@@ -33,6 +33,11 @@ export interface InvitationRow {
    *  blank as a gift name. */
   programme: string
   programme_name: string
+  /** Invitations I3: the gifts a SPONSOR invitation names (ordered by code), and whether it is for
+   *  Every gift (every gift open when they register). `gifts: []` with `every_gift: false` = none
+   *  stated. Absent on a payload from before I3. */
+  gifts?: Array<{ id: number; code: string; name: string }>
+  every_gift?: boolean
   /** Which SOURCE a source invitation signs somebody in for (source sign-in S2); null otherwise,
    *  and absent on a payload from before S2. */
   source_id?: number | null
@@ -59,7 +64,8 @@ export interface SourceUserRow {
   /** Null = not signed in yet (never "not recorded" for a source user). */
   first_seen_at: string | null
   last_seen_at: string | null
-  /** May THIS caller Resend / Remove — the server's own rule, so no button is offered it refuses. */
+  /** May THIS caller Resend / Cancel — the server's own rule, so no button is offered it refuses.
+   *  (Remove lives on the Sources row since I2, with its own `SourcePerson.manageable`.) */
   manageable: boolean
   /** Common profile S2: the source person's own phone (their Profile's Contact card), or null. */
   phone?: string | null
@@ -98,6 +104,9 @@ export interface InvitationsPayload {
   /** TD-501 (A1.3 review): the REVIEWER invite's gift choices — only the gifts of the organisation
    *  the invite binds to, the same list the POST checks. Absent on an older api: then none. */
   reviewer_programmes?: Array<{ id: number; code: string; name: string }>
+  /** Invitations I4: the MENTOR invite's gift choices — the ACTIVE gifts of the organisation the invite
+   *  binds to, the same list the POST checks. `?kind=mentor` only; absent on an older api: then none. */
+  mentor_programmes?: Array<{ id: number; code: string; name: string }>
   /** `?kind=source` only (source sign-in S2): every source user, and the sources to pick from. */
   source_users?: SourceUserRow[]
   sources?: InvitableSource[]
@@ -113,11 +122,13 @@ export async function getInvitations(kind: InvitationKind, options?: ApiOptions)
 /** Invite a SPONSOR. Creates no account: the link goes to the ordinary public registration, where
  *  they consent, sign the terms and are vetted exactly as anybody else.
  *
- *  `programme_id` records WHICH GIFT the organisation meant (S-ASSIGN). Omit it and the server
- *  takes the organisation's sole active gift, or refuses `programme_required` when there are
- *  several — it never picks silently. */
+ *  `programme_ids` records WHICH GIFTS the organisation meant (I3; `[]` = Every gift — every gift
+ *  open when they register); the one-gift `programme_id` (S-ASSIGN) still works. Send neither and
+ *  the server keeps a waiting invitation's gifts (a resend), else takes the sole active gift, or
+ *  refuses `programme_required` when there are several — it never picks silently. */
 export async function inviteSponsor(
-  data: { email: string; name?: string; note?: string; programme_id?: number }, options?: ApiOptions,
+  data: { email: string; name?: string; note?: string; programme_id?: number; programme_ids?: number[] },
+  options?: ApiOptions,
 ) {
   return adminMutate<{ id: number; emailed: boolean }>(
     '/api/v1/admin/invitations/', 'POST', { audience: 'sponsor', ...data }, options)

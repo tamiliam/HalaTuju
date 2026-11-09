@@ -10,8 +10,11 @@ reviewer's qualification, language and address cards and the `area` below. Staff
 their login row. Sprint 7b adds `MentorAssignment` / `MentoringSession` below (rules:
 `apps/scholarship/mentoring.py`).
 
-⚠ NEVER DELETED. A mentor is DEACTIVATED (`deactivated_at`), which also switches their login off;
-past meetings stay on each scholar's file (7b). Status is DERIVED (`mentor_invite.status_of`), never
+⚠ DELETED ONLY WITH NO WORK (D6, Sprint T2, 2026-11-08 — was "never deleted"). A mentor with no
+assignment, session or concern record may be deleted, with their login, in one transaction
+(`mentor_invite.delete_mentor`); anyone else is DEACTIVATED (`deactivated_at`), as before, which also
+switches their login off; past meetings stay on each scholar's file (7b). The PROTECT foreign keys
+below stay as the database's backstop — the footprint check refuses first. Status is DERIVED (`mentor_invite.status_of`), never
 stored: inactive when deactivated, invited until the login's first sign-in, else active.
 
 ⚠ MENTORS NEVER REACH SPONSORS OR PARTNERS. Nothing here is on a sponsor or partner serializer.
@@ -29,7 +32,8 @@ class Mentor(models.Model):
     #: The area of mentoring — written by the MENTOR (`PATCH admin/me/` `mentoring_area`), never by
     #: staff. Blank until the mentor fills in their profile.
     area = models.CharField(max_length=120, blank=True, default='')
-    #: NULL = active (or invited). Set by Deactivate, cleared by Reactivate — never a delete.
+    #: NULL = active (or invited). Set by Deactivate, cleared by Reactivate. Deactivate is not a delete:
+    #: a mentor with no assignment, session or concern record may be deleted instead (D6).
     deactivated_at = models.DateTimeField(null=True, blank=True)
     deactivated_by_email = models.CharField(max_length=254, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -43,13 +47,38 @@ class Mentor(models.Model):
         return f'Mentor {self.pk} org={self.organisation_id}'
 
 
+class MentorGift(models.Model):
+    """One gift a mentor mentors in (Invitations I4, 2026-11-08; owner ruling 2, open point C).
+
+    ⚠ NO ROWS = EVERY GIFT, including a gift started later — the reviewer rule (`reviewer_gifts`)
+    exactly. Rows LIMIT who the mentor may be assigned (`mentor_gift.allows`, asked by
+    `mentoring.refusal_for_mentor`). ONE writer: `mentor_gift.set_gifts`, which refuses narrowing past
+    an open assignment (open point D) — an assignment is never ended because a gift was unticked.
+    """
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name='gift_rows')
+    #: ⚠ CASCADE, but a gift that is a mentor's ONLY gift cannot be deleted: the delete refuses
+    #: `gift_limits_mentors` (`views_admin.gifts._delete_holders`), or the mentor would widen to every gift.
+    programme = models.ForeignKey('Programme', on_delete=models.CASCADE, related_name='mentor_gift_rows')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'mentor_gifts'
+        constraints = [
+            models.UniqueConstraint(fields=['mentor', 'programme'], name='mentor_gift_one_row_per_pair'),
+        ]
+
+    def __str__(self):
+        return f'MentorGift mentor={self.mentor_id} programme={self.programme_id}'
+
+
 class MentorAssignment(models.Model):
     """One mentor's time with one scholar (student maintenance S7b, 2026-11-01).
 
     ⚠ ONE OPEN ROW PER APPLICATION, held by the DATABASE (a partial unique index on
     `ended_at IS NULL`), not only by the code: two racing "assign" requests cannot both leave an
     open row. A CHANGE ends the open row (it stays, the history) and starts a new one, in one
-    transaction (`mentoring.assign`). Never deleted; never reopened.
+    transaction (`mentoring.assign`). Never deleted; never reopened. It is also WORK: a mentor with
+    one (ended or open) is never deleted, only deactivated (D6; PROTECT is the backstop).
 
     `end_reason` is STAFF ONLY (never on a student payload). `emailed_student` records whether the
     "You have a mentor" email actually went (set after the send).

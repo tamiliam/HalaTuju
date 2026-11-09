@@ -2,8 +2,11 @@
 ``results_doc`` (offer exact-read S6, 2026-11-03, a moves-only split: ``results_doc.py`` stood at the
 600-line standard). Pure data, no imports. ``results_doc`` re-exports every name, so
 ``from .results_doc import _UA_NAMES`` / ``UA_OFFER_SIGNATURES`` keep working; ``results_doc``'s
-``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them.
+``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them. 1.26.0 (request
+#66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``): it imports
+only ``re``, and reads the page through ``offer_reading`` lazily.
 """
+import re
 
 
 # Offer letters — five standard public-issuer families, scored together, best fit wins (and names
@@ -128,3 +131,148 @@ UA_OFFER_SIGNATURES = [
     ('registration date',           ['TARIKH PENDAFTARAN', 'TARIKH MENDAFTAR', 'TARIKH LAPOR DIRI',
                                      'HADIR MENDAFTAR PADA TARIKH'],               1, 'text'),
 ]
+
+
+# ── IIUM in ENGLISH (1.26.0, request #66) ──────────────────────────────────────────────────
+# IIUM (UNIV-006) writes its offers in English. Doc 5105, a genuine one, read not_offer_letter. Its REAL
+# layout (its stored text layer, read by review rounds 1-2): the letterhead is an IMAGE, so the text has no
+# letterhead at all — four lines (reference, date, the candidate's name and address), "Dear …", then the
+# offer SENTENCE "We are pleased to inform you that the International Islamic University Malaysia (IIUM) has
+# accepted and approved your application for the following programme in Semester 1, 2024/2025:"; the office
+# "Academic Management and Admission Division" only in the signature block and the acceptance form; "This
+# offer is valid for one (1) year only from the date of issuance"; "Registration Date". No title.
+# The English reading is the SAME UA family — the same six rows and weights, each Malay row with only those
+# real English twins added — and it opens ONLY on IIUM's own offer, anchored on its ISSUER, the sentence's
+# subject (`english_ua_lists`):
+#   1. the sentence with IIUM as its SUBJECT ("… THAT THE INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA (IIUM) HAS
+#      ACCEPTED AND APPROVED …"): "Mercu Academy, a partner of the International Islamic University Malaysia
+#      (IIUM), has accepted …" is not it;
+#   2. the office anywhere on the page;
+#   3. NOTHING before the sentence names another organisation — no organisation noun at all outside IIUM's
+#      name and office (`offer_reading._outside_orgs`; a company is one; a CAMPUS too, "MERCU CAMPUS"): a
+#      private college's own letterhead, an "affiliated college", "IIUM Holdings Berhad" sit above it; and
+#      no partner / tie-up word ANYWHERE on the page (`_PARTNER`, `_TIE_UP`, "validated", "in association"):
+#      "… the following programme at Mercu College, our teaching partner campus" (final review). The
+#      organisation check is NOT page-wide: a genuine letter names banks, kulliyyahs and mahallahs below;
+#   4. no CONDITIONAL / PROVISIONAL / "NOTIFICATION OF ADMISSION" (whole words; "UNCONDITIONAL" is not one)
+#      from the top of the page to the end of the sentence's line — a title or the sentence itself; a genuine
+#      letter's terms further down may say "conditional upon" (the owner's rule: an unconditional official
+#      offer only, decisions.md 2026-06-27);
+#   5. the SIGNATURE block — anchored on the first office line after the sentence: five lines above it, two
+#      below, and from a closing ("Wassalam", "Yours …") down to it — names no other organisation:
+#      "Registrar / MERCU UNIVERSITY COLLEGE" signing above IIUM's office, "for MERCU UNIVERSITY COLLEGE" below.
+# Accepted residuals (final review): a private body named only by an acronym; a private name only in a
+# FOOTER further below, with no company suffix (no safe rule: a genuine letter's lower pages name banks and
+# campuses; a "Sdn Bhd" anywhere is the private-arm veto's);
+# a candidate addressed at a residential college ("Kolej Kediaman …") keeps the 1.25.0 call; one template
+# sentence anchors the reading (a second IIUM template needs adding here).
+# Every other page, and every other UA letter, is scored by `UA_OFFER_SIGNATURES` exactly as under 1.25.0.
+# The acronyms "IIUM" / "UIAM" are never an anchor (`offer_issuers._UA_SHORT` keeps them for its reason).
+# `_UA_NAMES` (and so every block and reason that reads it) is untouched: adding the English name to the
+# BLOCK's public names would let a company line BELOW it ("IIUM HOLDINGS BERHAD") escape the block.
+_IIUM_EN = 'INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA'
+_IIUM_OFFICE = 'ACADEMIC MANAGEMENT AND ADMISSION DIVISION'
+#: The offer sentence (UiTM's own sentence is the Malay row's precedent). Never "offer of admission": on
+#: IIUM's pages it sits in "rejection of offer of admission", "I accept the offer of admission", "your
+#: application for offer of admission … was unsuccessful" and the booklet's "this offer of admission".
+_IIUM_OFFER_SENTENCE = 'HAS ACCEPTED AND APPROVED YOUR APPLICATION FOR THE FOLLOWING PROGRAMME'
+#: ... with IIUM as its subject (rule 1), folded: "(IIUM)" is a word.
+_IIUM_SUBJECT = f' THAT THE {_IIUM_EN} IIUM {_IIUM_OFFER_SENTENCE} '
+#: Rule 3: tie-up words beyond `offer_reading._PARTNER` / `_TIE_UP`.
+_TIE_UP_EXTRA = (' VALIDATED ', ' VALIDATION ', ' IN ASSOCIATION ', ' TIE UP ')
+#: Rule 4: whole words that make a page not yet an unconditional offer.
+_NOT_YET = (' CONDITIONAL ', ' PROVISIONAL ', ' NOTIFICATION OF ADMISSION ')
+_ENGLISH_TWINS = {
+    'public university (UA) name': [_IIUM_EN],
+    'offer/admission line': [_IIUM_OFFER_SENTENCE],
+    'academic office': [_IIUM_OFFICE],                       # "Bahagian … Akademik"
+    'finality / no-change clause': ['THIS OFFER IS VALID FOR'],
+    'Program / Kod Program': [],                             # "PROGRAMME :" folds to a bare word: no twin
+    'registration date': ['REGISTRATION DATE'],
+}
+UA_OFFER_SIGNATURES_EN = [(label, patterns + _ENGLISH_TWINS[label], weight, kind)
+                          for label, patterns, weight, kind in UA_OFFER_SIGNATURES]
+
+
+def english_ua_lists(lists: dict, text_norm: str, ocr_text: str = ''):
+    """``(lists, text_norm)`` for an offer: unchanged, unless the page is IIUM's own English offer (the five
+    rules above) — then the UA family reads its English twins (`UA_OFFER_SIGNATURES_EN`)."""
+    if _IIUM_SUBJECT not in f' {text_norm} ' or _IIUM_OFFICE not in text_norm or not _issued_by_iium(ocr_text):
+        return lists, text_norm
+    return {**lists, 'ua_offer': UA_OFFER_SIGNATURES_EN}, text_norm
+
+
+def _issued_by_iium(ocr_text: str) -> bool:
+    """Rules 3-5 (rule 4 up to the end of the sentence's line)."""
+    from .offer_reading import _PARTNER, _TIE_UP, _folded_lines, _page
+    lines = _folded_lines(ocr_text)
+    page = _page(lines)
+    at = page.find(_IIUM_SUBJECT)
+    if at < 0:
+        return False
+    end = page.find(' ', at + len(_IIUM_SUBJECT))
+    line_end = next((pos + len(ln.strip()) for pos, ln in _starts(lines) if pos + len(ln.strip()) >= end), len(page))
+    if any(w in f'{page[:line_end]} ' for w in _NOT_YET):
+        return False                                          # rule 4
+    if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+        return False                                          # rule 3: tie-up wording, ANYWHERE on the page
+    for pos, ln in _starts(lines):
+        if pos >= at:
+            break
+        if _names_another(f' {page[pos:min(pos + len(ln.strip()), at)].strip()} ', campus=True):
+            return False                                      # rule 3: another organisation named first
+    sentence_line = next(i for i, (pos, ln) in enumerate(_starts(lines)) if pos + len(ln.strip()) > at)
+    return not any(_signs_for_another(ln) for ln in _signature_block(lines, sentence_line))   # rule 5
+
+
+def _names_another(ln: str, campus: bool = False) -> bool:
+    """The folded line names an organisation other than IIUM and its office (`offer_reading._outside_orgs`; a
+    company is one). Above the sentence a CAMPUS counts too ("MERCU CAMPUS")."""
+    from .offer_reading import _allowed_spans, _decontact, _outside_orgs, _unstreeted
+    ln = _unstreeted(_decontact(ln))
+    allowed = (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ')
+    return bool(_outside_orgs(ln, _allowed_spans(ln, allowed))) or (campus and ' CAMPUS ' in ln)
+
+
+#: Rule 5: the nouns an issuer SIGNS for (an institution or a company). Narrower than the organisation nouns
+#: above the sentence: a signature's neighbours on a genuine letter are fee lines ("Tuition Fee") and "the
+#: University", which name no other body.
+_SIGNS_FOR = re.compile(r' (?:KOLEJ|COLLEGES?|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|AKADEMI|ACADEM(?:Y|IES)|'
+                        r'POLITEKNIK|POLYTECHNICS?|MAKTAB|GROUP|KUMPULAN|SDN|BHD|BERHAD|PLT|LTD|LIMITED)(?= )')  # GROUP: final review 2026-11-08
+
+
+def _signs_for_another(ln: str) -> bool:
+    """A signature-block line naming an institution or company other than IIUM and its office."""
+    from .offer_reading import _decontact, _unstreeted
+    ln = _unstreeted(_decontact(ln))
+    for n in (f' {_IIUM_EN} ', f' {_IIUM_OFFICE} ', ' THE UNIVERSITY ', ' THE UNIVERSITI '):
+        ln = ln.replace(n, ' ')
+    return bool(_SIGNS_FOR.search(ln))
+
+
+#: Rule 5: the signature block, anchored on IIUM's OFFICE — the first office line after the offer sentence,
+#: with up to `_BEFORE_OFFICE` lines above it and `_AFTER_OFFICE` below, and, when a closing ("Wassalam",
+#: "Yours sincerely") comes between the sentence and that line, every line from the closing down to it. IIUM
+#: closes with "Wassalam / Director / Academic Management and Admission Division" (doc 5105, no "Yours …").
+_CLOSINGS = (' WASSALAM ', ' WASSALAMUALAIKUM ', ' YOURS SINCERELY ', ' YOURS FAITHFULLY ', ' YOURS TRULY ')
+_BEFORE_OFFICE, _AFTER_OFFICE = 5, 2
+
+
+def _signature_block(lines, sentence_line):
+    """The signature block (above) — never the sentence's own line or anything above it; none when no office
+    line follows the sentence (then rule 2 holds only through an office line ABOVE it, on a letterhead)."""
+    first = sentence_line + 1
+    office = next((i for i in range(first, len(lines)) if f' {_IIUM_OFFICE} ' in lines[i]), None)
+    if office is None:
+        return []
+    closing = next((i for i in range(first, office) if any(c in lines[i] for c in _CLOSINGS)), office)
+    start = max(first, min(office - _BEFORE_OFFICE, closing))
+    return lines[start:office + _AFTER_OFFICE + 1]
+
+
+def _starts(lines):
+    """(where each folded line starts in `offer_reading._page(lines)`, the line)."""
+    pos = 1
+    for ln in lines:
+        yield pos, ln
+        pos += len(ln.strip()) + 1

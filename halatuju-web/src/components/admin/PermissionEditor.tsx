@@ -22,7 +22,7 @@ import {
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
  * the one local rule, Quality check bringing Applications, only mirrors what the server answers.
  *
- * Loaded as its own chunk by `LazyPermissionEditor` — most visits to People never open it.
+ * Loaded in the person page's own chunk (`'ad'`, `admin/person/TeamPersonPage`, sprint T3) — no route entry carries it.
  *
  * Under the card, **Changes** (2026-10-22): the same GET's `history`, re-read after every save so the
  * new line appears. A page that already holds the GET (the admin person page draws its header from
@@ -128,15 +128,17 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const preset = t(`admin.role.${view.role}`)
   // `?? []`: an api a few minutes behind this page serves no history yet; the list says "none".
   const history = <PermissionHistory rows={view.history ?? []} name={who} role={view.role} />
-  if (!view.editable) {
+  if (!view.editable && !view.is_active) {
     // A revoked person is not editable (review fix 8): say how to get there, draw no dead switches —
     // but their history still reads.
     return (<>
-      <p className="text-sm text-ground-500">{t(view.is_active ? 'admin.permEditor.fixed'
-        : 'admin.permEditor.restoreFirst', { name: who })}</p>
+      <p className="text-sm text-ground-500">{t('admin.permEditor.restoreFirst', { name: who })}</p>
       {history}
     </>)
   }
+  // Sprint T3 (M2): somebody active whose set this viewer may not change (an organisation admin, your
+  // own) — their keys as LOCKED switches under one line saying so: no Save, no Reset, no dry run.
+  const fixed = !view.editable
 
   const save = async () => {
     setBusy(true)
@@ -191,7 +193,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
             <div className="text-xs text-ground-500" data-testid="qc-brings-see-all">{t('admin.permEditor.qcBrings')}</div>
           )}
         </div>
-        <Toggle on={on} disabled={locked || busy} label={t(`admin.perm.${key}.name`)}
+        <Toggle on={on} disabled={fixed || locked || busy} label={t(`admin.perm.${key}.name`)}
           onChange={(v) => flip(key, v)} />
       </div>
     )
@@ -233,17 +235,18 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
           </span>
         )}
       </div>
-      <p className="mb-2 mt-0.5 text-sm text-ground-500">{t('admin.permEditor.subtitle', { preset })}</p>
+      <p className="mb-2 mt-0.5 text-sm text-ground-500" data-testid={fixed ? 'perm-fixed' : undefined}>
+        {fixed ? t('admin.permEditor.fixed', { name: who }) : t('admin.permEditor.subtitle', { preset })}</p>
       {inAdmins && group('perm-section-admins', t('admin.team.colKeys.admins'), TABLE_KEYS.admins)}
       {inReviewers && group('perm-section-reviewers', t('admin.team.colKeys.reviewers'), TABLE_KEYS.reviewers)}
-      {unlisted && (
+      {unlisted && !fixed && (
         <p className="text-xs text-caution-700" data-testid="unlisted-hint">
           {t('admin.permEditor.unlistedHint')}
         </p>
       )}
       {other.length > 0 && <div className="mt-2 border-t border-ground-100 pt-3">{other.map(row)}</div>}
 
-      {refusal ? (
+      {fixed ? null : refusal ? (
         <div role="alert" className="mt-4 rounded-lg bg-critical-50 px-3.5 py-3 text-sm text-critical-700">
           {refusal.message}
         </div>
@@ -253,6 +256,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </div>
       ) : null}
 
+      {!fixed && (<>
       <div className="mt-4 flex flex-wrap gap-2.5">
         <button type="button" onClick={save} disabled={!dirty || busy || !!refusal || !plan}
           className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
@@ -267,6 +271,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </button>)}
       </div>
       <p className="mt-3 text-xs text-ground-500">{t('admin.permEditor.footnote')}</p>
+      </>)}
     </section>
     {history}
   </>)

@@ -188,7 +188,7 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
       )}
       <div ref={scroller} data-testid="activity-scroller" tabIndex={phone ? undefined : 0} role="region"
         aria-label={t('admin.scholars.activity.listLabel')}
-        className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-500 md:overflow-y-auto md:overscroll-contain md:rounded-lg ${compact ? 'md:max-h-[420px]' : 'md:max-h-[560px]'}`}>
+        className={`relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-500 md:overflow-y-auto md:overscroll-contain md:rounded-lg ${compact ? 'md:max-h-[420px]' : 'md:max-h-[560px]'}`}>
         {remaining > 0 && (
           <button type="button" onClick={showOlder} disabled={older} data-testid="activity-older"
             className="w-full rounded-lg py-2 text-sm font-medium text-info-700 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11">

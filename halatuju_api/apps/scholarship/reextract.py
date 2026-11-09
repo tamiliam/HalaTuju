@@ -50,9 +50,13 @@ def reread_preflight(command, opts, *, refuse=True):
                        f'on the job, as on the halatuju-api service, or pass {ALLOW_WITHOUT_GENUINENESS}.')
 
 
-def reextract_document(doc) -> bool:
+def reextract_document(doc, *, reslot=False) -> bool:
     """Re-run the automatic read for one document, dispatched by type. Returns True when a
-    known read ran, False for a type with no automatic check (caller decides what to do)."""
+    known read ran, False for a type with no automatic check (caller decides what to do).
+    ``reslot`` (A2.8a review): the hourly sweep's re-read stands in for an upload read our outage
+    deferred, so it files an EPF found in the salary-slip slot as an EPF, exactly as the upload's
+    read does (the one step, ``views._reslot_income_doc``). An officer's Re-run and the bulk
+    commands leave the slot alone, as before."""
     from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
     app = doc.application
     if doc.doc_type in ('ic', 'parent_ic'):
@@ -70,6 +74,10 @@ def reextract_document(doc) -> bool:
         street = getattr(profile, 'address', '') or ''
         check_address = doc.doc_type in BILL_DOC_TYPES
         ocr = _vision.ocr_document_full(doc)               # ONE fetch + ONE Vision call, shared
+        if reslot:
+            from .views import _reslot_income_doc
+            if _reslot_income_doc(doc, ocr):
+                check_address = doc.doc_type in BILL_DOC_TYPES
         _vision.run_vision_match_for_document(
             doc, names=names, postcode=postcode, city=city, street=street,
             check_address=check_address, ocr=ocr)

@@ -98,10 +98,10 @@ def withdraw_scholars(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    # ⚠ origin/main has courses 0094_drop_partneradmin_is_super_admin, which this branch cannot see: the
-    # merge re-points the first dependency to it (sprint S1 report).
+    # Re-pointed from 0093 to main's 0094 at the merge with `activity-release` (one courses leaf). This
+    # migration never reads `is_super_admin` (0094 dropped it): it filters and loads by `role` only.
     dependencies = [
-        ('courses', '0093_retire_partneradmin_is_super_admin'),
+        ('courses', '0094_drop_partneradmin_is_super_admin'),
         ('scholarship', '0175_staff_permission_changes'),
     ]
 

@@ -125,6 +125,26 @@ it('shows the server refusal in its own words', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe(`${K}.error.own_application`)
 })
 
+// Invitations I4 (2026-11-08): a gift limits who a mentor mentors. The SERVER filters the picker
+// (`assignable` holds only mentors whose gifts hold this scholar's) and refuses an assign outside them.
+it('I4: the picker offers exactly the mentors the server served for this gift', async () => {
+  mockApi.getScholarMentoring.mockResolvedValue({ ...NONE, assignable: [WITH.assignable[1]] })
+  render(<ScholarMentoring id={104} token="tok" />)
+  fireEvent.click(await screen.findByText(`${K}.none.assign`))
+  const picker = screen.getByTestId('mentoring-picker') as HTMLSelectElement
+  expect(Array.from(picker.options).map((o) => o.value)).toEqual(['3'])
+  expect(picker.textContent).not.toContain('Faizal Hamid')
+})
+
+it('I4: an assign refused outside the mentor\'s gifts reads in its own words', async () => {
+  mockApi.getScholarMentoring.mockResolvedValue(NONE)
+  mockApi.assignMentor.mockRejectedValue(Object.assign(new Error('x'), { code: 'mentor_not_in_gift' }))
+  render(<ScholarMentoring id={104} token="tok" />)
+  fireEvent.click(await screen.findByText(`${K}.none.assign`))
+  fireEvent.click(screen.getByText(`${K}.form.assign`))
+  expect((await screen.findByRole('alert')).textContent).toBe(`${K}.error.mentor_not_in_gift`)
+})
+
 it('no mentor: what the scholar asked for, and Assign a mentor', async () => {
   mockApi.getScholarMentoring.mockResolvedValue(NONE)
   render(<ScholarMentoring id={104} token="tok" />)
