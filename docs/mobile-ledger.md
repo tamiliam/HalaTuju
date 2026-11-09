@@ -4,11 +4,11 @@
 > `halatuju-web/src/lib/mobileClass.ts`; numbers in `halatuju-web/mobile-check/baseline.json`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **2026-11-04** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
+Baseline last updated **2026-11-09** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**70 measured** (public page or sandbox surface), **70 fully green.**
+**69 measured** (public page or sandbox surface), **69 fully green.**
 
 How to read a row: the four numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -61,7 +61,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/requests` | Can | M7 | 6 (sandbox `m7-requests`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/requests/[id]` | Can | M7 | 6 (sandbox `m7-request`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholars` | Can | M7 | 6 (sandbox `m7-scholars`) | 0 | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholars/[id]` | Can | M7 | 6 (sandbox `m7-scholar-file`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholars/[id]` | Can | M7 | 12 (sandbox `m7-scholar-file`, sandbox `p1-scholar-activity`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/set-password` | Must | M6 | 6 (sandbox `m8-set-password`) | 0 | 0 | 0 | 0 | ✅ |  |
@@ -136,6 +136,7 @@ Component galleries — measured, but no single route is "them".
 | `header-signed-in-menu-bursary` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `header-signed-out` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `header-signed-out-menu` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `m8-organisation` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `onboarding-stepper` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `pieces` | 6 | 0 | 0 | 0 | 0 | ✅ |
 | `sheet-locked-confirm` | 6 | 0 | 0 | 0 | 0 | ✅ |
