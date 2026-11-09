@@ -562,7 +562,8 @@ for prose) — no billable calls in CI. **Read failures — ours or the document
 Vision/Gemini outage detectors behind `alert_vision_outage`. **Student-facing help (v2.20.0):** `help_engine.py` ("Cikgu Gopal") —
 `generate_document_help(doc_type, verdict, *, first_name, target_language)` phrases an already-decided document
 verdict into a warm 2-3 sentence coach note (reuses `_call_gemini_text`); `verdict_for_document` maps a doc's
-soft signals to the verdict, mirroring the FE chip precedence. Served by `DocumentHelpView`
+soft signals to the verdict, mirroring the FE chip precedence (since audit sprint A3.4 it hands the document to
+`help_verdict.py`, one check per document type in `HELP_VERDICT_CHECKS`; import it from `help_engine`). Served by `DocumentHelpView`
 (`GET …/documents/<pk>/help/`, own-doc scoped). **Structurally firewalled** — the engine receives only primitives,
 never an application/profile/score object (signature-asserted); it is the inverse wall to the admin-only gap-spotter.
 
@@ -704,12 +705,16 @@ place makes every total meaningless:
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist
-verdicts and `detect_anomalies`) and `academic_engine.py` (S2 — `_SUBJECT_BM` mirrors `subjects.ts`; `read_slip` +
+verdicts and `detect_anomalies`; since audit sprint A3.4 the facts live beside it in `verdict_identity.py`,
+`verdict_academic.py`, `verdict_pathway.py` (the offer-letter reading) and `verdict_income_str.py` (the declared STR
+route), the flat genuineness cap in `verdict_caps.py`, each old name kept in `verdict_engine.py` as a seam; every
+collaborator is still imported inside the function, so tests patch it where it lives) and `academic_engine.py` (S2 — `_SUBJECT_BM` mirrors `subjects.ts`; `read_slip` +
 `compare_academics` = completeness + accuracy by normalised subject name). Surfaced via
 `AdminApplicationDetailSerializer.verdict` as the "Verification verdict" scorecard above the Pre-interview flags.
 S2 extended the results-slip doc-assist schema to `results: [{subject, grade}]` (grade read per subject).
 **S3 — resolution tickets (the IBKR Action Centre backend):** `resolution.py` (`CODE_TO_TICKET` mapping +
-idempotent, race-safe `sync_resolution_items` with auto-resolve + no-re-nag, `resolve_item`, `add_officer_item`) +
+idempotent, race-safe `sync_resolution_items` with auto-resolve + no-re-nag, `resolve_item`, `add_officer_item`;
+`doc_match_verdict` picks one check per document type from `resolution_doc_match.DOC_MATCH_CHECKS`, A3.4) +
 the `ResolutionItem` model (**migration `0036`**, table `resolution_items`, RLS deny-by-default; partial unique
 `uniq_system_resolution_per_code`). Each unresolved verdict item → a discrete ticket closable by doc/explanation/
 confirm; three codes deliberately excluded (`ic_service_down`/`grades_unverified`/`str_present_unverified`). Student
