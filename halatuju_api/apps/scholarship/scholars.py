@@ -392,8 +392,9 @@ def controls(app, *, can_write, can_hold, can_review_results=None):
     }
 
 
-def result_dict(row):
-    """One result for the officer's Results tab — the slip by signed URL (org-fenced by the key)."""
+def result_dict(row, *, names=None):
+    """One result for the officer's Results tab — the slip by signed URL (org-fenced by the key).
+    ``names`` (S1 ruling A — a MENTOR reads the tab): ``{email: name}``; the reviewer is served by name."""
     slip = row.results_slip
     url = None
     if slip is not None:
@@ -405,20 +406,30 @@ def result_dict(row):
         'id': row.id, 'semester': row.semester, 'cgpa': _two(row.cgpa), 'graduated': row.graduated,
         'note': row.note, 'created_at': row.created_at,
         'review_status': row.review_status, 'review_note': row.review_note,
-        'reviewed_by': row.reviewed_by, 'reviewed_at': row.reviewed_at,
+        'reviewed_by': (row.reviewed_by if names is None
+                        else names.get((row.reviewed_by or '').lower(), '')),
+        'reviewed_at': row.reviewed_at,
         'slip': ({'url': url, 'filename': slip.original_filename, 'content_type': slip.content_type}
                  if slip is not None else None),
     }
 
 
-def activity_dict(row, actors=None):
+def activity_dict(row, actors=None, *, names_only=False):
     """One log row for the officer. ``actors`` (`activity_people.Actors`, built once per page) adds
     ``actor: {name, photo_url, kind} | None`` (sprint P1) and serves ``actor_email`` only for an unknown
-    writer (P1 review); without it the row carries ``actor: None`` and its email as stored."""
+    writer (P1 review); without it the row carries ``actor: None`` and its email as stored.
+    ``names_only`` (S1 ruling A — a MENTOR reads the log): no address at all — not an unknown writer's
+    (``actor_email`` and the name it stood in for are blank), not one in ``meta``."""
     actor, email = actors.of(row) if actors is not None else (None, row.actor_email)
+    meta = row.meta or {}
+    if names_only:
+        if email and actor is not None and actor.get('name') == email:
+            actor = {**actor, 'name': ''}
+        email = ''
+        meta = {k: v for k, v in meta.items() if not (isinstance(v, str) and '@' in v)}
     return {
         'id': row.id, 'kind': row.kind, 'event': row.event, 'body': row.body,
-        'meta': row.meta or {}, 'actor_email': email, 'actor': actor, 'internal': row.internal,
+        'meta': meta, 'actor_email': email, 'actor': actor, 'internal': row.internal,
         'created_at': row.created_at,
     }
 

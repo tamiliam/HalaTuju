@@ -352,14 +352,18 @@ def mask_email(address):
     return f'{local[:1]}…@{domain}' if local and domain else ''
 
 
-def admin_dict(letter, today=None):
+def admin_dict(letter, today=None, *, names_only=False):
+    """One letter for the staff tab. ``names_only`` (S1 ruling A — a MENTOR reads the tab): who issued or
+    withdrew it by NAME only; a blank name stays blank rather than falling back to the address."""
+    def by(name, email):
+        return name or ('' if names_only else email)
     return {'id': letter.id, 'kind': letter.kind, 'language': letter.language, 'subject': letter.subject,
             'body': letter.body, 'clause': letter.clause, 'issued_at': letter.issued_at,
-            'issued_by_name': letter.issued_by_name or letter.issued_by_email,
+            'issued_by_name': by(letter.issued_by_name, letter.issued_by_email),
             'issued_by_role': letter.issued_by_role, 'response_due_on': letter.response_due_on,
             'emailed_at': letter.emailed_at, 'emailed_to': mask_email(letter.emailed_to or ''),
             'acknowledged_at': letter.acknowledged_at, 'withdrawn_at': letter.withdrawn_at,
-            'withdrawn_by_name': letter.withdrawn_by_name or letter.withdrawn_by_email,
+            'withdrawn_by_name': by(letter.withdrawn_by_name, letter.withdrawn_by_email),
             'withdrawn_reason': letter.withdrawn_reason, 'state': state(letter, today),
             'has_pdf': bool(letter.pdf_path)}
 

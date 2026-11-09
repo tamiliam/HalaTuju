@@ -30,6 +30,16 @@ from ..models import SemesterResult, StudentActivity
 from .base import _AdminBase, scholars_scope
 
 
+def _staff_names(emails):
+    """``{email (lower): name}`` for the staff who wrote ``emails`` — ONE query (S1 ruling A)."""
+    from apps.courses.models import PartnerAdmin
+    emails = list({e for e in emails if e})
+    if not emails:
+        return {}
+    return {e.lower(): n or '' for e, n in PartnerAdmin.objects.filter(email__in=emails)
+            .values_list('email', 'name')}
+
+
 def _int(value, default, lo, hi):
     try:
         n = int(value)
@@ -174,12 +184,14 @@ class AdminScholarResultsView(_ScholarsBase):
     mentor_methods = ('get',)
 
     def get(self, request, pk):
-        app, _admin, err = self._file_for(request, pk)
+        app, admin, err = self._file_for(request, pk)
         if err:
             return err
         from .. import results_review
-        return Response({'results': [scholars.result_dict(r)
-                                     for r in results_review.results_for_file(app)]})
+        rows = list(results_review.results_for_file(app))
+        # S1 ruling A: a mentor sees the reviewer's NAME, never the address (one query).
+        names = _staff_names([r.reviewed_by for r in rows]) if self._as_mentor(admin) else None
+        return Response({'results': [scholars.result_dict(r, names=names) for r in rows]})
 
 
 class AdminScholarMoneyView(_ScholarsBase):
@@ -291,7 +303,7 @@ class AdminScholarActivityView(_ScholarsBase):
         rows = list(qs[(page - 1) * size:page * size])
         actors = activity_people.Actors(rows, app, may_see_mentors=may_mentoring)
         body = {'count': count, 'page': page, 'page_size': size,
-                'results': [scholars.activity_dict(r, actors) for r in rows]}
+                'results': [scholars.activity_dict(r, actors, names_only=as_mentor) for r in rows]}
         if want_counts:
             body['counts'] = counts
         return Response(body)

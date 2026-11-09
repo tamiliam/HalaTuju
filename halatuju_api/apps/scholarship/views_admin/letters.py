@@ -74,7 +74,7 @@ class AdminScholarLettersView(_LettersBase):
         if app.status == 'closed':
             kinds = tuple(k for k in kinds if k in svc.CLOSED_FILE_KINDS)
         return Response({
-            'letters': [svc.admin_dict(r) for r in rows],
+            'letters': [svc.admin_dict(r, names_only=self._as_mentor(admin)) for r in rows],
             'can_issue': list(kinds),
             'can_withdraw': self._senior(admin),
             'prompt_close': svc.prompt_close(app, rows),

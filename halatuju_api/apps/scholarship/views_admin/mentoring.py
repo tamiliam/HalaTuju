@@ -68,8 +68,9 @@ class AdminScholarMentoringView(_MentoringBase):
         app, admin, err = self._mentoring_file(request, pk)
         if err:
             return err
-        body = mentoring_read.file_payload(admin, app)
-        if self._as_mentor(admin):
+        as_mentor = self._as_mentor(admin)
+        body = mentoring_read.file_payload(admin, app, names_only=as_mentor)
+        if as_mentor:
             body.update(can_act=False, assignable=[])
         return Response(body)
 
