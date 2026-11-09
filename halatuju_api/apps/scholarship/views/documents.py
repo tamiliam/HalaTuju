@@ -86,16 +86,13 @@ class DocumentListCreateView(APIView):
     def _is_single_instance(self, doc_type, member):
         return True
 
-    def post(self, request):
-        app = _current_application(request.user_id)
-        if app is None:
-            return Response({'error': 'No shortlisted application.'}, status=status.HTTP_403_FORBIDDEN)
-        serializer = DocumentCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        new_doc_type = serializer.validated_data['doc_type']
+    # The POST is a short run of named steps, in the order the checks have always run. Each
+    # `_refuse_*` helper returns the Response to send, or None to carry on.
+    @staticmethod
+    def _refuse_bad_file(app, data):
+        """Guardrails 0 and 1 and the slip lock: format, size, and a results slip's slot."""
         # Guardrail 0 (TD-080): accept images + PDF only — reject video/other junk.
-        if not _is_allowed_upload(serializer.validated_data.get('content_type'),
-                                  serializer.validated_data.get('original_filename')):
+        if not _is_allowed_upload(data.get('content_type'), data.get('original_filename')):
             return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
                             status=status.HTTP_400_BAD_REQUEST)
         from apps.courses import org_config
@@ -104,18 +101,17 @@ class DocumentListCreateView(APIView):
         # ORGANISATION's, and `max_doc_size_bytes` is the only MB→bytes conversion — the
         # refusal reports the same number the uploader was served.
         _org = app.owning_organisation
-        if (serializer.validated_data.get('size') or 0) > org_config.max_doc_size_bytes(_org):
+        if (data.get('size') or 0) > org_config.max_doc_size_bytes(_org):
             return Response({'error': 'file_too_large',
                              'max_mb': org_config.value(_org, 'max_doc_size_mb')},
                             status=status.HTTP_400_BAD_REQUEST)
-        new_member = serializer.validated_data.get('household_member', '') or ''
-        # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
-        # document its OWN single-instance slot, so it can't overwrite the student's route doc
-        # or another request. '' = the student's own apply-form/route doc (shared slot).
-        new_request_code = serializer.validated_data.get('request_code', '') or ''
-        if new_request_code == SLIP_REQUEST_CODE:   # S4a H1: a results slip's slot is never replaced here
+        if (data.get('request_code', '') or '') == SLIP_REQUEST_CODE:   # S4a H1: a results slip's slot is never replaced here
             return Response({'error': 'slip_locked', 'code': 'slip_locked'}, status=status.HTTP_409_CONFLICT)
-        # Slot model (TD-115): income docs are tagged by the household member they belong to.
+        return None
+
+    @staticmethod
+    def _earner_tag(app, new_doc_type, new_member, new_request_code):
+        """Slot model (TD-115): returns (str_income, member) — who an STR-route income doc belongs to."""
         # The STR route has a single earner, so PRE-CONSENT the backend AUTHORITATIVELY tags the
         # earner's income docs (str/parent_ic/salary_slip/epf) to that earner — by design, the STR
         # route clears on ONE parent's STR + IC (+ BC), so a blank-request income doc IS the earner's.
@@ -137,21 +133,13 @@ class DocumentListCreateView(APIView):
                       and app.profile_completed_at is None)   # pre-consent only
         if str_income:
             new_member = (getattr(app, 'income_earner', '') or '').strip()
-            serializer.validated_data['household_member'] = new_member
-        single = self._is_single_instance(new_doc_type, new_member)
-        # Slots this upload supersedes — the target (type, member, request_code), plus (STR income
-        # docs) the legacy UNTAGGED copy. The request_code in the key is what lets multiple 'other'
-        # docs (and cross-person income requests) coexist instead of overwriting each other.
-        # `superseded_at__isnull=True` keeps this scoped to the LIVE row in the slot — an already-
-        # superseded copy (version history) is never re-superseded and never counts toward a cap.
-        sweep_members = [new_member, ''] if str_income else [new_member]
-        slot_filter = dict(application=app, doc_type=new_doc_type,
-                           household_member__in=sweep_members, request_code=new_request_code,
-                           superseded_at__isnull=True)
-        # Guardrail 2: per-application document cap. A single-instance re-upload
-        # replaces an existing doc, so it doesn't count toward growth. All caps count
-        # LIVE docs only — superseded history rows are retained but must not fill the quota.
-        replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
+        return str_income, new_member
+
+    @staticmethod
+    def _refuse_over_cap(app, new_doc_type, replaces):
+        """Guardrail 2: the per-application caps. A replacement never grows the count."""
+        from apps.courses import org_config
+        _org = app.owning_organisation
         # 'other' (reviewer-requested extra) cap — a NEW 'other' slot beyond the cap is rejected.
         _max_other = org_config.value(_org, 'max_other_docs')
         if new_doc_type == 'other' and not replaces and ApplicantDocument.objects.filter(
@@ -163,6 +151,59 @@ class DocumentListCreateView(APIView):
                 application=app, superseded_at__isnull=True).count() >= _max_docs:
             return Response({'error': 'doc_limit_reached', 'max': _max_docs},
                             status=status.HTTP_400_BAD_REQUEST)
+        return None
+
+    @staticmethod
+    def _stale_ids(app, new_doc_type, new_request_code, slot_filter, sweep_members):
+        """The live rows this upload supersedes, snapshotted BEFORE the create."""
+        stale_ids = list(
+            ApplicantDocument.objects.filter(**slot_filter).values_list('id', flat=True))
+        # An OFFICER-REQUESTED re-upload (request_code set) also SUPERSEDES the student's
+        # apply-form copy of the SAME (doc_type, member): the officer asked for a fresh/better
+        # copy, so the old one is replaced (→ OTHER "Old / Replaced"), not kept as a parallel
+        # slot. Scoped to the same member, so a cross-person request (e.g. the father's IC on a
+        # mother-STR route) never clobbers another member's doc (TD-115).
+        if new_request_code:
+            apply_form_ids = ApplicantDocument.objects.filter(
+                application=app, doc_type=new_doc_type, household_member__in=sweep_members,
+                request_code='', superseded_at__isnull=True).values_list('id', flat=True)
+            stale_ids += [i for i in apply_form_ids if i not in stale_ids]
+        return stale_ids
+
+    def post(self, request):
+        app = _current_application(request.user_id)
+        if app is None:
+            return Response({'error': 'No shortlisted application.'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = DocumentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_doc_type = serializer.validated_data['doc_type']
+        refusal = self._refuse_bad_file(app, serializer.validated_data)
+        if refusal:
+            return refusal
+        new_member = serializer.validated_data.get('household_member', '') or ''
+        # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
+        # document its OWN single-instance slot, so it can't overwrite the student's route doc
+        # or another request. '' = the student's own apply-form/route doc (shared slot).
+        new_request_code = serializer.validated_data.get('request_code', '') or ''
+        str_income, new_member = self._earner_tag(app, new_doc_type, new_member, new_request_code)
+        if str_income:
+            serializer.validated_data['household_member'] = new_member
+        single = self._is_single_instance(new_doc_type, new_member)
+        # Slots this upload supersedes — the target (type, member, request_code), plus (STR income
+        # docs) the legacy UNTAGGED copy. The request_code in the key is what lets multiple 'other'
+        # docs (and cross-person income requests) coexist instead of overwriting each other.
+        # `superseded_at__isnull=True` keeps this scoped to the LIVE row in the slot — an already-
+        # superseded copy (version history) is never re-superseded and never counts toward a cap.
+        sweep_members = [new_member, ''] if str_income else [new_member]
+        slot_filter = dict(application=app, doc_type=new_doc_type,
+                           household_member__in=sweep_members, request_code=new_request_code,
+                           superseded_at__isnull=True)
+        # A single-instance re-upload replaces an existing doc, so it doesn't count toward growth.
+        # All caps count LIVE docs only — superseded history rows are retained but must not fill the quota.
+        replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
+        refusal = self._refuse_over_cap(app, new_doc_type, replaces)
+        if refusal:
+            return refusal
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
@@ -183,18 +224,7 @@ class DocumentListCreateView(APIView):
         # Snapshot the stale ids BEFORE the create so the new row (same slot) is never superseded.
         stale_ids = []
         if single:
-            stale_ids = list(
-                ApplicantDocument.objects.filter(**slot_filter).values_list('id', flat=True))
-            # An OFFICER-REQUESTED re-upload (request_code set) also SUPERSEDES the student's
-            # apply-form copy of the SAME (doc_type, member): the officer asked for a fresh/better
-            # copy, so the old one is replaced (→ OTHER "Old / Replaced"), not kept as a parallel
-            # slot. Scoped to the same member, so a cross-person request (e.g. the father's IC on a
-            # mother-STR route) never clobbers another member's doc (TD-115).
-            if new_request_code:
-                apply_form_ids = ApplicantDocument.objects.filter(
-                    application=app, doc_type=new_doc_type, household_member__in=sweep_members,
-                    request_code='', superseded_at__isnull=True).values_list('id', flat=True)
-                stale_ids += [i for i in apply_form_ids if i not in stale_ids]
+            stale_ids = self._stale_ids(app, new_doc_type, new_request_code, slot_filter, sweep_members)
         # STAGE → JUDGE → PROMOTE (owner 2026-07-09): a KEY NAMED doc is created STAGED (not-live) so
         # the existing proof keeps the prime slot until it is read + judged below; only a usable doc
         # that is at least as good is promoted. BYPASS/reviewer docs (bank_statement / income_support
