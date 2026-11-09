@@ -457,7 +457,8 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
         **dict.fromkeys(('AdminScholarListView', 'AdminScholarFileView', 'AdminScholarResultsView',
                          'AdminScholarMoneyView', 'AdminScholarContractView', 'AdminScholarActivityView',
                          'AdminScholarLettersView', 'AdminScholarLetterPdfView', 'AdminScholarSurveysView',
-                         'AdminScholarGrowthView', 'AdminScholarMentoringView'), ('get',)),
+                         'AdminScholarGrowthView', 'AdminScholarGrowthFileView', 'AdminScholarMentoringView'),
+                        ('get',)),
     }
 
     def test_the_closed_list(self):

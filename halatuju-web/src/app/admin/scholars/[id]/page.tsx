@@ -351,7 +351,8 @@ function StaffScholarFile() {
       )}
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
-      {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token} /></div>}
+      {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token}
+        progressLinks={canAccess('/admin/programme/development', viewer, role?.permissions)} /></div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={asMentor || !file.in_maintenance} /></div>}
     </div>
   )

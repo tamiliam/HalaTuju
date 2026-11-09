@@ -146,8 +146,9 @@ export interface WorkRow {
   late: boolean
   task_sent_at: string | null
   task_text: string
-  /** An upload opens through its own door, signed on the tap (staff: `taskFileLink`; the mentor:
-   *  `myStudentTaskFile`) — never a link carried in the payload (S10 review). */
+  /** An upload opens through its own door, signed on the tap (the file's Growth tab: `scholarTaskFileLink`; a
+   *  module's Progress: `taskFileLink`; the mentor's desk: `myStudentTaskFile`) — never a link carried in the
+   *  payload (S10 review). */
   task_file: { name: string; type: string } | null
   reviewed_at: string | null
   review_comment: string
@@ -231,4 +232,11 @@ export async function fetchModuleCsv(id: number, options?: ApiOptions): Promise<
 
 export async function getScholarGrowth(id: number, options?: ApiOptions) {
   return adminFetch<{ modules: WorkRow[] }>(`/api/v1/admin/scholarship/scholars/${id}/development/`, options)
+}
+
+/** A short signed link to ONE module's uploaded task, through the scholar FILE's door (S1: the Growth tab's
+ *  own fence and readers, so a mentor reaches their current student's upload; the module's door is the makers'). */
+export async function scholarTaskFileLink(id: number, moduleId: number, options?: ApiOptions) {
+  return adminFetch<{ url: string; expires_in: number }>(
+    `/api/v1/admin/scholarship/scholars/${id}/development/${moduleId}/file/`, options)
 }

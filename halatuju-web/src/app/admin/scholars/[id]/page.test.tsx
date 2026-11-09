@@ -11,7 +11,7 @@
  *    cockpit, which keeps those controls until Sprint 3;
  *  * a file the server will not show is the neutral RecordState, never "does not exist".
  */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarFilePage from './page'
 import * as api from '@/lib/admin-api'
 import * as dev from '@/lib/admin-api/development'
@@ -250,4 +250,25 @@ it('sprint S1 (S1-h): staff who mentor open the page by their mentor record; wit
   mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'], mentoring: true }
   render(<ScholarFilePage />)
   await screen.findByRole('heading', { name: 'NUR AISYAH' })
+})
+
+it('sprint S1: the Growth task opens through the FILE\'s door; the Progress link only for who may open it', async () => {
+  window.open = jest.fn(() => null) as unknown as typeof window.open
+  mockDev.scholarTaskFileLink.mockResolvedValue({ url: 'https://storage.test/m', expires_in: 300 })
+  mockDev.getScholarGrowth.mockResolvedValue({ modules: [{ id: 3, title: 'Managing your money', status: 'published',
+    due_on: null, task_kind: 'upload', lessons: 3, read: 3, done: true, late: false, task_sent_at: '2026-10-01T00:00:00Z',
+    task_text: '', task_file: { name: 'cv.pdf', type: 'application/pdf' }, reviewed_at: null, review_comment: '' }] })
+  for (const [who, mentorView, progress] of [[{ role: 'org_admin' }, false, true],
+    [{ role: 'mentor', permissions: [] }, true, false]] as const) {
+    mockRole = { ...who, owning_org_id: 11 }
+    mockApi.getScholarFile.mockResolvedValue({ ...FILE, mentor_view: mentorView })
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.growth' }))
+    fireEvent.click(await screen.findByTestId('growth-file-3'))
+    await waitFor(() => expect(mockDev.scholarTaskFileLink).toHaveBeenCalledWith(104, 3, { token: 'tok' }))
+    expect(screen.queryAllByRole('link', { name: 'admin.scholars.growth.progress' }).length > 0).toBe(progress)
+    mockDev.scholarTaskFileLink.mockClear()
+    unmount()
+  }
 })

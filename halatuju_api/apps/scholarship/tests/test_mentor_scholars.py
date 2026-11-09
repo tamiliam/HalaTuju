@@ -11,13 +11,17 @@ Brief `docs/plans/2026-11-09-s1-scholars-access.md`; decisions.md "S1". Pinned t
   * a mentor who also holds `scholars` reads the whole organisation (`scholars_scope` 'all' wins).
 The sweep of every other admin route is `test_mentor_denied_everywhere.py`.
 """
+from unittest.mock import patch
+
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses.models_claim import ProfileLoginAlias
 from apps.scholarship import activity, mentoring
-from apps.scholarship.models import Mentor
+from apps.scholarship.models import Mentor, MentorAssignment, ModuleProgress
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_student
+from apps.scholarship.tests.test_development import _module
 from apps.scholarship.tests.test_mentoring import _scholar, make_mentor
 from apps.scholarship.views_admin.base import scholars_scope
 
@@ -174,3 +178,35 @@ class TestStaffWhoMentor(_Base):
         ids = {r['id'] for r in authed_client(person).get(API).json()['results']}
         self.assertTrue({self.app.id, self.theirs.id} <= ids)
         self.assertEqual(authed_client(person).get(f'{API}{self.theirs.id}/').status_code, 200)
+
+
+class TestTheGrowthTaskFile(_Base):
+    """S1 review should-fix 1: the Growth tab's "open the task" goes through the FILE's door
+    (`scholars/<pk>/development/<module>/file/`), so a mentor reaches their current student's upload — and
+    only theirs — instead of the module makers' door, which refused them."""
+    SIGN = 'apps.scholarship.storage.create_signed_download_url'
+
+    def setUp(self):
+        super().setUp()
+        self.m = _module(self.org, task_kind='upload', task_prompt='Upload your CV')
+        ModuleProgress.objects.create(module=self.m, application=self.app, task_file_path='1/2/growth-3/' + 'e' * 32,
+                                      task_file_name='cv.pdf', task_sent_at=timezone.now())
+
+    def url(self, mid=None, pk=None):
+        return f'{API}{pk or self.app.id}/development/{mid or self.m.id}/file/'
+
+    def test_their_current_student_opens_and_staff_still_do(self):
+        with patch(self.SIGN, return_value='https://storage.test/m') as sign:
+            r = self.client_for().get(self.url())
+            self.assertEqual((r.status_code, r.json()['url']), (200, 'https://storage.test/m'))
+            sign.assert_called_once_with('1/2/growth-3/' + 'e' * 32, expires_in=300)
+            self.assertEqual(authed_client(self.lead).get(self.url()).status_code, 200)
+
+    def test_another_mentors_student_an_ended_assignment_or_no_upload_is_404(self):
+        with patch(self.SIGN, return_value='https://storage.test/m'):
+            self.assertEqual(self.client_for(mentoring._login(self.faizal)).get(self.url()).status_code, 404)
+            self.assertEqual(self.client_for().get(self.url(pk=self.theirs.id)).status_code, 404)
+            self.assertEqual(self.client_for().get(self.url(mid=NO_ROW)).status_code, 404)
+            MentorAssignment.objects.filter(application=self.app, ended_at__isnull=True).update(
+                ended_at=timezone.now())
+            self.assertEqual(self.client_for().get(self.url()).status_code, 404)

@@ -20,6 +20,10 @@ and every per-scholar read 404, the one answer for "not your student". The revie
 login's writes stay 403 (`get_admin`, `mentor_methods = ('get',)`). A mentor who holds `scholars` (the
 org admin and admin who mentor) reads the whole organisation and moves nowhere.
 
+S1 review should-fix 1 ADDS one route, the Growth tab's task-file door
+(`scholars/<pk>/development/<mid>/file/`). It is the Growth tab's own fence and readers, so its cell is the
+Growth tab's (after S1), except where the tab answers 200: the probe names no module, so the door says 404.
+
 The web menu half (`MenuAndEndpointAgree`) hides the Scholars row from exactly the same shapes and offers
 it to the mentors (`teamTablesMatrix.test.ts`, `s1Moves.ts`).
 """
@@ -33,6 +37,8 @@ S1_SHUT = ('qc', 'reviewer', 'finance_custom', 'reviewer_payments_check')
 S1B_MENTORS = {'mentor': False, 'reviewer_mentor': True}
 S1_LIST = 'GET api/v1/admin/scholarship/scholars/'
 S1_WEB_PAGE = '/admin/scholars'
+S1_GROWTH = 'GET api/v1/admin/scholarship/scholars/<int:pk>/development/'
+S1_GROWTH_FILE = 'GET api/v1/admin/scholarship/scholars/<int:pk>/development/<int:mid>/file/'
 
 
 def _s1b_mentor_cells(shape, before):
@@ -48,14 +54,20 @@ def _s1b_mentor_cells(shape, before):
     return out
 
 
-def s1_moved_cells(shape, before):
-    """`{probe: status}` S1 moves for `shape`, from its BEFORE row (`before`)."""
+def _s1_moved(shape, before):
     if shape in S1B_MENTORS:
         return _s1b_mentor_cells(shape, before)
     if shape not in S1_SHUT:
         return {}
     return {p: (404 if p == S1_ACTION_ROUTE else 403)
             for p in before if p.split(' ', 1)[1].startswith(SCHOLARS_PREFIX)}
+
+
+def s1_moved_cells(shape, before):
+    """`{probe: status}` S1 moves (and adds) for `shape`, from its BEFORE row (`before`)."""
+    moved = _s1_moved(shape, before)
+    growth = moved.get(S1_GROWTH, before[S1_GROWTH])
+    return {**moved, S1_GROWTH_FILE: 404 if growth == 200 else growth}
 
 
 def s1_web_shown(shape, href, shown):
