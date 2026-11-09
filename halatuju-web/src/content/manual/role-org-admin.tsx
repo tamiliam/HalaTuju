@@ -129,7 +129,8 @@ export const roleOrgAdmin: ManualChapter = {
           on first), or to take you out of Admins. Somebody removed from Reviewers who is still in Admins stays an
           Admin and will open the admin work pages (Announcements, Surveys, Sources and the like); the question
           says so. Somebody who also mentors can leave their last staff table and stay on as a mentor only
-          (they keep their sign-in and their scholars, and see My students and their Profile only) &mdash; if
+          (they keep their sign-in and their scholars, and see only My students, their Profile and, on Scholars, the
+          files of the scholars they mentor now, read-only) &mdash; if
           they have signed in and hold no cases; otherwise revoke them or stop their mentoring instead.</span>
           <span className="mt-2 block"><strong>Team &rarr; Mentors</strong> lists the mentors who have signed in
           and the staff who also mentor, with their scholars now, meetings in the last 90 days, the last meeting
