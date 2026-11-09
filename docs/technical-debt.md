@@ -1908,6 +1908,10 @@ Each is an open entry with a defining line in the register body (read it there).
   with tests/test_td119_non_earner_str_card.py. a5 (two docs) is relabelled red by the owner's IC-chain ruling; the
   rest are explained in labels.json corpus_known (stale snapshots, never-read docs, applicant typos). Left open: a16
   parent IC is a design case (a proof match vs a relationship gap, needs Layer-1 gating first; owner decision).
+  **Owner ruling 2026-11-09:** case a16 stays red; no softening of the a16 parent-IC check until the TD-114 Layer-1
+  gating of Layer 2 exists. G7 review (2026-11-09): the non-earner skip applies only when BOTH the card's name and
+  number differ from the STR; one matching and the other differing ("one number, two names") stays the red mismatch
+  (tests in test_td119_non_earner_str_card.py). Eval after G7: a5 still red (both docs flagged), 540/550, 24/27.
   Original entry: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
   `birth_certificate`, 1 `epf`, 1 `str`, 1 `offer_letter` (mismatch), 1 `offer_letter` (unreadable) as genuine-docs-
   wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of

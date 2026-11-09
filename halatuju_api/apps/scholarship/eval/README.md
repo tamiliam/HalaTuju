@@ -56,6 +56,11 @@ main checkout's corpus).
 - **Genuineness (TD-121).** Each document's STORED genuineness score is read (never re-scored,
   no model call). A counter-example counts as caught if the content check OR the stored score
   flags it; the `genuineness` block reports both sides and `counter_caught_by_genuineness_only`.
+  The two layers are NOT combined for genuine documents: a genuine document passes on its content
+  verdict alone, so a genuineness false positive (a genuine document whose stored score reads
+  `suspect` / `not_<type>`) is counted only in the separate genuineness count
+  (`genuineness.genuine_docs.flagged`, "genuine docs: … flagged"), never in the content pass figure
+  (`genuine_passed` / "N passed"). Read both numbers when judging false positives.
 - **Owner rulings.** Offer letters the owner ruled `suspect` or `not_offer_letter` in
   `offer_genuineness_expect.json` (next to labels.json) are expected flagged. That file is the
   one home; do not copy them into labels.json.

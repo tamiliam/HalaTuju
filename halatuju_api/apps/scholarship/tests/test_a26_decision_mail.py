@@ -174,6 +174,28 @@ class TestRetrySchedule(TestCase):
             self.assertEqual(fires, 6, jitter)
             self.assertIsNotNone(decline_at)
 
+    def test_the_real_sweep_under_cron_jitter_tries_six_times_no_doubles(self):
+        """G7 review: drive `retry_unsent_decisions` itself (its `_owed_pks` window AND the slot rule),
+        not only `retry_slot`, on a 15-minute cron whose runs land a few seconds early or late. A
+        failing decline and a failing engine reveal are each tried exactly once per slot: six times."""
+        t0 = timezone.now().replace(microsecond=0)
+        _app(rejected_at=t0, rejection_category='interview', email='decline@x.com')
+        reveal = _app(status='shortlisted', verdict='shortlisted', decision_released_at=t0,
+                      email='reveal@x.com')
+        jitter = (-9, 3, 9, -2, 0, -7, 5, -4)                                # seconds, varying per run
+        tried, failed = [], 0
+        with mock.patch(DECLINE_SEND, side_effect=lambda **kw: tried.append(kw['to_email']) or False), \
+                mock.patch('apps.scholarship.services.decision_mail.send_verdict_email',
+                           side_effect=lambda app: tried.append(app.pk) or False):
+            for k in range(4 * 76):                                          # 76 hours of runs
+                run_at = t0 + timedelta(minutes=15 * k, seconds=jitter[k % len(jitter)])
+                if run_at >= t0:
+                    failed += retry_unsent_decisions(now=run_at)['failed']
+        self.assertEqual(failed, 12)                                         # each try counted, none raised
+        self.assertEqual(tried.count('decline@x.com'), 6)
+        self.assertEqual(tried.count(reveal.pk), 6)
+        self.assertEqual(len(tried), 12)                                     # nothing else, no doubles
+
     def test_slot_boundaries(self):
         h = timedelta(hours=1)
         self.assertTrue(decline.retry_slot(timedelta(minutes=16)))

@@ -63,6 +63,56 @@ class TestANonEarnerCardOnTheStrRoute(TestCase):
             _card(self.app, 'mother', 'Kumar A/L Raju', FATHER_NRIC))
         self.assertEqual((wrong['proof_name_status'], wrong['proof_nric_status']), ('mismatch', 'mismatch'))
 
+    def test_one_number_two_names_stays_red(self):
+        """G7 review: the skip is for a DIFFERENT person only (both fields differ). A non-earner card
+        that carries the STR's number under another name, or the STR's name over another number, is
+        the old red mismatch."""
+        same_number = _card(self.app, 'father', 'Kumar A/L Raju', MOTHER_NRIC)
+        check = income_engine.student_income_ic_check(same_number)
+        self.assertEqual((check['proof_kind'], check['proof_name_status'], check['proof_nric_status']),
+                         ('str', 'mismatch', 'match'))
+        self.assertEqual(doc_match_verdict(same_number), 'mismatch')
+        same_name = _card(self.app, 'father', 'Saraswathy A/P Muthu', FATHER_NRIC)
+        check = income_engine.student_income_ic_check(same_name)
+        self.assertEqual((check['proof_kind'], check['proof_name_status'], check['proof_nric_status']),
+                         ('str', 'match', 'mismatch'))
+        self.assertEqual(doc_match_verdict(same_name), 'mismatch')
+
+    def test_a_fully_different_non_earner_card_is_no_ref(self):
+        check = income_engine.student_income_ic_check(
+            _card(self.app, 'father', 'Lim Ah Kow', '680202-10-1111'))
+        self.assertEqual((check['proof_kind'], check['proof_name_status'], check['proof_nric_status']),
+                         ('', 'no_ref', 'no_ref'))
+
+    def test_a_blank_tagged_card_is_read_as_the_earners_and_checked(self):
+        """No household tag: the card is the declared earner's, so the STR cross-check still runs."""
+        doc = _card(self.app, '', 'Kumar A/L Raju', FATHER_NRIC)
+        check = income_engine.student_income_ic_check(doc)
+        self.assertEqual(check['member'], 'mother')
+        self.assertEqual((check['proof_kind'], check['proof_name_status'], check['proof_nric_status']),
+                         ('str', 'mismatch', 'mismatch'))
+        self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_a_guardian_earner_on_the_str_route(self):
+        """A guardian earner's own card is checked against the STR; a parent's different card is not."""
+        guardian_nric = '690303-08-2222'
+        app = make_application('profile_complete', income_route='str', income_earner='guardian',
+                               father_name='Kumar A/L Raju', mother_name='Saraswathy A/P Muthu',
+                               other_family_members=[],
+                               student=make_student(nric='050202-14-4321', name='Arun A/L Kumar'))
+        _doc(app, 'str', vision_fields={
+            'fields': {'recipient_name': 'Devi A/P Rama', 'recipient_nric': guardian_nric},
+            'student_verdict': 'ok', 'error': ''})
+        own = income_engine.student_income_ic_check(_card(app, 'guardian', 'Devi A/P Rama', guardian_nric))
+        self.assertEqual((own['proof_kind'], own['proof_name_status'], own['proof_nric_status']),
+                         ('str', 'match', 'match'))
+        wrong = income_engine.student_income_ic_check(_card(app, 'guardian', 'Kumar A/L Raju', FATHER_NRIC))
+        self.assertEqual((wrong['proof_kind'], wrong['proof_name_status'], wrong['proof_nric_status']),
+                         ('str', 'mismatch', 'mismatch'))
+        mother = income_engine.student_income_ic_check(_card(app, 'mother', 'Saraswathy A/P Muthu', MOTHER_NRIC))
+        self.assertEqual((mother['proof_kind'], mother['proof_name_status'], mother['proof_nric_status']),
+                         ('', 'no_ref', 'no_ref'))
+
     def test_the_salary_route_is_unchanged(self):
         """Salary route: each member's card is checked against THAT member's own slip, as before."""
         self.app.income_route, self.app.income_earner = 'salary', 'mother'
