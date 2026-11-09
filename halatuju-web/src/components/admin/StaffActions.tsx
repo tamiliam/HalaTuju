@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } fr
 import { useT } from '@/lib/i18n'
 import { workSummary } from '@/lib/staffRole'
 
-type Bubble = typeof import(/* webpackChunkName: 'mi' */ '../InfoTipBubble').default
+type Bubble = typeof import(/* webpackChunkName: 'ad' */ '../InfoTipBubble').default
 
 /**
  * Sprint T2 (owner, 2026-11-08): **Revoke / Restore, then Delete**, the same pair on every Team table
@@ -31,8 +31,10 @@ type Bubble = typeof import(/* webpackChunkName: 'mi' */ '../InfoTipBubble').def
  * It does nothing when pressed except show why. The reason is also its `aria-describedby`, so a
  * screen reader hears it with the button, before any bubble has loaded.
  *
- * ⚠ THE BUBBLE IS `InfoTip`'s (`InfoTipBubble`, its own chunk `mi`), fetched the first time it opens —
- * the same look, the same on-screen clamp, the same close on an outside tap or Escape. No new chunk.
+ * ⚠ THE BUBBLE IS `InfoTip`'s (`InfoTipBubble`), fetched the first time it opens — the same look, the
+ * same on-screen clamp, the same close on an outside tap or Escape. It is fetched into the ADMIN chunk
+ * `ad`, NOT the students' `mi`: an admin importer of `mi` re-split the shared chunks under
+ * /scholarship/apply (+0.18 kB first load, over its budget, 2026-11-10). No new chunk either way.
  *
  * Resend and Remove-from-table are NOT here: each caller keeps them where they were, either side.
  */
@@ -106,7 +108,7 @@ function GreyedDelete({ reason, text }: { reason: string; text: string }) {
   useEffect(() => {
     if (!open || Bubble) return
     let live = true
-    import(/* webpackChunkName: 'mi' */ '../InfoTipBubble')
+    import(/* webpackChunkName: 'ad' */ '../InfoTipBubble')
       .then((m) => { if (live) setBubble(() => m.default) }).catch(() => {})
     return () => { live = false }
   }, [open, Bubble])
