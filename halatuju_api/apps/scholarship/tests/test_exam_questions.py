@@ -357,7 +357,7 @@ _READERS = {
     'apps/scholarship/pool.py': 'results_held(',
     'apps/scholarship/income_engine/occupation.py': 'heading_for(',
     'apps/scholarship/income_engine/epf_evidence.py': 'heading_for(',
-    'apps/scholarship/vision.py': 'results_held(',
+    'apps/scholarship/vision/field_extraction.py': 'results_held(',   # audit A3.1: was vision.py
     'apps/scholarship/serializers.py': 'ResultsHeldField(',
     # TD-325 (2026-10-04): the sponsor-profile prompt and the Check-2 facts ledger name the
     # results we hold (owner ruling TD-324), so they read `results_held` too.
@@ -386,6 +386,16 @@ class TestNoReaderReadsTheAmbiguousName(SimpleTestCase):
                 self.assertIsNone(_RAW_ATTR.search(src), f'{rel} reads the ambiguous field')
             seen.append(rel)
         floor_count(seen, 8, 'reader modules', why)
+
+    def test_no_file_of_the_vision_package_reads_the_raw_field(self):
+        why = 'audit A3.1: vision is a package; every one of its files, not only field_extraction.py.'
+        files = sorted((_API / 'apps/scholarship/vision').glob('*.py'))
+        floor_count(files, 2, 'vision package files', why)
+        for f in files:
+            src = read_source(f, why)
+            with self.subTest(file=f.name):
+                self.assertIsNone(_RAW_GETATTR.search(src), f'{f.name} reads the ambiguous field')
+                self.assertIsNone(_RAW_ATTR.search(src), f'{f.name} reads the ambiguous field')
 
 
 class TestTheTd325ReadersOnTheExplorer(TestCase):

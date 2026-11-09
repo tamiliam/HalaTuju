@@ -215,7 +215,7 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 are multimodal "looks official?" reads; the results-slip/certificate check is a deterministic SIGNATURE-probability
 scorer over the OCR text (+ a focused QR/crest visual read), soft-bands, calibrated on a labelled corpus. The result
 (`vision_fields['authenticity']`) soft-caps the verdict (`verdict_engine`) and raises an officer flag (`anomaly_engine`);
-it never blocks. `vision.py` keeps the shared OCR/Gemini plumbing and re-exports `ic_genuineness`/`doc_genuineness`.
+it never blocks. The `vision/` package keeps the shared OCR/Gemini plumbing and re-exports `ic_genuineness`/`doc_genuineness`.
 
 **New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
@@ -539,9 +539,14 @@ API (`views_admin.py`/`serializers_admin.py`, reusing `PartnerAdminMixin`) under
 (`src/app/admin/scholarship/page.tsx` + `[id]/page.tsx`, AI profile generate/edit/publish) and the
 admin scholarship client functions in `lib/admin-api.ts`. **Phase 1 build complete (all 6 sprints).**
 
-**Post-shortlist three-engine gap model (S13–v2.17.0):** `vision.py` (Google Cloud Vision OCR — IC NRIC/name/
-address extraction + soft full-text name/address presence checks on supporting docs + the shared
-`_call_gemini_json` seam + doc-assist field extraction, `vision_fields`), `anomaly_engine.py` (S16 — pure
+**Post-shortlist three-engine gap model (S13–v2.17.0):** `vision/` (a package since audit sprint A3.1 — Google
+Cloud Vision OCR — IC NRIC/name/address extraction + soft full-text name/address presence checks on supporting docs
++ the shared `_call_gemini_json` seam + doc-assist field extraction, `vision_fields`. Its `__init__.py` is a
+re-export shell: `names` / `mykad` (pure matchers and the MyKad parse), `ocr` (Vision, Storage, PDF text layer),
+`gemini_read` (every Gemini call; the `doc_read` job in `halatuju/ai_registry.py`), `schemas` / `sanitize` /
+`judge` (the field read and the student verdict), `match`, `ic`, `field_extraction` + `authenticity`. Seams are
+called through the package (`_v.name`), so `apps.scholarship.vision.<name>` stays the one patch target),
+`anomaly_engine.py` (S16 — pure
 deterministic `detect_anomalies` → `{code, params}` flags, no LLM), and `gap_engine.py` (v2.17.0 Phase B — Gemini
 reads the typed narrative → 3–6 `{code, question, why}` interview gaps, `interview_gaps`). Profile draft + Phase-D
 refine: `profile_engine.py` — `generate_sponsor_profile` (draft from the form) and `refine_sponsor_profile`
@@ -552,7 +557,7 @@ for prose) — no billable calls in CI. **Read failures — ours or the document
 `read_errors.py` is the one classifier (`is_ai_service_error`, `is_ocr_service_error`, `model_rejected_document`,
 `read_deferred`, `deferred_by_us`); `gemini.py` builds the cascade's error strings (`cascade_failure`,
 `document_failure`); our failure is stored `review_manually` + `service_error` at the choke point in
-`vision._run_field_extraction_impl`. `check2_deferred.py` holds Check-2 doc requests while a read is deferred;
+`vision._run_field_extraction_impl` (`vision/field_extraction.py`). `check2_deferred.py` holds Check-2 doc requests while a read is deferred;
 `services/read_retry.py` is the hourly sweep's re-read of deferred reads; `services/outage.py` holds the
 Vision/Gemini outage detectors behind `alert_vision_outage`. **Student-facing help (v2.20.0):** `help_engine.py` ("Cikgu Gopal") —
 `generate_document_help(doc_type, verdict, *, first_name, target_language)` phrases an already-decided document
