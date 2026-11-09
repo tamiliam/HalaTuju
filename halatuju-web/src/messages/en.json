@@ -9415,7 +9415,7 @@
         "reviewers": "Add Reviewer"
       },
       "addIntro": {
-        "admins": "Pick someone already in the team. They start with the minimum, Applications, and you tick more admin permissions after. Their sign-in is not touched and no email is sent.",
+        "admins": "Pick someone already in the team. They start with Applications and Scholars, and you tick more admin permissions after. Their sign-in is not touched and no email is sent.",
         "reviewers": "Pick someone already in the team: an admin, a mentor or the organisation admin. They start with Review assigned students; tick Quality check after if wanted. Nobody ever quality-checks a case they reviewed. Their sign-in is not touched and no email is sent."
       },
       "addCta": {
