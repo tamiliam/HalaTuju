@@ -101,11 +101,13 @@ class TestReleaseCap(TestCase):
         # Lead ruling: a decline whose email keeps failing must NEVER become visible to her.
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         from apps.scholarship.student_status import student_facing_status
-        app = self._embargoed(80)                       # due 80 h ago: past RETRY_CAP
-        with mock.patch(DECLINE_SEND, return_value=False):
-            for _ in range(3):
-                decline.release_pending_declines()
-            decline.release_pending_declines(now=timezone.now() + timedelta(days=9))
+        now0 = timezone.now().replace(microsecond=0)
+        app = self._embargoed(96)                       # due 96 h before now0: past RETRY_CAP
+        ScholarshipApplication.objects.filter(pk=app.pk).update(decline_due_at=now0 - timedelta(hours=96))
+        with mock.patch(DECLINE_SEND, return_value=False) as send:
+            decline.release_pending_declines(now=now0)
+            decline.release_pending_declines(now=now0 + timedelta(days=9))
+        self.assertEqual(send.call_count, 2)            # the passed now is what counts: daily slots
         app.refresh_from_db()
         self.assertEqual(app.pending_rejection_category, 'interview')       # still embargoed
         self.assertEqual(student_facing_status(app), 'interviewed')         # she sees no decline
@@ -120,11 +122,27 @@ class TestReleaseCap(TestCase):
         app.decline_due_at = timezone.now() + timedelta(days=1)              # still cooling off
         self.assertEqual(untold_reason(app), '')
 
-    def test_a_failing_release_is_tried_in_slots_not_on_every_run(self):
-        self._embargoed(8)                                                    # between two slots
+    def test_a_release_that_fell_due_hours_ago_is_sent_at_once(self):
+        # A cron that was down must still send it on the first run: due 2 h ago, email works.
+        app = self._embargoed(2)
+        with mock.patch(DECLINE_SEND, return_value=True):
+            self.assertEqual(decline.release_pending_declines(), 1)
+        app.refresh_from_db()
+        self.assertEqual(app.pending_rejection_category, '')
+
+    def test_past_the_cap_an_off_slot_run_does_not_try(self):
+        now0 = timezone.now().replace(microsecond=0)
+        app = self._embargoed(80)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(decline_due_at=now0 - timedelta(hours=80))
         with mock.patch(DECLINE_SEND, return_value=False) as send:
-            decline.release_pending_declines()
+            decline.release_pending_declines(now=now0)
         send.assert_not_called()
+
+    def test_an_unsent_embargoed_decline_is_never_aged_out_of_the_banner(self):
+        app = self._embargoed(24 * 120)                 # due 120 days ago, still hidden
+        self.assertEqual(untold_reason(app), UNSENT)
+        old = _declined(hours_ago=24 * 120)             # not embargoed: aged out
+        self.assertEqual(untold_reason(old), '')
 
     def test_sent_stamp_can_be_kept_on_its_own(self):
         app = self._embargoed(1)
@@ -143,6 +161,18 @@ class TestRetrySchedule(TestCase):
             for k in range(0, 4 * 76):                                       # 15-minute cron, 76 hours
                 retry_unsent_decisions(now=t0 + timedelta(minutes=15 * k))
         self.assertEqual(send.call_count, 6)    # 15 min, 1 h, 6 h, 24 h, 48 h, 72 h after the decision
+
+    def test_cron_jitter_neither_doubles_nor_skips_a_slot(self):
+        t0 = timezone.now().replace(microsecond=0)
+        for jitter in (-9, -2, 0, 2, 9):
+            decline_at = t0 - timedelta(days=200)
+            fires = 0
+            for k in range(4 * 76):
+                elapsed = timedelta(minutes=15 * k, seconds=jitter)
+                if elapsed >= timedelta(0) and decline.retry_slot(elapsed):
+                    fires += 1
+            self.assertEqual(fires, 6, jitter)
+            self.assertIsNotNone(decline_at)
 
     def test_slot_boundaries(self):
         h = timedelta(hours=1)
@@ -231,27 +261,17 @@ class TestDetailPayload(TestCase):
 
 
 class TestCurrentApplicationTwoCohorts(TestCase):
-    def _two(self):
+    def test_an_embargoed_decline_plus_a_live_one_elsewhere_still_refuses(self):
+        # Lead ruling: a lock-out is recoverable, a document filed under the wrong foundation is not.
         from apps.scholarship.tests.factories import make_cohort
+        from apps.scholarship.views import AmbiguousApplication, _current_application
         p = StudentProfile.objects.create(supabase_user_id=f'a26-two-{StudentProfile.objects.count()}')
         a = make_application('shortlisted', cohort=_cohort(), student=p)
         ScholarshipApplication.objects.filter(pk=a.pk).update(
             status='rejected', pending_rejection_category='interview',
             pre_decline_status='shortlisted', rejected_at=timezone.now(),
             decline_due_at=timezone.now() + timedelta(days=3))
-        b = make_application('shortlisted', cohort=make_cohort(code='a26-b'), student=p)
-        return p, b
-
-    def test_an_embargoed_decline_does_not_block_the_other_cohort(self):
-        from apps.scholarship.views import _current_application
-        p, b = self._two()
-        self.assertEqual(_current_application(p.pk).pk, b.pk)
-
-    def test_two_live_ones_still_refuse(self):
-        from apps.scholarship.tests.factories import make_cohort
-        from apps.scholarship.views import AmbiguousApplication, _current_application
-        p, _b = self._two()
-        make_application('shortlisted', cohort=make_cohort(code='a26-c'), student=p)
+        make_application('shortlisted', cohort=make_cohort(code='a26-b'), student=p)
         with self.assertRaises(AmbiguousApplication):
             _current_application(p.pk)
 
