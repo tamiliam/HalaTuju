@@ -11,6 +11,8 @@ Branch: `s1-scholars-access`, cut from `p1-activity-box` (824baf62). P1 edits `s
 - **QC has no role in Scholars either.** QC keeps Applications.
 - **Semester results are reviewed by admin and org admin.**
 - **Mentors have no access to Applications.** This is already true for a mentor login; pin it with a test.
+- **Mentors see the scholars assigned to them on the Scholars page, with the full file**, just as reviewers see the applications assigned to them. This reverses the S7c "never" list for those students (owner, 2026-11-09).
+- **Access comes from permissions, not from which table a person is in.** "We do not have a concept of permanent reviewers. They are team members. They get their power from permissions." (owner, 2026-11-09)
 
 Enforce all of this in the API first; the web follows.
 
@@ -48,8 +50,9 @@ Enforce all of this in the API first; the web follows.
 | S1-a | **Scholars**, meaning the list and every per-scholar endpoint and tab behind the fence, opens for super and for anyone holding `see_all` in their own right. `review` alone → 403. `qc` alone → 403. Applications and `b40_scope` are unchanged. |
 | S1-b | **"In their own right"** means the key comes from the person's preset or saved keys, not from the `qc → see_all` implication. Do not invent a role-label gate (`test_role_is_display_only.py`). Prefer reading the unimplied key set if `resolve` can expose one cheaply. Otherwise use `see_all` and not "`qc` without a direct `see_all`". Name the helper `scholars_scope(admin)` beside `b40_scope` in `base.py`. If neither way is clean, stop and report: the fallback is a new key (`scholars`), which would need a data migration for the 6 rows with saved keys, and that needs the owner. |
 | S1-c | **Semester-result review** (the result-review POST and any other result accept/query write) is open to everyone S1-a admits, across their organisation: admin, org admin and super. It is no longer limited to the assignee. `qc` no longer writes here. The org fence stays. |
-| S1-d | **Letters and activity notes** on a scholar file follow S1-a: anyone admitted may write. Architect's default, flagged to the owner. A closed file stays read-only as today. |
-| S1-e | **People in several tables:** the union is taken by keys. A reviewer who also holds `see_all` keeps Scholars. Mentoring never opens Scholars or Applications. |
+| S1-d | **Letters and activity notes** on a scholar file: anyone S1-a admits (any admin or org admin in the organisation) may write them (owner, 2026-11-09). A closed file stays read-only as today. |
+| S1-e | **People in several tables:** the union is taken by keys (owner, 2026-11-09: team members "get their power from permissions"). A person in the Reviewers table who holds `see_all` keeps Scholars. A mentoring assignment opens Scholars only for that mentor's own students (S1-h), and never opens Applications. |
+| S1-h | **Mentors on Scholars** (owner, 2026-11-09, "Scholars, full file"). Applies to a mentor login, and to staff who mentor (`mentor_desk.mentor_of`).<br>• **Scope:** the Scholars list holds only their CURRENT students, as decided by `mentor_desk.current_assignments`: an open assignment, in their own organisation, in maintenance, and never their own application. Every per-scholar door gives a single 404 for anything else. That includes ended mentoring, another mentor's student, another organisation's file and an unknown id. Access ends when the mentoring ends.<br>• **What they see:** every tab an admin sees: results, money, contract, documents, letters, activity, growth, surveys and mentoring. One exception, the architect's default: activity notes marked **Staff only** stay hidden from a mentor, because a mentor is not staff. The mentoring tab shows as staff see it.<br>• **Read-only:** no result review (S1-c), no letters and no activity notes. A mentor keeps logging meetings on **My students**, which stays as it is (meeting log, modules, concern flag).<br>• **Enforced on the server:** add `GET` to `mentor_methods` on exactly the Scholars read views. Each must check the mentor scope before anything else, and `test_mentor_denied_everywhere.py` gets the new list.<br>• Supersedes S7c point (2), the "never" list, and point (7), "My students and Profile only". Mark both "Superseded 2026-11-09 (S1)". |
 | S1-f | **Mentors:** no code change. A test pins that a mentor login gets 403 on the Applications list and detail, through both the API and the web `canAccess`. |
 | S1-g | **Supersede** `docs/decisions.md` 2026-10-29 "The Scholars list and file read by the Applications rule", and the Scholars cell of T5c ("Applications and Scholars keep their rules"). Mark both "Superseded 2026-11-09 (S1)". |
 
@@ -59,9 +62,20 @@ Enforce all of this in the API first; the web follows.
   - Drop the `'assigned'` branch of `_file_for`.
   - Give the result-review write the S1-c rule. Check whether `_can_review_app` is shared with Applications writes. If it is, do not change it for Applications: add a scholar-file write check instead.
   - Make sure no other door lets a reviewer or QC reach scholar data, for example document downloads keyed by scholar, or payments reads of a scholar file. Exception: the Payments page's funding-summary allowlist stays as it is.
+  - **Mentor scope (S1-h):**
+    - `scholars_scope(admin)` returns `'all'`, `'mentor'` or `'none'`. `'mentor'` narrows the list and `_file_for` to `current_assignments`.
+    - A person who holds both `see_all` and a mentor record gets `'all'`.
+    - Every write path refuses `'mentor'`. That covers result review, letters, activity POST, contract, money and documents.
+    - Filter "Staff only" activity rows, and their counts, out for `'mentor'` on the server.
+    - Check the P1 actor rule: a mentor reading the log must not get any email that the P1 rules withhold.
+    - Document reads (signed links): if the scholar file opens documents through another view, that view needs the same mentor scope.
   - No migration.
 - **Web:**
-  - On the `scholars` row, set roles to `[super, org_admin, admin, source_partner]` and perms to `['see_all']`.
+  - On the `scholars` row, set roles to `[super, org_admin, admin, source_partner, mentor]` and perms to `['see_all']`.
+    - A mentor login gets the row through its role (mentors have no team keys).
+    - A staff member who mentors but has no `see_all` gets it through their mentor record, the same signal the nav already uses for My students.
+    - The mentor's file view hides every write control: composer, letters, result review and contract actions. The server refuses them anyway.
+    - Mentor nav becomes My students, Scholars and Profile.
   - Keep `source_partner`: it renders `components/source/*` (role-matrix ~531). Confirm what it shows.
   - Make sure the web `canAccess` matches S1-b for a QC-only person, whose resolved permissions include `see_all`. If the client cannot tell, gate on `qc` absence the same way as the API, with no role-label read.
   - Gate "Open scholar file" (`PostAwardPanels.tsx`) on `canAccess('/admin/scholars', …)`.
@@ -76,7 +90,14 @@ Enforce all of this in the API first; the web follows.
   - Admin, org admin and super are unchanged for reads.
   - An admin who is not the assignee can accept or query a semester result in their organisation, and gets 404 cross-organisation.
   - A mentor gets 403 on the Applications list and detail.
-  - The matrix diff equals `EXPECTED_CHANGES` exactly: reviewer, qc and reviewer_mentor Scholars cells, and nothing else.
+  - Mentor on Scholars:
+    - The list holds only their current students.
+    - Every tab reads 200 for a current student.
+    - 404 for an ended assignment, another mentor's student, another organisation's file, their own application and an unknown id.
+    - Every write is refused.
+    - "Staff only" activity rows and their counts are absent.
+    - A staff member who mentors and holds `see_all` keeps the full organisation.
+  - The matrix diff equals `EXPECTED_CHANGES` exactly: reviewer, qc, reviewer_mentor and mentor Scholars cells, and nothing else.
 - **Web tests:**
   - A reviewer and a QC have no Scholars row and no "Open scholar file" link.
   - An admin and a reviewer holding `see_all` keep both.
@@ -97,4 +118,6 @@ Enforce all of this in the API first; the web follows.
 - **Work in flight on the 53 awarded cases.** Semester results that reviewers would have reviewed now fall to the 2 admins and 2 org admins. The release note must say so. Before release, count the results awaiting review (architect, read-only).
 - **Live reviewers lose the file mid-work.** Tell them in the release note.
 - **S1-b subtlety:** a gate on `see_all` alone silently keeps QC in. The tests must include a QC-only person.
+- **Mentors now read documents, money and family data** for their own students. This is a deliberate PII widening by the owner. Record it in `role-matrix.md`, with the scope (current students only) and the end condition (access ends with the mentoring). Every new mentor door gets the 404-for-all test.
+- **Size:** this sprint is larger than the reviewer change alone. If it runs long, split it: S1a (reviewers and QC off), then S1b (mentors on). Commit each separately.
 - **Bundle headroom** is about 0.7 kB. This sprint should shrink the web, not grow it. Never raise a budget.
