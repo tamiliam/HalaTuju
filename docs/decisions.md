@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## The activity box shows who and when, oldest at the top, with a one-line note box — 2026-11-09 (sprint P1; owner rulings P1-a to P1-h)
+
+**The rule:** on a scholar's file, the activity log names the person behind each row, with their name and a photo or initials, and never their email. Only a fully automatic row is "System". Times read as relative words, with the exact time on hover and for a screen reader. The list runs oldest to newest inside a fixed-height scroller, with the note box below it. Brief: `docs/plans/2026-11-09-p1-activity-box.md`; roadmap: `docs/plans/2026-11-08-activity-box-roadmap.md` (P1).
+
+**Why:** the owner wants the box to read the way Podio does, so an officer sees at a glance who did what and how long ago, and the page around the box does not grow as the log does.
+
+**Rulings:**
+- **P1-a, notes only.** The box is "Add a note…", with no Note/Call/Meeting choice; the web sends `kind='note'`. The server still accepts every manual kind (no API break). Old call, meeting and email rows keep their word. A plain note shows no kind word; Call, Meeting, Email, and a System row that names a person, do.
+- **P1-b, oldest at the top, newest at the bottom, box below the list.** ⚠ **This reverses roadmap D3** (newest first). Only the latest few show, and "Show older (n)" at the top loads the rest in place, keeping the reader's position. Side panel: the latest 6. Activity tab: 20 per load. The server still pages newest first; the web shows each page reversed.
+- **P1-c, fixed height, scrolls inside.** 420 px in the side panel and 560 px on the tab; on a phone 55dvh (`dvh` per the Mobile Standard, never `vh`). It opens scrolled to the newest, and after a Save it scrolls to the new entry.
+- **P1-d, who is shown.** Any person who had a hand in the row is shown by name and photo, or initials. That covers a manual entry, a system row with an `actor_email`, and the scholar's own rows. Only a fully automatic row shows the System icon. The scholar's rows show the scholar's name (the file's existing convention), or "The scholar" when there is none. A letter acknowledgement, and a semester result with `meta.by='student'`, carry no email and are read as the scholar. An email that matches nobody is shown as written. ⚠ **A pure mentor is never named to a viewer without the Mentoring tab:** no name, no photo, no email (the web reads "A mentor").
+- **P1-e, time.** "Just now", minutes, hours, then "Yesterday" (the previous calendar day in Asia/Kuala_Lumpur), "n days ago", and a date from 30 days. The helper is `relativeTime` in `lib/formatDate.ts`, written as a union that T3's `lastSeen` can share.
+- **P1-f, filter.** All · Notes · System with counts, on the Activity tab only; the side panel stays mixed. "Notes" means every manual kind. It is applied on the server (`?show=`, an unknown value reads as all, `counts` from one grouped query), so paging and the counts stay correct.
+- **P1-g, composer.** One line until focused; then three rows, the Staff only `Toggle` (never a checkbox), Cancel and Save. Save, Cancel, or Esc on an empty box closes it. A closed file stays read-only, with no composer.
+- **P1-h:** the roadmap's "See all (n)" is dropped; "Show older" replaces it.
+- **Cost:** one login query and one batch photo-signing call per request, whatever the page holds (`activity_people.Actors`). The photo links last about an hour and are never kept beyond the page.
+
 ## A degree student gets a degree funding estimate; every skills / TVET course is estimated — 2026-11-07 (bug fix; owner decisions 1-12, app 278)
 
 **The bug:** the cockpit's "Estimated need & proposed bursary" card showed a post-STPM degree student the UA-diploma estimate (#278, *Ijazah Sarjana Muda Pendidikan*: "≈ RM6,600, ~RM220/month × 30 months"). `funding_estimate.py` assumed post-SPM only, but the Sabah / Ipoh gifts admit STPM-level students and the offer realignment (2026-10-31) stores an STPM degree as `university`. Same root, money: #251's stale `chosen_pathway='stpm'` on a degree made `award.proposed_award_amount` commit RM3,000 (or None and a QC start-year stop). Brief: `docs/plans/2026-11-07-degree-funding-estimate.md`.

@@ -263,6 +263,17 @@ hold** stays on the cockpit's sub-state endpoint and needs `payments.may_prepare
 a `payments_prepare` holder) since maintenance S1. Menu row: same roles and keys as Applications,
 inside a gift (`needsProgramme`).
 
+**Who wrote each activity row (sprint P1, 2026-11-09).** The file's activity log now shows each
+writer's NAME and staff PHOTO (a signed link, about an hour), and no longer their email
+(`activity_people.Actors`). This widens one thing: a reviewer or QC, who could already read the
+file and its rows' writer emails, now also sees the writing staff member's photo. That is the same
+staff photo every staff member sees in Team lists; it is staff-only, and no student, sponsor,
+finance or partner login reaches it. **A pure mentor is never named outside the Mentoring tab:**
+a viewer without `mentoring.may_read_mentoring` (qc, reviewer) gets no mentoring row under any filter
+(the S7b rule, unchanged). On any other row a pure mentor wrote (`role='mentor'`), they get an
+empty name, no photo (never signed) and a blank `actor_email`; the web reads "A mentor". A staff
+member who also mentors is shown as staff. An email that matches no login is shown as written.
+
 ## Payments module (Vircle payment runs) — access
 
 The Payments module (`/admin/payments`, entered via the Administration ORGANISATION-section card;
