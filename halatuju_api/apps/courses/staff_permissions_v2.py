@@ -103,9 +103,10 @@ IMPLIES = {k: (_page_view(k),) for k in CATALOGUE_V2 if _page_view(k)}
 #: rows are page tiers. ⚠ STILL NOT A GATE: QC opens through `resolve` / `_b40_scope`, as before.
 HAT_IMPLIES = {'qc': ('students.view',)}
 
-#: Dependencies as data (ruling 7): the Engagement pages name every scholar, so each needs
-#: `students.view` — as `qc` needed `see_all` in the old vocabulary until T5b (now `qc` brings it).
-DEPENDS_ON_V2 = {k: ('students.view',) for k, row in CATALOGUE_V2.items() if row[0] == ENGAGEMENT}
+#: Dependencies as data (ruling 7): the Engagement pages name every scholar (survey answers, module
+#: progress, mentoring), so each needs the key that reads every scholar's file. Since sprint S1 that is
+#: `scholars.view`; `students.view` is Applications only. Data, not a gate (`dependency_gaps`; T5d).
+DEPENDS_ON_V2 = {k: ('scholars.view',) for k, row in CATALOGUE_V2.items() if row[0] == ENGAGEMENT}
 
 #: Old key -> the v2 keys it MEANS. `manage_team` maps to nothing: it is lead-tier only, and the lead
 #: holds every v2 key anyway.

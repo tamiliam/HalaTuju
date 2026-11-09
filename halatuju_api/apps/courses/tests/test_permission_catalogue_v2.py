@@ -149,16 +149,18 @@ class Vocabulary(TestCase):
         self.assertEqual(v2.with_implied_views(['requests.approve']),
                          ('requests.view', 'requests.approve'))
 
-    def test_the_engagement_keys_need_students_view(self):
-        self.assertEqual(v2.DEPENDS_ON_V2, {k: ('students.view',) for k in _ENGAGEMENT_ALL})
+    def test_the_engagement_keys_need_scholars_view(self):
+        # Sprint S1: they name every scholar, which is now `scholars.view` (`students.view` = Applications).
+        self.assertEqual(v2.DEPENDS_ON_V2, {k: ('scholars.view',) for k in _ENGAGEMENT_ALL})
 
     def test_the_qc_hat_implies_students_view(self):
         # T5b: the v2 spelling of `staff_permissions.IMPLIES` — QC sees all students, by itself.
         self.assertEqual(v2.HAT_IMPLIES, {'qc': ('students.view',)})
         self.assertEqual(v2.with_implied_views(['qc']), ('students.view', 'qc'))
         self.assertEqual(v2.with_implied_views(['review']), ('review',))    # review is assigned-only
-        self.assertEqual(v2.dependency_gaps(['surveys.view']), {'surveys.view': ('students.view',)})
-        self.assertEqual(v2.dependency_gaps(['surveys.view', 'students.view']), {})
+        self.assertEqual(v2.dependency_gaps(['surveys.view']), {'surveys.view': ('scholars.view',)})
+        self.assertEqual(v2.dependency_gaps(['surveys.view', 'scholars.view']), {})
+        self.assertEqual(v2.dependency_gaps(['surveys.view', 'students.view']), {'surveys.view': ('scholars.view',)})
 
     def test_the_aliases_cover_every_old_key_and_name_only_v2_keys(self):
         self.assertEqual(set(v2.ALIASES), set(sp.CATALOGUE))
@@ -196,10 +198,13 @@ class GoldenV2(TestCase):
                 self.assertEqual(set(v2.effective_v2(self.people[shape])), expected)
 
     def test_every_set_is_closed_and_consistent(self):
+        # Sprint S1 (TD-597): a list saved without `scholars` still holds every Engagement key, which
+        # names every scholar. `dependency_gaps` reports it; it describes today, the owner decides.
+        known = {'admin_see_all_spending': {k: ('scholars.view',) for k in _ENGAGEMENT_ALL}}
         for shape, (_, expected) in GOLDEN_V2.items():
             with self.subTest(shape=shape):
                 self.assertEqual(set(v2.with_implied_views(expected)), expected)
-                self.assertEqual(v2.dependency_gaps(expected), {})
+                self.assertEqual(v2.dependency_gaps(expected), known.get(shape, {}))
 
     def test_no_team_member_holds_a_lead_only_key(self):
         lead_only = {k for k, row in v2.CATALOGUE_V2.items() if row[3]}
