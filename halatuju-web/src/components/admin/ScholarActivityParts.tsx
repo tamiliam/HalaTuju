@@ -101,9 +101,15 @@ export function ActivityComposer({ onSave }: {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  function close() {
+  /** Focusing the box opens it — except the one focus a Save hands back to the closed box. */
+  const quiet = useRef(false)
+  function close(refocus = false) {
     setOpen(false); setBody(''); setInternal(false)
-    box.current?.blur()
+    if (!refocus) { box.current?.blur(); return }
+    // After a Save the buttons are gone: focus returns to the (closed) box, not to the page.
+    quiet.current = true
+    box.current?.focus()
+    quiet.current = false
   }
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Escape' && !body.trim()) { e.preventDefault(); close() }
@@ -112,13 +118,15 @@ export function ActivityComposer({ onSave }: {
     if (!body.trim() || busy) return
     setBusy(true)
     try {
-      if (await onSave({ body, internal })) close()
+      if (await onSave({ body, internal })) close(true)
     } finally { setBusy(false) }
   }
 
   return (
     <div className="mt-3 border-t border-ground-100 pt-3" data-testid="activity-composer">
-      <textarea ref={box} value={body} onChange={(e) => setBody(e.target.value)} onFocus={() => setOpen(true)}
+      <textarea ref={box} value={body} onChange={(e) => { setBody(e.target.value); setOpen(true) }}
+        onFocus={() => { if (!quiet.current) setOpen(true) }}
+        onClick={() => setOpen(true)}
         onKeyDown={onKey} rows={open ? 3 : 1} aria-label={t('admin.scholars.activity.addLabel')}
         placeholder={t('admin.scholars.activity.placeholder')}
         className="block w-full resize-none rounded-lg border border-ground-300 px-3 py-2 text-sm focus:ring-2 focus:ring-info-500" />
@@ -129,7 +137,7 @@ export function ActivityComposer({ onSave }: {
             {t('admin.scholars.activity.staffOnly')}
           </span>
           <span className="flex items-center gap-2">
-            <button type="button" onClick={close} disabled={busy}
+            <button type="button" onClick={() => close()} disabled={busy}
               className="rounded-lg px-3 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11">
               {t('admin.scholars.activity.cancel')}
             </button>

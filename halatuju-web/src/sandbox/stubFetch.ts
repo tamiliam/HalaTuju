@@ -17,7 +17,8 @@ import {
   sandboxDocuments,
 } from './fixtures/scholarship'
 
-type Handler = () => unknown
+/** Given the request's URL, so a stub can honour its query string (`?page`, `?show`). */
+type Handler = (url: URL) => unknown
 
 /**
  * Endpoint path → payload. Keys are matched by `endsWith` against the URL's PATHNAME, never the
@@ -53,10 +54,10 @@ export function setSurfaceRoutes(routes?: Record<string, Handler>): void {
   overrides = routes ?? {}
 }
 
-function payloadFor(pathname: string): unknown | undefined {
+function payloadFor(url: URL): unknown | undefined {
   const table = { ...ROUTES, ...overrides }
-  const key = Object.keys(table).find((route) => pathname.endsWith(route))
-  return key ? table[key]() : undefined
+  const key = Object.keys(table).find((route) => url.pathname.endsWith(route))
+  return key ? table[key](url) : undefined
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -81,17 +82,18 @@ export function installStubFetch(): void {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
 
-    let pathname: string
+    let parsed: URL
     try {
-      pathname = new URL(url, window.location.origin).pathname
+      parsed = new URL(url, window.location.origin)
     } catch {
       return realFetch(input as RequestInfo, init)
     }
 
     // Next.js's own machinery (RSC payloads, HMR) must reach the real network or the page dies.
+    const pathname = parsed.pathname
     if (!pathname.startsWith('/api/')) return realFetch(input as RequestInfo, init)
 
-    const body = payloadFor(pathname)
+    const body = payloadFor(parsed)
     if (body === undefined) {
       // eslint-disable-next-line no-console
       console.warn(`[sandbox] no fixture for ${init?.method ?? 'GET'} ${pathname}`)

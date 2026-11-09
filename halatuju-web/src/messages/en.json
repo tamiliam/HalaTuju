@@ -6713,6 +6713,7 @@
         "showOlder": "Show older ({n})",
         "loadingOlder": "Loading…",
         "filterLabel": "Show",
+        "listLabel": "Activity entries",
         "filter": {
           "all": "All ({n})",
           "notes": "Notes ({n})",

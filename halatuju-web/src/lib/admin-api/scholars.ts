@@ -188,13 +188,15 @@ export async function getScholarFile(id: number, options?: ApiOptions) {
 
 /** Newest first; `page` / `page_size` / `show` are filtered and paged ON THE SERVER (P1-f). */
 export async function getScholarActivity(
-  id: number, options?: ApiOptions & { page?: number; page_size?: number; show?: ActivityShow },
+  id: number,
+  options?: ApiOptions & { page?: number; page_size?: number; show?: ActivityShow; counts?: boolean },
 ) {
-  const { page, page_size, show, ...rest } = options ?? {}
+  const { page, page_size, show, counts, ...rest } = options ?? {}
   const p = new URLSearchParams()
   if (page && page > 1) p.set('page', String(page))
   if (page_size) p.set('page_size', String(page_size))
   if (show && show !== 'all') p.set('show', show)
+  if (counts === false) p.set('counts', '0')   // no filter pills to fill: skip the grouped count
   const qs = p.toString()
   return adminFetch<ScholarActivityPage>(`${BASE}${id}/activity/${qs ? `?${qs}` : ''}`, rest)
 }

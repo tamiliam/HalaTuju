@@ -6713,6 +6713,7 @@
         "showOlder": "Tunjuk yang lebih lama ({n})",
         "loadingOlder": "Memuatkan…",
         "filterLabel": "Tunjuk",
+        "listLabel": "Catatan aktiviti",
         "filter": {
           "all": "Semua ({n})",
           "notes": "Nota ({n})",

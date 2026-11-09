@@ -52,13 +52,30 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
   const [rows, setRows] = useState<Entry[] | null>(null)
   const [count, setCount] = useState(0)
   const [counts, setCounts] = useState<Record<ActivityShow, number> | null>(null)
-  const [page, setPage] = useState(1)
+  /** The SERVER's paging says another page exists (P1 review): never inferred from our own row count. */
+  const [more, setMore] = useState(false)
   const [failed, setFailed] = useState(false)
   const [older, setOlder] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   /** Where to leave the scroll after the next render: the bottom, or as far from it as before. */
   const pin = useRef<'bottom' | { fromBottom: number } | null>(null)
+  /** Read through a ref, so a refreshed token never resets the list the officer is reading. */
+  const tokenRef = useRef(token)
+  useLayoutEffect(() => { tokenRef.current = token }, [token])
+  const ready = token !== null
+  /**
+   * Staleness (P1 review). `list` moves only when the list is REPLACED (first load, a filter switch),
+   * and every reply from before that, a "Show older" one included, is thrown away; `shown` is the list
+   * on screen. `asked` numbers every page-1 read and `landed` the newest applied, so a slower, older
+   * read never lands over a newer one. A Save's re-read does not move `list`, so a "Show older" in
+   * flight beside it still lands.
+   */
+  const list = useRef(0)
+  const shown = useRef(0)
   const asked = useRef(0)
+  const landed = useRef(0)
+  /** The last page read under the current list. */
+  const read = useRef(1)
 
   useLayoutEffect(() => {
     const el = scroller.current
@@ -68,38 +85,54 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
     pin.current = null
   }, [rows])
 
-  /** Page 1 of `which`: replaces the list, or (after a Save) merges into what is already read. */
-  const latest = useCallback(async (which: ActivityShow, keep: Entry[] | null) => {
+  /** Page 1 of `which`: replaces the list, or (after a Save, `keep`) merges into what is already read. */
+  const latest = useCallback(async (which: ActivityShow, keep: boolean) => {
+    const token = tokenRef.current
     if (!token) return
+    const gen = keep ? list.current : ++list.current
     const ask = ++asked.current
     try {
-      const p = await getScholarActivity(id, { token, page_size: size, show: which })
-      if (ask !== asked.current) return
+      const p = await getScholarActivity(id, compact
+        ? { token, page_size: size, show: which, counts: false }
+        : { token, page_size: size, show: which })
+      if (gen !== list.current || ask < landed.current) return
+      landed.current = ask
+      const into = keep && shown.current === gen
+      if (!into) read.current = 1
+      shown.current = gen
       pin.current = 'bottom'
-      setRows(keep ? merge(keep, p.results) : p.results)
-      setCount(p.count); setCounts(p.counts ?? null); setFailed(false)
-      if (!keep) setPage(1)
+      setRows((have) => (into ? merge(have ?? [], p.results) : p.results))
+      setCount(p.count); setFailed(false)
+      if (p.counts) setCounts(p.counts)
+      setMore(read.current * size < p.count)
     } catch {
-      if (ask === asked.current) setFailed(true)
+      if (gen === list.current && ask >= landed.current) setFailed(true)
     }
-  }, [id, token, size])
-  useEffect(() => { latest(show, null) }, [latest, show])
+  }, [id, size, compact])
+  useEffect(() => { if (ready) latest(show, false) }, [latest, show, ready])
 
   async function showOlder() {
-    if (!token || !rows || older) return
+    const token = tokenRef.current
+    if (!token || !rows || older || shown.current !== list.current) return
+    const gen = list.current
+    const want = read.current + 1
     setOlder(true)
-    const el = scroller.current
     try {
-      const p = await getScholarActivity(id, { token, page: page + 1, page_size: size, show })
+      const p = await getScholarActivity(id, { token, page: want, page_size: size, show, counts: false })
+      if (gen !== list.current) return                  // the filter changed while it was in flight
+      const el = scroller.current
       pin.current = el ? { fromBottom: el.scrollHeight - el.scrollTop } : null
-      setRows((have) => merge(have ?? [], p.results))
-      setCount(p.count); setPage(page + 1)
+      setRows((have) => merge(have ?? [], p.results))   // by id: a Save meanwhile shifts the pages by one
+      setCount(p.count)
+      if (p.page < want) setMore(false)                 // the server clamped us to its last page
+      else { read.current = p.page; setMore(p.page * size < p.count) }
     } catch {
       showToast(t('admin.scholars.activity.loadFailed'), 'error')
     } finally { setOlder(false) }
   }
 
   async function save(entry: { body: string; internal: boolean }) {
+    const token = tokenRef.current
     if (!token) return false
     try {
       await addScholarActivity(id, { kind: 'note', ...entry }, { token })
@@ -108,11 +141,13 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
       return false
     }
     showToast(t('admin.scholars.activity.saved'), 'success')
-    await latest(show, rows ?? [])
+    // A note is never a System row: under that filter it would vanish, so show All, which has it.
+    if (show === 'system') setShow('all')
+    else await latest(show, true)
     return true
   }
 
-  const remaining = rows ? Math.max(0, count - rows.length) : 0
+  const remaining = rows && more ? Math.max(0, count - rows.length) : 0
   return (
     <section aria-label={t('admin.scholars.activity.title')} className={PHONE_CARD_XL}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -137,8 +172,9 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
           {t('admin.scholars.activity.empty')}
         </p>
       )}
-      <div ref={scroller} data-testid="activity-scroller"
-        className={`overflow-y-auto overscroll-contain ${compact ? 'max-h-[420px]' : 'max-h-[560px]'} max-md:max-h-[55dvh]`}>
+      <div ref={scroller} data-testid="activity-scroller" tabIndex={0} role="region"
+        aria-label={t('admin.scholars.activity.listLabel')}
+        className={`overflow-y-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-500 md:overscroll-contain ${compact ? 'max-h-[420px]' : 'max-h-[560px]'} max-md:max-h-[55dvh]`}>
         {remaining > 0 && (
           <button type="button" onClick={showOlder} disabled={older} data-testid="activity-older"
             className="w-full rounded-lg py-2 text-sm font-medium text-info-700 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11">

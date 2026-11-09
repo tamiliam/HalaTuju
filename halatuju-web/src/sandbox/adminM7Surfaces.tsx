@@ -32,7 +32,7 @@ import ContractEditorPage from '@/app/admin/contracts/[id]/page'
 import ScholarActivity from '@/components/admin/ScholarActivity'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
-interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
+interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, (url: URL) => unknown> }
 
 const ORG_ADMIN = {
   is_admin: true, is_super_admin: false, role: 'org_admin', admin_id: 1,
@@ -121,10 +121,25 @@ const ACTIVITY_ROWS = [
   entry(6, 400, 'system', { event: 'results_overdue', meta: { due_on: '2026-09-30' } }),
   entry(5, 900, 'note', { body: 'Met at the campus. A long note so the row wraps on a phone: she is managing the '
     + 'course load, has joined the study group the faculty runs on Wednesdays, and asked about the hostel fee.', actor: STAFF_B }),
+  // Older filler, so the Activity tab (20 a page) has a second page and shows "Show older".
+  ...Array.from({ length: 14 }, (_, i) => i % 2
+    ? entry(100 + i, 1000 + 100 * i, 'system', { event: 'result_submitted', meta: { semester: `Semester ${i}` } })
+    : entry(100 + i, 1000 + 100 * i, 'note', { body: `Monthly check-in ${i + 1}: on track.`, actor: STAFF_A })),
 ]
-const ACTIVITY_COUNTS = { all: 14, notes: 7, system: 7 }
-const activityPage = (size: number) => () => ({
-  count: 14, page: 1, page_size: size, counts: ACTIVITY_COUNTS, results: ACTIVITY_ROWS.slice(0, size) })
+const isSystem = (r: { kind: string }) => r.kind === 'system'
+const ACTIVITY_SHOWN = {
+  all: ACTIVITY_ROWS, notes: ACTIVITY_ROWS.filter((r) => !isSystem(r)), system: ACTIVITY_ROWS.filter(isSystem) }
+/** Pages the way the server does (P1 review): `?show`, `?page` clamped to the last page, `?counts=0`. */
+const activityPage = (size: number) => (url: URL) => {
+  const q = url.searchParams
+  const show = (q.get('show') ?? 'all') as keyof typeof ACTIVITY_SHOWN
+  const all = ACTIVITY_SHOWN[show] ?? ACTIVITY_ROWS
+  const last = Math.max(1, Math.ceil(all.length / size))
+  const page = Math.min(last, Math.max(1, Number(q.get('page')) || 1))
+  const counts = q.get('counts') === '0' ? {}
+    : { counts: { all: ACTIVITY_ROWS.length, notes: ACTIVITY_SHOWN.notes.length, system: ACTIVITY_SHOWN.system.length } }
+  return { count: all.length, page, page_size: size, ...counts, results: all.slice((page - 1) * size, page * size) }
+}
 
 const runItem = (id: number, name: string, extra: Record<string, unknown> = {}) => ({
   id, application_id: id + 10, name, nric: 'XXXXXX-XX-XXXX', vircle_id: `VC-00${id}8812`, activated: id !== 2,
