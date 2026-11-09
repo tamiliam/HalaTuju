@@ -14,9 +14,20 @@ line allowance on the oversize ledger.
 Owner ruling 2A (2026-10-28, #374): an INFORMAL income document read before the approver rule existed
 (`income_declaration.approval_unchecked`) is the same kind of "ours to finish" — it does not count, and
 the income asks wait for its live re-read rather than ask the family again for what she sent.
+
+A2.8a (2026-11-09):
+* TD-397 — a deferred copy's hold ENDS when the sweep gives up: it holds only while the sweep's window
+  is open (`read_errors.service_retry_open`). After that the request falls back to the ordinary ask or
+  the officer, exactly as if the copy were any other unjudged document. An UNCHECKED informal document
+  keeps holding (lead ruling B, A2.8a review): once the sweep's one approval re-read is past its window
+  (`income_declaration.approval_sweep_gave_up`) the family is not asked again for what she sent; the
+  officer's drawer reason says to check it by eye instead.
+* TD-398 — an income ask's RESOLVE is not held when a live letter in its slots (that member's, for a
+  member's ask) READ FINE (`_read_fine`): the income readers count only read documents, so the resolve
+  comes from that letter, and the deferred one can only add to it. A raise or re-open is still held.
 """
 from .document_snapshot import live_docs
-from .read_errors import deferred_by_us
+from .read_errors import deferred_by_us, service_retry_open
 
 #: The income asks an UNCHECKED informal document holds — on either income slot, whichever the spec names.
 _INCOME_ASKS = ('father_income_proof_missing', 'mother_income_proof_missing', 'guardian_income_proof_missing',
@@ -50,7 +61,24 @@ def held_doc_requests(application, doc_specs, existing, wanted):
 
     def slots(code):
         return {doc_specs[code]['doc_type'], *(_INCOME_SLOTS if code in _INCOME_ASKS else ())}
+
+    def holds(d):
+        vf = getattr(d, 'vision_fields', None)
+        if deferred_by_us(vf):                       # TD-397: only while the sweep will still read it
+            return service_retry_open(vf)
+        return approval_unchecked(d)                 # ruling B: past the sweep, the officer, not the family
+
+    def _read_fine(d):
+        vf = getattr(d, 'vision_fields', None)
+        return (isinstance(vf, dict) and bool(vf.get('fields')) and vf.get('student_verdict') != 'unreadable'
+                and not approval_unchecked(d))
+
+    def read_letter(code, docs):                     # TD-398: a resolve that a letter already read for
+        member = doc_specs[code].get('member')
+        return (code in _INCOME_ASKS and code not in wanted
+                and any(d.doc_type in slots(code) and _read_fine(d)
+                        and (not member or getattr(d, 'household_member', '') == member) for d in docs))
     types = tuple(set().union(*(slots(c) for c in codes)))
-    deferred = {d.doc_type for d in live_docs(application, doc_types=types)   # snapshot-aware
-                if deferred_by_us(getattr(d, 'vision_fields', None)) or approval_unchecked(d)}
-    return {c for c in codes if slots(c) & deferred}
+    docs = list(live_docs(application, doc_types=types))   # snapshot-aware
+    deferred = {d.doc_type for d in docs if holds(d)}
+    return {c for c in codes if slots(c) & deferred and not read_letter(c, docs)}

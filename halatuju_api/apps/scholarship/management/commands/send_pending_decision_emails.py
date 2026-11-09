@@ -11,13 +11,18 @@ Schedule this (e.g. Cloud Scheduler → Cloud Run Job, every ~15 min) once deplo
 
     python manage.py send_pending_decision_emails [--dry-run]
 """
+import logging
+
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
 
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import release_decision, release_pending_declines
+from apps.scholarship.services.decision_mail import retry_unsent_decisions
 from apps.scholarship.sponsorship import release_pending_awards
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -52,10 +57,18 @@ class Command(BaseCommand):
                 )
                 released += 1
                 continue
-            if release_decision(app):
-                released += 1
-            else:
+            # TD-355: one application's failure must not stop the rest of the run, nor the
+            # cool-off releases below. A reveal that flipped but could not mail is picked up by
+            # `retry_unsent_decisions` further down.
+            try:
+                if release_decision(app):
+                    released += 1
+                else:
+                    skipped += 1
+            except Exception:
                 skipped += 1
+                logger.error('send_pending_decision_emails: app %s — the release raised.',
+                             app.pk, exc_info=True)
 
         self.stdout.write(self.style.SUCCESS(
             f"Decisions: {released} {'would be ' if dry else ''}released, {skipped} skipped"
@@ -68,4 +81,9 @@ class Command(BaseCommand):
             awards = release_pending_awards(now=now)
             self.stdout.write(self.style.SUCCESS(
                 f"Cool-off: {declines} decline(s) revealed, {awards} award(s) finalised"
+            ))
+            # TD-355: decision emails that failed at their reveal or at an immediate decline.
+            retried = retry_unsent_decisions(now=now)
+            self.stdout.write(self.style.SUCCESS(
+                f"Retried: {retried['sent']} sent, {retried['failed']} still failing"
             ))

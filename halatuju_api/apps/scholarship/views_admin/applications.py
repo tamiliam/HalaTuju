@@ -368,12 +368,9 @@ class AdminVerifyAcceptView(_AdminBase):
             # QC (2026-07): the reviewer's verify-accept ("submit verdict") lands the case in
             # 'interviewed' = AWAITING QC (was 'recommended'). QC then clears it to 'recommended'
             # (qc-decision accept) or reopens it (qc-decision reopen). The reviewer still owns
-            # identity verification (nric_verified + checklist) here.
-            app.status = 'interviewed'
-            app.verified_at = timezone.now()
-            app.verified_by = admin.email
-            app.verify_checklist = request.data.get('checklist', {}) or {}
-            app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+            # identity verification (nric_verified + checklist) here; TD-378: a QC re-lock keeps that stamp.
+            from ..birth_state import stamp_verify_accept
+            stamp_verify_accept(app, admin, request.data.get('checklist', {}))
             # Common profile S3: the reviewer's own activity list, in this transaction. The only
             # writer of `verified_at`, so the only door.
             staff_activity.record(admin, staff_activity.VERIFY_ACCEPT, app)

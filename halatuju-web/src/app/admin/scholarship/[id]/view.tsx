@@ -109,6 +109,7 @@ import { DocumentsDrawer } from './view/DocumentsDrawer'
 import { RateAndEstimate } from './view/RateAndEstimate'
 import { BlockersPanel } from './view/BlockersPanel'
 import { QcPanel, qcRefusalText } from './view/QcPanel'
+import { ReverifyIcCard } from './view/ReverifyIcCard'   // TD-378
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
@@ -1047,6 +1048,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       />
 
 
+      <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={(a) => { setApp(a); loadVerdictState(a) }} />
       <QcPanel
         app={app} t={t} busy={busy} canQc={canQc} role={role} doQcDecision={doQcDecision}
         qcReopenOpen={qcReopenOpen} setQcReopenOpen={setQcReopenOpen}

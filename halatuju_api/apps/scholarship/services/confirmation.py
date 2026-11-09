@@ -400,11 +400,14 @@ def _confirmed_place(op, application, prog, inst, issuer):
     """The institution the confirm stores: the letter's line, unless it is a hostel / centre line that
     yields to the letterhead (``letter_place``, round-2 review 2026-10-31) — then the CATALOGUE's
     spelling of that campus, never the hostel ("KOLEJ SRI RAJANG" + UPM → "Universiti Putra
-    Malaysia"). The course is the stored pick, else the one the letter resolves to."""
+    Malaysia"). The course is the letter's own, else the stored pick (TD-447, A2.7a: a STALE stored
+    course read the hostel against the wrong course's campuses and kept it). No issuer, no yield."""
     from ..offer_course_match import letter_place
+    if not issuer:
+        return inst
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
-    cid = (cp.get('course_id') or '').strip() or (
-        op.resolve_catalogue_course(prog, inst, issuer) or {}).get('course_id') or ''
+    cid = (op.resolve_catalogue_course(prog, inst, issuer) or {}).get('course_id') or (
+        cp.get('course_id') or '').strip()
     place = letter_place(cid, inst, issuer) if cid else inst
     if place == inst:
         return inst

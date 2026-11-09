@@ -294,6 +294,7 @@ function base(): AdminScholarshipDetail {
     reporting_date: null,
     closure_reason: '',
     pending_rejection_category: '',
+    decision_mail: '',
     decline_due_at: null,
     award_due_at: null,
     submitted_at: AT,

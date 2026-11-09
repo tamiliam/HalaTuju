@@ -36,6 +36,14 @@ def query_reminder_lead_days(application):
     return org_config.value(application.owning_organisation, 'query_reminder_lead_days')
 
 
+def query_reminder_is_due(application, sla):
+    """Is `application`'s one query reminder due, given its `query_sla` reading? ONE rule for the live
+    sweep (`query_emails.send_query_reminders`) and the dry run (TD-370: the dry run measured the
+    submit clock while the live sweep measures the latest open query's own clock, so it could report
+    a reminder the live run would never send): due once the days left have fallen to the lead."""
+    return sla['days_left'] is not None and sla['days_left'] <= query_reminder_lead_days(application)
+
+
 def query_sla(application, now=None):
     """The Check-2 query SLA clock. V3 (#8): each open clarify query runs its OWN clock from when
     it was RAISED (``ResolutionItem.created_at``), not one shared clock from submit — so a query

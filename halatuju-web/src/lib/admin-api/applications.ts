@@ -130,6 +130,14 @@ export interface StpmMarks {
   all_subjects?: 'match' | 'mismatch' | 'pending' | ''
 }
 
+/** A2.8a (TD-378): the verifier's ticks, `verified_ic` (a digest of the NRIC + name verified) and
+ *  `relock` (a QC's re-lock record when the earlier stamp was kept). */
+export type VerifyChecklist = Record<string, boolean | string | VerifyRelock | undefined> & {
+  verified_ic?: string
+  relock?: VerifyRelock
+}
+export interface VerifyRelock { by: string; at: string; checklist: Record<string, boolean> }
+
 export interface AdminScholarshipDetail {
   id: number
   name: string
@@ -151,7 +159,7 @@ export interface AdminScholarshipDetail {
   mentoring_candidate: boolean
   verified_at: string | null
   verified_by: string
-  verify_checklist: Record<string, boolean>
+  verify_checklist: VerifyChecklist
   profile_id: string | null
   // S13: typed-name signature captured at submit (used as a comparison against Vision-read IC name)
   declaration_name: string
@@ -312,6 +320,8 @@ export interface AdminScholarshipDetail {
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
+  // TD-358: '' (told, or owed no email) | 'no_address' | 'unsent' — her decision email has not gone.
+  decision_mail?: '' | 'no_address' | 'unsent'
   pending_rejection_category: string
   decline_due_at: string | null
   award_due_at: string | null

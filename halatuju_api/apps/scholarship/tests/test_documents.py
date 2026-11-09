@@ -62,6 +62,10 @@ class TestDocumentApi(TestCase):
         self.assertEqual(resp.status_code, 503)
 
     def test_sign_upload_no_shortlisted_403(self):
+        # TD-350: a decline still in its email embargo is NOT final to her (she is shown her old
+        # stage), so it resolves; the 403 is for a decline she has been told of (markers cleared).
+        ScholarshipApplication.objects.filter(pk=self.rejected_c.pk).update(
+            pending_rejection_category='', decline_due_at=None, pending_decline_by='')
         self._auth(USER_C)
         resp = self.client.post('/api/v1/scholarship/documents/sign-upload/', {'doc_type': 'ic'}, format='json')
         self.assertEqual(resp.status_code, 403)

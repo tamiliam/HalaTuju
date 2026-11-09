@@ -4396,6 +4396,10 @@
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
       "visionError": "Could not re-run Vision.",
+      "untold": {
+        "noAddress": "This student could not be emailed their decision: there is no email address on file. Please tell them another way, such as a phone call or WhatsApp.",
+        "unsent": "The decision email has not reached this student. It is retried automatically for three days after the decision; if this notice is still showing after that, please tell them another way."
+      },
       "cooloff": {
         "declineScheduled": "This decline is scheduled to be sent on",
         "awardScheduled": "This funding confirmation is scheduled to be sent on",
@@ -4837,6 +4841,7 @@
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
           "offer_not_official": "Scored not an offer letter (a private / IPTS offer, a private wing, or not an offer at all) — a fail; the student is asked for a public institution's offer letter.",
           "offer_issuer_not_checked": "Offer from {issuer} — a public TVET issuer we don't have a pattern for yet, so it was NOT checked. Check the letter by eye.",
+          "offer_not_read_yet": "The offer letter has not been read yet — our document check has not run on it or was unavailable. It is not the student's fault, so do not ask for a clearer copy. If it stays unread, check the letter by eye.",
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",
@@ -5124,7 +5129,10 @@
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",
         "overridePlaceholder": "Why is it safe to recommend this case despite the red fact?",
-        "overrideConfirm": "Record reason & accept"
+        "overrideConfirm": "Record reason & accept",
+        "reverifyTitle": "The IC lock was released",
+        "reverifyHint": "This intake has a \"Born in\" rule and the student's IC is no longer locked, so Accept is refused. Re-verify the IC here: it locks the IC again and checks that no other account holds it verified. The case stays awaiting QC and the reviewer is not told. Unless you are a super admin, someone else then does the QC.",
+        "reverifyButton": "Re-verify IC"
       },
       "caveats": {
         "studentAnswer": "Student's answer",

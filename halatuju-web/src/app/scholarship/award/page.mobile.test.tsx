@@ -240,5 +240,17 @@ describe('review M2 / M3 — after an answer, and after a refusal', () => {
       raf.mockRestore()
     }
   })
+
+  it('TD-400: a parent IC our outage left half-read says try later, never "check both"', async () => {
+    mockApi.respondToAward.mockRejectedValueOnce(Object.assign(new Error('400'), { code: 'parent_ic_service_down' }))
+    serve({ bursary_preview: preview({ comprehension_passed: true, guarantor_phone_verified: true }) })
+    render(<ScholarshipAwardPage />)
+    await fillSigning()
+    fireEvent.click(screen.getByTestId('award-read-agreement'))
+    for (const b of screen.getAllByRole('checkbox')) fireEvent.click(b)
+    await act(async () => { fireEvent.submit(signButton().closest('form') as HTMLFormElement) })
+    expect(await screen.findByText('scholarship.consent.blocker.ic_service_down')).toBeTruthy()
+    expect(screen.queryByText('scholarship.award.error.generic')).toBeNull()
+  })
 })
 

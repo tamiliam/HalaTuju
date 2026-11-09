@@ -132,8 +132,7 @@ class TestQuestionReminder(TestCase):
         out = StringIO()
         _off(self.app, 'question_reminder')
         cmd = 'apps.scholarship.management.commands.send_query_reminders'
-        with patch(f'{cmd}.query_sla', return_value=self.SLA), \
-                patch(f'{cmd}._elapsed_days_local', return_value=100):
+        with patch(f'{cmd}.query_sla', return_value=self.SLA):
             call_command('send_query_reminders', '--dry-run', stdout=out)
         self.assertIn(f'would skip app #{self.app.pk}', out.getvalue())
         self.assertIn('0 would be sent', out.getvalue())

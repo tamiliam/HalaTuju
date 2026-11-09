@@ -28,7 +28,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import agreement_guard
-from .vision import name_match, nric_match
 
 logger = logging.getLogger(__name__)
 
@@ -293,6 +292,7 @@ def guarantor_identity_check(application, name, nric):
                                      hasn't run / errored)
       'parent_ic_nric_mismatch'    — typed NRIC doesn't match the IC
       'parent_ic_name_mismatch'    — typed name doesn't match the IC
+      'parent_ic_service_down'     — it differs from an IC our outage left half-read (TD-400)
     """
     present_qs = application.documents.filter(superseded_at__isnull=True)
     parent_ic = next(
@@ -302,11 +302,8 @@ def guarantor_identity_check(application, name, nric):
     )
     if parent_ic is None:
         return 'parent_ic_missing'
-    if parent_ic.vision_nric and not nric_match(nric, parent_ic.vision_nric):
-        return 'parent_ic_nric_mismatch'
-    if parent_ic.vision_name and name_match(parent_ic.vision_name, name) != 'match':
-        return 'parent_ic_name_mismatch'
-    return 'ok'
+    from .identity import guarantor_mismatch                  # one comparison, one home (A2.8a)
+    return guarantor_mismatch(parent_ic, name, nric) or 'ok'
 
 
 def guarantor_phone_for(application):

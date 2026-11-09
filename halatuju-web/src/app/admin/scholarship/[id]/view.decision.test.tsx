@@ -410,4 +410,17 @@ describe('reopening a recorded decision', () => {
     expect(button('recordVerdict.reopen')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' })).toBeNull()
   })
+
+  // TD-358: an officer sees the student who was never emailed her decision.
+  it('shows the no-email banner only when the decision email has not gone', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: 'no_address' } })
+    await loaded()
+    expect(screen.getByTestId('decision-mail-banner').textContent).toBe('admin.scholarship.untold.noAddress')
+  })
+
+  it('shows no banner when she was told', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: '' } })
+    await loaded()
+    expect(screen.queryByTestId('decision-mail-banner')).toBeNull()
+  })
 })

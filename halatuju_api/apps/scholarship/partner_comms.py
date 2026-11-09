@@ -319,12 +319,16 @@ def stage_counts(org):
     `total` is the sum of the RAW tally, not of the lines, so a status that no line claims
     would break the reconciliation test loudly instead of vanishing from the email.
     """
-    rows = dict(
-        partner_applications(org)
-        .values_list('status')
-        .annotate(n=Count('pk'))
-        .values_list('status', 'n')
-    )
+    # TD-430: the status the STUDENT is shown (a decline in its cool-off is its old stage until she
+    # is emailed), by the one rule `student_facing_status` — a partner never learns an outcome first.
+    from types import SimpleNamespace
+
+    from .student_status import student_facing_status
+    rows = {}
+    for r in (partner_applications(org).values('status', 'pending_rejection_category',
+                                               'pre_decline_status').annotate(n=Count('pk'))):
+        shown = student_facing_status(SimpleNamespace(**r))
+        rows[shown] = rows.get(shown, 0) + r['n']
     counts = {line: sum(rows.get(s, 0) for s in statuses) for line, statuses in STAGE_LINES}
     counts['total'] = sum(rows.values())
     return counts
