@@ -847,7 +847,9 @@ describe('the cockpit on a phone', () => {
     // through these two components, and only they draw a status button.
     const live = (f: { raw: string }) => f.raw.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*|\{\/\*)/.test(l)).join('\n')
     const callers = TSX.filter((f) => /setMaintenanceSubstate\(|doSetSubstate\(/.test(live(f))).map((f) => f.rel)
-    expect(callers.sort()).toEqual(['src/app/admin/scholarship/[id]/view.tsx', ...places.map((p) => p.file)].sort())
+    // The handler that calls the api moved from view.tsx to `view/usePostAward.ts` (A3.3; a .ts, so
+    // not in TSX): the page itself only hands it down now.
+    expect(callers.sort()).toEqual(places.map((p) => p.file).sort())
     const labels = TSX.filter((f) => /maintenance\.action\./.test(live(f))).map((f) => f.rel)
     expect(labels.sort()).toEqual(places.map((p) => p.file).sort())
   })

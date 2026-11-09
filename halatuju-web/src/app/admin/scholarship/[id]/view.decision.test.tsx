@@ -22,7 +22,7 @@
  *    the reviewer her verdict was not submitted, and the Save button offered to generate a final
  *    profile a decline does not produce. The wording must follow the RECORDED OUTCOME.
  */
-import { act, fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 import { buildInterviewSession } from '@/test/adminApplicationDetail'
@@ -392,15 +392,18 @@ describe('reopening a recorded decision', () => {
   it('a PENDING decline offers its cancel in Reopen\'s place, never a Reopen', async () => {
     const { api, app } = renderCockpit({ role: 'super', stage: 'rejected' })   // email embargoed
     api.cancelPendingDecline.mockResolvedValue(app)
-    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
     await loaded()
     expect(noButton('recordVerdict.reopen')).toBeNull()
     const cancels = screen.getAllByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' })
     expect(cancels).toHaveLength(2)                     // the header banner's, and the card's
-    await act(async () => { fireEvent.click(cancels[1]) })    // the cancel's state settles
+    fireEvent.click(cancels[1])                                // asks first, in the site's dialog (TD-480)
+    expect(api.cancelPendingDecline).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('alertdialog')
+    await act(async () => {                                    // the cancel's state settles
+      fireEvent.click(within(dialog).getByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' }))
+    })
     expect(api.cancelPendingDecline).toHaveBeenCalledTimes(1)
     expect(api.reopenDecision).not.toHaveBeenCalled()
-    confirm.mockRestore()
   })
 
   it('once the decline email has gone, Reopen is offered again', async () => {

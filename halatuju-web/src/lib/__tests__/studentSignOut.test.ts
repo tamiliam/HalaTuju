@@ -100,7 +100,7 @@ describe('sign-out also wipes this tab', () => {
     sessionStorage.setItem(APPLY_RETURN_KEY, '1')
     sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'BP2026')
     sessionStorage.setItem(ONBOARDING_RETURN_KEY, '/scholarship/apply')
-    sessionStorage.setItem('halatuju_admin_scholarship_nav', '[1,2,3]')
+    sessionStorage.setItem('halatuju_list_nav:scholarship', '[1,2,3]')
     sessionStorage.setItem('halatuju_sponsor_pending', '{"name":"S"}')
     sessionStorage.setItem('other_tab_key', 'keeps')
   }
@@ -112,7 +112,7 @@ describe('sign-out also wipes this tab', () => {
       expect(k.startsWith('halatuju_')).toBe(true)   // a renamed key without the prefix would escape the wipe
       expect(sessionStorage.getItem(k)).toBeNull()
     }
-    expect(sessionStorage.getItem('halatuju_admin_scholarship_nav')).toBe('[1,2,3]')
+    expect(sessionStorage.getItem('halatuju_list_nav:scholarship')).toBe('[1,2,3]')
     expect(sessionStorage.getItem('halatuju_sponsor_pending')).toBe('{"name":"S"}')
     expect(sessionStorage.getItem('other_tab_key')).toBe('keeps')
   })
@@ -132,7 +132,7 @@ describe('sign-out also wipes this tab', () => {
     seed(); seedTab()
     clearStudentTab()
     expect(sessionStorage.getItem(APPLY_STASH_KEY)).toBeNull()
-    expect(sessionStorage.getItem('halatuju_admin_scholarship_nav')).toBe('[1,2,3]')
+    expect(sessionStorage.getItem('halatuju_list_nav:scholarship')).toBe('[1,2,3]')
     expect(localStorage.getItem('halatuju_grades')).toBe('{"BM":"A"}')
   })
 

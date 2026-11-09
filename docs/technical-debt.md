@@ -329,9 +329,9 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-474** - An STPM school name followed by a one-word town line takes the town - low
 - ~~**TD-475**~~ **FIXED 2026-11-07 (Sprint A1.10a: the checker seat is `payments_approve`)** - Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
 - ~~**TD-476**~~ **FIXED 2026-11-07 (Sprint A1.10a: the reopen refuses)** - A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
-- **TD-477** - The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
+- ~~**TD-477**~~ - The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low **Fixed 2026-11-09 (Sprint A3.3).**
 - **TD-478** - A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
-- **TD-480** - Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
+- ~~**TD-480**~~ - Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low **Fixed 2026-11-09 (Sprint A3.3) except item 3, the viewer's own Prev / Next (not built; the viewer still opens one document at a time).**
 - ~~**TD-483**~~ - The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low **Fixed 2026-11-07 (Sprint A1.11a).**
 - **TD-484** - A person deleted and re-invited with the same email escapes the QC separation guard - medium
 - **TD-485** - A failed activity write leaves the QC guard without its evidence - low
@@ -7870,6 +7870,8 @@ scholar file and the cockpit's no-file control, with a "use a computer" note (de
 **Fix:** (1) one Sheet per door, `dismissible={false}` for the money ones; (2) the name as visible text on a phone;
 (3) Prev / Next in the viewer's footer from the drawer's order. *(W · S)*
 
+**FIXED 2026-11-09 (Sprint A3.3), items 1 and 2:** the nudge, the cancel-decline and the hold-award questions now open the shared Sheet (`view/ConfirmSheet`, an alertdialog; the two money ones are not dismissible by a stray tap or Escape), wording unchanged. The contractual-decline question is a `window.prompt` for typed text, not a confirm, and stays. The referral source name shows as visible text below `md`. No new keys. Item 3 (viewer Prev / Next) remains open.
+
 **Accepted (M6b review), not debt:** ONE breakpoint decides "phone" across M6b — below `md` by width (the PDF rule's
 `PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and
 the payment controls; the server authorises by role, never by device, so this is a layout choice, not a safety gap.
@@ -8210,6 +8212,8 @@ has two lines of ledger room. Also open from R1 (D7): Previous / Next walk only 
 crossing to the next page would need a fetch from the detail page. **Fix:** after M6b lands, the scholarship list
 writes through `writeListNav` and the cockpit header reads `useListNav` (deleting the hand-rolled code); the
 cross-page step, if wanted, is its own small change. *(W · S)*
+
+**FIXED 2026-11-09 (Sprint A3.3):** the scholarship list writes through `writeListNav` (`SCHOLARSHIP_LIST_NAV`), the cockpit header reads `useListNav`, and both it and `RequestListNav` share `lib/useListSteps` (focus kept, ← / → keys). The cockpit gains the "n of m" position. The old `halatuju_admin_scholarship_nav` key is gone; `halatuju_list_nav:` is session-preserved. The cross-page step is still not built.
 
 ### [TD-478] A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
 
