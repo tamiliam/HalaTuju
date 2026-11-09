@@ -1,15 +1,20 @@
 'use client'
 
 /**
- * THE OFFICER COCKPIT — the screen itself: its state, the actions an officer can take, and the
- * layout that arranges the panels.
+ * THE OFFICER COCKPIT — the screen itself: the case it loads and the layout that arranges the panels.
  *
  * ⚠ THE PANELS MOVED TO `./view/` AT CODE HEALTH H14, AND NOTHING ELSE HAPPENED TO THEM. This
  * file was 3,599 lines; thirteen panel modules and one shared-furniture module now sit beside
  * it, and every moved line is byte-identical to the line it was. The FILE stayed at its own
  * path deliberately (H13's rule): `./page.tsx`, `@/sandbox/surfaces` and `@/test/renderCockpit`
- * still import `AdminScholarshipDetailView` from here, unchanged, and the oversize ledger's key
- * still names a real file.
+ * still import `AdminScholarshipDetailView` from here, unchanged.
+ *
+ * ⚠ AUDIT A3.3 THEN MOVED THE STATE AND THE HANDLERS OUT TOO, by concern, with no change to them:
+ * `view/useVerdict` (the decision, QC and the org reject), `view/useInterview`,
+ * `view/useRequests` (queries, document requests, referees, vision), `view/usePostAward`
+ * (witness, bursary, disbursement, closure) and `view/useCaseActions` (remind, cool-off, assign,
+ * reporting date); what the page works out from the case is `view/deriveCockpit`. They share one
+ * `CockpitCtx`. What stays here is the case itself, its load, and the layout.
  *
  * ⚠ THE DECISION / RECOMMENDATION PANEL DID NOT MOVE, AND THAT IS A RULING, NOT AN OVERSIGHT.
  * It reads thirty-five names out of this component and writes through nine handlers; the
@@ -25,102 +30,44 @@ import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import RecordState from '@/components/admin/RecordState'
-import { formatNric } from '@/lib/scholarship'
-import { isValidPhone } from '@/lib/scholarship'
-import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
   getScholarshipApplication,
   getVerdictCaseSummary,
   type VerdictCaseSummary,
-  suggestInterviewGaps,
-  verifyAcceptApplication,
-  rejectApplication,
-  submitDeclineApplication,
-  cancelPendingDecline,
-  holdPendingAward,
-  addReferee,
-  deleteReferee,
-  reRunVision,
-  assignApplication,
-  orgRejectApplication,
-  nudgeStudent,
-  setReportingDate,
-  saveInterview,
-  submitInterview,
-  reopenInterview,
   getAssignableAdmins,
-  recordVerdict,
-  reopenDecision,
-  cancelReopen,
-  recordQcDecision,
-  raiseResolutionItem,
-  actionResolutionItem,
-  adminCountersignBursary,
-  adminWitnessBursary,
-  getSources,
-  assignWitness,
-  type SourceItem,
-  scheduleTranche,
-  actOnDisbursement,
-  setMaintenanceSubstate,
-  closeApplication,
-  type DisbursementAction,
-  type MaintenanceSubstate,
-  type ClosureReason,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
-  type AdminAgendaEntry,
 } from '@/lib/admin-api'
-import {
-  isClearAccept,
-  isStuckAfterVerdict,
-  verdictSaveOutcome, verdictSaveErrorText,
-  isQcAccepted,
-  isQueryingLocked,
-  isDecisionReady,
-  isApproveReady,
-  queryingLockReason,
-  rejectionTrail,
-  showsDecisionCards,
-  showsWitnessCard,
-} from '@/lib/officerCockpit'
-import { docTypeToRequestFact } from '@/lib/docCategory'
-import { interviewGateApplies, interviewRefusalText, missingAgendaItems } from '@/lib/interviewCompleteness'
-import { formatDate } from '@/lib/formatDate'
+import { nudgeButton } from '@/lib/blockers'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
-import { nextSequence } from '@/lib/disbursement'
-import type { BursaryAgreement } from '@/lib/api'
 
-import {
-  GroupLabel,
-  QcOverrideNote,
-  EMPTY_REFEREE,
-  ANOMALY_CHECK2_OWNER,
-  NON_PARENT_RELATIONSHIPS,
-  resolveReq,
-} from './view/shared'
+import { GroupLabel } from './view/shared'
 import { CockpitHeader } from './view/CockpitHeader'
 import { ApplicantCards, householdFigures } from './view/ApplicantCards'
 import { VerificationVerdict } from './view/VerificationVerdict'
 import { GeneratedProfile } from './view/GeneratedProfile'
-import { OutstandingPanel, requestRefusalText } from './view/OutstandingPanel'
+import { OutstandingPanel } from './view/OutstandingPanel'
 import { RefereesPanel, InterviewStage } from './view/InterviewPanels'
 import { DocumentsDrawer } from './view/DocumentsDrawer'
 import { RateAndEstimate } from './view/RateAndEstimate'
 import { BlockersPanel } from './view/BlockersPanel'
-import { QcPanel, qcRefusalText } from './view/QcPanel'
+import { QcPanel } from './view/QcPanel'
 import { ReverifyIcCard } from './view/ReverifyIcCard'   // TD-378
 import { OrgRejectPanel } from './view/OrgRejectPanel'
-import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { WithdrawAwardCard } from './view/WithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
-import { closeErrorKey, stageStatus } from '@/lib/closeOffer'
-import { anomalyParams } from '@/lib/docSeen'
-
+import { ConfirmSheet } from './view/ConfirmSheet'
+import { deriveCockpit } from './view/deriveCockpit'
+import { askCopy, useCaseActions } from './view/useCaseActions'
+import { useInterview } from './view/useInterview'
+import { usePostAward } from './view/usePostAward'
+import { useRequests } from './view/useRequests'
+import { useVerdict } from './view/useVerdict'
+import type { CockpitCtx } from './view/cockpitCtx'
 
 /**
  * ⚠ `applicationId` EXISTS SO THE SANDBOX CAN MOUNT THIS PAGE (Layer 1 F7c), and it is the only
@@ -168,205 +115,25 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
-  // Request #40: a refused raise / document request is explained BESIDE its form. It used to go to
-  // `error`, which renders in the decision panel far down the page — so the screen looked silent.
-  const [requestError, setRequestError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
-  const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
-  // #7 prev/next: the ordered id list the list page last rendered (current filters).
-  // Read once from sessionStorage; if this id isn't in it (e.g. a direct link), nav hides.
-  const [navIds, setNavIds] = useState<number[]>([])
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('halatuju_admin_scholarship_nav')
-      if (raw) setNavIds(JSON.parse(raw))
-    } catch { /* sessionStorage unavailable — nav just won't show */ }
-  }, [])
-  const navIdx = navIds.indexOf(id)
-  const prevId = navIdx > 0 ? navIds[navIdx - 1] : null
-  const nextId = navIdx >= 0 && navIdx < navIds.length - 1 ? navIds[navIdx + 1] : null
-  // Phase C
   const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
-  const [findings, setFindings] = useState<Record<string, { verdict: string; rationale: string }>>({})
-  const [rubric, setRubric] = useState<Record<string, number>>({})
-  const [note, setNote] = useState('')
-  const [infoNote, setInfoNote] = useState('')
-  const [reqCategory, setReqCategory] = useState('')
-  const [reqQualifier, setReqQualifier] = useState('')   // the 'whose' member OR the 'which' sub-value
-  const [reqDocNote, setReqDocNote] = useState('')
-  // Sprint 5 — Officer cockpit
-  const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
-  const [verdictReason, setVerdictReason] = useState('')
-  const [verdictMsg, setVerdictMsg] = useState('')
-  const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
-  const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
-  // ⚠ AN INTERVIEW SAVE/SUBMIT FAILURE IS SHOWN BESIDE ITS OWN BUTTON (case 254, 2026-11-07).
-  // It used to go into the page `error`, which prints only in the Profile and Decision cards —
-  // off-screen from the Submit button, so a refused submit looked like nothing happened.
-  const [interviewError, setInterviewError] = useState('')
-  // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
-  // (app.decision_reopened_at) so it survives a reload; these only drive the reason input.
-  const [reopenOpen, setReopenOpen] = useState(false)    // the "why are you reopening?" box is showing
-  const [reopenReason, setReopenReason] = useState('')
-  // QC gate (on an AWAITING-QC 'interviewed' case): Accept, or Reopen with a gaps note.
-  const [qcReopenOpen, setQcReopenOpen] = useState(false)
-  const [qcComments, setQcComments] = useState('')
-  // Reject toggle inside the reopen box (default off): on → the case is rejected outright
-  // instead of returned to the reviewer (owner 2026-07-19).
-  const [qcRejectMode, setQcRejectMode] = useState(false)
-  // V5 gap floor: super-only override panel state (reason recorded server-side).
-  const [qcOverrideOpen, setQcOverrideOpen] = useState(false)
-  const [qcOverrideReason, setQcOverrideReason] = useState('')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(true)
-  // Conditional Bursary Award Agreement (flag-gated, dark by default). The admin
-  // detail GET does not carry the agreement, so the card's state is populated by
-  // the countersign/witness action responses (each returns the full agreement).
-  const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
-  const [bursaryMsg, setBursaryMsg] = useState('')
 
-  // Witness-organisation assignment (go-live transition, T2). Shown for a SOURCELESS application
-  // (no source; sources Sprint C) so a super/org_admin can assign a witness org — usable BEFORE the flag
-  // flips (runbook step 2 precedes the flip), so it is NOT gated behind bursary_agreement_enabled.
-  const [activeSources, setActiveSources] = useState<SourceItem[]>([])
-  const [witnessSel, setWitnessSel] = useState<string>('')
-  const [witnessBusy, setWitnessBusy] = useState(false)
-  const [witnessMsg, setWitnessMsg] = useState('')
-  // Once a witness org is on file the card SETTLES (names the org, no dropdown) — the assign
-  // copy would otherwise keep asking for something already done (owner 2026-07-25). Reassigning
-  // is still one click away: "Change" flips this back to the picker.
-  const [witnessEditing, setWitnessEditing] = useState(false)
-  const sourceless = !!app && !app.source
-  // Only fetch the organisation list when the witness card can actually render — same three
-  // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
-  // sourceless students today are at 'shortlisted', where the card never appears).
-  const witnessCardVisible = canManageSources && sourceless && showsWitnessCard(stageStatus(app, 'active_at'))
-  useEffect(() => {
-    if (!token || !witnessCardVisible) return
-    getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
-  }, [token, witnessCardVisible])
-  useEffect(() => { setWitnessSel(app?.witness_org?.code || '') }, [app?.witness_org?.code])
-  // A refusal answers the findings as they WERE; once she answers or deletes an item it is stale,
-  // and the live "still to answer" line under the buttons takes over.
-  useEffect(() => { setInterviewError('') }, [findings])
-
-  const doAssignWitness = async () => {
-    if (!token || !app) return
-    setWitnessBusy(true); setWitnessMsg('')
-    try {
-      const res = await assignWitness(id, witnessSel || null, { token })
-      setApp({ ...app, witness_org: res.witness_org ? { id: 0, code: res.witness_org, name: res.witness_org_name || res.witness_org } : null })
-      setWitnessMsg(t('admin.sources.witness.assigned'))
-      setWitnessEditing(false)   // settle back to the named-org state
-    } catch {
-      setWitnessMsg(t('admin.actionFailed'))
-    } finally { setWitnessBusy(false) }
-  }
-
-  const doCountersignBursary = async () => {
+  const refreshApp = async () => {
     if (!token) return
-    setBusy('bursary'); setBursaryMsg('')
-    try {
-      setBursary(await adminCountersignBursary(id, { token }))
-    } catch (e) {
-      setBursaryMsg(t('admin.scholarship.bursary.actionError'))
-    } finally { setBusy('') }
+    setApp(await getScholarshipApplication(id, { token }))
   }
-
-  const doWitnessBursary = async () => {
-    if (!token) return
-    setBusy('bursary'); setBursaryMsg('')
-    try {
-      setBursary(await adminWitnessBursary(id, undefined, { token }))
-    } catch (e) {
-      const { status, code = '' } = e as Error & { status?: number; code?: string }  // review L6: say which refusal
-      setBursaryMsg(t(status === 403 ? 'admin.scholarship.bursary.witnessForbidden'
-        : ['witness_changed', 'no_witness_organisation', 'already_witnessed'].includes(code)
-          ? `admin.scholarship.bursary.witnessRefused.${code}` : 'admin.scholarship.bursary.actionError'))
-    } finally { setBusy('') }
-  }
-
-  // Post-award S4: disbursement (tranche) ledger.
-  const [disbAmount, setDisbAmount] = useState('')
-  const [disbLabel, setDisbLabel] = useState('')
-  const [disbMsg, setDisbMsg] = useState('')
-
-  // The backend raises a machine code as the Error message (adminMutate throws new Error(body.error)).
-  const DISB_CODES = new Set(['bad_amount', 'not_in_programme', 'bad_state', 'bad_action', 'bad_sequence', 'on_hold', 'not_in_maintenance', 'bad_substate'])
-  const disbError = (e: unknown) => {
-    const code = (e as Error)?.message
-    return t(`admin.disbursement.error.${code && DISB_CODES.has(code) ? code : 'generic'}`)
-  }
-
-  const doScheduleTranche = async () => {
-    if (!token) return
-    const amount = parseFloat(disbAmount)
-    if (!amount || amount <= 0) { setDisbMsg(t('admin.disbursement.error.bad_amount')); return }
-    setBusy('disbursement'); setDisbMsg('')
-    try {
-      const seq = nextSequence(app?.disbursements ?? [])
-      setApp(await scheduleTranche(id, { amount, sequence: seq, label: disbLabel.trim() }, { token }))
-      setDisbAmount(''); setDisbLabel('')
-    } catch (e) {
-      setDisbMsg(disbError(e))
-    } finally { setBusy('') }
-  }
-
-  const doDisbursementAction = async (disbursementId: number, action: DisbursementAction) => {
-    if (!token) return
-    setBusy('disbursement'); setDisbMsg('')
-    try {
-      setApp(await actOnDisbursement(disbursementId, action, undefined, { token }))
-    } catch (e) {
-      setDisbMsg(disbError(e))
-    } finally { setBusy('') }
-  }
-
-  // Post-award S5: maintenance sub-state (on_track / probation / on_hold / ready_to_close).
-  const doSetSubstate = async (substate: MaintenanceSubstate) => {
-    if (!token) return
-    setBusy('disbursement'); setDisbMsg('')
-    try {
-      setApp(await setMaintenanceSubstate(id, substate, { token }))
-    } catch (e) {
-      setDisbMsg(disbError(e))
-    } finally { setBusy('') }
-  }
-
-  // Manual closure (post-award S6; any in-play status since TD-352).
-  const [closeReason, setCloseReason] = useState<ClosureReason | ''>('')
-  const [closeMsg, setCloseMsg] = useState('')
-  const doClose = async () => {
-    if (!token || !closeReason) return
-    setBusy('close'); setCloseMsg('')
-    try {
-      setApp(await closeApplication(id, closeReason, { token }))
-      setCloseReason('')
-    } catch (e) {
-      setCloseMsg(t(closeErrorKey((e as Error)?.message)))
-    } finally { setBusy('') }
-  }
-
-  const loadInterviewState = (d: AdminScholarshipDetail) => {
-    const s = d.interview_session
-    setFindings(s?.findings ?? {})
-    setRubric(s?.rubric ?? {})
-    setNote(s?.overall_note ?? '')
-  }
-
-  const loadVerdictState = (d: AdminScholarshipDetail) => {
-    const v = d.officer_verdict ?? {}
-    setOfficerVerdict({
-      identity: v.identity ?? '',
-      academic: v.academic ?? '',
-      income: v.income ?? '',
-      pathway: v.pathway ?? '',
-      overall: v.overall ?? '',
-    })
-    setVerdictReason(d.verdict_reason ?? '')
-  }
+  const ctx: CockpitCtx = { id, token, t, app, setApp, setProfile, setBusy, setError, refreshApp }
+  const verdict = useVerdict(ctx, genLang)
+  const interview = useInterview(ctx)
+  const requests = useRequests(ctx)
+  const postAward = usePostAward(ctx, canManageSources)
+  const actions = useCaseActions(ctx)
+  const { officerVerdict, loadVerdictState } = verdict
+  const { findings, loadInterviewState } = interview
 
   useEffect(() => {
     if (!token || !id) return
@@ -374,9 +141,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     // move between applicants WITHOUT remounting this page, so without this the previous student's
     // typed findings stay in state until their replacement arrives — and a save in that window
     // writes one student's interview onto another's record. The load below refills them.
-    setFindings({})
-    setRubric({})
-    setNote('')
+    interview.setFindings({})
+    interview.setRubric({})
+    interview.setNote('')
     getScholarshipApplication(id, { token })
       .then((d) => {
         setApp(d)
@@ -385,7 +152,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         loadVerdictState(d)
         // TD-144: seed the bursary panel from the real loaded agreement so the four-party
         // ticks are accurate on first paint (the action responses refresh it after a sign).
-        setBursary(d.bursary_agreement ?? null)
+        postAward.setBursary(d.bursary_agreement ?? null)
       })
       .catch(() => setError(t('admin.scholarship.loadFailed')))
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
@@ -394,542 +161,58 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
-  // One button: always APPENDS (generates 3 more, excluding any already suggested) so it never
-  // wipes questions the reviewer is still considering. On an empty list it just generates the
-  // first 3. To start over, the reviewer deletes the ones they don't want, then clicks again.
-  const doSuggestGaps = async () => {
-    if (!token) return
-    setBusy('gaps'); setError('')
-    try {
-      setApp(await suggestInterviewGaps(id, undefined, { token }, true))
-    } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
-  }
-
-  // TD-227 (A1.11a): the decline needs a reason (stored on the case; the server answers 400
-  // comments_required without one). The confirm became a prompt; Cancel still does nothing.
-  const doReject = async (category: 'interview' | 'contractual', preset = '') => {
-    if (!token) return
-    const confirmKey = category === 'contractual'
-      ? 'admin.scholarship.reject.confirmContractual' : 'admin.scholarship.reject.confirmReview'
-    const answer = window.prompt(`${t(confirmKey)}\n\n${t('admin.scholarship.reject.reasonPrompt')}`, preset)
-    if (answer === null) return
-    const comments = answer.trim()
-    if (!comments) { setError(t('admin.scholarship.reject.reasonRequired')); return }
-    setBusy('reject'); setError('')
-    try {
-      setApp(await rejectApplication(id, category, comments, { token }))
-    } catch (e) {
-      const code = (e as { code?: string } | null)?.code
-      setError(code === 'comments_required' ? t('admin.scholarship.reject.reasonRequired')
-        : e instanceof Error ? e.message : t('admin.scholarship.reject.error'))
-    } finally { setBusy('') }
-  }
-
-  // Org-admin reject of a stuck SHORTLISTED applicant. Three deliberate steps — idle → form
-  // (mandatory reason) → confirm — because unlike every other decline this one is IMMEDIATE and
-  // IRREVERSIBLE: there is no cool-off and therefore no Cancel banner to undo it. The confirm
-  // step IS the safety net, so it is in-page (not a window.confirm the browser can suppress).
-  const [rejectStep, setRejectStep] = useState<'idle' | 'form' | 'confirm'>('idle')
-  const [rejectComments, setRejectComments] = useState('')
-  const [rejectErr, setRejectErr] = useState('')
-  const closeReject = () => { setRejectStep('idle'); setRejectComments(''); setRejectErr('') }
-  const doOrgReject = async () => {
-    if (!token) return
-    setBusy('orgReject'); setRejectErr('')
-    try {
-      setApp(await orgRejectApplication(id, rejectComments.trim(), { token }))
-      closeReject()
-    } catch (e) {
-      // Stay on the confirm step so the typed reason isn't lost on a transient failure.
-      setRejectErr(e instanceof Error ? e.message : t('admin.scholarship.orgReject.error'))
-    } finally { setBusy('') }
-  }
-
-  // "You haven't submitted yet" reminder — org-admin manual re-send (the auto nudge fires once,
-  // ~30 min after consent; this is the human follow-up). Confirms first, then refreshes the
-  // nudge state (new sent_at + cooldown) from the returned detail.
-  const [nudgeMsg, setNudgeMsg] = useState('')
-  const doNudge = async () => {
-    if (!token || !window.confirm(t('admin.scholarship.blockers.nudge.confirm'))) return
-    setBusy('nudge'); setNudgeMsg('')
-    try {
-      setApp(await nudgeStudent(id, { token }))
-      setNudgeMsg(t('admin.scholarship.blockers.nudge.done'))
-    } catch (e) {
-      setNudgeMsg(e instanceof Error ? e.message : t('admin.scholarship.blockers.nudge.error'))
-    } finally { setBusy('') }
-  }
-
-  // Reporting date — recorded by hand when the offer letter carries no readable one. QC refuses
-  // to accept without it, so this is how a blocked case gets cleared (owner 2026-07-23).
-  const [reportingDateInput, setReportingDateInput] = useState('')
-  const [reportingDateMsg, setReportingDateMsg] = useState('')
-  const doSetReportingDate = async () => {
-    if (!token || !reportingDateInput) return
-    setBusy('reportingDate'); setReportingDateMsg('')
-    try {
-      setApp(await setReportingDate(id, reportingDateInput, { token }))
-      setReportingDateInput('')
-    } catch (e) {
-      setReportingDateMsg(e instanceof Error ? e.message : t('admin.actionFailed'))
-    } finally { setBusy('') }
-  }
-
-  // Cool-off controls: cancel a scheduled decline / hold a pending award before it reveals.
-  const doCancelDecline = async () => {
-    if (!token || !window.confirm(t('admin.scholarship.cooloff.cancelConfirm'))) return
-    setBusy('cooloff'); setError('')
-    try { setApp(await cancelPendingDecline(id, { token })) }
-    catch { setError(t('admin.scholarship.cooloff.error')) } finally { setBusy('') }
-  }
-  const doHoldAward = async () => {
-    if (!token || !window.confirm(t('admin.scholarship.cooloff.holdConfirm'))) return
-    setBusy('cooloff'); setError('')
-    try { setApp(await holdPendingAward(id, { token })) }
-    catch { setError(t('admin.scholarship.cooloff.error')) } finally { setBusy('') }
-  }
-
-  const doAssign = async (adminId: number | null) => {
-    if (!token) return
-    setBusy('assign'); setError('')
-    // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page.
-    try { await assignApplication(id, adminId, { token }); setApp(await getScholarshipApplication(id, { token })) }
-    catch (e) {
-      const code = e instanceof Error ? e.message : ''
-      const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'findings_submitted', 'gift_mismatch']
-      setError(known.includes(code)
-        ? t(`admin.scholarship.assign.error.${code}`)
-        : t('admin.scholarship.assignError'))
-    } finally { setBusy('') }
-  }
-
-  const doSaveInterview = async () => {
-    if (!token) return
-    setBusy('iv'); setError(''); setInterviewError(''); setInterviewMsg('')
-    try {
-      await saveInterview(id, { findings, rubric, overall_note: note }, { token })
-      await refreshApp()
-      // Save confidence: an explicit "Saved ✓" so the reviewer knows it persisted
-      // (the draft is still editable; re-saving overwrites it, until Submit).
-      setInterviewMsg(t('admin.scholarship.interview.saved'))
-      setTimeout(() => setInterviewMsg(''), 4000)
-    } catch { setInterviewError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
-  }
-
-  const doSubmitInterview = async () => {
-    if (!token) return
-    setBusy('ivs'); setError(''); setInterviewError(''); setInterviewMsg('')
-    try {
-      await saveInterview(id, { findings, rubric, overall_note: note }, { token })
-      const d = await submitInterview(id, { token })
-      setApp(d); loadInterviewState(d)   // freeze to the read-only view
-    } catch (e) {   // TD-253: an unanswered agenda item is refused, in words — beside the button
-      setInterviewError(interviewRefusalText(e, t) ?? t('admin.scholarship.interview.submitError'))
-    } finally { setBusy('') }
-  }
-
-  // Reviewer reopens a submitted interview (un-submits → both boxes editable again).
-  const doReopenInterview = async () => {
-    if (!token) return
-    setBusy('ivreopen'); setError(''); setInterviewMsg('')
-    try {
-      const d = await reopenInterview(id, { token })
-      setApp(d); loadInterviewState(d)
-    } catch { setError(t('admin.scholarship.interview.reopenError')) } finally { setBusy('') }
-  }
-
-  // Deleting an agenda talking point (an AI gap or a flag) must STICK across a refresh —
-  // the rest of the Interview Stage is a draft the officer saves on demand, but a Delete
-  // is a decision, so it persists immediately (write the whole session with that one item
-  // flipped to 'deleted'). Without this, the delete was local-only and the item reappeared
-  // on reload.
-  const doDeleteAgendaItem = async (code: string) => {
-    if (!token) return
-    const prev = findings[code] ?? { verdict: '', rationale: '' }
-    const next = { ...findings, [code]: { ...prev, verdict: 'deleted' } }
-    setFindings(next)
-    setBusy('delgap'); setError('')
-    try {
-      await saveInterview(id, { findings: next, rubric, overall_note: note }, { token })
-    } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
-  }
-
-  /** True when the verdict was recorded — a refusal must stop the decline chain below (review F5). */
-  const doRecordVerdict = async (finalise: boolean, accept = false): Promise<boolean> => {
-    if (!token) return false
-    setBusy('verdict'); setError(''); setVerdictMsg('')
-    try {
-      const result = await recordVerdict(id, {
-        officer_verdict: officerVerdict,
-        reason: verdictReason || undefined,
-        finalise,
-        language: genLang,
-      }, { token })
-      // Save verdict IS the decision: when the officer's verdict is a clear accept
-      // (Identity = Pass, nothing failed), the profile is complete, and the case is
-      // still live, accept in the same click. No separate IC-verify/lock step —
-      // identity was already verified at the consent gate.
-      let finalApp: AdminScholarshipDetail = result
-      let accepted = false
-      const clearAccept = isClearAccept(!!result.completeness?.complete, result.status)
-      if (accept && clearAccept) {
-        try {
-          finalApp = await verifyAcceptApplication(id, {}, { token })
-          accepted = true
-        } catch (e) {
-          // The verdict is saved; only the accept failed (e.g. an NRIC clash) — surface it.
-          setError(verdictSaveErrorText(e, t, 'admin.scholarship.acceptError'))
-        }
-      }
-      setApp(finalApp)
-      setProfile(finalApp.sponsor_profile)
-      loadVerdictState(finalApp)
-      // ⚠ EVERY OUTCOME GETS A LINE — BrightPath #20 was this block staying silent. The reviewer
-      // asked to submit, the submit was skipped, and the screen said nothing, so the case sat for
-      // fourteen days. `verdictSaveOutcome` is a closed set precisely so a new branch cannot be
-      // added without a message. The not-submitted lines come BEFORE `finalise`: "your case did
-      // not move" outranks "the profile was regenerated".
-      const outcome = verdictSaveOutcome({
-        acceptRequested: !!accept,
-        accepted,
-        completenessComplete: !!result.completeness?.complete,
-        status: result.status,
-      })
-      if (outcome === 'accepted') {
-        setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
-      } else if (outcome === 'not_submitted_incomplete') {
-        setVerdictMsg(t('admin.scholarship.decision.notSubmittedIncomplete')); setVerdictMsgTone('warn')
-      } else if (outcome === 'not_submitted_status') {
-        setVerdictMsg(t('admin.scholarship.decision.notSubmittedStatus')); setVerdictMsgTone('warn')
-      } else if (finalise) {
-        const fr = result.finalise_result
-        if (fr && fr.ok) {
-          // Verdict recorded and the final profile queued (A2.1: written in the background, `pending`).
-          setVerdictMsg(t(fr.pending ? 'admin.scholarship.recordVerdict.finalisePending' : 'admin.scholarship.recordVerdict.finaliseOk')); setVerdictMsgTone('ok')
-        } else {
-          // Saved, but NOT finalised — work is incomplete. Amber, not green.
-          // `engine_error` = the AI step failed; it is not a missing draft (request #61).
-          setVerdictMsg(t(fr?.code === 'no_interview' ? 'admin.scholarship.recordVerdict.finaliseNoInterview'
-            : fr?.code === 'engine_error' ? 'admin.scholarship.recordVerdict.finaliseEngineError'
-              : 'admin.scholarship.recordVerdict.finaliseNoDraft'))
-          setVerdictMsgTone('warn')
-        }
-      }
-      return true
-    } catch (e) {
-      setError(interviewRefusalText(e, t) ?? verdictSaveErrorText(e, t, 'admin.scholarship.acceptError'))
-      return false
-    } finally { setBusy('') }
-  }
-
-  // Decision = pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. The
-  // chosen outcome lives in officerVerdict.overall ('' | 'accept' | 'decline').
-  const selectApprove = () => setOfficerVerdict((v) => ({ ...v, overall: 'accept' }))
-  // The amount is now managed backend-side by record-verdict (accept → auto-apply the
-  // pathway-standard amount; decline → clear), so the UI no longer pokes the award endpoint.
-  const selectDecline = () => setOfficerVerdict((v) => ({ ...v, overall: 'decline' }))
-  // Send a recorded DECLINE verdict to QC (→ AWAITING QC) instead of rejecting directly. A second
-  // reviewer then CONFIRMS the decline (→ rejected) or reopens it (owner 2026-07-19).
-  const doSubmitDecline = async () => {
-    if (!token) return
-    setBusy('verdict'); setError('')
-    try {
-      const updated = await submitDeclineApplication(id, { token })
-      setApp(updated); setProfile(updated.sponsor_profile); loadVerdictState(updated)
-      setVerdictMsg(t('admin.scholarship.decision.declineSentToQc')); setVerdictMsgTone('ok')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
-    } finally { setBusy('') }
-  }
-  const doSave = async () => {
-    const outcome = officerVerdict.overall
-    if (outcome === 'accept') {
-      await doRecordVerdict(true, true)                 // record (overall=accept) + finalise + accept + publish
-    } else if (outcome === 'decline') {
-      // Record the decline verdict, then route to QC. A post-award (recommended) case still
-      // declines via the contractual path (that decline is already post-QC); an in-review case
-      // goes to AWAITING QC for a second pair of eyes before it becomes a rejection.
-      if (!(await doRecordVerdict(false, false))) return   // refused: sending on would 400 over it
-      if (app?.status === 'recommended') {
-        await doReject('contractual', verdictReason)
-      } else {
-        await doSubmitDecline()
-      }
-    }
-  }
-
-  // Reverse a recorded decision (super-only). Reopening HOLDS the sponsor profile from
-  // the pool and unlocks the panel; a reason is required (it asserts a reviewer error).
-  const doReopenDecision = async () => {
-    if (!token || !reopenReason.trim()) return
-    setBusy('reopen'); setError(''); setVerdictMsg('')
-    try {
-      const result = await reopenDecision(id, reopenReason.trim(), { token })
-      setApp(result)
-      setProfile(result.sponsor_profile)
-      loadVerdictState(result)
-      setReopenOpen(false); setReopenReason('')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.recordVerdict.reopenError'))
-    } finally { setBusy('') }
-  }
-
-  // Close a reopen with NO change — restore the profile to its prior published state.
-  const doCancelReopen = async () => {
-    if (!token) return
-    setBusy('reopen'); setError(''); setVerdictMsg('')
-    try {
-      const result = await cancelReopen(id, { token })
-      setApp(result)
-      setProfile(result.sponsor_profile)
-      loadVerdictState(result)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.recordVerdict.reopenError'))
-    } finally { setBusy('') }
-  }
-
-  // QC gate on an AWAITING-QC ('interviewed') case. Accept → Recommended; Reopen → back to the
-  // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
-  // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
-  // a super passes it with overrideReason, which the server records.
-  const doQcDecision = async (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => {
-    if (!token) return
-    // Reopen AND reject both carry the shared-with-reviewer comment (the gaps / the reject reason).
-    const carriesComments = decision === 'reopen' || decision === 'reject'
-    if (carriesComments && !qcComments.trim()) return
-    setBusy('qc'); setError(''); setVerdictMsg('')
-    try {
-      const result = await recordQcDecision(
-        id, { decision, comments: carriesComments ? qcComments.trim() : undefined,
-              override_reason: overrideReason?.trim() || undefined }, { token })
-      setApp(result)
-      setProfile(result.sponsor_profile)
-      loadVerdictState(result)
-      setQcReopenOpen(false); setQcComments(''); setQcRejectMode(false)
-      setQcOverrideOpen(false); setQcOverrideReason('')
-    } catch (e) {
-      const code = (e as { code?: string })?.code
-      // TD-483: every separation code in en / ms / ta (was only `self_verdict_qc_forbidden`).
-      setError(qcRefusalText(code, t)
-        || (e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error')))
-    } finally { setBusy('') }
-  }
-
-  const doRaiseQuery = async () => {
-    if (!token || !infoNote.trim()) return
-    setBusy('raise'); setError(''); setRequestError('')
-    try {
-      setApp(await raiseResolutionItem(id, { kind: 'explanation', prompt: infoNote.trim(), fact: 'identity' }, { token }))
-      setInfoNote('')
-    } catch (e) { setRequestError(requestRefusalText(e, t)) } finally { setBusy('') }
-  }
-
-  // A standard request line for the selected (doc, person) — prefills the note box so the
-  // reviewer can elaborate, and is the fallback if they clear it.
-  const stdDocRequest = (dt: string, m: string, kind = '') => {   // kind: S4 results by name
-    if (!dt) return ''
-    // "Other document" has no standard clause — the reviewer types exactly what they need,
-    // so leave the box empty (the generic "the requested document …" prefill was unhelpful).
-    if (dt === 'other') return ''
-    // Rich per-document clause (says what we look for) — clarity for the student.
-    const docTxt = t(`admin.scholarship.requestDocStd.${kind ? `higher_${kind}` : dt}`)
-    const memberTxt = m ? t(`scholarship.docs.income.wizard.member.${m}`) : ''
-    return m
-      ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
-      : t('admin.scholarship.requestDocPrompt', { doc: docTxt })
-  }
-  // The concrete (doc_type, member) the current category+qualifier resolves to — null until a
-  // required qualifier is chosen (which keeps the Request button disabled).
-  const reqResolved = resolveReq(reqCategory, reqQualifier)
-  const onReqCategory = (key: string) => {
-    setReqCategory(key)
-    setReqQualifier('')                                  // reset the qualifier when the category changes
-    const r = resolveReq(key, '')                         // prefills only for a no-qualifier category
-    setReqDocNote(r ? stdDocRequest(r.docType, r.member) : '')
-  }
-  const onReqQualifier = (q: string) => {
-    setReqQualifier(q)
-    const r = resolveReq(reqCategory, q)
-    setReqDocNote(r ? stdDocRequest(r.docType, r.member, r.kind) : '')
-  }
-  const doRequestDoc = async () => {
-    if (!token || !reqResolved) return
-    const { docType, member, kind } = reqResolved
-    const prompt = reqDocNote.trim() || stdDocRequest(docType, member, kind)
-    setBusy('reqdoc'); setError(''); setRequestError('')
-    try {
-      setApp(await raiseResolutionItem(
-        id,
-        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: docTypeToRequestFact(docType), ...(kind ? { results_kind: kind } : {}) },
-        { token },
-      ))
-      setReqDocNote(''); setReqCategory(''); setReqQualifier('')
-    } catch (e) { setRequestError(requestRefusalText(e, t)) } finally { setBusy('') }
-  }
-
-  const doActionResolution = async (itemId: number, action: 'waive' | 'resolve' | 'reopen') => {
-    if (!token) return
-    setBusy(`res${itemId}`); setError('')
-    try {
-      setApp(await actionResolutionItem(itemId, action, { token }))
-    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
-  }
-
-  const refreshApp = async () => {
-    if (!token) return
-    setApp(await getScholarshipApplication(id, { token }))
-  }
-
-  const doAddReferee = async () => {
-    if (!token || !refForm.name.trim()) return
-    // Referee phone is optional, but if given it must be a valid Malaysian number.
-    if (refForm.phone.trim() && !isValidPhone(refForm.phone)) {
-      setError(t('scholarship.apply.error.phone')); return
-    }
-    setBusy('ref'); setError('')
-    try {
-      await addReferee(id, refForm, { token })
-      setRefForm({ ...EMPTY_REFEREE })
-      await refreshApp()
-    } catch { setError(t('admin.scholarship.refError')) } finally { setBusy('') }
-  }
-
-  const doDeleteReferee = async (refId: number) => {
-    if (!token) return
-    setBusy('ref'); setError('')
-    try {
-      await deleteReferee(id, refId, { token })
-      await refreshApp()
-    } catch { setError(t('admin.scholarship.refError')) } finally { setBusy('') }
-  }
-
-  const doReRunVision = async (docId: number) => {
-    if (!token) return
-    setBusy('vision'); setError('')
-    try {
-      await reRunVision(id, docId, { token })
-      await refreshApp()
-    } catch { setError(t('admin.scholarship.visionError')) } finally { setBusy('') }
-  }
-
   if (!app) return <RecordState loading={!error} />
 
-  // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
-  // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source
-  // doc, or undefined when the field isn't corroborated (then no tick renders). Declared here (not
-  // in the cards block) so the header name/NRIC can use it too.
-  const _fv = fieldVerifications(app)
-  const vtip = (field: VerifiableField): string | undefined =>
-    _fv[field]
-      ? t('admin.scholarship.verified.tooltip', {
-          source: t(`admin.scholarship.verified.source.${_fv[field]!.source}`),
-        })
-      : undefined
-
+  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason)
+  const { vtip, decisionReopened, decisionLocked, decisionRecorded } = d
   // Household income + size (request #54: the declared figures, ticked on a document match).
   const household = householdFigures(app, t)
-
-  // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
-  // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
-  // unlock for the assigned reviewer (and super), not just the decision panel.
-  const decisionReopened = !!app.decision_reopened_at
-
-  // Attribution lines on the Recommendation card. The reviewer INTERVIEWED & recommended
-  // (verdict_decided_*); the QC ACCEPTED (recommended_*). The "accepted by" clause shows ONLY
-  // when a real QC identity was captured — we never fall back to the reviewer's own verify stamp,
-  // because the reviewer is not the QC and that would misattribute. Cases recommended before the
-  // QC gate existed (no QC step) simply omit the clause.
-  const reviewerName = app.verdict_decided_by_name || app.verdict_decided_by || '—'
-  const reviewerDate = app.verdict_decided_at ? ` · ${formatDate(app.verdict_decided_at)}` : ''
-  const hasQc = !!app.recommended_by
-  const qcName = app.recommended_by_name || app.recommended_by || '—'
-  const qcDate = app.recommended_at ? ` · ${formatDate(app.recommended_at)}` : ''
-
-  // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
-  // Ask again / request a document) closes and Outstanding becomes a read-only record.
-  // A reopen re-opens it (the backend querying_locked mirrors this).
-  const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status) && !decisionReopened
-  const lockReason = queryingLockReason(app.status, app.interview_session?.status)
-  // Freeze model (the owner's): Save persists a draft and stays editable (re-saving
-  // overwrites the same draft); Submit / recording the decision disables editing →
-  // read-only. A reopen unlocks the interview again (for the assigned reviewer too).
-  const interviewSubmitted = app.interview_session?.status === 'submitted'
-  const interviewLocked = interviewSubmitted && !decisionReopened
-  const decisionRecorded = !!app.verdict_decided_at
-  // ⚠ A HALF-COMPLETED APPROVE MUST NOT LOCK THE PANEL. Saving the verdict is the FIRST of the
-  // two things one Approve press does; locking on it stranded application 144 for six days with
-  // no button its own reviewer could press. While the case is still waiting to be submitted, the
-  // controls stay live so she can finish it herself — see `isStuckAfterVerdict`.
-  const recordedOutcome = (app.officer_verdict as { overall?: string } | null)?.overall ?? null
-  const stuckAfterVerdict = isStuckAfterVerdict({
-    status: app.status,
-    verdictDecidedAt: app.verdict_decided_at,
-    verifiedAt: app.verified_at,
-    outcome: recordedOutcome,
-  })
-  const decisionLocked = decisionRecorded && !decisionReopened && !stuckAfterVerdict
-
-  // The interview agenda (questions): deterministic flags not already a Check-2 query +
-  // AI gaps. Computed once; the editable view drops 'deleted' items, the read-only view
-  // shows only the answered ones.
-  const check2Owned = new Set((app.resolution_items ?? []).map((i) => i.code))
-  // V3 (#9): the folded agenda entries (open carried-over queries + the needs-interview verdict
-  // ambers + a standing Motivation & grit section) — so nothing raised at Check 1/2 evaporates at
-  // the interview. Anomalies are still sourced from app.anomalies above (to keep the
-  // ANOMALY_CHECK2_OWNER suppression), so the folded list drops kind==='anomaly'.
-  const agendaEntryLabel = (e: AdminAgendaEntry): string => {
-    const p = Object.fromEntries(Object.entries(e.params).map(([k, v]) => [k, String(v)]))
-    if (e.kind === 'motivation') {
-      return e.params.seeded
-        ? t('admin.scholarship.agenda.motivation.seeded')
-        : t('admin.scholarship.agenda.motivation.standing')
-    }
-    if (e.kind === 'needs_interview') return t(`admin.scholarship.agenda.needsInterview.${e.code}`, p)
-    return t('admin.scholarship.agenda.openQuery')   // a carried-over query — confirm verbally
-  }
-  const agendaItems = [
-    ...app.anomalies
-      .filter((a) => { const o = ANOMALY_CHECK2_OWNER[a.code]; return !(o && check2Owned.has(o)) })
-      .map((a) => ({
-        code: a.code, ai: false,
-        label: t(`admin.scholarship.anomaly.${a.code}.question`, anomalyParams(t, a.params)),   // M4b: no raw doc_seen
-      })),
-    ...(app.interview_agenda || [])
-      .filter((e) => e.kind !== 'anomaly')
-      .map((e) => ({ code: `${e.kind}:${e.code}`, ai: false, label: agendaEntryLabel(e) })),
-    ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
-  ]
-  const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
-  // The live count under Submit (case 254): the questions still unanswered in what she has typed
-  // so far — the same "answered" rule the api applies at submit, read from the UNSAVED findings,
-  // so she is told before she presses rather than after.
-  const interviewUnansweredCount = missingAgendaItems(agendaItems.map((it) => it.code), findings).length
-
-  // #7: Approve/Decline activate only once the reviewer has (1) submitted interview findings that
-  // answer EVERY agenda item (TD-253 — read from the SAVED session, which is what the api checks),
-  // (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
-  // (Approve's actual accept is still backend-gated on a complete profile + identity.)
-  const interviewMissing = interviewGateApplies({ status: app.status, recordedOutcome, decisionReopened })
-    ? missingAgendaItems(agendaItems.map((it) => it.code), app.interview_session?.findings) : []
-  const decisionReady = isDecisionReady(
-    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length === 0)
-  // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
-  // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
-  // figure); it is effectively always true now.
-  const hasAssistance = app.award_amount != null || app.proposed_award_amount != null
-  const approveReady = isApproveReady(decisionReady, hasAssistance)
-  // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
-  // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
-  const canSave = (officerVerdict.overall === 'accept' && approveReady)
-    || (officerVerdict.overall === 'decline' && decisionReady)
-
+  const q = actions.ask ? askCopy(actions.ask, nudgeButton(app.nudge, true).label) : null
+  const {
+    verdictReason, setVerdictReason, verdictMsg, verdictMsgTone, reopenOpen, setReopenOpen,
+    reopenReason, setReopenReason, qcReopenOpen, setQcReopenOpen, qcComments, setQcComments,
+    qcRejectMode, setQcRejectMode, qcOverrideOpen, setQcOverrideOpen, qcOverrideReason,
+    setQcOverrideReason, rejectStep, setRejectStep, rejectComments, setRejectComments, rejectErr,
+    closeReject, doReject, doOrgReject, selectApprove, selectDecline, doSave, doReopenDecision,
+    doCancelReopen, doQcDecision, setOfficerVerdict,
+  } = verdict
+  const {
+    note, setNote, setFindings, interviewMsg, interviewError, doSuggestGaps,
+    doSaveInterview, doSubmitInterview, doReopenInterview, doDeleteAgendaItem,
+  } = interview
+  const {
+    requestError, refForm, setRefForm, infoNote, setInfoNote, reqCategory, reqQualifier, reqDocNote,
+    setReqDocNote, reqResolved, onReqCategory, onReqQualifier, doRaiseQuery, doRequestDoc,
+    doActionResolution, doAddReferee, doDeleteReferee, doReRunVision,
+  } = requests
+  const {
+    nudgeMsg, doNudge, doCancelDecline, doHoldAward, reportingDateInput, setReportingDateInput,
+    reportingDateMsg, doSetReportingDate, doAssign,
+  } = actions
+  const {
+    reviewerName, reviewerDate, hasQc, qcName, qcDate, queryingLocked, lockReason, interviewSubmitted,
+    interviewLocked, recordedOutcome, stuckAfterVerdict, agendaItems, editableAgenda,
+    interviewUnansweredCount, interviewMissing, decisionReady, hasAssistance, approveReady, canSave,
+  } = d
+  const {
+    bursary, bursaryMsg, doCountersignBursary, doWitnessBursary, witnessCardVisible, activeSources,
+    witnessSel, setWitnessSel, witnessBusy, witnessMsg, setWitnessMsg, witnessEditing,
+    setWitnessEditing, doAssignWitness, disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
+    doScheduleTranche, doDisbursementAction, doSetSubstate, closeReason, setCloseReason, closeMsg,
+    doClose,
+  } = postAward
   return (
     <div className="space-y-4 pb-10">
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
+      {q && (
+        <ConfirmSheet
+          t={t} title={t(q.title)} question={t(q.question)} confirmLabel={t(q.title)}
+          busy={!!busy} dismissible={q.dismissible}
+          onCancel={() => actions.setAsk(null)} onConfirm={actions.confirmAsk}
+        />
+      )}
       <CockpitHeader
         app={app} t={t} vtip={vtip} busy={busy} canWrite={canWrite}
-        prevId={prevId} nextId={nextId}
         doCancelDecline={doCancelDecline} doHoldAward={doHoldAward}
       />
 

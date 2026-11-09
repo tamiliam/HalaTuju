@@ -29,6 +29,7 @@ import { lazySource } from '@/components/source/LazySource'
 import { referralAcronym } from '@/lib/scholarship'
 import { FIXED_REFERRAL_CODES, referralLabel } from '@/lib/referralSources'
 import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
+import { SCHOLARSHIP_LIST_NAV, writeListNav } from '@/lib/listNav'
 
 const SourceApplications = lazySource(
   () => import('@/components/source/SourceApplications').then((m) => m.default))
@@ -236,12 +237,10 @@ function StaffScholarshipList() {
   // can offer prev/next navigation that follows what the officer is looking at.
   useEffect(() => {
     if (typeof window === 'undefined' || !data) return
-    try {
-      sessionStorage.setItem(
-        'halatuju_admin_scholarship_nav',
-        JSON.stringify((data.applications ?? []).map((a) => a.id)),
-      )
-    } catch { /* sessionStorage unavailable — nav just won't show */ }
+    writeListNav(SCHOLARSHIP_LIST_NAV, {
+      ids: (data.applications ?? []).map((a) => a.id),
+      backHref: '/admin/scholarship', labelKey: 'admin.scholarship.back',
+    })
   }, [data])
 
   // Changing any filter resets to page 1 — otherwise you can land on a page
