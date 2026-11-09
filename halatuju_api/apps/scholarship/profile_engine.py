@@ -36,14 +36,14 @@ from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure
 from .read_errors import UNPARSEABLE_RESPONSE, model_rejected_document
 from .shortlisting import count_spm_a_grades
-from .profile_inputs import (  # noqa: F401  (re-exports)
+from .profile_inputs import (  # re-exports (A3.6)
     _GROUP_ORDER, _OFFICER_FACT_LABELS, _SIGNAL_CATEGORIES, _SIGNAL_LABELS, _SUBJECT_GROUP,
     _VERDICT_LABELS, _alias, _deliberation, _funding, _grades_summary, _help_wanted,
     _income_evidence, _join_human, _merit, _other_scholarships, _pathway, _pronouns,
     _quiz_interests, _region, _render_interview, _render_officer_decision, _render_qa,
     _reporting_date, _siblings_studying_display, _today_str, _top_choices, _yesno,
 )
-from .profile_prompts import (  # noqa: F401  (re-exports)
+from .profile_prompts import (  # re-exports (A3.6)
     PROFILE_PROMPT, REFINE_PROMPT, _ABOVE_LINE_EMPHASIS, _ASSISTANCE_NATURE, _BELOW_LINE_AFFIRM,
     _BUCKET_LABELS, _BUCKET_ORDER, _COVERAGE, _EVERGREEN, _REDACTION, _STYLE,
 )

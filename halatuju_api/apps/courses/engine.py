@@ -24,13 +24,13 @@ from .engine_merit import (
 # The grade classes, subject lists and grade helpers moved verbatim to `engine_grades.py`, and the
 # two JSON requirement checkers to `engine_subject_rules.py` (audit sprint A3.6, a moves-only split).
 # Re-exported here, so every `from apps.courses.engine import ...` is unchanged.
-from .engine_grades import (  # noqa: F401  (re-exports)
+from .engine_grades import (  # re-exports (A3.6)
     AGGREGATE_GRADE_POINTS, ATTEMPTED_GRADES, CREDIT_B_GRADES, CREDIT_GRADES, DISTINCTION_GRADES,
     PASS_GRADES, SUBJ_GROUP_SCIENCE, SUBJ_GROUP_TECHNICAL, SUBJ_GROUP_VOCATIONAL, SUBJ_LIST_ARTS,
     SUBJ_LIST_EXTRA, SUBJ_LIST_IT, SUBJ_LIST_SCIENCE, SUBJ_LIST_TECHNICAL, SUBJ_LIST_VOCATIONAL,
     is_attempted, is_credit, is_credit_b, is_distinction, is_pass, map_subject_code, to_int,
 )
-from .engine_subject_rules import (  # noqa: F401  (re-exports)
+from .engine_subject_rules import (  # re-exports (A3.6)
     check_complex_requirements, check_subject_group_logic,
 )
 

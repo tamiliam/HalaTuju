@@ -14,11 +14,11 @@ Architecture:
 # The tuning knobs moved verbatim to `ranking_constants.py`, and the Asasi / Matric / STPM pre-U
 # scorers to `ranking_pre_u.py` (audit sprint A3.6, a moves-only split). Re-exported here, so every
 # `from apps.courses.ranking_engine import ...` is unchanged.
-from .ranking_constants import (  # noqa: F401  (re-exports)
+from .ranking_constants import (  # re-exports (A3.6)
     BASE_SCORE, CATEGORY_CAP, FIELD_INTEREST_CAP, FIELD_KEY_MAP, GLOBAL_CAP, INSTITUTION_CAP,
     MERIT_PENALTY, WORK_PREFERENCE_CAP,
 )
-from .ranking_pre_u import (  # noqa: F401  (re-exports)
+from .ranking_pre_u import (  # re-exports (A3.6)
     ASASI_FIELD_MAP, ASASI_PRESTIGE_BONUS, ASASI_SIGNAL_CAP, MATRIC_PRESTIGE_BONUS, PRE_U_SIGNAL_CAP,
     STPM_PRESTIGE_BONUS, TRACK_FIELD_MAP, asasi_academic_bonus, asasi_field_preference,
     asasi_signal_adjustment, calculate_asasi_fit_score, calculate_matric_stpm_fit_score,
