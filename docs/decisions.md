@@ -21,7 +21,9 @@
 
 **The cost, accepted:** the admin and mentor details now serve the profile fields the reviewer detail already served. This is a PII widening, recorded in `docs/scholarship/role-matrix.md`: same fields, same phone rule, never the address. The mentor detail reads one more query (11 to 12) for `may_add`.
 
-**Revisit if:** an admin or finance reader should see a staff person's permissions. Today the Permissions tab is drawn only for a viewer who may manage, plus the read-only tab on a pure mentor.
+**Review round (same day):** (1) the mentor detail serves a staff mentor's background fields (job title, about, qualification, university, graduation year, field of study) only when the viewer could already open that person by the admin or reviewer route under those fences (`staff_person.opens_elsewhere`); otherwise exactly what the Mentors page served before T3. So the mentor door widens nothing. (2) Q1, architect: an `admin` or `finance` viewer gets the Permissions tab on a staff person, holding only the line that an organisation admin opens permissions; no data is fetched. (3) Left alone: an org admin's OWN page through Reviewers still cannot load Permissions, because the permissions GET answers 404 on an org_admin target by design; M2's locked switches there need a fence change.
+
+**Revisit if:** an admin or finance reader should see a staff person's permissions (today they see only the not-allowed line); or the owner wants an org admin to see their own keys on their own page.
 
 ## Reviewers, QC and mentors may be deleted under the one no-work test; Revoke and Delete on every Team table and person page — 2026-11-08 (Sprint T2, ruling D6)
 

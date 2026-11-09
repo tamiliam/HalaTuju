@@ -444,21 +444,35 @@ cannot appear in the payload. Widen this cell only by owner decision, recorded h
 The home address still reaches no serializer but the owner's own reviewer profile. The student-facing
 interviewer phone (the advance email, the student's interview card) is unchanged: `share_phone_with_students`.
 
-**Sprint T3 person page (owner, 2026-11-09) — the PROFILE fields widened to the admin and mentor details;
-the phone rule and the address unchanged.** All three person pages read one `person` block
-(`apps/scholarship/staff_person.py`, an allowlist pinned by an exact-key test):
+**Sprint T3 person page (owner, 2026-11-09; review round the same day) — the PROFILE fields widened to
+the admin and mentor details, and two to the reviewer detail; the phone rule and the address unchanged.**
+All three person pages read one `person` block (`apps/scholarship/staff_person.py`, an allowlist pinned by
+an exact-key test):
 
 | Detail | Who reads it | What it now serves |
 |---|---|---|
-| Reviewer (`admin/reviewers/<id>/`) | as before (super, org_admin, admin, finance) | the same fields it already served, now also as `person` |
+| Reviewer (`admin/reviewers/<id>/`) | as before (super, org_admin, admin, finance) | the fields it already served, now also as `person`; **new: job title and about** — so an `admin` or `finance` viewer now receives them too |
 | Admin (`admin/admins/<id>/permissions/`) | as before (super, org_admin) | **new:** job title, about, qualification, university, graduation year, field of study, languages; the phone under the rule below |
-| Mentor (`admin/mentors/<id>/`) | as before (super, org_admin, admin) | **new:** the same profile fields; the phone is the mentor login's own number (`staff_screen_phone`, S7a) |
+| Mentor (`admin/mentors/<id>/`) | as before (super, org_admin, admin) | name, email, the gated phone, area and languages, as before T3; **the background fields (job title, about, qualification, university, graduation year, field of study) only when the viewer could already open that person by the admin or reviewer route** (below) |
 
-The phone stays gated: a staff person's number only under `assigner_sees_phone` (they show it to the team,
-or hold `review`), otherwise ''. The **home address is never served** by any of the three (`address`,
-`street_address`, `postcode`, `city`, `state`); a test asserts it cannot appear in any payload. A GET never
-creates a profile row: someone who has not saved one reads as all "Not given". Every detail keeps its own
-organisation fence (404 across organisations).
+**The mentor route's background fields (T3 review fix 1).** `staff_person.opens_elsewhere(viewer, login)`:
+the viewer could open the person through the **admin route** (a super or an org_admin, and
+`_staff_target_manageable` — own organisation, never an org_admin, super or partner target) or the
+**reviewer route** (`may_read_team`, the viewer's own organisation unless a super, and the person holding
+`review` or `qc`, or an org admin who joined Reviewers; never a super). Otherwise the six fields read
+empty and `profile_full` is false, and the page draws no row for them. So an `admin` reading the Mentors
+table, or an org admin looking at a fellow org admin who mentors, sees exactly what the Mentors page showed
+before T3. A **mentor's own login** is opened by neither route, so it always gets the pre-T3 fields.
+
+**The phone stays gated**, by who the person is, not by the door:
+* a **staff person** (on any of the three details, a **staff mentor** on the mentor route included):
+  only under `assigner_sees_phone` — they show it to the team, or hold `review` — otherwise '';
+* a **mentor's own login**: their own number, which the inviting organisation sees (`staff_screen_phone`, S7a).
+
+The **home address is never served** by any of the three (`address`, `street_address`, `postcode`, `city`,
+`state`); a test asserts it cannot appear in any payload. A GET never creates a profile row: someone who
+has not saved one reads as all "Not given". Every detail keeps its own organisation fence (404 across
+organisations).
 
 **No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
 carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare
