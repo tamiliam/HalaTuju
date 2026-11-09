@@ -6698,16 +6698,26 @@
       },
       "activity": {
         "title": "Activity",
-        "kindLabel": "Entry type",
-        "addLabel": "Add an entry",
-        "placeholder": "What happened?",
+        "addLabel": "Add a note",
+        "placeholder": "Add a note…",
         "staffOnly": "Staff only",
         "save": "Save",
+        "cancel": "Cancel",
         "saved": "Entry saved.",
         "saveFailed": "Could not save the entry.",
         "loadFailed": "Could not load the activity.",
         "empty": "Nothing recorded yet.",
         "bySystem": "System",
+        "theScholar": "The scholar",
+        "aMentor": "A mentor",
+        "showOlder": "Show older ({n})",
+        "loadingOlder": "Loading…",
+        "filterLabel": "Show",
+        "filter": {
+          "all": "All ({n})",
+          "notes": "Notes ({n})",
+          "system": "System ({n})"
+        },
         "kind": {
           "note": "Note",
           "call": "Call",
@@ -9515,6 +9525,15 @@
         "mentorTitle": "Mentor terms",
         "mentorText": "What a mentor agrees to before meeting a student will be set here."
       }
+    },
+    "relativeTime": {
+      "now": "Just now",
+      "minute": "1 minute ago",
+      "minutes": "{n} minutes ago",
+      "hour": "1 hour ago",
+      "hours": "{n} hours ago",
+      "yesterday": "Yesterday",
+      "days": "{n} days ago"
     }
   },
   "documentsTab": {

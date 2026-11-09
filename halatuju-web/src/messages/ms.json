@@ -6698,16 +6698,26 @@
       },
       "activity": {
         "title": "Aktiviti",
-        "kindLabel": "Jenis catatan",
-        "addLabel": "Tambah catatan",
-        "placeholder": "Apa yang berlaku?",
+        "addLabel": "Tambah nota",
+        "placeholder": "Tambah nota…",
         "staffOnly": "Kakitangan sahaja",
         "save": "Simpan",
+        "cancel": "Batal",
         "saved": "Catatan disimpan.",
         "saveFailed": "Tidak dapat menyimpan catatan.",
         "loadFailed": "Tidak dapat memuatkan aktiviti.",
         "empty": "Belum ada apa-apa direkodkan.",
         "bySystem": "Sistem",
+        "theScholar": "Penerima biasiswa",
+        "aMentor": "Seorang mentor",
+        "showOlder": "Tunjuk yang lebih lama ({n})",
+        "loadingOlder": "Memuatkan…",
+        "filterLabel": "Tunjuk",
+        "filter": {
+          "all": "Semua ({n})",
+          "notes": "Nota ({n})",
+          "system": "Sistem ({n})"
+        },
         "kind": {
           "note": "Nota",
           "call": "Panggilan",
@@ -9515,6 +9525,15 @@
         "mentorTitle": "Terma mentor",
         "mentorText": "Apa yang dipersetujui oleh mentor sebelum bertemu pelajar akan ditetapkan di sini."
       }
+    },
+    "relativeTime": {
+      "now": "Sebentar tadi",
+      "minute": "1 minit lalu",
+      "minutes": "{n} minit lalu",
+      "hour": "1 jam lalu",
+      "hours": "{n} jam lalu",
+      "yesterday": "Semalam",
+      "days": "{n} hari lalu"
     }
   },
   "documentsTab": {

@@ -282,6 +282,7 @@ export {
 export type {
   ScholarStanding, ScholarResult, ScholarGift, ScholarRow, ScholarSummary,
   ScholarList, ScholarListQuery, ScholarFile, ActivityKind, ScholarActivity, ScholarActivityPage,
+  ActivityActor, ActivityShow,
   ScholarControls, ScholarResultRow, ScholarMoney, ScholarContract, ScholarContractParty,
 } from './admin-api/scholars'
 

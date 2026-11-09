@@ -340,6 +340,7 @@ const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/F
   'src/components/admin/ScholarResults.tsx', 'src/components/admin/ScholarContract.tsx',
   'src/components/admin/ScholarLetters.tsx', 'src/components/admin/ScholarMentoring.tsx',
   'src/components/admin/ScholarActivity.tsx', 'src/components/admin/ScholarSurveys.tsx',
+  'src/components/admin/ScholarActivityParts.tsx',   // sprint P1: the activity box's row and composer
   'src/components/admin/ScholarGrowth.tsx', 'src/components/admin/ScholarControls.tsx',
   'src/app/admin/students/[id]/page.tsx', 'src/app/admin/payments/[id]/page.tsx',
   'src/app/admin/requests/[id]/page.tsx', 'src/components/OrgRequestAttachments.tsx',
@@ -1311,6 +1312,7 @@ const PILL_SITES: Record<string, number> = {
   'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
   'src/app/admin/organisation/reviewers/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
   'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
+  'src/components/admin/ScholarActivity.tsx': 1,   // sprint P1: the Activity tab's All · Notes · System filter
 }
 describe('rule 17 — pills on a phone use the shared pill style', () => {
   const lib = readWeb('src/lib/phonePill.ts', 'the one home of rule 17')

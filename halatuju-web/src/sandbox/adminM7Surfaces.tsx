@@ -3,7 +3,8 @@
 /**
  * Mobile M7a, mounted for mobile-check and the owner's phone review: the REAL "Can" admin screens inside the REAL
  * console shell, with invented fixtures — the scholar file, the scholars list, Announcements (a table as rows),
- * the sponsor terms list, the payment run, student detail, organisation settings, a request and the Requests list.
+ * the sponsor terms list, the payment run, student detail, organisation settings, a request and the Requests list;
+ * sprint P1 adds the scholar file's Activity tab on its own (the file's tabs are internal state, a phone's a <select>).
  *
  * ⚠ IDENTITY IS SYNTHETIC (an `AdminAuthContext` value, never the provider, never a sign-in), and the network is
  * the sandbox stub: every write here goes nowhere. The address is the shell's sandbox-only `path`; a detail page
@@ -28,6 +29,7 @@ import RequestDetailPage from '@/app/admin/requests/[id]/page'
 import RequestsPage from '@/app/admin/requests/page'
 import ContractsPage from '@/app/admin/contracts/page'
 import ContractEditorPage from '@/app/admin/contracts/[id]/page'
+import ScholarActivity from '@/components/admin/ScholarActivity'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
 interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
@@ -97,6 +99,32 @@ const SCHOLAR_FILE = {
   ] },
   controls: { can_review_results: true, can_set_substate: true, can_hold: true, close_reasons: ['graduated', 'withdrew'], close_refusal: '' },
 }
+
+/** Sprint P1: a scholar's activity log — staff with and without a photo, the scholar, a fully automatic row,
+ *  an email that matches nobody, a call, a long note and a staff-only one. Newest first, as the server pages it;
+ *  each time is relative to the run (so it reads "2 hours ago", not a date years back). */
+const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString()
+const STAFF_A = { name: 'Pentadbir Contoh', photo_url: null, kind: 'staff' }
+const STAFF_B = { name: 'Siti Pegawai Contoh', photo_url: null, kind: 'staff' }
+const entry = (id: number, hours: number, kind: string, extra: Record<string, unknown>) => ({
+  id, kind, event: '', body: '', meta: {}, actor_email: '', actor: null, internal: false, created_at: ago(hours), ...extra })
+const ACTIVITY_ROWS = [
+  entry(12, 2, 'note', { body: 'Spoke to her about the second-semester timetable. She will send the slip on Friday.',
+    actor: STAFF_A, internal: true }),
+  entry(11, 20, 'call', { body: 'Rang her guardian; the address on file is current.', actor: STAFF_B }),
+  entry(10, 30, 'system', { event: 'letter_acknowledged', meta: { subject: 'Notis keputusan semester' },
+    actor: { name: 'Kavitha a/p Contoh', photo_url: null, kind: 'scholar' } }),
+  entry(9, 50, 'system', { event: 'substate_changed', meta: { old: 'probation', new: 'on_track' }, actor: STAFF_A }),
+  entry(8, 120, 'system', { event: 'payment_released', meta: { amount: '400.00', run: 'RUN-2026-10' } }),
+  entry(7, 200, 'note', { body: 'Transferred from the old record.',
+    actor: { name: 'former.officer@contoh.invalid', photo_url: null, kind: 'unknown' } }),
+  entry(6, 400, 'system', { event: 'results_overdue', meta: { due_on: '2026-09-30' } }),
+  entry(5, 900, 'note', { body: 'Met at the campus. A long note so the row wraps on a phone: she is managing the '
+    + 'course load, has joined the study group the faculty runs on Wednesdays, and asked about the hostel fee.', actor: STAFF_B }),
+]
+const ACTIVITY_COUNTS = { all: 14, notes: 7, system: 7 }
+const activityPage = (size: number) => () => ({
+  count: 14, page: 1, page_size: size, counts: ACTIVITY_COUNTS, results: ACTIVITY_ROWS.slice(0, size) })
 
 const runItem = (id: number, name: string, extra: Record<string, unknown> = {}) => ({
   id, application_id: id + 10, name, nric: 'XXXXXX-XX-XXXX', vircle_id: `VC-00${id}8812`, activated: id !== 2,
@@ -172,8 +200,20 @@ export const ADMIN_CAN_SURFACES: Surface[] = [
     note: 'Mobile M7a: sections, not cards; the nine tabs are ONE chooser on a phone; the money as rows; the status '
       + 'read-only with a note (owner).',
     routes: { ...SCOPES, '/api/v1/admin/scholarship/scholars/1/': () => SCHOLAR_FILE,
-      '/api/v1/admin/scholarship/scholars/1/activity/': () => ({ count: 0, page: 1, page_size: 25, results: [] }) },
+      '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(6) },
     render: () => <Console path="/admin/scholars/1" params={{ id: '1' }}><ScholarFilePage /></Console>,
+  },
+  {
+    slug: 'p1-scholar-activity',
+    title: 'Admin — the scholar file\'s Activity tab',
+    note: 'Sprint P1: oldest at the top, the box below, a list that scrolls inside itself (55dvh on a phone), '
+      + '"Show older", the All · Notes · System filter (44 px), names and initials, and the one-line composer.',
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(20) },
+    render: () => (
+      <Console path="/admin/scholars/1" params={{ id: '1' }}>
+        <div className="max-w-3xl"><ScholarActivity id={1} token="sandbox-not-a-real-token" /></div>
+      </Console>
+    ),
   },
   {
     slug: 'm7-announcements',

@@ -46,3 +46,51 @@ export function formatDateTime(value: string | number | Date | null | undefined)
   const min = String(d.getMinutes()).padStart(2, '0')
   return `${day} ${hh}:${min}`
 }
+
+/**
+ * Sprint P1 (owner, 2026-11-09, P1-e): WHEN a log row happened, relative to now — "2 hours ago",
+ * "Yesterday", "9 days ago", and from {@link RELATIVE_AS_DATE_DAYS} days back the date itself ("34 days
+ * ago" asks the reader to do the sum). The caller puts the exact `formatDateTime` in a `title` and in
+ * screen-reader text.
+ *
+ * ⚠ ANSWERS AN i18n KEY AND ITS VARIABLES, NEVER WORDS (`admin.relativeTime.<key>`), the shape of T3's
+ * `seenAgo` (`lib/lastSeen.ts`, not on main yet) so the two can become one helper.
+ * ⚠ THE DAYS ARE CALENDAR DAYS IN MALAYSIA (Asia/Kuala_Lumpur, UTC+8 all year, no daylight saving):
+ * "Yesterday" is the previous day there, so 23:50 to 00:10 is "20 minutes ago", and 22:00 to 08:00 the
+ * next morning is "Yesterday", never "10 hours ago". T3's `seenAgo` counts 24-hour gaps instead.
+ * ⚠ A time a little in the future (a clock ahead of ours) reads "just now", never "-1 minutes ago".
+ */
+export type RelativeTime =
+  | { key: 'now' | 'minute' | 'hour' | 'yesterday' }
+  | { key: 'minutes' | 'hours' | 'days'; n: number }
+  | { key: 'on'; date: Date }
+
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+/** Malaysia is UTC+8 all year. */
+const MALAYSIA_OFFSET = 8 * HOUR
+/** From this many calendar days back the date is shown instead. */
+export const RELATIVE_AS_DATE_DAYS = 30
+
+const malaysianDay = (ms: number) => Math.floor((ms + MALAYSIA_OFFSET) / DAY)
+
+export function relativeTime(value: string | Date, now: number = Date.now()): RelativeTime | null {
+  const at = value instanceof Date ? value : new Date(value)
+  const ms = at.getTime()
+  if (Number.isNaN(ms)) return null
+  const gap = Math.max(0, now - ms)
+  if (gap < MINUTE) return { key: 'now' }
+  if (gap < HOUR) {
+    const n = Math.floor(gap / MINUTE)
+    return n === 1 ? { key: 'minute' } : { key: 'minutes', n }
+  }
+  const days = Math.max(0, malaysianDay(now) - malaysianDay(ms))
+  if (days === 0) {
+    const n = Math.floor(gap / HOUR)
+    return n === 1 ? { key: 'hour' } : { key: 'hours', n }
+  }
+  if (days === 1) return { key: 'yesterday' }
+  if (days < RELATIVE_AS_DATE_DAYS) return { key: 'days', n: days }
+  return { key: 'on', date: at }
+}
