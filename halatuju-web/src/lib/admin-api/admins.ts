@@ -36,9 +36,14 @@ export interface AdminItem {
   photo_url?: string | null
   /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
   phone?: string | null
-  /** Whether this account may be DELETED outright rather than only revoked: an admin-shaped role
-   *  with NO recorded work. Reviewers are never deletable (owner, 2026-09-09). */
+  /** Whether this account may be DELETED outright rather than only revoked: a programme-staff role
+   *  with NO recorded work. Reviewers and QC too since D6 (Sprint T2, 2026-11-08), which reversed
+   *  2026-09-09's "never a reviewer". */
   deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
   /** What this person has DONE, `{what: count}`, empty when nothing. The reason a delete is
    *  refused, so the screen can name it instead of greying a button for no visible cause. */
   work?: Record<string, number>
@@ -128,9 +133,11 @@ export async function getAdmins(options?: ApiOptions) {
   return adminFetch<{ admins: AdminItem[] }>('/api/v1/admin/admins/', options)
 }
 
-/** Delete a staff account outright. ⚠ Only ever offered for an admin-shaped role with NO recorded
+/** Delete a staff account outright. ⚠ Only ever offered for a programme-staff role with NO recorded
  *  work; the server refuses everything else — 409 `has_work` carries the counts that stopped it,
- *  400 `not_deletable` means the role can never be deleted (every reviewer). */
+ *  400 `not_deletable` means the role can never be deleted (a super, a partner), 400 `last_org_admin`
+ *  the organisation's only active admin, and 404 a row this caller may not manage (another
+ *  organisation's, a mentor or a source login — those have their own doors). */
 export async function deleteAdmin(adminId: number, options?: ApiOptions) {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
@@ -174,6 +181,52 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
                    stops_mentoring?: boolean }
 }
 
+/**
+ * Sprint T3 (2026-11-09): ONE person page for every team member. The admin, reviewer and mentor detail
+ * payloads each carry this same block (`apps/scholarship/staff_person.py`), so the page's header and
+ * Profile tab read one shape whichever link opened it. Optional on each payload: an api a few minutes
+ * behind this page omits it.
+ *
+ * ⚠ THE HOME ADDRESS IS NEVER IN IT; the phone only under the screen's existing rule (role-matrix.md).
+ */
+export interface TeamPersonBlock {
+  admin_id: number
+  /** Their Mentors-table record while they mentor (the mentor detail's id), else null. */
+  mentor_id: number | null
+  name: string
+  email: string
+  /** The tables they sit in (`staff_tables.tables`) — the "Also in" chips' own source. */
+  tables: string[]
+  /** The organisation admin ("Admin (lead)"). */
+  lead: boolean
+  /** A mentor's own login: no staff role, so no permissions to change (D8). */
+  mentor_only: boolean
+  is_active: boolean
+  paused: boolean
+  joined_at: string | null
+  /** False = no sign-in RECORDED yet, never proof they have not come. */
+  signed_in: boolean
+  last_seen_at: string | null
+  /** '' / null / [] = not filled in ("Not given"). */
+  profile: {
+    job_title: string
+    about: string
+    qualification: string
+    university: string
+    graduation_year: number | null
+    field_of_study: string
+    phone: string
+    /** Spoken conversationally or better, in en · ms · ta order. */
+    languages: string[]
+    other_language: string
+  }
+  /** T3 review fix 1: false = the mentor route withheld the background fields (job title, about,
+   *  qualification, university, graduation year, field of study) — this viewer opens the person by no
+   *  admin or reviewer route. The page then draws no row for them (not "Not given": they are not shown
+   *  to you, which is not the same as not filled in). Missing (an older api) = served. */
+  profile_full?: boolean
+}
+
 /** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
  *  the editor may show, in the server's catalogue order; `editable` is false for a row nobody edits
  *  (an organisation admin, a super, a partner, your own). */
@@ -198,6 +251,16 @@ export interface StaffPermissionsView {
   history?: StaffPermissionChangeRow[]
   /** Team tables T3: the tables the person sits in — the Permissions tab shows one section per table. */
   tables?: string[]
+  /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
+   *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
+  deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
+  work?: Record<string, number>
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
 }
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set

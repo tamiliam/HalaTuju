@@ -31,6 +31,7 @@ import ProgrammesPage from '@/app/admin/organisation/programmes/page'
 import AdminProfilePage from '@/app/admin/profile/page'
 import ProgrammeOverviewPage from '@/app/admin/programme/overview/page'
 import ReviewerDetailPage from '@/app/admin/organisation/reviewers/[id]/page'
+import MentorPersonPage from '@/app/admin/organisation/reviewers/mentors/[id]/page'
 import AdminSetPasswordPage from '@/app/admin/set-password/page'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -271,6 +272,43 @@ const REVIEWER_DETAIL = {
   reopens: [{ id: 1, application_id: 412, reason: 'தவறான ஆவணம் பதிவேற்றப்பட்டது; மாணவர் புதிய சான்றிதழை அனுப்பினார்.',
     reopened_by: 'Pentadbir Contoh', at: '2026-10-14T08:00:00Z' }],
   pausable: true,
+  // Sprint T3: the one person block every person page draws its header and Profile from.
+  person: {
+    admin_id: 7, mentor_id: null, name: LONG_TAMIL, email: 'penyemak7@contoh.invalid', tables: ['reviewers'], lead: false,
+    mentor_only: false, is_active: true, paused: false, joined_at: '2026-01-10T00:00:00Z', signed_in: true,
+    last_seen_at: '2026-11-02T09:00:00Z',
+    profile: { job_title: 'Pensyarah Kanan', about: '', qualification: 'degree', university: 'Universiti Malaya',
+      graduation_year: 2004, field_of_study: 'Pendidikan', phone: '123456789', languages: ['en', 'ms', 'ta'], other_language: '' },
+  },
+}
+
+// Sprint T3: a PURE mentor's person page — the header, the mentor figures and their scholars (360 px).
+const MENTOR_NAME = 'முத்துக்குமாரசாமி பாலசுப்பிரமணியம்'
+const placed = (application_id: number, name: string, extra: Record<string, unknown> = {}) => ({
+  application_id, name, since: '2026-03-01T00:00:00Z', ended: null, meetings: 3, last_meeting: '2026-10-20',
+  standing: 'performing', has_file: true, concern: null, ...extra,
+})
+const MENTOR_PERSON = {
+  mentor: {
+    id: 3, name: MENTOR_NAME, email: 'mentor3@contoh.invalid', phone: '123456789', status: 'active',
+    area: 'Kejuruteraan mekanikal, perakaunan', languages: { en: 'fluent', ms: 'fluent', ta: 'fluent' }, other_language: '',
+    invited_at: '2026-02-01T00:00:00Z', signed_in: true, last_seen_at: '2026-11-02T09:00:00Z', deactivated_at: null,
+    manageable: true, scholars_now: 2, staff_role: null, tables: ['mentors'], lead: false, meetings_90: 5,
+    last_meeting: '2026-10-20', concerns_open: 1, deletable: false, work: { mentor_assignments: 2 },
+  },
+  mentoring_since: '2026-03-01T00:00:00Z', sees_scholars: true,
+  figures: { scholars_now: 2, meetings_90: 5, average_gap_days: 21, concerns_raised: 2, concerns_open: 1, last_meeting: '2026-10-20' },
+  current: [placed(1, 'கவிதா த/பெ முனியாண்டி இராஜேந்திரன்', { concern: 'open' }),
+    placed(2, 'Muhammad Haziq bin Contoh', { meetings: 0, last_meeting: null, standing: 'no_result_yet' })],
+  past: [placed(3, 'Tan Contoh Ling', { ended: '2026-08-01T00:00:00Z', standing: null, has_file: false, concern: 'handled' })],
+  may_add: ['admins', 'reviewers'],
+  person: {
+    admin_id: 9, mentor_id: 3, name: MENTOR_NAME, email: 'mentor3@contoh.invalid', tables: ['mentors'], lead: false,
+    mentor_only: true, is_active: true, paused: false, joined_at: '2026-02-01T00:00:00Z', signed_in: true,
+    last_seen_at: '2026-11-02T09:00:00Z',
+    profile: { job_title: '', about: '', qualification: '', university: '', graduation_year: null, field_of_study: '',
+      phone: '123456789', languages: ['en', 'ms', 'ta'], other_language: '' },
+  },
 }
 
 export const CONSOLE_MUST_SURFACES: Surface[] = [
@@ -356,6 +394,16 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     routes: { ...SCOPES, '/api/v1/admin/reviewers/7/': () => REVIEWER_DETAIL },
     render: () => (
       <Console path="/admin/organisation/reviewers/7" role={ORG_ADMIN} params={{ id: '7' }}><ReviewerDetailPage /></Console>
+    ),
+  },
+  {
+    slug: 't3-mentor-person',
+    title: 'Admin — one mentor (the person page)',
+    note: 'Sprint T3: a pure mentor as an organisation admin sees them — the Mentor chip, Status · Joined · Last seen, '
+      + 'Revoke and a greyed Delete, the four figures, the profile with "Not given", and their scholars as rows.',
+    routes: { ...SCOPES, '/api/v1/admin/mentors/3/': () => MENTOR_PERSON },
+    render: () => (
+      <Console path="/admin/organisation/reviewers/mentors/3" role={ORG_ADMIN} params={{ id: '3' }}><MentorPersonPage /></Console>
     ),
   },
   {

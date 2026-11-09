@@ -112,7 +112,7 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the widget layout (Customise) — per gift, with the organisation's as the default** *(#42)* · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09; since T2 not offered on Team, and the endpoint refuses a switch INTO Finance / QC — `label_retired` — while a switch out keeps the keys exactly)* · **Team -> Add / Remove from Admins / Reviewers; add or remove THEMSELVES at Reviewers** *(T2)* · **change a team member's permissions** *(#39 S4, 2026-10-21; never their own, never an org_admin's)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the widget layout (Customise) — per gift, with the organisation's as the default** *(#42)* · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09; since T2 not offered on Team, and the endpoint refuses a switch INTO Finance / QC — `label_retired` — while a switch out keeps the keys exactly)* · **Team -> Add / Remove from Admins / Reviewers; add or remove THEMSELVES at Reviewers** *(T2)* · **change a team member's permissions** *(#39 S4, 2026-10-21; never their own, never an org_admin's)* · **delete a programme-staff member — admin, finance, reviewer, QC — with no recorded work** *(D6, T2 2026-11-08; one with work is revoke-only; never another org admin, whom only a super deletes; never the sole active org admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
 | **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
 | **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + APPROVAL — the final signature that releases the money; #39 S2, 2026-10-19)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
@@ -270,6 +270,27 @@ rule). Another organisation's scholar is 404. Anybody who may read a file may ad
 hold** stays on the cockpit's sub-state endpoint and needs `payments.may_prepare` (super, org_admin,
 a `payments_prepare` holder) since maintenance S1. Menu row: same roles and keys as Applications,
 inside a gift (`needsProgramme`).
+
+**Who wrote each activity row (sprint P1, 2026-11-09; corrected in the P1 review).** The file's
+activity log shows each writer's NAME and staff PHOTO (a signed link, about an hour)
+(`activity_people.Actors`). **The API no longer sends a known person's email:** `actor_email` is
+blank on every row whose writer is a known login (staff, mentor) or the scholar, and carries the email
+only when it matches nobody (`actor.kind == 'unknown'`; the web shows it as written). This widens one
+thing: a reviewer or QC, who could already read the file, now also sees the writing staff member's
+photo. **The owner confirmed this is acceptable (2026-11-09).** That is the same staff photo every
+staff member sees in Team lists; it is staff-only, and no student, sponsor, finance or partner login
+reaches it. If signing the photos fails, the rows still
+load, with initials. **A pure mentor is never named outside the Mentoring tab:** a viewer without
+`mentoring.may_read_mentoring` (qc, reviewer) gets no mentoring row under any filter (the S7b rule,
+unchanged). On any other row a pure mentor wrote (`role='mentor'`), they get an empty name, no photo
+(never signed) and a blank `actor_email`; the web reads "A mentor". A staff member who also mentors
+is shown as staff.
+
+⚠ **Across organisations (recorded, not changed; the owner is being asked).** The writer's login
+(`PartnerAdmin`) is looked up by email ACROSS organisations, not only the file's. So when a super
+admin, or another organisation's admin, wrote a row on this file, this organisation's reviewer or
+QC sees that person's name and staff photo, where before the review they saw the email. No other
+detail of that login is served.
 
 ## Payments module (Vircle payment runs) — access
 
@@ -451,6 +472,36 @@ cannot appear in the payload. Widen this cell only by owner decision, recorded h
 
 The home address still reaches no serializer but the owner's own reviewer profile. The student-facing
 interviewer phone (the advance email, the student's interview card) is unchanged: `share_phone_with_students`.
+
+**Sprint T3 person page (owner, 2026-11-09; review round the same day) — the PROFILE fields widened to
+the admin and mentor details, and two to the reviewer detail; the phone rule and the address unchanged.**
+All three person pages read one `person` block (`apps/scholarship/staff_person.py`, an allowlist pinned by
+an exact-key test):
+
+| Detail | Who reads it | What it now serves |
+|---|---|---|
+| Reviewer (`admin/reviewers/<id>/`) | as before (super, org_admin, admin, finance) | the fields it already served, now also as `person`; **new: job title and about** — so an `admin` or `finance` viewer now receives them too |
+| Admin (`admin/admins/<id>/permissions/`) | as before (super, org_admin) | **new:** job title, about, qualification, university, graduation year, field of study, languages; the phone under the rule below |
+| Mentor (`admin/mentors/<id>/`) | as before (super, org_admin, admin) | name, email, the gated phone, area and languages, as before T3; **the background fields (job title, about, qualification, university, graduation year, field of study) only when the viewer could already open that person by the admin or reviewer route** (below) |
+
+**The mentor route's background fields (T3 review fix 1).** `staff_person.opens_elsewhere(viewer, login)`:
+the viewer could open the person through the **admin route** (a super or an org_admin, and
+`_staff_target_manageable` — own organisation, never an org_admin, super or partner target) or the
+**reviewer route** (`may_read_team`, the viewer's own organisation unless a super, and the person holding
+`review` or `qc`, or an org admin who joined Reviewers; never a super). Otherwise the six fields read
+empty and `profile_full` is false, and the page draws no row for them. So an `admin` reading the Mentors
+table, or an org admin looking at a fellow org admin who mentors, sees exactly what the Mentors page showed
+before T3. A **mentor's own login** is opened by neither route, so it always gets the pre-T3 fields.
+
+**The phone stays gated**, by who the person is, not by the door:
+* a **staff person** (on any of the three details, a **staff mentor** on the mentor route included):
+  only under `assigner_sees_phone` — they show it to the team, or hold `review` — otherwise '';
+* a **mentor's own login**: their own number, which the inviting organisation sees (`staff_screen_phone`, S7a).
+
+The **home address is never served** by any of the three (`address`, `street_address`, `postcode`, `city`,
+`state`); a test asserts it cannot appear in any payload. A GET never creates a profile row: someone who
+has not saved one reads as all "Not given". Every detail keeps its own organisation fence (404 across
+organisations).
 
 **No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
 carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare

@@ -3482,11 +3482,6 @@
       "turnaroundHint": "Typical days from assignment to verdict (the middle case, not the average).",
       "noTurnaroundHint": "No completed review yet — nothing to measure.",
       "footnote": "Every figure counts only decisions this person recorded themselves, on this organisation's applications.",
-      "role": {
-        "super": "Superadmin",
-        "qc": "Quality check",
-        "reviewer": "Reviewer"
-      },
       "lang": {
         "en": "English",
         "ms": "Malay",
@@ -3498,25 +3493,20 @@
         "revoked": "Revoked"
       },
       "detail": {
-        "back": "All reviewers",
         "joined": "Joined {date}",
         "noHistory": "No cases have been assigned to this reviewer yet.",
         "outcomes": "Outcomes",
         "noOutcomes": "No decisions recorded yet.",
         "declined": "Declined",
-        "credentials": "Credentials",
-        "noCredentials": "This reviewer has not filled in their profile yet.",
         "qualification": "Highest qualification",
         "university": "University",
         "graduationYear": "Graduated",
         "fieldOfStudy": "Field of study",
-        "contact": "Contact",
         "email": "Email",
         "phone": "Phone",
         "phoneNone": "Not given",
         "phone_shared": "students may be given this number",
         "phone_staff_only": "staff only — the reviewer has not agreed to share it with students",
-        "contactNote": "A reviewer's home address is never shown here.",
         "reopens": "Reopened decisions",
         "reopensNote": "A reopened decision is not by itself a mistake by this reviewer — several were caused by faults in the platform. The reason recorded at the time is shown with each one, and there is deliberately no total.",
         "noReopens": "None of this reviewer's decisions has been reopened.",
@@ -6748,16 +6738,27 @@
       },
       "activity": {
         "title": "Activity",
-        "kindLabel": "Entry type",
-        "addLabel": "Add an entry",
-        "placeholder": "What happened?",
+        "addLabel": "Add a note",
+        "placeholder": "Add a note…",
         "staffOnly": "Staff only",
         "save": "Save",
+        "cancel": "Cancel",
         "saved": "Entry saved.",
         "saveFailed": "Could not save the entry.",
         "loadFailed": "Could not load the activity.",
         "empty": "Nothing recorded yet.",
         "bySystem": "System",
+        "theScholar": "The scholar",
+        "aMentor": "A mentor",
+        "showOlder": "Show older ({n})",
+        "loadingOlder": "Loading…",
+        "filterLabel": "Show",
+        "listLabel": "Activity entries",
+        "filter": {
+          "all": "All ({n})",
+          "notes": "Notes ({n})",
+          "system": "System ({n})"
+        },
         "kind": {
           "note": "Note",
           "call": "Call",
@@ -8359,7 +8360,7 @@
     },
     "delete": "Delete",
     "deleteStaffBody": "Their sign-in and invitation history are removed. This cannot be undone.",
-    "hasWorkRevoke": "Has work on record — revoke instead",
+    "deleteHasWork": "Has work on record ({work}), so they cannot be deleted. Revoke them instead.",
     "changeRole": "Change role",
     "roleChangeConfirm": "Change {name} to {role}?",
     "financeCheckOn": "Wallet credits will need a finance check.",
@@ -8436,12 +8437,41 @@
       "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
     },
     "person": {
-      "back": "Team",
       "tabsAria": "Person panels",
       "tabProfile": "Profile",
       "tabPermissions": "Permissions",
       "invited": "Invited, no sign-in recorded yet",
-      "notAllowed": "Only an organisation admin can open a team member's permissions."
+      "notAllowed": "Only an organisation admin can open a team member's permissions.",
+      "backTo": {
+        "admins": "Team · Admins",
+        "reviewers": "Team · Reviewers",
+        "mentors": "Team · Mentors"
+      },
+      "lastSeen": "Last seen {when}",
+      "seenUnknown": "Last seen: not recorded",
+      "seen": {
+        "now": "just now",
+        "minute": "1 minute ago",
+        "minutes": "{n} minutes ago",
+        "hour": "1 hour ago",
+        "hours": "{n} hours ago",
+        "yesterday": "yesterday",
+        "days": "{n} days ago",
+        "on": "on {date}"
+      },
+      "aboutField": "About",
+      "areaField": "Area of mentoring",
+      "mentoringSince": "Mentoring since",
+      "privacyNote": "A team member's home address is never shown here.",
+      "mentorOnly": {
+        "intro": "{name} is a mentor. A mentor sees two things only:",
+        "students": "My students: the scholars assigned to them, and the meetings they log",
+        "profile": "Profile: their own details",
+        "none": "A mentor holds no permissions to change.",
+        "more": "To give {name} more, add them to another Team table."
+      },
+      "revokeEndsMentoring": "Their mentoring of {n} scholars ends too, and Restore will not bring it back.",
+      "loadFailed": "We could not load this page. Please try again."
     },
     "permHistory": {
       "title": "Changes",
@@ -8820,6 +8850,7 @@
         "staff_mentor": "This mentor is a staff member: use Remove from Mentors. Add Mentor brings them back.",
         "not_staff": "Only a staff member's mentoring can be stopped this way.",
         "not_found": "That staff member was not found.",
+        "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead.",
         "gift_required": "Choose Every gift or at least one gift.",
         "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again."
       },
@@ -8837,8 +8868,6 @@
         "concernsOpen": "Concerns open"
       },
       "notFilled": "Not filled in yet",
-      "activeSeen": "Active · last signed in {date}",
-      "inactiveOn": "Inactive since {date}",
       "action": {
         "deactivate": "Revoke",
         "reactivate": "Restore",
@@ -8860,7 +8889,8 @@
         "notEmailed": "The email could not be sent. Try Resend.",
         "stop": "{name} no longer mentors. Their staff sign-in is unchanged.",
         "resume": "{name} mentors again. Assign them to scholars on each file.",
-        "added": "{name} is now a mentor too. No email was sent — tell them yourself."
+        "added": "{name} is now a mentor too. No email was sent — tell them yourself.",
+        "delete": "{name} has been deleted."
       },
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8890,17 +8920,12 @@
         "loadError": "We could not load the staff list.",
         "before": "Mentored before"
       },
-      "staffTag": "Staff · {role}",
       "addMentor": "Add Mentor",
       "removeTitle": {
         "stop": "Remove {name} from Mentors?",
         "deactivate": "Revoke {name}?"
       },
       "detail": {
-        "back": "Team · Mentors",
-        "since": "mentoring since {date}",
-        "lastSeen": "last signed in {date}",
-        "lastSeenUnknown": "sign-in not recorded",
         "days": "{n} days",
         "oneDay": "1 day",
         "tile": {
@@ -8927,9 +8952,9 @@
         "pastTitle": "Past scholars (mentoring ended)",
         "noneNow": "No scholars at the moment.",
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
-        "notFound": "This mentor was not found.",
         "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
       },
+      "deleteBody": "Their sign-in, their mentor record and their invitation history are removed. This cannot be undone.",
       "gifts": {
         "label": "Gifts",
         "outside": "This mentor has {count} current scholar(s) outside those gifts. End or change that mentoring first. Nothing was changed."
@@ -9572,6 +9597,15 @@
         "mentorTitle": "Mentor terms",
         "mentorText": "What a mentor agrees to before meeting a student will be set here."
       }
+    },
+    "relativeTime": {
+      "now": "Just now",
+      "minute": "1 minute ago",
+      "minutes": "{n} minutes ago",
+      "hour": "1 hour ago",
+      "hours": "{n} hours ago",
+      "yesterday": "Yesterday",
+      "days": "{n} days ago"
     },
     "nudge": {
       "missing": "Your profile is missing {items}.",

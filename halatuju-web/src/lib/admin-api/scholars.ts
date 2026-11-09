@@ -137,14 +137,27 @@ export interface ScholarActivity {
   body: string
   meta: Record<string, unknown>
   actor_email: string
+  /** Sprint P1: who wrote it — a name and a signed photo link (about an hour), or `null` for a fully
+   *  automatic row (the System icon). `name` is '' for a mentor this viewer may not be told about.
+   *  Optional so an older payload, and the fixtures that build one, still type. */
+  actor?: ActivityActor | null
   /** Staff-only. Nothing in this log is ever shown to a student today. */
   internal: boolean
   created_at: string
 }
+export interface ActivityActor {
+  name: string
+  photo_url: string | null
+  kind: 'staff' | 'mentor' | 'scholar' | 'unknown'
+}
+/** Sprint P1, P1-f: the log's filter — every row, every manual kind, or the system's rows. */
+export type ActivityShow = 'all' | 'notes' | 'system'
 export interface ScholarActivityPage {
   count: number
   page: number
   page_size: number
+  /** The per-filter totals for the Activity tab's pills (the viewer's own rows only). */
+  counts?: Record<ActivityShow, number>
   results: ScholarActivity[]
 }
 
@@ -173,8 +186,19 @@ export async function getScholarFile(id: number, options?: ApiOptions) {
   return adminFetch<ScholarFile>(`${BASE}${id}/`, options)
 }
 
-export async function getScholarActivity(id: number, options?: ApiOptions) {
-  return adminFetch<ScholarActivityPage>(`${BASE}${id}/activity/`, options)
+/** Newest first; `page` / `page_size` / `show` are filtered and paged ON THE SERVER (P1-f). */
+export async function getScholarActivity(
+  id: number,
+  options?: ApiOptions & { page?: number; page_size?: number; show?: ActivityShow; counts?: boolean },
+) {
+  const { page, page_size, show, counts, ...rest } = options ?? {}
+  const p = new URLSearchParams()
+  if (page && page > 1) p.set('page', String(page))
+  if (page_size) p.set('page_size', String(page_size))
+  if (show && show !== 'all') p.set('show', show)
+  if (counts === false) p.set('counts', '0')   // no filter pills to fill: skip the grouped count
+  const qs = p.toString()
+  return adminFetch<ScholarActivityPage>(`${BASE}${id}/activity/${qs ? `?${qs}` : ''}`, rest)
 }
 
 /** S4a — one result on the officer's Results tab: the student's figures, the review, the slip. */
@@ -249,7 +273,7 @@ export async function reviewScholarResult(
 }
 
 export async function addScholarActivity(
-  id: number, entry: { kind: 'note' | 'call' | 'meeting'; body: string; internal: boolean },
+  id: number, entry: { kind: 'note'; body: string; internal: boolean },
   options?: ApiOptions,
 ) {
   return adminMutate<ScholarActivity>(`${BASE}${id}/activity/`, 'POST', entry, options)

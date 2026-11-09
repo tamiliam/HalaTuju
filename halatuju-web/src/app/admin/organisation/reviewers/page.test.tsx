@@ -758,3 +758,103 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(screen.queryByText('admin.team.tabMentors')).toBeNull()
   })
 })
+
+describe('Sprint T2: Revoke and Delete on the Reviewers table (owner, 2026-11-08)', () => {
+  /** Kavitha has work on record; Hafiz has none; Dina is an organisation admin who also reviews. */
+  const T2_ROWS = [
+    { ...REVIEWERS[0], deletable: false, work: { assigned_applications: 3 } },
+    { ...REVIEWERS[1], deletable: true, work: {} },
+    { ...REVIEWERS[1], id: 11, name: 'Dina Ismail', email: 'dina@example.org', role: 'org_admin',
+      lead: true, deletable: true, work: {} },
+  ] as unknown as api.AdminReviewer[]
+  const rowOf = (name: string) => ui().getByText(name).closest('tr') as HTMLElement
+
+  beforeEach(() => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: T2_ROWS, programmes: giftChoices })
+  })
+
+  it('offers Revoke and Delete on a reviewer with no work', async () => {
+    await loaded()
+    const r = within(rowOf('Hafiz Rahman'))
+    expect(r.getByText('admin.revoke')).toBeTruthy()
+    expect(r.getByTestId('staff-delete').getAttribute('aria-disabled')).toBeNull()
+  })
+
+  it('greys the Delete of a reviewer with work, with the reason, and it deletes nothing', async () => {
+    await loaded()
+    const r = within(rowOf('Kavitha Raman'))
+    expect(r.getByText('admin.revoke')).toBeTruthy()
+    expect(r.queryByTestId('staff-delete')).toBeNull()
+    const b = within(r.getByTestId('staff-delete-greyed')).getByText('admin.delete')
+    expect(b.getAttribute('aria-disabled')).toBe('true')
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.deleteHasWork')
+    fireEvent.click(b)
+    expect(screen.queryByTestId('typed-confirm-go')).toBeNull()
+  })
+
+  it('shows an organisation admin viewer no Delete (and no Revoke) on a fellow organisation admin', async () => {
+    await loaded()
+    const r = within(rowOf('Dina Ismail'))
+    expect(r.queryByText('admin.delete')).toBeNull()
+    expect(r.queryByText('admin.revoke')).toBeNull()
+  })
+
+  it('shows a super the Delete on that organisation admin', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await loaded()
+    expect(within(rowOf('Dina Ismail')).getByTestId('staff-delete')).toBeTruthy()
+  })
+
+  it('carries the same pair on the phone cards (which had no Revoke before)', async () => {
+    await loaded()
+    expect(within(cards()).getAllByText('admin.revoke').length).toBe(2)
+    expect(within(cards()).getAllByTestId('staff-delete').length).toBe(1)
+    expect(within(cards()).getAllByTestId('staff-delete-greyed').length).toBe(1)
+  })
+
+  it('deletes through the typed confirmation, and reads both lists again', async () => {
+    mockApi.deleteAdmin.mockResolvedValue({ message: 'ok' } as never)
+    await loaded()
+    fireEvent.click(within(rowOf('Hafiz Rahman')).getByTestId('staff-delete'))
+    expect(screen.getByTestId('typed-confirm-go')).toBeTruthy()
+    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'hafiz@example.org' } })
+    fireEvent.click(screen.getByTestId('typed-confirm-go'))
+    await waitFor(() => expect(mockApi.deleteAdmin).toHaveBeenCalledWith(6, { token: 'tok' }))
+    await waitFor(() => expect(mockApi.listReviewers).toHaveBeenCalledTimes(2))
+  })
+})
+
+describe('Sprint T2: the Admins tab — Delete on an organisation admin is a super\'s alone', () => {
+  const T2_ADMINS = [
+    { ...ADMINS[0], deletable: true, work: {} },
+    { ...ADMINS[1], deletable: false, work: { payment_runs: 1 } },
+  ] as unknown as api.AdminItem[]
+  const adminRow = (name: string) =>
+    within(document.querySelector('table') as HTMLElement).getByText(name).closest('tr') as HTMLElement
+
+  const openAdmins = async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: T2_ADMINS })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Dina Ismail').length).toBeGreaterThan(0))
+  }
+
+  it('shows a non-super viewer no Delete on a fellow organisation admin', async () => {
+    await openAdmins()
+    expect(within(adminRow('Dina Ismail')).queryByText('admin.delete')).toBeNull()
+  })
+
+  it('greys the Delete of an admin with work, with the reason', async () => {
+    await openAdmins()
+    const r = within(adminRow('Shanti Subramaniam'))
+    expect(r.getByText('admin.restore')).toBeTruthy()
+    expect(within(r.getByTestId('staff-delete-greyed')).getByText('admin.delete')
+      .getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('shows a super the Delete on the organisation admin', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await openAdmins()
+    expect(within(adminRow('Dina Ismail')).getByTestId('staff-delete')).toBeTruthy()
+  })
+})

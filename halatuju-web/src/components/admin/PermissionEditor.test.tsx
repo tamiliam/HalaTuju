@@ -197,11 +197,24 @@ it('resets to the preset in one press', async () => {
     7, ['review'], true, { token: 'tok' }))
 })
 
-it('draws no switches for a row nobody edits', async () => {
-  mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false })
+// Sprint T3 (M2, owner 2026-11-09) REVERSES "no switches for a row nobody edits": an organisation admin's
+// (or your own) set reads as LOCKED switches under one line — what they hold is visible, nothing moves.
+it('M2: shows a row nobody edits as locked switches under one line — no Save, no Reset, no dry run', async () => {
+  mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false, permissions: ['review', 'see_all'] })
   render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
-  await waitFor(() => expect(screen.getByText('admin.permEditor.fixed(name=Rohini)')).toBeTruthy())
-  expect(screen.queryByRole('switch')).toBeNull()
+  await waitFor(() => expect(screen.getByTestId('perm-fixed').textContent).toBe('admin.permEditor.fixed(name=Rohini)'))
+  expect(screen.getAllByRole('switch')).toHaveLength(KEYS.length)
+  for (const b of screen.getAllByRole('switch')) expect((b as HTMLButtonElement).disabled).toBe(true)
+  expect(isOn('review')).toBe(true)
+  expect(isOn('see_all')).toBe(true)
+  expect(isOn('spending')).toBe(false)
+  fireEvent.click(toggle('spending'))
+  expect(isOn('spending')).toBe(false)
+  expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
+  expect(screen.queryByTestId('perm-reset')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.save')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.footnote')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.noChange(name=Rohini)')).toBeNull()
 })
 
 it('drops the old preview the moment a new dry run starts, so Save cannot act on it (fix 9)', async () => {

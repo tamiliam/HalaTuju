@@ -171,7 +171,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/students': { cls: 'can', sprint: 'M7' },
   '/admin/students/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-student'] },
   '/admin/scholars': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholars'] },
-  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholar-file'] },
+  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholar-file', 'p1-scholar-activity'] },
   '/admin/programme/announcements': { cls: 'can', sprint: 'M7', surfaces: ['m7-announcements'] },   // maintenance S8: staff write news here
   '/admin/programme/surveys': { cls: 'can', sprint: 'M7' },   // maintenance S9: staff make surveys here
   '/admin/programme/surveys/[id]': { cls: 'can', sprint: 'M7' },   // maintenance S9: one survey's results
@@ -193,7 +193,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m8-reviewer-detail'] },
   '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7' },   // T3: the mentor detail page
+  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7', surfaces: ['t3-mentor-person'] },   // T3: one person page
   '/admin/programme': {
     cls: 'can', sprint: 'M7',
     surfaces: ['programme-config', 'programme-config-lean', 'programme-config-two-gifts'],

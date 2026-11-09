@@ -2,9 +2,8 @@
 
 /**
  * `lazySource(load)` — a source console screen fetched as its own chunk the first time a SOURCE
- * user opens the page (source sign-in, 2026-10-30). Same arrangement as
- * `admin/LazyPermissionEditor.tsx`: the import is owned here, not by `next/dynamic` (which re-throws
- * a failed chunk load). Each PAGE writes its own one-line loader with a LITERAL specifier, so the
+ * user opens the page (source sign-in, 2026-10-30). The import is owned here, not by `next/dynamic`
+ * (which re-throws a failed chunk load). Each PAGE writes its own one-line loader with a LITERAL specifier, so the
  * bundler emits a real chunk and a page carries only its own loader, not every screen's.
  *
  * WHY: the staff pages these share a route with (Overview, Applications, the cockpit, Scholars,
