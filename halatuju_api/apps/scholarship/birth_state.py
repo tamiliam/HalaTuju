@@ -211,22 +211,49 @@ def ic_unlocked_for_rule(profile, allowed):
     return bool(stored_keys(allowed)) and not getattr(profile, 'nric_verified', False)
 
 
+#: Keys verify-accept adds to `verify_checklist` beside the presser's ticks (TD-378, A2.8a re-check):
+#: the digest of the identity the stamp verified, and a later QC re-lock's own record.
+VERIFIED_IC_KEY = 'verified_ic'
+RELOCK_KEY = 'relock'
+
+
+def identity_print(profile):
+    """A digest of the identity a verify-accept confirms: the NRIC's digits and the name, upper-cased with
+    single spaces. A digest, so the stamp never holds a second raw copy of the number."""
+    import hashlib
+    digits = ''.join(c for c in str(getattr(profile, 'nric', '') or '') if c in '0123456789')
+    name = ' '.join(str(getattr(profile, 'name', '') or '').upper().split())
+    return hashlib.sha256(f'{digits}\n{name}'.encode()).hexdigest()
+
+
 def stamp_verify_accept(app, admin, checklist):
     """Verify-accept's stamp on the case (``AdminVerifyAcceptView``): the case goes to Awaiting QC
-    (`interviewed`) carrying who verified the IC, when, and the checklist they confirmed.
+    (`interviewed`) carrying who verified the IC, when, the checklist they confirmed, and the digest of
+    the identity they verified (`VERIFIED_IC_KEY`).
 
-    TD-378 (A2.8a review): a case ALREADY Awaiting QC with a reviewer's stamp is a RE-LOCK — a QC
-    holder pressing "Re-verify IC" after a released lock. It keeps the reviewer's `verified_by`,
-    `verified_at` and `verify_checklist` (the reviewer's audit, and the QC separation that reads
-    them, are not overwritten); the re-lock itself is recorded by the presser's `VERIFY_ACCEPT`
-    activity row, which the view writes for every press."""
+    TD-378 (A2.8a review and re-check): a press on a case ALREADY Awaiting QC with a stamp — a QC holder's
+    "Re-verify IC" after a released lock, or a case back at Awaiting QC after `award_revert` or a super's
+    reopen — keeps the earlier verifier's `verified_by`, `verified_at` and checklist ONLY when the
+    identity that stamp verified is unchanged (its recorded digest equals the profile's now); the press
+    is then recorded under `RELOCK_KEY` (by, at, the presser's checklist) and by the presser's
+    `VERIFY_ACCEPT` activity row. A stamp with no digest (written before this check) or a changed
+    identity makes the press a FRESH verify: the presser's own stamp, so QC separation makes them the
+    maker. Either way the separation rule refuses the presser at QC."""
     from django.utils import timezone
-    relock = app.status == 'interviewed' and bool((app.verified_by or '').strip())
+    now = timezone.now()
+    ticks = checklist if isinstance(checklist, dict) else {}
+    current = identity_print(app.profile)
+    stamp = app.verify_checklist if isinstance(app.verify_checklist, dict) else {}
+    keep = (app.status == 'interviewed' and bool((app.verified_by or '').strip())
+            and stamp.get(VERIFIED_IC_KEY) == current)
     app.status = 'interviewed'
-    if not relock:
-        app.verified_at = timezone.now()
+    if keep:
+        app.verify_checklist = {**stamp, RELOCK_KEY: {'by': admin.email, 'at': now.isoformat(),
+                                                      'checklist': ticks}}
+    else:
+        app.verified_at = now
         app.verified_by = admin.email
-        app.verify_checklist = checklist or {}
+        app.verify_checklist = {**ticks, VERIFIED_IC_KEY: current}
     app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
 
 

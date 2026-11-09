@@ -305,14 +305,22 @@ def _finish_read(doc_id, token, state=''):
         read_state=state, read_claimed_at=None)
 
 
-def _newer_upload_decided(doc):
+def newer_decided_uploads(application_id, doc_type, household_member, request_code, after_id):
+    """The NEWER uploads in a slot whose read has already finished — the one definition
+    `_newer_upload_decided` asks of a row and the sweep's kept-out query asks with ``OuterRef``s
+    (A2.8a re-check), so the two can never disagree."""
+    return ApplicantDocument.objects.filter(
+        application_id=application_id, doc_type=doc_type, household_member=household_member,
+        request_code=request_code, id__gt=after_id).exclude(read_state=PENDING)
+
+
+def _newer_upload_decided(doc, doc_type=None):
     """A NEWER upload in this slot whose read has already finished. Its decision stands: reading
     this older one now could promote it over the newer (``promote_into_slot`` supersedes every other
-    live copy in the slot). A newer one still waiting is read AFTER this one, as inline uploads were."""
-    return ApplicantDocument.objects.filter(
-        application_id=doc.application_id, doc_type=doc.doc_type,
-        household_member=doc.household_member, request_code=doc.request_code,
-        id__gt=doc.id).exclude(read_state=PENDING).exists()
+    live copy in the slot). A newer one still waiting is read AFTER this one, as inline uploads were.
+    ``doc_type`` asks of another slot type (a copy the re-read reslotted, asked of its old slot)."""
+    return newer_decided_uploads(doc.application_id, doc_type or doc.doc_type, doc.household_member,
+                                 doc.request_code, doc.id).exists()
 
 
 def _slot_now(doc, stale_ids):
@@ -355,11 +363,12 @@ def judge_reread_copy(doc):
     the upload's response body (unused by the sweep), or None when it is skipped.
     A2.8a review: the slot is re-checked on a FRESH row first. A newer upload decided while the sweep
     was reading, or the older live copy no longer holding the slot, means the copy is not kept out by
-    our outage any more: it is left as it is, so it can never push a newer decision out."""
+    our outage any more: it is left as it is, so it can never push a newer decision out. A copy the
+    re-read reslotted (salary_slip → epf) is asked of BOTH slots: its new one and its keeper's."""
     doc = ApplicantDocument.objects.select_related('application', 'superseded_by').get(pk=doc.pk)
     keeper = doc.superseded_by
     if (doc.superseded_at is None or keeper is None or keeper.id > doc.id or keeper.superseded_at is not None
-            or _newer_upload_decided(doc)):
+            or _newer_upload_decided(doc) or _newer_upload_decided(doc, doc_type=keeper.doc_type)):
         logger.info('AUDIT upload_rejudge_skipped doc=%s app=%s', doc.id, doc.application_id)
         return None
     plan = doc.read_plan or {}
