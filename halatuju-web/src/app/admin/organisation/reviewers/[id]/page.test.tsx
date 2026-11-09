@@ -38,6 +38,7 @@ const mockApi = api as jest.Mocked<typeof api>
 const BASE = {
   id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
   languages: ['ta', 'en'], open_now: 3, awaiting_review: 1, interviewing: 2, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
+  pausable: true,   // T3 review: a payload without it offers no Pause
   recommended: 6, declined: 0, rejected_after_review: 2, awaiting_qc: 0,
   created_at: '2026-03-01T00:00:00Z',
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
@@ -256,16 +257,26 @@ describe('the role gate and failure', () => {
     expect(screen.queryByText('Kavitha Raman')).toBeNull()
   })
 
-  it('shows the shared not-found state rather than a half-empty record when the fetch fails',
+  it('shows the shared not-found state rather than a half-empty record on a 404',
      async () => {
        // ⚠ The wording moved to `components/admin/RecordState` on 2026-10-05 and
        // `admin.reviewers.detail.loadFailed` was deleted with it: this screen's own sentence
        // named a cause the rejection does not carry — the identical 404 is a reviewer belonging
        // to another organisation, which the fence refuses to admit exists. What this test has
        // always been about is unchanged: not a half-drawn record.
-       mockApi.getReviewerDetail.mockRejectedValue(new Error('boom'))
+       mockApi.getReviewerDetail.mockRejectedValue(Object.assign(new Error('boom'), { status: 404 }))
        render(<AdminReviewerDetailPage />)
        await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+       expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
+     })
+
+  it('says the page could not load — not "not found" — when the fetch fails otherwise (T3 review)',
+     async () => {
+       // Neutral either way: it names no cause, so it leaks nothing the fence keeps back.
+       mockApi.getReviewerDetail.mockRejectedValue(new Error('boom'))
+       render(<AdminReviewerDetailPage />)
+       expect((await screen.findByRole('alert')).textContent).toBe('admin.person.loadFailed')
+       expect(screen.queryByTestId('record-not-found')).toBeNull()
        expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
      })
 
@@ -426,14 +437,15 @@ describe('#39 Sprint 4: the permission card, and Pause on the target rule of the
     expect(screen.getByTestId('perm-editor')).toBeTruthy()
   })
 
-  it('never shows a plain admin or finance the card — and draws no tab bar at all', async () => {
-    window.history.replaceState(null, '', '/x#permissions')       // even when asked by the address
+  it('never shows a plain admin or finance the card — their Permissions tab holds one line (Q1)', async () => {
     for (const r of ['admin', 'finance']) {
+      window.history.replaceState(null, '', '/x#permissions')     // even when asked by the address
       viewerRole = { role: r }
       const { unmount } = render(<AdminReviewerDetailPage />)
-      await waitFor(() => expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy())
+      expect((await screen.findByTestId('person-perm-not-allowed')).textContent).toBe('admin.person.notAllowed')
       expect(screen.queryByTestId('perm-editor')).toBeNull()
-      expect(screen.queryByRole('tablist')).toBeNull()
+      fireEvent.click(screen.getByText('admin.person.tabProfile'))
+      expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy()
       unmount()
     }
   })

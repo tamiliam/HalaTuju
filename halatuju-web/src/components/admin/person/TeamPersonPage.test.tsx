@@ -4,7 +4,8 @@
  * Sprint T3 (owner 2026-11-09; D8, D9, M1–M6): ONE person page for every team member, rendered once
  * per kind of person — a reviewer, an Admin, a Finance person, a pure mentor, an organisation admin,
  * and somebody in two tables. Each shows:
- *   * the same two tabs, Profile and Permissions (for a viewer who may manage, and for a pure mentor);
+ *   * the same two tabs, Profile and Permissions, for every viewer (Q1: an admin or finance reader's
+ *     Permissions tab holds one line and fetches nothing);
  *   * under the name, the tables they sit in as the "Also in" chips — and NO ROLE WORD (D9);
  *   * Status · Joined · Last seen, in that order, Last seen relative with the exact time in `title` (M1);
  *   * every profile field, "Not given" where it is empty, never an address (M3).
@@ -261,6 +262,78 @@ describe('D8: a pure mentor\'s Permissions tab is read-only', () => {
   })
 })
 
+describe('T3 review: a staff member who mentors, on the mentor route', () => {
+  // An Admin who mentors — not a reviewer: no reviewer detail, the permissions view carries the actions.
+  const ADMIN_MENTOR = person({ admin_id: 14, mentor_id: 3, name: 'Arun Pillai', email: 'arun@example.org',
+    tables: ['admins', 'mentors'] })
+  const drawAdminMentor = async (scholarsNow: number) => {
+    mM.getMentorDetail.mockResolvedValue(mentorDetail(ADMIN_MENTOR, {
+      mentor: mentorRow({ name: 'Arun Pillai', email: 'arun@example.org', staff_role: 'admin',
+        scholars_now: scholarsNow }) }))
+    mA.getStaffPermissions.mockResolvedValue(staffView(ADMIN_MENTOR))
+    mA.revokeAdmin.mockResolvedValue({} as never)
+    mM.mentorAction.mockResolvedValue({} as never)
+    await draw('mentor', 3, 'mentors')
+    await waitFor(() => expect(screen.getByTestId('mentor-work')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('person-actions')).toBeTruthy())
+  }
+
+  it('reads as one page: both chips, the mentor parts, their staff actions and Remove from Mentors', async () => {
+    await drawAdminMentor(2)
+    expectTheCommonPage(['admin.team.chip.admins', 'admin.team.chip.mentors'])
+    expect(mR.getReviewerDetail).not.toHaveBeenCalled()
+    expect(mA.getStaffPermissions).toHaveBeenCalledWith(14, { token: 'tok' })
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+    expect(screen.queryByTestId('reviewer-outcomes')).toBeNull()
+    const row = screen.getByTestId('person-action-row')
+    expect(within(row).getAllByTestId('person-actions')).toHaveLength(1)
+    expect(within(row).queryByTestId('mentor-person-actions')).toBeNull()   // a pure mentor's pair only
+    expect(within(row).getByTestId('mentor-person-stop').textContent).toBe('admin.mentors.action.stop')
+    fireEvent.click(screen.getByText('admin.person.tabPermissions'))
+    expect(await screen.findByTestId('permission-editor')).toBeTruthy()
+  })
+
+  it('Revoke says their scholars\' mentoring ends and Restore will not bring it back', async () => {
+    await drawAdminMentor(2)
+    fireEvent.click(within(screen.getByTestId('person-action-row')).getByText('admin.revoke'))
+    const asked = (window.confirm as jest.Mock).mock.calls[0][0] as string
+    expect(asked).toContain('admin.reviewers.revokeConfirm')
+    expect(asked).toContain('admin.person.revokeEndsMentoring {"n":"2"}')
+    await waitFor(() => expect(mA.revokeAdmin).toHaveBeenCalledWith(14, 'revoke', { token: 'tok' }))
+  })
+
+  it('with no scholars now, Revoke keeps the plain confirm', async () => {
+    await drawAdminMentor(0)
+    fireEvent.click(within(screen.getByTestId('person-action-row')).getByText('admin.revoke'))
+    expect((window.confirm as jest.Mock).mock.calls[0][0]).not.toContain('admin.person.revokeEndsMentoring')
+  })
+
+  it('Remove from Mentors asks with the table\'s words, then sends `stop` and reads the page again', async () => {
+    await drawAdminMentor(2)
+    const calls = mM.getMentorDetail.mock.calls.length
+    fireEvent.click(screen.getByTestId('mentor-person-stop'))
+    expect((window.confirm as jest.Mock).mock.calls[0][0]).toBe('admin.mentors.confirm.stop {"name":"Arun Pillai"}')
+    await waitFor(() => expect(mM.mentorAction).toHaveBeenCalledWith(3, 'stop', { token: 'tok' }))
+    await waitFor(() => expect(mM.getMentorDetail.mock.calls.length).toBeGreaterThan(calls))
+  })
+
+  it('an `admin` reader: no actions, and the background fields the server withheld are not drawn (fix 1)', async () => {
+    viewer = { role: 'admin' }
+    const p = { ...ADMIN_MENTOR, profile_full: false,
+      profile: { ...ADMIN_MENTOR.profile, job_title: '', qualification: '' } }
+    mM.getMentorDetail.mockResolvedValue(mentorDetail(p, {
+      mentor: mentorRow({ staff_role: 'admin', manageable: false }) }))
+    await draw('mentor', 3, 'mentors')
+    await waitFor(() => expect(screen.getByTestId('mentor-work')).toBeTruthy())
+    expect(screen.queryByTestId('person-action-row')).toBeNull()
+    expect(mA.getStaffPermissions).not.toHaveBeenCalled()
+    for (const k of ['jobTitle', 'about', 'qualification', 'university', 'fieldOfStudy', 'graduationYear']) {
+      expect(screen.queryByTestId(`person-field-${k}`)).toBeNull()
+    }
+    for (const k of ['email', 'phone', 'languages', 'area']) expect(screen.getByTestId(`person-field-${k}`)).toBeTruthy()
+  })
+})
+
 describe('M1: Last seen', () => {
   it('reads Invited when no sign-in is recorded, and "not recorded" when signed in without a time', async () => {
     const p = person({ tables: ['admins'], signed_in: false, last_seen_at: null })
@@ -276,20 +349,53 @@ describe('M1: Last seen', () => {
 })
 
 describe('the gates', () => {
-  it('without managing powers: the Profile alone, no tab bar, no actions', async () => {
-    viewer = { role: 'finance' }
-    const p = person()
-    mR.getReviewerDetail.mockResolvedValue(reviewerDetail(p))
-    await draw('reviewer', 5, 'reviewers')
-    expect(screen.queryByRole('tablist')).toBeNull()
-    expect(screen.getByTestId('person-profile')).toBeTruthy()
-    expect(screen.queryByTestId('person-action-row')).toBeNull()
+  it.each(['finance', 'admin'])('a %s reader: both tabs; Permissions holds one line and asks nothing (Q1); no actions',
+    async (r) => {
+      viewer = { role: r }
+      const p = person()
+      mR.getReviewerDetail.mockResolvedValue(reviewerDetail(p))
+      await draw('reviewer', 5, 'reviewers')
+      expect(screen.getAllByRole('tab').map((b) => b.textContent))
+        .toEqual(['admin.person.tabProfile', 'admin.person.tabPermissions'])
+      expect(screen.getByTestId('person-profile')).toBeTruthy()
+      expect(screen.queryByTestId('person-action-row')).toBeNull()
+      fireEvent.click(screen.getByText('admin.person.tabPermissions'))
+      expect(screen.getByTestId('person-perm-not-allowed').textContent).toBe('admin.person.notAllowed')
+      expect(screen.queryByTestId('permission-editor')).toBeNull()
+      expect(mA.getStaffPermissions).not.toHaveBeenCalled()
+    })
+
+  it('a 404 is the shared not-found state; any other failure says the page could not load', async () => {
+    mR.getReviewerDetail.mockRejectedValue(Object.assign(new Error('nope'), { status: 404 }))
+    const { unmount } = render(<TeamPersonPage entry="reviewer" id={5} backTable="reviewers" />)
+    await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+    expect(screen.queryByText('admin.person.loadFailed')).toBeNull()
+    unmount()
+    mR.getReviewerDetail.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
+    render(<TeamPersonPage entry="reviewer" id={5} backTable="reviewers" />)
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.person.loadFailed')
+    expect(screen.queryByTestId('record-not-found')).toBeNull()
   })
 
-  it('an api without the person block shows the shared not-found state, never a half-drawn page', async () => {
+  it('an id that names nobody is not found, and asks nothing', async () => {
+    render(<TeamPersonPage entry="reviewer" id={0} backTable="reviewers" />)
+    await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+    expect(mR.getReviewerDetail).not.toHaveBeenCalled()
+  })
+
+  it('an api without the person block says it could not load, never a half-drawn page', async () => {
     mR.getReviewerDetail.mockResolvedValue({ ...reviewerDetail(person()), person: undefined })
     render(<TeamPersonPage entry="reviewer" id={5} backTable="reviewers" />)
-    await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.person.loadFailed')
+    expect(screen.queryByTestId('person-header')).toBeNull()
+  })
+
+  it.each([[false], [undefined]])('offers no Pause when `pausable` is %p (missing means no)', async (pausable) => {
+    const p = person()
+    mR.getReviewerDetail.mockResolvedValue(reviewerDetail(p, { pausable }))
+    await draw('reviewer', 5, 'reviewers')
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+    expect(within(screen.getByTestId('person-action-row')).getByText('admin.revoke')).toBeTruthy()
   })
 
   it('a mentor route the viewer may not read: refused, and nothing asked', async () => {

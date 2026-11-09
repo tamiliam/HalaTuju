@@ -123,7 +123,7 @@ it('refuses a reviewer the way the Team page does', async () => {
 })
 
 it('shows the shared not-found state on a 404 (another organisation, or nobody)', async () => {
-  mockApi.getStaffPermissions.mockRejectedValue(new Error('Admin not found'))
+  mockApi.getStaffPermissions.mockRejectedValue(Object.assign(new Error('Admin not found'), { status: 404 }))
   render(<AdminPersonPage />)
   await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
   expect(screen.queryByTestId('perm-editor')).toBeNull()
