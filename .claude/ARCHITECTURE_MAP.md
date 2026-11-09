@@ -42,7 +42,7 @@ apps/courses/
 ├── models.py                      # 11 models (see model registry below)
 ├── admin.py                       # Admin registration (Course, Institution, StudentProfile, etc.)
 ├── apps.py                        # Startup: loads Course + CourseRequirement → Pandas DataFrame cache
-├── views.py                       # 22 API endpoint classes (see endpoint registry below)
+├── views/                         # package (A3.2): 13 modules, re-exported from __init__ (see endpoint registry below)
 ├── serializers.py                 # Grade key mapping (BM→bm, BI→eng, etc.), request/response serializers
 ├── urls.py                        # 21 URL patterns → /api/v1/
 │

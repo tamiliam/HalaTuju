@@ -66,7 +66,7 @@ class TheMinorsConsent(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token("guarantor-pending")}')
 
     def _post(self, nric):
-        with patch('apps.scholarship.views.consent_blockers', return_value=[]):
+        with patch('apps.scholarship.views.consent.consent_blockers', return_value=[]):
             return self.client.post('/api/v1/scholarship/consent/', {
                 'granted_by': 'guardian', 'guardian_name': NAME, 'guardian_relationship': 'mother',
                 'guardian_nric': nric}, format='json')

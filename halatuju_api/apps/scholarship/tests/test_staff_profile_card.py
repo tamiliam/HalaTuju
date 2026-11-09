@@ -288,7 +288,9 @@ class AStaffPhotoNeverReachesAnOutwardPayload(TestCase):
     student, sponsor or source-console module may name a photo or the profile row at all."""
 
     OUTWARD = ('serializers.py', 'pool.py', 'sponsorship.py', 'sponsor_feed.py', 'sponsor_comms.py',
-               'spend_sponsor.py', 'views_sponsor.py', 'source_console.py', 'views.py')
+               'spend_sponsor.py', 'views_sponsor.py', 'source_console.py') + tuple(
+        f'views/{n}' for n in sorted(os.listdir(os.path.join(os.path.dirname(staff_photo.__file__), 'views')))
+        if n.endswith('.py'))   # A3.2: views.py is now the views/ package
     NAMES = ('photo_path', 'photo_url', 'staff_photo', 'staff-photos', 'StaffProfile', 'ReviewerProfile',
              'reviewer_profile')
 

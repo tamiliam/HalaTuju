@@ -38,12 +38,15 @@ import { pySeq, readApi } from '@/test/apiSource'
 // (renamed from `services/constants.py` by TD-279, 2026-10-04 — one `constants.py` per app);
 // the path follows the code, and `readApi` throws if it moves again.
 const SERVICES = 'apps/scholarship/services/status_constants.py'
-const VIEWS = 'apps/scholarship/views.py'
+// A3.2: views.py became the package views/ - the funded states live in common.py, the slot rule in documents.py.
+const VIEWS = 'apps/scholarship/views/documents.py'
+const COMMON = 'apps/scholarship/views/common.py'
 const servicesSrc = readApi(SERVICES)
 const viewsSrc = readApi(VIEWS)
+const commonSrc = readApi(COMMON)
 
 const postShortlistEditable = pySeq(servicesSrc, 'POST_SHORTLIST_EDITABLE')
-const fundedStates = pySeq(viewsSrc, '_FUNDED_STATES')
+const fundedStates = pySeq(commonSrc, '_FUNDED_STATES')
 const backendLive = [...postShortlistEditable, ...fundedStates]
 
 describe('parse sanity — both halves of the pair were really found', () => {

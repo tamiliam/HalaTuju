@@ -129,8 +129,8 @@ class TestConsentReconcilesRoute(_Base):
             p.start()
         self.addCleanup(lambda: [p.stop() for p in patches])
         # Bypass the (separately-tested) consent gate + minor path; capture the switch.
-        with mock.patch('apps.scholarship.views.consent_blockers', return_value=[]), \
-             mock.patch('apps.scholarship.views.is_minor', return_value=False), \
+        with mock.patch('apps.scholarship.views.consent.consent_blockers', return_value=[]), \
+             mock.patch('apps.scholarship.views.consent.is_minor', return_value=False), \
              mock.patch.object(services.assignment, 'switch_income_route') as sw:
             r = client.post('/api/v1/scholarship/consent/', {'granted_by': 'self'}, format='json')
         self.assertEqual(r.status_code, 201)
