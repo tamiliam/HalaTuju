@@ -395,7 +395,7 @@ function Chrome(
       />
       {/* Staff nudges: the top-banner slot, one banner at a time, lazily loaded (`ShellBanners`). */}
       <LazyShellBanners pathname={pathname} accountId={role?.admin_id} completion={profileCompletion}
-        profileHref={profileHref} token={token} billingLive={probes.billing === 'live'}
+        profileHref={profileHref} token={token} billingLive={probes.billing === 'live' && r !== 'super'}
         signInStamp={session?.user?.last_sign_in_at ?? null} />
 
       <div className="relative flex flex-1">

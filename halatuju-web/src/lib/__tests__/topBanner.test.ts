@@ -4,12 +4,12 @@
  * Staff nudges (2026-11-08): the top-banner slot's dismissals — per browser, per account, for N days
  * (the profile banner) or until the next sign-in (Phase B's overdue banner).
  */
-import { bannerKey, dismiss, isDismissed } from '@/lib/topBanner'
+import { bannerKey, clearSignInDismissals, dismiss, isDismissed } from '@/lib/topBanner'
 
 const DAY = 24 * 60 * 60 * 1000
 const SEVEN = { kind: 'days', days: 7 } as const
 
-beforeEach(() => window.localStorage.clear())
+beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear() })
 
 it('keys a banner per account', () => {
   expect(bannerKey('profile', 7)).toBe('halatuju.banner.profile.7')
@@ -30,12 +30,35 @@ it('hides for seven days, then the banner returns', () => {
   expect(isDismissed(key, SEVEN, t0 - DAY)).toBe(false)
 })
 
-it('until the next sign-in: a new sign-in stamp brings it back', () => {
+it('until the next sign-in: held in this tab whatever the stamp does, until sign-out', () => {
   const key = bannerKey('overdue', 1)
   dismiss(key, { kind: 'signIn', stamp: 'a' })
   expect(isDismissed(key, { kind: 'signIn', stamp: 'a' })).toBe(true)
+  // The account's stamp moved (a sign-in on another device): this tab stays quiet.
+  expect(isDismissed(key, { kind: 'signIn', stamp: 'b' })).toBe(true)
+  // Sign-out ends the tab mark; the same sign-in's stamp (another tab of it) still holds…
+  clearSignInDismissals()
+  expect(isDismissed(key, { kind: 'signIn', stamp: 'a' })).toBe(true)
+  // …and a new sign-in brings it back.
   expect(isDismissed(key, { kind: 'signIn', stamp: 'b' })).toBe(false)
   expect(isDismissed(key, { kind: 'signIn', stamp: '' })).toBe(false)
+})
+
+it('a new tab of the same sign-in stays quiet; a new tab after another sign-in shows it', () => {
+  const key = bannerKey('overdue', 1)
+  dismiss(key, { kind: 'signIn', stamp: 'a' })
+  window.sessionStorage.clear()          // a new tab: no tab mark
+  expect(isDismissed(key, { kind: 'signIn', stamp: 'a' })).toBe(true)
+  expect(isDismissed(key, { kind: 'signIn', stamp: 'b' })).toBe(false)
+})
+
+it('sign-out clears only the banner marks of this tab', () => {
+  window.sessionStorage.setItem('someone.else', 'x')
+  dismiss(bannerKey('overdue', 1), { kind: 'signIn', stamp: '' })
+  expect(isDismissed(bannerKey('overdue', 1), { kind: 'signIn', stamp: '' })).toBe(true)
+  clearSignInDismissals()
+  expect(isDismissed(bannerKey('overdue', 1), { kind: 'signIn', stamp: '' })).toBe(false)
+  expect(window.sessionStorage.getItem('someone.else')).toBe('x')
 })
 
 it('a garbled or missing value shows the banner', () => {

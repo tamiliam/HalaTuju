@@ -15,6 +15,7 @@ from django.utils import timezone
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import invoice_overdue
 from apps.scholarship.models import Invoice, InvoicePaymentDeclaration, InvoiceReceipt
+from apps.scholarship.tests.factories import make_admin
 from apps.scholarship.tests.test_invoice_endpoints import _Doors
 
 #: Spelt out here, not imported: `test_endpoint_exercise.py` follows a module constant, not an import.
@@ -132,6 +133,13 @@ class TestTheRule(TestCase):
         self.assertNotEqual(s['invoice_id'], newer.id)
         self.assertIsNone(invoice_overdue.org_summary(None, today=today))
 
+    def test_a_void_invoice_is_never_counted_in_the_summary(self):
+        today = date(2026, 11, 9)
+        make_invoice(self.org, due_on=date(2026, 8, 1), void=True)   # the oldest, but void
+        live = make_invoice(self.org, due_on=date(2026, 10, 1))
+        s = invoice_overdue.org_summary(self.org.id, today=today)
+        self.assertEqual((s['invoice_id'], s['count'], s['more']), (live.id, 1, 0))
+
 
 class TestTheDoor(_Doors):
     """The real endpoint. `_Doors` pins the clock at 09:00 on 15 September 2026, Kuala Lumpur."""
@@ -167,6 +175,23 @@ class TestTheDoor(_Doors):
             with self.subTest(role=role):
                 PartnerAdmin.objects.create(supabase_user_id=f'{role}-uid', role=role, is_active=True,
                                             owning_organisation=self.org, name=role, email=f'{role}@x.com')
+                self.assertEqual(self.client_for(f'{role}-uid').get(f'{BASE}/overdue/').status_code, 403)
+
+    def test_an_org_admin_with_no_organisation_gets_none(self):
+        self.overdue_here()
+        PartnerAdmin.objects.create(supabase_user_id='oa-none', role='org_admin', is_active=True,
+                                    owning_organisation=None, name='No org', email='none@x.com')
+        r = self.client_for('oa-none').get(f'{BASE}/overdue/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {'overdue': None})
+
+    def test_qc_partner_source_partner_and_mentor_are_refused(self):
+        self.overdue_here()
+        for role, org in (('qc', self.org), ('partner', None), ('source_partner', self.org),
+                          ('mentor', self.org)):
+            with self.subTest(role=role):
+                # The factory gives a source user its source and a mentor login its mentor.
+                make_admin(role, owning_org=org, uid=f'{role}-uid')
                 self.assertEqual(self.client_for(f'{role}-uid').get(f'{BASE}/overdue/').status_code, 403)
 
     def test_dark_billing_is_a_404_for_the_tenant(self):

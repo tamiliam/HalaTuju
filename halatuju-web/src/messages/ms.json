@@ -9567,8 +9567,8 @@
     },
     "nudge": {
       "missing": "Profil anda belum ada {items}.",
-      "helpOne": "Menambahkannya membantu pasukan anda menghubungi anda.",
-      "helpMany": "Menambahkannya membantu pasukan anda menghubungi anda.",
+      "helpOne": "Menambahkannya akan melengkapkan profil anda.",
+      "helpMany": "Menambahkan semuanya akan melengkapkan profil anda.",
       "and": "dan",
       "link": "Lengkapkan profil",
       "hide7": "Sembunyikan selama 7 hari",

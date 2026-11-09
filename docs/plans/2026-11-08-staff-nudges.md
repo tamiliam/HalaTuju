@@ -95,9 +95,14 @@ Where the overdue rule lives and what "overdue" means (for audit A4.5), files to
   still 599) → `{overdue: null | summary}` for the caller's `owning_organisation` only (never a parameter), behind
   `_InvoiceBase._caller` (`surface_gates.may_read_invoices`: dark 404 for a non-super while billing is off, 403 for every
   role but org_admin); a super gets null. Classified in `test_org_fence.py`; `invoice_overdue.py` is in its `SCANNED` list.
-- **Web:** `ShellBanners.tsx` pushes the red `overdue` candidate first, asks `getOverdueSummary` only while the shell's
-  billing probe is live, and again on entering or leaving `/admin/billing`; X = `{kind:'signIn', stamp: session.user.
-  last_sign_in_at}` (plus hidden for the page view). `lib/invoices.ts` `statusChip` takes `overdue` (the served flag) and
+- **Web:** `ShellBanners.tsx` pushes the red `overdue` candidate first; asks `getOverdueSummary` only while the shell's
+  billing probe is live and the reader is not a super (the server's answer for a super is always null), never on
+  `/admin/billing`, and afresh on leaving it. **Not shown on `/admin/billing`** (its chip says Overdue there; review of
+  sprint B); it shows again elsewhere until paid or declared. X = `{kind:'signIn', stamp: session.user.last_sign_in_at}`,
+  kept TWO ways (`lib/topBanner.ts`): a per-tab mark in `sessionStorage` that holds for this browser session even when
+  the stamp moves (`last_sign_in_at` is per ACCOUNT, so a sign-in on another device moves it) and is cleared by
+  `clearSignInDismissals` in `adminSignOut`; plus the stamp in `localStorage`, so a new tab of the same sign-in stays
+  quiet. A new tab after a sign-in elsewhere shows it again (the safe direction). Also hidden for the page view. `lib/invoices.ts` `statusChip` takes `overdue` (the served flag) and
   keeps no date compare; tenant side: a late `sent` or `part_paid` reads Overdue; the owner's wording is unchanged.
 - **Tests:** `tests/test_invoice_overdue.py` (rule edge cases: due today, part-paid, declared, rejected declaration,
   part-paid + declared, void, zero balance, unsent, KL vs UTC midnight; summary; the door: own org, another tenant, super,
@@ -110,6 +115,11 @@ Where the overdue rule lives and what "overdue" means (for audit A4.5), files to
   (median 156.767 of 157.6 kB), `mobile-check` 787 passed (the new surface at 360/390 in en/ms/ta).
 - **Hours:** about 6.0 wall-clock, of which roughly 2.5 hands-on; the rest waiting on the shared test queue and the
   24-minute mobile-check.
-- **Left for A4.5 / open:** the banner refreshes on sign-in, on any token change and on entering/leaving Billing, not live;
+- **Review round (2026-11-09):** the points above, plus the profile banner's second line is neutral for everyone
+  (`admin.nudge.helpOne/helpMany`: "Adding it/them completes your profile." — the old "helps your team reach you" was
+  untrue for mentors, referral partners and source users, whose phone only their inviting organisation sees); tests
+  added for a void invoice in the summary count, an org_admin with no organisation (null), and 403 for qc, partner,
+  source_partner and a mentor.
+- **Left for A4.5 / open:** the banner refreshes on sign-in, on any token change and on leaving Billing, not live;
   the owner (super) chip never says Overdue (unchanged, by choice); ms/ta strings `admin.nudge.overdue*` need a language
   review.

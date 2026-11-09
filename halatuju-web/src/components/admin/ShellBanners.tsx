@@ -25,10 +25,11 @@ import { TopBanner, type BannerTone } from './TopBanner'
  * The overdue banner (decisions 5-7, Phase B): red, FIRST; the server's summary of the caller's own
  * organisation (`GET billing/overdue/`, the ONE rule in `invoice_overdue.py` — never derived here):
  * the oldest overdue invoice, what is owed, how many days late, "and N more"; "View invoice" opens
- * Billing; the X hides it until the next sign-in (`signIn` scope, stamped with this sign-in); gone once
- * paid or declared. Asked only while the shell's billing probe is live (the same people the server lets
- * read invoices; it still refuses everyone else), and asked again on entering or leaving Billing, so a
- * declaration made there clears it.
+ * Billing; NOT on Billing itself (its chip already says Overdue, review of sprint B); the X hides it until
+ * the next sign-in (`signIn` scope: this tab, and this sign-in's stamp); gone once paid or declared. Asked
+ * only while the shell's billing probe is live and the reader is not a super (the shell passes
+ * `billingLive` false for a super: the server always answers null, so the call is skipped), never while
+ * on Billing, and asked again on leaving it, so a declaration made there clears it.
  *
  * ⚠ Storage is read only after mount (`mounted`), so the server render and the first browser render
  * agree (hydration): no banner is painted until then.
@@ -42,7 +43,8 @@ export interface ShellBannersProps {
   profileHref: string
   /** The admin bearer token, to ask for the overdue summary. */
   token?: string | null
-  /** The shell's billing probe answered (`useNavProbes`): only then is the overdue summary asked for. */
+  /** The shell's billing probe answered (`useNavProbes`) and the reader is not a super: only then is the
+   *  overdue summary asked for. */
   billingLive?: boolean
   /** Names THIS sign-in (the session user's `last_sign_in_at`): the overdue X lasts until it changes. */
   signInStamp?: string | null
@@ -78,6 +80,7 @@ export default function ShellBanners(
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
     if (!token || !billingLive) { setOverdue(null); return }
+    if (onBilling) return      // not shown here; asked afresh on the way out
     let live = true
     // A refusal (403 / dark 404) or a blip is simply "no banner": a nudge never breaks the console.
     getOverdueSummary({ token })
@@ -88,7 +91,7 @@ export default function ShellBanners(
   if (!mounted || accountId == null) return null
 
   const candidates: Candidate[] = []
-  if (overdue) {
+  if (overdue && !onBilling) {
     // Decision 7: overdue FIRST. Text, link and X as the owner-approved mock-up.
     const facts = { number: overdue.number, amount: formatMyr(overdue.balance_myr), days: String(overdue.days_overdue) }
     const more = overdue.more > 0

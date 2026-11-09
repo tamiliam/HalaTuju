@@ -12,6 +12,7 @@ import ShellBanners from './ShellBanners'
 import type { ProfileCompletion } from '@/lib/admin-api'
 import type { OverdueSummary } from '@/lib/admin-api/invoices'
 import * as invoicesApi from '@/lib/admin-api/invoices'
+import { clearSignInDismissals } from '@/lib/topBanner'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k}(${Object.values(v).join('|')})` : k) }),
@@ -36,7 +37,7 @@ async function renderBanners(over: Partial<React.ComponentProps<typeof ShellBann
   return view
 }
 
-beforeEach(() => { window.localStorage.clear(); getOverdue.mockReset(); getOverdue.mockResolvedValue({ overdue: SUMMARY }) })
+beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); getOverdue.mockReset(); getOverdue.mockResolvedValue({ overdue: SUMMARY }) })
 
 it('shows the oldest overdue invoice in red, as an alert, over the profile banner', async () => {
   await renderBanners()
@@ -91,7 +92,8 @@ it('the X hides it until the next sign-in, for this account only', async () => {
   const other = await renderBanners({ accountId: 8 })
   expect(screen.getByTestId('top-banner-overdue')).toBeTruthy()
   other.unmount()
-  // A new sign-in brings it back while it is still overdue.
+  // Signing out and in again (a new stamp) brings it back while it is still overdue.
+  clearSignInDismissals()
   await renderBanners({ signInStamp: '2026-11-10T01:00:00Z' })
   expect(screen.getByTestId('top-banner-overdue')).toBeTruthy()
 })
@@ -102,17 +104,35 @@ it('without a sign-in stamp the X still hides it for this page view', async () =
   expect(screen.queryByTestId('top-banner-overdue')).toBeNull()
 })
 
-it('is asked again on entering or leaving Billing, so a payment declared there clears it', async () => {
+it('is not shown on Billing itself (its chip says it), is not asked there, and is asked afresh on the way out', async () => {
   const view = await renderBanners()
   expect(getOverdue).toHaveBeenCalledTimes(1)
-  getOverdue.mockResolvedValue({ overdue: null })
+  expect(screen.getByTestId('top-banner-overdue')).toBeTruthy()
   view.rerender(<ShellBanners {...props({ pathname: '/admin/billing' })} />)
   await act(async () => { await Promise.resolve() })
-  expect(getOverdue).toHaveBeenCalledTimes(2)
   expect(screen.queryByTestId('top-banner-overdue')).toBeNull()
+  expect(screen.getByTestId('top-banner-profile')).toBeTruthy()   // the slot falls to the next banner
+  expect(getOverdue).toHaveBeenCalledTimes(1)                     // not asked on Billing
+  // Still overdue: it shows again elsewhere.
+  view.rerender(<ShellBanners {...props({ pathname: '/admin/scholarship' })} />)
+  await act(async () => { await Promise.resolve() })
+  expect(getOverdue).toHaveBeenCalledTimes(2)
+  expect(screen.getByTestId('top-banner-overdue')).toBeTruthy()
+  // Declared (or paid) on Billing: gone on the way out.
+  view.rerender(<ShellBanners {...props({ pathname: '/admin/billing' })} />)
+  getOverdue.mockResolvedValue({ overdue: null })
   view.rerender(<ShellBanners {...props({ pathname: '/admin/scholarship' })} />)
   await act(async () => { await Promise.resolve() })
   expect(getOverdue).toHaveBeenCalledTimes(3)
+  expect(screen.queryByTestId('top-banner-overdue')).toBeNull()
+})
+
+it('the X holds for this tab even when the account\'s sign-in stamp moves (a sign-in on another device)', async () => {
+  const first = await renderBanners()
+  fireEvent.click(screen.getByRole('button', { name: 'admin.nudge.overdueHide' }))
+  first.unmount()
+  await renderBanners({ signInStamp: '2026-11-09T05:00:00Z' })
+  expect(screen.queryByTestId('top-banner-overdue')).toBeNull()
 })
 
 it('the X is a 44 x 44 target and the link is 44 px tall (Mobile Standard)', async () => {

@@ -9567,8 +9567,8 @@
     },
     "nudge": {
       "missing": "Your profile is missing {items}.",
-      "helpOne": "Adding it helps your team reach you.",
-      "helpMany": "Adding them helps your team reach you.",
+      "helpOne": "Adding it completes your profile.",
+      "helpMany": "Adding them completes your profile.",
       "and": "and",
       "link": "Complete profile",
       "hide7": "Hide for 7 days",
