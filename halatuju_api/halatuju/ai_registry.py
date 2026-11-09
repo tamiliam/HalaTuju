@@ -57,7 +57,7 @@ JOBS = [
     {'key': 'doc_read', 'label': 'Reading a document',
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
-     'module': 'apps/scholarship/vision.py'},
+     'module': 'apps/scholarship/vision/gemini_read.py'},   # audit A3.1: vision.py became a package
     {'key': 'offer_read', 'label': 'Reading an offer letter',      # offer exact-read S4: its own reader
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',

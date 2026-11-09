@@ -85,7 +85,7 @@ class TestTheRegistryCannotGoStale(TestCase):
         """Drive over the bump: prove the scanner finds a real seam rather than returning an
         empty set, which would make the assertion above pass for ever."""
         calling = _files_that_call_ai()
-        self.assertIn('apps/scholarship/vision.py', calling)
+        self.assertIn('apps/scholarship/vision/gemini_read.py', calling)   # audit A3.1: was vision.py
         self.assertIn('apps/scholarship/profile_engine.py', calling)
         self.assertGreaterEqual(len(calling), 10)
 
