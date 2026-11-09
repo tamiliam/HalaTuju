@@ -88,12 +88,17 @@ describe('the row actions (2026-09-09)', () => {
     expect(t.getByText('admin.delete')).toBeTruthy()
   })
 
-  it('⚠ and Revoke — never Delete — for somebody with work on record', () => {
-    // The whole rule, in one row: Kulaly has made 25 payment runs. Revoke stays, Delete does not.
+  it('⚠ and Revoke, with Delete GREYED, for somebody with work on record (Sprint T2)', () => {
+    // The whole rule, in one row: Kulaly has made 25 payment runs. Revoke stays; Delete is drawn
+    // but cannot act, so the owner sees the control and the reason, not a gap.
+    const onDelete = jest.fn()
     const t = act([row({ id: 4, name: 'Kulaly', role: 'admin', deletable: false,
                          work: { payment_runs_made: 25 },
-                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
-    expect(t.queryByText('admin.delete')).toBeNull()
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })], { onDelete })
+    const del = t.getByText('admin.delete')
+    expect(del.getAttribute('aria-disabled')).toBe('true')
+    del.click()
+    expect(onDelete).not.toHaveBeenCalled()
     expect(t.getByText('admin.revoke')).toBeTruthy()
   })
 
@@ -125,17 +130,25 @@ describe('the row actions (2026-09-09)', () => {
     expect(t.queryByText('admin.resend')).toBeNull()
   })
 
-  it('says WHY there is no Delete, with the counts on hover', () => {
+  it('says WHY Delete is greyed — the reason is the button\'s description', () => {
+    // The old "Has work on record — revoke instead" grey text is gone; the reason rides on Delete.
     const t = act([row({ id: 9, name: 'Kulaly', role: 'admin', deletable: false,
                          work: { payment_runs_made: 25, assigned_applications: 2 } })])
-    const why = t.getByText('admin.hasWorkRevoke')
-    expect(why.getAttribute('title')).toBe('payment runs made: 25, assigned applications: 2')
-    expect(t.queryByText('admin.delete')).toBeNull()
+    const del = t.getByText('admin.delete')
+    const why = document.getElementById(del.getAttribute('aria-describedby') ?? '')
+    expect(why?.textContent).toBe('admin.deleteHasWork')
   })
 
   it('says nothing about work on a row that is simply deletable', () => {
     const t = act([row({ id: 10, name: 'Fresh', role: 'admin', deletable: true, work: {} })])
-    expect(t.queryByText('admin.hasWorkRevoke')).toBeNull()
+    expect(t.getByText('admin.delete').getAttribute('aria-disabled')).toBeNull()
+    expect(t.queryByText('admin.deleteHasWork')).toBeNull()
+  })
+
+  it('⚠ draws an organisation admin\'s Delete for a SUPER viewer only (Sprint T2)', () => {
+    const lead = [row({ id: 14, name: 'Lead', role: 'org_admin', deletable: true, work: {} })]
+    expect(act(lead).queryByText('admin.delete')).toBeNull()
+    expect(act(lead, { viewerSuper: true }).getByText('admin.delete')).toBeTruthy()
   })
 
   it('offers Change role only where a switch exists', () => {

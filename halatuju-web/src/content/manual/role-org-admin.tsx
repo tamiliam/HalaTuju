@@ -150,9 +150,12 @@ export const roleOrgAdmin: ManualChapter = {
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t
           offered on the sole admin, so your organisation is never left without one.</span>
-          <span className="mt-2 block"><strong>Delete</strong> is offered only for an admin who has done no work
-          yet; you type their email address to confirm, and it removes their sign-in and their invitation
-          history. Anybody with work on record is revoked instead, and the row says so. Cancelling an
+          <span className="mt-2 block"><strong>Delete</strong> sits next to Revoke on every Team table and on
+          each person&rsquo;s own page. It works for anybody who has done no work yet: an admin, a reviewer, QC
+          or a mentor. You type their email address to confirm, and it removes their sign-in and their
+          invitation history. Anybody with work on record is revoked instead: their Delete is greyed, and
+          pointing at it or tapping it says what work is recorded. Only a super admin can delete an organisation
+          admin. Cancelling an
           invitation on <strong>Invitations</strong> stops its emailed password working, and you can invite the
           same address again afterwards &mdash; they get a fresh password.</span></>
       ),

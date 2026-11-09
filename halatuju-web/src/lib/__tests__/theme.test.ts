@@ -1032,8 +1032,8 @@ describe('the F4 semantic corrections the codemod could not make', () => {
     // weight — is unchanged and is the thing worth pinning. `bg-caution-600 text-white` was
     // measured at 3.30 in light and 1.40 in dark, so the fill became a role. Assert the role.
     expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-fill text-caution-fill-ink'/)
-    expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/declined: 'bg-caution-500'/)
-    expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/rejectedAfterReview: 'bg-critical-500'/)
+    expect(read('src/components/admin/person/ReviewerParts.tsx')).toMatch(/declined: 'bg-caution-500'/)
+    expect(read('src/components/admin/person/ReviewerParts.tsx')).toMatch(/rejectedAfterReview: 'bg-critical-500'/)
   })
 })
 

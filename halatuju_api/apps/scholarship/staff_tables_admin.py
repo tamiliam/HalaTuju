@@ -393,6 +393,22 @@ def candidates(caller, table, organisation_id):
     return out
 
 
+def addable_tables(caller, target):
+    """Sprint T3 (D8): the staff tables (Admins, Reviewers) ``caller`` could add ``target`` to right now —
+    exactly where `candidates` would offer them (`may_act`, then the Add's own plan). The pure mentor's
+    person page offers the Add path only for these; the Add endpoint still decides."""
+    out = []
+    for table in (ADMINS, REVIEWERS):
+        if not may_act(caller, target, table):
+            continue
+        try:
+            _plan_add_safe(target, table)
+        except Refused:
+            continue
+        out.append(table)
+    return out
+
+
 def _plan_add_safe(target, table):
     _refuse_basic(target)
     return _plan_add(target, table)

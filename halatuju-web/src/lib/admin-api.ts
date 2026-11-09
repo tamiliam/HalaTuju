@@ -35,7 +35,7 @@ export {
   changeAdminRole, changeTeamTable, getTeamCandidates,
 } from './admin-api/admins'
 export type {
-  AdminItem, TeamCandidate, TeamRemove, TeamTableName, TeamTablePlan,
+  AdminItem, TeamCandidate, TeamPersonBlock, TeamRemove, TeamTableName, TeamTablePlan,
 } from './admin-api/admins'
 
 // Every invitation this organisation has sent, of every kind.
@@ -56,7 +56,8 @@ export type {
 
 // Organisation → Mentors (student maintenance S7a).
 export {
-  addStaffMentor, getMentorDetail, getMentors, getStaffMentorCandidates, inviteMentor, mentorAction,   // + S7d, T3
+  addStaffMentor, deleteMentor, getMentorDetail, getMentors, getStaffMentorCandidates, inviteMentor,   // + S7d, T3, T2
+  mentorAction,
   setMentorGifts,   // Invitations I4
 } from './admin-api/mentors'
 export type {

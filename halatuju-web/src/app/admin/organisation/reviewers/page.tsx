@@ -34,6 +34,7 @@ import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/componen
 import type { TeamTableName } from '@/lib/admin-api'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 import StaffAvatar from '@/components/admin/StaffAvatar'
+import StaffActions from '@/components/admin/StaffActions'
 import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 // Organisation → **People**: the directory of everybody who is already in.
@@ -112,8 +113,10 @@ export default function AdminReviewersList() {
   const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
   const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
           resend, toggle, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
-  // The admin whose delete is being confirmed (typed confirmation, 2026-10-09). Null = closed.
-  const [deleting, setDeleting] = useState<AdminItem | null>(null)
+  // The person whose delete is being confirmed (typed confirmation, 2026-10-09) — from the Admins or,
+  // since Sprint T2 (D6), the Reviewers table. Null = closed.
+  const [deleting, setDeleting] = useState<Pick<AdminItem, 'id' | 'name' | 'email'> | null>(null)
+  const viewerSuper = effectiveRole(role) === 'super'
   const [deleteBusy, setDeleteBusy] = useState(false)
   // ⚠ A TEAM MEMBER'S PERMISSIONS LIVE ON THEIR OWN PAGE (2026-10-22, owner's option A). The
   // Admins tab used to open the card above this list; now the NAME opens the person's page, which
@@ -172,7 +175,7 @@ export default function AdminReviewersList() {
    * act until their email address is typed: the address is unique, where two people can share a
    * name, and it is what a re-invite would be sent to.
    */
-  const removeAdmin = async (a: AdminItem) => {
+  const removeAdmin = async (a: Pick<AdminItem, 'id'>) => {
     if (!token) return
     setDeleteBusy(true)
     try {
@@ -183,7 +186,7 @@ export default function AdminReviewersList() {
       // 409 `has_work` is the interesting one: somebody did work between the page loading and
       // the click. The server's sentence names them, so it is shown rather than replaced.
       setStaffMessage({ type: 'error', text: e instanceof Error ? e.message : t('admin.actionFailed') })
-    } finally { setDeleteBusy(false); setDeleting(null); reloadStaff() }
+    } finally { setDeleteBusy(false); setDeleting(null); reloadStaff(); load() }
   }
 
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
@@ -218,6 +221,15 @@ export default function AdminReviewersList() {
     ? <span className="mt-0.5 block text-[11px] text-ground-500" data-testid="lead-no-self-qc">{t('admin.team.noSelfQc')}</span>
     : null
   const paged = usePagedRows(sorted)
+  // Sprint T2: Revoke / Restore, then Delete (`StaffActions`, the Admins table's pair). The organisation
+  // admin is never revoked from here (the server refuses an org_admin acting on one; their way out of
+  // this table is Remove), and their Delete is drawn for a super only.
+  const reviewerActions = (r: AdminReviewer) => (
+    <StaffActions active={r.is_active} busy={busyId === r.id}
+      onToggle={r.lead || r.revocable === false ? undefined : () => toggleReviewer(r)}
+      onDelete={() => setDeleting(r)} deletable={r.deletable} deleteNever={r.delete_never} work={r.work}
+      orgAdmin={!!r.lead || r.role === 'org_admin'} viewerSuper={viewerSuper} />
+  )
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
   // Below every hook on purpose — an early return above them would change the hook order between
@@ -275,6 +287,14 @@ export default function AdminReviewersList() {
       <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}
         onClose={() => setRemoving(null)} onDone={teamDone} />
 
+      {/* One typed confirmation for a delete from the Admins or the Reviewers table. */}
+      {deleting && (
+        <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
+          title={t('admin.programmes.deleteTitle', { name: deleting.name })}
+          body={t('admin.deleteStaffBody')} cta={t('admin.delete')}
+          onCancel={() => setDeleting(null)} onConfirm={() => removeAdmin(deleting)} />
+      )}
+
       {/* T3: the Mentors table, its own chunk (the old Mentors page's, `lazySource`), handed this page's
           "Also in" chips so the chunk imports nothing the route already carries. */}
       {panel === 'mentors' && mayMentors && (
@@ -294,14 +314,8 @@ export default function AdminReviewersList() {
           onToggle={canManage ? toggle : undefined}
           onDelete={canManage ? setDeleting : undefined}
           nameHref={canManage ? personHref : undefined}
-          soleOrgAdmin={soleOrgAdmin}
+          soleOrgAdmin={soleOrgAdmin} viewerSuper={viewerSuper}
           team={{ onRemove: (a) => setRemoving({ id: a.id, name: a.name, table: 'admins' }) }} />
-        {deleting && (
-          <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
-            title={t('admin.programmes.deleteTitle', { name: deleting.name })}
-            body={t('admin.deleteStaffBody')} cta={t('admin.delete')}
-            onCancel={() => setDeleting(null)} onConfirm={() => removeAdmin(deleting)} />
-        )}
         {!canManage && (
           <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
         )}
@@ -379,6 +393,7 @@ export default function AdminReviewersList() {
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {leadNote(r)}
                   <AlsoIn row={r} here="reviewers" />
+                  {canManage && reviewerActions(r)}
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
                     onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />}
                 </div>
@@ -480,16 +495,7 @@ export default function AdminReviewersList() {
                     <td className="px-4 py-3">
                       {canManage && (
                         <div className="flex flex-wrap items-center gap-3">
-                          {/* The organisation admin is never revoked from here (the server refuses
-                              an org_admin acting on one); their way out of this table is Remove. */}
-                          {!r.lead && (
-                          <button disabled={busyId === r.id} onClick={() => toggleReviewer(r)}
-                            className={`text-xs font-medium disabled:opacity-50 ${
-                              r.is_active ? 'text-critical-600 hover:text-critical-800'
-                                          : 'text-primary-600 hover:text-primary-800'}`}>
-                            {t(r.is_active ? 'admin.revoke' : 'admin.restore')}
-                          </button>
-                          )}
+                          {reviewerActions(r)}
                           {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. */}
                           <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
                             onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />

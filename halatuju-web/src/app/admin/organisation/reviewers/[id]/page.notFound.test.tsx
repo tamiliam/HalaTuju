@@ -14,7 +14,7 @@ jest.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) =>
     <a href={href}>{children}</a>,
 }))
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: '999999' }) }))
+jest.mock('next/navigation', () => ({ useParams: () => ({ id: '999999' }), useRouter: () => ({ push: jest.fn() }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin' } }),

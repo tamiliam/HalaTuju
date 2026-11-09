@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Sheet from '@/components/Sheet'
+import TableChips, { CHIP } from '@/components/admin/TableChips'
 import { useT } from '@/lib/i18n'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import {
@@ -22,27 +23,11 @@ import {
 
 type Seat = { tables?: string[]; lead?: boolean }
 
-// The role palette's own swatches (`lib/roleBadge`, ONE copy), so a table reads the colour its role does.
-const CHIP: Record<string, string> = {
-  admins: roleBadgeClass('admin'),
-  reviewers: roleBadgeClass('reviewer'),
-  mentors: 'bg-positive-50 text-positive-700',
-}
-
-/** The person's OTHER tables, as small chips ("Admin (lead)" for the organisation admin). */
+/** The person's OTHER tables, as small chips ("Admin (lead)" for the organisation admin). The chips are
+ *  `TableChips`, which a person's page (Sprint T3) draws under the name. */
 export function AlsoIn({ row, here }: { row: Seat; here: TeamTableName | 'mentors' }) {
-  const { t } = useT()
-  const others = (row.tables ?? []).filter((x) => x !== here)
-  if (others.length === 0) return <span className="text-ground-400">—</span>
-  return (
-    <span className="inline-flex flex-wrap gap-1" data-testid="also-in">
-      {others.map((x) => (
-        <span key={x} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${CHIP[x] ?? 'bg-ground-100'}`}>
-          {x === 'admins' && row.lead ? t('admin.team.chip.lead') : t(`admin.team.chip.${x}`)}
-        </span>
-      ))}
-    </span>
-  )
+  if (!(row.tables ?? []).some((x) => x !== here)) return <span className="text-ground-400">—</span>
+  return <TableChips tables={row.tables} lead={row.lead} except={here} testId="also-in" />
 }
 
 /** One table's own permission chips (owner ruling 2: each table shows only its own keys). */
@@ -96,13 +81,16 @@ const effects = (t: T, plan: TeamTablePlan, name: string) => [
   plan.becomes_mentor ? t('admin.team.becomesMentor', { name }) : '',
 ].filter(Boolean)
 
-/** Team -> Add Admin / Add Reviewer: an EXISTING member of the team, never a new person. */
-export function TeamAddSheet({ open, table, token, onClose, onDone }: {
+/** Team -> Add Admin / Add Reviewer: an EXISTING member of the team, never a new person. `only` (Sprint T3,
+ *  D8: a mentor's page): offer that one person, already picked — still from the server's own candidates,
+ *  so the sheet can offer nobody the endpoint would refuse. */
+export function TeamAddSheet({ open, table, token, onClose, onDone, only }: {
   open: boolean
   table: TeamTableName
   token: string | null
   onClose: () => void
   onDone: (text: string) => void
+  only?: number
 }) {
   const { t } = useT()
   const [people, setPeople] = useState<TeamCandidate[] | null>(null)
@@ -118,10 +106,15 @@ export function TeamAddSheet({ open, table, token, onClose, onDone }: {
     let live = true
     setPeople(null); setFailed(false); setQuery(''); setPicked(null); setError(null); setPlan(null)
     getTeamCandidates(table, { token })
-      .then((d) => { if (live) setPeople(d.candidates) })
+      .then((d) => {
+        if (!live) return
+        const offered = only === undefined ? d.candidates : d.candidates.filter((p) => p.id === only)
+        setPeople(offered)
+        if (only !== undefined && offered.length === 1) setPicked(only)
+      })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }
-  }, [open, token, table])
+  }, [open, token, table, only])
 
   // What adding the picked person would do — the server's dry run, worded under the list.
   useEffect(() => {
@@ -168,11 +161,11 @@ export function TeamAddSheet({ open, table, token, onClose, onDone }: {
         </div>
       )}>
       <div className="space-y-3">
-        <label className="block text-sm text-ground-600">
+        {only === undefined && <label className="block text-sm text-ground-600">
           {t('admin.team.search')}
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
             className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-base focus:border-info-500 focus:ring-2 focus:ring-info-500" />
-        </label>
+        </label>}
         {failed && <p className="text-sm text-critical-600" role="alert">{t('admin.team.loadFailed')}</p>}
         {!people && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
         {people && (shown.length === 0 ? (
