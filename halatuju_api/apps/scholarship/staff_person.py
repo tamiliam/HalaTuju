@@ -17,6 +17,14 @@ The phone only under the rule each screen already used:
 until they save one on their own profile page; a GET that wrote one would be a side effect of looking.
 `profile` then reads as all-empty, and the screen says "Not given".
 
+⚠ THE MENTOR ROUTE SERVES LESS (T3 review fix 1). The mentor detail is read by an `admin`, and by any
+organisation admin, who cannot open a staff mentor through the admin route (404) and may not reach them
+through the reviewer route either. So the mentor route passes ``full=`` `opens_elsewhere(...)`: the
+profile's background fields (`BACKGROUND_KEYS`: job title, about, qualification, university, graduation
+year, field of study) only when the viewer could already open that person by the admin or reviewer route
+under those routes' own fences. Otherwise exactly what the Mentors page served before T3: name, email, the
+gated phone, area and languages; the background fields read empty and `profile_full` is False.
+
 Reads only what the caller has already loaded: `target.reviewer_profile` (select it, or pass ``rp``)
 and the mentor link (`staff_tables.in_mentors` reads `target.mentor`).
 """
@@ -31,10 +39,14 @@ SPOKEN = ('conversational', 'fluent')
 #: The exact keys of `person` and of its `profile`. An exact-key-set test pins both, so a new field is a
 #: decision.
 PERSON_KEYS = ('admin_id', 'mentor_id', 'name', 'email', 'tables', 'lead', 'mentor_only', 'is_active',
-               'paused', 'joined_at', 'signed_in', 'last_seen_at', 'profile')
+               'paused', 'joined_at', 'signed_in', 'last_seen_at', 'profile', 'profile_full')
 #: The exact keys of `profile`.
 PROFILE_KEYS = ('job_title', 'about', 'qualification', 'university', 'graduation_year',
                 'field_of_study', 'phone', 'languages', 'other_language')
+#: The profile fields the mentor route serves only to a viewer who could open the person elsewhere (fix 1).
+BACKGROUND_KEYS = ('job_title', 'about', 'qualification', 'university', 'graduation_year', 'field_of_study')
+#: The keys `staff_permissions.team_holding(..., with_lead=True)` reads for the Reviewers table's detail.
+REVIEWER_ROUTE_KEYS = frozenset(('review', 'qc'))
 
 
 def _profile_of(target):
@@ -51,9 +63,42 @@ def phone_of(target, rp):
     return (rp.phone or '') if assigner_sees_phone(target, rp) else ''
 
 
-def profile(target, rp=None):
-    """The Profile tab's fields (`PROFILE_KEYS`); '' / None / [] for what the person has not filled in."""
+def on_reviewer_route(target):
+    """Whether the reviewer detail lists `target` — `AdminReviewerDetailView._reviewers`, row by row: a team
+    member holding `review` or `qc`, or an organisation admin who joined the Reviewers table; never a super."""
+    if target.is_super or target.is_source_user or target.is_mentor:
+        return False
+    if sp.is_lead_tier(target):
+        return sp.lead_reviews(target)
+    return target.role in sp.TEAM_ROLES and bool(REVIEWER_ROUTE_KEYS & set(sp.resolve(target)))
+
+
+def opens_elsewhere(viewer, target):
+    """Could `viewer` already open `target` by the admin route (`AdminStaffPermissionsView`: a super or an
+    org_admin, and `_staff_target_manageable`) or the reviewer route (`AdminReviewerDetailView`:
+    `may_read_team`, the viewer's own organisation unless a super, and `on_reviewer_route`)? Reads only the
+    two loaded rows. A mentor's own login is opened by neither, so it is always False for them."""
+    if viewer is None or target is None or target.is_mentor:
+        return False
+    from apps.courses.views_admin import _staff_target_manageable
+    if (viewer.is_super or sp.is_lead_tier(viewer)) and _staff_target_manageable(viewer, target):
+        return True
+    from . import surface_gates
+    if not surface_gates.may_read_team(viewer):
+        return False
+    if not viewer.is_super and (viewer.owning_organisation_id is None
+                                or target.owning_organisation_id != viewer.owning_organisation_id):
+        return False
+    return on_reviewer_route(target)
+
+
+def profile(target, rp=None, full=True):
+    """The Profile tab's fields (`PROFILE_KEYS`); '' / None / [] for what the person has not filled in.
+    ``full=False`` (the mentor route, fix 1) empties `BACKGROUND_KEYS`."""
     rp = rp if rp is not None else _profile_of(target)
+    if not full:
+        return {**profile(target, rp), 'job_title': '', 'about': '', 'qualification': '', 'university': '',
+                'graduation_year': None, 'field_of_study': ''}
     return {
         'job_title': getattr(rp, 'job_title', '') or '',
         'about': getattr(rp, 'about', '') or '',
@@ -69,11 +114,13 @@ def profile(target, rp=None):
     }
 
 
-def person(target, rp=None):
+def person(target, rp=None, full=True):
     """The header and Profile tab of `target`'s page (`PERSON_KEYS`). `mentor_id` is set only while they
     mentor (the Mentors table's link); `mentor_only` is a mentor's own login (no staff role, so no
     permissions to change); `signed_in` is False only when the console never recorded a visit (NULL is
-    "not recorded"). Name and email are what each of the three payloads already serves this viewer."""
+    "not recorded"). Name and email are what each of the three payloads already serves this viewer.
+    ``full`` / `profile_full`: whether `BACKGROUND_KEYS` are served (always on the admin and reviewer
+    routes; on the mentor route only under `opens_elsewhere`)."""
     return {
         'admin_id': target.pk,
         'mentor_id': target.mentor_id if staff_tables.in_mentors(target) else None,
@@ -87,5 +134,6 @@ def person(target, rp=None):
         'joined_at': target.created_at,
         'signed_in': target.first_seen_at is not None,
         'last_seen_at': target.last_seen_at,
-        'profile': profile(target, rp),
+        'profile': profile(target, rp, full=full),
+        'profile_full': bool(full),
     }

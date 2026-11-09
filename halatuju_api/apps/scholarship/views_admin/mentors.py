@@ -333,7 +333,9 @@ class AdminMentorView(_MentorsBase):
         from .. import staff_person, staff_tables_admin
         login = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
                  .filter(mentor=mentor).order_by('id').first())
-        extra = {'person': staff_person.person(login),
+        # T3 review fix 1: the profile's background fields only for a viewer who could open this person by
+        # the admin or reviewer route under those routes' fences (`staff_person.opens_elsewhere`).
+        extra = {'person': staff_person.person(login, full=staff_person.opens_elsewhere(admin, login)),
                  'may_add': staff_tables_admin.addable_tables(admin, login) if login.is_mentor else []}
         if not self.sees_scholars(admin):
             # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).

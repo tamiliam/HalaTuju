@@ -230,6 +230,8 @@ ALLOWLIST = {
         'keeps a reviewer-tab label listed'),
     'scholarship/staff_permissions_admin.py::change_permissions': ('DISPLAY', 'T5a tables',
         'guards the row it rewrites'),
+    'scholarship/staff_person.py::on_reviewer_route': ('DISPLAY', 'T5a tables',
+        'T3 review fix 1: table membership, mirroring `_ReviewersBase._reviewers` (a team preset holding review/qc)'),
     'scholarship/staff_tables_admin.py::_plan_remove': ('DISPLAY', 'T5a tables',
         'table move plan: the label after a removal'),
     'scholarship/staff_tables_admin.py::_refuse_basic': ('DISPLAY', 'T5a tables',
