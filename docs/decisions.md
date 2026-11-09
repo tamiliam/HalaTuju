@@ -1,5 +1,12 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-09 — An invoice with a payment declaration being checked is not "overdue", even part-paid (owner ruling, staff nudges)
+
+Owner ruling (2026-11-09): **keep as built.** In `apps/scholarship/invoice_overdue.py`, an invoice counts as overdue when it is sent, not void, its balance is above zero and today (Asia/Kuala_Lumpur) is past `due_on`. Part-paid counts. But an invoice with an OPEN tenant payment declaration (`has_open_payment_declaration()`) does not count, and that includes a part-paid invoice. So neither the red banner nor the Billing chip shows it while the declaration is being checked. If the declaration is rejected, the invoice counts again.
+
+**Why:** the organisation has already told us it paid. Showing a red "payment overdue" banner while we check its claim reads as an accusation. A rejected claim no longer shields the invoice, so this cannot hide a real debt for good.
+**Revisit if:** declarations start to sit unchecked for long. The answer then is a review deadline on the claim, not a banner.
+
 ## 2026-11-08 — A declared informal wage the STR vouches for counts toward the household documents total and the #54 tick (owner ruling, request #54: KEEP)
 
 Owner ruling on request #54: **keep** the behaviour as built. In `apps/scholarship/income_engine/amounts.py` (`earner_monthly_income`, about lines 87-89), a member's declared average monthly wage with no payslip or EPF statement is accepted as a real figure when the household has a valid STR (source `declared_str`). That figure counts toward the household documents total and satisfies the #54 tick.
