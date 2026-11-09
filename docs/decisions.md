@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## One person page for every team member: the same header, Profile and Permissions tabs, no role word — 2026-11-09 (Sprint T3, rulings D8, D9, M1-M6)
+
+**The ask (owner, 2026-11-09, items 3, 4 and 5; mockup approved the same day):** the reviewer, admin and mentor pages should be one page. "If they are in the Reviewers table, they are a reviewer": the tables say what somebody is, so a role word under the name only repeats them, or contradicts them.
+
+**The rulings:**
+
+| | Ruling |
+|---|---|
+| D9 | Under the name go the table chips (the Team page's own "Also in" labels), then the Status pill · Joined · Last seen. There is no role word. Pause new cases is offered for a reviewer only (`pausable`, the pause endpoint's own rule). |
+| D8 | A pure mentor's Permissions tab is read-only. It says what a mentor sees (My students and Profile) and offers the Team page's Add-to-table path, and only to a viewer who may add them (`may_add`, served by the mentor detail under the Add endpoint's own rule). |
+| M1 | Last seen is relative ("2 days ago"; the date itself from 30 days back), with the exact date and time in `title`. Somebody who never signed in reads "Invited". A missing time with a recorded sign-in reads "not recorded", never "never". |
+| M2 | An organisation admin's Permissions tab (not editable) shows their keys as locked switches under one line saying they cannot be changed here. There is no Save. |
+| M3 | A Profile field nobody filled in reads "Not given", never hidden, so a reader can tell "empty" from "not shown to you". The home address is never shown, nor served. |
+| M4 | The reviewer's Covers and figures, and a mentor's figures, stay in the header card above the tabs. |
+| M5 | Revoke / Restore / Delete keep T2's behaviour (`StaffPersonActions`; a pure mentor's own actions) and sit in the same place on every page. |
+| M6 | A person in several tables sees every part that applies: a reviewer who mentors gets the reviewer parts and the mentor parts on either route. |
+
+**How:** the three routes stay, so no link breaks. Each renders one `TeamPersonPage`, and each detail GET serves one `person` block (`staff_person.py`), so the header and Profile read one shape whichever door the viewer came in by. Each GET keeps its own fence; across organisations it answers 404.
+
+**The cost, accepted:** the admin and mentor details now serve the profile fields the reviewer detail already served. This is a PII widening, recorded in `docs/scholarship/role-matrix.md`: same fields, same phone rule, never the address. The mentor detail reads one more query (11 to 12) for `may_add`.
+
+**Revisit if:** an admin or finance reader should see a staff person's permissions. Today the Permissions tab is drawn only for a viewer who may manage, plus the read-only tab on a pure mentor.
+
 ## Reviewers, QC and mentors may be deleted under the one no-work test; Revoke and Delete on every Team table and person page — 2026-11-08 (Sprint T2, ruling D6)
 
 **The ask (owner, 2026-11-08):** "I want the team member tables and profiles to be similar. Each must have Revoke and Delete. The delete however will be greyed out if there is work on record. When hovered above delete link/text, it may say there is work on record, etc. For org admins, the delete button should be visible only to super admin."

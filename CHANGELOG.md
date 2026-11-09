@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: Sprint T3 - one person page for every team member: the same header, two tabs (Profile, Permissions), no role word (D8, D9, M1-M6) (2026-11-09)
+
+Branch t3-person-page (not pushed; no migration). The owner's items 3, 4 and 5 of 2026-11-09, on the approved mockup. The three routes stay (`reviewers/[id]`, `reviewers/admins/[id]`, `reviewers/mentors/[id]`), so every link still works; each now renders the same page. Rulings in `docs/decisions.md`.
+- **API:**
+  - The reviewer, admin (`admin/admins/<id>/permissions/`) and mentor details all serve one `person` block (`apps/scholarship/staff_person.py`). It holds admin_id, mentor_id, name, email, the tables the person sits in (`staff_tables`, the "Also in" chips' source), lead, mentor_only, is_active, paused, joined_at, signed_in, last_seen_at and the Profile fields: job title, about, qualification, university, graduation year, field of study, phone and languages.
+  - A PII widening, recorded in `docs/scholarship/role-matrix.md`. The admin and mentor details now serve the profile fields the reviewer detail already served, under the same rules. The phone follows `assigner_sees_phone`, or a mentor login's own number. The home address is never served. A GET never creates a profile row.
+  - The mentor detail also serves `may_add` (D8): the staff tables this viewer could add a pure mentor to, by the Add sheet's own rule (`staff_tables_admin.addable_tables`). This adds one query to the mentor detail (11 to 12). The admin and reviewer details are unchanged.
+- **Web:**
+  - `components/admin/person/`: `TeamPersonPage` (chunk `ad`, lazy-loaded by the three routes), `PersonHeader`, `PersonProfile`, `ReviewerParts`, `MentorOnlyPermissions` and `useTeamPerson`.
+  - The header shows the name, the email, the table chips (`TableChips`, shared with the Team page's "Also in"), then Status · Joined · Last seen. There is no role word under the name (D9). Pause is drawn for a reviewer only (`pausable`).
+  - Revoke / Restore / Delete sit in one actions row in the same place on every page (M5). The reviewer's and mentor's figures stay in the header card (M4).
+  - Last seen is relative ("2 days ago", the date itself from 30 days), with the exact date and time in `title` (`lib/lastSeen.ts`, M1). Somebody who has never signed in reads "Invited".
+  - Profile and Permissions tabs; `#permissions` opens the second. The Profile shows every field, with "Not given" where empty, and a line saying the home address is never shown (M3). A person in several tables sees every part that applies (M6).
+  - Permissions: the permission editor for a staff person. For an organisation admin (not editable) it shows locked switches under one line, with no Save (M2). For a pure mentor it is a read-only tab (D8), offering the Team page's Add sheet narrowed to that one person, and only for the tables in `may_add`.
+  - `MentorsAdmin` exports `MentorFigures`, `MentorWork` and `MentorActions`; `MentorDetail` is removed. The mentor route has a sandbox surface (`t3-mentor-person`) and is classed `can` in `mobileClass.ts`.
+- **Wording (en/ms/ta):** new strings under `admin.person.*` (Back to a Team tab, Last seen, the Profile rows, the privacy line, the mentor's read-only tab); the existing `admin.team.chip.*` and `admin.permEditor.fixed` are reused. The keys only the old pages used are deleted: `admin.reviewers.role.*`, `admin.reviewers.detail.back`, `noCredentials`, `contactNote`, `admin.person.back`, `admin.mentors.staffTag` and `admin.mentors.detail.back` / `since` / `lastSeen` / `lastSeenUnknown` / `notFound`. Malay and Tamil need language review.
+- **Tests:**
+  - API: `test_t3_person_page.py` (the block's exact keys on all three details, the address never served, the phone rule, no profile row created, the org fence's 404, `may_add`, query counts).
+  - Web: `TeamPersonPage.test.tsx` (one rendered page per kind of person: reviewer, admin, finance, pure mentor, organisation admin, two tables through both doors; the mentor's read-only tab and its Add path; the locked switches; the gates; 360 px classes), `lastSeen.test.ts`, and updated reviewer page, admin page, Mentors and PermissionEditor tests.
+
 ### feat: Sprint T2 - Revoke and Delete on every Team table and person page; reviewers, QC and mentors deletable with no work (D6) (2026-11-08)
 
 Branch t2-revoke-delete (not pushed; no migration, model comments only). Owner, 2026-11-08: the Team tables and person pages should be alike, each with Revoke and Delete; Delete greyed when there is work on record, with the reason on hover; on an organisation admin, Delete only for a super. Ruling D6 reverses 2026-09-09's "never delete a reviewer" (`docs/decisions.md`).

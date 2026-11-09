@@ -444,6 +444,22 @@ cannot appear in the payload. Widen this cell only by owner decision, recorded h
 The home address still reaches no serializer but the owner's own reviewer profile. The student-facing
 interviewer phone (the advance email, the student's interview card) is unchanged: `share_phone_with_students`.
 
+**Sprint T3 person page (owner, 2026-11-09) — the PROFILE fields widened to the admin and mentor details;
+the phone rule and the address unchanged.** All three person pages read one `person` block
+(`apps/scholarship/staff_person.py`, an allowlist pinned by an exact-key test):
+
+| Detail | Who reads it | What it now serves |
+|---|---|---|
+| Reviewer (`admin/reviewers/<id>/`) | as before (super, org_admin, admin, finance) | the same fields it already served, now also as `person` |
+| Admin (`admin/admins/<id>/permissions/`) | as before (super, org_admin) | **new:** job title, about, qualification, university, graduation year, field of study, languages; the phone under the rule below |
+| Mentor (`admin/mentors/<id>/`) | as before (super, org_admin, admin) | **new:** the same profile fields; the phone is the mentor login's own number (`staff_screen_phone`, S7a) |
+
+The phone stays gated: a staff person's number only under `assigner_sees_phone` (they show it to the team,
+or hold `review`), otherwise ''. The **home address is never served** by any of the three (`address`,
+`street_address`, `postcode`, `city`, `state`); a test asserts it cannot appear in any payload. A GET never
+creates a profile row: someone who has not saved one reads as all "Not given". Every detail keeps its own
+organisation fence (404 across organisations).
+
 **No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
 carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare
 number beside a volunteer's name reads as a competence score to whoever hands out the next case, so
