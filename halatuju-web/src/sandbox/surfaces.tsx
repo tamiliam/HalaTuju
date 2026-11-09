@@ -119,7 +119,7 @@ export interface Surface {
    * Endpoint answers for THIS surface only, layered over the shared ones. Needed where two
    * screens want different answers from the same endpoint — see `setSurfaceRoutes`.
    */
-  routes?: Record<string, () => unknown>
+  routes?: Record<string, (url: URL) => unknown>
 }
 
 export const SURFACES: Surface[] = [

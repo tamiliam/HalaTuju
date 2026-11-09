@@ -9,6 +9,7 @@ degrade gracefully.
 Uses stdlib urllib (no extra dependency). The private bucket itself is created
 at deploy time (carry-forward), and these calls are mocked in tests.
 """
+import http.client
 import json
 import logging
 import re
@@ -168,7 +169,9 @@ def _post(path, payload, headers=None):
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode())
-    except (urllib.error.URLError, ValueError, TimeoutError):
+    except (OSError, http.client.HTTPException, ValueError):
+        # OSError covers URLError, TimeoutError and a reset connection; HTTPException a malformed or
+        # cut-off reply (sprint P1 review: a photo signing that raised one of these broke the read).
         logger.warning('Supabase Storage request failed: %s', path, exc_info=True)
         return None
 

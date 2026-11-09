@@ -26,9 +26,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import referral_links, staff_gift, staff_reinvite, staff_tables
+from .staff_delete_rules import delete_fields, is_sole_org_admin, lock_org_admins_of, sole_org_admin_ids
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
-                          PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
+                          PartnerAdminMixin, _invitation_dict, _invitations_for,
                           _record_invitation, _record_invitation_send, _staff_target_manageable,
                           scholarship_staff, send_partner_welcome_email, staff_mentor_leaves)
 
@@ -121,9 +122,9 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
     have declared her safe to delete and left 25 runs naming an address with nobody behind it. See
     `apps.scholarship.staff_footprint`.
 
-    ⚠ **REVIEWERS ARE NEVER DELETABLE** (`_DELETABLE_ROLES`), however empty their record looks —
-    the owner scoped this to admins explicitly, and a reviewer is who a student's case passed
-    through.
+    ⚠ **REVIEWERS AND QC TOO, SINCE D6 (Sprint T2, 2026-11-08)** (`_DELETABLE_ROLES`), reversing the
+    2026-09-09 "admins only": under the same footprint test, so a reviewer a student's case has passed
+    through (held, reviewed, interviewed, QC'd, mentored) is still only ever revoked.
 
     ⚠ **THE LOGIN GOES TOO, BEFORE THE ROW** (2026-10-09). The row is the only record of which
     Supabase login is ours; deleting it and leaving the login made a re-invite of the same address
@@ -159,6 +160,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
 
     def _delete_locked(self, admin, admin_id, staff_footprint, staff_lifecycle):
         with transaction.atomic():
+            lock_org_admins_of(admin_id)   # T2 review: two supers, one org's two org admins, at once
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             if target is None or not _staff_target_manageable(admin, target):
                 return Response({'error': 'Admin not found'}, status=404)
@@ -166,8 +168,10 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
                 return Response({'error': 'Cannot delete a super admin', 'code': 'not_deletable'},
                                 status=400)
             if target.role not in _DELETABLE_ROLES:
-                return Response({'error': 'Only an admin account can be deleted',
+                return Response({'error': 'Only a programme staff account can be deleted',
                                  'code': 'not_deletable'}, status=400)
+            if is_sole_org_admin(target, lock=True):   # T2 review N4: the guard Revoke has
+                return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
             work = staff_footprint.footprint(target)
             if work:
                 return Response({'error': f'{target.name} has work on record and can only be '
@@ -459,6 +463,8 @@ class AdminListView(PartnerAdminMixin, APIView):
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
         seats = staff_lifecycle.team_table_fields(admin, admins)
         _dormant_cache = {}
+        # Sprint T2: every person's footprint in ONE query, not one per row; T2 review N4, the sole org admins.
+        works, sole = staff_footprint.footprints(admins), sole_org_admin_ids(admin, admins)
 
         def _dormant_for(a):
             org_id = a.owning_organisation_id
@@ -469,7 +475,6 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         data = []
         for a in admins:
-            work = staff_footprint.footprint(a)   # once per row: 'deletable' reuses it
             data.append({
                 'id': a.id,
                 'name': a.name,
@@ -506,9 +511,9 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # admin-shaped role AND has never done any recorded work — see
                 # `staff_footprint`, and `AdminDeleteView` for why a footprint rather than the
                 # database's own protections. `work` says what stops it, so the screen can name
-                # the reason instead of hiding a button for no visible cause.
-                'deletable': _deletable_now(admin, a, work=work),
-                'work': work,
+                # the reason instead of hiding a button for no visible cause. T2 review: `delete_never`
+                # (no Delete drawn) and `revocable` (the toggle) by the same rules (`staff_delete_rules`).
+                **delete_fields(admin, a, work=works.get(a.id, {}), sole=sole),
                 # Request #39 Sprint 4: People's permission chips. `custom` = a set saved on the
                 # editor; the two lists are what differs from the preset (both empty on it).
                 **_permission_chips(a),
@@ -534,6 +539,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps
         # its mentor — or after, when it sees the login off and refuses.
         with transaction.atomic():
+            lock_org_admins_of(admin_id)   # T2 review: the org's org admins first, in id order
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             return self._revoke_locked(request, admin, target)
 
@@ -550,14 +556,8 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         # org_admin of a tenant — it would strand the organisation with no administrator.
         # (Only a super reaches this branch: _staff_target_manageable refuses an org_admin
         # caller a same-tier org_admin target.) Restore is unaffected.
-        if (action == 'revoke' and target.role == 'org_admin' and target.is_active
-                and target.owning_organisation_id is not None):
-            has_other = (PartnerAdmin.objects
-                         .filter(role='org_admin', is_active=True,
-                                 owning_organisation_id=target.owning_organisation_id)
-                         .exclude(id=target.id).exists())
-            if not has_other:
-                return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
+        if action == 'revoke' and is_sole_org_admin(target, lock=True):   # Delete refuses it too (N4)
+            return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
             target.is_active = False
             target.save(update_fields=['is_active'])

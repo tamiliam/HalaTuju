@@ -1,11 +1,71 @@
 # Architectural Decisions — HalaTuju
 
+## The activity box shows who and when, oldest at the top, with a one-line note box — 2026-11-09 (sprint P1; owner rulings P1-a to P1-h)
+
+**The rule:** on a scholar's file, the activity log names the person behind each row, with their name and a photo or initials, and never their email. Only a fully automatic row is "System". Times read as relative words, with the exact time on hover and for a screen reader. The list runs oldest to newest inside a fixed-height scroller, with the note box below it. Brief: `docs/plans/2026-11-09-p1-activity-box.md`; roadmap: `docs/plans/2026-11-08-activity-box-roadmap.md` (P1).
+
+**Why:** the owner wants the box to read the way Podio does, so an officer sees at a glance who did what and how long ago, and the page around the box does not grow as the log does.
+
+**Rulings:**
+- **P1-a, notes only.** The box is "Add a note…", with no Note/Call/Meeting choice; the web sends `kind='note'`. The server still accepts every manual kind (no API break). Old call, meeting and email rows keep their word. A plain note shows no kind word; Call, Meeting, Email, and a System row that names a person, do.
+- **P1-b, oldest at the top, newest at the bottom, box below the list.** ⚠ **This reverses roadmap D3** (newest first). Only the latest few show, and "Show older (n)" at the top loads the rest in place, keeping the reader's position. Side panel: the latest 6. Activity tab: 20 per load. The server still pages newest first; the web shows each page reversed.
+- **P1-c, fixed height, scrolls inside — desktop only; on a phone the list flows in the page (Mobile Standard rule 15), owner 2026-11-09.** From `md`: 420 px in the side panel and 560 px on the tab, opening scrolled to the newest, and after a Save it scrolls to the new entry. Below `md` there is no height cap and no scroll box of its own (option (a), no rule-15 exception): "Show older" sits above the latest entries and the box below, nothing is scrolled on opening, and after a Save the page brings the new entry into view. The list stays a labelled region at every width, and is a tab stop only where it scrolls.
+- **P1-d, who is shown.** Any person who had a hand in the row is shown by name and photo, or initials. That covers a manual entry, a system row with an `actor_email`, and the scholar's own rows. Only a fully automatic row shows the System icon. The scholar's rows show the scholar's name (the file's existing convention), or "The scholar" when there is none. A letter acknowledgement, and a semester result with `meta.by='student'`, carry no email and are read as the scholar. An email that matches nobody is shown as written. ⚠ **A pure mentor is never named to a viewer without the Mentoring tab:** no name, no photo, no email (the web reads "A mentor").
+- **P1-e, time.** "Just now", minutes, hours, then "Yesterday" (the previous calendar day in Asia/Kuala_Lumpur), "n days ago", and a date from 30 days. The helper is `relativeTime` in `lib/formatDate.ts`, written as a union that T3's `lastSeen` can share.
+- **P1-f, filter.** All · Notes · System with counts, on the Activity tab only; the side panel stays mixed. "Notes" means every manual kind. It is applied on the server (`?show=`, an unknown value reads as all, `counts` from one grouped query), so paging and the counts stay correct.
+- **P1-g, composer.** One line until focused; then three rows, the Staff only `Toggle` (never a checkbox), Cancel and Save. Save, Cancel, or Esc on an empty box closes it. A closed file stays read-only, with no composer.
+- **P1-h:** the roadmap's "See all (n)" is dropped; "Show older" replaces it.
+- **Cost:** one login query and one batch photo-signing call per request, whatever the page holds (`activity_people.Actors`). The photo links last about an hour and are never kept beyond the page.
+- **Review fixes (same day):** the API sends `actor_email` only for a writer who matches nobody (`kind == 'unknown'`); a known login or the scholar gets it blank. A failed photo signing never fails the read (initials, one PII-free warning). The side panel and "Show older" send `?counts=0`; the GET is pinned at 6 queries. "Show older" follows the server's paging (`page × size < count`, and stops when the server clamps the page), and every reply is checked for staleness so a filter switch, a Save and a "Show older" never lose or repeat a row. A Save under System switches to All. The scroller is a labelled, keyboard-reachable region. The phone height question went to the owner and was settled the same day (P1-c above: desktop only).
+- **Photos to reviewer and QC: accepted (owner 2026-11-09).** A reviewer or QC seeing the writing staff member's photo is fine.
+- ⚠ **Across organisations (left as is; owner asked):** the writer's login is matched by email across organisations, so a super admin or another organisation's admin who wrote a row is shown by name and photo to this organisation's reviewer or QC. Recorded in `docs/scholarship/role-matrix.md`.
+- **Revisit if** officers work outside Malaysia or the box must show the viewer's own time zone: "Yesterday" and the dates are fixed to Asia/Kuala_Lumpur, and the relative words are computed from the browser's clock.
+
+## One person page for every team member: the same header, Profile and Permissions tabs, no role word — 2026-11-09 (Sprint T3, rulings D8, D9, M1-M6)
+
+**The ask (owner, 2026-11-09, items 3, 4 and 5; mockup approved the same day):** the reviewer, admin and mentor pages should be one page. "If they are in the Reviewers table, they are a reviewer": the tables say what somebody is, so a role word under the name only repeats them, or contradicts them.
+
+**The rulings:**
+
+| | Ruling |
+|---|---|
+| D9 | Under the name go the table chips (the Team page's own "Also in" labels), then the Status pill · Joined · Last seen. There is no role word. Pause new cases is offered for a reviewer only (`pausable`, the pause endpoint's own rule). |
+| D8 | A pure mentor's Permissions tab is read-only. It says what a mentor sees (My students and Profile) and offers the Team page's Add-to-table path, and only to a viewer who may add them (`may_add`, served by the mentor detail under the Add endpoint's own rule). |
+| M1 | Last seen is relative ("2 days ago"; the date itself from 30 days back), with the exact date and time in `title`. Somebody who never signed in reads "Invited". A missing time with a recorded sign-in reads "not recorded", never "never". |
+| M2 | An organisation admin's Permissions tab (not editable) shows their keys as locked switches under one line saying they cannot be changed here. There is no Save. |
+| M3 | A Profile field nobody filled in reads "Not given", never hidden, so a reader can tell "empty" from "not shown to you". The home address is never shown, nor served. |
+| M4 | The reviewer's Covers and figures, and a mentor's figures, stay in the header card above the tabs. |
+| M5 | Revoke / Restore / Delete keep T2's behaviour (`StaffPersonActions`; a pure mentor's own actions) and sit in the same place on every page. |
+| M6 | A person in several tables sees every part that applies: a reviewer who mentors gets the reviewer parts and the mentor parts on either route. |
+
+**How:** the three routes stay, so no link breaks. Each renders one `TeamPersonPage`, and each detail GET serves one `person` block (`staff_person.py`), so the header and Profile read one shape whichever door the viewer came in by. Each GET keeps its own fence; across organisations it answers 404.
+
+**The cost, accepted:** the admin and mentor details now serve the profile fields the reviewer detail already served. This is a PII widening, recorded in `docs/scholarship/role-matrix.md`: same fields, same phone rule, never the address. The mentor detail reads one more query (11 to 12) for `may_add`.
+
+**Review round (same day):** (1) the mentor detail serves a staff mentor's background fields (job title, about, qualification, university, graduation year, field of study) only when the viewer could already open that person by the admin or reviewer route under those fences (`staff_person.opens_elsewhere`); otherwise exactly what the Mentors page served before T3. So the mentor door widens nothing. (2) Q1, architect: an `admin` or `finance` viewer gets the Permissions tab on a staff person, holding only the line that an organisation admin opens permissions; no data is fetched. (3) Left alone: an org admin's OWN page through Reviewers still cannot load Permissions, because the permissions GET answers 404 on an org_admin target by design; M2's locked switches there need a fence change.
+
+**Revisit if:** an admin or finance reader should see a staff person's permissions (today they see only the not-allowed line); or the owner wants an org admin to see their own keys on their own page.
+
 ## 2026-11-09 — An invoice with a payment declaration being checked is not "overdue", even part-paid (owner ruling, staff nudges)
 
 Owner ruling (2026-11-09): **keep as built.** In `apps/scholarship/invoice_overdue.py`, an invoice counts as overdue when it is sent, not void, its balance is above zero and today (Asia/Kuala_Lumpur) is past `due_on`. Part-paid counts. But an invoice with an OPEN tenant payment declaration (`has_open_payment_declaration()`) does not count, and that includes a part-paid invoice. So neither the red banner nor the Billing chip shows it while the declaration is being checked. If the declaration is rejected, the invoice counts again.
 
 **Why:** the organisation has already told us it paid. Showing a red "payment overdue" banner while we check its claim reads as an accusation. A rejected claim no longer shields the invoice, so this cannot hide a real debt for good.
 **Revisit if:** declarations start to sit unchecked for long. The answer then is a review deadline on the claim, not a banner.
+
+## Reviewers, QC and mentors may be deleted under the one no-work test; Revoke and Delete on every Team table and person page — 2026-11-08 (Sprint T2, ruling D6)
+
+**The ask (owner, 2026-11-08):** "I want the team member tables and profiles to be similar. Each must have Revoke and Delete. The delete however will be greyed out if there is work on record. When hovered above delete link/text, it may say there is work on record, etc. For org admins, the delete button should be visible only to super admin."
+
+**D6, the rule:** a reviewer, a QC member and a pure mentor may now be DELETED, under the same test as an admin: no work on record (`staff_footprint`). Anyone with work is revoked (a mentor: deactivated), as before. **This reverses 2026-09-09's "a reviewer may never be deleted at all"** (the entry "A staff delete is guarded by a FOOTPRINT, never by foreign keys") and point (4) of 2026-10-31's "Mentors are never deleted" ("Mentors sign in, on the source-partner pattern"). Everything else in those entries stands: the footprint, not foreign keys, decides; a super, a partner and anyone with work are never deleted.
+
+**Why the footprint widened:** a reviewer, QC member or mentor leaves traces an admin did not, so the footprint now counts them (QC decisions, corrections, request comments, mentor assignments, sessions and concerns, the remaining email stamps). Some admins who were deletable before are now revoke-only because of this. That is accepted: a delete that removed the name behind a recorded decision would be the fault the 2026-09-09 rule exists to prevent.
+
+**Mentors:** a pure mentor has their own door (`DELETE admin/mentors/<id>/`). It removes the login, its invitations and the `Mentor` row in one transaction, and refuses with 409 `has_work` on any assignment, session or concern. `MentorAssignment.mentor` and `MentoringSession.mentor` stay `on_delete=PROTECT` as a database backstop; the footprint refuses before PROTECT fires. A STAFF member who mentors is deleted at the staff door (Admins / Reviewers), where their mentoring counts as work, never through the mentor door.
+
+**The screen (one rule, one cell):** the server serves `deletable` and `work` on every row and person page (Admins, Reviewers, Mentors lists; reviewer, admin and mentor pages). The web draws them with one component (`StaffActions`): Revoke / Restore, then Delete. With work on record, Delete is greyed and `aria-disabled` (not `disabled`, which would take no hover or focus), and "Has work on record (counts)..." shows on hover, on tap and on keyboard focus. On an organisation admin's row or page, Delete is drawn only for a super (the server refuses an org_admin caller anyway). Resend and Remove-from-table are unchanged.
+
+**Revisit if:** the owner wants a person with work to be removable after a handover. That needs duties stored as assignments (see 2026-09-09's "Revisit if").
 
 ## 2026-11-08 — A declared informal wage the STR vouches for counts toward the household documents total and the #54 tick (owner ruling, request #54: KEEP)
 
@@ -1946,7 +2006,7 @@ mentor (entry above)*. (3) **The mentor fills in their own profile and staff can
 required), Qualifications and languages, Address, Your access (Role Mentor) and Sign-in; not Taking part
 (a mentor is never handed cases to pause). Photos stay staff-only. Staff may correct the NAME or EMAIL only
 until the first sign-in (409 `managed_by_mentor` after it); a new address is a new sign-in and is sent the
-invitation. (4) **Mentors are never deleted: Deactivate** (the login off, a waiting invitation withdrawn and
+invitation. (4) **Mentors are never deleted: Deactivate** (superseded 2026-11-08, D6: a mentor with no assignment, session or concern may be deleted) (the login off, a waiting invitation withdrawn and
 its password killed, `deactivated_at/_by_email` stamped) and Reactivate. Status is derived: inactive,
 invited (not yet signed in), active. (5) **The system never emails a mentor except the invitation and its
 resend** (Reactivate of a mentor who never signed in is that resend). (6) Mentors and meetings never reach
@@ -5791,6 +5851,9 @@ layout is an owner ruling (2026-09-07) and a destructive action hidden elsewhere
 rarely. Accepted: the recovery is retyping three languages of copy somebody wrote carefully.
 
 ## A staff delete is guarded by a FOOTPRINT, never by foreign keys — 2026-09-09
+**Superseded in part, 2026-11-08 (Sprint T2, D6):** reviewers, QC and mentors may now be deleted under
+the same no-work test. See the 2026-11-08 entry at the top. The rest of this entry stands.
+
 **Decision:** an admin account may be deleted only when it has done **no recorded work**
 (`apps.scholarship.staff_footprint`), and **a reviewer may never be deleted at all**. Everyone
 else is revoked, permanently. The footprint counts two kinds of trace: foreign keys (assignments,

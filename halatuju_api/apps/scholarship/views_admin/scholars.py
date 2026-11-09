@@ -20,7 +20,7 @@ from rest_framework.response import Response
 
 from apps.courses.search import people_search_term
 
-from .. import activity, mentoring, scholars
+from .. import activity, activity_people, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import SemesterResult, StudentActivity
 from .base import _AdminBase
@@ -214,7 +214,10 @@ class AdminScholarResultReviewView(_ScholarsBase):
 class AdminScholarActivityView(_ScholarsBase):
     """GET/POST admin/scholarship/scholars/<pk>/activity/.
 
-    GET — the timeline, newest first, `?page=` `?page_size=` (≤ 100): `{count, page, results}`.
+    GET — the timeline, newest first, `?page=` `?page_size=` (≤ 100) `?show=all|notes|system`
+    (sprint P1: filtered ON THE SERVER, so "Show older" pages the filter): `{count, page, page_size,
+    counts: {all, notes, system}, results}`; `?counts=0` leaves `counts` out (the side panel). Each
+    row carries `actor` (`activity_people`); `actor_email` only for an unknown writer.
     POST `{kind: note|call|meeting|email, body, internal}` — a manual entry by this officer
     (`activity.add_entry`). 400 `{code}` on bad_kind / empty_body / too_long; 409 `file_closed` on
     a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student."""
@@ -224,16 +227,29 @@ class AdminScholarActivityView(_ScholarsBase):
         if err:
             return err
         qs = StudentActivity.objects.filter(application=app).order_by('-created_at', '-id')
-        if not mentoring.may_read_mentoring(admin):     # TD-498 (A1.10a): a read
+        may_mentoring = mentoring.may_read_mentoring(admin)     # TD-498 (A1.10a): a read
+        if not may_mentoring:
             # S7b review fix 2: the mentoring lines name the mentor; a role outside the Mentoring
-            # tab (a reviewer, QC) never receives them — the compact Overview list reads this too.
+            # tab (a reviewer, QC) never receives them — under EVERY filter, the counts included.
             qs = qs.exclude(event__in=mentoring.EVENTS)
-        count = qs.count()
+        show = request.query_params.get('show') or activity_people.SHOW_ALL
+        if show not in (activity_people.SHOW_NOTES, activity_people.SHOW_SYSTEM):
+            show = activity_people.SHOW_ALL
+        # `?counts=0` (the side panel, which has no filter): the plain count of the rows shown instead
+        # of the grouped per-filter count, and no `counts` in the reply.
+        want_counts = request.query_params.get('counts') != '0'
+        counts = activity_people.counts(qs) if want_counts else None
+        qs = activity_people.filtered(qs, show)
+        count = counts[show] if want_counts else qs.count()
         size = _int(request.query_params.get('page_size'), 50, 1, scholars.MAX_PAGE_SIZE)
         page = _int(request.query_params.get('page'), 1, 1, max(1, -(-count // size)))
-        return Response({'count': count, 'page': page, 'page_size': size,
-                         'results': [scholars.activity_dict(r)
-                                     for r in qs[(page - 1) * size:page * size]]})
+        rows = list(qs[(page - 1) * size:page * size])
+        actors = activity_people.Actors(rows, app, may_see_mentors=may_mentoring)
+        body = {'count': count, 'page': page, 'page_size': size,
+                'results': [scholars.activity_dict(r, actors) for r in rows]}
+        if want_counts:
+            body['counts'] = counts
+        return Response(body)
 
     def post(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -250,4 +266,5 @@ class AdminScholarActivityView(_ScholarsBase):
                                      internal=data.get('internal') is True)
         except activity.ActivityError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(scholars.activity_dict(row), status=status.HTTP_201_CREATED)
+        actors = activity_people.Actors([row], app, may_see_mentors=mentoring.may_read_mentoring(admin))
+        return Response(scholars.activity_dict(row, actors), status=status.HTTP_201_CREATED)

@@ -7,7 +7,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
-import type { TeamRemove } from './admins'
+import type { TeamPersonBlock, TeamRemove } from './admins'
 
 /**
  * Step a reviewer back from NEW work, or bring them back — the admin's route (super/org_admin).
@@ -76,6 +76,14 @@ export interface AdminReviewer {
   admin_keys?: string[]
   reviewer_keys?: string[]
   remove?: TeamRemove
+  /** Sprint T2 (D6): may this viewer DELETE them outright (no work on record), and the work that
+   *  stops it, `{what: count}` — the Admins table's two fields, by the same server rule. */
+  deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
+  revocable?: boolean
+  work?: Record<string, number>
 }
 
 /** One gift a reviewer covers, as served (`staff_gift.gifts_payload`). */
@@ -148,8 +156,10 @@ export interface AdminReviewerDetail extends AdminReviewer {
   share_phone_with_students: boolean
   reopens: AdminReviewerReopen[]
   /** #39 S4: would the pause endpoint ACCEPT this person (`set_paused`'s own target rule)? Absent
-   *  on an older payload, which is read as "yes" — what the page assumed before it existed. */
+   *  on an older payload, which is read as "no" since the T3 review: no Pause is offered. */
   pausable?: boolean
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
 }
 
 export async function listReviewers(

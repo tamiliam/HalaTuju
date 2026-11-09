@@ -244,9 +244,10 @@ class TestActivity(_Scholars):
             'kind': 'call', 'body': '  Rang her mother about the slip.  ', 'internal': True},
             format='json')
         self.assertEqual(r.status_code, 201, r.content)
+        # Sprint P1 review: a known writer is served by name (`actor`), never by email.
         self.assertEqual((r.json()['kind'], r.json()['body'], r.json()['internal'],
-                          r.json()['actor_email']),
-                         ('call', 'Rang her mother about the slip.', True, self.officer.email))
+                          r.json()['actor_email'], r.json()['actor']['kind']),
+                         ('call', 'Rang her mother about the slip.', True, '', 'staff'))
 
     def test_the_timeline_is_newest_first_with_system_rows(self):
         maintenance.set_substate(self.bala, 'on_track', by_email='x@example.test')

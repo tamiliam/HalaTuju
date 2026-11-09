@@ -9,6 +9,7 @@ HTTP shapes:
   every organisation's, narrowed by `?org=`), with the status counts;
 - `AdminMentorView` — `PATCH admin/mentors/<id>/` `{name?, email?}`: staff correct a name or an
   address until the first sign-in (409 `managed_by_mentor` after it);
+- `AdminMentorView.delete` — Sprint T2 (D6): `DELETE admin/mentors/<id>/` a pure mentor with no work;
 - `AdminMentorActionView` — `POST admin/mentors/<id>/<resend|revoke|deactivate|reactivate|stop|resume>/`;
 - `AdminStaffMentorsView` — S7d (2026-11-01): `GET admin/mentors/staff/` the staff the "Add a staff member
   as mentor" sheet may offer; `POST admin/mentors/staff/` `{admin_id}` adds one (`staff_mentor.py`).
@@ -139,12 +140,15 @@ def mentor_rows(caller, mentors, *, team=False):
     ``team`` (Team tables T3, the Team -> Mentors table): also `tables` / `lead` (the "Also in" chips,
     `staff_tables.tables`) and the work columns `meetings_90`, `last_meeting`, `concerns_open`
     (`mentor_detail.team_columns`, ONE more query)."""
-    from .. import mentor_gift, mentor_invite
+    from .. import mentor_gift, mentor_invite, staff_footprint
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
     from ..staff_contact import staff_screen_phone
     # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
-    logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors).select_related('mentor')}
+    logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)
+              .select_related('mentor')}
+    # Sprint T2, review S1: every login's footprint in ONE query for the page (`footprints`).
+    footprints = staff_footprint.footprints(list(logins.values()))
     now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
     gifts = mentor_gift.gifts_by_mentor([m.pk for m in mentors])   # I4: ONE query
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
@@ -186,6 +190,7 @@ def mentor_rows(caller, mentors, *, team=False):
             'scholars_now': now.get(m.pk, 0),   # S7b
             'gifts': gifts.get(m.pk, []),        # I4: none = every gift
             'every_gift': m.pk not in gifts,
+            **_delete_fields(caller, m, login, staff, footprints),
         })
     if team:
         from apps.courses import staff_permissions as sp
@@ -198,6 +203,18 @@ def mentor_rows(caller, mentors, *, team=False):
             row['lead'] = bool(login and sp.is_lead_tier(login))
             row.update(work.get(m.pk, empty_columns()))
     return rows
+
+
+def _delete_fields(caller, mentor, login, staff, footprints):
+    """Sprint T2 (D6): `work` (the login's footprint, `{}` for none), `deletable` — a PURE mentor
+    this caller manages with no work — and `delete_never` (review N2): no Delete is ever drawn for
+    a row nobody may delete here. A staff mentor is never deleted here (their row is deleted from
+    Team -> Admins / Reviewers, where mentoring counts as work); nor is a row with no login, or one
+    this caller does not manage."""
+    from .. import mentor_invite
+    work = footprints.get(login.pk, {}) if login is not None else {}
+    never = login is None or staff or not mentor_invite.manageable(caller, mentor)
+    return {'work': work, 'deletable': not never and not work, 'delete_never': never}
 
 
 def mentor_kind_extras(caller, mentor_ids):
@@ -320,15 +337,57 @@ class AdminMentorView(_MentorsBase):
         if mentor is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
         row = mentor_rows(admin, [mentor], team=True)[0]
-        gifts = {'programmes': mentor_gift.choices(mentor.organisation_id)}   # I4
+        # Sprint T3: the ONE person page's header and Profile tab (`staff_person`, the admin and reviewer
+        # details' own block), and — for a mentor's own login (D8) — the tables this viewer could add
+        # them to (`staff_tables_admin.addable_tables`, the Add sheet's own rule). ONE query: the login
+        # with its profile and mentor.
+        from .. import staff_person, staff_tables_admin
+        login = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
+                 .filter(mentor=mentor).order_by('id').first())
+        # T3 review fix 1: the profile's background fields only for a viewer who could open this person by
+        # the admin or reviewer route under those routes' fences (`staff_person.opens_elsewhere`).
+        extra = {'person': staff_person.person(login, full=staff_person.opens_elsewhere(admin, login)),
+                 'may_add': staff_tables_admin.addable_tables(admin, login) if login.is_mentor else [],
+                 'programmes': mentor_gift.choices(mentor.organisation_id)}   # I4
         if not self.sees_scholars(admin):
             # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).
             row['concerns_open'] = None
             return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at),
-                             'sees_scholars': False, 'figures': None, 'current': [], 'past': [], **gifts})
+                             'sees_scholars': False, 'figures': None, 'current': [], 'past': [], **extra})
         figures, current, past = mentor_detail.scholars_of(mentor)
         return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at), 'sees_scholars': True,
-                         'figures': figures, 'current': current, 'past': past, **gifts})
+                         'figures': figures, 'current': current, 'past': past, **extra})
+
+    def delete(self, request, pk):
+        """DELETE admin/mentors/<id>/ — Sprint T2 (D6): a pure mentor with NO work (`mentor_invite.
+        delete_mentor`). super / org_admin of the mentor's own organisation (else 403 / 404). 200
+        `{message, login}`; 400 `staff_mentor`; 409 `has_work` with `work`; 502 `login_cleanup_failed`;
+        503 `delete_failed` (nothing removed)."""
+        from django.db import DatabaseError
+        from .. import mentor_invite
+        admin, mentor, login, err = self._target(request, pk)
+        if err:
+            return err
+        try:
+            refusal, detail = mentor_invite.delete_mentor(admin, mentor, login)
+        except DatabaseError:
+            logger.exception('mentor delete of %s failed in the database; nothing was removed', pk)
+            return _error('delete_failed', status.HTTP_503_SERVICE_UNAVAILABLE,
+                          'Could not delete them just now. Nothing was removed; try again.')
+        if refusal == 'staff_mentor':
+            return _error(refusal, status.HTTP_400_BAD_REQUEST)
+        if refusal == 'not_found':
+            return _error(refusal, status.HTTP_404_NOT_FOUND)
+        if refusal == 'has_work':
+            return Response({'error': 'This mentor has work on record and can only be deactivated.',
+                             'code': 'has_work', 'work': detail}, status=status.HTTP_409_CONFLICT)
+        if refusal:
+            return _error(refusal, status.HTTP_502_BAD_GATEWAY,
+                          'Could not check their sign-in. Nothing was deleted; try again.')
+        if detail == 'failed':
+            return Response({'message': 'Mentor deleted, but their sign-in could not be removed — tell '
+                             'support.', 'login': detail})
+        return Response({'message': 'Mentor deleted.', 'login': detail})
 
     def patch(self, request, pk):
         from .. import mentor_invite
