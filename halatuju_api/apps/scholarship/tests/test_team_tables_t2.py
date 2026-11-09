@@ -11,7 +11,8 @@ Every door the brief lists, driven through the real endpoints:
 - THE ORG ADMIN joins Reviewers by a stored ['review'] (Q1); only themselves or a super (Q4); every other
   key in that list is ignored; the generic editor still refuses the lead; self-QC still holds.
 - Revoked people are never offered or added; a pure mentor login added becomes staff (7d link rules).
-- Invitations: Admin and Reviewer only; a new Admin stores exactly ['see_all']; an OLD pending finance / qc
+- Invitations: Admin and Reviewer only; a new Admin stores exactly ['see_all', 'scholars'] (sprint S1);
+  an OLD pending finance / qc
   invitation still accepts onto today's preset, and may still be cancelled.
 - Maker / checker / approver unchanged: a finance-only person is an Admin with `payments_approve`.
 """
@@ -117,7 +118,7 @@ class AddToReviewers(_Base):
         self.assertEqual(r.status_code, 200, r.content[:300])
         adm = self.fresh(adm)
         self.assertEqual(adm.role, 'admin')
-        self.assertEqual(adm.permissions, ['review', 'see_all', 'spending', 'payments_prepare'])
+        self.assertEqual(adm.permissions, ['review', 'see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual(st.tables(adm), ('admins', 'reviewers'))
 
     def test_a_finance_person_gets_review_and_keeps_approving(self):
@@ -279,7 +280,8 @@ class OrgAdminJoinsReviewers(_Base):
         lead = self.fresh(self.lead)
         self.assertEqual(lead.permissions, ['review'])
         self.assertEqual(lead.role, 'org_admin')
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                                              'manage_team'))
         self.assertEqual(st.tables(lead), ('admins', 'reviewers'))
 
     def test_every_other_key_on_an_org_admin_row_is_ignored(self):
@@ -290,7 +292,8 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertFalse(st.in_reviewers(lead))
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['review', 'payments_approve'])
         lead = self.fresh(self.lead)
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                                              'manage_team'))
         self.assertFalse(lead.has_perm('payments_approve'))
 
     def test_the_generic_editor_still_refuses_the_lead(self):
@@ -378,19 +381,19 @@ class Invitations(TestCase):
                 'email': f'{role}@new.test', 'name': 'N', 'role': role}, format='json')
             self.assertEqual((r.status_code, r.json()['code']), (403, 'role_not_allowed'), role)
 
-    def test_a_new_admin_row_stores_exactly_see_all(self):
+    def test_a_new_admin_row_stores_exactly_see_all_and_scholars(self):
         from apps.courses import staff_reinvite
         row, _, err = staff_reinvite.provision(None, email='new.admin@x.test', name='N', role='admin',
                                                org=None, owning_org=self.org)
         self.assertIsNone(err)
-        self.assertEqual(row.permissions, ['see_all'])
+        self.assertEqual(row.permissions, ['see_all', 'scholars'])
         self.assertEqual(st.tables(row), ('admins',))
         rev, _, _ = staff_reinvite.provision(None, email='new.rev@x.test', name='N', role='reviewer',
                                              org=None, owning_org=self.org)
         self.assertIsNone(rev.permissions)
 
     def test_only_an_admin_starts_below_its_preset(self):
-        self.assertEqual(st.invite_permissions('admin'), ['see_all'])
+        self.assertEqual(st.invite_permissions('admin'), ['see_all', 'scholars'])
         self.assertIsNone(st.invite_permissions('reviewer'))
         self.assertIsNone(st.invite_permissions('finance'))
 
@@ -484,7 +487,7 @@ class ChangeRoleUnderT2(TestCase):
 
     def test_a_switch_out_equal_to_the_new_preset_is_stored_null(self):
         fin = make_admin('finance', owning_org=self.org,
-                         permissions=['see_all', 'spending', 'payments_prepare'])
+                         permissions=['see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual(self.switch(fin, 'admin').status_code, 200)
         fin.refresh_from_db()
         self.assertEqual((fin.role, fin.permissions), ('admin', None))

@@ -312,7 +312,8 @@ class TestFinanceRoleInvites(_Base):
         r = self._invite('oa-uid', {'email': 'sam@x.com', 'name': 'Sam', 'role': 'admin'})
         self.assertEqual(r.status_code, 201)
         a = PartnerAdmin.objects.get(email='sam@x.com')
-        self.assertEqual((a.role, a.permissions), ('admin', ['see_all']))
+        # Sprint S1: an Admin starts at Applications and Scholars.
+        self.assertEqual((a.role, a.permissions), ('admin', ['see_all', 'scholars']))
         self.assertEqual(a.owning_organisation_id, self.bp.id)   # caller's org, forced
 
     def test_super_invites_finance(self):

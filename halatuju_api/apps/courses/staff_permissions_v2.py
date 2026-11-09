@@ -51,7 +51,9 @@ CATALOGUE_V2 = {
     'requests.approve':      (ORGANISATION, 'requests', APPROVE, LEAD_ONLY),
     'settings.edit':         (ORGANISATION, 'settings', EDIT, LEAD_ONLY),
     # ── Programme ────────────────────────────────────────────────────────────────────────────────
-    'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications + Scholars
+    'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications (S1: not Scholars)
+    # Sprint S1 (owner 2026-11-09): the Scholars page and every scholar's file — `scholars` (`ALIASES`).
+    'scholars.view':         (PROGRAMME, 'scholars', VIEW, False),
     'students.edit':         (PROGRAMME, 'students', EDIT, LEAD_ONLY),  # assign (never self), nudge
     'students.approve':      (PROGRAMME, 'students', APPROVE, LEAD_ONLY),
     'contracts.view':        (PROGRAMME, 'contracts', VIEW, LEAD_ONLY),
@@ -110,6 +112,7 @@ DEPENDS_ON_V2 = {k: ('students.view',) for k, row in CATALOGUE_V2.items() if row
 ALIASES = {
     'review':           ('review',),
     'see_all':          ('students.view',),
+    'scholars':         ('scholars.view',),     # S1
     'qc':               ('qc',),
     'spending':         ('spending.view', 'spending.edit'),
     'payments_prepare': ('payments.view', 'payments.prepare'),

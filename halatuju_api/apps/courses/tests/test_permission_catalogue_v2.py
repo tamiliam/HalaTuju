@@ -56,28 +56,34 @@ SHAPES = {
 _ENGAGEMENT_ALL = ('announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
                    'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit')
 _ADMIN_NO_MONEY = ('invitations.view', 'team.view', 'sources.view', 'sources.edit', 'sponsors.view',
-                   'sponsors.edit', 'students.view', *_ENGAGEMENT_ALL, 'spending.view', 'spending.edit')
+                   'sponsors.edit', 'students.view', 'scholars.view', *_ENGAGEMENT_ALL, 'spending.view',
+                   'spending.edit')
 _ORG_READ = ('invitations.view', 'team.view', 'sponsors.view')
 _EVERY_PAGE_KEY = (
     'invitations.view', 'invitations.edit', 'team.view', 'sources.view', 'sources.edit',
     'sponsors.view', 'sponsors.edit', 'sponsors.check', 'sponsors.approve', 'billing.view',
     'billing.edit', 'requests.view', 'requests.edit', 'requests.approve', 'settings.edit',
-    'students.view', 'students.edit', 'students.approve', 'contracts.view', 'contracts.edit',
+    'students.view', 'scholars.view', 'students.edit', 'students.approve', 'contracts.view',
+    'contracts.edit',
     'programmes.edit', *_ENGAGEMENT_ALL, 'payments.view', 'payments.prepare', 'payments.check',
     'payments.approve', 'spending.view', 'spending.edit')
 
 #: shape -> (today's `resolve()` tuple, the hand-written v2 set). Set order does not matter.
 GOLDEN_V2 = {
-    'admin': (('see_all', 'spending', 'payments_prepare'),
+    # Sprint S1: the admin preset and the lead tier hold `scholars` (v2 `scholars.view`).
+    'admin': (('see_all', 'scholars', 'spending', 'payments_prepare'),
               {*_ADMIN_NO_MONEY, 'payments.view', 'payments.prepare'}),
-    'admin_see_all_spending': (('see_all', 'spending'), set(_ADMIN_NO_MONEY)),
+    # A custom row saved without `scholars` (S1): Applications only, no Scholars door.
+    'admin_see_all_spending': (('see_all', 'spending'), set(_ADMIN_NO_MONEY) - {'scholars.view'}),
     # resolve() ignores is_active (today's tuple stays); sign-in refuses the row, so v2 is empty.
-    'admin_inactive': (('see_all', 'spending', 'payments_prepare'), set()),
+    'admin_inactive': (('see_all', 'scholars', 'spending', 'payments_prepare'), set()),
     'finance': (('payments_approve',),
                 {*_ORG_READ, 'sponsors.check', 'payments.view', 'payments.approve'}),
     # A1.13b (owner 2026-11-08): the lead tier also holds `award_withdraw_approve` (a v1 seat key, no v2 page)
-    'org_admin': (('see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'), {*_EVERY_PAGE_KEY, 'qc'}),
-    'org_admin_reviews': (('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
+    'org_admin': (('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
+                  {*_EVERY_PAGE_KEY, 'qc'}),
+    'org_admin_reviews': (('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                           'manage_team'),
                           {*_EVERY_PAGE_KEY, 'qc', 'review'}),
     'reviewer': (('review',), {'review'}),
     'reviewer_see_all_spending': (('review', 'see_all', 'spending'),
