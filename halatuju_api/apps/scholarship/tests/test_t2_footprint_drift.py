@@ -23,6 +23,8 @@ from apps.scholarship.models import Mentor
 NOT_WORK = {
     'courses.PartnerAdmin.mentor': "the login's own link to its mentor record (MENTOR_TRACES read it)",
     'courses.ReviewerGift.partner_admin': 'a programme seat the person holds: configuration, not an act',
+    'scholarship.MentorGift.mentor': 'a gift the mentor mentors in (I4): configuration, not an act; '
+                                     'CASCADE, so delete_mentor leaves no orphan',
     'scholarship.ReviewerProfile.partner_admin': "the person's own profile",
     'scholarship.Invitation.partner_admin': "the person's own invitation (invited_by counts the sender)",
     'scholarship.Invitation.mentor': "the mentor's own invitations, deleted first by delete_mentor",
