@@ -70,6 +70,9 @@ def scholars_scope(admin):
         return 'none'
     if admin.has_perm('scholars'):
         return 'all'
+    from ..mentor_desk import mentor_of      # in the function: mentor_desk imports the scholar rules
+    if mentor_of(admin) is not None:
+        return 'mentor'
     return 'none'
 
 

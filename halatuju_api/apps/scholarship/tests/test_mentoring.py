@@ -285,7 +285,10 @@ class TestRefusals(_Base):
                    make_admin('partner', owning_org=self.org)]
         for who in refused:
             with self.subTest(role=who.role):
-                self.assertEqual(authed_client(who).get(tab(self.app.id)).status_code, 403)
+                # Sprint S1 (S1-h): a mentor login reads the tab of its own current students only; this
+                # one has none, so the answer is the one 404 for "not your student".
+                self.assertEqual(authed_client(who).get(tab(self.app.id)).status_code,
+                                 404 if who.role == 'mentor' else 403)
                 self.assertEqual(self.assign(self.kavitha, caller=who).status_code, 403)
                 self.assertEqual(self.meet(caller=who).status_code, 403)
         self.assertEqual(MentorAssignment.objects.count(), 0)

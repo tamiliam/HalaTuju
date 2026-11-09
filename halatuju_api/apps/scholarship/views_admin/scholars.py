@@ -19,11 +19,12 @@ shared with Applications). Nothing here is ever served to a student.
 """
 from django.db.models import Q
 from rest_framework import status
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from apps.courses.search import people_search_term
 
-from .. import activity, activity_people, mentoring, scholars
+from .. import activity, activity_people, mentor_desk, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import SemesterResult, StudentActivity
 from .base import _AdminBase, scholars_scope
@@ -38,10 +39,11 @@ def _int(value, default, lo, hi):
 
 
 class _ScholarsBase(_AdminBase):
-    """The fence for every Scholars endpoint."""
+    """The fence for every Scholars endpoint. ⚠ A MENTOR LOGIN reaches a view only on the methods it
+    lists in `mentor_methods` (`get_admin`): the READ views list `('get',)` (S1-h), the writes nothing."""
 
     def _scholars_admin(self, request):
-        """`(admin, scope, error)` — scope 'all' (never 'none': 403)."""
+        """`(admin, scope, error)` — scope 'all' or 'mentor' (never 'none': 403)."""
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
@@ -51,7 +53,17 @@ class _ScholarsBase(_AdminBase):
         return admin, scope, None
 
     def _fenced(self, qs, admin, scope):
-        return self._org_scoped(qs, admin)
+        qs = self._org_scoped(qs, admin)
+        if scope == 'mentor':     # S1-h: ONLY their current students (`mentor_desk.current_assignments`)
+            qs = qs.filter(pk__in=[a.application_id for a in mentor_desk.current_assignments(admin)])
+        return qs
+
+    @staticmethod
+    def _as_mentor(admin):
+        """True when this viewer reads the file AS A MENTOR (S1-h): no `scholars` key, mentoring now.
+        Read-only, and the tabs' own read keys (TD-498) are not asked of them: the owner gave a mentor
+        every tab of their own current student's file."""
+        return scholars_scope(admin) == 'mentor'
 
     def _file_for(self, request, pk):
         """`(app, admin, error)`: the application IFF it has a file AND this admin may read it.
@@ -59,6 +71,13 @@ class _ScholarsBase(_AdminBase):
         admin, scope, err = self._scholars_admin(request)
         if err:
             return None, None, err
+        if scope == 'mentor':
+            # S1-h: another mentor's student, an ended assignment, another organisation's file, their
+            # own application and an unknown id are ONE 404; then every write on their student is 403.
+            if mentor_desk.assignment_for(admin, pk) is None:
+                return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+            if request.method not in SAFE_METHODS:
+                return None, None, self._deny_role()
         app = self._get_application(pk)
         if app is None or not has_file(app) or not self._org_allows(admin, app):
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -76,7 +95,9 @@ class AdminScholarListView(_ScholarsBase):
     `?search=` `?sort=` `?page=` `?page_size=` `?mentoring=no_mentor|asked_for_help` (S7b)
     `|mentor_concerned` (S7c).
     Returns `{summary, count, page, page_size, results}`.
-    `summary` counts the scoped in-maintenance population (closed or not, it is what the tiles say)."""
+    `summary` counts the scoped in-maintenance population (closed or not, it is what the tiles say).
+    A mentor (S1-h) lists only their current students."""
+    mentor_methods = ('get',)
 
     def get(self, request):
         admin, scope, err = self._scholars_admin(request)
@@ -103,7 +124,7 @@ class AdminScholarListView(_ScholarsBase):
         wanted = q.get('standing')
         # S7b: the mentor column, the two Mentoring pills and their counts are for the roles that
         # see the Mentoring tab (`mentoring.may_read_mentoring`, TD-498: a read); for the rest the keys are absent.
-        sees_mentors = mentoring.may_read_mentoring(admin)
+        sees_mentors = scope == 'mentor' or mentoring.may_read_mentoring(admin)
         qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1',
                                   search=people_search_term(request, 'search'),  # TD-421
@@ -126,7 +147,9 @@ class AdminScholarListView(_ScholarsBase):
 
 
 class AdminScholarFileView(_ScholarsBase):
-    """GET admin/scholarship/scholars/<pk>/ — the file header + Overview cards."""
+    """GET admin/scholarship/scholars/<pk>/ — the file header + Overview cards. A mentor (S1-h) reads it
+    with every control off: the file is read-only to them."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -134,16 +157,20 @@ class AdminScholarFileView(_ScholarsBase):
             return err
         from .. import payments
         body = scholars.file_payload(app)
-        if not mentoring.may_read_mentoring(admin):  # S7b: the mentor card is the Mentoring tab's readers' only
+        as_mentor = self._as_mentor(admin)
+        if not (as_mentor or mentoring.may_read_mentoring(admin)):  # S7b: the Mentoring tab's readers' only
             body = {k: v for k, v in body.items() if k not in ('mentor', 'asked_for_help')}
+        writes = not as_mentor
         return Response({**body, 'controls': scholars.controls(
-            app, can_write=self._can_review_app(admin, app), can_hold=payments.may_prepare(admin),
-            can_review_results=self._may_write_file(admin, app))})
+            app, can_write=writes and self._can_review_app(admin, app),
+            can_hold=writes and payments.may_prepare(admin),
+            can_review_results=writes and self._may_write_file(admin, app))})
 
 
 class AdminScholarResultsView(_ScholarsBase):
     """GET admin/scholarship/scholars/<pk>/results/ — every result, newest first, each with its
     review and its slip (signed URL). S4a."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, _admin, err = self._file_for(request, pk)
@@ -159,6 +186,7 @@ class AdminScholarMoneyView(_ScholarsBase):
     remaining and her last releases by the Payments rules (`scholar_money`), all as strings, plus
     her spending this term by category ONLY for a viewer holding the `spending` permission (the
     key is absent otherwise). Read-only, so a closed file reads the same."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -173,6 +201,7 @@ class AdminScholarContractView(_ScholarsBase):
     signed (countersigned) agreement — dates, parties without IC numbers — or `{exists: false}`.
     `?link=1` also mints a 300-second signed PDF link; the tab asks only when someone opens the PDF.
     Not gated on the signing feature flag. Read-only."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, _admin, err = self._file_for(request, pk)
@@ -227,14 +256,22 @@ class AdminScholarActivityView(_ScholarsBase):
     row carries `actor` (`activity_people`); `actor_email` only for an unknown writer.
     POST `{kind: note|call|meeting|email, body, internal}` — a manual entry by this officer
     (`activity.add_entry`). 400 `{code}` on bad_kind / empty_body / too_long; 409 `file_closed` on
-    a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student."""
+    a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student.
+
+    A mentor (S1-h) reads the log WITHOUT the "Staff only" rows (`internal`) — they are not staff — and
+    the counts leave them out too; the P1 actor rule (`activity_people`) serves them no known email.
+    A mentor never writes here (a mentor login is refused by `get_admin`, staff who mentor by `_file_for`)."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
         qs = StudentActivity.objects.filter(application=app).order_by('-created_at', '-id')
-        may_mentoring = mentoring.may_read_mentoring(admin)     # TD-498 (A1.10a): a read
+        as_mentor = self._as_mentor(admin)
+        if as_mentor:
+            qs = qs.exclude(internal=True)
+        may_mentoring = as_mentor or mentoring.may_read_mentoring(admin)     # TD-498 (A1.10a): a read
         if not may_mentoring:
             # S7b review fix 2: the mentoring lines name the mentor; a role outside the Mentoring
             # tab (a reviewer, QC) never receives them — under EVERY filter, the counts included.

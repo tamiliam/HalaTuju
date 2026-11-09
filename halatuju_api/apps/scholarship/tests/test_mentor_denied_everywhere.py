@@ -43,6 +43,10 @@ ALLOWED = {
     ('api/v1/admin/scholarship/my-programmes/', 'get'),
     # T5c P5b S1: the Overview's pending cards — the mentor's OWN mentee counts (`my_pending._mentor_cards`).
     ('api/v1/admin/scholarship/my-pending/', 'get'),
+    # Sprint S1 (S1-h): the Scholars list — the mentor's OWN current students (none here, so empty). Each
+    # per-scholar READ is opted in too, and answers 404 here: the sweep's id is no student of theirs.
+    # Every Scholars write stays refused (`test_mentor_scholars.py` proves both on a real student).
+    ('api/v1/admin/scholarship/scholars/', 'get'),
 }
 
 #: (route, method) pairs a mentor's call REACHES, which serve no data. With the sweep's empty body:

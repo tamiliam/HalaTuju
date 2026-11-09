@@ -61,7 +61,9 @@ class _LettersBase(_ScholarsBase):
 class AdminScholarLettersView(_LettersBase):
     """GET/POST admin/scholarship/scholars/<pk>/letters/ — the tab; POST issues one letter
     `{kind, language, clause, note, confirm_name, issue_key}` — 201 with the letter, or 200 with the
-    SAME letter when `issue_key` was already used on this file (a repeated press; review 3)."""
+    SAME letter when `issue_key` was already used on this file (a repeated press; review 3).
+    A mentor (S1-h) reads the tab with nothing to issue or withdraw; their POST is refused."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -146,7 +148,9 @@ class AdminScholarLetterActionView(_LettersBase):
 
 
 class AdminScholarLetterPdfView(_LettersBase):
-    """GET admin/scholarship/scholars/<pk>/letters/<lid>/pdf/ — a 300-second link, minted on a click."""
+    """GET admin/scholarship/scholars/<pk>/letters/<lid>/pdf/ — a 300-second link, minted on a click.
+    A mentor (S1-h) gets it for their own current student only (`_file_for`)."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk, lid):
         app, _admin, err = self._file_for(request, pk)

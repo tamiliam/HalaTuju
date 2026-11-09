@@ -13,7 +13,7 @@ Doors, each driven through the real endpoints:
 - CONCERN: raised only by the mentor's log; handled only by staff of the organisation; twice is
   idempotent; a later concern re-raises; the Scholars chip, filter and count agree; reviewer / QC see no
   concern line, chip or count; the student's own tab is unchanged (date + how).
-- `mentor_methods`: the three new views are the only 7c additions.
+- `mentor_methods`: the three new views are the only 7c additions (sprint S1 adds the Scholars reads).
 """
 import datetime
 import json
@@ -453,6 +453,11 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
         'AdminMyProgrammesView': ('get',),
         # Team tables T5c P5b S1 — the Overview's pending cards: the mentor's own mentee counts.
         'AdminMyPendingView': ('get',),
+        # Sprint S1 (S1-h) — the Scholars READS, for the mentor's own current students only (the writes none).
+        **dict.fromkeys(('AdminScholarListView', 'AdminScholarFileView', 'AdminScholarResultsView',
+                         'AdminScholarMoneyView', 'AdminScholarContractView', 'AdminScholarActivityView',
+                         'AdminScholarLettersView', 'AdminScholarLetterPdfView', 'AdminScholarSurveysView',
+                         'AdminScholarGrowthView', 'AdminScholarMentoringView'), ('get',)),
     }
 
     def test_the_closed_list(self):
