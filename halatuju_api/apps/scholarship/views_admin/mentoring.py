@@ -8,11 +8,12 @@
 - `AdminScholarMentoringSessionsView` — `POST .../mentoring/sessions/` `{met_on, mode, minutes, notes,
   next_step}`.
 
-⚠ WHO: the scholar file's own fence (`_ScholarsBase._file_for`: another organisation's file, an unknown
-one or one with no file is 404, never 403; finance, partner and source users are refused) AND the
-Mentors roster's readers (`mentoring.may_act`: super, org_admin, admin). A reviewer or QC who may open
-the file is refused this tab (403) — mentors are the Mentors page's people. A closed file reads, and
-refuses every write (409 `file_closed`). One class per url shape (lessons, Billing 2026-10-29).
+⚠ WHO: the scholar file's own fence (`_ScholarsBase._file_for`: the `scholars` key since sprint S1;
+another organisation's file, an unknown one or one with no file is 404, never 403; everyone without the
+key is refused) AND the tab's own readers (`mentoring.may_read_mentoring`, writes `mentoring.may_act`:
+the Mentors roster's people). A `scholars` holder without the tab's key is refused this tab (403). A
+closed file reads, and refuses every write (409 `file_closed`). One class per url shape (lessons,
+Billing 2026-10-29).
 """
 from rest_framework import status
 from rest_framework.permissions import SAFE_METHODS

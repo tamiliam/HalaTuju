@@ -532,10 +532,14 @@ class TestResultsEndpoints(TestCase):
         self.assertEqual([(r['semester'], r['review_status'], r['slip']['filename']) for r in rows],
                          [('Sem 1', 'pending', 'slip.pdf')])
 
-    def test_the_assignee_and_the_org_admin_review_a_reader_cannot(self):
-        self.assertEqual(self._review(self.officer).status_code, 403)       # see_all, not assigned
+    def test_a_scholars_holder_reviews_whoever_is_assigned_and_a_reviewer_cannot(self):
+        # Sprint S1-d (owner 2026-11-09): the result-review writer is a `scholars` holder of the file's
+        # organisation, assignee or not; the assigned reviewer no longer opens the scholar file at all.
+        self.assertEqual(self._review(self.reviewer).status_code, 403)      # assigned, no `scholars`
         self.assertEqual(self._review(self.finance).status_code, 403)
-        r = self._review(self.reviewer)
+        stranger = make_admin('admin', owning_org=make_cohort().owning_organisation)
+        self.assertEqual(self._review(stranger).status_code, 404)           # the org fence stays
+        r = self._review(self.officer)                                      # `scholars`, not assigned
         self.assertEqual((r.status_code, r.json()['review_status']), (200, 'accepted'))
         r = self._review(self.org_admin, decision='queried', note='Unclear slip.')
         self.assertEqual((r.status_code, r.json()['review_note']), (200, 'Unclear slip.'))

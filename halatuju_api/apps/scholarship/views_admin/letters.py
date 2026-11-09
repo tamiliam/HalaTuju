@@ -4,10 +4,12 @@ Part of the `views_admin` package; re-exported from `views_admin/__init__.py`. T
 `apps/scholarship/letters.py`; THIS module is the fence.
 
 WHO (owner rulings, 2026-10-30):
-  * READ — the scholar file's own fence (`_ScholarsBase._file_for`: the Applications rule; finance,
-    partner and source users refused; another organisation 404).
+  * READ — the scholar file's own fence (`_ScholarsBase._file_for`: the `scholars` key since sprint S1,
+    or a mentor on their own current student; everyone else refused; another organisation 404).
   * ISSUE — suspension and termination: super or org_admin; general, discipline, close-out: anyone
-    who may WRITE on the case (`_can_review_app`). RESEND — the same rights as issuing that kind.
+    who may WRITE on the scholar file (`_may_write_file`, S1-d: a `scholars` holder of the file's
+    organisation; until S1 `_can_review_app`). RESEND — the same rights as issuing that kind. A mentor
+    issues nothing.
   * WITHDRAW — super or org_admin, with a reason.
 One class per url shape (lessons, Billing 2026-10-29: one view on two urls is how a wrong verb
 becomes a 500). Nothing here writes a status, a sub-state or money: letters are documents only.
@@ -48,7 +50,7 @@ class _LettersBase(_ScholarsBase):
         """The kinds THIS admin may issue on THIS file — the one rule the dialog and the POST share."""
         if self._senior(admin):
             return svc.KINDS
-        if self._can_review_app(admin, app):
+        if self._may_write_file(admin, app):
             return tuple(k for k in svc.KINDS if k not in svc.SENIOR_KINDS)
         return ()
 

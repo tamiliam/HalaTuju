@@ -410,10 +410,11 @@ class TestTheConcern(_Base):
     def test_reviewer_and_qc_see_no_concern_line_chip_or_count(self):
         self.log(concern=True)
         self.handle()
-        reviewer = make_admin('reviewer', owning_org=self.org)
+        # Sprint S1: only `scholars` opens the file; these two hold it beside their hat.
+        reviewer = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'scholars'])
         self.app.assigned_to = reviewer
         self.app.save(update_fields=['assigned_to'])
-        for who in (reviewer, make_admin('qc', owning_org=self.org)):
+        for who in (reviewer, make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'scholars'])):
             with self.subTest(role=who.role):
                 log = authed_client(who).get(f'{SCHOLARS}{self.app.id}/activity/').json()
                 events = {r['event'] for r in log['results']}
