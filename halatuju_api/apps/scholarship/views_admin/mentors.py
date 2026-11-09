@@ -29,7 +29,7 @@ from rest_framework.response import Response
 
 from apps.courses.models import PartnerAdmin
 
-from .base import _AdminBase
+from .base import _AdminBase, scholars_scope
 from .source_users import _error, _iso
 from .sources import _SourcesBase, text_of
 
@@ -210,10 +210,11 @@ class _MentorsBase(_AdminBase):
 
     def sees_scholars(self, admin):
         """T3 review (2026-11-03): may ``admin`` see the SCHOLAR side of a mentor (who they mentor, the
-        standing, the meetings per scholar, the concerns)? The Scholars list's own read rule: `_b40_scope`
-        'all' (`see_all`; a super, the org admin, an admin preset). An admin holding only money keys reads
-        the Mentors table (its gate is the role) but never a scholar's data through it."""
-        return self._b40_scope(admin) == 'all'
+        standing, the meetings per scholar, the concerns)? The Scholars list's own read rule: since sprint
+        S1 the `scholars` key (`scholars_scope` 'all'; a super, the org admin, an admin preset or a saved
+        set naming it), no longer `see_all`. An admin holding only money keys, or only `see_all`, reads the
+        Mentors table (its gate is the role) but never a scholar's data through it."""
+        return scholars_scope(admin) == 'all'
 
     def _reader(self, request):
         from .. import mentor_invite
