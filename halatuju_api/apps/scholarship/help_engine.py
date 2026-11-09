@@ -21,8 +21,6 @@ patches that one function, so CI runs with zero billable calls.
 import logging
 
 from . import branding as _branding
-from .income_declaration import approval_coach   # #374: an informal income document needs its approver
-from .read_errors import ic_second_opinion_deferred
 from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401  (re-exported for callers/tests)
 
 logger = logging.getLogger(__name__)
@@ -346,163 +344,13 @@ def verdict_for_document(doc):
     when there is nothing to help with. Reads ONLY the student's own document + profile
     (never admin data) and re-uses the same deterministic matchers the chip/serializer
     use — this module phrases the verdict, it does not invent one. Mirrors the frontend
-    chip precedence."""
-    # The student's OWN IC → identity match against the profile (name + NRIC).
-    if doc.doc_type == 'ic':
-        if doc.vision_run_at is None:
-            return ''
-        if ic_second_opinion_deferred(doc):
-            return 'review_manually'     # TD-390: our outage owes this card a second look — no re-upload
-        if doc.vision_error or not doc.vision_nric:
-            return 'unreadable'
-        from .vision import name_match, nric_match
-        profile = getattr(doc.application, 'profile', None)
-        if not nric_match(doc.vision_nric, getattr(profile, 'nric', '') or ''):
-            # IC number didn't match the account. If the NAME we read still matches, it is
-            # almost always an OCR misread of the digits (glare) — reassure + ask for a clean
-            # re-upload. If the name ALSO fails (or none was read), fall back to the generic
-            # number-mismatch note (it could be the wrong card entirely).
-            name_ok = doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') != 'mismatch'
-            return 'ic_nric_misread' if name_ok else 'nric_mismatch'
-        if doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') == 'mismatch':
-            return 'name_mismatch'
-        return ''
-    # An earner's IC (parent_ic) → the CLUSTER verdict for that member (their IC anchor +
-    # income proofs), so Gopal speaks ONCE per person. Income is a cluster, unlike the
-    # single-document Identity/Academic/Pathway facts. The NRIC is the EARNER's — never
-    # matched to the student.
-    if doc.doc_type == 'parent_ic':
-        if doc.vision_run_at is None:
-            return ''
-        member = (getattr(doc, 'household_member', '') or '').strip() \
-            or (getattr(doc.application, 'income_earner', '') or '').strip()
-        from .income_engine import income_cluster_advice
-        if member:
-            return income_cluster_advice(doc.application, member)
-        # A non-income parent_ic (e.g. minor consent) — just flag an unreadable card.
-        if ic_second_opinion_deferred(doc):
-            return 'review_manually'     # TD-390, as for the student's own IC above
-        if doc.vision_error or not (doc.vision_name or '').strip():
-            return 'unreadable'
-        return ''
-    # Third route S3b (D13): the higher-results card speaks in fixed, deterministic notes with one
-    # link each (`higher_results.student_higher_check`), never an AI coach — nothing to phrase here.
-    if doc.doc_type == 'higher_results':
-        return ''
-    # Results slip — the three clinical checks (name / subjects / results), most
-    # important first: a wrong-person slip, then a missing subject, then a grade that
-    # disagrees with the typed profile. Computed by the SAME engine the FE checklist
-    # uses (academic_engine.student_slip_check) so the coach and the checklist agree.
-    if doc.doc_type == 'results_slip':
-        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-        sv = fields.get('student_verdict')
-        if not sv:
-            return ''                        # not field-extracted yet → no coach
-        if sv == 'wrong_doc':
-            return 'wrong_doc'
-        if sv in ('unreadable', 'review_manually'):
-            return sv
-        from .academic_engine import student_slip_check
-        chk = student_slip_check(doc)
-        if chk['name'] == 'mismatch':
-            return 'slip_name_mismatch'
-        if chk['name'] == 'unreadable':
-            return 'unreadable'
-        if chk['subjects'] == 'mismatch':      # missing first; else a typed subject not on it (#62)
-            return 'slip_subjects_missing' if chk.get('missing') else 'slip_subjects_extra'
-        if chk['results'] == 'mismatch':
-            return 'slip_grade_mismatch'
-        # A grade we could not read with full confidence → ask the student to double-check
-        # (never a confident "you're wrong"). If the photo was also SKEWED, blame the photo
-        # and ask for a straight retake; otherwise just ask them to confirm the value.
-        if chk['results'] == 'uncertain':
-            return 'slip_skewed_unclear' if chk.get('was_skewed') else 'slip_grade_uncertain'
-        # The subject table couldn't be pulled → ask for a clearer copy; a straight retake if
-        # the slip was skewed, else the generic clearer-photo nudge.
-        if chk['subjects'] == 'unreadable' or chk['results'] == 'unreadable':
-            return 'slip_skewed_unclear' if chk.get('was_skewed') else 'unreadable'
-        return ''
-    # Offer letter (pathway) — name + IC are the identity checks; a mismatch on either
-    # means a wrong-person letter. (Richer pathway-aware coaching is a later pass.)
-    if doc.doc_type == 'offer_letter':
-        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-        sv = fields.get('student_verdict')
-        if not sv:
-            return ''
-        if sv == 'wrong_doc':
-            return 'wrong_doc'
-        if sv in ('unreadable', 'review_manually'):
-            return sv
-        from .pathway_engine import student_offer_check
-        chk = student_offer_check(doc)
-        if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-            return 'offer_name_mismatch'
-        # Identity is fine but the offer is for a different college/programme than
-        # declared — a SOFT nudge (never a block): "you may confirm this when you submit".
-        if chk['pathway'] == 'mismatch':
-            return 'offer_pathway_mismatch'
-        return ''
-    # A salary slip / EPF in an income context (salary route = member-tagged; STR route =
-    # the single earner) — part of that earner's cluster. The coherence (slip vs IC) is
-    # voiced by the cluster coach anchored on the IC, so here we only speak when there is
-    # NO IC to anchor on: nudge the student to add this person's IC. (Skips the generic
-    # "your name isn't on this" check below, which is wrong for an earner's document.)
-    if doc.doc_type in ('salary_slip', 'epf', 'str'):
-        from .income_engine import _proof_member, _member_ic_doc, student_str_check, STR_COACH_STATES
-        # An STR whose currency itself is the problem speaks here — the earner-IC cluster coach
-        # can't say "this STR is out of date". V2 (#16): use the SHARED STR_COACH_STATES (the S4
-        # unification), so a wrong_type/unreadable/unconfirmed STR re-upload also gets the
-        # doc-anchored coach — not just stale/rejected (which left the two worst states silent).
-        if doc.doc_type == 'str':
-            sc = student_str_check(doc)
-            if sc and sc['current_status'] in STR_COACH_STATES:
-                return 'str_not_current'
-        member = _proof_member(doc) if doc.doc_type != 'str' else \
-            ((doc.application.income_earner or '').strip()
-             if (doc.application.income_route or '') == 'str' else '')
-        if member:
-            return approval_coach(doc) if _member_ic_doc(doc.application, member) else 'income_ic_needed'
-    # Utility bill (water / electricity) — the meaningful check is the HOME ADDRESS (these
-    # confirm where the family lives). The bill is in a PARENT's name, so we deliberately do
-    # NOT flag a name mismatch (that's the wrong "edit your profile name" nudge). Coach only
-    # when the address couldn't be matched.
-    if doc.doc_type in ('water_bill', 'electricity_bill'):
-        if doc.vision_run_at is None:
-            return ''
-        return 'address_mismatch' if doc.vision_address_match == 'mismatch' else ''
-    # Relationship-proof docs (birth cert / guardianship letter) — any problem (the names
-    # don't link to the family) is voiced by the earner-IC cluster coach, and the per-row
-    # checklist shows the detail. So the doc itself stays quiet (no wrong generic nudge).
-    if doc.doc_type in ('birth_certificate', 'guardianship_letter'):
-        return ''
-    # Bank statement (post-award payout) — the doc-assist verdict checks all three fields are
-    # present AND the holder is the student. 'name_mismatch' = not the student's account (a
-    # hard problem); 'incomplete'/'wrong_doc'/'unreadable' = a field couldn't be read clearly.
-    if doc.doc_type == 'bank_statement':
-        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-        sv = fields.get('student_verdict')
-        if not sv:
-            return ''
-        if sv == 'name_mismatch':
-            return 'bank_holder_mismatch'
-        if sv == 'review_manually':
-            return sv                   # not read yet (TD-392b) — a reviewer checks it, no re-upload
-        if sv in ('incomplete', 'wrong_doc', 'unreadable'):
-            return 'bank_details_unclear'
-        return ''
-    # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
-    # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
-    fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-    sv = fields.get('student_verdict')
-    if sv:
-        return '' if sv == 'ok' else (sv if sv in VERDICT_GUIDANCE else '')
-    if doc.vision_name_match == 'not_found':
-        return 'name_mismatch'
-    if doc.vision_address_match == 'mismatch':
-        return 'address_mismatch'
-    if 'unreadable' in (doc.vision_name_match, doc.vision_address_match):
-        return 'unreadable'
-    return ''
+    chip precedence.
+
+    Each document type's check lives in ``help_verdict`` (one function per type, moved there whole
+    by audit sprint A3.4); this function hands the document over.
+    """
+    from .help_verdict import verdict_for_document as _v   # lazy: help_verdict imports VERDICT_GUIDANCE
+    return _v(doc)
 
 
 def _doc_label(doc_type):
