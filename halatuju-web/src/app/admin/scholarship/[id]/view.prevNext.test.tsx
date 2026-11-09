@@ -7,16 +7,16 @@
  * and the cockpit reads them with `useListNav`: the same steps it always had, now with "n of m".
  * A case that is not in the record (a direct link) shows no steps at all.
  */
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 
-import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import { cockpitRouterPush, installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 import { writeListNav } from '@/lib/listNav'
 
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
 
-beforeEach(() => { sessionStorage.clear() })
+beforeEach(() => { sessionStorage.clear(); cockpitRouterPush.mockClear() })
 
 describe('the cockpit header steps through the list it came from', () => {
   it('offers both steps and where the case sits (id 7 is the middle of 5, 7, 9)', async () => {
@@ -51,5 +51,49 @@ describe('the cockpit header steps through the list it came from', () => {
     renderCockpit({ role: 'super', stage: 'interviewing' })
     await loaded()
     expect(screen.queryByTestId('cockpit-prev-next')).toBeNull()
+  })
+})
+
+describe('the arrow keys step through the same list', () => {
+  const key = (k: string) => fireEvent.keyDown(document, { key: k })
+  const seed = () => writeListNav('scholarship', { ids: [5, 7, 9], backHref: '/admin/scholarship', labelKey: 'x' })
+
+  it('ArrowRight goes to the next case and ArrowLeft to the previous one', async () => {
+    seed()
+    renderCockpit({ role: 'super', stage: 'interviewing' })
+    await loaded()
+    await screen.findByTestId('cockpit-prev-next')
+    key('ArrowRight')
+    expect(cockpitRouterPush).toHaveBeenLastCalledWith('/admin/scholarship/9')
+    key('ArrowLeft')
+    expect(cockpitRouterPush).toHaveBeenLastCalledWith('/admin/scholarship/5')
+    expect(cockpitRouterPush).toHaveBeenCalledTimes(2)
+  })
+
+  it('does nothing while the officer is typing in a box', async () => {
+    seed()
+    renderCockpit({ role: 'super', stage: 'interviewing' })
+    await loaded()
+    await screen.findByTestId('cockpit-prev-next')
+    const box = document.querySelector('textarea, input:not([type="hidden"])') as HTMLElement
+    expect(box).not.toBeNull()
+    box.focus()
+    expect(document.activeElement).toBe(box)
+    fireEvent.keyDown(box, { key: 'ArrowRight' })
+    fireEvent.keyDown(box, { key: 'ArrowLeft' })
+    expect(cockpitRouterPush).not.toHaveBeenCalled()
+  })
+
+  it('does nothing while the confirm dialog is open', async () => {
+    seed()
+    renderCockpit({ role: 'super', stage: 'rejected' })
+    await loaded()
+    await screen.findByTestId('cockpit-prev-next')
+    fireEvent.click(screen.getAllByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' })[0])
+    expect(screen.getByRole('alertdialog')).toBeTruthy()
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    key('ArrowRight')
+    key('ArrowLeft')
+    expect(cockpitRouterPush).not.toHaveBeenCalled()
   })
 })

@@ -101,6 +101,7 @@ describe('sign-out also wipes this tab', () => {
     sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'BP2026')
     sessionStorage.setItem(ONBOARDING_RETURN_KEY, '/scholarship/apply')
     sessionStorage.setItem('halatuju_list_nav:scholarship', '[1,2,3]')
+    sessionStorage.setItem('halatuju_list_nav:requests', '[4,5]')
     sessionStorage.setItem('halatuju_sponsor_pending', '{"name":"S"}')
     sessionStorage.setItem('other_tab_key', 'keeps')
   }
@@ -113,6 +114,7 @@ describe('sign-out also wipes this tab', () => {
       expect(sessionStorage.getItem(k)).toBeNull()
     }
     expect(sessionStorage.getItem('halatuju_list_nav:scholarship')).toBe('[1,2,3]')
+    expect(sessionStorage.getItem('halatuju_list_nav:requests')).toBeNull()   // only the Applications record survives
     expect(sessionStorage.getItem('halatuju_sponsor_pending')).toBe('{"name":"S"}')
     expect(sessionStorage.getItem('other_tab_key')).toBe('keeps')
   })
