@@ -2,6 +2,7 @@
 
 import { PHONE_CARD_XL } from '@/lib/phoneConsole'
 import { PHONE_PILL } from '@/lib/phonePill'
+import { usePhoneWidth } from '@/lib/phoneWidth'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { useToast } from '@/components/ToastContext'
@@ -24,9 +25,12 @@ function merge(have: Entry[], more: Entry[]): Entry[] {
  * A scholar's activity log (student maintenance Sprint 2; reshaped in sprint P1, owner 2026-11-09).
  *
  * The way Podio reads (P1-b): OLDEST AT THE TOP, NEWEST AT THE BOTTOM, the "Add a note…" box below the
- * list, inside a fixed-height list that scrolls by itself and opens scrolled to the newest (P1-c). The
- * server still pages newest first; this shows each page reversed, and "Show older (n)" at the top
- * fetches the next page and keeps the reader where they were. Side panel (`compact`): 6 per load,
+ * list. On a desktop (from `md`) the list is fixed-height, scrolls by itself and opens scrolled to the
+ * newest (P1-c). On a phone it flows in the page (Mobile Standard rule 15, owner 2026-11-09): no box of
+ * its own to scroll, so nothing is scrolled on opening or after "Show older", and after a Save the
+ * page brings the new entry into view. The server still pages newest first; this shows each page
+ * reversed, and "Show older (n)" at the top fetches the next page (on a desktop, keeping the reader
+ * where they were). Side panel (`compact`): 6 per load,
  * mixed. Activity tab: 20 per load, with the All · Notes · System filter, applied ON THE SERVER (P1-f).
  *
  * ⚠ "Staff only" is the site `Toggle`, never a checkbox (house rule). Nothing in this log reaches a
@@ -58,7 +62,11 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
   const [older, setOlder] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   /** Where to leave the scroll after the next render: the bottom, or as far from it as before. */
-  const pin = useRef<'bottom' | { fromBottom: number } | null>(null)
+  const pin = useRef<'open' | 'saved' | { fromBottom: number } | null>(null)
+  /** Below md the list flows in the page: it has no scroll of its own, so it is not a tab stop either. */
+  const phone = usePhoneWidth()
+  /** A Save under System reloads All: that reload is still "after a Save" for the scroll. */
+  const afterSave = useRef(false)
   /** Read through a ref, so a refreshed token never resets the list the officer is reading. */
   const tokenRef = useRef(token)
   useLayoutEffect(() => { tokenRef.current = token }, [token])
@@ -80,10 +88,15 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
   useLayoutEffect(() => {
     const el = scroller.current
     const p = pin.current
-    if (!el || !p) return
-    el.scrollTop = p === 'bottom' ? el.scrollHeight : el.scrollHeight - p.fromBottom
     pin.current = null
-  }, [rows])
+    if (!el || !p) return
+    if (!phone) {
+      el.scrollTop = typeof p === 'string' ? el.scrollHeight : el.scrollHeight - p.fromBottom
+      return
+    }
+    // A phone: the list is part of the page. Only a Save moves it, to bring the new entry into view.
+    if (p === 'saved') el.querySelector('ol')?.lastElementChild?.scrollIntoView?.({ block: 'nearest' })
+  }, [rows, phone])
 
   /** Page 1 of `which`: replaces the list, or (after a Save, `keep`) merges into what is already read. */
   const latest = useCallback(async (which: ActivityShow, keep: boolean) => {
@@ -100,7 +113,8 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
       const into = keep && shown.current === gen
       if (!into) read.current = 1
       shown.current = gen
-      pin.current = 'bottom'
+      pin.current = keep || afterSave.current ? 'saved' : 'open'
+      afterSave.current = false
       setRows((have) => (into ? merge(have ?? [], p.results) : p.results))
       setCount(p.count); setFailed(false)
       if (p.counts) setCounts(p.counts)
@@ -142,7 +156,7 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
     }
     showToast(t('admin.scholars.activity.saved'), 'success')
     // A note is never a System row: under that filter it would vanish, so show All, which has it.
-    if (show === 'system') setShow('all')
+    if (show === 'system') { afterSave.current = true; setShow('all') }
     else await latest(show, true)
     return true
   }
@@ -172,9 +186,9 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
           {t('admin.scholars.activity.empty')}
         </p>
       )}
-      <div ref={scroller} data-testid="activity-scroller" tabIndex={0} role="region"
+      <div ref={scroller} data-testid="activity-scroller" tabIndex={phone ? undefined : 0} role="region"
         aria-label={t('admin.scholars.activity.listLabel')}
-        className={`overflow-y-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-500 md:overscroll-contain ${compact ? 'max-h-[420px]' : 'max-h-[560px]'} max-md:max-h-[55dvh]`}>
+        className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-500 md:overflow-y-auto md:overscroll-contain md:rounded-lg ${compact ? 'md:max-h-[420px]' : 'md:max-h-[560px]'}`}>
         {remaining > 0 && (
           <button type="button" onClick={showOlder} disabled={older} data-testid="activity-older"
             className="w-full rounded-lg py-2 text-sm font-medium text-info-700 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11">

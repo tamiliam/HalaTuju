@@ -920,6 +920,15 @@ describe('the cockpit on a phone', () => {
     expect(list.split(' ')).toEqual(expect.arrayContaining(['md:max-h-[28rem]', 'md:overflow-y-auto']))
     expect(list.split(' ').filter((c) => /^(max-h-|overflow-y-)/.test(c))).toEqual([])
   })
+  test('the activity log scrolls in the page on a phone (its own scroll box is md: only; owner 2026-11-09)', () => {
+    const src = readWeb('src/components/admin/ScholarActivity.tsx', 'the activity box')
+    const box = (src.match(/data-testid="activity-scroller"[\s\S]*?className=\{`([^`]*)`\}/) ?? [])[1] ?? ''
+    // `${compact ? 'a' : 'b'}` counts as both quoted class strings.
+    const classes = box.replace(/\$\{[^}]*\}/g, (m) => Array.from(m.matchAll(/'([^']*)'/g)).map((q) => q[1]).join(' '))
+      .split(/\s+/).filter(Boolean)
+    expect(classes).toEqual(expect.arrayContaining(['md:overflow-y-auto', 'md:overscroll-contain', 'md:max-h-[420px]', 'md:max-h-[560px]']))
+    expect(classes.filter((c) => /^(max-md:)?(max-h-|overflow-y-|overscroll-)/.test(c))).toEqual([])
+  })
   test('a PDF on a phone is an Open link to a new tab, never an iframe', () => {
     const src = readWeb('src/components/DocViewer.tsx', 'the document viewer')
     const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*)/.test(l)).join('\n')

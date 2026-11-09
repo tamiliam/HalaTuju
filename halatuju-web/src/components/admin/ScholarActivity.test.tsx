@@ -349,7 +349,32 @@ describe('the P1 review', () => {
     const region = screen.getByRole('region', { name: 'admin.scholars.activity.listLabel' })
     expect(region.getAttribute('tabindex')).toBe('0')
     expect(region.className).toContain('focus-visible:ring-2')
-    expect(region.className).toContain('md:overscroll-contain')
-    expect(region.className).not.toMatch(/(^|\s)overscroll-contain/)
+  })
+
+  it('on a phone the list flows in the page: not a tab stop, and a Save scrolls the page to the new entry', async () => {
+    const was = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: true, media: q, addEventListener: () => {},
+      removeEventListener: () => {} })) as unknown as typeof window.matchMedia
+    const into = jest.fn()
+    const had = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = into
+    try {
+      render(<ScholarActivity id={7} token="tok" />)
+      await screen.findByText('Talked through a study plan.')
+      const region = screen.getByRole('region', { name: 'admin.scholars.activity.listLabel' })
+      await waitFor(() => expect(region.hasAttribute('tabindex')).toBe(false))
+      expect(into).not.toHaveBeenCalled()                                     // opening scrolls nothing
+      mockApi.getScholarActivity.mockResolvedValue(page([row(60, 30, 'Newest.'), NOTE, SYSTEM]))
+      const box = screen.getByPlaceholderText('admin.scholars.activity.placeholder')
+      fireEvent.focus(box)
+      fireEvent.change(box, { target: { value: 'Newest.' } })
+      fireEvent.click(screen.getByRole('button', { name: 'admin.scholars.activity.save' }))
+      await waitFor(() => expect(rows()).toHaveLength(3))
+      await waitFor(() => expect(into).toHaveBeenCalledTimes(1))
+      expect(into.mock.contexts[0]).toBe(rows()[2])
+    } finally {
+      window.matchMedia = was
+      Element.prototype.scrollIntoView = had
+    }
   })
 })

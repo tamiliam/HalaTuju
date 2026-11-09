@@ -221,7 +221,7 @@ export const ADMIN_CAN_SURFACES: Surface[] = [
   {
     slug: 'p1-scholar-activity',
     title: 'Admin — the scholar file\'s Activity tab',
-    note: 'Sprint P1: oldest at the top, the box below, a list that scrolls inside itself (55dvh on a phone), '
+    note: 'Sprint P1: oldest at the top, the box below, a list that scrolls inside itself from md (in the page on a phone), '
       + '"Show older", the All · Notes · System filter (44 px), names and initials, and the one-line composer.',
     routes: { ...SCOPES, '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(20) },
     render: () => (

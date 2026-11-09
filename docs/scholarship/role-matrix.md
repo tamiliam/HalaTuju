@@ -269,8 +269,9 @@ activity log shows each writer's NAME and staff PHOTO (a signed link, about an h
 blank on every row whose writer is a known login (staff, mentor) or the scholar, and carries the email
 only when it matches nobody (`actor.kind == 'unknown'`; the web shows it as written). This widens one
 thing: a reviewer or QC, who could already read the file, now also sees the writing staff member's
-photo. That is the same staff photo every staff member sees in Team lists; it is staff-only, and no
-student, sponsor, finance or partner login reaches it. If signing the photos fails, the rows still
+photo. **The owner confirmed this is acceptable (2026-11-09).** That is the same staff photo every
+staff member sees in Team lists; it is staff-only, and no student, sponsor, finance or partner login
+reaches it. If signing the photos fails, the rows still
 load, with initials. **A pure mentor is never named outside the Mentoring tab:** a viewer without
 `mentoring.may_read_mentoring` (qc, reviewer) gets no mentoring row under any filter (the S7b rule,
 unchanged). On any other row a pure mentor wrote (`role='mentor'`), they get an empty name, no photo
