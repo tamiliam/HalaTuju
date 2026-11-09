@@ -280,8 +280,9 @@ class Invitation(models.Model):
         help_text='Source-partner invitations only: the referral source the invitee signs in for.',
     )
     #: WHICH MENTOR a `mentor` invitation signs somebody in as (student maintenance S7a, 2026-10-31) —
-    #: the `referral_source` pattern. NULL for every other audience. PROTECT: a mentor is never
-    #: deleted, and an invitation's history goes on naming the mentor it was for.
+    #: the `referral_source` pattern. NULL for every other audience. PROTECT: an invitation's history
+    #: goes on naming the mentor it was for; only a mentor with NO work is deleted (D6), and its
+    #: invitations go with it first (`mentor_invite.delete_mentor`).
     mentor = models.ForeignKey(
         'Mentor', on_delete=models.PROTECT, null=True, blank=True, related_name='invitations',
         help_text='Mentor invitations only: the mentor the invitee signs in as.',

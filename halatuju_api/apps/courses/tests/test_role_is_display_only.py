@@ -126,6 +126,14 @@ ALLOWLIST = {
         'queryset of staff holding a key; the label picks the preset half'),
     'courses/staff_permissions_v2.py::effective_v2': ('DISPLAY', 'T5a catalogue',
         'the v2 resolver reads the label for presets and the lead tier'),
+    'courses/staff_delete_rules.py::_live_org_admin': ('GATE-LEFT', 'T5e',
+        'T2 review N4: the sole-org-admin guard (lifted from AdminRevokeView, now Delete too); '
+        'T5e moves lead powers to keys'),
+    'courses/staff_delete_rules.py::_org_admins': ('GATE-LEFT', 'T5e',
+        'T2 review N4: the active org admins of an organisation, counted (and locked) by the sole-org-admin '
+        'guard; T5e moves lead powers to keys'),
+    'courses/staff_delete_rules.py::sole_org_admin_ids': ('GATE-LEFT', 'T5e',
+        'T2 review N4: the same guard for a whole table in one query; T5e moves lead powers to keys'),
     'courses/staff_gift.py::for_invite': ('DISPLAY', 'account kind',
         'TD-501 A1.3: the invited kind says which fields the invite asks for (a reviewer names a gift); '
         'it grants or refuses no action'),
@@ -226,6 +234,8 @@ ALLOWLIST = {
         'keeps a reviewer-tab label listed'),
     'scholarship/staff_permissions_admin.py::change_permissions': ('DISPLAY', 'T5a tables',
         'guards the row it rewrites'),
+    'scholarship/staff_person.py::on_reviewer_route': ('DISPLAY', 'T5a tables',
+        'T3 review fix 1: table membership, mirroring `_ReviewersBase._reviewers` (a team preset holding review/qc)'),
     'scholarship/staff_tables_admin.py::_plan_remove': ('DISPLAY', 'T5a tables',
         'table move plan: the label after a removal'),
     'scholarship/staff_tables_admin.py::_refuse_basic': ('DISPLAY', 'T5a tables',

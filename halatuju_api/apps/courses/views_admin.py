@@ -593,10 +593,10 @@ _ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
 # `adminStaff.PROGRAMME_STAFF_ROLES`; `super` and `partner` are platform-world and never here.
 PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
 
-# The roles a staff account may be DELETED in (owner, 2026-09-09: *"I am only talking about admin,
-# and not reviewers"*). A reviewer is never deletable however empty their record looks — they are
-# the people a student's case passes through, and revoking is the answer for one who has left.
-_DELETABLE_ROLES = {'admin', 'finance', 'org_admin'}
+# The roles a staff account may be DELETED in. D6 (Sprint T2, 2026-11-08) REVERSES 2026-09-09's "admins,
+# not reviewers": reviewers and QC too, under the SAME no-work test (`staff_footprint` counts every case
+# they held, reviewed, interviewed, QC'd or mentored). A pure mentor: `mentor_invite.delete_mentor`.
+_DELETABLE_ROLES = {'admin', 'finance', 'org_admin', 'reviewer', 'qc'}
 
 
 def _scholarship_staff_modules():
@@ -639,7 +639,7 @@ def _deletable_now(caller, target, work=None):
 
     Three conditions, all required, and each is refused again by `AdminDeleteView`:
       * the caller may manage them at all (`_staff_target_manageable`);
-      * the role is admin-shaped (`_DELETABLE_ROLES`) — never a reviewer, owner 2026-09-09;
+      * the role is a programme-staff one (`_DELETABLE_ROLES`; reviewers and QC since D6, 2026-11-08);
       * they have done NO recorded work (`staff_footprint`).
     """
     staff_footprint, _ = scholarship_staff()
