@@ -12,8 +12,9 @@ never offers a button the server refuses:
                      super, not the caller, and not the sole active org admin (Revoke refuses that too).
 
 The sole-org-admin guard (`is_sole_org_admin`) is the one `AdminRevokeView` and `AdminDeleteView` both
-enforce. Only a super can reach an org admin at all (`_staff_target_manageable`), so a table read by
-anybody else never pays its query.
+enforce, with the organisation's org admins locked first (`lock_org_admins_of`). Only a super can
+reach an org admin at all (`_staff_target_manageable`), so a table read by anybody else never pays
+its query.
 
 Lives in its own module because `views_admin.py` is on the oversize ledger with no room to grow.
 """
@@ -26,14 +27,38 @@ def _live_org_admin(target):
     return target.role == 'org_admin' and target.is_active and target.owning_organisation_id is not None
 
 
-def is_sole_org_admin(target):
+def _org_admins(**where):
+    """The active org admins matching ``where`` (the one place this module reads the role)."""
+    return PartnerAdmin.objects.filter(role='org_admin', is_active=True, **where)
+
+
+def lock_org_admins_of(admin_id):
+    """Inside the Revoke / Delete transaction, BEFORE the target row is locked: when ``admin_id`` is a
+    live org admin, lock every active org admin of that organisation, in id order (T2 review, race).
+
+    Two supers each removing one of an organisation's two org admins at once would otherwise both
+    count "one other left" and leave none. Taking the whole set first, always in the same order,
+    makes the second wait for the first and then count afresh; taking it AFTER each locked its own
+    target would deadlock the pair instead. A peek (no lock) finds the organisation; a non-org-admin
+    target locks nothing more. `is_sole_org_admin(..., lock=True)` locks again on the count itself,
+    so a target that BECAME an org admin after the peek is still covered."""
+    organisation_id = (_org_admins(id=admin_id).exclude(owning_organisation_id=None)
+                       .values_list('owning_organisation_id', flat=True).first())
+    if organisation_id:
+        list(_org_admins(owning_organisation_id=organisation_id).select_for_update().order_by('id')
+             .values_list('id', flat=True))
+
+
+def is_sole_org_admin(target, lock=False):
     """Whether ``target`` is the ONLY active org admin of their organisation (one query). Revoking or
-    deleting them would strand the organisation with no administrator (matrix 2026-07-15; N4)."""
+    deleting them would strand the organisation with no administrator (matrix 2026-07-15; N4).
+    ``lock=True`` (inside a transaction: the Revoke and Delete doors) counts with the rows locked."""
     if not _live_org_admin(target):
         return False
-    return not (PartnerAdmin.objects
-                .filter(role='org_admin', is_active=True, owning_organisation_id=target.owning_organisation_id)
-                .exclude(id=target.id).exists())
+    others = _org_admins(owning_organisation_id=target.owning_organisation_id).exclude(id=target.id)
+    if lock:
+        return not list(others.select_for_update().order_by('id').values_list('id', flat=True))
+    return not others.exists()
 
 
 def sole_org_admin_ids(caller, targets):

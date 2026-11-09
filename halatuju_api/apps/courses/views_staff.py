@@ -26,7 +26,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import referral_links, staff_gift, staff_reinvite, staff_tables
-from .staff_delete_rules import delete_fields, is_sole_org_admin, sole_org_admin_ids
+from .staff_delete_rules import delete_fields, is_sole_org_admin, lock_org_admins_of, sole_org_admin_ids
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
                           PartnerAdminMixin, _invitation_dict, _invitations_for,
@@ -160,6 +160,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
 
     def _delete_locked(self, admin, admin_id, staff_footprint, staff_lifecycle):
         with transaction.atomic():
+            lock_org_admins_of(admin_id)   # T2 review: two supers, one org's two org admins, at once
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             if target is None or not _staff_target_manageable(admin, target):
                 return Response({'error': 'Admin not found'}, status=404)
@@ -169,7 +170,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
             if target.role not in _DELETABLE_ROLES:
                 return Response({'error': 'Only a programme staff account can be deleted',
                                  'code': 'not_deletable'}, status=400)
-            if is_sole_org_admin(target):   # T2 review N4: the guard Revoke has
+            if is_sole_org_admin(target, lock=True):   # T2 review N4: the guard Revoke has
                 return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
             work = staff_footprint.footprint(target)
             if work:
@@ -538,6 +539,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps
         # its mentor — or after, when it sees the login off and refuses.
         with transaction.atomic():
+            lock_org_admins_of(admin_id)   # T2 review: the org's org admins first, in id order
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             return self._revoke_locked(request, admin, target)
 
@@ -554,7 +556,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         # org_admin of a tenant — it would strand the organisation with no administrator.
         # (Only a super reaches this branch: _staff_target_manageable refuses an org_admin
         # caller a same-tier org_admin target.) Restore is unaffected.
-        if action == 'revoke' and is_sole_org_admin(target):   # Delete refuses it too (T2 review N4)
+        if action == 'revoke' and is_sole_org_admin(target, lock=True):   # Delete refuses it too (N4)
             return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
             target.is_active = False

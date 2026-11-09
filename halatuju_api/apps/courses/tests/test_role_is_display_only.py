@@ -129,8 +129,9 @@ ALLOWLIST = {
     'courses/staff_delete_rules.py::_live_org_admin': ('GATE-LEFT', 'T5e',
         'T2 review N4: the sole-org-admin guard (lifted from AdminRevokeView, now Delete too); '
         'T5e moves lead powers to keys'),
-    'courses/staff_delete_rules.py::is_sole_org_admin': ('GATE-LEFT', 'T5e',
-        'T2 review N4: counts the other active org admins of the organisation; T5e moves lead powers to keys'),
+    'courses/staff_delete_rules.py::_org_admins': ('GATE-LEFT', 'T5e',
+        'T2 review N4: the active org admins of an organisation, counted (and locked) by the sole-org-admin '
+        'guard; T5e moves lead powers to keys'),
     'courses/staff_delete_rules.py::sole_org_admin_ids': ('GATE-LEFT', 'T5e',
         'T2 review N4: the same guard for a whole table in one query; T5e moves lead powers to keys'),
     'courses/staff_gift.py::for_invite': ('DISPLAY', 'account kind',

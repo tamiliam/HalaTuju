@@ -185,3 +185,72 @@ class TestN2ToN4WhatTheScreensMayOffer(TestCase):
         r = self._delete(self.super, self.lead)
         self.assertEqual(r.json().get('code'), 'last_org_admin')
         self.assertEqual(self._delete(self.super, PartnerAdmin.objects.get(pk=second.pk)).status_code, 200)
+
+
+def _locks_taken(fn):
+    """Every LOCKING read `fn` issues, in order, as the SQL Postgres would run (`FOR UPDATE` included).
+
+    ⚠ SQLITE CANNOT SHOW THE RACE, OR EVEN THE CLAUSE: Django drops `FOR UPDATE` on a backend without
+    it. So each locking query is caught as it executes and compiled against a Postgres connection
+    object that never connects. This pins that the lock is ASKED FOR, in which order; it does not
+    (cannot, here) prove two real transactions wait on each other."""
+    from django.db.backends.postgresql.base import DatabaseWrapper
+    from django.db.models.sql.compiler import SQLCompiler
+    pg = DatabaseWrapper({**connection.settings_dict, 'ENGINE': 'django.db.backends.postgresql'})
+    pg.get_autocommit = lambda: False            # inside the view's transaction; never connects
+    seen, real = [], SQLCompiler.execute_sql
+
+    def spy(self, *args, **kwargs):
+        if self.query.select_for_update:
+            sql, params = self.query.get_compiler(connection=pg).as_sql()
+            seen.append((sql, params))
+        return real(self, *args, **kwargs)
+
+    with patch.object(SQLCompiler, 'execute_sql', spy):
+        fn()
+    return seen
+
+
+@override_settings(**SUPABASE)
+class TestTheSoleOrgAdminGuardLocksTheWholeSet(TestCase):
+    """Two supers each removing one of an organisation's two org admins at once must not leave it
+    with none: the org's active org admins are locked, in id order, BEFORE the target row."""
+
+    def setUp(self):
+        self.org = make_org()
+        self.super = make_admin('super', super_admin=True)
+        self.lead = make_admin('org_admin', owning_org=self.org)
+        self.second = make_admin('org_admin', owning_org=self.org)
+
+    def _assert_set_locked_first(self, locks):
+        self.assertGreaterEqual(len(locks), 2, locks)
+        first_sql, first_params = locks[0]
+        self.assertIn('FOR UPDATE', first_sql)
+        self.assertIn('org_admin', first_params)
+        self.assertIn(self.org.pk, first_params)
+        # In id order (`ORDER BY 1` is the selected id column), so two lockers never cross.
+        self.assertRegex(first_sql, r'^SELECT "partner_admins"\."id" AS "id" .* ORDER BY 1 ASC FOR UPDATE$')
+        # The count itself is taken under the lock too.
+        self.assertTrue(any('FOR UPDATE' in sql and 'org_admin' in params for sql, params in locks[2:]),
+                        locks)
+
+    def test_delete_locks_the_org_admins_before_the_target(self):
+        def go():
+            with patch(READ, side_effect=_unused), patch(DELETE, return_value='deleted'):
+                r = authed_client(self.super).delete(f'/api/v1/admin/admins/{self.lead.pk}/')
+            self.assertEqual(r.status_code, 200, r.content[:200])
+        self._assert_set_locked_first(_locks_taken(go))
+
+    def test_revoke_locks_the_org_admins_before_the_target(self):
+        def go():
+            r = authed_client(self.super).patch(f'/api/v1/admin/admins/{self.lead.pk}/revoke/',
+                                                {'action': 'revoke'}, format='json')
+            self.assertEqual(r.status_code, 200, r.content[:200])
+        self._assert_set_locked_first(_locks_taken(go))
+
+    def test_a_staff_target_locks_no_org_admin_set(self):
+        staff = make_admin('admin', owning_org=self.org)
+        locks = _locks_taken(lambda: authed_client(self.super).patch(
+            f'/api/v1/admin/admins/{staff.pk}/revoke/', {'action': 'revoke'}, format='json'))
+        self.assertTrue(locks)
+        self.assertEqual([sql for sql, params in locks if 'org_admin' in params], [])
