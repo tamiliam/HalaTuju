@@ -24,7 +24,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
 import { useProgrammeParam } from '@/lib/programmeScope'
 import { useGiftGate } from '@/lib/useGiftGate'
 import { formatDate } from '@/lib/formatDate'
@@ -57,10 +57,12 @@ function StaffScholarsPage() {
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
   const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)   // T5c P4: the server's door
   const programme = useProgrammeParam()
-  // A MENTOR login has no gift to choose (S1-h: the server lists its own students; the shell asks no
-  // scopes for it, `AppShell`), so it never waits on the gift gate.
+  // Anyone viewing AS A MENTOR has no gift to choose (S1-h: the server lists their own current students,
+  // across gifts): a mentor login (the shell asks no scopes for it, `AppShell`), and staff who mentor
+  // without the `scholars` key. Neither waits on the gift gate nor is asked to pick one.
   const giftGate = useGiftGate(role)
-  const gate = role?.role === 'mentor' ? 'open' : giftGate
+  const asMentor = !readsAllScholars(role) && (effectiveRole(role) === 'mentor' || role?.mentoring === true)
+  const gate = asMentor ? 'open' : giftGate
 
   const [filter, setFilter] = useState<Filter>('all')
   const [typed, setTyped] = useState('')

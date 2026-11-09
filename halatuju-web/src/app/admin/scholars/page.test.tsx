@@ -185,12 +185,21 @@ it('sprint S1 (S1-h): a mentor login and staff who mentor open the list (the ser
   expect(mockApi.getScholars).not.toHaveBeenCalled()
 })
 
-it('sprint S1 (S1-h): a mentor login never waits on the gift gate (the shell asks it no scopes)', async () => {
-  for (const r of ['mentor', 'org_admin']) {
-    mockRole = { role: r, owning_org_id: 11, permissions: [] }
+it('sprint S1 (S1-h): anyone viewing as a mentor never waits on the gift gate; a `scholars` reader does', async () => {
+  const asMentor = [
+    { role: 'mentor', permissions: [] },                                    // a mentor login
+    { role: 'reviewer', permissions: ['review'], mentoring: true },          // staff who mentor
+    { role: 'admin', permissions: ['see_all'], mentoring: true },            // an admin without Scholars
+  ]
+  const readers = [
+    { role: 'org_admin', permissions: [] },
+    { role: 'admin', permissions: ['see_all', 'scholars'], mentoring: true },  // the key wins over mentoring
+  ]
+  for (const who of [...asMentor, ...readers]) {
+    mockRole = { ...who, owning_org_id: 11 }
     const { unmount } = render(
       <ProgrammeScopeProvider choices={[]} settled={false}><ScholarsPage /></ProgrammeScopeProvider>)
-    if (r === 'mentor') expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
+    if (asMentor.includes(who)) expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
     else expect(screen.getByTestId('gift-wait')).toBeTruthy()      // staff still wait for the scopes
     unmount()
   }
