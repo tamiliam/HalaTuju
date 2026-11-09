@@ -167,6 +167,75 @@ class TestThePersonBlock(TestCase):
                              'graduation_year': None, 'field_of_study': '', 'phone': '',
                              'languages': [], 'other_language': ''})
 
+    # ── T3 review fix 1: the mentor route serves the background fields only where the viewer could
+    #    already open the person (the admin or reviewer route, under those routes' own fences) ──────
+    def _staff_mentor(self, role, **kw):
+        a = make_admin(role, owning_org=self.org, mentor=Mentor.objects.create(organisation=self.org), **kw)
+        _profile(a)
+        return a
+
+    def _mentor_person(self, caller, target):
+        return self._get(caller, self._mentor_url(target)).json()['person']
+
+    def assertBackground(self, p, full):
+        self.assertIs(p['profile_full'], full)
+        prof = p['profile']
+        if full:
+            self.assertEqual((prof['job_title'], prof['about'], prof['qualification'], prof['university'],
+                              prof['graduation_year'], prof['field_of_study']),
+                             ('Volunteer lead', 'Likes maths.', 'Degree', 'Example University', 2010, 'Physics'))
+        else:
+            self.assertEqual((prof['job_title'], prof['about'], prof['qualification'], prof['university'],
+                              prof['graduation_year'], prof['field_of_study']), ('', '', '', '', None, ''))
+        # What the Mentors page served before T3 stays, either way: name, email, languages.
+        self.assertTrue(p['name'] and p['email'])
+        self.assertEqual(prof['languages'], ['en', 'ms'])
+
+    def test_a_viewer_who_cannot_open_them_elsewhere_gets_the_pre_t3_fields(self):
+        admin_mentor = self._staff_mentor('admin', name='Ad Mentor', email='admen@example.org')
+        lead_mentor = self._staff_mentor('org_admin', name='Lead Mentor', email='leadmen@example.org')
+        # An `admin` reads the Mentors table but opens no admin detail (403) and no reviewer detail for a
+        # person without `review` / `qc`: the pre-T3 fields only.
+        self._get(self.admin, self._admin_url(admin_mentor), 403)
+        self._get(self.admin, self._reviewer_url(admin_mentor), 404)
+        self.assertBackground(self._mentor_person(self.admin, admin_mentor), False)
+        # A fellow org admin who mentors: no other org admin opens them by the admin route (404).
+        self._get(self.lead, self._admin_url(lead_mentor), 404)
+        self.assertBackground(self._mentor_person(self.lead, lead_mentor), False)
+        self.assertBackground(self._mentor_person(self.admin, lead_mentor), False)
+        # A mentor's own login is opened by neither route: the Mentors page's own fields, phone included.
+        p = self._mentor_person(self.lead, self.mentor)
+        self.assertBackground(p, False)
+        self.assertEqual(p['profile']['phone'], '012-000 0000')
+
+    def test_a_viewer_who_can_open_them_elsewhere_gets_the_full_profile(self):
+        admin_mentor = self._staff_mentor('admin', name='Ad Mentor', email='admen@example.org')
+        lead_mentor = self._staff_mentor('org_admin', name='Lead Mentor', email='leadmen@example.org')
+        # The org admin opens their admin by the admin route: the full profile on the mentor route too.
+        self._get(self.lead, self._admin_url(admin_mentor))
+        self.assertBackground(self._mentor_person(self.lead, admin_mentor), True)
+        # A super opens anybody's admin detail, a fellow org admin included.
+        self.assertBackground(self._mentor_person(self.super, admin_mentor), True)
+        self.assertBackground(self._mentor_person(self.super, lead_mentor), True)
+        # A reviewer who mentors: the `admin` opens them by the reviewer route, so the full profile.
+        self._get(self.admin, self._reviewer_url(self.both))
+        self.assertBackground(self._mentor_person(self.admin, self.both), True)
+        # ...and the admin and reviewer routes always serve it.
+        self.assertTrue(self._get(self.lead, self._admin_url(admin_mentor)).json()['person']['profile_full'])
+        self.assertTrue(self._get(self.admin, self._reviewer_url(self.both)).json()['person']['profile_full'])
+
+    def test_a_staff_mentor_without_review_shows_no_phone_on_the_mentor_route(self):
+        admin_mentor = self._staff_mentor('admin', name='Ad Mentor', email='admen@example.org')
+        for caller in (self.super, self.lead, self.admin):
+            p = self._mentor_person(caller, admin_mentor)
+            self.assertEqual(p['profile']['phone'], '', caller.role)
+        # ...until they show it to their team (`assigner_sees_phone`), as on the reviewer detail.
+        ReviewerProfile.objects.filter(partner_admin=admin_mentor).update(share_phone_with_team=True)
+        for caller in (self.super, self.lead, self.admin):
+            self.assertEqual(self._mentor_person(caller, admin_mentor)['profile']['phone'], '012-000 0000')
+        # A reviewer who mentors holds `review`: the assigner sees it.
+        self.assertEqual(self._mentor_person(self.admin, self.both)['profile']['phone'], '012-000 0000')
+
     # ── the fence ───────────────────────────────────────────────────────────────────────────────
     def test_another_organisation_still_404s(self):
         far_mentor = make_admin('mentor', owning_org=self.other)
