@@ -428,3 +428,19 @@ class RescoreRunsTheRealignTest(_Base):
         self.assertIn('bumi_offer_realign: realigned=0', out)
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['course_id'], 'UM6343002')
+
+    def test_a_realign_that_raises_is_counted_and_the_run_goes_on(self):
+        # Best-effort like the upload path: one failing realign never stops the other offers.
+        from unittest import mock
+        from apps.scholarship.management.commands import rescore_unscored_documents as cmd
+        first, second = self._app(), self._app()
+        a, b = self._unscored_offer(first), self._unscored_offer(second)
+        out = StringIO()
+        score = mock.patch.object(cmd, 'score_from_text', return_value=({'status': 'genuine'}, None))
+        realign = mock.patch.object(cmd, 'realign_after_rescore', side_effect=[RuntimeError('boom'), True])
+        with score, realign, self.assertLogs(cmd.logger, level='WARNING'):
+            call_command('rescore_unscored_documents', '--apply', stdout=out)
+        self.assertIn('bumi_offer_realign: realigned=1 failed=1', out.getvalue())
+        a.refresh_from_db(); b.refresh_from_db()
+        self.assertEqual(a.vision_fields['authenticity'], {'status': 'genuine'})
+        self.assertEqual(b.vision_fields['authenticity'], {'status': 'genuine'})

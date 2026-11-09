@@ -8,8 +8,7 @@ ALLOWED spans are taken out, holds NO organisation word at all — wherever it s
   institute family's catalogued campus / place words; the letterhead agency and its umbrella names
   (`offer_rulings._AGENCIES`); the spelt-out TVET sector name; a field label (PUSAT PENGAJIAN / PUSAT LATIHAN /
   TEMPAT / LOKASI / INSTITUSI, an optional bracket) when the allowed institute follows it on the line; a line made
-  ONLY of label words (a table's label column); a closed-list bank line; the addressee block; a campus residence
-  ("Kolej Kediaman", TD-495) when no name follows it.
+  ONLY of label words (a table's label column); a closed-list bank line; the addressee block.
   The only exception: a bare generic noun in LOWERCASE raw OCR followed by a function word or punctuation
   ("pihak institut berhak", "di institusi/kolej"). At a line's end, the next line's first word is read: a
   title-case word, or an all-caps one that is no function word, is a name. A glued "KolejMercu" is split first.
@@ -50,8 +49,6 @@ OTHER_FULL_NAMES = (' JABATAN PEMBANGUNAN KEMAHIRAN ', ' KEMENTERIAN PENDIDIKAN 
 OPERATOR_PHRASES = (' DIKENDALIKAN OLEH ', ' DIKELOLAKAN OLEH ', ' DIURUSKAN OLEH ', ' DENGAN KERJASAMA ',
                     ' KERJASAMA DENGAN ', ' OPERATED BY ', ' MANAGED BY ', ' IN COLLABORATION WITH ',
                     ' IN PARTNERSHIP WITH ', ' RAKAN STRATEGIK ')
-#: TD-495: a campus residence named with an institution noun; taken out as an allowed span when no name follows it.
-FACILITIES = ('KOLEJ KEDIAMAN',)
 #: (1) The words a table's label column is made of, and its enumerators.
 LABEL_WORDS = frozenset({'TEMPAT', 'PUSAT', 'LOKASI', 'INSTITUSI', 'PENGAJIAN', 'LATIHAN', 'PROGRAM', 'TEMPOH'})
 _ENUMERATOR = re.compile(r'^(?:[A-Z]|[IVX]{1,4}|\d{1,2})$')
@@ -364,10 +361,6 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                 k += 1                                            # round 12: "IKM Kuantan Sila Mercu Jaya"
             if k < len(toks) and not covered[k] and toks[k][0][:1].isupper():
                 return f'after the institute: {up[k]}'            # (e) "IKM Mercu"
-        for _start, end in _cover(up, FACILITIES, covered):          # TD-495: a residence, no organisation
-            if (end < len(toks) and not covered[end] and toks[end][0][:1].isupper() and up[end] not in _FUNCTION_WORDS
-                    and up[end] not in places and up[end] not in _any_place()):
-                return f'after a residence: {up[end]}'            # "Kolej Kediaman Mercu Jaya" may be a company's
         for start, end in _cover(up, _AGENCIES[key], covered):
             if any(' '.join(up[start:end]) == n.strip() for n in umbrella):     # round 11 (M2): after an umbrella
                 k = _campus_end(up, end, covered, key, places)
@@ -385,10 +378,7 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                 continue
             named_after = (j + 1 < len(toks) and not covered[j + 1] and toks[j + 1][0][:1].isupper()
                            and up[j + 1] not in _FUNCTION_WORDS)
-            if w in WEAK_SUFFIXES and j + 1 == len(toks) and not raw[toks[j][2]:].strip():
-                named_after = _name_beside(lines, raws, i + 1, key, places, above=False)   # TD-494 (c)
-            if (w in WEAK_SUFFIXES and not named_after and _after_descriptor(
-                    up, j, toks, covered, i - 1 >= head_n and _name_beside(lines, raws, i - 1, key, places, True))):
+            if w in WEAK_SUFFIXES and not named_after and _after_descriptor(up, j, toks, covered):
                 continue                                          # "& Pendidikan Global" (a slogan), never a name
             if _numbered(j, toks, up, covered, places) and not _named_before(j, toks, up, covered, raw, places):
                 continue                                          # round 14: "KOLEJ 1", "PUSAT 1013", "Kampus 2"
@@ -443,59 +433,15 @@ DESCRIPTORS = frozenset({'PENDIDIKAN', 'LATIHAN', 'KEMAHIRAN', 'TEKNIKAL', 'VOKA
                          'TRAINING', 'TECHNICAL', 'VOCATIONAL'})
 
 
-#: TD-494 (a): a descriptor run holding one of each is the TVET sector spelt out where a name would stand.
-_TECHNICAL = frozenset({'TEKNIKAL', 'TECHNICAL'})
-_VOCATIONAL = frozenset({'VOKASIONAL', 'VOCATIONAL'})
-
-
-def _name_beside(lines, raws, i, key, places, above) -> bool:
-    """TD-494 (b, c): a NAME stands on the body line above (the words after its last punctuation, the line ending
-    on them) or below (the whole line) a descriptor run: one to four `_names_word` words, at least one of them no
-    descriptor, label, reference / date label, place, nor the letterhead agency's or institute's own word. Never the
-    letterhead or the addressee block, a closing line ("PENGARAH") or a course name ("Sijil Kemahiran …")."""
-    from .offer_reading import _CLOSING, _COURSE
-    if not (0 <= i < len(raws) and i < len(lines)) or _in_addressee_block(lines, i):
-        return False
-    if any(c in lines[i] for c in _CLOSING):
-        return False
-    raw, toks = raws[i], _tokens(raws[i])
-    if not toks:
-        return False
-    if above:
-        if raw[toks[-1][2]:].strip():
-            return False                                   # the line above ends on punctuation: a sentence ended
-        cut = max((m.end() for m in re.finditer(r'[^\w\s&]', raw)), default=0)
-        toks = [t for t in toks if t[1] >= cut]
-    elif re.search(r'[^\w\s&]', raw):
-        return False                                       # the line below is a name line, nothing else
-    own = {w for n in _INSTITUTE_KEY[key] + _AGENCIES[key] for w in n.split()} | AGENCY_TOKENS.get(key, set())
-    words = [t[0].upper() for t in toks]
-    if any(f' {w} ' in _COURSE for w in words):
-        return False                                       # a course name ("Kursus : Sijil Kemahiran …")
-    return 0 < len(toks) <= 4 and all(_names_word(t) for t in toks) and any(
-        not w.isdigit() and w not in DESCRIPTORS and w not in LABEL_WORDS and w not in _REF_DATE_LABELS
-        and w not in own and w not in places and w not in _any_place()
-        for w in words)
-
-
-def _after_descriptor(up, j, toks=None, covered=None, above=None) -> bool:
+def _after_descriptor(up, j, toks=None, covered=None) -> bool:
     """The word before `up[j]` is a descriptor (or DAN / AND after one; "&" is no token) — and (round 12, H2) no
     capitalised word that is no function word and no descriptor stands before that descriptor run on the line
-    ("Mercu Technical Solutions" names Mercu; "Ke arah Pendidikan & Latihan Global" names nothing). TD-494: nor is
-    the run the sector spelt out ("Teknikal Vokasional Solutions"), nor does an allowed name stand right before it
-    ("MARA Technical Solutions"), nor, when it starts the line, a name end the line above (`above`, a token)."""
+    ("Mercu Technical Solutions" names Mercu; "Ke arah Pendidikan & Latihan Global" names nothing)."""
     k = j - 1
     while k >= 0 and (up[k] in DESCRIPTORS or up[k] in ('DAN', 'AND')):
         k -= 1
     if k == j - 1 or up[k + 1] not in DESCRIPTORS:
         return False
-    run = set(up[k + 1:j])
-    if run & _TECHNICAL and run & _VOCATIONAL:
-        return False                                      # TD-494 (a): the sector where the name would be
-    if k >= 0 and toks and covered and covered[k] and toks[k][0][:1].isupper():
-        return False                                      # TD-494 (a): "MARA Technical Solutions"
-    if k < 0 and above:
-        return False                                      # TD-494 (b): "Penyedia latihan : Mercu" / "Technical …"
     for x in range(k + 1):
         if covered and covered[x]:
             continue

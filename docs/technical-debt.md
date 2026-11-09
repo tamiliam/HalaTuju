@@ -7454,7 +7454,7 @@ AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realig
 `realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
 add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
 
-**FIXED 2026-11-09 (A2.7b):** the upload and re-read paths already realign right after their own score; the only path that stored a score without one was `rescore_unscored_documents --apply`. It now calls `offer_sync.realign_after_rescore` for a newly scored offer that is its application's live latest offer, which runs the same `realign_bumi_only_pick` with every gate unchanged (genuine band, Bumi-only pick, pick not already the offer); a dry run only counts `would_realign` through `plan_bumi_realign`. Tests: `test_offer_realign.RescoreRunsTheRealignTest` (genuine score realigns; dry run writes nothing; a suspect score and an older offer never realign).
+**FIXED 2026-11-09 (A2.7b):** the upload and re-read paths already realign right after their own score; the only path that stored a score without one was `rescore_unscored_documents --apply`. It now calls `offer_sync.realign_after_rescore` for a newly scored offer that is its application's live latest offer, which runs the same `realign_bumi_only_pick` with every gate unchanged (genuine band, Bumi-only pick, pick not already the offer); a dry run only counts `would_realign` through `plan_bumi_realign`. Best-effort like the upload path: a realign that raises is logged and counted (`failed=N`), and the run goes on. Tests: `test_offer_realign.RescoreRunsTheRealignTest` (genuine score realigns; dry run writes nothing; a suspect score and an older offer never realign; a raising realign is counted and the other offers are still scored).
 
 ### [TD-449] The offer check's catalogue queries sit outside every query budget - low - **FIXED (2026-11-08, A2.4)**
 
@@ -8272,7 +8272,7 @@ corpus holds enough agency letters to measure it. *(S6 · M)*
 
 **Deferred 2026-11-09 (A2.7b):** not fixed. The capitalised-name test needs agency letters to measure against, which the fixture corpus does not yet hold; a narrower OCR-misread fold ("Acaderny", "Kolei") was considered and left out, since a one-off spelling list would be a guess, not a measured rule. The pinned cases still lift as before.
 
-### [TD-494] The agency lift's descriptor excuse can hide a company name - medium - **FIXED (2026-11-09, A2.7b)**
+### [TD-494] The agency lift's descriptor excuse can hide a company name - medium
 
 **Raised 2026-11-04 by the S6 round-13 review; left for S7 under the owner's stop rule (decisions S6 item 10).**
 Condition 4 excuses a weak suffix ("Solutions", "Technical") after a descriptor (`offer_agency._after_descriptor`)
@@ -8285,7 +8285,7 @@ pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus l
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*
 
-**FIXED 2026-11-09 (A2.7b):** `offer_agency._after_descriptor` no longer excuses the suffix when (a) the token before the descriptor run is an allowed span read in title case (the agency, "MARA Technical Solutions"), or the run itself spells both TVET words ("Teknikal Vokasional Solutions", "Teknikal dan Vokasional Skills"); (b) the run opens the line and the line above ends in a bare name; (c) the suffix ends the line and the next line is a name-only line. `_name_beside` reads a name line as 1-4 capitalised words with no punctuation, at least one not a descriptor, label, place or the agency's own word, and skips the addressee block, closing lines and course lines. The five pinned cases now block (`test_td494_a_descriptor_beside_a_name_no_longer_excuses_it`); the slogans still lift, a329 included (`test_td494_the_slogans_still_lift`). Offline genuineness eval unchanged at 286/287.
+**Deferred 2026-11-09 (A2.7b, adversarial review):** a fix was built (a name read on the line above / below, the agency or the spelt TVET sector before the run) and reverted before shipping: the name-line test blocked genuine slogan letters the baseline lifts. A future fix must be measured on the corpus and must hold both lists. **Must still lift** (a descriptor slogan beside): "Unit Kemasukan"; "Tarikh Pendaftaran"; "MALAYSIA MADANI"; a course-title line; a signatory name ("NOR AZLINA BINTI AHMAD" style); a street line; "MARA Keusahawanan & Pendidikan Global" on one line; a329 itself. **Must block** (the five pinned shapes): "MARA Technical Solutions", "Teknikal Vokasional Solutions", "Teknikal dan Vokasional Skills", "Penyedia latihan : Mercu" / "Technical Solutions", "Latihan Global" / "Mercu Jaya". The pinned gaps stay as accepted in `Round13.test_the_accepted_gaps_after_the_stop_rule`.
 
 ### [TD-495] "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
 
@@ -8297,7 +8297,7 @@ call, never a new fail. Round 12 blocked the plain spellings the same way; round
 read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
 and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
 
-**Part fixed 2026-11-09 (A2.7b):** `offer_agency.FACILITIES` ("KOLEJ KEDIAMAN") is taken out as an allowed span, so a residence line ("Kolej Kediaman", "Ko1ej Kediaman 2", "KOLEJ KEDIAMAN yang disediakan") no longer stops the lift; a capitalised name right after it ("Kolej Kediaman Mercu Jaya") still blocks, and an institute after it is judged by the existing institute rule (`test_td495_a_residence_is_no_second_organisation`). **Still open:** the sibling-institute part ("IKM1 Kuantan" on a KBS / JTM letter). Letting one agency's letter name another agency's institute widens condition (2) of `offer_rulings._agency_lift`, which is a design change for the owner; until then such a letter keeps its baseline call.
+**Deferred 2026-11-09 (A2.7b, adversarial review):** a residence span ("KOLEJ KEDIAMAN" taken out as an allowed span) was built and reverted before shipping: removing KOLEJ from the general checks let private names through. The sibling-institute part ("IKM1 Kuantan" on a KBS / JTM letter) also stays open; it widens condition (2) of `offer_rulings._agency_lift` and needs an owner ruling. A future fix must be measured on the corpus. **Must block:** "Kolej Kediaman 21 Mercu"; "Mercu Kolej Kediaman"; "Kolej Kediaman Kuantan Mercu"; "Kolej Kediaman" with a name on the NEXT line; "Kolej Kediaman Mercu Jaya". **Must lift:** a bare "Kolej Kediaman" / "Ko1ej Kediaman" line. Note: the common phrasings "Kolej Kediaman Pelajar", "Kolej Kediaman Lelaki" and "Kolej Kediaman Blok A" stay BLOCKED today (the letter keeps its baseline call) and should lift under a measured fix.
 Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 
 ### [TD-512] A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
