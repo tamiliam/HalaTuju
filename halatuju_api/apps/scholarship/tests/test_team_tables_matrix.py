@@ -240,6 +240,17 @@ def a113b_added_cells(shape):
     return cells
 
 
+#: Staff nudges sprint 3 (2026-11-09): the red banner's overdue summary (`AdminInvoiceOverdueView`). A NEW route,
+#: so NEW cells. It is the invoices screen's own door (`_InvoiceBase._caller`, `may_read_invoices`), so each shape
+#: reads exactly what it reads on the invoices list GET: a super and an organisation admin 200, the rest refused.
+NUDGE_OVERDUE = 'GET api/v1/admin/scholarship/billing/overdue/'
+NUDGE_SAME_AS = 'GET api/v1/admin/scholarship/billing/invoices/'
+
+
+def nudges_added_cells(row):
+    return {NUDGE_OVERDUE: row[NUDGE_SAME_AS]}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -412,6 +423,7 @@ def _shape_test(shape):
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
+        expected.update(nudges_added_cells(expected))
         new = sorted(set(cells) - set(expected))
         self.assertEqual(new, [], f'{shape}: endpoints with no BEFORE cell (a route added since T1?)')
         moved = {p: (expected[p], cells[p]) for p in cells if cells[p] != expected[p]}
@@ -434,6 +446,7 @@ def _expected_row(shape):
            **a113b_added_cells(shape), **i4_added_cells(shape)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
+    row.update(nudges_added_cells(row))
     return row
 
 

@@ -75,3 +75,41 @@ Where the overdue rule lives and what "overdue" means (for audit A4.5), files to
   should name this sign-in, e.g. the session user's `last_sign_in_at`). New props go on `ShellBannersProps` and are
   passed from `AppShell`'s `Chrome`. `TopBanner.tsx` draws either tone (`critical` is `role="alert"`).
 - Sandbox surface `nudge-profile-banner` (mobile-check) shows the banner; the two `m8-profile-*` surfaces show the bar.
+
+### Phase B handover (2026-11-09) — for audit A4.5
+
+- **Where the overdue rule lives:** `halatuju_api/apps/scholarship/invoice_overdue.py`, ONE module, read-only, a leaf
+  (`is_overdue(inv, today=None)`, `days_overdue(inv, today=None)`, `org_summary(organisation_id, today=None)`). No existing
+  `invoicing.py` function was touched; nothing else in the API or the web answers "is it late?".
+- **What "overdue" means, exactly:** an `Invoice` is overdue when ALL hold — `sent_at` is set; `voided_at` is not;
+  `balance()` (total less receipts) is > 0.00; `has_open_payment_declaration()` is False (an open tenant claim, neither
+  confirmed nor rejected, means "being checked", NOT late — even when part of the money has arrived and the status reads
+  `part_paid`; a rejected claim no longer shields it); and today's date in Asia/Kuala_Lumpur (`timezone.localdate()`) is
+  strictly AFTER `due_on`. On the due date itself it is not overdue; the day after is 1 day overdue. Part-paid counts; a
+  zero-balance (fully discounted) month never does; no grace period. `days_overdue` = today − `due_on` in whole days.
+- **The summary:** `org_summary` takes one organisation's sent, live invoices due before today, applies `is_overdue`, and
+  names the OLDEST (earliest `due_on`, then `issued_on`, then id): `{invoice_id, number, currency, balance_myr (string),
+  due_on, days_overdue, count, more = count − 1}`, or None.
+- **Served:** `is_overdue` on every row of `GET admin/scholarship/billing/invoices/` (`views_admin/invoices.py`, still 573
+  lines); `GET admin/scholarship/billing/overdue/` (`views_admin/invoice_overdue.py`, route in `urls_billing.py`; `urls.py`
+  still 599) → `{overdue: null | summary}` for the caller's `owning_organisation` only (never a parameter), behind
+  `_InvoiceBase._caller` (`surface_gates.may_read_invoices`: dark 404 for a non-super while billing is off, 403 for every
+  role but org_admin); a super gets null. Classified in `test_org_fence.py`; `invoice_overdue.py` is in its `SCANNED` list.
+- **Web:** `ShellBanners.tsx` pushes the red `overdue` candidate first, asks `getOverdueSummary` only while the shell's
+  billing probe is live, and again on entering or leaving `/admin/billing`; X = `{kind:'signIn', stamp: session.user.
+  last_sign_in_at}` (plus hidden for the page view). `lib/invoices.ts` `statusChip` takes `overdue` (the served flag) and
+  keeps no date compare; tenant side: a late `sent` or `part_paid` reads Overdue; the owner's wording is unchanged.
+- **Tests:** `tests/test_invoice_overdue.py` (rule edge cases: due today, part-paid, declared, rejected declaration,
+  part-paid + declared, void, zero balance, unsent, KL vs UTC midnight; summary; the door: own org, another tenant, super,
+  reviewer/finance/admin, dark billing, list flag = banner); web `ShellBanners.overdue.test.tsx`, `invoices.test.ts`,
+  `InvoicesSection.test.tsx`. Sandbox surface `nudge-overdue-banner`.
+- **The access matrix:** `test_team_tables_matrix.py` gives the new route its cells as the invoices list GET's own
+  (`nudges_added_cells`); no existing cell moved.
+- **Gates (merged tree, origin/main had nothing new):** API `pytest -n auto` 13,397 passed / 3 skipped, `manage.py check`
+  clean, `makemigrations --check` no changes; web `npm run gates` (444 suites, 6,881 tests), `bundle-budget --gate` ok
+  (median 156.767 of 157.6 kB), `mobile-check` 787 passed (the new surface at 360/390 in en/ms/ta).
+- **Hours:** about 6.0 wall-clock, of which roughly 2.5 hands-on; the rest waiting on the shared test queue and the
+  24-minute mobile-check.
+- **Left for A4.5 / open:** the banner refreshes on sign-in, on any token change and on entering/leaving Billing, not live;
+  the owner (super) chip never says Overdue (unchanged, by choice); ms/ta strings `admin.nudge.overdue*` need a language
+  review.
