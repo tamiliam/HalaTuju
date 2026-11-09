@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint S1 — a Scholars permission of its own; "See all students" is Applications; mentors read their students' files (2026-11-09)
+
+Branch s1-scholars-access, cut from p1-activity-box (not pushed). **Migration `courses` 0095_grant_scholars_key (data only, MIGRATE-FIRST by hand; SQL in `docs/releases/s1-scholars-access-release-note-draft.md`).** Brief `docs/plans/2026-11-09-s1-scholars-access.md`; rulings S1-a to S1-i in `docs/decisions.md` (2026-11-09).
+- **The key (S1-a, S1-b):** `scholars` ("Scholars") joins the catalogue, the admin preset, `LEAD_TIER`, `staff_tables.ADMIN_KEYS`, `INVITE_START['admin']` and v2 (`scholars.view`). `see_all` is relabelled "Applications" in en/ms/ta; the stored key is unchanged.
+- **The door (S1-c, S1-d):** `base.scholars_scope` decides Scholars; reviewers, QC and `see_all`-only staff are refused (403). Holders write (result review, letters, notes) across their organisation. The Mentors page's scholar side asks the key.
+- **Migration (S1-g):** every saved list holding `see_all` (or `qc`) gains `scholars`, with an audit row (`changed_by_role` 'migration'). Live: 4 rows. Reversible.
+- **Mentors (S1-h):** a mentor login and staff who mentor read their CURRENT students on Scholars, every tab, read-only; Staff-only activity rows and counts are filtered on the server; the file serves `mentor_view`. Mentor menu: Programmes, Scholars, My students, Profile. `test_mentor_denied_everywhere.py` allows the list; `test_mentor_scholars.py` pins the rest.
+- **Web:** `staffPermissions.ts`, `PermissionEditor`, the nav row (`perms: ['scholars']`, `staffMentors`), the list and file pages, "View application" and "Open scholar file" gated by key, `ScholarLetters` `readOnly`, the Manual chapters.
+- **Matrices:** API `team_matrix_s1.py`, web `src/test/s1Moves.ts` (the moved cells, nothing else).
+- **T3 merge note (`t3-person-page`, read with `git show` only):** T3's Permissions tab draws its switches through the shared `PermissionEditor` from `TABLE_KEYS.admins` / `.reviewers` (`lib/staffPermissions.ts`), so the `scholars` switch appears there with no T3 change. Expect text conflicts in `PermissionEditor.tsx` (its docstring and the `fixed` branch) and the message files. T3's `MentorOnlyPermissions.tsx` docstring and `admin.person.mentorOnly.intro` ("A mentor sees two things only: My students… Profile…") go stale with S1 and need "Scholars: their own students' files, read-only" at merge. T3 leaves `becomesMentor` as it was, so S1's wording merges clean.
+
 ### feat: sprint P1 — the activity box shows who and when, oldest at the top, with a one-line note box (2026-11-09)
 
 Branch p1-activity-box (not pushed; no migration). On a scholar's file (`/admin/scholars/<id>`), the activity box now reads the way Podio does. Brief `docs/plans/2026-11-09-p1-activity-box.md`; rulings P1-a to P1-h in `docs/decisions.md`.
