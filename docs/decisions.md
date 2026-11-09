@@ -1,5 +1,44 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-09 — A case is given only to someone in the Reviewers table who covers its gift; R1 is retired for assigning (Sprint T1, owner D7)
+
+Roadmap `docs/plans/2026-11-08-activity-box-roadmap.md` (T1, D7, on the activity-box branch); brief
+`docs/plans/2026-11-09-t1-assign-picker.md`. **Supersedes, for ASSIGNMENT only, the R1 super-target override**
+(lead ruling 2026-10-19, recorded in `services/assignment.py` and in the T5b entry's "R1 super-target" line).
+
+- **T1-a, the rule** (`services.assignment.may_assign_to`): the target must be in the Reviewers table
+  (`staff_tables.in_reviewers`: a team member who is a reviewer / qc or holds `review` / `qc`, or an org admin who
+  joined Reviewers) AND able to hold the case (`is_review_target`). A super may then give it to any such person; an
+  org admin only to one of their own organisation; anyone else to nobody. **Supers are no longer assignment
+  targets** (a super is never in Reviewers), and neither is an admin with `see_all` or an org admin outside
+  Reviewers. The `is_review_target` half is added so a Reviewer by label whose saved set took every key away is
+  not offered a case `_can_review` would refuse anyway; the server's answer does not change.
+  - It follows that an org admin may now give a case to their own organisation's QC-preset person, or to an admin
+    holding `qc`: both are in Reviewers (before, an org admin needed a `review` holder).
+- **R1 stays for HOLDING.** `is_review_target`, `_can_review`, `scheduling._can_review`, pause and the assignable
+  LIST's query still read `R1_SUPER_TARGET_ROLES`, so a case an admin holds is never stranded and its holder never
+  vanishes from either picker (bug #66).
+- **T1-b, the gift** stays in `assign_reviewer` (`gift_allows`, `gift_mismatch`) for every caller.
+- **T1-c, the codes** are unchanged: the service refuses `not_reviewer`; the org admin's own gate answers
+  `bad_assignee`. No new code, nothing new to translate.
+- **T1-d, a held case is kept.** Nothing reassigns or unassigns it. Re-picking the CURRENT holder skips
+  `may_assign_to` (in the service and in the org admin's gate), so it is the existing no-op, never a refusal.
+- **T1-e, the applications list dropdown** offers the current holder plus everyone served `assignable` who
+  covers THAT case's gift (`gifts` [] = every gift; a case whose gifts are unknown narrows nobody). Each list row
+  now serves `gift_ids` (its own `programme` and its cohort's, as `case_gifts` reads them; no extra query). A
+  legend line says what the marks mean: "✓ speaks the student's language · ⚠ does not" (en / ms / ta). The
+  parts live in `components/admin/AssignListPicker.tsx` and `lib/assignOptions.listAssignees`.
+- **T1-f, the case page picker** needs no web change: it already hides a non-`assignable` row except the holder,
+  and keeps greying a reviewer of another gift with its reason.
+- **T1-g:** this entry.
+
+**Production (2026-11-09, read-only count by the architect):** one awarded case sits with an org admin and one
+rejected case with a super. Both stay with their holders; no open case is affected.
+**Alternatives considered:** narrowing `is_review_target` itself — rejected: it would strand the cases an admin
+holds today. Hiding another gift's reviewer on the case page too — rejected (T1-f): the case page explains why a
+name is missing, the list row has no room to.
+**Revisit if:** T5e moves assignment targets to keys, or the owner wants a super to be assignable again.
+
 ## 2026-11-08 — A declared informal wage the STR vouches for counts toward the household documents total and the #54 tick (owner ruling, request #54: KEEP)
 
 Owner ruling on request #54: **keep** the behaviour as built. In `apps/scholarship/income_engine/amounts.py` (`earner_monthly_income`, about lines 87-89), a member's declared average monthly wage with no payslip or EPF statement is accepted as a real figure when the household has a valid STR (source `declared_str`). That figure counts toward the household documents total and satisfies the #54 tick.

@@ -105,8 +105,10 @@ Development, sponsor terms and emails) stay on the roles below; the landing and 
 hold and profile cards, graduation review, sponsors, sources, sponsor emails, wallet credits, team
 read-only views. So a Reviewer given Spending (Rohini) gets the Spending page and keeps the reviewer's
 Overview; a Finance person given Review reads ONLY the files of students assigned to them (owner,
-2026-10-19). A super may still assign an admin / qc / org_admin that holds `see_all`
-(`services.R1_SUPER_TARGET_ROLES`).
+2026-10-19). **Who may be GIVEN a case (T1, owner D7, 2026-11-09):** only someone in the Reviewers table
+(`staff_tables.in_reviewers`), for every caller; an org admin only their own organisation's, and only a reviewer
+who covers the case's gift. A super is never given a case. An admin / qc / org_admin keeping `see_all`
+(`services.R1_SUPER_TARGET_ROLES`) may still HOLD a case given before T1, but is no longer offered one.
 
 ### 4. What each role gets on its preset
 
