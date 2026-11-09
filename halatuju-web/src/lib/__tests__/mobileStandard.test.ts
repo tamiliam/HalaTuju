@@ -927,6 +927,9 @@ describe('the cockpit on a phone', () => {
     const classes = box.replace(/\$\{[^}]*\}/g, (m) => Array.from(m.matchAll(/'([^']*)'/g)).map((q) => q[1]).join(' '))
       .split(/\s+/).filter(Boolean)
     expect(classes).toEqual(expect.arrayContaining(['md:overflow-y-auto', 'md:overscroll-contain', 'md:max-h-[420px]', 'md:max-h-[560px]']))
+    // Each row's sr-only exact time is position:absolute; without `relative` here it escapes the scroll box and
+    // grows the PAGE on desktop (browser check 2026-11-10).
+    expect(classes).toContain('relative')
     expect(classes.filter((c) => /^(max-md:)?(max-h-|overflow-y-|overscroll-)/.test(c))).toEqual([])
   })
   test('a PDF on a phone is an Open link to a new tab, never an iframe', () => {
