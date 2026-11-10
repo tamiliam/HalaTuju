@@ -418,7 +418,7 @@ describe('a failed load or save', () => {
 })
 
 describe('i18n', () => {
-  const dirs = [path.join(__dirname), path.join(__dirname, '..', '..', 'components', 'profile')]
+  const dirs = [path.join(__dirname), path.join(__dirname, 'sections'), path.join(__dirname, 'sections', 'edit'), path.join(__dirname, '..', '..', 'components', 'profile')]
   const sources = dirs.flatMap(d => fs.readdirSync(d)
     .filter(f => /\.(tsx?)$/.test(f) && !/\.test\./.test(f))
     .map(f => fs.readFileSync(path.join(d, f), 'utf8')))

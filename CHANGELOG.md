@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: the profile page split into hooks, section views and one lazy edit chunk (audit A3.9, 2026-11-10)
+
+Branch a39 (not pushed, not deployed; no migration, no model). `src/app/profile/page.tsx` 1,274 -> 110 lines: state and load in `useProfileForm.ts`, section and save logic in `useProfileEditor.ts`, five section views in `sections/`, the five edit panels in `sections/edit/`, fetched as ONE chunk by `useProfileEditors.ts` when the page mounts (the read-only rows stay until it lands, so nothing flashes or moves). Behaviour and look unchanged, held by the pinning tests. `oversize_files` entry for the page removed from code-standards.json.
+
+### test: pin the profile page before it is split (audit A3.9, 2026-11-10)
+
+`page.sections.test.tsx`: 50 tests with `page.bumi.test.tsx` over the five sections, the edit and save paths, the IC flags and the i18n keys.
+
 ### fix: Matriculation and Form 6 rows of the SPM ranking get their academic bonus and field preference (2026-11-10)
 
 Branch stpm-rank (not pushed, not deployed; no migration, no model, no web change; no ranking weight changed). The eligibility route's items left out `track_id` and `mata_gred`, which the pre-U scorer (`ranking_pre_u.calculate_matric_stpm_fit_score`) reads, so on the dashboard ranking a Form 6 (STPM) row never got its academic bonus and no Matric / Form 6 row got its field preference or (Sains Sosial) its signal rules. `compute_course_merit` now also returns the track and the Form 6 mata gred it already worked out, and the view adds both keys to Matric / Form 6 items only, so every other item is byte-identical. The pre-U fit reason now shows the existing English track name ("matches your interest in Engineering", not the raw id), as all fit reasons are English. New `tests/test_preu_ranking_items.py` (10 cases, made-up students). A3.6 goldens: eligibility and fit unchanged; the pre-U digest (reason text only) and 26 of 35 rank digests re-recorded, with no non-pre-U score or reason changed. Not the STPM-results route (`/api/v1/stpm/ranking/`), not TD-434, not the poly/diploma route.
