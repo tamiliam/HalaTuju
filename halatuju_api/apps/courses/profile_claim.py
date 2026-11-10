@@ -238,7 +238,7 @@ def _scholarship(name):
     statement (the `_scholarship_constant` door in `org_config_registry.py` is the precedent). It
     stays inside a function so it does not run at app-load (the half that takes the service down
     at start-up)."""
-    from apps.scholarship import birth_state, emails, whatsapp
+    from apps.scholarship.public import birth_state, emails, whatsapp
     return {'birth_state': birth_state, 'emails': emails, 'whatsapp': whatsapp}[name]
 
 

@@ -7,8 +7,8 @@ from apps.courses import exam_questions, public
 class TestTheFacadeIsTheSameObjects(SimpleTestCase):
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
-            if name == 'register_stpm_document_witness':
-                continue
+            if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy'):
+                continue            # not exam_questions names; pinned in test_scholarship_public_facade
             with self.subTest(name=name):
                 self.assertIs(getattr(public, name), getattr(exam_questions, name))
 

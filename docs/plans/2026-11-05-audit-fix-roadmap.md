@@ -834,6 +834,7 @@ Each sprint here:
   - xapp ≤ 50.
   - courses → scholarship ≤ 8.
 - **Readings moved:** xapp ≈ 55 → ≤ 50.
+- **Status:** built 2026-11-11 on branch a313 (not pushed). Partial: five courses files and reports views/prompts routed; views_admin (9 names) and report_engine (3) skipped, owned by other sessions. Real readings xapp 105 -> 107, courses -> scholarship 20 -> 21 edges, budget 17 -> 16. Targets (xapp <= 50, courses -> scholarship <= 8) NOT met; they need those two files.
 - **Complexity:** M.
 - **Model:** Sonnet.
 - **Gates:** Fresh review.

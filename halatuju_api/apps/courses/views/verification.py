@@ -136,7 +136,7 @@ class PhoneVerifyStartView(APIView):
     def post(self, request):
         from django.conf import settings
         from django.core.cache import cache
-        from apps.scholarship import whatsapp  # local import: avoids app-load order issues
+        from apps.scholarship.public import whatsapp  # local import: avoids app-load order issues
 
         # Student phone verification is paused (see settings.PHONE_VERIFY_ENABLED). Refuse
         # gracefully — the /profile UI shows a "planned for the future" note, but guard the
@@ -180,7 +180,7 @@ class PhoneVerifyCheckView(APIView):
 
     def post(self, request):
         from django.conf import settings
-        from apps.scholarship import whatsapp  # local import: avoids app-load order issues
+        from apps.scholarship.public import whatsapp  # local import: avoids app-load order issues
 
         if not getattr(settings, 'PHONE_VERIFY_ENABLED', False):
             return Response({'verified': False, 'error': 'phone_verify_paused'},

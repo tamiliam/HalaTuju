@@ -41,7 +41,7 @@ def _scholarship_constant(name):
     # `apps.scholarship.constants`, which imports nothing (code health H16). Six helpers used to
     # carry an import each; the app-boundary standard counts STATEMENTS, so one door for all of
     # them is what let the reminder ladder join without raising that count.
-    from apps.scholarship import constants
+    from apps.scholarship.public import constants
     return getattr(constants, name)
 
 

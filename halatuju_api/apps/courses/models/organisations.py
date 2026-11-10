@@ -31,7 +31,7 @@ class PartnerOrganisationQuerySet(models.QuerySet):
         precisely the rows this excludes.
         """
         from django.db.models import Exists, OuterRef, Q
-        from apps.scholarship.models import Programme
+        from apps.scholarship.public import Programme
         from ..models_staff import PartnerAdmin   # was a module-level name of the old models.py
 
         owns_programme = Programme.objects.filter(
