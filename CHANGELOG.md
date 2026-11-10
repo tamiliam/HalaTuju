@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: lower the /profile first-load budget after the split (audit A3.9, 2026-11-10)
+
+`first_load_js["/profile"]` 205.5 -> 202.2 kB (build 204.527 -> 200.231). Nothing raised. /scholarship/apply passes with 0.264 kB of room against its 198.8 line, unchanged.
+
 ### refactor: the profile page split into hooks, section views and one lazy edit chunk (audit A3.9, 2026-11-10)
 
 Branch a39 (not pushed, not deployed; no migration, no model). `src/app/profile/page.tsx` 1,274 -> 110 lines: state and load in `useProfileForm.ts`, section and save logic in `useProfileEditor.ts`, five section views in `sections/`, the five edit panels in `sections/edit/`, fetched as ONE chunk by `useProfileEditors.ts` when the page mounts (the read-only rows stay until it lands, so nothing flashes or moves). Behaviour and look unchanged, held by the pinning tests. `oversize_files` entry for the page removed from code-standards.json.
