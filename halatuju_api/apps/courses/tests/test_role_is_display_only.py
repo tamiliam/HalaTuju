@@ -226,6 +226,8 @@ ALLOWLIST = {
     # (staff_lifecycle.other_active_checker) read the key payments_approve now, not the finance label.
     'scholarship/staff_lifecycle.py::change_role': ('DISPLAY', 'T5a tables',
         'the role change itself (guards the row it rewrites)'),
+    'scholarship/staff_mentor.py::add_member': ('DISPLAY', 'M1a account kind',
+        'a member joins Mentors: the UPDATE guards on the role it plans to change (concurrency)'),
     'scholarship/staff_mentor.py::candidates': ('DISPLAY', 'T5a tables',
         'who can be made a staff mentor (table rule)'),
     'scholarship/staff_mentor.py::eligible': ('DISPLAY', 'T5a tables',

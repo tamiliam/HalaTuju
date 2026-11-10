@@ -428,7 +428,7 @@ class AdminMentorActionView(_MentorsBase):
     delete) and `reactivate` (inactive only: 400 `active`; a never-signed-in mentor is sent the
     invitation again). 200 the row + `emailed`; 404 an unknown action or another organisation's
     mentor; 500 `not_configured`; 502 `reset_failed` / `send_failed`."""
-    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume')
+    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume', 'remove')   # M1a: + remove
     STAFF_ACTIONS = ('stop', 'resume')   # S7d: the only two that act on a staff mentor
 
     def post(self, request, pk, action):
@@ -443,6 +443,8 @@ class AdminMentorActionView(_MentorsBase):
             return _error('staff_mentor' if staff else 'not_staff', status.HTTP_400_BAD_REQUEST)
         if staff:
             return self._staff_action(admin, mentor, login, action)
+        if action == 'remove':
+            return self._remove_login(request, admin, mentor, login)
         emailed = None
         if action == 'resend':
             emailed, refusal = mentor_invite.resend_invite(admin, mentor, login)
@@ -476,9 +478,31 @@ class AdminMentorActionView(_MentorsBase):
             ended, refusal = staff_mentor.stop(admin, mentor, login)
         else:
             ended, refusal = 0, staff_mentor.resume(admin, mentor, login)
+        if refusal == staff_mentor.HAS_SCHOLARS:      # M1a (owner O5): nothing ended
+            return _has_scholars(login, ended)
         if refusal:
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         return Response({**mentor_rows(admin, [mentor])[0], 'emailed': None, 'ended': ended})
+
+    def _remove_login(self, request, admin, mentor, login):
+        """M1a: Remove a MENTOR LOGIN from Mentors, its only group — so only with ``{to_no_group: true}``
+        (400 `last_table` without it), and it stays on as "No group" (`staff_mentor.remove_mentor_login`)."""
+        from .. import staff_mentor
+        body = request.data if isinstance(request.data, dict) else {}
+        if body.get('to_no_group') is not True:
+            return _error('last_table', status.HTTP_400_BAD_REQUEST)
+        n, refusal = staff_mentor.remove_mentor_login(admin, mentor, login)
+        if refusal == staff_mentor.HAS_SCHOLARS:
+            return _has_scholars(login, n)
+        if refusal:
+            return _error(refusal, status.HTTP_400_BAD_REQUEST)
+        return Response({**mentor_rows(admin, [mentor])[0], 'emailed': None, 'becomes_member': True})
+
+
+def _has_scholars(login, n):
+    from .. import staff_mentor
+    return Response({'error': staff_mentor.has_scholars_message(login.name, n), 'code': staff_mentor.HAS_SCHOLARS,
+                     'scholars_now': n}, status=status.HTTP_409_CONFLICT)
 
 
 class AdminStaffMentorsView(_MentorsBase):
@@ -533,7 +557,8 @@ class AdminStaffMentorsView(_MentorsBase):
         target = qs.first()
         if target is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
-        mentor, refusal = staff_mentor.add(admin, target)
+        # M1a: a "No group" member joins Mentors as a mentor login (`add_member`).
+        mentor, refusal = (staff_mentor.add_member if target.is_member else staff_mentor.add)(admin, target)
         if refusal == 'already_mentor':
             return _error(refusal, status.HTTP_409_CONFLICT)
         if refusal:

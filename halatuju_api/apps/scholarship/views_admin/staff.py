@@ -215,7 +215,7 @@ def _permission_history(target, viewer):
 
 
 class AdminTeamTableView(_AdminBase):
-    """POST admin/team/<table>/ ``{admin_id, action: add|remove, dry_run?}`` — Team -> Admins / Reviewers
+    """POST admin/team/<table>/ ``{admin_id, action: add|remove, dry_run?, to_no_group?}`` — Team -> Admins / Reviewers
     -> Add, or Remove from (Team tables T2). The rules are `staff_tables_admin`; this is the door.
 
     Only a super or an organisation admin knocks (who may edit permissions on Team today); a person the
@@ -247,7 +247,9 @@ class AdminTeamTableView(_AdminBase):
                             status=status.HTTP_404_NOT_FOUND)
         dry_run = body.get('dry_run') is True
         try:
-            target, plan = sta.change(target.pk, table, action, by=admin, dry_run=dry_run)
+            # M1a (owner O6): only a JSON true opts a last-group Remove into "No group"; absent = today's.
+            target, plan = sta.change(target.pk, table, action, by=admin, dry_run=dry_run,
+                                      to_no_group=body.get('to_no_group') is True)
         except sta.Refused as refused:
             return Response({'error': refused.message, 'code': refused.code, **refused.extra},
                             status=refused.status)
@@ -262,7 +264,8 @@ class AdminTeamTableView(_AdminBase):
                          'finance_check_off': plan['finance_check_off'],
                          'opens_admin_pages': plan['opens_admin_pages'],
                          # T3: leaving their last staff table, they stay on as a mentor login.
-                         'becomes_mentor': plan['becomes_mentor']})
+                         'becomes_mentor': plan['becomes_mentor'],
+                         'becomes_member': plan['becomes_member']})
 
 
 class AdminTeamCandidatesView(_AdminBase):

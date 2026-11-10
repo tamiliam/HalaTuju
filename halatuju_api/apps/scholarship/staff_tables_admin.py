@@ -40,6 +40,11 @@ cannot mentor — who mentors NOW, HAS SIGNED IN, and holds no open case). Anyon
 `mentors_only` ("revoke, or stop mentoring"). The reverse door is T2's (a mentor login added to a table
 becomes staff). No email; the sign-in untouched; no stored field.
 
+⚠ SPRINT M1a (2026-11-10, owner O5/O6): with ``to_no_group`` a Remove of the LAST group (nobody mentoring
+now: T3 above still decides those) lands on "No group" — role `member`, NULL keys, sign-in kept — instead of
+`last_table`, once they have signed in. A member joins a group with that group's preset. A Remove from Admins
+is refused while anything waits on them as an admin (`staff_work.ADMIN_WAITING`: `run_in_progress` today).
+
 ⚠ WHO MAY: whoever may edit permissions on Team today — a super, or an organisation admin on their own
 organisation's TEAM members (`_staff_target_manageable`) — PLUS (lead ruling Q4) an organisation admin
 on THEIR OWN row, for the Reviewers table only. Never a fellow organisation admin; `manage_team` is
@@ -47,15 +52,19 @@ never a door (no team member holds it).
 """
 from django.db import transaction
 
+from apps.courses.staff_tables import ADMIN_KEYS
+
 from .staff_permissions_admin import PermissionChangeRefused
 
 ADMINS = 'admins'
 REVIEWERS = 'reviewers'
 TABLES = (ADMINS, REVIEWERS)
 
-#: Each table's OWN keys — what its chips show and its editor edits (owner ruling 2).
-ADMIN_TABLE_KEYS = ('see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check',
-                    'payments_approve', 'award_withdraw_request', 'award_withdraw_approve')   # A1.13b; S1
+#: Each table's OWN keys — what its chips show and its editor edits (owner ruling 2). M1a (brief addendum
+#: item 1): DERIVED from the ONE list of keys that seat a person in Admins (`staff_tables.ADMIN_KEYS`), so a
+#: future key follows on its own and a Remove from Admins strips it. `manage_team` is never a table key:
+#: the lead tier's alone (owner O15), never granted, so no chip shows it.
+ADMIN_TABLE_KEYS = tuple(k for k in ADMIN_KEYS if k != 'manage_team')
 REVIEWER_TABLE_KEYS = ('review', 'qc')
 
 #: The keys an Add gives. Admins: BOTH keys, the same as an invited Admin (`staff_tables.INVITE_START`;
@@ -68,6 +77,7 @@ MENTORS_ONLY = 'mentors_only'
 HAS_OPEN_CASES = 'has_open_cases'
 LEAD_FIXED = 'lead_fixed'
 QC_SEES_ALL = 'qc_sees_all'
+NOT_ARRIVED = 'not_arrived'       # M1a: "No group" only for somebody who has signed in (Invitations has the rest)
 
 #: T3: the staff roles that may leave their last STAFF table and stay on as a mentor login. Never
 #: `org_admin` (the lead never leaves Admins), never `finance` (it cannot mentor: `mentors_now` is false).
@@ -185,33 +195,30 @@ def _plan_add(target, table):
             'stored': _stored_set(target.role, after)}
 
 
-def _plan_remove(target, table, open_n):
+def _plan_remove(target, table, open_n, to_no_group=False):
     from apps.courses import staff_permissions as sp
     from apps.courses import staff_tables
-    from . import staff_lifecycle
+    from . import staff_lifecycle, staff_work
     if sp.is_lead_tier(target) and table == ADMINS:
         raise Refused(LEAD_FIXED, 400, 'The organisation admin always sits in Admins; that cannot change.')
     if not _in(target, table):
         raise Refused('not_in', 400, f'{target.name} is not in this table.')
+    if table == ADMINS:
+        # M1a (owner O5): refused while anything is still waiting on them as an admin (the per-key
+        # registry `staff_work.ADMIN_WAITING`; every entry counts, held key or not — lead).
+        for entry, n in staff_work.admins_waiting(target):
+            raise Refused(entry.code, 409, entry.message(target.name, n), **{entry.field: n})
     other = _other(table)
-    to_mentor = False
+    to_mentor = to_member = False
     if not _in(target, other):
         if not staff_tables.in_mentors(target):
-            raise Refused(LAST_TABLE, 400,
-                          f'This is the only table {target.name} is in. Revoke their access instead.')
-        # T3: only Mentors would be left — accepted as a mentor login where that shape is safe.
-        n = staff_lifecycle.open_cases(target) if open_n is None else open_n
-        if n:
-            raise Refused(HAS_OPEN_CASES, 409,
-                          f'{target.name} has {n} open case(s) assigned. Reassign their cases first.',
-                          open_cases=n)
-        if not may_become_mentor(target, n):
-            raise Refused(MENTORS_ONLY, 400,
-                          f'{target.name} would be left only in Mentors, which is possible only for an '
-                          'admin, reviewer or QC who has signed in. Revoke their access, or stop their '
-                          'mentoring, instead.')
-        to_mentor = True
-    if table == REVIEWERS and not to_mentor:
+            if not to_no_group:
+                raise Refused(LAST_TABLE, 400,
+                              f'This is the only table {target.name} is in. Revoke their access instead.')
+            to_member = _refuse_no_group(target, table, open_n)
+        else:
+            to_mentor = _refuse_to_mentor(target, open_n)
+    if table == REVIEWERS and not (to_mentor or to_member):
         n = staff_lifecycle.open_cases(target) if open_n is None else open_n
         if n:
             raise Refused(HAS_OPEN_CASES, 409,
@@ -223,6 +230,12 @@ def _plan_remove(target, table, open_n):
         from apps.courses.models import PartnerAdmin
         return {'role': PartnerAdmin.MENTOR_ROLE, 'before': before, 'after': [], 'stored': None,
                 'to_mentor': True}
+    if to_member:
+        # M1a (owner O6): their last group goes; they stay on the Staff list as "No group" — sign-in kept,
+        # no key (NULL), any mentor link kept with its Mentor already deactivated (`in_mentors` is false).
+        from apps.courses.models import PartnerAdmin
+        return {'role': PartnerAdmin.MEMBER_ROLE, 'before': before, 'after': [], 'stored': None,
+                'to_member': True}
     if sp.is_lead_tier(target):
         return {'role': target.role, 'before': before, 'after': list(sp.preset_for(target.role)),
                 'stored': None, 'lead': True}
@@ -239,18 +252,57 @@ def _plan_remove(target, table, open_n):
     return {'role': role, 'before': before, 'after': after, 'stored': _stored_set(role, after)}
 
 
-def plan_table_change(target, table, action, *, open_n=None):
-    """What adding / removing would do, or `Refused`. Read-only apart from the open-case count."""
+def _refuse_to_mentor(target, open_n):
+    """T3: only Mentors would be left — accepted as a mentor login where that shape is safe. True, or
+    `Refused`."""
+    from . import staff_lifecycle
+    n = staff_lifecycle.open_cases(target) if open_n is None else open_n
+    if n:
+        raise Refused(HAS_OPEN_CASES, 409,
+                      f'{target.name} has {n} open case(s) assigned. Reassign their cases first.',
+                      open_cases=n)
+    if not may_become_mentor(target, n):
+        raise Refused(MENTORS_ONLY, 400,
+                      f'{target.name} would be left only in Mentors, which is possible only for an '
+                      'admin, reviewer or QC who has signed in. Revoke their access, or stop their '
+                      'mentoring, instead.')
+    return True
+
+
+def _refuse_no_group(target, table, open_n):
+    """M1a (owner O6): may ``target`` leave their LAST group and stay on as "No group"? Only once they have
+    signed in (before that they live on Invitations, owner O1 — lead), and, from Reviewers, holding no
+    open case. True, or `Refused`."""
+    from . import staff_lifecycle
+    if target.first_seen_at is None:
+        raise Refused(NOT_ARRIVED, 400, f'{target.name} has not signed in yet. Cancel their invitation '
+                                        'instead.')
+    n = 0
+    if table == REVIEWERS:
+        n = staff_lifecycle.open_cases(target) if open_n is None else open_n
+    if n:
+        raise Refused(HAS_OPEN_CASES, 409,
+                      f'{target.name} has {n} open case(s) assigned. Reassign their cases first.',
+                      open_cases=n)
+    return True
+
+
+def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
+    """What adding / removing would do, or `Refused`. Read-only apart from the work counts.
+    ``to_no_group`` (M1a, owner O6): a Remove of the LAST group lands on "No group" (role `member`)
+    instead of `last_table`. Without it, today's answer."""
     from . import staff_lifecycle, staff_permissions_admin as spa
     if table not in TABLES or action not in ('add', 'remove'):
         raise Refused('bad_request', 400, 'table must be admins or reviewers; action add or remove.')
     _refuse_basic(target)
-    out = _plan_add(target, table) if action == 'add' else _plan_remove(target, table, open_n)
+    out = (_plan_add(target, table) if action == 'add'
+           else _plan_remove(target, table, open_n, to_no_group))
     out['role_from'] = target.role
     out['role_changed'] = out['role'] != target.role
     lead = out.pop('lead', False)
     # T3: they leave their last staff table and stay on as a mentor login — said on the confirm.
     out['becomes_mentor'] = out.pop('to_mentor', False)
+    out['becomes_member'] = out.pop('to_member', False)    # M1a: "No group", said on the confirm
     if not lead and not target.is_mentor:
         # The editor's own stranding rule (a Remove from Admins taking `see_all` from somebody who
         # reaches assigned cases only through it) — the same check, the same words.
@@ -275,10 +327,11 @@ def plan_table_change(target, table, action, *, open_n=None):
     return out
 
 
-def _cheap_refusal(target, table, open_n):
+def _cheap_refusal(target, table, open_n, to_no_group=False):
     """The refusal a Remove would meet, read WITHOUT a query (open cases counted once for the page):
     the same rules `_plan_remove` applies first, in its order. The rarer stranding refusal (a Remove from
-    Admins taking `see_all` from somebody who reaches cases only through it) is the endpoint's to say."""
+    Admins taking `see_all` from somebody who reaches cases only through it) is the endpoint's to say, and
+    so is M1a's Admins "waiting on them" refusal (`staff_work.ADMIN_WAITING`, e.g. `run_in_progress`)."""
     from apps.courses import staff_permissions as sp
     from apps.courses import staff_tables
     if not target.is_active:
@@ -289,7 +342,11 @@ def _cheap_refusal(target, table, open_n):
         return 'not_in'
     if not _in(target, _other(table)):
         if not staff_tables.in_mentors(target):
-            return LAST_TABLE
+            if not to_no_group:
+                return LAST_TABLE
+            if target.first_seen_at is None:          # M1a: `_refuse_no_group`, in its order
+                return NOT_ARRIVED
+            return HAS_OPEN_CASES if table == REVIEWERS and open_n else None
         if open_n:
             return HAS_OPEN_CASES
         return None if may_become_mentor(target, open_n) else MENTORS_ONLY   # T3
@@ -312,7 +369,7 @@ def open_case_counts(admin_ids):
     return {r['assigned_to_id']: r['n'] for r in rows}
 
 
-def row_fields(caller, admins, *, open_counts=None):
+def row_fields(caller, admins, *, open_counts=None, to_no_group=False):
     """`{admin_id: {...}}` — what the Team tables need per row, served on both lists so the screen shows
     a Remove only where the endpoint will accept it:
       `tables`        the tables the person sits in (`staff_tables.tables`)
@@ -331,7 +388,7 @@ def row_fields(caller, admins, *, open_counts=None):
         remove = {}
         for table in TABLES:
             if a.is_active and _in(a, table) and may_act(caller, a, table):
-                remove[table] = _cheap_refusal(a, table, counts.get(a.pk, 0))
+                remove[table] = _cheap_refusal(a, table, counts.get(a.pk, 0), to_no_group)
         out[a.pk] = {'tables': list(staff_tables.tables(a)), 'lead': sp.is_lead_tier(a),
                      'admin_keys': table_keys(a, ADMINS), 'reviewer_keys': table_keys(a, REVIEWERS),
                      'remove': remove}
@@ -339,7 +396,7 @@ def row_fields(caller, admins, *, open_counts=None):
 
 
 # ── the write ───────────────────────────────────────────────────────────────────────────────────────
-def change(target_id, table, action, *, by, dry_run=False):
+def change(target_id, table, action, *, by, dry_run=False, to_no_group=False):
     """Plan, and unless ``dry_run`` apply. Returns ``(target, plan)``. The row is LOCKED for the plan and
     the write (the editor's lock, which `assign_reviewer` also takes), and the UPDATE carries the role and
     the active flag it planned against."""
@@ -354,7 +411,7 @@ def change(target_id, table, action, *, by, dry_run=False):
         # it before the lock, and a role or organisation change landing in between must not slip through.
         if target is None or not may_act(by, target, table):
             raise Refused('not_found', 404, 'Admin not found')
-        p = plan_table_change(target, table, action)
+        p = plan_table_change(target, table, action, to_no_group=to_no_group)
         if dry_run:
             return target, p
         fields = {'permissions': p['stored']}
@@ -368,7 +425,7 @@ def change(target_id, table, action, *, by, dry_run=False):
         done = rows.update(**fields)
         if not done:
             raise Refused('changed', 409, 'Somebody changed this person a moment ago. Reload and try again.')
-        if p['role_changed'] and not target.is_mentor and not p['becomes_mentor']:
+        if p['role_changed'] and not target.is_mentor and not (p['becomes_mentor'] or p['becomes_member']):
             # As `change_role` does: an OPEN staff invitation carries the role the Invitations page shows.
             invitations.open_only(Invitation.objects.filter(
                 audience='staff', partner_admin=target)).update(role=p['role'])

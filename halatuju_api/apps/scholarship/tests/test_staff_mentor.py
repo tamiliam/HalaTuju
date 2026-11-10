@@ -81,6 +81,15 @@ class _Base(TestCase):
     def open_count(self, mentor):
         return MentorAssignment.objects.filter(mentor=mentor, ended_at__isnull=True).count()
 
+    def stop(self, mentor):
+        """M1a (owner O5): Stop mentoring is refused while a scholar is still mentored; end the scholar's
+        mentoring on their tab first, then stop."""
+        if self.open_count(mentor):
+            r = self.act(mentor, 'stop')
+            self.assertEqual((r.status_code, r.json().get('code')), (409, 'has_scholars'), r.content)
+            mentoring.end(self.lead, self.app)
+        return self.act(mentor, 'stop')
+
     def login_snapshot(self, login):
         login.refresh_from_db()
         return (login.is_active, login.role, login.supabase_user_id, login.email, login.permissions,
@@ -231,20 +240,32 @@ class TestTheWaysOut(_Base):
         before = self.login_snapshot(self.officer)
         with patch(SUPABASE[0]) as kill, patch(SUPABASE[1]) as setpw, patch(SUPABASE[2]) as drop, \
                 patch(SUPABASE[3]) as issue:
-            r = self.act(mentor, 'stop')
+            refused = self.act(mentor, 'stop')
+            # M1a (owner O5): refused while the scholar is still mentored, and nothing is ended.
+            self.assertEqual((refused.status_code, refused.json()['code'], refused.json()['scholars_now']),
+                             (409, 'has_scholars', 1))
+            self.assertEqual(self.open_count(mentor), 1)
+            mentor.refresh_from_db()
+            self.assertIsNone(mentor.deactivated_at)
+            r = self.stop(mentor)
         self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual((r.json()['status'], r.json()['ended']), ('inactive', 1))
+        self.assertEqual((r.json()['status'], r.json()['ended']), ('inactive', 0))
         for m in (kill, setpw, drop, issue):
             m.assert_not_called()
         self.assertEqual(self.login_snapshot(self.officer), before)
-        self._stopped(mentor, self.officer)
+        mentor.refresh_from_db()
+        self.officer.refresh_from_db()
+        self.assertIsNotNone(mentor.deactivated_at)
+        self.assertFalse(self.officer.mentors_now)
+        self.assertEqual(mail.outbox, [])
+        self.assertEqual(authed_client(self.officer).get(DESK).status_code, 403)
         self.assertEqual(authed_client(self.officer).get('/api/v1/admin/admins/').status_code, 200)
         self.assertEqual(self.act(mentor, 'stop').json().get('code'), 'not_active')
 
     def test_mentor_again_restores_the_mentor_and_no_assignment(self):
         mentor = self.added(self.officer)
         self.assign(mentor)
-        self.act(mentor, 'stop')
+        self.stop(mentor)
         r = self.act(mentor, 'resume')
         self.assertEqual((r.status_code, r.json()['status']), (200, 'active'))
         self.officer.refresh_from_db()
@@ -418,7 +439,7 @@ class TestTheReaders(_Base):
         self.assertEqual((rows[mentor.pk]['staff_role'], rows[mentor.pk]['scholars_now'],
                           rows[mentor.pk]['manageable']), ('admin', 1, True))
         self.assertIsNone(rows[self.kavitha.pk]['staff_role'])
-        self.act(mentor, 'stop')
+        self.stop(mentor)
         body = authed_client(self.lead).get(MENTORS).json()
         self.assertEqual({m['id']: m['status'] for m in body['mentors']}[mentor.pk], 'inactive')
         self.assertEqual(body['counts']['inactive'], 1)
@@ -475,7 +496,7 @@ class TestTheReaders(_Base):
                          (mentor.pk, 'Encik Faizal', 'active'))
         offered = [m['id'] for m in mentoring.assignable_mentors(self.app)]
         self.assertIn(mentor.pk, offered)
-        self.act(mentor, 'stop')
+        self.stop(mentor)
         self.assertNotIn(mentor.pk, [m['id'] for m in mentoring.assignable_mentors(self.app)])
 
     def test_leave_writes_nothing_for_anybody_but_a_staff_mentor(self):
@@ -504,7 +525,7 @@ class TestReviewFixes(_Base):
         listed, on_tab, whole = self._phone_on_staff_screens(mentor)
         self.assertEqual((listed, on_tab), ('', ''))
         self.assertNotIn('012-777 8899', whole)
-        self.act(mentor, 'stop')
+        self.stop(mentor)
         listed, on_tab, whole = self._phone_on_staff_screens(mentor)
         self.assertEqual((listed, on_tab), ('', None))
         self.assertNotIn('012-777 8899', whole)
