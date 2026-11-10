@@ -661,7 +661,7 @@ def student_slip_check(doc) -> dict:
     if not data['names']:
         # No subject rows: "extraction hasn't run / was skipped" (PENDING) vs "Gemini ran but
         # couldn't read the subject table" (UNREADABLE — re-upload; a bare candidate-name is this).
-        from apps.courses.exam_questions import spm_slip_comparable   # #62 review 3: only the name speaks
+        from apps.courses.public import spm_slip_comparable   # #62 review 3: only the name speaks
         s = ('not_compared' if not spm_slip_comparable(profile, _SUBJECT_BM)
              else 'pending' if (not sv) or sv == 'review_manually' else 'unreadable')
         return {'name': name, 'subjects': s, 'results': s,

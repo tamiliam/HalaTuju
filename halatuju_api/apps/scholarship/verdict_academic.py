@@ -17,7 +17,7 @@ def _verdict_academic(application, spm_only=False):
     'verified'. Two independent readings: agreement verifies, a disagreement pinpoints the cell.
     Third route S3 / #388: `higher_results.academic_fact` picks the card; `spm_only` = the SPM card."""
     from .academic_engine import read_slip, _slip_name_status, _SUBJECT_BM
-    from apps.courses.exam_questions import spm_slip_comparable
+    from apps.courses.public import spm_slip_comparable
     from . import higher_results, wrong_slip
     if not spm_only:      # the higher card (S3), or the SPM card capped while they are owed (#388)
         return higher_results.academic_fact(application, lambda: _verdict_academic(application, True))

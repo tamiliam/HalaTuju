@@ -6,7 +6,7 @@ only, never overwrites a deliberate pick. Going forward the track is kept curren
 """
 from django.core.management.base import BaseCommand
 
-from apps.courses.exam_questions import spm_grades_for
+from apps.courses.public import spm_grades_for
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ScholarshipApplication, ApplicantDocument
 from apps.scholarship import offer_pathway as op

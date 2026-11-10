@@ -18,7 +18,7 @@ from types import SimpleNamespace
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APITestCase
 
-from apps.courses import exam_questions as eq
+from apps.courses import public as eq
 from apps.courses.models import StudentProfile
 from apps.courses.serializers import ProfileUpdateSerializer
 from apps.scholarship import pool, shortlisting

@@ -11,7 +11,7 @@ application's documents (the STR / JKM claim gates and the Statement of Intent) 
 """
 import re
 
-from apps.courses.exam_questions import spm_grades_for, spm_grades_none_label
+from apps.courses.public import spm_grades_for, spm_grades_none_label
 
 from .models import FundingNeed
 from .profile_prompts import _BUCKET_LABELS, _BUCKET_ORDER

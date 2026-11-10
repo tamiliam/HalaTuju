@@ -204,7 +204,7 @@ def _offer_in_results_card(application):
 
 
 def _held_label(application):
-    from apps.courses.exam_questions import QUALIFICATION_LABELS
+    from apps.courses.public import QUALIFICATION_LABELS
     from .higher_results import anchor_doc, student_higher_check
     kind = student_higher_check(anchor_doc(application, 'higher_results'))['kind_held']
     return QUALIFICATION_LABELS.get(kind, kind)

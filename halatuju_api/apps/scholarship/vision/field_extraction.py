@@ -28,7 +28,7 @@ def _extract_slip_deterministic(doc, image, words=None):
     TD-324: 1 live Form Six explorer's SPM slip had been skipped, 0 live the other way)."""
     if image is None:
         return None, {'reason': 'no_image'}
-    from apps.courses.exam_questions import results_held
+    from apps.courses.public import results_held
     exam_type = results_held(getattr(doc.application, 'profile', None)).lower()
     if exam_type and exam_type != 'spm':
         return None, {'reason': 'not_spm_exam', 'exam_type': exam_type}

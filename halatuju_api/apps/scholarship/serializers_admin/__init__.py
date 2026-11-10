@@ -5,7 +5,7 @@ old name is re-exported here, so `from apps.scholarship.serializers_admin import
 
 # Everything the old module imported stays reachable under its old name.
 from rest_framework import serializers
-from apps.courses.exam_questions import results_held, spm_grades_for
+from apps.courses.public import results_held, spm_grades_for
 from apps.courses.utils import tidy_parentage_marker
 from ..models import (
     FundingNeed,

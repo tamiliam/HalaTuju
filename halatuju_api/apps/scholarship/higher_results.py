@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import re
 
-from apps.courses.exam_questions import spm_grades_for  # one SPM-grade reader (S3b)
+from apps.courses.public import spm_grades_for  # one SPM-grade reader (S3b)
 
 _STR = {'type': 'string'}
 
@@ -280,7 +280,7 @@ def student_higher_check(doc) -> dict:
     `kind_status`: 'match' | 'different' | 'spm' | '' (cannot tell). `readable` is None until
     read. `note`: 'spm_slip' | 'kind_differs' | 'grades_differ' | '' — the ONE note to show (D13),
     in that order; `note_kind` is the results page the note's link opens."""
-    from apps.courses.exam_questions import is_tertiary, results_held
+    from apps.courses.public import is_tertiary, results_held
     from .academic_engine import _slip_name_status
     vf, f = _fields(doc)
     sv = vf.get('student_verdict')
@@ -413,7 +413,7 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_unverified'))
     elif not chk['readable']:
         unresolved.append(_item('higher_results_unreadable'))
-    from apps.courses.exam_questions import QUALIFICATION_LABELS as name   # the sponsor line's words
+    from apps.courses.public import QUALIFICATION_LABELS as name   # the sponsor line's words
     kind = name.get(chk['kind_held'], chk['kind_held'])
     if chk['kind_status'] == 'spm':
         unresolved.append(_item('higher_results_is_spm', held=kind))

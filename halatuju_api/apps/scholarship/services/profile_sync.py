@@ -7,7 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`. Then, on 20
 """
 from django.utils import timezone
 
-from apps.courses.exam_questions import results_held, spm_grades_for
+from apps.courses.public import results_held, spm_grades_for
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from ..shortlisting import count_spm_a_grades

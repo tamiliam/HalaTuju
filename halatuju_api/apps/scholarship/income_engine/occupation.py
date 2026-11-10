@@ -10,7 +10,7 @@ from __future__ import annotations
 import datetime
 
 from ..document_snapshot import has_live_doc, live_docs
-from apps.courses.exam_questions import heading_for
+from apps.courses.public import heading_for
 from .freshness import _INCOME_DOC_CURRENT_MONTHS
 from .identity_checks import _cluster_docs
 from .relationships import _MEMBER_ORDER

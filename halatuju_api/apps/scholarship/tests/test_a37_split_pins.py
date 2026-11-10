@@ -41,9 +41,9 @@ class TestOldNamesStillResolve(SimpleTestCase):
         self._check('apps.courses.models', _PINS['courses.models']['names'])
 
     def test_the_identity_the_tests_lean_on(self):
-        from apps.courses import exam_questions
+        from apps.courses import public
         from apps.scholarship import serializers_admin
-        self.assertIs(serializers_admin.held_qualification, exam_questions.results_held)
+        self.assertIs(serializers_admin.held_qualification, public.results_held)
 
     def test_partneradmin_reexport_is_the_staff_module_class(self):
         from apps.courses import models, models_staff

@@ -18,7 +18,7 @@ Rules:
 - Courses itself keeps importing its own files directly; this module is for other apps.
 """
 from . import exam_questions as _exam_questions
-from .exam_questions import (  # noqa: F401  (the re-exports ARE the point)
+from .exam_questions import (
     QUALIFICATION_LABELS,
     THIRD_ROUTE,
     ResultsHeldField,

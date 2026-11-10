@@ -11,7 +11,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 
-from apps.courses.exam_questions import spm_grades_for
+from apps.courses.public import spm_grades_for
 from .shared import _P, _meter_email, logger
 
 

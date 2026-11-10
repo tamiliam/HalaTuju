@@ -189,7 +189,7 @@ def spm_slip_compare(profile, slip) -> dict:
     compared (``compared`` False: no tick, no hold). When some were checked but others could not be
     (``unchecked``: a short read, a printed row with no readable grade), it is not complete, and the
     verdict names them ("please check by eye") so a hold always has its reason."""
-    from apps.courses.exam_questions import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
+    from apps.courses.public import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
     if spm_slip_comparable(profile, _SUBJECT_BM):
         cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
         if not profile or not is_tertiary(results_held(profile)):

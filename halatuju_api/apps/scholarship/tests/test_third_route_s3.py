@@ -11,7 +11,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses import exam_questions as eq
+from apps.courses import public as eq
 from apps.courses.models import FieldTaxonomy, StpmCourse, StudentProfile
 from apps.courses.serializers import ProfileUpdateSerializer
 from apps.scholarship import requirements, results_kind, results_route

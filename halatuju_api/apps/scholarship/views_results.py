@@ -75,7 +75,7 @@ class SpmOnlyView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
-        from apps.courses.exam_questions import is_tertiary
+        from apps.courses.public import is_tertiary
         from .views import _current_application
         app = _current_application(request.user_id)
         if app is None or app.profile is None:

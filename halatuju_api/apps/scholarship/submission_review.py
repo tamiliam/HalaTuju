@@ -31,7 +31,7 @@ Verification taxonomy for a ledger row:
 """
 from __future__ import annotations
 
-from apps.courses.exam_questions import results_held
+from apps.courses.public import results_held
 
 from .anomaly_engine import sibling_tertiary_count, detect_anomalies
 from .document_snapshot import latest_doc
