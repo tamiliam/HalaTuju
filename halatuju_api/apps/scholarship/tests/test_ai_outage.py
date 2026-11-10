@@ -70,7 +70,7 @@ def _gemini_client(errors_by_model):
 def _gemini_down():
     """Patch the SDK so every model in the cascade answers 402 — the incident, at the provider."""
     client = _gemini_client({m: _402 for m in ('gemini-2.5-flash', 'gemini-2.5-flash-lite',
-                                               'gemini-2.5-pro')})
+                                               'gemini-3.8-flash')})
     return patch('google.genai.Client', return_value=client)
 
 

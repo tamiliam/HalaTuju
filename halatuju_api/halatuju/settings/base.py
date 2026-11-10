@@ -123,9 +123,9 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# Contract module — the SINGLE Gemini model for comprehension-quiz questions (contracts.generate_quiz).
-# Owner decision 4: never downgrade silently; an unavailable model raises (NOT the MODEL_CASCADE).
-CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+# Contract quiz, sponsor terms, docx segmentation: tried FIRST, then the Flash cascade (gemini.generate_with_fallback).
+# Owner 2026-11-10 (Gemini Phase 1) superseded "Owner decision 4: never downgrade"; see docs/decisions.md.
+CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-3.8-flash')
 # "How it's advertised" — the model that DRAFTS a gift's Malay/Tamil apply-page copy from its own
 # English (`apply_copy_draft`). Flash by owner decision (2026-09-10): a few hundred words a press,
 # and a person reads every line before it can be saved, so the pro model's cost buys nothing here.
@@ -480,8 +480,8 @@ REQUESTS_ENABLED = os.environ.get('REQUESTS_ENABLED', '').lower() in ('1', 'true
 # default OFF — dark until the owner approves the usage-screen artifact). It NEVER gates the meter:
 # UsageEvent rows accrue unconditionally from deploy (best-effort) regardless of this flag.
 BILLING_USAGE_ENABLED = os.environ.get('BILLING_USAGE_ENABLED', '').lower() in ('1', 'true', 'yes')
-# The Gemini model the AI reviewer triages a request with, through contracts._gemini_generate.
-REQUESTS_TRIAGE_MODEL = os.environ.get('REQUESTS_TRIAGE_MODEL', 'gemini-2.5-pro')
+# The AI reviewer's model for a request (contracts._gemini_generate), then the Flash cascade (owner 2026-11-10).
+REQUESTS_TRIAGE_MODEL = os.environ.get('REQUESTS_TRIAGE_MODEL', 'gemini-3.8-flash')
 # The preset margin (%) a feature quote carries, owner-adjustable per quote. A quote in hours
 # reads "≈N hours, includes M% margin".
 REQUESTS_QUOTE_MARGIN_PCT = int(os.environ.get('REQUESTS_QUOTE_MARGIN_PCT', '50'))

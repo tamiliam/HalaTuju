@@ -10,7 +10,7 @@ What is kept from there, because it earns its keep:
   * draft immutability — every write funnels through `_require_draft`
   * publish as archive-then-activate inside ONE transaction, with `select_for_update`
   * a validation checklist of machine codes the frontend renders without knowing any rule
-  * the single mockable Gemini seam, metered, with no downgrade fallback
+  * the single mockable Gemini seam, metered; its callers fall back down the Flash cascade
   * per-item locale→en fallback, so a half-translated version can never be served half-rendered
 
 What is deliberately dropped: hierarchy (sections are FLAT), tokens/merge variables (the
@@ -166,8 +166,9 @@ def replace_sections(terms, rows):
 def _gemini_generate(prompt, model):
     """The single mockable seam — patched in every test, so no CI run can make a live call.
 
-    NO downgrade fallback, matching the contract module's owner decision: an unconfigured or
-    unavailable model raises rather than quietly producing something from a weaker one.
+    ONE model per call; it raises on any failure. The callers fall back through
+    `gemini.generate_with_fallback` (the configured model, then the Flash cascade) — owner,
+    2026-11-10 (Gemini Phase 1), superseding the contract module's "no downgrade" decision.
 
     ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
     instead of three) and kept this name, because this is the boundary tenancy rule 6 names and
@@ -249,10 +250,11 @@ def generate_quiz(section, *, model=None):
     if not section.is_quiz_candidate:
         raise SponsorTermsError('quiz_not_candidate')
 
-    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-3.8-flash')
     from . import usage
     with usage.usage_context(source='sponsor_terms_quiz'):
-        raw = _gemini_generate(_build_quiz_prompt(section), model)
+        raw, model = gemini.generate_with_fallback(_gemini_generate, _build_quiz_prompt(section),
+                                                   model, fatal=SponsorTermsError)
 
     data = _parse_quiz_json(raw)
     if not quiz_payload_valid(data.get('en')):
@@ -298,10 +300,12 @@ def import_docx(data, *, model=None):
     structured = contracts._docx_structure(data)
     if structured is None:
         text = contracts._extract_docx_text(data)
-        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-3.8-flash')
         from . import usage
         with usage.usage_context(source='sponsor_terms_docx'):
-            raw = contracts._gemini_generate(contracts._build_segment_prompt(text), model)
+            raw, _answered = gemini.generate_with_fallback(
+                contracts._gemini_generate, contracts._build_segment_prompt(text), model,
+                fatal=contracts.ContractsError)
         structured = {'title': '', 'preamble': '', 'clauses': contracts._parse_segments(raw)}
 
     sections = []

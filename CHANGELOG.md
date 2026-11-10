@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Gemini Phase 1 - 3.8 Flash replaces 2.5 Pro, with a Flash fallback for every former Pro job (2026-11-11)
+
+Branch gemini-phase1 (not pushed, not deployed; no migration). `gemini-2.5-pro` has answered 404 for our key since
+about 2026-10-25: request triage (no fallback) had been dead since 2026-10-23, the contract and sponsor-terms quiz and
+the Word-import segmentation would fail, and the final profile refine fell back to 2.5 Flash. Owner ruling 2026-11-10,
+which supersedes the contract module's "Owner decision 4: NO downgrade fallback" (`docs/decisions.md`).
+- `gemini-3.8-flash` (confirmed in the models list, generateContent) replaces 2.5 Pro: `PRO_CASCADE` and the
+  `CONTRACT_QUIZ_MODEL` / `REQUESTS_TRIAGE_MODEL` defaults (env overrides kept).
+- One order rule, `profile_engine.cascade_from(model)` (the model, then `MODEL_CASCADE`, no repeats), and one runner,
+  `gemini.generate_with_fallback`, which calls each caller's own `_gemini_generate` seam once per model (every
+  existing `patch()` still lands). Wired into `contracts.generate_quiz` / `segment_docx`, `sponsor_terms.generate_quiz`
+  / `import_docx` and `org_requests_ai.run_ai_review`. Errors and empty answers move to the next model; "no key" / "no
+  SDK" does not; when every model fails the last error goes up, so the failure paths are unchanged.
+- The model that answered is what is recorded (`quiz_generated_model`, `ai_draft_model`, the usage meter).
+- AI registry: the three jobs list the Flash cascade as their fallbacks, read through `cascade_from`.
+- Tests: `test_gemini_fallback.py` (new; per caller: configured model first, the next model answers on failure, the
+  all-fail path unchanged, the meter names the answering model); tests pinning 2.5 Pro as our configuration moved to
+  3.8 Flash (the A3.6 profile goldens' model list only; every prompt byte-identical).
+- No temperature, top_p or thinking change. `apply_copy_draft` (2.5 Flash) keeps its single call.
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).

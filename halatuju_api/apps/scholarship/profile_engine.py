@@ -51,10 +51,22 @@ from .profile_prompts import (  # re-exports (A3.6)
 logger = logging.getLogger(__name__)
 
 MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']   # 2.0-flash retired (404), 2026-10-24
+
+
+def cascade_from(model):
+    """``model`` first, then ``MODEL_CASCADE`` in order, without repeats — the ONE rule for a
+    job that has a preferred model and falls back to the Flash cascade (owner, 2026-11-10: every
+    former Pro job may fall back, contracts included). ``PRO_CASCADE``, the single-model callers
+    (``gemini.generate_with_fallback``) and the AI registry all read it from here."""
+    return list(dict.fromkeys(m for m in [model, *MODEL_CASCADE] if m))
+
+
 # The FINAL profile is the conclusive document a sponsor reads, generated rarely (once
-# per accepted student) — so it runs on Pro for the best prose, falling back to the
-# Flash cascade if Pro is unavailable. The high-volume DRAFT stays on the Flash cascade.
-PRO_CASCADE = ['gemini-2.5-pro'] + MODEL_CASCADE
+# per accepted student) — so it runs on the strongest model we have, falling back to the
+# Flash cascade if that one is unavailable. The high-volume DRAFT stays on the Flash cascade.
+# Gemini Phase 1 (2026-11-10): gemini-2.5-pro answers 404 for our key; 3.8 Flash replaces it.
+PRO_MODEL = 'gemini-3.8-flash'
+PRO_CASCADE = cascade_from(PRO_MODEL)
 
 # Applicant locale code → output language name used in the prompt.
 LANGUAGE_NAMES = {'en': 'English', 'ms': 'Malay (Bahasa Melayu)'}

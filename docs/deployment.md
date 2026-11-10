@@ -228,7 +228,7 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 | `SUPABASE_SERVICE_ROLE_KEY` | Creates staff Supabase accounts (invite/resend); without it onboarding 500s |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` | AI: Gemini primary, OpenAI the report fallback. ⚠ The Gemini key must belong to the HalaTuju GCP project (billing PREPAID since 2026-10-24 — credit running out is an outage, 402); set it on `halatuju-api` AND the `release-decisions` job. Until 2026-10-24 the live key sat in a project outside the owner's billing view |
 | `GOOGLE_CLOUD_VISION_API_KEY` | Cloud Vision OCR (also usable by the eval tools) |
-| `CONTRACT_QUIZ_MODEL`, `APPLY_COPY_DRAFT_MODEL`, `REQUESTS_TRIAGE_MODEL` | The one model each job uses (no silent downgrade) |
+| `CONTRACT_QUIZ_MODEL`, `APPLY_COPY_DRAFT_MODEL`, `REQUESTS_TRIAGE_MODEL` | The model each job tries first. Contract quiz / sponsor terms / Word import and request triage default to `gemini-3.8-flash` and then fall back down the Flash cascade (`gemini.generate_with_fallback`; owner 2026-11-10, Gemini Phase 1). Apply-page copy (`gemini-2.5-flash`) makes one call, no fallback. ⚠ An env var set on the service still overrides the default: one pinned to `gemini-2.5-pro` (404 for our key) costs a failed call before the fallback answers |
 | `GOOGLE_DWD_SERVICE_ACCOUNT` | The Workspace delegation account's EMAIL (`halatuju-meet@…`), **keyless** (TD-125): the runtime SA signs as it through the IAM Credentials API. Not a secret. Empty → Meet/Drive/Sheets do nothing |
 | `MEET_ORGANISER_EMAIL` | The Workspace mailbox Meet, Drive and Sheets act as |
 | `GOOGLE_MEET_SA_JSON` | **GONE** (TD-329, 2026-10-04): removed from Cloud Run, the key deleted in GCP, the code path deleted; setting it does nothing |

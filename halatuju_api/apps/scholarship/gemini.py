@@ -7,10 +7,11 @@ names the sanctioned seams and this module adds no fourth:
     returning `{'_error': …}` rather than raising, because a document read must degrade into an
     officer's screen and never into a 500;
   * `profile_engine._call_gemini_text` — prose, same cascade, same error-as-a-value contract;
-  * this — ONE model, NO fallback, and it RAISES. Owner decision 4 on the contract module: if the
-    configured model is unconfigured or unavailable, say so; do not quietly produce something
-    from a weaker model and present it as the answer. The three callers here draft copy a HUMAN
-    then reads and publishes, so a silent downgrade is exactly the failure to avoid.
+  * this — ONE model per call, and it RAISES. The contract module's "Owner decision 4: no
+    downgrade fallback" is SUPERSEDED (owner, 2026-11-10, Gemini Phase 1): a former Pro job
+    (contracts, sponsor terms, request triage) now walks its configured model and then the Flash
+    cascade through `generate_with_fallback`, which calls the per-feature seam once per model and
+    hands back the model that actually answered. `apply_copy_draft` still makes one call, as before.
 
 Neither of the first two could absorb this without changing what its own callers get back, so the
 third shape keeps a home — but ONE home instead of three near-identical copies in
@@ -31,9 +32,13 @@ meter — the thing rule 6 exists to prevent.
 model's message — a retired model's 404 — so nobody could see the cause. Whether a stored error is
 OUR outage or the document's problem is `read_errors`, which reads the prefix this writes.
 """
+import logging
+
 from django.conf import settings
 
 from .read_errors import CASCADE_FAILED, DOCUMENT_FAILED
+
+logger = logging.getLogger(__name__)
 
 #: The stored cascade error stays readable on a cockpit row and in a log line.
 _CASCADE_ERROR_MAX = 600
@@ -100,3 +105,39 @@ def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable)
     _it, _ot = usage.gemini_tokens(response)
     usage.record_usage(usage.GEMINI, model=model, input_tokens=_it, output_tokens=_ot)
     return response.text
+
+
+def generate_with_fallback(seam, prompt, model, *, fatal, **kwargs):
+    """Call a feature's single-model ``seam`` on ``model`` first, then down the Flash cascade
+    (``profile_engine.cascade_from``), and return ``(text, model_that_answered)``.
+
+    Gemini Phase 1 (owner, 2026-11-10): every former Pro job may fall back to the Flash cascade,
+    contracts included — superseding the contract module's "Owner decision 4: no downgrade".
+    ``seam`` is the caller's own ``_gemini_generate``, looked up by the caller at call time, so
+    every ``patch('apps.scholarship.<module>._gemini_generate')`` still lands.
+
+    The next model is tried on the same failures the prose cascade treats that way: any error
+    from the call, or an empty answer. ``fatal`` is the caller's own exception class: the seam
+    raises it only for "no key" / "no SDK", which no other model can fix, so it goes up at once.
+    When every model fails, the last error is raised as before (or, if none raised, the empty
+    answer is returned), so each caller's failure path is unchanged. Metering stays in
+    ``generate_text`` and records each model as it actually answers.
+    """
+    from .profile_engine import cascade_from
+    last_exc, empty = None, None
+    for name in cascade_from(model):
+        try:
+            text = seam(prompt, name, **kwargs)
+        except fatal:
+            raise
+        except Exception as e:
+            logger.warning('Gemini %s failed, trying the next model: %s', name, e)
+            last_exc = e
+            continue
+        if isinstance(text, str) and not text.strip():
+            empty = empty or (text, name)
+            continue
+        return text, name
+    if last_exc is not None:
+        raise last_exc
+    return empty

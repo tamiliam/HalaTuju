@@ -58,9 +58,9 @@ def _model():
 def _gemini_generate(prompt, model):
     """The single mockable seam — patched in every test, so no CI run can make a live call.
 
-    NO downgrade fallback, matching `sponsor_terms._gemini_generate` and the contract module's
-    owner decision: an unconfigured or unavailable model raises rather than quietly producing
-    something from a weaker one.
+    NO fallback: an unconfigured or unavailable model raises. This is already a Flash job, so the
+    owner's 2026-11-10 ruling (Gemini Phase 1: the former Pro jobs fall back down the Flash
+    cascade) does not reach it; it makes one call, as before.
 
     ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
     instead of three) and kept this name, because this is the boundary tenancy rule 6 names and

@@ -62,12 +62,14 @@ from .render import _bold, render_clauses_html, render_preview_html
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Quiz generation (Gemini — draft-only, on-demand, single model, no downgrade)
+# Quiz generation (Gemini — draft-only, on-demand, configured model then the Flash cascade)
 # ─────────────────────────────────────────────────────────────────────────────
 def _gemini_generate(prompt, model, images=None):
     """The single-model Gemini call — the mockable seam (patched in tests, never
-    a live call in CI). Owner decision 4: NO downgrade fallback — if the
-    configured model is unconfigured/unavailable/errors, raise; do not degrade.
+    a live call in CI). ONE model per call; it raises on any failure. The fallback is the
+    callers': `gemini.generate_with_fallback` calls this seam once per model (the configured
+    one, then the Flash cascade). That SUPERSEDES "Owner decision 4: NO downgrade fallback"
+    (owner, 2026-11-10, Gemini Phase 1; docs/decisions.md).
 
     ``images`` is an optional list of ``(bytes, mime_type)`` sent alongside the prompt, added
     2026-07-30 so the requests reviewer can actually SEE the screenshots a submitter attached
@@ -95,11 +97,12 @@ def generate_quiz(clause, *, model=None):
     _require_draft(clause.template)
     if clause.level > MAX_QUIZ_LEVEL:
         raise ContractsError('quiz_not_top_level')
-    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-3.8-flash')
     from .. import usage
     with usage.usage_context(organisation_id=getattr(clause.template, 'organisation_id', None),
                              source='contract_quiz'):
-        raw = _gemini_generate(_build_quiz_prompt(clause), model)
+        raw, model = gemini.generate_with_fallback(_gemini_generate, _build_quiz_prompt(clause),
+                                                   model, fatal=ContractsError)
     data = _parse_quiz_json(raw)
     payloads = {}
     for lang in LANGUAGES:
@@ -134,10 +137,11 @@ def segment_docx(data, *, model=None):
     structured = _docx_structure(data)
     if structured is None:
         text = _extract_docx_text(data)
-        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-3.8-flash')
         from .. import usage  # import proposal: no template yet → org NULL, source docx_segment
         with usage.usage_context(source='docx_segment'):
-            raw = _gemini_generate(_build_segment_prompt(text), model)
+            raw, _answered = gemini.generate_with_fallback(
+                _gemini_generate, _build_segment_prompt(text), model, fatal=ContractsError)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
     # Pull the counterparty from the ORIGINAL recital (before rewriting), then tokenise: the
     # author's brackets → {{tokens}}, AND the donor's literal name / NRIC / address →

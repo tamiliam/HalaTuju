@@ -2,7 +2,7 @@
 
 ⚠ **THIS RESOLVES; IT NEVER RECORDS.** An entry names the JOB and HOW its model is chosen — a
 Django setting, a named cascade, or a literal in the source — and `resolve` reads that source
-live at the moment of asking. A registry that stored its own copy of "gemini-2.5-pro" would be a
+live at the moment of asking. A registry that stored its own copy of "gemini-3.8-flash" would be a
 second source of truth, and it would be wrong the first time somebody changed the setting without
 opening this file. The screen may only ever show what the engine would actually use.
 
@@ -24,6 +24,11 @@ from django.conf import settings
 BY_SETTING = 'setting'      # a Django setting, overridable per deployment by an env var
 BY_CASCADE = 'cascade'      # a named list; the first model that answers wins
 BY_LITERAL = 'literal'      # written into the source — changing it needs a deploy
+
+#: A setting-backed job that falls back down the Flash cascade when its model fails (Gemini
+#: Phase 1, owner 2026-11-10). Resolved through `profile_engine.cascade_from`, the same rule the
+#: job runs on (`gemini.generate_with_fallback`), so the screen cannot list a different order.
+THEN_CASCADE = 'then_cascade'
 
 #: Which shared seam a job reaches the provider through. Two of these carry most of the platform,
 #: which is why an upgrade is usually two edits rather than fourteen.
@@ -116,11 +121,11 @@ JOBS = [
     # ── jobs with their own client ──────────────────────────────────────────────────────
     {'key': 'contract_quiz', 'label': 'Writing the agreement quiz',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL',
+     'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL', THEN_CASCADE: True,
      'module': 'apps/scholarship/contracts/__init__.py'},
     {'key': 'sponsor_terms', 'label': 'Reading and quizzing the benefactor terms',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL',
+     'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL', THEN_CASCADE: True,
      'module': 'apps/scholarship/sponsor_terms.py'},
     {'key': 'apply_copy', 'label': 'Drafting apply-page copy in Malay or Tamil',
      'seam': SEAM_OWN, 'provider': GEMINI,
@@ -128,7 +133,7 @@ JOBS = [
      'module': 'apps/scholarship/apply_copy_draft.py'},
     {'key': 'request_triage', 'label': 'First read of a bug report or request',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_SETTING, 'from': 'REQUESTS_TRIAGE_MODEL',
+     'source': BY_SETTING, 'from': 'REQUESTS_TRIAGE_MODEL', THEN_CASCADE: True,
      'module': 'apps/scholarship/org_requests.py'},
     {'key': 'counsellor_report', 'label': 'The course-guide counsellor report',
      'seam': SEAM_OWN, 'provider': GEMINI,
@@ -159,11 +164,15 @@ def resolve(job):
 
     A cascade returns every model in order — the second and later entries are the fallbacks, and
     knowing they exist is half of what makes this list useful for an upgrade. A setting returns
-    one. Never a stored value.
+    one, or that one then the Flash cascade (`THEN_CASCADE`). Never a stored value.
     """
     src = job['source']
     if src == BY_SETTING:
-        return [getattr(settings, job['from'], '') or '']
+        model = getattr(settings, job['from'], '') or ''
+        if job.get(THEN_CASCADE):
+            from apps.scholarship.profile_engine import cascade_from
+            return cascade_from(model)
+        return [model]
     if src == BY_CASCADE:
         return _cascade(job['from'])
     return [job['from']]

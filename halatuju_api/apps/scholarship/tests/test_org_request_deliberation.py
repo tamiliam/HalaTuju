@@ -271,6 +271,6 @@ class TestTheReviewerSeesTheScreenshots(TestCase):
             models = _Models()
 
         with patch('google.genai.Client', return_value=_Client()):
-            contracts._gemini_generate('just text', 'gemini-2.5-pro')
+            contracts._gemini_generate('just text', 'gemini-3.8-flash')
         self.assertEqual(sent['contents'], 'just text',
                          'a text-only call must not become a parts list')

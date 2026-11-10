@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-10 — Gemini Phase 1: 3.8 Flash replaces 2.5 Pro in every Pro job, and every one of them may fall back to the Flash cascade (owner, direct)
+
+**Ruled by the owner, directly, on 2026-11-10.** **SUPERSEDES** the contract module's "Owner decision 4: NO downgrade
+fallback" (contract module plan, 2026-07-18; carried by `sponsor_terms` and the request reviewer) and, in part, the
+2026-06-14 entry "Gemini 2.5 Pro for the FINAL sponsor profile only" (the model; the Flash fallback it named stands).
+
+**Why.** `gemini-2.5-pro` has answered 404 for our API key since about 2026-10-25, and Google redirects it to
+`gemini-3.8-flash` from 2026-12-01. Request triage, which had no fallback, has been dead since 2026-10-23; the contract
+and sponsor-terms quiz and the Word-import segmentation would fail the same way; the final profile refine was quietly
+landing on 2.5 Flash. `gemini-3.8-flash` was confirmed in the models list (generateContent) on 2026-11-11.
+
+**Rulings**
+
+- Every job that ran on `gemini-2.5-pro` now runs on `gemini-3.8-flash`: `PRO_CASCADE` (the final profile), and the
+  defaults of `CONTRACT_QUIZ_MODEL` (contract quiz, sponsor-terms quiz, both Word imports) and `REQUESTS_TRIAGE_MODEL`.
+  The env overrides stay.
+- Fallback to the Flash cascade is ALLOWED for every one of those jobs, contracts included. A quiz or a triage draft
+  that a Flash model wrote is still read by a person before anyone relies on it, and a dead feature is worse than a
+  draft from the next model.
+- The record says which model actually answered: `quiz_generated_model`, `ai_draft_model` and the usage meter.
+
+**Lead decisions**
+
+- One rule, one home: `profile_engine.cascade_from(model)` is the order (the model, then `MODEL_CASCADE`, no repeats);
+  `PRO_CASCADE`, the AI registry and the runner all read it. `gemini.generate_with_fallback` is the one runner: it calls
+  the caller's OWN `_gemini_generate` once per model, so every `patch()` of a seam still lands and the seam stays
+  single-model and three lines long. The next model is tried on any error or an empty answer (the prose cascade's
+  rule); "no key" / "no SDK" is not retried; when every model fails, the last error goes up, so each caller's failure
+  path (the raised error, `quiz_ai_unconfigured`, `triage_ai_unavailable`) is unchanged.
+- No temperature, top_p or thinking change in this phase. `apply_copy_draft` (already Flash) keeps one call.
+- Phase 2 (before 2026-12-01) and a cross-provider bake-off (December) are separate work.
+
 ## 2026-11-10 — Staff list and membership rules, API half: a `member` role, Delete as archive, a read fence for the person page; owner rulings O12-O18 (Sprint M1a)
 
 Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md` (O1-O18); brief `docs/plans/2026-11-10-m1-staff-list-brief.md`
@@ -12039,6 +12071,7 @@ everything on Flash (slightly less polished final doc).
 quality matters and volume is tiny, so the cost delta is negligible.
 **Trade-offs:** Pro is slower/costlier per call; mitigated by it being low-volume + a Flash fallback.
 **Revisit if:** Pro latency/cost becomes an issue, or a cheaper model matches its prose quality.
+**Superseded in part 2026-11-10 (Gemini Phase 1, owner):** 2.5 Pro answers 404; the refine now runs on `gemini-3.8-flash`, then the same Flash fallback.
 
 ## One canonical genuineness outcome enum across all document types — Genuineness signatures, 2026-06-16
 **Decision:** Every genuineness check emits one of `genuine` / `suspect` / `not_<type>`, with identical

@@ -31,11 +31,12 @@ _NOT_A_JOB = {
     # The seams themselves are named by the jobs that use them, not listed as jobs.
     # (`vision.py` and `profile_engine.py` ARE jobs as well, so they are not excluded.)
     #
-    # Transport, not work. Code health H7 lifted the single-model/no-fallback Gemini call out of
+    # Transport, not work. Code health H7 lifted the single-model Gemini call out of
     # `apply_copy_draft`, `sponsor_terms` and `contracts`, where it was written three times. All
     # three of those files still hold their own `_gemini_generate` seam and all three are
     # registered jobs; this file is the shared body they call and starts nothing of its own. It
     # meters every call, exactly as each copy did, so nothing escapes attribution by being here.
+    # Its `generate_with_fallback` (Gemini Phase 1) only calls those seams again, once per model.
     'apps/scholarship/gemini.py',
 }
 
@@ -114,11 +115,27 @@ class TestTheRegistryCannotGoStale(TestCase):
 class TestItResolvesRatherThanRemembers(TestCase):
     def test_a_setting_backed_job_reads_the_setting_live(self):
         """⚠ THE REASON THE REGISTRY STORES NO MODEL NAMES. If it kept its own copy, this screen
-        would keep saying 2.5-pro after somebody moved the setting, and the reader would have no
+        would keep saying 3.8-flash after somebody moved the setting, and the reader would have no
         way to tell. Overriding the setting must move the answer."""
         with override_settings(CONTRACT_QUIZ_MODEL='gemini-9.9-imaginary'):
             job = next(j for j in ai_registry.snapshot() if j['key'] == 'contract_quiz')
             self.assertEqual(job['model'], 'gemini-9.9-imaginary')
+
+    def test_a_former_pro_job_lists_its_flash_fallbacks(self):
+        """Gemini Phase 1 (owner, 2026-11-10): the contract quiz, sponsor terms and request triage
+        fall back down the Flash cascade, so the screen shows the cascade after the setting — in
+        the order `gemini.generate_with_fallback` actually tries them, without a repeat."""
+        from apps.scholarship.profile_engine import MODEL_CASCADE
+        with override_settings(CONTRACT_QUIZ_MODEL='gemini-9.9-imaginary',
+                               REQUESTS_TRIAGE_MODEL=MODEL_CASCADE[0]):
+            jobs = {j['key']: j for j in ai_registry.snapshot()}
+        for key in ('contract_quiz', 'sponsor_terms'):
+            with self.subTest(job=key):
+                self.assertEqual(jobs[key]['model'], 'gemini-9.9-imaginary')
+                self.assertEqual(jobs[key]['fallbacks'], list(MODEL_CASCADE))
+        self.assertEqual(jobs['request_triage']['model'], MODEL_CASCADE[0])
+        self.assertEqual(jobs['request_triage']['fallbacks'], list(MODEL_CASCADE[1:]))
+        self.assertEqual(jobs['apply_copy']['fallbacks'], [])   # still a single call
 
     def test_a_cascade_backed_job_reads_the_live_list(self):
         job = next(j for j in ai_registry.snapshot() if j['key'] == 'doc_read')
@@ -148,7 +165,9 @@ class TestItResolvesRatherThanRemembers(TestCase):
 
     def test_models_in_use_covers_the_fallbacks_and_the_other_provider(self):
         models = ai_registry.models_in_use()
-        self.assertIn('gemini-2.5-pro', models)        # the pro cascade + three settings
+        self.assertIn('gemini-3.8-flash', models)      # the pro cascade + three settings
+        # Gemini Phase 1 (2026-11-10): 2.5 Pro answers 404 for our key; nothing may reach it.
+        self.assertNotIn('gemini-2.5-pro', models)
         self.assertIn('gemini-2.5-flash-lite', models)  # bottom of the cascade; a real reachable
         # Superseded 2026-10-24: this line used to pin 'gemini-2.0-flash' as the bottom of the
         # cascade. Google retired that model (404) and it was removed from every cascade, because

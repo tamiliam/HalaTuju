@@ -23,7 +23,7 @@ DOWN = 'apps.scholarship.services.outage.gemini_reads_down'
 SEAM = 'apps.scholarship.profile_engine._call_gemini_text'
 # No token of the factory's 'Test Student N' name, so the PII scan reads it as clean.
 FINAL = {'markdown': '## Determined, and wants to study engineering',
-         'model_used': 'gemini-2.5-pro', 'prompt_version': 'v-test'}
+         'model_used': 'gemini-3.8-flash', 'prompt_version': 'v-test'}
 
 
 def _queued(app, **kw):
@@ -74,7 +74,7 @@ class TestWorker(TestCase):
         sp.refresh_from_db()
         self.assertEqual(sp.final_markdown, FINAL['markdown'])
         self.assertEqual(sp.anon_markdown, FINAL['markdown'])
-        self.assertEqual((sp.final_model_used, sp.prompt_version), ('gemini-2.5-pro', 'v-test'))
+        self.assertEqual((sp.final_model_used, sp.prompt_version), ('gemini-3.8-flash', 'v-test'))
         self.assertEqual(sp.anon_blurb, 'Wants to study.')
         self.assertEqual((sp.finalise_state, sp.anon_published), ('', False))   # never publishes pre-QC
         self.assertIsNotNone(sp.finalised_at)

@@ -180,7 +180,7 @@ class TestBillingUsageEndpoint(TestCase):
         jobs = {j['key']: j for j in data['ai_jobs']}
         self.assertIn('doc_read', jobs)
         self.assertTrue(jobs['doc_read']['model'])          # resolved, never blank
-        self.assertIn('gemini-2.5-pro', data['ai_models_in_use'])
+        self.assertIn('gemini-3.8-flash', data['ai_models_in_use'])
 
     def test_and_NEVER_an_org_admin(self):
         """⚠ Which model a job uses is a PLATFORM fact a tenant cannot change. Their own usage

@@ -167,7 +167,7 @@ class TestGenerateQuiz(_Base):
         r = self.client.post(f'{BASE}{self.t.id}/clauses/{self.order}/generate-quiz/', {}, format='json')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data['quiz_en']['question'], 'q')
-        self.assertEqual(r.data['quiz_generated_model'], 'gemini-2.5-pro')
+        self.assertEqual(r.data['quiz_generated_model'], 'gemini-3.8-flash')
         self.assertEqual(mock_gemini.call_count, 1)
 
     @patch('apps.scholarship.contracts._gemini_generate')

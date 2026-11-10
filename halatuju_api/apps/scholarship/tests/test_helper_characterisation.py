@@ -947,14 +947,14 @@ class TestGeminiSeams(SimpleTestCase):
                 sink = {}
                 with patch('google.genai.Client', return_value=_Client(sink)), \
                         patch.object(usage, 'record_usage') as meter:
-                    out = module._gemini_generate('just text', 'gemini-2.5-pro')
+                    out = module._gemini_generate('just text', 'gemini-3.8-flash')
                 self.assertEqual(out, 'the model said this')
                 self.assertEqual(sink['contents'], 'just text',
                                  'a text-only call must not become a parts list')
-                self.assertEqual(sink['model'], 'gemini-2.5-pro')
+                self.assertEqual(sink['model'], 'gemini-3.8-flash')
                 self.assertEqual(meter.call_count, 1)
                 self.assertEqual(meter.call_args.args, (usage.GEMINI,))
-                self.assertEqual(meter.call_args.kwargs['model'], 'gemini-2.5-pro')
+                self.assertEqual(meter.call_args.kwargs['model'], 'gemini-3.8-flash')
 
     @override_settings(GEMINI_API_KEY='k')
     def test_only_contracts_takes_images_and_puts_them_before_the_prompt(self):
@@ -962,7 +962,7 @@ class TestGeminiSeams(SimpleTestCase):
         sink = {}
         with patch('google.genai.Client', return_value=_Client(sink)), \
                 patch.object(usage, 'record_usage'):
-            contracts._gemini_generate('the instructions', 'gemini-2.5-pro',
+            contracts._gemini_generate('the instructions', 'gemini-3.8-flash',
                                        images=[(b'\x89PNG', 'image/png')])
         self.assertEqual(len(sink['contents']), 2)
         self.assertEqual(sink['contents'][-1], 'the instructions',

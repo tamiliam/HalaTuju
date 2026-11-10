@@ -22,7 +22,7 @@ import re
 from django.conf import settings
 from django.utils import timezone
 
-from . import contracts, vision
+from . import contracts, gemini, vision
 from .models import OrgRequest
 from .org_requests_shared import (AI_RUN_CAP, AUTHOR_AI, AUTHOR_ENGINEER, AUTHOR_ORG,
                                   AUTHOR_OWNER, MAX_ATTACHMENTS, VALID_KINDS,
@@ -218,7 +218,7 @@ def run_ai_review(req):
     if req.ai_run_count >= AI_RUN_CAP:
         raise OrgRequestError('ai_limit_reached')
 
-    model = getattr(settings, 'REQUESTS_TRIAGE_MODEL', 'gemini-2.5-pro')
+    model = getattr(settings, 'REQUESTS_TRIAGE_MODEL', 'gemini-3.8-flash')
     from . import usage
     try:
         with usage.usage_context(organisation_id=getattr(req, 'organisation_id', None),
@@ -226,8 +226,11 @@ def run_ai_review(req):
             # Multimodal from 2026-07-30: the submitter's screenshots go WITH the prompt. Cost is
             # bounded by the two existing caps — ≤5 attachments × AI_RUN_CAP runs — and the
             # usage_context above already meters it as `requests_triage`.
-            raw = contracts._gemini_generate(_build_review_prompt(req), model,
-                                             images=_review_images(req))
+            # Gemini Phase 1 (owner, 2026-11-10): the configured model first, then the Flash
+            # cascade; `model` becomes the one that answered, so the draft records it truly.
+            raw, model = gemini.generate_with_fallback(
+                contracts._gemini_generate, _build_review_prompt(req), model,
+                fatal=contracts.ContractsError, images=_review_images(req))
     except contracts.ContractsError as e:
         # Map the seam's codes to the requests-space vocabulary. 'quiz_ai_unconfigured' (no key)
         # and 'quiz_ai_unavailable' (SDK missing) are the two the seam raises; anything else is

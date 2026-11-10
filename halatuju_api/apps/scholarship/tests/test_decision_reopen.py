@@ -184,7 +184,7 @@ class TestDecisionReopen(TestCase):
     @patch('apps.scholarship.profile_finalise.generate_anon_blurb', return_value='')
     @patch('apps.scholarship.profile_finalise.refine_sponsor_profile')
     def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine, _blurb, _down):
-        mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
+        mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-3.8-flash'}
         # TD-253: a REOPENED decision is the reviewer's again, so its interview must be complete.
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
                                         findings=answered_findings(self.app))
@@ -294,7 +294,7 @@ class TestDecisionReopen(TestCase):
     def test_a_profile_queued_during_a_reopen_never_rides_back_on_cancel(self, mock_refine, _b, _d):
         # A2.1 review: a reopen holds the published profile back; cancelling republishes it as it
         # stands. A worker run in between must not swap new, unread text in under it.
-        mock_refine.return_value = {'markdown': '## Unread', 'model_used': 'gemini-2.5-pro'}
+        mock_refine.return_value = {'markdown': '## Unread', 'model_used': 'gemini-3.8-flash'}
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
                                         findings=answered_findings(self.app))
         self._auth(SUPER)

@@ -144,7 +144,7 @@ def _mock_genai(text):
     return cls, client
 
 
-@override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL='gemini-2.5-pro')
+@override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL='gemini-3.8-flash')
 class TestGenerateQuiz(TestCase):
     def setUp(self):
         self.t = seed_draft()
@@ -161,17 +161,17 @@ class TestGenerateQuiz(TestCase):
         self.clause.refresh_from_db()
         self.assertTrue(self.clause.is_quiz_candidate)
         self.assertEqual(self.clause.quiz_en['question'], 'q')
-        self.assertEqual(self.clause.quiz_generated_model, 'gemini-2.5-pro')
+        self.assertEqual(self.clause.quiz_generated_model, 'gemini-3.8-flash')
 
     @patch('google.genai.Client')
-    def test_uses_single_configured_model_no_downgrade(self, mock_cls):
+    def test_the_configured_model_answers_first(self, mock_cls):
         cls, client = _mock_genai(self._payload())
         mock_cls.side_effect = cls
         contracts.generate_quiz(self.clause)
-        # Exactly ONE model call, with the configured model (no cascade).
+        # ONE call when the configured model answers; the Flash fallback is test_gemini_fallback.
         self.assertEqual(client.models.generate_content.call_count, 1)
         _, kwargs = client.models.generate_content.call_args
-        self.assertEqual(kwargs['model'], 'gemini-2.5-pro')
+        self.assertEqual(kwargs['model'], 'gemini-3.8-flash')
 
     @patch('google.genai.Client')
     def test_bad_json_raises(self, mock_cls):
@@ -346,7 +346,7 @@ class TestClauseNumbering(TestCase):
         self.assertEqual([contracts._roman(n) for n in range(1, 6)], ['i', 'ii', 'iii', 'iv', 'v'])
 
 
-@override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL='gemini-2.5-pro')
+@override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL='gemini-3.8-flash')
 class TestClauseHierarchy(TestCase):
     def _hierarchy(self, template):
         contracts.replace_clauses(template, [

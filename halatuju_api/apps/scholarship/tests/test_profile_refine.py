@@ -106,7 +106,7 @@ class TestRefineEngine(TestCase):
 
     @patch('apps.scholarship.profile_engine._call_gemini_text')
     def test_refine_includes_verdict_and_conclusion_but_not_amount(self, mock_call):
-        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-2.5-pro'}
+        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-3.8-flash'}
         self.app.officer_verdict = {'identity': 'pass', 'academic': 'pass',
                                     'pathway': 'fail', 'income': 'pass', 'overall': 'accept'}
         self.app.verdict_reason = 'Genuine need; offer letter still pending.'
@@ -129,7 +129,7 @@ class TestRefineEngine(TestCase):
     def test_refine_prompt_carries_the_three_sponsor_areas(self, mock_call):
         """S5: the refine prompt also instructs the model to organise the final profile
         around the sponsor's three areas, and tells it the findings are grouped by them."""
-        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-2.5-pro'}
+        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-3.8-flash'}
         session = _submitted_session(self.app)
         profile_engine.refine_sponsor_profile(self.app, 'draft', session, language='en')
         prompt = mock_call.call_args.args[0]
