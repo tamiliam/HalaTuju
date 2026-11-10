@@ -26,6 +26,14 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
 | O10 | **The organisation admin's name opens their person page** from the table, as every other admin's does. |
 | O11 | **The person page header drops the email under the name**; the email stays in About. |
 
+### Owner rulings, later on 2026-11-10 (admin permissions)
+| # | Ruling |
+|---|---|
+| O12 | The person page's Permissions tab shows only the section for the table it was opened from: Admin permissions from Admins, Reviewer permissions from Reviewers. Built in M1b. |
+| O13 | Admin permissions become COMPREHENSIVE: every admin menu item is a grantable permission, grouped by function (People, Partners, Engagement, Applications & scholars, Money, Settings), so the org admin can delegate to general or specialised admins. This resumes the paused T5 plan (`docs/plans/2026-11-01-team-tables-roadmap.md`, decisions.md 2026-11-03 T5.0), which the 2026-11-05 audit freeze paused but did not drop. New order: M1 → M2 (= T5g-lite: store the v2 keys of `staff_permissions_v2.CATALOGUE_V2` per person and draw the Permissions tab by group; the admin preset carries Partners + Engagement + org reads; replaces the single "admin-work chip"; still covers O8 and Rohini) → M3 (= T5e: the remaining org-admin-only actions become keys) → M4 (= T5d: money). |
+| O14 | This lane is EXEMPT from the audit feature freeze. Deploys stay one at a time, each with the owner's yes. |
+| O15 | Three powers stay with the org admin only and are never grantable: changing other staff's permissions (team edit / manage_team), paying the platform bill (billing.edit), and approving requests that commit paid hours (requests.approve). Everything else may be delegated. |
+
 ## Sprints
 1. **Small change (small-change lane):**
    - the InfoTip bubble is drawn above the page (a portal, fixed position), so a table frame (`TableFrame`'s

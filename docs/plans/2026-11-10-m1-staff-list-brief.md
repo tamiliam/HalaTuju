@@ -329,3 +329,11 @@ The full M1 is about 36 API files and about 22 web files, roughly 58 in all. Tha
 1. A fellow organisation admin's page is **view only**: no edit, suspend or delete of a fellow org admin, and no self-suspend or self-delete (§6 as written).
 2. A re-invited archived person comes back with **fresh defaults**: `invite_permissions(role)` for the role they are invited to, history kept; the org admin adjusts powers afterwards (§5 `restore` as written).
 3. Brief approved. The build starts once G10 is live (Requests reports it): M1a first, then M1b. Every push still needs the owner's direct yes.
+
+## Addendum (owner, later 2026-11-10): admin permissions (roadmap O12-O15)
+- **M1b adds O12:** the Permissions tab draws ONLY the section for the table it was opened from. `admins/[id]/page.tsx` already reads `?table=`, and the Reviewers page passes `backTable="reviewers"`. Pass the table to `PermissionEditor` (`PermissionEditor.tsx:43-47`, `TABLE_KEYS`) and draw one section. Saving stays safe, because the editor never drops keys from sections it does not show (`:40-41`); keep a test that proves this. The "Custom" badge compares against the role-label preset (`:212`). Serve each table's preset from the person GET (`views_admin/staff.py:110-145`) as one small field, so the badge compares against the shown table's preset. The grey role chip goes (the label is display-only). The person GET change belongs to M1a.
+- **Do not paint M2 into a corner (M1a):**
+  1. Keep ONE shared list of the keys that seat a person in Admins. Today `staff_tables.ADMIN_KEYS` (`:45`) and `staff_tables_admin.ADMIN_TABLE_KEYS` (`:57`) are copies. Make one import the other, and make `_plan_remove` strip every key on that list, so future v2 keys follow automatically.
+  2. Make the Admins "waiting on them" check in `staff_work` a per-key registry: a dict from key to count function, with `payments_prepare` → `runs_in_progress` today. Credits and award withdrawals can then join in M3/M4 without touching the refusal code.
+  3. `member` holds no keys (as written).
+- M2 is no longer the "admin-work chip". It is T5g-lite (roadmap O13). Nothing in M1 adds an admin-work key.
