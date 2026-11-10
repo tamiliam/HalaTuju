@@ -43,6 +43,26 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
    a production data step gives it to the existing admin-labelled rows AND (owner) Rohini's row; after that the role
    label decides no page. Needs the owner's yes and a phone check before going live.
 
+## Sequencing with the audit agent (its answer, 2026-11-10, via Requests)
+- **Order:** S1 → G8 (scholarship web/API splits, A3.1-A3.3) → G9 (API: verdict modules, `courses/views` package,
+  engine/ranking/profile splits) → this roadmap (small change → M1 → M2). Rebase onto main after G9 is live and re-run
+  the gates before asking the owner.
+- **Exception:** if the owner wants the SMALL change sooner, it may go between S1 and G8 (it touches none of the audit
+  agent's files). Tell the audit agent first, so it rebases G8. Every push still needs the owner's yes.
+- **No direct collision:** G8/G9 do not touch `staff_footprint`, `staff_tables_admin`, `staff_person`,
+  `staff_permissions`, `views_admin/staff.py`, `courses/views_staff.py`, `models_staff.py`, `staff_delete_rules.py`,
+  `TeamTables`, `StaffAdmin`, `StaffActions`, `person/` components, `admins.ts` or `InfoTip`. G8 only adjusts a mock
+  target in `scholarship/tests/test_staff_profile_card.py`.
+- **Watch-outs on rebase:**
+  1. `apps/courses/views.py` becomes the package `apps/courses/views/` (11 modules, re-exported in `__init__`): put an
+     edit in the right module.
+  2. `apps/scholarship/views.py` and `apps/scholarship/vision.py` become packages (G8); `views_admin/` is unchanged.
+     Patch targets stay valid through the re-exports.
+  3. `officerCockpit.ts` and `admin/scholarship/[id]/view.tsx` are split (G8).
+  4. TD numbers start at TD-600.
+  5. Bookkeeping conflicts are expected in `CHANGELOG.md`, `docs/technical-debt.md`, `.claude/ARCHITECTURE_MAP.md` and
+     both `code-standards.json` files. Keep both sides, take the lower budget and the later `last_tightened_on`.
+
 ## Open for the brief (the architect settles; ask the owner only if a choice changes what someone can do)
 - The exact list of "waiting on them" items for Admins (O5).
 - The no-group shape: reuse the mentor-login shape (role `mentor`, NULL permissions, no mentor record) or a new state.
