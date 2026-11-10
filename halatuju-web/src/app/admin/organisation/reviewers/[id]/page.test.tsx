@@ -473,50 +473,30 @@ describe('the summary figures on a phone', () => {
   })
 })
 
-describe('Sprint T2: Revoke and Delete on the reviewer\'s own page (owner, 2026-11-08)', () => {
-  const actions = () => within(screen.getByTestId('person-actions'))
-
-  beforeEach(() => { window.confirm = jest.fn(() => true) })
-
-  it('offers Revoke and a live Delete on a reviewer with no work, and leaves after the delete', async () => {
-    mockApi.deleteAdmin.mockResolvedValue({ message: 'ok' } as never)
+describe('M1b (owner O3): Suspend and Delete live on Team -> Staff, not on a reviewer\'s page', () => {
+  it('a reviewer with no work: Pause stays, but no Revoke and no Delete', async () => {
     await loaded({ is_active: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
-    expect(actions().getByText('admin.revoke')).toBeTruthy()
-    fireEvent.click(actions().getByTestId('staff-delete'))
-    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'kavitha@example.org' } })
-    fireEvent.click(screen.getByTestId('typed-confirm-go'))
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/organisation/reviewers?tab=reviewers'))
-    expect(mockApi.deleteAdmin).toHaveBeenCalledWith(5, { token: 'tok' })
+    expect(screen.queryByText('admin.revoke')).toBeNull()
+    expect(screen.queryByText('admin.delete')).toBeNull()
+    expect(screen.queryByTestId('staff-delete')).toBeNull()
+    expect(screen.queryByTestId('staff-delete-greyed')).toBeNull()
   })
 
-  it('greys the Delete of a reviewer with work, with the reason', async () => {
-    await loaded({ is_active: true, deletable: false, work: { assigned_applications: 3 } } as Partial<api.AdminReviewerDetail>)
-    expect(actions().getByText('admin.revoke')).toBeTruthy()
-    expect(actions().queryByTestId('staff-delete')).toBeNull()
-    const b = within(actions().getByTestId('staff-delete-greyed')).getByText('admin.delete')
-    expect(b.getAttribute('aria-disabled')).toBe('true')
-    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.deleteHasWork')
+  it('a revoked reviewer reads Revoked, with no Restore here', async () => {
+    await loaded({ is_active: false, deletable: false, work: { assigned_applications: 3 } } as Partial<api.AdminReviewerDetail>)
+    expect(screen.queryByText('admin.restore')).toBeNull()
   })
 
-  it('warns about their open cases before a revoke, then shows Restore and Revoked', async () => {
-    mockApi.revokeAdmin.mockResolvedValue({} as never)
-    await loaded({ is_active: true, deletable: false, work: { assigned_applications: 3 } } as Partial<api.AdminReviewerDetail>)
-    fireEvent.click(actions().getByText('admin.revoke'))
-    expect(window.confirm).toHaveBeenCalledWith('admin.reviewers.revokeConfirmOpen')
-    await waitFor(() => expect(actions().getByText('admin.restore')).toBeTruthy())
-    expect(mockApi.revokeAdmin).toHaveBeenCalledWith(5, 'revoke', { token: 'tok' })
-    expect(screen.getByText('admin.reviewers.status.revoked')).toBeTruthy()
+  it('O10: an organisation admin sees a fellow organisation admin read-only — no Pause, no action row', async () => {
+    await loaded({ role: 'org_admin', lead: true, is_active: true, pausable: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
+    expect(screen.queryByTestId('person-action-row')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
   })
 
-  it('shows an organisation admin viewer no Delete and no Revoke on a fellow organisation admin', async () => {
-    await loaded({ role: 'org_admin', lead: true, is_active: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
-    expect(actions().queryByText('admin.delete')).toBeNull()
-    expect(actions().queryByText('admin.revoke')).toBeNull()
-  })
-
-  it('shows a super the Delete on that organisation admin', async () => {
+  it('a super may still Pause that organisation admin, and has no Delete here either', async () => {
     viewerRole = { role: 'reviewer', is_super_admin: true }
-    await loaded({ role: 'org_admin', lead: true, is_active: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
-    expect(actions().getByTestId('staff-delete')).toBeTruthy()
+    await loaded({ role: 'org_admin', lead: true, is_active: true, pausable: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
+    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
+    expect(screen.queryByText('admin.delete')).toBeNull()
   })
 })

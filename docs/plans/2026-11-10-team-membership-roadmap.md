@@ -50,6 +50,12 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
    restoring the same row. Suspend and Delete endpoints already act per person (`revokeAdmin`, staff delete,
    `mentor_invite.delete_mentor`), so no permission changes. Risk to test hardest: the no-group shape (what it may
    open, its landing page) and the archive (every reader of a staff row must skip an archived one).
+   - **M1b (web, built 2026-11-11, branch m1b, local only):** Team -> Staff is the first and default tab
+     (`?tab=staff`, lazy `StaffList.tsx`); Suspend / Restore and Delete live there only (O3), Delete's confirm names
+     Archive or Erase, a refusal is a greyed button with the reason in its tip (O7, O17, O18). The group tables keep
+     Add and Remove (O4); a last-group Remove sends `to_no_group`. The person page has no Suspend or Delete, is
+     read-only for a fellow org admin (O10), and draws one Permissions section (O12). The `member` role joins the
+     web's mirror (TD-604 closed). Left open: TD-606 (mentor Suspend does not refuse `has_scholars` on the server).
 3. **Sprint M2: the admin-work chip** (O8). A new admin key named in `may_do_admin_work`; the admin preset carries it;
    a production data step gives it to the existing admin-labelled rows AND (owner) Rohini's row; after that the role
    label decides no page. Needs the owner's yes and a phone check before going live.

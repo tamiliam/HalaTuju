@@ -6,7 +6,7 @@
  * all students (TD-499: it IMPLIES it, as the server says), a "Custom" chip and "changed" markers, a consequence line worded from the SERVER's
  * dry run (never re-derived here), the server's refusal shown as it is, Save and Reset.
  */
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import PermissionEditor from './PermissionEditor'
 import * as api from '@/lib/admin-api/admins'
 import { formatDateTime } from '@/lib/formatDate'
@@ -379,5 +379,72 @@ describe('T3 review: no Reset for somebody sitting in no table', () => {
     document.body.innerHTML = ''
     await open(ROHINI)
     expect(screen.getByTestId('perm-reset')).toBeTruthy()
+  })
+})
+
+describe('M1b (owner O12): opened from one table, the card draws that table only', () => {
+  // Rohini sits in both tables; Admin preset is empty, Reviewer preset is Review.
+  const BOTH: api.StaffPermissionsView = {
+    ...ROHINI, permissions: ['review', 'spending'], preset: ['review'], custom: true,
+    table_presets: { admins: [], reviewers: ['review'] },
+  }
+  async function openFrom(table: 'admins' | 'reviewers', view: api.StaffPermissionsView = BOTH) {
+    mockApi.getStaffPermissions.mockResolvedValue(view)
+    render(<PermissionEditor adminId={7} name="Rohini" token="tok" table={table} />)
+    await waitFor(() => expect(screen.getByTestId('permission-editor')).toBeTruthy())
+  }
+
+  it('from Admins: only the Admin section, no role chip', async () => {
+    await openFrom('admins')
+    expect(screen.getByTestId('perm-section-admins')).toBeTruthy()
+    expect(screen.queryByTestId('perm-section-reviewers')).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'admin.perm.review.name' })).toBeNull()
+    // The grey role chip is gone; the role is named only in the subtitle.
+    expect(screen.queryByText('admin.role.reviewer')).toBeNull()
+  })
+
+  it('from Reviewers: only the Reviewer section', async () => {
+    await openFrom('reviewers')
+    expect(screen.getByTestId('perm-section-reviewers')).toBeTruthy()
+    expect(screen.queryByTestId('perm-section-admins')).toBeNull()
+  })
+
+  it('"Custom" weighs that table\'s keys against table_presets[table]', async () => {
+    await openFrom('reviewers')        // reviewer keys ['review'] = preset ['review'] -> not custom
+    expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
+    cleanup()
+    await openFrom('admins')           // admin keys ['spending'] vs preset [] -> custom
+    expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
+  })
+
+  it('saving never drops the keys of the hidden section', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({ permissions: ['review', 'spending', 'payments_check'] }))
+    await openFrom('admins')
+    fireEvent.click(toggle('payments_check'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalledTimes(1))
+    expect(mockApi.saveStaffPermissions.mock.calls[0][1]).toEqual(['review', 'spending', 'payments_check'])
+    const save = screen.getByText('admin.permEditor.save') as HTMLButtonElement
+    await waitFor(() => expect(save.disabled).toBe(false))
+    await act(async () => { fireEvent.click(save) })
+    const [, sent, dry] = mockApi.saveStaffPermissions.mock.calls[1]
+    expect(dry).toBe(false)
+    expect(sent).toEqual(expect.arrayContaining(['review']))       // the hidden Reviewer key rides along
+    expect(sent).toHaveLength(3)
+  })
+
+  it('Reset restores this table\'s preset and keeps the other table\'s keys', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    await openFrom('admins')
+    fireEvent.click(screen.getByTestId('perm-reset'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalled())
+    expect(mockApi.saveStaffPermissions.mock.calls[0][1]).toEqual(['review'])   // spending off, review kept
+  })
+
+  it('from Reviewers, turning Quality check off keeps Applications for someone seated at Admins', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    await openFrom('reviewers', { ...BOTH, permissions: ['review', 'qc', 'see_all'] })
+    fireEvent.click(toggle('qc'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalled())
+    expect(mockApi.saveStaffPermissions.mock.calls[0][1]).toEqual(['review', 'see_all'])
   })
 })

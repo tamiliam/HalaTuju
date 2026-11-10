@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M1b - Staff list and membership rules, the web half (team membership, 2026-11-11)
+
+Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roadmap
+`docs/plans/2026-11-10-team-membership-roadmap.md`.
+- Team -> **Staff** (O2, O3): the first and default tab (`?tab=staff`), a lazy `StaffList.tsx` over `GET admin/staff/`.
+  Each row shows its groups as chips, or "No group"; no phone or email (O16). Suspend / Restore and Delete live here
+  ONLY. Delete's confirm says whether it will Archive (records kept) or Erase, and sends `archive`. Delete is greyed
+  while work is unfinished and Suspend is greyed while they mentor anyone (O7, O18), the reason and the count in the
+  tip (O17). The sole organisation admin and your own row have neither.
+- Group tables (O4, O17): Add and Remove only, no inline hints. A refused Remove is greyed with the reason and the
+  count in its tip; a last-group Remove warns that they will become No group and sends `to_no_group: true`.
+  `lib/staffRefusals.ts` words every refusal code (en, ms, ta).
+- The person page: no Suspend or Delete (O3); a staff mentor keeps Remove from Mentors; a fellow org admin's page is
+  read-only and the Reviewers table links to it (O10). Permissions draw only the section for the table the page was
+  opened from, "Custom" weighs that table's preset (`table_presets`), the grey role chip is gone, and a save keeps
+  every hidden key (O12).
+- The `member` role (No group): in the web's programme-staff mirror, not on Admins, and treated like a mentor by the
+  console shell (TD-604 closed).
+- admin-api: `getStaffList`, `deleteAdmin` / `deleteMentor` with `archive`, `changeTeamTable` with `to_no_group`,
+  `mentorAction` `remove`.
+- docs: TD-604 closed; TD-606 raised (mentor Suspend does not refuse `has_scholars` on the server).
+- test: StaffList, RemoveControl, the greyed Suspend / Delete, the refusal wording, the O12 editor, the person pages,
+  the Team tabs and a member's shell.
+
 ### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
 
 Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.

@@ -11,7 +11,7 @@ const row = (over: Partial<AdminItem>): AdminItem => ({
 } as AdminItem)
 
 describe('isProgrammeStaff', () => {
-  it.each(['reviewer', 'admin', 'qc', 'org_admin', 'finance'])('includes programme role %s', (r) => {
+  it.each(['reviewer', 'admin', 'qc', 'org_admin', 'finance', 'member'])('includes programme role %s', (r) => {
     expect(isProgrammeStaff(r)).toBe(true)
   })
   it.each(['super', 'partner', ''])('excludes platform-world role %s', (r) => {
@@ -76,8 +76,19 @@ describe('the two categories', () => {
     // Without this, adding a role means it silently appears on no table at all — the person exists,
     // has access, and is invisible to whoever is meant to be managing them.
     for (const role of PROGRAMME_STAFF_ROLES) {
+      if (role === 'member') continue
       expect(categoryOf(role)).not.toBeNull()
     }
+  })
+
+  it('M1b: keeps a member (in no group) off both group tables — they appear on Staff only', () => {
+    expect(categoryOf('member')).toBeNull()
+    const out = byCategory([{
+      id: 9, name: 'Nadia Example', email: 'nadia@example.test', is_super_admin: false, role: 'member',
+      is_active: true, org_name: null, created_at: '2026-01-01T00:00:00Z',
+    }] as never)
+    expect(out.admins).toEqual([])
+    expect(out.reviewers).toEqual([])
   })
 
   it('gives no category to a platform role, which never appears on this page', () => {

@@ -15,7 +15,7 @@ export interface AdminItem {
   name: string
   email: string
   is_super_admin: boolean
-  role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance'
+  role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'member'
   is_active: boolean
   org_name: string | null
   owning_org_id?: number | null
@@ -116,6 +116,8 @@ export interface TeamTablePlan {
   opens_admin_pages: boolean
   /** T3: leaving their last staff table, they stay on as a mentor login (My students, their own students on Scholars read-only, and Profile; S1). */
   becomes_mentor?: boolean
+  /** M1b: leaving their last group (sent with `to_no_group`), they stay on as a member in No group. */
+  becomes_member?: boolean
 }
 
 export async function getTeamCandidates(table: TeamTableName, options?: ApiOptions) {
@@ -124,11 +126,43 @@ export async function getTeamCandidates(table: TeamTableName, options?: ApiOptio
 }
 
 /** Add a person to a table, or remove them from it; with `dryRun`, what it WOULD do. A refusal throws
- *  with the server's sentence and its `code`. Never touches a sign-in; never emails. */
+ *  with the server's sentence and its `code` (the whole body on `.body`, counts included). Never touches
+ *  a sign-in; never emails. `toNoGroup` (M1b): a Remove from their LAST group, which leaves them a member
+ *  in No group — without it the server refuses `last_table`. */
 export async function changeTeamTable(table: TeamTableName, adminId: number, action: 'add' | 'remove',
-                                      dryRun: boolean, options?: ApiOptions) {
+                                      dryRun: boolean, options?: ApiOptions, toNoGroup = false) {
   return adminMutate<TeamTablePlan>(`/api/v1/admin/team/${table}/`, 'POST',
-    { admin_id: adminId, action, dry_run: dryRun }, options)
+    { admin_id: adminId, action, dry_run: dryRun, ...(toNoGroup ? { to_no_group: true } : {}) }, options)
+}
+
+/** M1b: one accepted member of the team on the Staff list (`GET admin/staff/`). No phone, no email
+ *  (owner O16). `groups` empty = No group; a suspended row's groups are what a Restore gives back. */
+export interface StaffRow {
+  id: number
+  kind: 'staff' | 'mentor'
+  /** Their Mentors record (a mentor login's own door for Suspend and Delete). */
+  mentor_id: number | null
+  name: string
+  photo_url: string | null
+  last_seen_at: string | null
+  groups: ('admins' | 'reviewers' | 'mentors')[]
+  lead: boolean
+  suspended: boolean
+  manageable: boolean
+  /** What is still waiting on them, per group: `admins` the registry fields (`runs_in_progress`, …),
+   *  `reviewers.open_cases`, `mentors.scholars_now`. Always all three groups. */
+  work: { admins: Record<string, number>; reviewers: { open_cases: number }; mentors: { scholars_now: number } }
+  deletable: boolean
+  delete_never: null | 'self' | 'not_manageable' | 'sole_org_admin' | 'has_unfinished_work'
+  /** What a Delete does: `archive` keeps their name on past records; `erase` removes the row. */
+  delete_outcome: 'erase' | 'archive' | null
+  revocable: boolean
+}
+
+/** The Staff list. A super may name an `organisation`; everybody else reads their own. */
+export async function getStaffList(options?: ApiOptions, organisation?: number) {
+  const q = organisation === undefined ? '' : `?organisation=${organisation}`
+  return adminFetch<{ staff: StaffRow[] }>(`/api/v1/admin/staff/${q}`, options)
 }
 
 export async function getAdmins(options?: ApiOptions, phones = false) {
@@ -140,20 +174,11 @@ export async function getAdmins(options?: ApiOptions, phones = false) {
  *  400 `not_deletable` means the role can never be deleted (a super, a partner), 400 `last_org_admin`
  *  the organisation's only active admin, and 404 a row this caller may not manage (another
  *  organisation's, a mentor or a source login — those have their own doors). */
-export async function deleteAdmin(adminId: number, options?: ApiOptions) {
-  const headers: Record<string, string> = {}
-  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/`, {
-    method: 'DELETE', headers,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    const err = new Error(body.error || `Delete failed: ${res.status}`) as Error & { code?: string }
-    err.code = body.code || body.error || ''
-    throw err
-  }
+export async function deleteAdmin(adminId: number, options?: ApiOptions, archive = false) {
+  // M1b: `archive` when the Staff list says the outcome is archive — their name stays on past records.
   // `login: 'failed'` = the row is gone but their sign-in could not be removed; the message says so.
-  return res.json() as Promise<{ message: string; login?: string }>
+  return adminMutate<{ message: string; login?: string; archived?: boolean }>(
+    `/api/v1/admin/admins/${adminId}/`, 'DELETE', archive ? { archive: true } : undefined, options)
 }
 
 /** Switch a person within their pair (Admin ↔ Finance, Reviewer ↔ QC — `lib/staffRole`).
@@ -261,6 +286,10 @@ export interface StaffPermissionsView {
   /** T2 review N3: Revoke / Restore may be offered (false: a super, yourself, the sole org admin). */
   revocable?: boolean
   work?: Record<string, number>
+  /** M1a: may this viewer change them (false: a fellow organisation admin, yourself — read-only). */
+  manageable?: boolean
+  /** M1a (O12): each table's preset keys, so a one-table Permissions tab says Custom against its own. */
+  table_presets?: Partial<Record<TeamTableName, string[]>>
   /** Sprint T3: the person page's header and Profile tab. */
   person?: TeamPersonBlock
 }
@@ -309,21 +338,10 @@ export async function saveStaffPermissions(adminId: number, permissions: string[
     { permissions, dry_run: dryRun }, options)
 }
 
+/** Suspend (`revoke`) or restore a staff sign-in. A refusal throws with `code` and the whole body
+ *  (`self`, `last_org_admin`, `has_scholars` with `scholars_now`). */
 export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/revoke/`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ action }),
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    const err = new Error(body.error || `Action failed: ${res.status}`) as Error & { code?: string }
-    err.code = body.code || body.error || ''
-    throw err
-  }
-  return res.json()
+  return adminMutate<unknown>(`/api/v1/admin/admins/${adminId}/revoke/`, 'PATCH', { action }, options)
 }
 
 /** Re-send a partner's sign-in details, rotating their temporary password. The new password goes

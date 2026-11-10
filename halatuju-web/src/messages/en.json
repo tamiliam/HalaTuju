@@ -8897,7 +8897,8 @@
         "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead.",
         "gift_required": "Choose Every gift or at least one gift.",
         "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again.",
-        "has_scholars": "They still mentor scholars ({n} now). Move each one to another mentor first, then try again. Nothing was changed."
+        "has_scholars": "They still mentor scholars ({n} now). Move each one to another mentor first, then try again. Nothing was changed.",
+        "last_table": "Mentors is their last group. Confirm that they move to No group, then try again."
       },
       "status": {
         "active": "Active",
@@ -8919,12 +8920,14 @@
         "resend": "Resend",
         "revoke": "Revoke",
         "stop": "Remove from Mentors",
-        "resume": "Mentor again"
+        "resume": "Mentor again",
+        "remove": "Remove from Mentors"
       },
       "confirm": {
         "deactivate": "Revoke {name}? They can no longer sign in. You can restore them later.",
         "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later.",
-        "stop": "Remove {name} from Mentors? This works only once they mentor no scholars: move each one to another mentor first. Their staff sign-in is not touched. Add Mentor brings them back."
+        "stop": "Remove {name} from Mentors? This works only once they mentor no scholars: move each one to another mentor first. Their staff sign-in is not touched. Add Mentor brings them back.",
+        "remove": "Remove {name} from Mentors? They keep their sign-in and move to No group, where they see only their Profile until they are added to a group."
       },
       "done": {
         "resend": "Invitation re-sent to {email}.",
@@ -8935,7 +8938,8 @@
         "stop": "{name} no longer mentors. Their staff sign-in is unchanged.",
         "resume": "{name} mentors again. Assign them to scholars on each file.",
         "added": "{name} is now a mentor too. No email was sent — tell them yourself.",
-        "delete": "{name} has been deleted."
+        "delete": "{name} has been deleted.",
+        "remove": "{name} no longer mentors and is now in No group."
       },
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8968,7 +8972,8 @@
       "addMentor": "Add Mentor",
       "removeTitle": {
         "stop": "Remove {name} from Mentors?",
-        "deactivate": "Revoke {name}?"
+        "deactivate": "Revoke {name}?",
+        "remove": "Remove {name} from Mentors?"
       },
       "detail": {
         "days": "{n} days",
@@ -9641,7 +9646,8 @@
         "reviewerText": "What a reviewer agrees to before their first case will be set here.",
         "mentorTitle": "Mentor terms",
         "mentorText": "What a mentor agrees to before meeting a student will be set here."
-      }
+      },
+      "becomesMember": "{name} will be left in No group: they keep their sign-in and from now on see only their Profile. Add them to a group to give them work again."
     },
     "relativeTime": {
       "now": "Just now",
@@ -9670,6 +9676,53 @@
         "photo": "a photo",
         "phone": "a phone number",
         "mentoring_area": "your mentoring area"
+      }
+    },
+    "refusal": {
+      "last_table": "This is their last group. Removing them leaves them in No group: they keep their sign-in and see only their Profile.",
+      "mentors_only": "Only Mentors would be left, and they cannot stay on as a mentor alone. Move their scholars to another mentor first.",
+      "lead_fixed": "The organisation admin always stays in Admins.",
+      "qc_sees_all": "They already see every student through Quality check, so they are not added to Admins. Remove them from Reviewers first.",
+      "not_arrived": "They have not signed in yet, so they cannot be left in No group. Withdraw their invitation on Invitations instead.",
+      "self": "You cannot do this to your own account.",
+      "last_org_admin": "They are the organisation’s only admin. Make someone else an organisation admin first.",
+      "sole_org_admin": "They are this organisation’s only admin, so they cannot be suspended or deleted.",
+      "has_unfinished_work": "They still have unfinished work. Hand it on first.",
+      "staff_mentor": "This mentor is a staff member: use Remove from Mentors on the Mentors table.",
+      "has_open_cases": {
+        "one": "Reassign their 1 open case first.",
+        "many": "Reassign their {n} open cases first.",
+        "some": "Reassign their open cases first."
+      },
+      "run_in_progress": {
+        "one": "They have 1 payment run still in progress. Let it finish first.",
+        "many": "They have {n} payment runs still in progress. Let them finish first.",
+        "some": "They have payment runs still in progress. Let them finish first."
+      },
+      "has_scholars": {
+        "one": "They still mentor 1 scholar. Move them to another mentor first.",
+        "many": "They still mentor {n} scholars. Move each one to another mentor first.",
+        "some": "They still mentor scholars. Move each one to another mentor first."
+      }
+    },
+    "staff": {
+      "tab": "Staff",
+      "suspend": "Suspend",
+      "suspendConfirm": "Suspend {name}? They cannot sign in until they are restored. Their groups and records stay as they are.",
+      "restoreConfirm": "Restore {name}? They can sign in again, in the groups they had.",
+      "suspended": "{name} is suspended.",
+      "restored": "{name} is restored.",
+      "archived": "{name} was deleted. Their name stays on past records.",
+      "erased": "{name} was deleted.",
+      "loadFailed": "The staff list could not be loaded.",
+      "empty": "Nobody has joined the team yet.",
+      "noGroup": "No group",
+      "statusActive": "Active",
+      "statusSuspended": "Suspended",
+      "lastSeen": "Last seen {date}",
+      "outcome": {
+        "archive": "Archive: their sign-in is removed and they leave the team, but their name stays on past records. This cannot be undone.",
+        "erase": "Erase: their sign-in and their record are removed completely. This cannot be undone."
       }
     }
   },

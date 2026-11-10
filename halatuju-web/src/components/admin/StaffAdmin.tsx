@@ -61,15 +61,14 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
+                             onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
   busyId?: number | null
   onResend?: (a: AdminItem) => void
+  /** Revoke / Restore — the platform's staff screens only. On Team it is the Staff tab's (M1b, owner O3). */
   onToggle?: (a: AdminItem) => void
-  /** Delete outright. Only ever called for a row the SERVER marked `deletable`. */
-  onDelete?: (a: AdminItem) => void
   /** Is the viewer a super? Only a super is offered an organisation admin's Delete (Sprint T2). */
   viewerSuper?: boolean
   /** Switch within the pair (`lib/staffRole`). Offered only where a switch exists. */
@@ -85,7 +84,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
    *  reads "Organisation admin (lead)"), and a row gains "Remove from Admins" where the server says the
    *  endpoint accepts it (`remove`). T3 (owner): no permission column — permissions are set only on the
    *  person's own page, Permissions tab (the name opens it). */
-  team?: { onRemove: (a: AdminItem) => void }
+  team?: { onRemove: (a: AdminItem, toNoGroup: boolean) => void }
   /** Draw each person's phone. Off unless a screen asks (fail closed): only the platform's staff screens do. */
   showPhone?: boolean
 }) {
@@ -144,17 +143,15 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             {busyId === a.id ? t('admin.resending') : t('admin.resend')}
           </button>
         )}
-        {/* Sprint T2: Revoke / Restore, then Delete — the one pair every Team table and person page
-            draws (`StaffActions`). DELETE IS THE SERVER'S CALL (`deletable`); somebody with work on
-            record gets it greyed, with the reason on hover, tap and focus. An organisation admin's
-            Delete is drawn for a super viewer only. */}
-        <StaffActions active={a.is_active} busy={busyId === a.id}
-          onToggle={onToggle && a.revocable !== false && !(a.is_active && soleOrgAdmin?.(a))
-            ? () => onToggle(a) : undefined}
-          onDelete={onDelete ? () => onDelete(a) : undefined}
-          deletable={a.deletable} deleteNever={a.delete_never} work={a.work} orgAdmin={a.role === 'org_admin'} viewerSuper={viewerSuper} />
+        {/* Revoke / Restore on the platform's staff screens only. M1b (owner O3, O4): on Team, Suspend and
+            Delete live on the Staff tab; the Admins table keeps Add and Remove. */}
+        {!team && (
+          <StaffActions active={a.is_active} busy={busyId === a.id} orgAdmin={a.role === 'org_admin'} viewerSuper={viewerSuper}
+            onToggle={onToggle && a.revocable !== false && !(a.is_active && soleOrgAdmin?.(a))
+              ? () => onToggle(a) : undefined} />
+        )}
         {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id}
-          onRemove={() => team.onRemove(a)} />}
+          onRemove={(toNoGroup) => team.onRemove(a, toNoGroup)} />}
         {onChangeRole && switchableTo(a) && (
           <button disabled={busyId === a.id} onClick={() => onChangeRole(a)}
             className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">

@@ -8897,7 +8897,8 @@
         "has_work": "Kini ada kerja yang direkodkan untuk mereka, jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
         "gift_required": "Pilih Semua pemberian atau sekurang-kurangnya satu pemberian.",
         "gift_not_found": "Pemberian itu tidak dibuka dalam organisasi ini. Muat semula halaman dan pilih sekali lagi.",
-        "has_scholars": "Mereka masih membimbing penerima biasiswa ({n} kini). Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah."
+        "has_scholars": "Mereka masih membimbing penerima biasiswa ({n} kini). Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah.",
+        "last_table": "Mentor ialah kumpulan terakhir mereka. Sahkan bahawa mereka berpindah ke Tiada kumpulan, kemudian cuba lagi."
       },
       "status": {
         "active": "Aktif",
@@ -8919,12 +8920,14 @@
         "resend": "Hantar semula",
         "revoke": "Tarik balik",
         "stop": "Keluarkan daripada Mentor",
-        "resume": "Jadi mentor semula"
+        "resume": "Jadi mentor semula",
+        "remove": "Keluarkan daripada Mentor"
       },
       "confirm": {
         "deactivate": "Batalkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh memulihkan mereka kemudian.",
         "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian.",
-        "stop": "Keluarkan {name} daripada Mentor? Ini hanya boleh dilakukan apabila mereka tidak lagi membimbing mana-mana penerima biasiswa: pindahkan setiap seorang kepada mentor lain dahulu. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula."
+        "stop": "Keluarkan {name} daripada Mentor? Ini hanya boleh dilakukan apabila mereka tidak lagi membimbing mana-mana penerima biasiswa: pindahkan setiap seorang kepada mentor lain dahulu. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula.",
+        "remove": "Keluarkan {name} daripada Mentor? Log masuk mereka kekal dan mereka berpindah ke Tiada kumpulan, dan hanya melihat Profil mereka sehingga ditambah ke sesuatu kumpulan."
       },
       "done": {
         "resend": "Jemputan dihantar semula ke {email}.",
@@ -8935,7 +8938,8 @@
         "stop": "{name} tidak lagi membimbing. Log masuk kakitangan mereka tidak berubah.",
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
         "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri.",
-        "delete": "{name} telah dipadam."
+        "delete": "{name} telah dipadam.",
+        "remove": "{name} tidak lagi membimbing dan kini berada dalam Tiada kumpulan."
       },
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8968,7 +8972,8 @@
       "addMentor": "Tambah Mentor",
       "removeTitle": {
         "stop": "Keluarkan {name} daripada Mentor?",
-        "deactivate": "Batalkan {name}?"
+        "deactivate": "Batalkan {name}?",
+        "remove": "Keluarkan {name} daripada Mentor?"
       },
       "detail": {
         "days": "{n} hari",
@@ -9641,7 +9646,8 @@
         "reviewerText": "Apa yang dipersetujui oleh penilai sebelum kes pertamanya akan ditetapkan di sini.",
         "mentorTitle": "Terma mentor",
         "mentorText": "Apa yang dipersetujui oleh mentor sebelum bertemu pelajar akan ditetapkan di sini."
-      }
+      },
+      "becomesMember": "{name} akan berada dalam Tiada kumpulan: log masuk mereka kekal dan mulai sekarang mereka hanya melihat Profil mereka. Tambah mereka ke sesuatu kumpulan untuk memberi mereka kerja semula."
     },
     "relativeTime": {
       "now": "Sebentar tadi",
@@ -9670,6 +9676,53 @@
         "photo": "foto",
         "phone": "nombor telefon",
         "mentoring_area": "bidang bimbingan anda"
+      }
+    },
+    "refusal": {
+      "last_table": "Ini kumpulan terakhir mereka. Jika dikeluarkan, mereka akan berada dalam Tiada kumpulan: log masuk mereka kekal dan mereka hanya melihat Profil mereka.",
+      "mentors_only": "Hanya Mentor yang akan tinggal, dan mereka tidak boleh kekal sebagai mentor sahaja. Pindahkan penerima biasiswa mereka kepada mentor lain dahulu.",
+      "lead_fixed": "Pentadbir organisasi sentiasa kekal dalam Pentadbir.",
+      "qc_sees_all": "Mereka sudah melihat semua pelajar melalui Kawalan mutu, jadi mereka tidak ditambah ke Pentadbir. Keluarkan mereka daripada Penilai dahulu.",
+      "not_arrived": "Mereka belum log masuk, jadi mereka tidak boleh dibiarkan dalam Tiada kumpulan. Tarik balik jemputan mereka di Jemputan.",
+      "self": "Anda tidak boleh melakukan ini pada akaun anda sendiri.",
+      "last_org_admin": "Mereka satu-satunya pentadbir organisasi. Lantik orang lain sebagai pentadbir organisasi dahulu.",
+      "sole_org_admin": "Mereka satu-satunya pentadbir organisasi ini, jadi mereka tidak boleh digantung atau dipadam.",
+      "has_unfinished_work": "Mereka masih ada kerja yang belum selesai. Serahkan kepada orang lain dahulu.",
+      "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor dalam jadual Mentor.",
+      "has_open_cases": {
+        "one": "Agihkan semula 1 kes terbuka mereka dahulu.",
+        "many": "Agihkan semula {n} kes terbuka mereka dahulu.",
+        "some": "Agihkan semula kes terbuka mereka dahulu."
+      },
+      "run_in_progress": {
+        "one": "Mereka ada 1 larian pembayaran yang masih berjalan. Biarkan ia selesai dahulu.",
+        "many": "Mereka ada {n} larian pembayaran yang masih berjalan. Biarkan semuanya selesai dahulu.",
+        "some": "Mereka ada larian pembayaran yang masih berjalan. Biarkan semuanya selesai dahulu."
+      },
+      "has_scholars": {
+        "one": "Mereka masih membimbing 1 penerima biasiswa. Pindahkan dia kepada mentor lain dahulu.",
+        "many": "Mereka masih membimbing {n} penerima biasiswa. Pindahkan setiap seorang kepada mentor lain dahulu.",
+        "some": "Mereka masih membimbing penerima biasiswa. Pindahkan setiap seorang kepada mentor lain dahulu."
+      }
+    },
+    "staff": {
+      "tab": "Kakitangan",
+      "suspend": "Gantung",
+      "suspendConfirm": "Gantung {name}? Mereka tidak boleh log masuk sehingga dipulihkan. Kumpulan dan rekod mereka kekal seperti sedia ada.",
+      "restoreConfirm": "Pulihkan {name}? Mereka boleh log masuk semula, dalam kumpulan yang sama seperti dahulu.",
+      "suspended": "{name} telah digantung.",
+      "restored": "{name} telah dipulihkan.",
+      "archived": "{name} telah dipadam. Nama mereka kekal pada rekod lama.",
+      "erased": "{name} telah dipadam.",
+      "loadFailed": "Senarai kakitangan tidak dapat dimuatkan.",
+      "empty": "Belum ada sesiapa yang menyertai pasukan.",
+      "noGroup": "Tiada kumpulan",
+      "statusActive": "Aktif",
+      "statusSuspended": "Digantung",
+      "lastSeen": "Kali terakhir dilihat {date}",
+      "outcome": {
+        "archive": "Arkib: log masuk mereka dibuang dan mereka keluar daripada pasukan, tetapi nama mereka kekal pada rekod lama. Ini tidak boleh dibatalkan.",
+        "erase": "Padam terus: log masuk dan rekod mereka dibuang sepenuhnya. Ini tidak boleh dibatalkan."
       }
     }
   },

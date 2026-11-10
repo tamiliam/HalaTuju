@@ -5,6 +5,8 @@ import Sheet from '@/components/Sheet'
 import TableChips, { CHIP } from '@/components/admin/TableChips'
 import { useT } from '@/lib/i18n'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { refusalOf, refusalWords } from '@/lib/staffRefusals'
+import { Greyed } from '@/components/admin/StaffActions'
 import {
   changeTeamTable, getTeamCandidates,
   type TeamCandidate, type TeamRemove, type TeamTableName, type TeamTablePlan,
@@ -45,31 +47,35 @@ export function KeyChips({ keys }: { keys?: string[] }) {
   )
 }
 
-/** "Remove from {table}", or the short reason there is none (only table, open cases…). Nothing when
- *  the row carries no entry for this table (not in it, or not the viewer's to act on). */
-export function RemoveControl({ remove, table, busy, onRemove }: {
+/** "Remove from {table}" (M1b, owner O4: with Add, the group tables' only actions). Where the server refuses
+ *  it, the Remove is GREYED with the reason — and the count — in its tip (O17: never inline text). Their
+ *  LAST group (`last_table`) is accepted: they become No group, so `onRemove(true)` asks for `to_no_group`.
+ *  Nothing when the row carries no entry for this table, or for the lead's fixed seat at Admins. `counts`:
+ *  what the row knows of their work (`open_cases`), which the reason names. */
+export function RemoveControl({ remove, table, busy, onRemove, counts = {} }: {
   remove?: TeamRemove
   table: TeamTableName
   busy?: boolean
-  onRemove: () => void
+  onRemove: (toNoGroup: boolean) => void
+  counts?: Record<string, number>
 }) {
   const { t } = useT()
   if (!remove || !(table in remove)) return null
   const code = remove[table]
-  if (code === null) {
+  const last = code === 'last_table'
+  // Leaving Reviewers for No group still waits on their open cases (`_refuse_no_group`).
+  const blocked = last ? (table === 'reviewers' && (counts.open_cases ?? 0) > 0 ? 'has_open_cases' : null) : code
+  if (blocked === null || blocked === undefined) {
     return (
-      <button type="button" disabled={busy} onClick={onRemove} data-testid={`remove-from-${table}`}
+      <button type="button" disabled={busy} onClick={() => onRemove(last)} data-testid={`remove-from-${table}`}
         className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
         {t(`admin.team.removeFrom.${table}`)}
       </button>
     )
   }
-  // 'last_table' (their only table) shows nothing: Revoke sits beside it (owner 2026-11-07).
-  if (code === 'mentors_only' || code === 'has_open_cases') {
-    return <span className="text-[11px] text-ground-400" data-testid={`remove-note-${table}`}>
-      {t(`admin.team.note.${code}`)}</span>
-  }
-  return null
+  const reason = blocked === 'lead_fixed' ? null : refusalWords(blocked, t, counts)
+  if (!reason) return null
+  return <Greyed label={t(`admin.team.removeFrom.${table}`)} reason={reason} testId={`remove-greyed-${table}`} />
 }
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -79,6 +85,7 @@ const effects = (t: T, plan: TeamTablePlan, name: string) => [
   plan.opens_admin_pages ? t('admin.team.opensAdminPages') : '',
   plan.finance_check_off ? t('admin.team.financeCheckOff') : '',
   plan.becomes_mentor ? t('admin.team.becomesMentor', { name }) : '',
+  plan.becomes_member ? t('admin.team.becomesMember', { name }) : '',
 ].filter(Boolean)
 
 /** Team -> Add Admin / Add Reviewer: an EXISTING member of the team, never a new person. `only` (Sprint T3,
@@ -199,9 +206,11 @@ export function TeamAddSheet({ open, table, token, onClose, onDone, only }: {
   )
 }
 
-/** Team -> a row -> "Remove from {table}": a dry run first, so the confirm says what it does. */
+/** Team -> a row -> "Remove from {table}": a dry run first, so the confirm says what it does. `toNoGroup`
+ *  (M1b): their last group — the confirm warns they become No group, and both calls send `to_no_group`.
+ *  A refusal reads in the reader's words (`refusalOf`), the server's sentence only for an unknown code. */
 export function TeamRemoveSheet({ person, table, token, onClose, onDone }: {
-  person: { id: number; name: string } | null
+  person: { id: number; name: string; toNoGroup?: boolean } | null
   table: TeamTableName
   token: string | null
   onClose: () => void
@@ -209,16 +218,17 @@ export function TeamRemoveSheet({ person, table, token, onClose, onDone }: {
 }) {
   const { t } = useT()
   const [plan, setPlan] = useState<TeamTablePlan | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // The refusal as thrown, worded at render (its code and counts; the server's sentence otherwise).
+  const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!person || !token) return
     let live = true
     setPlan(null); setError(null)
-    changeTeamTable(table, person.id, 'remove', true, { token })
+    changeTeamTable(table, person.id, 'remove', true, { token }, !!person.toNoGroup)
       .then((p) => { if (live) setPlan(p) })
-      .catch((e: Error) => { if (live) setError(e.message) })
+      .catch((e: unknown) => { if (live) setError(e) })
     return () => { live = false }
   }, [person, token, table])
 
@@ -226,14 +236,16 @@ export function TeamRemoveSheet({ person, table, token, onClose, onDone }: {
     if (!token || !person) return
     setBusy(true); setError(null)
     try {
-      await changeTeamTable(table, person.id, 'remove', false, { token })
+      await changeTeamTable(table, person.id, 'remove', false, { token }, !!person.toNoGroup)
       onDone(t(`admin.team.removed.${table}`, { name: person.name }))
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.actionFailed'))
+      setError(e)
     } finally { setBusy(false) }
   }
 
   const name = person?.name ?? ''
+  const said = error === null ? null
+    : refusalOf(error, t) ?? (error instanceof Error ? error.message : t('admin.actionFailed'))
   return (
     <Sheet open={!!person} onClose={onClose} busy={busy} tone="critical" role="alertdialog"
       testId={`team-remove-${table}`} title={t(`admin.team.removeTitle.${table}`, { name })}
@@ -251,11 +263,15 @@ export function TeamRemoveSheet({ person, table, token, onClose, onDone }: {
       )}>
       <div className="space-y-2 text-sm text-ground-700">
         <p>{t(`admin.team.removeBody.${table}`, { name })}</p>
-        {!plan && !error && <p className="text-ground-500">{t('common.loading')}</p>}
+        {person?.toNoGroup && !plan?.becomes_member && (
+          <p className="rounded-lg bg-caution-50 px-3 py-2 text-ground-900" data-testid="team-remove-no-group">
+            {t('admin.team.becomesMember', { name })}</p>
+        )}
+        {!plan && !said && <p className="text-ground-500">{t('common.loading')}</p>}
         {plan && effects(t, plan, name).map((line) => (
           <p key={line} className="rounded-lg bg-primary-50 px-3 py-2 text-ground-900" data-testid="team-remove-effect">{line}</p>
         ))}
-        {error && <p className="text-critical-600" role="alert">{error}</p>}
+        {said && <p className="text-critical-600" role="alert">{said}</p>}
       </div>
     </Sheet>
   )

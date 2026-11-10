@@ -8,9 +8,9 @@ import { formatDate } from '@/lib/formatDate'
 import { isSuperRole } from '@/lib/superRole'
 import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
-import { scholarsRefusal } from '@/lib/staffRefusals'
+import { refusalWords, scholarsRefusal } from '@/lib/staffRefusals'
 import {
-  deleteMentor, getMentors, mentorAction, setMentorGifts,
+  getMentors, mentorAction, setMentorGifts,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
   type MentorsPayload, type ReviewerGiftTag, type ScholarStanding,
 } from '@/lib/admin-api'
@@ -18,8 +18,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import Sheet from '@/components/Sheet'
 import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import StaffMentorSheet from './StaffMentorSheet'
-import StaffActions from '@/components/admin/StaffActions'
-import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
+import { Greyed } from '@/components/admin/StaffActions'
 
 /**
  * Team → **Mentors** and the mentor parts of a **person page** (Team tables T3, 2026-11-03; the TeamMentors
@@ -37,14 +36,14 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  * ⚠ "INVITE A MENTOR" IS GONE (ruling 6): new mentors are invited on Invitations → Mentor. **Add Mentor**
  * is 7d's "Add a staff member as mentor" (`StaffMentorSheet`, the shared Sheet): an existing team member,
  * no email, their sign-in untouched. Its button sits on the Team page's tab row (the page owns `adding`).
- * ⚠ THE ACTIONS ARE 7d's, RENAMED TO THE OTHER TABS' WORDS: a staff member's **Remove from Mentors**
- * (endpoint `stop`: refused `has_scholars` while they mentor anyone, M1a; the sign-in untouched) and a
- * pure mentor's **Revoke** / **Restore**
- * (endpoints `deactivate` / `reactivate`: their sign-in is switched off and back on). Offered only where
- * the row's `manageable` says the endpoint will take it; the confirm is the shared Sheet.
+ * ⚠ ADD AND REMOVE ONLY (M1b, owner O4): **Remove from Mentors** — a staff member's (endpoint `stop`, the
+ * sign-in untouched) or a mentor login's (endpoint `remove` with `to_no_group`: they stay on as a member in
+ * No group, the confirm says so). Either is GREYED, with the reason in its tip (O17), while they still mentor
+ * scholars. Suspend / Restore and Delete live on the Staff tab only (O3). Offered only where the row's
+ * `manageable` says the endpoint will take it; the confirm is the shared Sheet.
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; they are shown on the
  * mentor's person page (its Profile tab), not as table columns.
- * ⚠ THE MENTOR PARTS OF A PERSON PAGE (Sprint T3: `MentorActions`, `MentorFigures`, `MentorWork`, drawn by
+ * ⚠ THE MENTOR PARTS OF A PERSON PAGE (Sprint T3: `MentorFigures`, `MentorWork`, drawn by
  * `components/admin/person/TeamPersonPage`) ARE STAFF ONLY AND SHOW NO MEETING NOTE: figures, scholars,
  * dates, standing, concern state. Notes stay on each scholar's file. Who reads them = who reads this table
  * (`GET admin/mentors/<id>/`).
@@ -58,10 +57,9 @@ type Banner = { ok: boolean; text: string } | null
 
 const K = 'admin.mentors'
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
-  'not_staff', 'has_work', 'has_scholars']
-const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
-/** The two actions that take a mentor OUT (the Sheet confirms them); the two that bring one back are direct. */
-const REMOVES: readonly MentorAction[] = ['stop', 'deactivate']
+  'not_staff', 'has_work', 'has_scholars', 'last_table']
+/** The two Removes (M1b): a staff mentor's `stop`, a mentor login's `remove` (to No group). */
+type RemoveAction = Extract<MentorAction, 'stop' | 'remove'>
 
 const codeOf = (err: unknown) => (err as { code?: string })?.code ?? ''
 
@@ -92,12 +90,11 @@ export function listed(m: MentorRow): boolean {
   return m.status === 'active' || !m.staff_role
 }
 
-/** The row's one action (endpoint names): a staff mentor's stop ("Remove from Mentors") / resume, a
- *  mentor login's deactivate ("Revoke") / reactivate ("Restore"). */
-export function actionOf(m: MentorRow): MentorAction {
-  return m.staff_role
-    ? (m.status === 'active' ? 'stop' : 'resume')
-    : (m.status === 'active' ? 'deactivate' : 'reactivate')
+/** The row's one action (endpoint names), M1b: "Remove from Mentors" on an active row — a staff mentor's
+ *  `stop`, a mentor login's `remove` (they become No group). None on a suspended row: Restore is on Staff. */
+export function actionOf(m: MentorRow): RemoveAction | null {
+  if (m.status !== 'active') return null
+  return m.staff_role ? 'stop' : 'remove'
 }
 
 /** The Team page's own "Also in" chips (`components/admin/TeamTables`), handed in by the route. */
@@ -120,8 +117,6 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   const [banner, setBanner] = useState<Banner>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [removing, setRemoving] = useState<MentorRow | null>(null)
-  // Sprint T2 (D6): the pure mentor whose delete is being typed out (`TypedConfirmDialog`).
-  const [deleting, setDeleting] = useState<MentorRow | null>(null)
 
   const load = useCallback(async () => {
     if (!token) return
@@ -136,7 +131,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
     if (!token) return
     setBusyId(m.id); setBanner(null)
     try {
-      await mentorAction(m.id, action, { token })
+      await mentorAction(m.id, action, { token }, action === 'remove' ? { to_no_group: true } : {})
       setBanner({ ok: true, text: t(`${K}.done.${action}`, { name: m.name, email: m.email }) })
     } catch (err) {
       setBanner({ ok: false, text: refusalText(err, t) })
@@ -146,25 +141,13 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
     }
   }
 
-  const remove = async (m: MentorRow) => {
-    if (!token) return
-    setBusyId(m.id); setBanner(null)
-    try {
-      await deleteMentor(m.id, { token })
-      setBanner({ ok: true, text: t(`${K}.done.delete`, { name: m.name }) })
-    } catch (err) {
-      setBanner({ ok: false, text: refusalText(err, t) })
-    } finally {
-      setBusyId(null); setDeleting(null)
-      void load()
-    }
-  }
-
   // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor switched
   // off before arriving is not listed: a re-invite on Invitations brings them back. `listed` has the rule.
   const rows = (data?.mentors ?? []).filter(listed)
   // A staff mentor removed from Mentors drops off the list; Add Mentor offers them back (`resume`).
-  const returning = (data?.mentors ?? []).filter((m) => m.staff_role && m.status === 'inactive' && m.manageable)
+  // M1b: never a member (No group) — Add Mentor brings them back as a mentor through the Team tables' Add.
+  const returning = (data?.mentors ?? []).filter((m) => m.staff_role && m.staff_role !== 'member'
+    && m.status === 'inactive' && m.manageable)
   const removingAction = removing ? actionOf(removing) : null
 
   return (
@@ -198,13 +181,6 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
           {removing && removingAction ? t(`${K}.confirm.${removingAction}`, { name: removing.name }) : ''}
         </p>
       </Sheet>
-
-      {deleting && (
-        <TypedConfirmDialog busy={busyId !== null} phrase={deleting.email}
-          title={t('admin.programmes.deleteTitle', { name: deleting.name })}
-          body={t(`${K}.deleteBody`)} cta={t('admin.delete')}
-          onCancel={() => setDeleting(null)} onConfirm={() => void remove(deleting)} />
-      )}
 
       {banner && (
         <p role={banner.ok ? 'status' : 'alert'}
@@ -269,28 +245,9 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                             : <span className="text-ground-400">{t('admin.reviewers.lastSeenUnknown')}</span>}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          {/* Sprint T2: a pure mentor gets the Team pair — Revoke / Restore, then Delete
-                              (`StaffActions`; greyed with its reason when there is work on record). A
-                              staff mentor keeps Remove from Mentors / Mentor again only: their sign-in,
-                              and so their Delete, is the Admins or Reviewers table's. */}
-                          {m.manageable && !m.staff_role && (
-                            <span className="flex items-center gap-3">
-                              <StaffActions size="sm" active={active} busy={busyId === m.id}
-                                toggleTestId={`mentor-action-${m.id}`}
-                                revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
-                                onToggle={() => (REMOVES.includes(action) ? setRemoving(m) : void act(m, action))}
-                                onDelete={() => setDeleting(m)} deletable={m.deletable}
-                                deleteNever={m.delete_never} work={m.work}
-                                orgAdmin={!!m.lead} viewerSuper={r === 'super'} />
-                            </span>
-                          )}
-                          {m.manageable && m.staff_role && (
-                            <button type="button" disabled={busyId === m.id} data-testid={`mentor-action-${m.id}`}
-                              className={REMOVES.includes(action)
-                                ? 'text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50' : LINK}
-                              onClick={() => (REMOVES.includes(action) ? setRemoving(m) : void act(m, action))}>
-                              {t(`${K}.action.${action}`)}
-                            </button>
+                          {/* M1b (O4): Remove from Mentors only — greyed, with the reason, while they mentor. */}
+                          {m.manageable && action && (
+                            <MentorRemove m={m} t={t} busy={busyId === m.id} onRemove={() => setRemoving(m)} />
                           )}
                         </td>
                       </tr>
@@ -303,6 +260,21 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
         </>
       )}
     </div>
+  )
+}
+
+/** M1b: a row's "Remove from Mentors", greyed with the reason (and the count) while they mentor scholars. */
+function MentorRemove({ m, t, busy, onRemove }: { m: MentorRow; t: T; busy: boolean; onRemove: () => void }) {
+  const scholars = m.scholars_now ?? 0
+  if (scholars > 0) {
+    return <Greyed label={t(`${K}.action.stop`)} text="text-sm" testId={`mentor-action-${m.id}-greyed`}
+      reason={refusalWords('has_scholars', t, { scholars_now: scholars }) ?? ''} />
+  }
+  return (
+    <button type="button" disabled={busy} data-testid={`mentor-action-${m.id}`} onClick={onRemove}
+      className="text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+      {t(`${K}.action.stop`)}
+    </button>
   )
 }
 
@@ -401,62 +373,10 @@ export function MentorGifts({ data, onSaved }: {
   )
 }
 
-/** Sprint T3: a PURE mentor's Revoke / Restore and Delete on their person page — the table's pair, by the
- *  same rules (Sprint T2), in the place a staff person's `StaffPersonActions` sits (M5). Drawn only where
- *  the row's `manageable` says the endpoint will take it; a staff mentor's are their staff actions. */
-export function MentorActions({ mentor: m, onChanged, onDeleted }: {
-  mentor: MentorRow
-  onChanged: (row: Pick<MentorRow, 'status' | 'deactivated_at'>) => void
-  onDeleted?: () => void
-}) {
-  const { token, role } = useAdminAuth()
-  const { t } = useT()
-  const [busy, setBusy] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [actionError, setActionError] = useState('')
-  const refusal = (err: unknown) => setActionError(refusalText(err, t))
-  const toggle = async () => {
-    const action = m.status === 'active' ? 'deactivate' : 'reactivate'
-    if (!token || (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name })))) return
-    setBusy(true); setActionError('')
-    try {
-      const row = await mentorAction(m.id, action, { token })
-      onChanged({ status: row.status, deactivated_at: row.deactivated_at })
-    } catch (err) { refusal(err) } finally { setBusy(false) }
-  }
-  const remove = async () => {
-    if (!token) return
-    setBusy(true); setActionError('')
-    try {
-      await deleteMentor(m.id, { token })
-      setDeleting(false)
-      onDeleted?.()
-    } catch (err) { refusal(err); setBusy(false); setDeleting(false) }
-  }
-  if (!m.manageable || m.staff_role) return null
-  return (
-    <div>
-      <div className="flex flex-wrap items-center gap-4" data-testid="mentor-person-actions">
-        <StaffActions size="sm" active={m.status === 'active'} busy={busy}
-          revokeKey={`${K}.action.deactivate`} restoreKey={`${K}.action.reactivate`}
-          onToggle={() => void toggle()} onDelete={() => setDeleting(true)}
-          deletable={m.deletable} deleteNever={m.delete_never} work={m.work} orgAdmin={!!m.lead}
-          viewerSuper={isSuperRole(role)} />
-      </div>
-      {actionError && <p className="mt-1.5 text-sm text-critical-600" role="alert">{actionError}</p>}
-      {deleting && (
-        <TypedConfirmDialog busy={busy} phrase={m.email}
-          title={t('admin.programmes.deleteTitle', { name: m.name })}
-          body={t(`${K}.deleteBody`)} cta={t('admin.delete')}
-          onCancel={() => setDeleting(false)} onConfirm={() => void remove()} />
-      )}
-    </div>
-  )
-}
-
 /** T3 review fix 3: a STAFF mentor's **Remove from Mentors** (`stop`) on their person page — the table's
  *  action and words: refused while they mentor anyone (M1a), the staff sign-in is untouched. Drawn only
- *  while they mentor and the row's `manageable` says the endpoint will take it (their Revoke is `StaffPersonActions`). */
+ *  while they mentor and the row's `manageable` says the endpoint will take it (their Suspend is on Staff, M1b).
+ *  Greyed, with the reason, while they mentor scholars (M1b, O17). */
 export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow; onRemoved: () => void }) {
   const { token } = useAdminAuth()
   const { t } = useT()
@@ -471,12 +391,18 @@ export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow;
       onRemoved()
     } catch (err) { setActionError(refusalText(err, t)) } finally { setBusy(false) }
   }
+  const scholars = m.scholars_now ?? 0
   return (
     <div>
-      <button type="button" disabled={busy} data-testid="mentor-person-stop" onClick={() => void stop()}
-        className="max-md:inline-flex max-md:min-h-11 max-md:items-center text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
-        {t(`${K}.action.stop`)}
-      </button>
+      {scholars > 0 ? (
+        <Greyed label={t(`${K}.action.stop`)} text="text-sm" testId="mentor-person-stop-greyed"
+          reason={refusalWords('has_scholars', t, { scholars_now: scholars }) ?? ''} />
+      ) : (
+        <button type="button" disabled={busy} data-testid="mentor-person-stop" onClick={() => void stop()}
+          className="max-md:inline-flex max-md:min-h-11 max-md:items-center text-sm font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+          {t(`${K}.action.stop`)}
+        </button>
+      )}
       {actionError && <p className="mt-1.5 text-sm text-critical-600" role="alert">{actionError}</p>}
     </div>
   )

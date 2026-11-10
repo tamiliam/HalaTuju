@@ -66,7 +66,9 @@ export interface MentorsPayload {
   sees_scholars?: boolean
 }
 
-export type MentorAction = 'resend' | 'revoke' | 'deactivate' | 'reactivate' | 'stop' | 'resume'
+/** `remove` (M1b): a mentor login leaves Mentors and stays on as a member in No group; send
+ *  `{ to_no_group: true }` (without it the server refuses `last_table`). */
+export type MentorAction = 'resend' | 'revoke' | 'deactivate' | 'reactivate' | 'stop' | 'resume' | 'remove'
 
 export async function getMentors(options?: ApiOptions) {
   return adminFetch<MentorsPayload>('/api/v1/admin/mentors/', options)
@@ -106,18 +108,20 @@ export async function addStaffMentor(adminId: number, options?: ApiOptions) {
   return adminMutate<MentorRow>('/api/v1/admin/mentors/staff/', 'POST', { admin_id: adminId }, options)
 }
 
-export async function mentorAction(id: number, action: MentorAction, options?: ApiOptions) {
-  return adminMutate<MentorRow & { emailed: boolean | null }>(
-    `/api/v1/admin/mentors/${id}/${action}/`, 'POST', {}, options)
+export async function mentorAction(id: number, action: MentorAction, options?: ApiOptions,
+                                   body: Record<string, unknown> = {}) {
+  return adminMutate<MentorRow & { emailed: boolean | null; becomes_member?: boolean }>(
+    `/api/v1/admin/mentors/${id}/${action}/`, 'POST', body, options)
 }
 
 /** Sprint T2 (D6): delete a PURE mentor outright — their sign-in, mentor record and invitations, in
  *  one transaction. Refusals arrive as `code`: `has_work` (409, with `work`), `staff_mentor` (400: a
  *  staff member is deleted from their staff table), `not_found`, `login_cleanup_failed`,
- *  `delete_failed`. */
-export async function deleteMentor(id: number, options?: ApiOptions) {
-  return adminMutate<{ message: string; login?: string }>(`/api/v1/admin/mentors/${id}/`, 'DELETE',
-    undefined, options)
+ *  `delete_failed`; M1a: `has_unfinished_work` (409). `archive` (M1b): the Staff list's outcome — their
+ *  name stays on past records. */
+export async function deleteMentor(id: number, options?: ApiOptions, archive = false) {
+  return adminMutate<{ message: string; login?: string; archived?: boolean }>(`/api/v1/admin/mentors/${id}/`,
+    'DELETE', archive ? { archive: true } : undefined, options)
 }
 
 /** Team tables T3: one scholar on the mentor detail page — never a meeting note. */

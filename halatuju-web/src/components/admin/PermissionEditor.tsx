@@ -56,6 +56,10 @@ export interface PermissionEditorProps {
   onSaved?: () => void
   /** The GET this page already made, so the card does not make it twice. */
   initial?: StaffPermissionsView
+  /** M1b (owner O12): the Team table the page was opened from — draw ONLY that table's section. "Custom"
+   *  and Reset then speak of that table's keys alone (against the server's `table_presets[table]`); every
+   *  other key the person holds rides along untouched in the saved set. Absent: every section they sit in. */
+  table?: TeamTable
 }
 
 type Refusal = { message: string; code: string }
@@ -63,7 +67,7 @@ type Refusal = { message: string; code: string }
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((k) => b.includes(k))
 
-export default function PermissionEditor({ adminId, name, token, onSaved, initial }: PermissionEditorProps) {
+export default function PermissionEditor({ adminId, name, token, onSaved, initial, table }: PermissionEditorProps) {
   const { t } = useT()
   const [view, setView] = useState<StaffPermissionsView | null>(initial ?? null)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -103,8 +107,9 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   // T3: the sections are the tables the server seated them at when the card loaded (a payload from before
   // T3, with no `tables`, shows both). They stay put while the switches move, and follow the next read.
   const tables = view?.tables
-  const inAdmins = !tables || tables.includes('admins')
-  const inReviewers = !tables || tables.includes('reviewers')
+  const seatedAdmins = !tables || tables.includes('admins')
+  const inAdmins = (!table || table === 'admins') && seatedAdmins
+  const inReviewers = (!table || table === 'reviewers') && (!tables || tables.includes('reviewers'))
   // Quality check brings Applications (`see_all`) along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
   // no "Applications" switch, so turning Quality check off takes it away again unless it was an ADMIN
   // key before (held without Quality check), so turning Quality check off never leaves somebody seated at
@@ -115,10 +120,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     setWant((cur) => {
       let next = on ? [...cur, key] : cur.filter((k) => k !== key)
       if (key === 'qc' && on && !next.includes('see_all')) next = [...next, 'see_all']
-      if (!inAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
+      // By their SEAT, not by what is drawn (O12): opened from Reviewers, an Admin's key stays theirs.
+      if (!seatedAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       return next
     })
-  }, [inAdmins, seeAllWasAdmin])
+  }, [seatedAdmins, seeAllWasAdmin])
 
   if (loadFailed) {
     return <p className="text-sm text-critical-600">{t('admin.permEditor.loadFailed', { name })}</p>
@@ -212,7 +218,12 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   // A key the server adds later still gets a switch, under the sections, rather than vanishing.
   const known: readonly string[] = [...TABLE_KEYS.admins, ...TABLE_KEYS.reviewers]
   const other = view.keys.filter((k) => !known.includes(k))
-  const custom = !sameSet(want, view.preset)
+  // O12: opened from one table, "Custom" and Reset weigh that table's keys only.
+  const scope: readonly string[] | null = table ? TABLE_KEYS[table] : null
+  const mine = (keys: readonly string[]) => (scope ? keys.filter((k) => scope.includes(k)) : [...keys])
+  const presetHere = scope ? (view.table_presets?.[table as TeamTable] ?? mine(view.preset)) : view.preset
+  const resetTo = scope ? [...want.filter((k) => !scope.includes(k)), ...presetHere] : view.preset
+  const custom = !sameSet(mine(want), presetHere)
   // Review fix 1: a Reviewer or QC holding neither key would vanish from People; the server refuses
   // it (`would_leave_people`) and the hint says why before the refusal arrives.
   const unlisted = ['reviewer', 'qc'].includes(view.role)
@@ -226,9 +237,6 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         <h2 id={`perm-editor-${adminId}`} className="text-base font-semibold text-ground-900">
           {t('admin.permEditor.title', { name: who })}
         </h2>
-        <span className="rounded-full border border-ground-200 px-2 py-0.5 text-xs font-semibold text-ground-700">
-          {preset}
-        </span>
         {custom && (
           <span className="rounded-full bg-caution-100 px-2 py-0.5 text-xs font-semibold text-caution-700">
             {t('admin.permEditor.custom')}
@@ -264,8 +272,8 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </button>
         {/* T3 review: no "back to the preset" for somebody not active or sitting in no table. */}
         {view.is_active && !(tables && tables.length === 0) && (
-        <button type="button" disabled={busy || sameSet(want, view.preset)} data-testid="perm-reset"
-          onClick={() => { setSaved(false); setWant(view.preset) }}
+        <button type="button" disabled={busy || sameSet(want, resetTo)} data-testid="perm-reset"
+          onClick={() => { setSaved(false); setWant(resetTo) }}
           className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
           {t('admin.permEditor.reset', { preset })}
         </button>)}

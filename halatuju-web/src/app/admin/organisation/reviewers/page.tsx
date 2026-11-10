@@ -27,16 +27,12 @@ import TeamEmails, { TeamTerms } from '@/components/admin/TeamEmails'
 import { formatDate } from '@/lib/formatDate'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
-import { scholarsRefusal } from '@/lib/staffRefusals'
 import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
-import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
 import type { TeamTableName } from '@/lib/admin-api'
-import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 import StaffAvatar from '@/components/admin/StaffAvatar'
-import StaffActions from '@/components/admin/StaffActions'
 import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 // Organisation → **People**: the directory of everybody who is already in.
@@ -51,13 +47,11 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // also an admin."* Same two categories the Invitations page groups by, so nobody has to learn a
 // second vocabulary.
 //
-// ⚠ **REVOKE AND RESTORE LIVE HERE NOW, not on Invitations.** Revoking is something you do to
-// somebody who has ARRIVED, and Invitations no longer lists anybody who has. They sit beside Pause
-// (on a reviewer's detail page) so one place decides whether a person is in — the two controls
-// used to be on different screens.
+// ⚠ **SUSPEND (REVOKE) AND RESTORE LIVE ON THE STAFF TAB, not on Invitations** — and, since M1b (owner O3),
+// not on the group tables either: Staff holds Suspend / Restore and Delete; Admins, Reviewers and Mentors
+// keep Add and Remove (O4).
 //
-// The reviewers tab is the default and stays sorted by open caseload, because "who can take this
-// case?" is asked daily and "who still has access?" is not.
+// The reviewers table stays sorted by open caseload, because "who can take this case?" is asked daily.
 //
 // A corrections count is deliberately absent and must stay absent unless the owner says
 // otherwise: it reads as a competence score, and the reopens live on the detail page WITH their
@@ -84,6 +78,11 @@ const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold 
 // Team tables T3: Team -> Mentors — the old Mentors page's chunk (one chunk for the table and the mentor
 // detail page; no new entry in the webpack runtime every route downloads).
 const TeamMentors = lazySource(() => import('@/components/mentors/MentorsAdmin').then((m) => m.default))
+// Sprint M1b: Team -> Staff, the first tab and the default — in the console's shared `'ad'` chunk (the
+// greyed-button tip and the person pages are there already), so no new entry in the webpack runtime every
+// route downloads. Suspend and Delete live there ONLY (owner O3); the group tables keep Add and Remove (O4).
+const StaffList = lazySource(() =>
+  import(/* webpackChunkName: 'ad' */ '@/components/admin/StaffList').then((m) => m.default))
 
 export default function AdminReviewersList() {
   const { token, role } = useAdminAuth()
@@ -99,11 +98,11 @@ export default function AdminReviewersList() {
   // different answer to the question you asked (owner, 2026-09-09).
   const search = useSearchParams()
   const asked = search?.get('tab')
-  // Team tables T2 (owner ruling 1): Admins · Reviewers · Mentors · Emails · Terms. Reviewers stays the
-  // tab you land on ("who can take this case?" is the daily question); `?tab=` opens any other.
-  type Panel = 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
+  // Team tables T2 (owner ruling 1): Admins · Reviewers · Mentors · Emails · Terms. M1b: Staff comes first
+  // and is the tab you land on (`?tab=staff`); `?tab=` opens any other.
+  type Panel = 'staff' | 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
   const [panel, setPanel] = useState<Panel>(
-    asked === 'admins' || asked === 'mentors' ? asked : 'reviewers')
+    asked === 'admins' || asked === 'mentors' || asked === 'reviewers' ? asked : 'staff')
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
@@ -116,22 +115,17 @@ export default function AdminReviewersList() {
   // the screen because the backend refuses it anyway.
   const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
   const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
-          resend, toggle, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
-  // The person whose delete is being confirmed (typed confirmation, 2026-10-09) — from the Admins or,
-  // since Sprint T2 (D6), the Reviewers table. Null = closed.
-  const [deleting, setDeleting] = useState<Pick<AdminItem, 'id' | 'name' | 'email'> | null>(null)
+          resend, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
   const viewerSuper = effectiveRole(role) === 'super'
-  const [deleteBusy, setDeleteBusy] = useState(false)
   // ⚠ A TEAM MEMBER'S PERMISSIONS LIVE ON THEIR OWN PAGE (2026-10-22, owner's option A). The
   // Admins tab used to open the card above this list; now the NAME opens the person's page, which
   // has a Permissions tab — the same place a reviewer's are. Only where the viewer may manage, and
   // only for a team member who is not revoked. O10 (owner, 2026-11-10): the organisation admin's name
-  // opens their page too, as every other admin's does. `manageable` is the page's own GET fence
-  // (`_staff_target_manageable`), so a super gets the link and an org_admin, who may not open a fellow
-  // organisation admin's (or their own) page, gets plain text rather than a link to a 404. An
-  // organisation admin's row links only on an explicit `manageable: true` (fails closed on an older payload).
+  // opens their page too, as every other admin's does. M1b: an organisation admin may now READ a fellow
+  // organisation admin's page (and their own) — the page draws it read-only, no action — so their row links
+  // whatever `manageable` says. Any other row still links only where it is manageable.
   const personHref = (a: AdminItem) =>
-    a.is_active && (a.role === 'org_admin' ? a.manageable === true : a.manageable !== false)
+    a.is_active && (a.role === 'org_admin' || a.manageable !== false)
       && (PERSON_PAGE_ROLES as readonly string[]).includes(a.role)
       ? `/admin/organisation/reviewers/admins/${a.id}` : null
   // T3 (owner): no permission column on the Team tables — permissions are set only on the person's own
@@ -140,64 +134,12 @@ export default function AdminReviewersList() {
   const [adding, setAdding] = useState<TeamTableName | null>(null)
   // Add Mentor's sheet lives in the Mentors chunk; its button is on the tab row with the other two.
   const [addingMentor, setAddingMentor] = useState(false)
-  const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName } | null>(null)
+  const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName; toNoGroup?: boolean } | null>(null)
   const teamDone = (text: string) => {
     setAdding(null); setRemoving(null)
     setStaffMessage({ type: 'success', text })
     reloadStaff(); load()
   }
-  // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
-  // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
-  const [busyId, setBusyId] = useState<number | null>(null)
-
-  /**
-   * Revoke or restore a REVIEWER, from the reviewers table (owner, 2026-09-09).
-   *
-   * ⚠ **IT SAYS WHAT IT STRANDS.** Revoke flips one flag and touches nothing else — the cases
-   * assigned to this person stay assigned to them, and they will not be able to open one. On
-   * production a single reviewer holds twelve. Pause is the tool for somebody stepping back;
-   * revoke is for somebody who has gone, and the difference has to be said out loud BEFORE the
-   * click, not discovered afterwards by a student whose case stopped moving.
-   */
-  const toggleReviewer = async (r: AdminReviewer) => {
-    if (!token) return
-    const going = r.is_active
-    const warn = going && r.open_now > 0
-      ? t('admin.reviewers.revokeConfirmOpen', { name: r.name, n: String(r.open_now) })
-      : t(going ? 'admin.reviewers.revokeConfirm' : 'admin.reviewers.restoreConfirm',
-          { name: r.name })
-    if (!window.confirm(warn)) return
-    setBusyId(r.id)
-    try {
-      await revokeAdmin(r.id, going ? 'revoke' : 'restore', { token })
-      load()
-    } catch (e) {   // O18: `has_scholars` (they still mentor someone) in the reader's language
-      setError(scholarsRefusal(e, t) ?? (e instanceof Error ? e.message : t('admin.actionFailed')))
-    } finally { setBusyId(null) }
-  }
-
-  /**
-   * Delete an ADMIN outright — offered only where the server said `deletable`.
-   *
-   * ⚠ A TYPED CONFIRMATION, NOT `window.confirm` (2026-10-09). The dialog says what goes — their
-   * sign-in, and their invitation history (`Invitation.partner_admin` is CASCADE) — and will not
-   * act until their email address is typed: the address is unique, where two people can share a
-   * name, and it is what a re-invite would be sent to.
-   */
-  const removeAdmin = async (a: Pick<AdminItem, 'id'>) => {
-    if (!token) return
-    setDeleteBusy(true)
-    try {
-      const r = await deleteAdmin(a.id, { token })
-      // Deleted, but the sign-in survived: the server's own sentence, shown as a warning.
-      setStaffMessage({ type: r.login === 'failed' ? 'warning' : 'success', text: r.message })
-    } catch (e) {
-      // 409 `has_work` is the interesting one: somebody did work between the page loading and
-      // the click. The server's sentence names them, so it is shown rather than replaced.
-      setStaffMessage({ type: 'error', text: e instanceof Error ? e.message : t('admin.actionFailed') })
-    } finally { setDeleteBusy(false); setDeleting(null); reloadStaff(); load() }
-  }
-
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -230,15 +172,6 @@ export default function AdminReviewersList() {
     ? <span className="mt-0.5 block text-[11px] text-ground-500" data-testid="lead-no-self-qc">{t('admin.team.noSelfQc')}</span>
     : null
   const paged = usePagedRows(sorted)
-  // Sprint T2: Revoke / Restore, then Delete (`StaffActions`, the Admins table's pair). The organisation
-  // admin is never revoked from here (the server refuses an org_admin acting on one; their way out of
-  // this table is Remove), and their Delete is drawn for a super only.
-  const reviewerActions = (r: AdminReviewer) => (
-    <StaffActions active={r.is_active} busy={busyId === r.id}
-      onToggle={r.lead || r.revocable === false ? undefined : () => toggleReviewer(r)}
-      onDelete={() => setDeleting(r)} deletable={r.deletable} deleteNever={r.delete_never} work={r.work}
-      orgAdmin={!!r.lead || r.role === 'org_admin'} viewerSuper={viewerSuper} />
-  )
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
   // Below every hook on purpose — an early return above them would change the hook order between
@@ -262,6 +195,7 @@ export default function AdminReviewersList() {
       <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
         onSelect={(k) => setPanel(k as Panel)}
         tabs={[
+          { key: 'staff', labelKey: 'admin.staff.tab' },
           { key: 'admins', labelKey: 'admin.people.tabAdmins' },
           { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
           // T3: the Mentors TABLE (owner ruling 6) — for who read the old Mentors page (`mayReadMentors`).
@@ -296,12 +230,10 @@ export default function AdminReviewersList() {
       <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}
         onClose={() => setRemoving(null)} onDone={teamDone} />
 
-      {/* One typed confirmation for a delete from the Admins or the Reviewers table. */}
-      {deleting && (
-        <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
-          title={t('admin.programmes.deleteTitle', { name: deleting.name })}
-          body={t('admin.deleteStaffBody')} cta={t('admin.delete')}
-          onCancel={() => setDeleting(null)} onConfirm={() => removeAdmin(deleting)} />
+      {/* M1b: Staff — every accepted member, with Suspend / Restore and Delete (O3), its own chunk. */}
+      {panel === 'staff' && (
+        <StaffList token={token} canManage={canManage} viewerSuper={viewerSuper}
+          onChanged={() => { reloadStaff(); load() }} />
       )}
 
       {/* T3: the Mentors table, its own chunk (the old Mentors page's, `lazySource`), handed this page's
@@ -318,13 +250,12 @@ export default function AdminReviewersList() {
         {/* T2: everybody who sits at the Admins table (`tables`, served) — a reviewer holding admin keys
             too. A revoked person sits at no table, so they are placed by their old label and keep
             their Restore. "Change role" is gone: Finance and QC are no longer labels (rulings 4, 8). */}
+        {/* M1b (O4): Add and Remove only — Suspend and Delete are on Staff. */}
         <StaffTable rows={adminRows} busyId={staffBusyId} canAct={canManage}
           onResend={canManage ? resend : undefined}
-          onToggle={canManage ? toggle : undefined}
-          onDelete={canManage ? setDeleting : undefined}
           nameHref={canManage ? personHref : undefined}
           soleOrgAdmin={soleOrgAdmin} viewerSuper={viewerSuper}
-          team={{ onRemove: (a) => setRemoving({ id: a.id, name: a.name, table: 'admins' }) }} />
+          team={{ onRemove: (a, toNoGroup) => setRemoving({ id: a.id, name: a.name, table: 'admins', toNoGroup }) }} />
         {!canManage && (
           <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
         )}
@@ -401,9 +332,9 @@ export default function AdminReviewersList() {
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {leadNote(r)}
                   <AlsoIn row={r} here="reviewers" />
-                  {canManage && reviewerActions(r)}
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                    onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />}
+                    counts={{ open_cases: r.open_now }}
+                    onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />}
                 </div>
               </div>
             )
@@ -502,10 +433,11 @@ export default function AdminReviewersList() {
                     <td className="px-4 py-3">
                       {canManage && (
                         <div className="flex flex-wrap items-center gap-3">
-                          {reviewerActions(r)}
-                          {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. */}
+                          {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. M1b (O4):
+                              Remove only; Suspend and Delete are on Staff. */}
                           <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                            onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />
+                            counts={{ open_cases: r.open_now }}
+                            onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />
                         </div>
                       )}
                     </td>

@@ -8710,7 +8710,7 @@ write an `AUDIT` log line but no `staff_activity` row, because `staff_activity` 
 needs its `WIRED` writers, its filter kind and its backfill. Fix: add `staff_archived` / `staff_restored` verbs when the
 Staff tab (M1b) or the activity box needs to show them.
 
-### [TD-604] The web's programme-staff mirror does not know the `member` role - low
+### ~~[TD-604] The web's programme-staff mirror does not know the `member` role - low~~ — RESOLVED 2026-11-11 (FIXED, sprint M1b, branch m1b, awaiting push: `member` added to `adminStaff.ts` `PROGRAMME_STAFF_ROLES` and left out of the Admins list (`adminStaff.test.ts`); the Staff tab draws the served `GET admin/staff/` rows unfiltered (`StaffList.test.tsx`); `AppShell` treats a member like a mentor (`AppShell.test.tsx`); the member's menu and landing were pinned in M1a (`navigation.test.ts`, `adminLanding.test.ts`))
 
 **Raised 2026-11-10 by Sprint M1a (left for M1b).** `halatuju-web/src/lib/adminStaff.ts` `PROGRAMME_STAFF_ROLES` lists
 reviewer, admin, qc, org_admin and finance; the API's `staff_fence.PROGRAMME_STAFF_ROLES` now also has `member`. Today

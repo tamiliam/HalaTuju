@@ -153,3 +153,27 @@ describe('a row nobody may ever delete (T2 review N2: `delete_never`)', () => {
     expect(screen.queryByText('admin.delete')).toBeNull()
   })
 })
+
+describe('M1b: refused Suspend and Delete, greyed with their reason (O7, O17, O18)', () => {
+  it('toggleBlocked greys Suspend: the reason is in the tip and a click never toggles', () => {
+    const onToggle = jest.fn()
+    render(<StaffActions active onToggle={onToggle} toggleTestId="staff-toggle-3" toggleBlocked="They still mentor 2 scholars." />)
+    expect(screen.queryByTestId('staff-toggle-3')).toBeNull()
+    const b = screen.getByTestId('staff-toggle-3-greyed').querySelector('button') as HTMLButtonElement
+    expect(b.textContent).toBe('admin.revoke')
+    expect(b.getAttribute('aria-disabled')).toBe('true')
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('They still mentor 2 scholars.')
+    fireEvent.click(b)
+    expect(onToggle).not.toHaveBeenCalled()
+  })
+
+  it('deleteBlocked greys Delete with the caller\'s reason, even with no work on the row', () => {
+    const onDelete = jest.fn()
+    render(<StaffActions active onDelete={onDelete} deleteBlocked="Reassign their 4 open cases first." />)
+    expect(screen.queryByTestId('staff-delete')).toBeNull()
+    const b = greyed()
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('Reassign their 4 open cases first.')
+    fireEvent.click(b)
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+})

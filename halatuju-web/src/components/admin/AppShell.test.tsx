@@ -134,6 +134,32 @@ describe('AppShell renders the scope sidebar per role', () => {
     } finally { mockToken = null }
   })
 
+  // M1b (TD-604): a member ("No group") is drawn like a mentor — no scope list, no staff probes —
+  // and their menu is Profile alone; they land there (`defaultRoute`, proven in navigation.test.ts).
+  it('gives a member Profile only, asks for no scopes and fires no staff probe', async () => {
+    mockToken = 'tok'
+    mockPath = '/admin/profile'
+    jest.mocked(adminApi.getAdminScopes).mockClear()
+    jest.mocked(adminApi.getOrgRequestCount).mockClear()
+    jest.mocked(adminApi.getBillingUsage).mockClear()
+    jest.mocked(adminApi.getPendingSponsorCount).mockClear()
+    jest.mocked(adminApi.getPaymentRuns).mockClear()
+    try {
+      asRole('member', { permissions: [] })
+      render(<AppShell>content</AppShell>)
+      const nav = sidebar()
+      expect(within(nav).queryByText('admin.nav.group.organisation')).toBeNull()
+      expect(within(nav).queryByText('admin.nav.group.programme')).toBeNull()
+      expect(within(nav).queryByText('admin.nav.group.platform')).toBeNull()
+      await new Promise((r) => setTimeout(r, 0))
+      expect(adminApi.getAdminScopes).not.toHaveBeenCalled()
+      expect(adminApi.getOrgRequestCount).not.toHaveBeenCalled()
+      expect(adminApi.getBillingUsage).not.toHaveBeenCalled()
+      expect(adminApi.getPendingSponsorCount).not.toHaveBeenCalled()
+      expect(adminApi.getPaymentRuns).not.toHaveBeenCalled()
+    } finally { mockToken = null; mockPath = '/admin/scholarship' }
+  })
+
   it('never renders the utility scope in the sidebar — it lives in the account menu', () => {
     asRole('super')
     render(<AppShell>content</AppShell>)

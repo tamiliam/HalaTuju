@@ -37,6 +37,11 @@ type Bubble = typeof import(/* webpackChunkName: 'ad' */ '../InfoTipBubble').def
  * /scholarship/apply (+0.18 kB first load, over its budget, 2026-11-10). No new chunk either way.
  *
  * Resend and Remove-from-table are NOT here: each caller keeps them where they were, either side.
+ *
+ * Sprint M1b (owner O3): the pair lives on the STAFF list only (and a super's platform screens' Revoke);
+ * the group tables keep Add and Remove. `toggleBlocked` greys Suspend with its reason (O18: they still
+ * mentor scholars), `deleteBlocked` greys Delete with the Staff list's own reason (O7: work unfinished).
+ * `Greyed` is exported for the group tables' blocked Remove (O17: the reason in the tip, never inline).
  */
 export interface StaffActionsProps {
   /** Is the person active? Decides Revoke (true) or Restore (false). */
@@ -60,19 +65,31 @@ export interface StaffActionsProps {
   toggleTestId?: string
   /** Text size: `xs` on the dense tables, `sm` on the Mentors table and the person pages. */
   size?: 'xs' | 'sm'
+  /** M1b (O18): Revoke / Suspend is refused — drawn greyed, this reason in its tip. */
+  toggleBlocked?: string | null
+  /** M1b (O7): Delete is refused for this reason — drawn greyed with it (instead of `work`'s summary). */
+  deleteBlocked?: string | null
+  /** M1b: the Delete label key (the Staff list says "Delete" too; kept for a table's own words). */
+  deleteKey?: string
 }
 
 export default function StaffActions({
   active, onToggle, onDelete, deletable = false, deleteNever = false, work, orgAdmin = false, viewerSuper = false,
   busy = false, revokeKey = 'admin.revoke', restoreKey = 'admin.restore', toggleTestId, size = 'xs',
+  toggleBlocked = null, deleteBlocked = null, deleteKey = 'admin.delete',
 }: StaffActionsProps) {
   const { t } = useT()
   const text = size === 'xs' ? 'text-xs' : 'text-sm'
-  const hasWork = !!work && Object.keys(work).length > 0
+  const hasWork = (!!work && Object.keys(work).length > 0) || !!deleteBlocked
   const showDelete = !!onDelete && !deleteNever && (!orgAdmin || viewerSuper) && (deletable || hasWork)
+  const why = deleteBlocked || t('admin.deleteHasWork', { work: workSummary(work) })
   return (
     <>
-      {onToggle && (
+      {onToggle && toggleBlocked && (
+        <Greyed label={t(active ? revokeKey : restoreKey)} reason={toggleBlocked} text={text}
+          testId={toggleTestId ? `${toggleTestId}-greyed` : 'staff-toggle-greyed'} />
+      )}
+      {onToggle && !toggleBlocked && (
         <button type="button" disabled={busy} onClick={onToggle} data-testid={toggleTestId}
           className={`${text} ${TAP} font-medium disabled:opacity-50 ${
             active ? 'text-critical-600 hover:text-critical-800' : 'text-primary-600 hover:text-primary-800'}`}>
@@ -83,10 +100,10 @@ export default function StaffActions({
         ? (
           <button type="button" disabled={busy} onClick={onDelete} data-testid="staff-delete"
             className={`${text} ${TAP} font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50`}>
-            {t('admin.delete')}
+            {t(deleteKey)}
           </button>
         )
-        : <GreyedDelete reason={t('admin.deleteHasWork', { work: workSummary(work) })} text={text} />)}
+        : <Greyed label={t(deleteKey)} reason={why} text={text} testId="staff-delete-greyed" />)}
     </>
   )
 }
@@ -94,9 +111,14 @@ export default function StaffActions({
 /** Phone tap target (44px): the max-md pattern the person pages use on their own buttons. */
 const TAP = 'max-md:inline-flex max-md:min-h-11 max-md:items-center'
 
-/** Delete, greyed, with its reason on hover (a mouse), on tap or click (pinned), and on focus. */
-function GreyedDelete({ reason, text }: { reason: string; text: string }) {
-  const { t } = useT()
+/** A refused action, greyed, with its reason on hover (a mouse), on tap or click (pinned), and on focus.
+ *  Delete here; Suspend (O18) and the group tables' blocked Remove (M1b, O17) too. */
+export function Greyed({ label, reason, text = 'text-xs', testId }: {
+  label: string
+  reason: string
+  text?: string
+  testId: string
+}) {
   const id = useId()
   const root = useRef<HTMLSpanElement>(null)
   const [pinned, setPinned] = useState(false)
@@ -117,7 +139,7 @@ function GreyedDelete({ reason, text }: { reason: string; text: string }) {
   const onMouse = (on: boolean) => (e: PointerEvent) => { if (e.pointerType === 'mouse') setHovered(on) }
 
   return (
-    <span ref={root} className="relative inline-flex" data-testid="staff-delete-greyed"
+    <span ref={root} className="relative inline-flex" data-testid={testId}
       onPointerEnter={onMouse(true)} onPointerLeave={onMouse(false)}>
       <button type="button" aria-disabled="true" aria-describedby={id} aria-expanded={open}
         onClick={() => setPinned((v) => !v)}
@@ -130,7 +152,7 @@ function GreyedDelete({ reason, text }: { reason: string; text: string }) {
           if (to && !root.current?.contains(to)) setPinned(false)
         }}
         className={`${text} ${TAP} cursor-not-allowed font-medium text-ground-400`}>
-        {t('admin.delete')}
+        {label}
       </button>
       <span id={id} className="sr-only">{reason}</span>
       {open && Bubble && <Bubble text={reason} root={root} onClose={close} />}

@@ -62,8 +62,7 @@ describe('the row actions (2026-09-09)', () => {
    *  quietly answered every one of them with the FIRST test's markup. Three assertions passed and
    *  failed for reasons that had nothing to do with the row under test. */
   const act = (rows: AdminItem[], on: Partial<Parameters<typeof StaffTable>[0]> = {}) => {
-    const r = render(<StaffTable rows={rows} canAct onResend={jest.fn()} onToggle={jest.fn()}
-      onDelete={jest.fn()} {...on} />)
+    const r = render(<StaffTable rows={rows} canAct onResend={jest.fn()} onToggle={jest.fn()} {...on} />)
     return within(r.container.querySelector('[data-testid="table-scroller"]') as HTMLElement)
   }
 
@@ -82,24 +81,22 @@ describe('the row actions (2026-09-09)', () => {
     expect(t.queryByText('admin.resend')).toBeNull()
   })
 
-  it('offers Delete only where the SERVER said deletable', () => {
+  it('M1b (owner O3): draws NO Delete on any staff table — Delete lives on Team -> Staff', () => {
     const t = act([row({ id: 3, name: 'Fresh', role: 'admin', deletable: true,
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] }),
+                   row({ id: 4, name: 'Kulaly', role: 'admin', deletable: false, work: { payment_runs_made: 25 },
                          invitation: { status: 'accepted' } as AdminItem['invitation'] })])
-    expect(t.getByText('admin.delete')).toBeTruthy()
+    expect(t.queryByText('admin.delete')).toBeNull()
+    expect(t.getAllByText('admin.revoke')).toHaveLength(2)   // the platform screens keep Revoke
   })
 
-  it('⚠ and Revoke, with Delete GREYED, for somebody with work on record (Sprint T2)', () => {
-    // The whole rule, in one row: Kulaly has made 25 payment runs. Revoke stays; Delete is drawn
-    // but cannot act, so the owner sees the control and the reason, not a gap.
-    const onDelete = jest.fn()
-    const t = act([row({ id: 4, name: 'Kulaly', role: 'admin', deletable: false,
-                         work: { payment_runs_made: 25 },
-                         invitation: { status: 'accepted' } as AdminItem['invitation'] })], { onDelete })
-    const del = t.getByText('admin.delete')
-    expect(del.getAttribute('aria-disabled')).toBe('true')
-    del.click()
-    expect(onDelete).not.toHaveBeenCalled()
-    expect(t.getByText('admin.revoke')).toBeTruthy()
+  it('M1b (owner O3, O4): the Admins table on Team keeps Add and Remove only — no Revoke, no Delete', () => {
+    const t = act([row({ id: 15, name: 'Seated', role: 'admin', deletable: true, remove: { admins: null },
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] } as Partial<AdminItem>)],
+                  { team: { onRemove: jest.fn() } })
+    expect(t.queryByText('admin.revoke')).toBeNull()
+    expect(t.queryByText('admin.delete')).toBeNull()
+    expect(t.getByTestId('remove-from-admins')).toBeTruthy()
   })
 
   it('⚠ draws NO controls at all on a row this viewer may not manage', () => {
@@ -128,27 +125,6 @@ describe('the row actions (2026-09-09)', () => {
                    row({ id: 8, name: 'Revoked early', is_active: false,
                          invitation: { status: 'no_reply' } as AdminItem['invitation'] })])
     expect(t.queryByText('admin.resend')).toBeNull()
-  })
-
-  it('says WHY Delete is greyed — the reason is the button\'s description', () => {
-    // The old "Has work on record — revoke instead" grey text is gone; the reason rides on Delete.
-    const t = act([row({ id: 9, name: 'Kulaly', role: 'admin', deletable: false,
-                         work: { payment_runs_made: 25, assigned_applications: 2 } })])
-    const del = t.getByText('admin.delete')
-    const why = document.getElementById(del.getAttribute('aria-describedby') ?? '')
-    expect(why?.textContent).toBe('admin.deleteHasWork')
-  })
-
-  it('says nothing about work on a row that is simply deletable', () => {
-    const t = act([row({ id: 10, name: 'Fresh', role: 'admin', deletable: true, work: {} })])
-    expect(t.getByText('admin.delete').getAttribute('aria-disabled')).toBeNull()
-    expect(t.queryByText('admin.deleteHasWork')).toBeNull()
-  })
-
-  it('⚠ draws an organisation admin\'s Delete for a SUPER viewer only (Sprint T2)', () => {
-    const lead = [row({ id: 14, name: 'Lead', role: 'org_admin', deletable: true, work: {} })]
-    expect(act(lead).queryByText('admin.delete')).toBeNull()
-    expect(act(lead, { viewerSuper: true }).getByText('admin.delete')).toBeTruthy()
   })
 
   it('offers Change role only where a switch exists', () => {

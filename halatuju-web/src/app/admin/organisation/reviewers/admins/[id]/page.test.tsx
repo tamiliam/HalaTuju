@@ -95,9 +95,9 @@ it('O10: a super opens the organisation admin\'s page — no Revoke, no Remove, 
   // The sole organisation admin, as the server serves them to a super (`delete_fields`).
   await loaded({ role: 'org_admin', editable: false, revocable: false, delete_never: true, deletable: false,
     work: { payment_runs: 1 } }, { lead: true })
-  const acts = within(screen.getByTestId('person-actions'))
-  expect(acts.queryByText('admin.revoke')).toBeNull()
-  expect(acts.queryByText('admin.delete')).toBeNull()
+  expect(screen.queryByTestId('person-action-row')).toBeNull()      // M1b (O3): Suspend and Delete are on Staff
+  expect(screen.queryByText('admin.revoke')).toBeNull()
+  expect(screen.queryByText('admin.delete')).toBeNull()
   expect(screen.queryByTestId('remove-from-admins')).toBeNull()
   expect(screen.getByTestId('person-tables').textContent).toContain('admin.team.chip.lead')
   fireEvent.click(screen.getByText('admin.person.tabPermissions'))
@@ -160,73 +160,25 @@ it('lets a super open it too', async () => {
   expect(screen.getByTestId('perm-editor')).toBeTruthy()
 })
 
-describe('Sprint T2: Revoke and Delete on an admin\'s own page (owner, 2026-11-08)', () => {
-  const actions = () => within(screen.getByTestId('person-actions'))
-
-  beforeEach(() => { window.confirm = jest.fn(() => true) })
-
-  it('offers Revoke and a live Delete on an admin with no work, and goes back to Admins after it', async () => {
-    mockApi.deleteAdmin.mockResolvedValue({ message: 'ok' } as never)
-    await loaded({ deletable: true, work: {} })
-    expect(actions().getByText('admin.revoke')).toBeTruthy()
-    fireEvent.click(actions().getByTestId('staff-delete'))
-    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'arun@example.org' } })
-    fireEvent.click(screen.getByTestId('typed-confirm-go'))
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/organisation/reviewers?tab=admins'))
-    expect(mockApi.deleteAdmin).toHaveBeenCalledWith(14, { token: 'tok' })
-  })
-
-  it('greys the Delete of an admin with work, with the reason and its counts', async () => {
-    await loaded({ deletable: false, work: { payment_runs: 2 } })
-    expect(actions().queryByTestId('staff-delete')).toBeNull()
-    const b = within(actions().getByTestId('staff-delete-greyed')).getByText('admin.delete')
-    expect(b.getAttribute('aria-disabled')).toBe('true')
-    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent)
-      .toBe('admin.deleteHasWork(work=payment runs: 2)')
-  })
-
-  it('revokes after a confirm, and then reads Revoked with a Restore', async () => {
-    mockApi.revokeAdmin.mockResolvedValue({} as never)
-    await loaded({ deletable: false, work: { payment_runs: 2 } })
-    fireEvent.click(actions().getByText('admin.revoke'))
-    await waitFor(() => expect(actions().getByText('admin.restore')).toBeTruthy())
-    expect(mockApi.revokeAdmin).toHaveBeenCalledWith(14, 'revoke', { token: 'tok' })
-    expect(screen.getByText('admin.reviewers.status.revoked')).toBeTruthy()
-  })
-
-  it('shows the server\'s refusal in its own words', async () => {
-    mockApi.deleteAdmin.mockRejectedValue(new Error('They have work on record now.'))
-    await loaded({ deletable: true, work: {} })
-    fireEvent.click(actions().getByTestId('staff-delete'))
-    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'arun@example.org' } })
-    fireEvent.click(screen.getByTestId('typed-confirm-go'))
-    expect((await screen.findByRole('alert')).textContent).toBe('They have work on record now.')
-    expect(mockPush).not.toHaveBeenCalled()
-  })
-
-  it('shows an organisation admin viewer no Delete and no Revoke on a fellow organisation admin', async () => {
-    await loaded({ role: 'org_admin', deletable: true, work: {} })
-    expect(actions().queryByText('admin.delete')).toBeNull()
-    expect(actions().queryByText('admin.revoke')).toBeNull()
-  })
-
-  it('shows a super the Delete on that organisation admin', async () => {
+describe('M1b (owner O3, O10): Suspend and Delete live on Team -> Staff, not on an admin\'s page', () => {
+  it.each([
+    ['a deletable admin', { deletable: true, work: {} }],
+    ['an admin with work', { deletable: false, work: { payment_runs: 2 } }],
+    ['a revocable admin', { revocable: true, delete_never: false, deletable: false, work: {} }],
+  ])('%s: no Revoke, no Restore, no Delete, no action row', async (_n, over) => {
     viewerRole = { role: 'reviewer', is_super_admin: true }
-    await loaded({ role: 'org_admin', deletable: true, work: {} })
-    expect(actions().getByTestId('staff-delete')).toBeTruthy()
+    await loaded(over as Partial<api.StaffPermissionsView>)
+    expect(screen.queryByTestId('person-action-row')).toBeNull()
+    for (const k of ['admin.revoke', 'admin.restore', 'admin.delete']) expect(screen.queryByText(k)).toBeNull()
+    expect(mockApi.deleteAdmin).not.toHaveBeenCalled()
   })
 
-  // T2 review N2 / N3: the server's `revocable` and `delete_never`, drawn as it says.
-  it('offers no Revoke where the server says it would refuse (a super, yourself, the sole org admin)', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
-    await loaded({ revocable: false, delete_never: true, deletable: false, work: { payment_runs: 2 } })
-    expect(actions().queryByText('admin.revoke')).toBeNull()
-    expect(actions().queryByText('admin.delete')).toBeNull()
-  })
-
-  it('offers Revoke and a greyed Delete when revocable and only work stops the delete', async () => {
-    await loaded({ revocable: true, delete_never: false, deletable: false, work: { payment_runs: 2 } })
-    expect(actions().getByText('admin.revoke')).toBeTruthy()
-    expect(actions().getByTestId('staff-delete-greyed')).toBeTruthy()
+  it('O10: a fellow organisation admin\'s page is read-only for an organisation admin (`manageable: false`)', async () => {
+    await loaded({ role: 'org_admin', editable: false, manageable: false } as Partial<api.StaffPermissionsView>, { lead: true })
+    expect(screen.queryByTestId('person-action-row')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+    fireEvent.click(screen.getByText('admin.person.tabPermissions'))
+    expect(screen.getByTestId('perm-editor').textContent).toBe('14')   // shown (locked, `editable: false`)
+    window.history.replaceState(null, '', window.location.pathname)
   })
 })

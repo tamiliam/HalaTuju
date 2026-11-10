@@ -4,7 +4,9 @@
 // programme staff) are PLATFORM-world rows and must never appear in the org table.
 import type { AdminItem } from './admin-api'
 
-export const PROGRAMME_STAFF_ROLES = ['reviewer', 'admin', 'qc', 'org_admin', 'finance'] as const
+// `member` (M1b, TD-604): somebody of the team who sits in NO group ("No group" on Team -> Staff). They are
+// programme staff, so never a platform row, but they have no category: no group table lists them.
+export const PROGRAMME_STAFF_ROLES = ['reviewer', 'admin', 'qc', 'org_admin', 'finance', 'member'] as const
 
 export function isProgrammeStaff(role: string): boolean {
   return (PROGRAMME_STAFF_ROLES as readonly string[]).includes(role)
@@ -39,7 +41,8 @@ const CATEGORY: Record<string, StaffCategory> = {
   finance: 'admins',
 }
 
-/** Which of the two groups a role belongs to. Null only for a role outside the staff table. */
+/** Which of the two groups a role belongs to. Null for a role outside the staff table, and for `member`
+ *  (in no group — they appear on Team -> Staff only). */
 export function categoryOf(role: string): StaffCategory | null {
   return CATEGORY[role] ?? null
 }
