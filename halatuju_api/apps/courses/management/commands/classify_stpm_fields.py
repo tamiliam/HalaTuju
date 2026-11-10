@@ -293,29 +293,21 @@ def _classify_spm_matching(category_lower: str, name_lower: str) -> str:
     return 'umum'
 
 
-def classify_stpm_course(category: str, field: str, course_name: str) -> str:
+def _normalise_category(category_lower: str) -> str:
+    """Normalise English field values to Malay equivalents.
+
+    After Sprint 5 removed the category column, field holds mixed-language
+    values. The "Others (X)" pattern extracts X for keyword matching.
     """
-    Map an STPM course to a taxonomy key using category, field, and course name.
-
-    Returns the taxonomy key (e.g. 'perubatan', 'kimia-proses').
-
-    NOTE: STPM's field column is often identical to category (an aggregate
-    value like "Komputer, IT & Multimedia"), unlike SPM where field is a
-    specific sub-discipline. We use course_name for sub-classification.
-    """
-    c = category.lower()
-    f = field.lower()
-    n = course_name.lower()
-
-    # Normalize English field values to Malay equivalents.
-    # After Sprint 5 removed the category column, field holds mixed-language
-    # values. The "Others (X)" pattern extracts X for keyword matching.
+    c = category_lower
     if c.startswith('others (') and c.endswith(')'):
         inner = c[8:-1].strip()
-        c = ENGLISH_FIELD_MAP.get(inner.lower(), c)
-    else:
-        c = ENGLISH_FIELD_MAP.get(c, c)
+        return ENGLISH_FIELD_MAP.get(inner.lower(), c)
+    return ENGLISH_FIELD_MAP.get(c, c)
 
+
+def _by_course_name(n: str):
+    """Course name trumps MOHE category."""
     # ── COURSE NAME OVERRIDES (name trumps MOHE category) ──
     # Kejuruteraan Kimia misclassified under wrong category
     if 'kejuruteraan kimia' in n and 'bioteknologi' not in n and 'makanan' not in n:
@@ -347,21 +339,11 @@ def classify_stpm_course(category: str, field: str, course_name: str) -> str:
                       'pembangunan kandungan', 'periklanan',
                       'kewartawanan', 'perhubungan awam']):
         return 'komunikasi'
+    return None
 
-    # ── PENDIDIKAN protection: never reclassify education degrees ──
-    if c == 'pendidikan':
-        return 'pendidikan'
 
-    # ── SPM-matching categories (702/1113 courses) ──
-    # Handle directly instead of delegating to classify_course(),
-    # because STPM field == category (aggregate), not a specific sub-field.
-    if c in SPM_MATCHING_CATEGORIES:
-        return _classify_spm_matching(c, n)
-
-    # ── Sains Sosial (direct match) ──
-    if c == 'sains sosial':
-        return 'sains-sosial'
-
+def _by_category_health_to_languages(c: str, n: str):
+    """Environment, health, pharmacy, law, Islamic, social, chemistry, languages, humanities."""
     # ── Environment (before health, to catch compound categories) ──
     if match_any(c, ['alam sekitar', 'teknologi persekitaran',
                       'teknologi alam sekitar']):
@@ -439,7 +421,11 @@ def classify_stpm_course(category: str, field: str, course_name: str) -> str:
     # ── Komunikasi & Media ──
     if match_any(c, ['komunikasi', 'media']):
         return 'komunikasi'
+    return None
 
+
+def _by_category_sciences_to_business(c: str, n: str):
+    """Data, maths, physics, life science, economics, management, engineering, arts, business."""
     # ── Sains Data: statistics, actuarial, data science ──
     if match_any(c, ['statistik', 'sains aktuari', 'sains data', 'analitik']):
         return 'sains-data'
@@ -532,6 +518,45 @@ def classify_stpm_course(category: str, field: str, course_name: str) -> str:
     # ── Business / Entrepreneurship ──
     if match_any(c, ['halal', 'keusahawanan', 'perniagaan']):
         return 'perniagaan'
+    return None
+
+
+def classify_stpm_course(category: str, field: str, course_name: str) -> str:
+    """
+    Map an STPM course to a taxonomy key using category, field, and course name.
+
+    Returns the taxonomy key (e.g. 'perubatan', 'kimia-proses').
+
+    NOTE: STPM's field column is often identical to category (an aggregate
+    value like "Komputer, IT & Multimedia"), unlike SPM where field is a
+    specific sub-discipline. We use course_name for sub-classification.
+    The rules run in a fixed order and the first that answers wins.
+    """
+    c = _normalise_category(category.lower())
+    n = course_name.lower()
+
+    key = _by_course_name(n)
+    if key is not None:
+        return key
+
+    # ── PENDIDIKAN protection: never reclassify education degrees ──
+    if c == 'pendidikan':
+        return 'pendidikan'
+
+    # ── SPM-matching categories (702/1113 courses) ──
+    # Handle directly instead of delegating to classify_course(),
+    # because STPM field == category (aggregate), not a specific sub-field.
+    if c in SPM_MATCHING_CATEGORIES:
+        return _classify_spm_matching(c, n)
+
+    # ── Sains Sosial (direct match) ──
+    if c == 'sains sosial':
+        return 'sains-sosial'
+
+    for rule in (_by_category_health_to_languages, _by_category_sciences_to_business):
+        key = rule(c, n)
+        if key is not None:
+            return key
 
     # ── Lain-lain catch-all ──
     # "Lain-lain" (16 courses) and any unmapped "Lain-lain (X)" that

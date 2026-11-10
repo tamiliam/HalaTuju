@@ -19,18 +19,8 @@ def match_any(text: str, keywords: list[str]) -> bool:
     return any(kw in text for kw in keywords)
 
 
-def classify_course(frontend_label: str, field: str, course_name: str) -> str:
-    """
-    Map a course to a taxonomy key using frontend_label, field, and course name.
-
-    Returns the taxonomy key (e.g. 'mekanikal', 'it-perisian').
-    Logic ported from CourseCard.tsx getImageSlug(), then mapped to
-    taxonomy keys (image_slug -> key).
-    """
-    f = field.lower()
-    c = course_name.lower()
-    fl = frontend_label.lower()
-
+def _education_and_name_overrides(f: str, c: str, fl: str):
+    """Education is never reclassified; then course-name overrides (name trumps frontend_label)."""
     # ── PENDIDIKAN protection: education courses never reclassified ──
     if fl == 'pendidikan' or f == 'pendidikan':
         return 'pendidikan'
@@ -56,117 +46,130 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
         return 'sains-fizikal'
     if 'sains sukan' in c or 'kejurulatihan' in c:
         return 'sains-sosial'
+    return None
 
-    # ── PENDIDIKAN ──
-    if fl == 'pendidikan':
-        return 'pendidikan'
 
-    # ── MEKANIKAL & PEMBUATAN / MEKANIKAL & AUTOMOTIF ──
-    if fl in ('mekanikal & pembuatan', 'mekanikal & automotif'):
-        if match_any(f, ['automotif', 'kenderaan', 'motosikal']):
-            return 'automotif'
-        if match_any(f, ['mekatronik']) or match_any(c, ['mekatronik']):
-            return 'mekatronik'
-        if match_any(f, ['minyak', 'gas', 'petrokimia']):
-            return 'minyak-gas'
-        return 'mekanikal'
+# ── frontend_label rules: each takes (field, course_name) and ALWAYS answers ──
 
-    # ── ELEKTRIK & ELEKTRONIK ──
-    if fl == 'elektrik & elektronik':
-        return 'elektrik'
+def _label_mekanikal(f: str, c: str) -> str:
+    if match_any(f, ['automotif', 'kenderaan', 'motosikal']):
+        return 'automotif'
+    if match_any(f, ['mekatronik']) or match_any(c, ['mekatronik']):
+        return 'mekatronik'
+    if match_any(f, ['minyak', 'gas', 'petrokimia']):
+        return 'minyak-gas'
+    return 'mekanikal'
 
-    # ── TEKNOLOGI MAKLUMAT ──
-    if fl == 'teknologi maklumat':
-        if match_any(c, ['networking', 'security', 'data', 'rangkaian']):
-            return 'it-rangkaian'
-        return 'it-perisian'
 
-    # ── KOMPUTER, IT & MULTIMEDIA ──
-    if fl == 'komputer, it & multimedia':
-        if match_any(f, ['ict', 'multimedia']):
-            return 'multimedia'
-        if match_any(c, ['networking', 'security', 'data', 'rangkaian']):
-            return 'it-rangkaian'
-        if match_any(f, ['animasi', 'teknologi kreatif digital']):
-            return 'multimedia'
-        return 'it-perisian'
+def _label_teknologi_maklumat(f: str, c: str) -> str:
+    if match_any(c, ['networking', 'security', 'data', 'rangkaian']):
+        return 'it-rangkaian'
+    return 'it-perisian'
 
-    # ── ICT & MULTIMEDIA ──
-    if fl == 'ict & multimedia':
+
+def _label_komputer(f: str, c: str) -> str:
+    if match_any(f, ['ict', 'multimedia']):
         return 'multimedia'
+    if match_any(c, ['networking', 'security', 'data', 'rangkaian']):
+        return 'it-rangkaian'
+    if match_any(f, ['animasi', 'teknologi kreatif digital']):
+        return 'multimedia'
+    return 'it-perisian'
 
-    # ── AERO & MARIN / AERO, MARIN, MINYAK & GAS ──
-    if fl in ('aero & marin', 'aero, marin, minyak & gas'):
-        if match_any(f, ['minyak', 'gas', 'petrokimia']):
-            return 'minyak-gas'
-        if match_any(c, ['penerbangan', 'pesawat', 'aviation']) or match_any(f, ['aero', 'penerbangan', 'pesawat']):
-            return 'aero'
-        if match_any(f, ['marin', 'perkapalan', 'kapal']) or match_any(c, ['marin', 'kapal', 'perkapalan']):
-            return 'marin'
+
+def _label_aero(f: str, c: str) -> str:
+    if match_any(f, ['minyak', 'gas', 'petrokimia']):
+        return 'minyak-gas'
+    if match_any(c, ['penerbangan', 'pesawat', 'aviation']) or match_any(f, ['aero', 'penerbangan', 'pesawat']):
         return 'aero'
+    if match_any(f, ['marin', 'perkapalan', 'kapal']) or match_any(c, ['marin', 'kapal', 'perkapalan']):
+        return 'marin'
+    return 'aero'
 
-    # ── HOSPITALITI & GAYA HIDUP / HOSPITALITI, KULINARI & PELANCONGAN ──
-    if fl in ('hospitaliti & gaya hidup', 'hospitaliti, kulinari & pelancongan'):
-        if match_any(f, ['fesyen']) or match_any(c, ['fesyen', 'pakaian', 'jahitan']):
-            return 'senireka'
-        if match_any(f, ['kulinari', 'culinary', 'patisserie', 'pastri', 'food', 'makanan']):
-            return 'kulinari'
-        if match_any(c, ['kulinari', 'culinary', 'pastri', 'patisserie', 'makanan', 'food', 'roti']):
-            return 'kulinari'
-        if match_any(f, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kecergasan']):
-            return 'kecantikan'
-        if match_any(c, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kosmetologi', 'rambut']):
-            return 'kecantikan'
-        return 'hospitaliti'
 
-    # ── PERNIAGAAN & PERDAGANGAN ──
-    if fl == 'perniagaan & perdagangan':
-        if match_any(f, ['perakaunan', 'kewangan', 'insurans']):
-            return 'perakaunan'
-        if match_any(f, ['pengurusan', 'logistik', 'peruncitan', 'retail']):
-            return 'pengurusan'
-        return 'perniagaan'
-
-    # ── PERTANIAN & BIO-INDUSTRI ──
-    if fl == 'pertanian & bio-industri':
-        if match_any(f, ['alam sekitar']):
-            return 'alam-sekitar'
-        return 'pertanian'
-
-    # ── SIVIL, SENI BINA & PEMBINAAN ──
-    if fl == 'sivil, seni bina & pembinaan':
-        if 'senibina kapal' in f:
-            return 'marin'
-        if match_any(f, ['seni bina', 'senibina', 'architectural', 'landskap', 'hortikultur', 'rekabentuk dalaman', 'perancangan bandar', 'geomatik']):
-            return 'senibina'
-        return 'sivil'
-
-    # ── SENI REKA & KREATIF ──
-    if fl == 'seni reka & kreatif':
-        if match_any(f, ['animasi', '3d animation', 'games art', 'teknologi kreatif digital', 'multimedia']):
-            return 'multimedia'
+def _label_hospitaliti(f: str, c: str) -> str:
+    if match_any(f, ['fesyen']) or match_any(c, ['fesyen', 'pakaian', 'jahitan']):
         return 'senireka'
+    if match_any(f, ['kulinari', 'culinary', 'patisserie', 'pastri', 'food', 'makanan']):
+        return 'kulinari'
+    if match_any(c, ['kulinari', 'culinary', 'pastri', 'patisserie', 'makanan', 'food', 'roti']):
+        return 'kulinari'
+    if match_any(f, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kecergasan']):
+        return 'kecantikan'
+    if match_any(c, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kosmetologi', 'rambut']):
+        return 'kecantikan'
+    return 'hospitaliti'
 
-    # ── SAINS & TEKNOLOGI ──
-    if fl == 'sains & teknologi':
-        if match_any(f, ['sains sosial']):
-            return 'sains-sosial'
-        return 'sains-hayat'
 
-    # ── PERAKAUNAN & KEWANGAN ──
-    if fl == 'perakaunan & kewangan':
+def _label_perniagaan(f: str, c: str) -> str:
+    if match_any(f, ['perakaunan', 'kewangan', 'insurans']):
         return 'perakaunan'
+    if match_any(f, ['pengurusan', 'logistik', 'peruncitan', 'retail']):
+        return 'pengurusan'
+    return 'perniagaan'
 
-    # ── SAINS SOSIAL ──
-    if fl == 'sains sosial':
+
+def _label_pertanian(f: str, c: str) -> str:
+    if match_any(f, ['alam sekitar']):
+        return 'alam-sekitar'
+    return 'pertanian'
+
+
+def _label_sivil(f: str, c: str) -> str:
+    if 'senibina kapal' in f:
+        return 'marin'
+    if match_any(f, ['seni bina', 'senibina', 'architectural', 'landskap', 'hortikultur', 'rekabentuk dalaman', 'perancangan bandar', 'geomatik']):
+        return 'senibina'
+    return 'sivil'
+
+
+def _label_seni_reka(f: str, c: str) -> str:
+    if match_any(f, ['animasi', '3d animation', 'games art', 'teknologi kreatif digital', 'multimedia']):
+        return 'multimedia'
+    return 'senireka'
+
+
+def _label_sains_teknologi(f: str, c: str) -> str:
+    if match_any(f, ['sains sosial']):
         return 'sains-sosial'
+    return 'sains-hayat'
 
-    # ── KEJURUTERAAN / KEJURUTERAAN & PEMBUATAN ──
-    if fl in ('kejuruteraan', 'kejuruteraan & pembuatan'):
-        return 'mekanikal'
 
-    # ── FIELD KEYWORD MATCHING ──
+def _const(key: str):
+    return lambda f, c: key
 
+
+_LABEL_RULES = {
+    'mekanikal & pembuatan': _label_mekanikal,
+    'mekanikal & automotif': _label_mekanikal,
+    'elektrik & elektronik': _const('elektrik'),
+    'teknologi maklumat': _label_teknologi_maklumat,
+    'komputer, it & multimedia': _label_komputer,
+    'ict & multimedia': _const('multimedia'),
+    'aero & marin': _label_aero,
+    'aero, marin, minyak & gas': _label_aero,
+    'hospitaliti & gaya hidup': _label_hospitaliti,
+    'hospitaliti, kulinari & pelancongan': _label_hospitaliti,
+    'perniagaan & perdagangan': _label_perniagaan,
+    'pertanian & bio-industri': _label_pertanian,
+    'sivil, seni bina & pembinaan': _label_sivil,
+    'seni reka & kreatif': _label_seni_reka,
+    'sains & teknologi': _label_sains_teknologi,
+    'perakaunan & kewangan': _const('perakaunan'),
+    'sains sosial': _const('sains-sosial'),
+    'kejuruteraan': _const('mekanikal'),
+    'kejuruteraan & pembuatan': _const('mekanikal'),
+}
+
+
+def _by_label(f: str, c: str, fl: str):
+    rule = _LABEL_RULES.get(fl)
+    return rule(f, c) if rule else None
+
+
+# ── FIELD KEYWORD MATCHING (first match wins, in this order) ──
+
+def _field_engineering(f: str):
     # Automotif
     if match_any(f, ['automotif', 'kenderaan', 'motosikal']):
         return 'automotif'
@@ -218,7 +221,10 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
     # Chemical engineering
     if match_any(f, ['kejuruteraan kimia', 'teknologi kimia', 'kejuruteraan alam sekitar', 'kejuruteraan proses']):
         return 'kimia-proses'
+    return None
 
+
+def _field_services(f: str):
     # Fitness / Sports (before Oil & Gas — 'gas' false-matches 'kecergasan')
     if 'kecergasan' in f:
         return 'sains-sosial'
@@ -250,7 +256,10 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
     # Agriculture & Agro
     if match_any(f, ['pertanian', 'agroteknologi', 'akuakultur', 'kesihatan haiwan', 'bioteknologi', 'teknologi pertanian']):
         return 'pertanian'
+    return None
 
+
+def _field_sciences_and_arts(f: str):
     # Science & Health
     if match_any(f, ['perubatan', 'kesihatan', 'fisioterapi']):
         return 'perubatan'
@@ -288,30 +297,58 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
         return 'bahasa'
     if match_any(f, ['sains sosial']):
         return 'sains-sosial'
+    return None
 
-    # ── UMUM catch-all ──
-    if fl == 'umum' or f == 'umum':
-        if match_any(c, ['perikanan', 'perhutanan', 'pertanian']):
-            return 'pertanian'
-        if match_any(c, ['bank', 'insurans']):
-            return 'perakaunan'
-        if match_any(c, ['radiografi']):
-            return 'perubatan'
-        if match_any(c, ['makmal']):
-            return 'sains-hayat'
-        if match_any(c, ['animasi', 'tari', 'teater', 'muzik']):
-            return 'multimedia'
-        if match_any(c, ['pembuatan']):
-            return 'mekanikal'
-        if match_any(c, ['rekabentuk']):
-            return 'senireka'
-        if match_any(c, ['kanak-kanak']):
-            return 'pendidikan'
-        if match_any(c, ['tahfiz']):
-            return 'pengajian-islam'
-        return 'umum'
 
+def _umum_by_course_name(f: str, c: str, fl: str):
+    """The 'Umum' catch-all: a generic field is read from the course name."""
+    if not (fl == 'umum' or f == 'umum'):
+        return None
+    if match_any(c, ['perikanan', 'perhutanan', 'pertanian']):
+        return 'pertanian'
+    if match_any(c, ['bank', 'insurans']):
+        return 'perakaunan'
+    if match_any(c, ['radiografi']):
+        return 'perubatan'
+    if match_any(c, ['makmal']):
+        return 'sains-hayat'
+    if match_any(c, ['animasi', 'tari', 'teater', 'muzik']):
+        return 'multimedia'
+    if match_any(c, ['pembuatan']):
+        return 'mekanikal'
+    if match_any(c, ['rekabentuk']):
+        return 'senireka'
+    if match_any(c, ['kanak-kanak']):
+        return 'pendidikan'
+    if match_any(c, ['tahfiz']):
+        return 'pengajian-islam'
     return 'umum'
+
+
+def classify_course(frontend_label: str, field: str, course_name: str) -> str:
+    """
+    Map a course to a taxonomy key using frontend_label, field, and course name.
+
+    Returns the taxonomy key (e.g. 'mekanikal', 'it-perisian').
+    Logic ported from CourseCard.tsx getImageSlug(), then mapped to
+    taxonomy keys (image_slug -> key). The rules run in a fixed order and the
+    first one that answers wins: education + name overrides, then the
+    frontend_label, then field keywords, then the 'Umum' catch-all.
+    """
+    f = field.lower()
+    c = course_name.lower()
+    fl = frontend_label.lower()
+
+    for rule in (_education_and_name_overrides, _by_label):
+        key = rule(f, c, fl)
+        if key is not None:
+            return key
+    for rule in (_field_engineering, _field_services, _field_sciences_and_arts):
+        key = rule(f)
+        if key is not None:
+            return key
+    key = _umum_by_course_name(f, c, fl)
+    return key if key is not None else 'umum'
 
 
 class Command(BaseCommand):
