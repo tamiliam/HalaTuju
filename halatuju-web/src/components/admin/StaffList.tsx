@@ -105,7 +105,7 @@ export default function StaffList({ token, canManage, viewerSuper, onChanged }: 
     const going = !row.suspended
     // Suspending a reviewer with open cases: say how many wait on them (the Reviewers table's own confirm).
     const open = row.work.reviewers.open_cases
-    const ask = going && open > 0 ? t('admin.reviewers.revokeConfirmOpen', { name: row.name, n: String(open) })
+    const ask = going && open > 0 ? t('admin.staff.suspendConfirmOpen', { name: row.name, n: String(open) })
       : t(going ? 'admin.staff.suspendConfirm' : 'admin.staff.restoreConfirm', { name: row.name })
     if (!window.confirm(ask)) return
     mark(row.id, true); setMessage(null)

@@ -264,7 +264,7 @@ describe('M1b review', () => {
     await draw()
     fireEvent.click(screen.getByTestId('staff-toggle-2'))
     expect((window.confirm as jest.Mock).mock.calls[0][0])
-      .toBe('admin.reviewers.revokeConfirmOpen {"name":"Bala Example","n":"3"}')
+      .toBe('admin.staff.suspendConfirmOpen {"name":"Bala Example","n":"3"}')
     await waitFor(() => expect(mockApi.revokeAdmin).toHaveBeenCalledWith(2, 'revoke', { token: 'tok' }))
   })
 

@@ -3623,7 +3623,6 @@
       "colLastSeen": "Kali terakhir dilihat",
       "lastSeenUnknown": "Tiada rekod",
       "revokeConfirm": "Tarik balik akses {name}? Mereka tidak akan dapat log masuk.",
-      "revokeConfirmOpen": "Tarik balik akses {name}? Mereka ada {n} kes terbuka. Kes itu kekal ditugaskan kepada mereka, dan mereka tidak akan dapat membukanya. Untuk menghentikan kerja baharu sahaja, jeda mereka.",
       "restoreConfirm": "Pulihkan {name}? Mereka boleh log masuk semula."
     },
     "sources": {
@@ -9700,6 +9699,7 @@
       "tab": "Kakitangan",
       "suspend": "Gantung",
       "suspendConfirm": "Gantung {name}? Mereka tidak boleh log masuk sehingga dipulihkan. Kumpulan dan rekod mereka kekal seperti sedia ada.",
+      "suspendConfirmOpen": "Gantung {name}? Mereka ada {n} kes terbuka. Kes itu kekal ditugaskan kepada mereka, dan mereka tidak boleh membukanya sehingga dipulihkan.",
       "restoreConfirm": "Pulihkan {name}? Mereka boleh log masuk semula, dalam kumpulan yang sama seperti dahulu.",
       "suspended": "{name} telah digantung.",
       "restored": "{name} telah dipulihkan.",

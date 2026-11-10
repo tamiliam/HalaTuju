@@ -3623,7 +3623,6 @@
       "colLastSeen": "Last seen",
       "lastSeenUnknown": "Not recorded",
       "revokeConfirm": "Revoke {name}? They will not be able to sign in.",
-      "revokeConfirmOpen": "Revoke {name}? They have {n} open cases. Those stay assigned to them, and they will not be able to open them. To stop new work but keep the cases moving, pause them instead.",
       "restoreConfirm": "Restore {name}? They will be able to sign in again."
     },
     "sources": {
@@ -9700,6 +9699,7 @@
       "tab": "Staff",
       "suspend": "Suspend",
       "suspendConfirm": "Suspend {name}? They cannot sign in until they are restored. Their groups and records stay as they are.",
+      "suspendConfirmOpen": "Suspend {name}? They have {n} open cases. Those stay assigned to them, and they cannot open them until they are restored.",
       "restoreConfirm": "Restore {name}? They can sign in again, in the groups they had.",
       "suspended": "{name} is suspended.",
       "restored": "{name} is restored.",
