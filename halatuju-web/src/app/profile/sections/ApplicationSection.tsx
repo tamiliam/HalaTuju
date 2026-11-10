@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { setOnboardingReturn } from '@/lib/scholarship'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
-import SectionCard, { PROFILE_ROWS } from './SectionCard'
+import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'
 import type { SectionProps } from '../useProfileEditor'
 
 /** The application section: its card, its read-only rows, and (once fetched) its edit panel. */
@@ -20,10 +20,10 @@ export default function ApplicationSection({ f, ed, Edit }: SectionProps & { Edi
       icon={<>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
       </>}
-      canEdit={editingSection === null}
+      canEdit={editingSection === null || (editingSection === 'application' && !Edit)}
       onEdit={() => startEditing('application')}
     >
-      {editingSection === 'application' && Edit ? <Edit f={f} ed={ed} /> : (
+      {editingSection === 'application' && !Edit ? <EditLoading /> : editingSection === 'application' && Edit ? <Edit f={f} ed={ed} /> : (
         <div className={`${PROFILE_ROWS} md:space-y-3`}>
           <div className="flex justify-between">
             <FieldLabel label={t('profile.school')} empty={!school} />

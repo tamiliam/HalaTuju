@@ -44,3 +44,9 @@ export default function SectionCard({ title, incomplete, icon, canEdit, onEdit, 
     </div>
   )
 }
+
+/** Shown in a card whose Edit was tapped before the edit chunk landed (see `useProfileEditors`). */
+export function EditLoading() {
+  const { t } = useT()
+  return <p role="status" className="text-sm text-ground-500">{t('common.loading')}</p>
+}

@@ -2,7 +2,7 @@
 import type { ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
-import SectionCard, { PROFILE_ROWS } from './SectionCard'
+import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'
 import type { SectionProps } from '../useProfileEditor'
 
 /** The contactDetails section: its card, its read-only rows, and (once fetched) its edit panel. */
@@ -17,10 +17,10 @@ export default function ContactDetailsSection({ f, ed, Edit }: SectionProps & { 
       icon={<>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
       </>}
-      canEdit={editingSection === null}
+      canEdit={editingSection === null || (editingSection === 'contactDetails' && !Edit)}
       onEdit={() => startEditing('contactDetails')}
     >
-      {editingSection === 'contactDetails' && Edit ? <Edit f={f} ed={ed} /> : (
+      {editingSection === 'contactDetails' && !Edit ? <EditLoading /> : editingSection === 'contactDetails' && Edit ? <Edit f={f} ed={ed} /> : (
         <div className={`${PROFILE_ROWS} md:space-y-3`}>
           <div className="flex justify-between">
             <span className="text-sm text-ground-500">{t('profile.loginMethod')}</span>

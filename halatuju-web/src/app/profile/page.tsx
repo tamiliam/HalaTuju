@@ -1,7 +1,7 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const { showToast } = useToast()
   const f = useProfileForm()
   const ed = useProfileEditor(f)
-  const { editors, failed } = useProfileEditors()
+  const { editors, failed, retry } = useProfileEditors()
   const { loading, loadData, savedCourses, setSavedCourses } = f
   const { nextUrl, editingSection, cancelEditing } = ed
 
@@ -46,13 +46,16 @@ export default function ProfilePage() {
     if (token) loadData()
   }, [token, authLoading, isAuthenticated, showAuthGate, loadData])
 
-  // The edit panels could not be fetched: say so and close the section rather than leave it stuck.
+  // The edit panels could not be fetched. The first Edit tap after a failure retries the import once;
+  // if that fails too, say so (once) and close the section rather than leave it stuck.
+  const retried = useRef(false)
   useEffect(() => {
-    if (failed && editingSection) {
-      cancelEditing()
-      showToast('Failed to load profile. Please try again.', 'error')
-    }
-  }, [failed, editingSection, cancelEditing, showToast])
+    if (!editingSection) { retried.current = false; return }
+    if (editors || !failed) return
+    if (!retried.current) { retried.current = true; retry(); return }
+    cancelEditing()
+    showToast(t('errors.unexpectedError'), 'error')
+  }, [editors, failed, editingSection, retry, cancelEditing, showToast, t])
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {

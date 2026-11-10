@@ -36,7 +36,7 @@ const MAY_ASK: Record<string, string> = {
 /** The scholarship picker's own modules: none may name an eligibility endpoint. */
 const PICKER = [
   'src/app/scholarship/apply/page.tsx',
-  'src/app/profile/page.tsx',
+  'src/app/profile/sections/edit/ApplicationEdit.tsx',
   'src/components/PathwayPicker.tsx',
   'src/components/scholarship/LazyPathwayPicker.tsx',
   'src/components/scholarship/InstitutionCoursePicker.tsx',

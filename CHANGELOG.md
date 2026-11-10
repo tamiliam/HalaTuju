@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### refactor: the profile page split into hooks, section views and one lazy edit chunk (audit A3.9, 2026-11-10)
 
-Branch a39 (not pushed, not deployed; no migration, no model). `src/app/profile/page.tsx` 1,274 -> 110 lines: state and load in `useProfileForm.ts`, section and save logic in `useProfileEditor.ts`, five section views in `sections/`, the five edit panels in `sections/edit/`, fetched as ONE chunk by `useProfileEditors.ts` when the page mounts (the read-only rows stay until it lands, so nothing flashes or moves). Behaviour and look unchanged, held by the pinning tests. `oversize_files` entry for the page removed from code-standards.json.
+Branch a39 (not pushed, not deployed; no migration, no model). `src/app/profile/page.tsx` 1,274 -> 110 lines: state and load in `useProfileForm.ts`, section and save logic in `useProfileEditor.ts`, five section views in `sections/`, the five edit panels in `sections/edit/`, fetched as ONE chunk by `useProfileEditors.ts` when the page mounts (the read-only rows stay until it lands, so nothing flashes or moves). Behaviour and look unchanged, held by the pinning tests. `oversize_files` entry for the page removed from code-standards.json. Review fixes: an Edit tapped before the chunk lands keeps its button and shows a loading line; a failed chunk fetch toasts `errors.unexpectedError` once per tap and the next tap retries the import; the results-row, phone-section and picker guards now read the new files; new `page.editors.test.tsx`.
 
 ### test: pin the profile page before it is split (audit A3.9, 2026-11-10)
 

@@ -5,7 +5,7 @@ import { maskIc } from '@/lib/ic-utils'
 import { hasIcFlags } from '@/lib/icEditor'
 import BumiputeraField from '@/components/profile/BumiputeraField'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
-import SectionCard, { PROFILE_ROWS } from './SectionCard'
+import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'
 import type { SectionProps } from '../useProfileEditor'
 
 /** The identity section: its card, its read-only rows, and (once fetched) its edit panel. */
@@ -20,10 +20,10 @@ export default function IdentitySection({ f, ed, Edit }: SectionProps & { Edit?:
       icon={<>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
       </>}
-      canEdit={editingSection === null}
+      canEdit={editingSection === null || (editingSection === 'identity' && !Edit)}
       onEdit={() => startEditing('identity')}
     >
-      {editingSection === 'identity' && Edit ? <Edit f={f} ed={ed} /> : (
+      {editingSection === 'identity' && !Edit ? <EditLoading /> : editingSection === 'identity' && Edit ? <Edit f={f} ed={ed} /> : (
         <div className={`grid grid-cols-1 md:grid-cols-2 md:gap-3 ${PROFILE_ROWS}`}>
           <div className="flex justify-between">
             <span className="text-sm text-ground-500 flex items-center gap-1.5">

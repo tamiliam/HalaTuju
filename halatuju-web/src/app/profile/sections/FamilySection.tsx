@@ -3,7 +3,7 @@ import type { ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 import LazyGuardianContactSection from '@/components/profile/LazyGuardianContactSection'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
-import SectionCard, { PROFILE_ROWS } from './SectionCard'
+import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'
 import type { SectionProps } from '../useProfileEditor'
 
 /** The family section: its card, its read-only rows, and (once fetched) its edit panel. */
@@ -18,10 +18,10 @@ export default function FamilySection({ f, ed, Edit }: SectionProps & { Edit?: C
       icon={<>
         <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
       </>}
-      canEdit={editingSection === null}
+      canEdit={editingSection === null || (editingSection === 'family' && !Edit)}
       onEdit={() => startEditing('family')}
     >
-      {editingSection === 'family' && Edit ? <Edit f={f} ed={ed} /> : (
+      {editingSection === 'family' && !Edit ? <EditLoading /> : editingSection === 'family' && Edit ? <Edit f={f} ed={ed} /> : (
         <div className={`${PROFILE_ROWS} md:space-y-3`}>
           <div className="flex justify-between">
             <FieldLabel label={t('profile.householdIncome')} empty={!householdIncome} />

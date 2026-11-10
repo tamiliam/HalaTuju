@@ -35,6 +35,19 @@ describe.each([
   })
 })
 
+describe('the /profile results row tap (sections/ApplicationSection.tsx)', () => {
+  // The path comes from useProfileForm (`resultsPath`); the router.push lives here, so guard it too.
+  const src = readWeb('src/app/profile/sections/ApplicationSection.tsx', 'the results row must push the path held, not a hand-written form')
+  it('pushes the resultsPath it is given', () => {
+    expect(src).toMatch(/router\.push\(resultsPath\)/)
+  })
+  it('names no results form by hand', () => {
+    expect(src).not.toMatch(/['"]\/onboarding\/(grades|stpm-grades|higher-grades)['"]\)?\s*(\}|$|;)/m)
+    expect(src).not.toMatch(/router\.push\(['"]\/onboarding\/grades['"]\)/)
+    expect(src).not.toMatch(/href="\/onboarding\/grades"/)
+  })
+})
+
 describe('the Action Centre "grades" ticket (S4)', () => {
   const src = readWeb('src/components/ScholarshipNextSteps.tsx', 'the grades ticket must open the results HELD')
   it('routes by the SERVER\'s results held, never the declaration', () => {
