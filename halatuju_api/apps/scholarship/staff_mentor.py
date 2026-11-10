@@ -24,6 +24,14 @@ rulings and the lead's two data rulings in docs/decisions.md the same day). The 
   lets a finance row keep it). Nothing brings mentoring back by itself — not a Restore, not a role change
   back: only `resume` (Team → Mentors → Add Mentor, which offers a removed staff mentor as "Mentored
   before", 2026-11-08), and only for an eligible, active login.
+- SPRINT M1a (2026-11-10, owner O5/O6): Remove from Mentors (`stop`) is REFUSED `has_scholars` while they
+  mentor anybody; it no longer ends assignments (each scholar is moved first, from their Mentoring card:
+  `mentoring.assign` / `mentoring.end`). A MENTOR LOGIN removed from Mentors (`remove_mentor_login`) becomes
+  "No group" (role `member`, the link kept, the Mentor deactivated). A member joins Mentors through
+  `add_member` (the kept Mentor reactivated, or a new one) and becomes a mentor login (T3's shape).
+- OWNER O18 (2026-11-10): People → Suspend (Revoke) is REFUSED `has_scholars` too while they mentor
+  anybody (`courses.staff_archive.has_scholars_refusal`, counted under the Mentor lock): it never ends
+  mentoring. With nobody mentored, `leave` still stamps the mentor deactivated (it ends nothing).
 - A FINANCE ROW IS NEVER AN ACTIVE MENTOR: `add` and `resume` refuse it, the role change deactivates, and
   every reader asks `PartnerAdmin.mentors_now` (never "mentor_id is set").
 """
@@ -42,6 +50,20 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 
 STAFF_MENTOR_ROLES = PartnerAdmin.STAFF_MENTOR_ROLES
 
+#: M1a: the refusal a Remove from Mentors meets while they mentor somebody (owner O5).
+HAS_SCHOLARS = 'has_scholars'
+
+
+def has_scholars_message(name, n):
+    return (f'{name} mentors {n} scholar(s) now. Move each scholar to another mentor from the scholar\'s '
+            'Mentoring card first.')
+
+
+def has_scholars_body(name, n):
+    """The 409 body every `has_scholars` refusal answers (Remove from Mentors, Suspend): the sentence, the
+    code and the count (`scholars_now`), so a screen can word it in its own language."""
+    return {'error': has_scholars_message(name, n), 'code': HAS_SCHOLARS, 'scholars_now': n}
+
 
 def eligible(login):
     """May this STAFF login mentor (be added, or mentor again)? See the module docstring."""
@@ -51,9 +73,13 @@ def eligible(login):
 
 def candidates(organisation_ids=None):
     """The staff the "Add a staff member as mentor" sheet may offer: eligible, not a mentor yet, of
-    ``organisation_ids`` (None = every organisation, a super with no narrowing). Name order."""
-    qs = PartnerAdmin.objects.filter(role__in=STAFF_MENTOR_ROLES, is_active=True,
-                                     mentor__isnull=True, owning_organisation__isnull=False)
+    ``organisation_ids`` (None = every organisation, a super with no narrowing) — and (M1a) every active,
+    signed-in "No group" member, link kept or not (`add_member`). Name order."""
+    from django.db.models import Q
+    qs = PartnerAdmin.objects.filter(
+        Q(role__in=STAFF_MENTOR_ROLES, mentor__isnull=True)
+        | Q(role=PartnerAdmin.MEMBER_ROLE, first_seen_at__isnull=False),
+        is_active=True, owning_organisation__isnull=False)
     if organisation_ids is not None:
         qs = qs.filter(owning_organisation_id__in=list(organisation_ids))
     return list(qs.select_related('owning_organisation').order_by('name', 'id'))
@@ -85,6 +111,62 @@ def add(caller, target):
     return mentor, None
 
 
+def add_member(caller, target):
+    """M1a (brief §2 item 8): a "No group" member joins Mentors and becomes a MENTOR LOGIN (role `mentor`,
+    NULL keys, the T3 shape): their kept Mentor is reactivated, or a new one made. ``(mentor, error)``:
+    `not_eligible` (not an active, signed-in member of an organisation). Under the row lock; no email."""
+    by = (getattr(caller, 'email', '') or '')[:254]
+    with transaction.atomic():
+        row = PartnerAdmin.objects.select_for_update().filter(pk=target.pk).first()
+        if (row is None or not row.is_member or not row.is_active or row.first_seen_at is None
+                or row.owning_organisation_id is None):
+            return None, 'not_eligible'
+        mentor = Mentor.objects.filter(pk=row.mentor_id).first() if row.mentor_id else None
+        if mentor is not None and mentor.organisation_id == row.owning_organisation_id:
+            Mentor.objects.filter(pk=mentor.pk).update(deactivated_at=None, deactivated_by_email='')
+        else:
+            mentor = Mentor.objects.create(organisation_id=row.owning_organisation_id, created_by_email=by)
+        if not PartnerAdmin.objects.filter(pk=row.pk, role=PartnerAdmin.MEMBER_ROLE, is_active=True).update(
+                role=PartnerAdmin.MENTOR_ROLE, mentor=mentor, permissions=None):
+            return None, 'not_eligible'
+    mentor.refresh_from_db()
+    target.role, target.mentor_id, target.mentor, target.permissions = 'mentor', mentor.pk, mentor, None
+    logger.info('AUDIT staff_mentor_member_added mentor=%s account=%s org=%s by=%s',
+                mentor.pk, row.pk, mentor.organisation_id, by)
+    return mentor, None
+
+
+def remove_mentor_login(caller, mentor, login):
+    """M1a: Team → Mentors → Remove for a MENTOR LOGIN (its only group): it becomes "No group" (role
+    `member`, the link kept, the Mentor stamped deactivated; sign-in kept). ``(scholars, error)``:
+    `not_active` (switched off, or the mentor already deactivated), `not_arrived` (never signed in — the
+    invitation is Revoke's), `has_scholars` (with the count). Under the login lock `stop` takes.
+
+    ⚠ M1a review: the MENTOR row is locked FIRST, then the login — the order `delete_mentor`,
+    `mentor_archive.archive` and Deactivate take (Mentor → PartnerAdmin), so two doors never deadlock.
+    Holding the Mentor lock also makes the scholar count final: `mentoring.assign` locks the same row, so
+    an assignment cannot commit between the count and the stamp."""
+    by = (getattr(caller, 'email', '') or '')[:254]
+    with transaction.atomic():
+        locked = Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+        row = PartnerAdmin.objects.select_for_update().filter(pk=getattr(login, 'pk', None)).first()
+        if locked is None or row is None or not row.is_mentor or row.mentor_id != mentor.pk:
+            return 0, 'not_active'
+        if not row.is_active or locked.deactivated_at is not None:
+            return 0, 'not_active'
+        if row.first_seen_at is None:
+            return 0, 'not_arrived'
+        n = mentoring.scholars_now([mentor.pk]).get(mentor.pk, 0)
+        if n:
+            return n, HAS_SCHOLARS
+        Mentor.objects.filter(pk=mentor.pk).update(deactivated_at=timezone.now(), deactivated_by_email=by)
+        PartnerAdmin.objects.filter(pk=row.pk).update(role=PartnerAdmin.MEMBER_ROLE, permissions=None)
+    mentor.refresh_from_db()
+    login.role = PartnerAdmin.MEMBER_ROLE
+    logger.info('AUDIT mentor_login_to_member mentor=%s account=%s by=%s', mentor.pk, login.pk, by)
+    return 0, None
+
+
 def _end_mentoring(mentor, by):
     """Stamp ``mentor`` deactivated and end every open assignment — inside the caller's transaction.
     Returns ``(stamped, ended)``; `stamped` is False when it was already deactivated (ends anyway)."""
@@ -96,8 +178,13 @@ def _end_mentoring(mentor, by):
 
 
 def stop(caller, mentor, login):
-    """Mentors page → "Stop mentoring" for a STAFF mentor. ``(ended, error)``: `not_staff` (a pure
-    mentor: Deactivate is theirs), `not_active` (already stopped). The staff login is not touched."""
+    """Mentors page → "Remove from Mentors" for a STAFF mentor. ``(n, error)``: `not_staff` (a pure
+    mentor: its own doors), `not_active` (already stopped), `has_scholars` (M1a, owner O5: ``n`` is how
+    many they mentor now; nothing is ended). The staff login is not touched; ``n`` is 0 on success.
+
+    ⚠ M1a review: the MENTOR row is locked first (Mentor → PartnerAdmin, as `remove_mentor_login`), so
+    the scholar count is final — `mentoring.assign` takes the same lock, and an assignment committed
+    after the count can never be ended here by "refuse, never end" (owner O5)."""
     if login is None or not login.is_staff_mentor:
         return 0, 'not_staff'
     by = (getattr(caller, 'email', '') or '')[:254]
@@ -105,10 +192,14 @@ def stop(caller, mentor, login):
         # T3 review: the LOGIN row is locked and judged again — the lock Team -> Remove
         # (`staff_tables_admin.change`) takes. A Remove that made them a mentor login first wins: their
         # mentoring is then Deactivate's (`not_staff`), never a stamp that leaves a live mentor login with a
-        # deactivated mentor sitting in no table.
-        row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk).first()
+        # deactivated mentor sitting in no table. M1a review: the Mentor row first (the lock order).
+        Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+        row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk, archived_at=None).first()
         if row is None or not row.is_staff_mentor or row.mentor_id != mentor.pk:
             return 0, 'not_staff'
+        n = mentoring.scholars_now([mentor.pk]).get(mentor.pk, 0)
+        if n:
+            return n, HAS_SCHOLARS
         stamped, ended = _end_mentoring(mentor, by)
         if not stamped:
             return 0, 'not_active'

@@ -25,7 +25,7 @@ from django.db import DatabaseError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import referral_links, staff_gift, staff_reinvite, staff_tables
+from . import referral_links, staff_archive, staff_gift, staff_reinvite, staff_tables
 from .staff_delete_rules import delete_fields, is_sole_org_admin, lock_org_admins_of, sole_org_admin_ids
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
@@ -85,7 +85,7 @@ def already_exists_answer(caller, existing):
     login may legitimately become staff; the inviter learns only that the address has a HalaTuju
     login, which is pre-existing, accepted behaviour). The sentences are served; the web adds none.
     """
-    if existing is None or not _listed_on_people(caller, existing):
+    if existing is None or existing.is_archived or not _listed_on_people(caller, existing):   # M1a
         return Response({'error': NOT_INVITABLE, 'code': 'not_invitable'}, status=409)
     role = 'super' if existing.is_super else existing.role
     # Team tables T2: "Finance" and "QC" are no longer labels (owner rulings 4 and 8) — they read as the
@@ -150,8 +150,9 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
         # refusal re-read on the locked copy, so work landing between the list and the click still
         # refuses; the login is only PLANNED inside the transaction (a read), and removed after the
         # row is gone — so a failed row delete can never leave a row naming a deleted login.
-        try:
-            return self._delete_locked(admin, admin_id, staff_footprint, staff_lifecycle)
+        try:   # M1a: 403 `self`, and `{"archive": true}` for a person with records (`staff_archive`)
+            return (staff_archive.before_delete(admin, admin_id, request.data)
+                    or self._delete_locked(admin, admin_id, staff_footprint, staff_lifecycle))
         except DatabaseError:
             logger.exception('staff delete of %s failed in the database; nothing was removed',
                              admin_id)
@@ -435,7 +436,7 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         # ⚠ A SOURCE USER IS NOT STAFF (source sign-in S1, C3), so not even a super's roster lists one;
         # the org list below already narrows to PROGRAMME_STAFF_ROLES. S2 gives sources their own list.
-        admins = (PartnerAdmin.objects.select_related('org', 'owning_organisation', 'mentor')
+        admins = (PartnerAdmin.objects.select_related('org', 'owning_organisation', 'mentor').filter(archived_at=None)
                   .exclude(role__in=PartnerAdmin.NOT_STAFF_ROLES).order_by('-created_at'))   # + mentors (S7a)
         if not admin.is_super:
             # ⚠ **SEEING IS NOT MANAGING (2026-09-09).** This used to filter the LIST by
@@ -458,8 +459,9 @@ class AdminListView(PartnerAdminMixin, APIView):
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
         staff_footprint, staff_lifecycle = scholarship_staff()
-        # Common profile S2: each person's photo, and their phone ONLY if they show it to the team.
-        cards = staff_lifecycle.team_cards(admins)
+        # Common profile S2: each person's photo. Never the phone on a group table (O9, O16; the person page has
+        # it); a super's platform screens (Organisations, Partners) ask for theirs with `?phones=1`.
+        cards, phones = staff_lifecycle.team_cards(admins), admin.is_super and request.GET.get('phones') == '1'
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
         seats = staff_lifecycle.team_table_fields(admin, admins)
         _dormant_cache = {}
@@ -483,17 +485,13 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'role': 'super' if a.is_super else a.role,
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
-                # Tenant binding (access boundary) — lets the panel's Add-tenant list show
-                # which organisation an org_admin runs, and lets the FE derive the sole-
-                # org-admin state (hide Revoke). NOT the referral org above.
+                # Tenant binding (access boundary): which organisation an org_admin runs (the Add-tenant
+                # list), and the sole-org-admin state (hide Revoke). NOT the referral org above.
                 'owning_org_id': a.owning_organisation_id,
                 'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
-                # ⚠ Pause is serialised by `AdminReviewerListView._reviewer_dict` and was NOT here,
-                # so the Staff table and the Reviewers table showed the same people and disagreed
-                # about who had stepped back — a reviewer reading "Active" on one screen and
-                # "Paused" on the other. Same shape as the stored-field-with-no-surface cluster:
-                # the column exists, one reader renders it, the other never asked. 2026-08-03.
+                # ⚠ Pause, as `AdminReviewerListView._reviewer_dict` serves it: without it the two tables
+                # disagreed about who had stepped back (2026-08-03, stored-field-with-no-surface).
                 'paused': a.paused_at is not None,
                 'paused_at': a.paused_at.isoformat() if a.paused_at else None,
                 # ⚠ NULL is NOT RECORDED, never "never signed in". Both columns start empty for
@@ -522,7 +520,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
                 'invitation': _invitation_dict(invites.get(a.id)),
                 **seats[a.id],
-                **cards[a.id],
+                'photo_url': cards[a.id]['photo_url'], **({'phone': cards[a.id]['phone']} if phones else {}),
             })
         return Response({'admins': data})
 
@@ -534,11 +532,14 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
+        if str(admin_id) == str(admin.pk):   # M1a (O10, owner): no self-suspend
+            return Response({'error': 'You cannot suspend your own account.', 'code': 'self'}, status=403)
 
         # S7d review fix 2: the row is LOCKED for the whole revoke / restore, so an "Add a staff member
         # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps
         # its mentor — or after, when it sees the login off and refuses.
         with transaction.atomic():
+            staff_archive.lock_mentor_of(admin_id)   # O18: the Mentor first (the lock order); the count is final
             lock_org_admins_of(admin_id)   # T2 review: the org's org admins first, in id order
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             return self._revoke_locked(request, admin, target)
@@ -559,10 +560,13 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         if action == 'revoke' and is_sole_org_admin(target, lock=True):   # Delete refuses it too (N4)
             return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
+            refused = staff_archive.has_scholars_refusal(target)   # O18 (owner): refuse, never end
+            if refused:
+                return refused
             target.is_active = False
             target.save(update_fields=['is_active'])
-            # S7d: a staff member who also mentors stops mentoring with the revoke (their scholars'
-            # assignments end, no email). A later Restore does NOT bring mentoring back.
+            # S7d: a staff member who also mentors stops mentoring with the revoke (O18: nobody is mentored
+            # by now, so the mentor is only stamped deactivated). A later Restore does NOT bring it back.
             staff_mentor_leaves(target, by=admin.email or '')
             return Response({'message': f'{target.name} access revoked'})
         elif action == 'restore':

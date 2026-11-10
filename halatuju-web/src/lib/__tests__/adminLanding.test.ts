@@ -136,6 +136,13 @@ describe('outsiderMustLeave (source users and mentors, S7a)', () => {
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students')).toBe(false)
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students/104')).toBe(false)
   })
+  it('sends a member ("No group", M1a) away from every page but its Profile', () => {
+    for (const p of ['/admin', '/admin/organisation/programmes', '/admin/scholarship', '/admin/scholars',
+      '/admin/my-students', '/admin/programme/overview', '/admin/guide']) {
+      expect(outsiderMustLeave({ role: 'member', permissions: [] }, p)).toBe(true)
+    }
+    expect(outsiderMustLeave({ role: 'member', permissions: [] }, '/admin/profile')).toBe(false)
+  })
   it('still holds a source user to its own pages, and never touches staff', () => {
     expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/sources')).toBe(true)
     expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/scholarship')).toBe(false)

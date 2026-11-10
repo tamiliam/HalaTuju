@@ -52,6 +52,7 @@ the lead tier.
 | `qc` | `see_all`, `qc` | No Scholars since S1 |
 | `admin` | `see_all`, `scholars`, `spending`, `payments_prepare` | S1: + `scholars` |
 | `finance` | `payments_approve` | Since #39 S2 (owner option A): Finance APPROVES runs |
+| `member` | (nothing) | M1a (2026-11-10, courses 0096): "No group". Signed in, opens only their own Profile, photo, activity and password (`member_methods`); listed on the Staff list, on no group table. Joining a group gives that group's role preset |
 
 **Team tables T2 (2026-11-03, built, not live):** Team -> Admins / Reviewers -> **Add** (an existing active member of
 the organisation; + `see_all` or + `review` on the materialised preset; role untouched; no email) and **Remove from**

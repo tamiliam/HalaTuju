@@ -86,6 +86,6 @@ def delete_fields(caller, target, work=None, sole=None):
     manageable = _staff_target_manageable(caller, target)
     alone = manageable and (target.id in sole if sole is not None else is_sole_org_admin(target))
     # `_deletable_now` with NO work answers the rule alone: may this caller ever delete this row?
-    never = alone or not _deletable_now(caller, target, work={})
+    never = alone or target.pk == caller.pk or not _deletable_now(caller, target, work={})   # M1a: never yourself
     return {'work': work, 'deletable': not never and not work, 'delete_never': never,
             'revocable': bool(manageable and not target.is_super and target.pk != caller.pk and not alone)}

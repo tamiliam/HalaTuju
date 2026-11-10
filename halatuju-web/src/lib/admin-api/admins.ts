@@ -34,7 +34,9 @@ export interface AdminItem {
   manageable?: boolean
   /** Common profile S2: a ~1-hour signed URL of their photo, or null. Staff screens only. */
   photo_url?: string | null
-  /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
+  /** M1a (owner O16): no group table shows a phone, so the list serves one ONLY to a super's platform
+   *  screens (Organisations, Partners: `getAdmins(options, true)`, `?phones=1`), and then only when the
+   *  person shows it to the team. Absent otherwise; the person page has it. */
   phone?: string | null
   /** Whether this account may be DELETED outright rather than only revoked: a programme-staff role
    *  with NO recorded work. Reviewers and QC too since D6 (Sprint T2, 2026-11-08), which reversed
@@ -129,8 +131,8 @@ export async function changeTeamTable(table: TeamTableName, adminId: number, act
     { admin_id: adminId, action, dry_run: dryRun }, options)
 }
 
-export async function getAdmins(options?: ApiOptions) {
-  return adminFetch<{ admins: AdminItem[] }>('/api/v1/admin/admins/', options)
+export async function getAdmins(options?: ApiOptions, phones = false) {
+  return adminFetch<{ admins: AdminItem[] }>(`/api/v1/admin/admins/${phones ? '?phones=1' : ''}`, options)
 }
 
 /** Delete a staff account outright. ⚠ Only ever offered for a programme-staff role with NO recorded

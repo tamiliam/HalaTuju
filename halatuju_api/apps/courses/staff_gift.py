@@ -218,7 +218,7 @@ def unchosen_rows():
     from .models import PartnerAdmin
     return (PartnerAdmin.objects
             .filter(staff_permissions.team_holding(('review',)))
-            .filter(gift_rows__isnull=True)
+            .filter(gift_rows__isnull=True, archived_at__isnull=True)   # M1a: never an archived row
             .exclude(role='super')
             .select_related('owning_organisation')
             .order_by('owning_organisation__code', 'id'))

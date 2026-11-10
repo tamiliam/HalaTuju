@@ -33,7 +33,7 @@ import {
 } from './navigationTypes'
 export { SIDEBAR_SCOPES, type NavScope, type ProbeKey, type BadgeKey, type ProbeState, type NavGate, type NavItemOf }
 
-/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same nine,
+/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same ten,
  *  same order, asserted on every run.
  *  ⚠ `source_partner` (source sign-in, 2026-10-30) is named here so `effectiveRole` never folds
  *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
@@ -41,13 +41,15 @@ export { SIDEBAR_SCOPES, type NavScope, type ProbeKey, type BadgeKey, type Probe
  *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its rows are Programmes (T5c P5: every partner
  *  login lands there, `defaultRoute`), My students (S7c), Scholars (sprint S1: its current students only,
  *  read-only) and Profile, and the layout sends it back from any other page (`outsiderMustLeave`).
+ *  ⚠ `member` (sprint M1a, 2026-11-10; "No group", roadmap O6): a team member in no group. Profile ONLY
+ *  (the server opens six views to it and nothing else); it lands on Profile (`defaultRoute`).
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
-  | 'mentor'
+  | 'mentor' | 'member'
 
 export const ROLE_NAMES: readonly AdminRoleName[] =
-  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner', 'mentor']
+  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner', 'mentor', 'member']
 
 /** One registry row (`navigationTypes.ts` holds its documented fields). */
 export type NavItem = NavItemOf<AdminRoleName>

@@ -49,6 +49,10 @@ ALREADY_STAFF = ("This email address already has a HalaTuju admin sign-in, so it
 ALREADY_TEAM = ('This person is already on your team. To make them a mentor, go to Mentors, press '
                 '"Add Mentor" and choose them from the list (no invitation is needed).')
 
+#: M1a: the address is an ARCHIVED staff member of this organisation; they come back by the staff invite.
+USE_STAFF_INVITE = ('This person was on your team before. Invite them again from Team, with the staff invite, '
+                    'to bring them back.')
+
 _FLUENT = ('conversational', 'fluent')
 
 
@@ -110,6 +114,8 @@ def invite_mentor(request, admin):
         return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
                       'Supabase service role key not configured')
     done = mentor_invite.invite(admin, organisation=owner, email=email, name=name, gifts=gifts)
+    if done.error == 'use_staff_invite':   # M1a: an archived staff member comes back by the staff invite
+        return _error(done.error, status.HTTP_409_CONFLICT, USE_STAFF_INVITE)
     if done.error == 'already_staff':
         if _is_addable_team_member(email, owner):
             return _error('already_team', status.HTTP_409_CONFLICT, ALREADY_TEAM)
@@ -131,11 +137,11 @@ def invite_mentor(request, admin):
 
 def mentor_rows(caller, mentors, *, team=False):
     """The Mentors page's rows for ``mentors`` — ONE query each for the logins, their profiles and
-    their invitations, whatever the page size. An ALLOWLIST: name, email, the mentor's own phone (the
-    profile tells them the inviting organisation sees it), status, area, languages, invited / signed-in
-    times, `manageable` (the endpoints' own rule, so the screen never offers a refused button),
-    `scholars_now` (S7b: their open mentoring assignments) and (I4) `gifts` `[{id, code, name}]` with
-    `every_gift` (no gifts = every gift) — ONE more query (`mentor_gift.gifts_by_mentor`).
+    their invitations, whatever the page size. An ALLOWLIST: name, email (never the phone: no group table
+    shows one, M1a O16; the person page's `person` block has it, `staff_person.phone_of`), status, area,
+    languages, invited / signed-in times, `manageable` (the endpoints' own rule, so the screen never offers a
+    refused button), `scholars_now` (S7b: their open mentoring assignments) and (I4) `gifts`
+    `[{id, code, name}]` with `every_gift` (no gifts = every gift) — ONE more query (`mentor_gift.gifts_by_mentor`).
 
     ``team`` (Team tables T3, the Team -> Mentors table): also `tables` / `lead` (the "Also in" chips,
     `staff_tables.tables`) and the work columns `meetings_90`, `last_meeting`, `concerns_open`
@@ -143,7 +149,6 @@ def mentor_rows(caller, mentors, *, team=False):
     from .. import mentor_gift, mentor_invite, staff_footprint
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
-    from ..staff_contact import staff_screen_phone
     # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)
               .select_related('mentor')}
@@ -173,8 +178,6 @@ def mentor_rows(caller, mentors, *, team=False):
             'staff_role': login.role if staff else None,
             'name': login.name if login else '',
             'email': login.email if login else '',
-            # S7d review fix 1: a STAFF mentor's phone only under the team rule People's screens use.
-            'phone': staff_screen_phone(login, rp),
             'status': mentor_invite.status_of(m, login, issued),
             'area': m.area,
             'languages': {'en': getattr(rp, 'english_fluency', '') or '',
@@ -256,14 +259,17 @@ class _MentorsBase(_AdminBase):
         """`(the mentors this caller may see, error)`: its own organisation's (an organisation-less
         caller: none); a super every organisation's, narrowed by `?org=`."""
         from ..models import Mentor
+        # M1a: a mentor whose login is ARCHIVED is on no list and out of reach by id (every door reads
+        # this scope); the way back is the mentor invite (`mentor_archive.reinvite`).
+        live = Mentor.objects.exclude(users__archived_at__isnull=False)
         if not self.has_role(admin, 'super'):
             org_id = admin.owning_organisation_id
-            return (Mentor.objects.filter(organisation_id=org_id) if org_id
+            return (live.filter(organisation_id=org_id) if org_id
                     else Mentor.objects.none()), None
         org, err = self._org_narrowing(request, admin)
         if err:
             return None, err
-        qs = Mentor.objects.all()
+        qs = live
         return (qs.filter(organisation=org) if org is not None else qs), None
 
     def _target(self, request, pk):
@@ -369,8 +375,11 @@ class AdminMentorView(_MentorsBase):
         admin, mentor, login, err = self._target(request, pk)
         if err:
             return err
-        try:
-            refusal, detail = mentor_invite.delete_mentor(admin, mentor, login)
+        from apps.courses.staff_archive import archive_asked
+        from .. import mentor_archive
+        try:   # M1a: `{"archive": true}` archives a mentor with records (`mentor_archive`); else today's
+            refusal, detail = ((archive_asked(request.data) and mentor_archive.archive(admin, mentor, login))
+                               or mentor_invite.delete_mentor(admin, mentor, login))
         except DatabaseError:
             logger.exception('mentor delete of %s failed in the database; nothing was removed', pk)
             return _error('delete_failed', status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -379,6 +388,12 @@ class AdminMentorView(_MentorsBase):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_found':
             return _error(refusal, status.HTTP_404_NOT_FOUND)
+        if refusal == 'archived':
+            return Response({'message': 'Mentor archived. Their name stays on past records.', 'archived': True,
+                             'login': detail})
+        if refusal == 'has_unfinished_work':
+            return Response({'error': 'This mentor still has scholars. Move them to another mentor first.',
+                             'code': refusal, 'work': detail}, status=status.HTTP_409_CONFLICT)
         if refusal == 'has_work':
             return Response({'error': 'This mentor has work on record and can only be deactivated.',
                              'code': 'has_work', 'work': detail}, status=status.HTTP_409_CONFLICT)
@@ -428,7 +443,7 @@ class AdminMentorActionView(_MentorsBase):
     delete) and `reactivate` (inactive only: 400 `active`; a never-signed-in mentor is sent the
     invitation again). 200 the row + `emailed`; 404 an unknown action or another organisation's
     mentor; 500 `not_configured`; 502 `reset_failed` / `send_failed`."""
-    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume')
+    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume', 'remove')   # M1a: + remove
     STAFF_ACTIONS = ('stop', 'resume')   # S7d: the only two that act on a staff mentor
 
     def post(self, request, pk, action):
@@ -443,6 +458,8 @@ class AdminMentorActionView(_MentorsBase):
             return _error('staff_mentor' if staff else 'not_staff', status.HTTP_400_BAD_REQUEST)
         if staff:
             return self._staff_action(admin, mentor, login, action)
+        if action == 'remove':
+            return self._remove_login(request, admin, mentor, login)
         emailed = None
         if action == 'resend':
             emailed, refusal = mentor_invite.resend_invite(admin, mentor, login)
@@ -476,9 +493,30 @@ class AdminMentorActionView(_MentorsBase):
             ended, refusal = staff_mentor.stop(admin, mentor, login)
         else:
             ended, refusal = 0, staff_mentor.resume(admin, mentor, login)
+        if refusal == staff_mentor.HAS_SCHOLARS:      # M1a (owner O5): nothing ended
+            return _has_scholars(login, ended)
         if refusal:
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         return Response({**mentor_rows(admin, [mentor])[0], 'emailed': None, 'ended': ended})
+
+    def _remove_login(self, request, admin, mentor, login):
+        """M1a: Remove a MENTOR LOGIN from Mentors, its only group — so only with ``{to_no_group: true}``
+        (400 `last_table` without it), and it stays on as "No group" (`staff_mentor.remove_mentor_login`)."""
+        from .. import staff_mentor
+        body = request.data if isinstance(request.data, dict) else {}
+        if body.get('to_no_group') is not True:
+            return _error('last_table', status.HTTP_400_BAD_REQUEST)
+        n, refusal = staff_mentor.remove_mentor_login(admin, mentor, login)
+        if refusal == staff_mentor.HAS_SCHOLARS:
+            return _has_scholars(login, n)
+        if refusal:
+            return _error(refusal, status.HTTP_400_BAD_REQUEST)
+        return Response({**mentor_rows(admin, [mentor])[0], 'emailed': None, 'becomes_member': True})
+
+
+def _has_scholars(login, n):
+    from .. import staff_mentor
+    return Response(staff_mentor.has_scholars_body(login.name, n), status=status.HTTP_409_CONFLICT)
 
 
 class AdminStaffMentorsView(_MentorsBase):
@@ -527,13 +565,14 @@ class AdminStaffMentorsView(_MentorsBase):
         if isinstance(target_id, bool) or not isinstance(target_id, int):
             return _error('bad_request', status.HTTP_400_BAD_REQUEST)
         # org-fence: only a staff member of the caller's own organisation (a super: any, or `?org=`).
-        qs = PartnerAdmin.objects.filter(pk=target_id, owning_organisation__isnull=False)
+        qs = PartnerAdmin.objects.filter(pk=target_id, owning_organisation__isnull=False, archived_at__isnull=True)
         if orgs is not None:
             qs = qs.filter(owning_organisation_id__in=orgs)
         target = qs.first()
         if target is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
-        mentor, refusal = staff_mentor.add(admin, target)
+        # M1a: a "No group" member joins Mentors as a mentor login (`add_member`).
+        mentor, refusal = (staff_mentor.add_member if target.is_member else staff_mentor.add)(admin, target)
         if refusal == 'already_mentor':
             return _error(refusal, status.HTTP_409_CONFLICT)
         if refusal:

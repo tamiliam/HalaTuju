@@ -240,7 +240,7 @@ def change_permissions(target_id, asked, *, by, dry_run=False):
     the role and the active flag it planned against, belt and braces."""
     from apps.courses.models import PartnerAdmin
     with transaction.atomic():
-        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
+        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id, archived_at=None).first()
         if target is None:
             raise PermissionChangeRefused('not_found', 404, 'Admin not found')
         plan = plan_change(target, asked, by=by)

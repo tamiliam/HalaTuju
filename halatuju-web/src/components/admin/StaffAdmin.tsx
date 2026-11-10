@@ -15,6 +15,7 @@ import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { scholarsRefusal } from '@/lib/staffRefusals'
 import { AlsoIn, RemoveControl } from '@/components/admin/TeamTables'
 import StaffActions from '@/components/admin/StaffActions'
 
@@ -164,9 +165,9 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
     )
   }
 
-  /** O9 (owner, 2026-11-10): a phone number never shows on Team -> Admins; it shows on the person's own
-   *  page (still only when they switched "Show my phone to my team" on). The Reviewers table draws its
-   *  own rows and keeps its phone line; the platform's staff screens ask for theirs (`showPhone`); the default is no phone. */
+  /** O9, O16 (owner, 2026-11-10): a phone number never shows on a group table (Admins, Reviewers, Mentors);
+   *  it shows on the person's own page (only when they switched "Show my phone to my team" on). The
+   *  platform's staff screens ask for theirs (`showPhone`, fed by `useStaffAdmin(token, _, true)`). */
   const phoneOf = (a: AdminItem) => showPhone && a.phone
     ? <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>
     : null
@@ -300,7 +301,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
 }
 
 /** Loads the staff list and owns the invite / resend / revoke actions the pages share. */
-export function useStaffAdmin(token: string | null | undefined, wantOrgs = false) {
+export function useStaffAdmin(token: string | null | undefined, wantOrgs = false, phones = false) {
   const { t } = useT()
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [orgs, setOrgs] = useState<OrgItem[]>([])
@@ -310,8 +311,8 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
 
   const load = useCallback(() => {
     if (!token) return
-    getAdmins({ token }).then((d) => setAdmins(d.admins)).catch(() => {})
-  }, [token])
+    getAdmins({ token }, phones).then((d) => setAdmins(d.admins)).catch(() => {})
+  }, [token, phones])
 
   useEffect(() => {
     load()
@@ -321,9 +322,10 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
   const onError = useCallback((err: unknown) => {
     const code = (err as { code?: string })?.code
     // `already_on_team` (#39) is a pointer to People, not a failure: shown as a warning.
+    // O18 (M1a review): Revoke is refused `has_scholars` while they mentor anyone — said in the reader's language.
     setMessage({ type: code === 'already_on_team' ? 'warning' : 'error', text: code === 'last_org_admin'
       ? t('admin.administration.lastOrgAdmin')
-      : err instanceof Error ? err.message : t('admin.actionFailed') })
+      : scholarsRefusal(err, t) ?? (err instanceof Error ? err.message : t('admin.actionFailed')) })
   }, [t])
 
   const invite = useCallback(async (data: Parameters<typeof inviteAdmin>[0]) => {

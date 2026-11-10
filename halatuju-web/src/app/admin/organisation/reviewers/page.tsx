@@ -26,6 +26,7 @@ import TeamEmails, { TeamTerms } from '@/components/admin/TeamEmails'
 import { formatDate } from '@/lib/formatDate'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { scholarsRefusal } from '@/lib/staffRefusals'
 import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
@@ -169,8 +170,8 @@ export default function AdminReviewersList() {
     try {
       await revokeAdmin(r.id, going ? 'revoke' : 'restore', { token })
       load()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.actionFailed'))
+    } catch (e) {   // O18: `has_scholars` (they still mentor someone) in the reader's language
+      setError(scholarsRefusal(e, t) ?? (e instanceof Error ? e.message : t('admin.actionFailed')))
     } finally { setBusyId(null) }
   }
 
@@ -368,7 +369,6 @@ export default function AdminReviewersList() {
                         {r.name || '—'}
                       </Link>
                       <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
-                      {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                     </div>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${PHONE_PILL_SM} ${
@@ -455,7 +455,6 @@ export default function AdminReviewersList() {
                             </span>
                           )}
                           {leadNote(r)}
-                          {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
                     </td>

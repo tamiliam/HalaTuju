@@ -38,8 +38,9 @@ class OversightListRoleGateTest(TestCase):
         # A new role must be placed in (or out of) each gate by a person, not by default.
         # Source sign-in S1 (2026-10-30): `source_partner` is placed OUT of all three (deny by default).
         # Student maintenance S7a (2026-10-31): `mentor` is placed OUT of all three the same way.
+        # Team membership M1a (2026-11-10): `member` ("No group") is placed OUT of all three (deny by default).
         self.assertEqual(set(ROLES), {'super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc',
-                                      'finance', 'source_partner', 'mentor'})
+                                      'finance', 'source_partner', 'mentor', 'member'})
 
     def _check(self, path):
         allowed = GATES[path]

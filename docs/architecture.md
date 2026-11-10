@@ -126,6 +126,12 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   foreign key (a purge never touches it). Written only by `apps/scholarship/staff_activity.record`, best-effort.
   Read only through `GET admin/me/activity/` (`staff_activity_read.py`: own rows; names decided at read time, D8);
   rebuilt from older records by `backfill_staff_activity` (S4; rows marked `backfilled`).
+- Staff membership (Sprint M1a, 2026-11-10; courses 0096): `partner_admins.archived_at` / `archived_by_email` (a
+  Delete with records ARCHIVES the row: off every list, out of reach by id, name kept; a re-invite restores the same
+  row; `apps/courses/staff_archive.py`, `apps/scholarship/mentor_archive.py`) and the role `member` ("No group").
+  Unfinished work per group: `apps/scholarship/staff_work.py`. The Staff list: `GET admin/staff/`
+  (`apps/courses/views_staff_list.py`, rows in `apps/scholarship/staff_list.py`). Read fence for the person page:
+  `apps/courses/staff_fence.staff_target_readable`.
 - Notes for the reviewer (request #55, 2026-11-07; scholarship 0205): `reviewer_notes` — `application`
   (CASCADE), `body` (varchar 2000, CHECK not empty), `author` (SET_NULL) + `author_email` (counted by
   `staff_footprint`), `created_at`; oldest first. Append-only (no edit or delete endpoint; `save()` refuses an

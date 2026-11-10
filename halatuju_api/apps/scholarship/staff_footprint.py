@@ -110,6 +110,7 @@ EMAIL_STAMPS = (
     ('billing_rates', 'scholarship', 'BillingRate', ('updated_by_email',)),
     ('organisation_layouts', 'scholarship', 'OrganisationOverviewLayout', ('updated_by_email',)),
     ('programme_layouts', 'scholarship', 'ProgrammeOverviewLayout', ('updated_by_email',)),
+    ('staff_archived', 'courses', 'PartnerAdmin', ('archived_by_email',)),   # M1a: who archived whom
 )
 
 #: The email stamps older than TD-443, kept under their first keys (the People tooltip reads them).

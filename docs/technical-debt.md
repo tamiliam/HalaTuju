@@ -8667,3 +8667,31 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 ### [TD-598] Letters' senior kinds and withdraw are gated by the role label - low
 
 **Raised 2026-11-10 by the sprint S1 review (nit 8), logged, not fixed.** `views_admin/letters.py` `_LettersBase._senior` answers "super or `role == 'org_admin'`" and gates the senior letter kinds (`letters.SENIOR_KINDS`), the Withdraw button (`can_withdraw`) and the withdraw POST. It reads the role label, which S1 and Team tables otherwise retired as a gate; it is allow-listed as `GATE-LEFT` (T5e) in `apps/courses/tests/test_role_is_display_only.py`. A key-seated admin with every other lead key still cannot issue a senior letter. **Fix:** T5e moves lead powers to keys: give the senior seat a key (or the lead tier's `manage_team`), read it through `has_perm`, and drop the allow-list row. *(A · S)*
+
+### [TD-603] Archive and restore write no staff activity row - low
+
+**Raised 2026-11-10 by Sprint M1a (lead decision, logged, not built).** Deleting a person with records archives them
+(`apps/courses/staff_archive.py`, `apps/scholarship/mentor_archive.py`) and a re-invite restores the same row; both
+write an `AUDIT` log line but no `staff_activity` row, because `staff_activity` has no verb for either and a new verb
+needs its `WIRED` writers, its filter kind and its backfill. Fix: add `staff_archived` / `staff_restored` verbs when the
+Staff tab (M1b) or the activity box needs to show them.
+
+### [TD-604] The web's programme-staff mirror does not know the `member` role - low
+
+**Raised 2026-11-10 by Sprint M1a (left for M1b).** `halatuju-web/src/lib/adminStaff.ts` `PROGRAMME_STAFF_ROLES` lists
+reviewer, admin, qc, org_admin and finance; the API's `staff_fence.PROGRAMME_STAFF_ROLES` now also has `member`. Today
+nothing breaks (a member sits in no group table, and the web filter drops them from the Admins list, which is right),
+but the M1b Staff tab must draw the API's `GET admin/staff/` rows and not filter them through this mirror. Fix in M1b:
+add `member`, or retire the mirror for the served rows.
+
+### [TD-605] The payment-run waiting check can race a new run - low
+
+**Raised 2026-11-10 by the Sprint M1a review (fix 5, recorded rather than locked).** Remove from a group table and the
+archive refuse `run_in_progress` while the person made or signed (as maker) an unfinished payment run
+(`staff_lifecycle.runs_in_progress`, read through `staff_work`). The count runs under the person's `PartnerAdmin` lock,
+but creating a run (`apps/scholarship/payments.py`) and the maker's signature do not take that lock: they match the
+person by email. So a run created in the instant between the count and the commit is not seen, and the person loses
+the table (or is archived) with a run waiting on them. Locking the existing run rows cannot help, because the race is a
+NEW row. Fix: make run create and maker-sign lock the actor's `PartnerAdmin` row (money code: Opus build and the
+owner's yes), so they wait on the Remove or archive. Rare in practice: a lead removing someone at the very second that
+person starts a run.

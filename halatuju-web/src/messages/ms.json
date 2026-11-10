@@ -5635,7 +5635,8 @@
       "org_admin": "Pentadbir organisasi",
       "finance": "Pentadbir kewangan",
       "source_partner": "Sumber",
-      "mentor": "Mentor"
+      "mentor": "Mentor",
+      "member": "Ahli pasukan"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
@@ -8476,7 +8477,8 @@
         "none": "Mentor tidak memegang kebenaran untuk diubah.",
         "more": "Untuk memberi {name} lebih, tambah mereka ke jadual Pasukan yang lain."
       },
-      "revokeEndsMentoring": "Bimbingan mereka terhadap {n} penerima biasiswa juga tamat, dan Pulihkan tidak akan mengembalikannya.",
+      "revokeWhileMentoring": "Mereka masih membimbing penerima biasiswa ({n} kini), jadi tindakan ini akan ditolak sehingga setiap seorang dipindahkan kepada mentor lain.",
+      "revokeHasScholars": "Mereka masih membimbing penerima biasiswa ({n} kini), jadi akses mereka tidak boleh ditarik balik. Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah.",
       "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
     },
     "permHistory": {
@@ -8859,7 +8861,8 @@
         "not_found": "Kakitangan itu tidak ditemui.",
         "has_work": "Kini ada kerja yang direkodkan untuk mereka, jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
         "gift_required": "Pilih Semua pemberian atau sekurang-kurangnya satu pemberian.",
-        "gift_not_found": "Pemberian itu tidak dibuka dalam organisasi ini. Muat semula halaman dan pilih sekali lagi."
+        "gift_not_found": "Pemberian itu tidak dibuka dalam organisasi ini. Muat semula halaman dan pilih sekali lagi.",
+        "has_scholars": "Mereka masih membimbing penerima biasiswa ({n} kini). Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah."
       },
       "status": {
         "active": "Aktif",
@@ -8886,7 +8889,7 @@
       "confirm": {
         "deactivate": "Batalkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh memulihkan mereka kemudian.",
         "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian.",
-        "stop": "Keluarkan {name} daripada Mentor? Penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula."
+        "stop": "Keluarkan {name} daripada Mentor? Ini hanya boleh dilakukan apabila mereka tidak lagi membimbing mana-mana penerima biasiswa: pindahkan setiap seorang kepada mentor lain dahulu. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula."
       },
       "done": {
         "resend": "Jemputan dihantar semula ke {email}.",
