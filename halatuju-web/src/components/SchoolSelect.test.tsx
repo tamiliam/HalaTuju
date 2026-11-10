@@ -76,7 +76,7 @@ describe('the saving is the import line', () => {
   it.each([
     ['src/app/scholarship/apply/page.tsx', "from '@/components/scholarship/LazySchoolSelect'"],
     ['src/components/scholarship/LazySchoolSelect.tsx', "import(/* webpackChunkName: 'sp' */ '@/components/SchoolSelect')"],
-    ['src/app/profile/page.tsx', "from '@/components/SchoolSelect'"],
+    ['src/app/profile/sections/edit/ApplicationEdit.tsx', "from '@/components/SchoolSelect'"],   // A3.9: the /profile page's edit panel
     ['src/app/onboarding/profile/page.tsx', "from '@/components/SchoolSelect'"],
   ])('%s does not import the list statically', (route, reachesTheField) => {
     const page = readWeb(route, 'a route (or the wrapper) that draws the school field')

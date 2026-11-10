@@ -20,7 +20,9 @@ const COURSE_GUIDE_READERS: Record<string, string> = {
   'src/lib/bumiputera.ts': 'the one rule (Malaysian + yes)',
   'src/app/onboarding/profile/page.tsx': 'asks the question and saves the answer',
   'src/app/dashboard/page.tsx': 'the course-guide results: STPM check + degree browse',
-  'src/app/profile/page.tsx': "the student's own /profile: shows and edits her answer",
+  // A3.9 split /profile/page.tsx: the two hooks are where her answer is read and saved.
+  'src/app/profile/useProfileEditor.ts': "the student's own /profile: saves her answer",
+  'src/app/profile/useProfileForm.ts': "the student's own /profile: loads and holds her answer",
   'src/components/profile/BumiputeraField.tsx': "/profile's Yes/No pair and read-only row (its i18n keys, onboarding.bumiputera, match too)",
   'src/components/AuthGateModal.tsx': 'sign-in sync: sends the answer given before sign-in',
   'src/lib/auth-context.tsx': 'hydrates this browser from the server profile',

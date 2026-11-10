@@ -286,6 +286,7 @@ const RULE15_SWEPT = [
   'src/app/course/[id]/page.tsx', 'src/app/stpm/[id]/page.tsx', 'src/components/CourseHeader.tsx',
   'src/components/CourseDetailShared.tsx', 'src/components/CareerPathways.tsx', 'src/components/SpecialConditions.tsx',
   'src/components/RequirementsCard.tsx', 'src/components/course/PreUInstitutions.tsx', 'src/app/profile/page.tsx',
+  'src/app/profile/sections/SectionCard.tsx',   // A3.9: the profile cards' frame (PHONE_SECTION_NO_GAP)
   'src/components/profile/CourseInterestsSection.tsx', 'src/app/saved/page.tsx', 'src/app/settings/page.tsx',
   // Mobile M4c: My Bursary and its tabs, Home, the scholarship landing, the report, the info and legal pages,
   // the pathway pages, onboarding (and the scholarship's own) and both quizzes.
@@ -307,7 +308,14 @@ const RULE15_SWEPT = [
   'src/components/AwardComprehensionQuiz.tsx', 'src/app/verify-email/page.tsx',
 ]
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
-const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
+const RULE15_SWEPT_PARTS = [
+  // A3.9: the profile's section views and edit panels (no section or gutter of their own: SectionCard holds the frame).
+  'src/app/profile/sections/IdentitySection.tsx', 'src/app/profile/sections/ContactDetailsSection.tsx',
+  'src/app/profile/sections/LocationSection.tsx', 'src/app/profile/sections/FamilySection.tsx',
+  'src/app/profile/sections/ApplicationSection.tsx', 'src/app/profile/sections/edit/IdentityEdit.tsx',
+  'src/app/profile/sections/edit/ContactDetailsEdit.tsx', 'src/app/profile/sections/edit/LocationEdit.tsx',
+  'src/app/profile/sections/edit/FamilyEdit.tsx', 'src/app/profile/sections/edit/ApplicationEdit.tsx',
+  'src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
   'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx', 'src/components/ReportView.tsx',
   // Mobile M5: sponsor screens with no section or gutter of their own.
   'src/app/sponsor/(portal)/students/page.tsx', 'src/app/sponsor/(portal)/my-students/[id]/page.tsx',

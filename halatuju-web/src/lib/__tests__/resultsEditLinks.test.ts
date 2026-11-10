@@ -20,13 +20,26 @@
 import { readWeb } from '@/test/sourceGuard'
 
 describe.each([
-  ['src/app/profile/page.tsx', 'the /profile results row (merit / overall CGPA)'],
+  ['src/app/profile/useProfileForm.ts', 'the /profile results row (merit / overall CGPA)'],
   ['src/app/onboarding/profile/page.tsx', 'the last onboarding step\'s Back link'],
   ['src/components/ScholarshipNextSteps.tsx', 'the Action Centre "grades" ticket (S4)'],
 ])('%s', (file, what) => {
   const src = readWeb(file, `${what} must route by the results held`)
   it('routes through resultsEditPath', () => {
     expect(src).toMatch(/resultsEditPath\(/)
+  })
+  it('names no results form by hand', () => {
+    expect(src).not.toMatch(/['"]\/onboarding\/(grades|stpm-grades|higher-grades)['"]\)?\s*(\}|$|;)/m)
+    expect(src).not.toMatch(/router\.push\(['"]\/onboarding\/grades['"]\)/)
+    expect(src).not.toMatch(/href="\/onboarding\/grades"/)
+  })
+})
+
+describe('the /profile results row tap (sections/ApplicationSection.tsx)', () => {
+  // The path comes from useProfileForm (`resultsPath`); the router.push lives here, so guard it too.
+  const src = readWeb('src/app/profile/sections/ApplicationSection.tsx', 'the results row must push the path held, not a hand-written form')
+  it('pushes the resultsPath it is given', () => {
+    expect(src).toMatch(/router\.push\(resultsPath\)/)
   })
   it('names no results form by hand', () => {
     expect(src).not.toMatch(/['"]\/onboarding\/(grades|stpm-grades|higher-grades)['"]\)?\s*(\}|$|;)/m)
