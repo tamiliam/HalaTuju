@@ -97,9 +97,9 @@ class TestAwardEmailFlagMatrix(TestCase):
         cls.cohort = _cohort(cls.org)
 
     @override_settings(BURSARY_AGREEMENT_ENABLED=False)
-    @patch('apps.scholarship.sponsorship.raise_setup_task')
-    @patch('apps.scholarship.sponsorship.send_award_offer_sign_email')
-    @patch('apps.scholarship.sponsorship.send_award_offer_email', return_value=True)
+    @patch('apps.scholarship.sponsorship.offers.raise_setup_task')
+    @patch('apps.scholarship.sponsorship.offers.send_award_offer_sign_email')
+    @patch('apps.scholarship.sponsorship.offers.send_award_offer_email', return_value=True)
     def test_flag_off_sends_vircle_award_and_raises_task(self, m_vircle, m_sign, m_task):
         sp, app = _offered_past_cooloff(self.cohort, 'off')
         self.assertEqual(svc.release_award_offer_emails(), 1)
@@ -110,9 +110,9 @@ class TestAwardEmailFlagMatrix(TestCase):
         self.assertIsNotNone(sp.offer_emailed_at)
 
     @override_settings(BURSARY_AGREEMENT_ENABLED=True)
-    @patch('apps.scholarship.sponsorship.raise_setup_task')
-    @patch('apps.scholarship.sponsorship.send_award_offer_sign_email', return_value=True)
-    @patch('apps.scholarship.sponsorship.send_award_offer_email')
+    @patch('apps.scholarship.sponsorship.offers.raise_setup_task')
+    @patch('apps.scholarship.sponsorship.offers.send_award_offer_sign_email', return_value=True)
+    @patch('apps.scholarship.sponsorship.offers.send_award_offer_email')
     def test_flag_on_sends_sign_variant_and_raises_no_task(self, m_vircle, m_sign, m_task):
         sp, app = _offered_past_cooloff(self.cohort, 'on')
         self.assertEqual(svc.release_award_offer_emails(), 1)

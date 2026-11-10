@@ -437,7 +437,7 @@ class TestAwardEmailRaisesTask(_Base):
         from apps.scholarship.sponsorship import release_award_offer_emails
         app = self._make('u2')
         sp = self._award(app)
-        with patch('apps.scholarship.sponsorship.send_award_offer_email', return_value=False):
+        with patch('apps.scholarship.sponsorship.offers.send_award_offer_email', return_value=False):
             self.assertEqual(release_award_offer_emails(), 0)
         sp.refresh_from_db()
         self.assertIsNone(sp.offer_emailed_at)

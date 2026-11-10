@@ -461,11 +461,11 @@ class TestOnlyTheServiceMintsAdminCredits(TestCase):
     #: `models/funding.py`. Allowlisting the bare name `funding.py` would have exempted any future
     #: `funding.py` anywhere in the app — a basename allowlist silently widens as the tree grows,
     #: which is how a source guard stops being a guard.
-    CREDIT_SOURCES = {('models', 'funding.py'), ('sponsorship.py',)}
+    CREDIT_SOURCES = {('models', 'funding.py'), ('sponsorship', 'credits.py')}   # A3.8: a package
 
     def test_no_other_production_path_creates_an_admin_recorded_donation(self):
         import pathlib
-        app_dir = pathlib.Path(svc.__file__).parent
+        app_dir = pathlib.Path(svc.__file__).parents[1]   # A3.8: svc is now sponsorship/__init__.py
         offenders, scanned = [], 0
         for path in app_dir.rglob('*.py'):
             if 'tests' in path.parts or 'migrations' in path.parts or '__pycache__' in path.parts:
@@ -500,8 +500,8 @@ class TestEverySponsorFacingReadNarrows(TestCase):
 
     #: (module, callable-or-region) that a sponsor's own eyes can reach.
     SPONSOR_FACING = [
-        ('sponsorship.py', 'sponsor_statement'),
-        ('sponsorship.py', 'sponsor_programme_balances'),
+        ('sponsorship/wallet.py', 'sponsor_statement'),
+        ('sponsorship/wallet.py', 'sponsor_programme_balances'),
     ]
 
     def test_sponsor_facing_service_reads_go_through_the_seam(self):

@@ -89,7 +89,7 @@ class LapseExpiredOffersCommandTest(TestCase):
             Sponsorship.objects.filter(pk=sp.pk).update(status='active')   # the student accepts
             return rows
 
-        with patch.object(svc, '_expired_offers', side_effect=read_then_accept):
+        with patch.object(svc.lapse, '_expired_offers', side_effect=read_then_accept):
             result = svc.lapse_expired_offers()
         self.assertEqual(result, {'lapsed': 0, 'flagged': []})
         sp.refresh_from_db()

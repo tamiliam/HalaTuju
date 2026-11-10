@@ -653,7 +653,9 @@ class TestTheScanActuallyFoundTheCode(_Standard):
     def test_the_readings_are_not_all_empty(self):
         self.assertGreater(len(self.scan['oversize_files']), 10,
                            'no large files found at all — the line counter is broken.')
-        self.assertGreater(len(self.scan['long_functions']), 5,
+        # A3.8 (2026-11-10): lowered 5 -> 2. The audit sprints paid the ledger down to 4 long
+        # functions, so the old floor failed on success, not on a broken walk.
+        self.assertGreater(len(self.scan['long_functions']), 2,
                            'no long functions found at all — the AST walk is broken.')
 
     def test_the_self_exclusion_is_one_file_wide(self):

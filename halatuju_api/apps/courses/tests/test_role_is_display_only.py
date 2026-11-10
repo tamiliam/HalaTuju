@@ -212,9 +212,9 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'scholarship/source_invite.py::sign_in_states': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
-    'scholarship/sponsorship.py::cancel_admin_credit': ('GATE-LEFT', 'T5d',
+    'scholarship/sponsorship/credits.py::cancel_admin_credit': ('GATE-LEFT', 'T5d',
         'money: cancelling a credit is gated by the label (getattr role)'),
-    'scholarship/sponsorship.py::record_admin_credit': ('GATE-LEFT', 'T5d',
+    'scholarship/sponsorship/credits.py::record_admin_credit': ('GATE-LEFT', 'T5d',
         'money: recording a credit is gated by the label (getattr role)'),
     'scholarship/credit_steps.py::step_refusal': ('GATE-LEFT', 'T5d',
         'money: credit signing by label (maker admin / approver org_admin); moved out of '

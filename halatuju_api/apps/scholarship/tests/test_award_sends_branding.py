@@ -47,7 +47,7 @@ class AwardSendsTest(TestCase):
 
     def test_the_release_cron_sends_in_the_tenants_brand(self):
         self._held_award(_tenant_cohort())
-        with mock.patch('apps.scholarship.sponsorship.send_award_offer_email',
+        with mock.patch('apps.scholarship.sponsorship.offers.send_award_offer_email',
                         return_value=True) as send:
             svc.release_award_offer_emails()
         self.assertEqual(_brand_name(send), TENANT)
