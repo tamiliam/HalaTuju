@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: Gemini Phase 1 review - an overall deadline for the fallback runner (2026-11-11)
+
+Branch gemini-phase1 (not pushed, not deployed; no migration). Follow-ups from a review of the Phase 1 commit.
+- `gemini.generate_with_fallback` has a deadline, because its calls run inside a web request (gunicorn: 120 s): the
+  first model gets a 100 s HTTP timeout; a later model starts only with at least 15 s left of 115 s, and gets what is
+  left. Passed as `types.HttpOptions(timeout=<ms>)` through an optional `timeout_ms` (default None) on `generate_text`
+  and both `_gemini_generate` seams; every other caller builds its client unchanged.
+- A missing (`None`) answer moves to the next model, like an empty one. When every model fails, the cascade's whole
+  story is logged (`cascade_failure`) before the last error goes up.
+- Docs: the runner's rule restated accurately; a mistyped admin `model` on the contracts quiz endpoint now falls back.
+- Tests (`test_gemini_fallback.py`): a fake-clock deadline, the client's timeout only on the runner's path, the
+  all-fail Word imports (contracts and sponsor terms), sponsor terms with no key, and the triage meter.
+
 ### fix: Gemini Phase 1 - 3.8 Flash replaces 2.5 Pro, with a Flash fallback for every former Pro job (2026-11-11)
 
 Branch gemini-phase1 (not pushed, not deployed; no migration). `gemini-2.5-pro` has answered 404 for our key since

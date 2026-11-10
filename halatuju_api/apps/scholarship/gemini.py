@@ -33,12 +33,23 @@ model's message — a retired model's 404 — so nobody could see the cause. Whe
 OUR outage or the document's problem is `read_errors`, which reads the prefix this writes.
 """
 import logging
+import time
 
 from django.conf import settings
 
 from .read_errors import CASCADE_FAILED, DOCUMENT_FAILED
 
 logger = logging.getLogger(__name__)
+
+#: The fallback runner's deadline (Gemini Phase 1 review). The calls run inside a web request and
+#: gunicorn kills a worker at 120 s, so: the first model gets ~100 s (close to the untimed call it
+#: replaced), a later model starts only if at least 15 s remain of 115 s, and gets what remains.
+FIRST_TIMEOUT_S = 100
+TOTAL_DEADLINE_S = 115
+MIN_LATER_S = 15
+
+#: The runner's clock — a module attribute so a test can swap in a fake one (no sleeping).
+_clock = time.monotonic
 
 #: The stored cascade error stays readable on a cockpit row and in a log line.
 _CASCADE_ERROR_MAX = 600
@@ -73,7 +84,7 @@ def _joined(prefix, errors):
     return (head + '; '.join(parts))[:_CASCADE_ERROR_MAX]
 
 
-def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable):
+def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable, timeout_ms=None):
     """Run `prompt` through ONE Gemini model and return the response text.
 
     `exc` is the caller's own exception class and `unconfigured` / `unavailable` its own machine
@@ -85,6 +96,9 @@ def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable)
     order is IMAGES FIRST, then the prompt, matching `vision._call_gemini_json` — the model
     attends better to instructions that follow the evidence. A call with no images takes the
     plain `contents=prompt` path, byte-identically to before, which a test pins.
+
+    `timeout_ms` (Gemini Phase 1 review) is set ONLY by `generate_with_fallback`, as the client's
+    `HttpOptions(timeout=…)`. Left as None, the client is built exactly as before.
     """
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
@@ -94,7 +108,10 @@ def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable)
         from google.genai import types
     except ImportError:
         raise exc(unavailable)
-    client = genai.Client(api_key=api_key)
+    if timeout_ms is None:
+        client = genai.Client(api_key=api_key)
+    else:
+        client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=timeout_ms))
     if images:
         contents = [types.Part.from_bytes(data=data, mime_type=mime) for data, mime in images]
         contents.append(prompt)
@@ -116,28 +133,41 @@ def generate_with_fallback(seam, prompt, model, *, fatal, **kwargs):
     ``seam`` is the caller's own ``_gemini_generate``, looked up by the caller at call time, so
     every ``patch('apps.scholarship.<module>._gemini_generate')`` still lands.
 
-    The next model is tried on the same failures the prose cascade treats that way: any error
-    from the call, or an empty answer. ``fatal`` is the caller's own exception class: the seam
-    raises it only for "no key" / "no SDK", which no other model can fix, so it goes up at once.
-    When every model fails, the last error is raised as before (or, if none raised, the empty
+    The next model is tried on what the prose cascade (``profile_engine._call_gemini_text``) moves
+    on from: any error from the call, or an empty or missing answer. ``fatal`` is the caller's own
+    exception class: the seam raises it only for "no key" / "no SDK", which no other model can
+    fix, so it goes up at once. Each call carries ``timeout_ms`` under the deadline above. When
+    every model fails, or the deadline leaves no room for another, the whole story is logged
+    (``cascade_failure``) and the last error is raised as before (or, if none raised, the empty
     answer is returned), so each caller's failure path is unchanged. Metering stays in
     ``generate_text`` and records each model as it actually answers.
     """
     from .profile_engine import cascade_from
-    last_exc, empty = None, None
-    for name in cascade_from(model):
+    start = _clock()
+    last_exc, empty, errors = None, None, []
+    for i, name in enumerate(cascade_from(model)):
+        if i == 0:
+            timeout_s = FIRST_TIMEOUT_S
+        else:
+            timeout_s = TOTAL_DEADLINE_S - (_clock() - start)
+            if timeout_s < MIN_LATER_S:
+                errors.append((name, f'not tried: {max(timeout_s, 0):.0f}s left of the deadline'))
+                break
         try:
-            text = seam(prompt, name, **kwargs)
+            text = seam(prompt, name, timeout_ms=int(timeout_s * 1000), **kwargs)
         except fatal:
             raise
         except Exception as e:
             logger.warning('Gemini %s failed, trying the next model: %s', name, e)
             last_exc = e
+            errors.append((name, str(e)))
             continue
-        if isinstance(text, str) and not text.strip():
+        if not (text or '').strip():
             empty = empty or (text, name)
+            errors.append((name, 'empty answer'))
             continue
         return text, name
+    logger.warning('Gemini fallback exhausted: %s', cascade_failure(errors))
     if last_exc is not None:
         raise last_exc
     return empty

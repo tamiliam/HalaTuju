@@ -26,9 +26,17 @@ landing on 2.5 Flash. `gemini-3.8-flash` was confirmed in the models list (gener
 - One rule, one home: `profile_engine.cascade_from(model)` is the order (the model, then `MODEL_CASCADE`, no repeats);
   `PRO_CASCADE`, the AI registry and the runner all read it. `gemini.generate_with_fallback` is the one runner: it calls
   the caller's OWN `_gemini_generate` once per model, so every `patch()` of a seam still lands and the seam stays
-  single-model and three lines long. The next model is tried on any error or an empty answer (the prose cascade's
-  rule); "no key" / "no SDK" is not retried; when every model fails, the last error goes up, so each caller's failure
-  path (the raised error, `quiz_ai_unconfigured`, `triage_ai_unavailable`) is unchanged.
+  single-model and three lines long. The next model is tried on what `profile_engine._call_gemini_text` moves on
+  from: any error from the call, or an empty or missing answer. Unlike that cascade, "no key" / "no SDK" goes up at
+  once (it cannot change between models), and the runner has a deadline (below). When every model fails, the cascade's
+  whole story is logged (`cascade_failure`) and the last error goes up, so each caller's failure path (the raised
+  error, `quiz_ai_unconfigured`, `triage_ai_unavailable`) is unchanged.
+- A deadline, because these calls run inside a web request and gunicorn kills a worker at 120 s (review fix,
+  2026-11-11): the first model gets a 100 s HTTP timeout; a later model starts only if at least 15 s remain of 115 s,
+  and gets what remains. The timeout goes in as `HttpOptions(timeout=…)` on the runner's path only; every other
+  `generate_text` caller (vision, the prose cascade, `apply_copy_draft`) builds its client exactly as before.
+- A mistyped admin-supplied `model` on the contracts quiz endpoint (`POST …/clauses/<order>/generate-quiz/`, `{"model": …}`) now falls back
+  down the cascade instead of raising; the clause's `quiz_generated_model` names the model that answered.
 - No temperature, top_p or thinking change in this phase. `apply_copy_draft` (already Flash) keeps one call.
 - Phase 2 (before 2026-12-01) and a cross-provider bake-off (December) are separate work.
 

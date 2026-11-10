@@ -163,12 +163,13 @@ def replace_sections(terms, rows):
 
 # ── quiz generation ──────────────────────────────────────────────────────────
 
-def _gemini_generate(prompt, model):
+def _gemini_generate(prompt, model, timeout_ms=None):
     """The single mockable seam — patched in every test, so no CI run can make a live call.
 
     ONE model per call; it raises on any failure. The callers fall back through
     `gemini.generate_with_fallback` (the configured model, then the Flash cascade) — owner,
     2026-11-10 (Gemini Phase 1), superseding the contract module's "no downgrade" decision.
+    ``timeout_ms`` (default None) is set only by that runner's deadline.
 
     ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
     instead of three) and kept this name, because this is the boundary tenancy rule 6 names and
@@ -176,7 +177,7 @@ def _gemini_generate(prompt, model):
     """
     return gemini.generate_text(prompt, model, exc=SponsorTermsError,
                                 unconfigured='quiz_ai_unconfigured',
-                                unavailable='quiz_ai_unavailable')
+                                unavailable='quiz_ai_unavailable', timeout_ms=timeout_ms)
 
 
 def _build_quiz_prompt(section):

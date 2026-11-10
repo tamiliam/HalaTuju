@@ -4480,7 +4480,7 @@
    "_extract_counterparty": "(preamble)",
    "_extract_docx_text": "(data)",
    "_fit_heading": "(heading, body)",
-   "_gemini_generate": "(prompt, model, images=None)",
+   "_gemini_generate": "(prompt, model, images=None, timeout_ms=None)",
    "_para_numbering": "(para)",
    "_parse_quiz_json": "(raw)",
    "_parse_segments": "(raw)",

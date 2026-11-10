@@ -181,7 +181,7 @@ def resolve(job):
 def snapshot():
     """Every job with its model(s) resolved — the payload the screen renders.
 
-    Read-only and cheap: a few `getattr`s over Django settings plus three lazy imports.
+    Read-only and cheap: a few `getattr`s over Django settings plus four lazy imports.
     """
     out = []
     for job in JOBS:

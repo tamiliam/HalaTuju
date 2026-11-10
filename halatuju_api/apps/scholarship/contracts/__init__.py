@@ -64,7 +64,7 @@ from .render import _bold, render_clauses_html, render_preview_html
 # ─────────────────────────────────────────────────────────────────────────────
 # Quiz generation (Gemini — draft-only, on-demand, configured model then the Flash cascade)
 # ─────────────────────────────────────────────────────────────────────────────
-def _gemini_generate(prompt, model, images=None):
+def _gemini_generate(prompt, model, images=None, timeout_ms=None):
     """The single-model Gemini call — the mockable seam (patched in tests, never
     a live call in CI). ONE model per call; it raises on any failure. The fallback is the
     callers': `gemini.generate_with_fallback` calls this seam once per model (the configured
@@ -77,6 +77,9 @@ def _gemini_generate(prompt, model, images=None):
     byte-identical** — contract generation passes no images and takes the same `contents=prompt`
     path it always did, which a test pins, because this seam is shared and mocked everywhere.
 
+    ``timeout_ms`` (optional, default None = the client's own default) is set only by
+    ``gemini.generate_with_fallback``'s deadline.
+
     Note the part ORDER: images first, then the prompt, matching ``vision._call_gemini_json`` —
     the model attends better to instructions that follow the evidence.
 
@@ -87,7 +90,7 @@ def _gemini_generate(prompt, model, images=None):
     """
     return gemini.generate_text(prompt, model, images=images, exc=ContractsError,
                                 unconfigured='quiz_ai_unconfigured',
-                                unavailable='quiz_ai_unavailable')
+                                unavailable='quiz_ai_unavailable', timeout_ms=timeout_ms)
 
 
 def generate_quiz(clause, *, model=None):
