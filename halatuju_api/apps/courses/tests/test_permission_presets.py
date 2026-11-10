@@ -178,6 +178,13 @@ GOLDEN = {
         'today': _t('super', 'org_admin', 'admin', 'qc'),
         'rule': lambda a, c: _scope_rule(a) == 'all',
     },
+    'scholars_list': {                                                        # S1 (2026-11-09)
+        'where': 'views_admin/scholars.py _ScholarsBase (base.scholars_scope: the Scholars door, '
+                 'its own key since sprint S1; review / qc / see_all alone no longer open it)',
+        'keys': ('scholars',),
+        'today': _t('super', 'org_admin', 'admin'),
+        'rule': lambda a, c: a.has_perm('scholars'),
+    },
     # ── D. spending ─────────────────────────────────────────────────────────────────────────────
     'spending_page': {
         'where': 'views_admin/spending.py _SpendingBase (spending)',
@@ -417,6 +424,9 @@ class GoldenTable(TestCase):
 
     def probe_read_unassigned_file(self, a):
         return self._scoped(a, self._case(owning_organisation_id=a.owning_organisation_id))
+
+    def probe_scholars_list(self, a):
+        return self._http(a, 'get', '/api/v1/admin/scholarship/scholars/').status_code != 403
 
     def probe_qc_gate(self, a):
         from apps.scholarship.views_admin import _AdminBase

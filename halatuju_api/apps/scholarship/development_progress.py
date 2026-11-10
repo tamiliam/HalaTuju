@@ -201,14 +201,15 @@ def scholar_file_payload(app):
 def mentor_rows(app):
     """The CURRENT mentor's view of their own student's modules (`mentor_desk.student_payload`): the same
     allowlist as the staff tab, for the modules the STUDENT can see. Never the author, the audience, other
-    scholars, the email state, who reviewed or a file link (an upload opens through `mentor_task_file_path`'s
+    scholars, the email state, who reviewed or a file link (an upload opens through `file_task_path`'s
     door, `admin/mentor/students/<id>/modules/<module>/file/`, signed on the tap)."""
     return _work_rows(app, staff=False)
 
 
-def mentor_task_file_path(app, module_id):
-    """The key of the student's uploaded task for ONE module the student can see, or '' (→ 404). The caller
-    (`views_admin/mentor_students.py`) has already fenced the student to the mentor's CURRENT assignment."""
+def file_task_path(app, module_id):
+    """The key of the student's uploaded task for ONE module the student can see (or started), or '' (→ 404).
+    The caller has already fenced the file: the mentor's CURRENT assignment (`views_admin/mentor_students.py`)
+    or the scholar file's own fence (`views_admin/development.AdminScholarGrowthFileView`, S1)."""
     if modules_for_file(app).filter(pk=module_id).exists():
         return task_file_path(DevelopmentModule(pk=module_id), app.pk)
     return ''

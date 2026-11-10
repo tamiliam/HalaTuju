@@ -42,8 +42,9 @@ TABLES = (ADMINS, REVIEWERS, MENTORS)
 
 #: The keys that put a TEAM member at the Admins table (owner ruling 2). `manage_team` is lead-tier only
 #: (`LEAD_TIER_ONLY`) and never resolves for a team member; it is named for completeness.
-ADMIN_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
-              'award_withdraw_request', 'award_withdraw_approve', 'manage_team')   # A1.13b: + the two seats
+ADMIN_KEYS = ('see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+              'award_withdraw_request', 'award_withdraw_approve', 'manage_team')   # A1.13b: + the two seats;
+# S1 (2026-11-09): + `scholars`
 #: The keys that put a TEAM member at the Reviewers table.
 REVIEWER_KEYS = ('review', 'qc')
 #: The preset labels that ARE a table by themselves (whatever a custom set later says).
@@ -190,10 +191,11 @@ def may_do_admin_work(admin):
 
 # ── Team tables T2: what an invitation STARTS a person at (owner ruling 4). ──────────────────────────
 #: "No View-only admin and no separate Finance label: one Admin; a new admin starts at the absolute
-#: minimum" — an invited Admin holds exactly `see_all`; payment keys are ticked afterwards on Team. Every
-#: other role starts at its preset (NULL). An OLD pending invitation is untouched: its row was written
+#: minimum" — an invited Admin holds exactly `see_all` (Applications) and, since S1 (2026-11-09),
+#: `scholars` (the Scholars page no longer rides on `see_all`); payment keys are ticked afterwards on
+#: Team. Every other role starts at its preset (NULL). An OLD pending invitation is untouched: its row was written
 #: when it was sent, so it accepts onto today's preset.
-INVITE_START = {'admin': ('see_all',)}
+INVITE_START = {'admin': ('see_all', 'scholars')}
 
 
 def invite_permissions(role):

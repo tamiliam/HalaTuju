@@ -25,9 +25,12 @@ def _people(emails):
             for a in PartnerAdmin.objects.filter(email__in=list(emails))}
 
 
-def _who(people, email):
+def _who(people, email, *, names_only=False):
+    """``{email, name, role}`` of a staff writer; ``names_only`` (a MENTOR reads the tab, S1 ruling A): the
+    email is blank — mentors see staff names, never their addresses."""
     p = people.get((email or '').lower())
-    return {'email': email or '', 'name': (p or {}).get('name', ''), 'role': (p or {}).get('role', '')}
+    return {'email': '' if names_only else (email or ''), 'name': (p or {}).get('name', ''),
+            'role': (p or {}).get('role', '')}
 
 
 def help_asked(application):
@@ -39,10 +42,11 @@ def help_asked(application):
             'flagged': bool(application.mentoring_candidate)}
 
 
-def file_payload(caller, application):
+def file_payload(caller, application, *, names_only=False):
     """The staff Mentoring tab for ONE application the view has fenced: the current mentor (staff see a
     mentor login's phone; a STAFF mentor's only under the team rule — `staff_contact.staff_screen_phone`), the history (ended, with reasons), every meeting with its notes, what the
-    scholar asked for, the mentors the picker may offer, `can_act` and the email switch."""
+    scholar asked for, the mentors the picker may offer, `can_act` and the email switch.
+    ``names_only`` (S1 ruling A): a MENTOR reads it — every email (staff and mentors) is blank."""
     rows = list(MentorAssignment.objects.filter(application_id=application.pk)
                 .select_related('mentor').order_by('-started_at', '-id'))
     sessions = list(MentoringSession.objects.filter(application_id=application.pk)
@@ -60,7 +64,7 @@ def file_payload(caller, application):
 
     def mentor_bits(mid):
         f = facts.get(mid) or {}
-        return {'mentor_id': mid, 'name': f.get('name', ''), 'email': f.get('email', ''),
+        return {'mentor_id': mid, 'name': f.get('name', ''), 'email': '' if names_only else f.get('email', ''),
                 'phone': f.get('staff_phone', ''), 'area': mentors[mid].area, 'languages': f.get('languages', []),
                 'other_language': f.get('other_language', ''), 'status': f.get('status', '')}
 
@@ -68,7 +72,7 @@ def file_payload(caller, application):
     can_act = may_assign(caller, application)
     return {
         'current': ({**mentor_bits(current.mentor_id), 'id': current.pk, 'since': current.started_at,
-                     'assigned_by': _who(people, current.started_by_email),
+                     'assigned_by': _who(people, current.started_by_email, names_only=names_only),
                      'meetings': counts.get(current.pk, 0), 'last_meeting': last.get(current.pk),
                      'emailed': current.emailed_student,
                      # Review fix 1b: the mentor is, by now, the student — the tab says "end it".
@@ -76,16 +80,18 @@ def file_payload(caller, application):
                     if current else None),
         'history': [{'id': r.pk, 'mentor_id': r.mentor_id, 'name': (facts.get(r.mentor_id) or {}).get('name', ''),
                      'started_at': r.started_at, 'ended_at': r.ended_at, 'end_reason': r.end_reason,
-                     'ended_by': _who(people, r.ended_by_email), 'meetings': counts.get(r.pk, 0)}
+                     'ended_by': _who(people, r.ended_by_email, names_only=names_only),
+                     'meetings': counts.get(r.pk, 0)}
                     for r in rows if r.ended_at is not None],
         'meetings': [{'id': s.pk, 'met_on': s.met_on, 'mode': s.mode, 'minutes': s.minutes,
                       'notes': s.notes, 'next_step': s.next_step,
                       'mentor_name': (facts.get(s.mentor_id) or {}).get('name', ''),
-                      'logged_by': _who(people, s.logged_by_email), 'created_at': s.created_at,
+                      'logged_by': _who(people, s.logged_by_email, names_only=names_only),
+                      'created_at': s.created_at,
                       # S7c: the mentor logged it ("logged by <name> (mentor)"), and its concern.
                       'logged_by_mentor': s.logged_by_mentor, 'concern': s.concern,
                       'concern_handled_at': s.concern_handled_at,
-                      'concern_handled_by': (_who(people, s.concern_handled_by_email)
+                      'concern_handled_by': (_who(people, s.concern_handled_by_email, names_only=names_only)
                                              if s.concern_handled_at else None)}
                      for s in sessions],
         # S7c: the open concerns ("Mentor concerned" at the top; "Mark as handled" clears them all).

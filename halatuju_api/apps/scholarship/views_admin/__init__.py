@@ -162,7 +162,8 @@ from .award_withdrawal import (   # A1.13b (TD-198): award withdrawal, maker and
 )
 from .development import (   # S10: Programme -> Development, a module's Progress, the scholar file's Growth tab
     AdminModuleActionView, AdminModuleCsvView, AdminModuleLessonFileSignView, AdminModuleLessonFileView,
-    AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthView,
+    AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthFileView,
+    AdminScholarGrowthView,
 )
 from .mentor_students import (   # S7c: a mentor's own students
     AdminMentorStudentModuleFileView, AdminMentorStudentSessionsView, AdminMentorStudentView,

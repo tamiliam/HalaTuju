@@ -3,15 +3,17 @@
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md`; lead rulings Q1-Q4 (decisions.md "Team tables T2").
 Every door the brief lists, driven through the real endpoints:
 
-- ADD gives the absolute minimum key (`see_all` / `review`) on top of the MATERIALISED preset — nobody loses
-  anything; role is untouched; no email; the sign-in untouched; org-fenced; only a super or an org admin.
+- ADD gives the table's starting keys (Admins `see_all` + `scholars`, S1 ruling B; Reviewers `review`) on top
+  of the MATERIALISED preset — nobody loses anything; role is untouched; no email; the sign-in untouched;
+  org-fenced; only a super or an org admin.
 - REMOVE takes only that table's keys; refused on the LAST table ("revoke instead"), when only Mentors would
   be left (until T3), while open cases remain (Reviewers), and for the lead at Admins. Role moves only where
   the label would otherwise keep them seated (Q2a / Q2b: Rohini leaving Reviewers becomes an Admin).
 - THE ORG ADMIN joins Reviewers by a stored ['review'] (Q1); only themselves or a super (Q4); every other
   key in that list is ignored; the generic editor still refuses the lead; self-QC still holds.
 - Revoked people are never offered or added; a pure mentor login added becomes staff (7d link rules).
-- Invitations: Admin and Reviewer only; a new Admin stores exactly ['see_all']; an OLD pending finance / qc
+- Invitations: Admin and Reviewer only; a new Admin stores exactly ['see_all', 'scholars'] (sprint S1);
+  an OLD pending finance / qc
   invitation still accepts onto today's preset, and may still be cancelled.
 - Maker / checker / approver unchanged: a finance-only person is an Admin with `payments_approve`.
 """
@@ -56,29 +58,29 @@ class _Base(TestCase):
 
 
 class AddToAdmins(_Base):
-    def test_a_reviewer_gets_see_all_on_top_of_the_materialised_preset_and_keeps_their_role(self):
+    def test_a_reviewer_gets_see_all_and_scholars_on_top_of_the_materialised_preset_and_keeps_their_role(self):
         rev = make_admin('reviewer', owning_org=self.org)
         r = self.act(self.lead, 'admins', rev, 'add')
         self.assertEqual(r.status_code, 200, r.content[:300])
         rev = self.fresh(rev)
         self.assertEqual(rev.role, 'reviewer')                     # option B: role untouched
-        self.assertEqual(rev.permissions, ['review', 'see_all'])   # nothing lost
+        self.assertEqual(rev.permissions, ['review', 'see_all', 'scholars'])   # nothing lost (S1 ruling B)
         self.assertEqual(st.tables(rev), ('admins', 'reviewers'))
         self.assertFalse(st.may_do_admin_work(rev))                # a key seat: read pages only
         self.assertEqual(mail.outbox, [])                          # no email
         self.assertEqual(rev.supabase_user_id, PartnerAdmin.objects.get(pk=rev.pk).supabase_user_id)
         row = StaffPermissionChange.objects.get(target=rev)
-        self.assertEqual((row.before, row.after), (['review'], ['review', 'see_all']))
+        self.assertEqual((row.before, row.after), (['review'], ['review', 'see_all', 'scholars']))
 
     def test_a_dry_run_writes_nothing_and_names_the_widened_files(self):
         rev = make_admin('reviewer', owning_org=self.org)
         r = self.act(self.lead, 'admins', rev, 'add', dry_run=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()['added'], ['see_all'])
+        self.assertEqual(r.json()['added'], ['see_all', 'scholars'])
         self.assertIn('files_widened_all', r.json()['consequences'])
         self.assertIsNone(self.fresh(rev).permissions)
 
-    def test_a_qc_holder_is_refused_because_see_all_would_add_nothing(self):
+    def test_a_qc_holder_is_refused_and_never_offered(self):
         qc = make_admin('qc', owning_org=self.org)
         r = self.act(self.lead, 'admins', qc, 'add')
         self.assertEqual((r.status_code, r.json()['code']), (400, 'qc_sees_all'))
@@ -90,7 +92,7 @@ class AddToAdmins(_Base):
         self.assertNotIn(adm.pk, self.candidates(self.lead, 'admins'))
         self.assertNotIn(self.lead.pk, self.candidates(self.lead, 'admins'))
 
-    def test_a_pure_mentor_login_becomes_an_admin_holding_only_see_all_and_keeps_mentoring(self):
+    def test_a_pure_mentor_login_becomes_an_admin_holding_see_all_and_scholars_and_keeps_mentoring(self):
         from django.utils import timezone
         m = make_admin('mentor', owning_org=self.org)
         PartnerAdmin.objects.filter(pk=m.pk).update(first_seen_at=timezone.now())
@@ -98,11 +100,11 @@ class AddToAdmins(_Base):
         r = self.act(self.lead, 'admins', m, 'add')
         self.assertEqual(r.status_code, 200, r.content[:300])
         m = self.fresh(m)
-        self.assertEqual((m.role, m.permissions), ('admin', ['see_all']))
+        self.assertEqual((m.role, m.permissions), ('admin', ['see_all', 'scholars']))
         self.assertTrue(r.json()['opens_admin_pages'])           # role admin: the confirm says so
         self.assertTrue(m.is_staff_mentor and m.mentors_now)       # 7d: the link is kept
         self.assertEqual(st.tables(m), ('admins', 'mentors'))
-        self.assertEqual(sp.resolve(m), ('see_all',))
+        self.assertEqual(sp.resolve(m), ('see_all', 'scholars'))
 
     def test_a_mentor_who_has_not_signed_in_is_not_offered_or_added(self):
         m = make_admin('mentor', owning_org=self.org)
@@ -117,7 +119,7 @@ class AddToReviewers(_Base):
         self.assertEqual(r.status_code, 200, r.content[:300])
         adm = self.fresh(adm)
         self.assertEqual(adm.role, 'admin')
-        self.assertEqual(adm.permissions, ['review', 'see_all', 'spending', 'payments_prepare'])
+        self.assertEqual(adm.permissions, ['review', 'see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual(st.tables(adm), ('admins', 'reviewers'))
 
     def test_a_finance_person_gets_review_and_keeps_approving(self):
@@ -279,7 +281,8 @@ class OrgAdminJoinsReviewers(_Base):
         lead = self.fresh(self.lead)
         self.assertEqual(lead.permissions, ['review'])
         self.assertEqual(lead.role, 'org_admin')
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                                              'manage_team'))
         self.assertEqual(st.tables(lead), ('admins', 'reviewers'))
 
     def test_every_other_key_on_an_org_admin_row_is_ignored(self):
@@ -290,7 +293,8 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertFalse(st.in_reviewers(lead))
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['review', 'payments_approve'])
         lead = self.fresh(self.lead)
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'))
+        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                                              'manage_team'))
         self.assertFalse(lead.has_perm('payments_approve'))
 
     def test_the_generic_editor_still_refuses_the_lead(self):
@@ -378,19 +382,19 @@ class Invitations(TestCase):
                 'email': f'{role}@new.test', 'name': 'N', 'role': role}, format='json')
             self.assertEqual((r.status_code, r.json()['code']), (403, 'role_not_allowed'), role)
 
-    def test_a_new_admin_row_stores_exactly_see_all(self):
+    def test_a_new_admin_row_stores_exactly_see_all_and_scholars(self):
         from apps.courses import staff_reinvite
         row, _, err = staff_reinvite.provision(None, email='new.admin@x.test', name='N', role='admin',
                                                org=None, owning_org=self.org)
         self.assertIsNone(err)
-        self.assertEqual(row.permissions, ['see_all'])
+        self.assertEqual(row.permissions, ['see_all', 'scholars'])
         self.assertEqual(st.tables(row), ('admins',))
         rev, _, _ = staff_reinvite.provision(None, email='new.rev@x.test', name='N', role='reviewer',
                                              org=None, owning_org=self.org)
         self.assertIsNone(rev.permissions)
 
     def test_only_an_admin_starts_below_its_preset(self):
-        self.assertEqual(st.invite_permissions('admin'), ['see_all'])
+        self.assertEqual(st.invite_permissions('admin'), ['see_all', 'scholars'])
         self.assertIsNone(st.invite_permissions('reviewer'))
         self.assertIsNone(st.invite_permissions('finance'))
 
@@ -484,7 +488,7 @@ class ChangeRoleUnderT2(TestCase):
 
     def test_a_switch_out_equal_to_the_new_preset_is_stored_null(self):
         fin = make_admin('finance', owning_org=self.org,
-                         permissions=['see_all', 'spending', 'payments_prepare'])
+                         permissions=['see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual(self.switch(fin, 'admin').status_code, 200)
         fin.refresh_from_db()
         self.assertEqual((fin.role, fin.permissions), ('admin', None))

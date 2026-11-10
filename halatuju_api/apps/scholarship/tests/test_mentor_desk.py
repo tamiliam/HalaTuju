@@ -13,7 +13,7 @@ Doors, each driven through the real endpoints:
 - CONCERN: raised only by the mentor's log; handled only by staff of the organisation; twice is
   idempotent; a later concern re-raises; the Scholars chip, filter and count agree; reviewer / QC see no
   concern line, chip or count; the student's own tab is unchanged (date + how).
-- `mentor_methods`: the three new views are the only 7c additions.
+- `mentor_methods`: the three new views are the only 7c additions (sprint S1 adds the Scholars reads).
 """
 import datetime
 import json
@@ -410,10 +410,11 @@ class TestTheConcern(_Base):
     def test_reviewer_and_qc_see_no_concern_line_chip_or_count(self):
         self.log(concern=True)
         self.handle()
-        reviewer = make_admin('reviewer', owning_org=self.org)
+        # Sprint S1: only `scholars` opens the file; these two hold it beside their hat.
+        reviewer = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'scholars'])
         self.app.assigned_to = reviewer
         self.app.save(update_fields=['assigned_to'])
-        for who in (reviewer, make_admin('qc', owning_org=self.org)):
+        for who in (reviewer, make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'scholars'])):
             with self.subTest(role=who.role):
                 log = authed_client(who).get(f'{SCHOLARS}{self.app.id}/activity/').json()
                 events = {r['event'] for r in log['results']}
@@ -452,6 +453,12 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
         'AdminMyProgrammesView': ('get',),
         # Team tables T5c P5b S1 — the Overview's pending cards: the mentor's own mentee counts.
         'AdminMyPendingView': ('get',),
+        # Sprint S1 (S1-h) — the Scholars READS, for the mentor's own current students only (the writes none).
+        **dict.fromkeys(('AdminScholarListView', 'AdminScholarFileView', 'AdminScholarResultsView',
+                         'AdminScholarMoneyView', 'AdminScholarContractView', 'AdminScholarActivityView',
+                         'AdminScholarLettersView', 'AdminScholarLetterPdfView', 'AdminScholarSurveysView',
+                         'AdminScholarGrowthView', 'AdminScholarGrowthFileView', 'AdminScholarMentoringView'),
+                        ('get',)),
     }
 
     def test_the_closed_list(self):

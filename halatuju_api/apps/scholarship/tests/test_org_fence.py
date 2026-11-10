@@ -331,6 +331,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminModuleLessonFileView': 'module-org-fenced',
         'AdminModuleLessonFileSignView': 'module-org-fenced',
         'AdminScholarGrowthView': 'scholars-org-fenced',   # `_file_for` + `development.may_make`
+        'AdminScholarGrowthFileView': 'scholars-org-fenced',   # S1: the same, for one module's task file
         '_MentoringBase': 'scholars-org-fenced',
         'AdminScholarMentoringView': 'scholars-org-fenced',
         'AdminScholarMentoringActionView': 'scholars-org-fenced',

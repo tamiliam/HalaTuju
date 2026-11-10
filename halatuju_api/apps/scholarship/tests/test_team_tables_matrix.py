@@ -46,6 +46,7 @@ from apps.scholarship.tests.factories import (
     make_programme, make_source,
 )
 from apps.scholarship.tests.source_walk import read_source
+from apps.scholarship.tests.team_matrix_s1 import s1_moved_cells, s1_web_shown   # sprint S1 (SHAPES: post-0095)
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_before.json'
 MIXED_FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_mixed_before.json'
@@ -62,13 +63,13 @@ SHAPES = {
     'org_admin_mentor':     {'role': 'org_admin', 'mentor': True},
     'admin':                {'role': 'admin'},
     'admin_inactive':       {'role': 'admin', 'is_active': False},
-    'admin_see_all_spending': {'role': 'admin', 'permissions': ['see_all', 'spending']},
+    'admin_see_all_spending': {'role': 'admin', 'permissions': ['see_all', 'scholars', 'spending']},
     'finance':              {'role': 'finance'},
     'qc':                   {'role': 'qc'},
     'reviewer':             {'role': 'reviewer'},
-    'reviewer_admin_keys':  {'role': 'reviewer', 'permissions': ['review', 'see_all', 'spending']},
+    'reviewer_admin_keys':  {'role': 'reviewer', 'permissions': ['review', 'see_all', 'scholars', 'spending']},
     'reviewer_admin_keys_other_org': {'role': 'reviewer', 'org': 'b',
-                                      'permissions': ['review', 'see_all', 'spending']},
+                                      'permissions': ['review', 'see_all', 'scholars', 'spending']},
     'mentor':               {'role': 'mentor'},
     'mentor_inactive':      {'role': 'mentor', 'is_active': False, 'mentor_deactivated': True},
     'partner':              {'role': 'partner'},
@@ -76,7 +77,7 @@ SHAPES = {
     # ── MIXED KEYS (T1 review, 2026-11-03). No live row has these shapes; they pin the derivation where it
     # could go wrong. Their BEFORE rows are in their OWN fixture (`MIXED_FIXTURE`), generated on faacf681
     # exactly as the first one was, so the original fixture stays as it was made.
-    'qc_spending':          {'role': 'qc', 'permissions': ['see_all', 'qc', 'spending']},
+    'qc_spending':          {'role': 'qc', 'permissions': ['see_all', 'qc', 'scholars', 'spending']},
     'reviewer_payments_check': {'role': 'reviewer', 'permissions': ['review', 'payments_check']},
     'finance_custom':       {'role': 'finance', 'permissions': ['payments_approve', 'review']},
     'reviewer_mentor':      {'role': 'reviewer', 'mentor': True},
@@ -419,7 +420,7 @@ def _shape_test(shape):
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
                     **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
                     **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-                    **a113b_added_cells(shape), **i4_added_cells(shape)}
+                    **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -443,7 +444,7 @@ def _expected_row(shape):
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-           **a113b_added_cells(shape), **i4_added_cells(shape)}
+           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))
@@ -610,12 +611,13 @@ class MenuAndEndpointAgree(TestCase):
         problems = []
         self.assertTrue(set(MIXED_SHAPES) <= set(web) & set(api))
         for shape in sorted(set(web) & set(api)):
-            cells = {**api[shape], **{p: now for p, (_, now) in EXPECTED_CHANGES.get(shape, {}).items()}}
+            cells = {**api[shape], **{p: now for p, (_, now) in EXPECTED_CHANGES.get(shape, {}).items()},
+                     **s1_moved_cells(shape, api[shape])}
             opens = WEB_T1_OPENS.get(shape, ())
             for href, probe in PAGE_ENDPOINT.items():
                 if shape == 'source_partner':
                     probe = SOURCE_PAGE_ENDPOINT.get(href, probe)
-                shown = web[shape][f'open {href}'] or href in opens
+                shown = s1_web_shown(shape, href, web[shape][f'open {href}'] or href in opens)
                 answered = cells[probe] not in (401, 403)
                 if shown != answered:
                     problems.append((shape, href, shown, cells[probe]))

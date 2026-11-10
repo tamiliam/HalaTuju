@@ -29,10 +29,15 @@ at 17), and nothing from `models*` at import time — `PartnerAdmin.has_perm` li
 delegates here, so scholarship callers write `admin.has_perm('qc')` with no new import statement.
 """
 
-#: The ten keys, in the order the screen will group them (Students, then Money, then the team).
+#: The eleven keys, in the order the screen will group them (Students, then Money, then the team).
 CATALOGUE = (
     'review',            # can be ASSIGNED cases; works on the cases assigned to them (files included)
-    'see_all',           # reads every application in the organisation (no writes unless assigned)
+    'see_all',           # "Applications": reads every APPLICATION in the organisation (no writes unless
+                         # assigned). Sprint S1 (2026-11-09): no longer the Scholars door.
+    # Sprint S1 (owner, 2026-11-09): reads every SCHOLAR's file in the organisation — the Scholars list,
+    # every per-scholar endpoint and tab — and writes on it (result review, letters, activity notes).
+    # In the admin preset and the lead tier; NOT in the reviewer or qc preset; nothing implies it.
+    'scholars',
     'qc',                # the QC gate + working on any case in the organisation; IMPLIES `see_all` (T5b)
     'spending',          # the Spending page: named students' spending, flags, categories
     'payments_prepare',  # create / edit / cancel runs; signs as MAKER
@@ -75,7 +80,7 @@ TEAM_ROLES = ('admin', 'finance', 'qc', 'reviewer')
 PRESETS = {
     'reviewer': ('review',),
     'qc': ('see_all', 'qc'),
-    'admin': ('see_all', 'spending', 'payments_prepare'),
+    'admin': ('see_all', 'scholars', 'spending', 'payments_prepare'),   # S1: + scholars
     'finance': ('payments_approve',),    # Sprint 2 (owner, 2026-10-19): was payments_check
 }
 
@@ -85,8 +90,9 @@ PRESETS = {
 #: run under the FALLBACK when nobody else can) are not catalogue keys: they stay on
 #: `role == 'org_admin'` (`is_lead_tier`).
 LEAD_ROLE = 'org_admin'
-LEAD_TIER = ('see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team')   # Sprint 2: payments_approve
-# removed; A1.13b: the withdrawal CHECKER seat added (the org admin approves, never requests)
+LEAD_TIER = ('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team')   # Sprint 2:
+# payments_approve removed; A1.13b: the withdrawal CHECKER seat added (the org admin approves, never
+# requests); S1: `scholars` added
 
 #: Team tables T2 (owner ruling 5, lead ruling 2026-11-03): the ONE key an organisation admin may hold
 #: beyond the fixed tier — `review`, so they sit at the Reviewers table and can be assigned cases. It is

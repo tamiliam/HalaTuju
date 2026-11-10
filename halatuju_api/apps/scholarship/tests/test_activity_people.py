@@ -45,7 +45,10 @@ class _Log(TestCase):
         org = cohort.owning_organisation
         cls.org_admin = make_admin('org_admin', owning_org=org, name='Farah Officer')
         cls.officer = make_admin('admin', owning_org=org, name='Gopal Officer')
-        cls.qc = make_admin('qc', owning_org=org, name='Hana Checker')
+        # Sprint S1: QC alone no longer reads Scholars; a QC given `scholars` is the reader outside
+        # the Mentoring tab.
+        cls.qc = make_admin('qc', owning_org=org, name='Hana Checker',
+                            permissions=['see_all', 'qc', 'scholars'])
         cls.mentor = make_admin('mentor', owning_org=org, name='Imran Mentor')
         ReviewerProfile.objects.create(partner_admin=cls.org_admin, phone='012-000 0001',
                                        photo_path='staff-photos/1/farah.webp')
