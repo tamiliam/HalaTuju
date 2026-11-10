@@ -32,6 +32,9 @@ from . import (csv_safe, password_change_flag, referral_links, staff_activity_ho
                staff_permissions, staff_reinvite, staff_tables, supabase_admin)
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search, people_search_term
+from .staff_fence import (   # moved there (M1a, moves only); re-exported for every old import
+    _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES, PROGRAMME_STAFF_ROLES, _deletable_now,
+    _staff_target_manageable)
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
 from .models import StudentProfile, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
@@ -86,13 +89,13 @@ class PartnerAdminMixin:
     Lookup order: 1. by supabase_user_id (fast path); 2. by email from JWT (first-login backfill).
     """
     permission_classes = [SupabaseIsAuthenticated]
-    #: ⚠ DENY BY DEFAULT (S1; a MENTOR since S7a, on its OWN list): "not an admin" bar the methods listed.
-    source_partner_methods = mentor_methods = ()
+    #: ⚠ DENY BY DEFAULT (S1; a MENTOR since S7a; a MEMBER since M1a, each on its OWN `<role>_methods`).
+    source_partner_methods = mentor_methods = member_methods = ()
 
     def get_admin(self, request):
         admin = self._find_admin(request)
-        if admin is not None and (admin.is_source_user or admin.is_mentor):
-            allowed = self.source_partner_methods if admin.is_source_user else self.mentor_methods
+        if admin is not None and (admin.is_source_user or admin.is_mentor or admin.is_member):
+            allowed = getattr(self, f'{admin.role}_methods')   # source_partner / mentor / member
             return admin if request.method.lower() in allowed else None
         return admin
 
@@ -288,7 +291,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
     which is the question. `PartnerAdminMixin.get_admin` runs on every admin request instead, so
     stamping there would count a replayed token against any endpoint as a visit.
     """
-    source_partner_methods = mentor_methods = ('get',)   # S7a: a mentor's sign-in closes its invite
+    source_partner_methods = mentor_methods = member_methods = ('get',)   # S7a: a mentor's sign-in closes its invite; M1a member
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -580,34 +583,15 @@ def _fmt_json(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
-# Programme-staff roles an org_admin may manage (invite / list / resend / revoke). Never
-# partner (referral), never super, never org_admin — no privilege escalation.
-# `finance` joined 2026-07-23 (owner decision D5): the org lead appoints their own finance
-# checker. Safe against escalation because finance grants LESS than the roles already here —
-# it has no B40 scope at all — and it cannot manage staff, so it can never appoint anyone.
-_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
-
-# Everyone who belongs to a TENANT's own staff list — what an org_admin may SEE. Wider than
-# `_ORG_ADMIN_MANAGEABLE_ROLES` by exactly one role, `org_admin`, and the gap is the point: you can
-# see your fellow organisation admins, you cannot revoke them. Mirrors the frontend's
-# `adminStaff.PROGRAMME_STAFF_ROLES`; `super` and `partner` are platform-world and never here.
-PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
-
-# The roles a staff account may be DELETED in. D6 (Sprint T2, 2026-11-08) REVERSES 2026-09-09's "admins,
-# not reviewers": reviewers and QC too, under the SAME no-work test (`staff_footprint` counts every case
-# they held, reviewed, interviewed, QC'd or mentored). A pure mentor: `mentor_invite.delete_mentor`.
-_DELETABLE_ROLES = {'admin', 'finance', 'org_admin', 'reviewer', 'qc'}
-
-
 def _scholarship_staff_modules():
     """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
-    from apps.scholarship import mentoring, staff_footprint, staff_lifecycle, staff_mentor
-    return staff_footprint, staff_lifecycle, mentoring, staff_mentor
+    from apps.scholarship import invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work
+    return staff_footprint, staff_lifecycle, mentoring, staff_mentor, invitations, staff_work   # M1a: + the last two
 
 
 def scholarship_staff():
     """`(staff_footprint, staff_lifecycle)`: the ONE courses door to scholarship's staff rules."""
-    staff_footprint, staff_lifecycle, _, _ = _scholarship_staff_modules()
+    staff_footprint, staff_lifecycle = _scholarship_staff_modules()[:2]
     return staff_footprint, staff_lifecycle
 
 
@@ -618,7 +602,7 @@ def staff_mentor_leaves(target, by=''):
     be stale (S7d review fix 2): `leave` re-reads the row under a lock and decides there."""
     if target is None:
         return 0
-    _, _, _, staff_mentor = _scholarship_staff_modules()
+    staff_mentor = _scholarship_staff_modules()[3]
     return staff_mentor.leave(target, by=by)
 
 
@@ -628,43 +612,10 @@ def _mentor_linked(admin):
     mentor to that scholar ends now (`mentoring.end_if_self`). Best effort: it never fails a sign-in
     (the read-time guard keeps the mentor off the student's screens meanwhile)."""
     try:
-        _, _, mentoring, _ = _scholarship_staff_modules()
+        mentoring = _scholarship_staff_modules()[2]
         mentoring.end_if_self(admin.mentor, by='')
     except Exception:   # a sign-in must never fail on this
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)
-
-
-def _deletable_now(caller, target, work=None):
-    """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
-
-    Three conditions, all required, and each is refused again by `AdminDeleteView`:
-      * the caller may manage them at all (`_staff_target_manageable`);
-      * the role is a programme-staff one (`_DELETABLE_ROLES`; reviewers and QC since D6, 2026-11-08);
-      * they have done NO recorded work (`staff_footprint`).
-    """
-    staff_footprint, _ = scholarship_staff()
-    if not _staff_target_manageable(caller, target):
-        return False
-    if target.is_super or target.role not in _DELETABLE_ROLES:
-        return False
-    return not (work if work is not None else staff_footprint.footprint(target))
-
-
-def _staff_target_manageable(caller, target):
-    """Whether ``caller`` may manage (resend/revoke) the staff row ``target``. A platform
-    super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
-    (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
-    Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
-    if caller is None or target is None or target.is_source_user or target.is_mentor:
-        return False        # not staff: a source user (S1; S2 has its doors), a mentor (S7a, ditto)
-    if caller.is_super:
-        return True
-    if caller.role == 'org_admin':
-        if target.is_super or target.role not in _ORG_ADMIN_MANAGEABLE_ROLES:
-            return False
-        return (caller.owning_organisation_id is not None
-                and target.owning_organisation_id == caller.owning_organisation_id)
-    return False
 
 
 class AdminSetPasswordView(PartnerAdminMixin, APIView):
@@ -685,7 +636,7 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
     ONLY, on the real JWT subject (review F3): a student or sponsor with a reset link never
     reaches the service-role write, and a TD-254 profile alias never redirects it.
     """
-    source_partner_methods = mentor_methods = ('post',)   # S2 / S7a: temp-password source and mentor
+    source_partner_methods = mentor_methods = member_methods = ('post',)   # S2 / S7a / M1a: temp-password source, mentor, member
 
     def post(self, request):
         uid = auth_sub(request)

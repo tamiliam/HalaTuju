@@ -100,12 +100,15 @@ class TestThePersonBlock(TestCase):
         self.assertEqual(p['profile']['qualification'], 'Degree')
         self.assertEqual(p['profile']['languages'], ['en', 'ms'])   # 'basic' is not spoken
 
-    def test_an_org_admin_is_the_lead_and_only_a_super_opens_them(self):
+    def test_an_org_admin_is_the_lead_and_a_fellow_opens_them_view_only(self):
         p = self._get(self.super, self._admin_url(self.lead)).json()
         self.assertTrue(p['person']['lead'])
         self.assertEqual(p['person']['tables'], ['admins'])
         self.assertFalse(p['editable'])             # M2: drawn as locked switches
-        self._get(self.lead, self._admin_url(make_admin('org_admin', owning_org=self.org)), 404)
+        # M1a (owner O10): a fellow org admin of the same organisation opens the page, view-only.
+        fellow = self._get(self.lead, self._admin_url(make_admin('org_admin', owning_org=self.org))).json()
+        self.assertEqual((fellow['editable'], fellow['manageable']), (False, False))
+        self._get(self.lead, self._admin_url(make_admin('org_admin', owning_org=make_org())), 404)
 
     def test_someone_in_two_tables_names_both_and_their_mentor_record(self):
         for url in (self._reviewer_url(self.both), self._admin_url(self.both), self._mentor_url(self.both)):
@@ -199,9 +202,10 @@ class TestThePersonBlock(TestCase):
         self._get(self.admin, self._admin_url(admin_mentor), 403)
         self._get(self.admin, self._reviewer_url(admin_mentor), 404)
         self.assertBackground(self._mentor_person(self.admin, admin_mentor), False)
-        # A fellow org admin who mentors: no other org admin opens them by the admin route (404).
-        self._get(self.lead, self._admin_url(lead_mentor), 404)
-        self.assertBackground(self._mentor_person(self.lead, lead_mentor), False)
+        # A fellow org admin who mentors: M1a (O10) another org admin opens them by the admin route,
+        # view-only, so the mentor route serves them the full profile too (`opens_elsewhere`).
+        self._get(self.lead, self._admin_url(lead_mentor))
+        self.assertBackground(self._mentor_person(self.lead, lead_mentor), True)
         self.assertBackground(self._mentor_person(self.admin, lead_mentor), False)
         # A mentor's own login is opened by neither route: the Mentors page's own fields, phone included.
         p = self._mentor_person(self.lead, self.mentor)

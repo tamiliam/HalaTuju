@@ -77,6 +77,12 @@ def team_table_fields(caller, admins):
     return staff_tables_admin.row_fields(caller, admins)
 
 
+def staff_list_rows(caller, admins):
+    """Sprint M1a: the Staff list's rows (`staff_list.list_rows`) — here for the ONE courses door, as `team_cards`."""
+    from . import staff_list
+    return staff_list.list_rows(caller, admins)
+
+
 def open_cases(admin):
     """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
     review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which
@@ -192,7 +198,7 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
     from . import invitations, staff_permissions_admin
     from .models import Invitation
     with transaction.atomic():
-        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
+        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id, archived_at=None).first()
         if target is None:
             raise RoleChangeRefused('not_found', 404, 'Admin not found')
         plan = plan_role_change(target, new_role)

@@ -51,7 +51,8 @@ class AdminInvitationsView(_ReviewersBase):
 
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
         qs = Invitation.objects.select_related(
-            'partner_admin', 'invited_by', 'programme', 'referral_source').all()
+            'partner_admin', 'invited_by', 'programme', 'referral_source').exclude(
+            partner_admin__archived_at__isnull=False)   # M1a: an archived person's are on no list
         from .. import sponsor_invite_gifts
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
@@ -293,7 +294,8 @@ class AdminInvitationCancelView(_ReviewersBase):
         from ..models import Invitation
 
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
-        qs = Invitation.objects.select_related('partner_admin').filter(pk=pk)
+        qs = Invitation.objects.select_related('partner_admin').filter(pk=pk).exclude(
+            partner_admin__archived_at__isnull=False)   # M1a: an archived person's: 404
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
         inv = qs.first()

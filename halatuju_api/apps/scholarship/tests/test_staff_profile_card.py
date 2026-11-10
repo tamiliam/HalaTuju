@@ -250,13 +250,13 @@ class TestTeamAndSourcePhones(TestCase):
     def _rows(self, url, key):
         return {r['name']: r for r in authed_client(self.lead).get(url).json()[key]}
 
-    def test_the_people_lists_show_a_phone_only_when_shared_and_sign_in_one_batch(self):
+    def test_the_people_lists_show_no_phone_even_when_shared_and_sign_in_one_batch(self):   # M1a O16
         for url, key in (('/api/v1/admin/reviewers/', 'reviewers'), ('/api/v1/admin/admins/', 'admins')):
             with self.subTest(url=url):
                 self.sign.reset_mock()
                 rows = self._rows(url, key)
-                self.assertEqual(rows['Shown']['phone'], '011-1111 1111')
-                self.assertIsNone(rows['Hidden']['phone'])
+                self.assertNotIn('phone', rows['Shown'])
+                self.assertNotIn('011-1111 1111', str(rows))
                 self.assertEqual(rows['Hidden']['photo_url'], f'https://signed/staff-photos/{self.hidden.id}/b.webp')
                 self.assertEqual(self.sign.call_count, 1)                    # ONE call for the page
                 self.assertNotIn('street_address', rows['Shown'])

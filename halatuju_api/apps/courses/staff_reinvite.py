@@ -53,6 +53,9 @@ def may_reuse(caller, existing):
     hold assigned cases, since a cancel unassigns nothing), and `bring_back` refuses a login that
     has been used with its own password, and a Google row that already has a login."""
     from .views_admin import _staff_target_manageable, scholarship_staff
+    if existing is not None and existing.is_archived:   # M1a: an archived row comes back by `restore`
+        from .staff_archive import may_restore
+        return may_restore(caller, existing)
     if not (existing is not None and not existing.is_active and existing.first_seen_at is None
             and not existing.is_super and _staff_target_manageable(caller, existing)):
         return False
@@ -231,6 +234,10 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     invite reuses only a row of the SAME source; `PartnerAdmin.save` refuses any other binding).
     ``mentor`` (S7a) is the same for a NEW `mentor` row; the mentor invite never reuses a row.
     """
+    if reuse is not None and reuse.is_archived:   # M1a (owner, closes TD-484): the same row, a new login
+        from .staff_archive import restore
+        return restore(reuse, name=name, role=role, org=org, owning_org=owning_org,
+                       temp_password=temp_password, email=email, gifts=gifts)
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
                           temp_password=temp_password, email=email, gifts=gifts)
@@ -259,12 +266,14 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
 
     ``email`` (the invite's lowercased address) is written onto the row (request #39 review): the
     invite finds a row case-insensitively, but `get_admin` links a first sign-in by EXACT email, so
-    a row stored as ``Gita@Gmail.com`` would never link. If another row already holds the exact
-    address (a case twin), this refuses ``'not_reusable'`` rather than break the unique constraint.
+    a row stored as ``Gita@Gmail.com`` would never link. If another row already holds the address in
+    ANY case (a case twin; M1a review: the check matches the invite's case-insensitive lookup), this
+    refuses ``'not_reusable'`` rather than make a second row for the same person.
     """
     with transaction.atomic():
         row = (PartnerAdmin.objects.select_for_update()
-               .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True).first())
+               .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True,
+                       archived_at__isnull=True).first())   # M1a: an archived row is `restore`'s
         if row is None:
             return None, False, 'not_reusable'
         # S7d review fix 3: a MENTOR login (or a source user) is never turned into ANOTHER role by a
@@ -274,8 +283,8 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         if row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role:
             return None, False, 'not_reusable'
         email = email or row.email
-        if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
-            return None, False, 'not_reusable'
+        if PartnerAdmin.objects.filter(email__iexact=email).exclude(pk=row.pk).exists():
+            return None, False, 'not_reusable'   # M1a review: a twin in ANY case (the invite's lookup)
         if temp_password is None and row.supabase_user_id:
             # A Google row gets its UID on its first Google sign-in — so one carrying a UID has
             # been in, and comes back through Restore, never a re-invite (review H1).

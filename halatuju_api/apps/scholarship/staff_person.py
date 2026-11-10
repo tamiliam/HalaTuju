@@ -75,13 +75,13 @@ def on_reviewer_route(target):
 
 def opens_elsewhere(viewer, target):
     """Could `viewer` already open `target` by the admin route (`AdminStaffPermissionsView`: a super or an
-    org_admin, and `_staff_target_manageable`) or the reviewer route (`AdminReviewerDetailView`:
+    org_admin, and its GET's read fence `staff_target_readable`, M1a O10) or the reviewer route (`AdminReviewerDetailView`:
     `may_read_team`, the viewer's own organisation unless a super, and `on_reviewer_route`)? Reads only the
     two loaded rows. A mentor's own login is opened by neither, so it is always False for them."""
     if viewer is None or target is None or target.is_mentor:
         return False
-    from apps.courses.views_admin import _staff_target_manageable
-    if (viewer.is_super or sp.is_lead_tier(viewer)) and _staff_target_manageable(viewer, target):
+    from apps.courses.staff_fence import staff_target_readable
+    if (viewer.is_super or sp.is_lead_tier(viewer)) and staff_target_readable(viewer, target):
         return True
     from . import surface_gates
     if not surface_gates.may_read_team(viewer):

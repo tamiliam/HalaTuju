@@ -253,7 +253,7 @@ class TestTheMentorsPage(_Base):
         body = authed_client(self.lead).get(MENTORS).json()
         row = body['mentors'][0]
         self.assertEqual(set(row), {
-            'id', 'name', 'email', 'phone', 'status', 'area', 'languages', 'other_language',
+            'id', 'name', 'email', 'status', 'area', 'languages', 'other_language',   # M1a O16: no phone
             'invited_at', 'signed_in', 'last_seen_at', 'deactivated_at', 'manageable',
             'scholars_now', 'staff_role',   # S7b; S7d
             # Team tables T3: the Team -> Mentors table's own columns (`mentor_rows(team=True)`).
@@ -265,8 +265,8 @@ class TestTheMentorsPage(_Base):
             'gifts', 'every_gift'})   # Invitations I4: the gifts they mentor in ([] + True = every gift)
         self.assertIsNone(row['staff_role'])   # a mentor login, not a staff member
         self.assertEqual((row['work'], row['deletable']), ({}, True))   # invited, nothing on record
-        self.assertEqual((row['name'], row['email'], row['phone'], row['area']),
-                         ('Priya Devi', 'priya@example.org', '12-345 6789', 'Accounting, finance'))
+        self.assertEqual((row['name'], row['email'], row['area']),
+                         ('Priya Devi', 'priya@example.org', 'Accounting, finance'))
         self.assertEqual(row['languages'], {'en': 'fluent', 'ms': 'conversational', 'ta': ''})
         # The fourth language shows only when spoken conversationally or better.
         self.assertEqual(row['other_language'], '')
