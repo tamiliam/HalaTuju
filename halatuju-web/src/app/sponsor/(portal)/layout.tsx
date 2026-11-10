@@ -35,7 +35,7 @@ export default function SponsorPortalLayout({ children }: { children: ReactNode 
   const router = useRouter()
   const { isLoading, isSignedIn, account, token, refreshAccount } = useSponsorAuth()
 
-  // Public "students waiting" counter for the signed-out landing (mirrors /scholarship).
+  // Public "students waiting" counter for the signed-out landing (as on /scholarship).
   const [waitingCount, setWaitingCount] = useState(0)
   useEffect(() => {
     let cancelled = false

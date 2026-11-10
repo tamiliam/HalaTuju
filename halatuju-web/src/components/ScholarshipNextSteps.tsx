@@ -33,6 +33,7 @@ import type { ConfirmTarget } from '@/lib/actionCentre'
 import { resultsEditPath } from '@/lib/qualification'
 import { type OtherMember } from '@/lib/familyRoster'
 
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // Anti-spam ceiling for the free-text Story fields — mirrors the backend's
 // STORY_TEXT_MAX. Generous (~900 words): well above any genuine answer, well
 // below a copy-paste flood. Stops over-long input at the keyboard so it never
@@ -78,7 +79,7 @@ const PROGRAMME_LENGTH_OPTIONS: { key: string; months: number }[] = [
   { key: 'length60', months: 60 },
 ]
 
-// SVG icon for each tab — mirrors the style in /apply's TabIcon.
+// SVG icon for each tab — the same style as /apply's TabIcon.
 function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
   const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-ground-400'}`
   const paths: Record<NextStepKey, string> = {

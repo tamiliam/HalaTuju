@@ -19,6 +19,7 @@ const EMPTY: Draft = {
   is_quiz_candidate: false, quiz_en: {}, quiz_ms: {}, quiz_ta: {},
 }
 
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // The comprehension quiz may sit on a CLAUSE (0) or SUB-CLAUSE (1), never a sub-sub-clause (2)
 // — mirrors contracts.MAX_QUIZ_LEVEL. A flagged clause's quiz covers its whole subtree, so a
 // clause and any of its own descendants are mutually exclusive (enforced here + on the backend).
@@ -39,6 +40,7 @@ function descendantsOf(i: number, levels: number[]): number[] {
   for (let j = i + 1; j < levels.length && levels[j] > levels[i]; j++) out.push(j)
   return out
 }
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // Re-resolve quiz flags after a STRUCTURAL change: keep a flag only on an eligible level (0/1)
 // with no flagged ancestor (ancestor wins). Mirrors contracts._resolve_quiz_flags.
 function resolveQuizFlags(levels: number[], flags: boolean[]): boolean[] {
@@ -54,6 +56,7 @@ function resolveQuizFlags(levels: number[], flags: boolean[]): boolean[] {
   return keep
 }
 
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // Merge variables the "Insert variable" menu offers — mirrors contracts.CONTRACT_VARS on the
 // backend (which does the actual substitution at render time). Tokens are language-neutral;
 // the descriptions are author hints about the English-authoritative merge fields, so they are
@@ -281,7 +284,7 @@ export default function ClauseEditor(
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {proposed.map((c, i) => {
                 const top = (c.level ?? 0) === 0
-                // Mirror the rendered document: number + heading + body inline; bold ONLY the
+                // Match the rendered document: number + heading + body inline; bold ONLY the
                 // top level; no "—" placeholder when a clause legitimately has no heading.
                 return (
                   <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
@@ -326,7 +329,7 @@ export default function ClauseEditor(
               </div>
             </div>
             {/* Bottom row: quiz control (top-level only) on the left; field-adders, text tools and
-                the clause controls on the bottom-right, split by a separator. A w-12 spacer mirrors
+                the clause controls on the bottom-right, split by a separator. A w-12 spacer matches
                 the number column above so the quiz toggle lines up with the heading/body box. */}
             <div className="flex gap-2 pt-1">
               <span className="w-12 shrink-0" aria-hidden="true" />

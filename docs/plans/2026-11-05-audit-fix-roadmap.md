@@ -874,6 +874,7 @@ Each sprint here:
 
 #### A3.16 Tests that test behaviour; mirrors with drift guards
 
+- **Status (2026-11-11):** PART A BUILT on branch a316a, not pushed, not deployed (tests and comments only). Mirror 3 -> 0 (code_health, read off the branch); guard% 12 -> 11 (new tests are named `*Drift.test.ts`, which the reading counts apart). The guard now scans all of `src/` and catches keyword-free claims; every mirror it found is guarded (`incomeWizardDrift.test.ts`, `appMirrorDrift.test.ts`, plus markers on six existing drift tests); the ledger is empty. Real divergences are pinned as NAMED KNOWN EXCEPTIONS, not fixed (TD-262, A to C; and D, the name-gate noise list). TD-426 and TD-185 SKIPPED: both change a payload or logic, so they are not guard items. TD-362 stays open for its structural half (served choice lists imported once). Part b (test conversion, sandbox) not started.
 - **Goal:** mirror 0, and guard% down.
 - **Scope:**
   - Add drift tests and markers for the 3 `incomeWizard.ts` mirrors (income engine, patronymic connectors, salary_member_blocks).

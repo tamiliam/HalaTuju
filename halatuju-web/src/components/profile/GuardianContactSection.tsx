@@ -11,7 +11,7 @@
  *  * Shown ONLY to a student who has applied (`has_scholarship_application`, owner ruling R4).
  *  * Editable by the student EXCEPT while bursary signing is possible for them
  *    (`guardian_contact_locked`, R2) — then read-only, with a note to contact the team, who can
- *    still correct it (R3). The server is the gate; this only mirrors it, and a save the server
+ *    still correct it (R3). The server is the gate; this only echoes it, and a save the server
  *    refuses as locked flips the view to the locked note.
  *  * Self-contained: it asks for its own data and saves on its own, so `profile/page.tsx` (held at
  *    its line budget) only mounts it. Loaded through `LazyGuardianContactSection` so `/profile`'s

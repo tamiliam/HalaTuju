@@ -431,7 +431,7 @@ export function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (
 }
 
 // ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
-// Mirrors the IC checklist: three rows the student can read at a glance —
+// Same shape as the IC checklist: three rows the student can read at a glance —
 // Name · Subjects · Results — each with what we read + a pass/fail badge, plus
 // the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
 // "what to do" only when there's a real problem.

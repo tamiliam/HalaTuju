@@ -286,7 +286,7 @@ export default function SourcesPage() {
             {sources.map((s) => editingId === s.id ? (
               // Inline edit expands into a single full-width labelled panel (spanning all
               // columns) rather than cramming inputs into narrow cells — no truncated text,
-              // no row-height misalignment. Mirrors the Add-a-source form layout.
+              // no row-height misalignment. Same layout as the Add-a-source form.
               <tr key={s.id} className="bg-info-50/40">
                 <td colSpan={8} className="px-4 py-5">
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -2,8 +2,8 @@
  * READ THE BACKEND'S OWN SOURCE, FROM A WEB TEST — the shared half of every drift test.
  *
  * **Why this file exists.** Code health H4 measured 60 front-end rules whose comments say they
- * mirror a backend rule, 58 of them with nothing enforcing it. A comment asking two files to stay
- * in step is a request; only a test is a rule (`SOFT_EVIDENCE` rotted for exactly that reason).
+ * copy a backend rule, 58 of them with nothing enforcing it. A comment asking two files to agree
+ * is a request; only a test is a rule (`SOFT_EVIDENCE` rotted for exactly that reason).
  * H9 converts the decision gates, and every one of them needs the same three lines: find
  * `halatuju_api`, read a `.py`, and lift a Python literal out of it.
  *

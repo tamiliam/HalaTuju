@@ -352,7 +352,7 @@ export function ApplicantCards({
                       {/* PISMP (a degree+specialisation pathway) reads INLINE exactly like STPM/Matric:
                           the constant degree + " · {bidang}" in the one Chosen Programme field
                           ("Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)"),
-                          mirroring "Tingkatan Enam · Sains Sosial". The gray suffix is the pre-U track
+                          echoing "Tingkatan Enam · Sains Sosial". The gray suffix is the pre-U track
                           for STPM/Matric, or the bidang for PISMP; other pathways keep course_name and
                           have no suffix. One inline format across all pathways — no separate row. */}
                       {(() => {

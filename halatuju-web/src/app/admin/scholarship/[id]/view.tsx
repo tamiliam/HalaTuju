@@ -110,6 +110,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // Execute (verify/verdict/interview/etc.): super acts on any application; org_admin + qc (the
   // `qc` holders, #39 S3) act on any OWN-ORG application (the detail GET already 404s cross-org);
   // everyone else acts ONLY on applications assigned to them (mirrors backend _can_review_app).
+  // drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
   const canWrite = hasPerm(role, 'qc')
     || (app?.assigned_to_id != null && app.assigned_to_id === (role?.admin_id ?? null))
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)

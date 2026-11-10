@@ -21,7 +21,9 @@
  * plan and the actual are the two numbers a reader wants side by side.
  *
  * ⚠ **IT WRITES TO THE ANALYSIS THE INVOICE READS**, chosen by `requestStatus.hoursAnalysisId`,
- * which mirrors the server's `closing_report`. The figures stay on the published REPORT rather
+ * which mirrors the server's `closing_report`
+ * drift-test: halatuju-web/src/lib/__tests__/hoursAnalysisDrift.test.ts
+ * The figures stay on the published REPORT rather
  * than on the request, so the record still says WHICH document stated them — the owner's ruling
  * is about which number is authoritative, and that only means anything if the document is known.
  * If the two rules ever drift, this screen offers to edit a number the invoice does not read.

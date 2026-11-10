@@ -22,7 +22,8 @@ import { AwardContractReader, AwardDeclineSheet } from '@/components/scholarship
 import { PHONE_BLEED, PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 
 /** Guardian relationship codes — must match Consent.GUARDIAN_RELATIONSHIPS on
- *  the backend (mirrors ScholarshipConsent's list). */
+ *  the backend (mirrors ScholarshipConsent's list).
+ *  drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts */
 const GUARDIAN_RELATIONSHIPS = [
   'father', 'mother', 'legal_guardian', 'grandparent', 'brother', 'sister', 'relative',
 ] as const

@@ -45,9 +45,8 @@ import { docKey, CollapsibleSection } from './cards'
 import { useFailedSaves, SaveFailedAlert, ANSWER_FIELDS } from './failedSaves'
 
 // ── Income wizard (Check-1 item 3) ────────────────────────────────────────
-// A few questions → the dynamic document checklist (compulsory + optional),
-// mirroring income_engine.income_requirements so the student's list matches the
-// officer verdict exactly. Encouraging, never-punitive; nothing here blocks.
+// A few questions → the dynamic document checklist (compulsory + optional), drift-test: halatuju-web/src/lib/__tests__/incomeWizardDrift.test.ts
+// mirroring income_engine.income_requirements so the student's list matches the officer verdict exactly. Encouraging, never-punitive; nothing here blocks.
 
 // Income cluster docs whose per-file coach is suppressed — the one cluster coach speaks
 // for the whole earner cluster instead.
@@ -163,7 +162,7 @@ export default function IncomeWizard({
   // the student accepts the prefill and just uploads. The uploads get tagged to the earner, but
   // income_working_members was previously only saved on an explicit toggle, so an accepted prefill
   // left tagged docs disagreeing with an empty list → income read as Optional/undeclared. (Backend
-  // mirror: income_engine.effective_working_members reconstructs the same fallback.)
+  // mirror: income_engine.effective_working_members reconstructs the same fallback.) drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
   useEffect(() => {
     if (!token) return
     const patch: Record<string, unknown> = {}
@@ -249,7 +248,8 @@ export default function IncomeWizard({
     titleOverride: memberTitle('parent_ic', m),
     helpOverride: strIcNamed.includes(m) ? iq('strIcHelp') : iq(`icHelp.${m}`) })
   const strIcMembers = strIcSlotMembers(docs, answers)
-  // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded. Presence is
+  // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded. drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
+  // Presence is
   // MEMBER-AWARE (mirrors the card's own slot match: household_member === earner, or a legacy blank for
   // STR-earner docs — so an IC left tagged to another member never counts as this earner's IC). Then, per
   // owner spec:

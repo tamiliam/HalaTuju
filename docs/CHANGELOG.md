@@ -1,5 +1,18 @@
 # Changelog — HalaTuju
 
+## Audit fix A3.16a: mirror drift guards (2026-11-11, branch a316a, not pushed)
+
+### Added
+- **`incomeWizardDrift.test.ts`**: guards the three `incomeWizard.ts` mirrors (document plan, roster tables, patronymic connectors) against the api source. No income logic changed. Where the two sides already disagree (TD-262) the difference is pinned as a named known exception, not blessed: A (mononym birth-certificate option is web-only), B (the api reads members through `effective_working_members`), C (`name_order.CONNECTOR_RE` has ANAK / AK / BT / BTE, the web list does not, and the web accepts "@").
+- **`appMirrorDrift.test.ts`**: guards the mirrors the widened scan found outside `src/lib` (urgency options, guardian relationships, apply-copy caps, story length, contract editor limits and variables, querying-locked states, paid-tranche rule, `canWrite`, income route switch, factories stages, glued-name check). Known exception D: the api `_NAME_NOISE` strips more tokens than the web `NAME_NOISE`.
+
+### Changed
+- **Mirror guard (TD-362)**: `codeStandards.test.ts` now scans all of `src/`, not only `src/lib`, and also catches claims that do not say "mirror" (kept in step, copy of the server, same list as the backend, must match the server, and similar). Self-tests added for both. The `unguarded_mirrors` ledger is now empty.
+- About 45 comment-only edits: drift-test markers added, and verb uses of "mirror" reworded. Existing drift tests reused by marker only.
+
+### Skipped
+- TD-426 (`hoursAnalysisId`) and TD-185 (`creditChain` uses status) change a payload or logic; they are not guard items and stay open.
+
 ## NRIC Hard Gate Sprint (2026-03-20)
 
 ### Added

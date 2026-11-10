@@ -4,7 +4,7 @@
 // an optional brother/sister/guardian pool, and the two sibling steppers (which
 // derive first-in-family). Used by BOTH the /scholarship/application "Your story"
 // step AND the /profile Family & Background card, against the SAME field names, so
-// the two surfaces are identical and stay in sync. i18n reuses the existing
+// the two surfaces are identical and agree. i18n reuses the existing
 // `scholarship.nextSteps.story.cardA.*` keys — no new strings.
 import { PROFESSION_GROUPS, FAMILY_ROLES, MAX_OTHER_MEMBERS, isValidPersonName, type FamilyRole, type OtherMember } from '@/lib/familyRoster'
 import FieldLabel from '@/components/FieldLabel'
@@ -26,7 +26,8 @@ export interface FamilyRosterForm {
 }
 
 /** Profession <select> with grouped options (employed / informal / not-working).
- *  Codes mirror the backend family.PROFESSION_CHOICES; labels are i18n. */
+ *  Codes mirror the backend family.PROFESSION_CHOICES; labels are i18n.
+ *  drift-test: halatuju-web/src/lib/__tests__/familyRosterDrift.test.ts */
 function ProfessionSelect({ value, onChange, t }: { value: string; onChange: (v: string) => void; t: TFn }) {
   return (
     <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>

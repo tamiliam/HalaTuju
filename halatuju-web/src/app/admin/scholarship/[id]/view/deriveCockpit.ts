@@ -54,6 +54,7 @@ export function deriveCockpit(
   // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
   // A reopen re-opens it (the backend querying_locked mirrors this).
+  // drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
   const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status) && !decisionReopened
   const lockReason = queryingLockReason(app.status, app.interview_session?.status)
   // Freeze model (the owner's): Save persists a draft and stays editable (re-saving

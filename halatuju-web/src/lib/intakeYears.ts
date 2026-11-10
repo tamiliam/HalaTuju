@@ -19,7 +19,7 @@
  *
  * ⚠ THIS IS DERIVED IN THE BROWSER ON PURPOSE, and it does not breach "serve, don't derive". That
  * rule bans a screen PREDICTING A SERVER REFUSAL from what the payload happens to carry — because
- * a client copy of the server's rule drifts and the button then lies. There is no refusal here:
+ * a client-side re-derivation of the server's rule drifts and the button then lies. There is no refusal here:
  * the server accepts an out-of-window open, deliberately. This compares two dates the row already
  * carries against today, and no server answer exists for it to disagree with.
  *

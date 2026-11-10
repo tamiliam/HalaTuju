@@ -14,7 +14,7 @@ import type { ApplicantDocument } from '@/lib/api'
 import type { ICCheckKind } from './checklists'
 
 // ── Offer-letter clinical facts (Check-1 Pathway) ────────────────────────
-// Mirrors the IC / slip checklists. Two real identity checks — Name and IC (the
+// Same shape as the IC / slip checklists. Two real identity checks — Name and IC (the
 // IC is the strong one) — then the offer's facts as soft data points: programme,
 // institution, who issued it (tells the pathway type), the date, and address.
 

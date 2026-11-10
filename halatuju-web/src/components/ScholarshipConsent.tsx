@@ -41,7 +41,8 @@ const canonicalNameTokens = (s: string): Set<string> => {
   return new Set(s.toLowerCase().replace(NAME_NOISE, ' ').split(/[^a-z]+/).filter(Boolean))
 }
 /** The name's words glued back in order (boundaries removed) — agnostic to an OCR space
- *  that split a token (RUSHAINDRA → "RUSHAIND RA") or glued two. Mirrors backend _glued_equal. */
+ *  that split a token (RUSHAINDRA → "RUSHAIND RA") or glued two. Mirrors backend _glued_equal.
+ *  drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts */
 const gluedName = (s: string): string =>
   s.toLowerCase().replace(NAME_NOISE, ' ').split(/[^a-z]+/).filter(Boolean).join('')
 const nameSetsMatch = (a: string, b: string): boolean => {

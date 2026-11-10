@@ -113,7 +113,7 @@ export function useProfileEditor(f: ProfileForm) {
         disability,
         angka_giliran: angkaGiliran,
         school,
-        // Structured family roster (backend mirrors it to an open application).
+        // Structured family roster (the backend copies it onto an open application).
         father_name: family.fatherName.trim(),
         father_occupation: family.fatherOccupation,
         father_occupation_other: family.fatherOccupation === 'other' ? family.fatherOccupationOther.trim() : '',
@@ -123,7 +123,7 @@ export function useProfileEditor(f: ProfileForm) {
         other_family_members: family.otherFamilyMembers,
         siblings_in_school: family.siblingsInSchool,
         siblings_in_tertiary: family.siblingsInTertiary,
-        // Pathway / "Your Plans" (backend mirrors to an open application).
+        // Pathway / "Your Plans" (the backend copies it onto an open application).
         pathway_certainty: pathwayForm.pathwayCertainty,
         chosen_pathway: pathwayForm.chosenPathway,
         pre_u_track: pathwayForm.preUTrack,
