@@ -266,7 +266,7 @@ Do one only when a sprint is already in that file.
 
 - **TD-345** — No local signed-in smoke path for the student apply flow: the live API's CORS refuses a localhost build and no local api + auth recipe exists. *(D · M · raised 2026-10-05 by the apply-gift-clarity sprint)*
 - **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
-- **TD-283** — Two central files are exactly at their size limit. *(D · M)*
+- **TD-283** — `applications.py` sits exactly at its size limit (the `serializers_admin` half closed by A3.7). *(D · M)*
 - **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
 - **TD-234** — Thirteen repair commands have no approved route to live data. *(D · M)*
 - **TD-212** — The email-template table is still named partner. *(D · M)*
@@ -673,6 +673,7 @@ Each is an open entry with a defining line in the register body (read it there).
   159 fields that no move can divide — its ledger entry already followed it there at H15) plus
   `FundingNeed`, which can leave. **Trigger:** whoever next needs to add a field to the cockpit
   payload or a column to the application.
+  **PARTLY RESOLVED 2026-11-10 (A3.7): `serializers_admin.py` is now a package of modules under 400 lines (`serializers_admin/`); its ledger row is gone. `FundingNeed` had already left `applications.py`; what remains there is the single 847-line `ScholarshipApplication` class, which no move can divide, so that margin stays as it is.**
 - ~~**TD-284**~~ **RESOLVED 2026-10-04 (Later-tier batch 3, in `Settings/_tools/code_health.py`: `m_guard_share` takes `*Drift.test.ts(x)` out of BOTH halves of the ratio and reports them beside it as `drift N` — the definition change is dated in the source, so the step DOWN is the reading catching up (HalaTuju: 40 of 204 = 20% → 26 of 192 = 14%, drift 15, under the 15% WARN line); `fix%` and `big` stay WARN-only BY DESIGN, with the reason written at the thresholds — `fix%` is a 90-day window, so a gate on it would fire on the calendar, and `big` duplicates the 600-line `oversize_files` ledger the tests already enforce, so the 1,000-line figure is a trend, not a promise; `tests/test_code_health.py::test_guard_share_counts_drift_tests_apart`)** — (raised 2026-09-20 by code health H19, the arc's last sprint) — low, and it is the
   arc's own lesson pointed back at itself. **Three of the roadmap's targets are enforced by
   nothing, and all three are the ones that were missed.** `fix%` (target under 30, reads **42**),

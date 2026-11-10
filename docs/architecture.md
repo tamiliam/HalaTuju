@@ -256,7 +256,7 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
 | `apps/courses/serializers.py` | Request normalization (grade keys, gender, booleans) | No |
 | `apps/courses/views.py` | API endpoints | No |
 | `apps/courses/apps.py` | Startup data loading (DB → DataFrame) | Careful |
-| `apps/courses/models.py` | Django ORM models | No |
+| `apps/courses/models/` | Django ORM models, a package since A3.7 (catalogue, organisations, student, outcomes; `__init__` re-exports every old name) | No |
 | `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |

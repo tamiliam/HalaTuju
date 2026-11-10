@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
+
+Branch a37 (not pushed, not deployed; no migration, behaviour kept).
+- `scholarship/serializers.py` (1,215 lines) is now `serializers/` (sponsor, sponsor_students, application, application_read, documents, student_records); `serializers_admin.py` (1,026) is now `serializers_admin/` (names, interviews, application_list, application_detail, detail_people, detail_blocks, records). `courses/models.py` (1,054) is now `models/` (catalogue, organisations, student, outcomes). Every module is under 400 lines and every old import path still works through the package `__init__`.
+- The reviewer-name lookup by email (`_admin_name_by_email`) lives in `serializers_admin/names.py`.
+- `AdminApplicationDetailSerializer` keeps its fields and Meta; its getters moved into two mixins (`ServesTheDetailPeople`, `ServesTheDetailBlocks`) with the mixins first in the bases, so resolution is unchanged.
+- `makemigrations --check`: no changes. `models_staff.py` untouched.
+- The three oversize ledger rows are removed (budget only; the frozen baseline is untouched). No budget raised.
+- test: `test_a37_split_pins.py` pins old names, serializer field order, validation errors and the courses model shapes, written before the split. Tests that read source files by path (and three web drift tests) now follow the packages.
+- docs: architecture map and TD-283 updated.
+
 ### fix: Matriculation and Form 6 rows of the SPM ranking get their academic bonus and field preference (2026-11-10)
 
 Branch stpm-rank (not pushed, not deployed; no migration, no model, no web change; no ranking weight changed). The eligibility route's items left out `track_id` and `mata_gred`, which the pre-U scorer (`ranking_pre_u.calculate_matric_stpm_fit_score`) reads, so on the dashboard ranking a Form 6 (STPM) row never got its academic bonus and no Matric / Form 6 row got its field preference or (Sains Sosial) its signal rules. `compute_course_merit` now also returns the track and the Form 6 mata gred it already worked out, and the view adds both keys to Matric / Form 6 items only, so every other item is byte-identical. The pre-U fit reason now shows the existing English track name ("matches your interest in Engineering", not the raw id), as all fit reasons are English. New `tests/test_preu_ranking_items.py` (10 cases, made-up students). A3.6 goldens: eligibility and fit unchanged; the pre-U digest (reason text only) and 26 of 35 rank digests re-recorded, with no non-pre-U score or reason changed. Not the STPM-results route (`/api/v1/stpm/ranking/`), not TD-434, not the poly/diploma route.
