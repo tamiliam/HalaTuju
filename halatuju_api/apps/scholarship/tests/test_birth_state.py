@@ -476,7 +476,7 @@ class TestTheCockpitLine(TestCase):
 
         from apps.scholarship import serializers as public
         classes = [c for _, c in inspect.getmembers(public, inspect.isclass)
-                   if issubclass(c, drf.BaseSerializer) and c.__module__ == public.__name__]
+                   if issubclass(c, drf.BaseSerializer) and (c.__module__ == public.__name__ or c.__module__.startswith(public.__name__ + '.'))]   # A3.7: a package now
         self.assertGreater(len(classes), 15)       # the scan really found the module's classes
         for cls in classes:
             with self.subTest(cls=cls.__name__):

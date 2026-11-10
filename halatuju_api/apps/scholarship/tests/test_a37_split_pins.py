@@ -18,7 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from django.apps import apps
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from rest_framework import serializers as drf
 
 _PINS = json.loads(Path(__file__).with_name('a37_pins.json').read_text(encoding='utf-8'))
@@ -172,3 +172,19 @@ class TestMadeUpObjectsSerialiseTheSame(SimpleTestCase):
         self.assertEqual(_full_name(app), 'SHARMILA A/P SANGGAR')
         app = SimpleNamespace(declaration_name='', profile=SimpleNamespace(name='ravi'))
         self.assertEqual(_full_name(app), 'RAVI')
+
+
+class TestTenantsReadsThePartnerAdminTable(TestCase):
+    """`PartnerOrganisationQuerySet.tenants` names `PartnerAdmin`, which lives in `models_staff`
+    and used to be a module-level name of `courses/models.py`. It must still resolve after the
+    split (added with the split commit; passes on the unsplit code as well)."""
+
+    def test_tenants_runs_and_keeps_an_org_with_an_org_admin(self):
+        from apps.courses.models import PartnerAdmin, PartnerOrganisation
+        before = set(PartnerOrganisation.objects.tenants().values_list('pk', flat=True))
+        org = PartnerOrganisation.objects.create(code='a37-org', name='A37 Org')
+        self.assertNotIn(org.pk, set(PartnerOrganisation.objects.tenants().values_list('pk', flat=True)))
+        PartnerAdmin.objects.create(supabase_user_id='a37-u', email='a37@example.test', name='A',
+                                    role='org_admin', owning_organisation=org, is_active=True)
+        after = set(PartnerOrganisation.objects.tenants().values_list('pk', flat=True))
+        self.assertEqual(after, before | {org.pk})

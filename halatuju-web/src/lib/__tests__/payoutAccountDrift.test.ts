@@ -15,7 +15,7 @@ import { countDigits } from '@/lib/actionCentre'
 import { readApi } from '@/test/apiSource'
 import { readWeb } from '@/test/sourceGuard'
 
-const SERIALIZERS = 'apps/scholarship/serializers.py'
+const SERIALIZERS = 'apps/scholarship/serializers/student_records.py'
 const src = readApi(SERIALIZERS)
 
 /** The validator body, so the floor is read from the rule itself rather than restated here. */

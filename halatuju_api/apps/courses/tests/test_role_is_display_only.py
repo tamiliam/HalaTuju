@@ -92,7 +92,7 @@ def site_counts(root=APPS):
 
 #: module::function -> (class, owner, one-line reason)
 ALLOWLIST = {
-    'courses/models.py::PartnerOrganisationQuerySet.tenants': ('DISPLAY', 'account kind',
+    'courses/models/organisations.py::PartnerOrganisationQuerySet.tenants': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/models_staff.py::PartnerAdmin.Meta': ('DISPLAY', 'account kind',
         'DB constraints: which kind may carry a source / mentor link'),

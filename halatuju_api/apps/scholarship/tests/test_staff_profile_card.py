@@ -287,10 +287,12 @@ class AStaffPhotoNeverReachesAnOutwardPayload(TestCase):
     """Staff only (owner, 2026-10-31): the header, the person's own Profile, the Team page. No
     student, sponsor or source-console module may name a photo or the profile row at all."""
 
-    OUTWARD = ('serializers.py', 'pool.py', 'sponsorship.py', 'sponsor_feed.py', 'sponsor_comms.py',
+    OUTWARD = ('pool.py', 'sponsorship.py', 'sponsor_feed.py', 'sponsor_comms.py',
                'spend_sponsor.py', 'views_sponsor.py', 'source_console.py') + tuple(
         f'views/{n}' for n in sorted(os.listdir(os.path.join(os.path.dirname(staff_photo.__file__), 'views')))
-        if n.endswith('.py'))   # A3.2: views.py is now the views/ package
+        if n.endswith('.py')) + tuple(
+        f'serializers/{n}' for n in sorted(os.listdir(os.path.join(os.path.dirname(staff_photo.__file__), 'serializers')))
+        if n.endswith('.py'))   # A3.2: views.py is now the views/ package; A3.7: so is serializers.py
     NAMES = ('photo_path', 'photo_url', 'staff_photo', 'staff-photos', 'StaffProfile', 'ReviewerProfile',
              'reviewer_profile')
 

@@ -637,7 +637,6 @@
     },
     "oversize_files": {
       "apps/courses/management/commands/classify_stpm_fields.py": 614,
-      "apps/courses/models.py": 1051,
       "apps/courses/stpm_quiz_data.py": 1371,
       "apps/courses/views_admin.py": 795,
       "apps/scholarship/academic_engine.py": 831,
@@ -650,8 +649,6 @@
       "apps/scholarship/partner_comms.py": 627,
       "apps/scholarship/programme_overview.py": 819,
       "apps/scholarship/scheduling.py": 711,
-      "apps/scholarship/serializers.py": 1195,
-      "apps/scholarship/serializers_admin.py": 1006,
       "apps/scholarship/spending_import.py": 749,
       "apps/scholarship/sponsorship.py": 999,
       "apps/scholarship/views_sponsor.py": 718,

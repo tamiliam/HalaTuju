@@ -132,7 +132,7 @@ class TestTheWebSuiteStillPointsAtRealApiFiles(SimpleTestCase):
         floor_count(sorted({api for _web, api in refs}), API_REFERENCE_FLOOR,
                     'distinct api paths named by web tests',
                     'each is a path from the api tree into the web suite that no api gate walks')
-        self.assertIn('apps/scholarship/serializers.py', {api for _web, api in refs},
+        self.assertIn('apps/scholarship/serializers/student_records.py', {api for _web, api in refs},
                       'the serializers path is named by payoutAccountDrift — if it is missing, '
                       'the extraction stopped working, not the reference')
 
