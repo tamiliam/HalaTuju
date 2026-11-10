@@ -160,6 +160,8 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'courses/staff_fence.py::manageable_if_restored': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
+    'courses/staff_fence.py::staff_target_readable': ('GATE-LEFT', 'T5e',
+        'M1a O10: an org admin reads a fellow org admin\'s page (view-only); T5e moves lead powers to keys'),
     'courses/views_referral_partners.py::AdminReferralPartnerDetailView.patch': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/views_staff.py::AdminDeleteView._delete_locked': ('GATE-LEFT', 'T5e',

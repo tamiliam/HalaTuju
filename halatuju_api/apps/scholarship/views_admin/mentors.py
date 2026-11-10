@@ -137,11 +137,11 @@ def invite_mentor(request, admin):
 
 def mentor_rows(caller, mentors, *, team=False):
     """The Mentors page's rows for ``mentors`` — ONE query each for the logins, their profiles and
-    their invitations, whatever the page size. An ALLOWLIST: name, email, the mentor's own phone (the
-    profile tells them the inviting organisation sees it), status, area, languages, invited / signed-in
-    times, `manageable` (the endpoints' own rule, so the screen never offers a refused button),
-    `scholars_now` (S7b: their open mentoring assignments) and (I4) `gifts` `[{id, code, name}]` with
-    `every_gift` (no gifts = every gift) — ONE more query (`mentor_gift.gifts_by_mentor`).
+    their invitations, whatever the page size. An ALLOWLIST: name, email (never the phone: no group table
+    shows one, M1a O16; the person page's `person` block has it, `staff_person.phone_of`), status, area,
+    languages, invited / signed-in times, `manageable` (the endpoints' own rule, so the screen never offers a
+    refused button), `scholars_now` (S7b: their open mentoring assignments) and (I4) `gifts`
+    `[{id, code, name}]` with `every_gift` (no gifts = every gift) — ONE more query (`mentor_gift.gifts_by_mentor`).
 
     ``team`` (Team tables T3, the Team -> Mentors table): also `tables` / `lead` (the "Also in" chips,
     `staff_tables.tables`) and the work columns `meetings_90`, `last_meeting`, `concerns_open`
@@ -149,7 +149,6 @@ def mentor_rows(caller, mentors, *, team=False):
     from .. import mentor_gift, mentor_invite, staff_footprint
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
-    from ..staff_contact import staff_screen_phone
     # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)
               .select_related('mentor')}
@@ -179,8 +178,6 @@ def mentor_rows(caller, mentors, *, team=False):
             'staff_role': login.role if staff else None,
             'name': login.name if login else '',
             'email': login.email if login else '',
-            # S7d review fix 1: a STAFF mentor's phone only under the team rule People's screens use.
-            'phone': staff_screen_phone(login, rp),
             'status': mentor_invite.status_of(m, login, issued),
             'area': m.area,
             'languages': {'en': getattr(rp, 'english_fluency', '') or '',

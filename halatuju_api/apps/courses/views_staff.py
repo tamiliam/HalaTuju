@@ -459,7 +459,7 @@ class AdminListView(PartnerAdminMixin, APIView):
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
         staff_footprint, staff_lifecycle = scholarship_staff()
-        # Common profile S2: each person's photo, and their phone ONLY if they show it to the team.
+        # Common profile S2: each person's photo. Never the phone on a group table (O9, O16; the person page has it).
         cards = staff_lifecycle.team_cards(admins)
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
         seats = staff_lifecycle.team_table_fields(admin, admins)
@@ -490,11 +490,8 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'owning_org_id': a.owning_organisation_id,
                 'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
-                # ⚠ Pause is serialised by `AdminReviewerListView._reviewer_dict` and was NOT here,
-                # so the Staff table and the Reviewers table showed the same people and disagreed
-                # about who had stepped back — a reviewer reading "Active" on one screen and
-                # "Paused" on the other. Same shape as the stored-field-with-no-surface cluster:
-                # the column exists, one reader renders it, the other never asked. 2026-08-03.
+                # ⚠ Pause, as `AdminReviewerListView._reviewer_dict` serves it: without it the two tables
+                # disagreed about who had stepped back (2026-08-03, stored-field-with-no-surface).
                 'paused': a.paused_at is not None,
                 'paused_at': a.paused_at.isoformat() if a.paused_at else None,
                 # ⚠ NULL is NOT RECORDED, never "never signed in". Both columns start empty for
@@ -523,7 +520,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
                 'invitation': _invitation_dict(invites.get(a.id)),
                 **seats[a.id],
-                **cards[a.id],
+                'photo_url': cards[a.id]['photo_url'],
             })
         return Response({'admins': data})
 
@@ -535,6 +532,8 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
+        if str(admin_id) == str(admin.pk):   # M1a (O10, owner): no self-suspend
+            return Response({'error': 'You cannot suspend your own account.', 'code': 'self'}, status=403)
 
         # S7d review fix 2: the row is LOCKED for the whole revoke / restore, so an "Add a staff member
         # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps

@@ -69,3 +69,19 @@ def manageable_if_restored(caller, target):
         return (caller.owning_organisation_id is not None
                 and target.owning_organisation_id == caller.owning_organisation_id)
     return False
+
+
+def staff_target_readable(caller, target):
+    """Whether ``caller`` may OPEN ``target``'s person page (GET only; O10, M1a §6). Wider than
+    `_staff_target_manageable` by exactly the fellow organisation admins and themselves: an org admin
+    reads every non-archived row of their OWN organisation in a manageable role (members too) or
+    `org_admin`, view-only where they may not manage (owner, 2026-11-10: a fellow org admin's page is
+    view only). A super reads anyone a super manages. Never a super's page for an org admin, never a
+    source user's, never a mentor login's (it keeps its own page, `admin/mentors/<id>/`)."""
+    if _staff_target_manageable(caller, target):
+        return True
+    if caller is None or target is None or target.is_archived or target.is_source_user or target.is_mentor:
+        return False
+    return (caller.role == 'org_admin' and not target.is_super and target.role == 'org_admin'
+            and caller.owning_organisation_id is not None
+            and target.owning_organisation_id == caller.owning_organisation_id)

@@ -252,6 +252,17 @@ def nudges_added_cells(row):
     return {NUDGE_OVERDUE: row[NUDGE_SAME_AS]}
 
 
+#: Team membership M1a (2026-11-10): the Staff list (`StaffListView`). A NEW route, so NEW cells. Its door is
+#: the Admins list's (`staff_tables.opens_door(admin, 'team_roster')`, the same `PartnerAdminMixin`), so each
+#: shape reads exactly what it reads on `GET admin/admins/`. Nobody gains.
+M1A_STAFF_LIST = 'GET api/v1/admin/staff/'
+M1A_SAME_AS = 'GET api/v1/admin/admins/'
+
+
+def m1a_added_cells(row):
+    return {M1A_STAFF_LIST: row[M1A_SAME_AS]}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -417,14 +428,9 @@ def _shape_test(shape):
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
         before = _before()[shape]
-        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
-                    **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-                    **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-                    **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
-        for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
+        for probe, (was, _now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
-            expected[probe] = now
-        expected.update(nudges_added_cells(expected))
+        expected = _expected_row(shape)   # M1a: the one assembly (it was written out twice)
         new = sorted(set(cells) - set(expected))
         self.assertEqual(new, [], f'{shape}: endpoints with no BEFORE cell (a route added since T1?)')
         moved = {p: (expected[p], cells[p]) for p in cells if cells[p] != expected[p]}
@@ -448,6 +454,7 @@ def _expected_row(shape):
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))
+    row.update(m1a_added_cells(row))
     return row
 
 

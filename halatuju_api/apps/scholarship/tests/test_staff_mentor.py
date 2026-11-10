@@ -513,9 +513,12 @@ class TestReviewFixes(_Base):
 
     # ── 1. a STAFF mentor's phone on staff screens follows the team rule ───────────────────────
     def _phone_on_staff_screens(self, mentor):
+        # M1a (owner O16): the Mentors list carries no phone; the rule now reads on the person page.
         row = {m['id']: m for m in authed_client(self.lead).get(MENTORS).json()['mentors']}[mentor.pk]
+        self.assertNotIn('phone', row)
+        page = authed_client(self.lead).get(f'{MENTORS}{mentor.pk}/').json()
         tab_body = authed_client(self.lead).get(tab(self.app.pk)).json()
-        return row['phone'], (tab_body['current'] or {}).get('phone'), str(tab_body)
+        return page['person']['profile']['phone'], (tab_body['current'] or {}).get('phone'), str(tab_body)
 
     def test_a_staff_mentor_phone_needs_team_sharing_before_and_after_stop(self):
         ReviewerProfile.objects.create(partner_admin=self.officer, phone='012-777 8899',

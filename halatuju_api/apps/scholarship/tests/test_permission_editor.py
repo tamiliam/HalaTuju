@@ -118,8 +118,13 @@ class TestFenceAndRefusals(TestCase):
 
     def test_another_organisation_and_a_fellow_org_admin_are_404(self):
         for target in (self.foreign, self.colleague, self.org_admin, self.super, self.partner):
-            self.assertEqual(authed_client(self.org_admin).get(_url(target)).status_code, 404)
             self.assertEqual(_patch(self.org_admin, target, ['review']).status_code, 404)
+        for target in (self.foreign, self.super, self.partner):
+            self.assertEqual(authed_client(self.org_admin).get(_url(target)).status_code, 404)
+        # M1a (owner O10): a fellow org admin's page, and their own, OPEN, view-only.
+        for target in (self.colleague, self.org_admin):
+            body = authed_client(self.org_admin).get(_url(target)).json()
+            self.assertEqual((body['editable'], body['manageable']), (False, False))
 
     def test_a_super_still_cannot_edit_a_lead_tier_super_or_partner_row(self):
         for target in (self.org_admin, self.partner):

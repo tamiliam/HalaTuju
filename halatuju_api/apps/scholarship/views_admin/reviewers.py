@@ -319,8 +319,8 @@ class AdminReviewerListView(_ReviewersBase):
                     .annotate(**staff_footprint.annotations()))
         work = _reviewer_workloads(rows, organisation_id=org_id)
         sole = sole_org_admin_ids(admin, rows)   # no query unless a super lists an active org admin
-        # Common profile S2: the photo, and the phone ONLY when its owner shows it to the team —
-        # one query and one batch signing call for the page (`staff_photo.team_cards`).
+        # Common profile S2: the photo — one query and one batch signing call for the page
+        # (`staff_photo.team_cards`). M1a (O16, owner): never the phone; the person page has it.
         from .. import staff_photo
         cards = staff_photo.team_cards(rows)
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
@@ -329,8 +329,8 @@ class AdminReviewerListView(_ReviewersBase):
             admin, rows, open_counts={i: w['_open_cases'] for i, w in work.items()})
         return Response({
             'reviewers': [_with_footprint(admin, r, {**_reviewer_dict(r, work[r.id]), **seats[r.id],
-                                                     **cards[r.id]}, work=staff_footprint.from_row(r),
-                                          sole=sole) for r in rows],
+                                                     'photo_url': cards[r.id]['photo_url']},
+                                          work=staff_footprint.from_row(r), sole=sole) for r in rows],
             # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
             # can offer the change wherever a reviewer is shown, without a second round trip.
             'programmes': self._gift_choices(admin),

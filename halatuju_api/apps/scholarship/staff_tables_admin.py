@@ -129,6 +129,21 @@ def table_keys(target, table):
     return [k for k in REVIEWER_TABLE_KEYS if k in held]
 
 
+def table_presets(target):
+    """`{admins: [...], reviewers: [...]}` — each table's PRESET for ``target``, what the person page's
+    Permissions tab compares a table's keys with ("Custom", owner O12; M1b draws one table's section).
+    The role label's preset as that table shows it; where the label gives that table nothing (a reviewer
+    seated at Admins), what an Add to that table gives (`ADD_KEYS`). Lead (M1a addendum)."""
+    from apps.courses import staff_permissions as sp
+    shown = {ADMINS: ADMIN_TABLE_KEYS, REVIEWERS: REVIEWER_TABLE_KEYS}
+    preset = sp.preset_for(target.role)
+    out = {}
+    for table, keys in shown.items():
+        mine = [k for k in preset if k in keys]
+        out[table] = mine or [k for k in ADD_KEYS[table] if k in keys]
+    return out
+
+
 def _in(target, table):
     from apps.courses import staff_tables
     return staff_tables.in_admins(target) if table == ADMINS else staff_tables.in_reviewers(target)

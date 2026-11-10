@@ -162,9 +162,9 @@ class TestTheTable(_Base):
             # #39 Sprint 4: People's permission chips — whether the set is custom, and what it adds
             # to / takes from the preset. Keys only, never the raw stored column.
             'custom', 'permissions_added', 'permissions_removed',
-            # Common profile S2 (owner, 2026-10-31): the photo, and the phone ONLY when its owner
-            # shows it to the team (None otherwise). Never the address.
-            'photo_url', 'phone',
+            # Common profile S2 (owner, 2026-10-31): the photo. Never the address; and since M1a (owner
+            # O16, 2026-11-10) never the phone: no group table shows one (the person page does).
+            'photo_url',
             # The optional fourth language, by name ('' when none).
             'other_language',
             # Team tables T2: the tables they sit in, each table's OWN keys, whether they are the

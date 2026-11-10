@@ -95,8 +95,11 @@ class AdminStaffPermissionsView(_AdminBase):
     `/admin/role/` is not trusted: every gate re-reads the row (`get_admin`) on every request.
     """
 
-    def _target(self, request, admin_id):
+    def _target(self, request, admin_id, read=False):
+        """``read=True`` (the GET): the O10 read fence (`staff_target_readable`, M1a §6): an org admin also
+        OPENS a fellow org admin's page and their own, view-only. Every write keeps the manage fence."""
         from apps.courses.models import PartnerAdmin
+        from apps.courses.staff_fence import staff_target_readable
         from apps.courses.views_admin import _staff_target_manageable
         admin = self.get_admin(request)
         if not admin:
@@ -106,7 +109,8 @@ class AdminStaffPermissionsView(_AdminBase):
         # T3: the profile and the mentor link ride on this query (the person page's `person` block).
         target = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
                   .filter(pk=admin_id).first())
-        if target is None or not _staff_target_manageable(admin, target):
+        fence = staff_target_readable if read else _staff_target_manageable
+        if target is None or not fence(admin, target):
             return None, None, Response({'error': 'Admin not found', 'code': 'not_found'},
                                         status=status.HTTP_404_NOT_FOUND)
         return admin, target, None
@@ -115,14 +119,17 @@ class AdminStaffPermissionsView(_AdminBase):
         from apps.courses import staff_permissions as sp
         from apps.courses import staff_tables
         from .. import staff_permissions_admin as spa
-        from .. import staff_person
-        admin, target, err = self._target(request, admin_id)
+        from .. import staff_person, staff_tables_admin
+        from apps.courses.views_admin import _staff_target_manageable
+        admin, target, err = self._target(request, admin_id, read=True)
         if err:
             return err
         # S4 review fix 8: a revoked person is not editable either (the PATCH refuses `not_active`),
         # so the card draws no dead switches; `is_active` lets it say "restore them first".
-        editable = (not target.is_super and target.role in sp.TEAM_ROLES and target.pk != admin.pk
-                    and target.is_active)
+        # M1a (O10): a page opened through the read fence only (a fellow org admin) is view-only.
+        manageable = _staff_target_manageable(admin, target)
+        editable = (manageable and not target.is_super and target.role in sp.TEAM_ROLES
+                    and target.pk != admin.pk and target.is_active)
         # Sprint T2: the person page offers Revoke and Delete as the Admins table does — by one rule
         # (`staff_delete_rules.delete_fields`: work, deletable, delete_never, revocable).
         from apps.courses.staff_delete_rules import delete_fields
@@ -132,7 +139,9 @@ class AdminStaffPermissionsView(_AdminBase):
                          'email': target.email, 'created_at': target.created_at,
                          'signed_in': target.first_seen_at is not None,
                          'paused': target.paused_at is not None,
-                         'preset': list(sp.preset_for(target.role)),
+                         'preset': list(sp.preset_for(target.role)), 'manageable': manageable,
+                         # M1a (owner O12, addendum): each table's own preset, for that table's "Custom".
+                         'table_presets': staff_tables_admin.table_presets(target),
                          'permissions': list(sp.resolve(target)),
                          'custom': sp.is_custom(target), 'keys': list(spa.editable_keys()),
                          # Team tables T3 (owner): the Permissions tab shows one section per table the
