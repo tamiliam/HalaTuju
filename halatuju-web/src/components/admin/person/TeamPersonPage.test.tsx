@@ -233,6 +233,7 @@ describe('D8: a pure mentor\'s Permissions tab is read-only', () => {
     fireEvent.click(screen.getByText('admin.person.tabPermissions'))
     const tab = screen.getByTestId('mentor-only-permissions')
     expect(within(tab).getByText(/admin\.person\.mentorOnly\.students/)).toBeTruthy()
+    expect(within(tab).getByText(/admin\.person\.mentorOnly\.scholars/)).toBeTruthy()   // sprint S1
     expect(within(tab).getByText(/admin\.person\.mentorOnly\.profile/)).toBeTruthy()
     expect(within(tab).queryByRole('switch')).toBeNull()
     expect(screen.queryByTestId('permission-editor')).toBeNull()

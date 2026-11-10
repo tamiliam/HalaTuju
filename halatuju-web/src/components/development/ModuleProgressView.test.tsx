@@ -13,7 +13,7 @@ import ModuleProgressView from './ModuleProgressView'
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string } = { role: 'org_admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: mockRole }) }))
 jest.mock('@/lib/admin-api/development')
 const mockApi = api as jest.Mocked<typeof api>
@@ -52,6 +52,19 @@ it('shows To review first, then each tab with lessons, mentor and Late', async (
   fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.in_progress`) }))
   expect(screen.getByTestId('late-2')).toBeTruthy()
   expect(screen.queryByTestId('read-2')).toBeNull()
+})
+
+it('sprint S1: a name links to the file only for a reader of every file, never a mentor without `scholars`', async () => {
+  mockApi.getModuleProgress.mockResolvedValue(payload())
+  const { unmount } = render(<ModuleProgressView id={3} />)
+  await screen.findByTestId('progress-row-1')
+  expect(screen.getByRole('link', { name: 'NUR AISYAH' }).getAttribute('href')).toBe('/admin/scholars/1')
+  unmount()
+  mockRole = { role: 'admin', permissions: ['see_all'], mentoring: true }
+  render(<ModuleProgressView id={3} />)
+  await screen.findByTestId('progress-row-1')
+  expect(screen.queryByRole('link', { name: 'NUR AISYAH' })).toBeNull()
+  expect(screen.getByTestId('progress-row-1').textContent).toContain('NUR AISYAH')
 })
 
 it('reads a reflection and marks it reviewed with a comment', async () => {

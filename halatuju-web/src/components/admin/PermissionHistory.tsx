@@ -13,7 +13,8 @@ import type { StaffPermissionChangeRow } from '@/lib/admin-api/admins'
  * loaded chunk and adds nothing to the People route.
  *
  * ⚠ "THE HALATUJU TEAM", NOT AN ADDRESS. A change a super made arrives as `by_super` with `by`
- * blank: the server does not hand the platform's addresses to an organisation.
+ * blank: the server does not hand the platform's addresses to an organisation. A change a data
+ * migration made (`by_migration`, nobody clicked: sprint S1's Scholars grant) says so in words.
  */
 export default function PermissionHistory({ rows, name, role }: {
   rows: readonly StaffPermissionChangeRow[]
@@ -50,7 +51,8 @@ export default function PermissionHistory({ rows, name, role }: {
               <p className="text-sm text-ground-900">{what(r)}</p>
               <p className="mt-0.5 text-xs text-ground-500">
                 {t('admin.permHistory.byAt', {
-                  by: r.by || (r.by_super ? t('admin.permHistory.team') : '—'),
+                  by: r.by || (r.by_super ? t('admin.permHistory.team')
+                    : r.by_migration ? t('admin.permHistory.migration') : '—'),
                   at: formatDateTime(r.at),
                 })}
               </p>

@@ -199,12 +199,14 @@ class AdminSurveyCsvView(_SurveysBase):
 class AdminScholarSurveysView(_ScholarsBase):
     """GET admin/scholarship/scholars/<pk>/surveys/ — the scholar file's Surveys tab: each survey this
     scholar answered, with the answers, and the open ones still waiting. The file's own fence
-    (`_file_for`: another organisation's, unknown or no file is 404) AND the survey makers' roles."""
+    (`_file_for`: another organisation's, unknown or no file is 404) AND the survey makers' roles —
+    or a mentor on their own current student (S1-h: every tab of the file)."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        if not svc.may_read_surveys(admin):        # TD-498 (A1.10a): a read
+        if not (self._as_mentor(admin) or svc.may_read_surveys(admin)):        # TD-498 (A1.10a): a read
             return self._deny_role()
         return Response(survey_results.scholar_file_payload(app))

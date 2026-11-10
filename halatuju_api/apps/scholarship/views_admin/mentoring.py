@@ -8,11 +8,13 @@
 - `AdminScholarMentoringSessionsView` — `POST .../mentoring/sessions/` `{met_on, mode, minutes, notes,
   next_step}`.
 
-⚠ WHO: the scholar file's own fence (`_ScholarsBase._file_for`: another organisation's file, an unknown
-one or one with no file is 404, never 403; finance, partner and source users are refused) AND the
-Mentors roster's readers (`mentoring.may_act`: super, org_admin, admin). A reviewer or QC who may open
-the file is refused this tab (403) — mentors are the Mentors page's people. A closed file reads, and
-refuses every write (409 `file_closed`). One class per url shape (lessons, Billing 2026-10-29).
+⚠ WHO: the scholar file's own fence (`_ScholarsBase._file_for`: the `scholars` key since sprint S1;
+another organisation's file, an unknown one or one with no file is 404, never 403; everyone without the
+key is refused) AND the tab's own readers (`mentoring.may_read_mentoring`, writes `mentoring.may_act`:
+the Mentors roster's people). A `scholars` holder without the tab's key is refused this tab (403). A
+MENTOR (S1-h) reads the tab of their own current student, read-only (`can_act` false, nothing
+assignable) and writes nothing here: they log meetings on My students. A closed file reads, and refuses
+every write (409 `file_closed`). One class per url shape (lessons, Billing 2026-10-29).
 """
 from rest_framework import status
 from rest_framework.permissions import SAFE_METHODS
@@ -48,7 +50,10 @@ class _MentoringBase(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return None, None, err
-        # TD-498 (A1.10a): the tab's GET asks `mentoring.view`; every action `mentoring.edit`.
+        # TD-498 (A1.10a): the tab's GET asks `mentoring.view`; every action `mentoring.edit`. A mentor's
+        # GET (S1-h) passes; `_file_for` has already refused them every write.
+        if request.method in SAFE_METHODS and self._as_mentor(admin):
+            return app, admin, None
         if not (mentoring.may_read_mentoring if request.method in SAFE_METHODS else mentoring.may_act)(admin):
             return None, None, self._deny_role()
         return app, admin, None
@@ -56,13 +61,18 @@ class _MentoringBase(_ScholarsBase):
 
 class AdminScholarMentoringView(_MentoringBase):
     """GET — the tab: `{current, history, meetings, asked_for_help, assignable, can_act, file_closed,
-    email_switch_on}` (`mentoring_read.file_payload`)."""
+    email_switch_on}` (`mentoring_read.file_payload`). A mentor's is read-only: no actions, no picker."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._mentoring_file(request, pk)
         if err:
             return err
-        return Response(mentoring_read.file_payload(admin, app))
+        as_mentor = self._as_mentor(admin)
+        body = mentoring_read.file_payload(admin, app, names_only=as_mentor)
+        if as_mentor:
+            body.update(can_act=False, assignable=[])
+        return Response(body)
 
 
 class AdminScholarMentoringActionView(_MentoringBase):

@@ -103,7 +103,8 @@ function StaffScholarFile() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)
+  // Sprint S1 (S1-h): staff who mentor open it by their mentor record, as My students.
+  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
   const [file, setFile] = useState<ScholarFile | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('overview')
@@ -125,10 +126,14 @@ function StaffScholarFile() {
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!file) return <RecordState loading={loading} />
+  // Sprint S1 (S1-h): a MENTOR reads every tab of its current student's file and writes nothing — the
+  // server says which reader this is (`mentor_view`); its controls are all off already, and the header's
+  // controls, the activity form, a letter's Resend and the Applications link are not drawn for it.
+  const asMentor = file.mentor_view === true
   // T5c P4: each tab on its server door (an older payload keeps the role lists).
-  const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)
-  const seesSurveys = opensDoorOr(role, 'surveys', SURVEY_ROLES)
-  const seesGrowth = opensDoorOr(role, 'development', GROWTH_ROLES)
+  const seesMentors = asMentor || opensDoorOr(role, 'mentoring', MENTORING_ROLES)
+  const seesSurveys = asMentor || opensDoorOr(role, 'surveys', SURVEY_ROLES)
+  const seesGrowth = asMentor || opensDoorOr(role, 'development', GROWTH_ROLES)
   const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)
     && (x.key !== 'surveys' || seesSurveys) && (x.key !== 'growth' || seesGrowth))
   const help = file.asked_for_help
@@ -296,14 +301,18 @@ function StaffScholarFile() {
             )}
           </div>
         </div>
-        <Link href={`/admin/scholarship/${file.id}`}
-          className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50 max-md:h-11 max-md:w-full max-md:justify-center">
-          {t('admin.scholars.file.viewApplication')}
-        </Link>
-        <div className="basis-full" ref={controlsRef}>
-          <ScholarControls key={`${file.status}-${file.maintenance_substate}`} file={file} token={token}
-            onChanged={() => setReloads((n) => n + 1)} />
-        </div>
+        {!asMentor && canAccess('/admin/scholarship', viewer, role?.permissions) && (
+          <Link href={`/admin/scholarship/${file.id}`}
+            className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50 max-md:h-11 max-md:w-full max-md:justify-center">
+            {t('admin.scholars.file.viewApplication')}
+          </Link>
+        )}
+        {!asMentor && (
+          <div className="basis-full" ref={controlsRef}>
+            <ScholarControls key={`${file.status}-${file.maintenance_substate}`} file={file} token={token}
+              onChanged={() => setReloads((n) => n + 1)} />
+          </div>
+        )}
       </header>
 
       <PanelTabs tabs={tabs} active={tab} onSelect={setTab} ariaLabelKey="admin.scholars.file.tabsLabel" />
@@ -315,7 +324,7 @@ function StaffScholarFile() {
             {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{seesSurveys && surveysCard}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
-            <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.in_maintenance} />
+            <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={asMentor || !file.in_maintenance} />
           </div>
         </div>
       )}
@@ -334,7 +343,7 @@ function StaffScholarFile() {
       {tab === 'contract' && <div className="max-w-3xl"><ScholarContract id={file.id} token={token} /></div>}
       {tab === 'letters' && (
         <div className="max-w-4xl">
-          <ScholarLetters id={file.id} token={token}
+          <ScholarLetters id={file.id} token={token} readOnly={asMentor}
             canClose={(file.controls?.close_reasons.length ?? 0) > 0}
             onGoToClose={() => controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             onChanged={() => setReloads((n) => n + 1)} />
@@ -342,8 +351,9 @@ function StaffScholarFile() {
       )}
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
-      {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token} /></div>}
-      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
+      {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token}
+        progressLinks={canAccess('/admin/programme/development', viewer, role?.permissions)} /></div>}
+      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={asMentor || !file.in_maintenance} /></div>}
     </div>
   )
 }

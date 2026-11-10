@@ -115,8 +115,8 @@ class AdminMentorStudentModuleFileView(_MentorBase):
         if assignment is None:
             return self._not_found()
         from .. import development_files
-        from ..development_progress import mentor_task_file_path
-        url = development_files.signed_url(mentor_task_file_path(assignment.application, mid))
+        from ..development_progress import file_task_path
+        url = development_files.signed_url(file_task_path(assignment.application, mid))
         if not url:
             return self._not_found()
         return Response({'url': url, 'expires_in': development_files.SIGNED_FOR})

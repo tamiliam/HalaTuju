@@ -51,7 +51,9 @@ CATALOGUE_V2 = {
     'requests.approve':      (ORGANISATION, 'requests', APPROVE, LEAD_ONLY),
     'settings.edit':         (ORGANISATION, 'settings', EDIT, LEAD_ONLY),
     # ── Programme ────────────────────────────────────────────────────────────────────────────────
-    'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications + Scholars
+    'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications (S1: not Scholars)
+    # Sprint S1 (owner 2026-11-09): the Scholars page and every scholar's file — `scholars` (`ALIASES`).
+    'scholars.view':         (PROGRAMME, 'scholars', VIEW, False),
     'students.edit':         (PROGRAMME, 'students', EDIT, LEAD_ONLY),  # assign (never self), nudge
     'students.approve':      (PROGRAMME, 'students', APPROVE, LEAD_ONLY),
     'contracts.view':        (PROGRAMME, 'contracts', VIEW, LEAD_ONLY),
@@ -101,15 +103,17 @@ IMPLIES = {k: (_page_view(k),) for k in CATALOGUE_V2 if _page_view(k)}
 #: rows are page tiers. ⚠ STILL NOT A GATE: QC opens through `resolve` / `_b40_scope`, as before.
 HAT_IMPLIES = {'qc': ('students.view',)}
 
-#: Dependencies as data (ruling 7): the Engagement pages name every scholar, so each needs
-#: `students.view` — as `qc` needed `see_all` in the old vocabulary until T5b (now `qc` brings it).
-DEPENDS_ON_V2 = {k: ('students.view',) for k, row in CATALOGUE_V2.items() if row[0] == ENGAGEMENT}
+#: Dependencies as data (ruling 7): the Engagement pages name every scholar (survey answers, module
+#: progress, mentoring), so each needs the key that reads every scholar's file. Since sprint S1 that is
+#: `scholars.view`; `students.view` is Applications only. Data, not a gate (`dependency_gaps`; T5d).
+DEPENDS_ON_V2 = {k: ('scholars.view',) for k, row in CATALOGUE_V2.items() if row[0] == ENGAGEMENT}
 
 #: Old key -> the v2 keys it MEANS. `manage_team` maps to nothing: it is lead-tier only, and the lead
 #: holds every v2 key anyway.
 ALIASES = {
     'review':           ('review',),
     'see_all':          ('students.view',),
+    'scholars':         ('scholars.view',),     # S1
     'qc':               ('qc',),
     'spending':         ('spending.view', 'spending.edit'),
     'payments_prepare': ('payments.view', 'payments.prepare'),

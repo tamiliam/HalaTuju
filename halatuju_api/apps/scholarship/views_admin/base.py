@@ -55,6 +55,27 @@ def b40_scope(admin):
     return 'none'
 
 
+def scholars_scope(admin):
+    """Who reads the SCHOLARS page and a scholar's file (sprint S1, owner 2026-11-09). Its own key,
+    no longer the Applications rule (`b40_scope`, which is unchanged):
+      'all'    — a super, or the `scholars` key (the admin preset, the lead tier, or a saved set
+                 naming it): every scholar in their own organisation (a super: every organisation).
+                 It WINS over 'mentor': a holder who also mentors reads the whole organisation;
+      'mentor' — a mentor login, or a staff member mentoring now (`mentor_desk.mentor_of`, S1-h):
+                 ONLY their CURRENT students (`mentor_desk.current_assignments`), read-only;
+      'none'   — everyone else: `review`, `qc` and `see_all` alone open nothing here (403).
+    Across organisations the answer is 404, downstream (`_org_allows`). ⚠ NO ROLE LABEL IS READ
+    (`test_role_is_display_only.py`): the key, then the mentor record."""
+    if admin is None:
+        return 'none'
+    if admin.has_perm('scholars'):
+        return 'all'
+    from ..mentor_desk import mentor_of      # in the function: mentor_desk imports the scholar rules
+    if mentor_of(admin) is not None:
+        return 'mentor'
+    return 'none'
+
+
 class _AdminBase(PartnerAdminMixin, APIView):
     """Shared 403-if-not-admin guard + own-application lookup."""
 

@@ -7,11 +7,12 @@ import { TeamAddSheet } from '@/components/admin/TeamTables'
 
 /**
  * Sprint T3 (D8, owner 2026-11-09): a PURE mentor's **Permissions** tab — read-only. A mentor holds no
- * permission keys; they see My students and their Profile, and nothing here changes that. What gives
+ * permission keys; they see My students, their current scholars' files on Scholars (read-only, sprint
+ * S1) and their Profile, and nothing here changes that. What gives
  * them more is a Team table, so the tab offers the Team page's own Add-to-table path (`TeamAddSheet`,
  * narrowed to this one person), and only for the tables the server says this viewer may add them to
  * (`may_add` — the Add endpoint's own rule: a super or their organisation admin, once they have signed
- * in). Everybody else reads the two lines and no button.
+ * in). Everybody else reads the lines and no button.
  */
 export default function MentorOnlyPermissions({ adminId, name, mayAdd, token, onAdded }: {
   adminId: number
@@ -30,6 +31,7 @@ export default function MentorOnlyPermissions({ adminId, name, mayAdd, token, on
         <p>{t('admin.person.mentorOnly.intro', { name })}</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>{t('admin.person.mentorOnly.students')}</li>
+          <li>{t('admin.person.mentorOnly.scholars')}</li>
           <li>{t('admin.person.mentorOnly.profile')}</li>
         </ul>
         <p className="text-ground-500">{t('admin.person.mentorOnly.none')}</p>

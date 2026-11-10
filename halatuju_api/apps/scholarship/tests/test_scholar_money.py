@@ -9,8 +9,8 @@ Pinned from the harm:
   * the contract is shown only when EXECUTED (the platform-signed rule), whatever the signing flag
     says; the PDF link is minted for 300 seconds and refused for another organisation's path; no IC
     number appears anywhere in the payload;
-  * the fence is the Applications rule (finance and an unassigned reviewer refused, another
-    organisation 404), and a closed file reads the same (read-only).
+  * the fence is the `scholars` key (sprint S1: finance and a reviewer, assigned or not, refused;
+    another organisation 404), and a closed file reads the same (read-only).
 """
 import datetime
 import json
@@ -69,7 +69,8 @@ class _Base(TestCase):
         self.cohort = make_cohort()
         org = self.cohort.owning_organisation
         self.org_admin = make_admin('org_admin', owning_org=org)
-        self.qc = make_admin('qc', owning_org=org)
+        # Sprint S1: a QC holding `scholars` beside their hat — a Scholars reader without `spending`.
+        self.qc = make_admin('qc', owning_org=org, permissions=['see_all', 'qc', 'scholars'])
         self.reviewer = make_admin('reviewer', owning_org=org)
         self.finance = make_admin('finance', owning_org=org)
         self.app = make_application('maintenance', cohort=self.cohort, reviewer=self.reviewer,
@@ -137,7 +138,9 @@ class TestSpendingBlock(_Base):
     def test_present_only_with_the_spending_permission_otherwise_absent(self):
         _spend(self.app, '12.00', timezone.localdate())
         self.assertIn('spending', self._get(self.org_admin, 'money').json())
-        for admin in (self.qc, self.reviewer):
+        reader = make_admin('reviewer', owning_org=self.cohort.owning_organisation,
+                            permissions=['review', 'see_all', 'scholars'])
+        for admin in (self.qc, reader):
             with self.subTest(role=admin.role):
                 body = self._get(admin, 'money').json()
                 self.assertNotIn('spending', body)                       # absent, not null
@@ -247,7 +250,7 @@ class TestContract(_Base):
 
 
 class TestTheFence(_Base):
-    def test_finance_refused_unassigned_reviewer_refused_other_org_404_closed_reads(self):
+    def test_finance_and_reviewers_refused_other_org_404_closed_reads(self):
         for what in ('money', 'contract'):
             with self.subTest(what=what):
                 self.assertEqual(self._get(self.finance, what).status_code, 403)
@@ -255,7 +258,8 @@ class TestTheFence(_Base):
                 self.assertEqual(self._get(stranger, what).status_code, 403)
                 outsider = make_admin('org_admin', owning_org=make_cohort().owning_organisation)
                 self.assertEqual(self._get(outsider, what).status_code, 404)
-                self.assertEqual(self._get(self.reviewer, what).status_code, 200)   # assigned
+                self.assertEqual(self._get(self.reviewer, what).status_code, 403)   # assigned (S1)
+                self.assertEqual(self._get(self.qc, what).status_code, 200)         # `scholars`
         type(self.app).objects.filter(pk=self.app.pk).update(status='closed', closure_reason='completed')
         for what in ('money', 'contract'):
             self.assertEqual(self._get(self.org_admin, what).status_code, 200)       # read-only, still readable

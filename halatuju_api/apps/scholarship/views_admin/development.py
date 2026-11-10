@@ -297,12 +297,34 @@ class AdminModuleLessonFileSignView(_DevelopmentBase):
 class AdminScholarGrowthView(_ScholarsBase):
     """GET admin/scholarship/scholars/<pk>/development/ — the scholar file's Growth tab: each module this scholar
     can see or started, with their work. The file's own fence (`_file_for`: another organisation's, unknown or
-    no file is 404) AND the module makers' roles."""
+    no file is 404) AND the module makers' roles — or a mentor on their own current student (S1-h)."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        if not svc.may_read_development(admin):        # TD-498 (A1.10a): a read
+        if not (self._as_mentor(admin) or svc.may_read_development(admin)):        # TD-498 (A1.10a): a read
             return self._deny_role()
         return Response(development_progress.scholar_file_payload(app))
+
+
+class AdminScholarGrowthFileView(_ScholarsBase):
+    """GET admin/scholarship/scholars/<pk>/development/<mid>/file/ — a short signed link to the scholar's uploaded
+    task for ONE module, opened from the file's Growth tab (S1 review should-fix 1: the module's own file door
+    is the makers', so a mentor's tap there was refused). The Growth tab's fence and readers exactly: `_file_for`
+    (another organisation's, unknown, ended or another mentor's: the one 404) AND the module makers' roles or a
+    mentor on their own current student. A module she cannot see, or no upload: 404."""
+    mentor_methods = ('get',)
+
+    def get(self, request, pk, mid):
+        app, admin, err = self._file_for(request, pk)
+        if err:
+            return err
+        if not (self._as_mentor(admin) or svc.may_read_development(admin)):
+            return self._deny_role()
+        url = development_files.signed_url(development_progress.file_task_path(app, mid))
+        if not url:
+            return _module_not_found()
+        logger.warning('AUDIT scholar_task_file app=%s module=%s by=%s', app.id, mid, admin.email)
+        return Response({'url': url, 'expires_in': development_files.SIGNED_FOR})

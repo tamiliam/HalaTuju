@@ -285,7 +285,10 @@ class TestRefusals(_Base):
                    make_admin('partner', owning_org=self.org)]
         for who in refused:
             with self.subTest(role=who.role):
-                self.assertEqual(authed_client(who).get(tab(self.app.id)).status_code, 403)
+                # Sprint S1 (S1-h): a mentor login reads the tab of its own current students only; this
+                # one has none, so the answer is the one 404 for "not your student".
+                self.assertEqual(authed_client(who).get(tab(self.app.id)).status_code,
+                                 404 if who.role == 'mentor' else 403)
                 self.assertEqual(self.assign(self.kavitha, caller=who).status_code, 403)
                 self.assertEqual(self.meet(caller=who).status_code, 403)
         self.assertEqual(MentorAssignment.objects.count(), 0)
@@ -447,7 +450,8 @@ class TestTheListsAndPages(_Base):
 
     def test_a_role_without_the_tab_sees_no_mentor_on_the_list_or_the_file(self):
         self.assign(self.kavitha, email_student=False)
-        qc = make_admin('qc', owning_org=self.org)
+        # Sprint S1: a QC reads Scholars only when given `scholars`; still outside the Mentoring tab.
+        qc = make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'scholars'])
         body = authed_client(qc).get(SCHOLARS, {'mentoring': 'no_mentor'}).json()
         self.assertNotIn('no_mentor', body['summary'])
         self.assertTrue(all('mentor' not in r for r in body['results']))
@@ -598,11 +602,12 @@ class TestReviewFix2TheTimelineKeepsMentorsFromOtherRoles(_Base):
         self.meet()
         self.assign(self.faizal, email_student=False)
         self.end()
-        reviewer = make_admin('reviewer', owning_org=self.org)
+        # Sprint S1: only `scholars` opens the file; these two hold it beside their hat.
+        reviewer = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'scholars'])
         self.app.assigned_to = reviewer
         self.app.save(update_fields=['assigned_to'])
         url = f'{SCHOLARS}{self.app.id}/activity/'
-        for who in (reviewer, make_admin('qc', owning_org=self.org)):
+        for who in (reviewer, make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'scholars'])):
             with self.subTest(role=who.role):
                 body = authed_client(who).get(url).json()
                 self.assertEqual([r['event'] for r in body['results'] if r['event'] in mentoring.EVENTS], [])

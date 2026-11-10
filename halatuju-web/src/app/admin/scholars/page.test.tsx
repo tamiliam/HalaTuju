@@ -14,6 +14,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarsPage from './page'
 import * as api from '@/lib/admin-api'
+import { ProgrammeScopeProvider } from '@/lib/programmeScope'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
@@ -78,7 +79,7 @@ it('S7b: the Mentor column, the two Mentoring pills with their counts, and the A
 })
 
 it('S7b: a role that does not see mentors gets no Mentor column and no Mentoring pills', async () => {
-  mockRole = { role: 'qc', owning_org_id: 11 }
+  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['qc', 'scholars'] }   // S1: Scholars asks its own key
   const { mentor: _m, asked_for_help: _a, ...bare } = ROW
   mockApi.getScholars.mockResolvedValue({ ...LIST, results: [bare] })
   render(<ScholarsPage />)
@@ -163,8 +164,43 @@ it('S7c: "Mentor concerned" — the row chip, and the pill with the server\'s co
 })
 
 it('S7c: a role that does not see mentors gets no Mentor concerned pill', async () => {
-  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['see_all'] }
+  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['see_all', 'scholars'] }   // S1: Scholars asks its own key
   render(<ScholarsPage />)
   await screen.findAllByText(/NUR AISYAH/)
   expect(screen.queryByRole('tab', { name: /admin\.scholars\.filter\.mentorConcerned/ })).toBeNull()
+})
+
+it('sprint S1 (S1-h): a mentor login and staff who mentor open the list (the server lists their students)', async () => {
+  for (const who of [{ role: 'mentor', permissions: [] }, { role: 'reviewer', permissions: ['review'], mentoring: true }]) {
+    mockRole = { ...who, owning_org_id: 11 }
+    const { unmount } = render(<ScholarsPage />)
+    expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
+    expect(screen.queryByText('apiErrors.superAdminRequired')).toBeNull()
+    unmount()
+  }
+  mockApi.getScholars.mockClear()
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'], mentoring: false }
+  render(<ScholarsPage />)
+  expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+  expect(mockApi.getScholars).not.toHaveBeenCalled()
+})
+
+it('sprint S1 (S1-h): anyone viewing as a mentor never waits on the gift gate; a `scholars` reader does', async () => {
+  const asMentor = [
+    { role: 'mentor', permissions: [] },                                    // a mentor login
+    { role: 'reviewer', permissions: ['review'], mentoring: true },          // staff who mentor
+    { role: 'admin', permissions: ['see_all'], mentoring: true },            // an admin without Scholars
+  ]
+  const readers = [
+    { role: 'org_admin', permissions: [] },
+    { role: 'admin', permissions: ['see_all', 'scholars'], mentoring: true },  // the key wins over mentoring
+  ]
+  for (const who of [...asMentor, ...readers]) {
+    mockRole = { ...who, owning_org_id: 11 }
+    const { unmount } = render(
+      <ProgrammeScopeProvider choices={[]} settled={false}><ScholarsPage /></ProgrammeScopeProvider>)
+    if (asMentor.includes(who)) expect(await screen.findAllByRole('link', { name: /NUR AISYAH/ })).toHaveLength(2)
+    else expect(screen.getByTestId('gift-wait')).toBeTruthy()      // staff still wait for the scopes
+    unmount()
+  }
 })

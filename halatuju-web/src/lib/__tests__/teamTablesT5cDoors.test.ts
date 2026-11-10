@@ -27,6 +27,7 @@ import { DOOR_KEYS, opensDoor, type DoorName } from '@/lib/pageDoors'
 import { mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
 import { pyDictOfSeqs, readApi } from '@/test/apiSource'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
+import { s1Moves, s1Served } from '@/test/s1Moves'
 
 const PAYLOADS = path.join(__dirname, 'fixtures', 't5cServedPayloads.json')
 const BEFORE = path.join(__dirname, 'fixtures', 't5cDoorsMenusBefore.json')
@@ -100,14 +101,17 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
   })
 
   // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
-  const after = (shape: string) => t5cP5Moves(before[shape], effectiveRole(SHAPES[shape]), isPlatform)
+  // Sprint S1's declared move and served payload (the Scholars row asks `scholars`) — see `test/s1Moves.ts`.
+  const after = (shape: string) =>
+    s1Moves(t5cP5Moves(before[shape], effectiveRole(SHAPES[shape]), isPlatform), shape)
+  const served = (shape: string) => s1Served(shape, SHAPES[shape])
 
   it.each(Object.keys(SHAPES))('%s, served today (with page_keys): identical to before', (shape) => {
-    expect(measure(SHAPES[shape], doorGate)).toEqual(after(shape))
+    expect(measure(served(shape), doorGate)).toEqual(after(shape))
   })
 
   it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): identical to before', (shape) => {
-    const { page_keys: _dropped, ...older } = SHAPES[shape]
+    const { page_keys: _dropped, ...older } = served(shape)
     expect(measure(older, doorGate)).toEqual(after(shape))
   })
 })

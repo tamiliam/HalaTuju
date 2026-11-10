@@ -124,11 +124,14 @@ describe('missingReviewerFields (client mirror)', () => {
 })
 
 describe('outsiderMustLeave (source users and mentors, S7a)', () => {
-  it('sends a mentor away from every page but My students and its Profile', () => {
-    for (const p of ['/admin', '/admin/organisation/mentors', '/admin/scholarship',
-      '/admin/scholars/4', '/admin/programme/overview', '/admin/guide']) {
+  it('sends a mentor away from every page but My students, Scholars and its Profile', () => {
+    for (const p of ['/admin', '/admin/organisation/mentors', '/admin/scholarship', '/admin/scholarship/4',
+      '/admin/programme/overview', '/admin/guide']) {
       expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, p)).toBe(true)
     }
+    // Sprint S1 (S1-h): Scholars, its current students only (the server answers 404 for anyone else's).
+    expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/scholars')).toBe(false)
+    expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/scholars/4')).toBe(false)
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/profile')).toBe(false)
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students')).toBe(false)
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students/104')).toBe(false)
