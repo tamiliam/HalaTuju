@@ -64,8 +64,6 @@ export interface AdminReviewer {
   organisation_id?: number | null
   /** Common profile S2: a ~1-hour signed URL of their photo, or null. Staff screens only. */
   photo_url?: string | null
-  /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
-  phone?: string | null
   /** Request #39 Sprint 4 — the permission chips, the same three fields as `AdminItem`. */
   custom?: boolean
   permissions_added?: string[]

@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/formatDate'
 import { isSuperRole } from '@/lib/superRole'
 import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
+import { scholarsRefusal } from '@/lib/staffRefusals'
 import {
   deleteMentor, getMentors, mentorAction, setMentorGifts,
   type MentorAction, type MentorDetail as MentorDetailPayload, type MentorRow, type MentorScholarRow,
@@ -37,7 +38,8 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  * is 7d's "Add a staff member as mentor" (`StaffMentorSheet`, the shared Sheet): an existing team member,
  * no email, their sign-in untouched. Its button sits on the Team page's tab row (the page owns `adding`).
  * ⚠ THE ACTIONS ARE 7d's, RENAMED TO THE OTHER TABS' WORDS: a staff member's **Remove from Mentors**
- * (endpoint `stop`: assignments end, the sign-in untouched) and a pure mentor's **Revoke** / **Restore**
+ * (endpoint `stop`: refused `has_scholars` while they mentor anyone, M1a; the sign-in untouched) and a
+ * pure mentor's **Revoke** / **Restore**
  * (endpoints `deactivate` / `reactivate`: their sign-in is switched off and back on). Offered only where
  * the row's `manageable` says the endpoint will take it; the confirm is the shared Sheet.
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; they are shown on the
@@ -56,12 +58,20 @@ type Banner = { ok: boolean; text: string } | null
 
 const K = 'admin.mentors'
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
-  'not_staff', 'has_work']
+  'not_staff', 'has_work', 'has_scholars']
 const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
 /** The two actions that take a mentor OUT (the Sheet confirms them); the two that bring one back are direct. */
 const REMOVES: readonly MentorAction[] = ['stop', 'deactivate']
 
 const codeOf = (err: unknown) => (err as { code?: string })?.code ?? ''
+
+/** A refused action in the reader's language: `has_scholars` (M1a: Remove from Mentors and Delete are
+ *  refused while they mentor anyone) names the API's `scholars_now`; a code we do not know is the generic line. */
+export function refusalText(err: unknown, t: T): string {
+  const code = codeOf(err)
+  return scholarsRefusal(err, t, `${K}.error.has_scholars`)
+    ?? t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`)
+}
 
 /** The codes of the languages spoken conversationally or better, in en · ms · ta order. */
 function spokenCodes(m: MentorRow): ('en' | 'ms' | 'ta')[] {
@@ -129,8 +139,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
       await mentorAction(m.id, action, { token })
       setBanner({ ok: true, text: t(`${K}.done.${action}`, { name: m.name, email: m.email }) })
     } catch (err) {
-      const code = codeOf(err)
-      setBanner({ ok: false, text: t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`) })
+      setBanner({ ok: false, text: refusalText(err, t) })
     } finally {
       setBusyId(null); setRemoving(null)
       void load()
@@ -144,8 +153,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
       await deleteMentor(m.id, { token })
       setBanner({ ok: true, text: t(`${K}.done.delete`, { name: m.name }) })
     } catch (err) {
-      const code = codeOf(err)
-      setBanner({ ok: false, text: t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`) })
+      setBanner({ ok: false, text: refusalText(err, t) })
     } finally {
       setBusyId(null); setDeleting(null)
       void load()
@@ -238,9 +246,6 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                           <Link href={mentorHref(m.id)} data-testid={`mentor-link-${m.id}`}
                             className="font-medium text-primary-600 hover:text-primary-800">{m.name}</Link>
                           <span className="block text-xs text-ground-500">{m.email}</span>
-                          {/* The phone on its own line, as on Admins and Reviewers. */}
-                          {m.phone && <span className="block text-xs text-ground-600" data-testid={`mentor-phone-${m.id}`}>
-                            <span className="sr-only">{t('admin.reviewer.phone')}: </span>{m.phone}</span>}
                         </td>
                         <td className="px-4 py-3" data-label={t('admin.team.colAlsoIn')}><AlsoIn row={m} here="mentors" /></td>
                         <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.scholarsNow`)} data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>
@@ -409,10 +414,7 @@ export function MentorActions({ mentor: m, onChanged, onDeleted }: {
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState('')
-  const refusal = (err: unknown) => {
-    const code = codeOf(err)
-    setActionError(t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`))
-  }
+  const refusal = (err: unknown) => setActionError(refusalText(err, t))
   const toggle = async () => {
     const action = m.status === 'active' ? 'deactivate' : 'reactivate'
     if (!token || (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name })))) return
@@ -453,8 +455,8 @@ export function MentorActions({ mentor: m, onChanged, onDeleted }: {
 }
 
 /** T3 review fix 3: a STAFF mentor's **Remove from Mentors** (`stop`) on their person page — the table's
- *  action and words: their scholars lose this mentor, the staff sign-in is untouched. Drawn only while they
- *  mentor and the row's `manageable` says the endpoint will take it (their Revoke is `StaffPersonActions`). */
+ *  action and words: refused while they mentor anyone (M1a), the staff sign-in is untouched. Drawn only
+ *  while they mentor and the row's `manageable` says the endpoint will take it (their Revoke is `StaffPersonActions`). */
 export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow; onRemoved: () => void }) {
   const { token } = useAdminAuth()
   const { t } = useT()
@@ -467,10 +469,7 @@ export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow;
     try {
       await mentorAction(m.id, 'stop', { token })
       onRemoved()
-    } catch (err) {
-      const code = codeOf(err)
-      setActionError(t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`))
-    } finally { setBusy(false) }
+    } catch (err) { setActionError(refusalText(err, t)) } finally { setBusy(false) }
   }
   return (
     <div>

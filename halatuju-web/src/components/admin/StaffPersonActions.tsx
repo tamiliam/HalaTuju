@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { deleteAdmin, revokeAdmin } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import { scholarsRefusal } from '@/lib/staffRefusals'
 import StaffActions from '@/components/admin/StaffActions'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 
@@ -19,8 +20,9 @@ import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
  * the Admins table) AND A DELETE ONLY TO A SUPER (owner, 2026-11-08). The server refuses either way.
  * ⚠ T2 review N3: nor is Revoke offered where the server says `revocable: false` — a super's page, your
  * own, the sole organisation admin's — and N2: no Delete where it says `delete_never`.
- * ⚠ T3 review fix 3: a STAFF MENTOR's Revoke also ends their mentoring (`staff_mentor_leaves`), and
- * Restore does not bring it back — so while they have scholars (`scholarsNow`) the confirm says so.
+ * ⚠ OWNER O18 (M1a review; supersedes T3 review fix 3): a STAFF MENTOR's Revoke is REFUSED 409
+ * `has_scholars` while they mentor anyone (it never ends mentoring), so while they have scholars
+ * (`scholarsNow`) the confirm says so, and the refusal is shown in the reader's language.
  */
 export default function StaffPersonActions({ person, token, viewerSuper, onDeleted, openNow = 0, scholarsNow = 0,
   onChanged }: {
@@ -35,7 +37,7 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
   onDeleted: () => void
   /** Their open cases, for the revoke warning (a reviewer's page). */
   openNow?: number
-  /** A staff mentor's scholars now, for the revoke warning: Revoke ends that mentoring for good. */
+  /** A staff mentor's scholars now, for the revoke warning: Revoke is refused while they have any (O18). */
   scholarsNow?: number
   /** After a revoke or restore: their new `is_active`. */
   onChanged: (active: boolean) => void
@@ -45,7 +47,8 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const orgAdmin = !!person.lead || person.role === 'org_admin'
-  const failed = (e: unknown) => setError(e instanceof Error && e.message ? e.message : t('admin.actionFailed'))
+  const failed = (e: unknown) => setError(scholarsRefusal(e, t)
+    ?? (e instanceof Error && e.message ? e.message : t('admin.actionFailed')))
 
   const toggle = async () => {
     const going = person.is_active
@@ -53,7 +56,7 @@ export default function StaffPersonActions({ person, token, viewerSuper, onDelet
       ? t('admin.reviewers.revokeConfirmOpen', { name: person.name, n: String(openNow) })
       : t(going ? 'admin.reviewers.revokeConfirm' : 'admin.reviewers.restoreConfirm', { name: person.name })
     const warn = going && scholarsNow > 0
-      ? `${base} ${t('admin.person.revokeEndsMentoring', { n: String(scholarsNow) })}` : base
+      ? `${base} ${t('admin.person.revokeWhileMentoring', { n: String(scholarsNow) })}` : base
     if (!window.confirm(warn)) return
     setBusy(true); setError('')
     try {

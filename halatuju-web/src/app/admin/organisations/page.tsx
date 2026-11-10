@@ -23,7 +23,7 @@ export default function OrganisationsPage() {
   const mayView = canAccess('/admin/organisations', effectiveRole(role))
 
   const { admins, message, busy, busyId, invite, resend, toggle, soleOrgAdmin } =
-    useStaffAdmin(token)
+    useStaffAdmin(token, false, true)   // the platform screen shows phones (not a group table, O16)
 
   const [name, setName] = useState('')
   const [code, setCode] = useState('')

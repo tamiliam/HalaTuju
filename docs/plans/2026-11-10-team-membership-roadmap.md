@@ -26,6 +26,17 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
 | O10 | **The organisation admin's name opens their person page** from the table, as every other admin's does. |
 | O11 | **The person page header drops the email under the name**; the email stays in About. |
 
+### Owner rulings, later on 2026-11-10 (admin permissions)
+| # | Ruling |
+|---|---|
+| O12 | The person page's Permissions tab shows only the section for the table it was opened from: Admin permissions from Admins, Reviewer permissions from Reviewers. Built in M1b. |
+| O13 | Admin permissions become COMPREHENSIVE: every admin menu item is a grantable permission, grouped by function (People, Partners, Engagement, Applications & scholars, Money, Settings), so the org admin can delegate to general or specialised admins. This resumes the paused T5 plan (`docs/plans/2026-11-01-team-tables-roadmap.md`, decisions.md 2026-11-03 T5.0), which the 2026-11-05 audit freeze paused but did not drop. New order: M1 → M2 (= T5g-lite: store the v2 keys of `staff_permissions_v2.CATALOGUE_V2` per person and draw the Permissions tab by group; the admin preset carries Partners + Engagement + org reads; replaces the single "admin-work chip"; still covers O8 and Rohini) → M3 (= T5e: the remaining org-admin-only actions become keys) → M4 (= T5d: money). |
+| O14 | This lane is EXEMPT from the audit feature freeze. Deploys stay one at a time, each with the owner's yes. |
+| O15 | Three powers stay with the org admin only and are never grantable: changing other staff's permissions (team edit / manage_team), paying the platform bill (billing.edit), and approving requests that commit paid hours (requests.approve). Everything else may be delegated. |
+| O16 | Phone numbers never show in ANY group table: Admins, Reviewers or Mentors. A phone shows only on the person's profile page, under "Show my phone to my team" (`share_phone_with_team`), as today. Supersedes the "Reviewers table keeps the phone" part of O9. The platform's own staff screens (Organisations, Partners) are not group tables and keep theirs. Built in M1a. |
+| O17 | No inline hint text under a group table's actions (today's "Reassign their cases first" line under Revoke / Delete is redundant). A blocked Remove is drawn greyed, with the reason in the InfoTip `i` (the GreyedDelete pattern; the tip names the count, e.g. "Reassign their 4 open cases first"), never as a line of text in the row. The M1a API already serves the reason and the count: the code per table in each row's `remove` (e.g. `has_open_cases`), the row's open-case count, and `open_cases` on the 409. Built in M1b. |
+| O18 | Suspend (the staff Revoke) is REFUSED with 409 `has_scholars` (and `scholars_now`) while the person mentors anyone, exactly like Remove from Mentors and Delete. It never ends mentoring: each scholar moves to another mentor first. The count is taken under the Mentor row's lock. Ruled 2026-11-10 during the M1a review; built in M1a. |
+
 ## Sprints
 1. **Small change (small-change lane):**
    - the InfoTip bubble is drawn above the page (a portal, fixed position), so a table frame (`TableFrame`'s

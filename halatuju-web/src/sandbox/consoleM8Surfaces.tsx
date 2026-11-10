@@ -290,7 +290,7 @@ const placed = (application_id: number, name: string, extra: Record<string, unkn
 })
 const MENTOR_PERSON = {
   mentor: {
-    id: 3, name: MENTOR_NAME, email: 'mentor3@contoh.invalid', phone: '123456789', status: 'active',
+    id: 3, name: MENTOR_NAME, email: 'mentor3@contoh.invalid', status: 'active',
     area: 'Kejuruteraan mekanikal, perakaunan', languages: { en: 'fluent', ms: 'fluent', ta: 'fluent' }, other_language: '',
     invited_at: '2026-02-01T00:00:00Z', signed_in: true, last_seen_at: '2026-11-02T09:00:00Z', deactivated_at: null,
     manageable: true, scholars_now: 2, staff_role: null, tables: ['mentors'], lead: false, meetings_90: 5,
