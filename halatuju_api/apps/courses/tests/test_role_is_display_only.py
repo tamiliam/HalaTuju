@@ -96,6 +96,8 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/models_staff.py::PartnerAdmin.Meta': ('DISPLAY', 'account kind',
         'DB constraints: which kind may carry a source / mentor link'),
+    'courses/models_staff.py::PartnerAdmin.is_member': ('DISPLAY', 'account kind',
+        'M1a: a team member in no group; holds no key, so it is the kind of account, not a power'),
     'courses/models_staff.py::PartnerAdmin.is_mentor': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/models_staff.py::PartnerAdmin.is_source_user': ('DISPLAY', 'account kind',

@@ -19,6 +19,10 @@ from . import staff_permissions
 SOURCE_ROLE = 'source_partner'
 #: Student maintenance S7a (2026-10-31): the role of a MENTOR's own login. See `PartnerAdmin.mentor`.
 MENTOR_ROLE = 'mentor'
+#: Team membership M1a (lead, 2026-11-10): a staff member in NO group ("No group" on the Staff list).
+#: Holds no key, deny by default (`member_methods`): only their Profile, sign-in and password open.
+#: Listed on Staff, so NOT in `NOT_STAFF_ROLES`. Keeps any mentor link (the Mentor deactivated).
+MEMBER_ROLE = 'member'
 #: The roles that sign in to the console and are NOT staff: no permission, deny by default on every
 #: view that has not opted in, never on a staff list. One tuple, so a reader cannot forget one.
 NOT_STAFF_ROLES = (SOURCE_ROLE, MENTOR_ROLE)
@@ -29,7 +33,8 @@ STAFF_MENTOR_ROLES = ('org_admin', 'admin', 'reviewer', 'qc')
 #: Admin -> Finance switch can KEEP the link with the mentor DEACTIVATED (lead ruling 2026-11-01): the
 #: mentor's name lives on this login, and every scholar's mentoring history reads it. A finance row is
 #: never an ACTIVE mentor — `mentors_now` says so and every door refuses it (`staff_mentor.py`).
-MENTOR_LINK_ROLES = (MENTOR_ROLE, *STAFF_MENTOR_ROLES, 'finance')
+#: M1a: `member` too, for the same reason (a person removed from their last group keeps the link).
+MENTOR_LINK_ROLES = (MENTOR_ROLE, *STAFF_MENTOR_ROLES, 'finance', MEMBER_ROLE)
 
 
 class PartnerAdmin(models.Model):
@@ -71,6 +76,9 @@ class PartnerAdmin(models.Model):
     #   mentor   — a MENTOR's own login (student maintenance S7a, 2026-10-31). NOT STAFF, exactly
     #              like a source user: no permission, deny by default (`mentor_methods`), on no
     #              staff list. Bound to one `scholarship.Mentor` and to its organisation (`mentor`).
+    #   member   — a staff member in NO group (team membership M1a, 2026-11-10): removed from their
+    #              last group, kept on the Staff list until deleted. No permission, deny by default
+    #              (`member_methods`): Profile, sign-in and set-password only.
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
@@ -82,9 +90,11 @@ class PartnerAdmin(models.Model):
         ('finance', 'Finance admin'),
         ('source_partner', 'Source partner'),   # a literal: the web's drift test parses this list
         ('mentor', 'Mentor'),
+        ('member', 'No group'),
     ]
     SOURCE_ROLE = SOURCE_ROLE
     MENTOR_ROLE = MENTOR_ROLE
+    MEMBER_ROLE = MEMBER_ROLE
     NOT_STAFF_ROLES = NOT_STAFF_ROLES
     STAFF_MENTOR_ROLES = STAFF_MENTOR_ROLES
     MENTOR_LINK_ROLES = MENTOR_LINK_ROLES
@@ -214,6 +224,16 @@ class PartnerAdmin(models.Model):
         help_text='Staff permission keys (staff_permissions.CATALOGUE). NULL = the preset of role, '
                   'which is the default. Read through has_perm, never directly.',
     )
+    # ⚠ ARCHIVED (team membership M1a, owner O7, 2026-11-10): deleted from the Staff list but kept,
+    # because their name stands on past records. Always with `is_active=False` and no login
+    # (`courses/staff_archive.py`). Every reader that lists or targets a staff row skips one
+    # (`test_m1_archive_reader_census.py`); re-inviting the same email restores THIS row.
+    archived_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When this person was deleted from the Staff list and archived (records kept). NULL = not archived.',
+    )
+    # db_default: the OLD image inserts staff rows without the column between migrate and deploy.
+    archived_by_email = models.CharField(max_length=254, blank=True, default='', db_default='')
 
     class Meta:
         db_table = 'partner_admins'
@@ -251,6 +271,16 @@ class PartnerAdmin(models.Model):
         """True for a mentor's own login (student maintenance S7a). Never staff. ⚠ NOT "mentors":
         a staff member who also mentors (S7d) is `is_staff_mentor`; who mentors NOW is `mentors_now`."""
         return self.role == MENTOR_ROLE
+
+    @property
+    def is_member(self):
+        """M1a: a staff member in no group. Deny by default; listed on Staff."""
+        return self.role == MEMBER_ROLE
+
+    @property
+    def is_archived(self):
+        """M1a: deleted from the Staff list but kept for the records (`staff_archive`)."""
+        return self.archived_at is not None
 
     @property
     def is_staff_mentor(self):

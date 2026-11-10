@@ -47,7 +47,7 @@ export function mustCompleteProfile(
 }
 
 /** The roles that sign in but are NOT staff, so every staff page refuses them (deny by default). */
-const OUTSIDER_ROLES = ['source_partner', 'mentor'] as const
+const OUTSIDER_ROLES = ['source_partner', 'mentor', 'member'] as const
 type OutsiderRole = (typeof OUTSIDER_ROLES)[number]
 
 /**

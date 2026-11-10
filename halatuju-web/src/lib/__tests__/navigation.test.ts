@@ -151,6 +151,9 @@ describe('visibleNav per role', () => {
     // adds My students, their landing. Sprint S1 (S1-h) adds Scholars: their current students, read-only.
     // Nothing else. NO Guide / FAQ: both are written for staff.
     mentor: ['programmes', 'scholars', 'myStudents', 'profile'],
+    // Sprint M1a (2026-11-10, roadmap O6): a team member in NO group ("No group") has their Profile and
+    // nothing else; the server opens six views to it (profile, photo, activity, role, set-password).
+    member: ['profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -230,6 +233,18 @@ describe('visibleNav per role', () => {
     for (const href of ['/admin', '/admin/organisation', '/admin/organisation/staff', '/admin/sources',
       '/admin/payments', '/admin/programme', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'source_partner', [])).toBe(false)
+    }
+  })
+
+  it('a member ("No group", M1a) is its own role, lands on Profile and opens nothing else', () => {
+    expect(effectiveRole({ role: 'member' })).toBe('member')
+    expect(defaultRoute({ role: 'member', permissions: [] })).toBe('/admin/profile')
+    expect(defaultRoute({ role: 'member' }, false)).toBe('/admin/profile')
+    expect(canAccess('/admin/profile', 'member', [])).toBe(true)
+    for (const href of ['/admin', '/admin/organisation', '/admin/organisation/programmes',
+      '/admin/organisation/staff', '/admin/programme/overview', '/admin/scholarship', '/admin/scholars',
+      '/admin/my-students', '/admin/payments', '/admin/guide', '/admin/faq']) {
+      expect(canAccess(href, 'member', [])).toBe(false)
     }
   })
 
