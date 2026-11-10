@@ -25,7 +25,7 @@ export default function ReferralPartnersPage() {
   const mayView = canAccess('/admin/partners', effectiveRole(role))
 
   const { admins, orgs, message, busy, busyId, invite, resend, toggle } =
-    useStaffAdmin(token, true)
+    useStaffAdmin(token, true, true)   // the platform screen shows phones (not a group table, O16)
 
   const [mode, setMode] = useState<'existing' | 'new'>('existing')
   const [orgId, setOrgId] = useState<number | ''>('')

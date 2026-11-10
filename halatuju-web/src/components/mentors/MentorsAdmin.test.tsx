@@ -7,7 +7,7 @@
  * - Owner 2026-11-08: ONE list, read like Admins and Reviewers — ARRIVED mentors plus every staff mentor; a
  *   revoked pure mentor stays (Revoked, with Restore), a staff mentor taken off drops off. No Active /
  *   Inactive chips, no "waiting to accept" line, no footnotes.
- * - Columns: Name (links to the detail page; the email and phone under it) · Also in · Scholars now · Meetings (90 days)
+ * - Columns: Name (links to the detail page; the email under it, never a phone: O16) · Also in · Scholars now · Meetings (90 days)
  *   · Last meeting · Concerns open · Status · Last seen · Action. Area and languages are on the detail page.
  * - Add Mentor = 7d's staff Sheet (no email); its button is on the Team page's tab row, which hands in `adding`.
  * - Actions, in the other tabs' words: Remove from Mentors (staff, `stop`) and Revoke (`deactivate`), both
@@ -37,7 +37,7 @@ jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
 const row = (over: Partial<api.MentorRow>): api.MentorRow => ({
-  id: 1, name: 'Dr Kavitha Raman', email: 'kavitha@example.org', phone: '12-345 6789', status: 'active',
+  id: 1, name: 'Dr Kavitha Raman', email: 'kavitha@example.org', status: 'active',
   area: 'Accounting, finance', languages: { en: 'fluent', ms: 'conversational', ta: 'fluent' },
   other_language: '', invited_at: '2026-10-01T00:00:00Z', signed_in: true,
   last_seen_at: '2026-10-30T00:00:00Z', deactivated_at: null, manageable: true, scholars_now: 4,
@@ -93,10 +93,10 @@ describe('Team → Mentors', () => {
       'admin.nameHeader', 'admin.team.colAlsoIn',
       'admin.mentors.col.scholarsNow', 'admin.mentors.col.meetings90', 'admin.mentors.col.lastMeeting',
       'admin.mentors.col.concernsOpen', 'admin.statusHeader', 'admin.reviewers.colLastSeen', 'admin.actionHeader'])
-    // The email and phone under the name, as on Admins and Reviewers; area and languages are on the detail page.
+    // The email under the name; area and languages are on the detail page; no phone (M1a, owner O16).
     expect(within(r).getByText('kavitha@example.org')).toBeTruthy()
     expect(within(r).queryByText('Accounting, finance')).toBeNull()
-    expect(within(r).getByTestId('mentor-phone-1').textContent).toBe('admin.reviewer.phone: 12-345 6789')
+    expect(document.querySelector('[data-testid^="team-phone-"], [data-testid^="mentor-phone-"]')).toBeNull()
     expect(screen.getByTestId('mentor-scholars-1').textContent).toBe('4')
     expect(screen.getByTestId('mentor-meetings-1').textContent).toBe('9')
     expect(screen.getByTestId('mentor-concerns-1').textContent).toBe('1')

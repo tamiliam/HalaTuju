@@ -238,9 +238,6 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                           <Link href={mentorHref(m.id)} data-testid={`mentor-link-${m.id}`}
                             className="font-medium text-primary-600 hover:text-primary-800">{m.name}</Link>
                           <span className="block text-xs text-ground-500">{m.email}</span>
-                          {/* The phone on its own line, as on Admins and Reviewers. */}
-                          {m.phone && <span className="block text-xs text-ground-600" data-testid={`mentor-phone-${m.id}`}>
-                            <span className="sr-only">{t('admin.reviewer.phone')}: </span>{m.phone}</span>}
                         </td>
                         <td className="px-4 py-3" data-label={t('admin.team.colAlsoIn')}><AlsoIn row={m} here="mentors" /></td>
                         <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.scholarsNow`)} data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>

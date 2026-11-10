@@ -68,7 +68,7 @@ const staffView = (p: admins.TeamPersonBlock, over: Partial<admins.StaffPermissi
 })
 
 const mentorRow = (over: Partial<mentors.MentorRow> = {}): mentors.MentorRow => ({
-  id: 3, name: 'Ravi Kumar', email: 'ravi@example.org', phone: '', status: 'active', area: '',
+  id: 3, name: 'Ravi Kumar', email: 'ravi@example.org', status: 'active', area: '',
   languages: { en: 'fluent', ms: '', ta: '' }, other_language: '', invited_at: null, signed_in: true,
   last_seen_at: TWO_DAYS_AGO, deactivated_at: null, manageable: true, scholars_now: 1, staff_role: null,
   tables: ['mentors'], lead: false, meetings_90: 2, last_meeting: '2026-10-28', concerns_open: 0,

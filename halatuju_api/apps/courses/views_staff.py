@@ -459,8 +459,9 @@ class AdminListView(PartnerAdminMixin, APIView):
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
         staff_footprint, staff_lifecycle = scholarship_staff()
-        # Common profile S2: each person's photo. Never the phone on a group table (O9, O16; the person page has it).
-        cards = staff_lifecycle.team_cards(admins)
+        # Common profile S2: each person's photo. Never the phone on a group table (O9, O16; the person page has
+        # it); a super's platform screens (Organisations, Partners) ask for theirs with `?phones=1`.
+        cards, phones = staff_lifecycle.team_cards(admins), admin.is_super and request.GET.get('phones') == '1'
         # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
         seats = staff_lifecycle.team_table_fields(admin, admins)
         _dormant_cache = {}
@@ -484,9 +485,8 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'role': 'super' if a.is_super else a.role,
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
-                # Tenant binding (access boundary) — lets the panel's Add-tenant list show
-                # which organisation an org_admin runs, and lets the FE derive the sole-
-                # org-admin state (hide Revoke). NOT the referral org above.
+                # Tenant binding (access boundary): which organisation an org_admin runs (the Add-tenant
+                # list), and the sole-org-admin state (hide Revoke). NOT the referral org above.
                 'owning_org_id': a.owning_organisation_id,
                 'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
@@ -520,7 +520,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
                 'invitation': _invitation_dict(invites.get(a.id)),
                 **seats[a.id],
-                'photo_url': cards[a.id]['photo_url'],
+                'photo_url': cards[a.id]['photo_url'], **({'phone': cards[a.id]['phone']} if phones else {}),
             })
         return Response({'admins': data})
 

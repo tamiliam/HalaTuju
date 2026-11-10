@@ -164,9 +164,9 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
     )
   }
 
-  /** O9 (owner, 2026-11-10): a phone number never shows on Team -> Admins; it shows on the person's own
-   *  page (still only when they switched "Show my phone to my team" on). The Reviewers table draws its
-   *  own rows and keeps its phone line; the platform's staff screens ask for theirs (`showPhone`); the default is no phone. */
+  /** O9, O16 (owner, 2026-11-10): a phone number never shows on a group table (Admins, Reviewers, Mentors);
+   *  it shows on the person's own page (only when they switched "Show my phone to my team" on). The
+   *  platform's staff screens ask for theirs (`showPhone`, fed by `useStaffAdmin(token, _, true)`). */
   const phoneOf = (a: AdminItem) => showPhone && a.phone
     ? <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>
     : null
@@ -300,7 +300,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
 }
 
 /** Loads the staff list and owns the invite / resend / revoke actions the pages share. */
-export function useStaffAdmin(token: string | null | undefined, wantOrgs = false) {
+export function useStaffAdmin(token: string | null | undefined, wantOrgs = false, phones = false) {
   const { t } = useT()
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [orgs, setOrgs] = useState<OrgItem[]>([])
@@ -310,8 +310,8 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
 
   const load = useCallback(() => {
     if (!token) return
-    getAdmins({ token }).then((d) => setAdmins(d.admins)).catch(() => {})
-  }, [token])
+    getAdmins({ token }, phones).then((d) => setAdmins(d.admins)).catch(() => {})
+  }, [token, phones])
 
   useEffect(() => {
     load()

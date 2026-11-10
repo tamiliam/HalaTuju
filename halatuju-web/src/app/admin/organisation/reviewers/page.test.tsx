@@ -598,15 +598,15 @@ describe('the staff lifecycle (2026-10-09)', () => {
   })
 })
 
-describe('common profile S2: photo and a phone shown to the team', () => {
-  it('shows the photo, and the phone only when the server sent it (its owner shares it)', async () => {
+describe('common profile S2: the photo; M1a (owner O16): never a phone on a group table', () => {
+  it('shows the photo, and no phone even when an older payload still carries one', async () => {
     mockApi.listReviewers.mockResolvedValue({ programmes: giftChoices, reviewers: [
       { ...REVIEWERS[0], photo_url: 'https://signed/k.webp', phone: '011-1111 1111' },
       { ...REVIEWERS[1], photo_url: null, phone: null },
     ] as unknown as api.AdminReviewer[] })
     await loaded()
-    expect(ui().getByTestId('team-phone-5').textContent).toContain('011-1111 1111')
-    expect(ui().queryByTestId('team-phone-6')).toBeNull()
+    expect(document.querySelector('[data-testid^="team-phone-"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('011-1111 1111')   // desktop table and phone cards
     const photos = ui().getAllByTestId('staff-avatar-photo') as HTMLImageElement[]
     expect(photos.map((p) => p.src)).toEqual(['https://signed/k.webp'])
     expect(ui().getAllByTestId('staff-avatar-initials').length).toBe(1)

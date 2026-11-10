@@ -368,7 +368,6 @@ export default function AdminReviewersList() {
                         {r.name || '—'}
                       </Link>
                       <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
-                      {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                     </div>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${PHONE_PILL_SM} ${
@@ -455,7 +454,6 @@ export default function AdminReviewersList() {
                             </span>
                           )}
                           {leadNote(r)}
-                          {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
                     </td>

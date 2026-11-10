@@ -15,8 +15,6 @@ export interface MentorRow {
   id: number
   name: string
   email: string
-  /** The mentor's own phone (their Profile tells them the inviting organisation sees it); '' if none. */
-  phone: string
   status: MentorStatus
   /** The area of mentoring, written by the mentor; '' until they fill in their profile. */
   area: string

@@ -144,6 +144,13 @@ class TestNoPhoneOnAGroupTable(_Base):
                     self.assertNotIn('phone', row)
                 self.assertNotIn(self.PHONE, str(body))
 
+    def test_only_a_super_s_platform_screens_ask_for_phones(self):
+        # Organisations and Partners (super only) are not group tables: they ask with `?phones=1`.
+        rows = {r['id']: r for r in authed_client(self.super).get('/api/v1/admin/admins/?phones=1').json()['admins']}
+        self.assertEqual(rows[self.admin.pk]['phone'], self.PHONE)
+        lead = authed_client(self.lead).get('/api/v1/admin/admins/?phones=1').json()['admins']
+        self.assertNotIn(self.PHONE, str(lead))
+
     def test_the_person_page_keeps_it_when_shared_and_lacks_it_when_not(self):
         self.assertEqual(_page(self.lead, self.admin).json()['person']['profile']['phone'], self.PHONE)
         StaffProfile.objects.filter(partner_admin=self.admin).update(share_phone_with_team=False)
