@@ -1,0 +1,18 @@
+{
+ "father_slip": {
+  "income_evidence": "father's salary slip shows about RM2400/month",
+  "prompt_line": "Documented income (payslip/EPF — use authoritatively if present): father's salary slip shows about RM2400/month"
+ },
+ "father_slip_mother_epf": {
+  "income_evidence": "father's salary slip shows about RM2400/month; mother's EPF statement shows about RM1800/month",
+  "prompt_line": "Documented income (payslip/EPF — use authoritatively if present): father's salary slip shows about RM2400/month; mother's EPF statement shows about RM1800/month"
+ },
+ "none_on_file": {
+  "income_evidence": "none on file",
+  "prompt_line": "Documented income (payslip/EPF — use authoritatively if present): none on file"
+ },
+ "str_route_earner_slip": {
+  "income_evidence": "mother's salary slip shows about RM2400/month",
+  "prompt_line": "Documented income (payslip/EPF — use authoritatively if present): mother's salary slip shows about RM2400/month"
+ }
+}

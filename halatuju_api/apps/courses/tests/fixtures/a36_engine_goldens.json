@@ -1,0 +1,360 @@
+{
+ "_about": "Audit sprint A3.6 golden readings (test_a36_engine_goldens.py), taken on the code BEFORE the split. Never edit a digest to make the test pass: a changed digest is a changed rule.",
+ "courses": 755,
+ "grade_profiles": 35,
+ "signal_profiles": 16,
+ "eligibility": {
+  "addmath_spike": {
+   "eligible": 286,
+   "sha256": "82d18a6ed483f886da879e888a01aaf8d839885d7a40c40dfc7abed7ac1cdac6"
+  },
+  "arts_credit_edge": {
+   "eligible": 235,
+   "sha256": "c6259861b7ec1377c5a7a977b234b58b818ccdde950337d3f5e2690b3b4c640b"
+  },
+  "arts_high": {
+   "eligible": 243,
+   "sha256": "9bc04e0840d50dd631aa09d1381d5014906fa714397d342765f6b46d6788e29e"
+  },
+  "bumi_islamic": {
+   "eligible": 578,
+   "sha256": "e8bafc9dbf624183af1c13d3b95cf6da7ac3cecc88ee5a899548cd836291a568"
+  },
+  "bumi_science": {
+   "eligible": 621,
+   "sha256": "e9e7debafe475ec8b3b1f1437f4ab4e07ae1fe14865f807f0f863e0f04f3e863"
+  },
+  "colourblind": {
+   "eligible": 205,
+   "sha256": "6bfd718c863b7f885c8887672f927568862fd8245e8137c77d258bef0104a701"
+  },
+  "colourblind_disability_tvet": {
+   "eligible": 44,
+   "sha256": "934e1edb0e75080e346671771ced17e0cbc9babbad4c4d56d3b3184291059678"
+  },
+  "disability": {
+   "eligible": 179,
+   "sha256": "74039767388ce853e557afe9869330d390520b0e3db4780b8cf6bb94ee030193"
+  },
+  "female_science": {
+   "eligible": 328,
+   "sha256": "55013b829bf996d557c9e3ac598bb269385535e4ed550dea27e1dc1089da5857"
+  },
+  "female_tamil_label": {
+   "eligible": 328,
+   "sha256": "55013b829bf996d557c9e3ac598bb269385535e4ed550dea27e1dc1089da5857"
+  },
+  "it_stream": {
+   "eligible": 299,
+   "sha256": "5447c0172dfa9f577df41c61a74538a9c31e0ffed5583176e75efdccb9400032"
+  },
+  "legacy_tech_voc_keys": {
+   "eligible": 272,
+   "sha256": "776146ae54741cf6fe42735bc2bf20181f30eae16404a31e7d5a7280a0a3d851"
+  },
+  "male_english_label": {
+   "eligible": 328,
+   "sha256": "44eeec52a07f2365b919aa81e0696672d5eb05e736758eeca0238f9c8b40b847"
+  },
+  "mixed_boundaries": {
+   "eligible": 304,
+   "sha256": "67793d89cdb7ab80109f79fc6829a41ad7641351d6f847d5043cf2b34868f7e3"
+  },
+  "no_grades": {
+   "eligible": 34,
+   "sha256": "f3da805a2abfe5fcbbbb34a56b05a675953e2d95717b38c94541bf073a6cc4bf"
+  },
+  "non_citizen": {
+   "eligible": 29,
+   "sha256": "5bf7fc166120d5bdbba807126cf97f1ec903c9bfa565e84bc7e4e76ec853ef80"
+  },
+  "pismp_chinese_stream": {
+   "eligible": 295,
+   "sha256": "9e51d2f4115b53e956fa2e8b743cc6ec3585c09d7cded1f5ca81a9f829858ce9"
+  },
+  "pismp_tamil_stream": {
+   "eligible": 314,
+   "sha256": "8142ed4e35b7062562e63311f00dbc3fb3efef6edee5372ba7294bfb64307702"
+  },
+  "science_all_A": {
+   "eligible": 351,
+   "sha256": "c694d0a99cfee9289e3da2c54212044725ddf497669660e16643753c816a4125"
+  },
+  "science_all_A+": {
+   "eligible": 351,
+   "sha256": "c694d0a99cfee9289e3da2c54212044725ddf497669660e16643753c816a4125"
+  },
+  "science_all_A-": {
+   "eligible": 338,
+   "sha256": "e0d8bf720637248737e07584f7717accf1478f17351fc7bc34a1ea7abad0a0ac"
+  },
+  "science_all_B": {
+   "eligible": 328,
+   "sha256": "44eeec52a07f2365b919aa81e0696672d5eb05e736758eeca0238f9c8b40b847"
+  },
+  "science_all_B+": {
+   "eligible": 328,
+   "sha256": "44eeec52a07f2365b919aa81e0696672d5eb05e736758eeca0238f9c8b40b847"
+  },
+  "science_all_C": {
+   "eligible": 322,
+   "sha256": "6af9fa4a3210a8e374624c61eeb298d54477ad921ed0b3e925e222f8757dc59b"
+  },
+  "science_all_C+": {
+   "eligible": 322,
+   "sha256": "96a9f8d0cb057aea13e0c4992e5bb8e5c49e8f0747d56aa32cce608f94a3d6ba"
+  },
+  "science_all_D": {
+   "eligible": 115,
+   "sha256": "dedcf19a0f8adf71f38d2c790b14a5c8c1471249b28f8213245ff15c79f46588"
+  },
+  "science_all_E": {
+   "eligible": 115,
+   "sha256": "d85b27173fdce2b4b0fe53eb377823ee64104c873bcd377a2d34e8bd38e3ccff"
+  },
+  "science_all_G": {
+   "eligible": 101,
+   "sha256": "17b4cf41a73e28d153080d17c7ffe6b88be29d41ffbc375a5d65bc08ac9b5b34"
+  },
+  "science_sci_not_triple": {
+   "eligible": 310,
+   "sha256": "b4a64cbc97afacd014fed04d99951c43f953e1112e3c2e2f4ea9ad37a988a213"
+  },
+  "technical_stream": {
+   "eligible": 327,
+   "sha256": "246bd91761307e8020257edf55cb8e2db90bfcba146fe8773f973c8b2c2c397d"
+  },
+  "tvet_3m_only": {
+   "eligible": 101,
+   "sha256": "1e0ad8c33569b638d1bcaa147c1fa6b30ae8b5160800820deb42da83bff01876"
+  },
+  "tvet_bm_only": {
+   "eligible": 34,
+   "sha256": "ca1ba63027768efafe2093600302fb6bfa6f6bd4a2c0c3cb37dbf95a6398334b"
+  },
+  "tvet_weak_passes": {
+   "eligible": 115,
+   "sha256": "19d4ad8f3e5c5dd36267a00c2bdebaaa7fcec62c99e1fa298efbf8313dd0f0e9"
+  },
+  "unknown_gender": {
+   "eligible": 327,
+   "sha256": "b508b0d926b08a0235fadb67ded0a93d02dbbaa921b4f94fa3cdb8166be6412f"
+  },
+  "vocational_stream": {
+   "eligible": 273,
+   "sha256": "907c30de0c61bb5f088558d3eb1d7e24ec7f1e239c3885cf72ad617afe264dd7"
+  }
+ },
+ "fit": {
+  "all_on": {
+   "sha256": "5dc5250397f12912277f4ec42c21f65456a8a976499287cc18eb6f94f829dc7e",
+   "total": 88535
+  },
+  "all_zero": {
+   "sha256": "f445e71e45255557bb71d1772a59c38d026d8d17bd044fa225ced6c736f223a5",
+   "total": 80211
+  },
+  "empty": {
+   "sha256": "5e693cdd2c12e770ee157116f1d6d1b7eae3653a921714b022537e48f95ee469",
+   "total": 75083
+  },
+  "flat_no_wrapper": {
+   "sha256": "9fcb0bc3ac421e5c4cdcb806c3aeb679ae5e31c067a31f73b6408536a2ea55f1",
+   "total": 86400
+  },
+  "seeded_00": {
+   "sha256": "f810387b6c6c34d6de2741af5b0424924ad348c68140c7d2a695e1e688e0263d",
+   "total": 78257
+  },
+  "seeded_01": {
+   "sha256": "e011ba95b6dbd3fb235a811f19dd7cef12a0d58ad05912426c5030aaf9a495ab",
+   "total": 83931
+  },
+  "seeded_02": {
+   "sha256": "43f17148b192656cbe096e40d47e8c86e387d1dbe8235b05682894486cb27693",
+   "total": 81505
+  },
+  "seeded_03": {
+   "sha256": "19bdc6c5ccd91cc9e41cdad7ff456573543a2aeee18d013cafda203b01400318",
+   "total": 88383
+  },
+  "seeded_04": {
+   "sha256": "aa2d9fb072b6b31ce2db374c5e2b76a0c1a494dd8a067bbe61d9b04aadb3c771",
+   "total": 85882
+  },
+  "seeded_05": {
+   "sha256": "e66b8a778d6aa523d136a6267f4913a8c4f86fcbfff57e6b0369571d3abad94e",
+   "total": 86946
+  },
+  "seeded_06": {
+   "sha256": "b3752581599632ac8948248cc26f6290ad6995fb7c04fb28455004cd888027bd",
+   "total": 87560
+  },
+  "seeded_07": {
+   "sha256": "deb2b6c112fbc16b69dc068b2d43ce5f2dcf3a1203082af5dd8297f0dad20c2a",
+   "total": 79446
+  },
+  "seeded_08": {
+   "sha256": "de0d207e785035250d28de52db5874a33a935c5d5c2153631769941bfb3391e8",
+   "total": 81552
+  },
+  "seeded_09": {
+   "sha256": "82c10d772386cae471461584af41825335468031c978e6bc2ab0fa4aab93bf73",
+   "total": 77534
+  },
+  "seeded_10": {
+   "sha256": "376a74057b6e916c0fa2f6efc983a8c8549bc4c8f1d389784849b77ca33a1290",
+   "total": 84928
+  },
+  "seeded_11": {
+   "sha256": "be452d09afdc62220af711a4616968e33fb4214f1064d2eb3002d6e925c0b8eb",
+   "total": 81428
+  }
+ },
+ "pre_u": {
+  "pairs": 1520,
+  "sha256": "5234d70542baa7a3af975ddff336d7ed0a3334f05bcb4d50482e40e9f9b161f1"
+ },
+ "rank": {
+  "addmath_spike": {
+   "ranked": 285,
+   "sha256": "d99e04f9d6437afc7b891a2983c679f32cc51141e0ae0412486ec2a36e99120a"
+  },
+  "arts_credit_edge": {
+   "ranked": 234,
+   "sha256": "ab4e622f44456930f4edd457f5a726639d30277dca0362d79e4da66b5c23c13c"
+  },
+  "arts_high": {
+   "ranked": 240,
+   "sha256": "1b7ec18c1f53c2c4efaa3d8dbfdb2a6437011a4db696f69b216a143fbbd4693c"
+  },
+  "bumi_islamic": {
+   "ranked": 577,
+   "sha256": "368cffbe181f3b1c0d4ba6fdbedd12d6179bc60fa3ebc448a2388c278c1a0695"
+  },
+  "bumi_science": {
+   "ranked": 619,
+   "sha256": "6669e16998dfac4027ffe61325b93d8a5273041cebd2ae90ce04a827917efc0f"
+  },
+  "colourblind": {
+   "ranked": 203,
+   "sha256": "0537572c688f8fbb69bd799f71369167a3a586f3cb223281c3410a5ff64abcd8"
+  },
+  "colourblind_disability_tvet": {
+   "ranked": 44,
+   "sha256": "0d8bf192b73d1e092ee07c4d86c8b5ed502e0da1bdfa8e2357b98d3f295949c9"
+  },
+  "disability": {
+   "ranked": 177,
+   "sha256": "d16520155c8f81b14409ba1545ac3c16b30247a2e85a0b9e544627b7bb914545"
+  },
+  "female_science": {
+   "ranked": 328,
+   "sha256": "9b5479a932cc221ac558621e95c64e50ec92b997a14054c7cda19bbead38c0fd"
+  },
+  "female_tamil_label": {
+   "ranked": 328,
+   "sha256": "b52322913f694ef192dd96d34833e0d9b439ef47c9c10129364edee4bbfacdd1"
+  },
+  "it_stream": {
+   "ranked": 298,
+   "sha256": "baad28e5751c50da9671c324de50ac7fc874da5447cb3629a817ccd5e485c3a6"
+  },
+  "legacy_tech_voc_keys": {
+   "ranked": 271,
+   "sha256": "5f7545d5bdd3125eddd3e082f330687505caa2cde28371b02ec9fe11ae220e3a"
+  },
+  "male_english_label": {
+   "ranked": 328,
+   "sha256": "45f9bea3fa90f42f4137e7b37c40145ec54a4301193498925f3aec116a3b783f"
+  },
+  "mixed_boundaries": {
+   "ranked": 304,
+   "sha256": "80fae0413560019f8af1b9a33db727f2968d739ec7c03e97e1760850739ba553"
+  },
+  "no_grades": {
+   "ranked": 34,
+   "sha256": "d78c6a20c82b3d6b2106806743c420c2315d967905be877a67a7a2b35605409f"
+  },
+  "non_citizen": {
+   "ranked": 29,
+   "sha256": "232b790c6a0bc3287556618da570980759302e36a4504ac2883a4cd2c4a9e9ae"
+  },
+  "pismp_chinese_stream": {
+   "ranked": 289,
+   "sha256": "e94b52d01e0cdbcbc3e29acb9105abcad4ec8e4e1ae4f526e460252acf40e6e3"
+  },
+  "pismp_tamil_stream": {
+   "ranked": 301,
+   "sha256": "de1b9ea335e0823703dc1f27c303da65b8c14c926696c9f8f096628c879c2928"
+  },
+  "science_all_A": {
+   "ranked": 343,
+   "sha256": "92b5ff2124a33ffd47fbe0daa4b6171c42805400856814b304df530b5852e1e4"
+  },
+  "science_all_A+": {
+   "ranked": 343,
+   "sha256": "28a595a2b5391b897a8dd6307ccbf332a177b1800d0816480408b89d1ca1c810"
+  },
+  "science_all_A-": {
+   "ranked": 336,
+   "sha256": "0c2b76aa948b317f17f48afe7c2efe3f88be56ba94d60a117943dc25ee656305"
+  },
+  "science_all_B": {
+   "ranked": 328,
+   "sha256": "eb332ea23dda1dec90c1e07dd71d2a7b0f5636a8c9e576210f794710a41b91d5"
+  },
+  "science_all_B+": {
+   "ranked": 328,
+   "sha256": "cb6ebb4e5c702a0b46acbce24a650779e5c276f42bb25f171bb3493907965282"
+  },
+  "science_all_C": {
+   "ranked": 322,
+   "sha256": "f99f4988947d542785d79632502140d5f078e83a85df87d3143db062a31e23e4"
+  },
+  "science_all_C+": {
+   "ranked": 322,
+   "sha256": "cfd97ba423ce20882a215ba415f32aea83b07f5d029a8d5478331e5ba5d8b222"
+  },
+  "science_all_D": {
+   "ranked": 115,
+   "sha256": "2293e4290c60d6b8fbd0e761ce1600b805191339e95d6eec0082f8e1e5171250"
+  },
+  "science_all_E": {
+   "ranked": 115,
+   "sha256": "6c6ce92c7c5361bd634402d6c6980ca793400f5a65a1b86031c71bb9b9cd8104"
+  },
+  "science_all_G": {
+   "ranked": 101,
+   "sha256": "ad7d592a963a70ab231595c61106c6a425f504624e164593b8417a60f650ff16"
+  },
+  "science_sci_not_triple": {
+   "ranked": 309,
+   "sha256": "4b803d8426500dd6212711630bcb4281cc6f60b40e4a78ea1140b1df10c585ab"
+  },
+  "technical_stream": {
+   "ranked": 327,
+   "sha256": "2ebe304ec5d142e74f6da3bb9fafb55485303c588df00546f25f32d6a4c89e13"
+  },
+  "tvet_3m_only": {
+   "ranked": 101,
+   "sha256": "65ffa6f4e34bf0003bef4436530c5b5b06e5b8e93ca4a8c4da5b456a2e6b7d97"
+  },
+  "tvet_bm_only": {
+   "ranked": 34,
+   "sha256": "abb674e76467a8b41969dbfc77e802b3c0f7797b8f2a51f633ed6816d09b79fa"
+  },
+  "tvet_weak_passes": {
+   "ranked": 115,
+   "sha256": "5c9b34a31fe940f77178368233223dbec4e2060e8c0321d027a291b762c82268"
+  },
+  "unknown_gender": {
+   "ranked": 327,
+   "sha256": "5548715dec6fe54c22af1c8d0caee98e4750b589486e8ea273826cfa07325dd1"
+  },
+  "vocational_stream": {
+   "ranked": 272,
+   "sha256": "49a5ede1302a422cf8070ac2df5d0eb777324f183a54c8529fca492f80d19f7c"
+  }
+ }
+}

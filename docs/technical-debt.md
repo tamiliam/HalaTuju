@@ -7270,7 +7270,11 @@ the other category's campuses; a `'tvet'` course would appear under none, so a s
 not name it. **Live 2026-10-30: 0 of 299 TVET courses span two categories, 0 fall back to `'tvet'`** — nothing is
 hidden today. **Fix when an ingest makes it real:** a drift test that every TVET course maps to exactly one of
 `TVET_PATHWAYS` (fail the ingest's checks, not the picker), or group offerings by the institution's own category
-rather than the course's. *(B · S)*
+rather than the course's. *(B · S)* **Update 2026-11-10 (audit sprint A3.6): still OPEN.** A drift PIN was
+added, not the fix: `apps/courses/tests/test_a36_tvet_pathway_drift.py` pins today's first-category-else-`tvet`
+rule per course (300 synthetic TVET rows, incl. a two-category course), so a refactor cannot change it silently;
+the fix above must update that test on purpose. Also noted: "first" rests on the query's row order (no
+`order_by`), which can differ between SQLite and Postgres.
 
 ### ~~[TD-435] A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low~~ — RESOLVED 2026-11-07 (FIXED, Sprint A1.10a: reviewer_onboarding.reviewer_profile_complete answers True for a row without `review`, so the hold releases; the web reads the served flag. Test: test_admin_me)
 
