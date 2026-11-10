@@ -18,7 +18,7 @@ jest.mock('next/link', () => ({
     <a href={href}>{children}</a>,
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
+let viewerRole: { role: string; is_super_admin?: boolean; page_keys?: string[] } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -30,12 +30,19 @@ jest.mock('next/navigation', () => ({
   ...jest.requireActual('next/navigation'),
   useSearchParams: () => ({ get: (k: string) => (k === 'tab' ? tabParam : null) }),
 }))
-// M1b: the Staff tab's screen is its own chunk (`components/admin/StaffList`, tested there).
-jest.mock('@/components/admin/StaffList', () => ({
-  __esModule: true,
-  default: ({ canManage }: { canManage: boolean }) =>
-    <div data-testid="team-staff-screen" data-manage={canManage ? 'yes' : 'no'} />,
-}))
+// M1b: the Staff tab's screen is its own chunk (`components/admin/StaffList`, tested there). The stand-in
+// reads the list as the real one does on mount, so a test can tell whether Staff was ever drawn.
+jest.mock('@/components/admin/StaffList', () => {
+  const { useEffect } = jest.requireActual('react')
+  const apiMock = jest.requireMock('@/lib/admin-api')
+  return {
+    __esModule: true,
+    default: function StaffListStub({ canManage }: { canManage: boolean }) {
+      useEffect(() => { apiMock.getStaffList({ token: 'tok' }) }, [])
+      return <div data-testid="team-staff-screen" data-manage={canManage ? 'yes' : 'no'} />
+    },
+  }
+})
 // T3: the Mentors tab's screen is its own chunk (`components/mentors/MentorsAdmin`, tested there).
 jest.mock('@/components/mentors/MentorsAdmin', () => ({
   __esModule: true,
@@ -662,6 +669,19 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       'admins', 33, 'remove', false, { token: 'tok' }, true))
   })
 
+  it('M1b review (O17): a last Admins seat for someone who never signed in is GREYED `not_arrived`', async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: [LEAD, ROHINI, { ...KAMALA, first_seen_at: null }] })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Kamala Devi').length).toBeGreaterThan(0))
+    const row = rowOf('Kamala Devi')
+    expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
+    const b = within(within(row).getByTestId('remove-greyed-admins')).getByText('admin.team.removeFrom.admins')
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.refusal.not_arrived')
+    fireEvent.click(b)
+    expect(mockApi.changeTeamTable).not.toHaveBeenCalled()
+  })
+
   it('a person whose only table this is shows no chips and no retired label (owner 2026-11-07)', async () => {
     await openAdmins()
     const row = rowOf('Kamala Devi')
@@ -710,7 +730,6 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], tables: ['admins', 'reviewers'],
       remove: { reviewers: 'has_open_cases' } }], programmes: giftChoices })
     await loaded()
-    expect(ui().queryByText('admin.team.note.has_open_cases')).toBeNull()
     expect(ui().queryByTestId('remove-from-reviewers')).toBeNull()
     const b = within(ui().getByTestId('remove-greyed-reviewers')).getByText('admin.team.removeFrom.reviewers')
     expect(b.getAttribute('aria-disabled')).toBe('true')
@@ -719,6 +738,27 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       .toBe('admin.refusal.has_open_cases.many')
     fireEvent.click(b)
     expect(mockApi.changeTeamTable).not.toHaveBeenCalled()
+  })
+
+  it('M1b review (O17): a never-signed-in reviewer\'s last-group Remove is GREYED `not_arrived`', async () => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[1], tables: ['reviewers'],
+      remove: { reviewers: 'last_table' } }], programmes: giftChoices })
+    // The reviewers row has no `first_seen_at`; the Admins list (same people, same ids) does.
+    mockApi.getAdmins.mockResolvedValue({ admins: [...ADMINS, { ...ADMINS[2], id: 6, first_seen_at: null }] })
+    render(<AdminReviewersList />)
+    const grey = await waitFor(() => within(table()).getByTestId('remove-greyed-reviewers'))
+    const b = within(grey).getByText('admin.team.removeFrom.reviewers')
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.refusal.not_arrived')
+    expect(within(table()).queryByTestId('remove-from-reviewers')).toBeNull()
+  })
+
+  it('M1b review (O17): once they have signed in, the last-group Remove stays live', async () => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[1], tables: ['reviewers'],
+      remove: { reviewers: 'last_table' } }], programmes: giftChoices })
+    mockApi.getAdmins.mockResolvedValue({ admins: [{ ...ADMINS[2], id: 6, first_seen_at: '2026-10-01T08:00:00Z' }] })
+    render(<AdminReviewersList />)
+    await waitFor(() => expect(within(table()).getByTestId('remove-from-reviewers')).toBeTruthy())
+    expect(within(table()).queryByTestId('remove-greyed-reviewers')).toBeNull()
   })
 
   it('Add Reviewer lists the server candidates and adds the one picked', async () => {
@@ -866,10 +906,31 @@ describe('M1b: Team -> Staff, the first tab and the default', () => {
     expect((await screen.findByTestId('team-staff-screen')).getAttribute('data-manage')).toBe('yes')
   })
 
-  it('a finance reader gets Staff too, with no manage power', async () => {
+  // M1b review: `admin/staff/` is on `team_roster` (team.view + mentoring.view), narrower than the page's
+  // `team_read`. Finance reads Team but not the roster: no Staff tab, the Reviewers default, no 403.
+  it('a finance reader (team_read, not team_roster) gets no Staff tab and lands on Reviewers', async () => {
     viewerRole = { role: 'finance' }
+    await loaded()
+    expect(screen.queryByRole('tab', { name: 'admin.staff.tab' })).toBeNull()
+    expect(screen.getByRole('tab', { name: 'admin.reviewers.tabReviewers' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.queryByTestId('team-staff-screen')).toBeNull()
+    expect(mockApi.getStaffList).not.toHaveBeenCalled()
+  })
+
+  it('served doors decide: team_read without team_roster gets no Staff, even for `?tab=staff`', async () => {
+    viewerRole = { role: 'org_admin', page_keys: ['invitations.view', 'team.view'] }
+    tabParam = 'staff'
+    await loaded()
+    expect(screen.queryByRole('tab', { name: 'admin.staff.tab' })).toBeNull()
+    expect(screen.queryByTestId('team-staff-screen')).toBeNull()
+    expect(mockApi.getStaffList).not.toHaveBeenCalled()
+  })
+
+  it('served doors decide: team_roster opens Staff for a role the label list would not', async () => {
+    viewerRole = { role: 'finance', page_keys: ['invitations.view', 'team.view', 'mentoring.view'] }
     render(<AdminReviewersList />)
     expect((await screen.findByTestId('team-staff-screen')).getAttribute('data-manage')).toBe('no')
+    expect(mockApi.getStaffList).toHaveBeenCalled()
   })
 
   it('offers no Add button on the Staff tab (Add belongs to a group table)', async () => {

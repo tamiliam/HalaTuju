@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { COUNTED, refusalOf, refusalWords } from '@/lib/staffRefusals'
@@ -33,10 +33,11 @@ import { MessageBanner } from '@/components/admin/StaffAdmin'
 type T = (k: string, vars?: Record<string, string>) => string
 type Banner = { type: 'success' | 'error' | 'warning'; text: string } | null
 
-/** What is unfinished, each in the reader's words with its count (the greyed Delete's tip). */
-export function unfinishedReason(row: StaffRow, t: T): string {
+/** What is unfinished, each in the reader's words with its count — from a row's `work`, or a 409
+ *  `has_unfinished_work` body's (the same shape). Missing parts read as none. */
+export function unfinishedWords(work: Partial<StaffRow['work']> | undefined, t: T): string {
   const counts: Record<string, number> = {
-    ...row.work.admins, open_cases: row.work.reviewers.open_cases, scholars_now: row.work.mentors.scholars_now,
+    ...work?.admins, open_cases: work?.reviewers?.open_cases ?? 0, scholars_now: work?.mentors?.scholars_now ?? 0,
   }
   const said = Object.entries(COUNTED)
     .filter(([, field]) => (counts[field] ?? 0) > 0)
@@ -44,6 +45,9 @@ export function unfinishedReason(row: StaffRow, t: T): string {
     .filter((x): x is string => !!x)
   return said.length > 0 ? said.join(' ') : t('admin.refusal.has_unfinished_work')
 }
+
+/** The greyed Delete's tip. */
+export const unfinishedReason = (row: StaffRow, t: T) => unfinishedWords(row.work, t)
 
 /** The person page, for a row in a group — read-only for a fellow organisation admin (O10). */
 const pageOf = (row: StaffRow) => {
@@ -64,25 +68,47 @@ export default function StaffList({ token, canManage, viewerSuper, onChanged }: 
   const [rows, setRows] = useState<StaffRow[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [message, setMessage] = useState<Banner>(null)
-  const [busyId, setBusyId] = useState<number | null>(null)
+  // Per row: a second row's action may start while the first is still in flight.
+  const [busy, setBusy] = useState<ReadonlySet<number>>(new Set())
   const [deleting, setDeleting] = useState<StaffRow | null>(null)
+  const mark = (id: number, on: boolean) => setBusy((b) => {
+    const next = new Set(b)
+    if (on) next.add(id); else next.delete(id)
+    return next
+  })
 
+  // Only the LATEST read lands, and none after unmount. A failed RE-read keeps the rows on screen (a
+  // stale list beats none) and says so inline, with a Retry; only a first read that fails replaces the list.
+  const seq = useRef(0)
+  useEffect(() => () => { seq.current += 1 }, [])
   const load = useCallback(() => {
     if (!token) return
+    const mine = ++seq.current
     setFailed(false)
-    getStaffList({ token }).then((d) => setRows(d.staff)).catch(() => setFailed(true))
+    getStaffList({ token })
+      .then((d) => { if (mine === seq.current) { setRows(d.staff); setFailed(false) } })
+      .catch(() => { if (mine === seq.current) setFailed(true) })
   }, [token])
   useEffect(() => { load() }, [load])
 
-  const refused = (e: unknown) =>
-    setMessage({ type: 'error', text: refusalOf(e, t) ?? (e instanceof Error ? e.message : t('admin.actionFailed')) })
-  const after = () => { setBusyId(null); load(); onChanged?.() }
+  const refused = (e: unknown) => {
+    const err = e as { code?: string; body?: { work?: Partial<StaffRow['work']> } } | null
+    const text = err?.code === 'has_unfinished_work' && err.body?.work ? unfinishedWords(err.body.work, t)
+      : refusalOf(e, t) ?? (e instanceof Error ? e.message : t('admin.actionFailed'))
+    setMessage({ type: 'error', text })
+  }
+  // Every outcome reads the list again — a refusal too (`has_work`: the row now archives, not erases).
+  const after = (id: number) => { mark(id, false); load(); onChanged?.() }
 
   const toggle = async (row: StaffRow) => {
     if (!token) return
     const going = !row.suspended
-    if (!window.confirm(t(going ? 'admin.staff.suspendConfirm' : 'admin.staff.restoreConfirm', { name: row.name }))) return
-    setBusyId(row.id); setMessage(null)
+    // Suspending a reviewer with open cases: say how many wait on them (the Reviewers table's own confirm).
+    const open = row.work.reviewers.open_cases
+    const ask = going && open > 0 ? t('admin.reviewers.revokeConfirmOpen', { name: row.name, n: String(open) })
+      : t(going ? 'admin.staff.suspendConfirm' : 'admin.staff.restoreConfirm', { name: row.name })
+    if (!window.confirm(ask)) return
+    mark(row.id, true); setMessage(null)
     try {
       if (row.kind === 'mentor' && row.mentor_id) {
         await mentorAction(row.mentor_id, going ? 'deactivate' : 'reactivate', { token })
@@ -90,39 +116,46 @@ export default function StaffList({ token, canManage, viewerSuper, onChanged }: 
         await revokeAdmin(row.id, going ? 'revoke' : 'restore', { token })
       }
       setMessage({ type: 'success', text: t(going ? 'admin.staff.suspended' : 'admin.staff.restored', { name: row.name }) })
-    } catch (e) { refused(e) } finally { after() }
+    } catch (e) { refused(e) } finally { after(row.id) }
   }
 
   const remove = async (row: StaffRow) => {
     if (!token) return
     const archive = row.delete_outcome === 'archive'
-    setBusyId(row.id); setMessage(null)
+    mark(row.id, true); setMessage(null)
     try {
       const r = row.kind === 'mentor' && row.mentor_id
         ? await deleteMentor(row.mentor_id, { token }, archive)
         : await deleteAdmin(row.id, { token }, archive)
       setMessage({ type: r?.login === 'failed' ? 'warning' : 'success',
                    text: t(archive ? 'admin.staff.archived' : 'admin.staff.erased', { name: row.name }) })
-    } catch (e) { refused(e) } finally { setDeleting(null); after() }
+    } catch (e) { refused(e) } finally { setDeleting(null); after(row.id) }
   }
 
-  if (failed) return <p className="text-critical-600" role="alert">{t('admin.staff.loadFailed')}</p>
+  if (failed && !rows) return <p className="text-critical-600" role="alert">{t('admin.staff.loadFailed')}</p>
   if (!rows) return <p className="mt-8 text-center text-ground-500">{t('common.loading')}</p>
   return (
     <div data-testid="staff-list">
       <MessageBanner message={message} />
+      {failed && (
+        <div className="mb-3 flex flex-wrap items-center gap-3" data-testid="staff-reload-failed">
+          <p className="text-sm text-critical-600" role="alert">{t('admin.staff.loadFailed')}</p>
+          <button type="button" onClick={load} className="text-sm font-medium text-primary-600 hover:text-primary-800">
+            {t('common.retry')}</button>
+        </div>
+      )}
       {rows.length === 0 ? (
         <p className="mt-8 text-center text-ground-500">{t('admin.staff.empty')}</p>
       ) : (
         <ul className="divide-y divide-ground-100 rounded-xl border border-ground-200 bg-ground-0">
           {rows.map((row) => (
             <StaffLine key={row.id} row={row} t={t} canManage={canManage} viewerSuper={viewerSuper}
-              busy={busyId === row.id} onToggle={() => toggle(row)} onDelete={() => setDeleting(row)} />
+              busy={busy.has(row.id)} onToggle={() => toggle(row)} onDelete={() => setDeleting(row)} />
           ))}
         </ul>
       )}
       {deleting && (
-        <TypedConfirmDialog busy={busyId === deleting.id} phrase={deleting.name}
+        <TypedConfirmDialog busy={busy.has(deleting.id)} phrase={deleting.name.trim() || t('admin.delete')}
           title={t('admin.programmes.deleteTitle', { name: deleting.name })}
           body={<span data-testid="staff-delete-outcome">
             {t(`admin.staff.outcome.${deleting.delete_outcome === 'archive' ? 'archive' : 'erase'}`)}</span>}

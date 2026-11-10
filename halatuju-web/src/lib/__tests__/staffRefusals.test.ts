@@ -59,7 +59,7 @@ describe('M1b: refusalWords / refusalOf', () => {
     for (const msgs of [en, ms, ta]) {
       const r = (msgs as { admin: { refusal: Record<string, unknown> } }).admin.refusal
       for (const c of ['last_table', 'mentors_only', 'lead_fixed', 'qc_sees_all', 'not_arrived', 'self',
-        'last_org_admin', 'sole_org_admin', 'has_unfinished_work', 'staff_mentor']) expect(typeof r[c]).toBe('string')
+        'last_org_admin', 'sole_org_admin', 'has_unfinished_work', 'staff_mentor', 'has_work']) expect(typeof r[c]).toBe('string')
       for (const c of ['has_open_cases', 'run_in_progress', 'has_scholars']) {
         const v = r[c] as Record<string, string>
         for (const f of ['one', 'many', 'some']) expect(typeof v[f]).toBe('string')

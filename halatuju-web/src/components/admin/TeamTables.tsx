@@ -51,20 +51,26 @@ export function KeyChips({ keys }: { keys?: string[] }) {
  *  it, the Remove is GREYED with the reason — and the count — in its tip (O17: never inline text). Their
  *  LAST group (`last_table`) is accepted: they become No group, so `onRemove(true)` asks for `to_no_group`.
  *  Nothing when the row carries no entry for this table, or for the lead's fixed seat at Admins. `counts`:
- *  what the row knows of their work (`open_cases`), which the reason names. */
-export function RemoveControl({ remove, table, busy, onRemove, counts = {} }: {
+ *  what the row knows of their work (`open_cases`), which the reason names. `arrived`: whether they have
+ *  signed in (`first_seen_at`), where the page knows it — the row's cheap refusal stops at `last_table`, but
+ *  the server then refuses No group for whoever never arrived (`_refuse_no_group`), before open cases. */
+export function RemoveControl({ remove, table, busy, onRemove, counts = {}, arrived }: {
   remove?: TeamRemove
   table: TeamTableName
   busy?: boolean
   onRemove: (toNoGroup: boolean) => void
   counts?: Record<string, number>
+  arrived?: boolean
 }) {
   const { t } = useT()
   if (!remove || !(table in remove)) return null
   const code = remove[table]
   const last = code === 'last_table'
-  // Leaving Reviewers for No group still waits on their open cases (`_refuse_no_group`).
-  const blocked = last ? (table === 'reviewers' && (counts.open_cases ?? 0) > 0 ? 'has_open_cases' : null) : code
+  // Leaving their last group for No group: refused for whoever never signed in, then (Reviewers) while they
+  // hold open cases — the server's order (`_refuse_no_group`). `arrived` unknown → left live; the sheet says.
+  const blocked = !last ? code
+    : arrived === false ? 'not_arrived'
+    : table === 'reviewers' && (counts.open_cases ?? 0) > 0 ? 'has_open_cases' : null
   if (blocked === null || blocked === undefined) {
     return (
       <button type="button" disabled={busy} onClick={() => onRemove(last)} data-testid={`remove-from-${table}`}

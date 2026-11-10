@@ -34,6 +34,8 @@ export const COUNTED: Record<string, string> = {
 const PLAIN = new Set([
   'last_table', 'mentors_only', 'lead_fixed', 'qc_sees_all', 'not_arrived', 'self', 'last_org_admin',
   'sole_org_admin', 'has_unfinished_work', 'staff_mentor',
+  // 409 on an Erase whose person gained work on record since the list was read: the list reloads.
+  'has_work',
 ])
 
 export function refusalWords(code: string | null | undefined, t: T,

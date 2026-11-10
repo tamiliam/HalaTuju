@@ -8396,7 +8396,6 @@
       "standardHeading": "Teks piawai platform"
     },
     "delete": "Padam",
-    "deleteStaffBody": "Log masuk dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
     "deleteHasWork": "Ada kerja yang direkodkan ({work}), jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
@@ -8512,7 +8511,6 @@
         "none": "Mentor tidak memegang kebenaran untuk diubah.",
         "more": "Untuk memberi {name} lebih, tambah mereka ke jadual Pasukan yang lain."
       },
-      "revokeWhileMentoring": "Mereka masih membimbing penerima biasiswa ({n} kini), jadi tindakan ini akan ditolak sehingga setiap seorang dipindahkan kepada mentor lain.",
       "revokeHasScholars": "Mereka masih membimbing penerima biasiswa ({n} kini), jadi akses mereka tidak boleh ditarik balik. Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah.",
       "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
     },
@@ -8924,7 +8922,6 @@
         "remove": "Keluarkan daripada Mentor"
       },
       "confirm": {
-        "deactivate": "Batalkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh memulihkan mereka kemudian.",
         "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian.",
         "stop": "Keluarkan {name} daripada Mentor? Ini hanya boleh dilakukan apabila mereka tidak lagi membimbing mana-mana penerima biasiswa: pindahkan setiap seorang kepada mentor lain dahulu. Log masuk kakitangan mereka tidak disentuh. Gunakan “Tambah Mentor” untuk menambah mereka semula.",
         "remove": "Keluarkan {name} daripada Mentor? Log masuk mereka kekal dan mereka berpindah ke Tiada kumpulan, dan hanya melihat Profil mereka sehingga ditambah ke sesuatu kumpulan."
@@ -8938,7 +8935,6 @@
         "stop": "{name} tidak lagi membimbing. Log masuk kakitangan mereka tidak berubah.",
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
         "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri.",
-        "delete": "{name} telah dipadam.",
         "remove": "{name} tidak lagi membimbing dan kini berada dalam Tiada kumpulan."
       },
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
@@ -8972,7 +8968,6 @@
       "addMentor": "Tambah Mentor",
       "removeTitle": {
         "stop": "Keluarkan {name} daripada Mentor?",
-        "deactivate": "Batalkan {name}?",
         "remove": "Keluarkan {name} daripada Mentor?"
       },
       "detail": {
@@ -9004,7 +8999,6 @@
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
         "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Penerima biasiswa” untuk melihat penerima biasiswa mentor ini."
       },
-      "deleteBody": "Log masuk, rekod mentor dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
       "gifts": {
         "label": "Pemberian",
         "outside": "Mentor ini mempunyai {count} penerima biasiswa semasa di luar pemberian tersebut. Tamatkan atau tukar mentor mereka dahulu. Tiada apa yang diubah."
@@ -9579,10 +9573,6 @@
       },
       "opensAdminPages": "Mereka menjadi Pentadbir dan akan dapat membuka halaman kerja pentadbir (Pengumuman, Tinjauan, Pembangunan, Sumber, Mentor) yang belum dapat mereka buka sekarang.",
       "financeCheckOff": "Mereka orang terakhir yang ditetapkan sebagai Kewangan: kredit dompet tidak lagi melalui semakan kewangan.",
-      "note": {
-        "mentors_only": "Hanya Mentor yang tinggal: batalkan akses atau keluarkan daripada Mentor (mereka mesti telah log masuk untuk kekal sebagai mentor)",
-        "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
-      },
       "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Permohonan dan Penerima biasiswa. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
       "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya, fail pelajar mereka sendiri dalam Penerima biasiswa (baca sahaja) dan Profil mereka.",
       "emails": {
@@ -9688,6 +9678,7 @@
       "last_org_admin": "Mereka satu-satunya pentadbir organisasi. Lantik orang lain sebagai pentadbir organisasi dahulu.",
       "sole_org_admin": "Mereka satu-satunya pentadbir organisasi ini, jadi mereka tidak boleh digantung atau dipadam.",
       "has_unfinished_work": "Mereka masih ada kerja yang belum selesai. Serahkan kepada orang lain dahulu.",
+      "has_work": "Kini terdapat rekod kerja mereka, jadi mereka tidak boleh dihapuskan. Senarai telah dimuat semula: semak apa yang akan dilakukan oleh Padam sekarang dan cuba lagi.",
       "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor dalam jadual Mentor.",
       "has_open_cases": {
         "one": "Agihkan semula 1 kes terbuka mereka dahulu.",

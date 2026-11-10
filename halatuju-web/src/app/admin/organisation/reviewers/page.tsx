@@ -12,7 +12,7 @@ import {
   listReviewers, type AdminItem, type AdminReviewer,
 } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen, mayReadMentors } from '@/lib/pageGuard'
+import { MENTORS_READ_ROLES, mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
 import { lazySource } from '@/components/source/LazySource'
 import { turnaroundBand } from '@/lib/reviewerDetail'
 import {
@@ -29,7 +29,7 @@ import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { byCategory } from '@/lib/adminStaff'
-import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
+import { MessageBanner, StaffTable, arrivedOf, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
 import type { TeamTableName } from '@/lib/admin-api'
 import StaffAvatar from '@/components/admin/StaffAvatar'
@@ -100,9 +100,17 @@ export default function AdminReviewersList() {
   const asked = search?.get('tab')
   // Team tables T2 (owner ruling 1): Admins · Reviewers · Mentors · Emails · Terms. M1b: Staff comes first
   // and is the tab you land on (`?tab=staff`); `?tab=` opens any other.
+  // ⚠ M1b review: `GET admin/staff/` is on the server's `team_roster` door (team.view + mentoring.view), which
+  // is NARROWER than this page's `team_read` — `finance` reads the page and would meet a 403 on Staff. So
+  // Staff is offered, and is the default, only to whoever opens that door (the served `page_keys`; an older
+  // payload answers by the Mentors tab's roles, `MENTORS_READ_ROLES`); anybody else lands on Reviewers, the
+  // default before M1b. The choice is derived at render, so a role that arrives after the first paint still
+  // gets Staff. Visibility only: the endpoint is the fence.
+  const mayStaff = opensDoorOr(role, 'team_roster', MENTORS_READ_ROLES)
   type Panel = 'staff' | 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
-  const [panel, setPanel] = useState<Panel>(
-    asked === 'admins' || asked === 'mentors' || asked === 'reviewers' ? asked : 'staff')
+  const [chosen, setPanel] = useState<Panel | null>(
+    asked === 'admins' || asked === 'mentors' || asked === 'reviewers' || asked === 'staff' ? asked : null)
+  const panel: Panel = (chosen === null || chosen === 'staff') ? (mayStaff ? 'staff' : 'reviewers') : chosen
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
@@ -195,7 +203,7 @@ export default function AdminReviewersList() {
       <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
         onSelect={(k) => setPanel(k as Panel)}
         tabs={[
-          { key: 'staff', labelKey: 'admin.staff.tab' },
+          ...(mayStaff ? [{ key: 'staff', labelKey: 'admin.staff.tab' }] : []),
           { key: 'admins', labelKey: 'admin.people.tabAdmins' },
           { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
           // T3: the Mentors TABLE (owner ruling 6) — for who read the old Mentors page (`mayReadMentors`).
@@ -231,7 +239,7 @@ export default function AdminReviewersList() {
         onClose={() => setRemoving(null)} onDone={teamDone} />
 
       {/* M1b: Staff — every accepted member, with Suspend / Restore and Delete (O3), its own chunk. */}
-      {panel === 'staff' && (
+      {panel === 'staff' && mayStaff && (
         <StaffList token={token} canManage={canManage} viewerSuper={viewerSuper}
           onChanged={() => { reloadStaff(); load() }} />
       )}
@@ -333,7 +341,7 @@ export default function AdminReviewersList() {
                   {leadNote(r)}
                   <AlsoIn row={r} here="reviewers" />
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                    counts={{ open_cases: r.open_now }}
+                    counts={{ open_cases: r.open_now }} arrived={arrivedOf(admins.find((a) => a.id === r.id))}
                     onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />}
                 </div>
               </div>
@@ -436,7 +444,7 @@ export default function AdminReviewersList() {
                           {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. M1b (O4):
                               Remove only; Suspend and Delete are on Staff. */}
                           <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                            counts={{ open_cases: r.open_now }}
+                            counts={{ open_cases: r.open_now }} arrived={arrivedOf(admins.find((a) => a.id === r.id))}
                             onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />
                         </div>
                       )}

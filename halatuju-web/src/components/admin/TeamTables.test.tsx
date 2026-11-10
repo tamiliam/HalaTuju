@@ -49,6 +49,30 @@ describe('RemoveControl', () => {
     expect(container.querySelectorAll('.sr-only')).toHaveLength(1)
   })
 
+  // M1b review (O17): the row's cheap refusal stops at `last_table`; the server then refuses No group for
+  // whoever never signed in (`_refuse_no_group`), before open cases. Greyed here, not refused in the sheet.
+  it('a last group for someone who never signed in is greyed `not_arrived`, before open cases', () => {
+    const onRemove = jest.fn()
+    render(<RemoveControl remove={{ reviewers: 'last_table' }} table="reviewers" onRemove={onRemove}
+      counts={{ open_cases: 2 }} arrived={false} />)
+    expect(screen.queryByTestId('remove-from-reviewers')).toBeNull()
+    expect(tip('remove-greyed-reviewers')).toBe('admin.refusal.not_arrived')
+    fireEvent.click(screen.getByTestId('remove-greyed-reviewers').querySelector('button')!)
+    expect(onRemove).not.toHaveBeenCalled()
+  })
+
+  it('`arrived` only matters for the last group; signed in or unknown stays live', () => {
+    const { rerender } = render(<RemoveControl remove={{ admins: null }} table="admins" onRemove={jest.fn()}
+      arrived={false} />)
+    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
+    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} arrived />)
+    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
+    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} />)
+    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
+    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} arrived={false} />)
+    expect(tip('remove-greyed-admins')).toBe('admin.refusal.not_arrived')
+  })
+
   it('draws nothing for the lead\'s fixed Admins seat, or with no entry for the table', () => {
     const { container, rerender } = render(<RemoveControl remove={{ admins: 'lead_fixed' }} table="admins" onRemove={jest.fn()} />)
     expect(container.textContent).toBe('')

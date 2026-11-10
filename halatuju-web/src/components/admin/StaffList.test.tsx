@@ -247,3 +247,111 @@ describe('unfinishedReason', () => {
     expect(unfinishedReason(row(), t)).toBe('admin.refusal.has_unfinished_work')
   })
 })
+
+/** A promise the test settles by hand. */
+function later<V>() {
+  let resolve!: (v: V) => void
+  let reject!: (e: unknown) => void
+  const promise = new Promise<V>((res, rej) => { resolve = res; reject = rej })
+  return { promise, resolve, reject }
+}
+
+describe('M1b review', () => {
+  it('Suspend on a reviewer with open cases says how many wait on them', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: [
+      row({ id: 2, name: 'Bala Example', groups: ['reviewers'], work: { ...NO_WORK, reviewers: { open_cases: 3 } } })] })
+    mockApi.revokeAdmin.mockResolvedValue({})
+    await draw()
+    fireEvent.click(screen.getByTestId('staff-toggle-2'))
+    expect((window.confirm as jest.Mock).mock.calls[0][0])
+      .toBe('admin.reviewers.revokeConfirmOpen {"name":"Bala Example","n":"3"}')
+    await waitFor(() => expect(mockApi.revokeAdmin).toHaveBeenCalledWith(2, 'revoke', { token: 'tok' }))
+  })
+
+  it('Restore keeps its own confirm, open cases or not', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: [
+      row({ id: 5, suspended: true, work: { ...NO_WORK, reviewers: { open_cases: 3 } } })] })
+    await draw()
+    fireEvent.click(screen.getByTestId('staff-toggle-5'))
+    expect((window.confirm as jest.Mock).mock.calls[0][0]).toBe('admin.staff.restoreConfirm {"name":"Aruna Example"}')
+  })
+
+  it('an Erase refused `has_work` reads in words, and the list is read again', async () => {
+    mockApi.deleteAdmin.mockRejectedValue(Object.assign(new Error('Server sentence.'),
+      { status: 409, code: 'has_work', body: { code: 'has_work', work: { reviews: 2 } } }))
+    await draw()
+    fireEvent.click(line(1).getByTestId('staff-delete'))
+    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'Aruna Example' } })
+    fireEvent.click(screen.getByTestId('typed-confirm-go'))
+    expect(await screen.findByText('admin.refusal.has_work')).toBeTruthy()
+    expect(screen.queryByText('Server sentence.')).toBeNull()
+    await waitFor(() => expect(mockApi.getStaffList).toHaveBeenCalledTimes(2))
+  })
+
+  it('a `has_unfinished_work` 409 names what is unfinished, with the counts from its body', async () => {
+    mockApi.deleteAdmin.mockRejectedValue(Object.assign(new Error('Server sentence.'), {
+      status: 409, code: 'has_unfinished_work', body: { code: 'has_unfinished_work', work: {
+        admins: { runs_in_progress: 2 }, reviewers: { open_cases: 0 }, mentors: { scholars_now: 1 } } } }))
+    await draw()
+    fireEvent.click(line(4).getByTestId('staff-delete'))
+    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'Devi Example' } })
+    fireEvent.click(screen.getByTestId('typed-confirm-go'))
+    expect(await screen.findByText(
+      'admin.refusal.run_in_progress.many {"n":"2"} admin.refusal.has_scholars.one {"n":"1"}')).toBeTruthy()
+  })
+
+  it('a blank name still gives Delete a word to type', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: [row({ name: '  ' })] })
+    mockApi.deleteAdmin.mockResolvedValue({ message: 'ok' })
+    await draw()
+    fireEvent.click(screen.getByTestId('staff-delete'))
+    const go = screen.getByTestId('typed-confirm-go') as HTMLButtonElement
+    expect(go.disabled).toBe(true)
+    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'admin.delete' } })
+    expect(go.disabled).toBe(false)
+    fireEvent.click(go)
+    await waitFor(() => expect(mockApi.deleteAdmin).toHaveBeenCalledWith(1, { token: 'tok' }, false))
+  })
+
+  it('a failed re-read keeps the rows, says so inline, and Retry reads again', async () => {
+    mockApi.revokeAdmin.mockResolvedValue({})
+    await draw()
+    mockApi.getStaffList.mockRejectedValueOnce(new Error('boom'))
+    fireEvent.click(screen.getByTestId('staff-toggle-1'))
+    expect(await screen.findByTestId('staff-reload-failed')).toBeTruthy()
+    for (const r of TEAM) expect(screen.getByTestId(`staff-row-${r.id}`)).toBeTruthy()
+    fireEvent.click(within(screen.getByTestId('staff-reload-failed')).getByText('common.retry'))
+    await waitFor(() => expect(screen.queryByTestId('staff-reload-failed')).toBeNull())
+    expect(mockApi.getStaffList).toHaveBeenCalledTimes(3)
+    expect(screen.getByTestId('staff-row-1')).toBeTruthy()
+  })
+
+  it('only the latest read lands: an older answer arriving late is ignored', async () => {
+    const first = later<{ staff: api.StaffRow[] }>()
+    const second = later<{ staff: api.StaffRow[] }>()
+    mockApi.getStaffList.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    const { rerender } = render(<StaffList token="tok" canManage viewerSuper={false} />)
+    rerender(<StaffList token="tok2" canManage viewerSuper={false} />)
+    second.resolve({ staff: [row({ id: 2, name: 'Bala Example' })] })
+    await waitFor(() => expect(screen.getByTestId('staff-row-2')).toBeTruthy())
+    first.resolve({ staff: [row({ id: 1, name: 'Aruna Example' })] })
+    await first.promise
+    await waitFor(() => expect(screen.getByTestId('staff-row-2')).toBeTruthy())
+    expect(screen.queryByTestId('staff-row-1')).toBeNull()
+  })
+
+  it('busy is per row: a second row acts while the first is still in flight', async () => {
+    const one = later<unknown>()
+    mockApi.revokeAdmin.mockReturnValueOnce(one.promise as never).mockResolvedValueOnce({})
+    await draw()
+    fireEvent.click(screen.getByTestId('staff-toggle-1'))
+    await waitFor(() => expect((screen.getByTestId('staff-toggle-1') as HTMLButtonElement).disabled).toBe(true))
+    expect((screen.getByTestId('staff-toggle-4') as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByTestId('staff-toggle-4'))
+    await waitFor(() => expect(mockApi.revokeAdmin).toHaveBeenCalledWith(4, 'revoke', { token: 'tok' }))
+    await waitFor(() => expect((screen.getByTestId('staff-toggle-4') as HTMLButtonElement).disabled).toBe(false))
+    expect((screen.getByTestId('staff-toggle-1') as HTMLButtonElement).disabled).toBe(true)
+    one.resolve({})
+    await waitFor(() => expect((screen.getByTestId('staff-toggle-1') as HTMLButtonElement).disabled).toBe(false))
+  })
+})

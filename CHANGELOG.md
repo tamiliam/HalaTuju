@@ -27,6 +27,13 @@ Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roa
 - docs: TD-604 closed; TD-606 raised (mentor Suspend does not refuse `has_scholars` on the server).
 - test: StaffList, RemoveControl, the greyed Suspend / Delete, the refusal wording, the O12 editor, the person pages,
   the Team tabs and a member's shell.
+- fix (M1b review): Staff is offered, and is the default, only to a viewer who opens `team_roster` (what
+  `GET admin/staff/` needs); anyone else, `finance` among them, lands on Reviewers as before M1b and never calls
+  the endpoint. On Staff, Suspend of a reviewer with open cases says how many; `has_work` is worded and the list
+  reloads; a `has_unfinished_work` 409 names its counts; a blank name still gives Delete a word to type; only the latest
+  list read lands, and a failed re-read keeps the rows with an inline Retry; busy is per row. A never-signed-in
+  person's last-group Remove is greyed `not_arrived`. Orphaned i18n keys removed. TD-606 corrected (the Staff row DOES
+  carry `runs_in_progress`) and its open gaps listed (no run count on the Admins row, so that Remove is not greyed yet).
 
 ### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
 
