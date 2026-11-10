@@ -174,7 +174,7 @@ def stop(caller, mentor, login):
         # (`staff_tables_admin.change`) takes. A Remove that made them a mentor login first wins: their
         # mentoring is then Deactivate's (`not_staff`), never a stamp that leaves a live mentor login with a
         # deactivated mentor sitting in no table.
-        row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk).first()
+        row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk, archived_at=None).first()
         if row is None or not row.is_staff_mentor or row.mentor_id != mentor.pk:
             return 0, 'not_staff'
         n = mentoring.scholars_now([mentor.pk]).get(mentor.pk, 0)

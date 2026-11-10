@@ -45,7 +45,7 @@ class Command(BaseCommand):
 
         headers = {'apikey': key, 'Authorization': f'Bearer {key}'}
         rows = PartnerAdmin.objects.filter(
-            supabase_user_id__isnull=False, first_seen_at__isnull=True).order_by('id')
+            supabase_user_id__isnull=False, first_seen_at__isnull=True, archived_at__isnull=True).order_by('id')
 
         seeded = skipped_no_signin = failed = 0
         for a in rows:

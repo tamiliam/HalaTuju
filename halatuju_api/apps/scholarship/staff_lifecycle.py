@@ -192,7 +192,7 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
     from . import invitations, staff_permissions_admin
     from .models import Invitation
     with transaction.atomic():
-        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
+        target = PartnerAdmin.objects.select_for_update().filter(pk=target_id, archived_at=None).first()
         if target is None:
             raise RoleChangeRefused('not_found', 404, 'Admin not found')
         plan = plan_role_change(target, new_role)

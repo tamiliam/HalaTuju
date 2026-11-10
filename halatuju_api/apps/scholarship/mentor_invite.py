@@ -498,6 +498,8 @@ def delete_mentor(caller, mentor, login):
         row = PartnerAdmin.objects.select_for_update().filter(mentor=locked).order_by('id').first()
         if is_staff_login(row):
             return 'staff_mentor', None
+        if row is not None and row.is_archived:   # M1a: out of reach by id (the scope hides it too)
+            return 'not_found', None
         work = mentor_work(row, locked)
         if work:
             return 'has_work', work

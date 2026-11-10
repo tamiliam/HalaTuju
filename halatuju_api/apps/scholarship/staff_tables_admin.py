@@ -99,7 +99,7 @@ def may_act(caller, target, table):
     from apps.courses.views_admin import _staff_target_manageable
     if caller is None or target is None or table not in TABLES:
         return False
-    if target.is_super:
+    if target.is_super or target.is_archived:   # M1a: an archived row is out of reach by id
         return False
     if target.role == sp.LEAD_ROLE:
         # Lead ruling Q4: a super, or the organisation admin on their OWN row — Reviewers only (the lead

@@ -275,7 +275,7 @@ class _ReviewersBase(_AdminBase):
         # on Team -> Reviewers; the table's own rule (`staff_tables.in_reviewers`) never counted them.
         qs = (PartnerAdmin.objects
               .filter(staff_permissions.team_holding(('review', 'qc'), with_lead=True))
-              .exclude(role='super')
+              .exclude(role='super').filter(archived_at__isnull=True)   # M1a: an archived row is on no list
               .select_related('reviewer_profile', 'mentor')
               .annotate(**staff_gift.gift_annotation()).order_by('name'))
         if not include_revoked:

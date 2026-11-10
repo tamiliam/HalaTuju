@@ -262,14 +262,17 @@ class _MentorsBase(_AdminBase):
         """`(the mentors this caller may see, error)`: its own organisation's (an organisation-less
         caller: none); a super every organisation's, narrowed by `?org=`."""
         from ..models import Mentor
+        # M1a: a mentor whose login is ARCHIVED is on no list and out of reach by id (every door reads
+        # this scope); the way back is the mentor invite (`mentor_archive.reinvite`).
+        live = Mentor.objects.exclude(users__archived_at__isnull=False)
         if not self.has_role(admin, 'super'):
             org_id = admin.owning_organisation_id
-            return (Mentor.objects.filter(organisation_id=org_id) if org_id
+            return (live.filter(organisation_id=org_id) if org_id
                     else Mentor.objects.none()), None
         org, err = self._org_narrowing(request, admin)
         if err:
             return None, err
-        qs = Mentor.objects.all()
+        qs = live
         return (qs.filter(organisation=org) if org is not None else qs), None
 
     def _target(self, request, pk):
@@ -566,7 +569,7 @@ class AdminStaffMentorsView(_MentorsBase):
         if isinstance(target_id, bool) or not isinstance(target_id, int):
             return _error('bad_request', status.HTTP_400_BAD_REQUEST)
         # org-fence: only a staff member of the caller's own organisation (a super: any, or `?org=`).
-        qs = PartnerAdmin.objects.filter(pk=target_id, owning_organisation__isnull=False)
+        qs = PartnerAdmin.objects.filter(pk=target_id, owning_organisation__isnull=False, archived_at__isnull=True)
         if orgs is not None:
             qs = qs.filter(owning_organisation_id__in=orgs)
         target = qs.first()
