@@ -2,10 +2,11 @@
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getSources, revokeSourceUser, updateSource, type SourceItem } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { mayOpen, opensDoorOr } from '@/lib/pageGuard'
@@ -79,8 +80,9 @@ export default function SourcesPage() {
   const [editForm, setEditForm] = useState<EditForm>({ name: '', contact_person: '', contact_email: '', phone: '' })
   const [panel, setPanel] = useState<Panel>('orgs')
 
-  const load = () => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
-  useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-read the list
+  const load = useCallback(() => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: tRef.current('admin.sources.loadError') })) }, [token, tRef])
+  useEffect(() => { load() }, [load])
 
   if (role && !canManage) {
     return <p className="text-critical-600">{t('admin.sources.superRequired')}</p>

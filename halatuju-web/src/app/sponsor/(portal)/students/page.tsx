@@ -147,7 +147,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
       className="flex flex-col overflow-hidden rounded-2xl border bg-ground-0 hover:border-info-300 hover:shadow-md transition">
       {/* Banner: field artwork + badges + ref pill */}
       <div className="relative h-[150px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- a small concept picture; a plain img keeps the card's fixed layout and adds no bundle weight */}
         <img src={fieldImageUrl(s.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         <span className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-ground-0/90 px-2 py-0.5 text-xs font-semibold text-positive-700 shadow-sm ${PHONE_PILL_SM}`}>

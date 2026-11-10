@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { seenBand } from '@/lib/sponsorDetail'
@@ -93,15 +94,15 @@ export default function AdminSponsorsList() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const { sort, setSort } = useSort<SponsorSortKey>(DEFAULT_SORT)
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     if (!token) return
     setLoading(true)
     listSponsors(statusF || undefined, { token })
       .then((d) => setSponsors(d.sponsors))
-      .catch(() => setError(t('admin.sponsors.loadFailed')))
+      .catch(() => setError(tRef.current('admin.sponsors.loadFailed')))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, statusF])
+  }, [token, statusF, tRef])
 
   useEffect(() => { load() }, [load])
 

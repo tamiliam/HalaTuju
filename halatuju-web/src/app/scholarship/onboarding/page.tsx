@@ -88,7 +88,7 @@ export default function ScholarshipOnboardingPage() {
       })
       .finally(() => { if (active) setSubmitting(false) })
     return () => { active = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submits once on ENTERING the Finish step; the answers, token and `t` are read as they stand then, and listing them would resubmit on every edit
   }, [step])
 
   function wrap(children: React.ReactNode) {

@@ -761,7 +761,7 @@ describe('the scan actually found the code (the floor)', () => {
     // A scan that matched nothing would report no violations and pass for ever while watching
     // nothing — the failure mode every guard in this repo carries a floor against.
     expect(Object.keys(SCAN.oversizeFiles).length).toBeGreaterThan(5)
-    expect(SCAN.eslintDisables.length).toBeGreaterThan(20)
+    expect(SCAN.eslintDisables.length).toBeGreaterThan(10)
     expect(SCAN.mirrors.length).toBeGreaterThan(20)
   })
 

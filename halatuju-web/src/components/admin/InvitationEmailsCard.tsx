@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLatest } from '@/lib/useLatest'
 import {
   getInvitationEmails,
   type PartnerEmailTemplate, type PartnerEmailsPayload,
@@ -41,12 +42,13 @@ export default function InvitationEmailsCard({ token, t, only, note }: {
   const [openKind, setOpenKind] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const tRef = useLatest(t)   // the load below words its error with the latest `t` without refiring on it
   useEffect(() => {
     if (!token) return
     getInvitationEmails({ token })
       .then(setData)
-      .catch(() => setError(t('admin.invitations.emails.loadError')))
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => setError(tRef.current('admin.invitations.emails.loadError')))
+  }, [token, tRef])
 
   if (!data) {
     return error ? (

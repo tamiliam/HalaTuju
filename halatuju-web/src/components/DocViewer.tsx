@@ -67,7 +67,7 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
         </div>
         <div className="flex-1 overflow-auto bg-ground-100">
           {doc.kind === 'image' && (
-            // eslint-disable-next-line @next/next/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element -- a signed document URL shown at its natural size; next/image would resize and re-encode a document a reviewer must read as uploaded
             <img src={doc.url} alt={doc.label} className="mx-auto block max-h-full max-w-full object-contain" />
           )}
           {doc.kind === 'pdf' && !phone && (

@@ -50,6 +50,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
@@ -204,16 +205,16 @@ export default function IntakeYearTab() {
   // day. Two rows disagreeing across a midnight tick would be a very hard bug to believe.
   const today = todayIso()
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(async () => {
     if (!token || programmeId === null) { setYears([]); return }
     try {
       setYears((await getAdminIntakeYears(programmeId, { token })).years)
       setError('')
     } catch {
-      setError(t('admin.years.loadFailed'))
+      setError(tRef.current('admin.years.loadFailed'))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, programmeId])
+  }, [token, programmeId, tRef])
 
   useEffect(() => { void load() }, [load])
 

@@ -119,7 +119,6 @@ export default function DocumentHelpCoach({
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, token, doc.id, lang, cacheSignal])
 
   if (!show || status === 'none') return null

@@ -15,6 +15,7 @@ import * as api from '@/lib/admin-api'
 import GiftProgrammes from '@/components/admin/GiftProgrammes'
 import { GiftScope, TWO_GIFTS, crumbText } from '@/test/giftScope'
 import { hasGiftDoor } from '@/lib/navigation'
+import { act as actA15 } from '@testing-library/react'
 
 // `t` echoes its key — except "Pays from", whose NAME is the point of asserting it, and the
 // TD-244 wallet line, whose count and NAMES are.
@@ -439,5 +440,22 @@ describe('#39 S2: waiting for you, and who may create', () => {
     render(<PaymentsLandingPage />)
     await screen.findByText(/admin.payments.newRun/)
     expect(screen.queryByTestId('waiting-for-you')).toBeNull()
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getPaymentRuns is called the same number of times after three more renders', async () => {
+    const view = render(<PaymentsLandingPage />)
+    await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getPaymentRuns.mock.calls.length
+    view.rerender(<PaymentsLandingPage />)
+    view.rerender(<PaymentsLandingPage />)
+    view.rerender(<PaymentsLandingPage />)
+    await actA15(async () => {})
+    expect(mockApi.getPaymentRuns).toHaveBeenCalledTimes(before)
   })
 })

@@ -37,6 +37,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
 import SortHeader from '@/components/admin/SortHeader'
 import SpendingShops, { rm } from '@/components/admin/SpendingShops'
@@ -109,6 +110,7 @@ export default function SpendingPage() {
   // gift's figures sat under the new gift's crumb, loading for ever. A save re-reads through
   // `load` (below), and the list's own ticket decides what lands.
   const latest = useRef(0)
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     const ticket = ++latest.current
     if (!token || !allowed || gate !== 'open') { setLoading(false); return }
@@ -116,13 +118,12 @@ export default function SpendingPage() {
     const forGift = programme
     getSpendingOverview(programme, { token })
       .then((d) => { if (ticket === latest.current) { setData(d); setDataGift(forGift) } })
-      .catch(() => { if (ticket === latest.current) setError(t('admin.spending.loadFailed')) })
+      .catch(() => { if (ticket === latest.current) setError(tRef.current('admin.spending.loadFailed')) })
       .finally(() => { if (ticket === latest.current) setLoading(false) })
     // ⚠ `programme` IS A DEPENDENCY. Switching gift in the breadcrumb must re-read; without
     // it the crumb would say one gift while the table showed another — the exact failure the
     // 2026-09-03 defect produced, arriving from the other direction.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme, gate])
+  }, [token, allowed, programme, gate, tRef])
 
   useEffect(() => { load() }, [load])
   // The LATEST `load` — a save that finishes after a gift switch must re-read the gift the crumb

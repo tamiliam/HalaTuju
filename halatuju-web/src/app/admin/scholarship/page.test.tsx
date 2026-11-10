@@ -279,3 +279,20 @@ describe('the page refuses a role the registry never gave it', () => {
     }
   })
 })
+
+// A3.15: the list effect reads `t` and `mayView` through refs instead of carrying a lint
+// suppression. The `useT` mock above hands back a NEW `t` on every render; the list must still
+// be read once, and again only when a filter (a real dependency) changes.
+describe('the list does not re-read when `t` or the role payload changes identity (A3.15)', () => {
+  it('reads once, and stays at one after more renders', async () => {
+    const view = render(<AdminScholarshipList />)
+    await waitFor(() => expect(mockApi.getScholarshipApplications).toHaveBeenCalled())
+    await act(async () => {})
+    const before = mockApi.getScholarshipApplications.mock.calls.length
+    authRole = { role: 'org_admin' }   // a refreshed payload: same role, new object
+    view.rerender(<AdminScholarshipList />)
+    view.rerender(<AdminScholarshipList />)
+    await act(async () => {})
+    expect(mockApi.getScholarshipApplications).toHaveBeenCalledTimes(before)
+  })
+})

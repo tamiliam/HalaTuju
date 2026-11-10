@@ -180,7 +180,7 @@ export default function IncomeWizard({
         .then(() => onChange?.())
         .catch(() => { /* soft */ })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- persists the prefilled route ONCE on mount; refiring on later changes would overwrite what the student chose
   }, [])
 
   // #1: re-seed the roster-derived "who works" / earner default when the roster changes, as long
@@ -195,7 +195,7 @@ export default function IncomeWizard({
         || (next.find((r) => r === 'father' || r === 'mother' || r === 'guardian') || '')
       return { ...a, income_working_members: next, income_earner: earner as typeof a.income_earner }
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-seeds only when the roster fields change (JSON key, not object identity); app itself changes every refresh
   }, [app.father_occupation, app.mother_occupation,
       JSON.stringify(app.other_family_members), app.income_working_members, touchedMembers])
 

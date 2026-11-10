@@ -178,7 +178,6 @@ function ActionCard({
   useEffect(() => {
     if (isClusterTask) { setCoachDoc(null); return }
     setCoachDoc((prev) => prev ?? latestDocFor(docs, item.doc_type))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs, isClusterTask, item.doc_type])
 
   // doc: refuse a file the server would (too big / not a photo or PDF — Mobile M4), else upload the named

@@ -18,6 +18,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import PaymentRunPage from './page'
 import * as api from '@/lib/admin-api'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
@@ -164,5 +165,22 @@ describe('the desktop table is untouched', () => {
     expect(frame?.className).toContain('hidden')
     expect(frame?.className).toContain('md:block')
     expect(cards().className).toContain('md:hidden')
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getPaymentRun is called the same number of times after three more renders', async () => {
+    const view = render(<PaymentRunPage />)
+    await waitFor(() => expect(mockApi.getPaymentRun).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getPaymentRun.mock.calls.length
+    view.rerender(<PaymentRunPage />)
+    view.rerender(<PaymentRunPage />)
+    view.rerender(<PaymentRunPage />)
+    await actA15(async () => {})
+    expect(mockApi.getPaymentRun).toHaveBeenCalledTimes(before)
   })
 })

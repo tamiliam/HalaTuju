@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate, formatDateTime } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import { effectiveRole } from '@/lib/navigation'
 import {
   getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest,
@@ -77,16 +78,15 @@ export default function AdminRequestDetailPage() {
   const [quoteMargin, setQuoteMargin] = useState('50')
   const [quoteNote, setQuoteNote] = useState('')
   const [scheduleDate, setScheduleDate] = useState('')
-
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     if (!token) return
     setLoading(true)
     getOrgRequest(id, { token })
       .then(setReq)
-      .catch(() => setError(t('admin.requests.error.generic')))
+      .catch(() => setError(tRef.current('admin.requests.error.generic')))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, id])
+  }, [token, id, tRef])
 
   useEffect(() => { load() }, [load])
 

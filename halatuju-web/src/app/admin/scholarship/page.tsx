@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import { PHONE_PILL, PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
@@ -132,8 +133,12 @@ function StaffScholarshipList() {
     return () => clearTimeout(id)
   }, [search])
 
+  // `mayView` and `t` are read through refs: the list must re-read on the filters and the token,
+  // not because the language changed or the role payload was refreshed.
+  const tRef = useLatest(t)
+  const mayViewRef = useLatest(mayView)
   useEffect(() => {
-    if (!token || !mayView || !urlRead || !urlFiltersRead) return
+    if (!token || !mayViewRef.current || !urlRead || !urlFiltersRead) return
     // Only this effect's newest read may land (TD-298): a slow reply for the gift — or filter — you
     // left must not overwrite the list you are now looking at.
     let current = true
@@ -161,11 +166,10 @@ function StaffScholarshipList() {
       { token },
     )
       .then((d) => { if (current) setData(d) })
-      .catch(() => { if (current) setError(t('admin.scholarship.loadFailed')) })
+      .catch(() => { if (current) setError(tRef.current('admin.scholarship.loadFailed')) })
       .finally(() => { if (current) setLoading(false) })
     return () => { current = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, readyF, bandF, withdrawalF, urlFiltersRead, parentCallF, q, page, pageSize, sort, sortDir])
+  }, [token, mayViewRef, tRef, urlRead, chosen, bucket, statusF, source, assignedF, readyF, bandF, withdrawalF, urlFiltersRead, parentCallF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 

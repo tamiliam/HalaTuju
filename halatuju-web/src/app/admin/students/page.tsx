@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 import { formatNricDisplay } from '@/lib/scholarship'
@@ -71,6 +72,7 @@ export default function AdminStudentList() {
     return () => clearTimeout(id)
   }, [search])
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   useEffect(() => {
     if (!token) return
     getPartnerStudents(
@@ -78,9 +80,8 @@ export default function AdminStudentList() {
       { token },
     )
       .then(setData)
-      .catch(() => setError(t('admin.loadStudentsFailed')))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page, pageSize, q, exam, source])
+      .catch(() => setError(tRef.current('admin.loadStudentsFailed')))
+  }, [token, page, pageSize, q, exam, source, tRef])
 
   if (error) {
     return <div className="text-critical-600 mt-8">{error}</div>

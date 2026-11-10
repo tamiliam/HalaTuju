@@ -52,6 +52,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getProgrammeOverview, type ProgrammeOverview } from '@/lib/admin-api'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { has } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
@@ -100,6 +101,7 @@ function StaffOverview() {
   // last and put its figures under a crumb naming the new gift — or, through the 404 branch, clear
   // the NEW gift's round. Every read takes a ticket; a reply whose ticket is not the latest is dropped.
   const latest = useRef(0)
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     if (!urlRead) return
     if (!token || !allowed) { setLoading(false); return }
@@ -119,13 +121,12 @@ function StaffOverview() {
           setChosenIntake({ gift: programme, id: undefined })
           return
         }
-        setError(t(`${K}.error`))
+        setError(tRef.current(`${K}.error`))
       })
       .finally(() => { if (mine()) setLoading(false) })
     // ⚠ `programme` AND `intake` ARE DEPENDENCIES. Switching gift in the breadcrumb, or picking a
     // round, must re-read — or the crumb would name one gift while the figures described another.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme, intake, urlRead])
+  }, [token, allowed, programme, intake, urlRead, tRef])
 
   useEffect(() => { load() }, [load])
 

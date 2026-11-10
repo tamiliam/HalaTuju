@@ -114,7 +114,6 @@ export default function AdminSponsorDetailPage() {
     return getSponsorDetail(id, { token })
       .then(setDetail)
       .catch(() => setLoadFailed(true))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
   useEffect(() => { load() }, [load])

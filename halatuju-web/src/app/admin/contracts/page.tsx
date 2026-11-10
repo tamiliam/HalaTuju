@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScopeCore'
@@ -53,7 +54,8 @@ export default function ContractsListPage() {
   // The gift in the breadcrumb ('' = none chosen: several gifts, or not yet known).
   const { chosen: gift, programme: giftChoice } = useProgrammeScope()
 
-  const load = () => {
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-read the list
+  const load = useCallback(() => {
     if (!token) return
     // ⚠ A REPLY FOR THE GIFT YOU LEFT IS DROPPED (the TD-298 shape): switching gift starts a new
     // read without cancelling the old, and the slower answer must not overwrite the newer.
@@ -61,12 +63,12 @@ export default function ContractsListPage() {
     setLoading(true)
     getContractTemplates(gift || undefined, { token })
       .then((d) => { if (current) setTemplates(d.templates) })
-      .catch(() => { if (current) setError(t('admin.contracts.actionFailed')) })
+      .catch(() => { if (current) setError(tRef.current('admin.contracts.actionFailed')) })
       .finally(() => { if (current) setLoading(false) })
     return () => { current = false }
-  }
+  }, [token, gift, tRef])
   // `gift` IS A DEPENDENCY — switching gift in the breadcrumb must re-read the list.
-  useEffect(load, [token, gift])   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(load, [load])
 
   if (role && !allowed) {
     return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>

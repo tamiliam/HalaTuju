@@ -30,6 +30,7 @@ import SpendingPage from './page'
 import * as api from '@/lib/admin-api'
 import { canAccess } from '@/lib/navigation'
 import { GiftScope, TWO_GIFTS } from '@/test/giftScope'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 // A mutable cell so the gift-gate tests can sign in as each role; every older test keeps `admin`.
@@ -933,5 +934,22 @@ describe('when it will not load', () => {
     mockApi.getSpendingOverview.mockRejectedValue(new Error('nope'))
     render(<SpendingPage />)
     expect((await screen.findByRole('alert')).textContent).toContain('admin.spending.loadFailed')
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getSpendingOverview is called the same number of times after three more renders', async () => {
+    const view = render(<SpendingPage />)
+    await waitFor(() => expect(mockApi.getSpendingOverview).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getSpendingOverview.mock.calls.length
+    view.rerender(<SpendingPage />)
+    view.rerender(<SpendingPage />)
+    view.rerender(<SpendingPage />)
+    await actA15(async () => {})
+    expect(mockApi.getSpendingOverview).toHaveBeenCalledTimes(before)
   })
 })

@@ -71,7 +71,7 @@ export default function MyStudentDetailPage() {
       <div className="md:mt-3 md:overflow-hidden md:rounded-2xl md:border md:bg-ground-0 md:shadow-sm">
         <div className="relative h-32 -mx-4 bg-gradient-to-br from-info-50 to-positive-50 md:mx-0">
           {st.field_image_slug && (
-            // eslint-disable-next-line @next/next/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element -- a small concept picture; a plain img keeps the card's fixed layout and adds no bundle weight
             <img src={conceptFieldImageUrl(st.field_image_slug)} alt="" className="w-full h-full object-cover" />
           )}
           <span className="absolute bottom-3 left-3 font-mono text-sm font-semibold bg-ground-0 border rounded-lg px-2.5 py-1">{st.ref}</span>

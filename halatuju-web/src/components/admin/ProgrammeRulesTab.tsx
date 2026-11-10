@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
@@ -74,6 +75,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
   const programmeId = programme?.id ?? null
   const year = useMemo(() => ruleYear(years), [years])
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(async () => {
     if (!token || programmeId === null) { setYears([]); return }
     setYearsLoading(true)
@@ -86,12 +88,11 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
       setSaved(asDraft)
       setOutcome({ kind: 'idle' })
     } catch {
-      setOutcome({ kind: 'error', message: t('admin.years.loadFailed') })
+      setOutcome({ kind: 'error', message: tRef.current('admin.years.loadFailed') })
     } finally {
       setYearsLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, programmeId])
+  }, [token, programmeId, tRef])
 
   useEffect(() => { void load() }, [load])
 

@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeParam, useProgrammeScope } from '@/lib/programmeScope'
@@ -106,6 +107,7 @@ export default function PaymentsLandingPage() {
     : foreignGift ? 'admin.payments.otherOrgGift' : ''
   const offerNewRun = canCreate && !newRunBlocked && !unconfirmed
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   useEffect(() => {
     if (!token || !allowed || gate !== 'open') { setLoading(false); return }
     // ⚠ A REPLY FOR THE GIFT YOU LEFT IS DROPPED (TD-298). Switching gift starts new reads without
@@ -115,7 +117,7 @@ export default function PaymentsLandingPage() {
     setLoading(true)
     getPaymentRuns(programme, { token })
       .then((d) => { if (current) { setRuns(d.runs); setCanPrepare(d.can_prepare) } })
-      .catch(() => { if (current) setError(t('admin.payments.loadFailed')) })
+      .catch(() => { if (current) setError(tRef.current('admin.payments.loadFailed')) })
       .finally(() => { if (current) setLoading(false) })
     // Best-effort: the funding summary is a supplementary section, so a failure here hides it
     // rather than breaking the runs list this page exists for.
@@ -125,8 +127,7 @@ export default function PaymentsLandingPage() {
     return () => { current = false }
     // ⚠ `programme` IS A DEPENDENCY — switching gift in the breadcrumb must re-read both
     // lists, or the crumb names one gift while the runs below belong to another.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme, gate])
+  }, [token, allowed, programme, gate, tRef])
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
