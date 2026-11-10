@@ -21,19 +21,20 @@ logger = logging.getLogger('apps.scholarship.services')
 
 
 
-# WHO MAY BE GIVEN A CASE (and therefore act on it — record a verdict, propose interview times,
-# etc.). Request #39 Sprint 3: whoever holds the `review` permission (a super holds every key), PLUS
-# the R1 override below. ONE predicate, `is_review_target`: scheduling._can_review reads it too, so
-# the interview surface can never drift out of step with the rest of the review surface again (a
-# stale copy silently blocked a 'qc' reviewer from proposing interview times — 2026-07-10).
+# WHO MAY HOLD A CASE (and therefore act on it — record a verdict, propose interview times, etc.).
+# Request #39 Sprint 3: whoever holds the `review` permission (a super holds every key), PLUS the
+# R1 roles below. ONE predicate, `is_review_target`: scheduling._can_review reads it too, so the
+# interview surface can never drift out of step with the rest of the review surface again (a stale
+# copy silently blocked a 'qc' reviewer from proposing interview times — 2026-07-10).
 #
-# ⚠ R1 (roadmap #39, lead ruling): before #39 a SUPER could assign any of reviewer / admin / qc /
-# org_admin, while an org_admin could assign only a reviewer. `review` reproduces the org_admin side
-# exactly; the super's wider choice is KEPT as this override (`views_admin/verdict.py` narrows an
-# org_admin to `review` holders through `may_assign_to`). Production 2026-10-19: no in-play case sat
-# with an admin / qc, one (awarded) with an org_admin. Its removal is the owner's question, not done.
-# A 'partner' is never a target; neither is the `finance` PRESET (it has no B40 scope, 2026-07-23) —
-# but a Finance person GIVEN `review` is one (owner, 2026-10-19: their assigned students only).
+# ⚠ R1 (roadmap #39, lead ruling 2026-10-19) let a SUPER hand a case to an admin / qc / org_admin.
+# T1 (owner D7, 2026-11-09) RETIRED IT FOR ASSIGNING: `may_assign_to` below now admits only the
+# Reviewers table, for every caller. R1_SUPER_TARGET_ROLES STAYS for HOLDING: `is_review_target`
+# (so `_can_review`, `scheduling._can_review`, pause) and the assignable LIST's query read it, so a
+# case an admin already holds is never stranded and its holder never vanishes from the picker.
+# Production 2026-11-09: one awarded case sits with an org_admin, one rejected with a super; no open
+# case is affected. A 'partner' is never a target; neither is the `finance` PRESET (it has no B40
+# scope, 2026-07-23) — but a Finance person GIVEN `review` is one (owner, 2026-10-19).
 R1_SUPER_TARGET_ROLES = ('admin', 'qc', 'org_admin')
 
 
@@ -58,16 +59,27 @@ def may_assign_to(caller, target):
     `assignable` flag `AdminAssignableAdminsView` serves per row, so the picker and the endpoint
     cannot disagree.
 
-      super      → any review target (the service then refuses a revoked or paused one);
-      org_admin  → an own-organisation team member who holds `review` — never a super, never
-                   another organisation's;
+    T1 (owner D7, 2026-11-09): the target must sit in the REVIEWERS TABLE (`staff_tables.in_reviewers`:
+    a team member who is a reviewer / qc or holds `review` / `qc`, or an org admin added to Reviewers),
+    whoever is assigning. The R1 super override is retired here, so an admin with `see_all`, an org
+    admin outside Reviewers and a super are never given a NEW case.
+
+      super      → anyone in Reviewers (the service then refuses a revoked or paused one);
+      org_admin  → anyone in Reviewers of the caller's own organisation (never a super:
+                   `in_reviewers` already excludes one);
       anyone else → nobody (assigning is a lead-tier power; the endpoint refuses them first).
-    """
-    if caller.is_super:
-        return is_review_target(target)
-    if caller.role != 'org_admin':
+
+    ⚠ It must also be someone who could HOLD the case (`is_review_target`): a Reviewer by label whose
+    saved set took every key away could not open it, and `_can_review` would refuse them anyway.
+    ⚠ The GIFT is not asked here (it needs the case): `assign_reviewer` refuses `gift_mismatch`.
+    ⚠ A case already held is never touched by this: `assign_reviewer` skips it for a re-pick of the
+    current holder, so re-saving the same name is a no-op, not a refusal (T1-d)."""
+    from apps.courses import staff_tables
+    if not (staff_tables.in_reviewers(target) and is_review_target(target)):
         return False
-    return (not target.is_super and target.has_perm('review')
+    if caller.is_super:
+        return True
+    return (caller.role == 'org_admin'
             and target.owning_organisation_id == caller.owning_organisation_id)
 
 
@@ -257,10 +269,12 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     with locked:
         if reviewer is not None:
             reviewer = _locked(reviewer)
-            # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — an org admin
-            # may hand a case only to an own-organisation `review` holder, and that row may have
-            # changed since the endpoint asked.
-            if by_admin is not None and not may_assign_to(by_admin, reviewer):
+            # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — only someone
+            # in Reviewers (an org admin: of their own organisation), and that row may have changed
+            # since the endpoint asked. T1-d: re-picking the CURRENT holder is the no-op below, never
+            # a refusal, so a case an admin held before T1 keeps its holder.
+            holder = reviewer.pk == application.assigned_to_id
+            if by_admin is not None and not holder and not may_assign_to(by_admin, reviewer):
                 raise AssignmentError('not_reviewer')
         if reviewer is not None and not _can_review(reviewer):
             # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and

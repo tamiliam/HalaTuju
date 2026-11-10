@@ -183,14 +183,16 @@ class TestReviewerAssignment(TestCase):
     def test_requires_auth(self):
         self.assertEqual(self._assign(self.reviewer.id).status_code, 401)
 
-    def test_can_assign_an_admin(self):
-        # 2026-07: a view-all admin can now be assigned selective review work (assignment
-        # grants WRITE on the assigned application; their read scope stays all).
+    def test_cannot_assign_an_admin_who_is_not_a_reviewer(self):
+        # T1 (owner D7, 2026-11-09) retired the R1 super override for ASSIGNING: a view-all admin
+        # is not in the Reviewers table, so even a super cannot give them a NEW case. (2026-07 to
+        # T1 a super could: assignment grants WRITE on the case; that still holds for a case they
+        # already hold — see test_assign_reviewers_only.py.)
         self._auth('super-uid')
         r = self._assign(self.viewer.id)   # self.viewer is role='admin'
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
         self.app.refresh_from_db()
-        self.assertEqual(self.app.assigned_to_id, self.viewer.id)
+        self.assertIsNone(self.app.assigned_to_id)
 
     def test_cannot_assign_a_partner(self):
         # A partner (org rep) has no review role and cannot be assigned work.

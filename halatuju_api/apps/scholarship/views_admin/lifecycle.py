@@ -315,7 +315,7 @@ class AdminAssignableAdminsView(_AdminBase):
         # assignment can't reach across tenants. (A PartnerAdmin list, not applicant data.)
         # ⚠ #39 Sprint 3: LISTED = everyone who could hold a case before #39 (the five roles, so
         # nobody already holding one vanishes — bug #66) PLUS anyone given `review`; WHO MAY BE
-        # PICKED is the served `assignable` flag (`may_assign_to`, the assign endpoint's own rule).
+        # PICKED is the served `assignable` flag (`may_assign_to`; T1: the Reviewers table only).
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
                           | staff_permissions.team_holding(('review',)))

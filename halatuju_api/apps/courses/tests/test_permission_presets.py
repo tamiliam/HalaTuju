@@ -31,6 +31,11 @@ approver, and no preset holds the CHECK any more. Each `s2` row's `today` is the
 `payments_read`'s RULE gained "or the lead tier" (its truth did not move), because the lead tier no
 longer holds `payments_approve` and still opens Payments.
 
+⚠ T1 (owner D7, 2026-11-09) CHANGED ONLY THE ROWS MARKED `t1`: who may be GIVEN a case is now the
+Reviewers table for every caller (`services.may_assign_to`). Same shape as `s2`: `today` is the new
+truth, `was` the old. The R1 rows that ask who may HOLD a case (`assignment_target`,
+`propose_interview_times`, `pause_target`, the listed sets) did not move.
+
 The reverse sweep (`ReverseSweep`) holds the vocabulary: every catalogue key reaches at least one row,
 every stored role resolves, and no row names a key the catalogue does not have.
 """
@@ -62,6 +67,21 @@ R1 = ('R1 (roadmap): today a SUPER may assign any of reviewer/admin/qc/org_admin
       '"assignment grants write" is unchanged. '
       'Production 2026-10-19: one in-play case sits with an org_admin (awarded), none with admin/qc.')
 
+#: T1 (owner D7, 2026-11-09). Quoted by every `t1` row: its `today` is the NEW truth, its `was` the
+#: answer before T1, so the flip stays readable (the `s2` pattern).
+T1_RULING = ('T1 (owner D7, 2026-11-09): a case is ASSIGNED only to someone in the Reviewers table '
+             '(staff_tables.in_reviewers), whoever assigns — the R1 super override is retired for '
+             'assigning (it stays for HOLDING: is_review_target). So a super no longer gives a NEW case '
+             'to an admin, an org admin outside Reviewers or a super, and an org admin may now give one '
+             'to an own-organisation QC person (a Reviewer by owner ruling 8).')
+
+
+def _in_reviewers(a):
+    """The T1 rule through permissions only: a TEAM member holding `review` or `qc` (never the lead
+    tier by its fixed `qc`, never a super) — the presets' reading of `staff_tables.in_reviewers`."""
+    return (not sp.is_lead_tier(a) and a.role != 'super'
+            and (a.has_perm('review') or a.has_perm('qc')))
+
 
 def _token(uid):
     return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
@@ -81,7 +101,7 @@ def _any_payments(a):
     return any(a.has_perm(k) for k in ('payments_prepare', 'payments_check', 'payments_approve'))
 
 
-#: gate -> {where, keys, today, rule, diverges, s2}. `rule(admin, case)` is the permission reading
+#: gate -> {where, keys, today, rule, diverges, s2, t1}. `rule(admin, case)` is the permission reading
 #: the gate will make; `case` is the test case (for the organisation and other fixtures).
 GOLDEN = {
     # ── A/B. who reaches the Applications list, and how much of it ──────────────────────────────
@@ -147,12 +167,13 @@ GOLDEN = {
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'org_admin_may_assign_to': {
-        'where': 'views_admin/verdict.py AdminAssignReviewerView (an org_admin assigns only a review '
-                 'holder: services.may_assign_to)',
-        'keys': ('review',),
-        'today': _t('reviewer'),
-        'rule': lambda a, c: (a.has_perm('review')
-                              and a.owning_organisation_id == c.org.id),
+        'where': 'views_admin/verdict.py AdminAssignReviewerView (an org_admin assigns only an '
+                 'own-organisation Reviewer: services.may_assign_to)',
+        'keys': ('review', 'qc'),
+        'today': _t('qc', 'reviewer'),
+        'was': _t('reviewer'),
+        'rule': lambda a, c: _in_reviewers(a) and a.owning_organisation_id == c.org.id,
+        't1': T1_RULING,
     },
     'reviewers_tab_lists': {
         'where': 'views_admin/reviewers.py _reviewers (team members holding review or qc; '
@@ -318,18 +339,20 @@ GOLDEN = {
     'assignable_flag_for_org_admin': {                                        # S3
         'where': 'views_admin/lifecycle.py AdminAssignableAdminsView served `assignable` (an '
                  'org_admin reads it; before S3 the web picker computed role == reviewer)',
-        'keys': ('review',),
-        'today': _t('reviewer'),
-        'rule': lambda a, c: (a.has_perm('review')
-                              and a.owning_organisation_id == c.org.id),
+        'keys': ('review', 'qc'),
+        'today': _t('qc', 'reviewer'),
+        'was': _t('reviewer'),
+        'rule': lambda a, c: _in_reviewers(a) and a.owning_organisation_id == c.org.id,
+        't1': T1_RULING,
     },
     'assignable_flag_for_super': {                                            # S3
         'where': 'views_admin/lifecycle.py AdminAssignableAdminsView served `assignable` (a super '
                  'reads it; before S3 the web picker offered a super every listed row)',
-        'keys': ('review',),
-        'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
-        'rule': lambda a, c: a.has_perm('review'),
-        'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
+        'keys': ('review', 'qc'),
+        'today': _t('qc', 'reviewer'),
+        'was': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
+        'rule': lambda a, c: _in_reviewers(a),
+        't1': T1_RULING,
     },
     # ── F2. the award withdrawal (A1.13b: maker and checker; NO preset holds either key, the lead
     #        tier holds the approve key only, and a super never sits in either seat) ─────────────
@@ -731,12 +754,21 @@ class ReverseSweep(TestCase):
 
     def test_every_s2_row_names_the_ruling_and_keeps_what_it_was(self):
         for gate, row in GOLDEN.items():
-            if 's2' not in row:
+            if 's2' not in row and 't1' not in row:
                 self.assertNotIn('was', row, gate)
                 continue
             with self.subTest(gate=gate):
-                self.assertTrue(row['s2'].startswith(S2_RULING))
+                if 's2' in row:
+                    self.assertTrue(row['s2'].startswith(S2_RULING))
+                else:
+                    self.assertEqual(row['t1'], T1_RULING)
                 self.assertEqual(set(row['was']), set(ROLES))
+
+    def test_the_t1_rows_are_exactly_who_may_be_given_a_case(self):
+        # T1 moved who may be ASSIGNED a case, never who may HOLD one (is_review_target's rows).
+        t1 = sorted(g for g, row in GOLDEN.items() if 't1' in row)
+        self.assertEqual(t1, ['assignable_flag_for_org_admin', 'assignable_flag_for_super',
+                              'org_admin_may_assign_to'])
 
     def test_the_s2_rows_are_exactly_the_payment_chain(self):
         s2 = sorted(g for g, row in GOLDEN.items() if 's2' in row)

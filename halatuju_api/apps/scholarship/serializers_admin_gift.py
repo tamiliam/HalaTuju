@@ -51,3 +51,21 @@ class ServesTheGift:
         data = super().to_representation(instance)
         data['programme'] = gift_ref(getattr(instance, 'programme', None))
         return data
+
+
+class ServesTheCaseGifts:
+    """Adds ``gift_ids: [int]`` to a LIST row, LAST (T1, 2026-11-09): the case's gifts as
+    `services.assignment.case_gifts` reads them — its own `programme` and its cohort's — sorted.
+
+    The applications list's Assign dropdown offers only reviewers who cover THIS case's gift
+    (`gifts` [] on a reviewer means every gift; an empty `gift_ids` hides nobody). The server
+    still decides: `assign_reviewer` refuses `gift_mismatch` with the same `case_gifts`.
+
+    Appended after `super()`, like `ServesTheGift`, because `serializers_admin.py` may not grow.
+    ⚠ NO QUERY: it reads `programme_id` and `cohort.programme_id`, and the list joins `cohort`."""
+
+    def to_representation(self, instance):
+        from .services.assignment import case_gifts
+        data = super().to_representation(instance)
+        data['gift_ids'] = sorted(case_gifts(instance))
+        return data
