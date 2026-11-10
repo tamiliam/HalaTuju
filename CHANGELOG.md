@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M1a - Staff list and membership rules, the API half (team membership, 2026-11-10)
+
+Branch team-membership (not pushed, not deployed). **Migration courses 0096 (MIGRATE-FIRST by hand):** two
+nullable / defaulted columns on `partner_admins` (`archived_at`, `archived_by_email`) and the
+`partner_admin_mentor_iff_mentor` check recreated with the new `member` role. Roadmap
+`docs/plans/2026-11-10-team-membership-roadmap.md`, brief `docs/plans/2026-11-10-m1-staff-list-brief.md`.
+Every new behaviour is opt-in on the request (`to_no_group`, `archive`), so today's web sees no change except the phones.
+- refactor: the staff fence moves to `apps/courses/staff_fence.py` (moves only, own commit); `views_admin.py` budget 795 -> 765.
+- "No group" (O6): a new role `member`. Signed in; opens only their own profile, photo, activity, password,
+  `admin/role/` and set-password; lands on Profile. Removing someone's last group makes them a member when the caller
+  sends `{"to_no_group": true}`; adding a member to a group gives that group's preset.
+- Remove from a group (O5) is refused while work in THAT group is unfinished; one home, `apps/scholarship/staff_work.py`
+  (Reviewers = open cases, Mentors = scholars now, Admins = a per-key registry, `payments_prepare` -> runs in progress).
+  One shared list of the keys that seat someone in Admins.
+- Delete (O7) is refused while work in ANY group is unfinished; with past records and `{"archive": true}` it ARCHIVES
+  (sign-in removed, name kept on every record; `staff_archive.py`, `mentor_archive.py`). An archived row is on no list
+  and out of reach by id (census of every reader). Re-inviting the same email restores the same row with fresh defaults,
+  so the QC-separation rule keeps its evidence.
+- `GET admin/staff/` (O2, O3): the Staff list's rows (groups, kind, manageable, work, delete answer, revocable), no
+  phone and no email, a fixed 10 queries; a super narrows with `?organisation=`.
+- The person page (O10): an org admin opens a fellow org admin's page and their own, view only (`staff_target_readable`);
+  nobody suspends (403 `self`) or deletes themselves. The person GET serves `manageable` and `table_presets` (O12).
+- Phones (O9, O16): no `phone` on the Admins, Reviewers or Mentors lists, nor on the mentor detail's `mentor` row; the
+  person page keeps it under "Show my phone to my team". A super's Organisations and Partners screens ask for theirs
+  with `GET admin/admins/?phones=1`. Web: the Reviewers rows (phone cards and table) and the Mentors rows draw no phone;
+  `phone` leaves `MentorRow` and `AdminReviewer`.
+- docs: decisions.md (M1a entry; O16 supersedes "the Reviewers table keeps the phone" in O9), roadmap O16 and O17,
+  role matrix (`member`), architecture map, TD-603 and TD-604.
+- test: archive and restore, the reader census, the member's six views, QC separation across archive + restore, the
+  Staff list (including its query budget), the read fence, no self-suspend / self-delete, the table presets, and no
+  phone on any group table; the web jest pins no `team-phone-*` on Reviewers and Mentors.
+
 ### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
 
 Branch a37 (not pushed, not deployed; no migration, behaviour kept).

@@ -1,5 +1,56 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-10 — Staff list and membership rules, API half: a `member` role, Delete as archive, a read fence for the person page; owner rulings O12-O17 (Sprint M1a)
+
+Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md` (O1-O17); brief `docs/plans/2026-11-10-m1-staff-list-brief.md`
+(with its Owner answers and Addendum). M1a is the API (courses 0096) plus the web's phone minimum; M1b draws the Staff
+tab. **Supersedes in part** the 2026-11-10 O9 entry below: "The Reviewers table is left as it is" (O16).
+
+**Owner rulings**
+
+| | Ruling |
+|---|---|
+| O12 | The person page's Permissions tab shows only the section for the table it was opened from (built in M1b). M1a serves `table_presets` on the person GET so M1b can draw it. |
+| O13 | Admin permissions become comprehensive (every admin menu item a grantable key, grouped by function); the paused T5 plan resumes as M2 (T5g-lite) → M3 (T5e) → M4 (T5d). Nothing in M1 adds an admin-work key. |
+| O14 | This lane is exempt from the audit feature freeze; deploys stay one at a time, each with the owner's yes. |
+| O15 | Three powers stay with the org admin and are never grantable: changing other staff's permissions, paying the platform bill, approving requests that commit paid hours. |
+| O16 | No phone on ANY group table (Admins, Reviewers, Mentors). A phone shows only on the person page, under "Show my phone to my team". The platform's Organisations and Partners screens are not group tables and keep theirs. |
+| O17 | No inline hint text under a group table's actions; a blocked Remove is greyed with the reason (and count) in the InfoTip (M1b). The API keeps serving the code and the count. |
+| Owner answers | A fellow org admin's page is view only; nobody suspends or deletes themselves. A re-invited archived person comes back with fresh defaults (`invite_permissions(role)`), history kept. |
+
+**Lead decisions**
+
+- **"No group" is a new role, `member`** (permissions NULL, sign-in kept, any mentor link kept with the Mentor
+  deactivated). Not the mentor-login shape: a new role opted in nowhere is denied by default, so only the six views it
+  is opted into (own profile, own photo, own activity, change own password, `admin/role/`, set-password) need auditing. Removing someone's last
+  group makes them a member only when the caller sends `{"to_no_group": true}`; without it the old refusal stands, so
+  today's web is unchanged. Adding a member to a group gives that group's role preset.
+- **Delete with records ARCHIVES** (`archived_at`, `archived_by_email`; sign-in removed, the row and its name kept on
+  every record), only when the caller sends `{"archive": true}`; without it today's 409 `has_work`. An archived row is
+  on no list and out of reach by id (one central 404), proven by a census of every reader of `PartnerAdmin`.
+  Re-inviting the same email restores THE SAME ROW (fresh defaults), so the QC-separation rule keeps its evidence
+  (TD-484's guard survives archive + restore). A mentor login archives the same way and its restore reactivates the
+  Mentor. No new activity verb for archive / restore: AUDIT log lines only (TD-603).
+- **Unfinished work has one home, `staff_work`**: Reviewers = open cases, Mentors = scholars now, Admins = a per-key
+  registry (`payments_prepare` → payment runs in progress today; M3 / M4 add keys without touching the refusals). One
+  shared list of the keys that seat a person in Admins (`staff_tables.ADMIN_KEYS`).
+- **The read fence (O10)** `staff_fence.staff_target_readable`: what the caller manages, plus, for an org admin, a
+  non-super org admin of their own organisation (a fellow one or themselves), view only (`manageable` and `editable`
+  false, no Delete, no Suspend; every write still 404 / 403). Never another organisation, a super, a source user, a
+  mentor login (it keeps its own page) or an archived row. The person block's "opens elsewhere" link follows it.
+- **The Staff list** `GET admin/staff/`: accepted programme staff, members and mentor logins; never a super, a source
+  user, a referral `partner` (platform-world) or someone not yet accepted (Invitations). A suspended row shows the
+  groups a Restore gives back. A super narrows with `?organisation=<id>` (400 not a number, 404 unknown). Fixed query
+  count (10), pinned by a test.
+- **Phones (O9, O16):** the Admins, Reviewers and Mentors lists serve no `phone`. The Admins list serves one to a super
+  who asks with `?phones=1`, because the Organisations and Partners screens read the same endpoint (the brief said to
+  drop `AdminItem.phone`; it stays optional for that use). The person page's `person.profile.phone` is unchanged.
+- **Per-table presets:** each table's preset is the role preset narrowed to that table's keys, or that table's Add
+  keys where the role gives none (a reviewer's Admins preset is the Admins Add keys).
+
+**Revisit if:** the owner wants a fellow org admin to be editable, an archive to be undoable other than by re-invite,
+or a referral `partner` on the Staff list.
+
 ## 2026-11-10 — No phone on Team → Admins; the organisation admin's name opens their page where the API serves it; no email in the person header (owner O9-O11, team-membership small change)
 
 Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md`, sprint item 1. **Supersedes in part** the 2026-10-31
