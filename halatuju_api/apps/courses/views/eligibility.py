@@ -155,7 +155,7 @@ class EligibilityCheckView(APIView):
             )
             inst = course_inst_data.get(course_id, {})
 
-            eligible_courses.append({
+            item = {
                 'course_id': course_id,
                 'course_name': course_name,
                 'level': course.level if course else '',
@@ -175,7 +175,13 @@ class EligibilityCheckView(APIView):
                 # Aliran (school type) — only for PISMP, so the apply-form picker can
                 # group teacher-training courses by SK/SJKC/SJKT before the bidang.
                 'aliran': aliran_of(course_name, course_id) if source_type == 'pismp' else '',
-            })
+            }
+            # Matric / Form 6 rows: the ranking's pre-U scorer reads the track and (Form 6) the
+            # mata gred off the item. Other rows carry neither key, so they are unchanged.
+            if merit_result['track_id']:
+                item['track_id'] = merit_result['track_id']
+                item['mata_gred'] = merit_result['mata_gred']
+            eligible_courses.append(item)
 
         eligible_courses = deduplicate_pismp(eligible_courses, pismp_req_hashes)
         eligible_courses = sort_eligible_courses(eligible_courses)

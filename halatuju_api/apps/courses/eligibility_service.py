@@ -84,6 +84,9 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
     merit_display_cutoff = None
     cutoff_for_bar = merit_cutoff  # Progress bar cutoff (0-100 scale)
     student_merit_for_course = student_merit
+    # The pre-U scorer (ranking_pre_u) reads these off the item; None for every other course.
+    track_id = None
+    mata_gred = None
 
     if merit_type == 'matric':
         track_id = _MATRIC_TRACK_MAP.get(course_id)
@@ -104,6 +107,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
 
     elif merit_type == 'stpm_mata_gred':
         bidang_id = _STPM_BIDANG_MAP.get(course_id)
+        track_id = bidang_id
         if bidang_id:
             stpm_result = check_stpm_bidang(bidang_id, grades)
             if stpm_result['eligible'] and stpm_result['mata_gred'] is not None:
@@ -137,6 +141,8 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
         'merit_display_cutoff': merit_display_cutoff,
         'merit_cutoff': cutoff_for_bar,
         'student_merit': student_merit_for_course,
+        'track_id': track_id,
+        'mata_gred': mata_gred,
     }
 
 

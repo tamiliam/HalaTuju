@@ -5,7 +5,15 @@ ledgered oversize file). `ranking_engine.py` re-exports every name, so every
 `from apps.courses.ranking_engine import ...` is unchanged. Nothing here changed.
 """
 
+from .pathways import MATRIC_TRACKS, STPM_BIDANGS
 from .ranking_constants import BASE_SCORE
+
+# The English track names the fit reason shows ('pathway:track_id' -> name); fit reasons are
+# English, like every other fit reason.
+_TRACK_NAMES = {
+    **{f"matric:{t['id']}": t['name'] for t in MATRIC_TRACKS},
+    **{f"stpm:{b['id']}": b['name'] for b in STPM_BIDANGS},
+}
 
 # --- Pre-University Unified Scoring (Asasi) ---
 # See docs/plans/2026-03-11-pre-u-scoring-design.md
@@ -273,6 +281,6 @@ def calculate_matric_stpm_fit_score(item, student_profile):
 
     reasons = ["Pre-university pathway to degree programmes"]
     if pre_u_field_preference(track_id, pathway, signals) > 0:
-        reasons.append(f"matches your interest in {track_id}")
+        reasons.append(f"matches your interest in {_TRACK_NAMES.get(f'{pathway}:{track_id}', track_id)}")
 
     return score, reasons
