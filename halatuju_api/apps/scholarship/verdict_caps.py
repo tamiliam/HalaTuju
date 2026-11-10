@@ -14,6 +14,8 @@ still imported inside ``_str_wrong_type``, so a patch at its source still lands.
 from __future__ import annotations
 
 from . import verdict_engine as _ve
+# ⚠ Imported BY VALUE: a mock.patch of verdict_engine._latest_doc does NOT reach _str_wrong_type
+# below. Patch apps.scholarship.verdict_caps._latest_doc instead.
 from .verdict_engine import _latest_doc
 
 
