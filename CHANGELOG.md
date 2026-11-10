@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: round_state out of the view layer; the rest of A3.11 stopped (A3.11, 2026-11-10)
+
+Branch a311 (not pushed, not deployed; no migration, no budget change).
+- RD-05 (part): `round_state` moved from `views_admin/gifts.py` to `intake_round.py`; `programme_overview` and `gifts` import it, `views_admin` still re-exports it. `programme_overview` still reaches `_reviewer_workloads` and `_median_days` in `views_admin/reviewers.py`, which another session is editing; left alone.
+- RD-09: there are two implementations, not three (`letters.names_match`, `payments._name_matches`; the wallet credit and payment-run signs both call the second). They differ on internal runs of whitespace, so they are pinned in `test_typed_name_pin.py` and not merged.
+- Not done, by design: the Gemini seams and the `render` / `banned_phrases` / `unknown_placeholders` adapters are already one engine (`gemini.generate_text`, `email_templates`) with thin per-caller names that tenancy rule 6 and ~35 `patch()` strings depend on. code-health.md records them as permanent; `duplicated_names` budget stays at 4.
+
 ### refactor: management commands split or retired, repair doors closed (audit A3.10, 2026-11-10)
 
 Branch a310 (not pushed, not deployed; no migration, no data change, no command run against a database).
