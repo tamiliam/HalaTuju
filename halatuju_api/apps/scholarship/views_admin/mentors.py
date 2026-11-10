@@ -49,6 +49,10 @@ ALREADY_STAFF = ("This email address already has a HalaTuju admin sign-in, so it
 ALREADY_TEAM = ('This person is already on your team. To make them a mentor, go to Mentors, press '
                 '"Add Mentor" and choose them from the list (no invitation is needed).')
 
+#: M1a: the address is an ARCHIVED staff member of this organisation; they come back by the staff invite.
+USE_STAFF_INVITE = ('This person was on your team before. Invite them again from Team, with the staff invite, '
+                    'to bring them back.')
+
 _FLUENT = ('conversational', 'fluent')
 
 
@@ -110,6 +114,8 @@ def invite_mentor(request, admin):
         return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
                       'Supabase service role key not configured')
     done = mentor_invite.invite(admin, organisation=owner, email=email, name=name, gifts=gifts)
+    if done.error == 'use_staff_invite':   # M1a: an archived staff member comes back by the staff invite
+        return _error(done.error, status.HTTP_409_CONFLICT, USE_STAFF_INVITE)
     if done.error == 'already_staff':
         if _is_addable_team_member(email, owner):
             return _error('already_team', status.HTTP_409_CONFLICT, ALREADY_TEAM)
@@ -369,8 +375,11 @@ class AdminMentorView(_MentorsBase):
         admin, mentor, login, err = self._target(request, pk)
         if err:
             return err
-        try:
-            refusal, detail = mentor_invite.delete_mentor(admin, mentor, login)
+        from apps.courses.staff_archive import archive_asked
+        from .. import mentor_archive
+        try:   # M1a: `{"archive": true}` archives a mentor with records (`mentor_archive`); else today's
+            refusal, detail = ((archive_asked(request.data) and mentor_archive.archive(admin, mentor, login))
+                               or mentor_invite.delete_mentor(admin, mentor, login))
         except DatabaseError:
             logger.exception('mentor delete of %s failed in the database; nothing was removed', pk)
             return _error('delete_failed', status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -379,6 +388,12 @@ class AdminMentorView(_MentorsBase):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_found':
             return _error(refusal, status.HTTP_404_NOT_FOUND)
+        if refusal == 'archived':
+            return Response({'message': 'Mentor archived. Their name stays on past records.', 'archived': True,
+                             'login': detail})
+        if refusal == 'has_unfinished_work':
+            return Response({'error': 'This mentor still has scholars. Move them to another mentor first.',
+                             'code': refusal, 'work': detail}, status=status.HTTP_409_CONFLICT)
         if refusal == 'has_work':
             return Response({'error': 'This mentor has work on record and can only be deactivated.',
                              'code': 'has_work', 'work': detail}, status=status.HTTP_409_CONFLICT)

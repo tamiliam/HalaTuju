@@ -207,6 +207,10 @@ def invite(caller, *, organisation, email, name, gifts=()):
     inside ``organisation`` (`mentor_gift.choose`); written on the mentor in the same transaction. A
     resend never touches them."""
     existing = PartnerAdmin.objects.select_related('mentor').filter(email__iexact=email).order_by('id').first()
+    if existing is not None and existing.is_archived:   # M1a: the same row back (`mentor_archive`)
+        from . import mentor_archive
+        return mentor_archive.reinvite(caller, existing, organisation=organisation, email=email, name=name,
+                                       gifts=gifts)
     if existing is not None:
         reuse = reusable_row(existing, organisation)
         if reuse is None:
@@ -456,6 +460,20 @@ def _drop_new_login(uid):
 
 
 # ── deleting (D6, Sprint T2, 2026-11-08) ─────────────────────────────────────────
+def mentor_work(row, mentor):
+    """A mentor's records: the login's footprint, else the mentor's own assignments and sessions (the
+    Delete's test; M1a: also whether a Delete archives, `mentor_archive.archive`)."""
+    from . import staff_footprint
+    from .models import MentorAssignment, MentoringSession
+    work = staff_footprint.footprint(row) if row is not None else {}
+    if not work and (MentorAssignment.objects.filter(mentor=mentor).exists()
+                     or MentoringSession.objects.filter(mentor=mentor).exists()):
+        counts = {'scholars_mentored': MentorAssignment.objects.filter(mentor=mentor).count(),
+                  'mentoring_sessions': MentoringSession.objects.filter(mentor=mentor).count()}
+        work = {k: n for k, n in counts.items() if n}
+    return work
+
+
 def delete_mentor(caller, mentor, login):
     """DELETE a mentor who has NO work: their invitations, their login and the mentor record, in ONE
     transaction; the Supabase login is retired after (`staff_lifecycle.retire_login`), as for staff.
@@ -470,8 +488,7 @@ def delete_mentor(caller, mentor, login):
     mentor row is LOCKED first: in Postgres a new assignment's foreign key waits on that lock, so work
     landing between the check and the delete cannot slip through."""
     from apps.courses import supabase_admin
-    from . import staff_footprint, staff_lifecycle
-    from .models import MentorAssignment, MentoringSession
+    from . import staff_lifecycle
     if is_staff_login(login):
         return 'staff_mentor', None
     with transaction.atomic():
@@ -481,12 +498,7 @@ def delete_mentor(caller, mentor, login):
         row = PartnerAdmin.objects.select_for_update().filter(mentor=locked).order_by('id').first()
         if is_staff_login(row):
             return 'staff_mentor', None
-        work = staff_footprint.footprint(row) if row is not None else {}
-        if not work and (MentorAssignment.objects.filter(mentor=locked).exists()
-                         or MentoringSession.objects.filter(mentor=locked).exists()):
-            counts = {'scholars_mentored': MentorAssignment.objects.filter(mentor=locked).count(),
-                      'mentoring_sessions': MentoringSession.objects.filter(mentor=locked).count()}
-            work = {k: n for k, n in counts.items() if n}
+        work = mentor_work(row, locked)
         if work:
             return 'has_work', work
         plan, account = (staff_lifecycle.plan_login_retirement(row) if row is not None

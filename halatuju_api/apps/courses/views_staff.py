@@ -25,7 +25,7 @@ from django.db import DatabaseError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import referral_links, staff_gift, staff_reinvite, staff_tables
+from . import referral_links, staff_archive, staff_gift, staff_reinvite, staff_tables
 from .staff_delete_rules import delete_fields, is_sole_org_admin, lock_org_admins_of, sole_org_admin_ids
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
@@ -85,7 +85,7 @@ def already_exists_answer(caller, existing):
     login may legitimately become staff; the inviter learns only that the address has a HalaTuju
     login, which is pre-existing, accepted behaviour). The sentences are served; the web adds none.
     """
-    if existing is None or not _listed_on_people(caller, existing):
+    if existing is None or existing.is_archived or not _listed_on_people(caller, existing):   # M1a
         return Response({'error': NOT_INVITABLE, 'code': 'not_invitable'}, status=409)
     role = 'super' if existing.is_super else existing.role
     # Team tables T2: "Finance" and "QC" are no longer labels (owner rulings 4 and 8) — they read as the
@@ -150,8 +150,9 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
         # refusal re-read on the locked copy, so work landing between the list and the click still
         # refuses; the login is only PLANNED inside the transaction (a read), and removed after the
         # row is gone — so a failed row delete can never leave a row naming a deleted login.
-        try:
-            return self._delete_locked(admin, admin_id, staff_footprint, staff_lifecycle)
+        try:   # M1a: 403 `self`, and `{"archive": true}` for a person with records (`staff_archive`)
+            return (staff_archive.before_delete(admin, admin_id, request.data)
+                    or self._delete_locked(admin, admin_id, staff_footprint, staff_lifecycle))
         except DatabaseError:
             logger.exception('staff delete of %s failed in the database; nothing was removed',
                              admin_id)

@@ -585,13 +585,13 @@ def _fmt_json(value):
 
 def _scholarship_staff_modules():
     """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
-    from apps.scholarship import mentoring, staff_footprint, staff_lifecycle, staff_mentor
-    return staff_footprint, staff_lifecycle, mentoring, staff_mentor
+    from apps.scholarship import invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work
+    return staff_footprint, staff_lifecycle, mentoring, staff_mentor, invitations, staff_work   # M1a: + the last two
 
 
 def scholarship_staff():
     """`(staff_footprint, staff_lifecycle)`: the ONE courses door to scholarship's staff rules."""
-    staff_footprint, staff_lifecycle, _, _ = _scholarship_staff_modules()
+    staff_footprint, staff_lifecycle = _scholarship_staff_modules()[:2]
     return staff_footprint, staff_lifecycle
 
 
@@ -602,7 +602,7 @@ def staff_mentor_leaves(target, by=''):
     be stale (S7d review fix 2): `leave` re-reads the row under a lock and decides there."""
     if target is None:
         return 0
-    _, _, _, staff_mentor = _scholarship_staff_modules()
+    staff_mentor = _scholarship_staff_modules()[3]
     return staff_mentor.leave(target, by=by)
 
 
@@ -612,7 +612,7 @@ def _mentor_linked(admin):
     mentor to that scholar ends now (`mentoring.end_if_self`). Best effort: it never fails a sign-in
     (the read-time guard keeps the mentor off the student's screens meanwhile)."""
     try:
-        _, _, mentoring, _ = _scholarship_staff_modules()
+        mentoring = _scholarship_staff_modules()[2]
         mentoring.end_if_self(admin.mentor, by='')
     except Exception:   # a sign-in must never fail on this
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)

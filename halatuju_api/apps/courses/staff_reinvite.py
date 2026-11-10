@@ -53,6 +53,9 @@ def may_reuse(caller, existing):
     hold assigned cases, since a cancel unassigns nothing), and `bring_back` refuses a login that
     has been used with its own password, and a Google row that already has a login."""
     from .views_admin import _staff_target_manageable, scholarship_staff
+    if existing is not None and existing.is_archived:   # M1a: an archived row comes back by `restore`
+        from .staff_archive import may_restore
+        return may_restore(caller, existing)
     if not (existing is not None and not existing.is_active and existing.first_seen_at is None
             and not existing.is_super and _staff_target_manageable(caller, existing)):
         return False
@@ -231,6 +234,10 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     invite reuses only a row of the SAME source; `PartnerAdmin.save` refuses any other binding).
     ``mentor`` (S7a) is the same for a NEW `mentor` row; the mentor invite never reuses a row.
     """
+    if reuse is not None and reuse.is_archived:   # M1a (owner, closes TD-484): the same row, a new login
+        from .staff_archive import restore
+        return restore(reuse, name=name, role=role, org=org, owning_org=owning_org,
+                       temp_password=temp_password, email=email, gifts=gifts)
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
                           temp_password=temp_password, email=email, gifts=gifts)
@@ -264,7 +271,8 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
     """
     with transaction.atomic():
         row = (PartnerAdmin.objects.select_for_update()
-               .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True).first())
+               .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True,
+                       archived_at__isnull=True).first())   # M1a: an archived row is `restore`'s
         if row is None:
             return None, False, 'not_reusable'
         # S7d review fix 3: a MENTOR login (or a source user) is never turned into ANOTHER role by a

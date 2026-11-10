@@ -144,6 +144,8 @@ ALLOWLIST = {
     'courses/staff_gift.py::staff_invite_org': ('GATE-LEFT', 'T5e',
         'TD-501 A1.3 review: lifted verbatim from AdminInviteView.post - which organisation an '
         'org_admin or super staff invite binds to; T5e moves lead powers to keys'),
+    'courses/staff_archive.py::restore': ('DISPLAY', 'account kind',
+        'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_reinvite.py::bring_back': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_tables.py::_team_member': ('DISPLAY', 'T5a tables',
@@ -156,7 +158,7 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_fence.py::_deletable_now': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
-    'courses/staff_fence.py::_staff_target_manageable': ('GATE-LEFT', 'T5e',
+    'courses/staff_fence.py::manageable_if_restored': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'courses/views_referral_partners.py::AdminReferralPartnerDetailView.patch': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),

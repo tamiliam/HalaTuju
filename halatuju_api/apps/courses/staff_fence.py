@@ -46,7 +46,19 @@ def _staff_target_manageable(caller, target):
     """Whether ``caller`` may manage (resend/revoke) the staff row ``target``. A platform
     super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
     (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
-    Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
+    Caller/target visibility failures collapse to a 404 at the call site (no existence leak).
+
+    ⚠ M1a (lead, 2026-11-10): NEVER AN ARCHIVED ROW. Every door that finds a person by id and asks this
+    answers 404 for one; the ONE way back is a re-invite of the address (`staff_archive.may_restore`,
+    which asks `manageable_if_restored`)."""
+    if target is None or target.is_archived:
+        return False
+    return manageable_if_restored(caller, target)
+
+
+def manageable_if_restored(caller, target):
+    """`_staff_target_manageable` without the archive refusal: the re-invite's question about an
+    archived row ("would this caller manage them once they are back?"). Nothing else asks it."""
     if caller is None or target is None or target.is_source_user or target.is_mentor:
         return False        # not staff: a source user (S1; S2 has its doors), a mentor (S7a, ditto)
     if caller.is_super:
