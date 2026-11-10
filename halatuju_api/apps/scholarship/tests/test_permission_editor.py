@@ -208,12 +208,12 @@ class TestSavingAndHistory(TestCase):
 
     def test_the_preset_is_stored_as_null_and_an_unchanged_save_writes_nothing(self):
         target = make_admin('admin', owning_org=self.org)
-        r = _patch(self.org_admin, target, ['payments_prepare', 'see_all', 'spending'])
+        r = _patch(self.org_admin, target, ['payments_prepare', 'see_all', 'scholars', 'spending'])
         self.assertEqual((r.json()['changed'], r.json()['custom']), (False, False))
         self.assertFalse(StaffPermissionChange.objects.exists())
-        _patch(self.org_admin, target, ['see_all', 'payments_prepare'])          # minus Spending
-        self.assertEqual(_fresh(target).permissions, ['see_all', 'payments_prepare'])
-        r = _patch(self.org_admin, target, ['see_all', 'spending', 'payments_prepare'])   # reset
+        _patch(self.org_admin, target, ['see_all', 'scholars', 'payments_prepare'])   # minus Spending
+        self.assertEqual(_fresh(target).permissions, ['see_all', 'scholars', 'payments_prepare'])
+        r = _patch(self.org_admin, target, ['see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual((r.json()['custom'], r.json()['added']), (False, ['spending']))
         self.assertIsNone(_fresh(target).permissions)
         self.assertEqual(StaffPermissionChange.objects.count(), 2)
@@ -591,8 +591,9 @@ class TestPersonPageReadsTheHistory(TestCase):
         return authed_client(who).get(_url(target or self.target))
 
     def test_header_and_history_shape_newest_first(self):
-        _patch(self.org_admin, self.target, ['see_all', 'payments_prepare'])       # Spending off
-        _patch(self.org_admin, self.target, ['see_all', 'payments_prepare', 'payments_approve'])
+        _patch(self.org_admin, self.target, ['see_all', 'scholars', 'payments_prepare'])   # Spending off
+        _patch(self.org_admin, self.target, ['see_all', 'scholars', 'payments_prepare',
+                                             'payments_approve'])
         body = self._get(self.org_admin).json()
         self.assertEqual((body['email'], body['signed_in'], body['paused']),
                          (self.target.email, True, False))
@@ -602,7 +603,7 @@ class TestPersonPageReadsTheHistory(TestCase):
                          ('edit', 'admin', ['payments_approve'], []))
         self.assertEqual((second['added'], second['removed']), ([], ['spending']))
         self.assertEqual((first['by'], first['by_super']), ('Priya Lead', False))
-        self.assertTrue(first['at'] and first['before'] == ['see_all', 'payments_prepare'])
+        self.assertTrue(first['at'] and first['before'] == ['see_all', 'scholars', 'payments_prepare'])
 
     def test_the_history_is_capped_and_an_invitee_is_not_signed_in(self):
         fresh = make_admin('finance', owning_org=self.org)

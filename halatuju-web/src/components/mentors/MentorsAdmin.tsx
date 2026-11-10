@@ -248,7 +248,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
                         <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.col.lastMeeting`)}>
                           {m.last_meeting ? formatDate(m.last_meeting) : <span className="text-ground-400">-</span>}
                         </td>
-                        {/* T3 review: null for a caller without `see_all` (no scholar data) — a dash. */}
+                        {/* T3 review: null for a caller without `scholars` (sprint S1; no scholar data) — a dash. */}
                         <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`} data-label={t(`${K}.col.concernsOpen`)}
                           data-testid={`mentor-concerns-${m.id}`}>
                           {m.concerns_open === null ? <span className="text-ground-400">-</span> : (m.concerns_open ?? 0)}</td>
@@ -484,7 +484,7 @@ export function StaffMentorRemove({ mentor: m, onRemoved }: { mentor: MentorRow;
 }
 
 /** Sprint T3 (M4): a mentor's figures, in the person page's header card. Nothing for a caller without
- *  the Scholars list's read key (`see_all`) — the Profile tab says why. */
+ *  the Scholars list's read key (`scholars`, sprint S1) — the Profile tab says why. */
 export function MentorFigures({ data }: { data: MentorDetailPayload }) {
   const { t } = useT()
   const f = data.figures
@@ -506,7 +506,7 @@ export function MentorFigures({ data }: { data: MentorDetailPayload }) {
  *  in both tables: their scholars now and past. Staff only; never a meeting note. */
 export function MentorWork({ data }: { data: MentorDetailPayload }) {
   const { t } = useT()
-  // T3 review: the scholar side needs the Scholars list's read key (`see_all`).
+  // T3 review: the scholar side needs the Scholars list's read key (`scholars`, sprint S1).
   if (data.sees_scholars === false || !data.figures) {
     return (
       <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">

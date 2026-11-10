@@ -177,7 +177,9 @@ def _permission_history(target, viewer):
     ⚠ A SUPER'S ADDRESS IS NOT SHOWN TO AN ORGANISATION. A change made by the HalaTuju team comes back
     as ``by_super: true`` with ``by`` blank unless the viewer is a super too; the screen says "the
     HalaTuju team". Anybody else is named from their staff row in the TARGET's organisation, or by
-    the address recorded at the time when that row is gone or elsewhere.
+    the address recorded at the time when that row is gone or elsewhere. A change a data migration made
+    (``changed_by_role`` 'migration', nobody clicked) comes back as ``by_migration: true`` with ``by``
+    blank; the screen says so in words (sprint S1, courses 0095).
 
     ⚠ ONLY THE TARGET'S CURRENT ORGANISATION'S ROWS. A cancelled invite re-sent into ANOTHER
     organisation reuses the same staff row (`staff_reinvite.bring_back`), so `target=` alone would
@@ -203,7 +205,8 @@ def _permission_history(target, viewer):
         out.append({'kind': r.kind, 'role': r.role, 'before': before, 'after': after,
                     'added': [k for k in after if k not in before],
                     'removed': [k for k in before if k not in after],
-                    'at': r.created_at, 'by': by, 'by_super': by_super})
+                    'at': r.created_at, 'by': by, 'by_super': by_super,
+                    'by_migration': r.changed_by_role == 'migration'})
     return out
 
 

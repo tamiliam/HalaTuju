@@ -19,10 +19,10 @@ import {
 } from '@/lib/profileCards'
 
 const PRESET: Record<string, string[]> = {
-  super: ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+  super: ['review', 'see_all', 'scholars', 'qc', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
           'award_withdraw_request', 'award_withdraw_approve', 'manage_team'],
-  org_admin: ['see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'],
-  admin: ['see_all', 'spending', 'payments_prepare'],
+  org_admin: ['see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'],
+  admin: ['see_all', 'scholars', 'spending', 'payments_prepare'],
   finance: ['payments_approve'],
   reviewer: ['review'],
   qc: ['see_all', 'qc'],
@@ -189,7 +189,7 @@ describe('"You can" lines', () => {
   it('a super is told one line; an org admin its role line and its named keys; a partner and a source their own', () => {
     expect(accessLines(ctx('super'))).toEqual(['admin.myProfile.can.super'])
     expect(accessLines(ctx('org_admin'))).toEqual(['admin.myProfile.can.org_admin', 'admin.perm.see_all.name',
-      'admin.perm.qc.name', 'admin.perm.spending.name', 'admin.perm.award_withdraw_approve.name'])   // A1.13b: lead tier
+      'admin.perm.scholars.name', 'admin.perm.qc.name', 'admin.perm.spending.name', 'admin.perm.award_withdraw_approve.name'])   // A1.13b: lead tier
     expect(accessLines(ctx('reviewer'))).toEqual(['admin.perm.review.name'])
     expect(accessLines(ctx('partner'))).toEqual(['admin.myProfile.can.partner'])
     expect(accessLines(ctx('source_partner'))).toEqual(['admin.myProfile.can.source_partner'])
@@ -200,7 +200,7 @@ describe('"You can" lines', () => {
   it.each([['en', en], ['ms', ms], ['ta', ta]] as const)('every line resolves in %s', (_l, msgs) => {
     const keys = new Set(Object.keys(PRESET).flatMap((r) => accessLines(ctx(r))))
     keys.add('admin.myProfile.can.profileOnly')
-    for (const k of ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+    for (const k of ['review', 'see_all', 'scholars', 'qc', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
       'award_withdraw_request', 'award_withdraw_approve']) {
       keys.add(`admin.perm.${k}.name`)
     }

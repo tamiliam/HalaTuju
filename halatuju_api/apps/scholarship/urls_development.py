@@ -9,7 +9,8 @@ from django.urls import path
 
 from .views_admin import (
     AdminModuleActionView, AdminModuleCsvView, AdminModuleLessonFileSignView, AdminModuleLessonFileView,
-    AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthView,
+    AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthFileView,
+    AdminScholarGrowthView,
 )
 from .views_bursary import BursaryGrowthLessonView, BursaryGrowthTaskView, BursaryGrowthView
 
@@ -26,6 +27,7 @@ urlpatterns = [
     path(f'{STAFF}<int:pk>/lessons/<int:lid>/file/sign/', AdminModuleLessonFileSignView.as_view()),
     path(f'{STAFF}<int:pk>/<str:action>/', AdminModuleActionView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/development/', AdminScholarGrowthView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/development/<int:mid>/file/', AdminScholarGrowthFileView.as_view()),
     path(MINE, BursaryGrowthView.as_view()),
     path(f'{MINE}<int:pk>/', BursaryGrowthView.as_view()),
     path(f'{MINE}<int:pk>/lessons/<int:lid>/<str:action>/', BursaryGrowthLessonView.as_view()),

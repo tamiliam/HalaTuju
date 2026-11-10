@@ -39,8 +39,8 @@ export { SIDEBAR_SCOPES, type NavScope, type ProbeKey, type BadgeKey, type Probe
  *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
  *  `components/source/*`, which call `admin/source/` only) and Profile; it lands on Overview.
  *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its rows are Programmes (T5c P5: every partner
- *  login lands there, `defaultRoute`), My students (S7c) and Profile, and the layout sends it back from any
- *  other page (`outsiderMustLeave`).
+ *  login lands there, `defaultRoute`), My students (S7c), Scholars (sprint S1: its current students only,
+ *  read-only) and Profile, and the layout sends it back from any other page (`outsiderMustLeave`).
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
@@ -236,14 +236,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
         perms: ['see_all', 'review'], gate: { mode: 'always' } },
       // ⚠ SCHOLARS (student maintenance S2, 2026-10-29): every funded student from award acceptance
-      // to closure. SAME roles and keys as Applications, on purpose — a scholar file is a view of an
-      // application the reader can already open, and the server fences it by the same rule
-      // (`views_admin/scholars.py`: see_all reads the organisation, a reviewer only their assigned
-      // scholars, finance never). `needsProgramme`: a list of one gift's scholars. 'M' for
-      // maintenance — 'S' is Students. No badge yet (the shell's badge needs its own count endpoint).
+      // to closure. Sprint S1 (owner 2026-11-09): ITS OWN KEY, `scholars` — no longer the Applications
+      // rule. The server (`base.scholars_scope`) opens it to a super and a `scholars` holder (the admin
+      // preset, the lead tier, a saved set naming it); `review`, `qc` and `see_all` alone are refused.
+      // A team member is admitted by `perms` whatever their label (`admitsRow`), so a reviewer whose
+      // saved set names `scholars` keeps the row. `source_partner` keeps its row: the page renders the
+      // source's own `SourceScholars` (`components/source/*`, its own endpoint). S1-h: a MENTOR reads its
+      // CURRENT students here, read-only — a mentor login by its role, staff who mentor by the mentor record
+      // (`staffMentors`, the signal My students reads); the server narrows the list and answers 404 for
+      // anyone else's (`scholars_scope` 'mentor'). `needsProgramme`: a list of one gift's scholars (a mentor
+      // has no gift door, so it never waits on one). 'M' for maintenance — 'S' is Students. No badge yet.
       { id: 'scholars', href: '/admin/scholars', labelKey: 'admin.scholars.nav', chord: 'M',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
-        perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'source_partner', 'mentor'],
+        perms: ['scholars'], staffMentors: true, gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ ANNOUNCEMENTS (S8), SURVEYS (S9), DEVELOPMENT (S10): super / org_admin / admin, each endpoint's own rule (`may_post` / `may_make`); no `needsProgramme` — each belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'announcements', gate: { mode: 'always' } },
@@ -288,9 +293,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   },
   {
     // ⚠ A MENTOR's OWN GROUP (student maintenance S7c, 2026-11-01). A mentor is not staff: its rows
-    // are Programmes, My students and Profile, and nothing else (`outsiderMustLeave` sends it back from any other
-    // page). The server is the fence — `admin/mentor/students/` serves the caller's CURRENT students
-    // only and refuses every other role. A mentor lands on Programmes (T5c P5, the first row they may open);
+    // are Programmes, My students, Scholars (sprint S1, read-only) and Profile, and nothing else
+    // (`outsiderMustLeave` sends it back from any other page). The server is the fence —
+    // `admin/mentor/students/` serves the caller's CURRENT students only and refuses every other role. A mentor lands on Programmes (T5c P5, the first row they may open);
     // this group is reached from the programme card or the menu, and no staff role ever sees it.
     scope: 'mentoring',
     headingKey: 'admin.nav.group.mentoring',

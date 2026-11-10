@@ -3,8 +3,8 @@
 // Design of record: the owner-approved canvas, 2026-10-29 (list artboard).
 //
 // ⚠ WHO IS LISTED, AND WHO MAY SEE IT, ARE THE SERVER'S (`views_admin/scholars.py`): the maintenance
-// predicate decides the population, and the Applications rule decides the reader — see_all reads the
-// organisation, a reviewer only their assigned scholars, finance never. This page draws what it is
+// predicate decides the population, and the reader is the `scholars` key's (sprint S1, `base.scholars_scope`;
+// no longer the Applications rule): a holder reads the organisation, everyone else is refused. This page draws what it is
 // handed and filters on the server, so a page of 25 is the right 25 of the whole list.
 //
 // ⚠ NO STANDING IS JUDGED HERE. The server's `standing` (S4a, `standing.py`: the latest ACCEPTED
@@ -24,7 +24,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
 import { useProgrammeParam } from '@/lib/programmeScope'
 import { useGiftGate } from '@/lib/useGiftGate'
 import { formatDate } from '@/lib/formatDate'
@@ -53,10 +53,16 @@ export default function ScholarsPage() {
 function StaffScholarsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)
+  // Sprint S1 (S1-h): staff who mentor open it by their mentor record, as My students.
+  const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
   const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)   // T5c P4: the server's door
   const programme = useProgrammeParam()
-  const gate = useGiftGate(role)
+  // Anyone viewing AS A MENTOR has no gift to choose (S1-h: the server lists their own current students,
+  // across gifts): a mentor login (the shell asks no scopes for it, `AppShell`), and staff who mentor
+  // without the `scholars` key. Neither waits on the gift gate nor is asked to pick one.
+  const giftGate = useGiftGate(role)
+  const asMentor = !readsAllScholars(role) && (effectiveRole(role) === 'mentor' || role?.mentoring === true)
+  const gate = asMentor ? 'open' : giftGate
 
   const [filter, setFilter] = useState<Filter>('all')
   const [typed, setTyped] = useState('')

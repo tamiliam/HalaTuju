@@ -30,10 +30,10 @@ const presets = (() => {
 })()
 
 describe('parse sanity — the server catalogue was really found', () => {
-  test('ten keys, review first and manage_team last', () => {
-    expect(apiKeys).toHaveLength(10)
+  test('eleven keys, review first and manage_team last (sprint S1 added scholars)', () => {
+    expect(apiKeys).toHaveLength(11)
     expect(apiKeys[0]).toBe('review')
-    expect(apiKeys[9]).toBe('manage_team')
+    expect(apiKeys[10]).toBe('manage_team')
   })
 
   test('four team presets and a lead tier', () => {
@@ -83,7 +83,7 @@ describe('TEAM_ROLES vs staff_permissions.TEAM_ROLES (#39 S3)', () => {
 describe('admitsRow — the registry rows that read permissions (#39 S3)', () => {
   const permRows = NAV_ITEMS.filter((i) => i.perms)
 
-  // Scholars (maintenance S2) carries Applications' keys exactly — the same server rule.
+  // Scholars (maintenance S2) carried Applications' keys until sprint S1; now its own key, `scholars`.
   test('exactly Applications, Scholars, Payments and Spending carry perms', () => {
     expect(permRows.map((i) => i.id).sort()).toEqual(['applications', 'payments', 'scholars', 'spending'])
   })
@@ -111,6 +111,27 @@ describe('admitsRow — the registry rows that read permissions (#39 S3)', () =>
     expect(canAccess('/admin/spending', 'admin', ['see_all', 'payments_prepare'])).toBe(false)
     expect(canAccess('/admin/scholarship', 'finance', ['payments_approve', 'review'])).toBe(true)
     expect(canAccess('/admin/payments', 'finance', [])).toBe(false)
+  })
+
+  test('sprint S1: Scholars opens by its own key, Applications by its own, whatever the label', () => {
+    // reviewer, QC and an Applications-only admin: no Scholars
+    expect(canAccess('/admin/scholars', 'reviewer', ['review'])).toBe(false)
+    expect(canAccess('/admin/scholars', 'qc', ['see_all', 'qc'])).toBe(false)
+    expect(canAccess('/admin/scholars', 'admin', ['see_all'])).toBe(false)
+    // Scholars alone: Scholars, not Applications
+    expect(canAccess('/admin/scholars', 'admin', ['scholars'])).toBe(true)
+    expect(canAccess('/admin/scholarship', 'admin', ['scholars'])).toBe(false)
+    // the union shape (S1-e): label reviewer, keys review + see_all + scholars — both rows
+    const both = ['review', 'see_all', 'scholars']
+    expect(canAccess('/admin/scholars', 'reviewer', both)).toBe(true)
+    expect(canAccess('/admin/scholarship', 'reviewer', both)).toBe(true)
+    // the presets that hold it, and a source (its own screen) keep the row
+    expect(canAccess('/admin/scholars', 'admin', STAFF_PRESETS_FOR('admin'))).toBe(true)
+    expect(canAccess('/admin/scholars', 'org_admin', leadTier)).toBe(true)
+    expect(canAccess('/admin/scholars', 'super', apiKeys)).toBe(true)
+    expect(canAccess('/admin/scholars', 'source_partner', [])).toBe(true)
+    // a mentor login never opens Applications
+    expect(canAccess('/admin/scholarship', 'mentor', [])).toBe(false)
   })
 
   test('the lead tier and the platform are answered by role, and no payload means role', () => {

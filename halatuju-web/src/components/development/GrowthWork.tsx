@@ -12,8 +12,8 @@ type T = (k: string, vars?: Record<string, string>) => string
 /**
  * One scholar's development modules and their work — the scholar file's Growth tab (staff) and the mentor's
  * My students page share it (student maintenance S10). Read-only: lessons read x of y, the task and what they
- * sent, the review, "Late". ``openFile`` opens an uploaded task (staff: the Progress page's file door; the mentor:
- * the short link already on the row). ``progressLinks`` adds a link to the module's Progress page (staff only).
+ * sent, the review, "Late". ``openFile`` opens an uploaded task (the file's Growth tab: the scholar file's door; the
+ * mentor's desk: its own door). ``progressLinks`` adds a link to the module's Progress page (staff only).
  */
 export default function GrowthWork({ rows, t, openFile, progressLinks }: {
   rows: WorkRow[]; t: T; openFile?: (row: WorkRow) => void; progressLinks?: boolean

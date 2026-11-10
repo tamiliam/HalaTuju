@@ -119,12 +119,14 @@ class AlreadyOnTheTeam(TestCase):
         row = make_admin('reviewer', owning_org=self.org_a, name='Old', email='old@gmail.com',
                          is_active=False, permissions=['review', 'spending'])
         PartnerAdmin.objects.filter(pk=row.pk).update(supabase_user_id=None)
-        # Team tables T2: an org admin invites an Admin or a Reviewer; an Admin starts at `see_all`.
+        # Team tables T2: an org admin invites an Admin or a Reviewer; an Admin starts at `see_all`
+        # (sprint S1: and `scholars`).
         r = self._invite(self.lead_a, 'old@gmail.com', role='admin', name='Old Again')
         self.assertEqual(r.status_code, 201, r.content)
         row.refresh_from_db()
-        self.assertEqual((row.role, row.is_active, row.permissions), ('admin', True, ['see_all']))
-        self.assertEqual(row.permission_set, ('see_all',))
+        self.assertEqual((row.role, row.is_active, row.permissions),
+                         ('admin', True, ['see_all', 'scholars']))
+        self.assertEqual(row.permission_set, ('see_all', 'scholars'))
 
     def test_a_switched_off_colleague_who_has_signed_in_is_sent_to_restore(self):
         # Not reusable (TD-335 re-invites only a never-seen, work-free row), so the 409 stands.

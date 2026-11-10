@@ -112,7 +112,7 @@ export interface TeamTablePlan {
    *  Development, Sources, Mentors): a Remove from Reviewers (lead ruling Q2b) or a mentor login added to
    *  Admins. Said in plain words on the confirm (review 2026-11-03). */
   opens_admin_pages: boolean
-  /** T3: leaving their last staff table, they stay on as a mentor login (My students and Profile only). */
+  /** T3: leaving their last staff table, they stay on as a mentor login (My students, their own students on Scholars read-only, and Profile; S1). */
   becomes_mentor?: boolean
 }
 
@@ -265,7 +265,8 @@ export interface StaffPermissionsView {
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set
  *  back to the new role's preset. ⚠ `by_super` with a blank `by` is a change made by the HalaTuju
- *  team: the server never hands a super's address to an organisation, so the screen names the team. */
+ *  team: the server never hands a super's address to an organisation, so the screen names the team.
+ *  `by_migration` = a data migration made it (nobody clicked); `by` is blank and the screen says so. */
 export interface StaffPermissionChangeRow {
   kind: 'edit' | 'role_change' | string
   role: string
@@ -276,6 +277,8 @@ export interface StaffPermissionChangeRow {
   at: string
   by: string
   by_super: boolean
+  /** Absent from an older api. */
+  by_migration?: boolean
 }
 
 /** The server's answer to a save or a dry run: the set it would hold, what differs from the set it

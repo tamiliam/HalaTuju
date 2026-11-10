@@ -4,10 +4,12 @@ Part of the `views_admin` package; re-exported from `views_admin/__init__.py`. T
 `apps/scholarship/letters.py`; THIS module is the fence.
 
 WHO (owner rulings, 2026-10-30):
-  * READ — the scholar file's own fence (`_ScholarsBase._file_for`: the Applications rule; finance,
-    partner and source users refused; another organisation 404).
+  * READ — the scholar file's own fence (`_ScholarsBase._file_for`: the `scholars` key since sprint S1,
+    or a mentor on their own current student; everyone else refused; another organisation 404).
   * ISSUE — suspension and termination: super or org_admin; general, discipline, close-out: anyone
-    who may WRITE on the case (`_can_review_app`). RESEND — the same rights as issuing that kind.
+    who may WRITE on the scholar file (`_may_write_file`, S1-d: a `scholars` holder of the file's
+    organisation; until S1 `_can_review_app`). RESEND — the same rights as issuing that kind. A mentor
+    issues nothing.
   * WITHDRAW — super or org_admin, with a reason.
 One class per url shape (lessons, Billing 2026-10-29: one view on two urls is how a wrong verb
 becomes a 500). Nothing here writes a status, a sub-state or money: letters are documents only.
@@ -48,7 +50,7 @@ class _LettersBase(_ScholarsBase):
         """The kinds THIS admin may issue on THIS file — the one rule the dialog and the POST share."""
         if self._senior(admin):
             return svc.KINDS
-        if self._can_review_app(admin, app):
+        if self._may_write_file(admin, app):
             return tuple(k for k in svc.KINDS if k not in svc.SENIOR_KINDS)
         return ()
 
@@ -59,7 +61,9 @@ class _LettersBase(_ScholarsBase):
 class AdminScholarLettersView(_LettersBase):
     """GET/POST admin/scholarship/scholars/<pk>/letters/ — the tab; POST issues one letter
     `{kind, language, clause, note, confirm_name, issue_key}` — 201 with the letter, or 200 with the
-    SAME letter when `issue_key` was already used on this file (a repeated press; review 3)."""
+    SAME letter when `issue_key` was already used on this file (a repeated press; review 3).
+    A mentor (S1-h) reads the tab with nothing to issue or withdraw; their POST is refused."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -70,7 +74,7 @@ class AdminScholarLettersView(_LettersBase):
         if app.status == 'closed':
             kinds = tuple(k for k in kinds if k in svc.CLOSED_FILE_KINDS)
         return Response({
-            'letters': [svc.admin_dict(r) for r in rows],
+            'letters': [svc.admin_dict(r, names_only=self._as_mentor(admin)) for r in rows],
             'can_issue': list(kinds),
             'can_withdraw': self._senior(admin),
             'prompt_close': svc.prompt_close(app, rows),
@@ -144,7 +148,9 @@ class AdminScholarLetterActionView(_LettersBase):
 
 
 class AdminScholarLetterPdfView(_LettersBase):
-    """GET admin/scholarship/scholars/<pk>/letters/<lid>/pdf/ — a 300-second link, minted on a click."""
+    """GET admin/scholarship/scholars/<pk>/letters/<lid>/pdf/ — a 300-second link, minted on a click.
+    A mentor (S1-h) gets it for their own current student only (`_file_for`)."""
+    mentor_methods = ('get',)
 
     def get(self, request, pk, lid):
         app, _admin, err = self._file_for(request, pk)

@@ -32,7 +32,8 @@ none.
 | Key | On screen | What it opens (the gates that read it) |
 |---|---|---|
 | `review` | Review assigned students | May be ASSIGNED cases; opens and works the cases assigned to them, files included; proposes interview times; may be paused. Applications list scope "assigned" |
-| `see_all` | See all students | Reads every application in the organisation (no writes unless assigned). Applications scope "all" |
+| `see_all` | Applications *(was "See all students"; relabelled sprint S1, 2026-11-09)* | Reads every application in the organisation (no writes unless assigned). Applications scope "all". **Since S1 it no longer opens Scholars** |
+| `scholars` | Scholars *(sprint S1, 2026-11-09)* | Reads every scholar's file in the organisation — the Scholars list, every per-scholar endpoint and tab — and writes on it: semester-result review (accept / query), letters, activity notes. Admin preset and lead tier; not in the reviewer or qc preset; nothing implies it. An Admins-table key. v2: `scholars.view` |
 | `qc` | Quality check | The QC gate, and working on any case in the organisation. **Needs `see_all`** (the editor holds it back; the server refuses a set without it and reads a stored one fail-closed) |
 | `spending` | Spending | The Spending page: named students' spending, flags, categories |
 | `payments_prepare` | Prepare payment runs | Create, edit, cancel runs; sign as MAKER |
@@ -48,8 +49,8 @@ the lead tier.
 | Role (preset label) | Holds | Note |
 |---|---|---|
 | `reviewer` | `review` | |
-| `qc` | `see_all`, `qc` | |
-| `admin` | `see_all`, `spending`, `payments_prepare` | |
+| `qc` | `see_all`, `qc` | No Scholars since S1 |
+| `admin` | `see_all`, `scholars`, `spending`, `payments_prepare` | S1: + `scholars` |
 | `finance` | `payments_approve` | Since #39 S2 (owner option A): Finance APPROVES runs |
 
 **Team tables T2 (2026-11-03, built, not live):** Team -> Admins / Reviewers -> **Add** (an existing active member of
@@ -59,7 +60,7 @@ Reviewers, and for the lead at Admins; leaving Reviewers a `reviewer` / `qc` bec
 work pages (said on the confirm); leaving Admins an `admin` / `finance` becomes `reviewer` / `qc`). Who: a super or the organisation admin on
 their team (`_staff_target_manageable`), plus the organisation admin on THEIR OWN row for Reviewers — the only way an
 org admin holds `review` (stored `['review']`; every other key on a lead row is ignored). A NEW invited Admin holds
-exactly `see_all`; org admins invite Admin / Reviewer only (no Finance / QC). The labels Finance / QC are retired on
+exactly `see_all` (and, since S1, `scholars`); org admins invite Admin / Reviewer only (no Finance / QC). The labels Finance / QC are retired on
 Team and Invitations; existing `finance` / `qc` rows are unchanged (since A1.10a, TD-475, the credit check reads
 the key `payments_approve`, not the finance role).
 
@@ -67,7 +68,8 @@ the key `payments_approve`, not the finance role).
 (`GET admin/mentors/<id>/`) are read by exactly who read the Mentors page (super, org_admin, admin; their own
 organisation; another organisation's mentor 404); Add Mentor / Stop mentoring / Deactivate are 7d's (super, org_admin).
 Remove from a person's LAST staff table while they mentor is accepted only for a signed-in admin / reviewer / QC with
-no open case, and makes them a MENTOR LOGIN (role `mentor`: My students and Profile only; sign-in untouched). The
+no open case, and makes them a MENTOR LOGIN (role `mentor`: My students and Profile only — since S1, 2026-11-09, also Programmes and
+Scholars for their own current students, read-only; sign-in untouched). The
 Permissions tab shows one section per table; who may edit is unchanged. No other cell moves.
 
 **Changing a set (#39 Sprint 4, 2026-10-21):** People → a reviewer's page, or **Permissions** beside an
@@ -88,14 +90,14 @@ when) and an `AUDIT staff_permissions_changed` line. The Django admin shows `per
 
 ### 3. The lead tier (`org_admin`, `LEAD_TIER`) — fixed, never edited
 
-`see_all`, `qc`, `spending`, `manage_team`, plus the powers that are not catalogue keys and stay on the
+`see_all`, `scholars` (S1), `qc`, `spending`, `manage_team`, plus the powers that are not catalogue keys and stay on the
 role: configuration, gifts, contracts, sponsors' acceptance, assigning cases, billing, requests, the
 parent's contact, creating / editing / cancelling runs (never signing as maker), and approving a run
 **only under the per-run fallback** (nobody eligible holds `payments_approve`). Org admins stay OFF the
 Reviewers tab although the tier holds `qc` (owner, 2026-10-19).
 
 **Team tables T1 (owner, 2026-11-03, option B; `apps/courses/staff_tables.py`):** a team member holding an
-ADMIN key (`see_all`, `spending`, `payments_*`; `see_all` beside `qc` does not count) also sits at the Admins table,
+ADMIN key (`see_all`, `scholars`, `spending`, `payments_*`; `see_all` beside `qc` does not count) also sits at the Admins table,
 and opens the organisation READ pages the `admin` / `finance` presets open — Organisation, Invitations, People,
 Sponsors (+ sponsor detail, sponsorships, the wallet-credit screens, read only: recording / signing / voiding a
 credit stays on the role). The admin WORK pages (Sources, Mentors, the team roster, Announcements, Surveys,
@@ -261,35 +263,50 @@ narrows **inside** the organisation fence and can never widen it.
 ## Scholars (student maintenance) — access
 
 `/admin/scholars` (list) and `/admin/scholars/<id>` (one scholar's maintenance file), added
-2026-10-29 (maintenance S2). **The Applications rule, unchanged — no new reach for anyone:**
-`_b40_scope` decides. `see_all` (super, org_admin, admin, qc presets) reads every scholar in the
-organisation; `review` without `see_all` (reviewer) reads ONLY the scholars assigned to them;
-`finance` and `partner` are refused (403) — finance never sees a name beside case data (the Spending
-rule). Another organisation's scholar is 404. Anybody who may read a file may add an activity entry
-(note / call / meeting, optionally staff-only) — a record, not a decision. **Placing or lifting a
-hold** stays on the cockpit's sub-state endpoint and needs `payments.may_prepare` (super, org_admin,
-a `payments_prepare` holder) since maintenance S1. Menu row: same roles and keys as Applications,
-inside a gift (`needsProgramme`).
+2026-10-29 (maintenance S2). **Since sprint S1 (2026-11-09) Scholars asks its own key, `scholars`**
+(`base.scholars_scope`: `'all'` / `'mentor'` / `'none'`); until then it read by the Applications rule.
+- **Who reads:** super, org_admin, the admin preset and any saved set holding `scholars` read every
+  scholar in the organisation. `review`, `qc` and `see_all` alone are refused (403), as are finance and
+  partner. Another organisation's scholar is 404.
+- **Who writes (result review, letters, activity notes):** a `scholars` holder, across their organisation,
+  assignee or not. **Semester-result review is no longer the assignee's or QC's**: on the 53 awarded cases
+  at S1 it falls to the 2 admins, the 2 people in both groups and the 2 org admins. `_can_review_app`
+  (Applications) is unchanged. A closed file stays read-only (409). **Placing or lifting a hold** stays on
+  the cockpit's sub-state endpoint and needs `payments.may_prepare` (super, org_admin, a `payments_prepare`
+  holder) since maintenance S1.
+- **Mentors read (S1-h; a deliberate PII widening by the owner):** a mentor login, and staff who mentor
+  without `scholars` (`mentor_desk.mentor_of`), read the list and the FULL file of their CURRENT students
+  only — every tab: results, money, contract, letters, activity, growth, surveys, mentoring, and so the
+  documents, money and family data on it. **Scope:** `mentor_desk.current_assignments` (open assignment,
+  own organisation, in maintenance, never their own application); anything else per-scholar is one 404.
+  **End condition:** access ends the moment the mentoring ends (the student leaves the list; every door
+  404s). **Read-only:** every write answers 403 on their own student, 404 elsewhere; the file serves
+  `mentor_view: true` and the web shows no control. "Staff only" activity rows and their counts never
+  reach them. A person holding `scholars` who also mentors reads the whole organisation (`'all'` wins).
+  Meetings are still logged on My students, unchanged.
+- **Menu row:** `perms: ['scholars']`, roles super / org_admin / admin / source_partner / mentor, plus a
+  staff member who mentors (`staffMentors`), inside a gift (`needsProgramme`; a mentor login skips the gift
+  wait). A `source_partner` keeps the row and sees `components/source/*`.
 
 **Who wrote each activity row (sprint P1, 2026-11-09; corrected in the P1 review).** The file's
 activity log shows each writer's NAME and staff PHOTO (a signed link, about an hour)
 (`activity_people.Actors`). **The API no longer sends a known person's email:** `actor_email` is
 blank on every row whose writer is a known login (staff, mentor) or the scholar, and carries the email
 only when it matches nobody (`actor.kind == 'unknown'`; the web shows it as written). This widens one
-thing: a reviewer or QC, who could already read the file, now also sees the writing staff member's
+thing: anyone who could already read the file now also sees the writing staff member's
 photo. **The owner confirmed this is acceptable (2026-11-09).** That is the same staff photo every
 staff member sees in Team lists; it is staff-only, and no student, sponsor, finance or partner login
 reaches it. If signing the photos fails, the rows still
 load, with initials. **A pure mentor is never named outside the Mentoring tab:** a viewer without
-`mentoring.may_read_mentoring` (qc, reviewer) gets no mentoring row under any filter (the S7b rule,
+`mentoring.may_read_mentoring` gets no mentoring row under any filter (the S7b rule,
 unchanged). On any other row a pure mentor wrote (`role='mentor'`), they get an empty name, no photo
 (never signed) and a blank `actor_email`; the web reads "A mentor". A staff member who also mentors
 is shown as staff.
 
 ⚠ **Across organisations (recorded, not changed; the owner is being asked).** The writer's login
 (`PartnerAdmin`) is looked up by email ACROSS organisations, not only the file's. So when a super
-admin, or another organisation's admin, wrote a row on this file, this organisation's reviewer or
-QC sees that person's name and staff photo, where before the review they saw the email. No other
+admin, or another organisation's admin, wrote a row on this file, this organisation's file readers
+see that person's name and staff photo, where before the review they saw the email. No other
 detail of that login is served.
 
 ## Payments module (Vircle payment runs) — access
@@ -579,7 +596,8 @@ A mentor's own sign-in (`PartnerAdmin.mentor` → `scholarship.Mentor`). Not sta
 denies the role (`mentor_methods`, deny by default), and it reaches only its OWN account — `admin/role/`,
 `admin/me/` (GET/PATCH, incl. its `mentoring_area`), `admin/me/photo/`, `admin/me/password/`,
 `admin/set-password/` and `admin/reviewer-profile/` (qualifications, languages, address; never a pause).
-**Menu:** Profile only; lands on Profile. **The Mentors page** (Organisation → Mentors; since Team tables T3,
+**Menu:** Profile only; lands on Profile *(S7a; since S7c and T5c P5 also My students and Programmes; since
+S1, 2026-11-09, also Scholars for their CURRENT students, read-only — see Scholars above)*. **The Mentors page** (Organisation → Mentors; since Team tables T3,
 Team → Mentors, the old route redirecting,
 `GET admin/mentors/`): super, org_admin and admin read their own organisation's mentors (name, email, the
 mentor's own phone, area, languages, status); **invite / resend / revoke / deactivate / reactivate and the

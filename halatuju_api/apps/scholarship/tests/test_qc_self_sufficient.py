@@ -4,8 +4,9 @@ Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` T5 (owner "approve all"):
 and may decide on any except those they reviewed / interviewed / were assigned (QC self-sufficient, no `see_all`
 dependency)."* decisions.md "Team tables T5b".
 
-- `QcAloneReads`   — a person holding `qc` WITHOUT a stored `see_all` reads the Applications list, a file and the
-                     Scholars list exactly as `see_all + qc` does; another organisation stays 404 / unseen. (The
+- `QcAloneReads`   — a person holding `qc` WITHOUT a stored `see_all` reads the Applications list and a file
+                     exactly as `see_all + qc` does; another organisation stays 404 / unseen. Since sprint S1 both
+                     are refused Scholars (its own key, `scholars`, which `qc` does not bring). (The
                      access matrix asks every other admin door: `test_team_tables_matrix.T5bQcAlone`.)
 - `SeparationGuard` — the QC decision refuses whoever was ever assigned, interviewed (a draft counts), proposed
                      interview times, verify-accepted, recorded or once recorded the verdict, or is assigned now;
@@ -81,29 +82,34 @@ class QcAloneReads(TestCase):
             self.assertEqual(who.permission_set, ('see_all', 'qc'))
         self.assertEqual(self.reviewer_qc.permission_set, ('review', 'see_all', 'qc'))
 
-    def test_the_applications_list_detail_scholars_and_metrics_read_as_see_all_plus_qc(self):
-        urls = (APPS, f'{APPS}{self.mine.pk}/', SCHOLARS, f'{SCHOLARS}{self.scholar.pk}/', METRICS)
+    def test_the_applications_list_detail_and_metrics_read_as_see_all_plus_qc(self):
+        urls = (APPS, f'{APPS}{self.mine.pk}/', METRICS)
         for who, twin in self.twins:
             for url in urls:
                 with self.subTest(who=who.role, url=url):
                     want, got = authed_client(twin).get(url), authed_client(who).get(url)
                     self.assertEqual(want.status_code, 200, want.content[:200])
                     self.assertEqual(got.status_code, 200, got.content[:200])
-                    if url in (APPS, SCHOLARS, METRICS):
+                    if url in (APPS, METRICS):
                         self.assertEqual(got.json(), want.json())
+
+    def test_neither_qc_nor_its_twin_opens_scholars(self):
+        # Sprint S1 (owner 2026-11-09): `qc` brings `see_all`, never `scholars`.
+        for pair in self.twins:
+            for who in pair:
+                for url in (SCHOLARS, f'{SCHOLARS}{self.scholar.pk}/'):
+                    with self.subTest(who=who.role, url=url):
+                        self.assertEqual(authed_client(who).get(url).status_code, 403)
 
     def test_the_lists_hold_only_their_own_organisation(self):
         apps = _ids(authed_client(self.qc_only).get(APPS).json())
         self.assertIn(self.mine.pk, apps)
         self.assertNotIn(self.theirs.pk, apps)
-        scholars = _ids(authed_client(self.qc_only).get(SCHOLARS).json())
-        self.assertIn(self.scholar.pk, scholars)
-        self.assertNotIn(self.their_scholar.pk, scholars)
 
     def test_another_organisation_is_still_404(self):
         c = authed_client(self.qc_only)
         self.assertEqual(c.get(f'{APPS}{self.theirs.pk}/').status_code, 404)
-        self.assertEqual(c.get(f'{SCHOLARS}{self.their_scholar.pk}/').status_code, 404)
+        self.assertEqual(c.get(f'{SCHOLARS}{self.their_scholar.pk}/').status_code, 403)   # S1: no door
         with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self.assertEqual(c.post(_qc_url(self.theirs), {'decision': 'accept'}, format='json').status_code,
                              404)

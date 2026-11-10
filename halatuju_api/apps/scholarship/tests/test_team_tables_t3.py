@@ -337,8 +337,8 @@ class ThePermissionsTabKnowsTheTables(_Base):
 
 class ScholarDataNeedsTheReadKey(_Base):
     """T3 review (CONFIRMED hole): the Mentors table's gate is a ROLE (admin), but scholar data elsewhere needs
-    the Scholars list's read key (`_b40_scope` 'all', i.e. `see_all`). An admin holding only money keys reads
-    the mentor's own row, never their scholars, standing, meetings per scholar or concerns."""
+    the Scholars list's read key (since sprint S1 `scholars`; until then `see_all`). An admin holding only money
+    keys, or only `see_all`, reads the mentor's own row, never their scholars, standing, meetings or concerns."""
 
     def setUp(self):
         super().setUp()
@@ -346,7 +346,7 @@ class ScholarDataNeedsTheReadKey(_Base):
         self.meet(a, 5, concern=True)
 
     def test_a_money_only_admin_sees_the_mentor_but_no_scholar(self):
-        for keys in (['payments_approve'], ['spending']):
+        for keys in (['payments_approve'], ['spending'], ['see_all']):   # S1: see_all is Applications only
             money = make_admin('admin', owning_org=self.org, permissions=keys)
             r = self.detail(money)
             self.assertEqual(r.status_code, 200, keys)
@@ -359,8 +359,8 @@ class ScholarDataNeedsTheReadKey(_Base):
             self.assertFalse(listed['sees_scholars'])
             self.assertEqual([m['concerns_open'] for m in listed['mentors']], [None])
 
-    def test_see_all_admin_org_admin_and_super_see_the_scholars(self):
-        for caller in (make_admin('admin', owning_org=self.org, permissions=['see_all']), self.officer,
+    def test_scholars_admin_org_admin_and_super_see_the_scholars(self):
+        for caller in (make_admin('admin', owning_org=self.org, permissions=['scholars']), self.officer,
                        self.lead, make_admin('super', super_admin=True)):
             body = self.detail(caller).json()
             self.assertTrue(body['sees_scholars'])
