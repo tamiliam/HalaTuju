@@ -776,4 +776,4 @@ misfiled under this section.
 
 **Close out.** Pending cleared (counter reset). Guardrail (`wat_lint` misclassification check) and the casing guard
 landed in-cycle; the extraction cluster is parked as TD-151 for a dedicated sprint.
-- 2026-11-10 7ea20c61 fix(web): team-membership small change - review follow-ups (InfoTip flips above and closes when its i leaves view; phone hidden by default in StaffAdmin via showPhone; web: InfoTip, InfoTipBubble, StaffAdmin, organisations/partners pages + tests; CHANGELOG)
+- 2026-11-10 ba65a15a fix(web): team-membership small change - review follow-ups (InfoTip flips above and closes when its i leaves view; phone hidden by default in StaffAdmin via showPhone; web: InfoTip, InfoTipBubble, StaffAdmin, organisations/partners pages + tests; CHANGELOG)
