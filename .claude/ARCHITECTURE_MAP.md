@@ -782,7 +782,7 @@ the generated anon blurb via `react-markdown`). Admin: a teal "Anonymous profile
 
 **Phase E3a — sponsor wallet + match/consent (v2.26.0, backend, mocked money, flag-gated).** Money is a **ledger, not
 custody**: `Donation` (sponsor donates into myNADI — final, no bank refund) + `Sponsorship` (allocation: offered →
-active/lapsed/cancelled). `apps/scholarship/sponsorship.py` is the service layer — `sponsor_balance` = donations −
+active/lapsed/cancelled). `apps/scholarship/sponsorship/` (a package since A3.8) is the service layer — `sponsor_balance` = donations −
 holding allocations; `is_fundable`/`fund_student` (1:1 full-or-nothing, DB partial-unique `uniq_holding_sponsorship_per_app`);
 `respond_to_award` (accept/decline; minor → guardian gate, reuses `services.record_consent` with
 `consent_type='consent_to_sponsorship'`); `lapse_expired_offers`. `ScholarshipApplication.award_amount` (admin-set,
