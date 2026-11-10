@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 type Bubble = typeof import(/* webpackChunkName: 'mi' */ './InfoTipBubble').default
 
@@ -40,18 +40,9 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
     return () => { live = false }
   }, [open, Bubble])
 
-  // Close is the one path Escape, an outside tap and a scrolled-away trigger all use, so it drops a hover too.
-  const close = useCallback(() => { setPinned(false); setHovered(false) }, [])
-  // Leaving the i for the portalled bubble is a leave from `root` (the bubble is not inside it), so a hover
-  // ends after a short grace that the bubble's own pointer-enter cancels.
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => clearTimeout(leaveTimer.current), [])
-  const onMouse = (on: boolean) => (e: { pointerType: string }) => {
-    if (e.pointerType !== 'mouse') return
-    clearTimeout(leaveTimer.current)
-    if (on) setHovered(true)
-    else leaveTimer.current = setTimeout(() => setHovered(false), 150)
-  }
+  // Not memoised here (eager bytes); the bubble holds the latest one in a ref. Also drops a hover.
+  const close = () => { setPinned(false); setHovered(false) }
+  const onMouse = (on: boolean) => (e: PointerEvent) => { if (e.pointerType === 'mouse') setHovered(on) }
 
   return (
     // No native `title` — that produced a second, drab browser tooltip on hover.
@@ -70,7 +61,7 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
           i
         </span>
       </button>
-      {open && Bubble && <Bubble text={text} root={root} onClose={close} onHover={onMouse} />}
+      {open && Bubble && <Bubble text={text} root={root} onClose={close} />}
     </span>
   )
 }

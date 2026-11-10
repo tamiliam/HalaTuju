@@ -15,8 +15,8 @@ const TEXT = 'Your household income is the total of everyone living with you.'
 const trigger = () => screen.getByRole('button', { name: TEXT })
 
 /** jsdom has no PointerEvent with `pointerType`, so the property is put on the event by hand. */
-function pointer(el: Element, type: 'pointerover' | 'pointerout' | 'pointerdown', pointerType: string) {
-  const e = new MouseEvent(type, { bubbles: true, cancelable: true })
+function pointer(el: Element, type: 'pointerover' | 'pointerout' | 'pointerdown', pointerType: string, relatedTarget: Element | null = null) {
+  const e = new MouseEvent(type, { bubbles: true, cancelable: true, relatedTarget })
   Object.defineProperty(e, 'pointerType', { value: pointerType })
   act(() => { el.dispatchEvent(e) })
 }
@@ -264,8 +264,9 @@ describe('InfoTip — placed above the page, not inside its parent', () => {
     render(<InfoTip text={TEXT} />)
     pointer(trigger(), 'pointerover', 'mouse')
     const bubble = await screen.findByRole('tooltip')
-    pointer(trigger(), 'pointerout', 'mouse')
-    pointer(bubble, 'pointerover', 'mouse')
+    // A browser names where the pointer is going; React sees the portalled bubble as inside the i, so no leave fires.
+    pointer(trigger(), 'pointerout', 'mouse', bubble)
+    pointer(bubble, 'pointerover', 'mouse', trigger())
     await act(async () => { await new Promise((r) => setTimeout(r, 300)) })
     expect(screen.queryByRole('tooltip')).not.toBeNull()
     pointer(bubble, 'pointerout', 'mouse')

@@ -29,7 +29,7 @@ type Pos = { left: number; top: number; caret: number; above: boolean }
  * means outside BOTH the trigger's `root` and the bubble: the bubble is no longer inside `root` in the
  * page, so a tap on its own text must not count as a tap elsewhere.
  */
-export default function InfoTipBubble({ text, root, onClose, onHover }: {
+export default function InfoTipBubble({ text, root, onClose: close, onHover }: {
   text: string
   root: RefObject<HTMLElement | null>
   onClose: () => void
@@ -38,6 +38,10 @@ export default function InfoTipBubble({ text, root, onClose, onHover }: {
 }) {
   const [pos, setPos] = useState<Pos | null>(null)
   const bubble = useRef<HTMLSpanElement>(null)
+  // The parent's close is a fresh function every render; the latest is read through a ref so the listeners below stay put.
+  const latest = useRef(close)
+  latest.current = close
+  const onClose = useCallback(() => latest.current(), [])
 
   const place = useCallback(() => {
     const r = root.current?.getBoundingClientRect()
