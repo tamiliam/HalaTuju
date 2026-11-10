@@ -153,13 +153,13 @@ WIRED = {
     TRANCHE_RELEASED: ('scholarship/disbursement.py:release_tranche',),   # checker / approver
     TRANCHE_WITHHELD: ('scholarship/disbursement.py:withhold_tranche',),
     TRANCHE_RETURNED: ('scholarship/disbursement.py:return_tranche',),
-    CREDIT_RECORDED: ('scholarship/sponsorship.py:sign_admin_credit',),   # the maker's signature
-    CREDIT_CHECKED: ('scholarship/sponsorship.py:sign_admin_credit',),
-    CREDIT_CONFIRMED: ('scholarship/sponsorship.py:sign_admin_credit',),
-    CONTRACT_TEMPLATE_CREATED: ('scholarship/contracts.py:create_template',),
-    CONTRACT_TEMPLATE_VETTED: ('scholarship/contracts.py:record_vetting',),
-    CONTRACT_TEMPLATE_SUBMITTED: ('scholarship/contracts.py:submit_for_deployment',),
-    CONTRACT_TEMPLATE_DEPLOYED: ('scholarship/contracts.py:deploy',),
+    CREDIT_RECORDED: ('scholarship/sponsorship/credits.py:sign_admin_credit',),   # the maker's signature
+    CREDIT_CHECKED: ('scholarship/sponsorship/credits.py:sign_admin_credit',),
+    CREDIT_CONFIRMED: ('scholarship/sponsorship/credits.py:sign_admin_credit',),
+    CONTRACT_TEMPLATE_CREATED: ('scholarship/contracts/authoring.py:create_template',),
+    CONTRACT_TEMPLATE_VETTED: ('scholarship/contracts/authoring.py:record_vetting',),
+    CONTRACT_TEMPLATE_SUBMITTED: ('scholarship/contracts/deployment.py:submit_for_deployment',),
+    CONTRACT_TEMPLATE_DEPLOYED: ('scholarship/contracts/deployment.py:deploy',),
     CONTRACT_COUNTERSIGNED: ('scholarship/bursary.py:countersign_foundation',),
     BENEFACTOR_VETTED: ('scholarship/views_admin/sponsors.py:AdminSponsorReviewView.post',
                         'scholarship/views_admin/sponsorships.py:AdminSponsorMembershipView.post'),

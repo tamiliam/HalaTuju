@@ -345,7 +345,7 @@ class TestReleasePendingAwardsIsLocked(TestCase):
             # Lands between the job's list read and the next case's write.
             ScholarshipApplication.objects.filter(pk=apps[app.pk]).update(status='closed')
             return real(app, locale)
-        with patch.object(svc, '_finalise_award', finalise_then_close_the_other):
+        with patch.object(svc.acceptance, '_finalise_award', finalise_then_close_the_other):
             self.assertEqual(svc.release_pending_awards(), 1)
         statuses = sorted(ScholarshipApplication.objects.filter(pk__in=apps)
                           .values_list('status', flat=True))
@@ -384,8 +384,8 @@ class TestAwardEmailsReRead(TestCase):
                 status='offered', offer_emailed_at__isnull=True).update(status='cancelled')
             return True
         later = timezone.now() + timedelta(days=30)
-        with patch.object(svc, 'send_award_offer_email', side_effect=send), \
-                patch.object(svc, 'raise_setup_task'), \
+        with patch.object(svc.offers, 'send_award_offer_email', side_effect=send), \
+                patch.object(svc.offers, 'raise_setup_task'), \
                 patch('apps.scholarship.parent_call.held_for_parent_call', return_value=False):
             self.assertEqual(svc.release_award_offer_emails(now=later), 1)
         self.assertEqual(len(sent_to), 1)
@@ -399,8 +399,8 @@ class TestAwardEmailsReRead(TestCase):
                                notify_email='stu@a113.example')
         sp = svc.fund_student(_sponsor(app.programme), app)
         order, (p1, p2) = _order_spy()
-        with p1, p2, patch.object(svc, 'send_award_offer_email', return_value=True), \
-                patch.object(svc, 'raise_setup_task'), \
+        with p1, p2, patch.object(svc.offers, 'send_award_offer_email', return_value=True), \
+                patch.object(svc.offers, 'raise_setup_task'), \
                 patch('apps.scholarship.parent_call.held_for_parent_call', return_value=False):
             self.assertEqual(svc.release_award_offer_emails(now=timezone.now() + timedelta(days=30)), 1)
         self.assertEqual(order[:3], ['lock_application', 'sfu:ScholarshipApplication',

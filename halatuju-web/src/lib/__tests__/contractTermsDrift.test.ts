@@ -20,7 +20,7 @@ import { quizComplete, setQuizFlag } from '@/lib/sponsorTerms'
 import type { SponsorQuizPayload, SponsorTermsSection } from '@/lib/admin-api'
 import { readApi } from '@/test/apiSource'
 
-const CONTRACTS = 'apps/scholarship/contracts.py'
+const CONTRACTS = 'apps/scholarship/contracts/numbering.py'   // A3.8: contracts.py became a package
 const TERMS = 'apps/scholarship/sponsor_terms.py'
 const contractsSrc = readApi(CONTRACTS)
 const termsSrc = readApi(TERMS)

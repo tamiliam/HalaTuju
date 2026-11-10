@@ -117,7 +117,7 @@ JOBS = [
     {'key': 'contract_quiz', 'label': 'Writing the agreement quiz',
      'seam': SEAM_OWN, 'provider': GEMINI,
      'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL',
-     'module': 'apps/scholarship/contracts.py'},
+     'module': 'apps/scholarship/contracts/__init__.py'},
     {'key': 'sponsor_terms', 'label': 'Reading and quizzing the benefactor terms',
      'seam': SEAM_OWN, 'provider': GEMINI,
      'source': BY_SETTING, 'from': 'CONTRACT_QUIZ_MODEL',

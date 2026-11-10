@@ -265,6 +265,25 @@ def autofill_pathway_from_offer(application):
     ptype = op.detect_pathway_type(prog, inst)
     pw = (application.chosen_pathway or '').strip().lower() or ptype
 
+    track = _standardise_preu_track(application, pw, prog, op, fields)
+    effective_track = (application.pre_u_track or track or '').strip().lower()
+
+    if not locked:
+        _adopt_unlocked_pathway(application, cp, chk, ptype, prog, inst, pw, effective_track, op,
+                                fields)
+
+    if _normalise_catalogue_institution(application, offer, chk, op, fields):
+        wrote_early = True    # it saved itself; don't re-add chosen_programme to `fields`
+    # (The date and the must-fill institution are synced at the TOP — see their docstrings.)
+    if not fields:
+        return wrote_early
+    application.save(update_fields=fields)
+    return True
+
+
+def _standardise_preu_track(application, pw, prog, op, fields):
+    """Part of ``autofill_pathway_from_offer`` (split out by audit A3.8, unchanged): fill a blank
+    pre-U track. Appends to ``fields``; returns the track it parsed ('' when none)."""
     # Standardise the pre-U TRACK first (it's needed below to reach the matric catalogue
     # college). Canonical vocabulary (Matrikulasi: sains/kejuruteraan/sains_komputer/
     # perakaunan; STPM: sains/sains_sosial); fill a blank/'not_sure' only — never clobber a
@@ -281,71 +300,84 @@ def autofill_pathway_from_offer(application):
     if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
         application.pre_u_track = track
         fields.append('pre_u_track')
-    effective_track = (application.pre_u_track or track or '').strip().lower()
+    return track
 
-    def _canonical_preu_institution():
-        # Matric → the catalogue college for the student's STATE (via the matric-<track> virtual
-        # course; 12 state-unique colleges → safe). STPM → casing-only clean of the recorded
-        # school (NO catalogue match: ~250 near-identical names, SMK vs SMJK indistinguishable —
-        # would change which school the student attends). '' when nothing resolves.
-        if pw == 'matric':
-            vc = op.preu_course_id('matric', effective_track)
-            hint = (inst or '').strip() or (application.pre_u_institution or '').strip()
-            return op.catalogue_institution(vc, hint) if vc else ''
-        if pw == 'stpm':
-            # #117 (d): standardise ONLY what the offer letter actually read. Passing
-            # application.pre_u_institution as a fallback laundered the student's OWN declared
-            # school into chosen_programme stamped source='offer_letter_auto' whenever the offer's
-            # institution failed to extract — so the cockpit showed the SMK as if the offer said so.
-            # If the offer institution is blank, leave it blank rather than attribute the student's
-            # own answer to the letter.
-            return keep_our_town(application.pre_u_institution, op.clean_school_name(inst))
-        return ''
 
-    if not locked:
-        if op.is_pre_u(ptype):
-            # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
-            # never clobber something the student deliberately typed.
-            if not (application.chosen_pathway or '').strip():
-                application.chosen_pathway = ptype
-                fields.append('chosen_pathway')
-            if not (application.pre_u_institution or '').strip():
-                application.pre_u_institution = inst
-                fields.append('pre_u_institution')
+def _canonical_preu_institution(application, pw, effective_track, inst, op):
+    """Part of ``autofill_pathway_from_offer`` (a closure there until audit A3.8; body unchanged)."""
+    # Matric → the catalogue college for the student's STATE (via the matric-<track> virtual
+    # course; 12 state-unique colleges → safe). STPM → casing-only clean of the recorded
+    # school (NO catalogue match: ~250 near-identical names, SMK vs SMJK indistinguishable —
+    # would change which school the student attends). '' when nothing resolves.
+    if pw == 'matric':
+        vc = op.preu_course_id('matric', effective_track)
+        hint = (inst or '').strip() or (application.pre_u_institution or '').strip()
+        return op.catalogue_institution(vc, hint) if vc else ''
+    if pw == 'stpm':
+        # #117 (d): standardise ONLY what the offer letter actually read. Passing
+        # application.pre_u_institution as a fallback laundered the student's OWN declared
+        # school into chosen_programme stamped source='offer_letter_auto' whenever the offer's
+        # institution failed to extract — so the cockpit showed the SMK as if the offer said so.
+        # If the offer institution is blank, leave it blank rather than attribute the student's
+        # own answer to the letter.
+        return keep_our_town(application.pre_u_institution, op.clean_school_name(inst))
+    return ''
 
-        # Display programme: a canonical course_id for a confident tertiary match, else labels.
-        # Pre-U course names are STANDARDISED ("Program Matrikulasi" / "Tingkatan Enam"; the
-        # stream/jurusan lives in pre_u_track) AND the institution is canonicalised here too
-        # (matric → catalogue college; STPM → casing-only), so a re-run is idempotent and never
-        # reintroduces raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
-        # Write-side guard (defence-in-depth): a mis-slotted offer (institution in the
-        # programme slot / a 'Tarikh' line in the institution slot — the #125 fault) is
-        # sanitised before it can be stored.
-        from .. import card_display
-        g_prog, g_inst, _rep = card_display.sanitise_offer_slots(prog, inst)
-        new_cp = {'course_name': g_prog, 'institution': g_inst, 'source': 'offer_letter_auto'}
-        if op.is_pre_u(ptype):
-            canon = op.canonical_pre_u_course(ptype)
-            if canon:
-                new_cp['course_name'] = canon
-            canon_inst = _canonical_preu_institution()
-            if canon_inst:
-                new_cp['institution'] = canon_inst
-        else:
-            match = op.resolve_catalogue_course(g_prog, g_inst, (chk.get('issuer') or '').strip())
-            if match:
-                new_cp = {**match, 'source': 'offer_letter_auto'}
-        # Only overwrite when there's no precise existing pick to protect, and only when the
-        # value actually changes (keeps re-runs idempotent).
-        if not cp.get('course_id') and cp != new_cp:
-            application.chosen_programme = new_cp
-            fields.append('chosen_programme')
 
-        # The place is confirmed — drop the "still deciding" framing.
-        if application.pathway_certainty != 'sure':
-            application.pathway_certainty = 'sure'
-            fields.append('pathway_certainty')
+def _adopt_unlocked_pathway(application, cp, chk, ptype, prog, inst, pw, effective_track, op,
+                            fields):
+    """Part of ``autofill_pathway_from_offer`` (split out by audit A3.8, unchanged): adopt the
+    offer's pathway for a student with no locked pick. Sets fields on ``application`` and appends
+    their names to ``fields``; the caller saves."""
+    if op.is_pre_u(ptype):
+        # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
+        # never clobber something the student deliberately typed.
+        if not (application.chosen_pathway or '').strip():
+            application.chosen_pathway = ptype
+            fields.append('chosen_pathway')
+        if not (application.pre_u_institution or '').strip():
+            application.pre_u_institution = inst
+            fields.append('pre_u_institution')
 
+    # Display programme: a canonical course_id for a confident tertiary match, else labels.
+    # Pre-U course names are STANDARDISED ("Program Matrikulasi" / "Tingkatan Enam"; the
+    # stream/jurusan lives in pre_u_track) AND the institution is canonicalised here too
+    # (matric → catalogue college; STPM → casing-only), so a re-run is idempotent and never
+    # reintroduces raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
+    # Write-side guard (defence-in-depth): a mis-slotted offer (institution in the
+    # programme slot / a 'Tarikh' line in the institution slot — the #125 fault) is
+    # sanitised before it can be stored.
+    from .. import card_display
+    g_prog, g_inst, _rep = card_display.sanitise_offer_slots(prog, inst)
+    new_cp = {'course_name': g_prog, 'institution': g_inst, 'source': 'offer_letter_auto'}
+    if op.is_pre_u(ptype):
+        canon = op.canonical_pre_u_course(ptype)
+        if canon:
+            new_cp['course_name'] = canon
+        canon_inst = _canonical_preu_institution(application, pw, effective_track, inst, op)
+        if canon_inst:
+            new_cp['institution'] = canon_inst
+    else:
+        match = op.resolve_catalogue_course(g_prog, g_inst, (chk.get('issuer') or '').strip())
+        if match:
+            new_cp = {**match, 'source': 'offer_letter_auto'}
+    # Only overwrite when there's no precise existing pick to protect, and only when the
+    # value actually changes (keeps re-runs idempotent).
+    if not cp.get('course_id') and cp != new_cp:
+        application.chosen_programme = new_cp
+        fields.append('chosen_programme')
+
+    # The place is confirmed — drop the "still deciding" framing.
+    if application.pathway_certainty != 'sure':
+        application.pathway_certainty = 'sure'
+        fields.append('pathway_certainty')
+
+
+def _normalise_catalogue_institution(application, offer, chk, op, fields):
+    """Part of ``autofill_pathway_from_offer`` (split out by audit A3.8, unchanged): tidy a
+    catalogue-linked institution name (appends to ``fields``), or fill a blank one. Returns True
+    when the fill wrote (it saves itself)."""
+    from .. import card_display
     # Single-source-of-truth for a catalogue-linked programme's institution NAME: the recommender
     # CATALOGUE (course_id → Institution), not the offer letter — so OCR variants ("POLITEKNIK
     # SEBERANG PERAI (POLITEKNIK PREMIER)") are ironed out and the bursary can't disagree with the
@@ -369,12 +401,8 @@ def autofill_pathway_from_offer(application):
                 fields.append('chosen_programme')
     elif cid_now:
         if sync_institution_from_catalogue(application, offer=offer, offer_check=chk):
-            wrote_early = True    # it saved itself; don't re-add chosen_programme to `fields`
-    # (The date and the must-fill institution are synced at the TOP — see their docstrings.)
-    if not fields:
-        return wrote_early
-    application.save(update_fields=fields)
-    return True
+            return True
+    return False
 
 
 #: When the scholarship course picker became COMPLETE (owner, 2026-11-01: a pick made before it was

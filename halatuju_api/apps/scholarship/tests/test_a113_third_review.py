@@ -63,7 +63,7 @@ class TestLapseLockOrder(TestCase):
             rows = real(now)
             Sponsorship.objects.filter(pk=self.sp.pk).update(status='active')   # lands in between
             return rows
-        with patch.object(svc, '_expired_offers', read_then_accept):
+        with patch.object(svc.lapse, '_expired_offers', read_then_accept):
             self.assertEqual(svc.lapse_expired_offers()['lapsed'], 0)
         self.sp.refresh_from_db()
         self.assertEqual(self.sp.status, 'active')

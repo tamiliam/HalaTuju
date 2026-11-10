@@ -599,7 +599,7 @@ class TestTheWalletIsLockedBeforeTheBalance(TestCase):
 
         with mock.patch.object(status_lock, 'lock_sponsor_wallet', create=True,
                                side_effect=lambda s: order.append(('lock', s.pk))), \
-                mock.patch.object(svc, 'sponsor_balance', side_effect=balance):
+                mock.patch.object(svc.offers, 'sponsor_balance', side_effect=balance):
             svc.fund_student(sponsor, app)
         self.assertEqual(order[:2], [('lock', sponsor.pk), 'balance'])
 
@@ -618,7 +618,7 @@ class TestTheWalletIsLockedBeforeTheBalance(TestCase):
 
         with mock.patch.object(status_lock, 'lock_sponsor_wallet', create=True,
                                side_effect=lambda s: order.append(('lock', s.pk))), \
-                mock.patch.object(svc, 'sponsor_balance', side_effect=balance):
+                mock.patch.object(svc.lapse, 'sponsor_balance', side_effect=balance):
             sp = svc.reinstate_lapsed_sponsorship(app, since=since)
         self.assertEqual(order[:2], [('lock', sponsor.pk), 'balance'])
         self.assertEqual(sp.status, 'active')

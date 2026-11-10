@@ -1,5 +1,5 @@
 // Contract clause numbering — MIRROR of `contracts.clause_numbers` / `contracts.normalise_levels`
-// in the Django backend (apps/scholarship/contracts.py). The two must stay in lockstep; since code
+// in the Django backend (apps/scholarship/contracts/numbering.py). The two must stay in lockstep; since code
 // health H10 the fixture really IS shared — the drift test lifts its rows out of the api's own
 // test rather than retyping them, so changing the expectation there fails here. 3 levels:
 // drift-test: halatuju-web/src/lib/__tests__/contractTermsDrift.test.ts
