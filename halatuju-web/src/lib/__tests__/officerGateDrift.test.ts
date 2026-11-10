@@ -119,15 +119,15 @@ describe('the org-admin reject gate — the ROLE half', () => {
 describe('the assignment picker vs the api\'s bad_assignee rule', () => {
   const body = viewBody('AdminAssignReviewerView')
 
-  test('a non-super may still assign only an own-org `review` holder (the api side, read as written)', () => {
+  test('every caller assigns only someone in Reviewers; a non-super only their own org (T1, read as written)', () => {
     expect(body).toMatch(/not may_assign_to\(admin, reviewer\)/)
     expect(body).toMatch(/is_active=True/)
     expect(body).toMatch(/bad_assignee/)
     const rule = pyFunc(servicesSrc, 'may_assign_to')
-    expect(rule).toMatch(/caller\.role != 'org_admin'/)
-    expect(rule).toMatch(/target\.has_perm\('review'\)/)
+    expect(rule).toMatch(/staff_tables\.in_reviewers\(target\) and is_review_target\(target\)/)
+    expect(rule).toMatch(/caller\.role == 'org_admin'/)
     expect(rule).toMatch(/target\.owning_organisation_id == caller\.owning_organisation_id/)
-    expect(rule).toMatch(/not target\.is_super/)
+    expect(rule).toMatch(/if caller\.is_super:/)
   })
 
   test('the list serves the same rule as `assignable`, so the picker reads it, not a role', () => {

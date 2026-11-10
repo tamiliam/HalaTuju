@@ -1,5 +1,55 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-09 — A case is given only to someone in the Reviewers table who covers its gift; R1 is retired for assigning (Sprint T1, owner D7)
+
+Roadmap `docs/plans/2026-11-08-activity-box-roadmap.md` (T1, D7, on the activity-box branch); brief
+`docs/plans/2026-11-09-t1-assign-picker.md`. **Supersedes, for ASSIGNMENT only, the R1 super-target override**
+(lead ruling 2026-10-19, recorded in `services/assignment.py` and in the T5b entry's "R1 super-target" line), and
+with it:
+- **decision 3 of the 2026-10-19 "Request #39 Sprint 3" entry** (a super → any review target; an org admin → an
+  own-organisation team member holding `review`);
+- **the "Revisit if: the owner removes the R1 super override"** line of the 2026-10-19 "Request #39: staff become a
+  set of permissions" entry: for assigning, the owner has now removed it.
+
+Both older entries carry a one-line "superseded by T1" note.
+
+- **T1-a, the rule** (`services.assignment.may_assign_to`): the target must be in the Reviewers table
+  (`staff_tables.in_reviewers`: a team member who is a reviewer / qc or holds `review` / `qc`, or an org admin who
+  joined Reviewers) AND able to hold the case (`is_review_target`). A super may then give it to any such person; an
+  org admin only to one of their own organisation; anyone else to nobody. **Supers are no longer assignment
+  targets** (a super is never in Reviewers), and neither is an admin with `see_all` or an org admin outside
+  Reviewers. The `is_review_target` half is added so a Reviewer by label whose saved set took every key away is
+  not offered a case `_can_review` would refuse anyway; the server's answer does not change.
+  - It follows that an org admin may now give a case to their own organisation's QC-preset person, or to an admin
+    holding `qc`: both are in Reviewers (before, an org admin needed a `review` holder).
+- **R1 stays for HOLDING.** `is_review_target`, `_can_review`, `scheduling._can_review`, pause and the assignable
+  LIST's query still read `R1_SUPER_TARGET_ROLES`, so a case an admin holds is never stranded and its holder never
+  vanishes from either picker (bug #66).
+- **T1-b, the gift** stays in `assign_reviewer` (`gift_allows`, `gift_mismatch`) for every caller.
+- **T1-c, the codes** are unchanged: the service refuses `not_reviewer`; the org admin's own gate answers
+  `bad_assignee`. No new code, nothing new to translate.
+- **T1-d, a held case is kept.** Nothing reassigns or unassigns it. Re-picking the CURRENT holder skips
+  `may_assign_to` (in the service and in the org admin's gate), and only the current holder: any other target is
+  still asked. An ACTIVE holder re-picked is then the existing no-op. A paused or revoked holder re-picked is
+  refused as before (`reviewer_paused` / `not_reviewer`); the web never sends a same-value pick.
+- **T1-e, the applications list dropdown** offers the current holder plus everyone served `assignable` who
+  covers THAT case's gift (`gifts` [] = every gift; a case whose gifts are unknown narrows nobody). Each list row
+  now serves `gift_ids` (its own `programme` and its cohort's, as `case_gifts` reads them; no extra query). A
+  legend line says what the marks mean: "✓ speaks the student's language · ⚠ does not" (en / ms / ta). It is
+  shown once under the desktop table and under each phone row's dropdown, and each Assign `<select>` names it in
+  `aria-describedby`. The parts live in `components/admin/AssignListPicker.tsx` and
+  `lib/assignOptions.listAssignees`.
+- **T1-f, the case page picker** needs no web change: it already hides a non-`assignable` row except the holder,
+  and keeps greying a reviewer of another gift with its reason.
+- **T1-g:** this entry.
+
+**Production (2026-11-09, read-only count by the architect):** one awarded case sits with an org admin and one
+rejected case with a super. Both stay with their holders; no open case is affected.
+**Alternatives considered:** narrowing `is_review_target` itself — rejected: it would strand the cases an admin
+holds today. Hiding another gift's reviewer on the case page too — rejected (T1-f): the case page explains why a
+name is missing, the list row has no room to.
+**Revisit if:** T5e moves assignment targets to keys, or the owner wants a super to be assignable again.
+
 ## Scholars has a permission of its own, `scholars`; "See all students" is relabelled "Applications"; mentors read their current students' files — 2026-11-09 (sprint S1; owner decisions S1-a to S1-i)
 
 **Context:** until S1 the Scholars page and the scholar file were read by the Applications rule (`_b40_scope`), so `see_all`, `review` (assigned) and `qc` all opened them, and nobody could be given one without the other. Brief: `docs/plans/2026-11-09-s1-scholars-access.md`.
@@ -17942,6 +17992,7 @@ golden table would then prove nothing).
 
 **Revisit if:** the owner removes the R1 super override, rules on the Reviewers-tab finding, or makes
 "Manage team" switchable (+2 h, needs "you cannot grant what you do not hold").
+*(The R1 override, for assigning: superseded by T1 (2026-11-09); it stays for holding — see that entry.)*
 
 ## 2026-10-19 — Request #39 Sprint 2: Finance APPROVES payment runs; the org admin approves only under a per-run fallback; credits keep today's chain
 
@@ -18035,7 +18086,8 @@ SQL update).
    override `R1_SUPER_TARGET_ROLES` (admin, qc, org_admin) **for someone who still holds `see_all`**
    (review fix 1: never hand a case to someone who cannot open it), which replaces `REVIEW_ROLES`. Assignment,
    pause and interview scheduling all read it (pause still blocks only NEW assignment).
-3. **Who may hand a case to whom is ONE predicate, `services.may_assign_to(caller, target)`:** a super →
+3. **Who may hand a case to whom is ONE predicate, `services.may_assign_to(caller, target)`:** *(superseded by
+   T1 (2026-11-09): the Reviewers table only, for every caller — see that entry.)* a super →
    any review target; an org_admin → an own-organisation team member holding `review`, never a super;
    anyone else → nobody. The assign endpoint calls it and the assignable list SERVES it per row as
    `assignable`, so the pickers no longer re-derive the rule (each falls back to the old role rule for
