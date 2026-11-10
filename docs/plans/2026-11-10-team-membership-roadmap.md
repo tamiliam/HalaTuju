@@ -62,6 +62,9 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
   4. TD numbers start at TD-603 (S1 took TD-597/598; G9 holds TD-600-602).
   5. Bookkeeping conflicts are expected in `CHANGELOG.md`, `docs/technical-debt.md`, `.claude/ARCHITECTURE_MAP.md` and
      both `code-standards.json` files. Keep both sides, take the lower budget and the later `last_tightened_on`.
+- **G10 (the audit agent's next lane, deploys AFTER this roadmap):** it adds no migration, so courses `0096` is ours
+  (M1's archive field in `models_staff.py`). Message Requests before M1 edits `serializers_admin.py` or
+  `courses/models.py`. G10's A3.8 leaves `courses/views_staff.py` alone until M1 is live.
 
 ## Open for the brief (the architect settles; ask the owner only if a choice changes what someone can do)
 - The exact list of "waiting on them" items for Admins (O5).
