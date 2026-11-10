@@ -10,7 +10,7 @@ Branch team-membership (not pushed, not deployed). **Migration courses 0096 (MIG
 nullable / defaulted columns on `partner_admins` (`archived_at`, `archived_by_email`) and the
 `partner_admin_mentor_iff_mentor` check recreated with the new `member` role. Roadmap
 `docs/plans/2026-11-10-team-membership-roadmap.md`, brief `docs/plans/2026-11-10-m1-staff-list-brief.md`.
-Every new behaviour is opt-in on the request (`to_no_group`, `archive`), so today's web sees no change except the phones.
+Every new behaviour is opt-in on the request (`to_no_group`, `archive`), so today's web sees no change except the phones and the `has_scholars` refusals (Remove from Mentors, Revoke).
 - refactor: the staff fence moves to `apps/courses/staff_fence.py` (moves only, own commit); `views_admin.py` budget 795 -> 765.
 - "No group" (O6): a new role `member`. Signed in; opens only their own profile, photo, activity, password,
   `admin/role/` and set-password; lands on Profile. Removing someone's last group makes them a member when the caller
@@ -35,6 +35,23 @@ Every new behaviour is opt-in on the request (`to_no_group`, `archive`), so toda
 - test: archive and restore, the reader census, the member's six views, QC separation across archive + restore, the
   Staff list (including its query budget), the read fence, no self-suspend / self-delete, the table presets, and no
   phone on any group table; the web jest pins no `team-phone-*` on Reviewers and Mentors.
+- Review round (sprint M1a follow-ups):
+  - Owner O18: Revoke (Suspend) is now REFUSED 409 `has_scholars` (with `scholars_now`) while the person mentors anyone,
+    like Remove from Mentors and Delete; it never ends mentoring. With no scholars it goes ahead and only stamps the
+    Mentor row deactivated. Recorded in the roadmap and decisions.md.
+  - Lock order: every M1a door that locks a Mentor and a login takes the Mentor row first (Remove a mentor login,
+    Remove from Mentors, the staff archive door, Revoke), as Delete and the mentor archive already did; the scholars are
+    counted under that lock, so an assignment made in between can never be ended silently.
+  - Restore and bring-back match the email in any case (`email__iexact`) when refusing a live twin.
+  - The payment-run waiting check's race is recorded as TD-605 (it needs run create and maker-sign to lock the
+    actor's row: money code).
+  - Web: `has_scholars` reads in the reader's language with the count on the Mentors table, the person page and both
+    Team tables' Revoke (`lib/staffRefusals.ts`); "Remove from Mentors" and the person page's Revoke warning say it is
+    refused until each scholar moves; `admin.role.member` ("Team member") and `member` on the role type; the sandbox
+    mentor loses its stale phone.
+  - test: lock order and the count under the Mentor lock (SQL spy), any-case twins, Revoke refused / allowed / mentoring
+    untouched; jest: each Mentors refusal code to its message, the `has_scholars` mappings, the Mentors phone fixture,
+    and the Organisations and Partners pages asking for phones while the Team Admins tab does not.
 
 ### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
 

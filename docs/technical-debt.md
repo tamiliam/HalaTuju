@@ -8682,3 +8682,15 @@ reviewer, admin, qc, org_admin and finance; the API's `staff_fence.PROGRAMME_STA
 nothing breaks (a member sits in no group table, and the web filter drops them from the Admins list, which is right),
 but the M1b Staff tab must draw the API's `GET admin/staff/` rows and not filter them through this mirror. Fix in M1b:
 add `member`, or retire the mirror for the served rows.
+
+### [TD-605] The payment-run waiting check can race a new run - low
+
+**Raised 2026-11-10 by the Sprint M1a review (fix 5, recorded rather than locked).** Remove from a group table and the
+archive refuse `run_in_progress` while the person made or signed (as maker) an unfinished payment run
+(`staff_lifecycle.runs_in_progress`, read through `staff_work`). The count runs under the person's `PartnerAdmin` lock,
+but creating a run (`apps/scholarship/payments.py`) and the maker's signature do not take that lock: they match the
+person by email. So a run created in the instant between the count and the commit is not seen, and the person loses
+the table (or is archived) with a run waiting on them. Locking the existing run rows cannot help, because the race is a
+NEW row. Fix: make run create and maker-sign lock the actor's `PartnerAdmin` row (money code: Opus build and the
+owner's yes), so they wait on the Remove or archive. Rare in practice: a lead removing someone at the very second that
+person starts a run.

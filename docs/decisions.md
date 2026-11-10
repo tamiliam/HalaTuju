@@ -1,8 +1,8 @@
 # Architectural Decisions — HalaTuju
 
-## 2026-11-10 — Staff list and membership rules, API half: a `member` role, Delete as archive, a read fence for the person page; owner rulings O12-O17 (Sprint M1a)
+## 2026-11-10 — Staff list and membership rules, API half: a `member` role, Delete as archive, a read fence for the person page; owner rulings O12-O18 (Sprint M1a)
 
-Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md` (O1-O17); brief `docs/plans/2026-11-10-m1-staff-list-brief.md`
+Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md` (O1-O18); brief `docs/plans/2026-11-10-m1-staff-list-brief.md`
 (with its Owner answers and Addendum). M1a is the API (courses 0096) plus the web's phone minimum; M1b draws the Staff
 tab. **Supersedes in part** the 2026-11-10 O9 entry below: "The Reviewers table is left as it is" (O16).
 
@@ -16,6 +16,7 @@ tab. **Supersedes in part** the 2026-11-10 O9 entry below: "The Reviewers table 
 | O15 | Three powers stay with the org admin and are never grantable: changing other staff's permissions, paying the platform bill, approving requests that commit paid hours. |
 | O16 | No phone on ANY group table (Admins, Reviewers, Mentors). A phone shows only on the person page, under "Show my phone to my team". The platform's Organisations and Partners screens are not group tables and keep theirs. |
 | O17 | No inline hint text under a group table's actions; a blocked Remove is greyed with the reason (and count) in the InfoTip (M1b). The API keeps serving the code and the count. |
+| O18 | Suspend is refused 409 `has_scholars` (with `scholars_now`) while the person mentors anyone, like Remove and Delete; it never ends mentoring. The Mentor row is locked before the count (and before the login: Mentor, then PartnerAdmin, on every M1a door). Ruled in the M1a review; supersedes M1a's first build, where Suspend ended the mentoring. |
 | Owner answers | A fellow org admin's page is view only; nobody suspends or deletes themselves. A re-invited archived person comes back with fresh defaults (`invite_permissions(role)`), history kept. |
 
 **Lead decisions**
