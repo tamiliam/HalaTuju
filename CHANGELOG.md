@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### test: sprint A3.4 - 19 more golden cases for the branches mutation testing found unpinned; TD-597 to TD-599 raised (2026-11-10)
+### test: sprint A3.4 - 19 more golden cases for the branches mutation testing found unpinned; TD-600 to TD-602 raised (2026-11-10)
 
-Branch a34 (not pushed; tests and docs only, no production code changed). Mutation testing of the split found 12 mutants no golden caught; 19 new cases in `fixtures/a34_golden_verdicts.json` (now 242) pin the STR recipient NRIC half, an earner with no route, the one-chip offer under-read, institution- or programme-only offers, the switch with an unknown family, a pre-U-track-only declaration, the profile with no NRIC, the unreadable birth certificate in the cap exclusion, a partly matching student IC name and an address-only unreadable other document. Recorded on the untouched tree, pass on both; each of the 12 mutants now fails at least one golden. Three pre-existing bugs found on the way are raised, not fixed (TD-597, TD-598, TD-599); `verdict_caps` notes that `_latest_doc` is imported by value.
+Branch a34 (not pushed; tests and docs only, no production code changed). Mutation testing of the split found 12 mutants no golden caught; 19 new cases in `fixtures/a34_golden_verdicts.json` (now 242) pin the STR recipient NRIC half, an earner with no route, the one-chip offer under-read, institution- or programme-only offers, the switch with an unknown family, a pre-U-track-only declaration, the profile with no NRIC, the unreadable birth certificate in the cap exclusion, a partly matching student IC name and an address-only unreadable other document. Recorded on the untouched tree, pass on both; each of the 12 mutants now fails at least one golden. Three pre-existing bugs found on the way are raised, not fixed (TD-600, TD-601, TD-602); `verdict_caps` notes that `_latest_doc` is imported by value.
 
 ### refactor: audit G9 / sprint A3.4 - the verdict, Action Centre and help engines split by moving code (TD-361 part, TD-262 note) (2026-11-10)
 
