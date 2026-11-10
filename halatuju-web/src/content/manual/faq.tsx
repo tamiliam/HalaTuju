@@ -132,7 +132,7 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>Why can&rsquo;t I switch off <strong>Review assigned students</strong> for somebody?</>,
       a: <>Because they still have cases assigned to them, and without it they could not open those cases.
         Hand the cases to someone else first (the <strong>Assigned</strong> control on Applications), then try
-        again. The same holds for <strong>See all students</strong> on an admin who is holding a case.</>,
+        again. The same holds for <strong>Applications</strong> on an admin who is holding a case.</>,
     },
     {
       q: <>What does <strong>Remove from Admins</strong> (or Reviewers) do?</>,
@@ -268,7 +268,7 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>Can one person be an admin and a reviewer?</>,
       a: <>Yes. On <strong>Team</strong>, <strong>Add Admin</strong> or <strong>Add Reviewer</strong> puts somebody
         already in your team into that table too, starting with that table&rsquo;s minimum permission
-        (<em>See all students</em>, or <em>Review assigned students</em>). Nothing they had is taken away, and no
+        (<em>Applications</em>, or <em>Review assigned students</em>). Nothing they had is taken away, and no
         email is sent. You can add yourself to Reviewers; you will never quality-check a case you reviewed.</>,
     },
     {

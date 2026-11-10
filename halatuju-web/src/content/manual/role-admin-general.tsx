@@ -42,8 +42,8 @@ export const roleAdminGeneral: ManualChapter = {
         the contract, and an <strong>Activity</strong> log where you can add a note, call or meeting. Because you
         prepare payment runs, you can also put a student <strong>on hold</strong> (she is left out of runs until
         you resume) from the file&rsquo;s header &mdash; on a student assigned to you, where you may also change her
-        status or close the file. On a student assigned to you, the <strong>Results</strong> tab is where you
-        accept or query each result she sends; only an accepted result counts. Every result needs the slip she
+        status or close the file. The <strong>Results</strong> tab is where you accept or query each result she
+        sends, on any scholar in your organisation; only an accepted result counts. Every result needs the slip she
         uploaded at the portal &mdash; one sent by email is not accepted, and you cannot attach it for her: query
         her to upload it. The <strong>Money</strong> tab shows her award, paid and remaining (the Payments
         page&rsquo;s figures), her last three payments and her spending this term by category; the

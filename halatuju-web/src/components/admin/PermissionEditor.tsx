@@ -20,7 +20,7 @@ import {
  * on every change — what saving would do: each toggle asks the endpoint for a DRY RUN, and the line
  * under the switches is worded from its answer (`added`, `removed`, `consequences`) or shows its
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
- * the one local rule, Quality check bringing See all students, only mirrors what the server answers.
+ * the one local rule, Quality check bringing Applications, only mirrors what the server answers.
  *
  * Loaded in the person page's own chunk (`'ad'`, `admin/person/TeamPersonPage`, sprint T3) — no route entry carries it.
  *
@@ -31,16 +31,17 @@ import {
 
 /**
  * Team tables T3 (owner, 2026-11-03): ONE SECTION PER TABLE THE PERSON SITS IN — the server's `tables`.
- * "Admin permissions" (`see_all`, `spending`, the three payment keys) only for somebody in Admins;
- * "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money groups,
- * which showed every key to everyone, are gone. "See all students" is an ADMIN permission; Quality check
+ * "Admin permissions" (`see_all`, `scholars`, `spending`, the payment and withdrawal keys) only for somebody in
+ * Admins; "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money
+ * groups, which showed every key to everyone, are gone. Sprint S1: `see_all` is labelled "Applications" and
+ * `scholars` ("Scholars", its own key) sits right after it. "Applications" is an ADMIN permission; Quality check
  * IMPLIES it (the server's `staff_permissions.IMPLIES`, T5b; TD-499), so it comes on with Quality check and
  * stays ticked and locked while Quality check is on; turning it off never takes Quality check away.
  * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
  * server served, changed only by the switches on screen (and the key Quality check brings).
  * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
 export const TABLE_KEYS = {
-  admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+  admins: ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
     'award_withdraw_request', 'award_withdraw_approve'],
   reviewers: ['review', 'qc'],
 } as const
@@ -104,8 +105,8 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const tables = view?.tables
   const inAdmins = !tables || tables.includes('admins')
   const inReviewers = !tables || tables.includes('reviewers')
-  // Quality check brings See all students along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
-  // no "See all students" switch, so turning Quality check off takes it away again unless it was an ADMIN
+  // Quality check brings Applications (`see_all`) along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
+  // no "Applications" switch, so turning Quality check off takes it away again unless it was an ADMIN
   // key before (held without Quality check), so turning Quality check off never leaves somebody seated at
   // Admins by a key nobody ticked (T2's rule, kept). In Admins the switch is on screen and stays as it is.
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
@@ -173,7 +174,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
 
   const row = (key: string) => {
     const on = want.includes(key)
-    // See all students is locked on while Quality check holds it (TD-499).
+    // Applications is locked on while Quality check holds it (TD-499).
     const locked = key === 'see_all' && want.includes('qc')
     const changed = on !== view.permissions.includes(key)
     return (

@@ -29,9 +29,11 @@ const STATE_TONE: Record<string, string> = {
  * ⚠ THE SERVER DECIDES: which kinds this officer may issue (`can_issue`), who may withdraw, and the
  * typed name. A letter is never edited or deleted — Withdraw, with a reason, is the only way out.
  */
-export default function ScholarLetters({ id, token, canClose, onGoToClose, onChanged }: {
+export default function ScholarLetters({ id, token, canClose, onGoToClose, onChanged, readOnly = false }: {
   id: number
   token: string | null
+  /** Sprint S1 (S1-h): a mentor reads the letters and resends nothing (the server refuses it anyway). */
+  readOnly?: boolean
   /** The header's Close control offers a close (its own rules decide). */
   canClose: boolean
   onGoToClose: () => void
@@ -161,9 +163,9 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
                     </span>
                   ) : (
                     <span className="text-sm text-caution-800" data-testid={`letter-not-emailed-${l.id}`}>
-                      {t(`${P}.notEmailed`)}{' — '}
-                      <button type="button" onClick={() => resend(l)} disabled={busy === l.id}
-                        className="text-primary-600 underline disabled:opacity-50">{t(`${P}.resend`)}</button>
+                      {t(`${P}.notEmailed`)}
+                      {!readOnly && <>{' — '}<button type="button" onClick={() => resend(l)} disabled={busy === l.id}
+                        className="text-primary-600 underline disabled:opacity-50">{t(`${P}.resend`)}</button></>}
                     </span>
                   )}
                   <span className={`self-start rounded-full px-2.5 py-0.5 text-xs font-medium ${STATE_TONE[l.state]}`}

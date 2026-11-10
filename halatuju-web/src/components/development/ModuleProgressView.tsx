@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
 import {
   fetchModuleCsv, getModuleProgress, remindModule, reviewTask, taskFileLink,
   type ModuleProgress, type ProgressBucket, type ProgressRow,
@@ -74,6 +74,7 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = opensDoorOr(role, 'development', MAKER_ROLES)   // T5c P4: the server's door
+  const opensFile = readsAllScholars(role)   // sprint S1: the name links only for a reader of every file
   const [data, setData] = useState<ModuleProgress | null>(null)
   const [failed, setFailed] = useState(false)
   const [tab, setTab] = useState<ProgressBucket>('to_review')
@@ -171,7 +172,9 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
               {rows.map((x) => (
                 <tr key={x.application_id} data-testid={`progress-row-${x.application_id}`}>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/scholars/${x.application_id}`} className="text-primary-600 hover:underline">{x.name || '—'}</Link>
+                    {opensFile
+                      ? <Link href={`/admin/scholars/${x.application_id}`} className="text-primary-600 hover:underline">{x.name || '—'}</Link>
+                      : <span>{x.name || '—'}</span>}
                     {x.late && <span className="ml-2 text-xs font-semibold text-critical-700" data-testid={`late-${x.application_id}`}>{t(`${K}.late`)}</span>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.lessons`)}>{t(`${K}.lessonsOf`, { read: String(x.read), count: String(x.lessons) })}</td>

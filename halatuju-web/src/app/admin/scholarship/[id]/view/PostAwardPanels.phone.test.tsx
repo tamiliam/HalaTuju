@@ -17,7 +17,7 @@ const ROWS = [
 const props = (over: Record<string, unknown> = {}) => ({
   app: { id: 5, status: 'maintenance', maintenance_substate: 'on_track', disbursements: ROWS, has_file: true,
     closure_reason: '', closed_at: null } as unknown as AdminScholarshipDetail,
-  t: t as never, busy: '', isSuper: false, canWrite: true, orgSuper: true,
+  t: t as never, busy: '', isSuper: false, canWrite: true, orgSuper: true, mayOpenFile: true,
   bursary: null, bursaryMsg: '', doCountersignBursary: jest.fn(), doWitnessBursary: jest.fn(),
   disbAmount: '500', setDisbAmount: jest.fn(), disbLabel: '', setDisbLabel: jest.fn(), disbMsg: '',
   doScheduleTranche: jest.fn(), doDisbursementAction: jest.fn(), doSetSubstate: jest.fn(),

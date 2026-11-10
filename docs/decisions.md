@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## Scholars has a permission of its own, `scholars`; "See all students" is relabelled "Applications"; mentors read their current students' files — 2026-11-09 (sprint S1; owner decisions S1-a to S1-i)
+
+**Context:** until S1 the Scholars page and the scholar file were read by the Applications rule (`_b40_scope`), so `see_all`, `review` (assigned) and `qc` all opened them, and nobody could be given one without the other. Brief: `docs/plans/2026-11-09-s1-scholars-access.md`.
+
+**Decision:**
+- **S1-a, the key.** `scholars` ("Scholars": "Read every scholar's file in this organisation.") reads the Scholars list and every per-scholar endpoint and tab. Super has it; it is in the admin preset and `LEAD_TIER`; not in the reviewer or qc preset; nothing implies it. It is an Admins-table key (`staff_tables.ADMIN_KEYS`), and `INVITE_START['admin']` is `('see_all', 'scholars')`. In v2 it is `scholars.view` (Programme group); `students.view` now means Applications only.
+- **S1-b, the relabel.** `see_all` reads "Applications" ("Read every application in this organisation.") in en, ms and ta. The stored key is unchanged.
+- **S1-c, the door.** `base.scholars_scope(admin)` answers `'all'` (super, or holds `scholars`), `'mentor'` (`mentor_desk.mentor_of`) or `'none'`. `review`, `qc` and `see_all` alone get 403. `_file_for` has no `'assigned'` branch. `b40_scope` and Applications are unchanged.
+- **S1-d, writes.** Semester-result review, letters and activity notes are for `scholars` holders across their organisation, assignee or not; `qc` no longer writes here. `_can_review_app` (Applications) is untouched. The org fence and the closed-file 409 stay.
+- **S1-e, union by keys.** A person in two groups holds both groups' keys. The web admits the Scholars row on `perms: ['scholars']` whatever the label; "label reviewer, keys `review` + `see_all` + `scholars`" is tested.
+- **S1-f.** A mentor login gets 403 on Applications (API and web `canAccess`); no code change, a test pins it.
+- **S1-g, data migration.** `courses` `0095_grant_scholars_key` adds `scholars` to every saved list of an ACTIVE team member that NAMES `see_all` (not a `qc`-only list: owner ruling 2026-11-10, Quality check carries no Scholars role; not a deactivated row), appended, with one `staff_permission_changes` row each (`changed_by_role` 'migration', blank email). Live: 4 rows. Reversible (it reads only its own audit rows, kind 'edit' with `after` holding `scholars` and `before` lacking it, removes the key from exactly the rows they name, then deletes only those audit rows). The old image drops an unknown key on read (`staff_permissions.clean`), so the rows are safe before the push. MIGRATE-FIRST by hand; the SQL is in the release-note draft.
+- **S1-h, mentors on Scholars.** A mentor login, and staff who mentor without `scholars`, read the Scholars list and the full file of their CURRENT students only (`mentor_desk.current_assignments`: open, own organisation, in maintenance, never their own application), every tab, read-only. Anything else per-scholar is one 404; access ends when the mentoring ends. "Staff only" activity rows and their counts are filtered on the server. Every write is refused (403 for their own student, 404 otherwise). The server serves `mentor_view` on the file so the web hides every control (never derived in the browser). A person who holds `scholars` and mentors gets `'all'`. Mentor menu: Programmes, Scholars, My students, Profile.
+- **S1-i.** The 2026-10-29 "Scholars list and file read by the Applications rule" entry, S7c points (2) and (7), and T5c's "Applications and Scholars keep their rules" (Scholars) are superseded; each is marked.
+
+**Builder's choices (for the owner to see):** the Mentors page's scholar side (`sees_scholars`) asks `scholars`; Growth, Surveys and Mentoring keep their own read keys for non-mentors; a mentor login skips the gift gate on the list (its programme scopes never settle); "View application" on the file shows only to Applications readers and never in a mentor view; Letters' Resend is hidden in a mentor view; a migrated list may now read as "custom" on People; a mentor sees the mentoring card, other mentors' names on the Mentoring tab and the mentoring payload's staff emails (open question below).
+
+**Alternatives considered:** keep Scholars on `see_all` and add a narrower key for the file only (two keys for one page); give reviewers their assigned scholars (they keep the cockpit for the application; the owner chose a clean key).
+
+**Trade-offs:** reviewers and QC lose Scholars. Semester-result review on the 53 awarded cases falls to the 2 admins, the 2 people in both groups and the 2 org admins. Mentors now read documents, money and family data for their own students: a deliberate PII widening by the owner, scoped and ended as above (`docs/scholarship/role-matrix.md`).
+
+**Open for the owner:** whether a mentor should see staff emails in the Mentoring tab's payload (served today); whether the Add-to-Admins action (`ADD_KEY`) should add `scholars` beside `see_all` (it adds only `see_all` today).
+
+**Revisit if:** a reviewer must review semester results again, or a mentor needs a write on the file.
+
 ## The activity box shows who and when, oldest at the top, with a one-line note box — 2026-11-09 (sprint P1; owner rulings P1-a to P1-h)
 
 **The rule:** on a scholar's file, the activity log names the person behind each row, with their name and a photo or initials, and never their email. Only a fully automatic row is "System". Times read as relative words, with the exact time on hover and for a screen reader. The list runs oldest to newest inside a fixed-height scroller, with the note box below it. Brief: `docs/plans/2026-11-09-p1-activity-box.md`; roadmap: `docs/plans/2026-11-08-activity-box-roadmap.md` (P1).
@@ -30,7 +55,7 @@
 | | Ruling |
 |---|---|
 | D9 | Under the name go the table chips (the Team page's own "Also in" labels), then the Status pill · Joined · Last seen. There is no role word. Pause new cases is offered for a reviewer only (`pausable`, the pause endpoint's own rule). |
-| D8 | A pure mentor's Permissions tab is read-only. It says what a mentor sees (My students and Profile) and offers the Team page's Add-to-table path, and only to a viewer who may add them (`may_add`, served by the mentor detail under the Add endpoint's own rule). |
+| D8 | A pure mentor's Permissions tab is read-only. It says what a mentor sees (My students and Profile; since S1, merged 2026-11-10, also Scholars: their current students' files, read-only) and offers the Team page's Add-to-table path, and only to a viewer who may add them (`may_add`, served by the mentor detail under the Add endpoint's own rule). |
 | M1 | Last seen is relative ("2 days ago"; the date itself from 30 days back), with the exact date and time in `title`. Somebody who never signed in reads "Invited". A missing time with a recorded sign-in reads "not recorded", never "never". |
 | M2 | An organisation admin's Permissions tab (not editable) shows their keys as locked switches under one line saying they cannot be changed here. There is no Save. |
 | M3 | A Profile field nobody filled in reads "Not given", never hidden, so a reader can tell "empty" from "not shown to you". The home address is never shown, nor served. |
@@ -366,7 +391,8 @@ no access moving for any shape.
   T1). A registry row names its `door` (Organisation `org_read`; Invitations, People `team_read`; Sources; Sponsors
   `sponsors_read`; Announcements; Surveys; Development); in-page gates ask `pageGuard.opensDoorOr(role, door,
   oldRoles)`. Offer-set == accept-set: a row or gate moves only where its server door moved, so Team -> Mentors
-  (TD-497), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
+  (TD-497), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules (*Scholars: superseded 2026-11-09 (S1) — the row
+  and its pages ask the `scholars` key, and admit a mentor for their own students*). No
   landing change (`defaultRoute` passes no `page_keys`), no string, no layout. **Proof:** the 27 shapes the server
   serves (the doors test's 32 less its 5 inactive rows, payloads taken from `admin/role/`) x 45 cells, frozen on P4a
   before the change, identical after with and without `page_keys`; shown red with one mapping broken.
@@ -1537,6 +1563,11 @@ mobile-check now opens `/stpm/UP6523001`, and `/course/stpm-sains` beside `/cour
 
 **Context:** 7a gave mentors a sign-in and a profile; 7b gave staff the assignments and meetings. A mentor still
 saw nothing of their students and could not record a meeting.
+
+> **Superseded 2026-11-09 (S1), points (2) and (7) only.** Point (2)'s "never" list no longer holds: a mentor
+> also reads the full Scholars file of their CURRENT students, every tab, read-only ("Staff only" activity rows
+> hidden), on the same scope and end condition as point (1). Point (7): the mentor's menu is Programmes,
+> Scholars, My students and Profile. See the 2026-11-09 S1 entry. The rest stands.
 
 **Decision:** (1) **A signed-in mentor sees ONLY their CURRENT students** — an open `MentorAssignment` of their
 own mentor row, on a file of the mentor's own organisation that is in maintenance. When mentoring ends the student
@@ -2840,6 +2871,10 @@ paid by the runs but has no file to be held from, so her status control stays in
 file is changed on the file.
 
 ## The Scholars list and file read by the Applications rule — 2026-10-29 (student maintenance S2)
+
+> **Superseded 2026-11-09 (S1).** Scholars now asks its own key, `scholars` (`base.scholars_scope`): a holder
+> reads and writes across the organisation; `review`, `qc` and `see_all` alone are refused; a mentor reads their
+> current students read-only. See the 2026-11-09 S1 entry. The list's standing and query-budget notes below stand.
 
 **Decision:** `/admin/scholars` and the maintenance file are fenced exactly as the Applications cockpit is
 (`_b40_scope`): `see_all` reads the organisation, a reviewer only their assigned scholars, finance and partner are

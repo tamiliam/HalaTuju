@@ -23,6 +23,7 @@ export type { DoorName }
 export const STAFF_PERMISSIONS = [
   'review',
   'see_all',
+  'scholars',
   'qc',
   'spending',
   'payments_prepare',
@@ -100,13 +101,17 @@ export function adminKeysHeld(permissions: readonly string[]): string[] {
   return permissions.filter((k) => ADMIN_KEYS.includes(k as StaffPermission) && !(qc && k === 'see_all'))
 }
 
-/** The keys that seat a team member at the Admins table (`staff_tables.ADMIN_KEYS`). */
+/** The keys that seat a team member at the Admins table (`staff_tables.ADMIN_KEYS`). Sprint S1: `scholars`
+ *  (the Scholars door's own key) seats one too. */
 export const ADMIN_KEYS: readonly StaffPermission[] =
-  ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+  ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
     'award_withdraw_request', 'award_withdraw_approve', 'manage_team']
 
 /** Team tables T1: the organisation pages an Admin READS (Organisation, Invitations, People, Sponsors) —
  *  any admin key opens them for a person at the Admins table (T1's `staff_tables.ORG_READ_KEYS`). Since
  *  T5c P4 those rows open by their `door`; this is the OLDER-payload rule (no `page_keys`), frozen as T1
- *  had it (the server's copy went in T5c P1). */
-export const ORG_READ_KEYS: readonly StaffPermission[] = ADMIN_KEYS
+ *  had it (the server's copy went in T5c P1). Sprint S1 added `scholars` to ADMIN_KEYS; this list stays
+ *  T1's, written out, so the older-payload rule does not widen. */
+export const ORG_READ_KEYS: readonly StaffPermission[] =
+  ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+    'award_withdraw_request', 'award_withdraw_approve', 'manage_team']

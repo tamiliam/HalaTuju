@@ -21,6 +21,7 @@ import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
@@ -1085,7 +1086,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       </div>{/* end cockpit grid */}
 
       <PostAwardPanels
-        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={canAssign}
+        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={canAssign} mayOpenFile={mayOpen('/admin/scholars', role)}
         bursary={bursary} bursaryMsg={bursaryMsg}
         doCountersignBursary={doCountersignBursary} doWitnessBursary={doWitnessBursary}
         disbAmount={disbAmount} setDisbAmount={setDisbAmount}

@@ -90,7 +90,7 @@ export type ActivityFilter = 'all' | 'students' | 'money' | 'profile'
 // A1.13b: the award-withdrawal seats are money powers (their activity rows are `money`, `staff_activity`).
 const MONEY_PERMS = ['spending', 'payments_prepare', 'payments_check', 'payments_approve',
   'award_withdraw_request', 'award_withdraw_approve']
-const CASE_PERMS = ['review', 'see_all', 'qc']
+const CASE_PERMS = ['review', 'see_all', 'scholars', 'qc']   // sprint S1: a scholar-file writer acts on cases
 
 /**
  * The My activity chips THIS person is offered (common profile S5), in order. All and "Profile and
@@ -126,7 +126,7 @@ export function profileContext(role: {
 
 /** The permission keys that have a plain-word name (`admin.perm.<key>.name`). `manage_team` has
  *  none: it is the organisation admin's fixed power and is said by that role's own line. */
-const NAMED_PERMS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
+const NAMED_PERMS = ['review', 'see_all', 'scholars', 'qc', 'spending', 'payments_prepare', 'payments_check',
   'payments_approve', 'award_withdraw_request', 'award_withdraw_approve'] as const
 
 /**

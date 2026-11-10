@@ -23,7 +23,7 @@ jest.mock('@/lib/i18n', () => ({
 jest.mock('@/lib/admin-api/admins')
 const mockApi = api as jest.Mocked<typeof api>
 
-const KEYS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
+const KEYS = ['review', 'see_all', 'scholars', 'qc', 'spending', 'payments_prepare', 'payments_check',
   'payments_approve', 'award_withdraw_request', 'award_withdraw_approve']
 const ROHINI: api.StaffPermissionsView = {
   id: 7, name: 'Rohini', role: 'reviewer', is_active: true, editable: true,
@@ -57,8 +57,8 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   const reviewers = screen.getByTestId('perm-section-reviewers')
   expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
-    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'award_withdraw_request',
-      'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))
+    ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+      'award_withdraw_request', 'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))   // S1: Scholars after Applications
   expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['admin.perm.review.name', 'admin.perm.qc.name'])
   expect(screen.queryByText('admin.permEditor.students')).toBeNull()
@@ -265,15 +265,18 @@ describe('Changes', () => {
     await open({ ...ROHINI, history: [
       change({ added: ['spending'], removed: ['payments_approve'] }),
       change({ kind: 'role_change', role: 'qc', by: '', by_super: true }),
+      change({ added: ['scholars'], by: '', by_migration: true }),
     ] })
     const items = within(screen.getByTestId('permission-history')).getAllByRole('listitem')
-    expect(items).toHaveLength(2)
+    expect(items).toHaveLength(3)
     expect(items[0].textContent).toContain(
       'admin.permHistory.on(perm=admin.perm.spending.name) · admin.permHistory.off(perm=admin.perm.payments_approve.name)')
     expect(items[0].textContent).toContain(`admin.permHistory.byAt(by=Priya Lead;at=${formatDateTime(AT)})`)
     expect(items[1].textContent).toContain('admin.permHistory.roleReset(role=admin.role.qc)')
     // A super's change names the team, never an address.
     expect(items[1].textContent).toContain('by=admin.permHistory.team')
+    // A data migration's change (sprint S1) says so, never a blank "by".
+    expect(items[2].textContent).toContain('by=admin.permHistory.migration')
   })
 
   it('says there is nothing yet, naming the set the person holds', async () => {
