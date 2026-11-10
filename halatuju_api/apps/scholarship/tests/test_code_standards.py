@@ -653,12 +653,18 @@ class TestTheScanActuallyFoundTheCode(_Standard):
     def test_the_readings_are_not_all_empty(self):
         self.assertGreater(len(self.scan['oversize_files']), 10,
                            'no large files found at all — the line counter is broken.')
-        # A3.8 (2026-11-10): lowered 5 -> 2. The audit sprints paid the ledger down to 4 long
-        # functions, so the old floor failed on success, not on a broken walk.
-        # A3.10 (2026-11-10): lowered 2 -> 0. Three more went (the command splits), leaving one
-        # long function (the staff invite view); the floor still proves the walk finds something.
-        self.assertGreater(len(self.scan['long_functions']), 0,
-                           'no long functions found at all — the AST walk is broken.')
+        # The ledger floor was retired in G11 (the audit sprints paid it down to one long
+        # function, so any floor fails on success). Scanner health is proved below instead.
+
+    def test_the_scanner_flags_a_synthetic_long_function(self):
+        """Scanner self-test: a function of LONG_FUNC_LINES + 5 lines must be reported by the
+        real `_qualnames` entry point, and a short one must not."""
+        body = chr(10).join(['    x = 1'] * (LONG_FUNC_LINES + 4))
+        source = 'def synthetic_long():' + chr(10) + body + chr(10) * 3 + 'def synthetic_short():' + chr(10) + '    return 1' + chr(10)
+        rows = dict(_qualnames(ast.parse(source)))
+        self.assertEqual(rows['synthetic_long'], LONG_FUNC_LINES + 5)
+        self.assertGreaterEqual(rows['synthetic_long'], LONG_FUNC_LINES)
+        self.assertLess(rows['synthetic_short'], LONG_FUNC_LINES)
 
     def test_the_self_exclusion_is_one_file_wide(self):
         """The hole at `SELF` is acceptable only while it stays exactly one file wide. If a second
