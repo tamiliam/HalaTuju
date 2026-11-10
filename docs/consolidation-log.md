@@ -7,6 +7,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-11-05 review - counter reset; the fifteen small-lane entries are named in that review, and line by line in git at the commit before it)_
 
+- 2026-11-10 b8bdf9cc feat(web): team-membership small change - InfoTip above the page; O9 no phone on Team Admins; O10 org admin's name opens their page; O11 no email in the person header (web: InfoTipBubble, StaffAdmin, reviewers/page, PersonHeader + tests; decisions.md, CHANGELOG)
+
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
