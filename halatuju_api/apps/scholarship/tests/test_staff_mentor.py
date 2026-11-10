@@ -300,13 +300,25 @@ class TestTheWaysOut(_Base):
             r = self.act(self.kavitha, action)
             self.assertEqual((r.status_code, r.json().get('code')), (400, 'not_staff'))
 
-    def test_a_revoke_stops_mentoring_and_a_restore_does_not_bring_it_back(self):
+    def test_a_revoke_is_refused_with_scholars_and_a_restore_does_not_bring_mentoring_back(self):
         mentor = self.added(self.officer)
         self.assign(mentor)
-        r = authed_client(self.lead).patch(f'/api/v1/admin/admins/{self.officer.pk}/revoke/',
-                                           {'action': 'revoke'}, format='json')
+        url = f'/api/v1/admin/admins/{self.officer.pk}/revoke/'
+        # Owner O18: Suspend is refused while they mentor anyone, and nothing is ended.
+        r = authed_client(self.lead).patch(url, {'action': 'revoke'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code'], r.json()['scholars_now']), (409, 'has_scholars', 1))
+        self.assertEqual(self.open_count(mentor), 1)
+        self.officer.refresh_from_db()
+        mentor.refresh_from_db()
+        self.assertTrue(self.officer.is_active)
+        self.assertIsNone(mentor.deactivated_at)
+        MentorAssignment.objects.filter(mentor=mentor, ended_at__isnull=True).update(ended_at=timezone.now())
+        r = authed_client(self.lead).patch(url, {'action': 'revoke'}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
-        self._stopped(mentor, self.officer)
+        self.officer.refresh_from_db()
+        mentor.refresh_from_db()
+        self.assertIsNotNone(mentor.deactivated_at)
+        self.assertFalse(self.officer.mentors_now)
         self.assertFalse(self.officer.is_active)   # the staff action's own change
         authed_client(self.lead).patch(f'/api/v1/admin/admins/{self.officer.pk}/revoke/',
                                        {'action': 'restore'}, format='json')

@@ -266,8 +266,9 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
 
     ``email`` (the invite's lowercased address) is written onto the row (request #39 review): the
     invite finds a row case-insensitively, but `get_admin` links a first sign-in by EXACT email, so
-    a row stored as ``Gita@Gmail.com`` would never link. If another row already holds the exact
-    address (a case twin), this refuses ``'not_reusable'`` rather than break the unique constraint.
+    a row stored as ``Gita@Gmail.com`` would never link. If another row already holds the address in
+    ANY case (a case twin; M1a review: the check matches the invite's case-insensitive lookup), this
+    refuses ``'not_reusable'`` rather than make a second row for the same person.
     """
     with transaction.atomic():
         row = (PartnerAdmin.objects.select_for_update()
@@ -282,8 +283,8 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         if row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role:
             return None, False, 'not_reusable'
         email = email or row.email
-        if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
-            return None, False, 'not_reusable'
+        if PartnerAdmin.objects.filter(email__iexact=email).exclude(pk=row.pk).exists():
+            return None, False, 'not_reusable'   # M1a review: a twin in ANY case (the invite's lookup)
         if temp_password is None and row.supabase_user_id:
             # A Google row gets its UID on its first Google sign-in — so one carrying a UID has
             # been in, and comes back through Restore, never a re-invite (review H1).

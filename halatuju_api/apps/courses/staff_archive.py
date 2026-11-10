@@ -58,10 +58,43 @@ def archive_asked(data):
     return isinstance(data, dict) and data.get('archive') is True
 
 
+def _mentor_model():
+    """The scholarship `Mentor` model, reached through the link (no courses → scholarship import)."""
+    return PartnerAdmin._meta.get_field('mentor').related_model
+
+
+def lock_mentor_of(admin_id):
+    """M1a review: inside the transaction, BEFORE any login row is locked, lock the Mentor ``admin_id``
+    is linked to (a peek finds it). Mentor → PartnerAdmin is the order `delete_mentor`,
+    `mentor_archive.archive`, Deactivate and `staff_mentor.stop` take, so the doors never deadlock."""
+    mentor_id = PartnerAdmin.objects.filter(id=admin_id).values_list('mentor_id', flat=True).first()
+    if mentor_id is not None:
+        _mentor_model().objects.select_for_update().filter(pk=mentor_id).first()
+
+
+def has_scholars_refusal(target):
+    """Owner O18 (2026-11-10): Suspend (People → Revoke) is REFUSED while ``target`` mentors anybody —
+    409 `has_scholars` with `scholars_now`, the body Remove from Mentors answers — and never ends
+    mentoring. None when nobody is mentored. The Mentor row is locked before the count (the door took it
+    first with `lock_mentor_of`; this is a no-op then), so an assignment cannot land after the count."""
+    from .views_admin import _scholarship_staff_modules
+    modules = _scholarship_staff_modules()
+    if target.mentor_id is not None:
+        _mentor_model().objects.select_for_update().filter(pk=target.mentor_id).first()
+    n = modules[5].scholars_now(target)
+    return Response(modules[3].has_scholars_body(target.name, n), status=409) if n else None
+
+
 def archive_locked(caller, row):
     """Archive ``row`` — the caller holds it LOCKED inside its transaction and has made every refusal
-    of its own door. Writes nothing when it refuses. Shared by the staff and the mentor Delete."""
+    of its own door. Writes nothing when it refuses. Shared by the staff and the mentor Delete.
+
+    ⚠ M1a review ("refuse, never end"): the linked MENTOR row is locked before the scholars are counted
+    (a no-op when the door already holds it, as both doors do), so an assignment committed after the
+    count cannot be ended by the mentoring leave below — `mentoring.assign` takes the same lock."""
     staff_lifecycle, invitations, staff_work = _modules()
+    if row.mentor_id is not None:
+        _mentor_model().objects.select_for_update().filter(pk=row.mentor_id).first()
     work = staff_work.unfinished(row)
     if staff_work.any_work(work):
         return Archived('has_unfinished_work', work, None, None, None)
@@ -72,7 +105,7 @@ def archive_locked(caller, row):
     now, by, uid = timezone.now(), (caller.email or '')[:254], row.supabase_user_id
     staff_mentor_leaves(row, by=by)   # a staff mentor: stamped deactivated (no scholar is left: refused above)
     if row.mentor_id is not None:     # a mentor login: its mentor too. The LINK is kept (the name stays)
-        PartnerAdmin._meta.get_field('mentor').related_model.objects.filter(
+        _mentor_model().objects.filter(
             pk=row.mentor_id, deactivated_at__isnull=True).update(deactivated_at=now, deactivated_by_email=by)
     invitations.open_only(invitations.Invitation.objects.filter(partner_admin=row)).update(
         revoked_at=now, updated_at=now)
@@ -107,6 +140,7 @@ def before_delete(caller, admin_id, data):
         return None
     staff_footprint, staff_lifecycle = scholarship_staff()
     with transaction.atomic():
+        lock_mentor_of(admin_id)   # M1a review: Mentor first, then the org admins and the target
         lock_org_admins_of(admin_id)
         target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
         if (target is None or not _deletable_now(caller, target, work={}) or is_sole_org_admin(target, lock=True)
@@ -147,8 +181,8 @@ def restore(existing, *, name, role, org, owning_org, temp_password=None, email=
         if row is None or (row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role):
             return None, False, 'not_reusable'
         email = email or row.email
-        if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
-            return None, False, 'not_reusable'
+        if PartnerAdmin.objects.filter(email__iexact=email).exclude(pk=row.pk).exists():
+            return None, False, 'not_reusable'   # M1a review: any case, as the invite finds a row
         uid, already = None, temp_password is None
         if temp_password is not None:
             uid, already, err = _new_login(email, name, temp_password)

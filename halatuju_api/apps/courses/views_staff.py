@@ -539,6 +539,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps
         # its mentor — or after, when it sees the login off and refuses.
         with transaction.atomic():
+            staff_archive.lock_mentor_of(admin_id)   # O18: the Mentor first (the lock order); the count is final
             lock_org_admins_of(admin_id)   # T2 review: the org's org admins first, in id order
             target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
             return self._revoke_locked(request, admin, target)
@@ -559,10 +560,13 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         if action == 'revoke' and is_sole_org_admin(target, lock=True):   # Delete refuses it too (N4)
             return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
+            refused = staff_archive.has_scholars_refusal(target)   # O18 (owner): refuse, never end
+            if refused:
+                return refused
             target.is_active = False
             target.save(update_fields=['is_active'])
-            # S7d: a staff member who also mentors stops mentoring with the revoke (their scholars'
-            # assignments end, no email). A later Restore does NOT bring mentoring back.
+            # S7d: a staff member who also mentors stops mentoring with the revoke (O18: nobody is mentored
+            # by now, so the mentor is only stamped deactivated). A later Restore does NOT bring it back.
             staff_mentor_leaves(target, by=admin.email or '')
             return Response({'message': f'{target.name} access revoked'})
         elif action == 'restore':

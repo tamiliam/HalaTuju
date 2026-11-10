@@ -516,8 +516,7 @@ class AdminMentorActionView(_MentorsBase):
 
 def _has_scholars(login, n):
     from .. import staff_mentor
-    return Response({'error': staff_mentor.has_scholars_message(login.name, n), 'code': staff_mentor.HAS_SCHOLARS,
-                     'scholars_now': n}, status=status.HTTP_409_CONFLICT)
+    return Response(staff_mentor.has_scholars_body(login.name, n), status=status.HTTP_409_CONFLICT)
 
 
 class AdminStaffMentorsView(_MentorsBase):

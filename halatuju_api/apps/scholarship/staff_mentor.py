@@ -29,6 +29,9 @@ rulings and the lead's two data rulings in docs/decisions.md the same day). The 
   `mentoring.assign` / `mentoring.end`). A MENTOR LOGIN removed from Mentors (`remove_mentor_login`) becomes
   "No group" (role `member`, the link kept, the Mentor deactivated). A member joins Mentors through
   `add_member` (the kept Mentor reactivated, or a new one) and becomes a mentor login (T3's shape).
+- OWNER O18 (2026-11-10): People → Suspend (Revoke) is REFUSED `has_scholars` too while they mentor
+  anybody (`courses.staff_archive.has_scholars_refusal`, counted under the Mentor lock): it never ends
+  mentoring. With nobody mentored, `leave` still stamps the mentor deactivated (it ends nothing).
 - A FINANCE ROW IS NEVER AN ACTIVE MENTOR: `add` and `resume` refuse it, the role change deactivates, and
   every reader asks `PartnerAdmin.mentors_now` (never "mentor_id is set").
 """
@@ -54,6 +57,12 @@ HAS_SCHOLARS = 'has_scholars'
 def has_scholars_message(name, n):
     return (f'{name} mentors {n} scholar(s) now. Move each scholar to another mentor from the scholar\'s '
             'Mentoring card first.')
+
+
+def has_scholars_body(name, n):
+    """The 409 body every `has_scholars` refusal answers (Remove from Mentors, Suspend): the sentence, the
+    code and the count (`scholars_now`), so a screen can word it in its own language."""
+    return {'error': has_scholars_message(name, n), 'code': HAS_SCHOLARS, 'scholars_now': n}
 
 
 def eligible(login):
@@ -131,13 +140,19 @@ def remove_mentor_login(caller, mentor, login):
     """M1a: Team → Mentors → Remove for a MENTOR LOGIN (its only group): it becomes "No group" (role
     `member`, the link kept, the Mentor stamped deactivated; sign-in kept). ``(scholars, error)``:
     `not_active` (switched off, or the mentor already deactivated), `not_arrived` (never signed in — the
-    invitation is Revoke's), `has_scholars` (with the count). Under the login lock `stop` takes."""
+    invitation is Revoke's), `has_scholars` (with the count). Under the login lock `stop` takes.
+
+    ⚠ M1a review: the MENTOR row is locked FIRST, then the login — the order `delete_mentor`,
+    `mentor_archive.archive` and Deactivate take (Mentor → PartnerAdmin), so two doors never deadlock.
+    Holding the Mentor lock also makes the scholar count final: `mentoring.assign` locks the same row, so
+    an assignment cannot commit between the count and the stamp."""
     by = (getattr(caller, 'email', '') or '')[:254]
     with transaction.atomic():
+        locked = Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
         row = PartnerAdmin.objects.select_for_update().filter(pk=getattr(login, 'pk', None)).first()
-        if row is None or not row.is_mentor or row.mentor_id != mentor.pk:
+        if locked is None or row is None or not row.is_mentor or row.mentor_id != mentor.pk:
             return 0, 'not_active'
-        if not row.is_active or Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=False).exists():
+        if not row.is_active or locked.deactivated_at is not None:
             return 0, 'not_active'
         if row.first_seen_at is None:
             return 0, 'not_arrived'
@@ -165,7 +180,11 @@ def _end_mentoring(mentor, by):
 def stop(caller, mentor, login):
     """Mentors page → "Remove from Mentors" for a STAFF mentor. ``(n, error)``: `not_staff` (a pure
     mentor: its own doors), `not_active` (already stopped), `has_scholars` (M1a, owner O5: ``n`` is how
-    many they mentor now; nothing is ended). The staff login is not touched; ``n`` is 0 on success."""
+    many they mentor now; nothing is ended). The staff login is not touched; ``n`` is 0 on success.
+
+    ⚠ M1a review: the MENTOR row is locked first (Mentor → PartnerAdmin, as `remove_mentor_login`), so
+    the scholar count is final — `mentoring.assign` takes the same lock, and an assignment committed
+    after the count can never be ended here by "refuse, never end" (owner O5)."""
     if login is None or not login.is_staff_mentor:
         return 0, 'not_staff'
     by = (getattr(caller, 'email', '') or '')[:254]
@@ -173,7 +192,8 @@ def stop(caller, mentor, login):
         # T3 review: the LOGIN row is locked and judged again — the lock Team -> Remove
         # (`staff_tables_admin.change`) takes. A Remove that made them a mentor login first wins: their
         # mentoring is then Deactivate's (`not_staff`), never a stamp that leaves a live mentor login with a
-        # deactivated mentor sitting in no table.
+        # deactivated mentor sitting in no table. M1a review: the Mentor row first (the lock order).
+        Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
         row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk, archived_at=None).first()
         if row is None or not row.is_staff_mentor or row.mentor_id != mentor.pk:
             return 0, 'not_staff'

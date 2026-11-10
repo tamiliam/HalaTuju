@@ -44,6 +44,7 @@ CENSUS = {
     C + 'referral_links.py::mark_refusal': (1, 'ACTIVE', 'active referral partners'),
     C + 'staff_archive.py::archive_locked': (2, 'ARCHIVE', 'the archive itself'),
     C + 'staff_archive.py::before_delete': (1, 'ARCHIVE', 'the Delete door; the fence refuses archived'),
+    C + 'staff_archive.py::lock_mentor_of': (1, 'OWN_ROW', "a lock peek by id; the door's fence refuses archived"),
     C + 'staff_archive.py::restore': (2, 'ARCHIVE', 'the restore; the address check'),
     C + 'staff_delete_rules.py::_org_admins': (1, 'ACTIVE', 'active org admins'),
     C + 'staff_delete_rules.py::sole_org_admin_ids': (1, 'ACTIVE', 'active org admins'),
