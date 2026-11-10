@@ -238,6 +238,13 @@ INCOME_CASES = {
     'i40_stale_and_ic_missing':         ('father', {'ic': None, 'str': True, 'sc': _sc('stale'),
                                                     'stands': True, 'salary': ('recommend', True)}),
     'i41_rejected_and_link_mismatch':   ('father', {'str': True, 'sc': _sc('rejected'), 'link': 'mismatch'}),
+    # Added after the split's mutation testing (each pins a branch no case above reached; every
+    # one was checked against the untouched tree first): the NRIC half of the STR recipient checks,
+    # and an earner declared with no route.
+    'i42_str_nric_mismatch_name_unread': ('father', {'str': True, 'sc': _sc('current', 'no_ref', 'mismatch')}),
+    'i42b_str_nric_mismatch_name_match': ('father', {'str': True, 'sc': _sc('current', 'match', 'mismatch')}),
+    'i43_str_nric_match_name_unread':    ('father', {'str': True, 'sc': _sc('current', 'no_ref', 'match')}),
+    'i44_earner_without_route':          ('father', {'route': ''}),
 }
 
 
@@ -376,6 +383,22 @@ PATHWAY_CASES = {
     'p16d_real_pick_is_declared': (_chk(), {'chosen_programme': {'course_id': 'X1', 'source': 'search'}},
                                    {'hearing': True, 'types': 'asasi', 'resolvable': True}),
     'p17_clean_but_blank_offer': (_chk(programme='', institution=''), {}, {}),
+    # Added after the split's mutation testing (checked against the untouched tree first): only ONE
+    # identity chip under-read, a letter with an institution OR a programme alone, a switch where
+    # one side's family is unknown, and a declaration made only by the pre-U track / intention.
+    'p18_offer_name_unread_ic_ok': (_chk(name='unreadable'), {}, {}),
+    'p18b_offer_ic_pending_name_ok': (_chk(ic='pending'), {}, {}),
+    'p19_no_identity_institution_only': (_chk(name='unreadable', ic='unreadable', programme=''), {}, {}),
+    'p19b_no_identity_programme_only': (_chk(name='unreadable', ic='unreadable', institution=''), {}, {}),
+    'p20_clean_institution_only': (_chk(programme=''), {}, {}),
+    'p20b_clean_programme_only':  (_chk(institution=''), {}, {}),
+    'p21_switch_offer_family_unknown': (_chk(), {'chosen_pathway': 'stpm'}, {'hearing': True, 'types': 'diploma'}),
+    'p21b_switch_declared_family_unknown': (_chk(), {'chosen_pathway': 'diploma'},
+                                            {'hearing': True, 'types': 'asasi'}),
+    'p22_pre_u_track_only':       (_chk(), {'pre_u_track': 'sains'},
+                                   {'hearing': True, 'types': 'asasi', 'resolvable': True}),
+    'p22b_intended_pathway_only': (_chk(), {'intended_pathway': 'asasi'},
+                                   {'hearing': True, 'types': 'asasi', 'resolvable': True}),
 }
 
 _FAMILY = {'stpm': 'preu', 'matric': 'preu', 'asasi': 'preu', 'pismp': 'pismp'}
@@ -423,10 +446,14 @@ class TestGoldenFacts(_GoldenBase):
                 ('id07_unreadable_image', {'error': 'empty image'}),
                 ('id07b_no_nric_read', {'name': STUDENT}),
                 ('id08_deferred_name', {'nric': STUDENT_NRIC, 'name': 'MEENA A/P RAJU', 'vf': _DEFERRED}),
-                ('id09_no_name_read', {'nric': STUDENT_NRIC})):
+                ('id09_no_name_read', {'nric': STUDENT_NRIC}),
+                # Added after the split's mutation testing: the card has an NRIC, the profile none.
+                ('id10_profile_without_nric', {'nric': STUDENT_NRIC, 'name': STUDENT, 'profile_nric': ''})):
             app = self.app()
             if kw is not None:
                 kw = dict(kw)
+                if 'profile_nric' in kw:
+                    app.profile.nric = kw.pop('profile_nric')
                 _mkdoc(app, 'ic', vf=kw.pop('vf', None), **kw)
             out[case] = _norm(verdict_engine._verdict_identity(app))
         return out
@@ -450,7 +477,12 @@ class TestGoldenFacts(_GoldenBase):
                 ('c06_already_not_genuine', 'str', 'father', {'str': 'suspect'},
                  fact('review', ['document_not_genuine']), None),
                 ('c07_str_genuine', 'str', 'father', {'str': 'genuine'}, fact(), None),
-                ('c08_str_not_an_str', 'str', 'father', {'str': 'not_str'}, fact('gap'), None)):
+                ('c08_str_not_an_str', 'str', 'father', {'str': 'not_str'}, fact('gap'), None),
+                # Added after the split's mutation testing: an UNREADABLE birth certificate's own
+                # ticket already explains it, so a suspect BC adds no generic caveat on top.
+                ('c09_mother_bc_unreadable_not_doubled', 'str', 'mother',
+                 {'str': 'genuine', 'birth_certificate': 'suspect'},
+                 fact('gap', ['birth_cert_unreadable']), None)):
             app = self.app(route=route, earner=earner)
             for dt, st in docs.items():
                 vf = _str_fields() if dt == 'str' else {'fields': {}}

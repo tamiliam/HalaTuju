@@ -212,6 +212,12 @@ def _hc_cases():
         'h62_other_address':          (_doc('statement_of_intent', address_match='mismatch'), {}),
         'h63_other_unreadable_match': (_doc('statement_of_intent', name_match='unreadable'), {}),
         'h64_other_clean':            (_doc('statement_of_intent', name_match='match'), {}),
+        # Added after the split's mutation testing (checked against the untouched tree first): a
+        # student IC whose name only PARTLY matches (OCR truncation), with and without a good
+        # number, and an "other" document whose ADDRESS alone did not read.
+        'h65_ic_name_partial':        (_doc('ic', nric=STUDENT_NRIC, name='ANBU A/L'), {}),
+        'h66_ic_misread_name_partial': (_doc('ic', nric='010101-01-0101', name='ANBU A/L'), {}),
+        'h67_other_address_unreadable': (_doc('statement_of_intent', address_match='unreadable'), {}),
     }
 
 

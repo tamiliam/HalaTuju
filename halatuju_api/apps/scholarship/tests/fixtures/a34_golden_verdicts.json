@@ -303,6 +303,19 @@
     ]
    }
   ],
+  "c09_mother_bc_unreadable_not_doubled": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "birth_cert_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  ],
   "id01_no_ic": {
    "evidence": [],
    "fact": "identity",
@@ -452,6 +465,19 @@
      "code": "nric_match",
      "params": {
       "nric": "080808-14-0808"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "verified",
+   "unresolved": []
+  },
+  "id10_profile_without_nric": {
+   "evidence": [
+    {
+     "code": "name_match",
+     "params": {
+      "name": "ANBU A/L DEVARAJ"
      }
     }
    ],
@@ -1153,6 +1179,214 @@
       "params": {}
      }
     ]
+   }
+  },
+  "p18_offer_name_unread_ic_ok": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p18b_offer_ic_pending_name_ok": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p19_no_identity_institution_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_no_identity",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p19b_no_identity_programme_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_no_identity",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p20_clean_institution_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": ""
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p20b_clean_programme_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p21_switch_offer_family_unknown": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p21b_switch_declared_family_unknown": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p22_pre_u_track_only": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p22b_intended_pathway_only": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
    }
   }
  },
@@ -4697,6 +4931,273 @@
      }
     ]
    }
+  },
+  "i42_str_nric_mismatch_name_unread": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i42b_str_nric_mismatch_name_match": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i43_str_nric_match_name_unread": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i44_earner_without_route": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "income_earner_undeclared",
+      "params": {}
+     }
+    ]
+   }
   }
  },
  "verdict_for_document": {
@@ -4975,6 +5476,18 @@
   "h64_other_clean": {
    "calls": [],
    "code": ""
+  },
+  "h65_ic_name_partial": {
+   "calls": [],
+   "code": ""
+  },
+  "h66_ic_misread_name_partial": {
+   "calls": [],
+   "code": "ic_nric_misread"
+  },
+  "h67_other_address_unreadable": {
+   "calls": [],
+   "code": "unreadable"
   }
  }
 }
