@@ -178,6 +178,8 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'courses/views_staff.py::_listed_on_people': ('DISPLAY', 'T5a tables',
         'who is listed on People'),
+    'courses/views_staff_list.py::StaffListView.get': ('DISPLAY', 'account kind',
+        'the M1a Staff list lists staff kinds and mentor logins; the gate is the team_roster door'),
     'scholarship/bursary.py::foundation_notify_emails': ('DISPLAY', 'account kind',
         'recipient routing: supers receive the notice'),
     'scholarship/emails/payment_mail.py::_instruction_cc': ('DISPLAY', 'account kind',

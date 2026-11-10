@@ -77,6 +77,12 @@ def team_table_fields(caller, admins):
     return staff_tables_admin.row_fields(caller, admins)
 
 
+def staff_list_rows(caller, admins):
+    """Sprint M1a: the Staff list's rows (`staff_list.list_rows`) — here for the ONE courses door, as `team_cards`."""
+    from . import staff_list
+    return staff_list.list_rows(caller, admins)
+
+
 def open_cases(admin):
     """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
     review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which

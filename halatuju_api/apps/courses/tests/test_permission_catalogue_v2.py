@@ -461,6 +461,8 @@ V2_DOOR_MODULES = {
                                              # cancel), sponsors.view (sign; the step is credit_steps')
     # A1.10a (TD-497): the Team roster (team.view + mentoring.view)
     'courses/views_staff.py',
+    # M1a: the Staff list, the SAME team_roster door (parity: test_m1a_staff_list's gate tests)
+    'courses/views_staff_list.py',
 }
 
 

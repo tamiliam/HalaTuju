@@ -12,6 +12,7 @@ from .views_admin import (
 from .views_profile import AdminProfileView
 from .views_staff import (AdminDeleteView, AdminInviteView, AdminListView, AdminResendView,
                           AdminRevokeView)
+from .views_staff_list import StaffListView
 from .views_referral_partners import AdminReferralPartnerDetailView, AdminReferralPartnerListView
 
 urlpatterns = [
@@ -32,6 +33,7 @@ urlpatterns = [
     path('admin/referral-partners/<int:org_id>/', AdminReferralPartnerDetailView.as_view(),
          name='admin-referral-partner-detail'),
     path('admin/admins/', AdminListView.as_view(), name='admin-list'),
+    path('admin/staff/', StaffListView.as_view(), name='admin-staff-list'),   # M1a: the Staff list
     path('admin/admins/<int:admin_id>/', AdminDeleteView.as_view(), name='admin-delete'),
     path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),
     path('admin/admins/<int:admin_id>/resend/', AdminResendView.as_view(), name='admin-resend'),

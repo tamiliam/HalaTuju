@@ -60,6 +60,7 @@ CENSUS = {
     C + 'views_staff.py::AdminDeleteView._delete_locked': (1, 'FENCED', '_deletable_now -> the fence'),
     C + 'views_staff.py::AdminInviteView.post': (1, 'ARCHIVE', 'archived -> restore or not_invitable'),
     C + 'views_staff.py::AdminListView.get': (1, 'FILTERED', 'the staff list'),
+    C + 'views_staff_list.py::StaffListView.get': (1, 'FILTERED', 'the M1a Staff list'),
     C + 'views_staff.py::AdminResendView.post': (1, 'FENCED', 'the fence'),
     C + 'views_staff.py::AdminRevokeView.patch': (1, 'FENCED', 'the fence: Restore never revives one'),
     # ── scholarship ────────────────────────────────────────────────────────────────────────────────
