@@ -141,7 +141,7 @@ class AdminMeView(_AdminBase):
     `mentoring_area` too (S7a): `mentoring_area_required`, `mentoring_area_too_long` (120); any other
     role sending it is `not_editable`. Answers with the GET payload."""
     source_partner_methods = ('get', 'patch')
-    mentor_methods = ('get', 'patch')
+    mentor_methods = member_methods = ('get', 'patch')
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -248,7 +248,7 @@ class AdminMePhotoView(_AdminBase):
     completion}` (staff nudges: the completion after the change).
     Opted in for a source user, and for a mentor (S7a)."""
     source_partner_methods = ('post', 'delete')
-    mentor_methods = ('post', 'delete')
+    mentor_methods = member_methods = ('post', 'delete')
     parser_classes = [MultiPartParser]
     throttle_classes = [UploadRateThrottle]
 
@@ -298,7 +298,7 @@ class AdminMeActivityView(_AdminBase):
     Refusals (400): `bad_kind`, `bad_cursor`, `bad_limit` (1-100). Opted in for a source user and a
     mentor (S7a), who read their own rows like anyone else."""
     source_partner_methods = ('get',)
-    mentor_methods = ('get',)
+    mentor_methods = member_methods = ('get',)
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -340,7 +340,7 @@ class AdminMePasswordView(_AdminBase):
     Opted in for a source user, and for a mentor (S7a), on POST only.
     """
     source_partner_methods = ('post',)
-    mentor_methods = ('post',)
+    mentor_methods = member_methods = ('post',)
 
     def post(self, request):
         admin = self.get_admin(request)

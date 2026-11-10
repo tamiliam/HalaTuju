@@ -52,6 +52,10 @@ class AdminStaffRoleView(_AdminBase):
             return Response({'error': 'role must be a role name.', 'code': 'bad_request'},
                             status=status.HTTP_400_BAD_REQUEST)
         new_role = body['role'].strip()
+        if target.is_member or new_role == PartnerAdmin.MEMBER_ROLE:
+            # M1a (brief §2 item 9): "No group" is reached and left by a group's Add / Remove, never here.
+            return Response({'error': 'Add them to a group from the Staff list.', 'code': 'not_eligible'},
+                            status=status.HTTP_400_BAD_REQUEST)
         dry_run = body.get('dry_run') in (True, 'true', '1', 1)
         try:
             target, plan = staff_lifecycle.change_role(target.pk, new_role, dry_run=dry_run,

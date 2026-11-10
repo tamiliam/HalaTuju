@@ -10,18 +10,19 @@ every `from apps.courses.views_admin import _staff_target_manageable` keeps work
 # `finance` joined 2026-07-23 (owner decision D5): the org lead appoints their own finance
 # checker. Safe against escalation because finance grants LESS than the roles already here —
 # it has no B40 scope at all — and it cannot manage staff, so it can never appoint anyone.
-_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
+# M1a (lead, 2026-11-10): + `member` ("No group"), a staff member who left their last group; it holds no key.
+_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'member'}
 
 # Everyone who belongs to a TENANT's own staff list — what an org_admin may SEE. Wider than
 # `_ORG_ADMIN_MANAGEABLE_ROLES` by exactly one role, `org_admin`, and the gap is the point: you can
 # see your fellow organisation admins, you cannot revoke them. Mirrors the frontend's
 # `adminStaff.PROGRAMME_STAFF_ROLES`; `super` and `partner` are platform-world and never here.
-PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
+PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin', 'member'}   # M1a: + member
 
 # The roles a staff account may be DELETED in. D6 (Sprint T2, 2026-11-08) REVERSES 2026-09-09's "admins,
 # not reviewers": reviewers and QC too, under the SAME no-work test (`staff_footprint` counts every case
 # they held, reviewed, interviewed, QC'd or mentored). A pure mentor: `mentor_invite.delete_mentor`.
-_DELETABLE_ROLES = {'admin', 'finance', 'org_admin', 'reviewer', 'qc'}
+_DELETABLE_ROLES = {'admin', 'finance', 'org_admin', 'reviewer', 'qc', 'member'}   # M1a: + member
 
 
 def _deletable_now(caller, target, work=None):

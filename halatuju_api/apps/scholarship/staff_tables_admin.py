@@ -139,7 +139,7 @@ def may_become_mentor(target, open_n):
 def _refuse_basic(target):
     from apps.courses import staff_permissions as sp
     if target.is_super or not (target.role in sp.TEAM_ROLES or target.role == sp.LEAD_ROLE
-                               or target.is_mentor):
+                               or target.is_mentor or target.is_member):   # M1a: "No group" joins one
         raise Refused('not_eligible', 400, 'Only a member of this organisation’s team can sit in a table.')
     if not target.is_active:
         raise Refused('not_active', 400,
@@ -161,6 +161,10 @@ def _plan_add(target, table):
             keys = list(ADD_KEYS[ADMINS])
             return {'role': 'admin', 'before': [], 'after': keys, 'stored': keys}
         return {'role': 'reviewer', 'before': [], 'after': ['review'], 'stored': None}
+    if target.is_member:
+        # M1a (brief §2 item 7): "No group" joins Admins with the `admin` preset, Reviewers with `reviewer`'s.
+        role = 'admin' if table == ADMINS else 'reviewer'
+        return {'role': role, 'before': [], 'after': list(sp.preset_for(role)), 'stored': None}
     if _in(target, table):
         raise Refused('already_in', 400, f'{target.name} is already in this table.')
     before = list(sp.resolve(target))
