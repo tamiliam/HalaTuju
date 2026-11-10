@@ -268,7 +268,6 @@ Do one only when a sprint is already in that file.
 - **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
 - **TD-283** — `applications.py` sits exactly at its size limit (the `serializers_admin` half closed by A3.7). *(D · M)*
 - **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
-- **TD-234** — Thirteen repair commands have no approved route to live data. *(D · M)*
 - **TD-212** — The email-template table is still named partner. *(D · M)*
 - **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
@@ -4517,7 +4516,7 @@ or a second organisation onboarding and leaving test rows behind on their Overvi
 
 ---
 
-### [TD-234] Thirteen repair commands have no route to the data they repair — medium
+### [TD-234] Thirteen repair commands have no route to the data they repair — medium — **RESOLVED 2026-11-10 (audit sprint A3.10: the ledger is empty; two commands retired, the other eleven declared in DOCUMENTED_ROUTE)**
 
 **Found:** the 2026-09-08 consolidation review, generalising from BrightPath #20.
 
@@ -4550,6 +4549,8 @@ is false.
 practice this ticket exists downstream of; the answer is a door, or a decision that none is needed.
 
 (Logged 2026-09-08, consolidation review.)
+
+**Resolution (A3.10, 2026-11-10).** `NO_DOOR` is now empty and a test keeps it so. Retired and deleted (kept in git history): `backfill_nric_locks` (IC-lock repair, applied before the 2026-07-29 push; retrospective-2026-07-29-ic-lock.md) and `repair_interview_credit` (TD-216, 25 interviews re-credited 2026-08-18; retrospective-2026-08-18-exam-type-and-requests.md), each with its test file. The other eleven are now in `DOCUMENTED_ROUTE`, with the route stated: the release-decisions Cloud Run job with an args override (CLAUDE.md, How a change reaches production, item 12), which runs the service image against the live database. No production credentials leave the service. Suspects to retire later, not proven spent in the docs: `backfill_reminder_anchors` (launch one-off) and `backfill_pismp_tags` (its tests import the tag helpers).
 
 ---
 
