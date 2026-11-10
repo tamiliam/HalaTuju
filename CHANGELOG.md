@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
+
+Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).
+- `invoice_parsers.parse_supabase` refused TPTHYS-00012, the first Supabase receipt to carry Malaysian tax
+  ('MY (8%) $2.00' under the subtotal), so October had no Supabase row and the 15 November invoice run would
+  have refused every tenant's October invoice. The tax is now its own line, `Service tax (MY 8%)` on service
+  `Invoice`, as Google Workspace's tax is, so it lands in the `tax` bucket. The check is now subtotal + tax =
+  amount paid/due; every other gap still refuses, and a receipt without a tax line parses exactly as before.
+- `pypdf` reads this receipt's total as `$27 .00`; one stray space before the decimal point is now accepted
+  (it previously cut the figure to `27`).
+- Tests: `apps/scholarship/tests/test_invoice_parsers_supabase_tax.py`, with a fixture from the receipt's
+  extracted text (amounts, labels, receipt number and dates only).
+
 ### feat: sprint M1a - Staff list and membership rules, the API half (team membership, 2026-11-10)
 
 Branch team-membership (not pushed, not deployed). **Migration courses 0096 (MIGRATE-FIRST by hand):** two

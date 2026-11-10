@@ -214,8 +214,19 @@ _SB_REF = re.compile(r'Invoice number\s+(\S+)')
 #: an invoice is that bill. It is not a weaker figure either, because the reconciliation below
 #: still refuses unless it equals the printed subtotal — a part-paid document cannot slip through
 #: as a whole one.
-_SB_PAID = re.compile(r'Amount (?:paid|due)\s+\$([\d,.]+)')
-_SB_SUBTOTAL = re.compile(r'Subtotal\s+\$([\d,.]+)')
+#:
+#: ⚠ ONE STRAY SPACE BEFORE THE DECIMAL POINT IS TOLERATED. `pypdf` reads TPTHYS-00012's total
+#: (8 November 2026) as `$27 .00`; without the optional ` .00` the figure stopped at `27`. Only
+#: that one shape is accepted, and `_sb_amount` removes the space before the figure is read.
+_SB_FIGURE = r'\$([\d,.]+(?: \.\d+)?)'
+_SB_PAID = re.compile(r'Amount (?:paid|due)\s+' + _SB_FIGURE)
+_SB_SUBTOTAL = re.compile(r'Subtotal\s+' + _SB_FIGURE)
+#: The tax line, which first appeared on TPTHYS-00012: 'MY (8%) $2.00', printed on the line
+#: DIRECTLY below the subtotal. Anchored there, so no other line on the page can be read as tax;
+#: a country code and a percentage, with or without brackets and a trailing word 'tax'.
+_SB_TAX = re.compile(
+    r'Subtotal\s+\$[\d,.]+(?: \.\d+)?\s*\n\s*([A-Z]{2})\s*\(?\s*([\d.]+)%\s*\)?(?:\s*tax)?\s+'
+    + _SB_FIGURE)
 #: The day the document itself was written: 'Receipt date Sep 8, 2026' / 'Invoice date Oct 8, 2026'.
 _SB_DOC_DATE = re.compile(r'(?:Receipt|Invoice) date\s+(\w{3})\s+(\d+),\s*(\d{4})')
 # The first usage window on the receipt; every line shares it.
@@ -225,6 +236,11 @@ _SB_PLAN = re.compile(r'(Pro Plan|Team Plan|Free Plan)')
 
 def detect_supabase(text: str) -> bool:
     return 'Supabase' in text and 'Invoice number' in text
+
+
+def _sb_amount(figure) -> Decimal:
+    """A Supabase figure, with the one stray space `_SB_FIGURE` allows taken out first."""
+    return _invoice_amount(str(figure).replace(' ', ''))
 
 
 def parse_supabase(text: str) -> ParsedInvoice:
@@ -237,10 +253,16 @@ def parse_supabase(text: str) -> ParsedInvoice:
         raise InvoiceParseError(
             'Supabase: could not find the invoice number, the amount paid or due, the subtotal, '
             'the billed window and the document date. All five are required.')
-    total, sub = _invoice_amount(paid.group(1)), _invoice_amount(subtotal.group(1))
-    if total != sub:
+    total, sub = _sb_amount(paid.group(1)), _sb_amount(subtotal.group(1))
+    tax = _SB_TAX.search(text)
+    tax_amount = _sb_amount(tax.group(3)) if tax else Decimal('0')
+    # ⚠ SUBTOTAL PLUS TAX MUST BE THE AMOUNT, EXACTLY. A receipt with no tax line reconciles as
+    # it always did (subtotal = amount); any other gap is still a refusal.
+    if total != sub + tax_amount:
+        taxed = f' plus tax {tax_amount}' if tax else ''
         raise InvoiceParseError(
-            f'Supabase {ref.group(1)}: subtotal {sub} and amount paid/due {total} disagree.')
+            f'Supabase {ref.group(1)}: subtotal {sub}{taxed} and amount paid/due {total} '
+            f'disagree.')
 
     start_mon, start_day, end_mon, end_day, year = window.groups()
     # ⚠ THE PRINTED YEAR BELONGS TO THE END OF THE RANGE. 'Dec 8 – Jan 7, 2027' carries one year
@@ -269,6 +291,14 @@ def parse_supabase(text: str) -> ParsedInvoice:
             f'{doc_date.group(2)}, {doc_date.group(3)} — so the month this bills cannot be read '
             f'from it.')
     plan = _SB_PLAN.search(text)
+    # One plan line: every metered line on this receipt is discounted to zero by the plan, so the
+    # plan fee IS the subtotal. The self-check in `ParsedInvoice` proves that rather than assuming it.
+    lines = [InvoiceLine('Supabase', plan.group(1) if plan else 'Plan', sub)]
+    if tax:
+        # Tax carried as its own line, as Google Workspace does, and NAMED with the word "tax"
+        # (Supabase prints only 'MY (8%)') so `platform_cost.is_tax` puts it in the 'tax' bucket.
+        lines.append(InvoiceLine('Invoice', f'Service tax ({tax.group(1)} {tax.group(2)}%)',
+                                 tax_amount))
     # ⚠ THE MONTH IS THE ONE THE USAGE WINDOW OPENS IN, not the receipt date. The receipt for
     # 'Aug 8 – Sep 7' is DATED 8 September, so keying on the receipt date would file August's
     # database under September and then discount or charge it by September's terms.
@@ -278,9 +308,7 @@ def parse_supabase(text: str) -> ParsedInvoice:
         currency='USD',
         period_month=_period_month(start_mon, year),
         total=total,
-        # One line: every metered line on this receipt is discounted to zero by the plan, so the
-        # plan fee IS the bill. The self-check above proves that rather than assuming it.
-        lines=[InvoiceLine('Supabase', plan.group(1) if plan else 'Plan', total)],
+        lines=lines,
         period_note=(f'Supabase bills {start_mon} {start_day} to {end_mon} {end_day}, '
                      f'not the calendar month.'),
     )
