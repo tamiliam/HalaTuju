@@ -20,7 +20,7 @@
 import { readWeb } from '@/test/sourceGuard'
 
 describe.each([
-  ['src/app/profile/page.tsx', 'the /profile results row (merit / overall CGPA)'],
+  ['src/app/profile/useProfileForm.ts', 'the /profile results row (merit / overall CGPA)'],
   ['src/app/onboarding/profile/page.tsx', 'the last onboarding step\'s Back link'],
   ['src/components/ScholarshipNextSteps.tsx', 'the Action Centre "grades" ticket (S4)'],
 ])('%s', (file, what) => {
