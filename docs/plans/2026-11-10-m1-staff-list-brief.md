@@ -325,5 +325,7 @@ The full M1 is about 36 API files and about 22 web files, roughly 58 in all. Tha
 - **A shared predicate needs its own query budget** (TD-285): the Staff list budget.
 - **Migrate-first SQL lacks the Supabase half** (the Security Advisor).
 
-## Owner questions
-1. May an organisation admin edit, suspend or delete a FELLOW organisation admin of the same organisation? Until you say yes, they can open that person's page read-only only.
+## Owner answers (2026-11-10; brief APPROVED)
+1. A fellow organisation admin's page is **view only**: no edit, suspend or delete of a fellow org admin, and no self-suspend or self-delete (§6 as written).
+2. A re-invited archived person comes back with **fresh defaults**: `invite_permissions(role)` for the role they are invited to, history kept; the org admin adjusts powers afterwards (§5 `restore` as written).
+3. Brief approved. The build starts once G10 is live (Requests reports it): M1a first, then M1b. Every push still needs the owner's direct yes.
