@@ -74,6 +74,8 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // table. Do not add either back as a column or a line under the name.
 
 // A caseload figure: grey at zero (normal, never a flag), bold otherwise.
+/** Whose name opens the person page on the Admins table: the team roles and (O10) the organisation admin. */
+const PERSON_PAGE_ROLES = [...TEAM_ROLES, 'org_admin'] as const
 const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
 
 
@@ -121,9 +123,14 @@ export default function AdminReviewersList() {
   // ⚠ A TEAM MEMBER'S PERMISSIONS LIVE ON THEIR OWN PAGE (2026-10-22, owner's option A). The
   // Admins tab used to open the card above this list; now the NAME opens the person's page, which
   // has a Permissions tab — the same place a reviewer's are. Only where the viewer may manage, and
-  // only for a team member who is not revoked: an organisation admin's set is fixed.
+  // only for a team member who is not revoked. O10 (owner, 2026-11-10): the organisation admin's name
+  // opens their page too, as every other admin's does. `manageable` is the page's own GET fence
+  // (`_staff_target_manageable`), so a super gets the link and an org_admin, who may not open a fellow
+  // organisation admin's (or their own) page, gets plain text rather than a link to a 404. An
+  // organisation admin's row links only on an explicit `manageable: true` (fails closed on an older payload).
   const personHref = (a: AdminItem) =>
-    a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
+    a.is_active && (a.role === 'org_admin' ? a.manageable === true : a.manageable !== false)
+      && (PERSON_PAGE_ROLES as readonly string[]).includes(a.role)
       ? `/admin/organisation/reviewers/admins/${a.id}` : null
   // T3 (owner): no permission column on the Team tables — permissions are set only on the person's own
   // page, Permissions tab (one section per table they sit in). The NAME opens it, as before.

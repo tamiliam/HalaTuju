@@ -12,6 +12,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import StaffActions from './StaffActions'
+import TableFrame from './TableFrame'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
@@ -98,6 +99,21 @@ describe('the greyed Delete — work on record', () => {
     expect(greyed().getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(greyed())
     expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('draws the reason ABOVE the table frame, so the frame cannot clip it (Team -> Reviewers, 2026-11-10)', async () => {
+    render(
+      <TableFrame label="Reviewers">
+        <table><tbody><tr><td><StaffActions active onDelete={() => {}} work={WORK} /></td></tr></tbody></table>
+      </TableFrame>,
+    )
+    fireEvent.click(greyed())
+    const bubble = await screen.findByRole('tooltip')
+    expect(bubble.closest('table')).toBeNull()
+    expect(bubble.parentElement).toBe(document.body)
+    // a tap on the reason itself keeps it open: the bubble is no longer inside the cell
+    act(() => { bubble.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })) })
+    expect(screen.queryByRole('tooltip')).toBe(bubble)
   })
 
   it('shows the reason on keyboard FOCUS, and hides it on blur', async () => {

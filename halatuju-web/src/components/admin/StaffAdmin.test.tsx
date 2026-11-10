@@ -233,6 +233,19 @@ describe('Team → Admins reads like Reviewers and Mentors (owner 2026-11-08)', 
     expect(ui().queryByTestId('team-last-seen-42')).toBeNull()
   })
 
+  it('O9 (owner 2026-11-10): shows NO phone number on the Admins table, on the table or the phone card', () => {
+    const { container } = render(<StaffTable rows={[row({ id: 43, role: 'admin', phone: '012-0000 0000' } as Partial<AdminItem>)]}
+      canAct team={team} />)
+    expect(container.querySelector('[data-testid="team-phone-43"]')).toBeNull()
+    expect(container.textContent).not.toContain('012-0000 0000')
+  })
+
+  it('O9 is the Admins table only: the platform screens keep the phone the server sent', () => {
+    const { container } = render(<StaffTable rows={[row({ id: 44, role: 'org_admin', phone: '012-0000 0000' } as Partial<AdminItem>)]}
+      canAct={false} />)
+    expect(container.querySelectorAll('[data-testid="team-phone-44"]').length).toBe(2)   // card + table
+  })
+
   it('the empty row spans every column', () => {
     render(<StaffTable rows={[]} canAct team={team} />)
     expect(ui().getByText('admin.noAdmins').closest('td')?.getAttribute('colspan')).toBe('5')

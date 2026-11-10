@@ -14,8 +14,7 @@ import type { TeamPersonData } from './useTeamPerson'
 /**
  * Sprint T3 (D9, M1, M4, M5): the header card every person page shares.
  *
- *   Name
- *   email
+ *   Name                                 ← O11 (owner, 2026-11-10): no email under it; it is in About
  *   [Admin] [Reviewer] [Mentor]          ← the tables they sit in: the "Also in" chips' own labels
  *   (Status) · Joined 3 Mar 2026 · Last seen 2 days ago
  *   Covers: … / Gifts: …                 ← a reviewer's gifts; a mentor's (Invitations I4)
@@ -68,7 +67,6 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-1.5">
           <h1 className="text-lg sm:text-xl font-bold [overflow-wrap:anywhere]">{p.name || p.email}</h1>
-          {p.email && <p className="text-sm text-ground-500 break-all" data-testid="person-email">{p.email}</p>}
           <TableChips tables={p.tables} lead={p.lead} testId="person-tables" />
           <p className="text-sm text-ground-500 flex flex-wrap items-center gap-x-1.5 gap-y-1" data-testid="person-facts">
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STAFF_STATUS_TONE[status]}`}
