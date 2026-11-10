@@ -1,7 +1,7 @@
 """THE ALARM ON THE SIDE THAT DOES THE MOVING (TD-269, closed by TD-276 at code health H16).
 
 **What this is for.** Thirty-one web test files read source text, and two dozen of them read
-`halatuju_api/**` by path — through `readApi('apps/scholarship/serializers.py')` and friends — to
+`halatuju_api/**` by path — through `readApi('apps/scholarship/serializers/application.py')` and friends — to
 check a front-end rule against the backend's own source. Every one of those is a path from the api
 tree into the web suite **that no api gate walks**.
 

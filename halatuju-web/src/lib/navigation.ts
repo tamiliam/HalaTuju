@@ -11,11 +11,11 @@
  * per-endpoint role gates, plus each page's own guard. A user who types a URL still gets
  * that page's 403 and the endpoint still 404s cross-org. This registry only decides what is
  * worth SHOWING. The 2026-07-15 surface-partition sprint exists because the two were once
- * confused — `apps/courses/models.py` (PartnerAdmin docstring): "nav hid it, backend didn't".
+ * confused — `apps/courses/models_staff.py` (PartnerAdmin docstring): "nav hid it, backend didn't".
  *
  * KEEP-IN-SYNC PAIR: `NavItem.roles` mirrors the authority in
  * `docs/scholarship/role-matrix.md` and `PartnerAdmin.ROLE_CHOICES`
- * (`halatuju_api/apps/courses/models.py`). A role's powers change in the matrix FIRST, then
+ * (`halatuju_api/apps/courses/models_staff.py`). A role's powers change in the matrix FIRST, then
  * here, then in the page guard — all in one commit.
  *
  * Both halves are held by a test, each by the right instrument (code health H9): the drift test

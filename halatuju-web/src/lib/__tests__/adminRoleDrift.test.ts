@@ -7,7 +7,7 @@
  * decides it per role — so a role added to `PartnerAdmin.ROLE_CHOICES` and not here is a person
  * who signs in to a console with **no sidebar at all**, because no `NavItem` names them. That is
  * the failure the 2026-07-15 surface-partition sprint was called to fix, in the other direction:
- * `apps/courses/models.py` records it as "nav hid it, backend didn't".
+ * `apps/courses/models_staff.py` records it as "nav hid it, backend didn't".
  *
  * Characterised first (the H8 rule): the seven roles on each side were compared on the untouched
  * tree. They AGREE, in the same order.
