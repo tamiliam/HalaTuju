@@ -308,13 +308,16 @@ def _eligible_items(p, rows, courses, pathway_map):
         if merit is None:
             continue
         course = courses.get(cid)
-        items.append({
+        item = {
             'course_id': cid, 'course_name': course.course if course else cid,
             'field_key': (course.field_key_id or '') if course else '', 'source_type': source_type,
             'pathway_type': pathway_map.get(cid, source_type), 'institution_id': _institution_for(cid),
             'merit_cutoff': merit['merit_cutoff'], 'student_merit': merit['student_merit'],
             'merit_label': merit['merit_label'],
-        })
+        }
+        if merit['track_id']:  # Matric / Form 6 rows, as the view adds them
+            item['track_id'], item['mata_gred'] = merit['track_id'], merit['mata_gred']
+        items.append(item)
     return sort_eligible_courses(deduplicate_pismp(items, hashes))
 
 
