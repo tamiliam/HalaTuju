@@ -157,7 +157,7 @@ def intakes_for(org, programme):
     (there is no organisation to fence on, and the picker hides itself).
     """
     from .models import ScholarshipCohort
-    from .views_admin import round_state
+    from .intake_round import round_state
 
     if programme is not None:
         # org-fence: the gift was resolved inside the caller's organisation by `_gift_narrowing`.
@@ -739,7 +739,7 @@ def build(admin, org, programme, *, cohort=None, now=None, withhold=()):
     by a client-side role check.
     """
     from .review_sla import clocks as review_clocks
-    from .views_admin import round_state
+    from .intake_round import round_state
     from . import overview_layout
 
     now = now or timezone.now()
