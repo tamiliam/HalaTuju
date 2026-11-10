@@ -39,7 +39,7 @@ def holds_completed_stpm(profile) -> bool:
     `completed_qualifications`), or — a legacy row from before the form recorded completions — a
     typed STPM CGPA with no grades at all (the old form saved its CGPA only on completion). A Form
     Six student's exploratory course-guide grades carry neither, so she is never asked."""
-    from apps.courses.exam_questions import results_held
+    from apps.courses.public import results_held
     if profile is None or results_held(profile) != 'stpm':
         return False
     recorded = (getattr(profile, 'results_exam_type', '') or '').strip().lower() == 'stpm'

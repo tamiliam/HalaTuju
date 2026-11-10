@@ -133,14 +133,14 @@ def degree_bound(application) -> bool:
 
 def _already_passed(application, code) -> bool:
     """A pre-U code (or her own held kind) recorded as the pathway of a TERTIARY holder."""
-    from apps.courses.exam_questions import is_tertiary
+    from apps.courses.public import is_tertiary
     kind = held(application)
     return is_tertiary(kind) and (code in _PASSED_PRE_U or code == kind)
 
 
 def held(application) -> str:
     """The results held (`exam_questions.results_held`) for this application's student."""
-    from apps.courses.exam_questions import results_held
+    from apps.courses.public import results_held
     return results_held(getattr(application, 'profile', None))
 
 
@@ -153,7 +153,7 @@ def higher_need(application) -> str:
     too — before submit; a submitted application keeps its frozen requirement. Her SPM slip stays
     REQUIRED as well, so she always has academic evidence on file, and the card tells her plainly
     to enter her higher results or choose a post-SPM pathway."""
-    from apps.courses.exam_questions import is_tertiary
+    from apps.courses.public import is_tertiary
     dest = destination(application)
     if dest == POST_SPM:
         return ''
@@ -185,7 +185,7 @@ def map_documents(application, resolved: dict) -> dict:
 
 def held_kind(application) -> str:
     """The results held, when tertiary; '' otherwise."""
-    from apps.courses.exam_questions import is_tertiary
+    from apps.courses.public import is_tertiary
     kind = held(application)
     return kind if is_tertiary(kind) else ''
 
@@ -368,7 +368,7 @@ def clear_to_spm(application, *, by: str = 'student') -> dict:
     at the first submit on the results she had then. A note is ALWAYS recorded for the reviewer
     (`results_change_notes`, shown on the cockpit's Academic card, fix 3) — she may have been
     shortlisted on the CGPA she now removes. Audited. Returns the note."""
-    from apps.courses.exam_questions import overall_cgpa, results_held
+    from apps.courses.public import overall_cgpa, results_held
     profile = application.profile
     before = results_held(profile)
     cgpa = overall_cgpa(profile)

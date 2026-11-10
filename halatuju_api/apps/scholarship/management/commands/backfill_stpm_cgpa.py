@@ -62,7 +62,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from apps.courses.exam_questions import merit_100, overall_from, results_held
+from apps.courses.public import merit_100, overall_from, results_held
 from apps.courses.models import StudentProfile
 from apps.courses.stpm_engine import STPM_CGPA_POINTS, calculate_stpm_cgpa
 from apps.courses.stpm_pngk import pngk_from_grades

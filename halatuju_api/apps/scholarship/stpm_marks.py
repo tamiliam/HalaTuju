@@ -25,7 +25,7 @@ document kind from `student_higher_check`. Nothing here feeds a verdict band or 
 """
 from __future__ import annotations
 
-from apps.courses.exam_questions import results_held
+from apps.courses.public import results_held
 
 #: The calculated PNGK and the printed one are both two-place figures, so they agree exactly; the
 #: 0.01 (plus float slack) only absorbs a print that rounds the last place the other way. ONE

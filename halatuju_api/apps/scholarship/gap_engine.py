@@ -15,7 +15,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.courses.exam_questions import spm_grades_for, spm_grades_none_label
+from apps.courses.public import spm_grades_for, spm_grades_none_label
 
 from .profile_engine import (
     DEFAULT_LANGUAGE, _funding, _pathway, _quiz_interests, _resolve_language,

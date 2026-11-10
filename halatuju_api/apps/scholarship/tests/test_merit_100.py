@@ -77,7 +77,7 @@ class TestSpmMeritIsByteIdentical(SimpleTestCase):
                 self.assertEqual(after, before)
 
     def test_merit_100_gives_the_same_spm_values(self):
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         for name, (fields, before, _after) in CASES.items():
             if before is None or name.startswith(('stpm', 'recorded')):
                 continue
@@ -87,7 +87,7 @@ class TestSpmMeritIsByteIdentical(SimpleTestCase):
     def test_the_stream_shape_still_equals_the_engine(self):
         """The SPM branch is the course-guide engine, called the same way as before S1."""
         from apps.courses.engine import calculate_merit_score, prepare_merit_inputs
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         fields = CASES['spm_stream'][0]
         g = dict(fields['grades'])
         g['history'] = g.pop('hist')
@@ -96,14 +96,14 @@ class TestSpmMeritIsByteIdentical(SimpleTestCase):
         self.assertEqual(merit_100(_p(**fields)), expected)
 
     def test_spm_keeps_one_decimal(self):
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         m = merit_100(_p(**CASES['spm_weak'][0]))
         self.assertEqual(m, round(m, 1))
 
 
 class TestStpmConversion(SimpleTestCase):
     def test_every_stpm_case_is_cgpa_over_4_times_100(self):
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         for name, (fields, _before, after) in CASES.items():
             if not name.startswith(('stpm', 'recorded')) or after is None:
                 continue
@@ -112,7 +112,7 @@ class TestStpmConversion(SimpleTestCase):
 
     def test_it_is_the_course_sides_rounding(self):
         """`CalculateCgpaView`: merit_percent = round(overall / 4 x 100, 2)."""
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         for cgpa in (2.01, 2.9, 3.13, 3.67, 3.92):
             with self.subTest(cgpa=cgpa):
                 self.assertEqual(merit_100(_p(exam_type='stpm', stpm_cgpa=cgpa)),
@@ -120,13 +120,13 @@ class TestStpmConversion(SimpleTestCase):
 
     def test_the_mirage_is_never_ranked_on_typed_stpm_data(self):
         """#15: presence of STPM data never promotes — she ranks on her SPM merit."""
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         self.assertNotIn(merit_100(_p(**CASES['mirage_15'][0])), (4.0, 100.0))
 
 
 class TestNullIsAbsent(SimpleTestCase):
     def test_no_results_is_none_never_zero(self):
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         for name in ('stpm_declared_nothing', 'spm_no_grades', 'blank'):
             with self.subTest(name):
                 self.assertIsNone(merit_100(_p(**CASES[name][0])))
@@ -134,7 +134,7 @@ class TestNullIsAbsent(SimpleTestCase):
 
     def test_a_cgpa_outside_0_to_4_is_absent_not_a_figure(self):
         """S1 review: a 0 stored before the calculator answered, or a hand-sent 40, must not rank."""
-        from apps.courses.exam_questions import merit_100
+        from apps.courses.public import merit_100
         for cgpa in (0, 0.0, -1, 4.01, 40):
             with self.subTest(cgpa=cgpa):
                 self.assertIsNone(merit_100(_p(exam_type='stpm', stpm_cgpa=cgpa)))
@@ -146,9 +146,9 @@ class TestNullIsAbsent(SimpleTestCase):
 
 class TestOneDefinition(SimpleTestCase):
     def test_the_admin_merit_is_merit_100(self):
-        from apps.courses import exam_questions
+        from apps.courses import public
         app = SimpleNamespace(profile=_p(**CASES['stpm_37'][0]))
-        with mock.patch.object(exam_questions, 'merit_100', return_value=12.34) as m:
+        with mock.patch.object(public, 'merit_100', return_value=12.34) as m:
             self.assertEqual(_application_merit_score(app), 12.34)
         m.assert_called_once_with(app.profile)
 

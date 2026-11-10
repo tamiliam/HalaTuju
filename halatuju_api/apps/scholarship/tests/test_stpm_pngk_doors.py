@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
-from apps.courses import exam_questions as eq
+from apps.courses import public as eq
 from apps.courses.serializers import ProfileUpdateSerializer
 from apps.courses.serializers_admin import PartnerStudentDetailSerializer
 from apps.scholarship import pool, profile_engine

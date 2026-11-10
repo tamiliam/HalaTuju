@@ -93,7 +93,7 @@ def may_raise(application, code, may_ask: bool) -> bool:
 def declared_kind(application) -> str:
     """The higher results she DECLARED: the results held when tertiary, else a legacy row's entered
     STPM results ('stpm') or third-route CGPA under a third-route exam ('matric' …); '' = none."""
-    from apps.courses.exam_questions import THIRD_ROUTE, has_stpm_results
+    from apps.courses.public import THIRD_ROUTE, has_stpm_results
     from . import results_route
     kind = results_route.held_kind(application)
     profile = getattr(application, 'profile', None)
@@ -108,7 +108,7 @@ def declared_kind(application) -> str:
 def _spm_only(application) -> bool:
     """Declared SPM results only: held 'spm', no higher results entered, and the exam she declared is
     not a tertiary one (a Form Six student has no STPM results yet; her semester ask is her route)."""
-    from apps.courses.exam_questions import is_tertiary
+    from apps.courses.public import is_tertiary
     from . import results_route
     if results_route.held(application) != 'spm' or declared_kind(application):
         return False
@@ -292,7 +292,7 @@ def cap(fact, kind):
     with the reason named. Owner 2026-11-06 (#388): STPM / Matric / Diploma / Asasi results are a
     MUST for a university student, so a matching SPM slip cannot carry the card to Probable while
     they are not on file (it was capped at Probable from 2026-10-27)."""
-    from apps.courses.exam_questions import QUALIFICATION_LABELS
+    from apps.courses.public import QUALIFICATION_LABELS
     from .verdict_engine import _item
     if fact['status'] in ('verified', 'review'):
         fact['status'] = 'recommend'

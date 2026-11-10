@@ -16,7 +16,8 @@ from unittest.mock import patch
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
-from apps.courses import exam_questions as eq
+from apps.courses import exam_questions as _exam_questions   # the witness is SET there, read there
+from apps.courses import public as eq
 from apps.courses.models import FieldTaxonomy, StpmCourse
 from apps.scholarship import anomaly_engine, help_engine, results_route, wrong_slip
 from apps.scholarship.academic_engine import student_slip_check
@@ -545,7 +546,7 @@ class TestD1Promotion(TestCase):
     def test_without_the_scholarship_witness_the_rule_is_unchanged(self):
         app = _app(LEGACY_SPM_WITH_STPM, UNDECIDED)
         _doc(app, 'results_slip', STPM_CERT_READ)
-        with patch.object(eq, 'STPM_DOCUMENT_WITNESS', None):
+        with patch.object(_exam_questions, 'STPM_DOCUMENT_WITNESS', None):
             self.assertEqual(eq.results_held(_fresh(app).profile), 'spm')
 
     def test_153_end_to_end_the_higher_card_asks_and_the_move_is_offered(self):

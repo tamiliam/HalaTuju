@@ -98,7 +98,7 @@ def _name(app):
 
 def level_of(profile):
     """The qualification we hold results for: `spm` / `stpm` / `matric` / `asasi` / `diploma` / ''."""
-    from apps.courses.exam_questions import results_held
+    from apps.courses.public import results_held
     return results_held(profile)
 
 

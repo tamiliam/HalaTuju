@@ -30,7 +30,7 @@ import time
 
 from django.conf import settings
 
-from apps.courses.exam_questions import held_summary
+from apps.courses.public import held_summary
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure

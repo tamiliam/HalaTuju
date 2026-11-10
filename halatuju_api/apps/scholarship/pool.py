@@ -12,8 +12,8 @@ gated behind the ``SPONSOR_POOL_ENABLED`` flag (off until lawyer sign-off).
 import hashlib
 import re
 
-from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
-                                         results_held, spm_grades_for)
+from apps.courses.public import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
+                                 results_held, spm_grades_for)
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from .school_names import school_name_core

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import re
 
-from apps.courses.exam_questions import spm_grades_for
+from apps.courses.public import spm_grades_for
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .pathway_engine import distinctive_tokens

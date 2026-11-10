@@ -1,7 +1,7 @@
 """The officer list: the sponsor profile, the held qualification and the application list row."""
 
 from rest_framework import serializers
-from apps.courses.exam_questions import results_held, spm_grades_for
+from apps.courses.public import results_held, spm_grades_for
 from ..models import ScholarshipApplication, SponsorProfile
 from .. import serializers_admin_gift as _gift
 from .names import _full_name
@@ -51,8 +51,8 @@ def _application_merit_score(obj):
     S1, so every STPM holder sorted below every SPM holder). None when there is nothing to score —
     absent, never 0 (#106). The list, the detail, the merit sort and the AI profile input all
     read this, so they cannot disagree."""
-    from apps.courses import exam_questions
-    return exam_questions.merit_100(getattr(obj, 'profile', None))
+    from apps.courses import public
+    return public.merit_100(getattr(obj, 'profile', None))
 
 
 class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.ModelSerializer):
@@ -110,7 +110,7 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
         return held_qualification(obj.profile)
 
     def get_overall_cgpa(self, obj):
-        from apps.courses.exam_questions import overall_cgpa
+        from apps.courses.public import overall_cgpa
         return overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):

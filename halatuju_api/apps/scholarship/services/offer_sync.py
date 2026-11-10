@@ -9,7 +9,7 @@ from datetime import datetime, timezone as _tz
 
 from django.utils.dateparse import parse_date
 
-from apps.courses.exam_questions import spm_grades_for
+from apps.courses.public import spm_grades_for
 
 from ..document_snapshot import SNAPSHOT_ORDER
 from ..school_names import keep_our_town

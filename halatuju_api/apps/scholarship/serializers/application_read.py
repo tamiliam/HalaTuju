@@ -1,7 +1,7 @@
 """The student-facing read of an application."""
 
 from rest_framework import serializers
-from apps.courses.exam_questions import ResultsHeldField, spm_grades_for
+from apps.courses.public import ResultsHeldField, spm_grades_for
 from ..serializers_maintenance import StudentMaintenanceFields
 from ..models import FundingNeed, ScholarshipApplication
 from .application import FundingNeedSerializer

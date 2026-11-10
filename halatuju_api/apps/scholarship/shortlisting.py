@@ -56,8 +56,8 @@ Consequences worth stating rather than discovering:
 """
 from dataclasses import dataclass
 
-from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
-                                         results_held, spm_grades_for, third_route_overall)
+from apps.courses.public import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
+                                 results_held, spm_grades_for, third_route_overall)
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from .birth_state import check as check_birth_state

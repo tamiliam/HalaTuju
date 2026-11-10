@@ -1,6 +1,6 @@
 """The people and identity getters of the cockpit payload (names, school, source, funding need, sponsor profile)."""
 
-from apps.courses.exam_questions import spm_grades_for
+from apps.courses.public import spm_grades_for
 from ..models import FundingNeed, SponsorProfile
 from ..serializers import FundingNeedSerializer
 from .application_list import SponsorProfileSerializer, _application_merit_score, held_qualification
@@ -54,7 +54,7 @@ class ServesTheDetailPeople:
         return held_qualification(obj.profile)
 
     def get_overall_cgpa(self, obj):
-        from apps.courses.exam_questions import overall_cgpa
+        from apps.courses.public import overall_cgpa
         return overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):
