@@ -1387,7 +1387,9 @@
      "created_at",
      "first_seen_at",
      "last_seen_at",
-     "permissions"
+     "permissions",
+     "archived_at",
+     "archived_by_email"
     ],
     "ordering": [],
     "label": "courses.PartnerAdmin"
