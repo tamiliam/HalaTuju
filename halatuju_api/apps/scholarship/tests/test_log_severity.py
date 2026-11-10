@@ -124,6 +124,6 @@ class TheAuthLookupFailureNamesItsCaller(SimpleTestCase):
         self.assertEqual(cm.records[0].getMessage(), 'Failed to fetch auth.users data for CSV export')
 
     def test_the_applicant_detail_serializer_names_itself(self):
-        src = read_source(os.path.join(settings.BASE_DIR, 'apps', 'scholarship', 'serializers_admin.py'),
+        src = read_source(os.path.join(settings.BASE_DIR, 'apps', 'scholarship', 'serializers_admin', 'names.py'),
                           'TD-294: the detail serializer is the second caller of _fetch_auth_data')
         self.assertEqual(src.count("purpose='the applicant login email'"), 1)

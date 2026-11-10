@@ -158,7 +158,7 @@ describe("the two ResolutionItem interfaces are one shape, and it is the seriali
     read('lib', 'api', 'resolution.ts'), 'ResolutionItem', 'lib/api/resolution.ts')
   const admin = interfaceFields(
     read('lib', 'admin-api', 'resolution.ts'), 'AdminResolutionItem', 'lib/admin-api/resolution.ts')
-  const serializerSrc = readApi('apps/scholarship/serializers.py')
+  const serializerSrc = readApi('apps/scholarship/serializers/documents.py')
   const block = serializerSrc.match(
     /class ResolutionItemSerializer\(([\s\S]*?)\n\S/)?.[0].match(/fields = \[([\s\S]*?)\]/)
   const served = block ? [...block[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]) : []

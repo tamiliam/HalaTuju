@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
+
+Branch a37 (not pushed, not deployed; no migration, behaviour kept).
+- `scholarship/serializers.py` (1,215 lines) is now `serializers/` (sponsor, sponsor_students, application, application_read, documents, student_records); `serializers_admin.py` (1,026) is now `serializers_admin/` (names, interviews, application_list, application_detail, detail_people, detail_blocks, records). `courses/models.py` (1,054) is now `models/` (catalogue, organisations, student, outcomes). Every module is under 400 lines and every old import path still works through the package `__init__`.
+- The reviewer-name lookup by email (`_admin_name_by_email`) lives in `serializers_admin/names.py`.
+- `AdminApplicationDetailSerializer` keeps its fields and Meta; its getters moved into two mixins (`ServesTheDetailPeople`, `ServesTheDetailBlocks`) with the mixins first in the bases, so resolution is unchanged.
+- `makemigrations --check`: no changes. `models_staff.py` untouched.
+- The three oversize ledger rows are removed (budget only; the frozen baseline is untouched). No budget raised.
+- test: `test_a37_split_pins.py` pins old names, serializer field order, validation errors and the courses model shapes, written before the split. Tests that read source files by path (and three web drift tests) now follow the packages.
+- docs: architecture map and TD-283 updated.
+
 ### chore: lower the /profile first-load budget after the split (audit A3.9, 2026-11-10)
 
 `first_load_js["/profile"]` 205.5 -> 202.2 kB (build 204.527 -> 200.231). Nothing raised. /scholarship/apply passes with 0.264 kB of room against its 198.8 line, unchanged.

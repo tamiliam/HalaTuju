@@ -16,7 +16,7 @@
 import { readApi } from '@/test/apiSource'
 import { readWeb } from '@/test/sourceGuard'
 
-const SERIALIZERS = 'apps/scholarship/serializers_admin.py'
+const SERIALIZERS = 'apps/scholarship/serializers_admin/records.py'
 const src = readApi(SERIALIZERS)
 
 /** The serializer's declared fields, in declaration order. */

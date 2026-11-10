@@ -358,7 +358,7 @@ _READERS = {
     'apps/scholarship/income_engine/occupation.py': 'heading_for(',
     'apps/scholarship/income_engine/epf_evidence.py': 'heading_for(',
     'apps/scholarship/vision/field_extraction.py': 'results_held(',   # audit A3.1: was vision.py
-    'apps/scholarship/serializers.py': 'ResultsHeldField(',
+    'apps/scholarship/serializers/application_read.py': 'ResultsHeldField(',   # audit A3.7: was serializers.py
     # TD-325 (2026-10-04): the sponsor-profile prompt and the Check-2 facts ledger name the
     # results we hold (owner ruling TD-324), so they read `results_held` too.
     # Third results route S2a (2026-10-25): through `held_summary(`, which is `results_held` plus
