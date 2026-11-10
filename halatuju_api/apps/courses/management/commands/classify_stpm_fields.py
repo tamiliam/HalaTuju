@@ -19,6 +19,9 @@ from apps.courses.models import StpmCourse, FieldTaxonomy
 from apps.courses.management.commands.backfill_spm_field_key import (
     classify_course, match_any,
 )
+from apps.courses.stpm_field_rules import (
+    _by_category_health_to_languages, _by_category_sciences_to_business, _by_course_name,
+)
 
 # English → Malay normalization for STPM field values.
 # After Sprint 5 removed the category column, the field column holds
@@ -293,6 +296,19 @@ def _classify_spm_matching(category_lower: str, name_lower: str) -> str:
     return 'umum'
 
 
+def _normalise_category(category_lower: str) -> str:
+    """Normalise English field values to Malay equivalents.
+
+    After Sprint 5 removed the category column, field holds mixed-language
+    values. The "Others (X)" pattern extracts X for keyword matching.
+    """
+    c = category_lower
+    if c.startswith('others (') and c.endswith(')'):
+        inner = c[8:-1].strip()
+        return ENGLISH_FIELD_MAP.get(inner.lower(), c)
+    return ENGLISH_FIELD_MAP.get(c, c)
+
+
 def classify_stpm_course(category: str, field: str, course_name: str) -> str:
     """
     Map an STPM course to a taxonomy key using category, field, and course name.
@@ -302,51 +318,14 @@ def classify_stpm_course(category: str, field: str, course_name: str) -> str:
     NOTE: STPM's field column is often identical to category (an aggregate
     value like "Komputer, IT & Multimedia"), unlike SPM where field is a
     specific sub-discipline. We use course_name for sub-classification.
+    The rules run in a fixed order and the first that answers wins.
     """
-    c = category.lower()
-    f = field.lower()
+    c = _normalise_category(category.lower())
     n = course_name.lower()
 
-    # Normalize English field values to Malay equivalents.
-    # After Sprint 5 removed the category column, field holds mixed-language
-    # values. The "Others (X)" pattern extracts X for keyword matching.
-    if c.startswith('others (') and c.endswith(')'):
-        inner = c[8:-1].strip()
-        c = ENGLISH_FIELD_MAP.get(inner.lower(), c)
-    else:
-        c = ENGLISH_FIELD_MAP.get(c, c)
-
-    # ── COURSE NAME OVERRIDES (name trumps MOHE category) ──
-    # Kejuruteraan Kimia misclassified under wrong category
-    if 'kejuruteraan kimia' in n and 'bioteknologi' not in n and 'makanan' not in n:
-        return 'kimia-proses'
-    # Veterinary is a medical doctorate, not agriculture
-    if 'veterinar' in n:
-        return 'perubatan'
-    # Pergigian by name
-    if 'pergigian' in n:
-        return 'pergigian'
-    # Farmasi by name
-    if 'farmasi' in n or 'farmaseutikal' in n:
-        return 'farmasi'
-    # Allied health by name → kejururawatan
-    if match_any(n, ['kejururawatan', 'fisioterapi', 'optometri', 'audiologi',
-                      'dietetik', 'terapi carakerja', 'pemulihan cara kerja',
-                      'pengimejan perubatan', 'pengimejan diagnostik',
-                      'sinaran perubatan', 'teknologi makmal perubatan']):
-        return 'kejururawatan'
-    # Nutrition / food science by name → kulinari
-    if match_any(n, ['pemakanan', 'sains makanan', 'teknologi makanan',
-                      'jaminan makanan', 'makanan halal']):
-        return 'kulinari'
-    # Ukur Bahan (Quantity Surveying) → sivil
-    if 'ukur bahan' in n:
-        return 'sivil'
-    # Komunikasi by name
-    if match_any(n, ['komunikasi massa', 'komunikasi sosial',
-                      'pembangunan kandungan', 'periklanan',
-                      'kewartawanan', 'perhubungan awam']):
-        return 'komunikasi'
+    key = _by_course_name(n)
+    if key is not None:
+        return key
 
     # ── PENDIDIKAN protection: never reclassify education degrees ──
     if c == 'pendidikan':
@@ -362,176 +341,10 @@ def classify_stpm_course(category: str, field: str, course_name: str) -> str:
     if c == 'sains sosial':
         return 'sains-sosial'
 
-    # ── Environment (before health, to catch compound categories) ──
-    if match_any(c, ['alam sekitar', 'teknologi persekitaran',
-                      'teknologi alam sekitar']):
-        return 'alam-sekitar'
-
-    # ── Health & Medical (split into perubatan / kejururawatan / pergigian) ──
-    # Pergigian
-    if 'pergigian' in c:
-        return 'pergigian'
-    # Allied health → kejururawatan
-    allied_health = [
-        'kejururawatan', 'fisioterapi', 'optometri', 'audiologi',
-        'dietetik', 'patologi', 'pengimejan', 'pemulihan cara kerja',
-        'teknologi makmal perubatan',
-    ]
-    if match_any(c, allied_health):
-        return 'kejururawatan'
-    # Nutrition / food science → kulinari (NOT kejururawatan)
-    if match_any(c, ['nutrisi', 'pemakanan', 'sains pemakanan']):
-        return 'kulinari'
-    # Occupational health → sains-sosial (not clinical medicine)
-    if 'kesihatan pekerjaan' in c:
-        return 'sains-sosial'
-    # Remaining medical
-    if match_any(c, ['perubatan', 'kesihatan', 'bioperubatan', 'biomolekul',
-                      'sains perubatan']):
-        return 'perubatan'
-
-    # ── Pharmacy ──
-    if 'farmasi' in c:
-        return 'farmasi'
-
-    # ── Law ──
-    if c == 'undang-undang':
-        return 'undang-undang'
-
-    # ── Islamic Studies ──
-    if match_any(c, ['pengajian islam', 'pengajian agama',
-                      'undang-undang islam', 'muamalat']):
-        return 'pengajian-islam'
-
-    # ── Social Sciences ──
-    if match_any(c, ['sains kemasyarakatan', 'psikologi',
-                      'sains politik', 'sosiologi', 'antropologi',
-                      'kriminologi', 'kajian pembangunan', 'kerja sosial',
-                      'hubungan industri', 'kaunseling', 'pengajian pengguna',
-                      'pengajian antarabangsa']):
-        return 'sains-sosial'
-
-    # ── Chemical Engineering (before general chemistry) ──
-    if match_any(c, ['kejuruteraan kimia', 'kejuruteraan nuklear',
-                      'kejuruteraan pemprosesan', 'bio-proses']):
-        return 'kimia-proses'
-
-    # ── Chemistry ──
-    if 'kimia' in c:
-        return 'kimia-proses'
-
-    # ── Bahasa & Kesusasteraan ──
-    bahasa_cats = [
-        'bahasa', 'linguistik', 'kesusasteraan', 'persuratan',
-        'pengajian melayu', 'pengajian cina', 'pengajian india',
-    ]
-    if match_any(c, bahasa_cats):
-        return 'bahasa'
-
-    # ── Sains Sosial: history, heritage, area studies ──
-    if match_any(c, ['sejarah', 'tamadun', 'warisan', 'pengajian asia',
-                      'kemanusiaan', 'geografi']):
-        # But Islamic humanities → pengajian-islam
-        if match_any(n, ['islam', 'syariah', 'dakwah']):
-            return 'pengajian-islam'
-        return 'sains-sosial'
-
-    # ── Komunikasi & Media ──
-    if match_any(c, ['komunikasi', 'media']):
-        return 'komunikasi'
-
-    # ── Sains Data: statistics, actuarial, data science ──
-    if match_any(c, ['statistik', 'sains aktuari', 'sains data', 'analitik']):
-        return 'sains-data'
-
-    # ── Mathematics ──
-    if 'matematik' in c:
-        if 'kewangan' in c:
-            return 'perakaunan'
-        return 'sains-fizikal'
-
-    # ── Physics ──
-    if 'fizik' in c:
-        if 'perubatan' in c:
-            return 'perubatan'
-        return 'sains-fizikal'
-
-    # ── Geosciences & Materials ──
-    if match_any(c, ['geologi', 'geosains', 'sains bumi', 'sains bahan']):
-        return 'sains-fizikal'
-
-    # ── Biology & Life Sciences ──
-    if match_any(c, ['biologi', 'bioteknologi', 'bio-teknologi',
-                      'mikrobiologi', 'biokimia', 'sains gunaan',
-                      'sains kognitif', 'sains forensik']):
-        return 'sains-hayat'
-
-    # ── Economics ──
-    if 'ekonomi' in c:
-        return 'perniagaan'
-
-    # ── Finance & Accounting ──
-    if match_any(c, ['kewangan', 'perakaunan']):
-        return 'perakaunan'
-
-    # ── Management & HR ──
-    if match_any(c, ['sumber manusia', 'pengurusan sumber']):
-        return 'pengurusan'
-    if match_any(c, ['hartanah', 'harta tanah']):
-        return 'pengurusan'
-
-    # ── Maritime ──
-    if match_any(c, ['maritim', 'marin', 'sains laut']):
-        return 'marin'
-
-    # ── Food Science ──
-    if match_any(c, ['sains makanan', 'teknologi makanan']):
-        return 'kulinari'
-
-    # ── Mechanical Engineering & Manufacturing ──
-    if match_any(c, ['kejuruteraan bahan', 'kejuruteraan polimer',
-                      'kejuruteraan pembuatan', 'kejuruteraan perlombongan',
-                      'teknologi mineral', 'teknologi higiene', 'pembuatan']):
-        return 'mekanikal'
-
-    # ── Energy / Electrical ──
-    if match_any(c, ['teknologi tenaga', 'kejuruteraan bioperubatan']):
-        return 'elektrik'
-
-    # ── Sports & Recreation ──
-    if match_any(c, ['sains sukan', 'sukan', 'rekreasi',
-                      'pengurusan sukan']):
-        return 'sains-sosial'
-
-    # ── Agriculture & Biodiversity ──
-    if match_any(c, ['perikanan', 'akuakultur', 'pengurusan taman']):
-        return 'pertanian'
-    if 'biodiversiti' in c:
-        return 'alam-sekitar'
-
-    # ── Fashion & Design ──
-    if match_any(c, ['tekstil', 'fesyen']):
-        return 'senireka'
-
-    # ── Performing Arts ──
-    if 'seni persembahan' in c:
-        return 'multimedia'
-
-    # ── Oil & Gas ──
-    if 'minyak' in c:
-        return 'minyak-gas'
-
-    # ── Landscape ──
-    if 'landskap' in c:
-        return 'senibina'
-
-    # ── Surveying ──
-    if 'ukur bahan' in c:
-        return 'sivil'
-
-    # ── Business / Entrepreneurship ──
-    if match_any(c, ['halal', 'keusahawanan', 'perniagaan']):
-        return 'perniagaan'
+    for rule in (_by_category_health_to_languages, _by_category_sciences_to_business):
+        key = rule(c, n)
+        if key is not None:
+            return key
 
     # ── Lain-lain catch-all ──
     # "Lain-lain" (16 courses) and any unmapped "Lain-lain (X)" that

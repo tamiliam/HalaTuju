@@ -923,9 +923,7 @@ halatuju_api/
 ├── manage.py                      # Django CLI
 ├── db.sqlite3                     # Local dev database (not committed)
 └── scripts/
-    ├── generate_sql_inserts.py    # Legacy SQL generation helper
-    ├── migrate_to_supabase.py     # Batched CSV → Supabase migration
-    └── supabase_data_migration.sql
+    └── school_town_names.py       # School town-name helper (offline migration scripts retired, A3.10)
 ```
 
 ---

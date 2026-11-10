@@ -655,7 +655,9 @@ class TestTheScanActuallyFoundTheCode(_Standard):
                            'no large files found at all — the line counter is broken.')
         # A3.8 (2026-11-10): lowered 5 -> 2. The audit sprints paid the ledger down to 4 long
         # functions, so the old floor failed on success, not on a broken walk.
-        self.assertGreater(len(self.scan['long_functions']), 2,
+        # A3.10 (2026-11-10): lowered 2 -> 0. Three more went (the command splits), leaving one
+        # long function (the staff invite view); the floor still proves the walk finds something.
+        self.assertGreater(len(self.scan['long_functions']), 0,
                            'no long functions found at all — the AST walk is broken.')
 
     def test_the_self_exclusion_is_one_file_wide(self):

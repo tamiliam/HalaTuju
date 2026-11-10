@@ -1,0 +1,66 @@
+{
+ "after_apply": {
+  "B01": [
+   true,
+   "https://x/B01",
+   40.0
+  ],
+  "B02": [
+   true,
+   "https://x/B02-new",
+   41.0
+  ],
+  "K01": [
+   true,
+   "https://x/K01",
+   70.0
+  ],
+  "K02": [
+   true,
+   "https://x/K02",
+   70.0
+  ],
+  "K03": [
+   true,
+   "https://x/new",
+   60.0
+  ],
+  "K04": [
+   true,
+   "",
+   65.0
+  ],
+  "K05": [
+   true,
+   "",
+   null
+  ],
+  "K06": [
+   true,
+   "https://x/K06",
+   55.0
+  ],
+  "M01": [
+   true,
+   "",
+   70.0
+  ],
+  "R01": [
+   false,
+   "",
+   50.0
+  ],
+  "R02": [
+   false,
+   "",
+   50.0
+  ],
+  "R03": [
+   false,
+   "",
+   50.0
+  ]
+ },
+ "apply_out": "\n=== STPM MOHE Sync Report ===\nMOHE programmes: 11\nDB courses:      12\nMatched:         9\nCurrently inactive: 3\n\n--- NEW (2) ---\n  + N01: New one (USM)\n  + N02: New two (UM)\n\n--- REMOVED — will deactivate (2) ---\n  - R01: Removed active one (UNI)\n  - R02: Removed active two (UNI)\n\n  (1 already inactive, unchanged)\n\n--- REACTIVATE (2) ---\n  ↑ B01: Back from inactive (UNI)\n  ↑ B02: Back with new url (UNI)\n\n--- MERIT CHANGES (1) ---\n  ~ K02: 70.00% -> 72.50%\n\nURL updates needed: 2\n\nApplied: 2 URL updates\nDeactivated 2 removed courses\nReactivated 2 returned courses\n1 merit changes detected but NOT auto-applied. Review the report above and update manually or extend this command.\n2 new programmes detected. These need manual review — requirements must be parsed before adding to DB.\n",
+ "dry_out": "\n=== STPM MOHE Sync Report ===\nMOHE programmes: 11\nDB courses:      12\nMatched:         9\nCurrently inactive: 3\n\n--- NEW (2) ---\n  + N01: New one (USM)\n  + N02: New two (UM)\n\n--- REMOVED — will deactivate (2) ---\n  - R01: Removed active one (UNI)\n  - R02: Removed active two (UNI)\n\n  (1 already inactive, unchanged)\n\n--- REACTIVATE (2) ---\n  ↑ B01: Back from inactive (UNI)\n  ↑ B02: Back with new url (UNI)\n\n--- MERIT CHANGES (1) ---\n  ~ K02: 70.00% -> 72.50%\n\nURL updates needed: 2\n\nDry run. Use --apply to write changes to DB.\n"
+}

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: management commands split or retired, repair doors closed (audit A3.10, 2026-11-10)
+
+Branch a310 (not pushed, not deployed; no migration, no data change, no command run against a database).
+- Split, behaviour unchanged (pins written first): `backfill_spm_field_key.classify_course` (293 lines) is a short orchestrator over `_label_*` and `_field_*` rule functions; `classify_stpm_fields.classify_stpm_course` (244) over rule functions that now live in the new `apps/courses/stpm_field_rules.py` (the command file falls 614 -> 427, out of the oversize ledger); `sync_stpm_mohe.Command.handle` (169) over load, report and apply helpers with every output line identical.
+- Retired (deleted, with their tests; history keeps them): `backfill_nric_locks` and `repair_interview_credit`, both applied long ago (retrospective-2026-07-29-ic-lock.md; retrospective-2026-08-18-exam-type-and-requests.md).
+- Retired offline migration files from `halatuju_api/scripts/` (RD-11): `gemini_map_careers.py`, `generate_sql_inserts.py`, `migrate_to_supabase.py`, `stpm_backfill_field_key.sql`, `supabase_data_migration.sql`. Nothing imported or ran them. `school_town_names.py` stays (tests read it).
+- TD-234 closed: `NO_DOOR` is empty; the eleven remaining repair commands are in `DOCUMENTED_ROUTE` (release-decisions job args override, CLAUDE.md item 12).
+- test: `test_a310_command_pins.py` (path-covering classifier corpus, full-output golden for the sync command); the door guard gained a test that `NO_DOOR` stays empty.
+- code-standards.json: the three long_functions rows, the classify_stpm_fields oversize row and the two retired test-file rows leave the budget. Nothing raised.
+
 ### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
 
 Branch a37 (not pushed, not deployed; no migration, behaviour kept).

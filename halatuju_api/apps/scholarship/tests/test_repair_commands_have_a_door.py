@@ -18,8 +18,7 @@ remembering to add it here. That is the whole point: a rule kept only in the hea
 yet on the project is not kept.
 
 ⚠ `NO_DOOR` IS A LEDGER, NOT AN EXEMPTION LIST. Adding a name to it is a decision to be read, and
-the reason is the check. The thirteen seeded entries are honest about their state rather than
-quietly blessed — see TD-234, which carries them.
+the reason is the check. A3.10 audited the thirteen seeded entries (TD-234, closed) and emptied it.
 """
 import os
 
@@ -31,38 +30,40 @@ _APPS = ('scholarship', 'courses')
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _API_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir, os.pardir))
 
-# Commands that write a one-off repair and have NO route to the live service. Each is here with the
-# reason it is not a defect today; none is here because nobody looked.
+# A3.10 (TD-234 closed): the ledger of door-less commands is EMPTY. Every command below is reachable
+# through a DOCUMENTED route rather than a CronRunView.JOBS entry: the release-decisions Cloud Run job
+# with an args override (CLAUDE.md, How a change reaches production, item 12). That job runs the
+# service image against the live database, so no production credentials ever sit on a laptop (the
+# practice TD-206 retired). Each reason says what the command is and why it needs no registered job.
 #
-# ⚠ The collective reason for the first thirteen: they predate this guard, and each ran (or was
-# meant to run) from a local checkout with production `DB_*` exported onto the laptop — the
-# practice TD-206 retired precisely because a manual mitigation fails on the day somebody forgets.
-# They have NOT been audited one by one for remaining work; TD-234 carries that. The guard's job is
-# that the FOURTEENTH cannot be added without somebody deciding.
-NO_DOOR = {
-    'backfill_admin_seen': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+# Retired in A3.10 (deleted, kept in git history): `backfill_nric_locks` (IC-lock repair, applied
+# before the 2026-07-29 push) and `repair_interview_credit` (TD-216, 25 interviews re-credited
+# 2026-08-18). Their tests went with them.
+NO_DOOR = {}
+
+# Documented-route commands: name -> why the release-decisions job route is enough.
+DOCUMENTED_ROUTE = {
+    'backfill_admin_seen': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
     'backfill_higher_results_kind': ('Matric/Diploma M1 (2026-10-29) — hand-run through the release-decisions '
                                      'job args override (CLAUDE.md, How a change reaches production, item 12): '
                                      'report, then --apply. Lead-gated.'),
-    'backfill_institution': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_invitations': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_nric_locks': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_offer_pathways': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_pismp_tags': 'TD-234 — catalogue rows; predates the guard.',
-    'backfill_pre_u_track': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_referral_attribution': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_reminder_anchors': 'TD-234 — launch one-off, spent; predates the guard.',
-    'backfill_results_exam_type': 'TD-234 — predates the guard; ran locally with exported prod creds.',
-    'backfill_spm_field_key': 'TD-234 — catalogue rows; predates the guard.',
+    'backfill_institution': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_invitations': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_offer_pathways': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_pismp_tags': 'catalogue-row tool; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_pre_u_track': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_referral_attribution': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_reminder_anchors': 'launch one-off, spent; a repeat is a no-op. Route: the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_results_exam_type': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
+    'backfill_spm_field_key': 'catalogue-row tool; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
     'backfill_stpm_cgpa': ('STPM CGPA C2 (2026-10-28) — hand-run through the release-decisions job args '
                            'override (CLAUDE.md, How a change reaches production, item 12): preview, '
                            '--apply --koko-only before the deploy, --apply after. Owner-gated.'),
-    'repair_chosen_programme': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'repair_chosen_programme': 'one-off; reach it through the release-decisions job args override (CLAUDE.md, How a change reaches production, item 12).',
     'backfill_staff_activity': ('Common profile S4 (2026-10-31) — run ONCE at the S5 deploy point through '
                                 'the release-decisions job args override (CLAUDE.md, How a change '
                                 'reaches production, item 12): --dry-run, then --apply, AFTER the API '
                                 'deploy. Idempotent; lead-gated.'),
-    'repair_interview_credit': 'TD-234 — predates the guard; ran locally with exported prod creds.',
 }
 
 
@@ -95,7 +96,8 @@ class TestEveryRepairHasADoor(SimpleTestCase):
     def test_every_repair_command_is_reachable_or_declared(self):
         registered = _registered_commands()
         stranded = sorted(c for c in _repair_commands()
-                          if c not in registered and c not in NO_DOOR)
+                          if c not in registered and c not in NO_DOOR
+                          and c not in DOCUMENTED_ROUTE)
         self.assertEqual(stranded, [], (
             'These repair commands can never run against production: they are not in '
             'CronRunView.JOBS and not declared in NO_DOOR. Register the job (and gate any write '
@@ -105,20 +107,25 @@ class TestEveryRepairHasADoor(SimpleTestCase):
     def test_the_ledger_names_only_real_commands(self):
         """A stale NO_DOOR entry is worse than none — it reads as a decision about something that
         no longer exists, and it hides the day a name is reused."""
-        ghosts = sorted(set(NO_DOOR) - _repair_commands())
+        ghosts = sorted((set(NO_DOOR) | set(DOCUMENTED_ROUTE)) - _repair_commands())
         self.assertEqual(ghosts, [], f'NO_DOOR names commands that do not exist: {ghosts}')
 
     def test_a_declared_command_is_not_also_registered(self):
         """The two lists answer the same question and must not both claim a command — a name in
         both says one of them was not read."""
-        both = sorted(set(NO_DOOR) & _registered_commands())
+        both = sorted((set(NO_DOOR) | set(DOCUMENTED_ROUTE)) & _registered_commands())
         self.assertEqual(both, [], f'Both registered and declared door-less: {both}')
+
+    def test_no_command_is_declared_door_less(self):
+        """A3.10 closed TD-234: the door-less ledger stays empty. A command either has a registered
+        job or a DOCUMENTED_ROUTE reason."""
+        self.assertEqual(NO_DOOR, {})
 
     def test_the_scan_actually_finds_the_commands(self):
         """The floor. A path change that silently returned nothing would make every assertion above
         vacuous, and the guard would pass for ever while protecting nothing."""
         found = _repair_commands()
-        self.assertGreaterEqual(len(found), 15, f'scan found only {len(found)} repair commands')
+        self.assertGreaterEqual(len(found), 14, f'scan found only {len(found)} repair commands')
         self.assertIn('backfill_untagged_income_docs', found)     # the one that started this
 
     def test_the_command_that_started_this_has_its_door(self):

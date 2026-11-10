@@ -778,6 +778,7 @@ Each sprint here:
 - **Acceptance:**
   - The `NO_DOOR` ledger is empty.
   - The retired commands are listed in docs.
+- **Built 2026-11-10 (branch a310, not pushed):** the three functions split (pins first); retired `backfill_nric_locks`, `repair_interview_credit` and five offline files in `halatuju_api/scripts/`; `NO_DOOR` is empty, the other eleven repair commands are declared in `DOCUMENTED_ROUTE` (release-decisions job args override). TD-234 closed; RD-11 acted on. Suspects not retired: `backfill_reminder_anchors`, `backfill_pismp_tags`.
 - **Readings moved:** long −3. td_open −2.
 - **Complexity:** M.
 - **Model:** Sonnet.
