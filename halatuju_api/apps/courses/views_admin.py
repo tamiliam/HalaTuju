@@ -32,6 +32,9 @@ from . import (csv_safe, password_change_flag, referral_links, staff_activity_ho
                staff_permissions, staff_reinvite, staff_tables, supabase_admin)
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search, people_search_term
+from .staff_fence import (   # moved there (M1a, moves only); re-exported for every old import
+    _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES, PROGRAMME_STAFF_ROLES, _deletable_now,
+    _staff_target_manageable)
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
 from .models import StudentProfile, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
@@ -580,25 +583,6 @@ def _fmt_json(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
-# Programme-staff roles an org_admin may manage (invite / list / resend / revoke). Never
-# partner (referral), never super, never org_admin — no privilege escalation.
-# `finance` joined 2026-07-23 (owner decision D5): the org lead appoints their own finance
-# checker. Safe against escalation because finance grants LESS than the roles already here —
-# it has no B40 scope at all — and it cannot manage staff, so it can never appoint anyone.
-_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
-
-# Everyone who belongs to a TENANT's own staff list — what an org_admin may SEE. Wider than
-# `_ORG_ADMIN_MANAGEABLE_ROLES` by exactly one role, `org_admin`, and the gap is the point: you can
-# see your fellow organisation admins, you cannot revoke them. Mirrors the frontend's
-# `adminStaff.PROGRAMME_STAFF_ROLES`; `super` and `partner` are platform-world and never here.
-PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
-
-# The roles a staff account may be DELETED in. D6 (Sprint T2, 2026-11-08) REVERSES 2026-09-09's "admins,
-# not reviewers": reviewers and QC too, under the SAME no-work test (`staff_footprint` counts every case
-# they held, reviewed, interviewed, QC'd or mentored). A pure mentor: `mentor_invite.delete_mentor`.
-_DELETABLE_ROLES = {'admin', 'finance', 'org_admin', 'reviewer', 'qc'}
-
-
 def _scholarship_staff_modules():
     """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
     from apps.scholarship import mentoring, staff_footprint, staff_lifecycle, staff_mentor
@@ -632,39 +616,6 @@ def _mentor_linked(admin):
         mentoring.end_if_self(admin.mentor, by='')
     except Exception:   # a sign-in must never fail on this
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)
-
-
-def _deletable_now(caller, target, work=None):
-    """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
-
-    Three conditions, all required, and each is refused again by `AdminDeleteView`:
-      * the caller may manage them at all (`_staff_target_manageable`);
-      * the role is a programme-staff one (`_DELETABLE_ROLES`; reviewers and QC since D6, 2026-11-08);
-      * they have done NO recorded work (`staff_footprint`).
-    """
-    staff_footprint, _ = scholarship_staff()
-    if not _staff_target_manageable(caller, target):
-        return False
-    if target.is_super or target.role not in _DELETABLE_ROLES:
-        return False
-    return not (work if work is not None else staff_footprint.footprint(target))
-
-
-def _staff_target_manageable(caller, target):
-    """Whether ``caller`` may manage (resend/revoke) the staff row ``target``. A platform
-    super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
-    (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
-    Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
-    if caller is None or target is None or target.is_source_user or target.is_mentor:
-        return False        # not staff: a source user (S1; S2 has its doors), a mentor (S7a, ditto)
-    if caller.is_super:
-        return True
-    if caller.role == 'org_admin':
-        if target.is_super or target.role not in _ORG_ADMIN_MANAGEABLE_ROLES:
-            return False
-        return (caller.owning_organisation_id is not None
-                and target.owning_organisation_id == caller.owning_organisation_id)
-    return False
 
 
 class AdminSetPasswordView(PartnerAdminMixin, APIView):

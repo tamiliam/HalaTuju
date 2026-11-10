@@ -60,6 +60,7 @@ apps/courses/
 ├── models_staff.py                # PartnerAdmin (moved out of models.py, request #39 S1; re-exported there) + `permissions`
 ├── staff_permissions.py           # #39 LEAF: permission catalogue, presets, lead tier, resolve/holds/holders, team_holding (Q for lists; no scholarship import)
 ├── views_admin.py                 # /admin/role/ (serves permissions/preset/custom), dashboard, students, set-password
+├── staff_fence.py                 # M1a: the staff fence (manageable / deletable role sets, `_staff_target_manageable`, `_deletable_now`), re-exported from views_admin.py
 ├── views_profile.py               # GET/PUT /admin/profile/ (a referral partner's name + organisation contact; moved out at common profile S3)
 ├── staff_activity_hook.py         # Common profile S3: courses' door to the staff activity list (the writer is REGISTERED here by scholarship; no import)
 ├── views_staff.py                 # staff accounts: invite (+ `already_exists_answer`: own team named / everyone else one neutral 409), resend, list, revoke, delete
