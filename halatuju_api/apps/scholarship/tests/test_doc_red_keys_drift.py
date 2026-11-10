@@ -164,7 +164,11 @@ class TestTheSharedKeys(SimpleTestCase):
 
     def test_both_readers_name_the_table_not_a_copy(self):
         import inspect
-        for fn in (resolution.doc_match_verdict, blockers.document_red_blockers):
+        from apps.scholarship.resolution_doc_match import DOC_MATCH_CHECKS
+        # Audit sprint A3.4: doc_match_verdict's branches moved, one function per document type, to
+        # resolution_doc_match; the guard follows them and now asks it of EVERY tabled type's check.
+        fns = [blockers.document_red_blockers] + [DOC_MATCH_CHECKS[dt] for dt in doc_red_keys.PERSON_RED_KEYS]
+        for fn in fns:
             with self.subTest(fn=fn.__name__):
                 self.assertIn('person_red(', inspect.getsource(fn))
 

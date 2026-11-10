@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.income_engine import (
-    STR_RED_STATES, STR_COACH_STATES, _member_ic_doc, _parent_has_income_evidence,
+    STR_RED_STATES, STR_COACH_STATES, STR_NOT_THIS_YEAR_STATES, _member_ic_doc, _parent_has_income_evidence,
     income_cluster_advice,
 )
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
@@ -50,6 +50,16 @@ class TestSharedRedStates(TestCase):
         self.assertNotIn('unreadable', STR_RED_STATES)
         self.assertIn('unreadable', STR_COACH_STATES)
         self.assertIn('unconfirmed', STR_COACH_STATES)
+
+    def test_a34_str_state_tuples(self):
+        # Audit sprint A3.4 (TD-262): the income verdict's STR reading (``verdict_income_str``) now
+        # uses these shared tuples instead of two typed-out copies. That was a pure move ONLY
+        # because their members equal the copies it replaced; changing either tuple now changes
+        # the income verdict too, so it must be a deliberate, owner-approved rule change.
+        self.assertEqual(set(STR_COACH_STATES),
+                         {'stale', 'future', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'})
+        self.assertEqual(len(STR_COACH_STATES), 6)
+        self.assertEqual(STR_NOT_THIS_YEAR_STATES, ('stale', 'future'))
 
     def test_cluster_coach_nudges_on_wrong_type(self):
         # A SALINAN/SARA in the STR slot reads wrong_type — the coach used to go silent
