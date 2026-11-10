@@ -5302,6 +5302,7 @@
         "title": "Final profile (v2 — with interview)"
       },
       "prefersLang": "Prefers {lang}",
+      "assignLangLegend": "✓ speaks the student's language · ⚠ does not",
       "bursary": {
         "title": "Bursary agreement",
         "student": "Student",
