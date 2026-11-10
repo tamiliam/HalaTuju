@@ -240,9 +240,16 @@ describe('Team → Admins reads like Reviewers and Mentors (owner 2026-11-08)', 
     expect(container.textContent).not.toContain('012-0000 0000')
   })
 
-  it('O9 is the Admins table only: the platform screens keep the phone the server sent', () => {
-    const { container } = render(<StaffTable rows={[row({ id: 44, role: 'org_admin', phone: '012-0000 0000' } as Partial<AdminItem>)]}
+  it('hides the phone by default (fail closed): no prop, no phone, card or table', () => {
+    const { container } = render(<StaffTable rows={[row({ id: 45, role: 'org_admin', phone: '012-0000 0000' } as Partial<AdminItem>)]}
       canAct={false} />)
+    expect(container.querySelector('[data-testid="team-phone-45"]')).toBeNull()
+    expect(container.textContent).not.toContain('012-0000 0000')
+  })
+
+  it('showPhone: the platform screens keep the phone the server sent', () => {
+    const { container } = render(<StaffTable rows={[row({ id: 44, role: 'org_admin', phone: '012-0000 0000' } as Partial<AdminItem>)]}
+      canAct={false} showPhone />)
     expect(container.querySelectorAll('[data-testid="team-phone-44"]').length).toBe(2)   // card + table
   })
 

@@ -88,7 +88,7 @@ export default function ReferralPartnersPage() {
         </button>
       </form>
 
-      <StaffTable rows={referralPartners(admins)} showOrg busyId={busyId}
+      <StaffTable showPhone rows={referralPartners(admins)} showOrg busyId={busyId}
         onResend={resend} onToggle={toggle} />
     </div>
   )

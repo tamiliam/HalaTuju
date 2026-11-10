@@ -64,7 +64,7 @@ export default function OrganisationsPage() {
         </button>
       </form>
 
-      <StaffTable rows={tenantAdmins(admins)} showOrg busyId={busyId}
+      <StaffTable showPhone rows={tenantAdmins(admins)} showOrg busyId={busyId}
         onResend={resend} onToggle={toggle} soleOrgAdmin={soleOrgAdmin} />
     </div>
   )

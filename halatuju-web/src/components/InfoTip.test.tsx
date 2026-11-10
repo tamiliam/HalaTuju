@@ -61,6 +61,8 @@ describe('InfoTip', () => {
     pointer(trigger(), 'pointerover', 'mouse')
     expect(await screen.findByRole('tooltip')).toBeTruthy()
     pointer(trigger(), 'pointerout', 'mouse')
+    // a short grace, so the pointer can cross onto the bubble
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)) })
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
@@ -114,6 +116,7 @@ describe('InfoTip — placed above the page, not inside its parent', () => {
   const WIDTH = 256
   let rect = { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 }
   let viewport = 0
+  let clip = { left: 0, right: 400, top: 0, bottom: 800 }
   const restore: Array<() => void> = []
 
   function stub<T extends object>(target: T, key: string, get: () => unknown) {
@@ -132,11 +135,15 @@ describe('InfoTip — placed above the page, not inside its parent', () => {
 
   beforeEach(() => {
     viewport = 400
+    clip = { left: 0, right: 400, top: 0, bottom: 800 }
     at(100)
+    stub(window, 'innerHeight', () => 800)
     stub(HTMLElement.prototype, 'offsetWidth', () => WIDTH)
+    stub(HTMLElement.prototype, 'offsetHeight', () => 60)
     stub(document.documentElement, 'clientWidth', () => viewport)
     const real = Element.prototype.getBoundingClientRect
     Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.getAttribute('data-testid') === 'clip') return { ...clip, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
       return (this.contains(trigger()) ? { ...rect, x: rect.left, y: rect.top, toJSON: () => ({}) } : real.call(this)) as DOMRect
     }
     restore.push(() => { Element.prototype.getBoundingClientRect = real })
@@ -212,5 +219,57 @@ describe('InfoTip — placed above the page, not inside its parent', () => {
     await screen.findByRole('tooltip')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(document.body.querySelector('[role="tooltip"]')).toBeNull()
+  })
+
+  it('flips ABOVE the i when there is no room below, the caret on the bubble\'s bottom edge', async () => {
+    stub(window, 'innerHeight', () => 300)
+    at(100, 270)   // trigger bottom 288: 288 + 10 + 60 overruns 300 - 8, and there is more room above
+    render(<InfoTip text={TEXT} />)
+    fireEvent.click(trigger())
+    const bubble = await screen.findByRole('tooltip')
+    expect(bubble.style.top).toBe('200px')   // 270 - 10 - 60
+    expect(caret(bubble).getAttribute('data-side')).toBe('bottom')
+    expect(caret(bubble).style.left).toBe('101px')   // still on the i
+  })
+
+  it('stays below, caret on top, when it fits', async () => {
+    render(<InfoTip text={TEXT} />)
+    fireEvent.click(trigger())
+    const bubble = await screen.findByRole('tooltip')
+    expect(caret(bubble).getAttribute('data-side')).toBe('top')
+  })
+
+  it('closes when the i scrolls out of the screen', async () => {
+    render(<InfoTip text={TEXT} />)
+    fireEvent.click(trigger())
+    await screen.findByRole('tooltip')
+    at(100, 900)
+    fireEvent.scroll(document.body)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('closes when the i scrolls out of its scrolling ancestor, and not while it is inside', async () => {
+    render(<div data-testid="clip" style={{ overflow: 'auto' }}><InfoTip text={TEXT} /></div>)
+    clip = { left: 0, right: 400, top: 0, bottom: 200 }
+    fireEvent.click(trigger())
+    await screen.findByRole('tooltip')
+    fireEvent.scroll(screen.getByTestId('clip'))
+    expect(screen.queryByRole('tooltip')).not.toBeNull()
+    clip = { left: 0, right: 400, top: 300, bottom: 500 }   // the i (100-118) is now above the frame
+    fireEvent.scroll(screen.getByTestId('clip'))
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('moving the mouse from the i onto the bubble keeps a hover-opened bubble open', async () => {
+    render(<InfoTip text={TEXT} />)
+    pointer(trigger(), 'pointerover', 'mouse')
+    const bubble = await screen.findByRole('tooltip')
+    pointer(trigger(), 'pointerout', 'mouse')
+    pointer(bubble, 'pointerover', 'mouse')
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)) })
+    expect(screen.queryByRole('tooltip')).not.toBeNull()
+    pointer(bubble, 'pointerout', 'mouse')
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)) })
+    expect(screen.queryByRole('tooltip')).toBeNull()
   })
 })

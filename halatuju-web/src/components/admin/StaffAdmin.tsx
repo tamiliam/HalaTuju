@@ -60,7 +60,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, viewerSuper = false }: {
+                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -85,6 +85,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
    *  endpoint accepts it (`remove`). T3 (owner): no permission column — permissions are set only on the
    *  person's own page, Permissions tab (the name opens it). */
   team?: { onRemove: (a: AdminItem) => void }
+  /** Draw each person's phone. Off unless a screen asks (fail closed): only the platform's staff screens do. */
+  showPhone?: boolean
 }) {
   const { t } = useT()
   // Team (owner 2026-11-08): read like Reviewers and Mentors — the email under the name, a Last seen
@@ -164,8 +166,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
 
   /** O9 (owner, 2026-11-10): a phone number never shows on Team -> Admins; it shows on the person's own
    *  page (still only when they switched "Show my phone to my team" on). The Reviewers table draws its
-   *  own rows and keeps its phone line; the platform's staff screens keep theirs. */
-  const phoneOf = (a: AdminItem) => !team && a.phone
+   *  own rows and keeps its phone line; the platform's staff screens ask for theirs (`showPhone`); the default is no phone. */
+  const phoneOf = (a: AdminItem) => showPhone && a.phone
     ? <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>
     : null
 

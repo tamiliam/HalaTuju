@@ -362,6 +362,13 @@ describe('the Admins tab (2026-09-09)', () => {
     expect(screen.getAllByText('Shanti Subramaniam').length).toBeGreaterThan(0)
   })
 
+  it('shows no phone on the Admins tab even when the admin data carries one', async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: ADMINS.map((a) => ({ ...a, phone: '012-000 0000' })) })
+    await openAdmins()
+    expect(document.querySelector('[data-testid^="team-phone-"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('012-000 0000')
+  })
+
   it('⚠ does NOT list reviewers on it — the two tabs are the owner\'s two categories', async () => {
     // If a reviewer leaked in, the tab would be the whole staff list under a narrower name, and
     // this page would be showing the same person twice — the fault the sprint exists to remove.
