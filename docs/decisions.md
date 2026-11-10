@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-10 — No phone on Team → Admins; the organisation admin's name opens their page where the API serves it; no email in the person header (owner O9-O11, team-membership small change)
+
+Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md`, sprint item 1. **Supersedes in part** the 2026-10-31
+"Every person's own card; the PHONE …" entry (O9) and adds to the 2026-11-09 T3 "One person page" entry (O10, O11).
+
+| | Ruling |
+|---|---|
+| O9 | A phone number never shows on the Team page's **Admins** table. It still shows on the person's own page (under "Show my phone to my team"). The Reviewers table is left as it is, and so are the platform's staff screens (`admin/organisations`, `admin/partners`), which share `StaffTable`: the phone is gated by the `team` prop, not removed from the component. The API is unchanged (`team_cards` still serves a shared phone). |
+| O10 | The organisation admin's name on the Admins table opens their person page, **only where the API serves that page**: `manageable === true` on the row (it fails closed when the field is missing). A super gets the link. An organisation admin does NOT, for their own row or a fellow org admin's: `admin/admins/<id>/permissions/` is fenced by `_staff_target_manageable`, which answers 404 on an org_admin target for an org_admin caller. Opening that needs the GET's read fence split from the PATCH's manage fence: an auth/PII change (the GET also serves permission history and the `person` profile), so a sprint, not this lane. |
+| O11 | The person page header drops the email under the name; the email stays in the Profile tab's About. A person with no name is still headed by their email. |
+| — | The InfoTip bubble is drawn in a portal on `document.body`, `position: fixed`, so a table frame no longer clips it (the greyed Delete's reason on Team → Reviewers). It keeps the 8 px screen clamp and the caret on the `i`, follows its trigger on scroll and resize, and closes on a tap outside both the trigger and the bubble, or Escape. |
+
+**Revisit if:** the owner wants an organisation admin to open their own or a fellow org admin's page (the fence split above, also T3's "Revisit if"); or the Reviewers table should lose its phone too.
+
 ## 2026-11-09 — A case is given only to someone in the Reviewers table who covers its gift; R1 is retired for assigning (Sprint T1, owner D7)
 
 Roadmap `docs/plans/2026-11-08-activity-box-roadmap.md` (T1, D7, on the activity-box branch); brief
@@ -2196,6 +2210,10 @@ changed); `apps/scholarship/tests/test_same_name_schools.py` (the helper, the of
 server set equal to the web lists).
 
 ## Every person's own card; the PHONE (not the address) may now reach the Team page and the inviting organisation — 2026-10-31 (owner rulings, common profile S2)
+
+> **Superseded in part, 2026-11-10 (owner O9):** the phone no longer shows on the Team page's Admins table; it
+> still shows on the person's own page and on the Reviewers table, under the same "Show my phone to my team"
+> rule. See the 2026-11-10 O9-O11 entry.
 
 **Context:** S1 gave every role one Profile page; the owner's card list (Podio's pattern) adds a photo, a
 job title, an About and a phone for everyone. Until now a reviewer's phone and address were "exposed by no

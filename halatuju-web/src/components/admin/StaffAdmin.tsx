@@ -60,7 +60,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, viewerSuper = false }: {
+                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -85,6 +85,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
    *  endpoint accepts it (`remove`). T3 (owner): no permission column — permissions are set only on the
    *  person's own page, Permissions tab (the name opens it). */
   team?: { onRemove: (a: AdminItem) => void }
+  /** Draw each person's phone. Off unless a screen asks (fail closed): only the platform's staff screens do. */
+  showPhone?: boolean
 }) {
   const { t } = useT()
   // Team (owner 2026-11-08): read like Reviewers and Mentors — the email under the name, a Last seen
@@ -162,6 +164,13 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
     )
   }
 
+  /** O9 (owner, 2026-11-10): a phone number never shows on Team -> Admins; it shows on the person's own
+   *  page (still only when they switched "Show my phone to my team" on). The Reviewers table draws its
+   *  own rows and keeps its phone line; the platform's staff screens ask for theirs (`showPhone`); the default is no phone. */
+  const phoneOf = (a: AdminItem) => showPhone && a.phone
+    ? <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>
+    : null
+
   /** The name, as a link to the person's page when the page offers one for this row; otherwise
    *  exactly what the row drew before (`plain`). */
   const nameOf = (a: AdminItem, link: string, plain: React.ReactNode) => {
@@ -189,7 +198,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                 {nameOf(a, 'block text-sm font-semibold',
                   <span className="block text-sm font-semibold text-ground-900">{a.name}</span>)}
                 <span className="block truncate text-[11px] text-ground-500">{a.email}</span>
-                {a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}
+                {phoneOf(a)}
                 {team && <span className="block text-[11px] text-ground-500">{t('admin.reviewers.colLastSeen')}: {lastSeen(a)}</span>}
                 </div>
                 {showOrg && (
@@ -245,7 +254,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               <td className="px-4 py-3">
                 <span className="flex items-start gap-2">
                   <StaffAvatar name={a.name} photoUrl={a.photo_url} size={28} />
-                  <span className="min-w-0">{nameOf(a, 'font-medium', a.name)}{team && <span className="block text-xs text-ground-500" data-testid={`team-email-${a.id}`}>{a.email}</span>}{a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}</span>
+                  <span className="min-w-0">{nameOf(a, 'font-medium', a.name)}{team && <span className="block text-xs text-ground-500" data-testid={`team-email-${a.id}`}>{a.email}</span>}{phoneOf(a)}</span>
                 </span>
               </td>
               {!team && <td className="px-4 py-3 text-ground-500">{a.email}</td>}

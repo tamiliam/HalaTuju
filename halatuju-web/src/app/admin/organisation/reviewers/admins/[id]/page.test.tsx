@@ -70,15 +70,39 @@ const loaded = async (over: Partial<api.StaffPermissionsView> = {}, person: Part
   await waitFor(() => expect(screen.getByText('Arun Pillai')).toBeTruthy())
 }
 
-it('draws the header: name, email, the table chip, status, joined date — and no role word (D9)', async () => {
+it('draws the header: name, the table chip, status, joined date — no email (O11) and no role word (D9)', async () => {
   await loaded()
   expect(screen.queryByText('admin.role.admin')).toBeNull()
   expect(screen.getByTestId('person-tables').textContent).toBe('admin.team.chip.admins')
   expect(screen.getByText('admin.reviewers.status.active')).toBeTruthy()
   expect(screen.getByText(`admin.reviewers.detail.joined(date=${formatDate(ARUN.created_at)})`))
     .toBeTruthy()
-  expect(screen.getByTestId('person-email').textContent).toBe('arun@example.org')
+  // O11 (owner, 2026-11-10): the header drops the email under the name; it stays in About.
+  expect(screen.queryByTestId('person-email')).toBeNull()
+  expect(screen.getByTestId('person-header').textContent).not.toContain('arun@example.org')
+  expect(screen.getByTestId('person-field-email').textContent).toContain('arun@example.org')
   expect(screen.queryByTestId('person-invited')).toBeNull()
+})
+
+it('O11: a person with no name is headed by their email, the one place it still shows up top', async () => {
+  mockApi.getStaffPermissions.mockResolvedValue({ ...ARUN, name: '', person: { ...ARUN.person!, name: '' } })
+  render(<AdminPersonPage />)
+  expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('arun@example.org')
+})
+
+it('O10: a super opens the organisation admin\'s page — no Revoke, no Remove, no dead Delete', async () => {
+  viewerRole = { role: 'reviewer', is_super_admin: true }
+  // The sole organisation admin, as the server serves them to a super (`delete_fields`).
+  await loaded({ role: 'org_admin', editable: false, revocable: false, delete_never: true, deletable: false,
+    work: { payment_runs: 1 } }, { lead: true })
+  const acts = within(screen.getByTestId('person-actions'))
+  expect(acts.queryByText('admin.revoke')).toBeNull()
+  expect(acts.queryByText('admin.delete')).toBeNull()
+  expect(screen.queryByTestId('remove-from-admins')).toBeNull()
+  expect(screen.getByTestId('person-tables').textContent).toContain('admin.team.chip.lead')
+  fireEvent.click(screen.getByText('admin.person.tabPermissions'))
+  expect(screen.getByTestId('perm-editor').textContent).toBe('14')
+  window.history.replaceState(null, '', window.location.pathname)   // the tab writes #permissions
 })
 
 it('says Invited when no sign-in is recorded, and Revoked over everything', async () => {

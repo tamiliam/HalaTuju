@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 type Bubble = typeof import(/* webpackChunkName: 'mi' */ './InfoTipBubble').default
 
@@ -40,7 +40,8 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
     return () => { live = false }
   }, [open, Bubble])
 
-  const close = useCallback(() => setPinned(false), [])
+  // Not memoised here (eager bytes); the bubble holds the latest one in a ref. Also drops a hover.
+  const close = () => { setPinned(false); setHovered(false) }
   const onMouse = (on: boolean) => (e: PointerEvent) => { if (e.pointerType === 'mouse') setHovered(on) }
 
   return (

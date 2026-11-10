@@ -362,6 +362,13 @@ describe('the Admins tab (2026-09-09)', () => {
     expect(screen.getAllByText('Shanti Subramaniam').length).toBeGreaterThan(0)
   })
 
+  it('shows no phone on the Admins tab even when the admin data carries one', async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: ADMINS.map((a) => ({ ...a, phone: '012-000 0000' })) })
+    await openAdmins()
+    expect(document.querySelector('[data-testid^="team-phone-"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('012-000 0000')
+  })
+
   it('⚠ does NOT list reviewers on it — the two tabs are the owner\'s two categories', async () => {
     // If a reviewer leaked in, the tab would be the whole staff list under a narrower name, and
     // this page would be showing the same person twice — the fault the sprint exists to remove.
@@ -421,10 +428,44 @@ describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', 
     expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/reviewers/admins/14')
   })
 
-  it('⚠ leaves an organisation admin and a revoked person as plain text', async () => {
+  it('⚠ leaves a revoked person as plain text', async () => {
     await openAdmins()
-    expect(hrefOf('Dina Ismail')).toBeNull()                 // org_admin: a fixed lead tier
     expect(hrefOf('Shanti Subramaniam')).toBeNull()          // revoked finance
+  })
+
+  // O10 (owner, 2026-11-10): the organisation admin's name opens their page, as every other admin's
+  // does — where the page's own GET would answer (`manageable`, the `_staff_target_manageable` fence).
+  const LEAD = { id: 21, name: 'Lead Person', email: 'lead@example.org', role: 'org_admin', is_active: true,
+    is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z' }
+  const openWithLead = async (lead: Record<string, unknown>) => {
+    mockApi.getAdmins.mockResolvedValue({ admins: [...WITH_ADMIN, lead] as unknown as api.AdminItem[] })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Lead Person').length).toBeGreaterThan(0))
+  }
+
+  it('O10: links the organisation admin for a super, whom the server lets manage them', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await openWithLead({ ...LEAD, manageable: true })
+    expect(hrefOf('Lead Person')).toBe('/admin/organisation/reviewers/admins/21')
+  })
+
+  it('O10: an organisation admin viewing a fellow (or themselves) gets plain text, not a link to a 404', async () => {
+    await openWithLead({ ...LEAD, manageable: false })
+    expect(hrefOf('Lead Person')).toBeNull()
+    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/reviewers/admins/14')   // the rest unchanged
+  })
+
+  it('O10: an organisation admin row without the server\'s `manageable` links nobody (fails closed)', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await openWithLead(LEAD)
+    expect(hrefOf('Lead Person')).toBeNull()
+  })
+
+  it('O10: a revoked organisation admin stays plain text, even for a super', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await openWithLead({ ...LEAD, is_active: false, manageable: true })
+    expect(hrefOf('Lead Person')).toBeNull()
   })
 
   it('⚠ links nobody for a viewer who may not manage (finance)', async () => {
