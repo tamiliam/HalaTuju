@@ -59,7 +59,7 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
   2. `apps/scholarship/views.py` and `apps/scholarship/vision.py` become packages (G8); `views_admin/` is unchanged.
      Patch targets stay valid through the re-exports.
   3. `officerCockpit.ts` and `admin/scholarship/[id]/view.tsx` are split (G8).
-  4. TD numbers start at TD-600.
+  4. TD numbers start at TD-603 (S1 took TD-597/598; G9 holds TD-600-602).
   5. Bookkeeping conflicts are expected in `CHANGELOG.md`, `docs/technical-debt.md`, `.claude/ARCHITECTURE_MAP.md` and
      both `code-standards.json` files. Keep both sides, take the lower budget and the later `last_tightened_on`.
 
