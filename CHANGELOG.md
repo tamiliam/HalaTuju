@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: scholarship reaches the exam_questions names through a courses public facade, and a guard against new private cross-app imports (audit A3.12 part 1, 2026-11-10)
+
+Branch a312 (not pushed, not deployed; no migration, behaviour kept).
+- `apps/courses/public.py` (new): the courses app's door for other apps. Part 1 re-exports only the 17 `exam_questions` names scholarship uses (same objects as the home module) plus `register_stpm_document_witness`. 39 scholarship files (the brief's 40 less `test_exam_questions.py`, which tests `exam_questions` itself and keeps the real module) import through it; nothing else in them changed.
+- Patch trap: a from-import binds early, so a patch on `exam_questions.X` would miss. The one such patch (`test_merit_100`, `merit_100`) now patches `public.merit_100`, and `_application_merit_score` reads it through the module at call time. `test_third_route_s4` still patches `STPM_DOCUMENT_WITNESS` on the real module, because the witness is set and read there.
+- test: `test_cross_app_private_imports.py` fails on a new `from <other app> import _x` (ast scan, relative imports resolved, all three apps). Allowlist of 18 exact triples (11 scholarship to courses; 7 courses to scholarship, all in courses tests, found by the scan). Floor: every allowlisted import must be found. Self-test with synthetic violations. `test_courses_public_facade.py` pins identity and both patch directions.
+- Reading: `xapp` 98 before and after (scholarship to courses 69, unchanged). The metric counts distinct (module, name) edges, so re-routing the same names through one module moves no count. It falls only when part 2 shrinks the set of names. No budget matched, none lowered.
+- TD-414 is PARTLY met (scholarship to `exam_questions` only; reports, `stpm_pngk`, `stpm_engine` and a test that the facade is the only door remain). Left open.
+
 ### refactor: split the scholarship serializers and the courses models into packages (A3.7, 2026-11-10)
 
 Branch a37 (not pushed, not deployed; no migration, behaviour kept).
