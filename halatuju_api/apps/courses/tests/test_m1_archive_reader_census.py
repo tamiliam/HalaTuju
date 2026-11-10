@@ -75,7 +75,6 @@ CENSUS = {
     S + 'invitations.py::purge_expired': (1, 'SHAPE', 'housekeeping by age'),
     S + 'management/commands/backfill_invitations.py::Command.handle': (3, 'FILTERED', 'staff not archived'),
     S + 'management/commands/bursary_e2e.py::Command._walk': (1, 'OWN_ROW', 'a seed it creates'),
-    S + 'management/commands/repair_interview_credit.py::intended_interviewer': (1, 'KEEPS', 'past credit'),
     S + 'management/commands/send_review_nudges.py::Command.handle.escalation_recipients':
         (1, 'ACTIVE', 'active org admins'),
     S + 'mentor_archive.py::archive': (1, 'ARCHIVE', 'the mentor archive itself'),
