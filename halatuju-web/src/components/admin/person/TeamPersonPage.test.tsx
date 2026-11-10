@@ -296,19 +296,27 @@ describe('T3 review: a staff member who mentors, on the mentor route', () => {
     expect(await screen.findByTestId('permission-editor')).toBeTruthy()
   })
 
-  it('Revoke says their scholars\' mentoring ends and Restore will not bring it back', async () => {
+  it('Revoke warns it is refused while they mentor scholars (owner O18)', async () => {
     await drawAdminMentor(2)
     fireEvent.click(within(screen.getByTestId('person-action-row')).getByText('admin.revoke'))
     const asked = (window.confirm as jest.Mock).mock.calls[0][0] as string
     expect(asked).toContain('admin.reviewers.revokeConfirm')
-    expect(asked).toContain('admin.person.revokeEndsMentoring {"n":"2"}')
+    expect(asked).toContain('admin.person.revokeWhileMentoring {"n":"2"}')
     await waitFor(() => expect(mA.revokeAdmin).toHaveBeenCalledWith(14, 'revoke', { token: 'tok' }))
+  })
+
+  it('a has_scholars refusal of Revoke shows the translated sentence with the API count (O18)', async () => {
+    await drawAdminMentor(2)
+    mA.revokeAdmin.mockRejectedValueOnce(Object.assign(new Error('Aminah still mentors 3 scholars.'),
+      { status: 409, code: 'has_scholars', body: { code: 'has_scholars', scholars_now: 3 } }))
+    fireEvent.click(within(screen.getByTestId('person-action-row')).getByText('admin.revoke'))
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.person.revokeHasScholars {"n":"3"}')
   })
 
   it('with no scholars now, Revoke keeps the plain confirm', async () => {
     await drawAdminMentor(0)
     fireEvent.click(within(screen.getByTestId('person-action-row')).getByText('admin.revoke'))
-    expect((window.confirm as jest.Mock).mock.calls[0][0]).not.toContain('admin.person.revokeEndsMentoring')
+    expect((window.confirm as jest.Mock).mock.calls[0][0]).not.toContain('admin.person.revokeWhileMentoring')
   })
 
   it('Remove from Mentors asks with the table\'s words, then sends `stop` and reads the page again', async () => {

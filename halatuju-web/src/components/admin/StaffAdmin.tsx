@@ -15,6 +15,7 @@ import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { scholarsRefusal } from '@/lib/staffRefusals'
 import { AlsoIn, RemoveControl } from '@/components/admin/TeamTables'
 import StaffActions from '@/components/admin/StaffActions'
 
@@ -321,9 +322,10 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
   const onError = useCallback((err: unknown) => {
     const code = (err as { code?: string })?.code
     // `already_on_team` (#39) is a pointer to People, not a failure: shown as a warning.
+    // O18 (M1a review): Revoke is refused `has_scholars` while they mentor anyone — said in the reader's language.
     setMessage({ type: code === 'already_on_team' ? 'warning' : 'error', text: code === 'last_org_admin'
       ? t('admin.administration.lastOrgAdmin')
-      : err instanceof Error ? err.message : t('admin.actionFailed') })
+      : scholarsRefusal(err, t) ?? (err instanceof Error ? err.message : t('admin.actionFailed')) })
   }, [t])
 
   const invite = useCallback(async (data: Parameters<typeof inviteAdmin>[0]) => {

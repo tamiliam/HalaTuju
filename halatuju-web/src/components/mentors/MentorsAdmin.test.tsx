@@ -20,7 +20,7 @@ import { useState } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import TeamMentorsScreen, {
-  MentorActions, MentorFigures, MentorGifts, MentorWork, actionOf, languagesLine, listed, mentorHref,
+  MentorActions, MentorFigures, MentorGifts, MentorWork, actionOf, languagesLine, listed, mentorHref, refusalText,
 } from './MentorsAdmin'
 import { AlsoIn } from '@/components/admin/TeamTables'
 
@@ -44,7 +44,9 @@ const row = (over: Partial<api.MentorRow>): api.MentorRow => ({
   staff_role: null, tables: ['mentors'], lead: false, meetings_90: 9, last_meeting: '2026-10-28', concerns_open: 1,
   ...over,
 })
-const ACTIVE = row({})
+// M1a review fix 7: the API no longer sends a mentor's phone (O16), but an older api might: the fixture keeps
+// one (outside the type) so "no phone drawn" below is a real test.
+const ACTIVE = row({ ...({ phone: '+60 12-555 0101' } as unknown as Partial<api.MentorRow>) })
 const INVITED = row({ id: 2, name: 'Ms Priya Devi', status: 'invited', signed_in: false, last_seen_at: null })
 const INACTIVE = row({ id: 3, name: 'Encik Faizal', status: 'inactive', deactivated_at: '2026-10-20T00:00:00Z' })
 // A staff mentor who has not signed in yet (their sign-in is People's): listed all the same.
@@ -97,6 +99,7 @@ describe('Team → Mentors', () => {
     expect(within(r).getByText('kavitha@example.org')).toBeTruthy()
     expect(within(r).queryByText('Accounting, finance')).toBeNull()
     expect(document.querySelector('[data-testid^="team-phone-"], [data-testid^="mentor-phone-"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('12-555 0101')
     expect(screen.getByTestId('mentor-scholars-1').textContent).toBe('4')
     expect(screen.getByTestId('mentor-meetings-1').textContent).toBe('9')
     expect(screen.getByTestId('mentor-concerns-1').textContent).toBe('1')
@@ -154,6 +157,27 @@ describe('Team → Mentors', () => {
     render(<TeamMentors />)
     fireEvent.click(await screen.findByTestId('mentor-action-3'))
     expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.error.active')
+  })
+
+  it('M1a review: Remove from Mentors refused has_scholars names the API count, in the reader\'s words', async () => {
+    mockApi.mentorAction.mockRejectedValue(Object.assign(new Error('Suresh still mentors 2 scholars.'),
+      { status: 409, code: 'has_scholars', body: { code: 'has_scholars', scholars_now: 2 } }))
+    render(<TeamMentors />)
+    fireEvent.click(await screen.findByTestId('mentor-action-5'))
+    fireEvent.click(within(await screen.findByTestId('mentor-remove')).getByTestId('mentor-remove-confirm'))
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.mentors.error.has_scholars {"n":"2"}')
+  })
+
+  it('M1a review: each refusal code maps to its own message; an unknown one to the generic line', () => {
+    const t = (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k)
+    const err = (code: string, body?: Record<string, unknown>) => Object.assign(new Error('server text'), { code, body })
+    for (const code of ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
+      'not_staff', 'has_work']) {
+      expect(refusalText(err(code), t)).toBe(`admin.mentors.error.${code}`)
+    }
+    expect(refusalText(err('has_scholars', { scholars_now: 1 }), t)).toBe('admin.mentors.error.has_scholars {"n":"1"}')
+    expect(refusalText(err('something_new'), t)).toBe('admin.mentors.error.generic')
+    expect(refusalText(new Error('offline'), t)).toBe('admin.mentors.error.generic')
   })
 
   it('Add Mentor (opened from the tab row) is the 7d staff Sheet, with no email', async () => {

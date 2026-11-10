@@ -18,6 +18,7 @@ export interface AdminRole {
   is_admin: boolean
   is_super_admin: boolean
   role?: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner' | 'mentor'
+    | 'member'   // M1a: "No group" (sign-in kept, permissions NULL); M1b draws it (TD-604)
   admin_id?: number | null
   org_name: string | null
   // The B40 tenant this staff member administers (their access boundary) — NOT the

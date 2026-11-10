@@ -369,6 +369,12 @@ describe('the Admins tab (2026-09-09)', () => {
     expect(document.body.textContent).not.toContain('012-000 0000')
   })
 
+  it('M1a review fix 7: the Admins tab does not ask the API for phones (no `?phones=1`)', async () => {
+    await openAdmins()
+    expect(mockApi.getAdmins).toHaveBeenCalled()
+    for (const call of mockApi.getAdmins.mock.calls) expect(call[1]).toBeFalsy()
+  })
+
   it('⚠ does NOT list reviewers on it — the two tabs are the owner\'s two categories', async () => {
     // If a reviewer leaked in, the tab would be the whole staff list under a narrower name, and
     // this page would be showing the same person twice — the fault the sprint exists to remove.
@@ -524,6 +530,17 @@ describe('what the reviewers table gained (2026-09-09)', () => {
     confirm.mockRestore()
   })
 
+  it('O18: a Revoke refused has_scholars (they still mentor) reads in the reader\'s words', async () => {
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.revokeAdmin.mockRejectedValue(Object.assign(new Error('Server sentence in English.'),
+      { status: 409, code: 'has_scholars', body: { code: 'has_scholars', scholars_now: 2 } }))
+    await loaded()
+    fireEvent.click(ui().getAllByText('admin.revoke')[0])
+    expect(await screen.findByText('admin.person.revokeHasScholars')).toBeTruthy()
+    expect(screen.queryByText('Server sentence in English.')).toBeNull()
+    confirm.mockRestore()
+  })
+
   it('⚠ shows finance no Revoke at all', async () => {
     viewerRole = { role: 'finance' }
     await loaded()
@@ -581,6 +598,16 @@ describe('the staff lifecycle (2026-10-09)', () => {
     fireEvent.click(adminsTable().getByText('admin.revoke'))
     expect(confirm).toHaveBeenCalledWith('admin.reviewers.revokeConfirm')
     expect(mockApi.revokeAdmin).not.toHaveBeenCalled()
+  })
+
+  it('O18: a Revoke on the Admins tab refused has_scholars reads in the reader\'s words', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.revokeAdmin.mockRejectedValue(Object.assign(new Error('Server sentence in English.'),
+      { status: 409, code: 'has_scholars', body: { code: 'has_scholars', scholars_now: 2 } }))
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.revoke'))
+    expect(await screen.findByText('admin.person.revokeHasScholars')).toBeTruthy()
+    expect(screen.queryByText('Server sentence in English.')).toBeNull()
   })
 
   it('⚠ T2: offers NO Change role on either table — Finance and QC are no longer labels', async () => {

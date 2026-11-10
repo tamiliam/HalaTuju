@@ -5635,7 +5635,8 @@
       "org_admin": "Organisation admin",
       "finance": "Finance admin",
       "source_partner": "Source",
-      "mentor": "Mentor"
+      "mentor": "Mentor",
+      "member": "Team member"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",
@@ -8476,7 +8477,8 @@
         "none": "A mentor holds no permissions to change.",
         "more": "To give {name} more, add them to another Team table."
       },
-      "revokeEndsMentoring": "Their mentoring of {n} scholars ends too, and Restore will not bring it back.",
+      "revokeWhileMentoring": "They still mentor scholars ({n} now), so this will be refused until each one has moved to another mentor.",
+      "revokeHasScholars": "They still mentor scholars ({n} now), so their access cannot be revoked. Move each one to another mentor first, then try again. Nothing was changed.",
       "loadFailed": "We could not load this page. Please try again."
     },
     "permHistory": {
@@ -8859,7 +8861,8 @@
         "not_found": "That staff member was not found.",
         "has_work": "They now have work on record, so they cannot be deleted. Revoke them instead.",
         "gift_required": "Choose Every gift or at least one gift.",
-        "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again."
+        "gift_not_found": "That gift is not open in this organisation. Reload the page and choose again.",
+        "has_scholars": "They still mentor scholars ({n} now). Move each one to another mentor first, then try again. Nothing was changed."
       },
       "status": {
         "active": "Active",
@@ -8886,7 +8889,7 @@
       "confirm": {
         "deactivate": "Revoke {name}? They can no longer sign in. You can restore them later.",
         "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later.",
-        "stop": "Remove {name} from Mentors? Their scholars are left without a mentor, and it shows on each file. Their staff sign-in is not touched. Add Mentor brings them back."
+        "stop": "Remove {name} from Mentors? This works only once they mentor no scholars: move each one to another mentor first. Their staff sign-in is not touched. Add Mentor brings them back."
       },
       "done": {
         "resend": "Invitation re-sent to {email}.",
