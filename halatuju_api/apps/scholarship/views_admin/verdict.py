@@ -526,10 +526,12 @@ class AdminAssignReviewerView(_AdminBase):
             if reviewer is None:
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if not self.has_role(admin, 'super') and not may_assign_to(admin, reviewer):
-                # An org_admin assigns only their OWN org's `review` holders (#39 S3; before, the
-                # `reviewer` role) — never a super, a cross-org target, or someone without
-                # `review`. Same shape as an unknown assignee. A super's target is the service's.
+            if (not self.has_role(admin, 'super') and reviewer.pk != app.assigned_to_id
+                    and not may_assign_to(admin, reviewer)):
+                # An org_admin assigns only their OWN org's Reviewers (T1, 2026-11-09; #39 S3 asked
+                # for `review`) — never a super, a cross-org target, or someone outside Reviewers.
+                # Same shape as an unknown assignee. A super's target is the service's. Re-picking
+                # the CURRENT holder is the service's no-op (T1-d), so it is not refused here.
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
         try:

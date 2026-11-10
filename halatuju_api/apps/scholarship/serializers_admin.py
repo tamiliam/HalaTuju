@@ -229,7 +229,7 @@ def _application_merit_score(obj):
     return exam_questions.merit_100(getattr(obj, 'profile', None))
 
 
-class AdminApplicationListSerializer(serializers.ModelSerializer):
+class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
     # Academic data is read live from the canonical profile, not the application.
