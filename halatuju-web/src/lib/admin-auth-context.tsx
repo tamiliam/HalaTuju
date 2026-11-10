@@ -10,6 +10,7 @@ import {
 import { getAdminSession, getAdminSupabase } from '@/lib/admin-supabase'
 import type { Session } from '@supabase/supabase-js'
 import { AdminAuthContext, useAdminAuth, type AdminAuthContextValue, type AdminRole } from '@/lib/adminAuthCore'
+import type { ProfileCompletion } from '@/lib/admin-api/profiles'
 
 // The context and its hook live in the leaf `adminAuthCore` (no Supabase client); re-exported so the
 // sandbox harness and every importer are unchanged.
@@ -22,6 +23,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AdminRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  // Staff nudges: the profile completion rides on the same `admin/me/` read as the photo.
+  const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null)
   const photoFor = useRef<number | null>(null)
 
   // The header photo: ONE `admin/me/` read per signed-in person per session (the provider lives in
@@ -31,14 +34,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Review fix L6: signed out → no photo; a DIFFERENT person signed in → the last person's photo is
   // dropped at once, and a late answer for somebody who is no longer signed in is ignored.
   useEffect(() => {
-    if (adminId == null) { photoFor.current = null; setPhotoUrl(null); return }
+    if (adminId == null) { photoFor.current = null; setPhotoUrl(null); setProfileCompletion(null); return }
     if (!accessToken || photoFor.current === adminId) return
     photoFor.current = adminId
     setPhotoUrl(null)
+    setProfileCompletion(null)
     const asked = adminId
     fetch(`${API_BASE}/api/v1/admin/me/`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then((res) => (res.ok ? res.json() : null))
-      .then((me) => { if (photoFor.current === asked) setPhotoUrl(me?.photo_url ?? null) })
+      .then((me) => {
+        if (photoFor.current !== asked) return
+        setPhotoUrl(me?.photo_url ?? null)
+        setProfileCompletion(me?.completion ?? null)
+      })
       .catch(() => {})
   }, [adminId, accessToken])
 
@@ -103,6 +111,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     refreshRole,
     photoUrl,
     setPhotoUrl,
+    profileCompletion,
+    setProfileCompletion,
   }
 
   return (

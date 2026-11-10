@@ -81,7 +81,8 @@ class TestEveryEmailStamp(TestCase):
         cls.person = make_admin('admin', owning_org=cls.org, email='Stamp.Person@example.org')
 
     def test_every_listed_stamp_is_a_real_field(self):
-        for key, label, model_name, fields in staff_footprint.EMAIL_STAMPS:
+        for key, label, model_name, fields in (staff_footprint.EMAIL_STAMPS
+                                               + staff_footprint.CORE_EMAIL_STAMPS):
             model = apps.get_model(label, model_name)
             for field in fields:
                 with self.subTest(key=key, field=field):
@@ -125,7 +126,14 @@ class TestEveryEmailStamp(TestCase):
                                       resolved_by='stamp.person@example.org')
         self.assertEqual(staff_footprint.footprint(self.person).get('resolution_items'), 1)
 
-    def test_all_the_stamps_cost_one_query(self):
-        # The People list calls `footprint` for every row: the stamps must not add a query each.
+    def test_the_whole_footprint_costs_one_query(self):
+        # Sprint T2: the stamps AND the foreign-key traces are one query for one person ...
         with self.assertNumQueries(1):
-            staff_footprint._stamp_counts(self.person, 'stamp.person@example.org')
+            staff_footprint.footprint(self.person)
+
+    def test_many_people_cost_one_query(self):
+        # ... and for a whole table (the Admins and Mentors lists read every row's at once).
+        others = [make_admin('reviewer', owning_org=self.org) for _ in range(3)]
+        with self.assertNumQueries(1):
+            work = staff_footprint.footprints([self.person, *others])
+        self.assertEqual(work, {p.pk: {} for p in [self.person, *others]})

@@ -1,0 +1,317 @@
+{
+ "_about": "Audit sprint A3.6 review follow-up (test_a36_review_goldens.py), taken on the code BEFORE the split (5c37b085f). Never edit a reading to make the test pass: a changed reading is a changed rule.",
+ "eligibility": {
+  "agg_ceiling_default_100": {
+   "audit": [
+    "chk_adv_subj_group ok"
+   ],
+   "ok": true
+  },
+  "agg_ceiling_equal": {
+   "audit": [
+    "chk_adv_subj_group ok"
+   ],
+   "ok": true
+  },
+  "agg_ceiling_json_string": {
+   "audit": [
+    "chk_adv_subj_group ok"
+   ],
+   "ok": true
+  },
+  "agg_ceiling_one_under": {
+   "audit": [
+    "chk_adv_subj_group FAIL Diversity/Aggregate Failed (Max Units: 10)"
+   ],
+   "ok": false
+  },
+  "agg_ceiling_without_diversity_flag": {
+   "audit": [
+    "chk_adv_subj_group ok"
+   ],
+   "ok": true
+  },
+  "islam_absent": {
+   "audit": [
+    "chk_credit_islam FAIL fail_credit_islam"
+   ],
+   "ok": false
+  },
+  "islam_credit": {
+   "audit": [
+    "chk_credit_islam ok"
+   ],
+   "ok": true
+  },
+  "islam_pass_only": {
+   "audit": [
+    "chk_credit_islam FAIL fail_credit_islam"
+   ],
+   "ok": false
+  },
+  "math_b_addmath_does_not_stand_in": {
+   "audit": [
+    "chk_credit_math_b FAIL fail_credit_math_b"
+   ],
+   "ok": false
+  },
+  "math_b_credit_below_b": {
+   "audit": [
+    "chk_credit_math_b FAIL fail_credit_math_b"
+   ],
+   "ok": false
+  },
+  "math_b_pass": {
+   "audit": [
+    "chk_credit_math_b ok"
+   ],
+   "ok": true
+  },
+  "math_sci_tech_legacy_tech_credit": {
+   "audit": [
+    "chk_credit_math_sci_tech ok"
+   ],
+   "ok": true
+  },
+  "math_sci_tech_legacy_tech_pass": {
+   "audit": [
+    "chk_credit_math_sci_tech FAIL fail_credit_math_sci_tech"
+   ],
+   "ok": false
+  },
+  "min_credit_exact": {
+   "audit": [
+    "chk_min_credit ok"
+   ],
+   "ok": true
+  },
+  "min_credit_one_short": {
+   "audit": [
+    "chk_min_credit FAIL fail_min_credit"
+   ],
+   "ok": false
+  },
+  "min_pass_exact": {
+   "audit": [
+    "chk_min_pass ok"
+   ],
+   "ok": true
+  },
+  "min_pass_one_short": {
+   "audit": [
+    "chk_min_pass FAIL fail_min_pass"
+   ],
+   "ok": false
+  },
+  "non_pismp_04_no_gate": {
+   "audit": [
+    "chk_pass_bm ok"
+   ],
+   "ok": true
+  },
+  "order_tvet_then_json_fails": {
+   "audit": [
+    "chk_pass_bm ok",
+    "chk_credit_stv FAIL fail_credit_stv",
+    "chk_credit_sf FAIL fail_credit_sf",
+    "chk_adv_subj_group FAIL Subject Count Fail: Need 2 from ['bm', 'eng'] with grade C",
+    "chk_complex_req FAIL Complex Req Fail: Need 1 from [phy, chem] with grade A (Found 0)",
+    "chk_min_credit FAIL fail_min_credit",
+    "chk_min_pass FAIL fail_min_pass"
+   ],
+   "ok": false
+  },
+  "order_tvet_then_json_passes": {
+   "audit": [
+    "chk_pass_bm ok",
+    "chk_credit_stv ok",
+    "chk_credit_sf ok",
+    "chk_adv_subj_group ok",
+    "chk_complex_req ok",
+    "chk_min_credit ok",
+    "chk_min_pass ok"
+   ],
+   "ok": true
+  },
+  "pass_sci_absent": {
+   "audit": [
+    "chk_pass_sci FAIL fail_pass_sci"
+   ],
+   "ok": false
+  },
+  "pass_sci_fail_grade": {
+   "audit": [
+    "chk_pass_sci FAIL fail_pass_sci"
+   ],
+   "ok": false
+  },
+  "pass_sci_pass": {
+   "audit": [
+    "chk_pass_sci ok"
+   ],
+   "ok": true
+  },
+  "pass_sci_tech_legacy_tech_pass": {
+   "audit": [
+    "chk_pass_sci_tech ok"
+   ],
+   "ok": true
+  },
+  "pass_stv_legacy_tech_pass": {
+   "audit": [
+    "chk_pass_stv ok"
+   ],
+   "ok": true
+  },
+  "pass_stv_legacy_voc_pass": {
+   "audit": [
+    "chk_pass_stv ok"
+   ],
+   "ok": true
+  },
+  "pismp_03_credit": {
+   "audit": [
+    "chk_pismp_lang_bc ok",
+    "chk_pass_bm ok"
+   ],
+   "ok": true
+  },
+  "pismp_03_pass_only": {
+   "audit": [
+    "chk_pismp_lang_bc FAIL fail_pismp_lang_bc"
+   ],
+   "ok": false
+  },
+  "pismp_04_absent": {
+   "audit": [
+    "chk_pismp_lang_bt FAIL fail_pismp_lang_bt"
+   ],
+   "ok": false
+  },
+  "pismp_04_credit": {
+   "audit": [
+    "chk_pismp_lang_bt ok",
+    "chk_pass_bm ok"
+   ],
+   "ok": true
+  },
+  "pismp_04_pass_only": {
+   "audit": [
+    "chk_pismp_lang_bt FAIL fail_pismp_lang_bt"
+   ],
+   "ok": false
+  },
+  "pismp_05_no_gate": {
+   "audit": [
+    "chk_pass_bm ok"
+   ],
+   "ok": true
+  },
+  "pismp_id_too_short": {
+   "audit": [
+    "chk_pass_bm ok"
+   ],
+   "ok": true
+  },
+  "sci_group_comp_sci_only_credit": {
+   "audit": [
+    "chk_credit_sci_group ok"
+   ],
+   "ok": true
+  },
+  "sci_group_comp_sci_only_pass": {
+   "audit": [
+    "chk_credit_sci_group FAIL fail_credit_sci_group"
+   ],
+   "ok": false
+  },
+  "sci_group_none": {
+   "audit": [
+    "chk_credit_sci_group FAIL fail_credit_sci_group"
+   ],
+   "ok": false
+  },
+  "sf_addmath_only": {
+   "audit": [
+    "chk_credit_sf FAIL fail_credit_sf"
+   ],
+   "ok": false
+  },
+  "sf_phy_only_credit": {
+   "audit": [
+    "chk_credit_sf ok"
+   ],
+   "ok": true
+  },
+  "sfmt_addmath_only_credit": {
+   "audit": [
+    "chk_credit_sfmt ok"
+   ],
+   "ok": true
+  },
+  "sfmt_addmath_only_pass": {
+   "audit": [
+    "chk_credit_sfmt FAIL fail_credit_sfmt"
+   ],
+   "ok": false
+  },
+  "stv_legacy_tech_credit": {
+   "audit": [
+    "chk_credit_stv ok"
+   ],
+   "ok": true
+  },
+  "stv_legacy_voc_credit": {
+   "audit": [
+    "chk_credit_stv ok"
+   ],
+   "ok": true
+  },
+  "stv_legacy_voc_pass": {
+   "audit": [
+    "chk_credit_stv FAIL fail_credit_stv"
+   ],
+   "ok": false
+  }
+ },
+ "fit": {
+  "field_blank_key": {
+   "reasons": [],
+   "score": 97
+  },
+  "field_no_match": {
+   "reasons": [],
+   "score": 97
+  },
+  "field_one_match": {
+   "reasons": [
+    "Matches or aligns with your strong interest in it-perisian field."
+   ],
+   "score": 105
+  },
+  "field_two_matches": {
+   "reasons": [
+    "Matches or aligns with your strong interest in multimedia field."
+   ],
+   "score": 105
+  },
+  "field_two_matches_wrapped": {
+   "reasons": [
+    "Matches or aligns with your strong interest in multimedia field."
+   ],
+   "score": 105
+  },
+  "many_reasons": {
+   "reasons": [
+    "Matches or aligns with your hands-on work preference, creative thinking style (Project Based), preference for workshop environments, learning by doing preference, preference for project-based assessment, and design-oriented creative preference."
+   ],
+   "score": 114
+  },
+  "many_reasons_and_field": {
+   "reasons": [
+    "Matches or aligns with your strong interest in multimedia field, hands-on work preference, creative thinking style (Project Based), preference for workshop environments, learning by doing preference, preference for project-based assessment, and design-oriented creative preference."
+   ],
+   "score": 120
+  }
+ }
+}

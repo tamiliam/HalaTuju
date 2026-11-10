@@ -9,9 +9,10 @@ an Add or a Remove may be, what it would do, and writes it.
 Remove writes the person's KEYS (`PartnerAdmin.permissions`) and — only where the preset label would
 otherwise keep them seated — their `role`:
 
-  Add to Admins      keys + `see_all` (the absolute minimum admin key). Role unchanged (a reviewer
-                     given `see_all` keeps role `reviewer`: option B, the organisation READ pages only).
-                     A pure MENTOR login becomes role `admin` holding exactly ['see_all'].
+  Add to Admins      keys + `see_all` and `scholars` (S1 ruling B: the same two keys an invited Admin starts
+                     with). Role unchanged (a reviewer given them keeps role `reviewer`: option B, the
+                     organisation READ pages only). A pure MENTOR login becomes role `admin` holding
+                     exactly ['see_all', 'scholars'].
   Add to Reviewers   keys + `review`. Role unchanged. A pure MENTOR login becomes role `reviewer` (the
                      preset, `review`). An ORGANISATION ADMIN stores ['review'] (`staff_permissions.
                      LEAD_MAY_ADD`) — the lead tier itself never changes.
@@ -53,12 +54,13 @@ REVIEWERS = 'reviewers'
 TABLES = (ADMINS, REVIEWERS)
 
 #: Each table's OWN keys — what its chips show and its editor edits (owner ruling 2).
-ADMIN_TABLE_KEYS = ('see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
-                    'award_withdraw_request', 'award_withdraw_approve')   # A1.13b
+ADMIN_TABLE_KEYS = ('see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check',
+                    'payments_approve', 'award_withdraw_request', 'award_withdraw_approve')   # A1.13b; S1
 REVIEWER_TABLE_KEYS = ('review', 'qc')
 
-#: The key an Add gives.
-ADD_KEY = {ADMINS: 'see_all', REVIEWERS: 'review'}
+#: The keys an Add gives. Admins: BOTH keys, the same as an invited Admin (`staff_tables.INVITE_START`;
+#: S1 owner ruling B, 2026-11-10) — Applications and Scholars.
+ADD_KEYS = {ADMINS: ('see_all', 'scholars'), REVIEWERS: ('review',)}
 
 #: Refusal codes the screen words (`admin.team.refused.<code>`).
 LAST_TABLE = 'last_table'
@@ -156,7 +158,8 @@ def _plan_add(target, table):
             raise Refused('not_eligible', 400,
                           f'{target.name} has not signed in as a mentor yet, or no longer mentors.')
         if table == ADMINS:
-            return {'role': 'admin', 'before': [], 'after': ['see_all'], 'stored': ['see_all']}
+            keys = list(ADD_KEYS[ADMINS])
+            return {'role': 'admin', 'before': [], 'after': keys, 'stored': keys}
         return {'role': 'reviewer', 'before': [], 'after': ['review'], 'stored': None}
     if _in(target, table):
         raise Refused('already_in', 400, f'{target.name} is already in this table.')
@@ -165,15 +168,15 @@ def _plan_add(target, table):
         return {'role': target.role, 'before': before,
                 'after': list(sp._ordered((*before, sp.LEAD_MAY_ADD))),
                 'stored': [sp.LEAD_MAY_ADD], 'lead': True}
-    key = ADD_KEY[table]
-    if key in before:
-        # Only `see_all` can be here: brought by `qc` (T5b IMPLIES), it seats nobody at Admins. Giving
-        # another admin key instead would give MORE than the minimum, so it is refused (T2 deviation).
+    keys = ADD_KEYS[table]
+    if keys[0] in before:
+        # Only `see_all` can be here: brought by `qc` (T5b IMPLIES), it seats nobody at Admins. Refused as
+        # in T2 (a deviation): the Add stays the invite's two keys, and Quality check alone never brings
+        # Scholars (S1 owner ruling, 2026-11-10) — so an Add never seats a QC holder through the back door.
         raise Refused(QC_SEES_ALL, 400,
-                      f'{target.name} already sees every student through Quality check, so the starting '
-                      'admin permission adds nothing. Remove them from Reviewers first, or ask HalaTuju '
-                      'support.')
-    after = sp._ordered((*before, key))      # the preset MATERIALISED, then the key added
+                      f'{target.name} already sees every student through Quality check, so they are not '
+                      'added to Admins. Remove them from Reviewers first, or ask HalaTuju support.')
+    after = sp._ordered((*before, *keys))    # the preset MATERIALISED, then the keys added
     return {'role': target.role, 'before': before, 'after': list(after),
             'stored': _stored_set(target.role, after)}
 
@@ -390,6 +393,22 @@ def candidates(caller, table, organisation_id):
         except Refused:
             continue
         out.append((a, plan_add))
+    return out
+
+
+def addable_tables(caller, target):
+    """Sprint T3 (D8): the staff tables (Admins, Reviewers) ``caller`` could add ``target`` to right now —
+    exactly where `candidates` would offer them (`may_act`, then the Add's own plan). The pure mentor's
+    person page offers the Add path only for these; the Add endpoint still decides."""
+    out = []
+    for table in (ADMINS, REVIEWERS):
+        if not may_act(caller, target, table):
+            continue
+        try:
+            _plan_add_safe(target, table)
+        except Refused:
+            continue
+        out.append(table)
     return out
 
 

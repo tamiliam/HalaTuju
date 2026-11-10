@@ -39,11 +39,7 @@ import copy
 from dataclasses import asdict, dataclass, field
 
 from .document_snapshot import latest_doc, present_doc_types
-from .read_errors import ic_second_opinion_deferred, read_deferred
-from .services import ic_identity_blockers
-from .vision import name_match
-from .genuineness.bands import NOT_CHECKED, canonical_status, stored_status
-from .genuineness.offer_issuers import not_checked_issuer
+from .genuineness.bands import canonical_status, stored_status
 
 
 # ⚠⚠ THE PREDICTOR'S OWN VERSION. BUMP IT WHEN A CHANGE HERE CAN ALTER A FACT'S STATUS, ITS BAND,
@@ -218,66 +214,10 @@ def _usable_relationship_fields(application, doc_type):
 # ── Identity (name + NRIC) ───────────────────────────────────────────────────
 
 def _verdict_identity(application):
-    """Identity is checkable by matching, so the AI may assert 'verified'. It
-    NEVER auto-fails: every mismatch has an innocent cause more likely than
-    fraud (OCR truncation, a typo, a missing connector), so the worst the engine
-    does is 'review' (confirm) or 'gap' (re-upload an unreadable IC)."""
-    evidence, unresolved = [], []
-    ic = _latest_doc(application, 'ic')
-    if ic is None:
-        return _fact('identity', 'gap', evidence, [_item('ic_missing')])
-
-    # Reuse the consent-gate identity logic so the verdict and the consent gate
-    # can never disagree. It returns at most: ic_service_down / ic_unreadable /
-    # ic_nric_mismatch / ic_name_mismatch (a 'partial' name is NOT a blocker).
-    blockers = ic_identity_blockers(application)
-    if 'ic_service_down' in blockers:
-        # The OCR *service* failed (not a bad image) — confirm later, never fail.
-        return _fact('identity', 'review', evidence, [_item('ic_service_down')])
-    if 'ic_unreadable' in blockers:
-        return _fact('identity', 'gap', evidence, [_item('ic_unreadable')])
-
-    profile = application.profile
-    pnric = (getattr(profile, 'nric', '') or '').strip()
-    pname = (getattr(profile, 'name', '') or '').strip()
-
-    # NRIC — the hard identity key.
-    if 'ic_nric_mismatch' in blockers:
-        unresolved.append(_item('nric_mismatch',
-                                ocr_nric=ic.vision_nric, profile_nric=pnric))
-    elif ic.vision_nric and pnric:
-        evidence.append(_item('nric_match', nric=pnric))
-
-    # Name — disjoint tokens raise a flag; a subset (OCR truncation) is RESOLVED
-    # silently because the NRIC already anchors identity.
-    if ic.vision_name and pname:
-        verdict = name_match(ic.vision_name, pname)
-        if verdict == 'match':
-            evidence.append(_item('name_match', name=pname))
-        elif verdict == 'partial':
-            evidence.append(_item('name_resolved_truncation',
-                                  ocr_name=ic.vision_name, profile_name=pname))
-        elif ic_second_opinion_deferred(ic):   # TD-390: half a read is no name mismatch — no ask
-            unresolved.append(_item('ic_service_down'))
-        else:  # 'mismatch'
-            unresolved.append(_item('name_mismatch',
-                                    ocr_name=ic.vision_name, profile_name=pname))
-
-    # NOTE: the IC's registered-address state is deliberately NOT an identity caveat.
-    # A MyKad carries the *least-current* address on file (people relocate; the IC is
-    # not reissued — fresher addresses come from the offer letter / bills / STR) and it
-    # is not an identity key: name + NRIC are. A state divergence therefore stays a
-    # pre-interview flag ("ask which is current" — `_detect_address_state_mismatch` in
-    # anomaly_engine), NOT a verdict downgrade. So identity reads green when name + NRIC
-    # match, consistent with the Documents panel and the student's own identity card.
-
-    # NB the IC genuineness fingerprint is applied AFTER this by the genuineness LADDER
-    # (_apply_genuineness_ladder): the band is rebuilt as max(this base, genuineness_step + red chips),
-    # where the red chips are the Name/NRIC mismatches emitted here (counted by _identity_red_chips) and
-    # the step is the IC fingerprint (suspect −1 / not_ic −2). This function returns the CONTENT base
-    # (verified when clean, review when a value mismatches or a sub-read is pending).
-    return _fact('identity', 'verified' if not unresolved else 'review',
-                 evidence, unresolved)
+    """The identity fact's home is ``verdict_identity`` (moved there whole, audit sprint A3.4,
+    moves only); this seam keeps ``build_verdict`` and every ``verdict_engine`` reader working."""
+    from .verdict_identity import _verdict_identity as identity_fact   # lazy: it imports our helpers
+    return identity_fact(application)
 
 
 # ── Academic (results slip) ──────────────────────────────────────────────────
@@ -449,14 +389,14 @@ def _verdict_income(application):
     Wizard not walked yet → 'review' (`income_earner_undeclared`), unless a present,
     name-matched STR already settles it on its own.
 
-    The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
-    from .income_engine import (father_link, mother_relationship,
-                                guardian_link, chain_verified_earner,
-                                student_name_for_link, salary_income_satisfied)
-    # Lazy: `verdict_income_salary` imports this module's `_fact` / `_item` primitives, so the
-    # edge has to be one-way at import time (the `income_engine` pattern above).
+    The SALARY route delegates to ``_verdict_income_salary`` (multi-earner); the declared STR
+    route's four steps live in ``verdict_income_str`` (audit sprint A3.4, a pure move)."""
+    from .income_engine import student_name_for_link, salary_income_satisfied
+    # Lazy: `verdict_income_salary` and `verdict_income_str` import this module's `_fact` /
+    # `_item` primitives, so the edge has to be one-way at import time (the `income_engine` pattern).
     from .verdict_income_salary import verdict_income_salary
-    evidence, gap, review = list(utility := _utility_context(application)), [], []  # TD-287
+    from .verdict_income_str import str_route_income_fact
+    evidence = list(utility := _utility_context(application))  # TD-287
     present = _present_doc_types(application)
     # IC-aware (#88): prefer the student's verified IC read when the typed name lacks the
     # patronymic connector, so the father link doesn't silently die on a typing habit.
@@ -502,170 +442,14 @@ def _verdict_income(application):
     if str_doc is None and salary_income_satisfied(application):
         return verdict_income_salary(application, student_name, present, True, utility)
 
-    # ── Earner IC (the income docs are issued in their name) ──────────────────
-    # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
-    # salary route (which lists several) — both render "… for {members}".
-    # Code-health S4 #17: select the EARNER'S IC (member-tagged, with the earner-only
-    # legacy-blank fallback) — the member-agnostic latest parent_ic could pick another
-    # member's card after a route switch with several ICs on file, making this verdict
-    # contradict the student checklist (which uses _member_ic_doc) on identical data.
-    from .income_engine import _member_ic_doc
-    ic_doc = _member_ic_doc(application, earner)
-    earner_ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
-    ic_deferred = ic_doc is not None and ic_second_opinion_deferred(ic_doc)   # TD-390
-    if ic_doc is None:
-        gap.append(_item('earner_ic_missing', members=[earner]))
-    elif not earner_ic_name and ic_deferred:
-        review.append(_item('ic_service_down', members=[earner]))
-    elif not earner_ic_name:
-        review.append(_item('earner_ic_unreadable', members=[earner]))
-    else:
-        evidence.append(_item('earner_ic_present', name=earner_ic_name))
-
-    # ── Relationship: prove the earner is the student's family ────────────────
-    # A WRONG-TYPE relationship doc (#27: a non-BC in the birth-certificate slot) is UNUSABLE —
-    # its fields prove nothing, and the student gets a specific re-upload ticket (gap, like a
-    # missing doc) instead of the officer-only generic genuineness caveat.
-    rel = None
-    if earner == 'father':
-        # Patronymic, with a BC fallback for a mononym student (#55) when a BC is uploaded.
-        _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
-        rel = father_link(student_name, earner_ic_name,
-                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''))
-    elif earner == 'mother':
-        if 'birth_certificate' not in present:
-            gap.append(_item('birth_cert_missing'))
-        else:
-            _, bcf, bc_unusable = _usable_relationship_fields(application, 'birth_certificate')
-            if bc_unusable == 'unreadable':
-                gap.append(_item('birth_cert_unreadable'))
-            elif bc_unusable:
-                gap.append(_item('birth_cert_not_genuine'))
-            else:
-                rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
-                                          student_name, earner_ic_name)
-    elif earner == 'guardian':
-        if 'guardianship_letter' not in present:
-            gap.append(_item('guardianship_letter_missing'))
-        else:
-            g, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
-            if g_unusable == 'unreadable':
-                gap.append(_item('guardianship_letter_unreadable'))
-            elif g_unusable:
-                gap.append(_item('guardianship_letter_not_genuine'))
-            else:
-                rel = guardian_link(g, earner_ic_name, student_name)   # TD-089 + review F1
-    # IC-number chain: the BC's parent number matching the income proof's number confirms a
-    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
-    if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
-        rel = 'match'
-    rel = 'pending' if (rel == 'mismatch' and ic_deferred) else rel   # TD-390: half a read, no clash
-    if rel == 'match':
-        evidence.append(_item('relationship_confirmed'))
-    elif rel == 'mismatch':
-        if earner == 'father':
-            review.append(_item('father_patronymic_mismatch', members=[earner]))
-        else:
-            review.append(_item('birth_cert_mismatch'))
-    # 'unknown' (no patronymic — e.g. a Chinese name) / 'pending' → no claim; officer eyeballs.
-
-    # ── Income evidence — the STR document (recipient = the earner, and CURRENT) ──
-    # The STR currency state (docs/scholarship/str-proof-spec.md) carries its own decisive copy via
-    # the `status` param: wrong_type (not an STR at all) / rejected (Ditolak) / stale (prior-year) /
-    # unreadable (cropped) / unconfirmed (approved, no date → confirm currency). Anything that isn't
-    # a CURRENT approved STR keeps the income fact off green — a human looks (and, post Sprint-2, the
-    # salary route is assessed when the STR is wrong_type/rejected).
-    from .income_engine import student_str_check
-    sc = student_str_check(str_doc) if str_doc is not None else None
-    str_verified = False
-    # A wrong_type (not an STR at all) or rejected (Ditolak) STR is definitively NOT a current STR;
-    # the family may still be B40 on their salary/benefit docs, so we fall through to the salary
-    # route below rather than freezing on the failed STR (str-proof-spec.md §6).
-    str_failed = bool(sc and sc['current_status'] in ('wrong_type', 'rejected'))
-    # STR-proof band matrix (str-proof-spec.md): approval Status × cycle Current →
-    #   Lulus + dated-current → Certain (verified) ; Lulus + no date → Probable (review, needs a green)
-    #   Lulus + prior-year (stale) OR approval-unread (unreadable) → Unsure (recommend → amber)
-    #   Ditolak / not-an-STR → Fail, with the salary route as the net beneath it (str_failed).
-    # 'stale'/'unreadable' → Unsure (NOT the blue 'review'): a review tile would read BLUE off the
-    # verified earner-IC/relationship greens, overstating a doc whose cycle is old or whose approval
-    # never read. Same reasoning as the salary unsure/over bands below.
-    # 'unknown' (not read yet / deferred by our outage) bands with them, unticketed (2026-10-24).
-    str_unsure = bool(sc and sc['current_status'] in ('stale', 'future', 'unreadable', 'unknown'))
-    # V5 (#10): a POSITIVE recipient mismatch (the STR is in someone else's name) bands Unsure
-    # (amber) per str-proof-spec.md §8 — never a blue 'review' read off the earner-IC/relationship
-    # greens, which would overstate an STR that provably belongs to a different person.
-    str_mismatch = False
-    if str_doc is None:
-        gap.append(_item('income_proof_missing'))
-    elif sc and sc['current_status'] in ('stale', 'future', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
-        review.append(_item('str_not_current', status=sc['current_status']))
-    elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
-        str_mismatch = True
-        review.append(_item('str_recipient_mismatch', members=[earner]))
-    elif sc and (sc['name_status'] == 'match' or sc['nric_status'] == 'match'):
-        str_verified = True
-        evidence.append(_item('str_verified'))
-    else:
-        # Present but the recipient couldn't be confirmed (earner IC missing/unreadable,
-        # or the STR didn't read) — a human looks.
-        review.append(_item('str_present_unverified'))
-
-    # ── Place the verdict ─────────────────────────────────────────────────────
-    # ⚠ TD-262 item 1b (R4, owner 2026-09-19): an INCOMPLETE STR cluster — a missing earner IC or
-    # birth certificate — used to RETURN here, ahead of BOTH fall-throughs below, so the payslips
-    # on file were never looked at. It now offers the salary reading too and keeps whichever is
-    # stronger; see `_stronger_income_fact`, which can only RAISE and carries these asks onward.
-    # ⚠ AND ONLY WHERE AN STR ACTUALLY EXISTS. With NO STR letter at all, §6 rule 2 above has
-    # ALREADY decided this household — on `salary_income_satisfied`, a deliberately STRICTER gate
-    # that holds §8's red row for a household with nothing to fall through to. Offering a second,
-    # looser reading here would quietly overrule a gate somebody chose on purpose (an unlinked
-    # adult's payslip would lift the card off the floor `test_unrelated_earner_ic_...` pins).
-    if gap:
-        red = _fact('income', 'gap', evidence, gap + review)
-        return (_stronger_income_fact(red, application, student_name, present, utility)
-                if str_doc is not None else red)
-    if str_failed:
-        # §6 evidence-driven fall-through, in the salary module for the usual reason (this file is
-        # on the oversize ledger): a rejected / wrong-type STR is no STR, so band the household on
-        # the salary/benefit documents it did supply. Same one-way edge as the two calls above.
-        from .verdict_income_salary import _failed_str_headroom_fact
-        return _failed_str_headroom_fact(application, earner, evidence, review)
-    # Two states, one answer (they are mutually exclusive — a mismatch is only read off a CURRENT
-    # STR). `str_unsure`: Lulus-but-stale or approval-unread → Unsure (amber), not a blue review
-    # off incidental greens. `str_mismatch`: an approved STR provably in someone ELSE'S name
-    # proves nothing about this household (spec §8), so a human owns the call.
-    # ⚠ TD-262 item 1 (R4): each of these used to RETURN here, so the payslips on file were never
-    # looked at. They now offer the salary reading too and keep whichever is stronger — see
-    # `_stronger_income_fact`, which can only ever RAISE a household.
-    if str_unsure or str_mismatch:
-        return _stronger_income_fact(_fact('income', 'recommend', evidence, review),
-                                     application, student_name, present, utility)
-    if review:
-        return _fact('income', 'review', evidence, review)
-    # Income GREEN only when the whole cluster adds up: a CURRENT STR whose recipient is
-    # the earner + the earner IC present + the relationship CONFIRMED (mother→BC,
-    # father→patronymic, guardian→letter). An unconfirmed relationship → a human places it.
-    if str_verified and rel == 'match':
-        return _fact('income', 'verified', evidence, [])
-    return _fact('income', 'recommend', evidence, [_income_open_item(application)])
+    # ── The declared STR route: earner IC, relationship, the STR document, then the verdict ──
+    # Moved whole to `verdict_income_str` (audit sprint A3.4) — four named steps, same lines, same
+    # order; this function was 210 lines on the long-function ledger.
+    return str_route_income_fact(application, earner, str_doc, student_name, present, evidence,
+                                 utility)
 
 
 # ── Pathway (offer letter) ───────────────────────────────────────────────────
-
-def _no_declared_pathway(application):
-    """True when the student declared NOTHING about a pathway — no chosen/intended pathway type, no
-    pre-U track, and no SPECIFIC chosen programme (a value autofilled FROM the offer, source
-    'offer_letter_auto', does NOT count as a declaration). This is the #127 all-blank case that the
-    'confirm or complete your pathway' flow targets; a type-only or specific declaration is left as
-    the offer settling it (owner 2026-07-15)."""
-    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
-    real_pick = bool(cp.get('course_id')) and cp.get('source') != 'offer_letter_auto'
-    return not (
-        (application.chosen_pathway or '').strip()
-        or (application.intended_pathway or '').strip()
-        or (application.pre_u_track or '').strip()
-        or real_pick)
-
 
 def _verdict_pathway(application):
     """The offer letter settles the FINAL chosen pathway. Identity on the letter
@@ -681,9 +465,11 @@ def _verdict_pathway(application):
     No offer letter → 'gap' (red) AND a submission blocker (`offer_letter_missing`
     in consent_blockers): the programme funds a CONFIRMED place, so without an offer
     there is nothing to fund. (An older design tolerated "declared-only → review";
-    that changed with the 2026-06-07 confidence-scale alignment.)"""
-    from .pathway_engine import student_offer_check
-    evidence, unresolved = [], []
+    that changed with the 2026-06-07 confidence-scale alignment.)
+
+    With an offer on file the reading lives in ``verdict_pathway.offer_pathway_fact`` (moved
+    there whole, audit sprint A3.4). The no-offer branch stays HERE because its ``# SOFT`` line
+    is read out of this file by the web's ``soft-evidence-drift.test.ts``."""
     offer = _latest_doc(application, 'offer_letter')
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
 
@@ -695,145 +481,15 @@ def _verdict_pathway(application):
         decl = [_item('pathway_declared', pathway=chosen)] if chosen else []  # SOFT
         return _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
 
-    chk = student_offer_check(offer)
-    # Identity on the letter: a wrong name OR IC is a RED chip the ladder counts (owner 2026-07-07), not an
-    # early return — one slip → −1, both → −2, stacking with the genuineness step (#12 → Fail). Amber, no
-    # block (decisions.md 2026-07-04: usually a family upload slip-up). The three chips are independent.
-    if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-        unresolved.append(_item('offer_name_mismatch'))
-    # A general NOTICE / wrong document (body read fine — issuer/programme present — but no name or
-    # IC, e.g. a "your offer will be released later" memo) vs a genuinely blurry scan → grey/pending
-    # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
-    elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
-        if read_deferred(offer.vision_fields):   # not read yet / our outage: no claim, no ask (2026-10-24)
-            return _fact('pathway', 'review', evidence, [_item('offer_not_read_yet')])  # TD-396: officer-only
-        if chk['programme'] or chk['institution']:
-            return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])
-        return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
-
-    prog, inst = chk['programme'], chk['institution']
-    if stored_status(offer.vision_fields) == NOT_CHECKED:   # C1: officer-only, see `offer_issuers`
-        unresolved.append(_item('offer_issuer_not_checked', issuer=not_checked_issuer(offer.vision_fields)))
-    confirmed = application.pathway_confirmed_at is not None
-    if confirmed:
-        evidence.append(_item('pathway_confirmed', programme=prog, institution=inst))
-    elif prog or inst:
-        evidence.append(_item('offer_programme', institution=inst, programme=prog))
-
-    # ── The pathway HEARING — ONE band-aware, mutually-exclusive detector (owner 2026-07-18) ──────
-    # A "which pathway?" hearing fires only for a SCORED, non-fake offer — genuine OR suspect
-    # (offer_hearing_ok). A FAKE (not_offer_letter) or UNSCORED offer never gets one: fake is flagged
-    # + submission-blocked elsewhere, and we don't ask about an offer whose genuineness isn't scored.
-    # Then AT MOST ONE of three cases (if/elif → the type switch suppresses the generic confirm):
-    #   Case 2 — the offer is a different pathway FAMILY than declared (STPM→PISMP/Matric, #43):
-    #     ask to confirm the SWITCH. Fires regardless of pathway_confirmed_at (the prior offer-confirm
-    #     wrote chosen_programme but never chosen_pathway); on Yes confirm_pathway adopts the new type
-    #     + drops the stale pre-U stream. A PISMP switch carries an aliran picker default (the letter
-    #     never states SK/SJKT/SJKC), inferred from the student's SPM vernacular subject.
-    #   Case 3 — SAME family but the institution/stream CLASHES (the #117 within-type case): the
-    #     generic "is this where you're going?" confirm. Not re-asked once confirmed (minor drift).
-    #   Case 1 — the student declared NOTHING (#127): resolvable → one-tap confirm; ambiguous (a PISMP
-    #     offer with no aliran) → the profile Aliran/Bidang picker (pathway_undeclared).
-    from . import offer_pathway as _op
-    from .pathway_engine import offer_hearing_ok
-    if offer_hearing_ok(offer):
-        declared_type = (application.chosen_pathway or '').strip().lower()
-        offer_type = _op.detect_pathway_type(prog, inst)
-        profile = getattr(application, 'profile', None)
-
-        # PISMP extras (owner 2026-07-18): the letter states the BIDANG (major) but NOT the aliran.
-        # Carry the bidang; when it pins a UNIQUE catalogue course (a vernacular bidang — Bahasa Tamil
-        # → SJKT) carry that course so the confirm NAMES + pins it directly (no picker); else carry the
-        # inferred aliran default for the scoped picker. Reliable-datum-first: never trust the
-        # Gemini-inferred aliran to pin a course.
-        def _pismp_extra():
-            bidang = (chk.get('bidang') or '').strip()
-            extra = {'bidang': bidang}
-            resolved = _op.resolve_pismp_course(bidang) if bidang else None
-            if resolved:
-                extra.update({'course_id': resolved['course_id'], 'course_name': resolved['course_name'],
-                              'aliran': resolved['aliran']})
-            else:
-                extra['aliran_hint'] = _op.infer_pismp_aliran(profile)
-            return extra
-
-        dfam, ofam = _op.pathway_family(declared_type), _op.pathway_family(offer_type)
-        if dfam and ofam and dfam != ofam:
-            sw = {'programme': prog, 'institution': inst,
-                  'declared_pathway': declared_type, 'offer_pathway': offer_type}
-            if offer_type == 'pismp':
-                sw.update(_pismp_extra())
-            unresolved.append(_item('pathway_type_switch', **sw))
-        elif chk['pathway'] == 'mismatch' and not confirmed:
-            unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
-                                    declared_programme=chk['declared_programme'],
-                                    declared_institution=chk['declared_institution']))
-        elif not confirmed and (prog or inst) and _no_declared_pathway(application):
-            # A unique-bidang PISMP offer is now RESOLVABLE (one-tap confirm + pin), like a pre-U/tertiary
-            # offer; a multi-aliran bidang still needs the profile picker.
-            pismp_unique = offer_type == 'pismp' and bool(
-                _op.resolve_pismp_course((chk.get('bidang') or '').strip()))
-            if _op.offer_is_resolvable(prog, inst, chk.get('issuer') or '') or pismp_unique:
-                cp = {'programme': prog, 'institution': inst,
-                      'declared_programme': '', 'declared_institution': ''}
-                if offer_type == 'pismp':
-                    cp.update(_pismp_extra())
-                unresolved.append(_item('pathway_confirm', **cp))
-            else:
-                ud = {'programme': prog, 'institution': inst}
-                if offer_type == 'pismp':
-                    ud.update(_pismp_extra())
-                unresolved.append(_item('pathway_undeclared', **ud))
-
-    # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
-    # switch is acceptable — a student may legitimately move STPM → matriculation → a UA diploma — so
-    # it must NOT downgrade the pathway band. It is surfaced separately as an always-visible cockpit
-    # banner + the offer's "Switched" chip (both from `offer_pathway_switch` / `pathway_check`), which
-    # inform the reviewer without penalising. A switch INTO a private/IPTS arm is red on its own via
-    # the genuineness veto, not via the switch.
-
-    # Base band (the ladder then applies the genuineness step + red-chip deductions): a clean letter
-    # with a readable programme (or an already-confirmed pathway) settles it → verified; any red chip
-    # or an unread programme is an under-claim → review.
-    if not unresolved:
-        if prog or inst or confirmed:
-            return _fact('pathway', 'verified', evidence, unresolved)
-        return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
-    return _fact('pathway', 'review', evidence, unresolved)
+    from .verdict_pathway import offer_pathway_fact   # lazy: it imports our helpers
+    return offer_pathway_fact(application, offer)
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────
 
-# Which documents feed each fact's genuineness FLAT CAP. As of the 2026-07-07 ladder, identity,
-# academic and pathway use `_apply_genuineness_ladder` instead (a graded step, not a flat cap), so
-# only INCOME remains on the flat cap — computed per-route (see `_income_genuineness_docs`), only the
-# docs REQUIRED to prove income can cap it.
-_FACT_GENUINENESS_DOCS: dict = {}
-
-
-def _income_genuineness_docs(application):
-    """Documents whose genuineness may lower the INCOME verdict — ONLY the docs REQUIRED to prove
-    income on the application's route. Optional corroboration (EPF, salary slip) never caps the
-    verdict: a dodgy optional doc still raises the officer ``document_not_genuine`` flag / a
-    Check-2 query, but the route's own required proof decides the verdict.
-
-    - STR route → the STR (+ the birth certificate when the earner is the mother, the required
-      relationship proof). A future-dated / typed *optional* EPF does NOT cap.
-    - Salary route → the required salary slip isn't fingerprintable and EPF is optional, so no
-      fingerprint-driven income cap applies."""
-    route = (getattr(application, 'income_route', '') or '').lower()
-    if route == 'str':
-        docs = ['str']
-        if (getattr(application, 'income_earner', '') or '').lower() == 'mother':
-            docs.append('birth_certificate')
-        return docs
-    return []
-
-
-def _fact_genuineness_docs(application, fact_name):
-    if fact_name == 'income':
-        return _income_genuineness_docs(application)
-    return _FACT_GENUINENESS_DOCS.get(fact_name, [])
+# The INCOME fact's flat genuineness cap (which route-required documents may lower it, and the
+# wrong-type STR exception) lives in ``verdict_caps`` (audit sprint A3.4). `_suspect_genuineness`
+# stays here: ``verdict_ladder`` imports it from this module at load time.
 
 
 def _suspect_genuineness(application, doc_types):
@@ -850,47 +506,12 @@ def _suspect_genuineness(application, doc_types):
     return ''
 
 
-def _str_wrong_type(application):
-    """True when the latest STR doc is a GENUINE document of the WRONG kind in the STR slot (a
-    payslip / SARA letter / SALINAN) — its currency state is 'wrong_type'. Used to suppress the
-    misleading "not a genuine original" genuineness caveat (str-proof-spec.md §4)."""
-    from .income_engine import student_str_check
-    d = _latest_doc(application, 'str')
-    if d is None:
-        return False
-    sc = student_str_check(d)
-    return bool(sc and sc.get('current_status') == 'wrong_type')
-
-
 def _apply_genuineness_caps(application, facts):
-    """Soft post-cap (Sprint 2): a suspect/wrong-type feeding document lowers a fact from 'verified' to
-    'review' and adds a `document_not_genuine` caveat (`verdict_ladder.doc_caveat`) — the AI is less
-    certain. NEVER moves a fact to 'gap'/fail, never upgrades; only once the genuineness check ran."""
-    for fact in facts:
-        dts = _fact_genuineness_docs(application, fact['fact'])
-        # A wrong_type STR — a GENUINE non-STR document in the STR slot (a payslip, a SARA letter) —
-        # is already explained by the str_not_current('wrong_type') item; the genuineness "may not be
-        # a genuine original" caveat is misleading (the doc IS genuine, just the wrong KIND), so don't
-        # double-flag it. (str-proof-spec.md §4.)
-        if 'str' in dts and _str_wrong_type(application):
-            dts = [d for d in dts if d != 'str']
-        # Same principle for a wrong-type RELATIONSHIP doc (#27): the specific re-upload ticket
-        # (birth_cert_not_genuine / guardianship_letter_not_genuine) already explains it — don't
-        # stack the generic officer-only caveat on top.
-        specific = {i['code'] for i in fact['unresolved']}
-        if specific & {'birth_cert_not_genuine', 'birth_cert_unreadable'}:
-            dts = [d for d in dts if d != 'birth_certificate']
-        if specific & {'guardianship_letter_not_genuine', 'guardianship_letter_unreadable'}:
-            dts = [d for d in dts if d != 'guardianship_letter']
-        if not dts or specific & {'document_not_genuine', 'higher_results_not_results'}:
-            continue
-        st = _suspect_genuineness(application, dts)
-        if st:
-            if fact['status'] == 'verified':
-                fact['status'] = 'review'
-            from .verdict_ladder import doc_caveat        # ruling D: an offer letter is "not a results document"
-            fact['unresolved'].append(doc_caveat(application, dts, st))
-    return facts
+    """The income fact's flat genuineness cap — its home is ``verdict_caps`` (moved there whole with
+    the route-required document list and the wrong-type STR exception, audit sprint A3.4, because
+    this file is on the oversize ledger). This name is kept for ``build_verdict`` and its tests."""
+    from .verdict_caps import _apply_genuineness_caps as apply_caps   # lazy: it imports our helpers
+    return apply_caps(application, facts)
 
 
 def _apply_genuineness_ladder(application, facts):

@@ -70,6 +70,23 @@ export interface AdminMe {
   photo_url: string | null
   /** S7a: a MENTOR's own area of mentoring — served (and writable) for a mentor only. */
   mentoring_area?: string
+  /** Staff nudges (2026-11-08): how complete the profile is — the server's ONE rule
+   *  (`apps/scholarship/profile_completion.py`); null for a super. Read, never re-derived. */
+  completion?: ProfileCompletion | null
+}
+
+/** A profile item the completion counts (`profile_completion.item_keys`). */
+export type CompletionKey = 'photo' | 'name' | 'job_title' | 'about' | 'phone' | 'qualifications'
+  | 'language' | 'address' | 'mentoring_area'
+
+/** `admin/me/` `completion`: the items in page order, done / total, the percent (rounded down) and
+ *  the banner's "important missing" keys (photo, phone, and a mentor's area). */
+export interface ProfileCompletion {
+  items: { key: CompletionKey; done: boolean }[]
+  done: number
+  total: number
+  percent: number
+  important_missing: CompletionKey[]
 }
 
 /** What `PATCH admin/me/` may write (only the keys sent are written). */
@@ -100,12 +117,12 @@ export async function uploadAdminPhoto(file: File, options?: ApiOptions) {
     throw Object.assign(new Error(b.error || `Upload failed: ${res.status}`),
       { status: res.status, code: b.code || b.error || '' })
   }
-  return b as { photo_url: string | null }
+  return b as { photo_url: string | null; completion?: ProfileCompletion | null }
 }
 
 /** `DELETE admin/me/photo/` — the object, then the path. */
 export async function deleteAdminPhoto(options?: ApiOptions) {
-  return adminMutate<{ photo_url: null }>('/api/v1/admin/me/photo/', 'DELETE', null, options)
+  return adminMutate<{ photo_url: null; completion?: ProfileCompletion | null }>('/api/v1/admin/me/photo/', 'DELETE', null, options)
 }
 
 /**

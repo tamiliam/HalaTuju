@@ -18,6 +18,19 @@ export function mayOpen(href: string, role: Served | null | undefined): boolean 
 }
 
 /**
+ * Sprint S1: may this person read EVERY scholar's file in their organisation (the server's
+ * `scholars_scope` 'all': a super, or the `scholars` key)? The Scholars row's rule WITHOUT its mentor
+ * admissions: a mentor (a login, or staff mentoring now) reads only their current students, so a link
+ * to any other scholar's file is a dead end (404). A page that lists scholars it does not fence to the
+ * viewer's mentees links a name to the file only when this says yes.
+ */
+export function readsAllScholars(role: Served | null | undefined): boolean {
+  const r = effectiveRole(role)
+  if (r === 'mentor' || r === 'source_partner') return false
+  return canAccess('/admin/scholars', r, role?.permissions, false, role?.tables, role?.page_keys)
+}
+
+/**
  * Team tables T5c P4: an IN-PAGE gate on a server door (Announcements, Surveys, Development, the scholar
  * Mentoring / Surveys / Growth tabs, sponsor emails, Sources' invite) — `opensDoor` with the served
  * `page_keys`; an older payload (none) answers by the role list the page held before (`roles`).

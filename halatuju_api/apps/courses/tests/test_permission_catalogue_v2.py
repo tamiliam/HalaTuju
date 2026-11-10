@@ -56,28 +56,34 @@ SHAPES = {
 _ENGAGEMENT_ALL = ('announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
                    'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit')
 _ADMIN_NO_MONEY = ('invitations.view', 'team.view', 'sources.view', 'sources.edit', 'sponsors.view',
-                   'sponsors.edit', 'students.view', *_ENGAGEMENT_ALL, 'spending.view', 'spending.edit')
+                   'sponsors.edit', 'students.view', 'scholars.view', *_ENGAGEMENT_ALL, 'spending.view',
+                   'spending.edit')
 _ORG_READ = ('invitations.view', 'team.view', 'sponsors.view')
 _EVERY_PAGE_KEY = (
     'invitations.view', 'invitations.edit', 'team.view', 'sources.view', 'sources.edit',
     'sponsors.view', 'sponsors.edit', 'sponsors.check', 'sponsors.approve', 'billing.view',
     'billing.edit', 'requests.view', 'requests.edit', 'requests.approve', 'settings.edit',
-    'students.view', 'students.edit', 'students.approve', 'contracts.view', 'contracts.edit',
+    'students.view', 'scholars.view', 'students.edit', 'students.approve', 'contracts.view',
+    'contracts.edit',
     'programmes.edit', *_ENGAGEMENT_ALL, 'payments.view', 'payments.prepare', 'payments.check',
     'payments.approve', 'spending.view', 'spending.edit')
 
 #: shape -> (today's `resolve()` tuple, the hand-written v2 set). Set order does not matter.
 GOLDEN_V2 = {
-    'admin': (('see_all', 'spending', 'payments_prepare'),
+    # Sprint S1: the admin preset and the lead tier hold `scholars` (v2 `scholars.view`).
+    'admin': (('see_all', 'scholars', 'spending', 'payments_prepare'),
               {*_ADMIN_NO_MONEY, 'payments.view', 'payments.prepare'}),
-    'admin_see_all_spending': (('see_all', 'spending'), set(_ADMIN_NO_MONEY)),
+    # A custom row saved without `scholars` (S1): Applications only, no Scholars door.
+    'admin_see_all_spending': (('see_all', 'spending'), set(_ADMIN_NO_MONEY) - {'scholars.view'}),
     # resolve() ignores is_active (today's tuple stays); sign-in refuses the row, so v2 is empty.
-    'admin_inactive': (('see_all', 'spending', 'payments_prepare'), set()),
+    'admin_inactive': (('see_all', 'scholars', 'spending', 'payments_prepare'), set()),
     'finance': (('payments_approve',),
                 {*_ORG_READ, 'sponsors.check', 'payments.view', 'payments.approve'}),
     # A1.13b (owner 2026-11-08): the lead tier also holds `award_withdraw_approve` (a v1 seat key, no v2 page)
-    'org_admin': (('see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'), {*_EVERY_PAGE_KEY, 'qc'}),
-    'org_admin_reviews': (('review', 'see_all', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
+    'org_admin': (('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
+                  {*_EVERY_PAGE_KEY, 'qc'}),
+    'org_admin_reviews': (('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
+                           'manage_team'),
                           {*_EVERY_PAGE_KEY, 'qc', 'review'}),
     'reviewer': (('review',), {'review'}),
     'reviewer_see_all_spending': (('review', 'see_all', 'spending'),
@@ -143,16 +149,18 @@ class Vocabulary(TestCase):
         self.assertEqual(v2.with_implied_views(['requests.approve']),
                          ('requests.view', 'requests.approve'))
 
-    def test_the_engagement_keys_need_students_view(self):
-        self.assertEqual(v2.DEPENDS_ON_V2, {k: ('students.view',) for k in _ENGAGEMENT_ALL})
+    def test_the_engagement_keys_need_scholars_view(self):
+        # Sprint S1: they name every scholar, which is now `scholars.view` (`students.view` = Applications).
+        self.assertEqual(v2.DEPENDS_ON_V2, {k: ('scholars.view',) for k in _ENGAGEMENT_ALL})
 
     def test_the_qc_hat_implies_students_view(self):
         # T5b: the v2 spelling of `staff_permissions.IMPLIES` — QC sees all students, by itself.
         self.assertEqual(v2.HAT_IMPLIES, {'qc': ('students.view',)})
         self.assertEqual(v2.with_implied_views(['qc']), ('students.view', 'qc'))
         self.assertEqual(v2.with_implied_views(['review']), ('review',))    # review is assigned-only
-        self.assertEqual(v2.dependency_gaps(['surveys.view']), {'surveys.view': ('students.view',)})
-        self.assertEqual(v2.dependency_gaps(['surveys.view', 'students.view']), {})
+        self.assertEqual(v2.dependency_gaps(['surveys.view']), {'surveys.view': ('scholars.view',)})
+        self.assertEqual(v2.dependency_gaps(['surveys.view', 'scholars.view']), {})
+        self.assertEqual(v2.dependency_gaps(['surveys.view', 'students.view']), {'surveys.view': ('scholars.view',)})
 
     def test_the_aliases_cover_every_old_key_and_name_only_v2_keys(self):
         self.assertEqual(set(v2.ALIASES), set(sp.CATALOGUE))
@@ -190,10 +198,13 @@ class GoldenV2(TestCase):
                 self.assertEqual(set(v2.effective_v2(self.people[shape])), expected)
 
     def test_every_set_is_closed_and_consistent(self):
+        # Sprint S1 (TD-597): a list saved without `scholars` still holds every Engagement key, which
+        # names every scholar. `dependency_gaps` reports it; it describes today, the owner decides.
+        known = {'admin_see_all_spending': {k: ('scholars.view',) for k in _ENGAGEMENT_ALL}}
         for shape, (_, expected) in GOLDEN_V2.items():
             with self.subTest(shape=shape):
                 self.assertEqual(set(v2.with_implied_views(expected)), expected)
-                self.assertEqual(v2.dependency_gaps(expected), {})
+                self.assertEqual(v2.dependency_gaps(expected), known.get(shape, {}))
 
     def test_no_team_member_holds_a_lead_only_key(self):
         lead_only = {k for k, row in v2.CATALOGUE_V2.items() if row[3]}

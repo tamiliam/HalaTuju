@@ -331,6 +331,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminModuleLessonFileView': 'module-org-fenced',
         'AdminModuleLessonFileSignView': 'module-org-fenced',
         'AdminScholarGrowthView': 'scholars-org-fenced',   # `_file_for` + `development.may_make`
+        'AdminScholarGrowthFileView': 'scholars-org-fenced',   # S1: the same, for one module's task file
         '_MentoringBase': 'scholars-org-fenced',
         'AdminScholarMentoringView': 'scholars-org-fenced',
         'AdminScholarMentoringActionView': 'scholars-org-fenced',
@@ -624,6 +625,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminInvoiceDeclarationView':
             'invoice-fenced (org_admin declares on its own sent invoice; super confirms/rejects)',
         'AdminInvoicePdfView': 'invoice-fenced (org_admin own sent invoice or its receipt)',
+        # Staff nudges sprint 3 (2026-11-09): the red banner's summary, the caller's OWN organisation
+        # only (never a parameter), sent invoices only; a super answers None. Same `_caller` gate.
+        'AdminInvoiceOverdueView': 'invoice-fenced (org_admin own org overdue summary; super None)',
         'AdminInvoiceIssuerView': 'super-only (who is billing: one platform-wide row)',
         # The ONE invoice surface a tenant may write. Not what it is billed FOR (build hours,
         # super-only) nor AT (rates, super-only) — only WHERE its own bill is addressed and
@@ -819,6 +823,8 @@ class TestOrgFenceStaticGuard(TestCase):
                # Requests list R1 (2026-11-03) — the list's tabs, filters and row tags, whose
                # `Exists` subqueries read OrgRequestComment / OrgRequestAnalysis; on the day written.
                'org_requests_queue.py',
+               # Staff nudges sprint 3 (2026-11-09) — the overdue rule's org summary, on the day written.
+               'invoice_overdue.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')

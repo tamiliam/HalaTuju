@@ -23,7 +23,7 @@ jest.mock('@/lib/i18n', () => ({
 jest.mock('@/lib/admin-api/admins')
 const mockApi = api as jest.Mocked<typeof api>
 
-const KEYS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
+const KEYS = ['review', 'see_all', 'scholars', 'qc', 'spending', 'payments_prepare', 'payments_check',
   'payments_approve', 'award_withdraw_request', 'award_withdraw_approve']
 const ROHINI: api.StaffPermissionsView = {
   id: 7, name: 'Rohini', role: 'reviewer', is_active: true, editable: true,
@@ -57,8 +57,8 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   const reviewers = screen.getByTestId('perm-section-reviewers')
   expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
-    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'award_withdraw_request',
-      'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))
+    ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+      'award_withdraw_request', 'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))   // S1: Scholars after Applications
   expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['admin.perm.review.name', 'admin.perm.qc.name'])
   expect(screen.queryByText('admin.permEditor.students')).toBeNull()
@@ -197,11 +197,24 @@ it('resets to the preset in one press', async () => {
     7, ['review'], true, { token: 'tok' }))
 })
 
-it('draws no switches for a row nobody edits', async () => {
-  mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false })
+// Sprint T3 (M2, owner 2026-11-09) REVERSES "no switches for a row nobody edits": an organisation admin's
+// (or your own) set reads as LOCKED switches under one line — what they hold is visible, nothing moves.
+it('M2: shows a row nobody edits as locked switches under one line — no Save, no Reset, no dry run', async () => {
+  mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false, permissions: ['review', 'see_all'] })
   render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
-  await waitFor(() => expect(screen.getByText('admin.permEditor.fixed(name=Rohini)')).toBeTruthy())
-  expect(screen.queryByRole('switch')).toBeNull()
+  await waitFor(() => expect(screen.getByTestId('perm-fixed').textContent).toBe('admin.permEditor.fixed(name=Rohini)'))
+  expect(screen.getAllByRole('switch')).toHaveLength(KEYS.length)
+  for (const b of screen.getAllByRole('switch')) expect((b as HTMLButtonElement).disabled).toBe(true)
+  expect(isOn('review')).toBe(true)
+  expect(isOn('see_all')).toBe(true)
+  expect(isOn('spending')).toBe(false)
+  fireEvent.click(toggle('spending'))
+  expect(isOn('spending')).toBe(false)
+  expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
+  expect(screen.queryByTestId('perm-reset')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.save')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.footnote')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.noChange(name=Rohini)')).toBeNull()
 })
 
 it('drops the old preview the moment a new dry run starts, so Save cannot act on it (fix 9)', async () => {
@@ -252,15 +265,18 @@ describe('Changes', () => {
     await open({ ...ROHINI, history: [
       change({ added: ['spending'], removed: ['payments_approve'] }),
       change({ kind: 'role_change', role: 'qc', by: '', by_super: true }),
+      change({ added: ['scholars'], by: '', by_migration: true }),
     ] })
     const items = within(screen.getByTestId('permission-history')).getAllByRole('listitem')
-    expect(items).toHaveLength(2)
+    expect(items).toHaveLength(3)
     expect(items[0].textContent).toContain(
       'admin.permHistory.on(perm=admin.perm.spending.name) · admin.permHistory.off(perm=admin.perm.payments_approve.name)')
     expect(items[0].textContent).toContain(`admin.permHistory.byAt(by=Priya Lead;at=${formatDateTime(AT)})`)
     expect(items[1].textContent).toContain('admin.permHistory.roleReset(role=admin.role.qc)')
     // A super's change names the team, never an address.
     expect(items[1].textContent).toContain('by=admin.permHistory.team')
+    // A data migration's change (sprint S1) says so, never a blank "by".
+    expect(items[2].textContent).toContain('by=admin.permHistory.migration')
   })
 
   it('says there is nothing yet, naming the set the person holds', async () => {

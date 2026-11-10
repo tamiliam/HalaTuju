@@ -140,7 +140,8 @@ class PartnerAdmin(models.Model):
     # a `MENTOR_LINK_ROLES` role, never a super" is a DATABASE check (Meta); `save` adds that
     # `owning_organisation` IS the mentor's organisation. Whether the person mentors NOW is
     # `mentors_now` (an eligible role and the mentor not deactivated), never "mentor_id is set".
-    # PROTECT: a mentor is never deleted, only deactivated (`Mentor.deactivated_at`). A string
+    # PROTECT: a mentor with work is never deleted, only deactivated (`Mentor.deactivated_at`); one
+    # with none is deleted WITH this login (D6, `mentor_invite.delete_mentor`). A string
     # reference: no `courses → scholarship` import.
     mentor = models.ForeignKey(
         'scholarship.Mentor', on_delete=models.PROTECT,

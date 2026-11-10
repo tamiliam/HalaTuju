@@ -11,7 +11,7 @@
  *    cockpit, which keeps those controls until Sprint 3;
  *  * a file the server will not show is the neutral RecordState, never "does not exist".
  */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarFilePage from './page'
 import * as api from '@/lib/admin-api'
 import * as dev from '@/lib/admin-api/development'
@@ -118,7 +118,7 @@ it('the Money and Contract tabs read their own endpoints (S5a)', async () => {
 })
 
 it('a reviewer gets no money links (Payments and Spending are not theirs)', async () => {
-  mockRole = { role: 'reviewer', owning_org_id: 11 }
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review', 'scholars'] }   // S1: the key opens it
   render(<ScholarFilePage />)
   await screen.findByRole('heading', { name: 'NUR AISYAH' })
   expect(screen.queryByRole('link', { name: 'admin.scholars.money.openPayments' })).toBeNull()
@@ -165,7 +165,7 @@ it('S7b: the mentor card, the Asked-for-help chip and the lazy Mentoring tab', a
 
 it('S7b: a reviewer or QC sees no Mentoring tab and no mentor card', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.mentoring' })).toBeNull()
@@ -188,7 +188,7 @@ it('S9: the Surveys tab reads the answers of this scholar, for super / org_admin
 
 it('S9: a reviewer or QC sees no Surveys tab and no Surveys card', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.surveys' })).toBeNull()
@@ -212,11 +212,63 @@ it('S10: the Growth tab reads the modules of this scholar, for super / org_admin
 
 it('S10: a reviewer or QC sees no Growth tab', async () => {
   for (const r of ['reviewer', 'qc']) {
-    mockRole = { role: r, owning_org_id: 11 }
+    mockRole = { role: r, owning_org_id: 11, permissions: [r === 'qc' ? 'qc' : 'review', 'scholars'] }   // S1
     const { unmount } = render(<ScholarFilePage />)
     await screen.findByRole('heading', { name: 'NUR AISYAH' })
     expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.growth' })).toBeNull()
     unmount()
   }
   expect(mockDev.getScholarGrowth).not.toHaveBeenCalled()
+})
+
+it('sprint S1 (S1-h): a mentor reads every tab of its student\'s file and is offered no write', async () => {
+  for (const who of [{ role: 'mentor', permissions: [] }, { role: 'reviewer', permissions: ['review'], mentoring: true }]) {
+    mockRole = { ...who, owning_org_id: 11 }
+    mockApi.getScholarFile.mockResolvedValue({ ...FILE, mentor_view: true, controls: { can_review_results: false,
+      can_set_substate: false, can_hold: false, close_reasons: [], close_refusal: 'sponsorship_open' } })
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    expect(mockApi.getScholarFile).toHaveBeenCalledWith(104, { token: 'tok' })
+    for (const tab of ['results', 'money', 'contract', 'letters', 'mentoring', 'surveys', 'growth', 'activity']) {
+      expect(screen.getByRole('tab', { name: `admin.scholars.tab.${tab}` })).toBeTruthy()
+    }
+    expect(screen.queryByTestId('scholar-controls')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'admin.scholars.file.viewApplication' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'admin.scholars.money.openPayments' })).toBeNull()
+    expect(await screen.findByTestId('activity-read-only')).toBeTruthy()
+    expect(screen.queryByPlaceholderText('admin.scholars.activity.placeholder')).toBeNull()
+    unmount()
+  }
+})
+
+it('sprint S1 (S1-h): staff who mentor open the page by their mentor record; without it, no key, no page', async () => {
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'] }
+  const { unmount } = render(<ScholarFilePage />)
+  expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+  expect(mockApi.getScholarFile).not.toHaveBeenCalled()
+  unmount()
+  mockRole = { role: 'reviewer', owning_org_id: 11, permissions: ['review'], mentoring: true }
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+})
+
+it('sprint S1: the Growth task opens through the FILE\'s door; the Progress link only for who may open it', async () => {
+  window.open = jest.fn(() => null) as unknown as typeof window.open
+  mockDev.scholarTaskFileLink.mockResolvedValue({ url: 'https://storage.test/m', expires_in: 300 })
+  mockDev.getScholarGrowth.mockResolvedValue({ modules: [{ id: 3, title: 'Managing your money', status: 'published',
+    due_on: null, task_kind: 'upload', lessons: 3, read: 3, done: true, late: false, task_sent_at: '2026-10-01T00:00:00Z',
+    task_text: '', task_file: { name: 'cv.pdf', type: 'application/pdf' }, reviewed_at: null, review_comment: '' }] })
+  for (const [who, mentorView, progress] of [[{ role: 'org_admin' }, false, true],
+    [{ role: 'mentor', permissions: [] }, true, false]] as const) {
+    mockRole = { ...who, owning_org_id: 11 }
+    mockApi.getScholarFile.mockResolvedValue({ ...FILE, mentor_view: mentorView })
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.growth' }))
+    fireEvent.click(await screen.findByTestId('growth-file-3'))
+    await waitFor(() => expect(mockDev.scholarTaskFileLink).toHaveBeenCalledWith(104, 3, { token: 'tok' }))
+    expect(screen.queryAllByRole('link', { name: 'admin.scholars.growth.progress' }).length > 0).toBe(progress)
+    mockDev.scholarTaskFileLink.mockClear()
+    unmount()
+  }
 })

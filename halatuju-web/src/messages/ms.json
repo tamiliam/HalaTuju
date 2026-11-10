@@ -3482,11 +3482,6 @@
       "turnaroundHint": "Bilangan hari lazim dari penugasan hingga keputusan (kes pertengahan, bukan purata).",
       "noTurnaroundHint": "Belum ada penilaian selesai — tiada apa untuk diukur.",
       "footnote": "Setiap angka mengira hanya keputusan yang direkodkan sendiri oleh orang ini, bagi permohonan organisasi ini.",
-      "role": {
-        "super": "Pentadbir utama",
-        "qc": "Semakan kualiti",
-        "reviewer": "Penilai"
-      },
       "lang": {
         "en": "Inggeris",
         "ms": "Bahasa Melayu",
@@ -3498,25 +3493,20 @@
         "revoked": "Ditarik balik"
       },
       "detail": {
-        "back": "Semua penilai",
         "joined": "Menyertai {date}",
         "noHistory": "Belum ada kes ditugaskan kepada penilai ini.",
         "outcomes": "Keputusan",
         "noOutcomes": "Belum ada keputusan direkodkan.",
         "declined": "Ditolak",
-        "credentials": "Kelayakan",
-        "noCredentials": "Penilai ini belum mengisi profil mereka.",
         "qualification": "Kelayakan tertinggi",
         "university": "Universiti",
         "graduationYear": "Tamat pengajian",
         "fieldOfStudy": "Bidang pengajian",
-        "contact": "Hubungan",
         "email": "E-mel",
         "phone": "Telefon",
         "phoneNone": "Tidak diberikan",
         "phone_shared": "nombor ini boleh diberikan kepada pelajar",
         "phone_staff_only": "kakitangan sahaja — penilai belum bersetuju untuk berkongsi dengan pelajar",
-        "contactNote": "Alamat rumah penilai tidak pernah dipaparkan di sini.",
         "reopens": "Keputusan yang dibuka semula",
         "reopensNote": "Keputusan yang dibuka semula bukan bermakna penilai ini tersilap — beberapa daripadanya berpunca daripada kesilapan platform. Sebab yang direkodkan pada masa itu dipaparkan bersama setiap satu, dan sengaja tiada jumlah keseluruhan.",
         "noReopens": "Tiada keputusan penilai ini yang dibuka semula.",
@@ -5564,6 +5554,34 @@
           "withdrawal_refused": "Menolak tarik balik {subject}",
           "withdrawal_cancelled": "Membatalkan permintaan tarik balik {subject}"
         }
+      },
+      "completion": {
+        "title": "Profil anda {percent}% lengkap",
+        "count": "{done} daripada {total} selesai",
+        "complete": "Profil anda lengkap",
+        "note": "Profil yang lengkap membantu pasukan dan pelajar anda mengenali anda.",
+        "done": {
+          "photo": "Foto",
+          "name": "Nama",
+          "job_title": "Jawatan",
+          "about": "Tentang saya",
+          "phone": "Telefon",
+          "qualifications": "Kelayakan",
+          "language": "Bahasa",
+          "address": "Alamat",
+          "mentoring_area": "Bidang bimbingan"
+        },
+        "todo": {
+          "photo": "Tambah foto",
+          "name": "Tambah nama anda",
+          "job_title": "Tambah jawatan anda",
+          "about": "Tulis ringkasan Tentang saya",
+          "phone": "Tambah nombor telefon",
+          "qualifications": "Tambah kelayakan anda",
+          "language": "Tambah bahasa yang anda tuturkan",
+          "address": "Tambah alamat anda",
+          "mentoring_area": "Tambah bidang bimbingan anda"
+        }
       }
     },
     "superAdmin": "Pentadbir Utama",
@@ -5635,7 +5653,7 @@
     "active": "Aktif",
     "revoked": "Dibatalkan",
     "actionFailed": "Tindakan gagal",
-    "revoke": "Batalkan",
+    "revoke": "Tarik balik",
     "restore": "Pulihkan",
     "resend": "Hantar semula",
     "resending": "Menghantar…",
@@ -6721,16 +6739,27 @@
       },
       "activity": {
         "title": "Aktiviti",
-        "kindLabel": "Jenis catatan",
-        "addLabel": "Tambah catatan",
-        "placeholder": "Apa yang berlaku?",
+        "addLabel": "Tambah nota",
+        "placeholder": "Tambah nota…",
         "staffOnly": "Kakitangan sahaja",
         "save": "Simpan",
+        "cancel": "Batal",
         "saved": "Catatan disimpan.",
         "saveFailed": "Tidak dapat menyimpan catatan.",
         "loadFailed": "Tidak dapat memuatkan aktiviti.",
         "empty": "Belum ada apa-apa direkodkan.",
         "bySystem": "Sistem",
+        "theScholar": "Penerima biasiswa",
+        "aMentor": "Seorang mentor",
+        "showOlder": "Tunjuk yang lebih lama ({n})",
+        "loadingOlder": "Memuatkan…",
+        "filterLabel": "Tunjuk",
+        "listLabel": "Catatan aktiviti",
+        "filter": {
+          "all": "Semua ({n})",
+          "notes": "Nota ({n})",
+          "system": "Sistem ({n})"
+        },
         "kind": {
           "note": "Nota",
           "call": "Panggilan",
@@ -8332,7 +8361,7 @@
     },
     "delete": "Padam",
     "deleteStaffBody": "Log masuk dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
-    "hasWorkRevoke": "Ada kerja yang direkodkan — tarik balik akses sahaja",
+    "deleteHasWork": "Ada kerja yang direkodkan ({work}), jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
     "financeCheckOn": "Kredit dompet akan memerlukan semakan kewangan.",
@@ -8343,8 +8372,12 @@
         "desc": "Temu duga dan buat keputusan bagi pelajar yang ditugaskan kepadanya."
       },
       "see_all": {
-        "name": "Lihat semua pelajar",
-        "desc": "Baca fail setiap pelajar dalam organisasi ini."
+        "name": "Permohonan",
+        "desc": "Baca setiap permohonan dalam organisasi ini."
+      },
+      "scholars": {
+        "name": "Penerima biasiswa",
+        "desc": "Baca fail setiap penerima biasiswa dalam organisasi ini."
       },
       "qc": {
         "name": "Kawalan mutu",
@@ -8398,7 +8431,7 @@
         "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya, kecuali larian yang {name} sediakan atau telah tandatangani.",
         "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
-        "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
+        "files_widened_all": "{name} akan dapat membaca setiap permohonan dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama.",
         "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
@@ -8406,15 +8439,45 @@
         "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
         "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
       },
-      "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
+      "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Permohonan”, jadi ia dihidupkan bersamanya."
     },
     "person": {
-      "back": "Pasukan",
       "tabsAria": "Panel individu",
       "tabProfile": "Profil",
       "tabPermissions": "Kebenaran",
       "invited": "Dijemput, belum ada log masuk direkodkan",
-      "notAllowed": "Hanya pentadbir organisasi boleh membuka kebenaran ahli pasukan."
+      "notAllowed": "Hanya pentadbir organisasi boleh membuka kebenaran ahli pasukan.",
+      "backTo": {
+        "admins": "Pasukan · Pentadbir",
+        "reviewers": "Pasukan · Penilai",
+        "mentors": "Pasukan · Mentor"
+      },
+      "lastSeen": "Terakhir dilihat {when}",
+      "seenUnknown": "Terakhir dilihat: tiada rekod",
+      "seen": {
+        "now": "sebentar tadi",
+        "minute": "1 minit lalu",
+        "minutes": "{n} minit lalu",
+        "hour": "1 jam lalu",
+        "hours": "{n} jam lalu",
+        "yesterday": "semalam",
+        "days": "{n} hari lalu",
+        "on": "pada {date}"
+      },
+      "aboutField": "Tentang",
+      "areaField": "Bidang bimbingan",
+      "mentoringSince": "Mentor sejak",
+      "privacyNote": "Alamat rumah ahli pasukan tidak pernah dipaparkan di sini.",
+      "mentorOnly": {
+        "intro": "{name} ialah mentor. Mentor hanya melihat tiga perkara:",
+        "students": "Pelajar saya: penerima biasiswa yang diserahkan kepada mereka, dan pertemuan yang mereka rekodkan",
+        "scholars": "Penerima biasiswa: fail penuh setiap penerima biasiswa yang mereka bimbing sekarang, baca sahaja",
+        "profile": "Profil: butiran mereka sendiri",
+        "none": "Mentor tidak memegang kebenaran untuk diubah.",
+        "more": "Untuk memberi {name} lebih, tambah mereka ke jadual Pasukan yang lain."
+      },
+      "revokeEndsMentoring": "Bimbingan mereka terhadap {n} penerima biasiswa juga tamat, dan Pulihkan tidak akan mengembalikannya.",
+      "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
     },
     "permHistory": {
       "title": "Perubahan",
@@ -8423,6 +8486,7 @@
       "roleReset": "Diset semula kepada set {role} oleh perubahan peranan",
       "byAt": "Oleh {by}, {at}",
       "team": "pasukan HalaTuju",
+      "migration": "migrasi sistem",
       "empty": "Belum ada perubahan. {name} mempunyai set {role}."
     },
     "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu.",
@@ -8793,6 +8857,7 @@
         "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor. Tambah Mentor boleh menambah mereka semula.",
         "not_staff": "Hanya bimbingan kakitangan boleh dihentikan dengan cara ini.",
         "not_found": "Kakitangan itu tidak ditemui.",
+        "has_work": "Kini ada kerja yang direkodkan untuk mereka, jadi mereka tidak boleh dipadam. Tarik balik akses mereka sahaja.",
         "gift_required": "Pilih Semua pemberian atau sekurang-kurangnya satu pemberian.",
         "gift_not_found": "Pemberian itu tidak dibuka dalam organisasi ini. Muat semula halaman dan pilih sekali lagi."
       },
@@ -8810,10 +8875,8 @@
         "concernsOpen": "Kebimbangan terbuka"
       },
       "notFilled": "Belum diisi",
-      "activeSeen": "Aktif · log masuk terakhir {date}",
-      "inactiveOn": "Tidak aktif sejak {date}",
       "action": {
-        "deactivate": "Batalkan",
+        "deactivate": "Tarik balik",
         "reactivate": "Pulihkan",
         "resend": "Hantar semula",
         "revoke": "Tarik balik",
@@ -8833,7 +8896,8 @@
         "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula.",
         "stop": "{name} tidak lagi membimbing. Log masuk kakitangan mereka tidak berubah.",
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
-        "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri."
+        "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri.",
+        "delete": "{name} telah dipadam."
       },
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8863,17 +8927,12 @@
         "loadError": "Senarai kakitangan tidak dapat dimuatkan.",
         "before": "Pernah menjadi mentor"
       },
-      "staffTag": "Kakitangan · {role}",
       "addMentor": "Tambah Mentor",
       "removeTitle": {
         "stop": "Keluarkan {name} daripada Mentor?",
         "deactivate": "Batalkan {name}?"
       },
       "detail": {
-        "back": "Pasukan · Mentor",
-        "since": "mentor sejak {date}",
-        "lastSeen": "log masuk terakhir {date}",
-        "lastSeenUnknown": "log masuk tidak direkodkan",
         "days": "{n} hari",
         "oneDay": "1 hari",
         "tile": {
@@ -8900,9 +8959,9 @@
         "pastTitle": "Penerima biasiswa lalu (bimbingan tamat)",
         "noneNow": "Tiada penerima biasiswa buat masa ini.",
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
-        "notFound": "Mentor ini tidak ditemui.",
-        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
+        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Penerima biasiswa” untuk melihat penerima biasiswa mentor ini."
       },
+      "deleteBody": "Log masuk, rekod mentor dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
       "gifts": {
         "label": "Pemberian",
         "outside": "Mentor ini mempunyai {count} penerima biasiswa semasa di luar pemberian tersebut. Tamatkan atau tukar mentor mereka dahulu. Tiada apa yang diubah."
@@ -9430,7 +9489,7 @@
         "reviewers": "Tambah Penilai"
       },
       "addIntro": {
-        "admins": "Pilih seseorang yang sudah dalam pasukan. Mereka bermula dengan kebenaran minimum, Lihat semua pelajar, dan anda boleh menanda kebenaran pentadbir lain selepas itu. Log masuk mereka tidak diusik dan tiada e-mel dihantar.",
+        "admins": "Pilih seseorang yang sudah dalam pasukan. Mereka bermula dengan Permohonan dan Penerima biasiswa, dan anda boleh menanda kebenaran pentadbir lain selepas itu. Log masuk mereka tidak diusik dan tiada e-mel dihantar.",
         "reviewers": "Pilih seseorang yang sudah dalam pasukan: pentadbir, mentor atau pentadbir organisasi. Mereka bermula dengan Menilai pelajar yang ditugaskan; tanda Kawalan mutu selepas itu jika perlu. Tiada sesiapa menyemak mutu kes yang dinilainya sendiri. Log masuk mereka tidak diusik dan tiada e-mel dihantar."
       },
       "addCta": {
@@ -9481,8 +9540,8 @@
         "mentors_only": "Hanya Mentor yang tinggal: batalkan akses atau keluarkan daripada Mentor (mereka mesti telah log masuk untuk kekal sebagai mentor)",
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
-      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
-      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka.",
+      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Permohonan dan Penerima biasiswa. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
+      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya, fail pelajar mereka sendiri dalam Penerima biasiswa (baca sahaja) dan Profil mereka.",
       "emails": {
         "aria": "E-mel pasukan",
         "adminTitle": "E-mel pentadbir",
@@ -9544,6 +9603,35 @@
         "reviewerText": "Apa yang dipersetujui oleh penilai sebelum kes pertamanya akan ditetapkan di sini.",
         "mentorTitle": "Terma mentor",
         "mentorText": "Apa yang dipersetujui oleh mentor sebelum bertemu pelajar akan ditetapkan di sini."
+      }
+    },
+    "relativeTime": {
+      "now": "Sebentar tadi",
+      "minute": "1 minit lalu",
+      "minutes": "{n} minit lalu",
+      "hour": "1 jam lalu",
+      "hours": "{n} jam lalu",
+      "yesterday": "Semalam",
+      "days": "{n} hari lalu"
+    },
+    "nudge": {
+      "missing": "Profil anda belum mempunyai {items}.",
+      "helpOne": "Menambahkannya akan melengkapkan profil anda.",
+      "helpMany": "Menambahkan semuanya akan melengkapkan profil anda.",
+      "and": "dan",
+      "link": "Lengkapkan profil",
+      "hide7": "Sembunyikan selama 7 hari",
+      "overdueTitle": "Bayaran tertunggak.",
+      "overdueOne": "Invois {number} berjumlah {amount} sepatutnya dijelaskan 1 hari yang lalu.",
+      "overdueMany": "Invois {number} berjumlah {amount} sepatutnya dijelaskan {days} hari yang lalu.",
+      "overdueMoreOne": "1 lagi invois juga tertunggak.",
+      "overdueMoreMany": "{count} lagi invois juga tertunggak.",
+      "overdueLink": "Lihat invois",
+      "overdueHide": "Sembunyikan hingga log masuk seterusnya",
+      "item": {
+        "photo": "foto",
+        "phone": "nombor telefon",
+        "mentoring_area": "bidang bimbingan anda"
       }
     }
   },

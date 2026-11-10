@@ -2,8 +2,9 @@
 
 Pinned here, through the real endpoints (factory-built):
   * WHO IS LISTED — the maintenance predicate only; `?closed=1` the closed students with a file;
-  * THE FENCE — the Applications rule (`_b40_scope`): see_all reads the organisation, a reviewer
-    only their assigned scholars, finance 403; another organisation is 404, never 403;
+  * THE FENCE — the `scholars` key (sprint S1, `base.scholars_scope`; until S1 the Applications rule):
+    a holder reads the organisation; review, qc, see_all alone and finance 403 (the full sweep is
+    `test_scholars_access.py`); another organisation is 404, never 403;
   * the gift narrowing (`?programme=`, TD-334 for an organisation-less super);
   * filters, search, sort, pagination and the summary tiles;
   * the file payload (money from the ledger, no invented standing) and the activity log (manual
@@ -103,13 +104,16 @@ class TestWhoIsListed(_Scholars):
 
 
 class TestFence(_Scholars):
-    def test_see_all_presets_read_the_organisation(self):
-        for admin in (self.officer, self.org_admin, self.qc):
+    def test_scholars_holders_read_the_organisation(self):
+        for admin in (self.officer, self.org_admin):
             self.assertEqual(self._names(self._get(admin)), ['AISYAH', 'BALA', 'CHEN'])
 
-    def test_a_reviewer_reads_only_their_assigned_scholars(self):
-        self.assertEqual(self._names(self._get(self.reviewer)), ['AISYAH'])
-        self.assertEqual(self._get(self.reviewer).json()['summary']['in_programme'], 1)
+    def test_a_reviewer_and_a_qc_are_refused_even_on_an_assigned_scholar(self):
+        # Sprint S1 (owner 2026-11-09): the assignment no longer opens Scholars.
+        for admin in (self.reviewer, self.qc):
+            with self.subTest(role=admin.role):
+                self.assertEqual(self._get(admin).status_code, 403)
+                self.assertEqual(self._get(admin, f'{API}{self.aisyah.id}/').status_code, 403)
 
     def test_finance_is_refused(self):
         self.assertEqual(self._get(self.finance).status_code, 403)
@@ -124,10 +128,6 @@ class TestFence(_Scholars):
 
     def test_a_case_with_no_file_is_404(self):
         self.assertEqual(self._get(self.org_admin, f'{API}{self.dina.id}/').status_code, 404)
-
-    def test_a_reviewer_is_refused_a_file_not_assigned_to_them(self):
-        self.assertEqual(self._get(self.reviewer, f'{API}{self.bala.id}/').status_code, 403)
-        self.assertEqual(self._get(self.reviewer, f'{API}{self.aisyah.id}/').status_code, 200)
 
     def test_the_gift_narrows_inside_the_fence(self):
         self.assertEqual(self._names(self._get(self.org_admin, programme=self.gift.code)),
@@ -145,10 +145,6 @@ class TestFence(_Scholars):
         moved.refresh_from_db()
         self.assertNotEqual(moved.programme_id, new_gift.id)          # the column stayed behind
         self.assertEqual(self._names(self._get(self.org_admin, programme=new_gift.code)), ['MIRA'])
-
-    def test_a_reviewer_sees_no_closed_or_unassigned_scholar(self):
-        self.assertEqual(self._names(self._get(self.reviewer, closed='1')), [])
-        self.assertEqual(self._names(self._get(self.reviewer, search=f'#{self.bala.id}')), [])
 
     def test_no_ic_is_served(self):
         row = self._get(self.org_admin).json()['results'][0]
@@ -244,9 +240,10 @@ class TestActivity(_Scholars):
             'kind': 'call', 'body': '  Rang her mother about the slip.  ', 'internal': True},
             format='json')
         self.assertEqual(r.status_code, 201, r.content)
+        # Sprint P1 review: a known writer is served by name (`actor`), never by email.
         self.assertEqual((r.json()['kind'], r.json()['body'], r.json()['internal'],
-                          r.json()['actor_email']),
-                         ('call', 'Rang her mother about the slip.', True, self.officer.email))
+                          r.json()['actor_email'], r.json()['actor']['kind']),
+                         ('call', 'Rang her mother about the slip.', True, '', 'staff'))
 
     def test_the_timeline_is_newest_first_with_system_rows(self):
         maintenance.set_substate(self.bala, 'on_track', by_email='x@example.test')
@@ -282,11 +279,13 @@ class TestActivity(_Scholars):
                                                format='json')
         self.assertEqual(r.status_code, 404)
 
-    def test_a_reviewer_writes_only_on_their_own_scholar(self):
-        client = authed_client(self.reviewer)
-        ok = client.post(self._url(self.aisyah), {'kind': 'note', 'body': 'Met her.'}, format='json')
+    def test_a_scholars_holder_writes_on_any_file_and_the_assignee_without_it_cannot(self):
+        # Sprint S1-d: Aisyah is assigned to the reviewer; the officer writes on her file anyway.
+        ok = authed_client(self.officer).post(self._url(self.aisyah), {'kind': 'note', 'body': 'Met her.'},
+                                              format='json')
         self.assertEqual(ok.status_code, 201)
-        no = client.post(self._url(self.bala), {'kind': 'note', 'body': 'x'}, format='json')
+        no = authed_client(self.reviewer).post(self._url(self.aisyah), {'kind': 'note', 'body': 'x'},
+                                               format='json')
         self.assertEqual(no.status_code, 403)
 
 
@@ -341,7 +340,10 @@ class TestFileControls(_Scholars):
         self.assertTrue(c['can_set_substate'])
 
     def test_a_reviewer_may_not_hold(self):
-        c = self._controls(self.reviewer, self.aisyah)                   # assigned to them
+        # Sprint S1-e: the label `reviewer` holding `review + see_all + scholars` — union by keys.
+        reader = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'scholars'])
+        type(self.aisyah).objects.filter(pk=self.aisyah.pk).update(assigned_to=reader)
+        c = self._controls(reader, self.aisyah)                          # assigned to them
         self.assertEqual((c['can_set_substate'], c['can_hold']), (True, False))
 
     def test_a_reader_who_cannot_write_is_offered_nothing(self):

@@ -185,7 +185,7 @@ export function claimStudentData(userId: string | null): boolean {
 
 /** Tab state that belongs to the OTHER user types (an admin's list navigation, a sponsor's
  *  half-finished registration) — a student's sign-out must not wipe it. */
-const SESSION_PRESERVE = ['halatuju_admin_', 'halatuju_sponsor_']
+const SESSION_PRESERVE = ['halatuju_admin_', 'halatuju_list_nav:scholarship', 'halatuju_sponsor_']
 
 /** Check if the user has entered any results (SPM or STPM grades, or a third-route CGPA). */
 export function hasGrades(): boolean {

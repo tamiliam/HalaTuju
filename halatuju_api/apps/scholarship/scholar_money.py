@@ -1,8 +1,8 @@
 """The scholar file's Money and Contract tabs (student maintenance Sprint 5a, 2026-10-30).
 
 READS ONLY. Nothing here writes money or a contract; the doors are listed in docs/decisions.md (S5a).
-The view (`views_admin/scholars.py`) is the fence — the Applications rule, org 404, a reviewer only
-for an assigned scholar, finance and partner refused — and hands an application it may read.
+The view (`views_admin/scholars.py`) is the fence — the `scholars` key (sprint S1, `scholars_scope`),
+org 404, a mentor only for a current student, everyone else refused — and hands an application it may read.
 
 MONEY. Award, paid, remaining and the last releases come from THE Payments rules and nowhere else:
 `payments.paid_to_date` / `payments._remaining` (RELEASED disbursements are the one truth for "paid";

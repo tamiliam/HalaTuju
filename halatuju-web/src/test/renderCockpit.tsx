@@ -43,11 +43,19 @@ jest.mock('@/lib/admin-auth-context', () => ({
 }))
 jest.mock('next/navigation', () => ({
   useParams: () => ({ id: '7' }),
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
+  // One shared `push` so a test can see where the page navigated (`cockpitRouterPush`).
+  __push: jest.fn(),
+  useRouter: () => ({
+    push: (jest.requireMock('next/navigation') as { __push: jest.Mock }).__push,
+    replace: jest.fn(), refresh: jest.fn(),
+  }),
   usePathname: () => '/admin/scholarship/7',
 }))
 
 const api = adminApi as jest.Mocked<typeof adminApi>
+
+/** The `router.push` every cockpit render shares; cleared by the test that reads it. */
+export const cockpitRouterPush = (jest.requireMock('next/navigation') as { __push: jest.Mock }).__push
 
 /** The mocked auth module's mutable cell — `useAdminAuth` above reads it on every render, so a
  *  test may change role between mounts without re-mocking anything. */

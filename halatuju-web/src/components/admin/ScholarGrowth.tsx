@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import { getScholarGrowth, taskFileLink, type WorkRow } from '@/lib/admin-api/development'
+import { getScholarGrowth, scholarTaskFileLink, type WorkRow } from '@/lib/admin-api/development'
 import GrowthWork from '@/components/development/GrowthWork'
 import { openSigned } from '@/components/development/shared'
 
@@ -15,9 +15,13 @@ const K = 'admin.scholars.growth'
  *
  * ⚠ THE SERVER'S FENCE: the file's own (`_file_for`) AND the module makers' roles (super, org_admin, admin); the
  * page draws the tab only for them. An uploaded task opens through a short signed link fetched on the tap. Its
- * own chunk, fetched the first time the tab is opened.
+ * own chunk, fetched the first time the tab is opened. Sprint S1: a mentor reads it too (their current student);
+ * the task opens through the FILE's door (`scholarTaskFileLink`), and the module's Progress link is drawn only
+ * for a viewer who may open that page (`progressLinks`) — never a dead end.
  */
-export default function ScholarGrowth({ id, token }: { id: number; token: string | null }) {
+export default function ScholarGrowth({ id, token, progressLinks = false }: {
+  id: number; token: string | null; progressLinks?: boolean
+}) {
   const { t } = useT()
   const [rows, setRows] = useState<WorkRow[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -31,13 +35,13 @@ export default function ScholarGrowth({ id, token }: { id: number; token: string
     return () => { live = false }
   }, [id, token])
 
-  const openFile = (row: WorkRow) => openSigned(() => taskFileLink(row.id, id, { token: token ?? undefined }), () => setFailed(true))
+  const openFile = (row: WorkRow) => openSigned(() => scholarTaskFileLink(id, row.id, { token: token ?? undefined }), () => setFailed(true))
 
   if (failed) return <p className="text-sm text-critical-600" role="alert">{t(`${K}.loadError`)}</p>
   if (!rows) return <p className="text-sm text-ground-500">{t('common.loading')}</p>
   return (
     <section className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:px-5 py-2" data-testid="scholar-growth">
-      <GrowthWork rows={rows} t={t} openFile={openFile} progressLinks />
+      <GrowthWork rows={rows} t={t} openFile={openFile} progressLinks={progressLinks} />
     </section>
   )
 }

@@ -221,7 +221,7 @@ from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S
 from .urls_announcements import urlpatterns as ANNOUNCEMENT_URLS   # announcements (maintenance S8)
 from .urls_surveys import urlpatterns as SURVEY_URLS   # surveys (maintenance S9)
 from .urls_development import urlpatterns as DEVELOPMENT_URLS   # development modules (maintenance S10)
-from .urls_award import urlpatterns as AWARD_URLS   # a super withdraws an award (A1.13, TD-198)
+from . import urls_award, urls_billing   # award withdrawal (A1.13, TD-198); overdue banner (nudges)
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
@@ -596,4 +596,4 @@ urlpatterns = [
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),   # F9a: graduation thank-you moderation queue
-] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + AWARD_URLS
+] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + urls_award.urlpatterns + urls_billing.urlpatterns

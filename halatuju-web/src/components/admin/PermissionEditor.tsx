@@ -20,9 +20,9 @@ import {
  * on every change — what saving would do: each toggle asks the endpoint for a DRY RUN, and the line
  * under the switches is worded from its answer (`added`, `removed`, `consequences`) or shows its
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
- * the one local rule, Quality check bringing See all students, only mirrors what the server answers.
+ * the one local rule, Quality check bringing Applications, only mirrors what the server answers.
  *
- * Loaded as its own chunk by `LazyPermissionEditor` — most visits to People never open it.
+ * Loaded in the person page's own chunk (`'ad'`, `admin/person/TeamPersonPage`, sprint T3) — no route entry carries it.
  *
  * Under the card, **Changes** (2026-10-22): the same GET's `history`, re-read after every save so the
  * new line appears. A page that already holds the GET (the admin person page draws its header from
@@ -31,16 +31,17 @@ import {
 
 /**
  * Team tables T3 (owner, 2026-11-03): ONE SECTION PER TABLE THE PERSON SITS IN — the server's `tables`.
- * "Admin permissions" (`see_all`, `spending`, the three payment keys) only for somebody in Admins;
- * "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money groups,
- * which showed every key to everyone, are gone. "See all students" is an ADMIN permission; Quality check
+ * "Admin permissions" (`see_all`, `scholars`, `spending`, the payment and withdrawal keys) only for somebody in
+ * Admins; "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money
+ * groups, which showed every key to everyone, are gone. Sprint S1: `see_all` is labelled "Applications" and
+ * `scholars` ("Scholars", its own key) sits right after it. "Applications" is an ADMIN permission; Quality check
  * IMPLIES it (the server's `staff_permissions.IMPLIES`, T5b; TD-499), so it comes on with Quality check and
  * stays ticked and locked while Quality check is on; turning it off never takes Quality check away.
  * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
  * server served, changed only by the switches on screen (and the key Quality check brings).
  * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
 export const TABLE_KEYS = {
-  admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
+  admins: ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
     'award_withdraw_request', 'award_withdraw_approve'],
   reviewers: ['review', 'qc'],
 } as const
@@ -104,8 +105,8 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const tables = view?.tables
   const inAdmins = !tables || tables.includes('admins')
   const inReviewers = !tables || tables.includes('reviewers')
-  // Quality check brings See all students along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
-  // no "See all students" switch, so turning Quality check off takes it away again unless it was an ADMIN
+  // Quality check brings Applications (`see_all`) along (TD-499: the server's IMPLIES). Somebody NOT in Admins has
+  // no "Applications" switch, so turning Quality check off takes it away again unless it was an ADMIN
   // key before (held without Quality check), so turning Quality check off never leaves somebody seated at
   // Admins by a key nobody ticked (T2's rule, kept). In Admins the switch is on screen and stays as it is.
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
@@ -127,15 +128,17 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const preset = t(`admin.role.${view.role}`)
   // `?? []`: an api a few minutes behind this page serves no history yet; the list says "none".
   const history = <PermissionHistory rows={view.history ?? []} name={who} role={view.role} />
-  if (!view.editable) {
+  if (!view.editable && !view.is_active) {
     // A revoked person is not editable (review fix 8): say how to get there, draw no dead switches —
     // but their history still reads.
     return (<>
-      <p className="text-sm text-ground-500">{t(view.is_active ? 'admin.permEditor.fixed'
-        : 'admin.permEditor.restoreFirst', { name: who })}</p>
+      <p className="text-sm text-ground-500">{t('admin.permEditor.restoreFirst', { name: who })}</p>
       {history}
     </>)
   }
+  // Sprint T3 (M2): somebody active whose set this viewer may not change (an organisation admin, your
+  // own) — their keys as LOCKED switches under one line saying so: no Save, no Reset, no dry run.
+  const fixed = !view.editable
 
   const save = async () => {
     setBusy(true)
@@ -171,7 +174,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
 
   const row = (key: string) => {
     const on = want.includes(key)
-    // See all students is locked on while Quality check holds it (TD-499).
+    // Applications is locked on while Quality check holds it (TD-499).
     const locked = key === 'see_all' && want.includes('qc')
     const changed = on !== view.permissions.includes(key)
     return (
@@ -190,7 +193,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
             <div className="text-xs text-ground-500" data-testid="qc-brings-see-all">{t('admin.permEditor.qcBrings')}</div>
           )}
         </div>
-        <Toggle on={on} disabled={locked || busy} label={t(`admin.perm.${key}.name`)}
+        <Toggle on={on} disabled={fixed || locked || busy} label={t(`admin.perm.${key}.name`)}
           onChange={(v) => flip(key, v)} />
       </div>
     )
@@ -232,17 +235,18 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
           </span>
         )}
       </div>
-      <p className="mb-2 mt-0.5 text-sm text-ground-500">{t('admin.permEditor.subtitle', { preset })}</p>
+      <p className="mb-2 mt-0.5 text-sm text-ground-500" data-testid={fixed ? 'perm-fixed' : undefined}>
+        {fixed ? t('admin.permEditor.fixed', { name: who }) : t('admin.permEditor.subtitle', { preset })}</p>
       {inAdmins && group('perm-section-admins', t('admin.team.colKeys.admins'), TABLE_KEYS.admins)}
       {inReviewers && group('perm-section-reviewers', t('admin.team.colKeys.reviewers'), TABLE_KEYS.reviewers)}
-      {unlisted && (
+      {unlisted && !fixed && (
         <p className="text-xs text-caution-700" data-testid="unlisted-hint">
           {t('admin.permEditor.unlistedHint')}
         </p>
       )}
       {other.length > 0 && <div className="mt-2 border-t border-ground-100 pt-3">{other.map(row)}</div>}
 
-      {refusal ? (
+      {fixed ? null : refusal ? (
         <div role="alert" className="mt-4 rounded-lg bg-critical-50 px-3.5 py-3 text-sm text-critical-700">
           {refusal.message}
         </div>
@@ -252,6 +256,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </div>
       ) : null}
 
+      {!fixed && (<>
       <div className="mt-4 flex flex-wrap gap-2.5">
         <button type="button" onClick={save} disabled={!dirty || busy || !!refusal || !plan}
           className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
@@ -266,6 +271,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </button>)}
       </div>
       <p className="mt-3 text-xs text-ground-500">{t('admin.permEditor.footnote')}</p>
+      </>)}
     </section>
     {history}
   </>)

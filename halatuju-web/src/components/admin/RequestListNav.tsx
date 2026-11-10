@@ -12,57 +12,18 @@
  * Its own file because the detail page sits on its oversize ledger with two lines of room.
  */
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
 import { useT } from '@/lib/i18n'
-import { REQUESTS_LIST_NAV, arrowKeysIgnored, useListNav } from '@/lib/listNav'
+import { REQUESTS_LIST_NAV, useListNav } from '@/lib/listNav'
+import { useListSteps } from '@/lib/useListSteps'
 
 const LINK = 'inline-flex min-h-11 items-center text-sm text-primary-600 hover:text-primary-800'
 const STEP = 'inline-flex min-h-11 items-center px-2 text-sm font-medium text-primary-600 '
   + 'hover:text-primary-800 disabled:cursor-not-allowed disabled:text-ground-300'
 
-/** The step button pressed last, across the remount a new request's page may cause. */
-let pressedStep: 'prev' | 'next' | null = null
-
 export default function RequestListNav({ id }: { id: number }) {
   const { t } = useT()
-  const router = useRouter()
   const nav = useListNav(REQUESTS_LIST_NAV, id)
-  const prevRef = useRef<HTMLButtonElement>(null)
-  const nextRef = useRef<HTMLButtonElement>(null)
-  const go = (which: 'prev' | 'next', to: number | null) => {
-    if (to === null) return
-    pressedStep = which
-    router.push(`/admin/requests/${to}`)
-  }
-
-  // ⚠ A control that disables itself on its own press drops focus to <body> (or keeps it on a
-  // dead button, depending on the browser) — and the next request's page may mount a NEW copy of
-  // this component, which is why the pressed step is held outside it. Focus returns to the step
-  // that was pressed; when that one is now greyed (Next onto the last request), to the other one.
-  useEffect(() => {
-    if (!nav || !pressedStep) return
-    const want = pressedStep === 'next' ? nav.nextId : nav.prevId
-    const same = pressedStep === 'next' ? nextRef.current : prevRef.current
-    const other = pressedStep === 'next' ? prevRef.current : nextRef.current
-    pressedStep = null
-    ;(want !== null ? same : other)?.focus()
-  }, [nav])
-
-  const navRef = useRef(nav)
-  navRef.current = nav
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const at = navRef.current
-      if (!at || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || arrowKeysIgnored(e)) return
-      const to = e.key === 'ArrowLeft' ? at.prevId : at.nextId
-      if (to === null) return
-      e.preventDefault()
-      router.push(`/admin/requests/${to}`)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [router])
+  const { prevRef, nextRef, go } = useListSteps(nav, (to) => `/admin/requests/${to}`)
 
   if (!nav) {
     return <Link href="/admin/requests" className={LINK}>← {t('admin.requests.detail.back')}</Link>

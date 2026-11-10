@@ -1,5 +1,6 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
 import { getTurnstileToken } from '@/lib/turnstile'
+import { clearSignInDismissals } from '@/lib/topBanner'
 
 let _adminSupabase: AuthOnlyClient | null = null
 
@@ -70,6 +71,7 @@ export async function adminSignOut() {
   // scope: 'local' — end only the admin session, not the user's student/sponsor
   // sessions (same Supabase identity across the three isolated clients).
   const { error } = await getAdminSupabase().auth.signOut({ scope: 'local' })
+  clearSignInDismissals()   // staff nudges: "hidden until the next sign-in" ends here (lib/topBanner)
   return { error }
 }
 

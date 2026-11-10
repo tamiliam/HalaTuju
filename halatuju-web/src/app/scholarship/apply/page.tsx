@@ -42,8 +42,7 @@ import LazyPathwayPicker from '@/components/scholarship/LazyPathwayPicker'
 import ApplyingTo from '@/components/scholarship/ApplyingTo'
 import ReferralSelect, { useReferralOptions } from '@/components/scholarship/ReferralSelect'
 import { isReferralNotOffered } from '@/lib/referralSources'
-import GiftClosed from '@/components/scholarship/GiftClosed'
-import AlreadyApplied from '@/components/scholarship/AlreadyApplied'
+import LazyApplyNotice from '@/components/scholarship/LazyApplyNotice'
 import { ApplyProgress, ApplyFooter } from '@/components/scholarship/ApplyStepper'
 import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 // THE DRAFT (Mobile M4, owner: this tab only) - no IC, signature or consent; bound to her id + programme.
@@ -335,7 +334,7 @@ export default function ScholarshipApplyPage() {
   }
 
   // A NAMED gift that has closed says so on its own page (after the bounce above, before all else).
-  if (gift.closed) return wrap(<GiftClosed onSeeOpen={gift.othersOpen ? gift.change : undefined} />, card.fromGift)
+  if (gift.closed) return wrap(<LazyApplyNotice kind="closed" onSeeOpen={gift.othersOpen ? gift.change : undefined} />, card.fromGift)
   // ── Which programme? Several open, none named — asked BEFORE the sign-in gate, for everyone ──
   // (owner's live test, 2026-10-05: signed out, a bare link showed one gift's criteria unasked).
   if (gift.choices.length > 1) {
@@ -360,7 +359,7 @@ export default function ScholarshipApplyPage() {
   }
 
   // A finished application in THIS round: say so, here (the gate's `already_applied`; never a bounce).
-  if (gate.state === 'already_applied') return wrap(<AlreadyApplied onSeeOpen={gift.canChange ? gift.change : undefined} />)
+  if (gate.state === 'already_applied') return wrap(<LazyApplyNotice kind="applied" onSeeOpen={gift.canChange ? gift.change : undefined} />)
   // ── status === 'ready', allowed by the gate (or it could not answer) → the tabbed form ──
   const academic = profileAcademicSummary(profile)
   const tabIndex = TAB_ORDER.indexOf(tab)

@@ -143,6 +143,17 @@ def sha256_text(text):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
+def package_sha(module):
+    """One sha over every .py file of a package, in name order (the vision package is many files)."""
+    h = hashlib.sha256()
+    d = os.path.dirname(module.__file__)
+    for name in sorted(n for n in os.listdir(d) if n.endswith(".py")):
+        h.update(name.encode("utf-8"))
+        with open(os.path.join(d, name), "rb") as fh:
+            h.update(fh.read())
+    return h.hexdigest()
+
+
 def prompt_of(contents):
     """The text part of a `generate_content` contents (a string, or [image part, prompt])."""
     if isinstance(contents, str):

@@ -97,15 +97,23 @@ def base_queryset(*, closed=False):
     return ScholarshipApplication.objects.filter(q)
 
 
-def annotate(qs):
-    """The per-row facts a list needs, as subqueries on ONE query (no per-row read)."""
+def _activity(application, with_internal):
+    """A file's log rows for `last_activity_at`. A mentor (`with_internal=False`) never reads a
+    Staff-only (`internal`) row, so its date never moves their "last activity" (sprint S1)."""
+    rows = StudentActivity.objects.filter(application=application)
+    return rows if with_internal else rows.filter(internal=False)
+
+
+def annotate(qs, *, with_internal=True):
+    """The per-row facts a list needs, as subqueries on ONE query (no per-row read). A mentor's list
+    passes `with_internal=False`: the same subquery, filtered, so still no per-row read."""
     return (qs.select_related('profile', 'programme', 'owning_organisation__configuration')
             .annotate(latest_cgpa=_latest('cgpa'), latest_semester=_latest('semester'),
                       latest_result_at=_latest('created_at'), latest_graduated=_latest('graduated'),
                       pending_review=Exists(SemesterResult.objects.filter(
                           application=OuterRef('pk'), review_status=PENDING)),
                       last_activity_at=Subquery(
-                          StudentActivity.objects.filter(application=OuterRef('pk'))
+                          _activity(OuterRef('pk'), with_internal)
                           .order_by('-created_at', '-id').values('created_at')[:1]),
                       # S4b: her earliest OPEN result term — its due date (past = late) and start.
                       next_due=Subquery(_open_term(OuterRef('pk')).values('due_on')[:1]),
@@ -313,8 +321,9 @@ def _asked(app):
     return h['university'] or h['scholarship'] or h['flagged']
 
 
-def file_payload(app):
-    """The file header + Overview cards for ONE application the view has fenced."""
+def file_payload(app, *, with_internal=True):
+    """The file header + Overview cards for ONE application the view has fenced. A mentor's file
+    passes `with_internal=False` (its "last activity" ignores Staff-only rows)."""
     from . import results_expectations
     from .payments import _remaining, paid_to_date
     latest = latest_accepted(app)
@@ -324,7 +333,7 @@ def file_payload(app):
     last = (Disbursement.objects.filter(application=app, status__in=Disbursement.PAID)
             .order_by('-released_at', '-id').values('amount', 'released_at').first())
     agreement = BursaryAgreement.objects.filter(application=app).first()
-    last_activity = (StudentActivity.objects.filter(application=app)
+    last_activity = (_activity(app, with_internal)
                      .order_by('-created_at', '-id').values_list('created_at', flat=True).first())
     result = _result(latest['cgpa'], latest['semester'], latest['created_at']) if latest else None
     return {
@@ -358,11 +367,13 @@ def file_payload(app):
     }
 
 
-def controls(app, *, can_write, can_hold):
+def controls(app, *, can_write, can_hold, can_review_results=None):
     """What the file's header may OFFER this officer (maintenance S3 — the sub-state and Close moved
     here from the cockpit). An offer, never the gate: `AdminMaintenanceSubstateView` and
     `AdminCloseApplicationView` judge every request again.
 
+      * `can_review_results` — may accept / query a result: the scholar-file write (S1-d,
+        `_may_write_file`; `can_write` when not given) while she is in maintenance;
       * `can_set_substate` — may write this case (`_can_review_app`) and the case takes a sub-state
         (`maintenance.can_set_substate`);
       * `can_hold` — may move it to or from `on_hold`: payments rights (`payments.may_prepare`, S1 M1);
@@ -380,7 +391,8 @@ def controls(app, *, can_write, can_hold):
         refusal = 'sponsorship_open'
     return {
         # S4a: accepting / querying a result is a write on the case, and only while she is in it.
-        'can_review_results': bool(can_write and maintenance_scope.is_in_maintenance(app)),
+        'can_review_results': bool((can_write if can_review_results is None else can_review_results)
+                                   and maintenance_scope.is_in_maintenance(app)),
         'can_set_substate': bool(can_write and can_set_substate(app)),
         'can_hold': bool(can_hold),
         'close_reasons': (list(closure.reasons_for(app.status))
@@ -389,8 +401,9 @@ def controls(app, *, can_write, can_hold):
     }
 
 
-def result_dict(row):
-    """One result for the officer's Results tab — the slip by signed URL (org-fenced by the key)."""
+def result_dict(row, *, names=None):
+    """One result for the officer's Results tab — the slip by signed URL (org-fenced by the key).
+    ``names`` (S1 ruling A — a MENTOR reads the tab): ``{email: name}``; the reviewer is served by name."""
     slip = row.results_slip
     url = None
     if slip is not None:
@@ -402,16 +415,30 @@ def result_dict(row):
         'id': row.id, 'semester': row.semester, 'cgpa': _two(row.cgpa), 'graduated': row.graduated,
         'note': row.note, 'created_at': row.created_at,
         'review_status': row.review_status, 'review_note': row.review_note,
-        'reviewed_by': row.reviewed_by, 'reviewed_at': row.reviewed_at,
+        'reviewed_by': (row.reviewed_by if names is None
+                        else names.get((row.reviewed_by or '').lower(), '')),
+        'reviewed_at': row.reviewed_at,
         'slip': ({'url': url, 'filename': slip.original_filename, 'content_type': slip.content_type}
                  if slip is not None else None),
     }
 
 
-def activity_dict(row):
+def activity_dict(row, actors=None, *, names_only=False):
+    """One log row for the officer. ``actors`` (`activity_people.Actors`, built once per page) adds
+    ``actor: {name, photo_url, kind} | None`` (sprint P1) and serves ``actor_email`` only for an unknown
+    writer (P1 review); without it the row carries ``actor: None`` and its email as stored.
+    ``names_only`` (S1 ruling A — a MENTOR reads the log): no address at all — not an unknown writer's
+    (``actor_email`` and the name it stood in for are blank), not one in ``meta``."""
+    actor, email = actors.of(row) if actors is not None else (None, row.actor_email)
+    meta = row.meta or {}
+    if names_only:
+        if email and actor is not None and actor.get('name') == email:
+            actor = {**actor, 'name': ''}
+        email = ''
+        meta = {k: v for k, v in meta.items() if not (isinstance(v, str) and '@' in v)}
     return {
         'id': row.id, 'kind': row.kind, 'event': row.event, 'body': row.body,
-        'meta': row.meta or {}, 'actor_email': row.actor_email, 'internal': row.internal,
+        'meta': meta, 'actor_email': email, 'actor': actor, 'internal': row.internal,
         'created_at': row.created_at,
     }
 

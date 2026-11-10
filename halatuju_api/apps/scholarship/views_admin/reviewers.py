@@ -223,6 +223,16 @@ def _reviewer_dict(admin, work):
     }
 
 
+def _with_footprint(caller, row, payload, work=None, sole=None):
+    """Sprint T2: `work` (the footprint counts, `{}` for none), `deletable`, `delete_never` and
+    `revocable` — the Admins list's keys, so all three tables offer Revoke and Delete by one rule
+    (`staff_delete_rules.delete_fields`). ``work`` is the row's `staff_footprint.footprints` entry
+    (a table: ONE query for the page) or `from_row` (one person); left out, it is read (`footprint`)."""
+    from apps.courses.staff_delete_rules import delete_fields
+    payload.update(delete_fields(caller, row, work=work, sole=sole))
+    return payload
+
+
 class _ReviewersBase(_AdminBase):
     """Shared gate + fence for the reviewers surface (Organisation → Reviewers).
 
@@ -300,8 +310,15 @@ class AdminReviewerListView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        rows = list(self._reviewers(org_id, include_revoked=True))
+        from apps.courses.staff_delete_rules import sole_org_admin_ids
+        from .. import staff_footprint
+        # ⚠ T2 review S1: the footprint rides on THIS query (`annotations`), not on a batched
+        # `footprints` like the Admins and Mentors lists. That would be one more query, and this list's
+        # budget (`api/v1/admin/reviewers/::GET::*`, 6) is frozen and may not be raised (open question).
+        rows = list(self._reviewers(org_id, include_revoked=True)
+                    .annotate(**staff_footprint.annotations()))
         work = _reviewer_workloads(rows, organisation_id=org_id)
+        sole = sole_org_admin_ids(admin, rows)   # no query unless a super lists an active org admin
         # Common profile S2: the photo, and the phone ONLY when its owner shows it to the team —
         # one query and one batch signing call for the page (`staff_photo.team_cards`).
         from .. import staff_photo
@@ -311,7 +328,9 @@ class AdminReviewerListView(_ReviewersBase):
         seats = staff_tables_admin.row_fields(
             admin, rows, open_counts={i: w['_open_cases'] for i, w in work.items()})
         return Response({
-            'reviewers': [{**_reviewer_dict(r, work[r.id]), **seats[r.id], **cards[r.id]} for r in rows],
+            'reviewers': [_with_footprint(admin, r, {**_reviewer_dict(r, work[r.id]), **seats[r.id],
+                                                     **cards[r.id]}, work=staff_footprint.from_row(r),
+                                          sole=sole) for r in rows],
             # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
             # can offer the change wherever a reviewer is shown, without a second round trip.
             'programmes': self._gift_choices(admin),
@@ -334,13 +353,17 @@ class AdminReviewerDetailView(_ReviewersBase):
         # ⚠ 404, never 403 — a 403 would confirm that another tenant's staff member exists.
         # ⚠ `include_revoked`: a closed account's record must still OPEN, or Restore on the list
         # would send somebody to a 404 (2026-09-09).
-        target = self._reviewers(org_id, include_revoked=True).filter(pk=pk).first()
+        from .. import staff_footprint   # one person: the footprint rides on this query (no extra one)
+        target = (self._reviewers(org_id, include_revoked=True)
+                  .annotate(**staff_footprint.annotations()).filter(pk=pk).first())
         if target is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
         rp = getattr(target, 'reviewer_profile', None)
         from .. import reopen as reopen_service
-        payload = _reviewer_dict(target, work)
+        from .. import staff_person
+        payload = _with_footprint(admin, target, _reviewer_dict(target, work),
+                                  work=staff_footprint.from_row(target))
         payload.update({
             # The four outcome bands. They partition the decided cases, so they sum to `completed`
             # — the bar and the figure above it can never disagree.
@@ -371,6 +394,8 @@ class AdminReviewerDetailView(_ReviewersBase):
             # endpoint takes it (a Finance + Review person is pausable; a set with no review power
             # is not). The CALLER side (super / org_admin) stays the page's.
             'pausable': is_review_target(target),
+            # Sprint T3: the ONE person page's header and Profile tab (`staff_person`, all three details).
+            'person': staff_person.person(target, rp),
         })
         return Response(payload)
 

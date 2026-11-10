@@ -221,7 +221,7 @@ class TestTheGuardIsNarrow(TestCase):
 
 
 _COCKPIT_TS = (Path(__file__).resolve().parents[4]
-               / 'halatuju-web' / 'src' / 'lib' / 'officerCockpit.ts')
+               / 'halatuju-web' / 'src' / 'lib' / 'cockpitStages.ts')
 
 
 class TestTheCockpitMirrorsThisSet(SimpleTestCase):
@@ -243,7 +243,7 @@ class TestTheCockpitMirrorsThisSet(SimpleTestCase):
             'it would have accepted, and both are silent')
         match = re.search(r'CASE_CLOSED_STATES\s*=\s*new Set<string>\(\[([^\]]*)\]\)', text)
         self.assertIsNotNone(
-            match, 'could not find CASE_CLOSED_STATES in officerCockpit.ts — if it was renamed, '
+            match, 'could not find CASE_CLOSED_STATES in cockpitStages.ts — if it was renamed, '
                    'rename it here too rather than deleting this guard')
         self.assertEqual(set(re.findall(r"'([^']+)'", match.group(1))),
                          set(CASE_CLOSED_STATES))

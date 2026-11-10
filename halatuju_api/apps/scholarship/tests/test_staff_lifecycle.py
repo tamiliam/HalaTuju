@@ -345,7 +345,7 @@ class TestInviteAgainAfterCancel(TestCase):
         account.refresh_from_db()
         self.assertEqual((account.is_active, account.role, account.name), (True, 'admin', 'Again'))
         # Team tables T2: brought back as an Admin, they start at the minimum — never the old set.
-        self.assertEqual(account.permissions, ['see_all'])
+        self.assertEqual(account.permissions, ['see_all', 'scholars'])   # S1: and Scholars
         new = Invitation.objects.filter(partner_admin=account).exclude(pk=old.pk).get()
         self.assertEqual((new.role, new.credential_issued, invitations.status_of(new)),
                          ('admin', True, 'invited'))
@@ -528,7 +528,7 @@ class TestDeleteRemovesTheLogin(TestCase):
         self.assertIn(password, mail.outbox[-1].body)
         again = PartnerAdmin.objects.get(email=target.email)
         self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'admin'))
-        self.assertEqual(again.permissions, ['see_all'])   # T2: a new Admin starts at the minimum
+        self.assertEqual(again.permissions, ['see_all', 'scholars'])   # T2 / S1: the minimum
 
     def test_a_login_that_is_also_a_student_survives(self):
         target = make_admin('admin', owning_org=self.org)
@@ -723,13 +723,15 @@ class TestDeleteRemovesTheLogin(TestCase):
         gone.assert_not_called()
         put.assert_not_called()
 
-    def test_still_refused_for_work_and_for_reviewers(self):
+    def test_still_refused_for_work_including_a_reviewers(self):
+        # D6 (2026-11-08): a reviewer is deletable now, but one who has held a case is not.
         worked = make_admin('admin', owning_org=self.org)
         PaymentRun.objects.create(organisation=self.org, created_by=worked.email,
                                   payment_date=datetime.date(2026, 9, 1))
         rev = make_admin('reviewer', owning_org=self.org)
+        make_application('assigned', reviewer=rev)
         with patch(f'{REQ}.get') as get, patch(f'{REQ}.delete') as gone:
             self.assertEqual(self._delete(worked).json()['code'], 'has_work')
-            self.assertEqual(self._delete(rev).json()['code'], 'not_deletable')
+            self.assertEqual(self._delete(rev).json()['code'], 'has_work')
         get.assert_not_called()
         gone.assert_not_called()

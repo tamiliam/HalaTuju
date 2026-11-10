@@ -166,10 +166,11 @@ class TestRunFieldExtraction(TestCase):
             y += 40
         return words
 
+    @patch('apps.scholarship.vision.ocr_document', return_value={'text': '', 'error': None})
     @patch('apps.scholarship.vision.extract_document_fields')
     @patch('apps.scholarship.vision._vision_words')
     @patch('apps.scholarship.vision._fetch_image_bytes')
-    def test_results_slip_uses_deterministic_ocr_not_gemini(self, mock_img, mock_words, mock_gemini):
+    def test_results_slip_uses_deterministic_ocr_not_gemini(self, mock_img, mock_words, mock_gemini, _ocr):
         # SPM slip → positional OCR parse wins; Gemini (extract_document_fields) untouched.
         mock_img.return_value = b'fake-image-bytes'
         mock_words.return_value = {'words': self._spm_words(), 'error': None}
@@ -181,10 +182,11 @@ class TestRunFieldExtraction(TestCase):
         self.assertEqual(got['Perniagaan'], 'B')
         mock_gemini.assert_not_called()
 
+    @patch('apps.scholarship.vision.ocr_document', return_value={'text': '', 'error': None})
     @patch('apps.scholarship.vision.extract_document_fields')
     @patch('apps.scholarship.vision._vision_words')
     @patch('apps.scholarship.vision._fetch_image_bytes')
-    def test_results_slip_falls_back_to_gemini_when_ocr_blank(self, mock_img, mock_words, mock_gemini):
+    def test_results_slip_falls_back_to_gemini_when_ocr_blank(self, mock_img, mock_words, mock_gemini, _ocr):
         # OCR found nothing parseable → fall back to the Gemini image read.
         mock_img.return_value = b'fake-image-bytes'
         mock_words.return_value = {'words': [], 'error': None}
@@ -194,10 +196,11 @@ class TestRunFieldExtraction(TestCase):
         vision.run_field_extraction_for_document(doc, names=['Sharmila'])
         mock_gemini.assert_called_once()
 
+    @patch('apps.scholarship.vision._vision_words', return_value={'words': [], 'error': None})
     @patch('apps.scholarship.vision.extract_document_fields')
     @patch('apps.scholarship.vision._fetch_image_bytes')
     @patch('apps.scholarship.doc_parse.parse_by_labels')
-    def test_birth_certificate_reads_image_when_deterministic_defers(self, mock_parse, mock_img, mock_gemini):
+    def test_birth_certificate_reads_image_when_deterministic_defers(self, mock_parse, mock_img, mock_gemini, _words):
         # When the conservative deterministic BC parser can't lock on, the Gemini fallback must read
         # the IMAGE (not the OCR-flattened text, which cross-wires the child's far-off "Nama" with the
         # father's fuller name — #10: child read as 'MUGINDRAN A/L ATHIAH' instead of 'TAANUSIYA').

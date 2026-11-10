@@ -19,9 +19,10 @@ import {
   NAV_ITEMS, NO_PROBES, canAccess, defaultRoute, effectiveRole, visibleNav, type ProbeState,
 } from '@/lib/navigation'
 import { defaultChapterSlug, manualPerms, manualRole, visibleChapters } from '@/content/manual'
-import { ADMIN_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
+import { ADMIN_KEYS, ORG_READ_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
 import { MENTORS_READ_ROLES, mayReadMentors } from '@/lib/pageGuard'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
+import { s1Moves, s1Served } from '@/test/s1Moves'
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessBefore.json')
 const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBefore.json')
@@ -125,7 +126,9 @@ function measure(p: Payload): Record<string, unknown> {
 }
 
 describe('Team tables T1: the console access matrix', () => {
-  const measured = Object.fromEntries(Object.entries(SHAPES).map(([k, p]) => [k, measure(p)]))
+  // Sprint S1: measured on the payload the server serves after S1 (`s1Served`; the WRITE path is unchanged in effect
+  // for a fixture, which is never rewritten).
+  const measured = Object.fromEntries(Object.entries(SHAPES).map(([k, p]) => [k, measure(s1Served(k, p))]))
 
   if (WRITE) {
     it('writes the BEFORE matrix', () => {
@@ -161,8 +164,9 @@ describe('Team tables T1: the console access matrix', () => {
       expected[cell] = now
     }
     // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
-    expect(measured[shape]).toEqual(
-      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)))
+    // Sprint S1's declared move (the Scholars row asks `scholars`) — see `test/s1Moves.ts`.
+    expect(measured[shape]).toEqual(s1Moves(
+      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)), shape))
   })
 })
 
@@ -233,7 +237,7 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
 
   // ⚠ T5c P1 removed the server's `ORG_READ_KEYS` / `ADMIN_WORK_KEYS` / `ADMIN_WORK_ROLES` (its doors read v2
   // keys). Since T5c P4 the web's `adminKeys` rows are the OLDER-payload rule (no `page_keys`), frozen as T1
-  // had it: `ORG_READ_KEYS = ADMIN_KEYS`, no admin-work key, Mentors readers super / org_admin / admin. The
+  // had it: `ORG_READ_KEYS` = T1's ADMIN_KEYS (written out since S1 added `scholars`), no admin-work key, Mentors readers super / org_admin / admin. The
   // served-payload rule is `pageDoors.DOOR_KEYS`, held to the server by `teamTablesT5cDoors.test.ts`.
   it('ADMIN_KEYS and the see_all-beside-qc rule match staff_tables.py', () => {
     expect([...ADMIN_KEYS]).toEqual(tuple('ADMIN_KEYS'))
@@ -245,7 +249,9 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
     // T1 (frozen): Sources, Mentors, Announcements, Surveys and Development stay on their roles.
     expect([...MENTORS_READ_ROLES]).toEqual(['super', 'org_admin', 'admin'])
     expect(NAV_ITEMS.filter((i) => i.adminKeys).map((i) => [i.id, i.adminKeys]))
-      .toEqual(['staff', 'reviewers', 'sponsors'].map((id) => [id, ADMIN_KEYS]))
+      .toEqual(['staff', 'reviewers', 'sponsors'].map((id) => [id, ORG_READ_KEYS]))
+    // Sprint S1: `scholars` seats a person at Admins, but the frozen older-payload rule is T1's list exactly.
+    expect([...ORG_READ_KEYS]).toEqual(ADMIN_KEYS.filter((k) => k !== 'scholars'))
   })
 
   it('a row is never NARROWED by tables: absent, empty or foreign tables answer exactly as before', () => {

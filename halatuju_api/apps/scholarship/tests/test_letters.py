@@ -1,8 +1,9 @@
 """Student maintenance Sprint 6b — formal letters (`letters.py`, `views_admin/letters.py`, `views_bursary`).
 
 Every door in the plan, each pinned (owner rulings 2026-10-30):
-  * ISSUE — suspension/termination super or org_admin only; general/discipline/close-out the case
-    writer; an unassigned reviewer, finance, another organisation and a student refused; a typed FULL
+  * ISSUE — suspension/termination super or org_admin only; general/discipline/close-out any
+    `scholars` holder of the file's organisation (sprint S1-d, assignee or not); a reviewer (assigned
+    or not), finance, another organisation and a student refused; a typed FULL
     NAME confirms discipline and termination, on the server; a closed file takes only general and
     close-out; a missing clause refuses wording that needs one.
   * DOCUMENTS ONLY — no status, sub-state or payment changes; termination makes the file PROMPT.
@@ -50,6 +51,7 @@ class _Base(TestCase):
         self.org_admin = make_admin('org_admin', owning_org=self.org)
         self.reviewer = make_admin('reviewer', owning_org=self.org)
         type(self.app).objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
+        self.officer = make_admin('admin', owning_org=self.org)    # holds `scholars`, not the assignee
         self.app.refresh_from_db()
         patcher = patch(UPLOAD, return_value=True)
         self.upload = patcher.start()
@@ -63,15 +65,15 @@ class _Base(TestCase):
 
 
 class TestWhoMayIssue(_Base):
-    def test_org_admin_issues_every_kind_and_the_assigned_reviewer_only_the_ordinary_ones(self):
+    def test_org_admin_issues_every_kind_and_a_scholars_holder_only_the_ordinary_ones(self):
         for kind in ('general', 'discipline', 'suspension', 'termination', 'close_out'):
             with self.subTest(kind=kind):
                 r = self._issue(self.org_admin, kind=kind, clause='9', confirm_name=self.name)
                 self.assertEqual(r.status_code, 201, r.content)
         for kind, code in (('general', 201), ('discipline', 201), ('close_out', 201),
                            ('suspension', 403), ('termination', 403)):
-            with self.subTest(reviewer=kind):
-                r = self._issue(self.reviewer, kind=kind, clause='5', confirm_name=self.name)
+            with self.subTest(officer=kind):
+                r = self._issue(self.officer, kind=kind, clause='5', confirm_name=self.name)
                 self.assertEqual(r.status_code, code, r.content)
 
     def test_others_are_refused(self):
@@ -79,6 +81,7 @@ class TestWhoMayIssue(_Base):
         finance = make_admin('finance', owning_org=self.org)
         stranger = make_admin('org_admin', owning_org=_scholar().owning_organisation)
         self.assertEqual(self._issue(unassigned).status_code, 403)
+        self.assertEqual(self._issue(self.reviewer).status_code, 403)    # S1: the assignee too
         self.assertEqual(self._issue(finance).status_code, 403)
         self.assertEqual(self._issue(stranger).status_code, 404)
         student = authed_client(self.app.profile.supabase_user_id)
@@ -87,7 +90,7 @@ class TestWhoMayIssue(_Base):
         self.assertFalse(Letter.objects.exists())
 
     def test_the_tab_says_what_this_admin_may_issue(self):
-        body = authed_client(self.reviewer).get(API.format(self.app.id)).json()
+        body = authed_client(self.officer).get(API.format(self.app.id)).json()
         self.assertEqual(body['can_issue'], ['general', 'discipline', 'close_out'])
         self.assertFalse(body['can_withdraw'])
         body = authed_client(self.org_admin).get(API.format(self.app.id)).json()
@@ -322,8 +325,10 @@ class TestNeverASponsorPartnerOrSourceReader(TestCase):
         readers = sorted(str(p.relative_to(root)).replace('\\', '/') for p in root.rglob('*.py')
                          if 'tests' not in p.parts and 'migrations' not in p.parts
                          and 'StudentActivity' in p.read_text(encoding='utf-8'))
+        # `staff_footprint.py` (Sprint T2 review B1) only COUNTS a staff member's own notes by
+        # `actor_email` for the Team tables' Delete rule; it never reads a body or a letter event.
         self.assertEqual(readers, ['activity.py', 'models/__init__.py', 'models/activity.py', 'scholars.py',
-                                   'views_admin/scholars.py'])
+                                   'staff_footprint.py', 'views_admin/scholars.py'])
 
 
 class TestLetterWording(TestCase):

@@ -100,7 +100,7 @@ from apps.scholarship.eval.offer_fresh_gemini import (
     IMAGE_TOKENS_HIGH_A4, IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
     StopRun, _refuse_db, call_cost_usd, error_code, guarded_production_read,
     bootstrap_django, image_tokens_estimate, load_gemini_key, price_for, print_costs, prompt_of,
-    sha256_text, usage_of, usd_to_myr)
+    package_sha, sha256_text, usage_of, usd_to_myr)
 
 __all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
            'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code',
@@ -187,7 +187,7 @@ def code_versions():
     except ImportError:
         sdk = None
     schema = vision._FIELD_SCHEMAS.get(DOC_TYPE)
-    return {'git_head': _git_head(), 'vision_py_sha256': _file_sha(vision.__file__),
+    return {'git_head': _git_head(), 'vision_py_sha256': package_sha(vision),
             'schema_sha256': sha256_text(json.dumps(schema, sort_keys=True, default=str)),
             'genai_sdk': sdk, 'offer_reader_version': offer_reader.OFFER_READER_VERSION,
             'offer_reader_py_sha256': _file_sha(offer_reader.__file__)}

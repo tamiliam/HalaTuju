@@ -5,6 +5,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { TeamPersonBlock, TeamTableName } from './admins'
 import type { AdminReviewerGift, ReviewerGiftTag } from './reviewers'
 
 export type MentorStatus = 'active' | 'invited' | 'inactive'
@@ -43,8 +44,14 @@ export interface MentorRow {
   /** The latest meeting's date (YYYY-MM-DD), or null. */
   last_meeting?: string | null
   /** Concerns raised and not marked handled, on files still in maintenance. Null for a caller without
-   *  the Scholars list's read key (`see_all`) — T3 review. */
+   *  the Scholars list's read key (`scholars` since sprint S1; `see_all` before) — T3 review. */
   concerns_open?: number | null
+  /** Sprint T2 (D6): a pure mentor with no assignment, session or concern may be deleted
+   *  (`DELETE admin/mentors/<id>/`); false for a staff mentor, deleted from their staff table. */
+  deletable?: boolean
+  /** T2 review N2: nobody may ever delete this row here — draw no Delete. */
+  delete_never?: boolean
+  work?: Record<string, number>
   // ── Invitations I4 (2026-11-08): the gifts this mentor mentors in ──
   /** Their gifts, by code. EMPTY means every gift — including gifts started later (`every_gift`).
    *  Absent on an api from before I4: read as every gift. */
@@ -57,7 +64,7 @@ export interface MentorsPayload {
   mentors: MentorRow[]
   counts: Record<MentorStatus, number>
   can_invite: boolean
-  /** T3 review: may the caller see the scholar side (`see_all`)? False: no concerns, no detail scholars. */
+  /** T3 review: may the caller see the scholar side (the `scholars` key, sprint S1)? False: no concerns, no detail scholars. */
   sees_scholars?: boolean
 }
 
@@ -106,6 +113,15 @@ export async function mentorAction(id: number, action: MentorAction, options?: A
     `/api/v1/admin/mentors/${id}/${action}/`, 'POST', {}, options)
 }
 
+/** Sprint T2 (D6): delete a PURE mentor outright — their sign-in, mentor record and invitations, in
+ *  one transaction. Refusals arrive as `code`: `has_work` (409, with `work`), `staff_mentor` (400: a
+ *  staff member is deleted from their staff table), `not_found`, `login_cleanup_failed`,
+ *  `delete_failed`. */
+export async function deleteMentor(id: number, options?: ApiOptions) {
+  return adminMutate<{ message: string; login?: string }>(`/api/v1/admin/mentors/${id}/`, 'DELETE',
+    undefined, options)
+}
+
 /** Team tables T3: one scholar on the mentor detail page — never a meeting note. */
 export interface MentorScholarRow {
   application_id: number
@@ -125,7 +141,7 @@ export interface MentorScholarRow {
 export interface MentorDetail {
   mentor: MentorRow
   mentoring_since: string | null
-  /** T3 review: false for a caller without `see_all` — then `figures` is null and both lists are empty. */
+  /** T3 review: false for a caller without `scholars` (sprint S1) — then `figures` is null and both lists are empty. */
   sees_scholars: boolean
   figures: null | {
     scholars_now: number
@@ -138,6 +154,11 @@ export interface MentorDetail {
   }
   current: MentorScholarRow[]
   past: MentorScholarRow[]
+  /** Sprint T3: the person page's header and Profile tab. */
+  person?: TeamPersonBlock
+  /** Sprint T3 (D8): the tables THIS viewer may add a mentor's own login to — the Add endpoint's own rule
+   *  (`staff_tables_admin.addable_tables`). [] for a staff mentor and for a viewer who may not add. */
+  may_add?: TeamTableName[]
   /** I4: the gifts this mentor may be given — every gift of THEIR organisation, ended ones marked.
    *  Absent on an older api: then the details box shows the gifts but offers no edit. */
   programmes?: AdminReviewerGift[]

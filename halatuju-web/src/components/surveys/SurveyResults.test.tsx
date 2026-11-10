@@ -13,7 +13,7 @@ import SurveyResults from './SurveyResults'
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string } = { role: 'admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean } = { role: 'admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: mockRole }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
@@ -82,6 +82,16 @@ it('offers no Remind button when the server does not', async () => {
   render(<SurveyResults id={5} />)
   await screen.findByTestId('summary-1')
   expect(screen.queryByTestId('survey-remind')).toBeNull()
+})
+
+it('sprint S1: names are plain text for a reader without `scholars`, even one who mentors (no 404 links)', async () => {
+  mockRole = { role: 'admin', permissions: ['see_all'], mentoring: true }
+  mockApi.getSurveyResults.mockResolvedValue(results())
+  render(<SurveyResults id={5} />)
+  await screen.findByTestId('summary-1')
+  fireEvent.click(screen.getByTestId('who-1-Struggling'))
+  expect(screen.getByText('Thivya')).toBeTruthy()
+  expect(screen.queryAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('/admin/scholars/'))).toEqual([])
 })
 
 it('refuses the other roles and calls nothing', () => {

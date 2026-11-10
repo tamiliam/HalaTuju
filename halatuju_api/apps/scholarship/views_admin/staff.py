@@ -99,7 +99,9 @@ class AdminStaffPermissionsView(_AdminBase):
             return None, None, self._deny()
         if not (admin.is_super or admin.role == 'org_admin'):
             return None, None, self._deny_role()
-        target = PartnerAdmin.objects.filter(pk=admin_id).first()
+        # T3: the profile and the mentor link ride on this query (the person page's `person` block).
+        target = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
+                  .filter(pk=admin_id).first())
         if target is None or not _staff_target_manageable(admin, target):
             return None, None, Response({'error': 'Admin not found', 'code': 'not_found'},
                                         status=status.HTTP_404_NOT_FOUND)
@@ -109,6 +111,7 @@ class AdminStaffPermissionsView(_AdminBase):
         from apps.courses import staff_permissions as sp
         from apps.courses import staff_tables
         from .. import staff_permissions_admin as spa
+        from .. import staff_person
         admin, target, err = self._target(request, admin_id)
         if err:
             return err
@@ -116,6 +119,9 @@ class AdminStaffPermissionsView(_AdminBase):
         # so the card draws no dead switches; `is_active` lets it say "restore them first".
         editable = (not target.is_super and target.role in sp.TEAM_ROLES and target.pk != admin.pk
                     and target.is_active)
+        # Sprint T2: the person page offers Revoke and Delete as the Admins table does — by one rule
+        # (`staff_delete_rules.delete_fields`: work, deletable, delete_never, revocable).
+        from apps.courses.staff_delete_rules import delete_fields
         return Response({'id': target.pk, 'name': target.name, 'role': target.role,
                          'is_active': target.is_active, 'editable': editable,
                          # The person page's header (Team → a person → Permissions, 2026-10-22).
@@ -128,7 +134,11 @@ class AdminStaffPermissionsView(_AdminBase):
                          # Team tables T3 (owner): the Permissions tab shows one section per table the
                          # person sits in (Admin permissions, Reviewer permissions). Read-only.
                          'tables': list(staff_tables.tables(target)),
-                         'history': _permission_history(target, admin)})
+                         'history': _permission_history(target, admin),
+                         # Sprint T3: the ONE person page's header and Profile tab (`staff_person`) —
+                         # Last seen, the lead flag and the profile, under the reviewer detail's PII rules.
+                         'person': staff_person.person(target),
+                         **delete_fields(admin, target)})
 
 
     def patch(self, request, admin_id):
@@ -167,7 +177,9 @@ def _permission_history(target, viewer):
     ⚠ A SUPER'S ADDRESS IS NOT SHOWN TO AN ORGANISATION. A change made by the HalaTuju team comes back
     as ``by_super: true`` with ``by`` blank unless the viewer is a super too; the screen says "the
     HalaTuju team". Anybody else is named from their staff row in the TARGET's organisation, or by
-    the address recorded at the time when that row is gone or elsewhere.
+    the address recorded at the time when that row is gone or elsewhere. A change a data migration made
+    (``changed_by_role`` 'migration', nobody clicked) comes back as ``by_migration: true`` with ``by``
+    blank; the screen says so in words (sprint S1, courses 0095).
 
     ⚠ ONLY THE TARGET'S CURRENT ORGANISATION'S ROWS. A cancelled invite re-sent into ANOTHER
     organisation reuses the same staff row (`staff_reinvite.bring_back`), so `target=` alone would
@@ -193,7 +205,8 @@ def _permission_history(target, viewer):
         out.append({'kind': r.kind, 'role': r.role, 'before': before, 'after': after,
                     'added': [k for k in after if k not in before],
                     'removed': [k for k in before if k not in after],
-                    'at': r.created_at, 'by': by, 'by_super': by_super})
+                    'at': r.created_at, 'by': by, 'by_super': by_super,
+                    'by_migration': r.changed_by_role == 'migration'})
     return out
 
 

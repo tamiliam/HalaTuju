@@ -87,20 +87,11 @@ export const roleReviewer: ManualChapter = {
       title: 'Your scholars',
       body: (
         <>Once a student you reviewed is <strong>funded</strong> &mdash; her award accepted and her eWallet live
-        &mdash; she also appears on <strong>Scholars</strong>, under your gift in the menu. You see only the
-        scholars assigned to you. Her <strong>file</strong> shows her latest semester result, what has been paid
-        and what remains, whether a contract is on file, and an <strong>Activity</strong> log of what has
-        happened. Add a <strong>note</strong>, <strong>call</strong> or <strong>meeting</strong> there; switch on
-        <strong> Staff only</strong> for an entry meant for colleagues. On her file&rsquo;s header you can change her
-        status &mdash; <strong>probation</strong> or <strong>ready to close</strong> &mdash; and close the file when
-        her support ends. Putting a student <strong>on hold</strong> (which stops her payments) is done by the
-        people who prepare payment runs, not by reviewers. Her <strong>Results</strong> tab lists each result
-        she sends with her slip: <strong>Accept</strong> it, or <strong>Query</strong> it with a note she will
-        see. Only an accepted result counts. A result needs the slip she uploaded at the portal &mdash; slips sent
-        by email are not accepted and you cannot attach one for her, so query her to upload it. Her
-        <strong> Money</strong> tab shows her award, what has been paid and what remains, and her last three
-        payments (spending detail is for staff who may open Spending); her <strong>Contract</strong> tab shows the
-        contract signed on the platform and its signed PDF.</>
+        &mdash; she moves to <strong>Scholars</strong>, which your organisation&rsquo;s admins look after: they
+        accept or query her semester results, write her letters and keep her activity log. Your work stays in
+        <strong> Applications</strong>, where her case remains, and Scholars is not in your menu. If your
+        organisation also gives you the <em>Scholars</em> permission, the admin guide&rsquo;s Scholars section
+        describes what you can then do.</>
       ),
     },
     {

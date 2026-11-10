@@ -6,9 +6,9 @@
  * "‹ Back to <tab>" and "‹ Previous · 2 of 7 · Next ›". The walk is the PAGE you came from
  * (D7): crossing to the next page would need a fetch from the detail page, and is a follow-up.
  *
- * ⚠ ONE HOME FOR THIS, SHARED. The Applications cockpit hand-rolls the same thing
- * (`halatuju_admin_scholarship_nav`, ids only, no position, no keys); it moves onto this hook after
- * Mobile M6b re-lays-out that header — see docs/technical-debt.md.
+ * ⚠ ONE HOME FOR THIS, SHARED. The Requests list and the Applications list both write it, and both
+ * detail pages read it (`useListNav`) and step with `useListSteps` — the Applications cockpit's
+ * older hand-rolled copy (`halatuju_admin_scholarship_nav`) was retired by audit A3.3 (TD-477).
  *
  * ⚠ STORAGE IS INJECTED AND EVERY TOUCH IS GUARDED. `sessionStorage` is absent on the server,
  * throws in some private windows, and can hold anything a previous version wrote; a record that
@@ -44,6 +44,8 @@ export interface ListNavPosition {
 
 /** The Requests list's key. Each list has its own, so two lists never read each other's ids. */
 export const REQUESTS_LIST_NAV = 'requests'
+/** The Applications list's key. */
+export const SCHOLARSHIP_LIST_NAV = 'scholarship'
 
 const PREFIX = 'halatuju_list_nav:'
 

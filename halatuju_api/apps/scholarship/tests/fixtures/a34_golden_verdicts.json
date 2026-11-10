@@ -1,0 +1,5493 @@
+{
+ "doc_match_verdict": {
+  "d01_higher_results": "golden-higher",
+  "d02_slip_name_mismatch": "mismatch",
+  "d03_slip_grade_mismatch": "mismatch",
+  "d04_slip_name_unreadable": "unreadable",
+  "d05_slip_table_unreadable": "unreadable",
+  "d06_slip_name_pending": "pending",
+  "d07_slip_table_pending": "pending",
+  "d08_slip_subject_soft": "ok",
+  "d09_slip_results_pending_ok": "ok",
+  "d10_slip_no_check": "ok",
+  "d11_offer_name_mismatch": "mismatch",
+  "d12_offer_ic_mismatch": "mismatch",
+  "d13_offer_not_official": "mismatch",
+  "d14_offer_name_unreadable": "unreadable",
+  "d15_offer_name_pending": "pending",
+  "d16_offer_ok": "ok",
+  "d17_parent_ic_mismatch": "mismatch",
+  "d18_parent_ic_chain_rescues": "ok",
+  "d19_parent_ic_not_run": "pending",
+  "d20_parent_ic_deferred": "pending",
+  "d21_parent_ic_decode_error": "unreadable",
+  "d22_parent_ic_service_down": "ok",
+  "d23_parent_ic_blank": "unreadable",
+  "d24_parent_ic_ok": "ok",
+  "d25_slip_mismatch": "mismatch",
+  "d26_slip_unread": "pending",
+  "d27_slip_deferred": "pending",
+  "d28_slip_wrong_doc": "unreadable",
+  "d29_slip_incomplete": "unreadable",
+  "d30_slip_ok": "ok",
+  "d31_epf_unreadable": "unreadable",
+  "d32_str_stale": "mismatch",
+  "d33_str_rejected": "mismatch",
+  "d34_str_wrong_type": "mismatch",
+  "d35_str_matched_but_red": "mismatch",
+  "d36_str_proven_stranger": "mismatch",
+  "d37_str_unjudged_stranger": "pending",
+  "d38_str_unknown": "pending",
+  "d39_str_future": "insufficient",
+  "d40_str_ok": "ok",
+  "d41_str_unmatched": "pending",
+  "d41b_str_unconfirmed_matched": "ok",
+  "d41c_str_no_check": "pending",
+  "d42_bc_child_mismatch": "mismatch",
+  "d43_bc_father_only": "ok",
+  "d44_bc_unread": "pending",
+  "d45_bc_wrong_doc": "unreadable",
+  "d46_letter_mismatch": "mismatch",
+  "d47_letter_unread": "pending",
+  "d48_letter_wrong_doc": "unreadable",
+  "d49_letter_incomplete": "ok",
+  "d50_support_unread": "pending",
+  "d51_support_wrong_doc": "unreadable",
+  "d52_support_ok": "ok",
+  "d53_leaving_cert_deferred": "pending",
+  "d54_semester_wrong_doc": "unreadable",
+  "d55_semester_ok": "ok",
+  "d56_bank_read": "pending",
+  "d57_bank_not_holder": "mismatch",
+  "d58_bank_incomplete": "unreadable",
+  "d59_bank_ok": "ok",
+  "d60_ic_not_run": "pending",
+  "d61_ic_service_down": "ok",
+  "d62_ic_deferred": "pending",
+  "d63_ic_no_nric": "unreadable",
+  "d64_ic_decode_error_blank": "unreadable",
+  "d65_ic_nric_mismatch": "mismatch",
+  "d66_ic_name_mismatch": "mismatch",
+  "d67_ic_ok": "ok",
+  "d68_ic_truncated_ok": "ok",
+  "d69_water_bill": "ok"
+ },
+ "facts": {
+  "b01_empty_file": [
+   {
+    "evidence": [],
+    "fact": "identity",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "ic_missing",
+      "params": {}
+     }
+    ]
+   },
+   {
+    "evidence": [],
+    "fact": "academic",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "results_slip_missing",
+      "params": {}
+     }
+    ]
+   },
+   {
+    "evidence": [
+     {
+      "code": "pathway_declared",
+      "params": {
+       "pathway": "Matriculation"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "offer_letter_missing",
+      "params": {}
+     }
+    ]
+   },
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     },
+     {
+      "code": "income_proof_missing",
+      "params": {}
+     }
+    ]
+   }
+  ],
+  "b02_identity_and_settled_str": [
+   {
+    "evidence": [
+     {
+      "code": "nric_match",
+      "params": {
+       "nric": "080808-14-0808"
+      }
+     },
+     {
+      "code": "name_match",
+      "params": {
+       "name": "ANBU A/L DEVARAJ"
+      }
+     }
+    ],
+    "fact": "identity",
+    "status": "verified",
+    "unresolved": []
+   },
+   {
+    "evidence": [],
+    "fact": "academic",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "results_slip_missing",
+      "params": {}
+     }
+    ]
+   },
+   {
+    "evidence": [
+     {
+      "code": "pathway_declared",
+      "params": {
+       "pathway": "Matriculation"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "offer_letter_missing",
+      "params": {}
+     }
+    ]
+   },
+   {
+    "evidence": [
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "member": "father",
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {
+       "member": "father"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  ],
+  "c01_str_suspect": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "document_not_genuine",
+      "params": {
+       "status": "suspect"
+      }
+     }
+    ]
+   }
+  ],
+  "c02_str_wrong_type_not_doubled": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  ],
+  "c03_mother_bc_suspect": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "document_not_genuine",
+      "params": {
+       "status": "suspect"
+      }
+     }
+    ]
+   }
+  ],
+  "c04_mother_bc_already_ticketed": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "birth_cert_not_genuine",
+      "params": {}
+     }
+    ]
+   }
+  ],
+  "c05_salary_route_never_capped": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  ],
+  "c06_already_not_genuine": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "document_not_genuine",
+      "params": {}
+     }
+    ]
+   }
+  ],
+  "c07_str_genuine": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  ],
+  "c08_str_not_an_str": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "document_not_genuine",
+      "params": {
+       "status": "not_str"
+      }
+     }
+    ]
+   }
+  ],
+  "c09_mother_bc_unreadable_not_doubled": [
+   {
+    "evidence": [],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "birth_cert_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  ],
+  "id01_no_ic": {
+   "evidence": [],
+   "fact": "identity",
+   "status": "gap",
+   "unresolved": [
+    {
+     "code": "ic_missing",
+     "params": {}
+    }
+   ]
+  },
+  "id02_match": {
+   "evidence": [
+    {
+     "code": "nric_match",
+     "params": {
+      "nric": "080808-14-0808"
+     }
+    },
+    {
+     "code": "name_match",
+     "params": {
+      "name": "ANBU A/L DEVARAJ"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "verified",
+   "unresolved": []
+  },
+  "id03_truncated_name": {
+   "evidence": [
+    {
+     "code": "nric_match",
+     "params": {
+      "nric": "080808-14-0808"
+     }
+    },
+    {
+     "code": "name_resolved_truncation",
+     "params": {
+      "ocr_name": "ANBU A/L",
+      "profile_name": "ANBU A/L DEVARAJ"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "verified",
+   "unresolved": []
+  },
+  "id04_name_mismatch": {
+   "evidence": [
+    {
+     "code": "nric_match",
+     "params": {
+      "nric": "080808-14-0808"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "review",
+   "unresolved": [
+    {
+     "code": "name_mismatch",
+     "params": {
+      "ocr_name": "MEENA A/P RAJU",
+      "profile_name": "ANBU A/L DEVARAJ"
+     }
+    }
+   ]
+  },
+  "id05_nric_mismatch": {
+   "evidence": [
+    {
+     "code": "name_match",
+     "params": {
+      "name": "ANBU A/L DEVARAJ"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "review",
+   "unresolved": [
+    {
+     "code": "nric_mismatch",
+     "params": {
+      "ocr_nric": "010101-01-0101",
+      "profile_nric": "080808-14-0808"
+     }
+    }
+   ]
+  },
+  "id06_service_down": {
+   "evidence": [],
+   "fact": "identity",
+   "status": "review",
+   "unresolved": [
+    {
+     "code": "ic_service_down",
+     "params": {}
+    }
+   ]
+  },
+  "id07_unreadable_image": {
+   "evidence": [],
+   "fact": "identity",
+   "status": "gap",
+   "unresolved": [
+    {
+     "code": "ic_unreadable",
+     "params": {}
+    }
+   ]
+  },
+  "id07b_no_nric_read": {
+   "evidence": [],
+   "fact": "identity",
+   "status": "gap",
+   "unresolved": [
+    {
+     "code": "ic_unreadable",
+     "params": {}
+    }
+   ]
+  },
+  "id08_deferred_name": {
+   "evidence": [
+    {
+     "code": "nric_match",
+     "params": {
+      "nric": "080808-14-0808"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "review",
+   "unresolved": [
+    {
+     "code": "ic_service_down",
+     "params": {}
+    }
+   ]
+  },
+  "id09_no_name_read": {
+   "evidence": [
+    {
+     "code": "nric_match",
+     "params": {
+      "nric": "080808-14-0808"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "verified",
+   "unresolved": []
+  },
+  "id10_profile_without_nric": {
+   "evidence": [
+    {
+     "code": "name_match",
+     "params": {
+      "name": "ANBU A/L DEVARAJ"
+     }
+    }
+   ],
+   "fact": "identity",
+   "status": "verified",
+   "unresolved": []
+  },
+  "p01_no_offer_declared": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "pathway_declared",
+      "params": {
+       "pathway": "Matriculation"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "offer_letter_missing",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p02_no_offer_undeclared": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "offer_letter_missing",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p03_offer_name_mismatch": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_name_mismatch",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p03b_offer_ic_mismatch": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_name_mismatch",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p04_offer_not_read_yet": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_not_read_yet",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p05_offer_no_identity": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_no_identity",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p06_offer_unreadable": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p07_offer_clean": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p08_offer_issuer_unchecked": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_issuer_not_checked",
+      "params": {
+       "issuer": "TVET"
+      }
+     }
+    ]
+   }
+  },
+  "p09_confirmed": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "pathway_confirmed",
+      "params": {
+       "institution": "",
+       "programme": ""
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p10_switch_to_pismp_resolved": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Bahasa Tamil"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_type_switch",
+      "params": {
+       "aliran": "SJKT",
+       "bidang": "Bahasa Tamil",
+       "course_id": "PISMP-SJKT-BT",
+       "course_name": "Bahasa Tamil SJKT",
+       "declared_pathway": "stpm",
+       "institution": "UM",
+       "offer_pathway": "pismp",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p11_switch_to_pismp_hint": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Matematik"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_type_switch",
+      "params": {
+       "aliran_hint": "SK",
+       "bidang": "Matematik",
+       "declared_pathway": "stpm",
+       "institution": "UM",
+       "offer_pathway": "pismp",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p12_switch_to_matric": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p13_same_family_clash": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_confirm",
+      "params": {
+       "declared_institution": "UiTM",
+       "declared_programme": "Asasi Sains",
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p13b_clash_but_confirmed": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "pathway_confirmed",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p14_undeclared_resolvable": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "offer_is_resolvable",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_confirm",
+      "params": {
+       "declared_institution": "",
+       "declared_programme": "",
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p15_undeclared_pismp_unique": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "PISMP",
+       "IPG"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Bahasa Tamil"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "offer_is_resolvable",
+     {
+      "args": [
+       "PISMP",
+       "IPG",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Bahasa Tamil"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "IPG",
+       "programme": "PISMP"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_confirm",
+      "params": {
+       "aliran": "SJKT",
+       "bidang": "Bahasa Tamil",
+       "course_id": "PISMP-SJKT-BT",
+       "course_name": "Bahasa Tamil SJKT",
+       "declared_institution": "",
+       "declared_programme": "",
+       "institution": "IPG",
+       "programme": "PISMP"
+      }
+     }
+    ]
+   }
+  },
+  "p16_undeclared_ambiguous": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "offer_is_resolvable",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_undeclared",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p16b_undeclared_pismp_picker": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Matematik"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "offer_is_resolvable",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Matematik"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_undeclared",
+      "params": {
+       "aliran_hint": "SK",
+       "bidang": "Matematik",
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p16c_autofilled_pick_is_undeclared": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "offer_is_resolvable",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "pathway_undeclared",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ]
+   }
+  },
+  "p16d_real_pick_is_declared": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p17_clean_but_blank_offer": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p18_offer_name_unread_ic_ok": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p18b_offer_ic_pending_name_ok": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p19_no_identity_institution_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_no_identity",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p19b_no_identity_programme_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [],
+    "fact": "pathway",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "offer_no_identity",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "p20_clean_institution_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": ""
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p20b_clean_programme_only": {
+   "calls": [],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p21_switch_offer_family_unknown": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p21b_switch_declared_family_unknown": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p22_pre_u_track_only": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "p22b_intended_pathway_only": {
+   "calls": [
+    [
+     "detect_pathway_type",
+     {
+      "args": [
+       "Asasi Sains",
+       "UM"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "offer_programme",
+      "params": {
+       "institution": "UM",
+       "programme": "Asasi Sains"
+      }
+     }
+    ],
+    "fact": "pathway",
+    "status": "verified",
+    "unresolved": []
+   }
+  }
+ },
+ "income": {
+  "i01_precedence_current": {
+   "fact": {
+    "evidence": [
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "member": "father",
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {
+       "member": "father"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i02_precedence_unconfirmed": {
+   "fact": {
+    "evidence": [
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "member": "father",
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {
+       "member": "father"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "unconfirmed"
+      }
+     }
+    ]
+   }
+  },
+  "i03_precedence_other_parents_str": {
+   "fact": {
+    "evidence": [
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i04_salary_route": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": false,
+      "present": [],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i05_wizard_not_walked": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "income_earner_undeclared",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i06_no_str_salary_satisfied": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_income_satisfied",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i07_no_str_no_salary": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_income_satisfied",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "income_proof_missing",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i08_ic_missing_str_stands_no": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i09_ic_missing_salary_raises": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     },
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i10_ic_missing_salary_no_proof": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i11_ic_missing_salary_not_better": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i12_ic_deferred_unnamed": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "ic_service_down",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i13_ic_unreadable": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "earner_ic_unreadable",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i14_father_link_mismatch": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "father_patronymic_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i15_father_mismatch_deferred_ic": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "income_unverified_needs_interview",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i16_father_link_unknown": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "income_unverified_needs_interview",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i17_unknown_not_means_tested": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "income_not_means_tested",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i18_father_chain_upgrade": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i18b_father_verified": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i19_mother_no_bc": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "birth_cert_missing",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i20_mother_bc_unreadable": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "birth_cert_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i21_mother_bc_wrong_type": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "birth_cert_not_genuine",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i22_mother_verified": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "mother_relationship",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "KAMALA A/P SUPPIAH",
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i23_mother_bc_mismatch": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "mother_relationship",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "KAMALA A/P SUPPIAH",
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "birth_cert_mismatch",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i23b_mother_mismatch_deferred": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "mother_relationship",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "KAMALA A/P SUPPIAH",
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "income_unverified_needs_interview",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i24_guardian_no_letter": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "guardianship_letter_missing",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i25_guardian_letter_unreadable": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "guardianship_letter_unreadable",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i26_guardian_letter_wrong_type": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "guardianship_letter_not_genuine",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i27_guardian_verified": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "guardian_link",
+     {
+      "args": [
+       "DEVARAJ A/L MUNUSAMY",
+       "ANBU A/L DEVARAJ"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i28_guardian_link_mismatch": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "guardian_link",
+     {
+      "args": [
+       "DEVARAJ A/L MUNUSAMY",
+       "ANBU A/L DEVARAJ"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "birth_cert_mismatch",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i28b_guardian_chain_ignored": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "guardian"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "guardian_link",
+     {
+      "args": [
+       "DEVARAJ A/L MUNUSAMY",
+       "ANBU A/L DEVARAJ"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "birth_cert_mismatch",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i29_str_stale": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "stale"
+      }
+     }
+    ]
+   }
+  },
+  "i30_str_future": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "future"
+      }
+     }
+    ]
+   }
+  },
+  "i31_str_rejected": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_failed_str_headroom_fact",
+     {
+      "earner": "father",
+      "evidence": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       },
+       {
+        "code": "earner_ic_present",
+        "params": {
+         "name": "DEVARAJ A/L MUNUSAMY"
+        }
+       },
+       {
+        "code": "relationship_confirmed",
+        "params": {}
+       }
+      ],
+      "review": [
+       {
+        "code": "str_not_current",
+        "params": {
+         "status": "rejected"
+        }
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "rejected"
+      }
+     },
+     {
+      "code": "golden_headroom_reading",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i32_str_unconfirmed": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "unconfirmed"
+      }
+     }
+    ]
+   }
+  },
+  "i33_str_wrong_type": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_failed_str_headroom_fact",
+     {
+      "earner": "father",
+      "evidence": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       },
+       {
+        "code": "earner_ic_present",
+        "params": {
+         "name": "DEVARAJ A/L MUNUSAMY"
+        }
+       },
+       {
+        "code": "relationship_confirmed",
+        "params": {}
+       }
+      ],
+      "review": [
+       {
+        "code": "str_not_current",
+        "params": {
+         "status": "wrong_type"
+        }
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "wrong_type"
+      }
+     },
+     {
+      "code": "golden_headroom_reading",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i34_str_unreadable": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "unreadable"
+      }
+     }
+    ]
+   }
+  },
+  "i35_str_unknown_named": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": []
+   }
+  },
+  "i35b_str_unknown_no_ref": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_present_unverified",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i36_str_recipient_mismatch": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i37_mismatch_salary_raises": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     },
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     },
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i38_str_present_unverified": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "str_present_unverified",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i38b_str_check_none": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "str_present_unverified",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i39_stale_salary_raises": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     },
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "review",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     },
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "stale"
+      }
+     }
+    ]
+   }
+  },
+  "i40_stale_and_ic_missing": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "verdict_income_salary",
+     {
+      "any_route": true,
+      "present": [
+       "str"
+      ],
+      "student_name": "ANBU A/L DEVARAJ",
+      "utility": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "income_proof_present",
+      "params": {}
+     },
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "golden_salary_reading",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_missing",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     },
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "stale"
+      }
+     }
+    ]
+   }
+  },
+  "i41_rejected_and_link_mismatch": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_failed_str_headroom_fact",
+     {
+      "earner": "father",
+      "evidence": [
+       {
+        "code": "utility_percapita_b40",
+        "params": {
+         "amount": 123
+        }
+       },
+       {
+        "code": "utility_hardship",
+        "params": {}
+       },
+       {
+        "code": "earner_ic_present",
+        "params": {
+         "name": "DEVARAJ A/L MUNUSAMY"
+        }
+       }
+      ],
+      "review": [
+       {
+        "code": "father_patronymic_mismatch",
+        "params": {
+         "members": [
+          "father"
+         ]
+        }
+       },
+       {
+        "code": "str_not_current",
+        "params": {
+         "status": "rejected"
+        }
+       }
+      ]
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "father_patronymic_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     },
+     {
+      "code": "str_not_current",
+      "params": {
+       "status": "rejected"
+      }
+     },
+     {
+      "code": "golden_headroom_reading",
+      "params": {}
+     }
+    ]
+   }
+  },
+  "i42_str_nric_mismatch_name_unread": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i42b_str_nric_mismatch_name_match": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "salary_evidence_stands_without_the_str",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "str_recipient_mismatch",
+      "params": {
+       "members": [
+        "father"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "i43_str_nric_match_name_unread": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "father_link",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       "",
+       ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "relationship_confirmed",
+      "params": {}
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "verified",
+    "unresolved": []
+   }
+  },
+  "i44_earner_without_route": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "gap",
+    "unresolved": [
+     {
+      "code": "income_earner_undeclared",
+      "params": {}
+     }
+    ]
+   }
+  }
+ },
+ "verdict_for_document": {
+  "h01_ic_not_run": {
+   "calls": [],
+   "code": ""
+  },
+  "h02_ic_deferred": {
+   "calls": [],
+   "code": "review_manually"
+  },
+  "h03_ic_error": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h04_ic_no_nric": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h05_ic_digits_misread": {
+   "calls": [],
+   "code": "ic_nric_misread"
+  },
+  "h06_ic_wrong_card": {
+   "calls": [],
+   "code": "nric_mismatch"
+  },
+  "h07_ic_nric_off_no_name": {
+   "calls": [],
+   "code": "nric_mismatch"
+  },
+  "h08_ic_name_mismatch": {
+   "calls": [],
+   "code": "name_mismatch"
+  },
+  "h09_ic_clean": {
+   "calls": [],
+   "code": ""
+  },
+  "h10_parent_ic_not_run": {
+   "calls": [],
+   "code": ""
+  },
+  "h11_parent_ic_tagged": {
+   "calls": [
+    [
+     "income_cluster_advice",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "code": "cluster:mother"
+  },
+  "h12_parent_ic_earner": {
+   "calls": [
+    [
+     "income_cluster_advice",
+     {
+      "args": [
+       "father"
+      ],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "code": "cluster:father"
+  },
+  "h13_parent_ic_consent_deferred": {
+   "calls": [],
+   "code": "review_manually"
+  },
+  "h14_parent_ic_consent_error": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h15_parent_ic_consent_blank": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h16_parent_ic_consent_ok": {
+   "calls": [],
+   "code": ""
+  },
+  "h17_higher_results": {
+   "calls": [],
+   "code": ""
+  },
+  "h18_slip_unread": {
+   "calls": [],
+   "code": ""
+  },
+  "h19_slip_wrong_doc": {
+   "calls": [],
+   "code": "wrong_doc"
+  },
+  "h20_slip_unreadable": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h21_slip_deferred": {
+   "calls": [],
+   "code": "review_manually"
+  },
+  "h22_slip_name_mismatch": {
+   "calls": [],
+   "code": "slip_name_mismatch"
+  },
+  "h23_slip_name_unreadable": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h24_slip_missing_subject": {
+   "calls": [],
+   "code": "slip_subjects_missing"
+  },
+  "h25_slip_extra_subject": {
+   "calls": [],
+   "code": "slip_subjects_extra"
+  },
+  "h26_slip_grade_mismatch": {
+   "calls": [],
+   "code": "slip_grade_mismatch"
+  },
+  "h27_slip_uncertain_skewed": {
+   "calls": [],
+   "code": "slip_skewed_unclear"
+  },
+  "h28_slip_uncertain": {
+   "calls": [],
+   "code": "slip_grade_uncertain"
+  },
+  "h29_slip_table_skewed": {
+   "calls": [],
+   "code": "slip_skewed_unclear"
+  },
+  "h30_slip_results_unreadable": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h31_slip_clean": {
+   "calls": [],
+   "code": ""
+  },
+  "h32_offer_unread": {
+   "calls": [],
+   "code": ""
+  },
+  "h33_offer_wrong_doc": {
+   "calls": [],
+   "code": "wrong_doc"
+  },
+  "h34_offer_deferred": {
+   "calls": [],
+   "code": "review_manually"
+  },
+  "h35_offer_ic_mismatch": {
+   "calls": [],
+   "code": "offer_name_mismatch"
+  },
+  "h36_offer_pathway_mismatch": {
+   "calls": [],
+   "code": "offer_pathway_mismatch"
+  },
+  "h37_offer_clean": {
+   "calls": [],
+   "code": ""
+  },
+  "h38_str_stale": {
+   "calls": [],
+   "code": "str_not_current"
+  },
+  "h39_str_unreadable": {
+   "calls": [],
+   "code": "str_not_current"
+  },
+  "h40_str_current_ic_on_file": {
+   "calls": [],
+   "code": ""
+  },
+  "h41_str_current_no_ic": {
+   "calls": [],
+   "code": "income_ic_needed"
+  },
+  "h42_str_current_approval_missing": {
+   "calls": [],
+   "code": "income_doc_needs_approver"
+  },
+  "h43_str_salary_route": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h44_payslip_no_ic": {
+   "calls": [],
+   "code": "income_ic_needed"
+  },
+  "h45_payslip_needs_approver": {
+   "calls": [],
+   "code": "income_doc_needs_approver"
+  },
+  "h46_epf_ic_ok": {
+   "calls": [],
+   "code": ""
+  },
+  "h47_payslip_no_member": {
+   "calls": [],
+   "code": "wrong_doc"
+  },
+  "h48_bill_not_run": {
+   "calls": [],
+   "code": ""
+  },
+  "h49_bill_address": {
+   "calls": [],
+   "code": "address_mismatch"
+  },
+  "h50_bill_ok": {
+   "calls": [],
+   "code": ""
+  },
+  "h51_birth_certificate": {
+   "calls": [],
+   "code": ""
+  },
+  "h52_guardianship_letter": {
+   "calls": [],
+   "code": ""
+  },
+  "h53_bank_unread": {
+   "calls": [],
+   "code": ""
+  },
+  "h54_bank_not_holder": {
+   "calls": [],
+   "code": "bank_holder_mismatch"
+  },
+  "h55_bank_deferred": {
+   "calls": [],
+   "code": "review_manually"
+  },
+  "h56_bank_unclear": {
+   "calls": [],
+   "code": "bank_details_unclear"
+  },
+  "h57_bank_ok": {
+   "calls": [],
+   "code": ""
+  },
+  "h58_other_ok": {
+   "calls": [],
+   "code": ""
+  },
+  "h59_other_unreadable": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h60_other_unknown_code": {
+   "calls": [],
+   "code": ""
+  },
+  "h61_other_name_not_found": {
+   "calls": [],
+   "code": "name_mismatch"
+  },
+  "h62_other_address": {
+   "calls": [],
+   "code": "address_mismatch"
+  },
+  "h63_other_unreadable_match": {
+   "calls": [],
+   "code": "unreadable"
+  },
+  "h64_other_clean": {
+   "calls": [],
+   "code": ""
+  },
+  "h65_ic_name_partial": {
+   "calls": [],
+   "code": ""
+  },
+  "h66_ic_misread_name_partial": {
+   "calls": [],
+   "code": "ic_nric_misread"
+  },
+  "h67_other_address_unreadable": {
+   "calls": [],
+   "code": "unreadable"
+  }
+ }
+}

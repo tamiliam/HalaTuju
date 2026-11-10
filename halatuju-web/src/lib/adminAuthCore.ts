@@ -12,6 +12,7 @@
  */
 import { createContext, useContext } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import type { ProfileCompletion } from '@/lib/admin-api/profiles'
 
 export interface AdminRole {
   is_admin: boolean
@@ -66,6 +67,12 @@ export interface AdminAuthContextValue {
   photoUrl: string | null
   /** The Profile page sets it after an upload or a removal, so the header follows at once. */
   setPhotoUrl: (url: string | null) => void
+  /** Staff nudges (2026-11-08): the person's profile completion (`admin/me/` `completion`, the server's
+   *  ONE rule), read in the SAME `admin/me/` call as the photo; null for a super or until it arrives.
+   *  The console's profile banner reads it. Optional so a harness may leave it out (no banner). */
+  profileCompletion?: ProfileCompletion | null
+  /** The Profile page sets it after a save or a photo change, so the banner follows at once. */
+  setProfileCompletion?: (c: ProfileCompletion | null) => void
 }
 
 // Exported for the sandbox harness ONLY (src/sandbox), which supplies a canned admin session to

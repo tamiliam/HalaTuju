@@ -19,19 +19,19 @@ import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
+import { SCHOLARSHIP_LIST_NAV, useListNav } from '@/lib/listNav'
+import { useListSteps } from '@/lib/useListSteps'
 
 import type { T, Vtip } from './shared'
 
 export function CockpitHeader({
-  app, t, vtip, busy, canWrite, prevId, nextId, doCancelDecline, doHoldAward,
+  app, t, vtip, busy, canWrite, doCancelDecline, doHoldAward,
 }: {
   app: AdminScholarshipDetail
   t: T
   vtip: Vtip
   busy: string
   canWrite: boolean
-  prevId: number | null
-  nextId: number | null
   doCancelDecline: () => void
   doHoldAward: () => void
 }) {
@@ -39,6 +39,13 @@ export function CockpitHeader({
   const refOrg = app.source
   const refNames = refOrg ? { [refOrg.code]: refOrg.name } : undefined
   const refTag = referralAcronym(app.referral_source, refNames?.[app.referral_source ?? ''])
+  const refName = referralLabel(app.referral_source, t, refNames)
+  // Previous / Next walk the page of the Applications list this case was opened from — the ONE
+  // list-nav record every list uses (TD-477); ← / → step too, never while typing or in a dialog.
+  const nav = useListNav(SCHOLARSHIP_LIST_NAV, app.id)
+  useListSteps(nav, (to) => `/admin/scholarship/${to}`)
+  const prevId = nav?.prevId ?? null
+  const nextId = nav?.nextId ?? null
   return (<>
 
       {/* Header — applicant identity, status, and key facts at a glance */}
@@ -51,13 +58,16 @@ export function CockpitHeader({
               reviewer's only door — and naming this applicant's gift would narrow it on the way
               back: the F2 defect by another road. A bare link returns the person's OWN choice. */}
           <Link href="/admin/scholarship" className="text-xs text-ground-400 hover:text-ground-600 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:self-start max-md:text-sm max-md:text-ground-600">‹ {t('admin.scholarship.back')}</Link>
-          {(prevId != null || nextId != null) && (
+          {nav && (prevId != null || nextId != null) && (
             <div className="flex items-center gap-1 text-xs max-md:gap-2 max-md:text-sm" data-testid="cockpit-prev-next">
               {prevId != null ? (
                 <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-300 max-md:bg-ground-0">‹ {t('admin.scholarship.prev')}</Link>
               ) : (
                 <span className="rounded px-2 py-1 text-ground-300 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-200">‹ {t('admin.scholarship.prev')}</span>
               )}
+              <span className="px-1 text-ground-500" data-testid="cockpit-position">
+                {t('admin.requests.detail.position', { n: String(nav.index + 1), m: String(nav.total) })}
+              </span>
               {nextId != null ? (
                 <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-300 max-md:bg-ground-0">{t('admin.scholarship.next')} ›</Link>
               ) : (
@@ -111,10 +121,12 @@ export function CockpitHeader({
           ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
           {refTag && (
             <span
-              title={referralLabel(app.referral_source, t, refNames)}
+              title={refName}
               className={`rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600 ${PHONE_PILL_SM}`}
             >
               {refTag}
+              {/* The full name is TEXT on a phone (TD-480): a `title` is hover-only, and a phone has no hover. */}
+              {refName && refName !== refTag && <span className="md:hidden"> · {refName}</span>}
             </span>
           )}
           {(() => {
