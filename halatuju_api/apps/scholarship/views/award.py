@@ -290,6 +290,7 @@ class StudentAwardView(APIView):
                 payload['bursary_preview'] = {
                     'award_amount': str(p['award_amount']) if p['award_amount'] is not None else None,
                     'payment_schedule': p['payment_schedule'],
+                    'payment_schedule_parts': bursary.payment_schedule_parts(app, template),
                     'institution_name': p['institution_name'],
                     'course_name': p['course_name'],
                     'progress_standard': p['progress_standard'],

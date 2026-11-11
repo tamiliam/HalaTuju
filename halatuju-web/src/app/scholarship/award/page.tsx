@@ -17,10 +17,10 @@ import {
   type StudentAward, type BursaryPreview, type BursaryAgreement,
 } from '@/lib/api'
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
+import { scheduleSentence } from '@/lib/awardSchedule'
 import Sheet from '@/components/Sheet'
 import { AwardContractReader, AwardDeclineSheet } from '@/components/scholarship/AwardContract'
 import { PHONE_BLEED, PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
-
 /** Guardian relationship codes — must match Consent.GUARDIAN_RELATIONSHIPS on
  *  the backend (mirrors ScholarshipConsent's list).
  *  drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts */
@@ -41,7 +41,7 @@ const REUSED_WORDS: Record<string, string> = {
 }
 
 export default function ScholarshipAwardPage() {
-  const { t, locale } = useT()
+  const { t, locale, contentLocale } = useT()
   const { status, token } = useAuth()
   const router = useRouter()
 
@@ -405,7 +405,7 @@ export default function ScholarshipAwardPage() {
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.schedule')}</dt>
-              <dd className="text-sm text-ground-800">{preview.payment_schedule || '—'}</dd>
+              <dd className="text-sm text-ground-800">{(preview.payment_schedule_parts ? scheduleSentence(preview.payment_schedule_parts, t, contentLocale) : preview.payment_schedule) || '—'}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.institution')}</dt>

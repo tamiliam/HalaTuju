@@ -843,7 +843,34 @@
     "otherSubjects": "{grade} or better in {count} more subject(s) not already counted",
     "exceptSubjects": "not counting",
     "oneOf": "one of these:",
-    "orAlternative": "or"
+    "orAlternative": "or",
+    "level": "நிலை",
+    "field": "துறை",
+    "department": "பிரிவு",
+    "duration": "கால அளவு",
+    "semestersValue": "{count} பருவங்கள்",
+    "wbl": "பணியிடக் கற்றல் (WBL)",
+    "yes": "ஆம்",
+    "no": "இல்லை",
+    "category": "வகை",
+    "stream": "பாடப்பிரிவு",
+    "streamScience": "அறிவியல்",
+    "streamArts": "கலை",
+    "streamBoth": "அறிவியல் / கலை",
+    "avgMerit": "சராசரி தகுதிப் புள்ளி",
+    "moreInfo": "மேலும் தகவல்",
+    "loadingCourse": "படிப்பு விவரங்கள் ஏற்றப்படுகின்றன...",
+    "notFoundTitle": "படிப்பு காணப்படவில்லை",
+    "backToDashboard": "முகப்புப் பலகைக்குத் திரும்பு",
+    "subjectKey": "பாடக் குறியீடுகள்",
+    "allStates": "அனைத்து மாநிலங்கள்",
+    "allDistricts": "அனைத்து மாவட்டங்கள்",
+    "noSchools": "தேர்ந்தெடுத்த வடிப்பான்களுக்குப் பொருந்தும் பள்ளிகள் இல்லை.",
+    "chanceHigh": "அதிக வாய்ப்பு",
+    "chanceFair": "நடுத்தர வாய்ப்பு",
+    "chanceLow": "குறைந்த வாய்ப்பு",
+    "meritYou": "நீங்கள்",
+    "meritNeed": "தேவை"
   },
   "saved": {
     "title": "சேமிக்கப்பட்ட படிப்புகள்",
@@ -853,7 +880,10 @@
     "browseCourses": "படிப்புகளை உலாவவும்",
     "remove": "சேமிப்பிலிருந்து நீக்கவும்",
     "noSpm": "SPM படிப்புகள் எதுவும் சேமிக்கப்படவில்லை.",
-    "noStpm": "STPM படிப்புகள் எதுவும் சேமிக்கப்படவில்லை."
+    "noStpm": "STPM படிப்புகள் எதுவும் சேமிக்கப்படவில்லை.",
+    "removedToast": "படிப்பு நீக்கப்பட்டது",
+    "removeFailed": "படிப்பை நீக்க முடியவில்லை",
+    "statusFailed": "நிலையைப் புதுப்பிக்க முடியவில்லை"
   },
   "discovery": {
     "filters": "வடிப்பான்கள்",
@@ -2003,7 +2033,7 @@
       },
       "multiple": {
         "title": "உங்களுக்கு ஒன்றுக்கு மேற்பட்ட விண்ணப்பங்கள் உள்ளன",
-        "body": "உங்களுக்கு {count} விண்ணப்பங்கள் திறந்திருக்கின்றன. {supportEmail} என்ற முகவரிக்கு மின்னஞ்சல் அனுப்புங்கள்; சரியான விண்ணப்பத்தைக் காட்டுகிறோம்."
+        "body": "உங்களுக்கு எங்களிடம் {count} விண்ணப்பங்கள் உள்ளன. {supportEmail} என்ற முகவரிக்கு மின்னஞ்சல் அனுப்புங்கள்; சரியான விண்ணப்பத்தைக் காட்டுகிறோம்."
       }
     },
     "banner": {
@@ -2640,6 +2670,8 @@
         "particulars": "விவரங்கள்",
         "amount": "உதவித்தொகை தொகை",
         "schedule": "கட்டண அட்டவணை",
+        "scheduleLine": "மாதம் RM{amount} வீதம் {count} தவணைகள், {month} முதல் (மொத்தம் RM{total}).",
+        "scheduleLineNoStart": "மாதம் RM{amount} வீதம் {count} தவணைகள் (மொத்தம் RM{total}).",
         "institution": "நிறுவனம்",
         "course": "பாடநெறி",
         "documentTitle": "ஒப்பந்தம்",

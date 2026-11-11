@@ -184,6 +184,7 @@ function MeritIndicator({
   displayStudent?: string
   displayCutoff?: string
 }) {
+  const { t } = useT()
   if (!label) return null
 
   const hasScores = studentMerit !== null && meritCutoff !== null
@@ -218,9 +219,9 @@ function MeritIndicator({
     'text-critical-700'
 
   const displayLabel =
-    label === 'High' ? 'High Chance' :
-    label === 'Fair' ? 'Fair Chance' :
-    'Low Chance'
+    label === 'High' ? t('courseDetail.chanceHigh') :
+    label === 'Fair' ? t('courseDetail.chanceFair') :
+    t('courseDetail.chanceLow')
 
   // Fallback: simple dot + label when numeric scores are unavailable
   if (!hasScores) {
@@ -258,9 +259,9 @@ function MeritIndicator({
       </div>
       {/* Label row */}
       <div className="flex items-center justify-between">
-        <span className={`text-[11px] font-semibold ${textClass}`}>{displayLabel}</span>
-        <span className="text-[10px] text-ground-400">
-          You: {displayStudent ?? studentMerit} &nbsp;|&nbsp; Need: {displayCutoff ?? meritCutoff}
+        <span className={`text-xs font-semibold ${textClass}`}>{displayLabel}</span>
+        <span className="text-xs text-ground-400">
+          {t('courseDetail.meritYou')}: {displayStudent ?? studentMerit} &nbsp;|&nbsp; {t('courseDetail.meritNeed')}: {displayCutoff ?? meritCutoff}
         </span>
       </div>
     </div>

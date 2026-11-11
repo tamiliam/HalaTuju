@@ -78,6 +78,23 @@ def particulars_for(application, template, locale='en'):
     }
 
 
+def payment_schedule_parts(application, template):
+    """TD-463: the schedule's PARTS (monthly amount, payment count, first month, total), so the web
+    composes the sentence in the reader's language. ``particulars_for`` keeps the English
+    one-liner: it is what the signed agreement freezes. None when no row applies."""
+    from . import contracts
+    row = contracts.schedule_row_for(template, application)
+    if row is None:
+        return None
+    amount = row.monthly_amount
+    return {
+        'monthly_amount': str(int(amount)) if amount == amount.to_integral() else str(amount),
+        'count': len(row.paid_offsets or []),
+        'start_month': row.start_month if 1 <= row.start_month <= 12 else 0,
+        'total': str(int(row.total)),
+    }
+
+
 def render_agreement_html(application, particulars, *, student, guarantor,
                           foundation, witness, locale='en', template):
     """Render the full, self-contained agreement HTML (inline CSS only — xhtml2pdf

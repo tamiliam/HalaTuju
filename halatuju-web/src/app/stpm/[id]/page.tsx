@@ -37,7 +37,7 @@ export default function StpmCourseDetailPage() {
   if (isLoading) return <LoadingSpinner />
   if (error || !data) return <CourseNotFound />
 
-  const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
+  const streamLabel = data.stream === 'science' ? t('courseDetail.streamScience') : data.stream === 'arts' ? t('courseDetail.streamArts') : t('courseDetail.streamBoth')
 
   return (
     <main className="min-h-screen bg-ground-50">
@@ -74,7 +74,7 @@ export default function StpmCourseDetailPage() {
                       rel="noopener noreferrer"
                       className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                     >
-                      More Info
+                      {t('courseDetail.moreInfo')}
                     </a>
                   </div>
                 )}
@@ -126,7 +126,7 @@ export default function StpmCourseDetailPage() {
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors"
                         >
-                          More Info
+                          {t('courseDetail.moreInfo')}
                         </a>
                       )}
                     </div>
@@ -151,14 +151,14 @@ export default function StpmCourseDetailPage() {
                 {t('courseDetail.quickFacts')}
               </h2>
               <div className="space-y-4">
-                <InfoRow label="Level" value="Ijazah Sarjana Muda" />
-                {(data.field_key || data.field) && <InfoRow label="Field" value={getFieldName(data.field_key) || data.field} />}
-                {data.category && <InfoRow label="Category" value={data.category} />}
-                <InfoRow label="Stream" value={streamLabel} />
+                <InfoRow label={t('courseDetail.level')} value="Ijazah Sarjana Muda" />
+                {(data.field_key || data.field) && <InfoRow label={t('courseDetail.field')} value={getFieldName(data.field_key) || data.field} />}
+                {data.category && <InfoRow label={t('courseDetail.category')} value={data.category} />}
+                <InfoRow label={t('courseDetail.stream')} value={streamLabel} />
                 {data.merit_score != null && (
                   <div className="pt-2 mt-2 border-t border-ground-100">
                     <div className="flex justify-between items-center">
-                      <span className="text-ground-500 text-sm">Avg. Merit</span>
+                      <span className="text-ground-500 text-sm">{t('courseDetail.avgMerit')}</span>
                       <span className={`font-medium text-sm ${
                         data.merit_score >= 80 ? 'text-positive-700' : data.merit_score >= 60 ? 'text-caution-700' : 'text-critical-600'
                       }`}>

@@ -12,7 +12,7 @@ import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 
 export default function SettingsPage() {
-  const { t, locale } = useT()
+  const { t, contentLocale } = useT()
   const [cleared, setCleared] = useState(false)
 
   const handleClearData = () => {
@@ -68,7 +68,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between">
               <span>{t('settings.currentLanguage')}</span>
-              <span className="text-ground-900">{LOCALE_LABELS[locale]}</span>
+              <span className="text-ground-900">{LOCALE_LABELS[contentLocale]}</span>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-ground-100 space-y-2">

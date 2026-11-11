@@ -11,7 +11,7 @@ import { join } from 'path'
 import SettingsPage from './page'
 
 jest.mock('@/lib/i18n', () => ({
-  useT: () => ({ t: (k: string) => k, locale: 'en' }),
+  useT: () => ({ t: (k: string) => k, locale: 'en', contentLocale: 'en' }),
   LOCALE_LABELS: { en: 'English' },
 }))
 jest.mock('@/components/LanguageSelector', () => () => null)

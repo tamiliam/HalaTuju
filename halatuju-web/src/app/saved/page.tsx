@@ -77,11 +77,11 @@ export default function SavedPage() {
     setSelected(prev => { const next = new Set(prev); next.delete(courseId); return next })
     try {
       await unsaveCourse(courseId, { token })
-      showToast('Course removed', 'success')
+      showToast(t('saved.removedToast'), 'success')
     } catch {
       const { saved_courses } = await getSavedCourses({ token })
       setCourses(saved_courses)
-      showToast('Failed to remove course', 'error')
+      showToast(t('saved.removeFailed'), 'error')
     }
   }
 
@@ -105,7 +105,7 @@ export default function SavedPage() {
       setCourses(prev => prev.map(c =>
         c.course_id === courseId ? { ...c, interest_status: course?.interest_status || 'interested' } : c
       ))
-      showToast('Failed to update status', 'error')
+      showToast(t('saved.statusFailed'), 'error')
     }
     setUpdatingId(null)
   }

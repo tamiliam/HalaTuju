@@ -843,7 +843,34 @@
     "otherSubjects": "{grade} atau lebih dalam {count} mata pelajaran lain yang belum dikira",
     "exceptSubjects": "tidak termasuk",
     "oneOf": "salah satu daripada:",
-    "orAlternative": "atau"
+    "orAlternative": "atau",
+    "level": "Tahap",
+    "field": "Bidang",
+    "department": "Jabatan",
+    "duration": "Tempoh",
+    "semestersValue": "{count} semester",
+    "wbl": "WBL",
+    "yes": "Ya",
+    "no": "Tidak",
+    "category": "Kategori",
+    "stream": "Aliran",
+    "streamScience": "Sains",
+    "streamArts": "Sastera",
+    "streamBoth": "Sains / Sastera",
+    "avgMerit": "Purata Merit",
+    "moreInfo": "Maklumat Lanjut",
+    "loadingCourse": "Memuatkan butiran kursus...",
+    "notFoundTitle": "Kursus tidak dijumpai",
+    "backToDashboard": "Kembali ke Papan Pemuka",
+    "subjectKey": "Kunci Subjek",
+    "allStates": "Semua Negeri",
+    "allDistricts": "Semua Daerah",
+    "noSchools": "Tiada sekolah yang sepadan dengan penapis yang dipilih.",
+    "chanceHigh": "Peluang Tinggi",
+    "chanceFair": "Peluang Sederhana",
+    "chanceLow": "Peluang Rendah",
+    "meritYou": "Anda",
+    "meritNeed": "Perlu"
   },
   "saved": {
     "title": "Kursus Disimpan",
@@ -853,7 +880,10 @@
     "browseCourses": "Layari Kursus",
     "remove": "Buang dari senarai",
     "noSpm": "Tiada kursus SPM disimpan lagi.",
-    "noStpm": "Tiada kursus STPM disimpan lagi."
+    "noStpm": "Tiada kursus STPM disimpan lagi.",
+    "removedToast": "Kursus dibuang",
+    "removeFailed": "Gagal membuang kursus",
+    "statusFailed": "Gagal mengemas kini status"
   },
   "discovery": {
     "filters": "Penapis",
@@ -2003,7 +2033,7 @@
       },
       "multiple": {
         "title": "Anda mempunyai lebih daripada satu permohonan",
-        "body": "Anda mempunyai {count} permohonan yang terbuka. Sila e-mel {supportEmail} dan kami akan menunjukkan yang mana satu."
+        "body": "Anda mempunyai {count} permohonan dengan kami. Sila e-mel {supportEmail} dan kami akan menunjukkan yang mana satu."
       }
     },
     "banner": {
@@ -2640,6 +2670,8 @@
         "particulars": "Butiran",
         "amount": "Jumlah biasiswa",
         "schedule": "Jadual pembayaran",
+        "scheduleLine": "RM{amount} sebulan × {count} bayaran, bermula {month} (jumlah RM{total}).",
+        "scheduleLineNoStart": "RM{amount} sebulan × {count} bayaran (jumlah RM{total}).",
         "institution": "Institusi",
         "course": "Kursus",
         "documentTitle": "Perjanjian",

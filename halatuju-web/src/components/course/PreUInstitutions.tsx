@@ -17,11 +17,12 @@ import { PHONE_ROWS, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 // ── STPM rich institution section ────────────────────────────────────────
 
 export function SubjectLegend({ stream }: { stream: string }) {
+  const { t } = useT()
   const subjects = legendSubjects(stream)
 
   return (
     <section className={PHONE_SECTION_NO_GAP}>
-      <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
+      <h2 className="text-lg font-semibold text-ground-900 mb-3">{t('courseDetail.subjectKey')}</h2>
       <div className="space-y-2">
         {subjects.map(code => (
           <div key={code} className="flex items-center gap-2">
@@ -98,7 +99,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
           onChange={e => { setStateFilter(e.target.value); setPpdFilter(''); setDisplayCount(PAGE_SIZE) }}
           className="min-h-11 w-full min-w-0 rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape sm:w-auto"
         >
-          <option value="">All States</option>
+          <option value="">{t('courseDetail.allStates')}</option>
           {allStates.map(state => (
             <option key={state} value={state}>{state}</option>
           ))}
@@ -108,7 +109,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
           onChange={e => { setPpdFilter(e.target.value); setDisplayCount(PAGE_SIZE) }}
           className="min-h-11 w-full min-w-0 rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape sm:w-auto"
         >
-          <option value="">All Districts</option>
+          <option value="">{t('courseDetail.allDistricts')}</option>
           {availablePpds.map(ppd => (
             <option key={ppd} value={ppd}>{ppd}</option>
           ))}
@@ -125,7 +126,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
           ))
         ) : (
           <p className="text-ground-400 text-center py-8">
-            No schools match the selected filters.
+            {t('courseDetail.noSchools')}
           </p>
         )}
       </div>
@@ -221,7 +222,7 @@ export function MatricInstitutionsSection({ courseId }: { courseId: string }) {
           onChange={e => setStateFilter(e.target.value)}
           className="min-h-11 border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
         >
-          <option value="">All States</option>
+          <option value="">{t('courseDetail.allStates')}</option>
           {availableStates.map(state => (
             <option key={state} value={state}>{state}</option>
           ))}
