@@ -56,7 +56,14 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
      Add and Remove (O4); a last-group Remove sends `to_no_group`. The person page has no Suspend or Delete, is
      read-only for a fellow org admin (O10), and draws one Permissions section (O12). The `member` role joins the
      web's mirror (TD-604 closed). Left open: TD-606 (mentor Suspend does not refuse `has_scholars` on the server).
-3. **Sprint M2: the admin-work chip** (O8). A new admin key named in `may_do_admin_work`; the admin preset carries it;
+3. **Owner input for M2 (2026-11-11, decisions.md "Team URLs move to /team"):** Team moves to
+   `/admin/organisation/team`, with `/team/admins/<id>`, `/team/reviewers/<id>` and `/team/mentors/<id>`, and permanent
+   redirects from every old address. One page per GROUP (Rohini, in Admins and Reviewers, has two): the admin page
+   covers admin work only, the reviewer page carries the figures, Covers, Pause new cases, Outcomes and reviewer
+   permissions, the mentor page carries their scholars. About shows on all of them; the header chips link to the
+   person's other group pages; someone in no group shows only on Staff. This replaces T3's single `TeamPersonPage`.
+   Fold it into M2's brief (or a sprint of its own just before M2 if M2 is too big; the architect decides).
+4. **Sprint M2: the admin-work chip** (O8). A new admin key named in `may_do_admin_work`; the admin preset carries it;
    a production data step gives it to the existing admin-labelled rows AND (owner) Rohini's row; after that the role
    label decides no page. Needs the owner's yes and a phone check before going live.
 

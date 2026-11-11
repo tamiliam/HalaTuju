@@ -1,5 +1,35 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-11 — Team URLs move to /team; each group has its own person page (owner, direct; for Sprint M2)
+
+**Ruled by the owner, directly, on 2026-11-11.** **SUPERSEDES** the 2026-11-09 entry "One person page for every team
+member" (Sprint T3): its M6 ("a person in several tables sees every part that applies … on either route") and its
+"each renders one `TeamPersonPage`". Its D8, D9 and M1-M3 (chips, Last seen, "Not given", locked switches) stand.
+
+**The ask.** Team lives under `/admin/organisation/reviewers`, and admins and mentors hang under it
+(`/reviewers/admins/25`, `/reviewers/mentors/2`), as if everyone were a reviewer. They are not. And a person's group
+page must be about that group: Rohini's ADMIN page showed reviewer figures (Awaiting review, Interviewing, Completed,
+Turnaround), Covers, Pause new cases and Outcomes.
+
+**Rulings**
+
+| | Ruling |
+|---|---|
+| U1 | Team is `/admin/organisation/team`. A person's pages are `/team/admins/<id>`, `/team/reviewers/<id>` and `/team/mentors/<id>`. Every old address redirects permanently to its new one, so no link breaks. |
+| U2 | One page per GROUP, not per person. Someone in Admins and Reviewers has two pages. The admin page covers admin work only (for now: header, About, admin permissions; a fuller admin performance page comes later). The reviewer page carries the reviewer figures, Covers, Pause new cases, Outcomes and the reviewer permissions. The mentor page carries their scholars. |
+| U3 | About (the Profile) shows on every group page. |
+| U4 | The header's group chips link to that person's OTHER group pages. |
+| U5 | Someone in no group has no group page; they appear only on the Staff tab. |
+
+**Why.** The tables say what somebody is; a page that mixes every group's parts makes an admin page read as a
+reviewer's. Per-group pages also fit permissions drawn by table (O12).
+
+**How (M2, not built).** Split `TeamPersonPage` into per-group pages sharing the header and About; move the routes;
+add the redirects (Next.js `redirects`, permanent) for `/admin/organisation/reviewers`, `/reviewers/<id>`,
+`/reviewers/admins/<id>` and `/reviewers/mentors/<id>`, keeping query strings (`?tab=`). Every in-app link moves.
+
+**Revisit if:** the fuller admin performance page is planned; it replaces U2's interim admin page.
+
 ## 2026-11-10 — Gemini Phase 1: 3.8 Flash replaces 2.5 Pro in every Pro job, and every one of them may fall back to the Flash cascade (owner, direct)
 
 **Ruled by the owner, directly, on 2026-11-10.** **SUPERSEDES** the contract module's "Owner decision 4: NO downgrade
