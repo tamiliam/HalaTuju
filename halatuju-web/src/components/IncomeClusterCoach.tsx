@@ -76,7 +76,6 @@ export default function IncomeClusterCoach({
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, token, member, lang, cacheKey])
 
   if (!show || status === 'none') return null

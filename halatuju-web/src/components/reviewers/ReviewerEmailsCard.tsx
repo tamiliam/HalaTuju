@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLatest } from '@/lib/useLatest'
 import {
   getReviewerEmails, getReviewerSystemEmails, updatePartnerEmail,
   type PartnerEmailTemplate, type PartnerEmailsPayload, type ReviewerSystemEmail,
@@ -32,17 +33,18 @@ export default function ReviewerEmailsCard({ token, t }: {
   const [busyKind, setBusyKind] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const tRef = useLatest(t)   // the load below words its error with the latest `t` without refiring on it
   useEffect(() => {
     if (!token) return
     getReviewerEmails({ token })
       .then(setData)
-      .catch(() => setError(t('admin.reviewers.emails.loadError')))
+      .catch(() => setError(tRef.current('admin.reviewers.emails.loadError')))
     // Its own request, and its own silence on failure: the seven are a REFERENCE list, so losing
     // them must not take down the five a person came here to operate.
     getReviewerSystemEmails({ token })
       .then((r) => setSystem(r.emails))
       .catch(() => setSystem([]))
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, tRef])
 
   if (!data) {
     return error ? (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLatest } from '@/lib/useLatest'
 import {
   getPartnerEmails, updatePartnerEmail,
   type PartnerEmailTemplate, type PartnerEmailsPayload,
@@ -26,12 +27,13 @@ export default function PartnerEmailsCard({ token, t }: {
   const [error, setError] = useState<string | null>(null)
   const [showWho, setShowWho] = useState(false)
 
+  const tRef = useLatest(t)   // the load below words its error with the latest `t` without refiring on it
   useEffect(() => {
     if (!token) return
     getPartnerEmails({ token })
       .then(setData)
-      .catch(() => setError(t('admin.sources.emails.loadError')))
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => setError(tRef.current('admin.sources.emails.loadError')))
+  }, [token, tRef])
 
   if (!data) {
     // A partner-emails hiccup must never take the Organisations table with it.

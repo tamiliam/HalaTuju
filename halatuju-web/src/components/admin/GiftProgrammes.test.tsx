@@ -22,6 +22,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import GiftProgrammes from './GiftProgrammes'
 import * as api from '@/lib/admin-api'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
@@ -494,5 +495,22 @@ describe('changing the short code', () => {
     // it — the same shape the create dialog has had since it shipped.
     await waitFor(() => expect(
       screen.getAllByText('admin.programmes.error.codeTaken').length).toBeGreaterThan(0))
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getAdminProgrammes is called the same number of times after three more renders', async () => {
+    const view = render(<GiftProgrammes token="tok" />)
+    await waitFor(() => expect(mockApi.getAdminProgrammes).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getAdminProgrammes.mock.calls.length
+    view.rerender(<GiftProgrammes token="tok" />)
+    view.rerender(<GiftProgrammes token="tok" />)
+    view.rerender(<GiftProgrammes token="tok" />)
+    await actA15(async () => {})
+    expect(mockApi.getAdminProgrammes).toHaveBeenCalledTimes(before)
   })
 })

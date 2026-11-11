@@ -19,6 +19,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ProgrammeRulesTab, { ruleYear } from './ProgrammeRulesTab'
 import * as api from '@/lib/admin-api'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
@@ -386,5 +387,22 @@ describe('what it says', () => {
     withYears([year()])
     await loaded()
     expect(screen.getByText('admin.rules.liveWarning')).toBeTruthy()
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getAdminIntakeYears is called the same number of times after three more renders', async () => {
+    const view = render(<ProgrammeRulesTab />)
+    await waitFor(() => expect(mockApi.getAdminIntakeYears).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getAdminIntakeYears.mock.calls.length
+    view.rerender(<ProgrammeRulesTab />)
+    view.rerender(<ProgrammeRulesTab />)
+    view.rerender(<ProgrammeRulesTab />)
+    await actA15(async () => {})
+    expect(mockApi.getAdminIntakeYears).toHaveBeenCalledTimes(before)
   })
 })

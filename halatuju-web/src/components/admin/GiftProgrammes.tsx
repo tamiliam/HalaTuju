@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { withGift } from '@/lib/giftHref'
 import InfoBox from '@/components/InfoBox'
@@ -117,6 +118,7 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
   // Which gift's link was just copied, so the confirmation names one card rather than all of them.
   const [copied, setCopied] = useState('')
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(async () => {
     if (!token) return
     setLoading(true)
@@ -124,12 +126,11 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
       setRows((await getAdminProgrammes({ token })).programmes)
       setError('')
     } catch {
-      setError(t('admin.programmes.loadFailed'))
+      setError(tRef.current('admin.programmes.loadFailed'))
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, tRef])
 
   useEffect(() => { void load() }, [load])
 

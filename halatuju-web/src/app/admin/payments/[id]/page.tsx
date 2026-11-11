@@ -15,6 +15,7 @@ import { useParams } from 'next/navigation'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import RecordState from '@/components/admin/RecordState'
 import { canAccess, effectiveRole } from '@/lib/navigation'
@@ -88,11 +89,11 @@ export default function PaymentRunDetailPage() {
   const [signError, setSignError] = useState('')   // shown inside the sign-off card, beside the action
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     if (!token) return
-    getPaymentRun(id, { token }).then(setRun).catch(() => setError(t('admin.payments.loadFailed')))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, id])
+    getPaymentRun(id, { token }).then(setRun).catch(() => setError(tRef.current('admin.payments.loadFailed')))
+  }, [token, id, tRef])
   useEffect(() => { if (allowed) load() }, [allowed, load])
   // ⚠ A RUN BELONGS TO ONE GIFT, AND THE CRUMB NOW SAYS WHICH (2026-09-28). Before this, the crumb
   // on a run page could be switched to another gift and the page ignored it — the crumb lied.

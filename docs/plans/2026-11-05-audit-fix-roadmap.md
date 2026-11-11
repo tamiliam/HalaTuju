@@ -860,6 +860,8 @@ Each sprint here:
 
 #### A3.15 Suppressions (web)
 
+- **Status (2026-11-11):** BUILT on branch a315, not pushed, not deployed. eslint-disable 42 counted -> 15 (all 15 carry a written reason; 27 removed, most by fixing the cause with a latest-value ref for the translator, six being unused), `: any` 2 -> 0 (both were prose in comments). One jest test per changed hook. Budget lowered 42 -> 15 and 2 -> 0, reasonless ledger now empty. No M1b file touched. Awaiting fresh review and G12.
+
 - **Goal:** Most eslint-disables are gone, because the code no longer needs them.
 - **Scope:**
   - The 40 `eslint-disable`: fix the cause (mostly hook dependencies and `img` rules). The tool counts them even with a reason.

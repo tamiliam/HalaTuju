@@ -64,6 +64,14 @@ Branch a314 (not pushed, not deployed; no behaviour change, comments only).
 - 60 bare `# noqa` now read `# noqa: CODE — reason` (BLE001 best-effort handlers, F401 re-exports, E402 import order, E731 test helpers, F403 fixture). Bare count 67 -> 7; the 7 left sit in files other sessions own (courses views_admin, backfill_admin_seen) and in test_code_standards.py.
 - `noqa` budget unchanged at 80: reasoned suppressions still count towards it.
 
+### refactor: web suppressions, audit A3.15 (2026-11-11)
+
+Branch a315 (not pushed, not deployed; no API change).
+- eslint-disable 42 -> 15 and `: any` 2 -> 0 in halatuju-web. The dominant cause was `t` (the translator, which changes identity on a language switch) missing from effect dependencies; a new `src/lib/useLatest.ts` holds the latest value in a ref that the effect reads, so the effect fires exactly when it did before and no `t` is listed. About 25 sites changed (admin lists and detail pages, the four email cards, GiftProgrammes, IntakeYearTab, ProgrammeRulesTab, SelectWithOther, scholarship page and view). Six disables were unused and simply removed.
+- Each changed hook has a jest test that re-renders with a new `t` and asserts the loader did not refire (checked to fail if `t` is added to the deps). The 15 kept disables (blob and signed-URL images, the theme boot script, three deliberate fire-once or fire-on-step effects, the auth gate and the income wizard) now each carry a written reason.
+- Both `: any` were prose inside comments or visible manual text; the manual wording of one sentence changed slightly (role-org-admin.tsx).
+- code-standards.json: counts.eslint_disable 42 -> 15, any 2 -> 0, eslint_disable_without_reason emptied, two stale _moved records removed; the scanner floor test 20 -> 10. Nothing raised, baseline untouched.
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).

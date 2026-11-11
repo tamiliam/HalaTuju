@@ -76,3 +76,19 @@ describe('contract templates are read and written for the breadcrumb gift (TD-22
     expect(mockApi.createContractTemplate).not.toHaveBeenCalled()
   })
 })
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The `useT` mock above hands back a NEW `t` on every render, so a loader that
+// listed `t` would read again on each re-render below. `gift` stays a dependency (see the TD-229
+// tests above): the breadcrumb changing still re-reads.
+describe('the list does not re-read when `t` changes identity (A3.15)', () => {
+  it('reads once, and stays at one after three more renders', async () => {
+    const view = render(<GiftScope><ContractsListPage /></GiftScope>)
+    await screen.findByText('2026-v1')
+    const before = mockApi.getContractTemplates.mock.calls.length
+    view.rerender(<GiftScope><ContractsListPage /></GiftScope>)
+    view.rerender(<GiftScope><ContractsListPage /></GiftScope>)
+    view.rerender(<GiftScope><ContractsListPage /></GiftScope>)
+    expect(mockApi.getContractTemplates).toHaveBeenCalledTimes(before)
+  })
+})

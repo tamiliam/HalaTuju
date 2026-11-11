@@ -140,7 +140,7 @@ export default function OrgRequestAttachments({
                     kind: 'image',
                   })}
                   title={t('admin.requests.attachments.view')}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a signed download URL for a screenshot, shown as a thumbnail; next/image cannot take a signed URL without a loader */}
                   <img src={a.download_url} alt={a.original_filename}
                     className="w-full h-32 object-cover bg-ground-50" />
                 </button>

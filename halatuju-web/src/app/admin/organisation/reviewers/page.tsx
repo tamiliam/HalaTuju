@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import {
@@ -202,15 +203,15 @@ export default function AdminReviewersList() {
   const [loading, setLoading] = useState(true)
   const { sort, setSort } = useSort<ReviewerSortKey>(DEFAULT_SORT)
 
+  const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(() => {
     if (!token) return
     setLoading(true)
     listReviewers({ token })
       .then((d) => setReviewers(d.reviewers))
-      .catch(() => setError(t('admin.reviewers.loadFailed')))
+      .catch(() => setError(tRef.current('admin.reviewers.loadFailed')))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, tRef])
 
   useEffect(() => { load() }, [load])
 

@@ -115,7 +115,7 @@ export default function StudentDetailPage() {
             {/* Header card: slim banner strip + title + chips. On a phone the banner runs edge to edge. */}
             <div className="border-b border-ground-100 md:overflow-hidden md:rounded-2xl md:border md:bg-ground-0">
               <div className="relative h-24 -mx-4 md:mx-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- a small concept picture; a plain img keeps the card's fixed layout and adds no bundle weight */}
                 <img src={conceptFieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <span className="absolute bottom-2 left-4 rounded-md bg-ground-0/90 px-2.5 py-0.5 text-xs font-bold text-ground-900 shadow-sm">{detail.ref}</span>

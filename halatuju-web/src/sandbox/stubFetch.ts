@@ -95,7 +95,6 @@ export function installStubFetch(): void {
 
     const body = payloadFor(parsed)
     if (body === undefined) {
-      // eslint-disable-next-line no-console
       console.warn(`[sandbox] no fixture for ${init?.method ?? 'GET'} ${pathname}`)
       return jsonResponse({ error: 'No sandbox fixture for this endpoint.' }, 404)
     }

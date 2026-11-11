@@ -10,6 +10,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import AdminSponsorsList from './page'
 import * as api from '@/lib/admin-api'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('next/link', () => ({
   __esModule: true,
@@ -217,5 +218,22 @@ describe('pagination', () => {
     fireEvent.click(nexts[nexts.length - 1])
     expect(ui().getByText('Sponsor 025')).toBeTruthy()
     expect(screen.queryByText('Sponsor 000')).toBeNull()
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('listSponsors is called the same number of times after three more renders', async () => {
+    const view = render(<AdminSponsorsList />)
+    await waitFor(() => expect(mockApi.listSponsors).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.listSponsors.mock.calls.length
+    view.rerender(<AdminSponsorsList />)
+    view.rerender(<AdminSponsorsList />)
+    view.rerender(<AdminSponsorsList />)
+    await actA15(async () => {})
+    expect(mockApi.listSponsors).toHaveBeenCalledTimes(before)
   })
 })

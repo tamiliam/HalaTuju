@@ -1,5 +1,5 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element -- the manual's images are static files served as they are; the optimiser would only change their layout */
 // Role-aware admin manual (rebuilt 2026-07-16). One page, sidebar of chapters filtered by the
 // caller's role, role-aware landing, stable deep-link anchors. Content lives in
 // src/content/manual/* — every capability claim traces to docs/scholarship/role-matrix.md.

@@ -21,6 +21,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 
 import IntakeYearTab from './IntakeYearTab'
 import * as api from '@/lib/admin-api'
+import { act as actA15 } from '@testing-library/react'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
@@ -103,7 +104,6 @@ describe('the caution sits above the table', () => {
     const banner = screen.getByText('admin.years.oneOpen')
     const table = document.querySelector('table') as HTMLElement
     // DOCUMENT_POSITION_FOLLOWING: the table comes AFTER the banner in reading order.
-    // eslint-disable-next-line no-bitwise
     expect(banner.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
@@ -461,5 +461,22 @@ describe('creating a round with a birth-state rule', () => {
     fireEvent.click(screen.getByText('admin.years.createClosed'))
     await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
     expect(mockApi.createAdminIntakeYear.mock.calls[0][1].allowed_birth_states).toEqual([])
+  })
+})
+
+// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
+// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
+// would read again on each re-render below; one that does not, reads exactly as often as before.
+describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
+  it('getAdminIntakeYears is called the same number of times after three more renders', async () => {
+    const view = render(<IntakeYearTab />)
+    await waitFor(() => expect(mockApi.getAdminIntakeYears).toHaveBeenCalled())
+    await actA15(async () => {})
+    const before = mockApi.getAdminIntakeYears.mock.calls.length
+    view.rerender(<IntakeYearTab />)
+    view.rerender(<IntakeYearTab />)
+    view.rerender(<IntakeYearTab />)
+    await actA15(async () => {})
+    expect(mockApi.getAdminIntakeYears).toHaveBeenCalledTimes(before)
   })
 })

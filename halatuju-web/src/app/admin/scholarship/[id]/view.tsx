@@ -22,6 +22,7 @@
  * below. Do not lift it out without that design.
  */
 import { useEffect, useState } from 'react'
+import { useLatest } from '@/lib/useLatest'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -135,9 +136,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const actions = useCaseActions(ctx)
   const { officerVerdict, loadVerdictState } = verdict
   const { findings, loadInterviewState } = interview
+  // The load below needs the CURRENT hooks' handlers and `t`, but must fire on `token`/`id` alone: the
+  // hook objects are new every render, so listing them would re-read the case on every keystroke.
+  const live = useLatest({ interview, loadInterviewState, loadVerdictState, postAward, t })
 
   useEffect(() => {
     if (!token || !id) return
+    const { interview, loadInterviewState, loadVerdictState, postAward, t } = live.current
     // ⚠ CLEAR THE INTERVIEW BOXES BEFORE FETCHING THE NEXT STUDENT (TD-216). The prev/next arrows
     // move between applicants WITHOUT remounting this page, so without this the previous student's
     // typed findings stay in state until their replacement arrives — and a save in that window
@@ -159,8 +164,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
     // Check-2 case summary — fetched lazily (in parallel), server-cached; dark-flag aware.
     getVerdictCaseSummary(id, { token }).then(setCaseSummary).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, id])
+  }, [token, id, live])
 
   if (!app) return <RecordState loading={!error} />
 

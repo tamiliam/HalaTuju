@@ -119,7 +119,7 @@ function Ticks({ ticks, count, box, text }: {
  *
  * ⚠ THREE VALUES, TWO GRIDLINES (owner, 2026-09-18). The top of the plot IS the largest value
  * and the baseline IS the smallest (or zero), so those labels are exact by construction; the
- * middle is their mean, which is exact too. No other gridlines: any further tick would need a
+ * middle is their mean, which is exact too. No other gridlines: a further tick would need a
  * rounding the fixed `viewBox` gives no room to explain. The figures beneath still carry every
  * number a person would quote.
  */

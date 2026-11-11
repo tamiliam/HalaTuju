@@ -72,7 +72,7 @@ export default function AuthGateModal() {
       }
       setStep('login')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets only when the gate opens or closes; handleReturningUser is rebuilt every render and listing it would reset the form on each keystroke
   }, [authGateReason])
 
   // Advance when user authenticates mid-modal
@@ -90,7 +90,7 @@ export default function AuthGateModal() {
       if (googleName && !name) setName(googleName)
       setStep('ic')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- advances only when sign-in status or the gate reason changes; the typed name and handleReturningUser are read as they stand then
   }, [status, authGateReason])
 
   // Redirect after profile-reason auth completes — reads fresh status, not stale closure

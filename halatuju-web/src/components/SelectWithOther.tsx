@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLatest } from '@/lib/useLatest'
 
 /**
  * A <select> of preset options plus an "Other" choice that reveals a free-text
@@ -20,7 +21,11 @@ export default function SelectWithOther({
   const isKnown = (v: string) => options.some((o) => o.value === v)
   const [mode, setMode] = useState<'preset' | 'other'>(value && !isKnown(value) ? 'other' : 'preset')
   // Re-sync when the stored value arrives async and is a non-preset (custom) string.
-  useEffect(() => { if (value && !isKnown(value)) setMode('other') }, [value])  // eslint-disable-line react-hooks/exhaustive-deps
+  // Fires on `value` alone: `options` is read through a ref so a changed list never flips the mode.
+  const optionsRef = useLatest(options)
+  useEffect(() => {
+    if (value && !optionsRef.current.some((o) => o.value === value)) setMode('other')
+  }, [value, optionsRef])
 
   return (
     <div className="space-y-2">

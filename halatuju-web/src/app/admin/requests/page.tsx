@@ -243,7 +243,7 @@ export default function AdminRequestsPage() {
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
                 {files.map((f, i) => (
                   <figure key={i} className="border rounded-lg overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a blob: preview of a file not yet uploaded; next/image cannot optimise a local object URL */}
                     <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover bg-ground-50" />
                     <figcaption className="px-1 py-0.5 text-[10px] text-ground-500 truncate" title={f.name}>{f.name} · {formatFileSize(f.size)}</figcaption>
                     <button type="button" onClick={() => unstage(i)}
