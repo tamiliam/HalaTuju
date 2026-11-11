@@ -55,8 +55,6 @@ NOT_CALLED_FROM_WEB = {
     'api/v1/admin/sponsorships/':
         'decisions.md (staff-permissions table): the same rows reach the console through the '
         'sponsor detail; the list route is read by no screen.',
-    'api/v1/admin/staff/':
-        'M1 staff list: its web caller lands with the M1b screens (separate session).',
     'api/v1/institutions/<str:institution_id>/':
         'Public catalogue detail; the web reads the list only. Kept as public API, pinned by '
         'courses/tests/test_api.py.',
