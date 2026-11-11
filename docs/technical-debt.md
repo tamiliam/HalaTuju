@@ -8788,3 +8788,12 @@ Remove sheet's dry run):
 (2) serve `run_in_progress` as the Admins row's cheap refusal (or `work.admins` counts on that row), then pass the count
 to the Admins `RemoveControl`; (3) answer `not_arrived` in `_cheap_refusal` for a last group, so the web stops reading
 `first_seen_at` for it. *(A · S)*
+
+### [TD-607] An apply that names a cohort skips the inactive-programme check - low
+
+**Raised 2026-11-11 by the audit's A4.1 review (logged by the fix lane; G13 does not fix it).** The student apply
+endpoint (`apps/scholarship/views/applications.py`, around line 97) resolves its round with
+`services/intake.resolve_open_cohort`. Without a code, that resolver drops a round whose programme is inactive (TD-339).
+An explicit `cohort_code` returns the round straight away, though, and the view only re-checks `cohort.is_open`. So a
+submit that names an open round under a deactivated programme is accepted. Fix: after the `is_open` re-check, refuse
+the same way when `cohort.programme` is inactive, with a test for the explicit-code path. *(A · S)*
