@@ -13,7 +13,11 @@ import { fundStudent, getSponsorPoolDetail, getSponsorWallet } from '@/lib/api'
 
 // TD-074: the route segment is the opaque pool ref, never the raw application id.
 let routeId = 'S-ABC123'
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: routeId }) }))
+const mockReplace = jest.fn()
+jest.mock('next/navigation', () => ({
+  useParams: () => ({ id: routeId }),
+  useRouter: () => ({ replace: mockReplace }),
+}))
 jest.mock('next/link', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
 jest.mock('react-markdown', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }) }))
@@ -191,6 +195,30 @@ it('forgets the previous student at once when the address names another one', as
     reporting_date: null, funding_categories: [], programme_months: 12, enrolment_verified: false, anon_profile: '', award_amount: '2000' }) })
   expect(mockDetail).toHaveBeenLastCalledWith('S-ABC124', { token: 'tok' })
   expect(document.body.textContent).toContain('RM2,000')
+})
+
+// ── A4.6 review: an old raw-id link, and a malformed segment ────────────────────────────────────────
+it('sends an all-digit (pre-TD-074 raw id) link to the student list, asking for no detail', async () => {
+  routeId = '1234'
+  render(<StudentDetailPage />)
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/sponsor/students'))
+  expect(mockDetail).not.toHaveBeenCalled()
+  expect(mockFund).not.toHaveBeenCalled()
+  expect(screen.queryByText('sponsorPool.notAvailable')).toBeNull()
+})
+
+it('does not redirect a ref segment', async () => {
+  render(<StudentDetailPage />)
+  await screen.findAllByText('sponsorPool.fullyFund', { selector: 'button' })
+  expect(mockReplace).not.toHaveBeenCalled()
+})
+
+it('shows "not available" for a malformed segment instead of throwing', async () => {
+  routeId = '%E0'
+  render(<StudentDetailPage />)
+  await screen.findByText('sponsorPool.notAvailable')
+  expect(mockDetail).not.toHaveBeenCalled()
+  expect(mockReplace).not.toHaveBeenCalled()
 })
 
 it('paints the confirm in the sponsor portal face (the Sheet is portalled out of the shell)', async () => {

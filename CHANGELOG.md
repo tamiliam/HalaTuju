@@ -12,6 +12,14 @@ M1b; their own entries are below.
   bill was skipped because no closing rate could be fetched for a month that HAS ended, so the
   `supplier-bills-import` / `-report` doors record a failed run (body `error`, System health red; HTTP stays 200 by
   design). A bill only "waiting for month end" is not a failure. Tests in `test_td247_supplier_bills_cron.py`.
+- docs: TD-247 cautions that a manual run near 00:00 MYT on the 1st may lock in the previous day's ECB rate;
+  `docs/testing.md` TD-345 step 3 asks for a throwaway sign-in address.
+- fix (A4.6 review): an all-digit sponsor link (a pre-TD-074 raw id in an email already sent) goes to the student
+  list from both `/sponsor/pool/[id]` and `/sponsor/students/[id]`, asking for no detail; a malformed escape in the
+  student or my-student segment (`%E0`) shows "not available" instead of throwing. `localeDelivery.test.tsx` now
+  asserts the English first render unconditionally (a fresh copy of the i18n modules), and fails without the
+  `contentLocale` fix. TD-074 says the `S-XXXXXX` ref is a salted-hash label, not a secret; the protection is the
+  visible-set fence in `resolve_ref`.
 
 ### feat: sprint M1b - Staff list and membership rules, the web half (team membership, 2026-11-11)
 

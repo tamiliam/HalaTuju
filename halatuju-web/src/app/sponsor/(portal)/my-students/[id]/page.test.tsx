@@ -15,7 +15,8 @@ import * as api from '@/lib/api'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/sponsor-auth-context', () => ({ useSponsorAuth: () => ({ token: 'tok' }) }))
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: '7' }) }))
+let routeId = '7'
+jest.mock('next/navigation', () => ({ useParams: () => ({ id: routeId }) }))
 jest.mock('react-markdown', () => ({
   __esModule: true, default: ({ children }: { children: string }) => <div>{children}</div>,
 }))
@@ -45,7 +46,14 @@ const detail = (spending: api.SponsorSpending | null) => ({
   },
 }) as unknown as api.SponsorMyStudentDetail
 
-beforeEach(() => jest.clearAllMocks())
+beforeEach(() => { jest.clearAllMocks(); routeId = '7' })
+
+it('shows "unavailable" for a malformed segment instead of throwing (A4.6 review)', async () => {
+  routeId = '%E0'
+  render(<MyStudentDetailPage />)
+  await screen.findByText('sponsorPortal.myStudents.detail.unavailable')
+  expect(mockApi.getMyStudentDetail).not.toHaveBeenCalled()
+})
 
 it('shows the spending panel when there is something to show', async () => {
   mockApi.getMyStudentDetail.mockResolvedValue(detail(SPENDING))

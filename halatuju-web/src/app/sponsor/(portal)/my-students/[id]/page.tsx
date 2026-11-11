@@ -18,6 +18,11 @@ import JourneyLine from '@/components/sponsor/JourneyLine'
  *  it always was inside the page's card from md. */
 const PART = 'mt-5 border-t border-ground-100 pt-4 md:mt-6 md:border-t-0 md:pt-0'
 
+/** The route segment decoded, or '' when it is not valid percent-encoding (A4.6 review). */
+function decodeSegment(segment: string): string {
+  try { return decodeURIComponent(segment) } catch { return '' }
+}
+
 
 /**
  * A student the sponsor SUPPORTS — the portfolio detail page (reached by clicking a My-students
@@ -29,14 +34,16 @@ export default function MyStudentDetailPage() {
   const { t } = useT()
   const { token } = useSponsorAuth()
   const params = useParams()
-  // TD-074: the segment is the student's opaque ref (S-XXXXXX), never a raw id.
-  const id = typeof params?.id === 'string' ? decodeURIComponent(params.id) : ''
+  // TD-074: the segment is the student's opaque ref (S-XXXXXX), never a raw id. A malformed escape
+  // ('%E0') decodes to '' (the "unavailable" state), never a thrown render.
+  const id = typeof params?.id === 'string' ? decodeSegment(params.id) : ''
 
   const [detail, setDetail] = useState<SponsorMyStudentDetail | null>(null)
   const [unavailable, setUnavailable] = useState(false)
 
   useEffect(() => {
-    if (!token || !id) return
+    if (!id) { setUnavailable(true); return }
+    if (!token) return
     let cancelled = false
     getMyStudentDetail(id, { token })
       .then((d) => { if (!cancelled) setDetail(d) })

@@ -3,7 +3,7 @@
 import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
@@ -25,6 +25,11 @@ const payMonthsOf = (amount: string | null | undefined) => {
   return Number.isFinite(n) && n > 0 ? Math.round(n / PAY_RATE) : 0
 }
 
+/** The route segment decoded, or '' when it is not valid percent-encoding (A4.6 review). */
+function decodeSegment(segment: string): string {
+  try { return decodeURIComponent(segment) } catch { return '' }
+}
+
 // Backend fund error code → localised message key.
 const FUND_ERR_KEY: Record<string, string> = {
   insufficient_balance: 'sponsorPortal.students.errInsufficient',
@@ -42,8 +47,16 @@ export default function StudentDetailPage() {
   const { token } = useSponsorAuth()
   const { refreshPool, refreshWallet } = useSponsorPortal()
   const params = useParams()
-  // TD-074: the segment is the student's opaque ref (S-XXXXXX), never a raw id.
-  const id = typeof params?.id === 'string' ? decodeURIComponent(params.id) : ''
+  const router = useRouter()
+  // TD-074: the segment is the student's opaque ref (S-XXXXXX), never a raw id. A malformed escape
+  // ('%E0') decodes to '' (the "not available" state), never a thrown render.
+  const id = typeof params?.id === 'string' ? decodeSegment(params.id) : ''
+  // An all-digit segment is a pre-TD-074 raw-id link (an email already sent): the student list, not
+  // "not available". Nothing maps the id to a student; no detail is asked for.
+  const legacyRawId = /^\d+$/.test(id)
+  useEffect(() => {
+    if (legacyRawId) router.replace('/sponsor/students')
+  }, [legacyRawId, router])
 
   const [detail, setDetail] = useState<SponsorPoolDetail | null>(null)
   const [unavailable, setUnavailable] = useState(false)
@@ -60,7 +73,8 @@ export default function StudentDetailPage() {
     // A different student (the address changed in place): forget the last one FIRST, so nothing — above
     // all the confirm's amount — can show the previous student's figures while this one loads (M5 review).
     setDetail(null); setUnavailable(false); setFunded(false); setConfirming(false); setErrCode(null)
-    if (!token || !id) return
+    if (!id) { setUnavailable(true); return }
+    if (!token || legacyRawId) return
     let cancelled = false
     getSponsorPoolDetail(id, { token })
       .then((d) => { if (!cancelled) setDetail(d) })
@@ -69,7 +83,7 @@ export default function StudentDetailPage() {
       .then((w) => { if (!cancelled) setBalance(w.balance) })
       .catch(() => { /* balance is a hint; the fund call is the real gate */ })
     return () => { cancelled = true }
-  }, [token, id])
+  }, [token, id, legacyRawId])
 
   const doFund = async () => {
     if (!token || inFlight.current) return

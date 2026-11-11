@@ -25,6 +25,9 @@
  *
  * ⚠ Plain DOM assertions — this project's jest setup does not load `@testing-library/jest-dom`.
  */
+import * as React from 'react'
+import * as jsxRuntime from 'react/jsx-runtime'
+import * as jsxDevRuntime from 'react/jsx-dev-runtime'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import en from '@/messages/en.json'
@@ -149,13 +152,32 @@ describe('a reader who arrives already set to another language', () => {
   // the server's HTML said "BrightPath Bursary" — a hydration mismatch in the footer of every page.
   test('a branding token speaks the language of the words, not the stored choice', async () => {
     localStorage.setItem(KEY_LOCALE, 'ms')
+    // ⚠ A FRESH copy of the i18n modules (G14): earlier tests in this file leave the Malay chunk in
+    // memory, and with it there the first render is already Malay, so the English first render this
+    // pins would never happen. The fresh copy has no Malay in memory (its own warm start is a promise,
+    // not yet settled at render), so the first render is English every time. React stays shared, so
+    // the fresh provider renders in this file's React.
+    let fresh!: typeof import('@/lib/i18n')
+    jest.isolateModules(() => {
+      jest.doMock('react', () => React)
+      jest.doMock('react/jsx-runtime', () => jsxRuntime)
+      jest.doMock('react/jsx-dev-runtime', () => jsxDevRuntime)
+      fresh = require('@/lib/i18n')
+    })
     function Heading() {
-      const { t } = useT()
-      return <span data-testid="programme">{t('footer.b40Heading')}</span>
+      const { t } = fresh.useT()
+      return (
+        <div>
+          <span data-testid="word">{t(PROBE_KEY)}</span>
+          <span data-testid="programme">{t('footer.b40Heading')}</span>
+        </div>
+      )
     }
-    render(<I18nProvider><Probe /><Heading /></I18nProvider>)
+    render(<fresh.I18nProvider><Heading /></fresh.I18nProvider>)
     const programme = () => screen.getByTestId('programme').textContent
-    if (word() === EXPECTED.en) expect(programme()).toBe(PLATFORM.programmeName.en)
+    // The first render: English words, so the English programme name (the server's HTML).
+    expect(word()).toBe(EXPECTED.en)
+    expect(programme()).toBe(PLATFORM.programmeName.en)
     await waitFor(() => expect(word()).toBe(EXPECTED.ms))
     expect(programme()).toBe(PLATFORM.programmeName.ms)
   })
