@@ -197,7 +197,7 @@ def test_wrong_type_kwsp_doc_is_not_epf():
 
 
 # ── misfiled_as: light NEGATIVE wrong-type backstop for types we don't yet positively fingerprint ──
-from apps.scholarship.genuineness.results_doc import misfiled_as   # noqa: E402
+from apps.scholarship.genuineness.results_doc import misfiled_as  # noqa: E402 — import kept beside the tests that use it
 
 GENUINE_PAYSLIP = """SLIP GAJI BULAN JUN 2026
 NAMA : RAVI A/L PERIAKARUPPAN

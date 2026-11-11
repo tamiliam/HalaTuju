@@ -3,7 +3,7 @@ package (genuineness/results_doc.py + genuineness/bands.py). Kept so existing im
 (``apps.scholarship.doc_signatures.*``) keep resolving. New code should import from
 ``apps.scholarship.genuineness``.
 """
-from .genuineness.bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401
-from .genuineness.results_doc import (  # noqa: F401
+from .genuineness.bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401 — re-exported for callers of this module
+from .genuineness.results_doc import (  # noqa: F401 — re-exported for callers of this module
     SLIP_SIGNATURES, CERT_SIGNATURES, score_signatures, signature_genuineness,
 )

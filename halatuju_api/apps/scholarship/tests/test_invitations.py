@@ -185,9 +185,9 @@ class TestThePiiPurge(TestCase):
 
 
 # ── the four kinds, and the endpoint behind the page ─────────────────────────────
-import jwt  # noqa: E402
-from django.test import override_settings  # noqa: E402
-from rest_framework.test import APIClient  # noqa: E402
+import jwt  # noqa: E402 — import kept beside the tests that use it
+from django.test import override_settings  # noqa: E402 — import kept beside the tests that use it
+from rest_framework.test import APIClient  # noqa: E402 — import kept beside the tests that use it
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 URL = '/api/v1/admin/invitations/'

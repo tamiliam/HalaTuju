@@ -461,7 +461,7 @@ Alamat: NO 5, JALAN BAHAGIA
 
     def test_empty_input(self):
         self.assertEqual(_extract_address(''), '')
-        self.assertEqual(_extract_address(None), '')  # type: ignore
+        self.assertEqual(_extract_address(None), '')  # type: ignore[arg-type] — deliberately passes None to prove it is handled
 
     def test_deduplicates_repeated_lines(self):
         # Vision occasionally repeats the same line in the layout pass.

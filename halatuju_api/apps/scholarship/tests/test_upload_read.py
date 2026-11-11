@@ -39,7 +39,7 @@ class _Reads:
 
     def __enter__(self):
         self._stack = ExitStack()
-        p = lambda target, **kw: self._stack.enter_context(patch(target, **kw))  # noqa: E731
+        p = lambda target, **kw: self._stack.enter_context(patch(target, **kw))  # noqa: E731 — short local helper in a test
         self.ic = p('apps.scholarship.vision.run_vision_for_document', return_value=None)
         self.ocr = p('apps.scholarship.vision.ocr_document_full',
                      return_value={'text': '', 'error': None})
@@ -213,7 +213,7 @@ class TestUploadQueue(TestCase):
         a = self._pending('ic', 'good')
         b = self._pending('ic', 'bad')
         self.assertEqual((a.read_plan['existing_live'], b.read_plan['existing_live']), (None, None))
-        verdict = lambda d: 'mismatch' if d.id == b.id else 'ok'  # noqa: E731
+        verdict = lambda d: 'mismatch' if d.id == b.id else 'ok'  # noqa: E731 — short local helper in a test
         with _Reads(), patch('apps.scholarship.resolution.doc_match_verdict', side_effect=verdict):
             self.assertEqual(upload_read.run_read(a.id)[0], 'done')
             outcome, data = upload_read.run_read(b.id)

@@ -84,5 +84,5 @@ logger = logging.getLogger(__name__)   # 'apps.scholarship.vision' — the name 
 # ── Genuineness checks live in the genuineness/ package (one home, per the architecture) ──
 # Re-exported here so the upload path above and back-compatible imports
 # (apps.scholarship.vision.ic_genuineness / .doc_genuineness) keep resolving unchanged.
-from ..genuineness.ic import ic_genuineness            # noqa: E402,F401
-from ..genuineness.supporting_doc import doc_genuineness, _GENUINENESS_DOCS  # noqa: E402,F401
+from ..genuineness.ic import ic_genuineness  # noqa: E402,F401 — re-export for back-compatible imports; placed after the definitions above it
+from ..genuineness.supporting_doc import doc_genuineness, _GENUINENESS_DOCS  # noqa: E402,F401 — re-export for back-compatible imports; placed after the definitions above it

@@ -501,9 +501,9 @@ class TestIncomeIcCheck(SimpleTestCase):
 
 
 # ── Utility-bill facts (current / reasonable / outstanding / name note) ────────
-import datetime  # noqa: E402
+import datetime  # noqa: E402 — import kept beside the tests that use it
 
-from apps.scholarship.income_engine import (  # noqa: E402
+from apps.scholarship.income_engine import (  # noqa: E402 — import kept beside the tests that use it
     _parse_billing_month, _utility_currency, _bill_month_label, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
@@ -1507,10 +1507,10 @@ class TestEffectiveWorkingMembers(SimpleTestCase):
 # carries the recipient's NRIC. When the two NUMBERS match, the earner is confirmed as that parent
 # even when the IC physically uploaded in their slot is the wrong card or absent (#9: father's IC
 # in the mother slot, but BC-mother / STR / EPF all carry the mother's number).
-from apps.scholarship.income_engine import (  # noqa: E402
+from apps.scholarship.income_engine import (  # noqa: E402 — import kept beside the tests that use it
     chain_verified_earner, student_str_check, student_bc_check, student_income_proof_check,
 )
-from apps.scholarship.resolution import doc_match_verdict  # noqa: E402
+from apps.scholarship.resolution import doc_match_verdict  # noqa: E402 — import kept beside the tests that use it
 
 _STUDENT = 'THERESA D/O RAJAN'
 _MOTHER = 'MARY THOMAS'
@@ -1730,7 +1730,7 @@ class TestFilledChildNricCanOnlyHelp(SimpleTestCase):
         self.assertEqual(self._child_status(child=_STUDENT, child_nric=''), 'check_one')
 
 
-from apps.scholarship.income_engine import _combine_relationship  # noqa: E402
+from apps.scholarship.income_engine import _combine_relationship  # noqa: E402 — import kept beside the tests that use it
 
 
 class TestOneCellIsNotGreen(SimpleTestCase):

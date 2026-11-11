@@ -129,7 +129,7 @@ def gemini_tokens(resp):
         if thoughts is not None:
             out = (out or 0) + thoughts
         return (_int_or_none(getattr(md, 'prompt_token_count', None)), out)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — usage metering must never break the call it measures
         return (None, None)
 
 
@@ -141,7 +141,7 @@ def openai_tokens(completion):
             return (None, None)
         return (_int_or_none(getattr(u, 'prompt_tokens', None)),
                 _int_or_none(getattr(u, 'completion_tokens', None)))
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — usage metering must never break the call it measures
         return (None, None)
 
 
@@ -295,7 +295,7 @@ def org_storage_bytes(org_id):
                 .filter(org_request__organisation_id=org_id)
                 .aggregate(b=Sum('size'))['b'] or 0)
         return int(docs) + int(atts)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — a storage reading that fails reports 0 rather than breaking the page
         return 0
 
 
@@ -311,7 +311,7 @@ def bucket_storage_bytes():
         docs = ApplicantDocument.objects.aggregate(b=Sum('size'))['b'] or 0
         atts = OrgRequestAttachment.objects.aggregate(b=Sum('size'))['b'] or 0
         return int(docs) + int(atts)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — a storage reading that fails reports 0 rather than breaking the page
         return 0
 
 

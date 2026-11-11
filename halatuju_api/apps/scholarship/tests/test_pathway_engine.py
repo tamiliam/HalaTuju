@@ -353,7 +353,7 @@ class TestOfferIntakeYear(SimpleTestCase):
 
 
 # ── Offer-validity signal (owner policy: only genuine official PUBLIC offers qualify) ──
-from apps.scholarship.pathway_engine import offer_official_status  # noqa: E402
+from apps.scholarship.pathway_engine import offer_official_status  # noqa: E402 — import kept beside the tests that use it
 
 
 def _auth_doc(authenticity):

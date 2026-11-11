@@ -57,6 +57,13 @@ Branch a313 (not pushed, not deployed; no migration, no behaviour change).
   report_engine route. Roadmap targets (xapp <= 50, courses -> scholarship <= 8) are not met here.
 - Tests: `test_scholarship_public_facade.py` (identity pins), the door guard and its scanner self-test.
 
+### chore: audit A3.14, Python suppressions (2026-11-11)
+
+Branch a314 (not pushed, not deployed; no behaviour change, comments only).
+- Removed the 11 source-side `# type: ignore` on lazy imports of untyped libraries (googleapiclient, google.cloud, openpyxl); mypy is not run here. `type_ignore` budget 11 -> 0. The 2 in tests stay, narrowed to a code with a reason.
+- 60 bare `# noqa` now read `# noqa: CODE — reason` (BLE001 best-effort handlers, F401 re-exports, E402 import order, E731 test helpers, F403 fixture). Bare count 67 -> 7; the 7 left sit in files other sessions own (courses views_admin, backfill_admin_seen) and in test_code_standards.py.
+- `noqa` budget unchanged at 80: reasoned suppressions still count towards it.
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).

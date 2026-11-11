@@ -27,7 +27,7 @@ def _meter_email():
                 break
             f = f.f_back
         usage.record_usage(usage.EMAIL, source=source, quantity=1)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — usage recording must never break an email send
         pass
 
 # Per-org branding is read ONLY through the branding seam (decision D1). Sender identity,

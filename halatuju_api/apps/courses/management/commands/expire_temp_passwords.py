@@ -116,7 +116,7 @@ class Command(BaseCommand):
                     expired += 1
                 else:
                     logger.warning('expire_temp_passwords: rotate failed %s %s', pr.status_code, pr.text)
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 — one failed rotation is logged and must not stop the rest of the batch
                 logger.warning('expire_temp_passwords: rotate errored for %s', uid, exc_info=True)
 
         ttls = ', '.join(f'{v}d' for v in sorted(set(ttl_cache.values()))) or '-'

@@ -364,7 +364,7 @@ def rows_from_xlsx(path) -> tuple[list[SpendRow], list[str]]:
     import os
 
     try:
-        from openpyxl import load_workbook            # type: ignore
+        from openpyxl import load_workbook
     except ImportError as exc:                        # pragma: no cover - environment-dependent
         raise UnreadableReport(
             'openpyxl is not installed; it is needed only to read a local .xlsx export '

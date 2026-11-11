@@ -19,11 +19,11 @@ class TestBackwardCompatibleImports(SimpleTestCase):
         self.assertTrue(callable(vision.doc_genuineness))
 
     def test_from_vision_import_still_works(self):
-        from apps.scholarship.vision import ic_genuineness, doc_genuineness  # noqa: F401
+        from apps.scholarship.vision import ic_genuineness, doc_genuineness  # noqa: F401 — import is the assertion: it must resolve
         self.assertTrue(callable(ic_genuineness) and callable(doc_genuineness))
 
     def test_signature_scorer_importable(self):
-        from apps.scholarship.doc_signatures import signature_genuineness, score_signatures  # noqa: F401
+        from apps.scholarship.doc_signatures import signature_genuineness, score_signatures  # noqa: F401 — import is the assertion: it must resolve
         self.assertTrue(callable(signature_genuineness) and callable(score_signatures))
 
     def test_genuineness_doc_types_set_still_on_vision(self):

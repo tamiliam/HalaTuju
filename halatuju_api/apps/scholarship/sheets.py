@@ -91,7 +91,7 @@ def _services():
         return None, None
     pinned = bool(getattr(settings, 'VIRCLE_SHEET_ID', ''))
     try:
-        from googleapiclient.discovery import build  # type: ignore
+        from googleapiclient.discovery import build
 
         scopes = [_SHEETS_SCOPE] if pinned else [_SHEETS_SCOPE, _DRIVE_SCOPE]
         creds = google_dwd.dwd_credentials(scopes)
@@ -272,7 +272,7 @@ def _drive_for_upload():
     if not sheets_enabled():
         return None
     try:
-        from googleapiclient.discovery import build  # type: ignore
+        from googleapiclient.discovery import build
 
         creds = google_dwd.dwd_credentials([_DRIVE_SCOPE])
         if creds is None:
@@ -313,7 +313,7 @@ def fetch_drive_pdf(folder_path, filename):
             return None
         import io
 
-        from googleapiclient.http import MediaIoBaseDownload  # type: ignore
+        from googleapiclient.http import MediaIoBaseDownload
         buf = io.BytesIO()
         downloader = MediaIoBaseDownload(buf, drive.files().get_media(fileId=files[0]['id']))
         done = False
@@ -338,7 +338,7 @@ def _sheet_values_or_none(spreadsheet_id, cell_range):
     if not (sheets_enabled() and spreadsheet_id):
         return None
     try:
-        from googleapiclient.discovery import build  # type: ignore
+        from googleapiclient.discovery import build
         creds = google_dwd.dwd_credentials([_SHEETS_SCOPE])
         if creds is None:
             return None
@@ -478,7 +478,7 @@ def file_text_to_folder(folder_path, filename, text, *, mimetype='text/csv',
             logger.warning('Drive write: folder path %r not found in the Drive of %s',
                            folder_path, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
             return None
-        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        from googleapiclient.http import MediaInMemoryUpload
         media = MediaInMemoryUpload(text.encode('utf-8'), mimetype=mimetype)
         # ⚠⚠ **REPLACE A FILE OF THE SAME NAME, NEVER ADD A SECOND ONE.** Drive happily keeps two
         # files with identical names in one folder, and on 2026-09-12 it did: the daily job filed
@@ -538,7 +538,7 @@ def write_payment_csv(run):
             logger.warning('Payments CSV: folder path %r not found in the Drive of %s',
                            folder, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
             return None
-        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        from googleapiclient.http import MediaInMemoryUpload
         media = MediaInMemoryUpload(text.encode('utf-8'), mimetype='text/csv')
         created = drive.files().create(
             body={'name': f'{run.reference}.csv', 'parents': [folder_id]},
@@ -568,7 +568,7 @@ def write_contract_pdf(agreement, pdf_bytes):
             logger.warning('Contract PDF: folder path %r not found in the Drive of %s',
                            folder, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
             return None
-        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        from googleapiclient.http import MediaInMemoryUpload
         name = f'app{agreement.application_id}_bursary_agreement_{agreement.version}.pdf'
         media = MediaInMemoryUpload(pdf_bytes, mimetype='application/pdf')
         created = drive.files().create(

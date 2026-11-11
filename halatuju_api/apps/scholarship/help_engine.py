@@ -21,7 +21,7 @@ patches that one function, so CI runs with zero billable calls.
 import logging
 
 from . import branding as _branding
-from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401  (re-exported for callers/tests)
+from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401 — re-exported for callers and tests
 
 logger = logging.getLogger(__name__)
 

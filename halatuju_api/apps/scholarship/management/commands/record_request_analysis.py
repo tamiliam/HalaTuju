@@ -267,7 +267,7 @@ def _mint_session(stdout):
     try:
         gr = http.post(f'{url}/auth/v1/admin/generate_link',
                        headers=svc, json={'type': 'magiclink', 'email': email}, timeout=30)
-    except Exception as e:      # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — any network failure is re-raised as a CommandError
         raise CommandError(f'Could not reach Supabase to mint a session: {e}')
     if gr.status_code != 200:
         raise CommandError(
@@ -281,7 +281,7 @@ def _mint_session(stdout):
         vr = http.post(f'{url}/auth/v1/verify',
                        headers={'apikey': anon, 'Content-Type': 'application/json'},
                        json={'type': 'magiclink', 'token_hash': hashed}, timeout=30)
-    except Exception as e:      # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — any network failure is re-raised as a CommandError
         raise CommandError(f'Could not exchange the minted link: {e}')
     if vr.status_code != 200:
         raise CommandError(f'The minted link would not exchange ({vr.status_code}): {vr.text[:200]}')
@@ -362,7 +362,7 @@ def _api_call(method, api_url, path, token, *, payload=None):
     try:
         resp = http.request(method, url, headers={'Authorization': f'Bearer {token}'},
                             json=payload, timeout=60)
-    except Exception as e:      # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — any network failure is re-raised as a CommandError
         raise CommandError(f'Could not reach the API at {url}: {e}')
 
     if resp.status_code in (401, 403):

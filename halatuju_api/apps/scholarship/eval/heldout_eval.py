@@ -43,8 +43,8 @@ def _load_dotenv():
 _load_dotenv()
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'halatuju.settings.development')
 django.setup()
-from apps.scholarship.genuineness.results_doc import signature_genuineness  # noqa: E402
-from apps.scholarship.vision import extract_document_fields                 # noqa: E402
+from apps.scholarship.genuineness.results_doc import signature_genuineness  # noqa: E402 — must follow django.setup() above
+from apps.scholarship.vision import extract_document_fields  # noqa: E402 — must follow django.setup() above
 
 BUCKET = 'b40-documents'
 # Offer-letter doc ids already in the local corpus (fixtures + counter_examples) — the "training" set.
@@ -125,7 +125,7 @@ def run(rows, do_extract):
         data, ct = r['bytes'], r['content_type']
         try:
             text = ocr_text(data, ct)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 — an OCR failure on one row is printed and the run continues
             print(f"{r['id']:>6} {r['app']:>4} {r['declared']:12} OCR-FAIL ({type(e).__name__})")
             continue
         sg = signature_genuineness(text, doc_type='offer_letter')

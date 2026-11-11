@@ -52,7 +52,7 @@ def _calendar_service():
     if not meet_enabled():
         return None
     try:
-        from googleapiclient.discovery import build  # type: ignore
+        from googleapiclient.discovery import build
 
         creds = google_dwd.dwd_credentials(_SCOPES)
         if creds is None:

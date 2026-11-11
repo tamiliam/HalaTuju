@@ -842,6 +842,8 @@ Each sprint here:
 
 #### A3.14 Suppressions (api)
 
+- **Status (2026-11-11):** BUILT on branch a314, not pushed, not deployed. Source `# type: ignore` 11 -> 0 (budget 11 -> 0; 2 deliberate ones remain in tests, each with a reason). Bare `# noqa` 67 -> 7: every one outside the other sessions' files now names its code and a reason. The noqa budget stays 80 (the count includes reasoned ones; it only falls if a noqa is removed, which was not safe without a linter to check). Left for the owners of those files: 4 in courses views_admin.py, 1 in backfill_admin_seen.py, 2 in test_code_standards.py (its own prose). No linter or mypy is configured in this repo.
+
 - **Goal:** Every Python suppression is fixed or explained.
 - **Scope:**
   - The 11 `# type: ignore`: fix the types.

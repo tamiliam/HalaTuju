@@ -438,7 +438,7 @@ class TestTheListsAndPages(_Base):
         flagged = _scholar(cohort=self.app.cohort, mentoring_candidate=True)
         plain = _scholar(cohort=self.app.cohort, help_university='no')
         self.assign(self.kavitha, email_student=False)
-        get = lambda **q: authed_client(self.org_admin).get(SCHOLARS, q).json()   # noqa: E731
+        get = lambda **q: authed_client(self.org_admin).get(SCHOLARS, q).json()  # noqa: E731 — short local helper in a test
         everyone = get()
         self.assertEqual((everyone['summary']['no_mentor'], everyone['summary']['asked_for_help']), (3, 3))
         rows = {r['id']: r for r in everyone['results']}

@@ -123,10 +123,10 @@ def pdf_text_layer(data: bytes) -> str:
         if reader.is_encrypted:
             try:
                 reader.decrypt('')
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 — a PDF that will not decrypt has no text layer; the caller falls back to OCR
                 return ''
         return '\n'.join((p.extract_text() or '') for p in reader.pages).strip()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
         return ''
 
@@ -153,7 +153,7 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
             return buf.getvalue()
         finally:
             pdf.close()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — a PDF that will not rasterise is logged; the caller handles None
         logger.warning('PDF rasterise failed: %s', e)
         return None
 

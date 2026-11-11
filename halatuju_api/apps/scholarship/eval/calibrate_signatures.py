@@ -21,7 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, '..', '..', '..')))   # halatuju_api/
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'halatuju.settings.development')
 django.setup()
-from apps.scholarship.genuineness.results_doc import score_signatures, signature_genuineness  # noqa: E402
+from apps.scholarship.genuineness.results_doc import score_signatures, signature_genuineness  # noqa: E402 — must follow django.setup() above
 
 DOC_TYPE = sys.argv[1] if len(sys.argv) > 1 else 'results_slip'
 SNAP = os.path.join(HERE, 'snapshots')

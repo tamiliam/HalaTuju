@@ -20,7 +20,7 @@ def _fmt_amount(amount):
         return '—'
     try:
         return f'RM{Decimal(amount):,.2f}'
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — any unparseable amount falls back to the raw text
         return f'RM{amount}'
 
 

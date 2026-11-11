@@ -1017,7 +1017,7 @@ _PRAGMA_ED = (
 def _fake_package(root, **files):
     pkg = root / 'views_admin'
     (pkg / 'nested').mkdir(parents=True)
-    (pkg / '__init__.py').write_text('from .requests import *  # noqa\n', encoding='utf-8')
+    (pkg / '__init__.py').write_text('from .requests import *  # noqa: F403 — fixture, the star import is the point\n', encoding='utf-8')
     for name, body in files.items():
         (pkg / name.replace('/', os.sep)).write_text(body, encoding='utf-8')
     return pkg

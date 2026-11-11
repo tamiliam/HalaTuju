@@ -18,7 +18,7 @@ SOFT signal only; the reviewer is the authority.
 import re
 import unicodedata
 
-from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
+from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401 — re-exported for callers
 from .epf_app_doc import epf_app_scores, screen_at_most_suspect
 from .stpm_doc import STPM_LISTS
 # The five offer-letter families + the 20 UA names moved verbatim to `offer_signatures` (offer
