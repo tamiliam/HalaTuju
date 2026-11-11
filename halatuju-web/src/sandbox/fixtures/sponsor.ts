@@ -35,7 +35,7 @@ import type { SponsorPoolCard } from '@/lib/api'
  */
 export const sandboxPool: SponsorPoolCard[] = [
   {
-    id: 901, ref: 'S-CTH-01', state: 'Perak', school: 'SMK Contoh Satu',
+    ref: 'S-CTH-01', state: 'Perak', school: 'SMK Contoh Satu',
     field: 'engineering', course: 'Diploma Kejuruteraan Mekanikal',
     academic: 'SPM · 7A', institution: 'Politeknik Teladan',
     blurb: 'Membaiki motosikal jiran sejak umur 13 tahun, dan mahu menjadi jurutera.',
@@ -46,7 +46,7 @@ export const sandboxPool: SponsorPoolCard[] = [
     course_href: '/course/DIP-MEK', funded: false, portfolio_status: null, supported_semesters: 4,
   },
   {
-    id: 902, ref: 'S-CTH-02', state: 'Kedah', school: 'SMK Contoh Dua',
+    ref: 'S-CTH-02', state: 'Kedah', school: 'SMK Contoh Dua',
     field: 'health', course: 'Diploma Kejururawatan',
     academic: 'SPM · 5A', institution: 'Kolej Teladan',
     // Deliberately blank: a card with no blurb and no artwork is the state most likely to be
@@ -58,7 +58,7 @@ export const sandboxPool: SponsorPoolCard[] = [
     course_href: '', funded: false, portfolio_status: null, supported_semesters: null,
   },
   {
-    id: 903, ref: 'S-CTH-03', state: 'Selangor', school: 'SMK Contoh Tiga',
+    ref: 'S-CTH-03', state: 'Selangor', school: 'SMK Contoh Tiga',
     field: 'computing', course: 'Asasi Sains Komputer',
     academic: 'SPM · 8A', institution: 'Universiti Teladan',
     blurb: 'Belajar membuat laman web daripada video, dan kini mengajar adiknya.',
@@ -69,7 +69,7 @@ export const sandboxPool: SponsorPoolCard[] = [
     course_href: '/course/ASASI-SK', funded: true, portfolio_status: 'on_track', supported_semesters: 2,
   },
   {
-    id: 904, ref: 'S-CTH-04', state: 'Johor', school: 'SMK Contoh Empat',
+    ref: 'S-CTH-04', state: 'Johor', school: 'SMK Contoh Empat',
     field: 'education', course: 'PISMP Pendidikan Rendah',
     academic: 'SPM · 6A', institution: 'Institut Pendidikan Teladan',
     blurb: 'Mahu mengajar di sekolah yang sama seperti tempat dia belajar.',
@@ -80,7 +80,7 @@ export const sandboxPool: SponsorPoolCard[] = [
     course_href: '/course/PISMP-PR', funded: false, portfolio_status: 'graduated', supported_semesters: 8,
   },
   {
-    id: 905, ref: 'S-CTH-05', state: 'Pulau Pinang', school: 'SMK Contoh Lima',
+    ref: 'S-CTH-05', state: 'Pulau Pinang', school: 'SMK Contoh Lima',
     field: 'business', course: 'Diploma Perakaunan',
     academic: 'STPM · PNGK 3.4', institution: 'Kolej Komuniti Teladan',
     blurb: 'Menguruskan kedai runcit keluarga selepas waktu sekolah, dan menyimpan setiap resit.',

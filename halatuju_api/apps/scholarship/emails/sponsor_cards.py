@@ -206,8 +206,15 @@ def _sponsor_card_text(card, lang, frontend, tax):
     blurb = (card.get('blurb') or '').strip()
     if blurb:
         lines.append(f'"{blurb}"')
-    lines.append(f'{_SPONSOR_READ_STORY[lang]} {frontend}/sponsor/students/{card.get("id", "")}')
+    lines.append(f'{_SPONSOR_READ_STORY[lang]} {_story_url(card, frontend)}')
     return '\n'.join(lines)
+
+
+def _story_url(card, frontend):
+    """TD-074: the student's page is keyed by the opaque ``ref`` (lowercased for a tidy link; the
+    server resolves it case-insensitively, inside the reader's own programme fence) — never by the
+    raw application id, which the card no longer carries."""
+    return f'{frontend}/sponsor/students/{(card.get("ref") or "").lower()}'
 
 
 def _sponsor_card_html(card, lang, frontend, tax):
@@ -219,7 +226,7 @@ def _sponsor_card_html(card, lang, frontend, tax):
     loc = _h.escape((card.get('institution') or '').strip())   # institution only (no state)
     facts = _h.escape(' · '.join(_facts_bits(card, lang)))
     blurb = (card.get('blurb') or '').strip()
-    url = f'{frontend}/sponsor/students/{card.get("id", "")}'
+    url = _story_url(card, frontend)
     img = _field_image_url(card.get('field_image_slug', ''))
     thumb = (f'<td width="64" valign="top" style="padding-right:12px;">'
              f'<img src="{img}" width="56" height="56" alt="{prog or "Field"}" '

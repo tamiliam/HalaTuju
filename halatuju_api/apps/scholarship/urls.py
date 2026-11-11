@@ -288,8 +288,10 @@ urlpatterns = [
     path('sponsor/pool/count/', SponsorPoolCountView.as_view()),  # F1: public landing counter
     path('branding/<slug:code>/', BrandingView.as_view()),  # Sprint 6: public per-org branding
     path('sponsor/pool/', SponsorPoolListView.as_view()),
-    path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
-    path('sponsor/my-students/<int:pk>/', SponsorMyStudentDetailView.as_view()),  # portfolio detail (own)
+    # TD-074: keyed by the opaque pool ref (S-XXXXXX); a raw id (old link) answers 404 not_found.
+    # Must stay BELOW 'sponsor/pool/count/' — a str segment would otherwise swallow 'count'.
+    path('sponsor/pool/<str:ref>/', SponsorPoolDetailView.as_view()),
+    path('sponsor/my-students/<str:ref>/', SponsorMyStudentDetailView.as_view()),  # portfolio detail (own)
     # Phase E3: wallet + funding (flag + approved-sponsor gated)
     path('sponsor/wallet/', SponsorWalletView.as_view()),
     path('sponsor/impact/', SponsorImpactView.as_view()),  # R2: My Giving dashboard aggregate
@@ -301,7 +303,7 @@ urlpatterns = [
     path('sponsor/graduation-messages/', SponsorGraduationMessagesView.as_view()),  # F9a relay
     path('sponsor/referrals/', SponsorReferralView.as_view()),  # F4 referral/invite
     path('sponsor/wallet/donate/', SponsorDonateView.as_view()),
-    path('sponsor/pool/<int:pk>/fund/', SponsorFundView.as_view()),
+    path('sponsor/pool/<str:ref>/fund/', SponsorFundView.as_view()),  # TD-074: opaque ref
     path('sponsor/sponsorships/', SponsorSponsorshipsView.as_view()),
     path('sponsor/sponsorships/<int:pk>/cancel/', SponsorCancelOfferView.as_view()),
 

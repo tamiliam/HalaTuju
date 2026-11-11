@@ -30,6 +30,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerOrganisation, StudentProfile
+from apps.scholarship import pool
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
@@ -95,8 +96,10 @@ class TestFundGoesThroughTheFence(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("td258-spon")}')
 
     def _fund(self, application_id):
-        return self.client.post(f'/api/v1/sponsor/pool/{application_id}/fund/', {},
-                                format='json')
+        # TD-074: the route is keyed by the opaque ref. The ref is COMPUTED here for every arm
+        # (even another gift's row), so the fence — not the obscurity of the ref — is on trial.
+        return self.client.post(f'/api/v1/sponsor/pool/{pool.pool_ref(application_id)}/fund/',
+                                {}, format='json')
 
     def test_outside_the_visible_pool_is_always_the_same_answer(self):
         """No row · another gift's row · a row that is not pooled → indistinguishable."""

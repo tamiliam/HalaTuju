@@ -29,7 +29,8 @@ export default function MyStudentDetailPage() {
   const { t } = useT()
   const { token } = useSponsorAuth()
   const params = useParams()
-  const id = Number(params?.id)
+  // TD-074: the segment is the student's opaque ref (S-XXXXXX), never a raw id.
+  const id = typeof params?.id === 'string' ? decodeURIComponent(params.id) : ''
 
   const [detail, setDetail] = useState<SponsorMyStudentDetail | null>(null)
   const [unavailable, setUnavailable] = useState(false)

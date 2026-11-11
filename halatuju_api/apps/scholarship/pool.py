@@ -33,6 +33,25 @@ def pool_ref(application_id):
     return f'S-{digest[:6].upper()}'
 
 
+_REF_RE = re.compile(r'^S-[0-9A-F]{6}$')
+
+
+def resolve_ref(ids, ref):
+    """TD-074: the application id behind a sponsor-facing ``ref`` — or None.
+
+    ``ids`` MUST already be fenced to what the caller may see (``for_sponsor`` over the display
+    pool, or the sponsor's own sponsorships): the ref is matched ONLY inside it, so a ref copied or
+    computed for another programme's student resolves to nothing — the same 404 as a ref that never
+    existed. A raw numeric id (the pre-TD-074 link) fails the format check and also resolves to
+    nothing. Two ids sharing a ref (a 24-bit collision) resolve to None too: an ambiguous ref is
+    never opened or funded. Case-insensitive, so the lowercased email link works."""
+    norm = (ref or '').strip().upper()
+    if not _REF_RE.match(norm):
+        return None
+    hits = {i for i in ids if pool_ref(i) == norm}   # a set: a join may repeat an id
+    return next(iter(hits)) if len(hits) == 1 else None
+
+
 def academic_band(profile):
     """A coarse, non-identifying academic summary string for the card.
     SPM → A-count; STPM → PNGK. Returns '' when unknown.

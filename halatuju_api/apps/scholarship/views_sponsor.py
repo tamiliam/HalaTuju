@@ -352,38 +352,55 @@ class SponsorPoolListView(_PoolBase):
         return Response({'students': SponsorPoolCardSerializer(qs, many=True).data})
 
 
+def _fenced_pool_app(sponsor, ref):
+    """TD-074: the display-pool application behind ``ref`` for THIS sponsor, or None. The ref is
+    resolved only among the ids already inside the sponsor's programme fence, so the detail and the
+    fund action share one lookup and one answer for "not yours" and "no such student"."""
+    fenced = pool.for_sponsor(pool.display_pool_queryset(ScholarshipApplication), sponsor)
+    app_id = pool.resolve_ref(fenced.values_list('id', flat=True), ref)
+    if app_id is None:
+        return None
+    return fenced.filter(id=app_id).first()
+
+
 class SponsorPoolDetailView(_PoolBase):
-    """GET /api/v1/sponsor/pool/<pk>/ — one anonymised student (card + the
-    generated anonymous blurb). 404 unless the student is currently pool-eligible."""
-    def get(self, request, pk):
+    """GET /api/v1/sponsor/pool/<ref>/ — one anonymised student (card + the
+    generated anonymous blurb). 404 unless the student is currently pool-eligible.
+    TD-074: keyed by the opaque ``ref`` (S-XXXXXX), never the raw application id."""
+    def get(self, request, ref):
         sponsor, err = self._gate(request)
         if err:
             return err
         # Display pool (incl. just-funded grace-window cards) — a funded student's detail stays
         # viewable (read-only) for the window; the fund action itself remains gated by is_fundable.
         # Programme-fenced: a student in a gift this sponsor isn't accepted into reads as
-        # not_found, never as forbidden — an existence leak would defeat the fence.
-        app = pool.for_sponsor(
-            pool.display_pool_queryset(ScholarshipApplication), sponsor,
-        ).filter(id=pk).first()
+        # not_found, never as forbidden — an existence leak would defeat the fence. The ref is
+        # resolved INSIDE the fence, so a guessed/copied ref outside it is simply not found.
+        app = _fenced_pool_app(sponsor, ref)
         if not app:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(SponsorPoolDetailSerializer(app).data)
 
 
 class SponsorMyStudentDetailView(_PoolBase):
-    """GET /api/v1/sponsor/my-students/<pk>/ — the detail of a student the CALLER sponsors
-    (``pk`` = application id), at ANY lifecycle status. Unlike the discovery-pool detail this serves
+    """GET /api/v1/sponsor/my-students/<ref>/ — the detail of a student the CALLER sponsors
+    (``ref`` = the student's opaque pool ref, TD-074; never the raw application id), at ANY
+    lifecycle status. Unlike the discovery-pool detail this serves
     a student the sponsor has already funded — including past the grace window when they've dropped
     off the pool. Gated to the caller's OWN sponsorship (404 otherwise, so it can't be used to probe
     other students); read-only — no funding controls. Returns the sponsorship + student card + the
     generated anon PROFILE."""
-    def get(self, request, pk):
+    def get(self, request, ref):
         sponsor, err = self._gate(request)
         if err:
             return err
+        # TD-074: the ref is resolved over the caller's OWN sponsorships only.
+        app_id = pool.resolve_ref(
+            set(sponsor.sponsorships.values_list('application_id', flat=True)), ref)
+        if app_id is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         sponsorship = (sponsor.sponsorships
-                       .filter(application_id=pk)
+                       .filter(application_id=app_id)
                        .select_related('application', 'application__sponsor_profile', 'application__profile')
                        .order_by('-offered_at')
                        .first())
@@ -554,7 +571,7 @@ class SponsorDonateView(_PoolBase):
 
 
 class SponsorFundView(_PoolBase):
-    """POST /api/v1/sponsor/pool/<pk>/fund/ — fund a student IN FULL for their
+    """POST /api/v1/sponsor/pool/<ref>/fund/ — fund a student IN FULL for their
     admin-set award amount → an 'offered' award (1:1, full-or-nothing for now).
 
     **THE RULE (TD-258, 2026-09-18): the fence decides what is VISIBLE, the service decides
@@ -575,13 +592,11 @@ class SponsorFundView(_PoolBase):
     Distinctions therefore survive only INSIDE the visible pool, where they are useful and
     leak nothing: `insufficient_balance` is news about the caller's own wallet, and
     `not_fundable` is news about a card whose state they can already read."""
-    def post(self, request, pk):
+    def post(self, request, ref):
         sponsor, err = self._gate(request)
         if err:
             return err
-        app = pool.for_sponsor(
-            pool.display_pool_queryset(ScholarshipApplication), sponsor,
-        ).filter(id=pk).first()
+        app = _fenced_pool_app(sponsor, ref)
         if app is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         try:

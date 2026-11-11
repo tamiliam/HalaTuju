@@ -158,7 +158,7 @@ export default function MyGivingPage() {
               const offered = sp.status === 'offered'
               const discontinued = st.portfolio_status === 'discontinued'
               return (
-                <Link key={sp.id} href={`/sponsor/my-students/${st.id}`}
+                <Link key={sp.id} href={`/sponsor/my-students/${encodeURIComponent(st.ref)}`}
                   className={`block py-3 transition-colors md:rounded-2xl md:border md:p-4 md:hover:border-info-300 ${offered ? 'md:bg-ground-50' : 'md:bg-ground-0'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-sm font-semibold text-ground-900">{st.ref}</span>

@@ -138,8 +138,9 @@ export async function createSponsorReferral(
 // Phase E2 — anonymised sponsor pool. The card holds ONLY non-identifying fields
 // (the backend allowlist serializer guarantees no name/NRIC/address/phone/email).
 export interface SponsorPoolCard {
-  id: number          // opaque key to fetch the detail; not identifying
-  ref: string         // human alias, e.g. "S-A3F9C1"
+  // TD-074: no raw `id` — `ref` is both the human alias and the key for the detail / fund /
+  // my-students URLs (the server resolves it only inside the sponsor's own fence).
+  ref: string         // e.g. "S-A3F9C1"
   state: string
   school: string      // the SECONDARY school attended (owner 2026-07-18) — '' when unknown
   field: string
@@ -184,8 +185,8 @@ export async function getSponsorPool(options?: ApiOptions): Promise<{ students: 
   return apiRequest('/api/v1/sponsor/pool/', options)
 }
 
-export async function getSponsorPoolDetail(id: number, options?: ApiOptions): Promise<SponsorPoolDetail> {
-  return apiRequest(`/api/v1/sponsor/pool/${id}/`, options)
+export async function getSponsorPoolDetail(ref: string, options?: ApiOptions): Promise<SponsorPoolDetail> {
+  return apiRequest(`/api/v1/sponsor/pool/${encodeURIComponent(ref)}/`, options)
 }
 
 // F2 — a sponsor's own allocation: the ANONYMISED student card + money/status only.
@@ -232,9 +233,9 @@ export interface SponsorMyStudentDetail extends SponsorSponsorship {
   spending: SponsorSpending | null
 }
 
-/** A student the caller sponsors (by application id). 404 if the caller doesn't sponsor them. */
-export async function getMyStudentDetail(id: number, options?: ApiOptions): Promise<SponsorMyStudentDetail> {
-  return apiRequest(`/api/v1/sponsor/my-students/${id}/`, options)
+/** A student the caller sponsors (by the student's opaque `ref`, TD-074). 404 if the caller doesn't sponsor them. */
+export async function getMyStudentDetail(ref: string, options?: ApiOptions): Promise<SponsorMyStudentDetail> {
+  return apiRequest(`/api/v1/sponsor/my-students/${encodeURIComponent(ref)}/`, options)
 }
 
 export interface SponsorWallet {
@@ -253,8 +254,8 @@ export async function getSponsorWallet(options?: ApiOptions): Promise<SponsorWal
 /** E3 — fund a pooled student IN FULL for their admin-set award amount → an 'offered'
  *  award (the student is then notified to accept). On a bad state the thrown Error's
  *  `.code` is 'insufficient_balance' | 'not_fundable' | 'not_found'. */
-export async function fundStudent(id: number, options?: ApiOptions): Promise<SponsorSponsorship> {
-  return apiRequest(`/api/v1/sponsor/pool/${id}/fund/`, {
+export async function fundStudent(ref: string, options?: ApiOptions): Promise<SponsorSponsorship> {
+  return apiRequest(`/api/v1/sponsor/pool/${encodeURIComponent(ref)}/fund/`, {
     ...options, method: 'POST', body: JSON.stringify({}),
   })
 }

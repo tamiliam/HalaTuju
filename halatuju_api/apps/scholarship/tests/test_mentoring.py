@@ -28,6 +28,7 @@ from django.utils import timezone
 
 from apps.courses.models_claim import ProfileLoginAlias
 from apps.scholarship import closure, mentoring, student_email_catalogue
+from apps.scholarship.pool import pool_ref
 from apps.scholarship.models import (
     MentorAssignment, MentoringSession, ReviewerProfile, StudentActivity, StudentEmailLog,
 )
@@ -491,7 +492,7 @@ class TestNeverASponsorOrPartnerReader(_Base):
         sponsor = Sponsor.objects.create(supabase_user_id='spon-mine', email='s@example.test', name='S',
                                          phone='0123', source='friend', consent_at=timezone.now(), status='approved')
         Sponsorship.objects.create(sponsor=sponsor, application=self.app, amount=Decimal('2000'), status='active')
-        r = authed_client('spon-mine').get(f'/api/v1/sponsor/my-students/{self.app.id}/')
+        r = authed_client('spon-mine').get(f'/api/v1/sponsor/my-students/{pool_ref(self.app.id)}/')
         self.assertEqual(r.status_code, 200, r.content)
         partner = json.dumps(PartnerStudentDetailSerializer(self.app.profile).data, default=str)
         for text in (json.dumps(r.json()), partner):
