@@ -237,3 +237,55 @@ if (SANDBOX_ON) {
     expect([...linked].sort()).toEqual([...sandboxSlugs()].sort())
   })
 }
+
+/**
+ * A48: the theme and language segments stay INSIDE the menu. The signed-out phone menu draws the same
+ * `DisplayControls` as the desktop account dropdown, so one run covers both: at the phone's own width,
+ * then with the language row's parent squeezed to 256 px (the desktop AccountPanel: w-72 less mx-2 and
+ * px-2). Before the fix "தமிழ்" ran past the right edge (nowrap + flex items that could not shrink).
+ */
+test('A48: the menu theme and language rows fit their box, at phone width and at 256 px', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 375, height: 800 }, userAgent: PHONE_UA, isMobile: true, hasTouch: true })
+  try {
+    const page = await context.newPage()
+    await readOnly(page)
+    await page.addInitScript(([key, value]) => {
+      try { window.localStorage.setItem(key, value) } catch { /* ignore */ }
+    }, [LOCALE_KEY, 'ta'])
+    // The sandbox surface that opens the signed-out phone menu on mount (`defaultMenuOpen`).
+    await step('load the signed-out menu surface', () => page.goto(`${BASE}/sandbox/header-signed-out-menu`, { waitUntil: 'networkidle', timeout: 90_000 }))
+    await step('wait for the phone menu', async () => {
+      await page.locator('[role="radiogroup"]').first().waitFor({ timeout: 60_000 })
+    })
+    const measure = () => page.evaluate(() => Array.from(document.querySelectorAll('[role="radiogroup"]')).map((g) => {
+      const box = g.getBoundingClientRect()
+      return {
+        label: g.getAttribute('aria-label') ?? '', scroll: g.scrollWidth, client: g.clientWidth, right: box.right,
+        buttons: Array.from(g.querySelectorAll('button[role="radio"]')).map((b) => {
+          const r = b.getBoundingClientRect()
+          return { text: b.textContent ?? '', right: r.right, height: r.height }
+        }),
+      }
+    }))
+    const check = (groups: Awaited<ReturnType<typeof measure>>, where: string) => {
+      expect(groups.length, `${where}: theme and language radiogroups`).toBeGreaterThanOrEqual(2)
+      for (const g of groups) {
+        expect(g.scroll, `${where}: ${g.label} scrollWidth ${g.scroll} > clientWidth ${g.client}`).toBeLessThanOrEqual(g.client)
+        for (const b of g.buttons) {
+          expect(b.right, `${where}: "${b.text}" right ${b.right} past the box edge ${g.right}`).toBeLessThanOrEqual(g.right + 0.5)
+          expect(b.height, `${where}: "${b.text}" is ${b.height} px tall`).toBeGreaterThanOrEqual(44)
+        }
+      }
+    }
+    check(await measure(), 'phone 375')
+    await page.evaluate(() => {
+      const groups = document.querySelectorAll('[role="radiogroup"]')
+      for (const g of Array.from(groups)) (g.parentElement as HTMLElement).style.width = '256px'
+    })
+    const squeezed = await measure()
+    console.log('A48 widths at 256:', JSON.stringify(squeezed.map((g) => ({ l: g.label, s: g.scroll, c: g.client }))))
+    check(squeezed, 'squeezed 256')
+  } finally {
+    await context.close()
+  }
+})
