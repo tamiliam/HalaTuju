@@ -38,6 +38,12 @@ Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roa
   (`not_arrived`, `has_open_cases`, `run_in_progress`; `last_table` = No group is accepted) and no longer reads
   `first_seen_at` (`arrivedOf` removed). The Admins Remove's tip names the served `runs_in_progress`.
 
+### fix: A48 - the account menu's language row no longer runs off the right edge (2026-11-11)
+
+Branch a48. `DisplaySegments` buttons: `min-w-0`, `px-2`, `text-center leading-tight`, no `whitespace-nowrap`, so
+"தமிழ்" stays inside the w-72 menu (desktop and phone). Regression test in `theme.test.ts` (class-string; the
+mobile-check suite has no signed-in menu).
+
 ### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
 
 Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.

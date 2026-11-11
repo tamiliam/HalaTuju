@@ -332,6 +332,16 @@ describe('the switch a person can actually click (Layer 1 F7d)', () => {
     expect(mount).not.toContain('applyTheme')
   })
 
+  it('lets the segmented buttons shrink and wrap, so the language row stays inside the w-72 menu (A48)', () => {
+    // flex items cannot shrink below their text unless min-w-0, and whitespace-nowrap forbade the wrap:
+    // "தமிழ்" was cut off at the right edge of the account menu, on desktop and phone.
+    const display = read('src/components/DisplaySegments.tsx')
+    const segment = display.match(/const segment = [^`]*`([^`$]*)/)?.[1] ?? ''
+    expect(segment).toContain('min-w-0')
+    expect(segment).toContain('min-h-11')
+    expect(segment).not.toContain('whitespace-nowrap')
+  })
+
   it('keeps `auto` live for the whole tab, from the provider stack and not from the control', () => {
     // A chromeless page renders no header. Document upload is one, and it is exactly the screen
     // someone sits on for a long time — long enough for a device to reach its own sunset.
