@@ -18,7 +18,7 @@ const META: Record<PendingKey, { href: string; label: string; small?: boolean; t
   unassigned: { href: '/admin/scholarship?status=profile_complete&assigned=none&ready=1', label: 'admin.overview.unassigned' },
   overdue: { href: '/admin/scholarship?band=overdue', label: 'admin.overview.overdue' },
   awaiting_qc: { href: '/admin/scholarship?status=interviewed', label: 'admin.overview.awaitingQc' },
-  sponsors_to_vet: { href: '/admin/sponsors', label: 'admin.overview.sponsorsToVet' },
+  sponsors_to_vet: { href: '/admin/sponsors?status=pending', label: 'admin.overview.sponsorsToVet' },
   invitations: { href: '/admin/organisation/staff', label: 'admin.overview.invitations', small: true },
   payment_runs: { href: '/admin/payments', label: 'admin.overview.paymentRuns', small: true },
   requests: { href: '/admin/requests?tab=action', label: 'admin.overview.requests', small: true },

@@ -67,6 +67,10 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
   the Revoke test again checks `end_reason` and the `mentor_deactivated` cause. Tests: `test_m1b_api_part2.py` (new),
   `test_m1b_api_part1.py` (a run holder's row against the action; the login lock).
 
+### A4.4 Cockpit and overview leftovers (2026-11-11)
+
+- TD-438 fixed (header photo link refreshed every 50 minutes), TD-126 fixed (scheduling screenshots in the Guide, FAQ points to them), TD-502 partly fixed (sponsors card opens the pending list). TD-444 skipped (file owned by another lane); TD-228 trigger not reached; TD-503 waits for the owner.
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

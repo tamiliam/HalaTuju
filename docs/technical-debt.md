@@ -1981,7 +1981,7 @@ Each is an open entry with a defining line in the register body (read it there).
   four credential builds (meeting.py ×1, sheets.py ×3) and both gates moved onto it, scopes unchanged. The key
   path stays as the rollback until production is proven; its removal is TD-329. NOT resolved: the key still
   exists until it is deleted in GCP. Production steps: halatuju_api/CLAUDE.md, top of "## Next Sprint".
-- **TD-126**: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
+- **TD-126** (FIXED 2026-11-11, A4.4: the three `scheduling-*.png` are wired into the reviewer Guide, two new short sections, FAQ points to them; test in `manual.test.ts`): **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
   text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
   cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
 - **TD-127**: **New PISMP rows (Pendidikan Khas `…H`, Prasekolah `…H7P`, MBPK `50BK…`) carry cloned generic descriptions.** *Checked 2026-11-05 (A0.2): no repo evidence of a rewrite; stays open.*
@@ -4292,6 +4292,7 @@ PROGRAMME does not fire this one — that was TD-193's half and it is closed.
 **Status 2026-10-05 (Later-tier batch 5, partly done, left OPEN):** REQUESTS narrows — `AdminOrgRequestListView` reads `?org=<code>` through the new `_AdminBase._org_narrowing` (a super names any organisation; anybody else only their own, and any other or unknown code is 404, never 403; absent narrows nothing), and the page sends the crumb's choice from the new `lib/orgScope` context, which `AppShell` provides from its `selectedOrg`. `test_td228_requests_org_crumb.py`, query budgets `super-narrowed-2/6-rows` (7, flat), `requests/page.orgcrumb.test.tsx`. LEFT: Sponsors and Sources — each is now one view reading `_org_narrowing` plus one page reading `useOrgScope`, with a fence test (kept out of this batch by its file budget). Pre-existing and unchanged: with nothing chosen the crumb DISPLAYS the first organisation while the list holds every one the fence allows; an "All organisations" entry, or narrowing by the displayed one, is a product call.
 **Status 2026-10-04 (Later-tier batch 4, left OPEN):** Payments and Spending are narrowed through the gift (TD-246, closed). What is left is Sponsors, Sources and Requests: an `orgScope` context in `programmeScope`'s shape, the shell's `selectedOrg` lifted into it, and an `?org=` re-fenced server-side per list (super only; 404 on a foreign code) with a fence test each — six or more files across both trees with ~1.3 kB of median bundle headroom, and the trigger has not fired.
 (Logged 2026-09-03, console shape sprint.)
+**Checked 2026-11-11 (A4.4):** trigger not reached (no second organisation is active); left OPEN.
 
 ---
 
@@ -7332,7 +7333,7 @@ card shows the four fields it can save. **Fix when wanted:** an additive `websit
 '') on `referral_sources`, added to `sources.DETAIL_FIELDS` (the Sources page) and the source's own PATCH,
 validated as http(s). *(C · S)*
 
-### [TD-438] The header photo's signed link expires after about an hour in a tab left open - low
+### [TD-438] The header photo's signed link expires after about an hour in a tab left open - low - FIXED 2026-11-11 (A4.4: the admin auth provider re-reads `admin/me/` every 50 minutes for a fresh photo link; test in `adminAuthPhoto.test.tsx`)
 
 **Raised 2026-10-31 by common profile S2.** The auth context reads `admin/me/` ONCE per session for the
 header photo, and the URL it gets is signed for about an hour (`staff_photo.SIGNED_FOR`). A tab open longer
@@ -7363,7 +7364,7 @@ read-only on that serializer (serializers_admin.py is at its 1026-line allowance
 `Invitation.invited_by=getattr(request, '_inviting_admin', None)`, and nothing ever sets
 `request._inviting_admin` — so every staff invitation row has `invited_by` NULL. The new activity list is
 not affected (its `invitation_sent` row takes the actor passed explicitly to `invitations.record_send`).
-**Fix:** pass the inviting admin into `_record_invitation` the same way, and add a test that a staff invite
+**A4.4 2026-11-11: SKIPPED** - the fix is in `courses/views_admin.py`, owned by another lane. **Fix:** pass the inviting admin into `_record_invitation` the same way, and add a test that a staff invite
 stores `invited_by`. S4's back-fill cannot rebuild `invitation_sent` rows for old staff invites until then
 (no actor to write them under). *(B · S)*
 
@@ -8207,7 +8208,7 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **FIXED 2026-11-06 (audit fix A1.3, owner ruling) - the gift blocks ASSIGNMENT.** Before, the picker greyed an other-gift reviewer but `assign_reviewer` accepted the assignment, so a gift-A reviewer could be given, and then read, a gift-B case. Now `assign_reviewer` (`scholarship/services/assignment.py`, the one assignment door; there is no bulk or auto-assign path) refuses `gift_mismatch` (400, never 500). Rule (`gift_allows`): reviewer gift NULL (every gift) - allow; case gift unknown - allow; otherwise the case gift (`application.programme`, else `cohort.programme`) must be in `reviewer_gifts(admin)`. A case already held is not taken away. The READ fence is unchanged: it is still the organisation plus assignment. `may_assign_to` (no application) is unchanged. The web shows an en/ms/ta message for the code. Written as set membership so the owner-approved multi-gift tagging (a separate sprint after G2) changes `reviewer_gifts` only. `qc` stays not gift-scoped (owner, 2026-11-06). Tests: `test_assign_gift_mismatch.py` (4 fail on the old code), the case-list phone jest. Review fixes the same day: the invite picker now offers only the gifts of the organisation the invite binds to (`reviewer_programmes`, `staff_gift.staff_invite_org`), and the report lists everyone who reviews (`team_holding(('review',))`), not the reviewer role only. The rest of the multi-gift scope is TD-525.
 
-### [TD-502] Overview cards without a filtered action link - low
+### [TD-502] Overview cards without a filtered action link - low - PARTLY FIXED 2026-11-11 (A4.4: sponsors_to_vet opens `/admin/sponsors?status=pending`, the list reads it; test `sponsors/page.status.test.tsx`. LEFT OPEN: invitations (StaffAdmin), qc_awaiting (barred cases), wallet_credits (no page of its own), payment_runs (the page already lists the waiting runs first))
 
 **Raised 2026-11-05 by T5c P5b / P5c (NOT fixed).** The cards qc_awaiting, invitations, sponsors_to_vet, payment_runs, wallet_credits and the mentor cards open their page unfiltered, so the count and the list can differ. P5c linked only the application-list cards (`?ready=1`, `?band=`, `?status`, `?assigned=me`) and requests (`?tab=action`). **Fix:** add the filter to each target page, then link the card, with a parity test per card as P5c did. *(A · M)*
 

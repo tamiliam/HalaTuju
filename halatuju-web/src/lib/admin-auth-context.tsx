@@ -18,6 +18,8 @@ export { AdminAuthContext, useAdminAuth }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+const PHOTO_REFRESH_MS = 50 * 60 * 1000
+
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<AdminRole | null>(null)
@@ -49,6 +51,24 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {})
   }, [adminId, accessToken])
+
+  // TD-438: the photo link is signed for about an hour, so a tab left open re-asks `admin/me/` for a
+  // fresh one every 50 minutes (photo only; the completion nudge is left as it was).
+  const tokenRef = useRef<string | null>(null)
+  tokenRef.current = accessToken
+  useEffect(() => {
+    if (adminId == null) return
+    const timer = setInterval(() => {
+      const token = tokenRef.current
+      if (!token) return
+      const asked = adminId
+      fetch(`${API_BASE}/api/v1/admin/me/`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((me) => { if (me && photoFor.current === asked) setPhotoUrl(me.photo_url ?? null) })
+        .catch(() => {})
+    }, PHOTO_REFRESH_MS)
+    return () => clearInterval(timer)
+  }, [adminId])
 
   const checkRole = useCallback(async (token: string) => {
     try {

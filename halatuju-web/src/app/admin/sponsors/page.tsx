@@ -88,7 +88,9 @@ export default function AdminSponsorsList() {
     wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
   const mayEditEmails = opensDoorOr(role, 'sponsor_emails', CAN_EDIT_EMAILS)   // T5c P4: the server's door
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
-  const [statusF, setStatusF] = useState('')
+  // TD-502: the Overview's "sponsors to vet" card opens `?status=pending`, so the list matches its count.
+  const wantedStatus = search?.get('status') ?? ''
+  const [statusF, setStatusF] = useState(STATUS_OPTIONS.includes(wantedStatus) ? wantedStatus : '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<number | null>(null)

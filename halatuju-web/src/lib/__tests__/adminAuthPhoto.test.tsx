@@ -52,6 +52,21 @@ it('reads the photo once, clears it on sign-out, and never shows it to the next 
   expect(screen.getByTestId('photo').textContent).toBe('none')        // person 2 has none
 })
 
+it('TD-438: a tab left open asks for a fresh signed photo link after 50 minutes', async () => {
+  jest.useFakeTimers()
+  try {
+    render(<AdminAuthProvider><Show /></AdminAuthProvider>)
+    await waitFor(() => expect(meCalls()).toBe(1))
+    PEOPLE['tok-1'] = { id: 1, photo: 'https://signed/one-fresh.webp' }
+    await act(async () => { jest.advanceTimersByTime(51 * 60 * 1000) })
+    await waitFor(() => expect(screen.getByTestId('photo').textContent).toBe('https://signed/one-fresh.webp'))
+    expect(meCalls()).toBe(2)
+  } finally {
+    jest.useRealTimers()
+    PEOPLE['tok-1'] = { id: 1, photo: 'https://signed/one.webp' }
+  }
+})
+
 it('a token refresh for the same person does not read the photo again', async () => {
   render(<AdminAuthProvider><Show /></AdminAuthProvider>)
   await waitFor(() => expect(meCalls()).toBe(1))
