@@ -208,7 +208,7 @@ def _invitation_dict(inv):
     }
 
 
-def _record_invitation(created_admin, role, organisation, request, *, credential_issued):
+def _record_invitation(created_admin, role, organisation, *, invited_by, credential_issued):
     """Write the `Invitation` row for a staff invite that has just been provisioned.
 
     ⚠ **BEST-EFFORT, ALWAYS.** The account exists and the email is about to go; failing the invite
@@ -224,7 +224,7 @@ def _record_invitation(created_admin, role, organisation, request, *, credential
         return invitations.create_or_refresh(
             audience='staff', email=created_admin.email, name=created_admin.name, role=role,
             organisation=organisation, partner_admin=created_admin,
-            invited_by=getattr(request, '_inviting_admin', None),
+            invited_by=invited_by,   # TD-444: the caller's admin; a Resend's refresh keeps the first
             credential_issued=credential_issued)
     except Exception:   # noqa: BLE001
         logger.warning('Could not record the invitation for %s', created_admin.email, exc_info=True)
