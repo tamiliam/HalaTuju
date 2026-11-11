@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M2a - Team moves to /team, one page per group (team membership, 2026-11-12)
+
+Branch m2a (local, not pushed, not deployed). Web only; no API file changed, no migration. Brief
+`docs/plans/2026-11-11-m2-team-pages-brief.md`; owner rulings U1-U5 (decisions.md "Team URLs move to /team").
+- Team moved from `/admin/organisation/reviewers` to `/admin/organisation/team`, with `/team/admins/<id>`,
+  `/team/reviewers/<id>` and `/team/mentors/<id>` (U1). `next.config.js` `redirects()` sends the five old addresses
+  on permanently (308, the query kept), explicit and most specific first, with no `:path*` catch-all. The client
+  redirect page at `/admin/organisation/mentors` is deleted and the Team row's `match` dropped.
+- `TeamPersonPage` is split into `AdminGroupPage`, `ReviewerGroupPage` and `MentorGroupPage` over a shared
+  `PersonShell` (Back to the page's own tab, the header, About, the optional Permissions tab). Each reads ONE
+  detail; the cross-reads are gone (U2). The admin page has no figures, Covers, Pause or Outcomes; the reviewer
+  page has no admin Permissions; a staff mentor's mentor page has no Permissions tab, a pure mentor keeps the
+  read-only one with Add to a group. About shows on all three (U3). Fences as before (admin page: super and
+  org_admin; reviewer page: `mayOpen(team)`; mentor page: `mayReadMentors`).
+- The header chips link to the person's other group pages the viewer may open; the current chip is plain with
+  `aria-current="page"` (U4). A page opened for someone not in its group replaces itself with their first group
+  page (Admins, Reviewers, Mentors), keeping only `#permissions`, or the Staff tab when they are in none (U5). The
+  rules are pure functions in `lib/teamPaths.ts`; `StaffList.pageOf` uses the same order.
+- Every in-app link, `mobileClass.ts`, `pageWidth.ts`, `docs/mobile-ledger.md` and the sandbox surfaces
+  (`m8-reviewer-detail`, `t3-mentor-person`, ids kept) follow the new paths. No new message keys.
+- test: `lib/__tests__/teamPaths.test.ts`, `teamRedirects.test.ts`, `person/GroupPages.split.test.tsx`; T3's
+  `TeamPersonPage.test.tsx` moved onto the three pages as `GroupPages.test.tsx` (fixtures in `src/test/teamPerson.ts`).
+  The frozen access fixtures are unchanged; the address move is declared in `src/test/m2aMoves.ts`.
+
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
 
 Branch g14 (not pushed, not deployed; no migration, no budget raised). Merged a44, a45, a46, a47 and a48 onto

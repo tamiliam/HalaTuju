@@ -63,6 +63,14 @@ decisions.md 2026-11-03). And a person who was only ever handed cases (no review
    permissions, the mentor page carries their scholars. About shows on all of them; the header chips link to the
    person's other group pages; someone in no group shows only on Staff. This replaces T3's single `TeamPersonPage`.
    Fold it into M2's brief (or a sprint of its own just before M2 if M2 is too big; the architect decides).
+   - **M2a (web, built 2026-11-12, branch m2a, local only):** brief `docs/plans/2026-11-11-m2-team-pages-brief.md`.
+     Team lives at `/admin/organisation/team`; the five old addresses are permanent redirects in `next.config.js`
+     (no catch-all, pinned by `teamRedirects.test.ts`). `TeamPersonPage` became `AdminGroupPage`,
+     `ReviewerGroupPage` and `MentorGroupPage` over one `PersonShell`, each reading its own detail only (U2); About
+     on all three (U3); the header chips link to the person's other group pages the viewer may open (U4); a page
+     opened for someone outside its group replaces itself with their first group page, or Staff (U5,
+     `lib/teamPaths.ts`). The frozen access fixtures are untouched: the address move is declared in
+     `src/test/m2aMoves.ts` (the S1 precedent). M2b (the admin-work chip) is not built.
 4. **Sprint M2: the admin-work chip** (O8). A new admin key named in `may_do_admin_work`; the admin preset carries it;
    a production data step gives it to the existing admin-labelled rows AND (owner) Rohini's row; after that the role
    label decides no page. Needs the owner's yes and a phone check before going live.
