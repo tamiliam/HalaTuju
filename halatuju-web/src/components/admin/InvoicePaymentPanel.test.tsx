@@ -117,8 +117,22 @@ describe('the owner side', () => {
     const value = (label: string) =>
       (within(form).getByLabelText(label) as HTMLInputElement).value
     expect(value('admin.billing.invoice.amount')).toBe('179.89')
-    expect(value('admin.billing.invoice.receivedOn')).toBe('2026-10-20')
+    expect(value('admin.billing.invoice.receivedOn')).toBe('20-10-2026')   // TD-424: day first
     expect(value('admin.billing.invoice.reference')).toBe('MBB-77')
+  })
+
+  it('TD-424: the owner types the received date day first; a bad one is refused, not sent', () => {
+    const { container, row, onConfirm } = mount(
+      { payment_declarations: [open], status: 'payment_declared' }, true)
+    const form = within(container).getByTestId('check-7')
+    const box = within(form).getByLabelText('admin.billing.invoice.receivedOn')
+    const confirm = within(form).getByText('admin.billing.invoice.declare.confirm') as HTMLButtonElement
+    fireEvent.change(box, { target: { value: '2026-10-21' } })
+    expect(within(form).getByTestId('check-baddate-7')).not.toBeNull()
+    expect(confirm.disabled).toBe(true)
+    fireEvent.change(box, { target: { value: '21-10-2026' } })
+    fireEvent.click(confirm)
+    expect(onConfirm).toHaveBeenCalledWith(row, expect.objectContaining({ received_on: '2026-10-21' }))
   })
 
   it('confirms with the figures on the screen, corrections included', () => {

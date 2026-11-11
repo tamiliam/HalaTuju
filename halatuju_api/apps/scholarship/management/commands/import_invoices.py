@@ -19,6 +19,15 @@ Three properties, each of which is the reason a figure here can be trusted:
 Idempotent: rows UPSERT on (period_month, source, service, sku), exactly like `sync_gcp_costs`,
 so re-running a folder corrects it instead of doubling it.
 
+**The cron door (TD-247, A4.5): `--drive`.** Reads the same PDFs from the Drive folder named by
+`SUPPLIER_BILLS_FOLDER` (see `supplier_bills.py`) inside the running service, so no laptop is needed.
+Reached through `CronRunView` as `supplier-bills-report` (no `--apply`: a dry run that writes nothing)
+and `supplier-bills-import` (`--apply`). ⚠ **With `--drive` the write is INSERT-ONLY**: a line whose
+(period_month, source, service, sku) is already in the ledger is never touched, whatever its figure -
+so a second run writes nothing, a transient exchange-rate outage can never blank a good figure, and two
+bills that claim the same line are REPORTED rather than one silently replacing the other. A correction
+to a line already in the ledger stays a person's job, on the `--dir` path, which is unchanged.
+
 ⚠ **Google Cloud statements are READ BUT NEVER IMPORTED.** The BigQuery export carries every SKU
 and the statement does not, so the export stays authoritative — and on 2026-09-11 it was proved
 to match these statements to the cent. The statement is used here purely to CHECK that pull, so
@@ -29,7 +38,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.scholarship import fx, invoice_parsers, platform_cost
+from apps.scholarship import fx, invoice_parsers, platform_cost, supplier_bills
 from apps.scholarship.models import PlatformCost
 
 
@@ -37,19 +46,21 @@ class Command(BaseCommand):
     help = "Import Workspace / Supabase / Twilio invoice PDFs into the platform cost ledger."
 
     def add_arguments(self, parser):
-        parser.add_argument('--dir', required=True,
+        parser.add_argument('--dir',
                             help='Folder holding the invoice PDFs.')
+        parser.add_argument('--drive', action='store_true',
+                            help='Read the PDFs from the Drive folder in SUPPLIER_BILLS_FOLDER '
+                                 '(the cron door, TD-247). With --apply it only INSERTS lines '
+                                 'the ledger does not hold yet.')
         parser.add_argument('--apply', action='store_true',
                             help='Write to the ledger. Without it this only reports.')
 
     def handle(self, *args, **opts):
-        folder = Path(opts['dir'])
-        if not folder.is_dir():
-            raise CommandError(f'Not a folder: {folder}')
-        pdfs = sorted(folder.glob('*.pdf'))
-        if not pdfs:
-            raise CommandError(
-                f'No PDFs in {folder}. An empty folder is NOT the same as a month with no bills.')
+        if bool(opts.get('dir')) == bool(opts.get('drive')):
+            raise CommandError('Pass exactly one of --dir or --drive.')
+        self.insert_only = bool(opts.get('drive'))
+        # (display name, what `pdf_text` reads): a local Path, or the bytes Drive returned.
+        pdfs = self._drive_pdfs() if self.insert_only else self._dir_pdfs(opts['dir'])
 
         apply = opts['apply']
         written = failed = skipped = 0
@@ -59,37 +70,72 @@ class Command(BaseCommand):
         problems = []
         checks = []
 
-        for path in pdfs:
+        for name, source in pdfs:
             try:
-                text = invoice_parsers.pdf_text(path)
+                text = invoice_parsers.pdf_text(source)
             except invoice_parsers.InvoiceParseError as exc:
-                problems.append(f'{path.name}: {exc}')
+                problems.append(f'{name}: {exc}')
+                failed += 1
+                continue
+            except Exception as exc:    # a damaged file must not stop the rest (drive path)
+                if not self.insert_only:
+                    raise               # the --dir path behaves exactly as it always has
+                problems.append(f'{name}: could not be read as a PDF ({exc.__class__.__name__}).')
                 failed += 1
                 continue
 
             if invoice_parsers.detect_gcp_statement(text):
-                checks.append((path.name, invoice_parsers.parse_gcp_statement(text)))
+                checks.append((name, invoice_parsers.parse_gcp_statement(text)))
                 skipped += 1
                 continue
 
             try:
                 invoice = invoice_parsers.parse_text(text)
             except invoice_parsers.InvoiceParseError as exc:
-                problems.append(f'{path.name}: {exc}')
+                problems.append(f'{name}: {exc}')
                 failed += 1
                 continue
             if invoice is None:
-                problems.append(f'{path.name}: not recognised as any provider we can read.')
+                problems.append(f'{name}: not recognised as any provider we can read.')
                 failed += 1
                 continue
 
-            written += self._import_one(path, invoice, apply, problems)
+            written += self._import_one(name, invoice, apply, problems)
 
         self._report(written, failed, skipped, checks, problems, apply)
 
+    # ── where the PDFs come from ──────────────────────────────────────────────
+
+    def _dir_pdfs(self, folder):
+        folder = Path(folder)
+        if not folder.is_dir():
+            raise CommandError(f'Not a folder: {folder}')
+        pdfs = sorted(folder.glob('*.pdf'))
+        if not pdfs:
+            raise CommandError(
+                f'No PDFs in {folder}. An empty folder is NOT the same as a month with no bills.')
+        return [(p.name, p) for p in pdfs]
+
+    def _drive_pdfs(self):
+        folder = supplier_bills.folder_path()
+        if not folder:
+            raise CommandError(
+                f'{supplier_bills.FOLDER_ENV} is not set, so there is no Drive folder to read.')
+        pdfs = supplier_bills.drive_pdfs(folder)
+        if pdfs is None:
+            raise CommandError(
+                f'Could not read the Drive folder {folder!r} (Workspace off, folder missing or a '
+                f'Drive error - see the log). Nothing was written.')
+        if not pdfs:
+            raise CommandError(
+                f'No PDFs in the Drive folder {folder!r}. An empty folder is NOT the same as a '
+                f'month with no bills.')
+        self.stdout.write(f'--- import_invoices (drive) --- {len(pdfs)} PDF(s) in {folder!r}.')
+        return pdfs
+
     # ── one invoice ───────────────────────────────────────────────────────────
 
-    def _import_one(self, path, invoice, apply, problems):
+    def _import_one(self, name, invoice, apply, problems):
         # The rate at the END of the billed month — the owner's ruling. A MYR invoice short-
         # circuits inside `fx`, so Workspace can never fail on an exchange-rate outage.
         rate = published = None
@@ -100,10 +146,10 @@ class Command(BaseCommand):
             # ⚠ NOT a failure of the import. The invoice is still recorded, with no ringgit
             # figure, and `month_totals` will report the month as a FLOOR until a rate exists.
             # An honest gap beats a plausible number nobody can source.
-            problems.append(f'{path.name}: {exc}')
+            problems.append(f'{name}: {exc}')
 
         self.stdout.write(
-            f'\n{path.name}  ->  {invoice.source} {invoice.period_month} '
+            f'\n{name}  ->{invoice.source} {invoice.period_month} '
             f'{invoice.invoice_ref}  {invoice.currency} {invoice.total}'
             + (f'  @ {rate} ({published})' if rate is not None else '  [NO RATE]'))
         if invoice.period_note:
@@ -126,28 +172,42 @@ class Command(BaseCommand):
                 f'{(str(myr) + " MYR") if myr is not None else "     —    ":>14}  {flag}')
 
             if apply:
-                PlatformCost.objects.update_or_create(
-                    period_month=invoice.period_month, source=invoice.source,
-                    service=line.service, sku=line.sku,
-                    defaults={
-                        'currency': invoice.currency,
-                        # The invoiced figure is kept in its OWN currency whatever happens, so a
-                        # rate that arrives later can convert it without re-reading the PDF.
-                        'amount_original': (line.amount if invoice.currency != 'MYR' else None),
-                        'fx_rate': rate if invoice.currency != 'MYR' else None,
-                        'amount_myr': myr,
-                        'attributable': is_attr,
-                        'provenance': 'extracted',
-                        'invoice_ref': invoice.invoice_ref,
-                        'period_note': invoice.period_note,
-                        'note': (f'Parsed from {path.name} by import_invoices; reconciled to the '
-                                 f'invoice total of {invoice.currency} {invoice.total}.'
-                                 + (f' Converted at the ECB closing rate {rate} published '
-                                    f'{published}.' if rate is not None else
-                                    ' No exchange rate was available; the ringgit figure is '
-                                    'deliberately blank.')),
-                    })
-                count += 1
+                key = {'period_month': invoice.period_month, 'source': invoice.source,
+                       'service': line.service, 'sku': line.sku}
+                defaults = {
+                    'currency': invoice.currency,
+                    # The invoiced figure is kept in its OWN currency whatever happens, so a
+                    # rate that arrives later can convert it without re-reading the PDF.
+                    'amount_original': (line.amount if invoice.currency != 'MYR' else None),
+                    'fx_rate': rate if invoice.currency != 'MYR' else None,
+                    'amount_myr': myr,
+                    'attributable': is_attr,
+                    'provenance': 'extracted',
+                    'invoice_ref': invoice.invoice_ref,
+                    'period_note': invoice.period_note,
+                    'note': (f'Parsed from {name} by import_invoices; reconciled to the '
+                             f'invoice total of {invoice.currency} {invoice.total}.'
+                             + (f' Converted at the ECB closing rate {rate} published '
+                                f'{published}.' if rate is not None else
+                                ' No exchange rate was available; the ringgit figure is '
+                                'deliberately blank.')),
+                }
+                if not self.insert_only:
+                    PlatformCost.objects.update_or_create(**key, defaults=defaults)
+                    count += 1
+                    continue
+                # ⚠ TD-247: the unattended door never UPDATES. `get_or_create` leans on the
+                # `platform_cost_unique_line` constraint, so even two runs at once cannot double
+                # a line, and an existing line is left exactly as it is.
+                row, created = PlatformCost.objects.get_or_create(**key, defaults=defaults)
+                if created:
+                    count += 1
+                elif row.invoice_ref != invoice.invoice_ref:
+                    problems.append(
+                        f'{name}: {invoice.source} {invoice.period_month} "{line.sku}" is already '
+                        f'in the ledger from invoice {row.invoice_ref or "(no reference)"}, not '
+                        f'{invoice.invoice_ref}. Left as it was - if this bill replaces that one, '
+                        f'import it with --dir.')
         return count
 
     # ── the summary ───────────────────────────────────────────────────────────

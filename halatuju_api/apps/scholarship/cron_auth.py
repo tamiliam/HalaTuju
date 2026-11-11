@@ -35,6 +35,9 @@ _BY_FAMILY = {
         'award-students-batch', 'auto-sponsor', 'issue-monthly-invoices', 'lapse-expired-offers',
         'rescore-pending', 'sync-vircle-sheet', 'spending-ingest', 'spending-sort',
         'spending-import-only', 'spending-reread',
+        # TD-247: both write or read the cost ledger the invoices bill from; the report door
+        # prints supplier amounts, so it is not handed to the read-only maintenance key either.
+        'supplier-bills-import', 'supplier-bills-report',
     ),
     'paid': (
         'read-documents',  # A2.3: the upload's Vision/Gemini read, queued

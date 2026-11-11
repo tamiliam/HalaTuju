@@ -73,9 +73,19 @@ describe('picking the month', () => {
 })
 
 describe('the issue date', () => {
-  it('prefills the 15th of the month after the one being billed', () => {
+  it('prefills the 15th of the month after the one being billed, day first (TD-424)', () => {
     const { container } = setup()
-    expect((within(container).getByTestId('issue-date') as HTMLInputElement).value).toBe('2026-08-15')
+    const box = within(container).getByTestId('issue-date') as HTMLInputElement
+    expect(box.value).toBe('15-08-2026')
+    expect(box.placeholder).toBe('DD-MM-YYYY')
+  })
+
+  it('TD-424: a date typed the old ISO way is refused on the screen, not sent', () => {
+    const { container, onIssue } = setup()
+    fireEvent.change(within(container).getByTestId('issue-date'), { target: { value: '2026-08-20' } })
+    expect(within(container).getByRole('alert').textContent).toBe('admin.billing.invoice.badIssueDate')
+    fireEvent.click(within(container).getByText('admin.billing.invoice.issue'))
+    expect(onIssue).not.toHaveBeenCalled()
   })
 
   it('sends the typed date with the issue, not the day the button was pressed', () => {
@@ -86,7 +96,7 @@ describe('the issue date', () => {
 
   it('an edited date is the one that travels, trimmed', () => {
     const { container, onIssue } = setup()
-    fireEvent.change(within(container).getByTestId('issue-date'), { target: { value: ' 2026-08-20 ' } })
+    fireEvent.change(within(container).getByTestId('issue-date'), { target: { value: ' 20-08-2026 ' } })
     fireEvent.click(within(container).getByText('admin.billing.invoice.issue'))
     expect(onIssue).toHaveBeenCalledWith(1, '2026-07', '', '2026-08-20')
   })
@@ -94,7 +104,7 @@ describe('the issue date', () => {
   it('refuses to offer Issue at all while the date is one the server would reject', () => {
     const { container, onIssue } = setup()
     // Inside the billed month: a bill cannot predate the thing it bills.
-    fireEvent.change(within(container).getByTestId('issue-date'), { target: { value: '2026-07-31' } })
+    fireEvent.change(within(container).getByTestId('issue-date'), { target: { value: '31-07-2026' } })
     expect(within(container).getByRole('alert').textContent)
       .toBe('admin.billing.invoice.issueDateBeforeMonthEnd')
     const button = within(container).getByText('admin.billing.invoice.issue') as HTMLButtonElement
