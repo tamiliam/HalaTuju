@@ -275,9 +275,9 @@ Do one only when a sprint is already in that file.
 - **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)* **Fixed in code 2026-11-07 (Sprint A1.10b): every reader uses the role; migration courses 0093; open until the owner applies STEP 1 before the push and drops the column after the deploy. See the detail entry.**
-- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)*
+- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)* **Fixed in code 2026-11-11 (Sprint A3.17): fields removed; migration scholarship 0211; open until the owner applies it by hand BEFORE the deploy.**
 - **TD-115** — The document slot has no database-level guard. *(D · L)* **Fixed in code 2026-11-06 (Sprint A1.8): 4-column partial unique index, migration 0203; open until the owner applies it by hand after the deploy. See the detail entry.**
-- **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L)*
+- **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L · partly done)* **Fields removed in code 2026-11-11 (Sprint A3.17), migration scholarship 0211 (same one as TD-226), apply before the deploy. Dead i18n keys `wizard.{q2,q3,q4,work}` still to delete in en/ms/ta.**
 - **TD-058** — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)*
 - **TD-024** — The course-name field is called course. *(D · L)*
 

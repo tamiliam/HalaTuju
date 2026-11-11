@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: dead code (audit A3.17, 2026-11-11)
+
+Branch a317 (not pushed, not deployed). One scholarship migration, 0211, NOT applied.
+- RD-07: deleted `ScholarshipReferee.tsx` and `error-i18n.ts` (no importer anywhere), plus the student-side
+  `listReferees` / `addReferee` client functions and the `Referee` type they left orphaned.
+- RD-08: new `courses/tests/test_route_web_callers.py` reads the web source and fails on any API route with no web
+  caller and no reason in its allowlist (17 routes allowlisted: cron, webhooks, break-glass, parked screens, Gemini
+  profile actions, sponsor money). Removed the one provably dead route, the student referee list/add
+  (`scholarship/referees/`), with its view and test.
+- CO-16: kept. The BANK_DETAILS capture flag sits on the award money path and its production value cannot be proved here.
+- TD-226: dropped `ScholarshipCohort.funding_envelope` and `bucket_b_margin` (read by nothing).
+- TD-084: dropped `earner_work_status` and `household_other_earners` from the application, serializers, details
+  service, a37 pins and web types (write-only since the multi-earner income route).
+- Migration `scholarship/0211_drop_orphaned_cohort_and_income_fields` drops the four columns. Apply it by hand BEFORE the
+  deploy: `bucket_b_margin` is NOT NULL, so inserts from the new code would fail against the old column.
+- Dead i18n left in place (messages are another session's): `scholarship.docs.income.wizard.{q2,q3,q4,work}` in en/ms/ta,
+  and the student `scholarship.referee` block.
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).

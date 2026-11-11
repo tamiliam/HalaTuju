@@ -375,15 +375,9 @@ class ScholarshipCohort(models.Model):
         help_text="State keys (birth_state.STATE_KEYS) a student must have been BORN in, read "
                   "from the IC's place-of-birth code. Empty list = not applied.",
     )
-    bucket_b_margin = models.IntegerField(
-        default=1,
-        help_text="DEPRECATED (pre-S8 marginal-miss logic); unused by the current engine",
-    )
+    # (TD-226, 2026-11: `bucket_b_margin` and `funding_envelope` were dropped — read by nothing.)
 
-    # Funding + workflow parameters (consumed by later sprints)
-    funding_envelope = models.IntegerField(
-        null=True, blank=True, help_text="Per-student funding envelope in RM",
-    )
+    # Workflow parameters
     fail_email_delay_days = models.IntegerField(
         default=3,
         help_text="DEPRECATED (pre-S8); the scheduler now uses success/decline_delay_hours",

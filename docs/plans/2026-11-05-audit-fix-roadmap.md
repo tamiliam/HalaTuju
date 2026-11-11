@@ -897,6 +897,8 @@ Each sprint here:
 
 #### A3.17 Dead code
 
+- **Status (2026-11-11): built on branch a317, not pushed.** RD-07 removed; RD-08 test added, 17 routes allowlisted, student referee route removed; CO-16 kept (money); TD-226 and TD-084 fields dropped in code, migration scholarship 0211 awaiting the owner. Dead i18n keys listed in the CHANGELOG, not removed.
+
 - **Goal:** Shipped code is all used.
 - **Scope:**
   - RD-07: `ScholarshipReferee.tsx`, `error-i18n.ts`.

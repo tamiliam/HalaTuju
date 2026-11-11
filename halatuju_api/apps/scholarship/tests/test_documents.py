@@ -819,16 +819,6 @@ class TestDocumentApi(TestCase):
         resp = self.client.delete(f'/api/v1/scholarship/documents/{doc.id}/')
         self.assertEqual(resp.status_code, 404)
 
-    def test_referee_create_and_list(self):
-        self._auth(USER_A)
-        resp = self.client.post('/api/v1/scholarship/referees/', {
-            'name': 'Mr Teacher', 'role': 'teacher', 'phone': '012-3456789',
-        }, format='json')
-        self.assertEqual(resp.status_code, 201)
-        resp2 = self.client.get('/api/v1/scholarship/referees/')
-        self.assertEqual(len(resp2.json()['referees']), 1)
-        self.assertEqual(resp2.json()['referees'][0]['name'], 'Mr Teacher')
-
     @override_settings(SUPABASE_URL='', SUPABASE_SERVICE_ROLE_KEY='')
     def test_storage_returns_none_when_unconfigured(self):
         from apps.scholarship.storage import create_signed_download_url, create_signed_upload_url

@@ -116,13 +116,13 @@ export type { InterviewSlot, InterviewMessage, InterviewSchedule } from './api/i
 // Uploads, every per-document check the reader returns, referees and consent.
 export {
   signUploadDocument, uploadFileToSignedUrl, recordDocument, listDocuments, deleteDocument,
-  getDocumentHelp, getIncomeHelp, listReferees, addReferee, getConsentStatus, recordConsent,
+  getDocumentHelp, getIncomeHelp, getConsentStatus, recordConsent,
   refileToSpm, continueWithSpmOnly,
 } from './api/documents'
 export type {
   ApplicantDocument, BcCheck, GuardianshipCheck, SupportDocCheck, StrCheck, IncomeIcCheck,
   IncomeProofCheck, UtilityCheck, SlipCheckStatus, AcademicCheck, HigherCheck, SemesterCheck,
-  SchoolLeavingCheck, PathwayCheck, Referee, ConsentStatus, DocumentLimits, GradeDiff,
+  SchoolLeavingCheck, PathwayCheck, ConsentStatus, DocumentLimits, GradeDiff,
   DocumentHelp,
 } from './api/documents'
 

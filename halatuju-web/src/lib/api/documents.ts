@@ -321,15 +321,6 @@ export interface PathwayCheck {
   switched_from?: { programme: string; institution: string } | null
 }
 
-export interface Referee {
-  id: number
-  name: string
-  role: string
-  relationship: string
-  phone: string
-  email: string
-}
-
 export interface ConsentStatus {
   is_minor: boolean
   consent_version: string
@@ -498,18 +489,6 @@ export async function getIncomeHelp(
 ): Promise<DocumentHelp> {
   const q = lang ? `?lang=${encodeURIComponent(lang)}` : ''
   return apiRequest(`/api/v1/scholarship/income/${encodeURIComponent(member)}/help/${q}`, options)
-}
-
-export async function listReferees(options?: ApiOptions): Promise<{ referees: Referee[] }> {
-  return apiRequest('/api/v1/scholarship/referees/', options)
-}
-
-export async function addReferee(payload: Partial<Referee>, options?: ApiOptions): Promise<Referee> {
-  return apiRequest('/api/v1/scholarship/referees/', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    ...options,
-  })
 }
 
 export async function getConsentStatus(options?: ApiOptions): Promise<ConsentStatus> {

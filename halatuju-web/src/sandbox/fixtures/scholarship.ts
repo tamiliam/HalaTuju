@@ -140,8 +140,6 @@ export const sandboxApplication: ScholarshipApplication = {
   income_route: 'str',
   income_earner: 'father',
   income_working_members: ['father'],
-  earner_work_status: '',
-  household_other_earners: 0,
   siblings_in_school: 2,
   siblings_in_tertiary: 0,
 

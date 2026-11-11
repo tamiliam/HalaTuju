@@ -72,7 +72,6 @@ from .help import (
     IncomeClusterHelpView,
 )
 from .consent import (
-    RefereeListCreateView,
     ConsentView,
 )
 from .cron import (
