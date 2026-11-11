@@ -249,3 +249,17 @@ describe('#39 Sprint 4: permissions a person was GIVEN open those sections of ot
     }
   })
 })
+
+// TD-126: the three interview-scheduling screenshots shipped in public/ are wired into the Guide.
+describe('reviewer guide scheduling screenshots (TD-126)', () => {
+  test('each scheduling PNG is used by a section and exists on disk', () => {
+    const fs = require('fs') as typeof import('fs')
+    const reviewer = CHAPTERS.find((c) => c.slug === 'role-reviewer')
+    const imgs = (reviewer?.sections ?? []).map((s) => s.img)
+    for (const n of ['scheduling-1-propose', 'scheduling-2-proposed', 'scheduling-3-booked']) {
+      const url = `/reviewer-guide/${n}.png`
+      expect(imgs).toContain(url)
+      expect(fs.existsSync(path.join(WEB_ROOT, 'public', url))).toBe(true)
+    }
+  })
+})

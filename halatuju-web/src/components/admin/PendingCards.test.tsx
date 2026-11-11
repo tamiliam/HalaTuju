@@ -29,7 +29,7 @@ describe('per-role views', () => {
     expect(href('unassigned')).toBe('/admin/scholarship?status=profile_complete&assigned=none&ready=1')
     expect(href('overdue')).toBe('/admin/scholarship?band=overdue')
     expect(href('awaiting_qc')).toBe('/admin/scholarship?status=interviewed')
-    expect(href('sponsors_to_vet')).toBe('/admin/sponsors')
+    expect(href('sponsors_to_vet')).toBe('/admin/sponsors?status=pending')
     expect(href('invitations')).toBe('/admin/organisation/staff')
     expect(href('payment_runs')).toBe('/admin/payments')
     expect(href('requests')).toBe('/admin/requests?tab=action')

@@ -162,6 +162,30 @@ export const roleReviewer: ManualChapter = {
         an hour before. If the student reschedules or cancels, you&rsquo;ll see the change — just propose fresh
         times if needed. It&rsquo;s a short video call (about 30&ndash;45 minutes); parents are welcome to join.</>
       ),
+      img: '/reviewer-guide/scheduling-1-propose.png',
+      alt: 'The Interview scheduling card where you propose three times',
+    },
+    {
+      anchor: 'reviewer-scheduling-proposed',
+      perm: 'review',
+      title: 'After you propose times',
+      body: (
+        <>Once you send your times, the card shows them as <strong>proposed</strong> while you wait for the
+        student to choose. Nothing more is needed from you until they pick one.</>
+      ),
+      img: '/reviewer-guide/scheduling-2-proposed.png',
+      alt: 'The Interview scheduling card showing the proposed times',
+    },
+    {
+      anchor: 'reviewer-scheduling-booked',
+      perm: 'review',
+      title: 'When the student has booked',
+      body: (
+        <>When the student picks a time the card shows it as <strong>booked</strong>, with the Google Meet
+        link. Both of you receive the confirmation and the reminders automatically.</>
+      ),
+      img: '/reviewer-guide/scheduling-3-booked.png',
+      alt: 'The Interview scheduling card showing the booked time and Meet link',
     },
     {
       anchor: 'reviewer-interview-stage',

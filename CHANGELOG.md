@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.4 Cockpit and overview leftovers (2026-11-11)
+
+- TD-438 fixed (header photo link refreshed every 50 minutes), TD-126 fixed (scheduling screenshots in the Guide, FAQ points to them), TD-502 partly fixed (sponsors card opens the pending list). TD-444 skipped (file owned by another lane); TD-228 trigger not reached; TD-503 waits for the owner.
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

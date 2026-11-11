@@ -199,7 +199,8 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>How do I schedule the interview?</>,
       a: <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to propose two or three times.
         The student picks one and a <strong>Google Meet</strong> link is created automatically — you both get a
-        confirmation, plus reminders the day before and an hour before.</>,
+        confirmation, plus reminders the day before and an hour before. The Guide&rsquo;s <strong>Scheduling the
+        interview</strong> steps show each screen.</>,
     },
     {
       q: <>What if the student needs a different time, or doesn&rsquo;t book?</>,
