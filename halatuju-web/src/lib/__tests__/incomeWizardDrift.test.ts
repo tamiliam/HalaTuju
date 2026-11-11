@@ -193,8 +193,10 @@ describe('patronymic connectors (name_order.CONNECTOR_RE vs incomeWizard PATRONY
 
   // KNOWN EXCEPTION E (TD-262, owner ruling pending): a name that STARTS with a connector. The
   // web's PATRONYMIC_RE matches `(^|\s)bin(\s|$)`, so a bare leading "BIN ALI" or "A/L RAJU" counts as
-  // having a patronymic. The api's first_connector skips a connector with no letter before it (a
-  // leading AK is the Sabah title Awangku). Pinned as both are today, not blessed.
+  // having a patronymic. On the api, CONNECTOR_RE itself (also relationships._PATRONYMIC_RE) DOES match a
+  // leading connector; the divergent place is name_order.first_connector / split_patronymic, which skip a
+  // connector with no letter before it (a leading AK is the Sabah title Awangku). Pinned as both are today,
+  // not blessed.
   it('KNOWN EXCEPTION E: a LEADING connector is a patronymic on the web, ignored by the api', () => {
     expect(hasPatronymic('BIN ALI')).toBe(true)
     expect(hasPatronymic('A/L MURUGAN')).toBe(true)

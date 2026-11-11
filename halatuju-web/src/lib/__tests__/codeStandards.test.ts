@@ -780,13 +780,9 @@ describe('the scan actually found the code (the floor)', () => {
   })
 
   test('the eslint-disable scanner counts known text (synthetic self-test)', () => {
-    const text = 'const a = 1
-// eslint-disable-next-line no-console
-console.log(a)
-'
+    const text = 'const a = 1\n// eslint-disable-next-line no-console\nconsole.log(a)\n'
     expect(disablesIn('x.ts', text)).toHaveLength(1)
-    expect(disablesIn('x.ts', 'const a = 1
-')).toHaveLength(0)
+    expect(disablesIn('x.ts', 'const a = 1\n')).toHaveLength(0)
   })
 
   test('the self-exclusion is one file wide', () => {
