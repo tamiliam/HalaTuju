@@ -9,13 +9,12 @@
  * for the date alone. What this pins is the pair that is easy to regress together: the date must
  * still be there, and the reference must not creep back beside it.
  */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import PaymentsLandingPage from './page'
 import * as api from '@/lib/admin-api'
 import GiftProgrammes from '@/components/admin/GiftProgrammes'
 import { GiftScope, TWO_GIFTS, crumbText } from '@/test/giftScope'
 import { hasGiftDoor } from '@/lib/navigation'
-import { act as actA15 } from '@testing-library/react'
 
 // `t` echoes its key — except "Pays from", whose NAME is the point of asserting it, and the
 // TD-244 wallet line, whose count and NAMES are.
@@ -450,12 +449,12 @@ describe('the loader does not re-read when `t` changes identity (A3.15)', () => 
   it('getPaymentRuns is called the same number of times after three more renders', async () => {
     const view = render(<PaymentsLandingPage />)
     await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalled())
-    await actA15(async () => {})
+    await act(async () => {})
     const before = mockApi.getPaymentRuns.mock.calls.length
     view.rerender(<PaymentsLandingPage />)
     view.rerender(<PaymentsLandingPage />)
     view.rerender(<PaymentsLandingPage />)
-    await actA15(async () => {})
+    await act(async () => {})
     expect(mockApi.getPaymentRuns).toHaveBeenCalledTimes(before)
   })
 })

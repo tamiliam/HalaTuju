@@ -6,6 +6,8 @@ These tests create a cohort and an application through the ORM against the migra
 where the columns still exist: they pass only because 0211 gave the two NOT NULL columns a DATABASE
 default. Without `db_default`, the cohort INSERT fails on `bucket_b_margin` and the application INSERT
 fails on `earner_work_status`.
+
+NOTE: the column-exists asserts below must be deleted or rewritten by the 0212 that drops the columns.
 """
 from django.db import connection
 from django.test import TestCase
@@ -21,7 +23,7 @@ class RetiredColumnsInsertTest(TestCase):
         cohort_fields = {f.name for f in ScholarshipCohort._meta.get_fields()}
         self.assertFalse({'earner_work_status', 'household_other_earners'} & app_fields)
         self.assertNotIn('bucket_b_margin', cohort_fields)
-        self.assertIn('funding_envelope', cohort_fields)   # kept: the owner has not ruled
+        self.assertIn('funding_envelope', cohort_fields)   # kept: owner ruling 2026-11-11 (Programme budget)
 
     def test_a_cohort_can_be_created_without_bucket_b_margin(self):
         cohort = make_cohort()

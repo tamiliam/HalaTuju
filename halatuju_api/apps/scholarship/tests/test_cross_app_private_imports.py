@@ -196,9 +196,17 @@ DOOR_ALLOWED = frozenset({
 DOOR_RULES = {'courses': ('scholarship',), 'reports': ('courses', 'scholarship')}
 
 
+def _door_edge(bits, guarded):
+    """True when the dotted path `bits` reaches a guarded app by a way other than its `public`."""
+    app = bits[1] if bits[0] == 'apps' and len(bits) > 1 else bits[0]
+    return app in guarded and not (len(bits) > 2 and bits[2] == 'public')
+
+
 def scan_doors(rel_path, source):
     """(rel_path, module, name) for every import of another app that does NOT go through its
-    `public` module. Rules: DOOR_RULES. `import apps.x.y` counts with an empty name."""
+    `public` module. Rules: DOOR_RULES. Spellings caught: `from apps.x.y import n`,
+    `from apps import x` (the app itself as a name), `import apps.x.y [as z]` (empty name), and
+    `importlib.import_module('apps.x.y')` / `import_module('apps.x.y')` with a string literal."""
     own_app = Path(rel_path).parts[0]
     guarded = DOOR_RULES.get(own_app, ())
     found = set()
@@ -206,6 +214,11 @@ def scan_doors(rel_path, source):
         if isinstance(node, ast.ImportFrom):
             module = _absolute_module(rel_path, node)
             bits = module.split('.')
+            if bits == ['apps']:
+                for alias in node.names:    # `from apps import scholarship`
+                    if alias.name in guarded:
+                        found.add((rel_path, 'apps', alias.name))
+                continue
             app = bits[1] if bits[0] == 'apps' and len(bits) > 1 else bits[0]
             if app not in guarded:
                 continue
@@ -217,10 +230,16 @@ def scan_doors(rel_path, source):
                 found.add((rel_path, module, alias.name))
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                bits = alias.name.split('.')
-                app = bits[1] if bits[0] == 'apps' and len(bits) > 1 else bits[0]
-                if app in guarded and not (len(bits) > 2 and bits[2] == 'public'):
+                if _door_edge(alias.name.split('.'), guarded):
                     found.add((rel_path, alias.name, ''))
+        elif isinstance(node, ast.Call) and node.args:
+            fn = node.func
+            called = fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, 'id', '')
+            arg = node.args[0]
+            if (called == 'import_module' and isinstance(arg, ast.Constant)
+                    and isinstance(arg.value, str)
+                    and _door_edge(arg.value.split('.'), guarded)):
+                found.add((rel_path, arg.value, ''))
     return found
 
 
@@ -262,6 +281,17 @@ class TestBackEdgesGoThroughTheFacade(SimpleTestCase):
             'from apps.scholarship.public import X': set(),
             'from apps.scholarship import public': set(),
             'from apps.courses.models import Y': set(),        # courses -> courses is its own app
+            'from apps import scholarship': {('courses/x.py', 'apps', 'scholarship')},
+            'from apps import courses, scholarship': {('courses/x.py', 'apps', 'scholarship')},
+            'from apps import public': set(),
+            'import apps.scholarship.emails as e': {('courses/x.py', 'apps.scholarship.emails', '')},
+            'import apps.scholarship.public as p': set(),
+            "import importlib; importlib.import_module('apps.scholarship.emails')":
+                {('courses/x.py', 'apps.scholarship.emails', '')},
+            "from importlib import import_module; import_module('apps.scholarship')":
+                {('courses/x.py', 'apps.scholarship', '')},
+            "importlib.import_module('apps.scholarship.public')": set(),
+            "importlib.import_module('apps.courses.models')": set(),
         }
         for src, want in cases.items():
             with self.subTest(src=src):

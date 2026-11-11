@@ -11,7 +11,10 @@ and the new image's INSERTs omit them, so the two NOT NULL columns would refuse 
 - DROP COLUMN (STEP 2, a later sprint, 0212, AFTER the new image serves all traffic): `DROP COLUMN IF
   EXISTS`, no CASCADE, state_operations empty. Not written yet.
 
-`funding_envelope` is NOT touched: the Programme roadmap plans it and the owner has not ruled.
+`funding_envelope` is NOT touched: KEPT by owner ruling on 2026-11-11 for the planned Programme budget.
+
+NOTE for 0212: test_a317_retired_columns.py asserts the three columns still EXIST in the database;
+0212 must delete or rewrite those column-exists asserts when it drops them.
 """
 from django.db import migrations, models
 

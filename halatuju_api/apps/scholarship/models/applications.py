@@ -255,7 +255,8 @@ class ScholarshipApplication(models.Model):
         help_text="{member: {reason, since:'YYYY-MM'}} for an 'unemployed' roster member — why and "
                   "since when. Reviewer texture; EPF (all-zeros employer) corroborates. Never a gate.")
     # (TD-084, 2026-11: the old single-earner `earner_work_status` and `household_other_earners`
-    # columns were dropped. `income_working_members` replaced them; informal is inferred from
+    # columns leave the model now (scholarship 0211); a later 0212 drops them from the database.
+    # `income_working_members` replaced them; informal is inferred from
     # 'IC present, no payslip/EPF'.)
 
     # Workflow

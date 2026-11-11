@@ -187,6 +187,21 @@ describe('patronymic connectors (name_order.CONNECTOR_RE vs incomeWizard PATRONY
     expect(hasPatronymic('MOHD @ ALI')).toBe(true)
   })
 
+  it('API_ONLY is a subset of the api alternatives (a renamed branch cannot silently drop out)', () => {
+    for (const alt of API_ONLY) expect(alternatives).toContain(alt)
+  })
+
+  // KNOWN EXCEPTION E (TD-262, owner ruling pending): a name that STARTS with a connector. The
+  // web's PATRONYMIC_RE matches `(^|\s)bin(\s|$)`, so a bare leading "BIN ALI" or "A/L RAJU" counts as
+  // having a patronymic. The api's first_connector skips a connector with no letter before it (a
+  // leading AK is the Sabah title Awangku). Pinned as both are today, not blessed.
+  it('KNOWN EXCEPTION E: a LEADING connector is a patronymic on the web, ignored by the api', () => {
+    expect(hasPatronymic('BIN ALI')).toBe(true)
+    expect(hasPatronymic('A/L MURUGAN')).toBe(true)
+    // the api side: first_connector only accepts a match with a letter before it
+    expect(pyBody(NAME_ORDER, 'first_connector')).toContain("re.search(r'[A-Za-z]', s[:m.start()])")
+  })
+
   it('a mononym carries none, on both sides', () => {
     expect(hasPatronymic('DIVIYA')).toBe(false)
     expect(hasPatronymic('')).toBe(false)

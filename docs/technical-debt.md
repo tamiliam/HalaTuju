@@ -275,7 +275,7 @@ Do one only when a sprint is already in that file.
 - **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)* **Fixed in code 2026-11-07 (Sprint A1.10b): every reader uses the role; migration courses 0093; open until the owner applies STEP 1 before the push and drops the column after the deploy. See the detail entry.**
-- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)* **Partly fixed in code 2026-11-11 (Sprint A3.17): `bucket_b_margin` retired from the model (migration scholarship 0211). `funding_envelope` is kept: the owner has not ruled (a Programme roadmap item plans it). Open: STEP 1 SQL by the owner BEFORE the push, then a later 0212 drops the column. See the CHANGELOG.**
+- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)* **Partly fixed in code 2026-11-11 (Sprint A3.17): `bucket_b_margin` retired from the model (migration scholarship 0211). `funding_envelope` is KEPT by owner ruling on 2026-11-11 for the planned Programme budget (docs/plans/2026-07-26-programme-layer-roadmap.md); it is not orphaned debt, and 0212 drops only the 3 retired columns. Open: STEP 1 SQL by the owner BEFORE the push (CHANGELOG, with its read-only pre-check), then a later 0212 drops the `bucket_b_margin` column. See the CHANGELOG.**
 - **TD-115** — The document slot has no database-level guard. *(D · L)* **Fixed in code 2026-11-06 (Sprint A1.8): 4-column partial unique index, migration 0203; open until the owner applies it by hand after the deploy. See the detail entry.**
 - **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L · partly done)* **Fields retired from the model 2026-11-11 (Sprint A3.17), migration scholarship 0211 (same one as TD-226, expand-contract). Open: STEP 1 SQL by the owner BEFORE the push, then a later 0212 drops the columns. Dead i18n keys `wizard.{q2,q3,q4,work}` still to delete in en/ms/ta.**
 - **TD-058** — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)*
@@ -4212,12 +4212,13 @@ is not is a small trap: the Sabah mock asked for the pot at creation on the stre
 existing, and was corrected by the owner, not by the code.
 
 **Why it is LOW and not being fixed now:** dropping a column is a migration against a live table for
-no behavioural gain, and `funding_envelope` may yet be wanted once a programme has a real budget
-ceiling. **The cheap half is done:** the intake-year screen does not offer either of them, so
+no behavioural gain, and `funding_envelope` is wanted once a programme has a real budget
+ceiling (**KEPT by owner ruling on 2026-11-11** for the planned Programme budget,
+docs/plans/2026-07-26-programme-layer-roadmap.md; not orphaned debt). **The cheap half is done:** the intake-year screen does not offer either of them, so
 nothing new can come to depend on them.
 
-**Fix (when convenient):** drop `bucket_b_margin` outright — it is explicitly deprecated. Decide
-whether `funding_envelope` is a real requirement or should follow it.
+**Fix (when convenient):** drop `bucket_b_margin` outright — it is explicitly deprecated.
+`funding_envelope` stays (owner ruling 2026-11-11); the A3.17 0212 drops only the 3 retired columns.
 
 **Status:** Open.
 

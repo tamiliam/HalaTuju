@@ -346,7 +346,8 @@ function disablesIn(relpath: string, text: string): Disable[] {
 /** A comment claiming a duplicated rule. */
 const MIRROR = new RegExp([
   /mirror/,
-  /keep\s+(?:the\s+two\s+)?in\s+(?:sync|step)/,
+  /(?:keeps?|keeping)\s+(?:the\s+two\s+)?in\s+(?:sync|step)/,
+  /same\s+as\s+(?:the\s+)?(?:server|backend|api)/,
   // TD-362: the same claim in words that do not say "mirror".
   /(?:kept|stay|stays|staying)\s+in\s+(?:sync|step|lockstep)/,
   /lockstep/,
@@ -772,8 +773,20 @@ describe('the scan actually found the code (the floor)', () => {
     // A scan that matched nothing would report no violations and pass for ever while watching
     // nothing — the failure mode every guard in this repo carries a floor against.
     expect(Object.keys(SCAN.oversizeFiles).length).toBeGreaterThan(5)
-    expect(SCAN.eslintDisables.length).toBeGreaterThan(10)
+    // The tree is clean of reasonless disables, so the real count is small and may fall; the
+    // scanner's power is proven by the synthetic self-test below, and here only >0 is required.
+    expect(SCAN.eslintDisables.length).toBeGreaterThan(0)
     expect(SCAN.mirrors.length).toBeGreaterThan(20)
+  })
+
+  test('the eslint-disable scanner counts known text (synthetic self-test)', () => {
+    const text = 'const a = 1
+// eslint-disable-next-line no-console
+console.log(a)
+'
+    expect(disablesIn('x.ts', text)).toHaveLength(1)
+    expect(disablesIn('x.ts', 'const a = 1
+')).toHaveLength(0)
   })
 
   test('the self-exclusion is one file wide', () => {

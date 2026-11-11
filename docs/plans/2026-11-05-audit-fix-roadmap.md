@@ -903,7 +903,7 @@ Each sprint here:
 
 #### A3.17 Dead code
 
-- **Status (2026-11-11): built on branch a317, not pushed.** RD-07 removed; RD-08 test added, 17 routes allowlisted, student referee route removed; CO-16 kept (money); TD-084 fields and `bucket_b_margin` retired from the model (`funding_envelope` kept, owner has not ruled); migration scholarship 0211 is expand-contract: STEP 1 (owner, BEFORE the push) a SQL block in the CHANGELOG, STEP 2 (later sprint, after the new image serves all traffic) a 0212 that drops the three columns. Dead i18n keys listed in the CHANGELOG, not removed.
+- **Status (2026-11-11): built on branch a317, not pushed.** RD-07 removed; RD-08 test added, 17 routes allowlisted, student referee route removed; CO-16 kept (money); TD-084 fields and `bucket_b_margin` retired from the model (`funding_envelope` KEPT by owner ruling on 2026-11-11 for the planned Programme budget, docs/plans/2026-07-26-programme-layer-roadmap.md; not orphaned debt, and 0212 drops only the 3 retired columns); migration scholarship 0211 is expand-contract: STEP 1 (owner, BEFORE the push) a SQL block in the CHANGELOG (read-only pre-check first, expect 0210 only; the INSERT is idempotent), STEP 2 (later sprint, after the new image serves all traffic) a 0212 that drops the three columns. Dead i18n keys listed in the CHANGELOG, not removed.
 
 - **Goal:** Shipped code is all used.
 - **Scope:**

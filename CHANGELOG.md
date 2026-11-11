@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### merge: G12 - audit sprints A3.13 to A3.17 on one branch (2026-11-11)
+
+Branch g12 (not pushed, not deployed). Merged in order: a313 (courses and reports reach scholarship / courses
+through facades), a314 (helper characterisation tests), a315 (eslint suppressions), a316a (mirror drift tests),
+a317 (dead code; migration scholarship 0211, MIGRATE-FIRST by hand, see its STEP 1). Conflicts: CHANGELOG only,
+kept both sides; web code-standards.json took the emptied eslint list (a315) with a316a's emptied mirrors list.
+Follow-up commit:
+- a313 facade guard also catches `from apps import scholarship`, `import apps.x.y as z` and
+  `importlib.import_module('apps.scholarship...')`, each with a synthetic self-test.
+- a315 web: the eslint-disable floor is now a synthetic scanner self-test plus a >0 floor; payments page test has one `act` import.
+- a316a drift tests: divergence E (a leading connector) pinned, API_ONLY proved a subset, mirror-guard regex widened
+  (keeps/keeping in sync, "same as the server"), IncomeWizard marker on its own line.
+- a317: STEP 1 SQL gained a read-only pre-check and an idempotent INSERT; model comment fixed; 0212 note added;
+  `funding_envelope` kept by owner ruling 2026-11-11 recorded in TD-226, the A3.17 entry and the roadmap.
+- API code-standards.json: A3.14 note (type_ignore 11 -> 0).
+
 ### refactor: Gemini Phase 1 review - an overall deadline for the fallback runner (2026-11-11)
 
 Branch gemini-phase1 (not pushed, not deployed; no migration). Follow-ups from a review of the Phase 1 commit.
@@ -82,8 +98,9 @@ Branch a317 (not pushed, not deployed). One scholarship migration, 0211, NOT app
   profile actions, sponsor money). Removed the one provably dead route, the student referee list/add
   (`scholarship/referees/`), with its view and test. The scanner has its own self-test.
 - CO-16: kept. The BANK_DETAILS capture flag sits on the award money path and its production value cannot be proved here.
-- TD-226 (part): `ScholarshipCohort.bucket_b_margin` left the model. `funding_envelope` is KEPT, untouched: a Programme
-  roadmap item plans it and the owner has not ruled. TD-226 stays partly open for it.
+- TD-226 (part): `ScholarshipCohort.bucket_b_margin` left the model. `funding_envelope` is KEPT, untouched, by owner
+  ruling on 2026-11-11 for the planned Programme budget (docs/plans/2026-07-26-programme-layer-roadmap.md); it is not
+  orphaned debt, and STEP 2 (0212) drops only the 3 retired columns. TD-226 stays open only for that 0212 column drop.
 - TD-084: `earner_work_status` and `household_other_earners` left the application model, serializers, details
   service, a37 pins and web types (write-only since the multi-earner income route).
 - Migration `scholarship/0211_retire_orphaned_cohort_and_income_fields` is expand-contract (as courses 0093): the two
@@ -91,12 +108,17 @@ Branch a317 (not pushed, not deployed). One scholarship migration, 0211, NOT app
   old image keeps working and the new image's INSERTs (which omit the columns) pass. Test:
   `scholarship/tests/test_a317_retired_columns.py`.
 - Two steps, in this order:
-  - STEP 1 (owner, BEFORE the push). Run this SQL:
+  - STEP 1 (owner, BEFORE the push). First a read-only pre-check:
+
+        SELECT name FROM django_migrations WHERE app='scholarship' AND name IN ('0210_read_and_notify_queues','0211_retire_orphaned_cohort_and_income_fields');
+
+    Expect 0210 only. If 0211 is already listed, STOP: do not run the block below. Then run this SQL (the INSERT is
+    idempotent):
 
         BEGIN;
         ALTER TABLE "scholarship_applications" ALTER COLUMN "earner_work_status" SET DEFAULT '';
         ALTER TABLE "scholarship_cohorts" ALTER COLUMN "bucket_b_margin" SET DEFAULT 1;
-        INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0211_retire_orphaned_cohort_and_income_fields', now());
+        INSERT INTO django_migrations (app, name, applied) SELECT 'scholarship', '0211_retire_orphaned_cohort_and_income_fields', now() WHERE NOT EXISTS (SELECT 1 FROM django_migrations WHERE app='scholarship' AND name='0211_retire_orphaned_cohort_and_income_fields');
         COMMIT;
 
   - STEP 2 (a later sprint, after the new image serves all traffic): a 0212 that drops the three columns with
