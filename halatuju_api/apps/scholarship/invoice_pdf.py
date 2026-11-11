@@ -217,7 +217,7 @@ def to_pdf(html):
         return buf.getvalue()
     except InvoicingError:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 — any renderer failure is re-raised as InvoicingError
         raise InvoicingError('pdf_failed', f'The PDF could not be produced: {exc}')
 
 

@@ -155,7 +155,7 @@ class TestParseInvoiceParsers(_Table):
     must be a THOUSANDS separator (`1,234.56`) and a non-finite figure is refused."""
 
     def test_the_table(self):
-        bad = lambda v: Raises(invoice_parsers.InvoiceParseError,  # noqa: E731
+        bad = lambda v: Raises(invoice_parsers.InvoiceParseError,  # noqa: E731 — short local helper in a test
                                message=f'Not a money figure: {v!r}')
         self.check(_fn(invoice_parsers, '_invoice_amount', '_money'), [
             (None, bad(None)),
@@ -342,7 +342,7 @@ class TestParseVircleImport(_Table):
     negative one describes nothing the column can mean), and so is a non-finite figure."""
 
     def test_the_table(self):
-        bad = lambda v: Raises(import_vircle_csv.CommandError,  # noqa: E731
+        bad = lambda v: Raises(import_vircle_csv.CommandError,  # noqa: E731 — short local helper in a test
                                message=f'Unrecognised Monthly amount: {v!r}')
         self.check(_fn(import_vircle_csv, '_monthly_amount', '_money'), [
             (None, Decimal('0.00')),

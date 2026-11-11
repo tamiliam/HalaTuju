@@ -70,7 +70,7 @@ class TestReprocessUnreadIc(TestCase):
         # (superseded, nothing later) and the live one are still swept, as before.
         from apps.scholarship.services.blockers import _stuck_unread_documents
         now = timezone.now()
-        mk = lambda path, **kw: ApplicantDocument.objects.create(  # noqa: E731
+        mk = lambda path, **kw: ApplicantDocument.objects.create(  # noqa: E731 — short local helper in a test
             application=self.app, doc_type='ic', storage_path=path, vision_run_at=None, **kw)
         dropped = mk('ic-dropped', superseded_at=now)               # staged, never read
         replaced = mk('ic-replaced', superseded_at=now)

@@ -40,7 +40,7 @@ def _vision_document_text(image_bytes: bytes) -> dict:
     The single seam the OCR functions share (and tests patch). Graceful — returns
     an error dict, never raises. ``error`` is None on success."""
     try:
-        from google.cloud import vision  # type: ignore
+        from google.cloud import vision
     except ImportError:
         return {'text': '', 'error': 'AI module not installed'}
     api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
@@ -68,7 +68,7 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
     if img is None:
         return {'words': [], 'text': '', 'error': 'no image'}
     try:
-        from google.cloud import vision  # type: ignore
+        from google.cloud import vision
     except ImportError:
         return {'words': [], 'text': '', 'error': 'AI module not installed'}
     api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
@@ -146,7 +146,7 @@ def _fetch_image_bytes(storage_path: str) -> Optional[bytes]:
             return None
         with urlopen(url, timeout=10) as r:
             return r.read()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — a failed image fetch is logged and the caller handles None
         logger.warning('IC image fetch failed for %s: %s', storage_path, e)
         return None
 

@@ -100,7 +100,7 @@ def _safe(kind, sponsor, context=None, **kwargs):
     """`deliver`, with the last guard: bookkeeping must never break the caller."""
     try:
         return deliver(kind, sponsor, context, **kwargs)
-    except Exception:                              # noqa: BLE001
+    except Exception:  # noqa: BLE001 — notification bookkeeping must never break the caller
         logger.warning('Sponsor email %s could not be attempted', kind, exc_info=True)
         return False
 

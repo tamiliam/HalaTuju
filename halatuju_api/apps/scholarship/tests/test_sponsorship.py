@@ -485,7 +485,7 @@ class TestAdminSponsorship(TestCase):
 
 # ─── award good-news email (sent when a student becomes 'awarded') ────────────
 
-from django.core import mail  # noqa: E402
+from django.core import mail  # noqa: E402 — import kept beside the tests that use it
 
 
 class TestAwardOfferEmail(TestCase):
@@ -595,7 +595,7 @@ class TestAwardOfferEmail(TestCase):
         self.assertIn('help@', mail.outbox[0].body.split(marker)[1][:400])   # routes them to support
 
 
-from django.core.management import call_command  # noqa: E402
+from django.core.management import call_command  # noqa: E402 — import kept beside the tests that use it
 
 
 class TestAwardStudentsBatch(TestCase):
@@ -685,7 +685,7 @@ class TestSendAwardOfferEmails(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-from datetime import timedelta  # noqa: E402
+from datetime import timedelta  # noqa: E402 — import kept beside the tests that use it
 
 
 class TestReleaseAwardOfferEmails(TestCase):

@@ -338,7 +338,7 @@ class OrgAdminJoinsReviewers(_Base):
 
     def test_they_join_the_reviewers_list_and_the_assignment_picker(self):
         from apps.scholarship.services import may_assign_to
-        listed = lambda: {r['id'] for r in authed_client(self.lead).get(  # noqa: E731
+        listed = lambda: {r['id'] for r in authed_client(self.lead).get(  # noqa: E731 — short local helper in a test
             '/api/v1/admin/reviewers/').json()['reviewers']}
         self.assertNotIn(self.lead.pk, listed())
         self.assertFalse(may_assign_to(self.lead, self.lead))

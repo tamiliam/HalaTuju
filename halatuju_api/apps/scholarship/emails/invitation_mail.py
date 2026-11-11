@@ -112,7 +112,7 @@ def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', in
         EmailMessage(subject=subject, body=body, from_email=_P.email_from,
                      to=[to_email], reply_to=[_P.sponsor_reply_to]).send()
         return True, ''
-    except Exception as e:      # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — a failed send is logged and reported to the caller, never raised
         logger.warning('Failed to send sponsor invitation to %s', to_email, exc_info=True)
         return False, str(e)[:300]
 

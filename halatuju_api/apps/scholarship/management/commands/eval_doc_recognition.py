@@ -217,7 +217,7 @@ class Command(BaseCommand):
                                                         profile_fields=rec.get('profile'), app_fields=rec.get('application'))
                     for obj, m in zip(built, docs):
                         captured[m['key']] = doc_match_verdict(obj)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001 — one failing case is recorded as ERROR and the run continues
                 for m in docs:
                     results.append({'key': m['key'], 'doc_type': m['doc_type'], 'expect': '?', 'verdict': 'ERROR',
                                     'detail': f'{type(e).__name__}: {e}'})

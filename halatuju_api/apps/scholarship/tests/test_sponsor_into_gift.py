@@ -124,7 +124,7 @@ class TestTheMembershipWriter(_Case):
 
     def test_the_programme_is_required_positionally_so_no_caller_can_forget_it(self):
         with self.assertRaises(TypeError):
-            svc.sync_account_membership(_sponsor())      # type: ignore[call-arg]
+            svc.sync_account_membership(_sponsor())  # type: ignore[call-arg] — deliberately omits the required argument to prove it raises
 
     def test_it_touches_ONLY_the_gift_it_was_given(self):
         # ⚠ The rule that predates the parameter: a second gift's membership is that

@@ -19,7 +19,7 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 
-from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile  # noqa: F401
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile  # noqa: F401 — imported for the test module namespace
 from apps.scholarship import sheets, spend_summary as ss, spending_import as si
 from apps.scholarship.models import (
     BursarySpendTxn, Programme, ScholarshipApplication, ScholarshipCohort,

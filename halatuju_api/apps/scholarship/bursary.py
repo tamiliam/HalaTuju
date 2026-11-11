@@ -271,7 +271,7 @@ def generate_pdf(html):
         return buf.getvalue()
     except BursaryError:
         raise
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — any renderer failure is re-raised as BursaryError
         raise BursaryError('pdf_failed', str(e))
 
 

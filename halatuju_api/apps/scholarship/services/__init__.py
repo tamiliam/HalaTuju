@@ -32,7 +32,7 @@ Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_servic
 # place that scores academics). Re-exported here for callers that still import it from
 # services — as they did before the split.
 from .. import requirements
-from ..shortlisting import A_GRADES, count_spm_a_grades, evaluate  # noqa: F401
+from ..shortlisting import A_GRADES, count_spm_a_grades, evaluate  # noqa: F401 — package re-export for callers of services
 
 from .errors import (
     AmbiguousOpenCohort, AssignmentError, IncompleteProfileError, OnboardingError,

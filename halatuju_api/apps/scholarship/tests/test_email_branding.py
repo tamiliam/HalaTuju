@@ -248,9 +248,9 @@ def test_email_branding_golden():
 # A second tenant ("inspire") with its OWN programme name, sign-off, persona, sender identity
 # and frontend URL. Every branding-accepting send_* must render THAT tenant's brand and leak
 # NONE of the platform's — the proof that the seam actually swaps per org.
-from types import SimpleNamespace  # noqa: E402
+from types import SimpleNamespace  # noqa: E402 — import kept beside the tests that use it
 
-from apps.scholarship import branding as _branding  # noqa: E402
+from apps.scholarship import branding as _branding  # noqa: E402 — import kept beside the tests that use it
 
 _INSPIRE_ORG = SimpleNamespace(
     code='inspire',

@@ -297,7 +297,7 @@ def record_send(inv, ok, error='', *, actor=None):
         inv.last_send_error = ('' if ok else (error or 'unknown'))[:300]
         inv.save(update_fields=['send_count', 'last_sent_at', 'last_send_ok',
                                 'last_send_error', 'updated_at'])
-    except Exception:   # noqa: BLE001
+    except Exception:  # noqa: BLE001 — send bookkeeping must never break the send
         pass
     staff_activity.record(actor, staff_activity.INVITATION_SENT, inv, meta=lambda: {
         'audience': inv.audience, 'emailed': bool(ok), 'resend': (inv.send_count or 0) > 1})
@@ -329,7 +329,7 @@ def accept_for_admin(admin, now=None):
         done = Invitation.objects.filter(
             pk__in=[pk for pk, _ in closing],
             accepted_at__isnull=True, revoked_at__isnull=True).update(accepted_at=now)
-    except Exception:   # noqa: BLE001
+    except Exception:  # noqa: BLE001 — closing sibling invitations is best-effort; the accept itself stands
         return 0
     for pk, org_id in (closing if done else ()):
         staff_activity.record(admin, staff_activity.INVITATION_ACCEPTED, ('invitation', pk),

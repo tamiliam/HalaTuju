@@ -1112,7 +1112,7 @@ class TestRequestOwnedSlots(TestCase):
         self.assertEqual(i2.status, 'open')       # the OTHER request stays open
 
 
-from django.utils import timezone as _dj_tz  # noqa: E402
+from django.utils import timezone as _dj_tz  # noqa: E402 — import kept beside the tests that use it
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

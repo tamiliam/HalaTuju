@@ -34,7 +34,7 @@ from . import money, staff_activity
 # Moves only, when this file passed the 600-line standard. RE-EXPORTED rather than left behind,
 # because `invoicing.month_label`, `invoicing.previous_month`, `invoicing.MONTH_RE` and
 # `invoicing.next_number` are read from a dozen modules and tests: a split is not a rename.
-from .invoice_dates import (  # noqa: F401  (re-export: see above)
+from .invoice_dates import (  # noqa: F401 — re-exported, see above
     DAY_RE, ISSUE_DAY, MONTH_NAMES, MONTH_RE, _refuse_out_of_order, _today, issue_date_for,
     month_label, month_of, next_number, previous_month, shift_month,
 )
