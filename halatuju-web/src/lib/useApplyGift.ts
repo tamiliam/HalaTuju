@@ -85,6 +85,11 @@ export interface ApplyGift {
   sources: ReferralSource[] | null
   /** The fixed choices THIS gift offers (request #44). null = not sent (older api): all three. */
   fixedSources: string[] | null
+  /** TD-343: the intake could not be reached, so no gift is named and none is submitted (the server then
+   *  resolves the one open round or refuses). The form says so and offers `retry`. */
+  failed: boolean
+  /** Ask the intake again after a failure. */
+  retry: () => void
   /** The server refused the submitted referral code; the list was re-read and the form asks again. */
   referralRefused: boolean
   /** Re-read the sources after a `referral_source_not_offered` refusal and raise `referralRefused`. */
@@ -115,6 +120,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   const [canChange, setCanChange] = useState(false)
   const [settled, setSettled] = useState(false)
   const [closed, setClosed] = useState(false)
+  const [failed, setFailed] = useState(false)
   const [othersOpen, setOthersOpen] = useState(false)
   const [noneOpen, setNoneOpen] = useState(false)
   const [sources, setSources] = useState<ReferralSource[] | null>(null)
@@ -135,7 +141,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
     let active = true
     // Never show (or submit) one gift's name or code while another is in force.
     setCopy(undefined); setName(''); setServed(''); setChoices([]); setCanChange(false)
-    setSettled(false); setClosed(false); setOthersOpen(false); setNoneOpen(false)
+    setSettled(false); setClosed(false); setOthersOpen(false); setNoneOpen(false); setFailed(false)
     setSources(null); setFixedSources(null); setReferralRefused(false)
     // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
     // — a student on a closed gift's poster was shown the whole form and refused only at submit.
@@ -160,7 +166,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
       // ⚠ ASK BEFORE THE FORM, NOT AT SUBMIT — `resolve_open_cohort` refuses to guess between two
       // open rounds, and that refusal used to arrive as a 409 after the whole form was filled in.
       if (needsProgrammeChoice(urlCode, r.choices)) setChoices(r.choices ?? [])
-    }).catch(() => { if (active) setSettled(true) })   // a failure settles too: the page as before
+    }).catch(() => { if (active) { setFailed(true); setSettled(true) } })   // a failure settles too, and SAYS so (TD-343)
     // "Change" only makes sense when another gift is open. A coded question never lists choices,
     // so ask the bare one for that alone — and whether ANY round is open, for the closed card.
     if (urlCode) {
@@ -172,6 +178,8 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
     }
     return () => { active = false }
   }, [urlCode, asked])
+
+  const retry = useCallback(() => { setSettled(false); setAsked((n) => n + 1) }, [])
 
   const pick = useCallback((picked: string) => {
     const clean = picked.trim()
@@ -224,6 +232,6 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
 
   return {
     code, copy, choices, name, canChange, settled, closed, othersOpen, noneOpen, pick, change, recheck,
-    named: urlCode, sources, fixedSources, referralRefused, refuseReferral,
+    failed, retry, named: urlCode, sources, fixedSources, referralRefused, refuseReferral,
   }
 }

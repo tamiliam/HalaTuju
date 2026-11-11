@@ -105,7 +105,12 @@ def resolve_open_cohort(cohort_code='', programme_code=''):
     if cohort_code:
         return ScholarshipCohort.objects.filter(code=cohort_code).first()
 
-    qs = ScholarshipCohort.objects.filter(is_active=True, is_open=True)
+    # TD-339: one definition of "open round" — the chooser (`_open_round_choices`) drops a round whose
+    # programme is inactive, so the bare resolver must too, or one live gift + one open round under a
+    # deactivated programme reads "ambiguous" with a single choice. `exclude(False)` keeps a round with
+    # no programme (bare fixtures), which the chooser skips but the resolver always counted.
+    qs = (ScholarshipCohort.objects.filter(is_active=True, is_open=True)
+          .exclude(programme__is_active=False))
     if programme_code:
         p = resolve_programme_by_code(programme_code)
         # An unknown/inactive programme narrows to nothing → None → "no open round", which is

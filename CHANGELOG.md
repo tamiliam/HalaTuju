@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.1 - apply and student scholarship screens (2026-11-11)
+
+Branch a41 (not pushed, not deployed). No migration.
+- TD-339: the bare open-round resolver now skips a round whose programme is inactive, as the chooser already did, so one live gift plus one such round no longer reads ambiguous with a single choice.
+- TD-341: the dashboard banner reads applicationScreen, not applications[0].
+- TD-342: the pending sign-in action is stamped and ignored after 30 minutes (callback and resume effect).
+- TD-343: a failed intake request shows "we could not check which programme" with Try again (new keys scholarship.apply.giftCheckFailed and giftCheckRetry, en/ms/ta).
+- TD-354: the closed-application card offers "See programmes" only when the intake says one is open.
+- TD-454: a Google student on her NRIC step sees her name and Log out in the header; account links stay gated.
+- TD-462: the bank-statement upload refuses a too-big or wrong-format file before uploading.
+- TD-338 not built: needs an owner design call.
+
 ### merge: G12 - audit sprints A3.13 to A3.17 on one branch (2026-11-11)
 
 Branch g12 (not pushed, not deployed). Merged in order: a313 (courses and reports reach scholarship / courses

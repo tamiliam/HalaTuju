@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
-import { KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, isStalePendingAction } from '@/lib/storage'
 import { applyPagePath } from '@/lib/applyPagePath'
 
 export default function AuthCallback() {
@@ -22,7 +22,8 @@ export default function AuthCallback() {
     try {
       const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
       if (pending) {
-        const reason = JSON.parse(pending)?.reason
+        const parsed = JSON.parse(pending)
+        const reason = isStalePendingAction(parsed) ? undefined : parsed?.reason   // TD-342: an abandoned one is not a destination
         // The gift's code survives the Google round trip in sessionStorage (same tab); it rides
         // back in the URL because a bare /scholarship/apply now asks afresh.
         if (reason === 'apply') dest = applyPagePath()

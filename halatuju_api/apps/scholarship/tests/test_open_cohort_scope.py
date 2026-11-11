@@ -252,6 +252,41 @@ class TestProgrammeNamedByTheApplyLink(TestCase):
         self.prog_b.save(update_fields=['is_active'])
         self.assertIsNone(services.resolve_open_cohort(programme_code='tenant-b-bursary'))
 
+    def test_a_round_under_an_INACTIVE_programme_does_not_make_the_bare_visit_ambiguous(self):
+        """TD-339: the chooser drops an inactive programme's round, so the bare resolver must too.
+        Before: one live gift + one open round under a deactivated programme read ambiguous with ONE
+        choice (no chooser, then a 409 at submit). Now the live gift is simply THE open round."""
+        self.prog_b.is_active = False
+        self.prog_b.save(update_fields=['is_active'])
+        self.assertEqual(services.resolve_open_cohort(), self.cohort_a)
+        self.client = APIClient()
+        body = self.client.get('/api/v1/scholarship/intake/').json()
+        self.assertTrue(body['open'])
+        self.assertEqual(body['programme_code'], 'tenant-a-bursary')
+        self.assertEqual(body['choices'], [])
+
+    def test_a_programme_less_open_round_still_resolves_when_it_is_the_only_open_round(self):
+        """TD-339: `exclude(programme__is_active=False)` must keep a round with NO programme."""
+        self.cohort_b.is_open = False
+        self.cohort_b.save(update_fields=['is_open'])
+        self.cohort_a.programme = None
+        self.cohort_a.save(update_fields=['programme'])
+        self.assertEqual(services.resolve_open_cohort(), self.cohort_a)
+
+    def test_a_sole_open_round_whose_programme_is_deactivated_reads_closed(self):
+        self.cohort_b.is_open = False
+        self.cohort_b.save(update_fields=['is_open'])
+        self.cohort_a.programme.is_active = False
+        self.cohort_a.programme.save(update_fields=['is_active'])
+        self.assertIsNone(services.resolve_open_cohort())
+
+    def test_a_programme_less_open_round_next_to_a_programme_round_reads_ambiguous(self):
+        """Pins TODAY's behaviour (not an endorsement): both count as open, so the bare visit refuses."""
+        self.cohort_a.programme = None
+        self.cohort_a.save(update_fields=['programme'])
+        with self.assertRaises(services.AmbiguousOpenCohort):
+            services.resolve_open_cohort()
+
     def test_two_open_intakes_of_the_SAME_programme_are_still_refused(self):
         """The link narrows to a programme, not to a round — so PF-1's shape can still occur
         one level down, and must still refuse rather than pick the newer year."""

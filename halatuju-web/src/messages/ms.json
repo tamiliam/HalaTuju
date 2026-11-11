@@ -894,6 +894,7 @@
   },
   "scholarship": {
     "nav": "{programmeName}",
+    "finishSignIn": "Selesaikan log masuk",
     "apply": {
       "title": "Mohon Bantuan Pendidikan B40",
       "intro": "Bantuan kewangan untuk pelajar B40 yang melanjutkan ke IPTA/ILKA. Baca kriteria, kemudian lengkapkan borang ringkas di bawah.",
@@ -1167,6 +1168,8 @@
       "chooseCta": "Teruskan",
       "applyingTo": "Anda sedang memohon untuk:",
       "changeGift": "Tukar",
+      "giftCheckFailed": "Kami tidak dapat menyemak program yang anda mohon.",
+      "giftCheckRetry": "Cuba lagi",
       "seeOpen": "Lihat program yang masih dibuka",
       "alreadyApplied": "Anda sudah memohon untuk program ini pada tahun ini."
     },

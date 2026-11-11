@@ -633,7 +633,7 @@ export default function ScholarshipApplyPage() {
   return wrap(
     <form onSubmit={handleSubmit}>
       {/* Which gift this is for; "Change" (back to the chooser, edits kept) only when another is open */}
-      <ApplyingTo name={gift.name} onChange={gift.canChange ? gift.change : undefined} />
+      <ApplyingTo name={gift.name} onChange={gift.canChange ? gift.change : undefined} failed={gift.failed} onRetry={gift.retry} />
       {/* Context bar — profile is the source of truth */}
       <div className={`${PHONE_SECTION} flex items-center gap-3`}>
         <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">

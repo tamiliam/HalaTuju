@@ -930,6 +930,7 @@ See section 6. This is a measurement step, not a sprint.
 
 #### A4.1 Apply and student scholarship screens
 
+- **Status (2026-11-11):** BUILT on branch a41, not pushed, not deployed. TD-339, 341, 342, 343, 354, 454, 462 fixed. TD-338 NOT built (owner design call: refuse a second open intake per programme at the admin door, or let a choice carry the cohort). Owner phone check: apply.
 - **Scope:**
   - TD-338 / 339 (two open cohorts: duplicate choice and 409; inactive programme).
   - TD-341 (banner reads `applications[0]`).

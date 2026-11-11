@@ -23,12 +23,14 @@ import {
   confirmBankAccount,
   type ResolutionItem,
   type ApplicantDocument,
+  type DocumentLimits,
 } from '@/lib/api'
 import { countDigits } from '@/lib/actionCentre'
 // The Vircle task captures a Malaysian mobile — reuse the shared, node-tested helpers rather
 // than writing a second phone validator.
 import { formatMyMobile, isValidMyMobile, localMobileDigits } from '@/lib/sponsorAuth'
 import DocumentHelpCoach from '@/components/DocumentHelpCoach'
+import { refusalFor } from '@/lib/uploadCheck'   // TD-462: the early refusal the documents tab and Action Centre use
 
 // ── Bank-details task (post-award payout account) ─────────────────────────
 // A two-step card: (1) upload a bank statement → Gemini pre-fills the three fields;
@@ -37,11 +39,12 @@ import DocumentHelpCoach from '@/components/DocumentHelpCoach'
 // numbers are high-stakes, so the confirm step is deliberate.
 
 export function BankDetailsTask({
-  item, token, onResolved,
+  item, token, onResolved, limits = null,
 }: {
   item: ResolutionItem
   token: string | null
   onResolved: () => void
+  limits?: DocumentLimits | null   // served upload limits (null = platform default)
 }) {
   const { t, locale } = useT()
   const [busy, setBusy] = useState(false)
@@ -55,6 +58,9 @@ export function BankDetailsTask({
   // Upload the bank statement → pre-fill the three fields from the extraction.
   const onFile = async (file: File) => {
     if (!token) return
+    // TD-462: refuse a file the server would refuse (too big / not a photo or PDF) before uploading it.
+    const refusal = refusalFor(file, limits)
+    if (refusal) { setError(t(refusal.key, refusal.params)); return }
     setBusy(true)
     setError(null)
     try {

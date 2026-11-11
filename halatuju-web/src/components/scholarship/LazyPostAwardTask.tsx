@@ -22,9 +22,9 @@
  */
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import type { ResolutionItem } from '@/lib/api'
+import type { DocumentLimits, ResolutionItem } from '@/lib/api'
 
-type Common = { item: ResolutionItem; token: string | null; onResolved: () => void }
+type Common = { item: ResolutionItem; token: string | null; onResolved: () => void; limits?: DocumentLimits | null }
 type Props = ({ kind: 'bank' } & Common) | ({ kind: 'vircle'; contactPhone: string } & Common)
 type Tasks = typeof import(/* webpackChunkName: 'sd' */ '@/components/scholarship/PostAwardTasks')
 
@@ -50,7 +50,7 @@ export default function LazyPostAwardTask(props: Props) {
   }
   if (!tasks) return null
   if (props.kind === 'bank') {
-    return <tasks.BankDetailsTask item={props.item} token={props.token} onResolved={props.onResolved} />
+    return <tasks.BankDetailsTask item={props.item} token={props.token} onResolved={props.onResolved} limits={props.limits} />
   }
   return (
     <tasks.VircleTask

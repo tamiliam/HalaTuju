@@ -25,7 +25,7 @@ jest.mock('@/lib/i18n', () => ({
   LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' },
 }))
 const mockShowAuthGate = jest.fn()
-let mockAuth: { session: unknown; isAuthenticated: boolean } = { session: null, isAuthenticated: false }
+let mockAuth: { session: unknown; isAuthenticated: boolean; isAnonymous?: boolean; hasSession?: boolean } = { session: null, isAuthenticated: false }
 jest.mock('@/lib/auth-context', () => ({
   useAuth: () => ({ ...mockAuth, isAnonymous: false, showAuthGate: mockShowAuthGate }),
 }))
@@ -99,6 +99,41 @@ it('signed in: each destination once, profile and settings, Log out last; no Sig
   expect(menu.getByRole('button', { name: 'header.logout' })).toBeTruthy()
   // The current page is marked.
   expect(menu.getByRole('link', { name: 'search.nav' }).getAttribute('aria-current')).toBe('page')
+})
+
+it('TD-454: a Google student still on her NRIC step sees her name and Log out, not the signed-out header, and no account links', async () => {
+  mockAuth = { ...SIGNED_IN, isAuthenticated: false, isAnonymous: false, hasSession: true }
+  render(<AppHeader />)
+  const menu = await openPhoneMenu()
+  expect(menu.getByText('Aishwarya Kumar')).toBeTruthy()
+  expect(menu.getByRole('button', { name: 'header.logout' })).toBeTruthy()
+  expect(menu.queryByText('header.signUp')).toBeNull()
+  expect(menu.queryByText('header.login.student')).toBeNull()
+  expect(hrefs(menu)).not.toContain('/profile')
+  expect(hrefs(menu)).not.toContain('/settings')
+})
+
+it('TD-454: an unverified student gets a Finish signing in row (phone menu) that reopens the sign-in step', async () => {
+  mockAuth = { ...SIGNED_IN, isAuthenticated: false, isAnonymous: false, hasSession: true }
+  render(<AppHeader />)
+  const menu = await openPhoneMenu()
+  fireEvent.click(menu.getByRole('button', { name: 'scholarship.finishSignIn' }))
+  expect(mockShowAuthGate).toHaveBeenCalledWith('profile')
+})
+
+it('TD-454: the desktop account panel offers Finish signing in for an unverified student only', async () => {
+  mockAuth = { ...SIGNED_IN, isAuthenticated: false, isAnonymous: false, hasSession: true }
+  const { unmount } = render(<AppHeader />)
+  fireEvent.click(await screen.findByRole('button', { name: 'header.myProfile', expanded: false }))
+  fireEvent.click(screen.getByRole('button', { name: 'scholarship.finishSignIn' }))
+  expect(mockShowAuthGate).toHaveBeenCalledWith('profile')
+  unmount()
+
+  mockShowAuthGate.mockClear()
+  mockAuth = SIGNED_IN
+  render(<AppHeader />)
+  fireEvent.click(await screen.findByRole('button', { name: 'header.myProfile', expanded: false }))
+  expect(screen.queryByRole('button', { name: 'scholarship.finishSignIn' })).toBeNull()
 })
 
 it('My Bursary only for a signed-in student with a file', async () => {

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { getMyScholarshipApplications, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
+import { getMyScholarshipApplications, getScholarshipIntake, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
 import { showsActionCentre, isFundedStatus } from '@/lib/scholarship'
@@ -36,6 +36,8 @@ export default function ScholarshipApplicationPage() {
   const [severalCount, setSeveralCount] = useState(0)
   // No live or submitted application, only finished ones (rejected / withdrawn / closed …).
   const [finished, setFinished] = useState(false)
+  // TD-354: is any programme open? Asked only for the closed card; a failed ask keeps the link (as before).
+  const [anyOpen, setAnyOpen] = useState(false)
   const [award, setAward] = useState<StudentAward | null>(null)
   // Gates the award/onboarding panel. Default false: the accept→onboarding flow
   // isn't exposed yet (students are invited by a later email), so the panel stays
@@ -62,6 +64,7 @@ export default function ScholarshipApplicationPage() {
         const screen = applicationScreen(res.applications)
         setApp(screen.kind === 'one' || screen.kind === 'finished' ? screen.app : null)
         setFinished(screen.kind === 'finished')
+        if (screen.kind === 'finished') getScholarshipIntake().then((r) => { if (active) setAnyOpen(!!r.open) }, () => { if (active) setAnyOpen(true) })
         setSeveralCount(screen.kind === 'several' ? screen.count : 0)
       })
       .catch(() => { if (active) setApp(null) })
@@ -181,9 +184,11 @@ export default function ScholarshipApplicationPage() {
         <div className={PHONE_SECTION}>
           <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.finishedTitle')}</h2>
           <p className="text-ground-700">{t('scholarship.application.finishedBody')}</p>
-          <Link href="/scholarship/apply" className="mt-4 inline-block font-medium text-primary-600 hover:underline">
-            {t('scholarship.apply.seeOpen')} →
-          </Link>
+          {anyOpen && (
+            <Link href="/scholarship/apply" className="mt-4 inline-block font-medium text-primary-600 hover:underline">
+              {t('scholarship.apply.seeOpen')} →
+            </Link>
+          )}
         </div>
         {nav({ email: false, waiting: false })}
       </>,

@@ -16,7 +16,7 @@ import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, isStalePendingAction, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
 
 /** TD-458: the real (non-anonymous) user id of a session, else null. */
 const realUserId = (s: Session | null) => (s && !s.user?.is_anonymous && s.user?.id) || null
@@ -207,8 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!pendingStr) return
 
     try {
-      const { reason, courseId } = JSON.parse(pendingStr)
-      if (reason) {
+      const parsed = JSON.parse(pendingStr)
+      const { reason, courseId } = parsed
+      if (reason && !isStalePendingAction(parsed)) {   // TD-342: an abandoned sign-in does not resume
         // Restore the auth gate — modal will auto-advance based on status
         showAuthGate(reason, courseId ? { courseId } : undefined)
       }

@@ -12,7 +12,7 @@
  *
  * Pure: no React, no storage.
  */
-import { liveApplications } from './scholarship'
+import { liveApplications } from './applicationStates'
 
 export type ApplicationScreen<T> =
   | { kind: 'one'; app: T }
