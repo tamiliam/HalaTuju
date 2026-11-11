@@ -125,7 +125,7 @@ describe('missingReviewerFields (client mirror)', () => {
 
 describe('outsiderMustLeave (source users and mentors, S7a)', () => {
   it('sends a mentor away from every page but My students, Scholars and its Profile', () => {
-    for (const p of ['/admin', '/admin/organisation/mentors', '/admin/scholarship', '/admin/scholarship/4',
+    for (const p of ['/admin', '/admin/organisation/team', '/admin/scholarship', '/admin/scholarship/4',
       '/admin/programme/overview', '/admin/guide']) {
       expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, p)).toBe(true)
     }
@@ -147,7 +147,7 @@ describe('outsiderMustLeave (source users and mentors, S7a)', () => {
     expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/sources')).toBe(true)
     expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/scholarship')).toBe(false)
     for (const role of ['super', 'org_admin', 'admin', 'reviewer']) {
-      expect(outsiderMustLeave({ role, permissions: ['review'] }, '/admin/organisation/mentors')).toBe(false)
+      expect(outsiderMustLeave({ role, permissions: ['review'] }, '/admin/organisation/team')).toBe(false)
     }
     expect(outsiderMustLeave(null, '/admin')).toBe(false)
   })

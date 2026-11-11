@@ -44,7 +44,7 @@ import { Greyed } from '@/components/admin/StaffActions'
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; they are shown on the
  * mentor's person page (its Profile tab), not as table columns.
  * ⚠ THE MENTOR PARTS OF A PERSON PAGE (Sprint T3: `MentorFigures`, `MentorWork`, drawn by
- * `components/admin/person/TeamPersonPage`) ARE STAFF ONLY AND SHOW NO MEETING NOTE: figures, scholars,
+ * `components/admin/person/MentorGroupPage`) ARE STAFF ONLY AND SHOW NO MEETING NOTE: figures, scholars,
  * dates, standing, concern state. Notes stay on each scholar's file. Who reads them = who reads this table
  * (`GET admin/mentors/<id>/`).
  * ⚠ `superRole` (a leaf), never `lib/navigation`: importing the route registry here split it into a shared
@@ -100,7 +100,7 @@ export function actionOf(m: MentorRow): RemoveAction | null {
 /** The Team page's own "Also in" chips (`components/admin/TeamTables`), handed in by the route. */
 export type AlsoInChips = ComponentType<{ row: { tables?: string[]; lead?: boolean }; here: 'mentors' }>
 
-export const mentorHref = (id: number) => `/admin/organisation/reviewers/mentors/${id}`
+export const mentorHref = (id: number) => `/admin/organisation/team/mentors/${id}`
 
 /** `adding` / `onAddClose`: the Team page's Add Mentor button (on its tab row) opens the sheet here. */
 export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {

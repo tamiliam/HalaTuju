@@ -69,7 +69,7 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     // owner spotted it: shop names wrapped and the last column fell off the right edge.
     expect(pageWidthFor('/admin/spending')).toBe('wide')
     expect(pageWidthFor('/admin/sources')).toBe('wide')
-    expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
+    expect(pageWidthFor('/admin/organisation/team')).toBe('wide')
     // ⚠ The rule's central case, laid out ACROSS the page: a row of tiles, two charts side by
     // side, a full-width money chart, and three cards under it — one of which is a donut beside an
     // eleven-line legend, which at the reading width would sit on top of itself.
@@ -80,8 +80,8 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
 
   test('a detail page that runs DOWN the page reads — the longer match wins', () => {
     // Longest-prefix matching exists for this pair: a one-column profile below a table list.
-    expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
-    expect(pageWidthFor('/admin/organisation/reviewers/7')).toBe('reading')
+    expect(pageWidthFor('/admin/organisation/team')).toBe('wide')
+    expect(pageWidthFor('/admin/organisation/team/reviewers/7')).toBe('reading')
     expect(pageWidthFor('/admin/students')).toBe('wide')
     expect(pageWidthFor('/admin/students/88')).toBe('reading')
   })

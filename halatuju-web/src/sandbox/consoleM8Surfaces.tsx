@@ -30,8 +30,8 @@ import MyStudentPage from '@/app/admin/my-students/[id]/page'
 import ProgrammesPage from '@/app/admin/organisation/programmes/page'
 import AdminProfilePage from '@/app/admin/profile/page'
 import ProgrammeOverviewPage from '@/app/admin/programme/overview/page'
-import ReviewerDetailPage from '@/app/admin/organisation/reviewers/[id]/page'
-import MentorPersonPage from '@/app/admin/organisation/reviewers/mentors/[id]/page'
+import ReviewerDetailPage from '@/app/admin/organisation/team/reviewers/[id]/page'
+import MentorPersonPage from '@/app/admin/organisation/team/mentors/[id]/page'
 import AdminSetPasswordPage from '@/app/admin/set-password/page'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -393,7 +393,7 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
       + 'figures two by two on a phone, the outcomes, about them and a reopened decision.',
     routes: { ...SCOPES, '/api/v1/admin/reviewers/7/': () => REVIEWER_DETAIL },
     render: () => (
-      <Console path="/admin/organisation/reviewers/7" role={ORG_ADMIN} params={{ id: '7' }}><ReviewerDetailPage /></Console>
+      <Console path="/admin/organisation/team/reviewers/7" role={ORG_ADMIN} params={{ id: '7' }}><ReviewerDetailPage /></Console>
     ),
   },
   {
@@ -403,7 +403,7 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
       + 'Revoke and a greyed Delete, the four figures, the profile with "Not given", and their scholars as rows.',
     routes: { ...SCOPES, '/api/v1/admin/mentors/3/': () => MENTOR_PERSON },
     render: () => (
-      <Console path="/admin/organisation/reviewers/mentors/3" role={ORG_ADMIN} params={{ id: '3' }}><MentorPersonPage /></Console>
+      <Console path="/admin/organisation/team/mentors/3" role={ORG_ADMIN} params={{ id: '3' }}><MentorPersonPage /></Console>
     ),
   },
   {

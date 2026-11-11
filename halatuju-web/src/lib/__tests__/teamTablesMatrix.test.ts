@@ -23,6 +23,7 @@ import { ADMIN_KEYS, ORG_READ_KEYS, adminKeysHeld } from '@/lib/staffPermissions
 import { MENTORS_READ_ROLES, mayReadMentors } from '@/lib/pageGuard'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
 import { s1Moves, s1Served } from '@/test/s1Moves'
+import { m2aMoves } from '@/test/m2aMoves'
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessBefore.json')
 const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBefore.json')
@@ -79,7 +80,7 @@ const REVIEWER_MENU = ['programmeOverview:show', 'applications:show', 'scholars:
   'profile:show', 'guide:show', 'faq:show']
 const ORG_READ_ROWS = ['staff:show', 'reviewers:show', 'sponsors:show']
 const ORG_READ_HREFS = ['/admin/organisation', '/admin/administration', '/admin/organisation/programmes',
-  '/admin/organisation/staff', '/admin/invite', '/admin/organisation/reviewers', '/admin/sponsors']
+  '/admin/organisation/staff', '/admin/invite', '/admin/organisation/reviewers', '/admin/sponsors']   // the fixture's keys; M2a renames Team's (`test/m2aMoves.ts`)
 /** The shapes seated at Admins by KEYS, not role: each gains exactly the organisation READ rows (they lead
  *  the menu: the Organisation group comes before Programme) and nothing else. */
 const KEY_SEATED = ['reviewer_admin_keys', 'qc_spending', 'reviewer_payments_check']
@@ -165,8 +166,9 @@ describe('Team tables T1: the console access matrix', () => {
     }
     // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
     // Sprint S1's declared move (the Scholars row asks `scholars`) — see `test/s1Moves.ts`.
-    expect(measured[shape]).toEqual(s1Moves(
-      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)), shape))
+    // Sprint M2a's declared move (Team's address is `/team`) — see `test/m2aMoves.ts`.
+    expect(measured[shape]).toEqual(m2aMoves(s1Moves(
+      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)), shape)))
   })
 })
 

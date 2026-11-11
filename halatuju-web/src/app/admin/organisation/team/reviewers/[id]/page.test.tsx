@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * One reviewer, rendered (request #10, 2026-08-02; one person page since Sprint T3, 2026-11-09 — the
- * per-kind T3 checks are in `components/admin/person/TeamPersonPage.test.tsx`).
+ * per-kind T3 checks are in `components/admin/person/GroupPages*.test.tsx`).
  *
  * The block that matters most is the reopens list. A reopened decision is not by itself a mistake
  * by the reviewer — several of BrightPath's were caused by our own defects — so the reason
@@ -291,7 +291,7 @@ describe('the role gate and failure', () => {
   it('links back to the tab it came from', async () => {
     await loaded()
     expect(screen.getByText('← admin.person.backTo.reviewers').closest('a')!
-      .getAttribute('href')).toBe('/admin/organisation/reviewers?tab=reviewers')
+      .getAttribute('href')).toBe('/admin/organisation/team?tab=reviewers')
   })
 })
 

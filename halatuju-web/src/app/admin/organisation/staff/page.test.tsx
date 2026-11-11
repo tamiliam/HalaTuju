@@ -489,7 +489,7 @@ describe('an empty table says WHICH empty it is', () => {
     await pick('reviewers')          // 0 waiting, 13 sent — TOTALS.reviewers
     await waitFor(() => expect(screen.getByText('admin.invitations.allAccepted')).toBeTruthy())
     const link = screen.getByText('admin.invitations.seePeople').closest('a')!
-    expect(link.getAttribute('href')).toBe('/admin/organisation/reviewers?tab=reviewers')
+    expect(link.getAttribute('href')).toBe('/admin/organisation/team?tab=reviewers')
   })
 
   it('⚠ but says nobody has been ASKED when nobody has — the other empty', async () => {
@@ -512,7 +512,7 @@ describe('an empty table says WHICH empty it is', () => {
     render(<OrganisationInvitationsPage />)
     await waitFor(() => expect(screen.getByText('admin.invitations.allAccepted')).toBeTruthy())
     expect(screen.getByText('admin.invitations.seePeople').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers?tab=admins')
+      .toBe('/admin/organisation/team?tab=admins')
   })
 
   it('sends a benefactor to the benefactors, not to the staff directory', async () => {

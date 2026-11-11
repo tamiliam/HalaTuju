@@ -26,10 +26,31 @@ const SECURITY_HEADERS = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
 ]
 
+/*
+ * Sprint M2a (owner ruling U1, 2026-11-11): Team moved from `/admin/organisation/reviewers` to
+ * `/admin/organisation/team`, with one person page per group. Every old address is a PERMANENT
+ * redirect (308); Next keeps the query string (`?tab=`, `?table=`) and the browser keeps `#permissions`.
+ * ⚠ EXPLICIT RULES, MOST SPECIFIC FIRST, AND NO `:path*` CATCH-ALL: one would send a reviewer's
+ * `/reviewers/7` to `/team/7`, which is nobody's page. `teamRedirects.test.ts` pins the five.
+ * An old `admins/<id>?table=reviewers` link lands on the admin page, whose wrong-group rule
+ * (`lib/teamPaths.wrongGroupTarget`) sends a person who is not an admin on to their own page.
+ */
+const TEAM_REDIRECTS = [
+  { source: '/admin/organisation/reviewers', destination: '/admin/organisation/team' },
+  { source: '/admin/organisation/reviewers/admins/:id', destination: '/admin/organisation/team/admins/:id' },
+  { source: '/admin/organisation/reviewers/mentors/:id', destination: '/admin/organisation/team/mentors/:id' },
+  { source: '/admin/organisation/reviewers/:id', destination: '/admin/organisation/team/reviewers/:id' },
+  { source: '/admin/organisation/mentors', destination: '/admin/organisation/team?tab=mentors' },
+].map((r) => ({ ...r, permanent: true }))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }]
+  },
+
+  async redirects() {
+    return TEAM_REDIRECTS
   },
 
   // Enable React strict mode

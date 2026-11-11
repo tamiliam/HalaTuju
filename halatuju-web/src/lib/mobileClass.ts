@@ -188,12 +188,11 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/requests/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-request'] },
   '/admin/organisations': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/staff': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/mentors': { cls: 'can', sprint: 'M7', redirect: '/admin/organisation/reviewers' },   // T3: Team -> Mentors
   '/admin/organisation/settings': { cls: 'can', sprint: 'M7', surfaces: ['m7-org-settings'] },
-  '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m8-reviewer-detail'] },
-  '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7', surfaces: ['t3-mentor-person'] },   // T3: one person page
+  '/admin/organisation/team': { cls: 'can', sprint: 'M7' },   // M2a: Team moved here from /reviewers (redirects in next.config.js)
+  '/admin/organisation/team/reviewers/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m8-reviewer-detail'] },
+  '/admin/organisation/team/admins/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/team/mentors/[id]': { cls: 'can', sprint: 'M7', surfaces: ['t3-mentor-person'] },   // M2a: one page per group
   '/admin/programme': {
     cls: 'can', sprint: 'M7',
     surfaces: ['programme-config', 'programme-config-lean', 'programme-config-two-gifts'],

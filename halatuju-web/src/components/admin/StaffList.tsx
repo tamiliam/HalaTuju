@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { COUNTED, refusalOf, refusalWords } from '@/lib/staffRefusals'
+import { firstGroupPage } from '@/lib/teamPaths'
 import {
   deleteAdmin, deleteMentor, getStaffList, mentorAction, revokeAdmin, type StaffRow,
 } from '@/lib/admin-api'
@@ -49,11 +50,12 @@ export function unfinishedWords(work: Partial<StaffRow['work']> | undefined, t: 
 /** The greyed Delete's tip. */
 export const unfinishedReason = (row: StaffRow, t: T) => unfinishedWords(row.work, t)
 
-/** The person page, for a row in a group — read-only for a fellow organisation admin (O10). */
-const pageOf = (row: StaffRow) => {
-  if (row.suspended || row.groups.length === 0) return null
-  if (row.kind === 'mentor') return row.mentor_id ? `/admin/organisation/reviewers/mentors/${row.mentor_id}` : null
-  return `/admin/organisation/reviewers/admins/${row.id}`
+/** The person page, for a row in a group — read-only for a fellow organisation admin (O10). Sprint M2a
+ *  (U5): the FIRST group page they have, in the order Admins, Reviewers, Mentors (a pure mentor's is the
+ *  mentor page, by their mentor record); in no group, or suspended, no link. */
+export const pageOf = (row: StaffRow) => {
+  if (row.suspended) return null
+  return firstGroupPage(row.groups, { admin_id: row.kind === 'staff' ? row.id : null, mentor_id: row.mentor_id })
 }
 
 export default function StaffList({ token, canManage, viewerSuper, onChanged }: {

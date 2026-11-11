@@ -33,11 +33,11 @@ describe('the folded row does not widen any other route', () => {
     expect(activeItem('/admin/administration')?.id).toBe('programmes')
     expect(activeItem('/admin/organisation/staff')?.id).toBe('staff')
     expect(activeItem('/admin/organisation/settings')?.id).toBe('orgSettings')
-    expect(activeItem('/admin/organisation/reviewers')?.id).toBe('reviewers')
+    expect(activeItem('/admin/organisation/team')?.id).toBe('reviewers')
   })
   it('a role that could not open Invitations / People / Settings still cannot', () => {
     for (const role of ['qc', 'reviewer', 'mentor']) {
-      for (const path of ['/admin/organisation/staff', '/admin/organisation/reviewers', '/admin/organisation/settings']) {
+      for (const path of ['/admin/organisation/staff', '/admin/organisation/team', '/admin/organisation/settings']) {
         expect(mayOpen(path, { role })).toBe(false)
       }
     }

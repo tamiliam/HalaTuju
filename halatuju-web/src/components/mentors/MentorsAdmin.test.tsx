@@ -15,7 +15,7 @@
  *   mentor scholars. Suspend and Delete are the Staff tab's (O3). Nothing where not `manageable`.
  * - The mentor parts: figures, current and past scholars, standing and concern chips, '-' for no gap; never a
  *   meeting note (the payload carries none; the parts draw only what they are given). The header, the
- *   profile and the page's gates are `components/admin/person/TeamPersonPage.test.tsx`'s.
+ *   profile and the page's gates are `components/admin/person/GroupPages.test.tsx`'s.
  */
 import { useState } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -91,7 +91,7 @@ describe('Team → Mentors', () => {
   it('draws the columns like the other tabs: Name, the work figures, Status, Last seen, Action', async () => {
     render(<TeamMentors />)
     const r = await screen.findByTestId('mentor-row-1')
-    expect(within(r).getByTestId('mentor-link-1').getAttribute('href')).toBe('/admin/organisation/reviewers/mentors/1')
+    expect(within(r).getByTestId('mentor-link-1').getAttribute('href')).toBe('/admin/organisation/team/mentors/1')
     expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
       'admin.nameHeader', 'admin.team.colAlsoIn',
       'admin.mentors.col.scholarsNow', 'admin.mentors.col.meetings90', 'admin.mentors.col.lastMeeting',
@@ -301,7 +301,7 @@ describe('Team → Mentors', () => {
     expect(languagesLine({ ...ACTIVE, languages: { en: '', ms: '', ta: '' }, other_language: 'Mandarin' })).toBe('Mandarin')
     expect([ACTIVE, INVITED, INACTIVE, STAFF, STOPPED].map(listed)).toEqual([true, false, true, true, false])
     expect([ACTIVE, INACTIVE, STAFF, STOPPED].map(actionOf)).toEqual(['remove', null, 'stop', null])
-    expect(mentorHref(7)).toBe('/admin/organisation/reviewers/mentors/7')
+    expect(mentorHref(7)).toBe('/admin/organisation/team/mentors/7')
   })
 })
 
@@ -381,7 +381,7 @@ describe('M1b: a staff mentor\'s Remove from Mentors on their page (StaffMentorR
 
 // ── Invitations I4 (2026-11-08): the gifts a mentor mentors in, shown and edited. Merged with Sprint T3
 // (2026-11-09): the old mentor detail page's gifts line is now `MentorGifts`, in the person page's header;
-// the page's `patch` is stood in for by local state here (`TeamPersonPage.test.tsx` has the page). ──
+// the page's `patch` is stood in for by local state here (`GroupPages.test.tsx` has the page). ──
 describe('Invitations I4: a mentor\'s gifts on their person page (MentorGifts)', () => {
   const DETAIL: api.MentorDetail = {
     mentor: ACTIVE, mentoring_since: '2026-09-02T00:00:00Z', sees_scholars: true,

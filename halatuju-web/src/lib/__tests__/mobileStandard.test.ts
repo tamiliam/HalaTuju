@@ -1332,7 +1332,7 @@ const PILL_SITES: Record<string, number> = {
   'src/components/admin/PanelTabs.tsx': 3, 'src/components/ActionCentre.tsx': 4,
   'src/components/RequirementsCard.tsx': 4, 'src/components/CourseCard.tsx': 1,
   'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
-  'src/app/admin/organisation/reviewers/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
+  'src/app/admin/organisation/team/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
   'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
   'src/components/admin/ScholarActivity.tsx': 1,   // sprint P1: the Activity tab's All · Notes · System filter
 }

@@ -22,7 +22,7 @@ import {
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
  * the one local rule, Quality check bringing Applications, only reflects what the server answers.
  *
- * Loaded in the person page's own chunk (`'ad'`, `admin/person/TeamPersonPage`, sprint T3) — no route entry carries it.
+ * Loaded in the person page's own chunk (`'ad'`, `admin/person/{Admin,Reviewer}GroupPage`, sprint M2a) — no route entry carries it.
  *
  * Under the card, **Changes** (2026-10-22): the same GET's `history`, re-read after every save so the
  * new line appears. A page that already holds the GET (the admin person page draws its header from

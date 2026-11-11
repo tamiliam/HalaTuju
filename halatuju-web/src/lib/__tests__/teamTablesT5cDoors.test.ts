@@ -28,6 +28,7 @@ import { mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
 import { pyDictOfSeqs, readApi } from '@/test/apiSource'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
 import { s1Moves, s1Served } from '@/test/s1Moves'
+import { m2aMoves } from '@/test/m2aMoves'
 
 const PAYLOADS = path.join(__dirname, 'fixtures', 't5cServedPayloads.json')
 const BEFORE = path.join(__dirname, 'fixtures', 't5cDoorsMenusBefore.json')
@@ -102,8 +103,9 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
 
   // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
   // Sprint S1's declared move and served payload (the Scholars row asks `scholars`) — see `test/s1Moves.ts`.
+  // Sprint M2a's declared move (Team's address is `/team`) — see `test/m2aMoves.ts`.
   const after = (shape: string) =>
-    s1Moves(t5cP5Moves(before[shape], effectiveRole(SHAPES[shape]), isPlatform), shape)
+    m2aMoves(s1Moves(t5cP5Moves(before[shape], effectiveRole(SHAPES[shape]), isPlatform), shape))
   const served = (shape: string) => s1Served(shape, SHAPES[shape])
 
   it.each(Object.keys(SHAPES))('%s, served today (with page_keys): identical to before', (shape) => {

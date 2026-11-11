@@ -7,6 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { mayOpen } from '@/lib/pageGuard'
+import { teamTabHref } from '@/lib/teamPaths'
 import {
   cancelInvitation, getInvitations, inviteSponsor,
   type AdminItem, type InvitationKind, type InvitationRow, type InvitationsPayload,
@@ -273,7 +274,7 @@ export default function OrganisationInvitationsPage() {
   // ⚠ THE TAB IS PART OF THE ANSWER (owner, 2026-09-09). Sent bare, this link dropped an
   // org_admin who had just asked about ADMINS onto the Reviewers tab — a different question.
   const peopleHref = kind === 'sponsors' ? '/admin/sponsors'
-    : `/admin/organisation/reviewers?tab=${kind === 'admins' ? 'admins' : 'reviewers'}`
+    : teamTabHref(kind === 'admins' ? 'admins' : 'reviewers')
   const emptyWords = total === 0 ? t('admin.invitations.noneInKind') : (
     <>
       {t('admin.invitations.allAccepted')}{' '}

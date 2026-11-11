@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
+import { TEAM_PATH, groupPageHref } from '@/lib/teamPaths'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import {
@@ -88,7 +89,7 @@ export default function AdminReviewersList() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   // UX only — the endpoint is the fence. This just avoids rendering a table that would 403.
-  const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
+  const mayView = mayOpen(TEAM_PATH, role)   // T1: with the served tables
   // The same pill idiom the Sponsors and Sources screens use, so the console has one way of doing
   // this. Reviewers is the default: "who can take this case?" is the daily question, and both
   // "who still has access?" and "what are volunteers told?" are deliberate second clicks.
@@ -135,7 +136,7 @@ export default function AdminReviewersList() {
   const personHref = (a: AdminItem) =>
     a.is_active && (a.role === 'org_admin' || a.manageable !== false)
       && (PERSON_PAGE_ROLES as readonly string[]).includes(a.role)
-      ? `/admin/organisation/reviewers/admins/${a.id}` : null
+      ? groupPageHref('admins', { admin_id: a.id }) : null
   // T3 (owner): no permission column on the Team tables — permissions are set only on the person's own
   // page, Permissions tab (one section per table they sit in). The NAME opens it, as before.
   // T2: the Add sheet (which table) and the Remove confirm (who, from which table).
@@ -304,7 +305,7 @@ export default function AdminReviewersList() {
                   <div className="flex min-w-0 items-start gap-2">
                     <StaffAvatar name={r.name} photoUrl={r.photo_url} size={32} />
                     <div className="min-w-0">
-                      <Link href={`/admin/organisation/reviewers/${r.id}`}
+                      <Link href={`${TEAM_PATH}/reviewers/${r.id}`}
                         className="text-sm font-semibold text-primary-600 hover:text-primary-800">
                         {r.name || '—'}
                       </Link>
@@ -384,7 +385,7 @@ export default function AdminReviewersList() {
                       <div className="flex items-start gap-2">
                         <StaffAvatar name={r.name} photoUrl={r.photo_url} size={28} />
                         <div className="min-w-0">
-                          <Link href={`/admin/organisation/reviewers/${r.id}`}
+                          <Link href={`${TEAM_PATH}/reviewers/${r.id}`}
                             className="font-medium text-primary-600 hover:text-primary-800">
                             {r.name || '—'}
                           </Link>

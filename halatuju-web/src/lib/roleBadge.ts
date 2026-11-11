@@ -3,7 +3,7 @@
  *
  * ── WHY THIS FILE EXISTS ──
  * Three files declared this mapping independently: `components/admin/StaffAdmin.tsx`,
- * `app/admin/organisation/reviewers/page.tsx` and `app/admin/guide/page.tsx` — the last with the
+ * `app/admin/organisation/team/page.tsx` and `app/admin/guide/page.tsx` — the last with the
  * comment *"Reuse the Administration panel's role-badge palette so a role reads the same colour
  * everywhere."* A comment is not a mechanism. F4's codemod converted one copy's `amber` to
  * `caution` and left another's alone, and the three silently stopped agreeing: the same role would

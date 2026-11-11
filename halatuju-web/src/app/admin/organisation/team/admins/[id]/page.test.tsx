@@ -6,7 +6,7 @@
  * as everybody's, Profile and Permissions. The card itself is `PermissionEditor.test.tsx`'s subject;
  * here what matters is the header (no role word, D9), the gate, the single request (the page hands its
  * GET to the card), and the way back to the Admins tab. The per-kind checks are in
- * `components/admin/person/TeamPersonPage.test.tsx`.
+ * `components/admin/person/GroupPages*.test.tsx`.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import AdminPersonPage from './page'
@@ -127,7 +127,7 @@ it('has the two tabs, opens on Profile, and hands the card the GET it already ma
 it('goes back to the Admins tab of Team', async () => {
   await loaded()
   expect(screen.getByText('← admin.person.backTo.admins').closest('a')!.getAttribute('href'))
-    .toBe('/admin/organisation/reviewers?tab=admins')
+    .toBe('/admin/organisation/team?tab=admins')
 })
 
 it('tells an admin or finance viewer they may not, and asks the server nothing', async () => {

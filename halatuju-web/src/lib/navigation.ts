@@ -129,17 +129,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Organisation scope, not programme — a `PartnerAdmin` belongs to a tenant and has no
       // programme field at all (request #10, 2026-08-02).
       //
-      // ⚠ THE ROUTE STAYS `/admin/organisation/reviewers` THOUGH THE LABEL IS NOW "People", for
-      // exactly the reason the Staff → Invitations rename kept its own route: bookmarks, the
-      // highlight rules and the ⌘K key all keep working, and only the word changed. The `id` is
-      // likewise still `reviewers` — it is the snapshot key, never derived from the label.
-      //
-      // ⚠ TEAM TABLES T3 (2026-11-03): `/admin/organisation/mentors` REDIRECTS HERE (Team → Mentors) and is
-      // matched to this row, so a bookmark lights Team. Who sees the Mentors TAB and the mentor detail
-      // page is NOT this row's rule: it is `MENTORS_READ_ROLES` (the server's `mentor_invite.may_read`).
-      { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
+      // ⚠ SPRINT M2a (owner U1, 2026-11-11): Team lives at `/admin/organisation/team`. The old
+      // `/admin/organisation/reviewers/...` and `/admin/organisation/mentors` addresses are PERMANENT
+      // redirects in `next.config.js` — they never render, so this row matches nothing else. The `id`
+      // is still `reviewers` — it is the snapshot key, never derived from the label or the route.
+      // Who sees the Mentors TAB and a mentor page is NOT this row's rule: it is `MENTORS_READ_ROLES`
+      // (the server's `mentor_invite.may_read`).
+      { id: 'reviewers', href: '/admin/organisation/team', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        adminKeys: ORG_READ_KEYS, door: 'team_read', gate: { mode: 'always' }, match: ['/admin/organisation/mentors'] },
+        adminKeys: ORG_READ_KEYS, door: 'team_read', gate: { mode: 'always' } },
       // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
       // before the people who fund them, in the order the work actually flows.
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',

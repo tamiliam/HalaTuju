@@ -12,7 +12,9 @@ import { ReviewerFigures } from './ReviewerParts'
 import type { TeamPersonData } from './useTeamPerson'
 
 /**
- * Sprint T3 (D9, M1, M4, M5): the header card every person page shares.
+ * Sprint T3 (D9, M1, M4, M5): the header card every person page shares. Since M2a (U2) each group page
+ * hands it only its own group's detail, so a part another group brings (figures, Covers, Pause) is drawn on
+ * that group's page, and the chips link there (U4).
  *
  *   Name                                 ← O11 (owner, 2026-11-10): no email under it; it is in About
  *   [Admin] [Reviewer] [Mentor]          ← the tables they sit in: the "Also in" chips' own labels
@@ -26,7 +28,7 @@ import type { TeamPersonData } from './useTeamPerson'
  * ⚠ LAST SEEN IS RELATIVE (M1), the exact date and time in `title`. A NULL `last_seen_at` is "not
  * recorded", never "never signed in"; somebody with no sign-in recorded reads the Invited wording.
  */
-export default function PersonHeader({ data, token, mayManage, actions, mentorFigures, mentorGifts, onPatch }: {
+export default function PersonHeader({ data, token, mayManage, actions, mentorFigures, mentorGifts, onPatch, chips }: {
   data: TeamPersonData
   token: string | null
   mayManage: boolean
@@ -37,6 +39,8 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
   /** Invitations I4: the gifts a mentor mentors in (the Mentors table's chunk), or null. */
   mentorGifts?: ReactNode
   onPatch: (next: (d: TeamPersonData) => TeamPersonData) => void
+  /** Sprint M2a (U4): the page's own group, and the other groups' pages its chips link to. */
+  chips?: { current: string; hrefs: Partial<Record<string, string>> }
 }) {
   const { t } = useT()
   const { person: p, reviewer } = data
@@ -67,7 +71,8 @@ export default function PersonHeader({ data, token, mayManage, actions, mentorFi
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-1.5">
           <h1 className="text-lg sm:text-xl font-bold [overflow-wrap:anywhere]">{p.name || p.email}</h1>
-          <TableChips tables={p.tables} lead={p.lead} testId="person-tables" />
+          <TableChips tables={p.tables} lead={p.lead} testId="person-tables" current={chips?.current}
+            hrefs={chips?.hrefs} />
           <p className="text-sm text-ground-500 flex flex-wrap items-center gap-x-1.5 gap-y-1" data-testid="person-facts">
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STAFF_STATUS_TONE[status]}`}
               data-testid="person-status">{t(`admin.reviewers.status.${status}`)}</span>

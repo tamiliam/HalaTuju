@@ -1,5 +1,5 @@
 /**
- * Reviewer detail — the pure decisions behind `/admin/organisation/reviewers[/id]` (#10, 2026-08-02).
+ * Reviewer detail — the pure decisions behind `/admin/organisation/team[/reviewers/id]` (#10, 2026-08-02).
  *
  * The server is authoritative on every figure, and on who may read this page at all. What lives
  * here is only what the SCREEN has to decide: how to phrase a measurement we may not have, what

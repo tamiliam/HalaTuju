@@ -266,7 +266,7 @@ describe('visibleNav per role', () => {
     for (const role of ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner'] as const) {
       expect(canAccess('/admin/my-students', role, [])).toBe(false)
     }
-    for (const href of ['/admin', '/admin/organisation/mentors',
+    for (const href of ['/admin', '/admin/organisation/team',
       '/admin/programme/overview', '/admin/scholarship', '/admin/scholarship/104', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'mentor', [])).toBe(false)
     }
@@ -606,9 +606,9 @@ describe('visibleNav groups', () => {
   // per-programme SCOPING. The shape sprint deleted that slot rather than renaming it again:
   // which gift a reviewer covers is a FIELD on that reviewer, so it belongs on their record here.
   it('there is ONE reviewer row, and it is the organisation directory', () => {
-    const rows = NAV_ITEMS.filter((i) => i.href.includes('reviewers'))
+    const rows = NAV_ITEMS.filter((i) => i.href.includes('reviewers') || i.href.includes('/organisation/team'))
     expect(rows.map((i) => i.id)).toEqual(['reviewers'])
-    expect(rows[0].href).toBe('/admin/organisation/reviewers')
+    expect(rows[0].href).toBe('/admin/organisation/team')   // M2a: Team moved (U1)
     expect(rows[0].scope).toBe('organisation')
     expect(rows[0].placeholder).toBeFalsy()
   })

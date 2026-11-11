@@ -1024,7 +1024,7 @@ describe('the F4 semantic corrections the codemod could not make', () => {
     // silently stopped agreeing — the same role would have rendered one colour in Administration
     // and another in the Manual. A comment is not a mechanism; a shared module is.
     for (const f of ['src/components/admin/StaffAdmin.tsx',
-                     'src/app/admin/organisation/reviewers/page.tsx',
+                     'src/app/admin/organisation/team/page.tsx',
                      'src/app/admin/guide/page.tsx']) {
       expect(read(f)).toMatch(/roleBadgeClass/)
       // …and none of them may re-declare a palette of its own.

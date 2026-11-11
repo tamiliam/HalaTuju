@@ -146,7 +146,7 @@ describe('what the table shows', () => {
   it('opens each reviewer\'s own record from their name', async () => {
     await loaded()
     expect(ui().getByText('Kavitha Raman').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers/5')
+      .toBe('/admin/organisation/team/reviewers/5')
   })
 
   it('shows no languages on the table or the phone cards (owner 2026-11-07: on the profile)', async () => {
@@ -446,9 +446,9 @@ describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', 
     await waitFor(() => expect(screen.getAllByText('Arun Pillai').length).toBeGreaterThan(0))
   }
 
-  it('links an active Admin to /admin/organisation/reviewers/admins/<id>', async () => {
+  it('links an active Admin to /admin/organisation/team/admins/<id>', async () => {
     await openAdmins()
-    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/reviewers/admins/14')
+    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/team/admins/14')
   })
 
   it('⚠ leaves a revoked person as plain text', async () => {
@@ -470,13 +470,13 @@ describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', 
   it('O10: links the organisation admin for a super, whom the server lets manage them', async () => {
     viewerRole = { role: 'reviewer', is_super_admin: true }
     await openWithLead({ ...LEAD, manageable: true })
-    expect(hrefOf('Lead Person')).toBe('/admin/organisation/reviewers/admins/21')
+    expect(hrefOf('Lead Person')).toBe('/admin/organisation/team/admins/21')
   })
 
   it('O10 (M1b): an organisation admin may open a fellow organisation admin\'s page — it is read-only there', async () => {
     await openWithLead({ ...LEAD, manageable: false })
-    expect(hrefOf('Lead Person')).toBe('/admin/organisation/reviewers/admins/21')
-    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/reviewers/admins/14')   // the rest unchanged
+    expect(hrefOf('Lead Person')).toBe('/admin/organisation/team/admins/21')
+    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/team/admins/14')   // the rest unchanged
   })
 
   it('O10: a non-lead row the server says is not manageable still links nobody', async () => {
@@ -711,7 +711,7 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(row).queryByText('admin.team.edit.admins')).toBeNull()
     expect(screen.queryByText('admin.team.colKeys.admins')).toBeNull()
     expect(within(row).getByText('Rohini Thiru').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers/admins/31')
+      .toBe('/admin/organisation/team/admins/31')
   })
 
   it('Remove asks first, says what it does from the dry run, and only then removes', async () => {

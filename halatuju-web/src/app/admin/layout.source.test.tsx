@@ -42,7 +42,7 @@ const SOURCE = { role: 'source_partner', is_admin: true, is_super_admin: false, 
 beforeEach(() => { jest.clearAllMocks(); mockRole = SOURCE })
 
 it.each([
-  '/admin', '/admin/students', '/admin/organisation', '/admin/organisation/staff', '/admin/organisation/reviewers',
+  '/admin', '/admin/students', '/admin/organisation', '/admin/organisation/staff', '/admin/organisation/team',
   '/admin/sources', '/admin/sponsors', '/admin/sponsors/4', '/admin/requests', '/admin/billing', '/admin/payments',
   '/admin/programme', '/admin/contracts', '/admin/guide', '/admin/faq',
 ])('sends a source user away from %s before the page or the shell mounts', (path) => {
@@ -77,7 +77,7 @@ const MENTOR_LANDING = '/admin/organisation/programmes'
 const MENTOR = { role: 'mentor', is_admin: true, is_super_admin: false, permissions: [] }
 
 it.each([
-  '/admin', '/admin/organisation/mentors', '/admin/organisation/staff',
+  '/admin', '/admin/organisation/team', '/admin/organisation/staff',
   '/admin/programme/overview', '/admin/scholarship', '/admin/scholarship/104', '/admin/guide',
 ])('sends a mentor away from %s to Programmes before the page or the shell mounts', (path) => {
   mockRole = MENTOR

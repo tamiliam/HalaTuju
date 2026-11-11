@@ -7,7 +7,7 @@
  * click (Suspend while they mentor scholars, Delete while work is unfinished).
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import StaffList, { unfinishedReason } from './StaffList'
+import StaffList, { pageOf, unfinishedReason } from './StaffList'
 import * as api from '@/lib/admin-api'
 
 jest.mock('next/link', () => ({
@@ -79,11 +79,22 @@ describe('the rows', () => {
   it('links a manager to the person page (a mentor login by its Mentors record), never a suspended row', async () => {
     await draw()
     expect(line(1).getByText('Aruna Example').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers/admins/1')
+      .toBe('/admin/organisation/team/admins/1')
     expect(line(3).getByText('Chitra Example').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers/mentors/30')
+      .toBe('/admin/organisation/team/mentors/30')
     expect(line(5).getByText('Elan Example').closest('a')).toBeNull()
     expect(line(4).getByText('Devi Example').closest('a')).toBeNull()      // No group: no group page
+  })
+
+  it('Sprint M2a (U5): pageOf is the first group page in the order Admins, Reviewers, Mentors', () => {
+    const team = '/admin/organisation/team'
+    expect(pageOf(row({ groups: ['mentors', 'reviewers', 'admins'], mentor_id: 9 }))).toBe(`${team}/admins/1`)
+    expect(pageOf(row({ groups: ['mentors', 'reviewers'], mentor_id: 9 }))).toBe(`${team}/reviewers/1`)
+    expect(pageOf(row({ groups: ['mentors'], mentor_id: 9 }))).toBe(`${team}/mentors/9`)
+    expect(pageOf(row({ kind: 'mentor', id: 40, groups: ['mentors'], mentor_id: 30 }))).toBe(`${team}/mentors/30`)
+    expect(pageOf(row({ groups: [] }))).toBeNull()                               // No group: no page
+    expect(pageOf(row({ groups: ['mentors'], mentor_id: null }))).toBeNull()     // no Mentors record to open
+    expect(pageOf(row({ groups: ['admins'], suspended: true }))).toBeNull()
   })
 
   it('a reader who may not manage gets the list with no links and no actions', async () => {

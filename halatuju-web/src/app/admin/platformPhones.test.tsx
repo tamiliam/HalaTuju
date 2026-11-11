@@ -4,7 +4,7 @@
  * M1a review fix 7 (owner O16): the group tables show no phone, but the platform's own staff screens
  * (Organisations, Partners) are not group tables and keep theirs — they ask the Admins endpoint for it
  * (`getAdmins(options, true)` → `?phones=1`). The Team page's Admins tab does not ask
- * (`organisation/reviewers/page.test.tsx`).
+ * (`organisation/team/page.test.tsx`).
  */
 import { render, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api'

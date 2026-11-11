@@ -42,7 +42,7 @@ export const WIDTH_CLASS: Record<PageWidth, string> = {
 export const WIDE_ROUTES: readonly string[] = [
   '/admin/scholarship',              // Applications
   '/admin/scholars',                 // Scholars list + file (summary cards beside the activity log)
-  '/admin/organisation/reviewers',
+  '/admin/organisation/team',
   '/admin/organisation/staff',
   '/admin/organisation/programmes',  // gift list + intake years
   '/admin/programme/years',
@@ -86,7 +86,7 @@ export const WIDE_ROUTES: readonly string[] = [
 export const READING_ROUTES: readonly string[] = [
   '/admin/students/',                // one student — a profile, read downwards
   '/admin/contracts/',               // one contract template — a long document
-  '/admin/organisation/reviewers/',  // one reviewer — a profile and a short history
+  '/admin/organisation/team/',       // one person's group page — a profile and a short history
 ]
 
 /** The width for a pathname. Unlisted → 'reading', which is the safe default: a page that is
