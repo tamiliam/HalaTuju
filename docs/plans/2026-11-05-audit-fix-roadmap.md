@@ -963,6 +963,7 @@ See section 6. This is a measurement step, not a sprint.
 - **Model:** Sonnet.
 - **Gates:** Fresh review.
 - **Deploy:** G13.
+- **Status:** built 2026-11-11 on branch a42 (not pushed). TD-388, TD-455, TD-463, TD-346 fixed; TD-456 built (Tamil 360 px mobile-check still to run; the number inside the merit bar stays 9 px). TD-077 not built (needs a Stitch-approved badge). TD-469 and TD-472 not built (owner's call, D10).
 
 #### A4.3 Phone layout leftovers
 

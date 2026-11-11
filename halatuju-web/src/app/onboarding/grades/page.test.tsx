@@ -23,7 +23,7 @@ import { KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_STREAM } from '@/lib/storage'
 const push = jest.fn()
 
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en', contentLocale: 'en' }) }))
 jest.mock('@/lib/api', () => ({
   calculateMerit: jest.fn().mockResolvedValue({ academic_merit: 80, final_merit: 85 }),
 }))

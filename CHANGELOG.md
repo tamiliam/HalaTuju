@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.2 Language - five language fixes (2026-11-11)
+
+Branch a42 (not pushed, not deployed). TD-388: `/onboarding/grades` and `/settings` render `contentLocale`, so a
+Malay or Tamil reader no longer gets a hydration mismatch (stpm-grades already did). TD-455: the saved page's three
+toasts come from `saved.*`. TD-456: 27 `courseDetail.*` keys replace the English labels on both course pages, the
+STPM school filters, Subject Key and the course card; the card's merit label row is `text-xs`. TD-463: the award
+preview also serves `payment_schedule_parts`, and the page composes the schedule sentence in the reader's language
+(the signed agreement still freezes the English line). TD-346: "applications open" is now "applications with us" in
+all three languages. Not built: TD-077 (needs a Stitch-approved badge), TD-469 and TD-472 (owner's call).
+Tests: `a42Language.test.ts`, `settings/page.hydration.test.tsx`, one API test in `test_award_signing_progress.py`.
+
 ### A4.1 - apply and student scholarship screens (2026-11-11)
 
 Branch a41 (not pushed, not deployed). No migration.

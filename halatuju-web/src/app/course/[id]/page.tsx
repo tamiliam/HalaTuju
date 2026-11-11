@@ -111,7 +111,7 @@ export default function CourseDetailPage() {
                     rel="noopener noreferrer"
                     className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                   >
-                    More Info
+                    {t('courseDetail.moreInfo')}
                   </a>
                 </div>
               )}
@@ -160,18 +160,18 @@ export default function CourseDetailPage() {
                 {t('courseDetail.quickFacts')}
               </h2>
               <div className="space-y-4">
-                <InfoRow label="Level" value={course.level} />
-                <InfoRow label="Field" value={getFieldName(course.field_key)} />
-                {!isPreU && <InfoRow label="Department" value={course.department} />}
+                <InfoRow label={t('courseDetail.level')} value={course.level} />
+                <InfoRow label={t('courseDetail.field')} value={getFieldName(course.field_key)} />
+                {!isPreU && <InfoRow label={t('courseDetail.department')} value={course.department} />}
                 {course.semesters && (
-                  <InfoRow label="Duration" value={`${course.semesters} semesters`} />
+                  <InfoRow label={t('courseDetail.duration')} value={t('courseDetail.semestersValue', { count: String(course.semesters) })} />
                 )}
-                {!isPreU && <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />}
+                {!isPreU && <InfoRow label={t('courseDetail.wbl')} value={course.wbl ? t('courseDetail.yes') : t('courseDetail.no')} />}
                 {merit_cutoff != null && (
                   <div className="pt-2 mt-2 border-t border-ground-100">
                     <div className="flex justify-between items-center">
                       <span className="text-ground-500 text-sm">
-                        {isMatGred ? t('courseDetail.maxGradePoints') : 'Avg. Merit'}
+                        {isMatGred ? t('courseDetail.maxGradePoints') : t('courseDetail.avgMerit')}
                       </span>
                       <span className={`font-medium text-sm ${
                         isMatGred
@@ -270,6 +270,7 @@ function InstitutionList({ institutions }: { institutions: Institution[] }) {
 }
 
 function InstitutionCard({ institution }: { institution: Institution }) {
+  const { t } = useT()
   // ⚠ THE STATE TINT IS GONE (Layer 1 F6). It gave a pastel card background to six of Malaysia's
   // sixteen states and `bg-gray-50` to the other ten, so the colour asserted a distinction that
   // stopped a third of the way through the set — and the codemod had just renamed four of the six
@@ -377,7 +378,7 @@ function InstitutionCard({ institution }: { institution: Institution }) {
               rel="noopener noreferrer"
               className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors"
             >
-              More Info
+              {t('courseDetail.moreInfo')}
             </a>
           )}
         </div>

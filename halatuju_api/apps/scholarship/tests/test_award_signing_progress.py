@@ -66,6 +66,18 @@ class TestAwardSigningProgress(TestCase):
 
     # ── The quiz ──────────────────────────────────────────────────────────────
 
+    def test_preview_serves_the_schedule_parts_beside_the_english_line(self):
+        """TD-463: the web composes the schedule sentence from these parts in the reader's language;
+        the English one-liner stays (it is what the signed agreement freezes)."""
+        app = self._offered('sp0')
+        prev = self._preview(app)
+        parts = prev['payment_schedule_parts']
+        self.assertEqual(set(parts), {'monthly_amount', 'count', 'start_month', 'total'})
+        self.assertIsInstance(parts['count'], int)
+        self.assertIn(f"RM{parts['monthly_amount']} per month", prev['payment_schedule'])
+        self.assertIn(f"{parts['count']} payments", prev['payment_schedule'])
+        self.assertIn(f"total RM{parts['total']}", prev['payment_schedule'])
+
     def test_quiz_passed_on_this_template_is_read_back(self):
         app = self._offered('sp1')
         self.assertTrue(self._preview(app)['comprehension_passed'])

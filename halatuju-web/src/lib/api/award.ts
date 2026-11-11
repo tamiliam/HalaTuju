@@ -5,6 +5,7 @@
 import { apiRequest } from './client'
 import type { ApiOptions } from './client'
 import type { ScholarshipApplication } from './application'
+import type { PaymentScheduleParts } from '@/lib/awardSchedule'
 
 // ── Phase E/F: student award + onboarding (F8b) ──────────────────────────
 // The student's funded-studies offer. The sponsor's identity is never exposed
@@ -29,6 +30,8 @@ export interface StudentAward {
 export interface BursaryPreview {
   award_amount: string | null
   payment_schedule: string
+  /** TD-463: the schedule's parts, composed into a sentence in the reader's language. Absent on an older API. */
+  payment_schedule_parts?: PaymentScheduleParts | null
   institution_name: string
   course_name: string
   progress_standard: string

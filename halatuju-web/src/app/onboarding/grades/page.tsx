@@ -58,7 +58,7 @@ function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
 
 export default function GradesInputPage() {
   const router = useRouter()
-  const { t, locale } = useT()
+  const { t, contentLocale } = useT()
 
   // Stream selection (merged into this page).
   // ⚠ NO DEFAULT — DO NOT PUT 'science' BACK. It used to start here, and the four stream slots
@@ -173,9 +173,9 @@ export default function GradesInputPage() {
   const streamPool = useMemo(
     () =>
       [...(SPM_STREAM_POOLS[stream] || [])].sort((a, b) =>
-        getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
+        getSubjectName(a.id, contentLocale).localeCompare(getSubjectName(b.id, contentLocale))
       ),
-    [stream, locale]
+    [stream, contentLocale]
   )
   const selectedAliranIds = aliranSubjects.filter(Boolean)
   const coreIdsList = SPM_CORE_SUBJECTS.map((s) => s.id)
@@ -184,9 +184,9 @@ export default function GradesInputPage() {
   const elektifPool = useMemo(() => {
     const excluded = new Set([...coreIdsList, ...selectedAliranIds])
     return SPM_ALL_ELECTIVE_SUBJECTS.filter((s) => !excluded.has(s.id)).sort((a, b) =>
-      getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
+      getSubjectName(a.id, contentLocale).localeCompare(getSubjectName(b.id, contentLocale))
     )
-  }, [selectedAliranIds, locale])
+  }, [selectedAliranIds, contentLocale])
 
   const addElektifSlot = () => {
     if (elektifSlots.length < MAX_SPM_ELECTIVES) {
@@ -320,7 +320,7 @@ export default function GradesInputPage() {
             {SPM_CORE_SUBJECTS.map((subject) => (
               <CoreSubjectGrade
                 key={subject.id}
-                label={getSubjectName(subject.id, locale)}
+                label={getSubjectName(subject.id, contentLocale)}
                 value={grades[subject.id] || ''}
                 onChange={(grade) => handleGradeChange(subject.id, grade)}
                 onClear={() => handleGradeClear(subject.id)}
@@ -538,7 +538,7 @@ function CompactSubjectRow({
   onGradeChange: (grade: string) => void
   onRemove: () => void
 }) {
-  const { t, locale } = useT()
+  const { t, contentLocale } = useT()
   const excludeSet = new Set(excludeIds)
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
@@ -552,7 +552,7 @@ function CompactSubjectRow({
       >
         <option value="">{t('onboarding.selectSubject')}</option>
         {options.map((s) => (
-          <option key={s.id} value={s.id}>{getSubjectName(s.id, locale)}</option>
+          <option key={s.id} value={s.id}>{getSubjectName(s.id, contentLocale)}</option>
         ))}
       </select>
 

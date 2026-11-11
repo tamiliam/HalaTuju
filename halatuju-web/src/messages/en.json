@@ -843,7 +843,34 @@
     "otherSubjects": "{grade} or better in {count} more subject(s) not already counted",
     "exceptSubjects": "not counting",
     "oneOf": "one of these:",
-    "orAlternative": "or"
+    "orAlternative": "or",
+    "level": "Level",
+    "field": "Field",
+    "department": "Department",
+    "duration": "Duration",
+    "semestersValue": "{count} semesters",
+    "wbl": "WBL",
+    "yes": "Yes",
+    "no": "No",
+    "category": "Category",
+    "stream": "Stream",
+    "streamScience": "Science",
+    "streamArts": "Arts",
+    "streamBoth": "Science / Arts",
+    "avgMerit": "Avg. Merit",
+    "moreInfo": "More Info",
+    "loadingCourse": "Loading course details...",
+    "notFoundTitle": "Course not found",
+    "backToDashboard": "Back to Dashboard",
+    "subjectKey": "Subject Key",
+    "allStates": "All States",
+    "allDistricts": "All Districts",
+    "noSchools": "No schools match the selected filters.",
+    "chanceHigh": "High Chance",
+    "chanceFair": "Fair Chance",
+    "chanceLow": "Low Chance",
+    "meritYou": "You",
+    "meritNeed": "Need"
   },
   "saved": {
     "title": "Saved Courses",
@@ -853,7 +880,10 @@
     "browseCourses": "Browse Courses",
     "remove": "Remove from saved",
     "noSpm": "No SPM courses saved yet.",
-    "noStpm": "No STPM courses saved yet."
+    "noStpm": "No STPM courses saved yet.",
+    "removedToast": "Course removed",
+    "removeFailed": "Failed to remove course",
+    "statusFailed": "Failed to update status"
   },
   "discovery": {
     "filters": "Filters",
@@ -2006,7 +2036,7 @@
       },
       "multiple": {
         "title": "You have more than one application",
-        "body": "You have {count} applications open. Please email {supportEmail} and we will point you to the right one."
+        "body": "You have {count} applications with us. Please email {supportEmail} and we will point you to the right one."
       }
     },
     "banner": {
@@ -2643,6 +2673,8 @@
         "particulars": "The particulars",
         "amount": "Bursary amount",
         "schedule": "Payment schedule",
+        "scheduleLine": "RM{amount} per month × {count} payments, starting {month} (total RM{total}).",
+        "scheduleLineNoStart": "RM{amount} per month × {count} payments (total RM{total}).",
         "institution": "Institution",
         "course": "Course",
         "documentTitle": "The agreement",
