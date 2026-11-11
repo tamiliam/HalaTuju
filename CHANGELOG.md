@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.7 Tests, tooling and data (2026-11-11, branch a47; not pushed; no migration, no budget raised)
+- TD-345 FIXED: local student apply recipe in `docs/testing.md`, pinned by `TestSeedLocalStudentPath`. TD-478 CLOSED (one sighting, no repeat). TD-058 CLOSED: "managed by Supabase" decided as final, with the revisit triggers (no SQL run).
+- CO-12: `vocabularyGateDrift.test.ts` gates the payment-run status pill and the call-language options. The mirror ledger was already empty. TD-385 waits for owner approval D11 (workspace tool; not touched).
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).
