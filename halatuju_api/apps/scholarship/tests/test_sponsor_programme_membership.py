@@ -195,7 +195,8 @@ class TestEverySponsorPoolReadIsFenced(TestCase):
             'pool.for_sponsor(', helper,
             '_fenced_pool_app must narrow the pool via pool.for_sponsor(...) before resolving a ref.',
         )
-        for view in (views_sponsor.SponsorPoolListView, views_sponsor.SponsorPoolDetailView):
+        for view in (views_sponsor.SponsorPoolListView, views_sponsor.SponsorPoolDetailView,
+                     views_sponsor.SponsorFundView):
             source = inspect.getsource(view)
             self.assertTrue(
                 'for_sponsor' in source or '_fenced_pool_app(' in source,

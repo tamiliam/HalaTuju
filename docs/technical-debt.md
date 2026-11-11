@@ -5007,7 +5007,9 @@ Tests: `test_td247_supplier_bills_cron.py`.
 Cloud Scheduler job POSTing to `/api/v1/internal/cron/supplier-bills-import/` with header `X-Cron-Secret` = the money
 key (suggested: 08:00 MYT daily on the 8th to the 14th, before the 15th's invoice run - after month end, so USD
 bills go straight in; a run inside the billed month only reports "waiting for month end"), and at the same time
-add it to `cron_health.EXPECTED_CADENCE`. Nothing is scheduled yet. `sync_gcp_costs` (BigQuery) is still manual.
+register it in `cron_health.EXPECTED_CADENCE` with the `MONTHLY` cadence (NOT daily: a daily cadence for a job that
+runs only on the 8th-14th turns red "missed" from about the 16th each month). A failed run is recorded now, but is
+seen on the System health light only once the job is registered in `EXPECTED_CADENCE`. Nothing is scheduled yet. `sync_gcp_costs` (BigQuery) is still manual.
 
 ### [TD-248] The billing-rates form defaults its start date from the UTC clock — low — **RESOLVED 2026-09-30** (Now-tier sweep: `timezone.localdate().replace(day=1)`; pinned-clock test at 23:30 UTC on 30 Sep, `test_billing_rate_default_date.py`)
 
