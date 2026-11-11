@@ -24,25 +24,29 @@
  * the numbers.
  */
 
-import { usePhoneWidth } from '@/lib/phoneWidth'
 import {
   barLayout, columnX, donutArcs, lineLayout, plotLeft, sliceClasses, thinTicks,
   type ChartBox, type Tick, WIDE_BOX, DONUT_RADIUS, PHONE_AXIS_BOX, PHONE_BOX, PHONE_TICKS_MAX,
 } from '@/lib/programmeOverview'
 
 /**
- * Mobile M8: the box and the text size a chart draws with. ⚠ A viewBox SCALES ITS TEXT: a 9-unit label in a
- * 740-wide box on a 264 px phone card is 3 px. So on a phone (below md, `usePhoneWidth`) every chart swaps to a
- * phone box about as wide as the card and 11.5-unit text — 11–14 px on screen — with at most `PHONE_TICKS_MAX`
- * month names. The caller's box and the 8/9-unit text are the desktop's, unchanged; the first paint is the
- * desktop picture (no matchMedia on the server) and a phone swaps after mount.
- * ⚠ Both size classes are COMPLETE LITERALS — Tailwind reads source text.
+ * Mobile M8: the box and the text size a chart draws with. A viewBox SCALES ITS TEXT: a 9-unit label in a
+ * 740-wide box on a 264 px phone card is 3 px. So a phone (below md) draws a phone box about as wide as the card
+ * and 11.5-unit text (11-14 px on screen) with at most `PHONE_TICKS_MAX` month names. The caller's box and the
+ * 8/9-unit text are the desktop's, unchanged.
+ * TD-490: BOTH pictures are in the markup and CSS picks one (`max-md:hidden` / `md:hidden`), so the first paint
+ * is already the right one; it used to read `usePhoneWidth` and swap after mount, a brief layout jump. The
+ * desktop copy carries the test ids; the phone copy is a twin without them (one id, one element).
+ * Both size classes are COMPLETE LITERALS: Tailwind reads source text.
  */
 export const PHONE_CHART_TEXT = 'text-[11.5px]'
-function useChartBox(box: ChartBox, axis: boolean): { box: ChartBox; tick: string; axisText: string; phone: boolean } {
-  const phone = usePhoneWidth()
-  if (!phone) return { box, tick: 'text-[9px]', axisText: 'text-[8px]', phone }
-  return { box: axis ? PHONE_AXIS_BOX : PHONE_BOX, tick: PHONE_CHART_TEXT, axisText: PHONE_CHART_TEXT, phone }
+interface Look { box: ChartBox; tick: string; axisText: string; phone: boolean; svgClass: string }
+function chartLooks(box: ChartBox, axis: boolean): [Look, Look] {
+  return [
+    { box, tick: 'text-[9px]', axisText: 'text-[8px]', phone: false, svgClass: 'block h-auto w-full max-md:hidden' },
+    { box: axis ? PHONE_AXIS_BOX : PHONE_BOX, tick: PHONE_CHART_TEXT, axisText: PHONE_CHART_TEXT, phone: true,
+      svgClass: 'block h-auto w-full md:hidden' },
+  ]
 }
 
 /** One line of the text beneath a chart — the name of a column and what it was. */
@@ -100,11 +104,11 @@ function EndLabels({ columns, box, text }: { columns: readonly string[]; box: Ch
  * axis would collide at the first column. `columnX` puts a tick under the centre of a bar and
  * under a line's point alike, so the two chart shapes agree about where a month starts.
  */
-function Ticks({ ticks, count, box, text }: {
-  ticks: readonly Tick[]; count: number; box: ChartBox; text: string
+function Ticks({ ticks, count, box, text, tid }: {
+  ticks: readonly Tick[]; count: number; box: ChartBox; text: string; tid?: string
 }) {
   return (
-    <g data-testid="chart-ticks">
+    <g data-testid={tid}>
       {ticks.map((tick) => (
         <text key={tick.index} x={columnX(tick.index, count, box)} y={box.height - 6}
           textAnchor="middle" className={`fill-ground-400 ${text}`}>{tick.label}</text>
@@ -123,14 +127,14 @@ function Ticks({ ticks, count, box, text }: {
  * rounding the fixed `viewBox` gives no room to explain. The figures beneath still carry every
  * number a person would quote.
  */
-function YAxisLabels({ axis, box, top, bottom, text }: {
-  axis: YAxis; box: ChartBox; top: number; bottom: number; text: string
+function YAxisLabels({ axis, box, top, bottom, text, tid }: {
+  axis: YAxis; box: ChartBox; top: number; bottom: number; text: string; tid?: string
 }) {
   const x = plotLeft(box) - 4
   const baseline = box.height - box.bottom
   const midY = (box.top + baseline) / 2
   return (
-    <g data-testid="chart-y-axis">
+    <g data-testid={tid}>
       <line x1={plotLeft(box)} y1={box.top} x2={box.width - box.side} y2={box.top}
         className="stroke-ground-100" strokeWidth="1" />
       <line x1={plotLeft(box)} y1={midY} x2={box.width - box.side} y2={midY}
@@ -176,44 +180,49 @@ export function BarChart({
   ticks?: readonly Tick[]
   yAxis?: YAxis
 }) {
-  const { box, tick, axisText, phone } = useChartBox(givenBox, !!yAxis)
-  const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
-  const { bars, baseline, max } = barLayout(series.map((s) => s.values), box)
-  const path = line ? lineLayout(line.values, box) : null
   return (
     <div data-testid={testId}>
-      <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
-        role="img" aria-label={label}>
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} text={axisText} />}
-        <line x1={plotLeft(box)} y1={baseline} x2={box.width - box.side} y2={baseline}
-          className="stroke-ground-200" strokeWidth="1" />
-        {/* ⚠ A BAR CARRIES ITS OWN VALUE AS A `<title>` (owner, 2026-09-18: hover, not a list
-            beneath). The rect IS the hit target, so nothing extra is drawn. */}
-        {series.map((s, i) => (
-          <g key={s.key} className={s.className}>
-            {bars[i].map((b, j) => (
-              <rect key={`${s.key}-${j}`} x={b.x} y={b.y} width={b.width} height={b.height}
-                data-testid="chart-bar">
-                {s.titles && <title>{s.titles[j] ?? ''}</title>}
-              </rect>
+      {chartLooks(givenBox, !!yAxis).map((look) => {
+        const { box, tick, axisText, phone } = look
+        const id = (name: string) => (phone ? undefined : name)
+        const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
+        const { bars, baseline, max } = barLayout(series.map((s) => s.values), box)
+        const path = line ? lineLayout(line.values, box) : null
+        return (
+          <svg key={phone ? 'phone' : 'wide'} viewBox={`0 0 ${box.width} ${box.height}`} className={look.svgClass}
+            role="img" aria-label={label}>
+            {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} text={axisText} tid={id('chart-y-axis')} />}
+            <line x1={plotLeft(box)} y1={baseline} x2={box.width - box.side} y2={baseline}
+              className="stroke-ground-200" strokeWidth="1" />
+            {/* A BAR CARRIES ITS OWN VALUE AS A `<title>` (owner, 2026-09-18: hover, not a list
+                beneath). The rect IS the hit target, so nothing extra is drawn. */}
+            {series.map((s, i) => (
+              <g key={s.key} className={s.className}>
+                {bars[i].map((b, j) => (
+                  <rect key={`${s.key}-${j}`} x={b.x} y={b.y} width={b.width} height={b.height}
+                    data-testid={id('chart-bar')}>
+                    {s.titles && <title>{s.titles[j] ?? ''}</title>}
+                  </rect>
+                ))}
+              </g>
             ))}
-          </g>
-        ))}
-        {path && path.points.length > 1 && (
-          <polyline fill="none" strokeWidth="2" strokeDasharray="4 3"
-            className={line!.className}
-            points={path.points.map((p) => `${p.x},${p.y}`).join(' ')} />
-        )}
-        {path && line?.titles && path.points.map((p, i) => (
-          <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
-            data-testid="chart-point">
-            <title>{line.titles![i] ?? ''}</title>
-          </circle>
-        ))}
-        {shown
-          ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} />
-          : <EndLabels columns={columns} box={box} text={tick} />}
-      </svg>
+            {path && path.points.length > 1 && (
+              <polyline fill="none" strokeWidth="2" strokeDasharray="4 3"
+                className={line!.className}
+                points={path.points.map((p) => `${p.x},${p.y}`).join(' ')} />
+            )}
+            {path && line?.titles && path.points.map((p, i) => (
+              <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
+                data-testid={id('chart-point')}>
+                <title>{line.titles![i] ?? ''}</title>
+              </circle>
+            ))}
+            {shown
+              ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} tid={id('chart-ticks')} />
+              : <EndLabels columns={columns} box={box} text={tick} />}
+          </svg>
+        )
+      })}
       <Figures testId={testId} figures={figures} />
     </div>
   )
@@ -242,42 +251,47 @@ export function LineChart({
   /** One per point: what the browser shows when the mouse rests on it. */
   pointTitles?: readonly string[]
 }) {
-  const { box, tick, axisText, phone } = useChartBox(givenBox, !!yAxis)
-  const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
-  const { points, zeroY, min, max } = lineLayout(values, box)
-  const latest = points.length > 0 ? points[points.length - 1] : null
   return (
     <div data-testid={testId}>
-      <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
-        role="img" aria-label={label}>
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} text={axisText} />}
-        <line x1={plotLeft(box)} y1={box.height - box.bottom} x2={box.width - box.side}
-          y2={box.height - box.bottom} className="stroke-ground-200" strokeWidth="1" />
-        {/* ⚠ Drawn ONLY when something is actually negative — otherwise the zero line and the
-            baseline are the same line, and two strokes on one pixel read as a heavier axis. */}
-        {min < 0 && (
-          <line x1={plotLeft(box)} y1={zeroY} x2={box.width - box.side} y2={zeroY}
-            className="stroke-ground-300" strokeWidth="1" strokeDasharray="2 2" />
-        )}
-        {points.length > 1 && (
-          <polyline fill="none" strokeWidth="2" className={className}
-            points={points.map((p) => `${p.x},${p.y}`).join(' ')} />
-        )}
-        {latest && <circle cx={latest.x} cy={latest.y} r="3" className="fill-brand-shape" />}
-        {/* ⚠ HOVER TARGETS, NOT MARKS (owner, 2026-09-18: "show the weekly values on hover").
-            An invisible circle per point, wide enough to hit, carrying the browser's own
-            `<title>` tooltip — no state, no positioning code, nothing to break on a phone. The
-            figures beneath stay the quotable numbers; this is the one-week answer. */}
-        {pointTitles && points.map((p, i) => (
-          <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
-            data-testid="chart-point">
-            <title>{pointTitles[i] ?? ''}</title>
-          </circle>
-        ))}
-        {shown
-          ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} />
-          : <EndLabels columns={columns} box={box} text={tick} />}
-      </svg>
+      {chartLooks(givenBox, !!yAxis).map((look) => {
+        const { box, tick, axisText, phone } = look
+        const id = (name: string) => (phone ? undefined : name)
+        const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
+        const { points, zeroY, min, max } = lineLayout(values, box)
+        const latest = points.length > 0 ? points[points.length - 1] : null
+        return (
+          <svg key={phone ? 'phone' : 'wide'} viewBox={`0 0 ${box.width} ${box.height}`} className={look.svgClass}
+            role="img" aria-label={label}>
+            {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} text={axisText} tid={id('chart-y-axis')} />}
+            <line x1={plotLeft(box)} y1={box.height - box.bottom} x2={box.width - box.side}
+              y2={box.height - box.bottom} className="stroke-ground-200" strokeWidth="1" />
+            {/* Drawn ONLY when something is actually negative: otherwise the zero line and the
+                baseline are the same line, and two strokes on one pixel read as a heavier axis. */}
+            {min < 0 && (
+              <line x1={plotLeft(box)} y1={zeroY} x2={box.width - box.side} y2={zeroY}
+                className="stroke-ground-300" strokeWidth="1" strokeDasharray="2 2" />
+            )}
+            {points.length > 1 && (
+              <polyline fill="none" strokeWidth="2" className={className}
+                points={points.map((p) => `${p.x},${p.y}`).join(' ')} />
+            )}
+            {latest && <circle cx={latest.x} cy={latest.y} r="3" className="fill-brand-shape" />}
+            {/* HOVER TARGETS, NOT MARKS (owner, 2026-09-18: "show the weekly values on hover").
+                An invisible circle per point, wide enough to hit, carrying the browser's own
+                `<title>` tooltip: no state, no positioning code, nothing to break on a phone. The
+                figures beneath stay the quotable numbers; this is the one-week answer. */}
+            {pointTitles && points.map((p, i) => (
+              <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
+                data-testid={id('chart-point')}>
+                <title>{pointTitles[i] ?? ''}</title>
+              </circle>
+            ))}
+            {shown
+              ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} tid={id('chart-ticks')} />
+              : <EndLabels columns={columns} box={box} text={tick} />}
+          </svg>
+        )
+      })}
       <Figures testId={testId} figures={figures} />
     </div>
   )

@@ -140,7 +140,7 @@ export default function SavedCompareView({ data, loading, onBack }: {
                 </div>
               </div>
             )}
-            <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top))] z-[5] grid grid-cols-2 gap-2 bg-ground-50 pb-2">
+            <div className="sticky top-[var(--header-height,calc(4.25rem+env(safe-area-inset-top)))] z-[5] grid grid-cols-2 gap-2 bg-ground-50 pb-2">
               {[a, b].map((c) => (
                 <Link key={c.course_id} href={hrefOf(c)}
                   className="flex min-h-11 min-w-0 items-center rounded-lg border border-primary-100 bg-primary-50 p-2 text-sm font-semibold text-primary-700">

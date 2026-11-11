@@ -32,6 +32,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
 import { signOutStudent } from '@/lib/studentSignOut'
+import { useHeaderHeight } from '@/lib/headerHeight'
 import StudentTabBar from './StudentTabBar'
 import type { Who } from './StudentMenus'
 
@@ -56,6 +57,8 @@ export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
   const [menuOpen, setMenuOpen] = useState(defaultMenuOpen)
   const [menus, setMenus] = useState<Menus | null>(null)
   const started = useRef(false)
+  const headerRef = useRef<HTMLElement>(null)
+  useHeaderHeight(headerRef)
 
   // The menus' chunk, fetched once. ⚠ IT CAN FAIL — a tab open across a deploy asks for a chunk that
   // no longer exists, and a phone fetches it on the first tap, maybe hours later. Then `failed`: the
@@ -114,7 +117,7 @@ export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
 
   return (
     <>
-    <header className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
+    <header ref={headerRef} className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
       {/* ⚠ ONE ROW, NO WRAP. Every item but the logo is a fixed, measured width (navLayout.test.ts). */}
       <div className="container mx-auto flex items-center gap-2 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center">

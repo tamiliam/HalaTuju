@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.3 - phone layout leftovers (2026-11-11, branch a43, not pushed)
+
+- TD-457 fixed: `AppHeader` publishes its height as `--header-height` (`lib/headerHeight.ts`); the saved compare's
+  sticky course-name row sticks at `var(--header-height, <old calc>)`.
+- TD-490 fixed: the Programme Overview bar and line charts render the desktop and the phone picture, CSS shows one
+  (`max-md:hidden` / `md:hidden`), so the first paint is right. The phone twin has no test ids; role and label on both.
+- TD-453 fixed: `future.hoverOnlyWhenSupported` on in `tailwind.config.ts`; the sweep found no hover-only reveal
+  except the desktop admin rail chip (pinned by `phoneLeftovers.test.ts`).
+- TD-464 closed: the shared selects were already 44 px below md; mobile-check now skips the whole subtree of a fixed bar
+  when it names the widest element.
+- TD-466 (4) fixed: SPM grade pickers `w-20` to `w-24`. (2) the sandbox gutter left open (re-baselines every surface).
+- TD-450 (3) fixed: the Sheet pads its title row, body and footer by the left/right safe areas.
+- TD-471 already resolved; TD-461, TD-187, TD-489 and the rest of TD-450 not built (see their status lines).
+- Tests: `phoneLeftovers.test.ts`, `headerHeight.test.tsx`, `Charts.phone.test.tsx` (rewritten for the twin),
+  `Charts.test.tsx` (counts scoped to one picture).
+
 ### merge: G12 - audit sprints A3.13 to A3.17 on one branch (2026-11-11)
 
 Branch g12 (not pushed, not deployed). Merged in order: a313 (courses and reports reach scholarship / courses
