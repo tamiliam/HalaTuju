@@ -427,12 +427,16 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', S
   },
   // Mobile M3 (2026-11-01): the phone search filters, the course page's "show all" and the saved-
   // course compare. Three production routes load it from their PAGES; the sandbox from its layout.
+  // G13 (2026-11-11): plus the `courseDetail.*` and `saved.*` children outside CORE_KEEPS.
   discovery: {
     loader: path.join(SRC, 'lib', 'messagesDiscovery.ts'),
-    key: /^discovery\.|\$\{\}discovery\./,
-    notKey: /^discovery\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
-    // Plus both quizzes (Mobile M4c follow-up, owner 2026-11-02): their phone Next (`discovery.quizNext`).
-    owners: ['/course/[id]', '/quiz', '/sandbox', '/sandbox/[surface]', '/saved', '/search', '/stpm/quiz'],
+    key: new RegExp('^discovery\\.|\\$\\{\\}discovery\\.'
+      + `|^courseDetail\\.(?!(?:${CORE_KEEPS.courseDetail.join('|')})(?:\\.|$))|\\$\\{\\}courseDetail\\.`
+      + `|^saved\\.(?!(?:${CORE_KEEPS.saved.join('|')})(?:\\.|$))|\\$\\{\\}saved\\.`),
+    notKey: /^(discovery|courseDetail|saved)\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    // Plus both quizzes (Mobile M4c follow-up, owner 2026-11-02): their phone Next (`discovery.quizNext`)
+    // and `saved.signIn`; and /stpm/[id] (G13): the course page's own words.
+    owners: ['/course/[id]', '/quiz', '/sandbox', '/sandbox/[surface]', '/saved', '/search', '/stpm/[id]', '/stpm/quiz'],
     // The two search files, the course pages and their shared pieces, the saved page and compare, the quizzes.
     floors: { keyFiles: 6, importers: 6, loaders: 7 },
   },
@@ -511,6 +515,17 @@ describe('TD-416: the slice patterns', () => {
     expect(keys("t('sponsorPortal.nav.home'); t('sponsorAuth.email')")).toEqual(['sponsorPortal.nav.home', 'sponsorAuth.email'])
     expect(keys('t(`sponsorPool.${k}`); t(`sponsorLanding.hero.${x}`)')).toEqual(['sponsorPool.${}', 'sponsorLanding.hero.${}'])
     expect(keys("t('admin.sponsors.title'); router.push('/sponsor/login'); t('sponsorship.x')")).toEqual([])
+  })
+
+  test('discovery (G13): unkept courseDetail / saved children count; the kept ones do not', () => {
+    const rule = SLICE_RULES.discovery
+    const keys = (src: string) => scanSource('x.ts', src).strings
+      .filter((s) => rule.key.test(s.text) && !rule.notKey.test(s.text)).map((s) => s.text)
+    expect(keys("t('discovery.quizNext'); t('courseDetail.level'); t('saved.title')"))
+      .toEqual(['discovery.quizNext', 'courseDetail.level', 'saved.title'])
+    expect(keys("t('courseDetail.chanceHigh'); t('courseDetail.whereToStudy'); t('saved.remove')")).toEqual([])
+    expect(keys("t('courseDetail.saved'); t('saved.removedToast')")).toEqual(['courseDetail.saved', 'saved.removedToast'])
+    expect(keys("router.push('/saved'); const f = 'saved.ts'")).toEqual([])
   })
 
   test('static and lazy edges are told apart', () => {

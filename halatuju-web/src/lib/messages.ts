@@ -77,7 +77,7 @@ export const FALLBACK_CATALOGUE: Catalogue = { ...enCore }
  * the two lists together). For these, "the namespace is present" does not mean "its slice is in",
  * so `i18n.tsx`'s English fallback asks `sliceAbsent` instead of looking at the namespace alone.
  */
-export const SPLIT_NAMESPACES: ReadonlySet<string> = new Set(['scholarship'])
+export const SPLIT_NAMESPACES: ReadonlySet<string> = new Set(['scholarship', 'courseDetail', 'saved'])
 
 /**
  * Merge one slice INTO `target`. A namespace both hold (a `SPLIT_NAMESPACES` one) gets its CHILDREN

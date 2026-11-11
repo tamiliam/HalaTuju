@@ -15,6 +15,8 @@ import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useCallback } from 'react'
 import { institutionTypeChip } from '@/lib/courseBadges'
 import { PHONE_GUTTER, PHONE_INNER_BOX, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
+// G13: the course page's own words (`courseDetail.*` but the kept children) ride the discovery slice.
+import '@/lib/messagesDiscovery'
 
 export default function StpmCourseDetailPage() {
   const params = useParams()

@@ -59,7 +59,12 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
   })
 
   test('no two slices share a namespace, and the split namespace shares no child', () => {
-    expect(Object.keys(core).filter((ns) => ns in admin || ns in documents || ns in sponsor || ns in bursary || ns in discovery)).toEqual([])
+    expect(Object.keys(core).filter((ns) => ns in admin || ns in documents || ns in sponsor || ns in bursary
+      || (ns in discovery && !SPLIT_NAMESPACES.has(ns)))).toEqual([])
+    // G13: courseDetail and saved are split between core and discovery — no child in both.
+    for (const ns of ['courseDetail', 'saved']) {
+      expect(Object.keys((core as Cat)[ns]).filter((c) => c in (discovery as Cat)[ns])).toEqual([])
+    }
     expect(Object.keys(bursary).filter((ns) => ns in admin || ns in documents || ns in scholarship || ns in sponsor)).toEqual([])
     expect(Object.keys(discovery).filter((ns) => ns in admin || ns in documents || ns in scholarship || ns in sponsor || ns in bursary)).toEqual([])
     expect(Object.keys(admin).filter((ns) => ns in documents || ns in scholarship || ns in sponsor)).toEqual([])
@@ -91,8 +96,14 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
     expect(documents.documentsTab).toBe(file.documentsTab)
     expect(Object.keys(bursary)).toEqual(['bursaryTabs'])          // S5b
     expect(bursary.bursaryTabs).toBe(file.bursaryTabs)
-    expect(Object.keys(discovery)).toEqual(['discovery'])          // Mobile M3
+    // Mobile M3; G13 added the unkept courseDetail / saved children (file order).
+    expect(Object.keys(discovery)).toEqual(['courseDetail', 'saved', 'discovery'])
     expect(discovery.discovery).toBe(file.discovery)
+    for (const ns of ['courseDetail', 'saved']) {
+      const all = file[ns] as Record<string, unknown>
+      expect(Object.keys((core as Cat)[ns]).sort()).toEqual([...CORE_KEEPS[ns]].sort())
+      expect(Object.keys((discovery as Cat)[ns])).toEqual(Object.keys(all).filter((k) => !CORE_KEEPS[ns].includes(k)))
+    }
     expect(Object.keys(core)).toEqual(Object.keys(file)
       .filter((ns) => ns !== 'admin' && ns !== 'documentsTab' && ns !== 'bursaryTabs' && ns !== 'discovery'
         && !SPONSOR_NS.includes(ns)))

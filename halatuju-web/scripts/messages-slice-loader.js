@@ -19,7 +19,8 @@
  *   - `sponsor` = the four `sponsor*` namespaces (`sponsorPortal`, `sponsorAuth`, `sponsorPool`,
  *     `sponsorLanding`) — the sponsor routes' words (TD-416).
  *   - `discovery` = the `discovery` namespace — the phone search filters, the course page's "show
- *     all" and the saved-course compare (Mobile M3), loaded by those three routes' pages.
+ *     all" and the saved-course compare (Mobile M3), loaded by those three routes' pages — plus the
+ *     `courseDetail` and `saved` children outside `CORE_KEEPS` (G13: the course and saved pages' words).
  *   - `bursary` = the `bursaryTabs` namespace — her My Bursary Funds and Contract tabs (maintenance
  *     S5b). In the scholarship slice they pushed /scholarship/apply and /scholarship/application over
  *     their first-load budgets, for words neither route ever shows.
@@ -58,17 +59,27 @@ const SLICES = {
   // Mobile M3 (2026-11-01): the phone search filters, the course page's "show all" and the saved-
   // course compare. Loaded by the PAGES of /search, /course/[id] and /saved
   // (`lib/messagesDiscovery.ts`) — in core they would have moved every route's first load.
-  discovery: ['discovery'],
+  // G13 (2026-11-11): plus the course pages' and the saved page's own words (`courseDetail`,
+  // `saved`) but the children `CORE_KEEPS` names; A4.2 put them in the catalogue and in core they
+  // pushed /scholarship/apply over its line. /stpm/[id] loads the slice for them.
+  discovery: ['discovery', 'courseDetail', 'saved'],
 }
 
 /**
  * Children of a sliced namespace that STAY IN CORE, because a component on most routes reads them:
  * `scholarship.nav` / `scholarship.subnav` (`AppHeader`, on nearly every student and sponsor page)
  * and `scholarship.banner` (`ScholarshipBanner`, on `/dashboard`). 0.1 kB gz together on 2026-10-29.
+ * `courseDetail` / `saved` (G13, 2026-11-11): the words `CourseCard` (dashboard, search, saved) and
+ * the /pathway/stpm page read — the card's chance and merit labels, its save and remove buttons,
+ * "Where to study" and "Quick facts".
  * ⚠ Adding a child here puts it back on every route; that is the trade to weigh, not a free fix.
  */
 const CORE_KEEPS = {
-  scholarship: ['nav', 'subnav', 'banner'],
+  // `finishSignIn` (G13 fix): A4.1 (TD-454) put it in `StudentMenus`, on every student route.
+  scholarship: ['nav', 'subnav', 'banner', 'finishSignIn'],
+  courseDetail: ['whereToStudy', 'quickFacts', 'saveCourse', 'chanceHigh', 'chanceFair', 'chanceLow',
+    'meritYou', 'meritNeed'],
+  saved: ['remove'],
 }
 
 const SLICE_NAMES = ['core', ...Object.keys(SLICES)]
