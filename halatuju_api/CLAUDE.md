@@ -121,6 +121,7 @@ Full suites run ONCE locally, right before the push. Run the API gate with `-n a
 Enforced by tests inside the deploy gate: no file over 600 lines (ledgered ones may not grow), no function of 150+ lines, one rule one home, no skipped tests, no new `# noqa` / `@ts-ignore` / `any`, every `eslint-disable` carries a reason, no unguarded mirror, no unused dependency, the `courses -> scholarship` import ceiling, new tests use the factory, a route may not get heavier (250 kB, median ratchet), applicant-detail GET pinned at 38 queries, the Mobile Standard. The two budget files are `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json` (frozen `baseline` + live `budget` that only tightens). The one-liners that cause damage if missed:
 
 - **NEVER raise a budget, a floor or a ledger**; split the file first, in its own commit, moves only. No value import from `@supabase/supabase-js` in `src/` (auth clients only in `supabaseAuthClient.ts`). The remaining guard rules (bundle, query budgets, moved ledger files, tree-walking guards, the nine harvested groups): `docs/code-standards.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05".
+- **Dates (owner, TD-424, 2026-11-12):** a date box shows and takes **DD-MM-YYYY** (the Malaysian format) and sends **ISO** to the API (`isoFromDayFirst`, `lib/invoices.ts`). Nothing stored changes. ISO is only for file names and sorting.
 
 ## Income — the rules that move money (full text: `docs/domain-rules.md`)
 
