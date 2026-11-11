@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### A4.6 - sponsor side and walks (2026-11-11, branch a46, not pushed)
+
+- TD-074: the sponsor pool detail, fund and my-students routes take the opaque S-XXXXXX ref, matched only inside the sponsor's own fence; a raw id, a guessed ref or another sponsor's ref all get the same 404. The card no longer sends the raw id; the new-student email links by ref. No migration.
+- TD-092: browser walk of the sponsor landing in en/ms/ta (halatuju-web/e2e, local next dev, made-up API data); it found a hydration mismatch for a stored Malay reader, fixed by filling branding tokens in the language of the words.
+- TD-070, TD-112: walk scripts added, skipped by default (they need real sign-ins; they run only against a local Supabase and API).
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

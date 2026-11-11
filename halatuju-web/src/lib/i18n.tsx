@@ -262,9 +262,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       const value = lookup(words.catalogue, key)
       // Branding tokens first, explicit params override them. interpolateMessage has a
       // '{'-absent fast path, so a plain string is returned untouched (byte-identical to before).
-      return interpolateMessage(value, { ...brandingParams(branding, locale), ...params })
+      // The tokens follow `contentLocale` (the language of the WORDS), never `locale`: while a stored
+      // Malay reader's chunk is still loading the words are English, and a Malay programme name inside
+      // them made the first client render differ from the server's English HTML — a hydration
+      // mismatch on every page with the footer (found by the A4.6 TD-092 walk; same family as TD-388).
+      return interpolateMessage(value, { ...brandingParams(branding, contentLocale), ...params })
     },
-    [words, locale, branding]
+    [words, contentLocale, branding]
   )
 
   return (

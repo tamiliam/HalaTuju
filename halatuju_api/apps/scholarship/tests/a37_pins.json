@@ -381,7 +381,6 @@
     "spending"
    ],
    "SponsorPoolCardSerializer": [
-    "id",
     "ref",
     "state",
     "school",
@@ -405,7 +404,6 @@
     "course_href"
    ],
    "SponsorPoolDetailSerializer": [
-    "id",
     "ref",
     "state",
     "school",

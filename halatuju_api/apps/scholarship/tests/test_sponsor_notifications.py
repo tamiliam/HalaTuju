@@ -134,7 +134,7 @@ class TestSponsorEmailContent(TestCase):
 
     def _card(self, **over):
         c = {
-            'id': 42, 'ref': 'S-ABC123', 'state': 'Perak', 'field': 'engineering',
+            'ref': 'S-ABC123', 'state': 'Perak', 'field': 'engineering',   # TD-074: no 'id'
             'course': 'Diploma Kejuruteraan Mekanikal', 'academic': 'SPM · 7A 1B',
             'institution': 'Politeknik Ungku Omar', 'blurb': 'A determined leaver.',
             'funding_categories': ['tuition'], 'programme_months': 24, 'award_amount': '3000',
@@ -155,9 +155,11 @@ class TestSponsorEmailContent(TestCase):
         msg, html = self._last()
         self.assertTrue(html, 'HTML alternative present')
         # per-student link in BOTH parts
-        link = 'https://halatuju.xyz/sponsor/students/42'
+        # TD-074: keyed by the opaque ref, never a raw id
+        link = 'https://halatuju.xyz/sponsor/students/s-abc123'
         self.assertIn(link, msg.body)
         self.assertIn(link, html)
+        self.assertNotIn('/sponsor/students/42', msg.body + html)
         # programme (never the raw field key), amount (RM2,000 format), artwork thumbnail
         self.assertIn('Diploma Kejuruteraan Mekanikal', msg.body)
         self.assertIn('RM3,000', msg.body)                 # whole ringgit, thousands-grouped

@@ -642,7 +642,7 @@ class TestSponsorBrowse(TestCase):
     @override_settings(SPONSOR_POOL_ENABLED=True)
     def test_detail_ok_and_clean(self):
         self._auth('spon-ok')
-        r = self.client.get(f'/api/v1/sponsor/pool/{self.app.id}/')
+        r = self.client.get(f'/api/v1/sponsor/pool/{pool.pool_ref(self.app.id)}/')   # TD-074
         self.assertEqual(r.status_code, 200)
         self.assertIn('anon_profile', r.json())
         self._assert_clean(r.json())
@@ -651,7 +651,8 @@ class TestSponsorBrowse(TestCase):
     def test_detail_404_for_ineligible(self):
         ineligible = _make_eligible_app(self.cohort, suffix='2', anon_published=False)
         self._auth('spon-ok')
-        self.assertEqual(self.client.get(f'/api/v1/sponsor/pool/{ineligible.id}/').status_code, 404)
+        self.assertEqual(
+            self.client.get(f'/api/v1/sponsor/pool/{pool.pool_ref(ineligible.id)}/').status_code, 404)
 
     @override_settings(SPONSOR_POOL_ENABLED=True)
     def test_pool_orders_unfunded_before_sponsored(self):
@@ -844,7 +845,7 @@ class TestMyStudentDetail(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
 
     def _url(self, pk):
-        return f'/api/v1/sponsor/my-students/{pk}/'
+        return f'/api/v1/sponsor/my-students/{pool.pool_ref(pk)}/'   # TD-074: keyed by ref
 
     def test_owner_sees_detail_with_profile_and_status(self):
         self._auth('mine-uid')
@@ -913,7 +914,7 @@ class TestMyStudentSpendingPanel(TestCase):
             HTTP_AUTHORIZATION=f'Bearer {_token("spend-uid", "s@x.com")}')
 
     def _url(self):
-        return f'/api/v1/sponsor/my-students/{self.app.id}/'
+        return f'/api/v1/sponsor/my-students/{pool.pool_ref(self.app.id)}/'   # TD-074
 
     def _spend(self, merchant, amount, category, **over):
         from apps.scholarship.models import BursarySpendTxn

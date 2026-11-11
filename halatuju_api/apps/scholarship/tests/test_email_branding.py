@@ -38,7 +38,7 @@ def _card(ref, course, inst):
         'ref': ref, 'course': course, 'institution': inst,
         'academic': 'SPM · 9A', 'state': 'Selangor', 'award_amount': 3000,
         'blurb': 'A determined student who did well despite the odds.',
-        'id': ref.lower(), 'field_image_slug': '',
+        'field_image_slug': '',   # TD-074: no 'id' — the story link is built from the ref
     }
 
 

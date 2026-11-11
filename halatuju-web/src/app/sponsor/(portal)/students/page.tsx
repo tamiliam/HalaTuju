@@ -129,7 +129,7 @@ export default function StudentsPage() {
         </div>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 md:mt-5 md:gap-5 lg:grid-cols-3">
-          {shown.map((s) => <PoolCard key={s.id} s={s} />)}
+          {shown.map((s) => <PoolCard key={s.ref} s={s} />)}
         </div>
       )}
     </div>
@@ -143,7 +143,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
   const institutionLine = s.institution
 
   return (
-    <Link href={`/sponsor/students/${s.id}`}
+    <Link href={`/sponsor/students/${encodeURIComponent(s.ref)}`}
       className="flex flex-col overflow-hidden rounded-2xl border bg-ground-0 hover:border-info-300 hover:shadow-md transition">
       {/* Banner: field artwork + badges + ref pill */}
       <div className="relative h-[150px]">

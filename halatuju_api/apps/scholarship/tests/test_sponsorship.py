@@ -288,7 +288,7 @@ class TestSponsorEndpoints(TestCase):
     def test_fund_then_wallet_then_my_sponsorships(self):
         self._auth('spon-ok')
         self._credit()
-        f = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json')
+        f = self.client.post(f'/api/v1/sponsor/pool/{pool.pool_ref(self.app.id)}/fund/', {}, format='json')
         self.assertEqual(f.status_code, 201, f.content)
         self.assertEqual(f.json()['status'], 'offered')
         # wallet balance reflects the held allocation
@@ -302,14 +302,14 @@ class TestSponsorEndpoints(TestCase):
     def test_cancel_offer_endpoint_cooloff_then_refused(self):
         self._auth('spon-ok')
         self._credit()
-        sp_id = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json').json()['id']
+        sp_id = self.client.post(f'/api/v1/sponsor/pool/{pool.pool_ref(self.app.id)}/fund/', {}, format='json').json()['id']
         c = self.client.post(f'/api/v1/sponsor/sponsorships/{sp_id}/cancel/', {}, format='json')
         self.assertEqual(c.status_code, 200, c.content)
         self.assertEqual(c.json()['status'], 'cancelled')
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
         # …but once the student has been emailed the award, there is no turning back.
-        sp2_id = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json').json()['id']
+        sp2_id = self.client.post(f'/api/v1/sponsor/pool/{pool.pool_ref(self.app.id)}/fund/', {}, format='json').json()['id']
         Sponsorship.objects.filter(id=sp2_id).update(offer_emailed_at=timezone.now())
         r = self.client.post(f'/api/v1/sponsor/sponsorships/{sp2_id}/cancel/', {}, format='json')
         self.assertEqual(r.status_code, 400)
@@ -318,7 +318,7 @@ class TestSponsorEndpoints(TestCase):
     @override_settings(SPONSOR_POOL_ENABLED=True)
     def test_fund_insufficient_400(self):
         self._auth('spon-ok')
-        r = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json')
+        r = self.client.post(f'/api/v1/sponsor/pool/{pool.pool_ref(self.app.id)}/fund/', {}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['error'], 'insufficient_balance')
 

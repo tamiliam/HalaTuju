@@ -48,16 +48,16 @@ const card = (o: Partial<SponsorPoolCard>): SponsorPoolCard => ({ ...sandboxPool
 const MINE: SponsorSponsorship[] = [
   { id: 1, status: 'active', amount: '3000.00', offered_at: '2026-03-01T00:00:00Z', accept_deadline: null,
     decided_at: '2026-03-03T00:00:00Z', onboarded: true, semesters: 1,
-    student: card({ id: 801, ref: 'S-CTH-11', state: 'Johor', course: 'Diploma Kejuruteraan Elektrik',
+    student: card({ ref: 'S-CTH-11', state: 'Johor', course: 'Diploma Kejuruteraan Elektrik',
       institution: 'Politeknik Teladan Johor', portfolio_status: 'on_track', progress_state: 'on_track' }) },
   { id: 2, status: 'active', amount: '3000.00', offered_at: '2026-03-01T00:00:00Z', accept_deadline: null,
     decided_at: '2026-03-03T00:00:00Z', onboarded: true, semesters: 2,
-    student: card({ id: 802, ref: 'S-CTH-12', state: 'Pahang', course: 'Diploma Perakaunan',
+    student: card({ ref: 'S-CTH-12', state: 'Pahang', course: 'Diploma Perakaunan',
       institution: 'Kolej Komuniti Teladan', portfolio_status: 'semester_completed',
       progress_state: 'semester_completed', supported_semesters: 6 }) },
   { id: 3, status: 'offered', amount: '3000.00', offered_at: '2026-10-30T00:00:00Z', accept_deadline: '2026-11-13',
     decided_at: null, onboarded: false, semesters: 0,
-    student: card({ id: 803, ref: 'S-CTH-13', state: 'Perak', course: 'Asasi Sains', institution: 'Universiti Teladan' }) },
+    student: card({ ref: 'S-CTH-13', state: 'Perak', course: 'Asasi Sains', institution: 'Universiti Teladan' }) },
 ]
 
 const PORTAL = {
@@ -90,10 +90,10 @@ const PORTAL = {
 export const SPONSOR_ROUTES: Record<string, () => unknown> = {
   '/api/v1/sponsor/wallet/': () => PORTAL.wallet,
   '/api/v1/sponsor/standing-gift/': () => ({ configured: false, active: false }),
-  '/api/v1/sponsor/pool/901/': () => ({ ...sandboxPool[0],
+  '/api/v1/sponsor/pool/S-CTH-01/': () => ({ ...sandboxPool[0],   // TD-074: keyed by ref
     anon_profile: 'Anak sulung daripada keluarga petani kecil di Perak. Membaiki motosikal jiran sejak umur 13 tahun.\n\n'
       + 'Mendapat 7A dalam SPM sambil bekerja di gerai keluarga pada hujung minggu.' }),
-  '/api/v1/sponsor/my-students/801/': () => ({ ...MINE[0],
+  '/api/v1/sponsor/my-students/S-CTH-11/': () => ({ ...MINE[0],
     anon_profile: 'Pelajar generasi pertama dari Johor, kini dalam semester dua diploma kejuruteraan elektrik.',
     spending: { promised: '3000.00', released: '1200.00', spent: '940.50', left: '259.50', as_at: '2026-10-28',
       categories: [
@@ -184,7 +184,7 @@ export const SPONSOR_PORTAL_SURFACES: Surface[] = [
     title: 'Sponsor — one pool student (the fund bar)',
     note: 'Mobile M5: sections, and the sticky "Fully fund" bar with the balance — a page bar, so the tabs give way.',
     routes: SPONSOR_ROUTES,
-    render: () => <Portal path="/sponsor/students/901" params={{ id: '901' }}><StudentDetailPage /></Portal>,
+    render: () => <Portal path="/sponsor/students/S-CTH-01" params={{ id: 'S-CTH-01' }}><StudentDetailPage /></Portal>,
   },
   {
     slug: 'sponsor-fund-confirm',
@@ -192,7 +192,7 @@ export const SPONSOR_PORTAL_SURFACES: Surface[] = [
     note: 'Mobile M5: the one confirm for both widths, `dismissible={false}`; the amount is the server’s.',
     routes: SPONSOR_ROUTES,
     render: () => (
-      <Portal path="/sponsor/students/901" params={{ id: '901' }}>
+      <Portal path="/sponsor/students/S-CTH-01" params={{ id: 'S-CTH-01' }}>
         <StudentDetailPage /><TapOnce selector="[data-testid=fund-bar] button" />
       </Portal>
     ),
@@ -202,7 +202,7 @@ export const SPONSOR_PORTAL_SURFACES: Surface[] = [
     title: 'Sponsor — a supported student (spending)',
     note: 'Mobile M5: one box level — the banner edge to edge, commitment and spending as sections, 12 px labels.',
     routes: SPONSOR_ROUTES,
-    render: () => <Portal path="/sponsor/my-students/801" params={{ id: '801' }}><MyStudentDetailPage /></Portal>,
+    render: () => <Portal path="/sponsor/my-students/S-CTH-11" params={{ id: 'S-CTH-11' }}><MyStudentDetailPage /></Portal>,
   },
   {
     slug: 'sponsor-account',

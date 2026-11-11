@@ -33,6 +33,7 @@ import ta from '@/messages/ta.json'
 import LanguageSelector from '@/components/LanguageSelector'
 import { I18nProvider, useT, tOr } from '@/lib/i18n'
 import { KEY_LOCALE } from '@/lib/storage'
+import { PLATFORM } from '@/lib/branding'
 
 /** A key that exists in all three, is one plain word, and has a different value in each. */
 const PROBE_KEY = 'common.save'
@@ -141,6 +142,22 @@ describe('a reader who arrives already set to another language', () => {
     mount()
     await waitFor(() => expect(word()).toBe(EXPECTED.ms))
     expect(switcher().value).toBe('ms')
+  })
+
+  // A4.6 (found by the TD-092 walk): a branding token used to follow the CHOSEN locale while the
+  // words were still English, so a stored Malay reader's first render said "Bursari BrightPath" where
+  // the server's HTML said "BrightPath Bursary" — a hydration mismatch in the footer of every page.
+  test('a branding token speaks the language of the words, not the stored choice', async () => {
+    localStorage.setItem(KEY_LOCALE, 'ms')
+    function Heading() {
+      const { t } = useT()
+      return <span data-testid="programme">{t('footer.b40Heading')}</span>
+    }
+    render(<I18nProvider><Probe /><Heading /></I18nProvider>)
+    const programme = () => screen.getByTestId('programme').textContent
+    if (word() === EXPECTED.en) expect(programme()).toBe(PLATFORM.programmeName.en)
+    await waitFor(() => expect(word()).toBe(EXPECTED.ms))
+    expect(programme()).toBe(PLATFORM.programmeName.ms)
   })
 
   test('an unreadable stored value is English, as before', () => {

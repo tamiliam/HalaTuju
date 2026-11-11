@@ -39,3 +39,5 @@ next-env.d.ts
 
 # Mobile check (screenshots, per-cell results, Playwright scratch)
 mobile-check/output/
+# Browser walks (A4.6) — Playwright scratch
+e2e/output/

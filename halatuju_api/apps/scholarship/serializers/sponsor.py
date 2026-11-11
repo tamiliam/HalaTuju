@@ -103,9 +103,9 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     material context for a sponsor; the anonymity promise to sponsors covers name/NRIC/photo/
     contact/address, not the school). ``state`` stays region-level. ``blurb`` is a ≤20-word
     card-strict one-liner (generated + identifier-scanned at publish)."""
-    # `id` is the application row id — used only as the opaque key to fetch the
-    # detail; it is not identifying. `ref` is the human-facing alias.
-    id = serializers.IntegerField(read_only=True)
+    # TD-074: no `id` here — the raw application row id never reaches a sponsor. `ref` is both
+    # the human-facing alias AND the key for the detail/fund/my-students URLs (resolved server-
+    # side only inside the sponsor's own fence; `pool.resolve_ref`).
     ref = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()        # the SECONDARY school attended (owner 2026-07-18)

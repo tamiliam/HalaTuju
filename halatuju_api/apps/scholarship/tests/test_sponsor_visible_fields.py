@@ -24,8 +24,9 @@ from apps.scholarship.serializers import (
 )
 
 #: The pool card. Re-read `scholarship.consent.text` before changing this list.
+#: TD-074 (2026-11-11): `id` (the raw application row id) REMOVED — `ref` is now the only key.
 POOL_CARD = {
-    'id', 'ref', 'state', 'school', 'field', 'course', 'academic', 'institution', 'blurb',
+    'ref', 'state', 'school', 'field', 'course', 'academic', 'institution', 'blurb',
     'funding_categories', 'programme_months', 'award_amount', 'funded_amount', 'funded',
     'portfolio_status', 'supported_semesters', 'progress_state', 'support_status',
     'enrolment_verified', 'field_image_slug', 'reporting_date', 'course_href',

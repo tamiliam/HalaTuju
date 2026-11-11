@@ -11,7 +11,8 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import StudentDetailPage from './page'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet } from '@/lib/api'
 
-let routeId = '5'
+// TD-074: the route segment is the opaque pool ref, never the raw application id.
+let routeId = 'S-ABC123'
 jest.mock('next/navigation', () => ({ useParams: () => ({ id: routeId }) }))
 jest.mock('next/link', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
 jest.mock('react-markdown', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
@@ -36,7 +37,7 @@ const mockWallet = getSponsorWallet as jest.Mock
 
 beforeEach(() => {
   jest.clearAllMocks()
-  routeId = '5'
+  routeId = 'S-ABC123'
   mockDetail.mockResolvedValue({
     ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
     institution: 'Politeknik Ungku Omar', school: 'SMK Test', reporting_date: '2026-09-01',
@@ -55,7 +56,7 @@ it('refreshes the pool + wallet after a successful fund', async () => {
   fireEvent.click((await screen.findAllByText('sponsorPool.fullyFund', { selector: 'button' }))[0])
   fireEvent.click(await screen.findByText('sponsorPortal.students.confirmAward'))
 
-  await waitFor(() => expect(mockFund).toHaveBeenCalledWith(5, { token: 'tok' }))
+  await waitFor(() => expect(mockFund).toHaveBeenCalledWith('S-ABC123', { token: 'tok' }))
   // The fix: both shared surfaces are refreshed so the funded student leaves the available
   // list and shows under "My students" without a manual reload.
   await waitFor(() => expect(refreshPool).toHaveBeenCalled())
@@ -181,14 +182,14 @@ it('forgets the previous student at once when the address names another one', as
   // Student 6 is slow to arrive; until it does, neither its page nor the confirm may show student 5's RM 3,000.
   let arrive: (v: unknown) => void = () => {}
   mockDetail.mockImplementation(() => new Promise((r) => { arrive = r }))
-  routeId = '6'
+  routeId = 'S-ABC124'
   rerender(<StudentDetailPage />)
   await waitFor(() => expect(screen.queryByTestId('fund-confirm')).toBeNull())
   expect(screen.getByText('common.loading')).toBeTruthy()
   expect(document.body.textContent).not.toContain('3,000')
   await act(async () => { arrive({ ref: 'Student B2', state: 'Kedah', field: 'Health', academic: '5A', institution: 'X', school: 'Y',
     reporting_date: null, funding_categories: [], programme_months: 12, enrolment_verified: false, anon_profile: '', award_amount: '2000' }) })
-  expect(mockDetail).toHaveBeenLastCalledWith(6, { token: 'tok' })
+  expect(mockDetail).toHaveBeenLastCalledWith('S-ABC124', { token: 'tok' })
   expect(document.body.textContent).toContain('RM2,000')
 })
 
