@@ -28,6 +28,9 @@ function markup(ui: ReactElement): string {
   return container.innerHTML
 }
 
+/** TD-490: every chart draws a desktop svg and a phone twin (CSS picks one); a count is of ONE picture. */
+const wide = (c: ParentNode) => c.querySelector('svg') as Element
+
 describe('BarChart', () => {
   const bars = (
     <BarChart
@@ -41,7 +44,7 @@ describe('BarChart', () => {
 
   it('is a named image, not an unlabelled graphic', () => {
     render(bars)
-    const img = screen.getByRole('img', { name: 'Applications received per week' })
+    const img = screen.getAllByRole('img', { name: 'Applications received per week' })[0]
     expect(img).not.toBeNull()
     expect(img.tagName.toLowerCase()).toBe('svg')
   })
@@ -56,7 +59,7 @@ describe('BarChart', () => {
 
   it('draws one rect per column, in the class the caller named', () => {
     const { container } = render(bars)
-    const rects = container.querySelectorAll('rect')
+    const rects = wide(container).querySelectorAll('rect')
     expect(rects.length).toBe(2)
     expect((container.querySelector('g') as Element).getAttribute('class'))
       .toBe('fill-brand-shape')
@@ -119,7 +122,7 @@ describe('BarChart', () => {
     const ticks = container.querySelector('[data-testid="chart-ticks"]') as Element
     expect(ticks.querySelectorAll('text').length).toBe(3)
     // One label per column, and only one: the end-label system is not also drawn.
-    expect(container.querySelectorAll('text').length).toBe(3)
+    expect(wide(container).querySelectorAll('text').length).toBe(3)
   })
 })
 
@@ -134,24 +137,24 @@ describe('LineChart', () => {
 
   it('is named, and carries its figures as text', () => {
     render(line)
-    expect(screen.getByRole('img', { name: 'Average spend per student per week' })).not.toBeNull()
+    expect(screen.getAllByRole('img', { name: 'Average spend per student per week' })[0]).not.toBeNull()
     expect(screen.getByTestId('chart-line-figures').textContent).toContain('RM19.40')
   })
 
   it('marks the latest point so "where are we now" is answerable at a glance', () => {
     const { container } = render(line)
-    expect(container.querySelectorAll('circle').length).toBe(1)
+    expect(wide(container).querySelectorAll('circle').length).toBe(1)
   })
 
   /* ⚠ THE ZERO LINE APPEARS ONLY WHEN SOMETHING IS NEGATIVE. Otherwise it lands on the axis and
    * two strokes on one pixel just read as a heavier baseline. */
   it('draws a zero line for a series that goes below zero, and not otherwise', () => {
     const positive = render(line).container
-    expect(positive.querySelectorAll('line').length).toBe(1)
+    expect(wide(positive).querySelectorAll('line').length).toBe(1)
     const { container } = render(
       <LineChart testId="chart-gap" label="Still in wallets" values={[10, -5]}
         columns={['05/2026', '06/2026']} figures={[]} />)
-    expect(container.querySelectorAll('line').length).toBe(2)
+    expect(wide(container).querySelectorAll('line').length).toBe(2)
   })
 
   it('has no raw hex colour anywhere in what it renders', () => {
@@ -175,7 +178,7 @@ describe('LineChart', () => {
     const ticks = container.querySelector('[data-testid="chart-ticks"]') as Element
     expect(ticks.querySelectorAll('text').length).toBe(2)
     expect(ticks.textContent).toBe('MayJun')
-    expect(container.textContent).not.toContain('04/05')
+    expect(wide(container).textContent).not.toContain('04/05')
     const axis = container.querySelector('[data-testid="chart-y-axis"]') as Element
     expect(axis.textContent).toContain('RM per student')
     expect(axis.textContent).toContain('RM31')   // the top of the plot is the largest value
@@ -183,7 +186,7 @@ describe('LineChart', () => {
     expect(axis.textContent).toContain('RM0')    // the baseline is zero for an all-positive line
     // Two gridlines, top and middle — plus the baseline, three lines in all.
     expect(axis.querySelectorAll('line').length).toBe(2)
-    expect(container.querySelectorAll('line').length).toBe(3)
+    expect(wide(container).querySelectorAll('line').length).toBe(3)
     const html = container.innerHTML
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
@@ -205,7 +208,7 @@ describe('LineChart', () => {
     const plain = render(
       <LineChart testId="chart-plain" label="x" values={[1, 2]} columns={['a', 'b']} figures={[]} />)
     expect(plain.container.querySelectorAll('[data-testid="chart-point"]').length).toBe(0)
-    expect(plain.container.querySelectorAll('circle').length).toBe(1)
+    expect(wide(plain.container).querySelectorAll('circle').length).toBe(1)
   })
 })
 

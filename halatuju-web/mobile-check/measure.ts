@@ -99,13 +99,30 @@ export function measurePage(scopeSelector: string): Measurement {
     // An element "reaches" its own right edge, or further when its CONTENT spills out of it — a
     // long unbreakable word overflows its heading while the heading's box stays inside the screen
     // (TD-311's Tamil hero is exactly that), so box edges alone find nothing.
+    // TD-464: anything INSIDE a fixed ancestor is not the page's flow either (a fixed tab bar's tab, not the
+    // real offender), so the walk skips the whole subtree, not just the fixed element itself.
+    const fixedUp = new Map<Element, boolean>()
+    const insideFixed = (el: Element): boolean => {
+      const chain: Element[] = []
+      let cur: Element | null = el
+      let found = false
+      while (cur && cur !== document.body) {
+        const known = fixedUp.get(cur)
+        if (known !== undefined) { found = known; break }
+        chain.push(cur)
+        if (getComputedStyle(cur).position === 'fixed') { found = true; break }
+        cur = cur.parentElement
+      }
+      for (const c of chain) fixedUp.set(c, found)
+      return found
+    }
     let best: { el: Element; right: number; width: number } | null = null
     for (const el of Array.from(document.body.querySelectorAll('*'))) {
       const r = el.getBoundingClientRect()
       if (r.width < 2 || r.height < 2) continue   // an sr-only control (1 × 1) is never "the widest"
       const reach = Math.max(r.right, r.left + el.scrollWidth)
       if (reach <= vw + 0.5) continue
-      if (getComputedStyle(el).position === 'fixed' || insideSideScroller(el)) continue
+      if (insideFixed(el) || insideSideScroller(el)) continue
       if (!best || reach > best.right + 0.5 || (Math.abs(reach - best.right) <= 0.5 && r.width < best.width)) {
         best = { el, right: reach, width: r.width }
       }

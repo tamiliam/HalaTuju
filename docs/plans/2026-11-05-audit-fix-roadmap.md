@@ -983,6 +983,7 @@ See section 6. This is a measurement step, not a sprint.
 - **Complexity:** M.
 - **Model:** Sonnet.
 - **Gates:** Fresh review. Owner phone check.
+- **Status 2026-11-11:** BUILT on branch a43 (not pushed). Fixed: TD-457, 490, 453, 464, TD-466 (4), TD-450 (3). Already resolved: TD-471. Not built: TD-461 (needs a Stitch design), TD-489 (owner: later), TD-187 (trigger not reached), TD-466 (2) and the rest of TD-450 (re-baseline / other lane).
 - **Deploy:** G13.
 
 #### A4.4 Cockpit and overview leftovers

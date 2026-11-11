@@ -192,13 +192,13 @@ function SheetPanel({
   const inner = (
     <>
       <div ref={body} onFocus={onFocusIn}
-        className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 ${
+        className={`min-h-0 flex-1 overflow-y-auto overscroll-contain sheet-pad-x pt-4 ${
           footer ? 'pb-4' : 'pb-[max(1rem,env(safe-area-inset-bottom))]'}`}>
         {children}
       </div>
       {footer && (
         <div ref={foot}
-          className="flex flex-wrap items-center justify-end gap-3 border-t border-ground-100 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-4">
+          className="flex flex-wrap items-center justify-end gap-3 border-t border-ground-100 sheet-pad-x pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-4">
           {footer}
         </div>
       )}
@@ -222,7 +222,7 @@ function SheetPanel({
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>
           <span className="h-1.5 w-10 rounded-full bg-ground-300" />
         </div>
-        <div className="flex items-start gap-3 border-b border-ground-100 px-5 pb-3 pt-2 md:pt-4">
+        <div className="flex items-start gap-3 border-b border-ground-100 sheet-pad-x pb-3 pt-2 md:pt-4">
           <div className="min-w-0 flex-1 pt-2">
             <h2 id={`${id}-title`}
               className={`text-lg font-semibold break-words ${tone === 'critical' ? 'text-critical-700' : 'text-ground-900'}`}>

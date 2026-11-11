@@ -151,6 +151,9 @@ const config: Config = {
       },
     },
   },
+  // TD-453: a `hover:` style applies only where the device can hover, so a phone's sticky tap-hover never
+  // leaves a style behind. The sweep found no reveal that depends on hover (src/lib/__tests__/hoverOnly.test.ts).
+  future: { hoverOnlyWhenSupported: true },
   plugins: [require('@tailwindcss/typography')],
 }
 

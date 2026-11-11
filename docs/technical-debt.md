@@ -2860,6 +2860,8 @@ rail may scroll freely.
 **Size:** small (a portal + its test), once it is actually needed. (Logged 2026-07-28, nav/IA N4.)
 **Status 2026-10-04 (Later-tier batch 2, left OPEN):** there is no CSS-only fix — any non-visible overflow on the rail clips the chip, so a scrollable rail needs the chip in a portal (or `position: fixed` with JS-measured coordinates) AND the `AppShell` rail container bounded to the viewport (it is `absolute inset-y-0` + `sticky h-full`, as tall as the page, today). That is interactive positioning nobody can walk on a developer machine (TD-194), and the trigger (~20 rows) is not reached — super's menu is still 19. Do it with the browser pass, not blind.
 
+**2026-11-11 (A4.3):** trigger not reached (super menu still 19 rows; the fix lives in `AppShell`/`Sidebar`, another lane). Left open.
+
 ### [TD-188] The rail's own review is still owed a browser — low, but it is the third in a row — **RESOLVED 2026-09-30 (overtaken: 3a6c4586; the owner reviewed the live console on 2026-07-28)**
 **Status:** Open — logged 2026-07-28.
 **What.** N4 closes on 968 jest, `check-i18n` and a clean build, plus an interactive mock-up the
@@ -7522,6 +7524,8 @@ renamed target silently stops being checked). (5) **Guards:** rule 10 reads only
 rule's text, not that its selector is valid. (6) The 16 px rule's `:is()` drops on Safari < 14 / Chrome < 88.
 **Trigger:** the first stacked overlay, M6 (admin shell), or the next mobile-check change. *(B · S)*
 
+**2026-11-11 (A4.3):** (3) FIXED: the Sheet pads its title row, body and footer by the left/right safe areas. Still open: (1) the Escape stack (trigger not reached: no stacked overlay), (2) the admin drawer focus trap (`AppShell`, another lane), (4)-(6) mobile-check / guard tooling.
+
 ### [TD-451] A short campus line can name a campus of another institution type - low - **FIXED (2026-11-09, A2.7a)**
 
 **Raised 2026-11-01 by the offer date-rule review (round 4), pre-existing.** Word matching either way round lets a
@@ -7551,7 +7555,7 @@ holds; a bare town still names nothing. Tests: `test_offer_pages_and_lines.Short
 (A2.7a review, Low, left open): "KK" also means Kolej Kediaman, so a "KK X" hostel line now names a Kolej Komuniti X
 when one exists, which blocks the letterhead fallback and leaves the course unresolved (no wrong clash, nothing pinned).
 
-### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low
+### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low - **FIXED (2026-11-11, A4.3: flag on after the sweep)**
 
 **Raised 2026-11-01 by Mobile M2.** M1a did not adopt the Tailwind flag because the student header's BrightPath menu
 opened on `group-hover` and reached iPads only through Safari's sticky hover. M2 made that menu open on a click, so the
@@ -7590,7 +7594,7 @@ literal English; `CourseCard`'s merit bar reads "High / Fair / Low Chance" and "
 course pages load core) and lift the merit row to `text-xs`; re-run mobile-check on `/search`, `/dashboard` and both
 course pages in Tamil (the merit row must still fit a card at 360). *(B · M)*
 
-### [TD-457] The phone compare's sticky course-name row assumes the student header's height - low
+### [TD-457] The phone compare's sticky course-name row assumes the student header's height - low - **FIXED (2026-11-11, A4.3: --header-height published by AppHeader)**
 
 **Raised 2026-11-01 by Mobile M3.** In `components/saved/SavedCompare.tsx` the two course names stick at
 `top-[calc(4.25rem+env(safe-area-inset-top))]` — the student header's measured height (64 px plus its border) and
@@ -7658,6 +7662,8 @@ story, funding, documents, consent, review) keeps the same bar (its 8 px sandbox
 is only the unsaved step. Fix: reuse `ApplyStepper`'s pattern — but the bar there is also how a student JUMPS to the
 Documents step from an Action Centre query, so it needs its own design (Stitch). *(B · M)*
 
+**2026-11-11 (A4.3):** NOT built: needs its own design (Stitch) because the bar is also how a student jumps to the Documents step. Stays open.
+
 ### [TD-462] The bank-statement upload has no early size / format refusal - low - **FIXED (2026-11-11, A4.1: BankDetailsTask calls refusalFor with the served limits before signUploadDocument; PostAwardTasks.bankRefusal.test.tsx)**
 
 **Raised 2026-11-01 by Mobile M4.** The Action Centre now refuses, before uploading, a file the server would refuse
@@ -7684,7 +7690,7 @@ unless the owner rules otherwise). *(B · S)*
 server-composed English string, so the Tamil and Malay award pages show it in English among translated labels.
 **Fix:** serve the parts (amount, cadence, count) and compose the sentence in the web catalogue. *(B · S)*
 
-### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
+### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low - **FIXED (2026-11-11, A4.3)**
 
 **Raised 2026-11-02 at the Mobile M4b build.** (1) `LanguageSelector` and `ThemeSelector` draw 36 px selects (rule 3
 asks 44): two small targets on every Settings cell. They ride eagerly on the console and the sponsor portal, so a
@@ -7694,6 +7700,8 @@ when it names the widest element, but not that element's CHILDREN: when a page o
 contact rows, fixed in M4b), it named a tab of the fixed tab bar instead of the real offender. Skip anything inside a
 fixed ancestor (the `measureBars` walk already does). (3) The rest of the student pages are M4c (roadmap), not debt.
 *(W · S)*
+
+**2026-11-11 (A4.3):** (1) already done: both shared selects carry `max-md:min-h-11`. (2) `measure.ts` now skips anything inside a fixed ancestor. Pinned by `phoneLeftovers.test.ts`.
 
 ### [TD-465] A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money)
 
@@ -7742,6 +7750,8 @@ Bursary's results form OPEN (it opens on a tap; the page reads no address for it
 awarded application and its consent read). The other swept screens have surfaces since the M4c review. (4) Seen while
 adding them, older than M4c: the SPM block's grade pickers (`SpmResultsBlock.tsx`, `w-20`) clip "Grade" to "Grad‹" once
 rule 2 raises their text to 16 px. *(W · S)*
+
+**2026-11-11 (A4.3):** (4) FIXED: the SPM grade pickers are `w-24`. (2) NOT done: mounting surfaces without the sandbox wrapper shifts every mobile-check reading and needs a full re-baseline; do it with a full mobile-check run. (3) unchanged. Stays open.
 
 ### [TD-467] The private bucket has no allowed_mime_types / file_size_limit; the older upload flows sign with upsert - medium
 
@@ -8226,7 +8236,7 @@ four numbers, so nothing is broken — they only look boxier than the rest of th
 onto `PHONE_SECTION` / `PHONE_CARD_XL` (and their pills onto `lib/phonePill.ts`), add both files to the rule-15 and
 rule-17 lists in `mobileStandard.test.ts`, and update the MentorPhone board to match. *(M · S)*
 
-### [TD-490] The Programme Overview charts paint the desktop box first on a phone, then swap - low
+### [TD-490] The Programme Overview charts paint the desktop box first on a phone, then swap - low - **FIXED (2026-11-11, A4.3: both SVGs, CSS picks one)**
 
 **Raised 2026-11-04 by the Mobile M8 close review (accepted, NOT fixed; two-deploys-per-feature rule).** `Charts.tsx` (`useChartBox`, line ~43) reads `usePhoneWidth`, so on a phone the first paint draws the desktop viewBox and the phone box replaces it after mount: a brief layout jump. No effect from md. **Fix:** render both SVGs and switch them by CSS (`md:hidden` / `max-md:hidden`), so the first paint is already right; keep `Charts.phone.test.tsx` (its text-size guard bites) and add a case that both SVGs exist. *(S · S)*
 

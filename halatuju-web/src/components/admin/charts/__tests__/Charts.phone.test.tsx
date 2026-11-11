@@ -6,7 +6,7 @@
  * chart draws in a phone box about as wide as the card, with 11.5-unit text (11-14 px on screen) and at most four
  * month names. From md — and wherever the width is unknown — the caller's box and the old sizes are unchanged.
  */
-import { act, render } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { BarChart, LineChart, PHONE_CHART_TEXT } from '../Charts'
 import { PHONE_WIDTH_QUERY } from '@/lib/phoneWidth'
 import { FULL_AXIS_BOX, PHONE_AXIS_BOX, PHONE_TICKS_MAX } from '@/lib/programmeOverview'
@@ -40,37 +40,53 @@ it('the phone text and box draw 11-14 px across every phone card width', () => {
   }
 })
 
-it('a phone gets the phone box, 11.5-unit text on every label and at most four month names', async () => {
+/** TD-490: both pictures are always in the markup; CSS shows one. [desktop svg, phone twin]. */
+const twins = (c: ParentNode) => Array.from(c.querySelectorAll('svg')) as SVGSVGElement[]
+const box = (w: number, h: number) => `0 0 ${w} ${h}`
+
+it('the phone twin has the phone box, 11.5-unit text on every label and at most four month names', () => {
   widthIs(true)
   const { container } = render(money())
-  await act(async () => {})
-  expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(`0 0 ${PHONE_AXIS_BOX.width} ${PHONE_AXIS_BOX.height}`)
-  const texts = Array.from(container.querySelectorAll('text'))
+  const [, phone] = twins(container)
+  expect(phone.getAttribute('viewBox')).toBe(box(PHONE_AXIS_BOX.width, PHONE_AXIS_BOX.height))
+  const texts = Array.from(phone.querySelectorAll('text'))
   expect(texts.length).toBeGreaterThan(0)
   for (const t of texts) expect(t.getAttribute('class')).toContain(PHONE_CHART_TEXT)
-  expect(container.querySelectorAll('[data-testid="chart-ticks"] text').length).toBeLessThanOrEqual(PHONE_TICKS_MAX)
+  const months = MONTHS.filter((m) => texts.some((t) => t.textContent === m))
+  expect(months.length).toBeLessThanOrEqual(PHONE_TICKS_MAX)
 })
 
-it('a line chart swaps too', async () => {
-  widthIs(true)
+it('TD-490: the first paint already holds both pictures, one hidden by CSS each way, with no width read', () => {
+  widthIs(null)   // no matchMedia at all: the markup must not depend on it
+  const { container } = render(money())
+  const [wide, phone] = twins(container)
+  expect(twins(container)).toHaveLength(2)
+  expect(wide.getAttribute('class')).toContain('max-md:hidden')
+  expect(phone.getAttribute('class')).toContain('md:hidden')
+  expect(phone.getAttribute('class')).not.toContain('max-md:hidden')
+  expect(wide.getAttribute('viewBox')).toBe(box(FULL_AXIS_BOX.width, FULL_AXIS_BOX.height))
+  expect(phone.getAttribute('viewBox')).toBe(box(PHONE_AXIS_BOX.width, PHONE_AXIS_BOX.height))
+  // one test id, one element: the twin carries none
+  expect(container.querySelectorAll('[data-testid="chart-ticks"]')).toHaveLength(1)
+  expect(container.querySelectorAll('[data-testid="chart-bar"]')).toHaveLength(MONTHS.length)
+  expect(phone.querySelector('[data-testid]')).toBeNull()
+})
+
+it('a line chart has the twin too', () => {
   const { container } = render(
     <LineChart testId="chart-line" label="x" values={[1, 2, 3]} columns={['a', 'b', 'c']}
       yAxis={{ label: 'RM', format: (v) => String(v) }} />)
-  await act(async () => {})
-  expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(`0 0 ${PHONE_AXIS_BOX.width} ${PHONE_AXIS_BOX.height}`)
-  for (const t of Array.from(container.querySelectorAll('text'))) expect(t.getAttribute('class')).toContain(PHONE_CHART_TEXT)
+  const [, phone] = twins(container)
+  expect(phone.getAttribute('viewBox')).toBe(box(PHONE_AXIS_BOX.width, PHONE_AXIS_BOX.height))
+  for (const t of Array.from(phone.querySelectorAll('text'))) expect(t.getAttribute('class')).toContain(PHONE_CHART_TEXT)
 })
 
-it('from md, and with no matchMedia, the caller\'s box, the 8/9-unit text and every month are unchanged', async () => {
-  for (const w of [false, null] as const) {
-    widthIs(w)
-    const { container, unmount } = render(money())
-    await act(async () => {})
-    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(`0 0 ${FULL_AXIS_BOX.width} ${FULL_AXIS_BOX.height}`)
-    expect(container.querySelectorAll('[data-testid="chart-ticks"] text')).toHaveLength(MONTHS.length)
-    expect(container.querySelector('[data-testid="chart-ticks"] text')!.getAttribute('class')).toContain('text-[9px]')
-    expect(container.querySelector('[data-testid="chart-y-axis"] text')!.getAttribute('class')).toContain('text-[8px]')
-    expect(container.innerHTML).not.toContain(PHONE_CHART_TEXT)
-    unmount()
-  }
+it('the desktop picture keeps the caller\'s box, the 8/9-unit text and every month', () => {
+  const { container } = render(money())
+  const [wide] = twins(container)
+  expect(wide.getAttribute('viewBox')).toBe(box(FULL_AXIS_BOX.width, FULL_AXIS_BOX.height))
+  expect(wide.querySelectorAll('[data-testid="chart-ticks"] text')).toHaveLength(MONTHS.length)
+  expect(wide.querySelector('[data-testid="chart-ticks"] text')!.getAttribute('class')).toContain('text-[9px]')
+  expect(wide.querySelector('[data-testid="chart-y-axis"] text')!.getAttribute('class')).toContain('text-[8px]')
+  expect(wide.innerHTML).not.toContain(PHONE_CHART_TEXT)
 })

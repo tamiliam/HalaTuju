@@ -118,7 +118,7 @@ export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
 
   return (
     <>
-    <header className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
+    <header data-app-header className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
       {/* ⚠ ONE ROW, NO WRAP. Every item but the logo is a fixed, measured width (navLayout.test.ts). */}
       <div className="container mx-auto flex items-center gap-2 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center">

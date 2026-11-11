@@ -533,6 +533,13 @@
 
 /* Component styles */
 @layer components {
+  /* TD-450 (3): the Sheet is `fixed`, so the body's side insets do not reach it; its rows keep 1.25rem
+     and clear the notch in landscape. A class (not three long utilities) keeps the shared JS chunk small. */
+  .sheet-pad-x {
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
   /* Primary button */
   .btn-primary {
     /* the FILL ROLE, like every other filled control (F7a) - reached here in F7c, because
