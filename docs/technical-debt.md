@@ -7357,7 +7357,12 @@ OLD web saves the phone there during the rollout; the view refuses a blank phone
 read-only on that serializer (serializers_admin.py is at its 1026-line allowance — add them to a
 `read_only_fields` on the existing Meta line, never grow the file), and keep the GET serving them. *(B · S)*
 
-### [TD-444] Staff invitations never record who sent them (`invited_by` is always NULL) - low
+### [TD-444] Staff invitations never record who sent them (`invited_by` is always NULL) - low - **RESOLVED 2026-11-11** (FIXED: `apps/courses/views_admin.py` `_record_invitation(..., *, invited_by, ...)`, passed by `AdminInviteView` and `AdminResendView` in `apps/courses/views_staff.py`; tests `apps/courses/tests/test_td444_invited_by.py`)
+
+**Closed 2026-11-11.** The Invite and Resend views now pass the admin who pressed the button, as `record_send` takes its
+`actor`; the dead `request._inviting_admin` read is gone. `invited_by` lands on a NEW row only: a Resend refreshes the
+open row and keeps who first invited them (`create_or_refresh` does not touch it on refresh). Rows written before the fix
+stay NULL; nothing back-fills them, because who sent them was never stored anywhere.
 
 **Found 2026-10-31 by the common profile S3 build.** `courses/views_admin._record_invitation` sets
 `Invitation.invited_by=getattr(request, '_inviting_admin', None)`, and nothing ever sets

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: TD-444 - staff invitations record who sent them (2026-11-11)
+
+API only; no migration. `courses/views_admin._record_invitation` takes `invited_by` from its caller instead of a
+`request._inviting_admin` attribute nothing ever set, so every staff `Invitation` stored NULL. `AdminInviteView` and
+`AdminResendView` pass the admin who pressed the button. A Resend keeps the first inviter on an open invitation.
+- test: `apps/courses/tests/test_td444_invited_by.py` (invite stores the sender; Resend by another admin keeps it; a
+  Resend with no open invitation stores the resender).
+- docs: TD-444 resolved.
+
 ### feat: sprint M1b - Staff list and membership rules, the web half (team membership, 2026-11-11)
 
 Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roadmap

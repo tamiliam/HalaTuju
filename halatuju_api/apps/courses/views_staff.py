@@ -331,7 +331,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # neither is given a password, so they can go unanswered but nothing of theirs can EXPIRE.
         # The screen must say "no reply", not "expired", or an org_admin goes hunting for a
         # password that never existed. This is the one moment we know which branch was taken.
-        inv = _record_invitation(made.account, role, owning_org or org, request,
+        inv = _record_invitation(made.account, role, owning_org or org, invited_by=admin,
                                  credential_issued=made.temp_password is not None)
 
         # The email is the ONLY carrier of the temp password, so a failed send strands the
@@ -407,7 +407,7 @@ class AdminResendView(PartnerAdminMixin, APIView):
         # above. Two clocks would let this screen say "still valid" about a password the login gate
         # already refuses. `credential_issued` reflects what THIS send did: a target with no UID is
         # sent no password, so it stays false and the screen says "no reply" rather than "expired".
-        inv = _record_invitation(target, target.role, target.owning_organisation, request,
+        inv = _record_invitation(target, target.role, target.owning_organisation, invited_by=admin,
                                  credential_issued=bool(temp_password))
 
         emailed = send_partner_welcome_email(
