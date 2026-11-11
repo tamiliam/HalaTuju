@@ -88,6 +88,29 @@ def _run(*args):
     return out.getvalue()
 
 
+def _run_failing(case, *args):
+    """Run the command expecting the end-of-run CommandError (a bill skipped for want of a rate
+    for an ENDED month); returns (the printed report, the error text)."""
+    out = io.StringIO()
+    with case.assertRaises(CommandError) as ctx:
+        call_command('import_invoices', *args, stdout=out)
+    return out.getvalue(), str(ctx.exception)
+
+
+def _myr_bill():
+    return ParsedInvoice(source='workspace', invoice_ref='WS-2026-10', currency='MYR',
+                         period_month='2026-10', total=Decimal('36.00'),
+                         lines=[InvoiceLine('Google Workspace', 'Business Starter',
+                                            Decimal('36.00'))])
+
+
+def _rate_down_but_ringgit(amount, currency, on_date):
+    """The rate service is down; a ringgit bill still needs no rate (as `fx` short-circuits it)."""
+    if currency == 'MYR':
+        return amount, Decimal('1'), on_date
+    raise fx.RateUnavailable('ECB unreachable')
+
+
 class TestTheDriveDoor(TestCase):
     def test_the_dry_run_writes_nothing(self):
         with _Drive([_invoice()]):
@@ -114,7 +137,7 @@ class TestTheDriveDoor(TestCase):
         with _Drive([_invoice()]):
             _run('--drive', '--apply')
         with _Drive([_invoice()], rate=_rate_down):
-            _run('--drive', '--apply')
+            _run_failing(self, '--drive', '--apply')   # the outage is reported as a failed run
         row = PlatformCost.objects.get()
         self.assertEqual(row.amount_myr, Decimal('42.00'))
         self.assertEqual(row.fx_rate, RATE)
@@ -187,13 +210,41 @@ class TestNoBlankFigureThroughTheDoor(TestCase):
 
     def test_an_ended_month_with_the_rate_service_down_is_skipped_then_inserted(self):
         with _Drive([_invoice()], rate=_rate_down):
-            out = _run('--drive', '--apply')
+            out, err = _run_failing(self, '--drive', '--apply')
         self.assertIn('NOT saved - no USD->MYR closing rate for 2026-10-31', out)
+        self.assertIn('1 bill(s) NOT saved', err)
+        self.assertIn('twilio 2026-10 MTSOJA-2026-10', err)
         self.assertEqual(PlatformCost.objects.count(), 0)
 
         with _Drive([_invoice()]):
-            _run('--drive', '--apply')
+            _run('--drive', '--apply')   # the rate is back: no error, inserted
         self.assertEqual(PlatformCost.objects.get().amount_myr, Decimal('42.00'))
+
+    def test_a_missing_rate_for_an_ended_month_fails_the_run_after_the_other_bills(self):
+        # bill-0 (USD, October ended) cannot get a rate; bill-1 (ringgit) needs none.
+        with _Drive([_invoice(), _myr_bill()], rate=_rate_down_but_ringgit):
+            out, err = _run_failing(self, '--drive', '--apply')
+        self.assertIn('1 ledger rows written', out)          # the summary still printed
+        self.assertIn('1 bill(s) NOT saved', err)
+        self.assertIn('bill-0.pdf', err)
+        self.assertNotIn('bill-1.pdf', err)
+        row = PlatformCost.objects.get()                     # the other bill went in
+        self.assertEqual((row.source, row.amount_myr), ('workspace', Decimal('36.00')))
+
+    def test_the_dry_run_also_fails_on_a_missing_rate_for_an_ended_month(self):
+        with _Drive([_invoice()], rate=_rate_down):
+            out, _err = _run_failing(self, '--drive')
+        self.assertIn('0 ledger rows would be written', out)
+        self.assertEqual(PlatformCost.objects.count(), 0)
+
+    def test_waiting_for_month_end_alone_is_not_a_failure(self):
+        # Still October: the USD bill waits (no rate is even asked for); the ringgit bill goes in.
+        with _Drive([_invoice(), _myr_bill()], rate=_rate_down_but_ringgit,
+                    today=date(2026, 10, 20)):
+            out = _run('--drive', '--apply')                 # no CommandError
+        self.assertIn('waiting for month end', out)
+        self.assertIn('1 ledger rows written', out)
+        self.assertEqual(PlatformCost.objects.get().source, 'workspace')
 
     def test_a_ringgit_bill_never_waits(self):
         bill = ParsedInvoice(source='workspace', invoice_ref='WS-2026-10', currency='MYR',
@@ -286,3 +337,31 @@ class TestTheCronDoor(TestCase):
             self.assertEqual(r.status_code, 200)
             self.assertNotIn('error', r.json())
         self.assertEqual(PlatformCost.objects.count(), 1)
+
+    def test_a_missing_rate_for_an_ended_month_is_a_failed_run_at_the_door(self):
+        # The door answers HTTP 200 whatever happens (a 5xx only makes Cloud Scheduler retry -
+        # cron_health.run_job); the failure is the body's `error` and a FAILED run recorded for
+        # the System health light.
+        from apps.scholarship import system_health_store
+        client = APIClient()
+        with _Drive([_invoice(), _myr_bill()], rate=_rate_down_but_ringgit), \
+                patch.object(system_health_store, 'record_cron') as record:
+            r = client.post('/api/v1/internal/cron/supplier-bills-import/',
+                            HTTP_X_CRON_SECRET='k-money')
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn('1 bill(s) NOT saved', body['error'])
+        self.assertNotIn('output', body)
+        record.assert_called_once()
+        self.assertEqual(record.call_args.args[:2], ('supplier-bills-import', False))
+        self.assertEqual(PlatformCost.objects.get().source, 'workspace')   # the rest went in
+
+    def test_waiting_for_month_end_is_a_successful_run_at_the_door(self):
+        from apps.scholarship import system_health_store
+        client = APIClient()
+        with _Drive([_invoice()], today=date(2026, 10, 20)), \
+                patch.object(system_health_store, 'record_cron') as record:
+            r = client.post('/api/v1/internal/cron/supplier-bills-import/',
+                            HTTP_X_CRON_SECRET='k-money')
+        self.assertNotIn('error', r.json())
+        self.assertEqual(record.call_args.args[:2], ('supplier-bills-import', True))

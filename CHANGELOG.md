@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
+
+Branch g14 (not pushed, not deployed; no migration, no budget raised). Merged a44, a45, a46, a47 and a48 onto
+M1b; their own entries are below.
+- fix (A4.5 money): `import_invoices --drive` now ends in a `CommandError` (after processing every other bill) when a
+  bill was skipped because no closing rate could be fetched for a month that HAS ended, so the
+  `supplier-bills-import` / `-report` doors record a failed run (body `error`, System health red; HTTP stays 200 by
+  design). A bill only "waiting for month end" is not a failure. Tests in `test_td247_supplier_bills_cron.py`.
+
 ### feat: sprint M1b - Staff list and membership rules, the web half (team membership, 2026-11-11)
 
 Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roadmap

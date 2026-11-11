@@ -28,7 +28,9 @@ so a second run writes nothing, a transient exchange-rate outage can never blank
 bills that claim the same line are REPORTED rather than one silently replacing the other. Because it
 never comes back to a line, it also never saves a foreign-currency line WITHOUT its ringgit figure: a
 bill whose month has not ended yet ("waiting for month end"), or whose rate cannot be fetched, is
-skipped and reported, and a later run inserts it with the rate. A correction to a line already in
+skipped and reported, and a later run inserts it with the rate. A bill skipped for want of a rate
+for a month that HAS ended also makes the run end in a CommandError once every other bill is done,
+so the door records a failed run; the month-end wait does not. A correction to a line already in
 the ledger stays a person's job, on the `--dir` path, which is unchanged.
 
 ⚠ **Google Cloud statements are READ BUT NEVER IMPORTED.** The BigQuery export carries every SKU
@@ -78,6 +80,11 @@ class Command(BaseCommand):
         # either. Every failure is repeated in the summary.
         problems = []
         checks = []
+        # ⚠ TD-247 (G14): bills the drive door skipped because no closing rate could be fetched
+        # for a month that HAS ended. Unlike "waiting for month end" (expected, quiet) this is an
+        # outage nobody would see on an unattended run, so the command FAILS after the rest are
+        # done (CommandError below) and the cron door records the run as failed.
+        self.fx_skipped = []
 
         for name, source in pdfs:
             try:
@@ -112,6 +119,11 @@ class Command(BaseCommand):
             written += self._import_one(name, invoice, apply, problems)
 
         self._report(written, failed, skipped, checks, problems, apply)
+        if self.fx_skipped:
+            raise CommandError(
+                f'{len(self.fx_skipped)} bill(s) NOT saved: no closing exchange rate could be '
+                f'fetched for a month that has ended ({"; ".join(self.fx_skipped)}). Every other '
+                f'bill was processed; a later run inserts these once a rate is available.')
 
     # ── where the PDFs come from ──────────────────────────────────────────────
 
@@ -172,6 +184,9 @@ class Command(BaseCommand):
                     f'{name}: {what} NOT saved - no {invoice.currency}->MYR closing rate for {end} '
                     f'could be fetched ({exc.__cause__ or exc.__class__.__name__}). A later run '
                     f'inserts it once a rate is available.')
+                # Only reached for an ENDED month (an unended one returned above), so this is
+                # always a failure of the run, never the expected month-end wait.
+                self.fx_skipped.append(f'{name}: {what}')
                 return 0
             # ⚠ NOT a failure of the import. The invoice is still recorded, with no ringgit
             # figure, and `month_totals` will report the month as a FLOOR until a rate exists.
