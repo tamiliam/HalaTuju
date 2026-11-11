@@ -249,8 +249,7 @@ export default function IncomeWizard({
     helpOverride: strIcNamed.includes(m) ? iq('strIcHelp') : iq(`icHelp.${m}`) })
   const strIcMembers = strIcSlotMembers(docs, answers)
   // drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
-  // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded.
-  // Presence is
+  // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded. Presence is
   // MEMBER-AWARE (mirrors the card's own slot match: household_member === earner, or a legacy blank for
   // STR-earner docs — so an IC left tagged to another member never counts as this earner's IC). Then, per
   // owner spec:
