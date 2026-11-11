@@ -34,6 +34,9 @@ Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roa
   list read lands, and a failed re-read keeps the rows with an inline Retry; busy is per row. A never-signed-in
   person's last-group Remove is greyed `not_arrived`. Orphaned i18n keys removed. TD-606 corrected (the Staff row DOES
   carry `runs_in_progress`) and its open gaps listed (no run count on the Admins row, so that Remove is not greyed yet).
+- M1b follow-up on the API's part 2 (TD-606): `RemoveControl` takes the row's served `remove` code as the whole answer
+  (`not_arrived`, `has_open_cases`, `run_in_progress`; `last_table` = No group is accepted) and no longer reads
+  `first_seen_at` (`arrivedOf` removed). The Admins Remove's tip names the served `runs_in_progress`.
 
 ### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
 

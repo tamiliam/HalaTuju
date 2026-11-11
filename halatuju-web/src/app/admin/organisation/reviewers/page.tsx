@@ -29,7 +29,7 @@ import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { byCategory } from '@/lib/adminStaff'
-import { MessageBanner, StaffTable, arrivedOf, useStaffAdmin } from '@/components/admin/StaffAdmin'
+import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
 import type { TeamTableName } from '@/lib/admin-api'
 import StaffAvatar from '@/components/admin/StaffAvatar'
@@ -341,7 +341,7 @@ export default function AdminReviewersList() {
                   {leadNote(r)}
                   <AlsoIn row={r} here="reviewers" />
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                    counts={{ open_cases: r.open_now }} arrived={arrivedOf(admins.find((a) => a.id === r.id))}
+                    counts={{ open_cases: r.open_now }}
                     onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />}
                 </div>
               </div>
@@ -444,7 +444,7 @@ export default function AdminReviewersList() {
                           {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. M1b (O4):
                               Remove only; Suspend and Delete are on Staff. */}
                           <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
-                            counts={{ open_cases: r.open_now }} arrived={arrivedOf(admins.find((a) => a.id === r.id))}
+                            counts={{ open_cases: r.open_now }}
                             onRemove={(toNoGroup) => setRemoving({ id: r.id, name: r.name, table: 'reviewers', toNoGroup })} />
                         </div>
                       )}

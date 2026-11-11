@@ -31,9 +31,9 @@ describe('RemoveControl', () => {
     expect(onRemove).toHaveBeenCalledWith(true)
   })
 
-  it('a last Reviewers seat with open cases is greyed, the count in the tip', () => {
+  it('a served has_open_cases is greyed, the count in the tip', () => {
     const onRemove = jest.fn()
-    render(<RemoveControl remove={{ reviewers: 'last_table' }} table="reviewers" onRemove={onRemove}
+    render(<RemoveControl remove={{ reviewers: 'has_open_cases' }} table="reviewers" onRemove={onRemove}
       counts={{ open_cases: 4 }} />)
     expect(screen.queryByTestId('remove-from-reviewers')).toBeNull()
     expect(tip('remove-greyed-reviewers')).toBe('admin.refusal.has_open_cases.many {"n":"4"}')
@@ -49,28 +49,27 @@ describe('RemoveControl', () => {
     expect(container.querySelectorAll('.sr-only')).toHaveLength(1)
   })
 
-  // M1b review (O17): the row's cheap refusal stops at `last_table`; the server then refuses No group for
-  // whoever never signed in (`_refuse_no_group`), before open cases. Greyed here, not refused in the sheet.
-  it('a last group for someone who never signed in is greyed `not_arrived`, before open cases', () => {
+  // M1b (O17, TD-606): the served code is the server's whole answer. A last group they may not leave reads
+  // the refusal itself; `last_table` means No group is accepted.
+  it('a served `not_arrived` or `has_open_cases` is greyed; `last_table` stays live', () => {
     const onRemove = jest.fn()
-    render(<RemoveControl remove={{ reviewers: 'last_table' }} table="reviewers" onRemove={onRemove}
-      counts={{ open_cases: 2 }} arrived={false} />)
+    const { rerender } = render(<RemoveControl remove={{ reviewers: 'not_arrived' }} table="reviewers"
+      onRemove={onRemove} counts={{ open_cases: 2 }} />)
     expect(screen.queryByTestId('remove-from-reviewers')).toBeNull()
     expect(tip('remove-greyed-reviewers')).toBe('admin.refusal.not_arrived')
     fireEvent.click(screen.getByTestId('remove-greyed-reviewers').querySelector('button')!)
     expect(onRemove).not.toHaveBeenCalled()
+    rerender(<RemoveControl remove={{ reviewers: 'last_table' }} table="reviewers" onRemove={onRemove}
+      counts={{ open_cases: 2 }} />)
+    fireEvent.click(screen.getByTestId('remove-from-reviewers'))
+    expect(onRemove).toHaveBeenCalledWith(true)
   })
 
-  it('`arrived` only matters for the last group; signed in or unknown stays live', () => {
-    const { rerender } = render(<RemoveControl remove={{ admins: null }} table="admins" onRemove={jest.fn()}
-      arrived={false} />)
-    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
-    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} arrived />)
-    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
-    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} />)
-    expect(screen.getByTestId('remove-from-admins')).toBeTruthy()
-    rerender(<RemoveControl remove={{ admins: 'last_table' }} table="admins" onRemove={jest.fn()} arrived={false} />)
-    expect(tip('remove-greyed-admins')).toBe('admin.refusal.not_arrived')
+  it('an Admins Remove served `run_in_progress` is greyed with the run count in its tip', () => {
+    render(<RemoveControl remove={{ admins: 'run_in_progress' }} table="admins" onRemove={jest.fn()}
+      counts={{ runs_in_progress: 2 }} />)
+    expect(screen.queryByTestId('remove-from-admins')).toBeNull()
+    expect(tip('remove-greyed-admins')).toMatch(/^admin\.refusal\.run_in_progress/)
   })
 
   it('draws nothing for the lead\'s fixed Admins seat, or with no entry for the table', () => {

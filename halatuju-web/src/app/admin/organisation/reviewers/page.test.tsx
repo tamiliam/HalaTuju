@@ -669,8 +669,8 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       'admins', 33, 'remove', false, { token: 'tok' }, true))
   })
 
-  it('M1b review (O17): a last Admins seat for someone who never signed in is GREYED `not_arrived`', async () => {
-    mockApi.getAdmins.mockResolvedValue({ admins: [LEAD, ROHINI, { ...KAMALA, first_seen_at: null }] })
+  it('M1b (O17, TD-606): an Admins row served `not_arrived` is GREYED', async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: [LEAD, ROHINI, { ...KAMALA, remove: { admins: 'not_arrived' } }] })
     await loaded()
     fireEvent.click(screen.getByText('admin.people.tabAdmins'))
     await waitFor(() => expect(screen.getAllByText('Kamala Devi').length).toBeGreaterThan(0))
@@ -678,6 +678,22 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
     const b = within(within(row).getByTestId('remove-greyed-admins')).getByText('admin.team.removeFrom.admins')
     expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.refusal.not_arrived')
+    fireEvent.click(b)
+    expect(mockApi.changeTeamTable).not.toHaveBeenCalled()
+  })
+
+  it('M1b (O17, TD-606): an Admins row served `run_in_progress` is GREYED with its served run count', async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: [LEAD, ROHINI,
+      { ...KAMALA, remove: { admins: 'run_in_progress' }, runs_in_progress: 2 }] })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Kamala Devi').length).toBeGreaterThan(0))
+    const row = rowOf('Kamala Devi')
+    expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
+    const b = within(within(row).getByTestId('remove-greyed-admins')).getByText('admin.team.removeFrom.admins')
+    // The i18n mock returns the key: the count rides on `.many` (2 runs).
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent)
+      .toBe('admin.refusal.run_in_progress.many')
     fireEvent.click(b)
     expect(mockApi.changeTeamTable).not.toHaveBeenCalled()
   })
@@ -740,11 +756,11 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(mockApi.changeTeamTable).not.toHaveBeenCalled()
   })
 
-  it('M1b review (O17): a never-signed-in reviewer\'s last-group Remove is GREYED `not_arrived`', async () => {
+  it('M1b (O17, TD-606): a reviewer row served `not_arrived` is GREYED, whatever the Admins list says', async () => {
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[1], tables: ['reviewers'],
-      remove: { reviewers: 'last_table' } }], programmes: giftChoices })
-    // The reviewers row has no `first_seen_at`; the Admins list (same people, same ids) does.
-    mockApi.getAdmins.mockResolvedValue({ admins: [...ADMINS, { ...ADMINS[2], id: 6, first_seen_at: null }] })
+      remove: { reviewers: 'not_arrived' } }], programmes: giftChoices })
+    // The served code is the whole answer; the page no longer reads `first_seen_at` from the Admins list.
+    mockApi.getAdmins.mockResolvedValue({ admins: [...ADMINS, { ...ADMINS[2], id: 6, first_seen_at: '2026-10-01T08:00:00Z' }] })
     render(<AdminReviewersList />)
     const grey = await waitFor(() => within(table()).getByTestId('remove-greyed-reviewers'))
     const b = within(grey).getByText('admin.team.removeFrom.reviewers')
@@ -752,10 +768,10 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(table()).queryByTestId('remove-from-reviewers')).toBeNull()
   })
 
-  it('M1b review (O17): once they have signed in, the last-group Remove stays live', async () => {
+  it('M1b (O17, TD-606): a served `last_table` stays live, whatever the Admins list says', async () => {
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[1], tables: ['reviewers'],
       remove: { reviewers: 'last_table' } }], programmes: giftChoices })
-    mockApi.getAdmins.mockResolvedValue({ admins: [{ ...ADMINS[2], id: 6, first_seen_at: '2026-10-01T08:00:00Z' }] })
+    mockApi.getAdmins.mockResolvedValue({ admins: [{ ...ADMINS[2], id: 6, first_seen_at: null }] })
     render(<AdminReviewersList />)
     await waitFor(() => expect(within(table()).getByTestId('remove-from-reviewers')).toBeTruthy())
     expect(within(table()).queryByTestId('remove-greyed-reviewers')).toBeNull()

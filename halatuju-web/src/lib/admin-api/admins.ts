@@ -63,6 +63,9 @@ export interface AdminItem {
   admin_keys?: string[]
   reviewer_keys?: string[]
   remove?: TeamRemove
+  /** M1b (TD-606): their unfinished payment runs, served on the Admins list only; the tip of a Remove greyed
+   *  `run_in_progress` names it. */
+  runs_in_progress?: number
   /** The invitation behind this person. Null when they predate the record. */
   invitation?: {
     /** Decided by the server (`invitations.status_of`); never re-derived on this side. */

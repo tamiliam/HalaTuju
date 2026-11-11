@@ -60,11 +60,6 @@ function roleBadge(rl: string) {
   return roleBadgeClass(rl)
 }
 
-/** Whether they have signed in, from the row's `first_seen_at`; `undefined` when the row does not say. */
-export function arrivedOf(a?: Pick<AdminItem, 'first_seen_at'>): boolean | undefined {
-  return a?.first_seen_at === undefined ? undefined : a.first_seen_at !== null
-}
-
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
                              onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
   rows: AdminItem[]
@@ -155,9 +150,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             onToggle={onToggle && a.revocable !== false && !(a.is_active && soleOrgAdmin?.(a))
               ? () => onToggle(a) : undefined} />
         )}
-        {/* M1b review (O17): `arrived` greys a never-signed-in person's last-group Remove. Their runs in
-            progress cannot grey it yet — the Admins row carries no run count (TD-606); the sheet refuses. */}
-        {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id} arrived={arrivedOf(a)}
+        {/* M1b (O17, TD-606): the row's served code greys Remove (`run_in_progress`, `not_arrived`); the
+            served `runs_in_progress` is the count its tip names. */}
+        {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id}
+          counts={{ runs_in_progress: a.runs_in_progress ?? 0 }}
           onRemove={(toNoGroup) => team.onRemove(a, toNoGroup)} />}
         {onChangeRole && switchableTo(a) && (
           <button disabled={busyId === a.id} onClick={() => onChangeRole(a)}
