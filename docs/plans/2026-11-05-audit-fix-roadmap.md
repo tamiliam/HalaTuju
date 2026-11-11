@@ -926,11 +926,22 @@ Each sprint here:
 
 See section 6. This is a measurement step, not a sprint.
 
+**Corrections found at G13 (2026-11-11), before the reading is taken.** Read these with the targets above.
+
+- **RD-09 is 2 implementations, not 3** (`letters.names_match`, `payments._name_matches`). A3.11 pinned both in `test_typed_name_pin.py` and did not merge them (they differ on runs of whitespace).
+- **The xapp breakdown in section 2 is stale.** A read-only `code_health.py --full` on g13 gives xapp 107: scholarship → courses 75, courses → scholarship 21, reports → courses 9, reports → scholarship 2. The 54 / 19 / 8 / 2 split was the baseline.
+- **"≥ 3 kB bundle headroom" cannot be reached by design.** The ratchet sets each line to build + 2 kB, so the most room a line can hold is 2 kB. Read the target as "under the line, never raised".
+- **guard% needs A3.16b.** A3.16a brought it 12 → 11; ≤ 9% (interim) and ≤ 8% need the test conversion in A3.16b, not built.
+- **The noqa budget of 80 was not lowered.** A3.14 made 60 noqa carry a code and a reason, but the budget counts reasoned ones too, so it only falls when a noqa is removed.
+- **dup stays 4, and that is accepted.** The four names (`_gemini_generate`, `render`, `banned_phrases`, `unknown_placeholders`) are thin per-caller adapters over one engine each (`gemini.generate_text`, `email_templates`); tenancy rule 6 and about 35 `patch()` strings depend on the names, so A3.11 left them by design and kept the `duplicated_names` budget at 4.
+- **std still FAILs** on the four web lines loosened before the audit (since 227eaf7). G13 raised no budget.
+
 ### Wave 4 — remaining open TDs, grouped by area
 
 #### A4.1 Apply and student scholarship screens
 
-- **Status (2026-11-11):** BUILT on branch a41, not pushed, not deployed. TD-339, 341, 342, 343, 354, 454, 462 fixed. TD-338 NOT built (owner design call: refuse a second open intake per programme at the admin door, or let a choice carry the cohort). Owner phone check: apply.
+- **Status (2026-11-11):** BUILT on branch a41, not pushed, not deployed. TD-339, 341, 342, 343, 354, 454, 462 fixed. TD-338 NOT built (owner design call: refuse a second open intake per programme at the admin door, or let a choice carry the cohort). Owner phone check: apply. Merged into g13 2026-11-11 (not pushed).
+- **Open item (G13 review, 2026-11-11, for the other lane to number):** a submit that names a cohort directly skips the inactive-programme check (`views/applications.py`, around line 97). Only the open-round resolver was fixed for TD-339. Not fixed in G13.
 - **Scope:**
   - TD-338 / 339 (two open cohorts: duplicate choice and 409; inactive programme).
   - TD-341 (banner reads `applications[0]`).
@@ -963,7 +974,7 @@ See section 6. This is a measurement step, not a sprint.
 - **Model:** Sonnet.
 - **Gates:** Fresh review.
 - **Deploy:** G13.
-- **Status:** built 2026-11-11 on branch a42 (not pushed). TD-388, TD-455, TD-463, TD-346 fixed; TD-456 built (Tamil 360 px mobile-check still to run; the number inside the merit bar stays 9 px). TD-077 not built (needs a Stitch-approved badge). TD-469 and TD-472 not built (owner's call, D10).
+- **Status:** built 2026-11-11 on branch a42 (not pushed). TD-388, TD-455, TD-463, TD-346 fixed; TD-456 built (Tamil 360 px mobile-check still to run; the number inside the merit bar stays 9 px). TD-077 not built (needs a Stitch-approved badge). TD-469 and TD-472 not built (owner's call, D10). **Owner ruled D10 2026-11-11** (TD-469 option A, TD-472 option B); both built in G13: the sponsor desktop row has the language select (TD-469 part 1; part 3, the admin 10-11 px labels, stays open), and the console Profile page has the language segments (TD-472 resolved).
 
 #### A4.3 Phone layout leftovers
 

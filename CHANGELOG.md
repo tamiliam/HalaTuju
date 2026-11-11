@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
+
+Branch g13 (not pushed, not deployed; no migration, no budget raised).
+- Merged a41 (apply and student scholarship screens), a42 (language fixes) and a43 (phone layout leftovers); their
+  own entries are below.
+- Review fixes: the TD-463 schedule now has shared golden cases (pence, a row with no first month) that the web and
+  the server must agree on; the TD-453 comment and debt entry are corrected; the Malay `courseDetail.meritNeed`.
+- Message slices: `courseDetail` and `saved` leave the core slice for the discovery slice, except the eight course-card
+  words and `saved.remove` that every route needs (`CORE_KEEPS`). `/stpm/[id]` now loads the discovery slice too.
+  This brings `/scholarship/apply` back under its line without raising it.
+- Bug fixed on the way: `scholarship.finishSignIn` is read by the student menus on every route (A4.1, TD-342) but sat
+  in the scholarship slice, so other routes showed the raw key. It is now kept in core; the slice-reach test caught it.
+- Owner D10: TD-469 part (1) - the sponsor portal's desktop top row has the language select
+  (`SponsorShell.language.test.tsx`); part (3), the admin 10-11 px labels, stays open. TD-472 - the console Profile
+  page has the language segments, outside the form (`admin/profile/language.test.tsx`). Both reuse the existing controls.
+- Roadmap: corrections at the interim reading (RD-09 is 2 copies, the xapp split, the 2 kB ratchet, guard% needs
+  A3.16b, the noqa budget, why dup stays 4) and an open A4.1 item for the other lane (a submit naming a cohort
+  directly skips the inactive-programme check).
+
 ### A4.3 - phone layout leftovers (2026-11-11, branch a43, not pushed)
 
 - TD-457 fixed: `AppHeader` is marked `data-app-header`; the saved compare measures it into `--header-height` (`lib/headerHeight.ts`, kept out of the shared chunk) and its
