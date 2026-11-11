@@ -20,6 +20,10 @@ M1b; their own entries are below.
   asserts the English first render unconditionally (a fresh copy of the i18n modules), and fails without the
   `contentLocale` fix. TD-074 says the `S-XXXXXX` ref is a salted-hash label, not a secret; the protection is the
   visible-set fence in `resolve_ref`.
+- fix (gates on the merged branch): `import_invoices`' date helper is `_server_date` (it reads the server's date
+  on purpose, unlike the Malaysia-time `_today` in `invoice_dates` / `invoice_overdue`); the pool-fence source
+  guard also accepts `_fenced_pool_app` and checks that helper fences; the TD-074 test builds its students with
+  `make_application`; the console-matrix test declares A4.4's two new reviewer Guide sections.
 
 ### feat: sprint M1b - Staff list and membership rules, the web half (team membership, 2026-11-11)
 

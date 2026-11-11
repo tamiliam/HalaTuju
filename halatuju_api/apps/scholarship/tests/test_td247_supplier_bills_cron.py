@@ -71,7 +71,7 @@ class _Drive:
             patch.object(invoice_parsers, 'pdf_text', side_effect=lambda _src: next(texts)),
             patch.object(invoice_parsers, 'parse_text', side_effect=lambda t: by_text[t]),
             patch.object(fx, 'to_myr', side_effect=self.rate),
-            patch.object(import_invoices, '_today', return_value=self.today),
+            patch.object(import_invoices, '_server_date', return_value=self.today),
         ]
         for p in self._patches:
             p.start()

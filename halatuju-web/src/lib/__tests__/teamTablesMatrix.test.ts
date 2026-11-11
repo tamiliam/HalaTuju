@@ -194,11 +194,20 @@ const R55_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
   ['role-qc', 'qc-review-all', 'qc-reviewer-notes'],
   ['role-org-admin', 'org-admin-assigning', 'org-admin-reviewer-notes'],
 ]
+/**
+ * A4.4 (TD-502 part, 2026-11-11): two more Guide SECTIONS in the reviewer chapter, on the two scheduling states,
+ * inserted in order after "reviewer-scheduling". Same rule as #55: only a shape that already sees the reviewer
+ * chapter sees them; no chapter, menu row, page or landing moves.
+ */
+const A44_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
+  ['role-reviewer', 'reviewer-scheduling', 'reviewer-scheduling-proposed'],
+  ['role-reviewer', 'reviewer-scheduling-proposed', 'reviewer-scheduling-booked'],
+]
 function r55GuideMoves(cells: Record<string, unknown>): Record<string, unknown> {
   const guide = (cells.guide as string[]).map((row) => {
     const [slug, list] = [row.slice(0, row.indexOf(':')), row.slice(row.indexOf(':') + 1)]
     let anchors = list ? list.split(',') : []
-    for (const [chapter, after, added] of R55_SECTIONS) {
+    for (const [chapter, after, added] of [...R55_SECTIONS, ...A44_SECTIONS]) {
       const at = anchors.indexOf(after)
       if (slug === chapter && at >= 0) anchors = [...anchors.slice(0, at + 1), added, ...anchors.slice(at + 1)]
     }

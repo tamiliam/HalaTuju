@@ -20,9 +20,9 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import pool
 from apps.scholarship.models import (
-    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
-    SponsorProfile, SponsorProgrammeMembership, Sponsorship,
+    Donation, Programme, ScholarshipCohort, Sponsor, SponsorProgrammeMembership, Sponsorship,
 )
+from apps.scholarship.tests.factories import make_application
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 NOT_FOUND = {'error': 'not_found'}
@@ -38,13 +38,10 @@ def _pool_app(programme, org, *, code, uid):
     cohort = ScholarshipCohort.objects.create(
         code=code, name='Intake', year=2026, owning_organisation=org, programme=programme)
     profile = StudentProfile.objects.create(supabase_user_id=uid, name='Pooled Student')
-    app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, award_amount=Decimal('3000'), status='recommended')
-    SponsorProfile.objects.create(application=app, anon_markdown='Determined.',
-                                  anon_published=True)
-    Consent.objects.create(application=app, consent_type='share_with_sponsors',
-                           version='e', is_active=True)
-    return app
+    # The factory stamps what makes a student pool-eligible (the published sponsor profile and
+    # the active share consent) the way the product does - no hand-built row.
+    return make_application('recommended', cohort=cohort, student=profile,
+                            award_amount=Decimal('3000'))
 
 
 def _sponsor(uid, programme):

@@ -48,8 +48,12 @@ from apps.scholarship import fx, invoice_parsers, platform_cost, supplier_bills
 from apps.scholarship.models import PlatformCost
 
 
-def _today():
-    """Today's date, in one place so the month-end wait can be tested."""
+def _server_date():
+    """The SERVER's date, in one place so the month-end wait can be tested.
+
+    Not the Malaysia-time ``_today`` of ``invoice_dates`` / ``invoice_overdue``: the month-end wait
+    deliberately reads the server's date (see TD-247 in docs/technical-debt.md), so it is named
+    for what it reads rather than sharing their name."""
     return date.today()
 
 
@@ -165,7 +169,7 @@ class Command(BaseCommand):
         # month is still running (its last day included: the closing rate is not final until the
         # day is over) the bill is SKIPPED and reported, and the first run after the month ends
         # inserts it with the rate. No exchange-rate call is made for it in the meantime.
-        if self.insert_only and invoice.currency != 'MYR' and end >= _today():
+        if self.insert_only and invoice.currency != 'MYR' and end >= _server_date():
             problems.append(
                 f'{name}: {what} NOT saved - waiting for month end. The closing rate for {end} does '
                 f'not exist yet; a run after the month ends inserts it with the rate.')

@@ -186,12 +186,22 @@ class TestEverySponsorPoolReadIsFenced(TestCase):
     the paths we thought of, this covers the one someone adds next.
     """
     def test_pool_views_narrow_by_membership(self):
+        # TD-074 (A4.6): the detail view and the fund action look a student up through
+        # `_fenced_pool_app`, which fences with `pool.for_sponsor` BEFORE resolving the ref. A view
+        # may go through that helper instead of calling `for_sponsor` itself - so the helper is
+        # held to the same rule here, or the guard would pass on a helper that stopped fencing.
+        helper = inspect.getsource(views_sponsor._fenced_pool_app)
+        self.assertIn(
+            'pool.for_sponsor(', helper,
+            '_fenced_pool_app must narrow the pool via pool.for_sponsor(...) before resolving a ref.',
+        )
         for view in (views_sponsor.SponsorPoolListView, views_sponsor.SponsorPoolDetailView):
             source = inspect.getsource(view)
-            self.assertIn(
-                'for_sponsor', source,
-                f'{view.__name__} must narrow the pool via pool.for_sponsor(...) — a bare '
-                f'display_pool_queryset serves every programme on the platform.',
+            self.assertTrue(
+                'for_sponsor' in source or '_fenced_pool_app(' in source,
+                f'{view.__name__} must narrow the pool via pool.for_sponsor(...) (directly or '
+                f'through _fenced_pool_app) — a bare display_pool_queryset serves every programme '
+                f'on the platform.',
             )
 
     def test_notification_paths_narrow_by_membership(self):
