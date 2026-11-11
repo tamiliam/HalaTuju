@@ -128,7 +128,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 
 - **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
 - **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)* - **FIXED (2026-11-08, A1.13: owner ruling D3, super-only withdrawal with a required reason; a paid case is TD-591; A1.13b 2026-11-08 replaced it with MAKER and CHECKER: one staff member asks, a different one approves or refuses, no super in either seat)**
-- **TD-192** — Sponsor vetting is one button. What checks do we require, for whom, and do they block money? *(A · L · parked with the sponsor module)*
+- **TD-192** — Sponsor vetting is one button. What checks do we require, for whom, and do they block money? *(A · L · parked with the sponsor module; risk accepted D8 2026-11-12 while every sponsor is known to the owner; KYC before the first unknown sponsor's money)*
 - **TD-152** — The agreement's donor is a named person until the Foundation is registered. Confirm the hand-over plan. *(A · L)*
 - **TD-142** — Payments are real but not tied to the signed agreement. This waits on TD-140. *(A · L · partly done)*
 - **TD-140** — The bursary agreement cannot go live until a lawyer approves the wording and the signing entity is settled. *(A · L)*
@@ -3051,6 +3051,15 @@ when TD-190 was the highest — re-verify it is still unique at the next close**
 agent lesson.)
 
 ### [TD-192] Sponsor vetting is a BUTTON, not a process — we do not know our customers — HIGH
+**RISK ACCEPTED, stays parked (owner, 2026-11-12, audit decision D8 = A):** *"The proper vetting can
+be done in future. For now, all sponsors are personal friends. When we accept money from anon, the
+proper kyc should be in place."* So: every sponsor today is known to the owner in person, and the
+Approve button records that personal knowledge. **The trigger to un-park is the first sponsor the
+owner does not know personally** (open sign-up, a public appeal, a referral from a stranger). Proper
+KYC must be live BEFORE that sponsor's money is accepted, not after. Until then `is_trusted = True`
+by default is also accepted (it widens student detail only to these known people). Re-check at each
+audit that the condition still holds.
+
 **Owner, 2026-07-28:** *"This is a gap. There must be vetting. We need to know our customers."*
 
 **What vetting is today.** A sponsor registers with **name, email, phone, a "how did you find us?"
