@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
+
+Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
+- Owner O18 on the mentor-only login: the mentor action `deactivate` (the Staff tab's Suspend of a mentor login) is
+  now refused 409 `{'error', 'code': 'has_scholars', 'scholars_now': n}` while they mentor anybody, the staff
+  Revoke's body and count (`staff_mentor.has_scholars_body`, `mentoring.scholars_now`), counted under the `Mentor`
+  row's lock taken first (M1a's order). Nothing is ended or switched off; move each scholar first. Before, it
+  ended their mentoring. The invitation's Cancel of a never-signed-in mentor (`revoke_invite`) still ends theirs,
+  as the staff invitation Cancel does.
+- Group-table rows (`GET admin/admins/`, `GET admin/reviewers/`): a row's `remove` code is now
+  `staff_tables_admin.row_refusal`, the Remove as the screen sends it (`to_no_group` when the row says
+  `last_table`), so a never-signed-in person's last group reads `not_arrived` (before `has_open_cases`, as the
+  action orders them) instead of a live `last_table` the sheet then refused.
+- Tests: `test_m1b_api_part1.py` (new: refused with scholars, allowed with none, the 409 matches the staff Revoke's
+  keys, the lock order, every row's code against the endpoint's answer); `test_mentoring.py` and
+  `test_team_tables_t2.py` updated to the new rules.
+- Left open (TD-606 part 2): the Admins row's `run_in_progress`, through the scholarship public facade after G12.
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

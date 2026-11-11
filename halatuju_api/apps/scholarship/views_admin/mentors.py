@@ -440,7 +440,8 @@ class AdminMentorActionView(_MentorsBase):
     """POST admin/mentors/<id>/<action>/ — `resend` (invited only: 400 `already_joined` /
     `not_active`), `revoke` (invited only: withdraws the invitation, switches the login off, kills
     the emailed password, stamps the mentor inactive), `deactivate` (any not-inactive mentor; never a
-    delete) and `reactivate` (inactive only: 400 `active`; a never-signed-in mentor is sent the
+    delete; 409 `has_scholars` with `scholars_now` while they mentor anybody — owner O18, TD-606, the
+    staff Revoke's body) and `reactivate` (inactive only: 400 `active`; a never-signed-in mentor is sent the
     invitation again). 200 the row + `emailed`; 404 an unknown action or another organisation's
     mentor; 500 `not_configured`; 502 `reset_failed` / `send_failed`."""
     ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume', 'remove')   # M1a: + remove
@@ -468,7 +469,9 @@ class AdminMentorActionView(_MentorsBase):
         elif action == 'revoke':
             _, refusal = mentor_invite.revoke_invite(admin, mentor, login)
         else:
-            _, refusal = mentor_invite.deactivate(admin, mentor, login)
+            n, refusal = mentor_invite.deactivate(admin, mentor, login)
+            if refusal == 'has_scholars':                 # O18: nothing ended, nothing switched off
+                return _has_scholars(login, n)
         if refusal in ('already_joined', 'not_active', 'active', 'no_login', 'not_arrived'):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_configured':
@@ -516,7 +519,8 @@ class AdminMentorActionView(_MentorsBase):
 
 def _has_scholars(login, n):
     from .. import staff_mentor
-    return Response(staff_mentor.has_scholars_body(login.name, n), status=status.HTTP_409_CONFLICT)
+    name = login.name if login is not None else ''
+    return Response(staff_mentor.has_scholars_body(name, n), status=status.HTTP_409_CONFLICT)
 
 
 class AdminStaffMentorsView(_MentorsBase):

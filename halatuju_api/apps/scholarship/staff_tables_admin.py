@@ -370,6 +370,17 @@ def _cheap_refusal(target, table, open_n, to_no_group=False):
     return None
 
 
+def row_refusal(target, table, open_n):
+    """A row's `remove` code (TD-606): the answer the screen's Remove meets, as the screen sends it — as it
+    is, and where that is `last_table`, again WITH `to_no_group` (the web sends it exactly then). So a last
+    group they may leave for No group stays `last_table` (the web's cue); one they may not reads that
+    refusal (`not_arrived`, then `has_open_cases`: `_refuse_no_group`'s order), never `last_table`."""
+    code = _cheap_refusal(target, table, open_n)
+    if code == LAST_TABLE:
+        return _cheap_refusal(target, table, open_n, to_no_group=True) or LAST_TABLE
+    return code
+
+
 def open_case_counts(admin_ids):
     """`{admin_id: open cases}` in ONE query — `staff_lifecycle.open_cases`'s rule, for a page of rows."""
     from django.db.models import Count, Q
@@ -384,15 +395,16 @@ def open_case_counts(admin_ids):
     return {r['assigned_to_id']: r['n'] for r in rows}
 
 
-def row_fields(caller, admins, *, open_counts=None, to_no_group=False):
+def row_fields(caller, admins, *, open_counts=None):
     """`{admin_id: {...}}` — what the Team tables need per row, served on both lists so the screen shows
     a Remove only where the endpoint will accept it:
       `tables`        the tables the person sits in (`staff_tables.tables`)
       `lead`          the organisation admin ("Admin (lead)", never editable at Admins)
       `admin_keys` / `reviewer_keys`  each table's OWN chips
       `remove`        `{admins|reviewers: None | code}` for a table they sit in and the caller may act
-                      on: None = Remove is accepted; a code = why not (the screen's note). Absent = no
-                      link at all (not in that table, or not the caller's to act on)."""
+                      on: None = Remove is accepted; `last_table` = accepted as a move to No group (send
+                      `to_no_group`); another code = why not (`row_refusal`). Absent = no link at all
+                      (not in that table, or not the caller's to act on)."""
     from apps.courses import staff_permissions as sp
     from apps.courses import staff_tables
     rows = list(admins)
@@ -403,7 +415,7 @@ def row_fields(caller, admins, *, open_counts=None, to_no_group=False):
         remove = {}
         for table in TABLES:
             if a.is_active and _in(a, table) and may_act(caller, a, table):
-                remove[table] = _cheap_refusal(a, table, counts.get(a.pk, 0), to_no_group)
+                remove[table] = row_refusal(a, table, counts.get(a.pk, 0))
         out[a.pk] = {'tables': list(staff_tables.tables(a)), 'lead': sp.is_lead_tier(a),
                      'admin_keys': table_keys(a, ADMINS), 'reviewer_keys': table_keys(a, REVIEWERS),
                      'remove': remove}

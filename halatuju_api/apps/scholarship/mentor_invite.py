@@ -28,8 +28,10 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
 - DEACTIVATE switches the login off (`is_active=False`, the source user's revoke), withdraws a waiting
   invitation and kills its emailed password, and stamps `deactivated_at/_by_email`. REACTIVATE
   reverses it for a mentor who has signed in, and sends nothing (see the Mentors-page rule below).
-  S7b: Deactivate (and Revoke, the same switch-off) also ENDS every open mentoring assignment of
-  theirs (`mentoring.end_for_mentor`); Reactivate restores none.
+  S7b: Revoke (the same switch-off) also ENDS every open mentoring assignment of theirs
+  (`mentoring.end_for_mentor`); Reactivate restores none. OWNER O18 (sprint M1b API part 1, TD-606):
+  Deactivate (the Staff list's Suspend of a mentor login) is REFUSED `has_scholars` while they mentor
+  anybody, as the staff Revoke is — it never ends mentoring; each scholar is moved first.
 - THE MENTORS PAGE NEVER INVITES (S7b follow-up review, owner 2026-11-01): it manages mentors who have
   ARRIVED, like People. Reactivate is only for a mentor who has signed in, and sends nothing; a mentor
   who never signed in is refused `not_arrived` there — they come back by a re-invite (above).
@@ -282,14 +284,24 @@ def resend_invite(caller, mentor, login):
 
 
 # ── switching off and on ─────────────────────────────────────────────────────────
-def _switch_off(caller, mentor, login):
+def _switch_off(caller, mentor, login, *, refuse_scholars=False):
     """Login off, waiting invitation withdrawn, mentor stamped — in ONE transaction, each write
     conditional so a concurrent change wins. Then the emailed password is killed. ``(done, error)``.
-    ⚠ NEVER FOR A STAFF MENTOR (S7d): it would switch their STAFF login off — refused `staff_mentor`."""
+    ⚠ NEVER FOR A STAFF MENTOR (S7d): it would switch their STAFF login off — refused `staff_mentor`.
+    ``refuse_scholars`` (O18, Deactivate): refused `has_scholars` while they mentor anybody, ``done``
+    then being the count — the MENTOR row locked first (M1a's order, as `staff_mentor.stop`), so an
+    assignment committed after the count cannot be ended here (`mentoring.assign` takes that lock)."""
     if is_staff_login(login):
         return False, 'staff_mentor'
+    from . import mentoring
     now = timezone.now()
     with transaction.atomic():
+        if refuse_scholars:
+            Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+            n = mentoring.scholars_now([mentor.pk]).get(mentor.pk, 0)
+            if n:
+                from .staff_mentor import HAS_SCHOLARS
+                return n, HAS_SCHOLARS
         if not Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=True).update(
                 deactivated_at=now, deactivated_by_email=caller.email or ''):
             return False, 'not_active'
@@ -301,8 +313,7 @@ def _switch_off(caller, mentor, login):
             Invitation.objects.filter(pk__in=[i.pk for i in waiting]).update(
                 revoked_at=now, updated_at=now)
         # S7b: their open assignments end with them ("Mentor deactivated", a line on each file, no
-        # email), in this transaction. Reactivate restores none of them.
-        from . import mentoring
+        # email), in this transaction — a Revoke's; a Deactivate found none above. Reactivate restores none.
         mentoring.end_for_mentor(mentor, by=caller.email or '')
     mentor.deactivated_at, mentor.deactivated_by_email = now, caller.email or ''
     if login is not None:
@@ -329,12 +340,14 @@ def revoke_invite(caller, mentor, login):
 
 def deactivate(caller, mentor, login):
     """Switch a mentor OFF — never a delete. ``(done, error)``; `not_active` when already off;
-    `staff_mentor` for a staff member (S7d: Stop mentoring is theirs, `staff_mentor.stop`)."""
+    `staff_mentor` for a staff member (S7d: Stop mentoring is theirs, `staff_mentor.stop`);
+    `has_scholars` (owner O18, TD-606) while they mentor anybody, ``done`` then being how many —
+    nothing is ended or switched off."""
     if is_staff_login(login):
         return False, 'staff_mentor'
     if status_of(mentor, login) == INACTIVE:
         return False, 'not_active'
-    return _switch_off(caller, mentor, login)
+    return _switch_off(caller, mentor, login, refuse_scholars=True)
 
 
 def reactivate(caller, mentor, login):

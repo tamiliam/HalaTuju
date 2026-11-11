@@ -8729,3 +8729,46 @@ the table (or is archived) with a run waiting on them. Locking the existing run 
 NEW row. Fix: make run create and maker-sign lock the actor's `PartnerAdmin` row (money code: Opus build and the
 owner's yes), so they wait on the Remove or archive. Rare in practice: a lead removing someone at the very second that
 person starts a run.
+
+### [TD-606] Suspending a mentor login ends their mentoring instead of refusing `has_scholars` - low (part 1 fixed 2026-11-11)
+
+**Part 1 FIXED 2026-11-11 (sprint M1b, API part 1, branch m1b-api, awaiting push; no migration).** Fix (1): the mentor
+action `deactivate` (`mentor_invite.deactivate`, through `_switch_off(..., refuse_scholars=True)`) now refuses 409
+`{'error', 'code': 'has_scholars', 'scholars_now': n}` while the mentor has any open assignment: the staff Revoke's
+body (`staff_mentor.has_scholars_body`) and its count (`mentoring.scholars_now`), taken under the `Mentor` row's lock
+first (M1a's order); nothing is ended or switched off. The invitation's Cancel of a never-signed-in mentor
+(`revoke_invite`) still ends their mentoring, as the staff invitation Cancel does (`staff_mentor.leave`); O18 names
+Suspend only. Fix (3): a group-table row's `remove` code is now `staff_tables_admin.row_refusal`, which composes
+`_cheap_refusal` as the screen sends the Remove (`to_no_group` when the row says `last_table`), so a never-signed-in
+person's last group reads `not_arrived` on the Admins AND Reviewers rows, ahead of `has_open_cases` as
+`_refuse_no_group` orders them. Tests: `test_m1b_api_part1.py`, `test_mentoring.py`, `test_team_tables_t2.py`.
+**Still open: Fix (2)**, the Admins row's `run_in_progress` (part 2): `courses/views_staff.py` serves the run count
+through the scholarship public facade once the audit lane's G12 has landed. Once the web reads the served
+`not_arrived`, `RemoveControl` can stop reading `first_seen_at` for it (web follow-up).
+
+**Raised 2026-11-11 by sprint M1b (web only; no API file may change in M1b).** Owner O18 says Suspend is refused while
+the person still mentors anyone. The staff Revoke does refuse 409 `has_scholars` (M1a review), but a MENTOR-ONLY login is
+suspended through the mentor action `deactivate` (`mentorAction(id, 'deactivate')`), which ends their assignments
+rather than refusing. The Staff tab therefore greys that Suspend itself whenever the row's `scholars_now` is above 0
+(`StaffList.tsx`, tip "They still mentor {n} scholars..."), so a lead cannot reach it from the web, but the endpoint
+itself still allows it.
+
+**Corrected 2026-11-11 (M1b review).** An earlier line here said `run_in_progress` is not on the Staff row. It is:
+`GET admin/staff/` serves `work.admins.runs_in_progress` (`staff_work.unfinished_counts`, one field per
+`ADMIN_WAITING` entry), and the greyed Delete's tip already names it. The gaps that remain are on the GROUP tables'
+rows, where the web cannot grey a Remove the server will refuse, so the refusal arrives only after the click (in the
+Remove sheet's dry run):
+- **Admins row (`GET admin/admins/`) carries no run count.** `_plan_remove` refuses Remove from Admins with
+  `run_in_progress` (409, `ADMIN_WAITING`) before anything else, but the row's cheap refusal (`_cheap_refusal`) does not
+  check it and the row has no `runs_in_progress`. So the Admins Remove cannot be greyed `run_in_progress` (O17).
+- **`not_arrived` is never a cheap refusal.** For their last group `_cheap_refusal` answers `last_table`, but
+  `_refuse_no_group` then refuses `not_arrived` (400) for whoever never signed in. Since this review the web greys it
+  from `first_seen_at` (`RemoveControl`'s `arrived`): the Admins row carries it, and the Reviewers table looks it up in
+  the Admins list (same ids). It is not on the Reviewers row (`GET admin/reviewers/`) itself, nor on the Staff row, so
+  a reviewer missing from the Admins list stays live and is refused in the sheet.
+- **Staff row has no `first_seen_at`** (not needed today: Staff has no Remove).
+
+**Fix:** (1) make the mentor `deactivate` refuse 409 `has_scholars` (with `scholars_now`) like the staff Revoke;
+(2) serve `run_in_progress` as the Admins row's cheap refusal (or `work.admins` counts on that row), then pass the count
+to the Admins `RemoveControl`; (3) answer `not_arrived` in `_cheap_refusal` for a last group, so the web stops reading
+`first_seen_at` for it. *(A · S)*

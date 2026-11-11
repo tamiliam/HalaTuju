@@ -6,7 +6,8 @@ Doors, each driven through the real endpoints (or the real service another door 
 
 - INTO "has a mentor": assign; change (the old one ends, the new one starts — never two open); a racing
   second open row (the partial unique index, and the service's `conflict`).
-- OUT of it: end; change; the mentor deactivated (and revoked); the file closed.
+- OUT of it: end; change; the mentor revoked (a Deactivate is refused while they mentor anybody: owner
+  O18, TD-606); the file closed.
 - REFUSED: another organisation's mentor; a deactivated mentor; the student themselves (UID, alias UID,
   contact email, notify email); a file not in maintenance (read-only); a caller role outside
   super / org_admin / admin; another organisation's application (404).
@@ -186,20 +187,21 @@ class TestOutOfHasAMentor(_Base):
         self.assertEqual((r.status_code, r.json()['code']), (409, 'no_mentor'))
 
     @override_settings(SUPABASE_SERVICE_ROLE_KEY='svc', SUPABASE_URL='https://x.supabase.co')
-    def test_deactivating_the_mentor_ends_every_open_assignment_and_reactivating_restores_none(self):
+    def test_deactivating_the_mentor_is_refused_while_they_mentor_and_reactivating_restores_none(self):
+        # Owner O18 (TD-606): refused `has_scholars`, nothing ended; each scholar is moved first.
         other = _scholar(cohort=self.app.cohort)
         self.assign(self.kavitha, email_student=False)
         mentoring.assign(self.org_admin, other, self.kavitha, email_student=False)
         mail.outbox.clear()
+        url = f'/api/v1/admin/mentors/{self.kavitha.pk}/deactivate/'
         with patch('apps.courses.supabase_admin.kill_temp_password', return_value='killed'):
-            r = authed_client(self.org_admin).post(f'/api/v1/admin/mentors/{self.kavitha.pk}/deactivate/', {},
-                                                   format='json')
+            r = authed_client(self.org_admin).post(url, {}, format='json')
+            self.assertEqual((r.status_code, r.json()['code'], r.json()['scholars_now']), (409, 'has_scholars', 2))
+            for app in (self.app, other):
+                self.assertEqual(len(self.open_rows(app)), 1)
+                mentoring.end(self.org_admin, app)
+            r = authed_client(self.org_admin).post(url, {}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
-        for app in (self.app, other):
-            self.assertEqual(self.open_rows(app), [])
-            row = MentorAssignment.objects.get(application=app)
-            self.assertEqual(row.end_reason, mentoring.REASON_DEACTIVATED)
-            self.assertEqual(self.events(app)[-1][1]['cause'], 'mentor_deactivated')
         self.assertEqual(mail.outbox, [])
         with patch('apps.courses.supabase_admin.issue_temp_password', return_value=True), \
                 patch('apps.courses.supabase_admin.read_auth_user',

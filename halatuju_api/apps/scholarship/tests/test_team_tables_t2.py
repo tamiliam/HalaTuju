@@ -263,12 +263,15 @@ class Remove(_Base):
     def test_the_list_serves_where_remove_is_accepted(self):
         rohini = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'spending'])
         make_application('assigned', reviewer=rohini, cohort=self.cohort)
-        adm = make_admin('admin', owning_org=self.org)
+        from django.utils import timezone
+        adm = make_admin('admin', owning_org=self.org, first_seen_at=timezone.now())
+        never = make_admin('admin', owning_org=self.org)    # TD-606: never signed in
         rows = {a['id']: a for a in authed_client(self.lead).get('/api/v1/admin/admins/').json()['admins']}
         self.assertEqual(rows[rohini.pk]['remove'], {'admins': None, 'reviewers': 'has_open_cases'})
         self.assertEqual(rows[rohini.pk]['admin_keys'], ['see_all', 'spending'])
         self.assertEqual(rows[rohini.pk]['reviewer_keys'], ['review'])
         self.assertEqual(rows[adm.pk]['remove'], {'admins': 'last_table'})
+        self.assertEqual(rows[never.pk]['remove'], {'admins': 'not_arrived'})   # what the Remove answers
         self.assertEqual(rows[self.lead.pk]['remove'], {})       # an org admin is not theirs to act on
         self.assertTrue(rows[self.lead.pk]['lead'])
 
