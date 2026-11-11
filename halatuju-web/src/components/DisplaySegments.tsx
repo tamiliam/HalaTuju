@@ -19,7 +19,7 @@ import {
 } from '@/lib/theme'
 
 const SEGMENTS = 'flex w-full gap-1 rounded-lg bg-ground-100 p-1'
-const segment = (on: boolean) => `inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium ${
+const segment = (on: boolean) => `inline-flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-md px-2 text-center text-sm font-medium leading-tight ${
   on ? 'bg-ground-0 text-ground-900 shadow-sm' : 'text-ground-600 hover:text-ground-900'}`
 
 /**
@@ -48,7 +48,8 @@ export function ThemeSegments() {
 
 /**
  * English / Bahasa Melayu / தமிழ் as three 44 px buttons, sized to their words (`flex-auto`, so
- * "Bahasa Melayu" gets its room and the row still fits a 320 px sheet body). ⚠ The SAME rule as
+ * "Bahasa Melayu" gets its room) but free to shrink (`min-w-0`) and wrap inside the button, so the row
+ * stays inside the w-72 desktop menu and a 320 px sheet body. ⚠ The SAME rule as
  * `LanguageSelector` (read its header): the pending choice is this control's own state, shown at once
  * with a spinner while the catalogue loads; a failed load puts it back and says so in the house toast;
  * an answer for a choice already replaced is ignored.
