@@ -4991,6 +4991,14 @@ skipped and reported as "waiting for month end", with no rate lookup; a bill who
 down) is skipped and reported the same way. The first run after the month ends, or after the rate service is
 back, inserts it with the rate. Ringgit bills (Workspace) never wait. The `--dir` path is unchanged (still
 upserts, and still records a blank figure when there is no rate).
+**A missing rate for an ENDED month fails the run (G14):** after every other bill is processed the command ends
+in a `CommandError`, so the door's body carries `error` and the System health light records a failed run (the
+door still answers HTTP 200 by design - a 5xx only makes Cloud Scheduler retry). The month-end wait alone is not a
+failure.
+**Caution - a manual run near 00:00 MYT on the 1st:** the month-end check reads the server's date and the rate is
+"published on or before" the last day (`fx`), so a run just after the month turns, before the ECB has published
+the last day's closing rate, may lock in the PREVIOUS day's ECB rate - and the insert-only door never revisits it.
+Run it later on the 1st or after (the suggested schedule, the 8th onwards, is clear of this).
 Tests: `test_td247_supplier_bills_cron.py`.
 **The owner must, in order:** (1) create the Drive folder and upload the month's bills; (2) set
 `SUPPLIER_BILLS_FOLDER` on halatuju-api with `--update-env-vars` (a path like `05 Billing/Supplier bills`); (3) call
