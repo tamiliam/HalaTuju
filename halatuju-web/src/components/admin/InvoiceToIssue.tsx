@@ -19,8 +19,8 @@ import { useState } from 'react'
 import type { InvoiceProblem, InvoiceReadiness, InvoicesPayload } from '@/lib/admin-api'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  defaultIssueDate, monthOptions, issueDateProblem, issueMode, orderedProblems, settingsHref,
-  todayIso,
+  dayFirstFromIso, defaultIssueDate, isoFromDayFirst, monthOptions, issueDateProblem, issueMode,
+  orderedProblems, settingsHref, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -140,8 +140,13 @@ export default function InvoiceToIssue({ data, busy, t, onMonth, onIssue }: {
   // which remounts this panel. Keeping a stale 15 September while the reader switches to July
   // would date July's bill inside the month it bills — the server would then refuse a value
   // nobody typed. A `key` rather than an effect because the default is derived, not fetched.
-  const [issuedOn, setIssuedOn] = useState(() => defaultIssueDate(month, today))
-  const problem = issueDateProblem(month, issuedOn, today)
+  // TD-424: day first on the screen, ISO on the wire (the tenant's rule, `isoFromDayFirst`). The
+  // date rules below still compare ISO strings; a box that does not convert is a bad date.
+  const [issuedOn, setIssuedOn] = useState(() => dayFirstFromIso(defaultIssueDate(month, today)))
+  const issuedIso = isoFromDayFirst(issuedOn)
+  const problem = issuedOn.trim() === ''
+    ? issueDateProblem(month, '', today)
+    : issuedIso === '' ? 'badIssueDate' : issueDateProblem(month, issuedIso, today)
 
   return (
     <div className="mt-4 space-y-3">
@@ -164,7 +169,7 @@ export default function InvoiceToIssue({ data, busy, t, onMonth, onIssue }: {
           <span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.issueDate')}</span>
           {/* ⚠ A plain text box, not type="date": a native picker follows the BROWSER's locale and
               can report no value at all until it is satisfied — the receipt form's own note. */}
-          <input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" className={`${INPUT} w-36`}
+          <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={`${INPUT} w-36`}
             value={issuedOn} disabled={busy} data-testid="issue-date"
             aria-label={t('admin.billing.invoice.issueDate')}
             onChange={(e) => setIssuedOn(e.target.value)} />
@@ -183,7 +188,7 @@ export default function InvoiceToIssue({ data, busy, t, onMonth, onIssue }: {
       {(data.readiness || []).map((row) => (
         <ReadinessCard key={row.organisation_id} row={row} month={month}
           busy={busy || problem !== ''} t={t}
-          onIssue={(orgId, reason) => onIssue(orgId, month, reason, issuedOn.trim())} />
+          onIssue={(orgId, reason) => onIssue(orgId, month, reason, issuedIso)} />
       ))}
     </div>
   )

@@ -332,6 +332,27 @@ describe('after issue', () => {
       { token: 'tok' }))
   })
 
+  it('TD-424: the received date is typed day first and travels as ISO', async () => {
+    const { detail } = await openIssued(inv())
+    const box = within(detail).getByLabelText('admin.billing.invoice.receivedOn') as HTMLInputElement
+    expect(box.placeholder).toBe('DD-MM-YYYY')
+    expect(box.value).toMatch(/^\d{2}-\d{2}-\d{4}$/)
+    fireEvent.change(within(detail).getByLabelText('admin.billing.invoice.reference'), { target: { value: 'MBB-1' } })
+    const record = within(detail).getByText('admin.billing.invoice.recordAndReceipt') as HTMLButtonElement
+    // An ISO date is no longer what the box asks for: refused on the screen, never sent.
+    fireEvent.change(box, { target: { value: '2026-09-20' } })
+    const msg = within(detail).getByTestId('receipt-baddate-7')
+    expect(msg.getAttribute('role')).toBe('alert')
+    expect(box.getAttribute('aria-describedby')).toBe(msg.id)
+    expect(record.disabled).toBe(true)
+    fireEvent.change(box, { target: { value: '20-09-2026' } })
+    expect(box.getAttribute('aria-describedby')).toBeNull()
+    expect(record.disabled).toBe(false)
+    fireEvent.click(record)
+    await waitFor(() => expect(mockApi.recordInvoiceReceipt).toHaveBeenCalledWith(
+      7, expect.objectContaining({ received_on: '2026-09-20' }), { token: 'tok' }))
+  })
+
   it('says whether the receipt reached the customer, either way', async () => {
     // ⚠ NEVER BLANK. A receipt that did not arrive looks identical to one that did unless the
     // screen says so, and the customer is not going to tell us.

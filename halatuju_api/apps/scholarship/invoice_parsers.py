@@ -478,7 +478,7 @@ PARSERS = (
 
 
 def pdf_text(path) -> str:
-    """All the text in a PDF, pages joined by newlines.
+    """All the text in a PDF (a path, or the file's bytes), pages joined by newlines.
 
     `pypdf` only — an owner-run reporting tool must not pull an image stack into the service
     image, and every invoice these providers issue is a text PDF.
@@ -489,7 +489,12 @@ def pdf_text(path) -> str:
         raise InvoiceParseError(
             'pypdf is not installed. This is an owner-run reporting tool; install it locally '
             'rather than adding it to the service image.') from exc
-    reader = PdfReader(str(path))
+    if isinstance(path, (bytes, bytearray)):
+        # TD-247: the cron door reads the PDF from Drive into memory, never onto disk.
+        import io
+        reader = PdfReader(io.BytesIO(bytes(path)))
+    else:
+        reader = PdfReader(str(path))
     return normalise('\n'.join((page.extract_text() or '') for page in reader.pages))
 
 

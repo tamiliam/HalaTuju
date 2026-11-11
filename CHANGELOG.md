@@ -71,6 +71,23 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
 
 - TD-438 fixed (header photo link refreshed every 50 minutes), TD-126 fixed (scheduling screenshots in the Guide, FAQ points to them), TD-502 partly fixed (sponsors card opens the pending list). TD-444 skipped (file owned by another lane); TD-228 trigger not reached; TD-503 waits for the owner.
 
+### A4.5 - billing, sources and org requests (2026-11-11, branch a45, not pushed)
+
+- TD-247 (PDF half): `import_invoices --drive` reads supplier bills from the Drive folder in `SUPPLIER_BILLS_FOLDER`
+  (`supplier_bills.py`); two money-family cron doors, `supplier-bills-report` (dry run) and `supplier-bills-import`.
+  The Drive path is insert-only, so a rerun writes nothing and a clashing bill is reported, not swapped in; `--dir`
+  is unchanged. NOT scheduled: the owner sets the env var, runs the report once, then schedules the import (steps in
+  the TD-247 entry). BigQuery stays manual. Tests `test_td247_supplier_bills_cron.py`.
+  Review fix: the Drive path never saves a USD line without its ringgit figure - a bill whose month has not ended
+  ("waiting for month end") or whose rate cannot be fetched is skipped and reported, and a later run inserts it with
+  the rate; the same bill read again with a different figure is reported.
+- TD-424: Record payment, Confirm a declared payment and the Issue date take DD-MM-YYYY and send ISO; labels and the
+  bad-date message in en/ms/ta. No API or stored value changed. Review fix: the bad-date messages are
+  `role="alert"` and linked to their box with `aria-describedby`.
+- TD-431 closed as an accepted risk (no migration-free way through the allowed files). Not built, notes in each
+  entry: TD-423 (needs `views_admin/invoices.py`), TD-432 (needs `lib/navigation.ts`), TD-387 (new component, Stitch
+  first), TD-243 (owner-deferred design change), TD-212 (the rename writes a migration).
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

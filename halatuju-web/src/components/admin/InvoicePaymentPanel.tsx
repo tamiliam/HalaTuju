@@ -57,6 +57,7 @@ function DeclareForm({ inv, busy, t, onDeclare }: {
   const [paidOn, setPaidOn] = useState(dayFirstFromIso(todayIso()))
   const [reference, setReference] = useState('')
   const iso = isoFromDayFirst(paidOn)
+  const paidBad = paidOn.trim() !== '' && iso === ''
   return (
     <div data-testid={`declare-${inv.id}`}>
       <h4 className="text-xs font-semibold text-ground-900">{t('admin.billing.invoice.declare.title')}</h4>
@@ -66,13 +67,15 @@ function DeclareForm({ inv, busy, t, onDeclare }: {
           {/* ⚠ A plain text box, not type="date": a native picker follows the BROWSER's locale and
               can report no value at all until it is satisfied. Same rule as Record payment. */}
           <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={INPUT} value={paidOn}
-            onChange={(e) => setPaidOn(e.target.value)} aria-label={t('admin.billing.invoice.declare.paidOn')} /></label>
+            onChange={(e) => setPaidOn(e.target.value)} aria-label={t('admin.billing.invoice.declare.paidOn')}
+            aria-describedby={paidBad ? `declare-baddate-${inv.id}` : undefined} /></label>
         <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.declare.reference')}</span>
           <input type="text" className={INPUT} value={reference}
             onChange={(e) => setReference(e.target.value)} aria-label={t('admin.billing.invoice.declare.reference')} /></label>
       </div>
-      {paidOn.trim() !== '' && iso === '' && (
-        <p className="mt-1 text-[11px] text-critical-700" data-testid={`declare-baddate-${inv.id}`}>
+      {paidBad && (
+        <p className="mt-1 text-[11px] text-critical-700" role="alert"
+          id={`declare-baddate-${inv.id}`} data-testid={`declare-baddate-${inv.id}`}>
           {t('admin.billing.invoice.declare.badDate')}
         </p>
       )}
@@ -94,10 +97,13 @@ function CheckForm({ inv, declaration, busy, t, onConfirm, onReject }: {
   // ⚠ The amount defaults to the BALANCE, not to anything the tenant said — they were never
   // asked. It is editable because the figure that counts is the one on the statement.
   const [amount, setAmount] = useState(inv.balance_myr)
-  const [receivedOn, setReceivedOn] = useState(declaration.paid_on)
+  // TD-424: day first on the screen, ISO on the wire — the same rule as the tenant's box above.
+  const [receivedOn, setReceivedOn] = useState(dayFirstFromIso(declaration.paid_on))
   const [reference, setReference] = useState(declaration.reference)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [reason, setReason] = useState('')
+  const receivedIso = isoFromDayFirst(receivedOn)
+  const receivedBad = receivedOn.trim() !== '' && receivedIso === ''
   return (
     <div data-testid={`check-${inv.id}`}>
       <h4 className="text-xs font-semibold text-ground-900">{t('admin.billing.invoice.declare.checkTitle')}</h4>
@@ -113,18 +119,25 @@ function CheckForm({ inv, declaration, busy, t, onConfirm, onReject }: {
           <input type="text" inputMode="decimal" className={INPUT} value={amount}
             onChange={(e) => setAmount(e.target.value)} aria-label={t('admin.billing.invoice.amount')} /></label>
         <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.receivedOn')}</span>
-          <input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" className={INPUT} value={receivedOn}
-            onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')} /></label>
+          <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={INPUT} value={receivedOn}
+            onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')}
+            aria-describedby={receivedBad ? `check-baddate-${inv.id}` : undefined} /></label>
         <label className="col-span-2 block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.reference')}</span>
           <input type="text" className={INPUT} value={reference}
             onChange={(e) => setReference(e.target.value)} aria-label={t('admin.billing.invoice.reference')} /></label>
       </div>
+      {receivedBad && (
+        <p className="mt-1 text-[11px] text-critical-700" role="alert"
+          id={`check-baddate-${inv.id}`} data-testid={`check-baddate-${inv.id}`}>
+          {t('admin.billing.invoice.declare.badDate')}
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button type="button" className={PRIMARY}
-          disabled={busy || !(Number(amount) > 0) || reference.trim() === '' || receivedOn.trim() === ''}
+          disabled={busy || !(Number(amount) > 0) || reference.trim() === '' || receivedIso === ''}
           onClick={() => onConfirm(inv, {
             declaration_id: declaration.id, amount_myr: amount.trim(),
-            received_on: receivedOn.trim(), reference: reference.trim(),
+            received_on: receivedIso, reference: reference.trim(),
           })}>
           {t('admin.billing.invoice.declare.confirm')}
         </button>

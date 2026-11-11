@@ -229,7 +229,7 @@ Class C at medium or large size, and class D that is small.
 - **TD-328** — A gift with no agreement template pays the default schedule (`default_schedule.py`, a copy of contract 10 with its gap months and end, since 2026-10-29) until the first template goes live; then the default is removed and such a gift is not paid (owner ruling 2026-10-04; trigger = the first live template). *(A · S)*
 - **TD-321** — Production serves every page image at full size: there is no sharp package, so Next never resizes. *(C · S · raised 2026-10-01)*
 
-- **TD-247** — Supplier bills reach the cost ledger only when someone imports them by hand. *(C · M)*
+- **TD-247** — Supplier bills reach the cost ledger only when someone imports them by hand. *(C · M)* **PDF half FIXED 2026-11-11 (A4.5): cron doors `supplier-bills-import` / `supplier-bills-report` (insert-only); owner must set the folder and schedule them (detail entry). The BigQuery feed stays manual, so the item stays open.**
 - **TD-245** — We cannot tell spent-nothing from wallet-missing-in-the-export. *(C · M · looked at 2026-10-04: needs a table for the unmatched rows — a migration)*
 - **TD-228** — Picking an organisation in the crumb filters nothing on Sponsors and Sources (Requests narrows since 2026-10-05; Payments and Spending narrow through the gift — TD-246, closed). *(C · M · partly done 2026-10-05: the server door `_org_narrowing` and the `orgScope` context exist; two lists left)*
 - **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done · looked at 2026-10-04 and again 2026-11-07 in A1.11b: needs the box split — a column, a second labelled box, Stitch; moved to a later sprint)*
@@ -290,13 +290,13 @@ Each is an open entry with a defining line in the register body (read it there).
 
 - **TD-422** - The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
 - **TD-423** - A receipt whose email failed can only be re-sent by hand - low
-- **TD-424** - Two date formats on one platform: the tenant writes day-first, the owner writes ISO - low
+- ~~**TD-424**~~ **FIXED 2026-11-11 (A4.5)** - Two date formats on one platform: the tenant writes day-first, the owner writes ISO - low
 - **TD-425** - A correction is carried by ONE named month, so a skipped month silently strands it - medium
 - **TD-426** - `hoursAnalysisId` and `closing_report` are one rule in two languages - low
 - **TD-428** - The email-verification mail is a bare `send_mail`: never metered, never billed - low
 - **TD-429** - The student's and the guarantor's signatures record the proxy's address, not theirs - low - **FIXED (2026-11-07, A1.9a)**
 - **TD-430** - The weekly partner email counts a decline still in its cool-off as "Rejected" - medium
-- **TD-431** - An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
+- ~~**TD-431**~~ **CLOSED 2026-11-11 (A4.5): accepted risk, reason in the entry** - An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
 - **TD-432** - Source users have no Guide or FAQ - low
 - **TD-434** - The TVET pathway map gives a course the FIRST institution category it meets, and a course with none falls to an unpickable `tvet` - low
 - ~~**TD-435**~~ **FIXED 2026-11-07 (Sprint A1.10a)** - A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low
@@ -3668,6 +3668,9 @@ it is. Trigger: the next time a fourth family is added, or any sprint that alrea
 
 **Status:** open, low. Cosmetic; nothing behaves wrongly because of it.
 
+**Deferred again 2026-11-11 (A4.5):** renaming the Django class, even with `db_table` kept, writes a migration
+(`RenameModel` in the migration state), and that sprint could add none. Do it in a sprint that may add a migration.
+
 ### [TD-213] The invite emails are not visible on the Invitations page — RESOLVED
 
 **Status:** ✅ Resolved 2026-08-04 (commits `9210bc97`, `087e72d0`) · raised 2026-08-03
@@ -4896,6 +4899,10 @@ Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting
 
 (Logged 2026-09-11 at the verdict-engine-version close.)
 
+**Looked at 2026-11-11 (A4.5), not built:** it is a design change the owner deferred ("A now, and B in future"),
+not a bug — a new response shape from `audit.override_metrics`, served by `views_admin/verdict.py` (another lane's
+file), and a rewritten card. It needs the owner's word that the buckets are now comparable.
+
 ### [TD-244] Nothing watches a student whose wallet never gets switched on — low — **RESOLVED 2026-10-03** (Next-tier batch 3: a REPORT, never an email — `FundingSummaryRowSerializer.wallet_not_live` (vircle_id held, no `vircle_activated_at`) and `totals.wallet_not_live`; the Payments funding summary names those students in an amber line above the table; finance key snapshot extended deliberately; manual finance chapter says what to do)
 
 **2026-09-18:** the retired chaser's last two remains are gone — the paused scheduler job
@@ -4962,6 +4969,29 @@ It does not matter today — a super sees every organisation on both screens, wh
 **Fix when it bites:** a door that reads the supplier PDFs from a Drive folder the service can reach (the spending import already reads Drive), and a BigQuery pull that runs on the service. Until then, import the month's bills between the 8th and the 15th.
 
 **Trigger:** the first 15th on which the job refuses for a missing supplier.
+
+**PDF half FIXED 2026-11-11 (A4.5); the BigQuery half stays open.** `import_invoices --drive` reads the PDFs directly
+inside the Drive folder named by the env var `SUPPLIER_BILLS_FOLDER` (`supplier_bills.drive_pdfs`, the spending
+import's Drive door). Two money-family cron doors run it with fixed flags: `supplier-bills-report` (dry run, never
+`--apply`) and `supplier-bills-import` (`--drive --apply`). **Idempotent:** the Drive path is INSERT-ONLY
+(`get_or_create` on the ledger's unique line, `platform_cost_unique_line`), so a second run writes nothing and an
+exchange-rate outage cannot blank a figure already there; a second bill claiming a line another bill holds is
+reported, never swapped in (import a true replacement with `--dir`); the same bill read again with a different
+figure is reported too. **Skip until month end (review fix):** because the door never comes back to a line, it
+never saves a foreign-currency (USD) line without its ringgit figure - a blank would stay blank and stop the next
+month's invoice job on `fx_missing`. A bill whose month has not ended (the last day included, server date) is
+skipped and reported as "waiting for month end", with no rate lookup; a bill whose rate cannot be fetched (ECB
+down) is skipped and reported the same way. The first run after the month ends, or after the rate service is
+back, inserts it with the rate. Ringgit bills (Workspace) never wait. The `--dir` path is unchanged (still
+upserts, and still records a blank figure when there is no rate).
+Tests: `test_td247_supplier_bills_cron.py`.
+**The owner must, in order:** (1) create the Drive folder and upload the month's bills; (2) set
+`SUPPLIER_BILLS_FOLDER` on halatuju-api with `--update-env-vars` (a path like `05 Billing/Supplier bills`); (3) call
+`/api/v1/internal/cron/supplier-bills-report/` once by hand with the MONEY key and read the output; (4) create a
+Cloud Scheduler job POSTing to `/api/v1/internal/cron/supplier-bills-import/` with header `X-Cron-Secret` = the money
+key (suggested: 08:00 MYT daily on the 8th to the 14th, before the 15th's invoice run - after month end, so USD
+bills go straight in; a run inside the billed month only reports "waiting for month end"), and at the same time
+add it to `cron_health.EXPECTED_CADENCE`. Nothing is scheduled yet. `sync_gcp_costs` (BigQuery) is still manual.
 
 ### [TD-248] The billing-rates form defaults its start date from the UTC clock — low — **RESOLVED 2026-09-30** (Now-tier sweep: `timezone.localdate().replace(day=1)`; pinned-clock test at 23:30 UTC on 30 Sep, `test_billing_rate_default_date.py`)
 
@@ -6784,7 +6814,7 @@ depends on, not a defect.
 - **TD-384 (raised 2026-10-18 by the Consolidation Review's code-health reading, `xapp` 44 → 50) - low, hygiene: a private name is imported across the app border.** `apps/scholarship/views_admin/staff.py` (the staff lifecycle's role endpoint) does `from apps.courses.views_admin import _staff_target_manageable` — a leading-underscore helper of another app's VIEW module, so a refactor of `courses/views_admin.py` can break the role switch with nothing on the courses side saying it is used. The other five new edges in that reading are the sanctioned direction (scholarship builds on courses: `staff_lifecycle.py` reads `PartnerAdmin`, `ProfileLoginAlias`, `supabase_admin`, `password_change_flag`; `referral_links.referring_org` is Sprint A's one door) and are accepted in `docs/code-health.md`. **Fix:** move the fence check into a public courses module the staff views already share (e.g. `apps/courses/staff_fence.py`, re-exported from `views_admin` under its old name so its existing callers and patch targets are unchanged) and import that. Moves only, one commit. *(D · S)*
 - **TD-385 (raised 2026-10-18 by the Consolidation Review's code-health reading, `fix%` 45 → 46) - low, tooling: `fix%` counts a sprint's own review-round fixes as field fixes.** Third reading running whose movement is explained the same way (2026-10-06 at `48fda4b`, "dated, not accepted"; again here): at least 18 of the 205 `fix:` commits in the 90-day window are adversarial-review rounds of a sprint landed the same week as its `feat:` (TD-352 review 1 ×8 and 2 ×4, plus `c301220c`, `fa150e29`, `c1da7f4d`, `de158391`, `b991fbf4`, `ffa0983a`); without them the ratio reads ~44, not 46. A reading that rises when the reviews get more thorough is reading the wrong thing. **Fix (in the workspace tool `Settings/_tools/code_health.py`, not this repo):** read the SHAs recorded under `## Sprints since the last review` in `docs/consolidation-log.md` (the sprint-close line added to `sprint-close.md` on 2026-10-18) and count a sprint's own fixes apart from field fixes — or adopt a `review:` commit prefix. Close this entry when the reading can tell the two apart. *(D · S)*
 - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations once a second one joins.** Sprint B fenced every source surface by its owning organisation (TD-381), but three things it left read or write ACROSS them: **(a)** the witness readers (`referral_links.referring_org` → `bursary._resolve_witness_org`, the witness authority check, the cockpit pill) read the PER-STUDENT `StudentProfile.source`, so a student who applies to organisation A and later names organisation B's source on B's form would have A's witness request routed to B's source; **(b)** the witness bridge pairs a `?ref=cumig` student's referral partner with CUMIG's source TWIN, which is always BrightPath's copy (the Sprint B seed owner) whatever organisation the application belongs to; **(c)** the partner-email TEMPLATES (`PartnerEmailTemplate`, edited on Sources → Partner emails and Organisation → Reviewers / Invitations) are ONE platform-wide set that any organisation's org_admin or admin can rewrite, for every organisation's sources, reviewers and invitees. None crosses a line while BrightPath is the only tenant. **Fix:** (a) and (b) — Sprint C's per-application source (`ScholarshipApplication.source` or the snapshot answer) and the source-only witness (owner: never the referral partner) remove `referring_org` and its twin pairing; (c) — decide: per-organisation template overrides with the platform copy as the default, or super-only editing (owner question). **Trigger:** a second organisation joins (as TD-353 / TD-381), or Sprint C. *(C · M · roadmap `docs/plans/2026-10-09-sources-and-referrals-roadmap.md` Sprint C)* **Status 2026-10-19 (sources-and-referrals Sprint C, built, not yet live): (a) and (b) BUILT** — each application keeps its own source, resolved inside ITS organisation at submit and in the backfill (`gift_sources.submitted_source`), and the witness reads it (never the profile's later source, never the referral partner's twin); `referring_org` / `is_same_organisation` are gone (`source_twin` remains only for the invite refusal). Evidence: `test_sources_c.py` (`test_the_source_is_the_applications_own_organisations`, `test_the_profiles_later_source_is_not_the_witness`, `test_a_referral_partner_alone_is_no_witness_and_is_never_emailed`), bite-checked. **(c) is NOT built and is why this stays open:** the safest small step is super-only editing (`AdminPartnerEmailDetailView.patch` refused below super; the edit controls hidden on Sources → Partner emails and Organisation → Reviewers / Invitations; reading unchanged), but it takes editing away from the only tenant's own org_admins today, where nothing crosses a line — an owner decision, and three screens. Re-scope as (c) only once Sprint C is live. **Added by the Sprint C review (2026-10-19) — (d) a super's duplicate-code view:** an UNNARROWED super's Applications list reads `source-names` for every organisation, so two organisations' sources sharing a code (A's `smc`, B's `smc`) appear as two options with one value, and the Source filter (`?source=<code>`, by `referral_code`) returns both organisations' applications for either; the column and tooltip name whichever arrived last. Harmless with one tenant; fix with (c): filter by source id (fixed choices by code), or have a super narrow by organisation first. **Status 2026-10-19 (sources-and-referrals Sprint D): (a) and (b) are LIVE and DONE** — Sprint C went live 2026-10-19 (`e90179c6`, api `halatuju-api-01123-nbw`), and Sprint D removed the last profile-level source (`StudentProfile.source` left the model; courses 0083 drops the column) and the cockpit's old `referred_by_org` key, so nothing pairs a witness with a profile or a referral partner any more. **Still open: (c)** — an owner question, unchanged (the safest small step remains super-only editing of `PartnerEmailTemplate`; per-organisation overrides of a platform default is the larger one), **and (d)**. Re-scope this entry to (c)+(d) only.
-- **TD-387 (raised 2026-10-19 by sources-and-referrals Sprint D) - low, platform: referral partners have no screen to mark / unmark them.** Roadmap item 1b put "Referral partners get a screen (super only)" in Sprint D. Sprint D built the PATH — `GET /api/v1/admin/referral-partners/` (every non-tenant `partner_organisations` row: marked, switched on, active `partner` logins) and `PATCH /api/v1/admin/referral-partners/<id>/` `{is_referral_partner}` (super only; refuses a tenant `org_is_tenant`, a reserved code `code_reserved`, a switched-off row `org_inactive`, and an unmark while the row has active partner logins `has_partner_logins`; each with a sentence; `AUDIT referral_partner_marked|unmarked` line; rules in `referral_links.mark_refusal`, view `apps/courses/views_referral_partners.py`, tests `test_sources_d.py`) — but not the screen: a new section on Platform → Referral partners (`app/admin/partners/page.tsx`) is a new component, which the workspace rule says is prototyped in Stitch and approved first, and it needs new en/ms/ta strings while en.json sits at its bundle line (TD-360). Until it exists a super can call the PATCH directly; nothing needs it today (CUMIG is the only referral partner, marked since Sprint A). **Fix:** a Stitch prototype of a list with the site Toggle per row (never a tick box) on the Referral partners page, owner approval, then the screen reading the two endpoints and printing the server's sentence on a refusal; take en.json weight off first if the bundle budget asks. *(C · S)*
+- **TD-387 (raised 2026-10-19 by sources-and-referrals Sprint D) - low, platform: referral partners have no screen to mark / unmark them.** Roadmap item 1b put "Referral partners get a screen (super only)" in Sprint D. Sprint D built the PATH — `GET /api/v1/admin/referral-partners/` (every non-tenant `partner_organisations` row: marked, switched on, active `partner` logins) and `PATCH /api/v1/admin/referral-partners/<id>/` `{is_referral_partner}` (super only; refuses a tenant `org_is_tenant`, a reserved code `code_reserved`, a switched-off row `org_inactive`, and an unmark while the row has active partner logins `has_partner_logins`; each with a sentence; `AUDIT referral_partner_marked|unmarked` line; rules in `referral_links.mark_refusal`, view `apps/courses/views_referral_partners.py`, tests `test_sources_d.py`) — but not the screen: a new section on Platform → Referral partners (`app/admin/partners/page.tsx`) is a new component, which the workspace rule says is prototyped in Stitch and approved first, and it needs new en/ms/ta strings while en.json sits at its bundle line (TD-360). Until it exists a super can call the PATCH directly; nothing needs it today (CUMIG is the only referral partner, marked since Sprint A). **Fix:** a Stitch prototype of a list with the site Toggle per row (never a tick box) on the Referral partners page, owner approval, then the screen reading the two endpoints and printing the server's sentence on a refusal; take en.json weight off first if the bundle budget asks. *(C · S)* *Looked at 2026-11-11 (A4.5), not built: still a new component that needs a Stitch prototype and owner approval first; the PATCH remains the way to mark a partner.*
 - **TD-388 (raised 2026-10-21 by the TD-360 Sprint 1 review; pre-existing) - low, student-visible: three pages hydrate with a mismatch for a reader who has Malay or Tamil stored.** `/onboarding/grades`, `/onboarding/stpm-grades` and `/settings` render the reader's CHOSEN `locale` directly (subject names via `getSubjectName(id, locale)`, the settings switcher), and `I18nProvider`'s state initialiser reads that choice from `localStorage` on the first client render while the server always renders `en` — so the first client render differs from the server HTML and React logs #425 / #422 and re-renders the tree on the client. Not caused by the slices (the review reproduced it with Tamil stored); every other page renders `t()` words, which follow the CATALOGUE (English until the chunk lands) and so match. **Fix:** have these pages render `contentLocale` (the language of the words on screen, already English on the first render), or hold the stored locale out of the first render until after hydration, then prove it with a hydration test that stores `ta` before rendering the server HTML. *(C · S)*
 
 **FIXED 2026-11-11 (A4.2, branch a42):** `/onboarding/stpm-grades` already read `contentLocale` (M4c); `/onboarding/grades` and `/settings` now do too. `settings/page.hydration.test.tsx` renders with `locale: 'ta'` and `contentLocale: 'en'` and holds all three pages off the bare `locale`.
@@ -7132,7 +7162,11 @@ may be pressed again. **Fix:** a "Send receipt" button beside the PDF button, ca
 existing receipt; it is idempotent already (it overwrites the stamp). Small, and worth doing the first time a
 send actually fails. *(B · S)*
 
-### [TD-424] Two date formats on one platform: the tenant writes day-first, the owner writes ISO - low
+**Looked at 2026-11-11 (A4.5), not built:** the button needs a new action on `AdminInvoiceActionView`, in
+`apps/scholarship/views_admin/invoices.py`, which that sprint could not touch (another lane owns `views_admin/*`).
+The web half alone would call a door that does not exist. Build it with the next sprint that may edit that file.
+
+### [TD-424] Two date formats on one platform: the tenant writes day-first, the owner writes ISO - low — **FIXED 2026-11-11 (A4.5)** (the owner's three date boxes are day-first too; ISO on the wire)
 
 **Raised 2026-10-29** by the owner's reading of the live page. The tenant's "Tell us you have paid" box takes
 DD-MM-YYYY (`isoFromDayFirst`), which is how Malaysia writes a date; the owner's Record payment, Confirm and
@@ -7142,6 +7176,13 @@ growing the change. It is still two rules for one idea, and the next date box ha
 follow. **Fix:** move the owner's three boxes to day-first too (the helper and its tests already exist), and
 state the rule in CLAUDE.md so the next box does not re-open the question. Ask the owner first: they read ISO
 dates daily and may prefer them. *(B · S)*
+
+**FIXED 2026-11-11 (A4.5), on the lead's instruction:** the owner's three boxes (Record payment, Confirm a
+declared payment, Issue date) now show and take DD-MM-YYYY and convert with `isoFromDayFirst` at the edge, so the
+API still receives ISO and nothing stored changed; a box that does not convert shows the bad-date line and its
+button stays off. Labels and the bad-date message updated in en/ms/ta. The rule for the next box: **a date box shows
+DD-MM-YYYY and sends ISO** (`lib/invoices.ts`). Tests: `InvoiceToIssue.test.tsx`, `InvoicePaymentPanel.test.tsx`,
+`InvoicesSection.test.tsx` (each has a TD-424 case that fails on the old ISO boxes).
 
 ### [TD-425] A correction is carried by ONE named month, so a skipped month silently strands it - medium
 
@@ -7244,7 +7285,7 @@ folds what the student sees (`student_status.student_facing_status`). **Fix:** c
 (fold `rejected` + pending marker to its `pre_decline_status`, the console's rule), keep the `total` reconciliation,
 and add the cool-off case to the digest tests. *(B · S)*
 
-### [TD-431] An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
+### [TD-431] An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low — **CLOSED 2026-11-11 (A4.5)** (accepted risk; reason below)
 
 **Raised 2026-10-30 by the source sign-in adversarial review (L6a), accepted by the lead.** The Sources page's Edit
 locks once a source has joined (409 `managed_by_source`): the source owns its own name, contact and phone. The lock
@@ -7253,6 +7294,13 @@ details and then re-invite. Accepted: each step is a deliberate, visible action 
 source's access, the revoke and re-invite are on the Invitations page for anyone to see, and the source can change
 the details back from its Profile. **Fix if it matters:** keep the lock once a source has EVER joined (a stamp on
 `ReferralSource`, not a live count), or log a details change made while the source was briefly unjoined. *(B · S)*
+
+**CLOSED 2026-11-11 (A4.5) as an accepted risk.** The reasons above stand: every step of the bypass is a deliberate
+action by someone who already controls the source's access, it is visible on the Invitations page, and the source
+can put its details back. No stamp was added: a `ReferralSource` column needs a migration, and the no-migration
+version (drop `is_active=True` from `source_invite.has_joined`, since a revoke keeps `first_seen_at`) cannot be used
+as it stands, because `source_witness.has_console` needs the ACTIVE reading, and the lock's call site is in
+`views_admin/sources.py`. Reopen if a source ever reports details changed behind its back.
 
 ### [TD-432] Source users have no Guide or FAQ - low
 
@@ -7263,6 +7311,10 @@ witness step, and the org admin's guide does not yet mention the Invitations →
 source section (what the stages mean, why a result appears only after the student is told, how to witness), shown
 only to the role, plus one paragraph in the org admin's Invitations section; mind the bundle (TD-427) — the manual
 lives on its own routes, so measure. *(B · S)*
+
+**Looked at 2026-11-11 (A4.5), not built:** showing a Guide/FAQ to `source_partner` needs `lib/navigation.ts`, which
+that sprint could not touch (another lane owns it). Writing the text without the door would ship pages no source can
+reach. Build it in a sprint that may edit `navigation.ts`.
 
 ### ~~[TD-433] `/scholarship/application` is 0.13 kB under its first-load line - medium~~ — RESOLVED 2026-11-05 (STALE: the line was raised 206 to 209 by 442b21f4, owner-approved TD-506, code-standards.json:228; shared chunk grew 1.3 kB so room is about 1.8 kB; a fresh next build should confirm)
 

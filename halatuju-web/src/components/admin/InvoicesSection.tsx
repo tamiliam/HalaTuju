@@ -26,8 +26,8 @@ import {
 import { formatMyr } from '@/lib/billingCosts'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  canRecordPayment, canSend, canVoid, formatDay, lineRequest, orderedInvoices, splitSignedMoney,
-  statusChip, todayIso,
+  canRecordPayment, canSend, canVoid, dayFirstFromIso, formatDay, isoFromDayFirst, lineRequest,
+  orderedInvoices, splitSignedMoney, statusChip, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -115,7 +115,10 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
   onReceipt: (inv: InvoiceRow, data: { received_on: string; amount_myr: string; method: string; reference: string }) => void
   decl: DeclActions
 }) {
-  const [receivedOn, setReceivedOn] = useState(todayIso())
+  // TD-424: day first on the screen, ISO on the wire. An empty box still sends '' as before.
+  const [receivedOn, setReceivedOn] = useState(dayFirstFromIso(todayIso()))
+  const receivedIso = isoFromDayFirst(receivedOn)
+  const receivedBad = receivedOn.trim() !== '' && receivedIso === ''
   const [amount, setAmount] = useState(inv.balance_myr)
   const [method, setMethod] = useState('bank_transfer')
   const [reference, setReference] = useState('')
@@ -235,8 +238,9 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
               <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.receivedOn')}</span>
                 {/* ⚠ A plain text box, not type="date": a native picker follows the BROWSER's
                     locale and can report no value at all until it is satisfied. */}
-                <input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" className={INPUT} value={receivedOn}
-                  onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')} /></label>
+                <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={INPUT} value={receivedOn}
+                  onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')}
+                  aria-describedby={receivedBad ? `receipt-baddate-${inv.id}` : undefined} /></label>
               <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.amount')}</span>
                 <input type="text" inputMode="decimal" className={INPUT} value={amount}
                   onChange={(e) => setAmount(e.target.value)} aria-label={t('admin.billing.invoice.amount')} /></label>
@@ -251,9 +255,15 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
                 <input type="text" className={INPUT} value={reference}
                   onChange={(e) => setReference(e.target.value)} aria-label={t('admin.billing.invoice.reference')} /></label>
             </div>
+            {receivedBad && (
+              <p className="mt-1 text-[11px] text-critical-700" role="alert"
+                id={`receipt-baddate-${inv.id}`} data-testid={`receipt-baddate-${inv.id}`}>
+                {t('admin.billing.invoice.declare.badDate')}
+              </p>
+            )}
             <button type="button" className={`${PRIMARY} mt-2`}
-              disabled={busy || reference.trim() === '' || !(Number(amount) > 0)}
-              onClick={() => onReceipt(inv, { received_on: receivedOn.trim(), amount_myr: amount.trim(), method, reference: reference.trim() })}>
+              disabled={busy || reference.trim() === '' || !(Number(amount) > 0) || receivedBad}
+              onClick={() => onReceipt(inv, { received_on: receivedIso, amount_myr: amount.trim(), method, reference: reference.trim() })}>
               {t('admin.billing.invoice.recordAndReceipt')}
             </button>
           </div>

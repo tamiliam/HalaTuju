@@ -42,6 +42,13 @@ class CronRunView(APIView):
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
         'issue-monthly-invoices': 'issue_monthly_invoices',  # monthly, 15th 09:00 MYT: issue LAST month's tenant invoices (sends nothing; idempotent)
+        # TD-247 (A4.5): the supplier bills (Workspace, Supabase, Twilio, Anthropic PDFs) from the
+        # Drive folder in SUPPLIER_BILLS_FOLDER into the cost ledger. NOT SCHEDULED by the build:
+        # the owner adds the Scheduler job (suggested daily 08:00 MYT from the 8th to the 14th).
+        # INSERT-ONLY, so a repeat writes nothing; `-report` is the dry run and must never gain
+        # `--apply`. Flags live here, never in the request.
+        'supplier-bills-import': ('import_invoices', ('--drive', '--apply')),
+        'supplier-bills-report': ('import_invoices', ('--drive',)),
         'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'lapse-expired-offers': 'lapse_expired_offers',  # TD-252: daily; armed unpaid offers past deadline lapse, paid ones are flagged, never lapsed
