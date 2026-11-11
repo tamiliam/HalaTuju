@@ -894,6 +894,7 @@
   },
   "scholarship": {
     "nav": "{programmeName}",
+    "finishSignIn": "Finish signing in",
     "apply": {
       "title": "Apply for B40 Education Assistance",
       "intro": "Financial assistance for B40 students continuing to IPTA/ILKA. Read the criteria, then complete the short form below.",

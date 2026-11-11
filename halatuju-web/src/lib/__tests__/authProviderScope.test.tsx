@@ -13,7 +13,7 @@
  * Whichever client initialises first wins, which is why this reproduced on a local origin and
  * not in production. A race is not a guarantee, so it is pinned here rather than left to luck.
  */
-import { render } from '@testing-library/react'
+import { act, render, waitFor } from '@testing-library/react'
 
 import { AuthProvider } from '@/lib/auth-context'
 
@@ -92,5 +92,33 @@ describe('the student AuthProvider stays out of the design sandbox', () => {
     // Same prefix trap as `/administrivia` — `/sandboxes` is a student route, not the sandbox.
     mount('/sandboxes')
     expect(getSession).toHaveBeenCalled()
+  })
+})
+
+describe('TD-342: a stale pending sign-in action does not reopen the auth flow', () => {
+  const run = async (ageMs: number) => {
+    const { useAuth } = jest.requireActual('@/lib/auth-context')
+    const { KEY_PENDING_AUTH_ACTION } = jest.requireActual('@/lib/storage')
+    getSession.mockImplementation(() => Promise.resolve({
+      session: { access_token: 't', user: { id: 'u1', is_anonymous: false } },
+    }) as never)
+    localStorage.setItem(KEY_PENDING_AUTH_ACTION, JSON.stringify({ reason: 'profile', at: Date.now() - ageMs }))
+    const seen: unknown[] = []
+    const Probe = () => { seen.push(useAuth().authGateReason); return null }
+    mockPath = '/'
+    await act(async () => { render(<AuthProvider><Probe /></AuthProvider>) })
+    await waitFor(() => expect(localStorage.getItem(KEY_PENDING_AUTH_ACTION)).toBeNull())
+    return seen
+  }
+
+  it('control: a fresh pending action reopens the gate', async () => {
+    const seen = await run(1000)
+    expect(seen).toContain('profile')
+  })
+
+  it('a stale pending action is consumed and never reopens the gate', async () => {
+    const { PENDING_AUTH_TTL_MS } = jest.requireActual('@/lib/storage')
+    const seen = await run(PENDING_AUTH_TTL_MS + 1000)
+    expect(seen.every((r) => r === null)).toBe(true)
   })
 })

@@ -187,6 +187,12 @@ export function PhoneMenu({ open, onClose, who, incompleteCount }: PhoneMenuProp
             {t('header.signUp')}
           </button>
         )}
+        {who?.unverified && (
+          // TD-454: no "Log in" for her, so this is the way back to the NRIC step (the same sign-in gate).
+          <button ref={takeFirst()} type="button" onClick={() => { onClose(); onStudentLogin() }} className={`${ROW} ${ROW_IDLE}`}>
+            {t('scholarship.finishSignIn')}
+          </button>
+        )}
         {groups.map((g, i) => (
           <div key={i} className={i > 0 && !g.label ? 'mt-2 border-t border-ground-100 pt-2' : ''}>
             {g.label && <GroupLabel>{g.label}</GroupLabel>}
@@ -215,8 +221,8 @@ export function PhoneMenu({ open, onClose, who, incompleteCount }: PhoneMenuProp
 }
 
 /** The desktop avatar's dropdown. Positioned by AppHeader; this is only its card. */
-export function AccountPanel({ who, links, pathname, onClose }: {
-  who: Who; links: NavLink[]; pathname: string | null; onClose: () => void
+export function AccountPanel({ who, links, pathname, onClose, onFinishSignIn }: {
+  who: Who; links: NavLink[]; pathname: string | null; onClose: () => void; onFinishSignIn?: () => void
 }) {
   const { t } = useT()
   return (
@@ -228,6 +234,11 @@ export function AccountPanel({ who, links, pathname, onClose }: {
         </div>
       )}
       <div className="px-2 pt-1">
+        {who.unverified && onFinishSignIn && (
+          <button type="button" onClick={() => { onClose(); onFinishSignIn() }} className={`${ROW} ${ROW_IDLE}`}>
+            {t('scholarship.finishSignIn')}
+          </button>
+        )}
         {links.map((l) => (
           <Row key={l.href} link={l} here={pathname === l.href} onGo={onClose} onGate={() => {}} />
         ))}
@@ -276,7 +287,7 @@ function Chevron({ open, className = 'h-4 w-4 text-ground-400' }: { open: boolea
  */
 export function DesktopBar({ who, incompleteCount }: { who: Who | null; incompleteCount: number }) {
   const { t } = useT()
-  const { pathname, b40Links, mainLinks, accountLinks, onGate } = useStudentNav(incompleteCount)
+  const { pathname, b40Links, mainLinks, accountLinks, onGate, studentLogin } = useStudentNav(incompleteCount)
   const [drop, setDrop] = useState<null | 'b40' | 'account' | 'display'>(null)
   const root = useRef<HTMLDivElement>(null)
 
@@ -357,7 +368,8 @@ export function DesktopBar({ who, incompleteCount }: { who: Who | null; incomple
             </button>
             {drop === 'account' && (
               <div className="absolute right-0 top-full z-20 mt-1">
-                <AccountPanel who={who} links={who.unverified ? [] : accountLinks} pathname={pathname} onClose={() => setDrop(null)} />
+                <AccountPanel who={who} links={who.unverified ? [] : accountLinks} pathname={pathname} onClose={() => setDrop(null)}
+                  onFinishSignIn={studentLogin} />
               </div>
             )}
           </div>
