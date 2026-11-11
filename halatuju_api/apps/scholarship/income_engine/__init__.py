@@ -5,9 +5,11 @@ Pure, deterministic helpers (no DB writes, no live calls) that the income verdic
 (verdict_engine._verdict_income, Sprint I2) and the student wizard checklist
 (Sprint I3) both consume, so they can never disagree.
 
-The model: a guided wizard collects three answers on the application —
-``income_route`` (str | salary), ``income_earner`` (father | mother | guardian),
-``earner_work_status`` (payslip | informal | not_working). From those,
+The model: a guided wizard collects the answers on the application —
+``income_route`` (str | salary), ``income_earner`` (father | mother | guardian) and, on the
+salary route, ``income_working_members`` (the working household members). The earner's work
+status (payslip | informal | not_working) is no longer a stored answer: it is inferred from the
+documents present. (The old ``earner_work_status`` column left the model in A3.17.) From those,
 ``income_requirements`` returns the documents the family must upload (compulsory)
 plus credibility boosters (optional). Proving the earner is the student's family:
 

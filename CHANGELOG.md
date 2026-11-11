@@ -12,13 +12,27 @@ Branch a317 (not pushed, not deployed). One scholarship migration, 0211, NOT app
 - RD-08: new `courses/tests/test_route_web_callers.py` reads the web source and fails on any API route with no web
   caller and no reason in its allowlist (17 routes allowlisted: cron, webhooks, break-glass, parked screens, Gemini
   profile actions, sponsor money). Removed the one provably dead route, the student referee list/add
-  (`scholarship/referees/`), with its view and test.
+  (`scholarship/referees/`), with its view and test. The scanner has its own self-test.
 - CO-16: kept. The BANK_DETAILS capture flag sits on the award money path and its production value cannot be proved here.
-- TD-226: dropped `ScholarshipCohort.funding_envelope` and `bucket_b_margin` (read by nothing).
-- TD-084: dropped `earner_work_status` and `household_other_earners` from the application, serializers, details
+- TD-226 (part): `ScholarshipCohort.bucket_b_margin` left the model. `funding_envelope` is KEPT, untouched: a Programme
+  roadmap item plans it and the owner has not ruled. TD-226 stays partly open for it.
+- TD-084: `earner_work_status` and `household_other_earners` left the application model, serializers, details
   service, a37 pins and web types (write-only since the multi-earner income route).
-- Migration `scholarship/0211_drop_orphaned_cohort_and_income_fields` drops the four columns. Apply it by hand BEFORE the
-  deploy: `bucket_b_margin` is NOT NULL, so inserts from the new code would fail against the old column.
+- Migration `scholarship/0211_retire_orphaned_cohort_and_income_fields` is expand-contract (as courses 0093): the two
+  NOT NULL columns get a DATABASE default and the three fields leave Django's state only. NO column is dropped, so the
+  old image keeps working and the new image's INSERTs (which omit the columns) pass. Test:
+  `scholarship/tests/test_a317_retired_columns.py`.
+- Two steps, in this order:
+  - STEP 1 (owner, BEFORE the push). Run this SQL:
+
+        BEGIN;
+        ALTER TABLE "scholarship_applications" ALTER COLUMN "earner_work_status" SET DEFAULT '';
+        ALTER TABLE "scholarship_cohorts" ALTER COLUMN "bucket_b_margin" SET DEFAULT 1;
+        INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0211_retire_orphaned_cohort_and_income_fields', now());
+        COMMIT;
+
+  - STEP 2 (a later sprint, after the new image serves all traffic): a 0212 that drops the three columns with
+    `DROP COLUMN IF EXISTS`, no CASCADE, `state_operations` empty. NOT written yet.
 - Dead i18n left in place (messages are another session's): `scholarship.docs.income.wizard.{q2,q3,q4,work}` in en/ms/ta,
   and the student `scholarship.referee` block.
 

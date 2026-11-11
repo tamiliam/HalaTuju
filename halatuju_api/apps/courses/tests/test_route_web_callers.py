@@ -18,6 +18,9 @@ and the fix is to teach `_literals` the new spelling, not to widen the allowlist
 reason: a scheduler, a webhook, an email link, a script, or an external caller. Adding to it is a
 statement that somebody outside the web bundle depends on the route. **A route with no reason
 here and no caller is removed.**
+
+**Deploy note.** The API build only triggers on `halatuju_api/**`, so a web-only push that removes
+the last caller of a route passes its own build and fails the NEXT API deploy.
 """
 import re
 from functools import lru_cache
@@ -60,7 +63,7 @@ NOT_CALLED_FROM_WEB = {
     # ---- per-application profile actions: the pipeline runs from cron, the cockpit does not
     # ---- ever call these. Gemini-backed, so left for the owner to retire rather than cut here.
     'api/v1/admin/scholarship/applications/<int:pk>/generate-profile/':
-        'Manual trigger for what the autogenerate-profiles cron already does; no screen.',
+        'Admin/scripted action; no web caller; Gemini-backed.',
     'api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/':
         'Manual trigger for what the finalise-profiles cron (every 5 minutes) already does.',
     'api/v1/admin/scholarship/applications/<int:pk>/profile/':
@@ -258,3 +261,16 @@ class RouteWebCallerTest(SimpleTestCase):
         self.assertEqual(stale, [], 'allowlisted routes that no longer exist')
         called = [r for r in NOT_CALLED_FROM_WEB if r not in uncalled_routes()]
         self.assertEqual(called, [], 'allowlisted routes that the web now calls: drop the entry')
+
+
+class ScannerSelfTest(SimpleTestCase):
+    """The scanner must tell a called route from an orphaned one, or the guard above is blind."""
+
+    def test_a_called_route_is_seen_and_an_orphan_is_not(self):
+        src = "const BASE = '/api/v1/widgets/';" + chr(10) + "fetch(`${BASE}${id}/pdf/`);"
+        consts = _file_consts(src)
+        text = _expand(_template_literals(src)[0], consts).split('?')[0]
+        lits = {re.sub(r'/{2,}', '/', text).strip('/').replace('api/v1/', '', 1)}
+        self.assertEqual(lits, {'widgets/X/pdf'})
+        self.assertTrue(_called('api/v1/widgets/<int:pk>/pdf/', lits))
+        self.assertFalse(_called('api/v1/gadgets/<int:pk>/pdf/', lits))
