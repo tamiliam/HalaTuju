@@ -13,7 +13,7 @@ import ProfilePage from './page'
 import { ME, PROFILE } from '@/components/source/testFixtures'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: jest.fn() }),
-  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' } }))
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' }, LOCALE_SHORT_LABELS: { en: 'English', ms: 'B. Melayu', ta: 'தமிழ்' } }))
 const refreshRole = jest.fn(() => Promise.resolve())
 const push = jest.fn()
 let mockAuth: Record<string, unknown> = {}

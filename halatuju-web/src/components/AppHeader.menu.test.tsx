@@ -22,7 +22,7 @@ import { KEY_HAS_BURSARY_FILE } from '@/lib/storage'
 const mockSetLocale = jest.fn((_l: string) => Promise.resolve())
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: mockSetLocale }),
-  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' },
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' }, LOCALE_SHORT_LABELS: { en: 'English', ms: 'B. Melayu', ta: 'தமிழ்' },
 }))
 const mockShowAuthGate = jest.fn()
 let mockAuth: { session: unknown; isAuthenticated: boolean; isAnonymous?: boolean; hasSession?: boolean } = { session: null, isAuthenticated: false }

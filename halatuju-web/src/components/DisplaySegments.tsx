@@ -12,14 +12,14 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/components/ToastContext'
-import { useT, LOCALE_LABELS, type Locale } from '@/lib/i18n'
+import { useT, LOCALE_LABELS, LOCALE_SHORT_LABELS, type Locale } from '@/lib/i18n'
 import {
   DEFAULT_MODE, THEME_MODES, applyTheme, devicePrefersDark, readStoredMode, resolveTheme,
   writeStoredMode, type ThemeMode,
 } from '@/lib/theme'
 
 const SEGMENTS = 'flex w-full gap-1 rounded-lg bg-ground-100 p-1'
-const segment = (on: boolean) => `inline-flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-md px-2 text-center text-sm font-medium leading-tight ${
+const segment = (on: boolean) => `inline-flex min-h-11 min-w-0 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-center text-sm font-medium leading-tight ${
   on ? 'bg-ground-0 text-ground-900 shadow-sm' : 'text-ground-600 hover:text-ground-900'}`
 
 /**
@@ -47,9 +47,9 @@ export function ThemeSegments() {
 }
 
 /**
- * English / Bahasa Melayu / தமிழ் as three 44 px buttons, sized to their words (`flex-auto`, so
- * "Bahasa Melayu" gets its room) but free to shrink (`min-w-0`) and wrap inside the button, so the row
- * stays inside the w-72 desktop menu and a 320 px sheet body. ⚠ The SAME rule as
+ * English / B. Melayu / தமிழ் as three 44 px buttons, each on ONE line (`whitespace-nowrap`). Malay is
+ * drawn SHORT ("B. Melayu", `LOCALE_SHORT_LABELS`) so the row stays inside the w-72 desktop menu and a
+ * 320 px sheet body; the button's accessible name stays the full "Bahasa Melayu" (`aria-label`). ⚠ The SAME rule as
  * `LanguageSelector` (read its header): the pending choice is this control's own state, shown at once
  * with a spinner while the catalogue loads; a failed load puts it back and says so in the house toast;
  * an answer for a choice already replaced is ignored.
@@ -77,8 +77,9 @@ export function LanguageSegments() {
     <div role="radiogroup" aria-label={t('settings.language')} aria-busy={busy} className={SEGMENTS}>
       {(Object.keys(LOCALE_LABELS) as Locale[]).map((key) => (
         <button key={key} type="button" role="radio" aria-checked={shown === key}
+          aria-label={LOCALE_LABELS[key]}
           onClick={() => { if (key !== shown) choose(key) }} className={segment(shown === key)}>
-          {LOCALE_LABELS[key]}
+          {LOCALE_SHORT_LABELS[key]}
           {busy && shown === key && (
             <span aria-hidden className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-shape border-t-transparent" />
           )}

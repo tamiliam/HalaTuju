@@ -263,7 +263,11 @@ test('A48: the menu theme and language rows fit their box, at phone width and at
         label: g.getAttribute('aria-label') ?? '', scroll: g.scrollWidth, client: g.clientWidth, right: box.right,
         buttons: Array.from(g.querySelectorAll('button[role="radio"]')).map((b) => {
           const r = b.getBoundingClientRect()
-          return { text: b.textContent ?? '', right: r.right, height: r.height }
+          const lh = parseFloat(getComputedStyle(b).lineHeight) || 20
+          const range = document.createRange()
+          range.selectNodeContents(b)
+          const textH = Array.from(range.getClientRects()).reduce((m, q) => Math.max(m, q.height), 0)
+          return { text: b.textContent ?? '', right: r.right, height: r.height, textH, lh }
         }),
       }
     }))
@@ -274,6 +278,7 @@ test('A48: the menu theme and language rows fit their box, at phone width and at
         for (const b of g.buttons) {
           expect(b.right, `${where}: "${b.text}" right ${b.right} past the box edge ${g.right}`).toBeLessThanOrEqual(g.right + 0.5)
           expect(b.height, `${where}: "${b.text}" is ${b.height} px tall`).toBeGreaterThanOrEqual(44)
+          expect(b.textH, `${where}: "${b.text}" text is ${b.textH} px tall (line ${b.lh}) - it wrapped`).toBeLessThan(b.lh * 1.5)
         }
       }
     }

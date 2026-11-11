@@ -33,6 +33,13 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   ta: 'தமிழ்',
 }
 
+/** Short names for the account menu's language row ONLY, where "Bahasa Melayu" will not fit on one line. */
+export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
+  en: 'English',
+  ms: 'B. Melayu',
+  ta: 'தமிழ்',
+}
+
 interface I18nContextValue {
   /** The language the reader has CHOSEN, and the one the switcher has committed to. */
   locale: Locale

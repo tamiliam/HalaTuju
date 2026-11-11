@@ -73,6 +73,8 @@ Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roa
 Branch a48. `DisplaySegments` buttons: `min-w-0`, `px-2`, `text-center leading-tight`, no `whitespace-nowrap`, so
 "தமிழ்" stays inside the w-72 menu (desktop and phone). Regression test in `theme.test.ts` (class-string; the
 mobile-check suite has no signed-in menu).
+Owner 2026-11-12: no two lines - the language row shows "B. Melayu" (`LOCALE_SHORT_LABELS`, that row only; aria-label
+stays "Bahasa Melayu"), `whitespace-nowrap` is back; the A48 mobile-check spec also asserts one line per button.
 
 ### feat: sprint M1b (API part 1) - mentor Deactivate refuses `has_scholars`; group rows answer `not_arrived` (2026-11-11)
 

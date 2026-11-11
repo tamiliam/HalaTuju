@@ -13,7 +13,7 @@ import { ME } from '@/components/source/testFixtures'
 const mockSetLocale = jest.fn(() => Promise.resolve())
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: mockSetLocale }),
-  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' },
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' }, LOCALE_SHORT_LABELS: { en: 'English', ms: 'B. Melayu', ta: 'தமிழ்' },
 }))
 let mockAuth: Record<string, unknown> = {}
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => mockAuth }))
@@ -45,7 +45,7 @@ it('the Profile page shows the three languages, the current one chosen, outside 
   const section = await screen.findByTestId('profile-language')
   const group = within(section).getByRole('radiogroup', { name: 'settings.language' })
   const radios = within(group).getAllByRole('radio')
-  expect(radios.map((r) => r.textContent)).toEqual(['English', 'Bahasa Melayu', 'தமிழ்'])
+  expect(radios.map((r) => r.textContent)).toEqual(['English', 'B. Melayu', 'தமிழ்'])
   expect(radios.map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false'])
   expect(screen.getByTestId('admin-profile').contains(section)).toBe(false)
 })

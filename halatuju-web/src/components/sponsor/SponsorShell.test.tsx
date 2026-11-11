@@ -18,7 +18,7 @@ jest.mock('next/link', () => ({
     <a href={href} {...rest}>{children}</a>,
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: jest.fn() }),
-  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' } }))
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' }, LOCALE_SHORT_LABELS: { en: 'English', ms: 'B. Melayu', ta: 'தமிழ்' } }))
 jest.mock('@/components/BrandLogo', () => ({ __esModule: true, default: () => <span>logo</span> }))
 jest.mock('@/components/ThemeSelector', () => ({ __esModule: true, default: () => <select aria-label="theme" /> }))
 jest.mock('@/lib/sponsor-supabase', () => ({ sponsorSignOut: jest.fn() }))
