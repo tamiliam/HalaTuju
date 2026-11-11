@@ -341,9 +341,12 @@ describe('after issue', () => {
     const record = within(detail).getByText('admin.billing.invoice.recordAndReceipt') as HTMLButtonElement
     // An ISO date is no longer what the box asks for: refused on the screen, never sent.
     fireEvent.change(box, { target: { value: '2026-09-20' } })
-    expect(within(detail).getByTestId('receipt-baddate-7')).not.toBeNull()
+    const msg = within(detail).getByTestId('receipt-baddate-7')
+    expect(msg.getAttribute('role')).toBe('alert')
+    expect(box.getAttribute('aria-describedby')).toBe(msg.id)
     expect(record.disabled).toBe(true)
     fireEvent.change(box, { target: { value: '20-09-2026' } })
+    expect(box.getAttribute('aria-describedby')).toBeNull()
     expect(record.disabled).toBe(false)
     fireEvent.click(record)
     await waitFor(() => expect(mockApi.recordInvoiceReceipt).toHaveBeenCalledWith(

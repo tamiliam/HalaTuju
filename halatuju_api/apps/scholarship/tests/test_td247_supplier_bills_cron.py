@@ -27,6 +27,7 @@ from rest_framework.test import APIClient
 
 from apps.scholarship import cron_auth, fx, invoice_parsers, supplier_bills
 from apps.scholarship.invoice_parsers import InvoiceLine, ParsedInvoice
+from apps.scholarship.management.commands import import_invoices
 from apps.scholarship.models import PlatformCost
 from apps.scholarship.views import CronRunView
 
@@ -49,12 +50,17 @@ def _rate_down(amount, currency, on_date):
 
 
 class _Drive:
-    """Patch the three seams: the Drive folder listing, the PDF text and the parser."""
+    """Patch the seams: the Drive folder listing, the PDF text, the parser, the rate and today.
 
-    def __init__(self, invoices, rate=_rate_ok):
+    Today defaults to a date after October 2026 ends, so the bills in these tests are ready for
+    their closing rate whatever the real clock says.
+    """
+
+    def __init__(self, invoices, rate=_rate_ok, today=date(2026, 11, 15)):
         self.pdfs = [(f'bill-{i}.pdf', b'%PDF-fake') for i in range(len(invoices))]
         self.invoices = list(invoices)
         self.rate = rate
+        self.today = today
 
     def __enter__(self):
         texts = iter(f'text {i}' for i in range(len(self.invoices)))
@@ -65,6 +71,7 @@ class _Drive:
             patch.object(invoice_parsers, 'pdf_text', side_effect=lambda _src: next(texts)),
             patch.object(invoice_parsers, 'parse_text', side_effect=lambda t: by_text[t]),
             patch.object(fx, 'to_myr', side_effect=self.rate),
+            patch.object(import_invoices, '_today', return_value=self.today),
         ]
         for p in self._patches:
             p.start()
@@ -119,6 +126,87 @@ class TestTheDriveDoor(TestCase):
         self.assertEqual(row.invoice_ref, 'MTSOJA-2026-10')
         self.assertEqual(row.amount_original, Decimal('10.00'))
         self.assertIn('already in the ledger from invoice MTSOJA-2026-10, not OTHER-REF', out)
+
+    def test_the_same_bill_with_a_different_figure_is_reported_not_swapped_in(self):
+        with _Drive([_invoice(amount='10.00')]):
+            _run('--drive', '--apply')
+        with _Drive([_invoice(amount='12.00')]):
+            out = _run('--drive', '--apply')
+        self.assertIn('0 ledger rows written', out)
+        row = PlatformCost.objects.get()
+        self.assertEqual(row.amount_original, Decimal('10.00'))
+        self.assertIn('from invoice MTSOJA-2026-10 is already in the ledger at USD 10.00, but this '
+                      'copy says USD 12.00', out)
+
+    def test_the_same_bill_with_the_same_figure_says_nothing(self):
+        with _Drive([_invoice()]):
+            _run('--drive', '--apply')
+        with _Drive([_invoice()]):
+            out = _run('--drive', '--apply')
+        self.assertNotIn('  ! ', out)
+
+
+class TestNoBlankFigureThroughTheDoor(TestCase):
+    """A blank ringgit figure saved by the insert-only door would never be filled in, and the next
+    month's invoice job would stop on fx_missing. So such a bill is skipped until it can carry one."""
+
+    def test_an_unended_month_waits_then_goes_in_with_its_rate(self):
+        # Still October: no closing rate yet, and none is even asked for.
+        with _Drive([_invoice()], today=date(2026, 10, 20)):
+            out = _run('--drive', '--apply')
+            self.assertEqual(fx.to_myr.call_count, 0)
+        self.assertIn('NOT saved - waiting for month end', out)
+        self.assertIn('0 ledger rows written', out)
+        self.assertEqual(PlatformCost.objects.count(), 0)
+
+        # The last day itself still waits: the closing rate is not final until the day is over.
+        with _Drive([_invoice()], today=date(2026, 10, 31)):
+            out = _run('--drive', '--apply')
+        self.assertIn('waiting for month end', out)
+        self.assertEqual(PlatformCost.objects.count(), 0)
+
+        # After the month ends: inserted once, with the rate.
+        with _Drive([_invoice()], today=date(2026, 11, 2)):
+            out = _run('--drive', '--apply')
+        self.assertIn('1 ledger rows written', out)
+        row = PlatformCost.objects.get()
+        self.assertEqual(row.amount_myr, Decimal('42.00'))
+        self.assertEqual(row.fx_rate, RATE)
+
+        # And a rerun writes nothing.
+        with _Drive([_invoice()], today=date(2026, 11, 3)):
+            out = _run('--drive', '--apply')
+        self.assertIn('0 ledger rows written', out)
+        self.assertEqual(PlatformCost.objects.count(), 1)
+
+    def test_an_unended_month_is_not_counted_in_the_dry_run_either(self):
+        with _Drive([_invoice()], today=date(2026, 10, 20)):
+            out = _run('--drive')
+        self.assertIn('0 ledger rows would be written', out)
+        self.assertIn('waiting for month end', out)
+
+    def test_an_ended_month_with_the_rate_service_down_is_skipped_then_inserted(self):
+        with _Drive([_invoice()], rate=_rate_down):
+            out = _run('--drive', '--apply')
+        self.assertIn('NOT saved - no USD->MYR closing rate for 2026-10-31', out)
+        self.assertEqual(PlatformCost.objects.count(), 0)
+
+        with _Drive([_invoice()]):
+            _run('--drive', '--apply')
+        self.assertEqual(PlatformCost.objects.get().amount_myr, Decimal('42.00'))
+
+    def test_a_ringgit_bill_never_waits(self):
+        bill = ParsedInvoice(source='workspace', invoice_ref='WS-2026-10', currency='MYR',
+                             period_month='2026-10', total=Decimal('36.00'),
+                             lines=[InvoiceLine('Google Workspace', 'Business Starter',
+                                                Decimal('36.00'))])
+        def myr(amount, currency, on_date):
+            return amount, Decimal('1'), on_date
+
+        with _Drive([bill], rate=myr, today=date(2026, 10, 20)):
+            out = _run('--drive', '--apply')
+        self.assertIn('1 ledger rows written', out)
+        self.assertEqual(PlatformCost.objects.get().amount_myr, Decimal('36.00'))
 
     def test_no_folder_configured_refuses_and_writes_nothing(self):
         with patch.dict(os.environ, {supplier_bills.FOLDER_ENV: ''}):

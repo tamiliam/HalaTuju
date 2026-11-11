@@ -4975,14 +4975,22 @@ import's Drive door). Two money-family cron doors run it with fixed flags: `supp
 `--apply`) and `supplier-bills-import` (`--drive --apply`). **Idempotent:** the Drive path is INSERT-ONLY
 (`get_or_create` on the ledger's unique line, `platform_cost_unique_line`), so a second run writes nothing and an
 exchange-rate outage cannot blank a figure already there; a second bill claiming a line another bill holds is
-reported, never swapped in (import a true replacement with `--dir`). The `--dir` path is unchanged (still upserts).
+reported, never swapped in (import a true replacement with `--dir`); the same bill read again with a different
+figure is reported too. **Skip until month end (review fix):** because the door never comes back to a line, it
+never saves a foreign-currency (USD) line without its ringgit figure - a blank would stay blank and stop the next
+month's invoice job on `fx_missing`. A bill whose month has not ended (the last day included, server date) is
+skipped and reported as "waiting for month end", with no rate lookup; a bill whose rate cannot be fetched (ECB
+down) is skipped and reported the same way. The first run after the month ends, or after the rate service is
+back, inserts it with the rate. Ringgit bills (Workspace) never wait. The `--dir` path is unchanged (still
+upserts, and still records a blank figure when there is no rate).
 Tests: `test_td247_supplier_bills_cron.py`.
 **The owner must, in order:** (1) create the Drive folder and upload the month's bills; (2) set
 `SUPPLIER_BILLS_FOLDER` on halatuju-api with `--update-env-vars` (a path like `05 Billing/Supplier bills`); (3) call
 `/api/v1/internal/cron/supplier-bills-report/` once by hand with the MONEY key and read the output; (4) create a
 Cloud Scheduler job POSTing to `/api/v1/internal/cron/supplier-bills-import/` with header `X-Cron-Secret` = the money
-key (suggested: 08:00 MYT daily on the 8th to the 14th, before the 15th's invoice run), and at the same time add it to
-`cron_health.EXPECTED_CADENCE`. Nothing is scheduled yet. `sync_gcp_costs` (BigQuery) is still manual.
+key (suggested: 08:00 MYT daily on the 8th to the 14th, before the 15th's invoice run - after month end, so USD
+bills go straight in; a run inside the billed month only reports "waiting for month end"), and at the same time
+add it to `cron_health.EXPECTED_CADENCE`. Nothing is scheduled yet. `sync_gcp_costs` (BigQuery) is still manual.
 
 ### [TD-248] The billing-rates form defaults its start date from the UTC clock — low — **RESOLVED 2026-09-30** (Now-tier sweep: `timezone.localdate().replace(day=1)`; pinned-clock test at 23:30 UTC on 30 Sep, `test_billing_rate_default_date.py`)
 

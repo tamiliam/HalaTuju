@@ -25,14 +25,18 @@ Reached through `CronRunView` as `supplier-bills-report` (no `--apply`: a dry ru
 and `supplier-bills-import` (`--apply`). ⚠ **With `--drive` the write is INSERT-ONLY**: a line whose
 (period_month, source, service, sku) is already in the ledger is never touched, whatever its figure -
 so a second run writes nothing, a transient exchange-rate outage can never blank a good figure, and two
-bills that claim the same line are REPORTED rather than one silently replacing the other. A correction
-to a line already in the ledger stays a person's job, on the `--dir` path, which is unchanged.
+bills that claim the same line are REPORTED rather than one silently replacing the other. Because it
+never comes back to a line, it also never saves a foreign-currency line WITHOUT its ringgit figure: a
+bill whose month has not ended yet ("waiting for month end"), or whose rate cannot be fetched, is
+skipped and reported, and a later run inserts it with the rate. A correction to a line already in
+the ledger stays a person's job, on the `--dir` path, which is unchanged.
 
 ⚠ **Google Cloud statements are READ BUT NEVER IMPORTED.** The BigQuery export carries every SKU
 and the statement does not, so the export stays authoritative — and on 2026-09-11 it was proved
 to match these statements to the cent. The statement is used here purely to CHECK that pull, so
 the day it stops matching is the day somebody is told.
 """
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -40,6 +44,11 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.scholarship import fx, invoice_parsers, platform_cost, supplier_bills
 from apps.scholarship.models import PlatformCost
+
+
+def _today():
+    """Today's date, in one place so the month-end wait can be tested."""
+    return date.today()
 
 
 class Command(BaseCommand):
@@ -136,20 +145,41 @@ class Command(BaseCommand):
     # ── one invoice ───────────────────────────────────────────────────────────
 
     def _import_one(self, name, invoice, apply, problems):
+        end = platform_cost.month_end(invoice.period_month)
+        what = f'{invoice.source} {invoice.period_month} {invoice.invoice_ref}'
+        # ⚠ TD-247: the insert-only door must NEVER save a foreign-currency line without its
+        # ringgit figure, because it never comes back to fill one in - a blank line would sit in
+        # the ledger for good and stop the next invoice job on fx_missing. So while the billed
+        # month is still running (its last day included: the closing rate is not final until the
+        # day is over) the bill is SKIPPED and reported, and the first run after the month ends
+        # inserts it with the rate. No exchange-rate call is made for it in the meantime.
+        if self.insert_only and invoice.currency != 'MYR' and end >= _today():
+            problems.append(
+                f'{name}: {what} NOT saved - waiting for month end. The closing rate for {end} does '
+                f'not exist yet; a run after the month ends inserts it with the rate.')
+            return 0
+
         # The rate at the END of the billed month — the owner's ruling. A MYR invoice short-
         # circuits inside `fx`, so Workspace can never fail on an exchange-rate outage.
         rate = published = None
         try:
-            _probe, rate, published = fx.to_myr(Decimal('1'), invoice.currency,
-                                                platform_cost.month_end(invoice.period_month))
+            _probe, rate, published = fx.to_myr(Decimal('1'), invoice.currency, end)
         except fx.RateUnavailable as exc:
+            if self.insert_only:
+                # Same reason as above: no blank figure through the door. Skipped, reported, and
+                # inserted by a later run once the rate can be fetched.
+                problems.append(
+                    f'{name}: {what} NOT saved - no {invoice.currency}->MYR closing rate for {end} '
+                    f'could be fetched ({exc.__cause__ or exc.__class__.__name__}). A later run '
+                    f'inserts it once a rate is available.')
+                return 0
             # ⚠ NOT a failure of the import. The invoice is still recorded, with no ringgit
             # figure, and `month_totals` will report the month as a FLOOR until a rate exists.
             # An honest gap beats a plausible number nobody can source.
             problems.append(f'{name}: {exc}')
 
         self.stdout.write(
-            f'\n{name}  ->{invoice.source} {invoice.period_month} '
+            f'\n{name}  ->  {invoice.source} {invoice.period_month} '
             f'{invoice.invoice_ref}  {invoice.currency} {invoice.total}'
             + (f'  @ {rate} ({published})' if rate is not None else '  [NO RATE]'))
         if invoice.period_note:
@@ -208,6 +238,17 @@ class Command(BaseCommand):
                         f'in the ledger from invoice {row.invoice_ref or "(no reference)"}, not '
                         f'{invoice.invoice_ref}. Left as it was - if this bill replaces that one, '
                         f'import it with --dir.')
+                else:
+                    # Same bill, but its figure differs from the one held: a re-issued bill or a
+                    # parsing change. Never swapped in here - a person looks.
+                    held = row.amount_original if row.currency != 'MYR' else row.amount_myr
+                    if (row.currency, held) != (invoice.currency, line.amount):
+                        problems.append(
+                            f'{name}: {invoice.source} {invoice.period_month} "{line.sku}" from '
+                            f'invoice {invoice.invoice_ref} is already in the ledger at '
+                            f'{row.currency} {held}, but this copy says {invoice.currency} '
+                            f'{line.amount}. Left as it was - if the bill changed, import it '
+                            f'with --dir.')
         return count
 
     # ── the summary ───────────────────────────────────────────────────────────

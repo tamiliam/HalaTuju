@@ -68,7 +68,10 @@ describe('the tenant side', () => {
       { target: { value: 'MBB-77' } })
     fireEvent.change(within(form).getByLabelText('admin.billing.invoice.declare.paidOn'),
       { target: { value: '31-02-2026' } })
-    expect(within(form).getByTestId('declare-baddate-7')).toBeTruthy()
+    const msg = within(form).getByTestId('declare-baddate-7')
+    expect(msg.getAttribute('role')).toBe('alert')
+    expect(within(form).getByLabelText('admin.billing.invoice.declare.paidOn')
+      .getAttribute('aria-describedby')).toBe(msg.id)
     const button = within(form)
       .getByText('admin.billing.invoice.declare.submit') as HTMLButtonElement
     expect(button.disabled).toBe(true)
@@ -128,9 +131,12 @@ describe('the owner side', () => {
     const box = within(form).getByLabelText('admin.billing.invoice.receivedOn')
     const confirm = within(form).getByText('admin.billing.invoice.declare.confirm') as HTMLButtonElement
     fireEvent.change(box, { target: { value: '2026-10-21' } })
-    expect(within(form).getByTestId('check-baddate-7')).not.toBeNull()
+    const msg = within(form).getByTestId('check-baddate-7')
+    expect(msg.getAttribute('role')).toBe('alert')
+    expect(box.getAttribute('aria-describedby')).toBe(msg.id)
     expect(confirm.disabled).toBe(true)
     fireEvent.change(box, { target: { value: '21-10-2026' } })
+    expect(box.getAttribute('aria-describedby')).toBeNull()
     fireEvent.click(confirm)
     expect(onConfirm).toHaveBeenCalledWith(row, expect.objectContaining({ received_on: '2026-10-21' }))
   })

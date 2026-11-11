@@ -239,7 +239,8 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
                 {/* ⚠ A plain text box, not type="date": a native picker follows the BROWSER's
                     locale and can report no value at all until it is satisfied. */}
                 <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={INPUT} value={receivedOn}
-                  onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')} /></label>
+                  onChange={(e) => setReceivedOn(e.target.value)} aria-label={t('admin.billing.invoice.receivedOn')}
+                  aria-describedby={receivedBad ? `receipt-baddate-${inv.id}` : undefined} /></label>
               <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.amount')}</span>
                 <input type="text" inputMode="decimal" className={INPUT} value={amount}
                   onChange={(e) => setAmount(e.target.value)} aria-label={t('admin.billing.invoice.amount')} /></label>
@@ -255,7 +256,8 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
                   onChange={(e) => setReference(e.target.value)} aria-label={t('admin.billing.invoice.reference')} /></label>
             </div>
             {receivedBad && (
-              <p className="mt-1 text-[11px] text-critical-700" data-testid={`receipt-baddate-${inv.id}`}>
+              <p className="mt-1 text-[11px] text-critical-700" role="alert"
+                id={`receipt-baddate-${inv.id}`} data-testid={`receipt-baddate-${inv.id}`}>
                 {t('admin.billing.invoice.declare.badDate')}
               </p>
             )}
