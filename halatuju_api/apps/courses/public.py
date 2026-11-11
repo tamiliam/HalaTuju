@@ -6,6 +6,8 @@ could be moved or renamed only by chasing imports across the app boundary. This 
 door: a name listed here is a promise to the other apps, and a courses file behind it may move
 without them noticing.
 
+Part 2 (A3.13) adds the two models `reports` reads, `StudentProfile` and `FieldTaxonomy`.
+
 Part 1 re-exports the `exam_questions` names scholarship uses (the held-qualification, SPM-grade,
 CGPA and merit readers). Later parts add the models, the staff helpers and the rest.
 
@@ -37,12 +39,14 @@ from .exam_questions import (
     spm_slip_comparable,
     third_route_overall,
 )
+from .models import FieldTaxonomy, StudentProfile
 
 __all__ = [
     'QUALIFICATION_LABELS', 'THIRD_ROUTE', 'ResultsHeldField', 'completed_qualifications',
     'diploma_is_public', 'has_stpm_results', 'heading_for', 'held_summary', 'is_tertiary',
     'merit_100', 'overall_cgpa', 'overall_from', 'results_held', 'spm_grades_for',
     'spm_grades_none_label', 'spm_slip_comparable', 'third_route_overall',
+    'FieldTaxonomy', 'StudentProfile',
     'register_stpm_document_witness',
 ]
 

@@ -165,3 +165,107 @@ class TestTheScannerItself(SimpleTestCase):
                          {('courses/x.py', 'apps.scholarship.m', '_q')})
         self.assertEqual(scan_source('reports/x.py', 'from apps.courses.m import _q'),
                          {('reports/x.py', 'apps.courses.m', '_q')})
+
+
+# ---------------------------------------------------------------------------------------------
+# A3.13: the back-edges go through the facade. courses -> scholarship, and reports -> courses /
+# scholarship, must import from `apps.<other>.public`, never from a file behind it. Every skip is
+# an exact (file, module, name) and says why. Shrink it, never grow it. Test files are exempt:
+# they build fixtures from the other app's factories and are counted by the budget, not here.
+
+# (file relative to apps/, imported module, name)
+DOOR_ALLOWED = frozenset({
+    # courses/views_admin.py: owned by the team-membership (M1) sessions; joins the facade when
+    # they land (TD-414). Nine distinct names.
+    ('courses/views_admin.py', 'apps.scholarship', 'emails'),
+    ('courses/views_admin.py', 'apps.scholarship', 'invitations'),
+    ('courses/views_admin.py', 'apps.scholarship', 'mentoring'),
+    ('courses/views_admin.py', 'apps.scholarship', 'staff_footprint'),
+    ('courses/views_admin.py', 'apps.scholarship', 'staff_lifecycle'),
+    ('courses/views_admin.py', 'apps.scholarship', 'staff_mentor'),
+    ('courses/views_admin.py', 'apps.scholarship', 'staff_work'),
+    ('courses/views_admin.py', 'apps.scholarship.models', 'Invitation'),
+    ('courses/views_admin.py', 'apps.scholarship.reviewer_onboarding',
+     'reviewer_profile_complete'),
+    # reports/report_engine.py: in the Gemini lane's hands; routes through the facades after it.
+    ('reports/report_engine.py', 'apps.courses.exam_questions', 'THIRD_ROUTE'),
+    ('reports/report_engine.py', 'apps.scholarship', 'usage'),
+    ('reports/report_engine.py', 'apps.scholarship.gemini', 'cascade_failure'),
+})
+# app -> the apps it must reach only through their `public` module
+DOOR_RULES = {'courses': ('scholarship',), 'reports': ('courses', 'scholarship')}
+
+
+def scan_doors(rel_path, source):
+    """(rel_path, module, name) for every import of another app that does NOT go through its
+    `public` module. Rules: DOOR_RULES. `import apps.x.y` counts with an empty name."""
+    own_app = Path(rel_path).parts[0]
+    guarded = DOOR_RULES.get(own_app, ())
+    found = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.ImportFrom):
+            module = _absolute_module(rel_path, node)
+            bits = module.split('.')
+            app = bits[1] if bits[0] == 'apps' and len(bits) > 1 else bits[0]
+            if app not in guarded:
+                continue
+            if len(bits) > 2 and bits[2] == 'public':
+                continue
+            for alias in node.names:
+                if alias.name == 'public' and len(bits) <= 2:
+                    continue                # `from apps.scholarship import public`
+                found.add((rel_path, module, alias.name))
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                bits = alias.name.split('.')
+                app = bits[1] if bits[0] == 'apps' and len(bits) > 1 else bits[0]
+                if app in guarded and not (len(bits) > 2 and bits[2] == 'public'):
+                    found.add((rel_path, alias.name, ''))
+    return found
+
+
+def scan_door_tree():
+    found = set()
+    for app in DOOR_RULES:
+        for path in (APPS_DIR / app).rglob('*.py'):
+            if 'migrations' in path.parts or 'tests' in path.parts or path.name.startswith('test_'):
+                continue
+            rel = path.relative_to(APPS_DIR).as_posix()
+            found |= scan_doors(rel, path.read_text(encoding='utf-8'))
+    return found
+
+
+class TestBackEdgesGoThroughTheFacade(SimpleTestCase):
+    def test_no_new_import_past_the_public_door(self):
+        new = sorted(scan_door_tree() - DOOR_ALLOWED)
+        self.assertEqual(
+            new, [],
+            'courses -> scholarship and reports -> courses/scholarship must import from '
+            '`apps.<app>.public`. Add the name to that facade (re-export only) and import it from '
+            'there:' + chr(10) + chr(10).join(f'  {f}: from {m} import {n}' for f, m, n in new))
+
+    def test_the_scan_still_finds_every_skipped_edge(self):
+        missing = sorted(DOOR_ALLOWED - scan_door_tree())
+        self.assertEqual(missing, [],
+                         'Skipped edges the scan did not find (routed now? delete the line; or the '
+                         f'scanner broke): {missing}')
+
+    def test_the_skip_list_only_shrinks(self):
+        # 9 (courses/views_admin.py) + 3 (reports/report_engine.py). Lower when a line goes.
+        self.assertLessEqual(len(DOOR_ALLOWED), 12)
+
+    def test_the_door_scanner_catches_each_spelling(self):
+        cases = {
+            'from apps.scholarship.models import X': {('courses/x.py', 'apps.scholarship.models', 'X')},
+            'from apps.scholarship import emails': {('courses/x.py', 'apps.scholarship', 'emails')},
+            'import apps.scholarship.emails': {('courses/x.py', 'apps.scholarship.emails', '')},
+            'from apps.scholarship.public import X': set(),
+            'from apps.scholarship import public': set(),
+            'from apps.courses.models import Y': set(),        # courses -> courses is its own app
+        }
+        for src, want in cases.items():
+            with self.subTest(src=src):
+                self.assertEqual(scan_doors('courses/x.py', src), want)
+        self.assertEqual(scan_doors('reports/x.py', 'from apps.courses.models import Y'),
+                         {('reports/x.py', 'apps.courses.models', 'Y')})
+        self.assertEqual(scan_doors('scholarship/x.py', 'from apps.courses.models import Y'), set())

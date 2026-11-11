@@ -13,10 +13,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from apps.courses.exam_questions import (
-    QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa, results_held, spm_grades_for,
+from apps.courses.public import (
+    QUALIFICATION_LABELS, THIRD_ROUTE, StudentProfile, overall_cgpa, results_held, spm_grades_for,
 )
-from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from .models import GeneratedReport
 from .report_engine import generate_report
@@ -81,7 +80,7 @@ class GenerateReportView(APIView):
         student_signals = profile.student_signals or {}
 
         # Enrich courses with field display names
-        from apps.courses.models import FieldTaxonomy
+        from apps.courses.public import FieldTaxonomy
         field_cache = {}
         for course in eligible_courses:
             fk = course.get('field_key') or course.get('field', '')

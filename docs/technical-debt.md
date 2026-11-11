@@ -6876,6 +6876,9 @@ over those three. Moves only, no behaviour change. *(D · S)*
 **Trigger:** the next sprint that adds a results route or a results field; or a rename in
 `exam_questions` that breaks another app.
 
+
+**Progress 2026-11-11 (A3.13):** `apps/scholarship/public.py` added and `apps/courses/public.py` gains `StudentProfile` / `FieldTaxonomy`; courses (5 files) and reports (views, prompts) import through them, and a guard fails on a new skip. Still direct: `courses/views_admin.py` (9 names) and `reports/report_engine.py` (3). RD-04 stays open until those two route.
+
 ### [TD-415] A cockpit test raises a query at a stage the server refuses, because the fixture never serves `officer_requests` - low
 
 **Raised 2026-10-28 by the Consolidation Review**, from the note request #40 (`082487df`) left in

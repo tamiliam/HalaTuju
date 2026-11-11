@@ -79,7 +79,7 @@ class ProfileView(APIView):
         try:
             # Read through the reverse relation rather than importing the model: one fewer
             # `courses -> scholarship` edge for an identical queryset (app-boundary standard).
-            from apps.scholarship.family import DECIDED_STATUSES
+            from apps.scholarship.public import DECIDED_STATUSES
             latest_app = profile.scholarship_applications.order_by('-id').first()
             if latest_app is not None:
                 application_open = latest_app.status not in DECIDED_STATUSES
@@ -114,8 +114,7 @@ class ProfileView(APIView):
                        or profile_claim.ic_held_by_birth_state_rule(profile))
         ic_flags, ic_card_nric, ic_card_name = [], '', ''
         try:
-            from apps.scholarship import identity as identity_rules
-            from apps.scholarship.models import ApplicantDocument
+            from apps.scholarship.public import ApplicantDocument, identity as identity_rules
             ic = (ApplicantDocument.objects
                   .filter(application__profile=profile, doc_type='ic',
                           superseded_at__isnull=True)     # a REPLACED card decides nothing
@@ -245,7 +244,7 @@ class ProfileView(APIView):
         # edit flows into the student's latest undecided application so the two stay
         # identical. Once the application is decided its copy FREEZES (excluded here), and
         # a /profile edit no longer touches it.
-        from apps.scholarship.family import (
+        from apps.scholarship.public import (
             PROFILE_FAMILY_FIELDS, PROFILE_PATHWAY_FIELDS, DECIDED_STATUSES,
             copy_family_roster, copy_pathway,
         )

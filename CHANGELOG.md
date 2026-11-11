@@ -37,6 +37,26 @@ which supersedes the contract module's "Owner decision 4: NO downgrade fallback"
   3.8 Flash (the A3.6 profile goldens' model list only; every prompt byte-identical).
 - No temperature, top_p or thinking change. `apply_copy_draft` (2.5 Flash) keeps its single call.
 
+### refactor: courses and reports reach scholarship / courses through facades (audit A3.13, 2026-11-11)
+
+Branch a313 (not pushed, not deployed; no migration, no behaviour change).
+- New `apps/scholarship/public.py`, a re-export-only facade (same objects as at home): the Programme and
+  ApplicantDocument models, the family copy rules, and the birth_state, constants, emails, identity and
+  whatsapp modules. Five courses files import through it (`models/organisations.py`,
+  `org_config_registry.py`, `profile_claim.py`, `views/profile.py`, `views/verification.py`); all
+  were lazy imports and stay lazy, so the module-level back-edge budget stays 0.
+- `apps/courses/public.py` gains `StudentProfile` and `FieldTaxonomy`; `reports/views.py` and
+  `reports/prompts.py` import through it.
+- Guard: `test_cross_app_private_imports.py` now also fails on a courses -> scholarship or
+  reports -> courses/scholarship import that skips `public`. Skip list (cap 12, equal to the count):
+  `courses/views_admin.py` (9 names, M1 sessions) and `reports/report_engine.py` (3, Gemini lane).
+- Budget `courses_to_scholarship_imports` 17 -> 16 (views/profile.py's two adjacent imports became one).
+- Readings, honest: `xapp` 105 -> 107 and courses -> scholarship edges 20 -> 21, reports -> courses 8 -> 9.
+  A facade re-routes an edge, it does not remove it, and the two skipped files still hold the old
+  edge beside the new one (`emails`, `THIRD_ROUTE`). They fall by 2 and more when views_admin and
+  report_engine route. Roadmap targets (xapp <= 50, courses -> scholarship <= 8) are not met here.
+- Tests: `test_scholarship_public_facade.py` (identity pins), the door guard and its scanner self-test.
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).
