@@ -129,8 +129,6 @@ export interface ScholarshipApplication {
   // Phase 2B: unemployment detail per 'unemployed' roster member, {member: {reason, since}}.
   income_nonearning?: Partial<Record<'father' | 'mother' | 'guardian' | 'brother' | 'sister',
     { reason?: string; since?: string }>>
-  earner_work_status: '' | 'payslip' | 'informal' | 'not_working' // deprecated (salary route)
-  household_other_earners: number | null
   siblings_in_school: number | null
   siblings_in_tertiary: number | null
   // Address pre-fill from the profile (S14) — round-trips through the details

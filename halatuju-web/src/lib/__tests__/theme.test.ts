@@ -784,7 +784,7 @@ export const F2A_FILES = [
   'src/components/FilterPill.tsx', 'src/components/DocViewer.tsx',
   'src/components/IcInput.tsx', 'src/components/InfoTip.tsx',
   'src/components/ProgressStepper.tsx', 'src/components/FundingBar.tsx',
-  'src/components/ScholarshipReferee.tsx', 'src/components/ScholarshipBanner.tsx',
+  'src/components/ScholarshipBanner.tsx',
   'src/components/Toast.tsx', 'src/components/Toggle.tsx',
   'src/components/FieldLabel.tsx', 'src/components/VerifiedTick.tsx',
   'src/components/DocumentHelpCoach.tsx', 'src/components/SelectWithOther.tsx',

@@ -90,8 +90,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
             'other_family_members',
             # Income Check-1 wizard answers.
             'income_route', 'income_earner', 'income_working_members', 'income_declared',
-            'income_nonearning', 'earner_work_status',
-            'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
+            'income_nonearning', 'siblings_in_school', 'siblings_in_tertiary',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',

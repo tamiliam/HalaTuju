@@ -172,10 +172,6 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     # Phase 2B: unemployment detail per 'unemployed' roster member, {member: {reason, since}}.
     income_nonearning = serializers.DictField(
         child=serializers.DictField(), required=False, allow_empty=True)
-    earner_work_status = serializers.ChoiceField(
-        choices=['', 'payslip', 'informal', 'not_working'], required=False, allow_blank=True)
-    household_other_earners = serializers.IntegerField(
-        required=False, allow_null=True, min_value=0, max_value=20)
     siblings_in_school = serializers.IntegerField(
         required=False, allow_null=True, min_value=0, max_value=20)
     siblings_in_tertiary = serializers.IntegerField(

@@ -375,10 +375,9 @@ class ScholarshipCohort(models.Model):
         help_text="State keys (birth_state.STATE_KEYS) a student must have been BORN in, read "
                   "from the IC's place-of-birth code. Empty list = not applied.",
     )
-    bucket_b_margin = models.IntegerField(
-        default=1,
-        help_text="DEPRECATED (pre-S8 marginal-miss logic); unused by the current engine",
-    )
+    # (TD-226, 2026-11: `bucket_b_margin` left the model, read by nothing. Its column stays in the
+    # database until scholarship 0212 drops it. `funding_envelope` is kept: the Programme roadmap
+    # plans it.)
 
     # Funding + workflow parameters (consumed by later sprints)
     funding_envelope = models.IntegerField(

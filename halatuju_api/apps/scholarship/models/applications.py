@@ -219,9 +219,6 @@ class ScholarshipApplication(models.Model):
     INCOME_EARNER_CHOICES = [
         ('', 'Not chosen'), ('father', 'Father'), ('mother', 'Mother'),
         ('guardian', 'Legal guardian')]
-    EARNER_WORK_CHOICES = [
-        ('', 'Not chosen'), ('payslip', 'Working — has payslip'),
-        ('informal', 'Working — no payslip'), ('not_working', 'Not working')]
     income_route = models.CharField(
         max_length=10, blank=True, default='', choices=INCOME_ROUTE_CHOICES,
         help_text="Wizard Q1 'have an STR document?': yes→'str' route, no→'salary' route.")
@@ -231,7 +228,7 @@ class ScholarshipApplication(models.Model):
                   "proof: father=student-IC patronymic, mother=birth_certificate, guardian=guardianship_letter. "
                   "The SALARY route uses income_working_members (multi-select) instead.")
     # Salary (non-STR) route: the household members who currently work. Replaces the
-    # single income_earner + earner_work_status + household_other_earners for that route.
+    # single-earner questions for that route.
     # Each ticked member gets their own IC + salary slip + EPF (tagged via
     # ApplicantDocument.household_member). Relationship proof: father/brother/sister via the
     # student-IC patronymic (siblings carry the same father's name), mother via birth cert,
@@ -257,15 +254,9 @@ class ScholarshipApplication(models.Model):
         default=dict, blank=True,
         help_text="{member: {reason, since:'YYYY-MM'}} for an 'unemployed' roster member — why and "
                   "since when. Reviewer texture; EPF (all-zeros employer) corroborates. Never a gate.")
-    # DEPRECATED (salary route): Q3 work-status + Q4 other-earner are superseded by
-    # income_working_members (informal is now inferred from 'IC present, no payslip/EPF').
-    # Kept for the STR route's legacy reads + to avoid a destructive migration; drop later (tech debt).
-    earner_work_status = models.CharField(
-        max_length=12, blank=True, default='', choices=EARNER_WORK_CHOICES,
-        help_text="DEPRECATED (salary route) — informal is now inferred. STR route unaffected.")
-    household_other_earners = models.PositiveSmallIntegerField(
-        null=True, blank=True,
-        help_text="DEPRECATED — superseded by income_working_members (siblings ticked explicitly).")
+    # (TD-084, 2026-11: the old single-earner `earner_work_status` and `household_other_earners`
+    # columns were dropped. `income_working_members` replaced them; informal is inferred from
+    # 'IC present, no payslip/EPF'.)
 
     # Workflow
     status = models.CharField(

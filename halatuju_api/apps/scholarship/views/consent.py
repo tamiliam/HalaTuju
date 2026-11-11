@@ -1,13 +1,13 @@
-"""Referees and the student's consent."""
+"""The student's consent."""
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from .. import request_ip
-from ..models import Consent, Referee
+from ..models import Consent
 from ..read_errors import ic_second_opinion_deferred
-from ..serializers import ConsentCreateSerializer, ConsentSerializer, RefereeSerializer
+from ..serializers import ConsentCreateSerializer, ConsentSerializer
 from ..services import (
     consent_blockers,
     CONSENT_VERSION,
@@ -16,25 +16,6 @@ from ..services import (
     record_consent,
 )
 from .common import _current_application
-
-
-class RefereeListCreateView(APIView):
-    """GET list / POST add a referee for the caller's application."""
-    permission_classes = [SupabaseIsAuthenticated]
-
-    def get(self, request):
-        app = _current_application(request.user_id)
-        refs = Referee.objects.filter(application=app) if app else Referee.objects.none()
-        return Response({'referees': RefereeSerializer(refs, many=True).data})
-
-    def post(self, request):
-        app = _current_application(request.user_id)
-        if app is None:
-            return Response({'error': 'No shortlisted application.'}, status=status.HTTP_403_FORBIDDEN)
-        serializer = RefereeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        ref = Referee.objects.create(application=app, **serializer.validated_data)
-        return Response(RefereeSerializer(ref).data, status=status.HTTP_201_CREATED)
 
 
 class ConsentView(APIView):

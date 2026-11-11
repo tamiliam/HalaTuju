@@ -903,6 +903,8 @@ Each sprint here:
 
 #### A3.17 Dead code
 
+- **Status (2026-11-11): built on branch a317, not pushed.** RD-07 removed; RD-08 test added, 17 routes allowlisted, student referee route removed; CO-16 kept (money); TD-084 fields and `bucket_b_margin` retired from the model (`funding_envelope` kept, owner has not ruled); migration scholarship 0211 is expand-contract: STEP 1 (owner, BEFORE the push) a SQL block in the CHANGELOG, STEP 2 (later sprint, after the new image serves all traffic) a 0212 that drops the three columns. Dead i18n keys listed in the CHANGELOG, not removed.
+
 - **Goal:** Shipped code is all used.
 - **Scope:**
   - RD-07: `ScholarshipReferee.tsx`, `error-i18n.ts`.

@@ -59,7 +59,6 @@ PINNED_ROUTES = {
     'scholarship/documents/': 'DocumentListCreateView',
     'scholarship/income/<str:member>/help/': 'IncomeClusterHelpView',
     'scholarship/intake/': 'ScholarshipIntakeView',
-    'scholarship/referees/': 'RefereeListCreateView',
     'scholarship/resolution-items/<int:pk>/resolve/': 'ResolutionItemResolveView',
     'scholarship/resolution-items/': 'ResolutionItemListView',
     'scholarship/whatsapp/inbound/': 'WhatsAppInboundView',

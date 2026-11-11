@@ -31,7 +31,6 @@ from .views import (
     DocumentListCreateView,
     DocumentSignUploadView,
     PromotionalConsentView,
-    RefereeListCreateView,
     ResolutionItemListView,
     ResolutionItemResolveView,
     SemesterResultView,
@@ -259,7 +258,6 @@ urlpatterns = [
     path('scholarship/results/spm-only/', SpmOnlyView.as_view()),
     path('scholarship/results/refile-to-higher/', RefileToHigherView.as_view()),   # S4 (D15)
     path('scholarship/income/<str:member>/help/', IncomeClusterHelpView.as_view()),
-    path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
     # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)
     path('scholarship/award/', StudentAwardView.as_view()),
