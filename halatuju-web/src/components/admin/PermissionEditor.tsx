@@ -20,7 +20,7 @@ import {
  * on every change — what saving would do: each toggle asks the endpoint for a DRY RUN, and the line
  * under the switches is worded from its answer (`added`, `removed`, `consequences`) or shows its
  * refusal (a person holding cases keeps "Review assigned students"). Nothing here re-derives a rule;
- * the one local rule, Quality check bringing Applications, only mirrors what the server answers.
+ * the one local rule, Quality check bringing Applications, only reflects what the server answers.
  *
  * Loaded in the person page's own chunk (`'ad'`, `admin/person/TeamPersonPage`, sprint T3) — no route entry carries it.
  *

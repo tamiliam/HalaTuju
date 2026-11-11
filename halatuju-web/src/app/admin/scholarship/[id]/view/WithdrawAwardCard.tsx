@@ -40,7 +40,8 @@ export const KNOWN_ERRORS = [
 const TAP = 'max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center'
 const DECIMAL = /^(-?)(\d+)(?:\.(\d{1,2}))?$/
 
-/** Has money gone out on this case (a released or returned tranche)? Mirrors the API's rule. */
+/** Has money gone out on this case (a released or returned tranche)? Mirrors the API's rule.
+ *  drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts */
 export function hasPaidTranche(app: AdminScholarshipDetail): boolean {
   return (app.disbursements ?? []).some((d) => d.status === 'released' || d.status === 'returned')
 }

@@ -526,7 +526,7 @@ function StaffScholarshipList() {
                         // A case may only change hands while there IS a review to do (Completed /
                         // interviewing). Shortlisted and rejected aren't ready; awaiting-QC and
                         // beyond are over. AND a FIRST assignment waits until the app is ready — all
-                        // student tasks done OR the 5-day window lapsed — mirroring the detail
+                        // student tasks done OR the 5-day window lapsed — the same rule as the detail
                         // cockpit's firstAssignBlocked, so the list can't offer an assign the server
                         // refuses ('not_ready'). The server refuses either way; disabling here means
                         // the officer isn't invited to take an action that will bounce.

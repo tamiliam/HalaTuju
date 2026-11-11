@@ -171,7 +171,7 @@ export default function BursaryPage() {
       // S4a: the slip goes to storage first (a signed URL), then the result names it — the server
       // records the slip itself, so the pre-award document pipeline never runs on it.
       // ⚠ OWNER RULING 2026-10-29: no slip uploaded HERE, no result (emailed slips are not accepted).
-      // The server refuses `slip_required`; Save stays asleep until a slip is chosen to mirror it.
+      // The server refuses `slip_required`; Save stays asleep until a slip is chosen, matching it.
       if (!slip) { setResultError(t('scholarship.bursary.resultError.slip_required')); return }
       const signed = await signUploadDocument('semester_result', { token })
       await uploadFileToSignedUrl(signed.upload_url, slip)

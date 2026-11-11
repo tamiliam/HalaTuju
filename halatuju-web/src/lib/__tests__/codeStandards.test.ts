@@ -344,7 +344,18 @@ function disablesIn(relpath: string, text: string): Disable[] {
 
 // ── Mirrors: a rule copied from the backend must name the test that guards it ────────────────
 /** A comment claiming a duplicated rule. */
-const MIRROR = /mirror|keep\s+(?:the\s+two\s+)?in\s+(?:sync|step)/i
+const MIRROR = new RegExp([
+  /mirror/,
+  /keep\s+(?:the\s+two\s+)?in\s+(?:sync|step)/,
+  // TD-362: the same claim in words that do not say "mirror".
+  /(?:kept|stay|stays|staying)\s+in\s+(?:sync|step|lockstep)/,
+  /lockstep/,
+  /copy\s+of\s+(?:the\s+)?(?:server|backend|api|python)/,
+  /copied\s+(?:verbatim\s+)?from\s+(?:the\s+)?(?:server|backend|api|python|\w+\.py)/,
+  /same\s+(?:list|rule|table|set|map|codes?|values?|regex|pattern|order)\s+as\s+(?:the\s+)?(?:server|backend|api|python)/,
+  /must\s+(?:match|agree\s+with)\s+(?:the\s+)?(?:server|backend|api|python)/,
+  /duplicat\w*\s+(?:of\s+)?(?:the\s+)?(?:server|backend|api|python)/,
+].map((r) => r.source).join('|'), 'i')
 /**
  * ⚠ THE EXCLUSION, DEFINED PRECISELY, because the opposite of a mirror is written with the same
  * word. `documentLimits.ts` says "THE LIMITS ARE SERVED, NOT MIRRORED"; `adminStaff.ts` says
@@ -501,13 +512,13 @@ export function scanWeb(): WebScan {
         keyEchoFallbacks.push(`${relpath}:${i + 1}  ${line.trim().slice(0, 110)}`)
       }
     })
-    if (relpath.startsWith('src/lib/')) {
-      for (const claim of mirrorsIn(relpath, text)) {
-        mirrors.push(claim)
-        if (claim.driftTest && !fs.existsSync(path.join(REPO_ROOT, claim.driftTest))) {
-          brokenDriftTestMarkers.push(
-            `${claim.where} names ${claim.driftTest}, which does not exist`)
-        }
+    // TD-362: every source file under src, not just src/lib — a mirror in a component or a page
+    // is the same debt, and the one that tripped the old guard lived in components/.
+    for (const claim of mirrorsIn(relpath, text)) {
+      mirrors.push(claim)
+      if (claim.driftTest && !fs.existsSync(path.join(REPO_ROOT, claim.driftTest))) {
+        brokenDriftTestMarkers.push(
+          `${claim.where} names ${claim.driftTest}, which does not exist`)
       }
     }
   }
@@ -986,7 +997,7 @@ describe('no unguarded mirror', () => {
     const ledger = new Set(BUDGET.unguarded_mirrors)
     const unlisted = unguarded.filter((m) => !ledger.has(m.key)).map((m) => `${m.where}  ${m.key}`)
     expect(say(unlisted.length > 0, [
-      'Comment(s) in src/lib claiming a rule is mirrored or kept in sync, with nothing enforcing',
+      'Comment(s) in src claiming a rule is mirrored or kept in sync, with nothing enforcing',
       'it. A comment asking two files to stay in step is a request; only a test is a rule — the',
       'SOFT_EVIDENCE denylist rotted for exactly this reason and leaked a tile to blue. WRITE THE',
       'DRIFT TEST (soft-evidence-drift.test.ts is the model: read the other side and assert both',
@@ -1337,6 +1348,25 @@ describe('the mirror rule, proven both ways', () => {
 
   test('"keep the two in sync" is caught too', () => {
     expect(at('// Keep the two in sync with the backend.\nconst a = 1\n').length).toBe(1)
+  })
+
+  // TD-362 / A3.16a: the claim is caught in words that do not say "mirror", and outside src/lib.
+  test.each([
+    'The list is kept in step with the API.',
+    'This stays in sync with the Python table.',
+    'A client-side copy of the server rule.',
+    'Copied verbatim from advice.py.',
+    'Same list as the backend uses.',
+    'These codes must match the server.',
+    'A duplicate of the API rule.',
+  ])('a claim without the keyword is caught: %s', (text) => {
+    expect(at(`// ${text}\nconst a = 1\n`).length).toBe(1)
+  })
+
+  test('the scan covers src/components and src/app, not only src/lib', () => {
+    const found = mirrorsIn('src/components/X.tsx', '// Mirrors the backend rule.\nconst a = 1\n')
+    expect(found.length).toBe(1)
+    expect(found[0].guarded).toBe(false)
   })
 
   test('a drift-test marker discharges the claim', () => {

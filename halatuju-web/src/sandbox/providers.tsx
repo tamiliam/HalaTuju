@@ -3,7 +3,7 @@
 /**
  * The provider stack the real screens expect, with the network stubbed and no identity.
  *
- * This mirrors `src/app/providers.tsx` deliberately rather than reusing it. Two things must differ
+ * This follows `src/app/providers.tsx` deliberately rather than reusing it. Two things must differ
  * and both matter: `AuthProvider` mints an anonymous Supabase user on mount, which a sandbox must
  * never do (it would create real auth rows for a design review), and `AuthGateModal` would open
  * over the screens a designer came to look at. Everything else — QueryClient, BrandingProvider

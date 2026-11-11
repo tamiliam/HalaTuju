@@ -39,6 +39,7 @@ export function OrgRejectPanel({
             organisation". Nothing is lost by the swap — a reviewer CANNOT be assigned at
             'shortlisted' anyway (services.is_assignable), so that box was inert here.
 
+            drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
             KEEP IN SYNC with the server (lessons.md 2026-07-16 — the offer-set and the accept-set
             are one unit of change): role must match AdminOrgRejectView's super/org_admin guard,
             and the status must match services.ORG_REJECT_FROM. Rendering it anywhere else just

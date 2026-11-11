@@ -26,6 +26,7 @@ const errText = (t: (k: string) => string, code?: string) => {
   return code && known.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 }
 
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // Optional urgency keys (mirror org_requests.VALID_URGENCIES). Components come from the
 // two-level REQUEST_COMPONENT_TREE (parent surface → optional B40 sub-component).
 const URGENCY_OPTIONS = ['blocking', 'important', 'nice_to_have']

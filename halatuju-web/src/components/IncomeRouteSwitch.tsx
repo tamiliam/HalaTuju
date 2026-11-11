@@ -1,12 +1,12 @@
 'use client'
 
 /**
- * Student self-serve income route switch (post-submit Action Centre).
+ * Student self-serve income route toggle (post-submit Action Centre).
  *
  * A submitted student whose income route is wrong (e.g. they were told "Upload your
  * STR" but have no STR) can change it in place: pick STR (whose name) or the salary
  * route (who works), confirm, and the backend flips `income_route`, recomputes the
- * document tasks, and never re-blocks the submission. Mirrors the income wizard's
+ * document tasks, and never re-blocks the submission. Asks the income wizard's
  * route question — see lib/incomeWizard.ts for the shared completeness rule.
  */
 
@@ -35,6 +35,7 @@ export default function IncomeRouteSwitch({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
   // Mirrors backend wizardComplete: STR needs an earner, salary needs ≥1 member.
   const valid = route === 'str' ? !!earner : route === 'salary' ? members.length > 0 : false
 

@@ -78,7 +78,7 @@ export default function ContactDetailsEdit({ f, ed }: SectionProps) {
               if (!contactPhone || !token) return
               setSendingPhoneVerify(true)
               try {
-                // Save first, then send the code (mirrors the email Verify flow)
+                // Save first, then send the code (as in the email Verify flow)
                 await updateProfile({ contact_phone: contactPhone }, { token })
                 await sendPhoneVerification(contactPhone, { token })
                 setVerifyingPhone(true)

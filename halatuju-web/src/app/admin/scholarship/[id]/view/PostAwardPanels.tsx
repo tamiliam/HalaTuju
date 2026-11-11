@@ -328,6 +328,7 @@ export function PostAwardPanels({
       {/* ── Manual closure (post-award S6; TD-352; TD-488: before an award, submitted /
           recommended only) ──
           Close a file with a reason that fits the stage (`closeOffer` mirrors the api's table).
+          drift-test: halatuju-web/src/lib/__tests__/closeOfferDrift.test.ts
           Terminal. Shows the closed summary once closed (the graduation thank-you relay stays
           open after closure). Before an award: no offboarding checklist, and the owner's
           explainer says when close fits, what to use instead, and what the student is emailed. */}

@@ -45,6 +45,7 @@ import type {
   AdminVerdictFact,
 } from '@/lib/admin-api'
 
+// drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
 // ── The stage table (mirrors factories.STAGES) ───────────────────────────────────────────────
 /**
  * Every stage the builder can reach, in the order the product reaches them.

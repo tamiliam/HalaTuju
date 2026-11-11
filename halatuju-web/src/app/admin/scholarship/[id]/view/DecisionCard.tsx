@@ -142,7 +142,7 @@ export function DecisionCard({
             ) : app.status === 'rejected' ? (
               /* Decision-history trail (rejectionTrail). A decline is a TWO-person decision just
                  like a recommend — the reviewer records it, a QC upholds it — so the record names
-                 both, mirroring the accepted card above. Earlier steps are muted; the step that
+                 both, like the accepted card above. Earlier steps are muted; the step that
                  ENDED the case is red. */
               <div className="space-y-1.5">
                 {rejectionTrail(app).map((step, i) => {

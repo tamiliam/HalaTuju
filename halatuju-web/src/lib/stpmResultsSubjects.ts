@@ -19,7 +19,7 @@ export interface StpmSubject {
  * Every subject on the MPM STPM syllabus (STPM CGPA sprint C1, 2026-10-28), plus Matematik
  * Lanjutan T, which only older certificates carry. Keys never change once stored. The server's
  * list is `halatuju_api/apps/courses/stpm_subjects.py`, kept in step by
- * drift-test: src/lib/__tests__/stpmSubjectsDrift.test.ts
+ * drift-test: halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts
  */
 export const STPM_SUBJECTS: StpmSubject[] = [
   { id: 'PA', name: 'Pengajian Am', en: 'General Studies', ta: 'பொதுக் கல்வி', stream: 'compulsory' },

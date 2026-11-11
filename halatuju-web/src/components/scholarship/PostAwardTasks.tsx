@@ -107,6 +107,7 @@ export function BankDetailsTask({
     }
   }
 
+  // drift-test: halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts
   // Mirror the API's account-number floor (≥5 digits) client-side so a truncated OCR
   // fragment is flagged inline before the save round-trip ever happens.
   const accountNumberTooShort = accountNumber.trim() !== '' && countDigits(accountNumber) < 5

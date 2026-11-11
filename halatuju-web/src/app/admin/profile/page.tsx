@@ -198,7 +198,7 @@ export default function AdminProfilePage() {
   const blocked = Object.values(invalid).some(Boolean)
 
   // Onboarding: a Reviewer whose backend flag is false is held here until the compulsory fields are
-  // filled. `missing` is a live client mirror (updates as they type) that drives the banner.
+  // filled. `missing` is a live client-side check (updates as they type) that drives the banner.
   const gated = isReviewerRole && role?.reviewer_profile_complete === false
   const missing = reviews ? missingReviewerFields(draft.name, withPhone(draft.reviewer, draft.card.phone)) : []
   const remind = reviews && !isReviewerRole && missing.length > 0

@@ -90,7 +90,7 @@ export default function AdminAuthCallbackPage() {
           // Clear ONLY this admin-scope session. `scope: 'local'` matters: the default
           // (global) revokes EVERY session for this Supabase user — so a person who is
           // also a signed-in sponsor (same Google identity, other tab) would be kicked
-          // out of the sponsor portal just for landing here. Mirror the other signOuts.
+          // out of the sponsor portal just for landing here. Same as the other signOuts.
           await supabase.auth.signOut({ scope: 'local' })
           // `withdrawn`: this Google account's own staff access was revoked or its invitation
           // cancelled (staff lifecycle, 2026-10-09) — said to the holder only.

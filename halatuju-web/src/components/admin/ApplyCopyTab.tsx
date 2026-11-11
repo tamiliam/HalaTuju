@@ -37,7 +37,8 @@ const LOCALES = ['en', 'ms', 'ta'] as const
 type Loc = (typeof LOCALES)[number]
 
 /** Server caps, mirrored so the box can stop a reader before the round trip. The SERVER is the
- *  guarantee — a form `maxLength` is a courtesy (the `parents_occupation` lesson, 2026-06-07). */
+ *  guarantee — a form `maxLength` is a courtesy (the `parents_occupation` lesson, 2026-06-07).
+ *  drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts */
 const MAX_TITLE = 120
 const MAX_INTRO = 400
 const MAX_BULLET = 200

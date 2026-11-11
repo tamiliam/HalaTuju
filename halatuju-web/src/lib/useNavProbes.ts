@@ -9,7 +9,7 @@ import { NO_PROBES, type ProbeKey, type ProbeState } from '@/lib/navigation'
  * Whether each dark-shipped feature is live, inferred from whether its endpoint answers.
  *
  * There is deliberately NO client-side flag. `REQUESTS_ENABLED` and `BILLING_USAGE_ENABLED`
- * are server-side env vars; the API's 404 IS the answer, so nothing has to be kept in step.
+ * are server-side env vars; the API's 404 IS the answer, so there is nothing to keep aligned.
  * This reproduces exactly what the Administration hub has done since those features were dark
  * shipped (see the probe comments in admin/administration/page.tsx) — the hook just gives the
  * whole shell one copy of it instead of each surface probing for itself.

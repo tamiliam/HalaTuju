@@ -8,7 +8,7 @@
  * `pageSize` state, fetches the matching page, and passes `total` / `totalPages`
  * from the API response. Designed to be dropped onto any admin table.
  *
- * Footer layout mirrors the MySkills admin tables: a "Show [n] per page ·
+ * Footer layout follows the MySkills admin tables: a "Show [n] per page ·
  * Page X of Y · [Page][Go]" cluster on the left and First / Previous / Next /
  * Last controls on the right; a compact "‹ Page X of Y ›" on mobile.
  */
