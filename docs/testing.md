@@ -18,6 +18,17 @@ the seeded super admin on the first VERIFIED sign-in. Development settings allow
 nothing changes on the live API. The command refuses any database that is not SQLite. It cannot
 show documents (no Storage) — never re-run extraction locally.
 
+### Walking the student apply flow locally (TD-345, 2026-11-11) — no production login, no real student data
+
+The same seed and the same two servers as above; only the sign-in differs.
+
+1. Seed once (`seed_local_console --email you@example.com`). It also makes the open round ("Local Review Bursary 2026") a student applies to.
+2. Run the local API and `npm run dev` as above. Development settings allow every origin, so the live API's CORS is never involved.
+3. Open http://localhost:3000, sign in with a DIFFERENT address from the admin one (a throwaway Google or email account on the Supabase project). The API makes the student profile on the first verified call, so no student row is seeded.
+4. Walk Apply: the page asks the intake (open), the form, the chooser, the submit. Everything lands in the local SQLite file; delete it to start again.
+
+Pinned by `test_td194_seed_local_console.py::TestSeedLocalStudentPath`. The documents step cannot run (no Storage), and extraction is never re-run locally.
+
 ### ⚠ The API gate — run the deploy gate's OWN line, not a serial run
 
 ```bash

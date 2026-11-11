@@ -94,6 +94,10 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
 - TD-092: browser walk of the sponsor landing in en/ms/ta (halatuju-web/e2e, local next dev, made-up API data); it found a hydration mismatch for a stored Malay reader, fixed by filling branding tokens in the language of the words.
 - TD-070, TD-112: walk scripts added, skipped by default (they need real sign-ins; they run only against a local Supabase and API).
 
+### A4.7 Tests, tooling and data (2026-11-11, branch a47; not pushed; no migration, no budget raised)
+- TD-345 FIXED: local student apply recipe in `docs/testing.md`, pinned by `TestSeedLocalStudentPath`. TD-478 CLOSED (one sighting, no repeat). TD-058 CLOSED: "managed by Supabase" decided as final, with the revisit triggers (no SQL run).
+- CO-12: `vocabularyGateDrift.test.ts` gates the payment-run status pill and the call-language options. The mirror ledger was already empty. TD-385 waits for owner approval D11 (workspace tool; not touched).
+
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 
 Branch g13 (not pushed, not deployed; no migration, no budget raised).

@@ -63,3 +63,19 @@ class TestSeedLocalConsole(TestCase):
                 seed('--email', 'me@example.com')
         self.assertFalse(PartnerOrganisation.objects.filter(code=cmd.ORG_CODE).exists())
         self.assertFalse(PartnerAdmin.objects.filter(email='me@example.com').exists())
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestSeedLocalStudentPath(TestCase):
+    """TD-345 (A4.7): the same seed is the local STUDENT path. A student needs no seeded row of
+    their own (the API makes the profile on the first verified call); what they need is an OPEN
+    round to apply to, which the seed makes. Pinned so the recipe in docs/testing.md stays true."""
+
+    def test_a_fresh_student_sees_an_open_round_and_gets_a_profile(self):
+        seed('--email', 'me@example.com')
+        client = authed_client('td345-student-uid')
+        intake = client.get('/api/v1/scholarship/intake/')
+        self.assertEqual(intake.status_code, 200)
+        self.assertTrue(intake.json()['open'])
+        r = client.get('/api/v1/profile/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
