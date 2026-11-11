@@ -14,6 +14,7 @@ import { SIDE_CARDS, cardsFor, mentorsNow, profileContext, reviewsCases, worksWi
 import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
 import { lazySource } from '@/components/source/LazySource'
+import { LanguageSegments } from '@/components/DisplaySegments'
 import type { CardProps, MeCard, ProfileDraft, ProfileState, SourceForm } from '@/components/adminProfile/shared'
 import type { ComponentType } from 'react'
 
@@ -367,6 +368,12 @@ export default function AdminProfilePage() {
           </aside>
         )}
       </div>
+      {/* TD-472 (owner D10, option B): the console's language control. Outside the form: a choice
+          applies at once and is not part of Save. The same segments as the student and sponsor menus. */}
+      <section className="max-w-md" data-testid="profile-language">
+        <p className="px-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-ground-500">{t('settings.language')}</p>
+        <LanguageSegments />
+      </section>
     </div>
   )
 }

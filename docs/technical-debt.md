@@ -323,8 +323,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-465** - A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money) - part 2 done 2026-11-08 (A1.13: one read point, no behaviour change); the time-left ruling still open
 - **TD-466** - Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 - **TD-467** - The private bucket has no allowed_mime_types / file_size_limit; the older upload flows sign with upsert - medium (PART FIXED 2026-11-06 by A1.7: every upload now signs with upsert=False and the browsers no longer send x-upsert; the bucket limits are written in docs/security/2026-11-06-b40-documents-bucket-limits.sql, NOT applied - owner step)
-- **TD-469** - Mobile M5 leftovers: the sponsor desktop has no language control; admin-side sponsor labels - low
-- **TD-472** - The console has no language control at any width - low
+- **TD-469** - Mobile M5 leftovers: the sponsor desktop has no language control; admin-side sponsor labels - low - part (1) FIXED 2026-11-11 (owner D10 2026-11-11, option A: `LanguageSelector` in the desktop top row); part (3), the admin-side 10-11 px labels, still open
+- ~~**TD-472**~~ **FIXED 2026-11-11 (owner D10 2026-11-11, option B: `LanguageSegments` on the console Profile page)** - The console has no language control at any width - low
 - **TD-474** - An STPM school name followed by a one-word town line takes the town - low
 - ~~**TD-475**~~ **FIXED 2026-11-07 (Sprint A1.10a: the checker seat is `payments_approve`)** - Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
 - ~~**TD-476**~~ **FIXED 2026-11-07 (Sprint A1.10a: the reopen refuses)** - A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
@@ -7795,6 +7795,10 @@ Next / Previous, "pick up to 2") but the question and the answer cards read in E
 
 **Status 2026-11-11 (A4.2): not built, still the owner's call on placement.**
 
+**Part (1) FIXED 2026-11-11 (G13, owner D10 2026-11-11, option A):** `components/sponsor/SponsorShell.tsx` draws the
+existing `LanguageSelector` in the desktop top row, before the theme select, as the student desktop row shows it; the
+phone keeps it in My Account. Test `SponsorShell.language.test.tsx`. Part (3) is still open (M7's sweep), so the item stays.
+
 **Raised 2026-11-03 at Mobile M5.** (1) The portal's language control (the 44 px segments) is on My Account on a phone
 only; from `md` the top row has the theme select and Log out but no language — a desktop sponsor still changes
 language only on the public pages. Add `LanguageSelector` to the desktop row or show the Display section at every
@@ -7858,7 +7862,7 @@ are classed Must and still unmeasured in a browser: `/admin/programme/overview` 
 `/admin/my-students` and `[id]` (built to the approved MentorPhone board in S7c, never measured since). **Fix:** a
 surface each in `src/sandbox/adminM6Surfaces.tsx` with fixtures, then fix what mobile-check names. M6b or M8. *(W · S)*
 
-### [TD-472] The console has no language control at any width - low
+### ~~[TD-472] The console has no language control at any width - low~~ — RESOLVED 2026-11-11 (FIXED, owner D10 2026-11-11, option B: `LanguageSegments` on the console Profile page, halatuju-web/src/app/admin/profile/page.tsx, outside the form; test `src/app/admin/profile/language.test.tsx`. AppShell and the account menu untouched)
 
 **Status 2026-11-11 (A4.2): not built, still the owner's call (D10).** **Status 2026-11-05: waiting on the owner** - AppShell.tsx still has no language control; the open question is where it goes. Not closed by the A0.2 sweep.
 

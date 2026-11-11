@@ -8,12 +8,14 @@
  *   the theme, the language and Log out live in My Account (owner, 2026-11-02). On the screens WITHOUT
  *   tabs (details form, terms wizard, pending, inactive) the header keeps a 44 px Log out, the only way
  *   out there. The tabs (`SponsorTabBar`) are the navigation.
- * - **From `md`:** the top row exactly as before M5 — logo, the three tabs, the theme select, Log out.
+ * - **From `md`:** the top row as before M5 — logo, the three tabs, the theme select, Log out — plus the
+ *   language select (TD-469, owner D10 2026-11-11).
  */
 import { type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'
+import LanguageSelector from '@/components/LanguageSelector'
 import ThemeSelector from '@/components/ThemeSelector'
 import SponsorTabBar, { SPONSOR_TABS, sponsorTabCurrent } from '@/components/sponsor/SponsorTabBar'
 import SponsorLogOut from '@/components/sponsor/SponsorLogOut'
@@ -65,6 +67,9 @@ export default function SponsorShell({ children, nav = false, path }: { children
                 ))}
               </nav>
             )}
+            {/* TD-469 (owner D10, option A): the language select, as the student desktop row shows it.
+                On a phone it is in My Account (Mobile M5). */}
+            <div className="ml-2"><LanguageSelector /></div>
             {/* Light / Dark / Auto (Layer 1 F7d). On a phone it is in My Account (Mobile M5). */}
             <div className="ml-2"><ThemeSelector /></div>
             <SponsorLogOut className="ml-2 px-3 py-2 text-sm text-ground-400 hover:text-ground-600" />

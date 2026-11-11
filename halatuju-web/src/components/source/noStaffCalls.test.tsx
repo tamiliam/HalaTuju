@@ -20,7 +20,8 @@ import ScholarsPage from '@/app/admin/scholars/page'
 import ScholarPage from '@/app/admin/scholars/[id]/page'
 import ProfilePage from '@/app/admin/profile/page'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: jest.fn() }),
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' } }))
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', refreshRole: jest.fn(),
                          role: { role: 'source_partner', is_admin: true, is_super_admin: false,

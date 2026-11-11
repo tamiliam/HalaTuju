@@ -13,7 +13,8 @@ import ProfilePage from './page'
 import { ME } from '@/components/source/testFixtures'
 
 jest.mock('@/lib/i18n', () => ({
-  useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k}(${Object.values(v).join('|')})` : k), locale: 'en' }),
+  useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k}(${Object.values(v).join('|')})` : k), locale: 'en', setLocale: jest.fn() }),
+  LOCALE_LABELS: { en: 'English', ms: 'Bahasa Melayu', ta: 'தமிழ்' },
 }))
 let mockAuth: Record<string, unknown> = {}
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => mockAuth }))
