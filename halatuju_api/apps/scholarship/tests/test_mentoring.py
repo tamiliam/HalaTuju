@@ -220,6 +220,10 @@ class TestOutOfHasAMentor(_Base):
                                                    format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self.open_rows(), [])
+        # M1b review: the Revoke still ends through `end_for_mentor`, with its reason and cause.
+        row = MentorAssignment.objects.get(application=self.app)
+        self.assertEqual(row.end_reason, mentoring.REASON_DEACTIVATED)
+        self.assertEqual(self.events()[-1][1]['cause'], 'mentor_deactivated')
 
     def test_closing_the_file_ends_it(self):
         self.assign(self.kavitha, email_student=False)

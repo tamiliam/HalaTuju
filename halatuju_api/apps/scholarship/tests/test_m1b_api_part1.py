@@ -23,6 +23,7 @@ from apps.scholarship import staff_tables_admin as sta
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
 )
+from apps.scholarship.tests.test_m1a_remove_rules import _run
 from apps.scholarship.tests.test_m1a_review_fixes import _first, _queries
 from apps.scholarship.tests.test_mentoring import _scholar, make_mentor
 
@@ -110,8 +111,12 @@ class TestDeactivateRefusesWhileMentoring(_Base):
         mentoring.assign(self.lead, self.app, self.mentor, email_student=False)
         seen, result = _queries(lambda: mentor_invite.deactivate(self.lead, self.mentor, self.login))
         self.assertEqual(result, (1, 'has_scholars'))
-        self.assertLess(_first(seen, 'mentors', locks=True), _first(seen, 'mentor_assignments'), seen)
-        self.assertIsNone(_first(seen, 'partner_admins'), seen)   # the login is never touched
+        lock = _first(seen, 'mentors', locks=True)
+        self.assertLess(lock, _first(seen, 'mentor_assignments'), seen)
+        # M1b review: the login is LOCKED after the Mentor (to re-judge `staff_mentor`), never read or written
+        # otherwise.
+        self.assertLess(lock, _first(seen, 'partner_admins', locks=True), seen)
+        self.assertIsNone(_first(seen, 'partner_admins', locks=False), seen)
 
     def test_revoking_an_invited_mentor_still_ends_their_mentoring(self):
         # The invitation's Cancel (never signed in) is unchanged: it ends what they had, as the staff
@@ -137,6 +142,10 @@ class TestTheRowSaysWhatTheRemoveAnswers(_Base):
         self.arrived_rev = make_admin('reviewer', owning_org=self.org, first_seen_at=now)
         self.busy_rev = make_admin('reviewer', owning_org=self.org, first_seen_at=now)
         self.never_both = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'scholars'])
+        # M1b part 2: `_plan_remove` asks about unfinished payment runs before the last group, so a
+        # never-signed-in admin holding a run reads `run_in_progress`, not `not_arrived`.
+        self.never_runner = make_admin('admin', owning_org=self.org)
+        _run(self.org, by=self.never_runner.email)
         for who in (self.never_busy, self.busy_rev):
             make_application('assigned', reviewer=who, cohort=self.cohort)
 
@@ -170,11 +179,12 @@ class TestTheRowSaysWhatTheRemoveAnswers(_Base):
             self.arrived_rev.pk: {'reviewers': sta.LAST_TABLE},
             self.busy_rev.pk: {'reviewers': sta.HAS_OPEN_CASES},
             self.never_both.pk: {'admins': None, 'reviewers': None},    # not their last group
+            self.never_runner.pk: {'admins': 'run_in_progress'},
         }
         for path, key in (('/api/v1/admin/admins/', 'admins'), ('/api/v1/admin/reviewers/', 'reviewers')):
             rows = self.rows(path, key)
             for person in (self.never_rev, self.never_adm, self.never_busy, self.arrived_rev, self.busy_rev,
-                           self.never_both):
+                           self.never_both, self.never_runner):
                 if person.pk not in rows:
                     continue
                 with self.subTest(path=path, person=person.name):

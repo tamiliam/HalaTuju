@@ -8730,7 +8730,23 @@ NEW row. Fix: make run create and maker-sign lock the actor's `PartnerAdmin` row
 owner's yes), so they wait on the Remove or archive. Rare in practice: a lead removing someone at the very second that
 person starts a run.
 
-### [TD-606] Suspending a mentor login ends their mentoring instead of refusing `has_scholars` - low (part 1 fixed 2026-11-11)
+### [TD-606] Suspending a mentor login ends their mentoring instead of refusing `has_scholars` - low - **RESOLVED 2026-11-11** (sprint M1b API parts 1 and 2: fixes (1) and (3) `mentor_invite._switch_off` and `staff_tables_admin.row_refusal`; fix (2) `staff_lifecycle.team_table_fields` serves `runs_in_progress` and `staff_tables_admin._cheap_refusal` answers `run_in_progress`; tests `test_m1b_api_part1.py`, `test_m1b_api_part2.py`)
+
+**Status 2026-11-11: all three fixes done (sprint M1b, API part 2, branch m1b-api-g12, awaiting push; no migration).**
+Fix (2): each `GET admin/admins/` row now carries a flat `runs_in_progress` (an integer, 0 when none), the Staff list's
+`work.admins.runs_in_progress` rule (`staff_work.runs_counts`), counted for the whole page in ONE query by
+`staff_lifecycle.team_table_fields` (the list's queries go from 8 to 9 and stay flat in the page size; pinned in
+`test_m1b_api_part2.py`). The row's `remove.admins` now says `run_in_progress` where `_plan_remove` would, ahead of
+`last_table` and `not_arrived` (`row_refusal(..., runs_n)`), so the web can grey Remove with that tip. Served from the
+scholarship side, not imported in `courses/views_staff.py`: that would be a 17th courses-to-scholarship import against
+a budget of 16. The Reviewers list is unchanged (its query budget is exact and its screen reads only
+`remove.reviewers`). Runs match by email across organisations, as `_plan_remove` does; emails are unique, so another
+organisation's people never count. Part 1 also changed a second row code, recorded here: an ARRIVED reviewer whose
+last group is Reviewers and who has open cases now reads `has_open_cases` (it read `last_table`), the answer the
+Remove meets once the screen sends it to No group. Review follow-ups in the same commit: the mentor Deactivate re-locks
+the login after the `Mentor` row and refuses `staff_mentor` if it was made staff meanwhile; its 409 names "This mentor"
+when the login has no name. Web follow-up (not debt here): grey the Admins Remove from the served code and stop reading
+`first_seen_at` for `not_arrived`.
 
 **Part 1 FIXED 2026-11-11 (sprint M1b, API part 1, branch m1b-api, awaiting push; no migration).** Fix (1): the mentor
 action `deactivate` (`mentor_invite.deactivate`, through `_switch_off(..., refuse_scholars=True)`) now refuses 409

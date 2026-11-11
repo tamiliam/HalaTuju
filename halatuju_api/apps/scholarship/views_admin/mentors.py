@@ -472,7 +472,8 @@ class AdminMentorActionView(_MentorsBase):
             n, refusal = mentor_invite.deactivate(admin, mentor, login)
             if refusal == 'has_scholars':                 # O18: nothing ended, nothing switched off
                 return _has_scholars(login, n)
-        if refusal in ('already_joined', 'not_active', 'active', 'no_login', 'not_arrived'):
+        if refusal in ('already_joined', 'not_active', 'active', 'no_login', 'not_arrived',
+                       'staff_mentor'):   # M1b review: made staff after the read above
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_configured':
             return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -519,7 +520,9 @@ class AdminMentorActionView(_MentorsBase):
 
 def _has_scholars(login, n):
     from .. import staff_mentor
-    name = login.name if login is not None else ''
+    # M1b review: a Mentor has no name of its own (`mentoring.mentor_name` reads this same login), so a
+    # missing login or a blank name reads "This mentor", never a sentence that starts with a space.
+    name = (login.name if login is not None else '') or 'This mentor'
     return Response(staff_mentor.has_scholars_body(name, n), status=status.HTTP_409_CONFLICT)
 
 

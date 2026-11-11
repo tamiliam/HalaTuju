@@ -21,6 +21,17 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
   keys, the lock order, every row's code against the endpoint's answer); `test_mentoring.py` and
   `test_team_tables_t2.py` updated to the new rules.
 - Left open (TD-606 part 2): the Admins row's `run_in_progress`, through the scholarship public facade after G12.
+- Part 2 (2026-11-11, branch m1b-api-g12; closes TD-606): each `GET admin/admins/` row now serves a flat
+  `runs_in_progress` (the Staff list's `work.admins.runs_in_progress` rule, `staff_work.runs_counts`, one query for the
+  page: 8 to 9 queries, flat in the page size), and its `remove.admins` reads `run_in_progress` where the Remove would
+  refuse it (`row_refusal`, `_plan_remove`'s order). Served through `staff_lifecycle.team_table_fields`, not a new
+  import in `courses/views_staff.py` (the courses-to-scholarship import budget is full). Reviewers list unchanged.
+- Part 1 also changed a second row code: an arrived reviewer whose last group is Reviewers and who has open cases now
+  reads `has_open_cases` (it read `last_table`).
+- Review fixes: the mentor Deactivate locks the login after the `Mentor` row and refuses `staff_mentor` (400) if it
+  was made staff meanwhile, changing nothing; the 409 `has_scholars` names "This mentor" when the login has no name;
+  the Revoke test again checks `end_reason` and the `mentor_deactivated` cause. Tests: `test_m1b_api_part2.py` (new),
+  `test_m1b_api_part1.py` (a run holder's row against the action; the login lock).
 
 ### merge: G13 - Wave 4 (A4.1, A4.2, A4.3) on one branch, plus review fixes and owner D10 (2026-11-11)
 

@@ -72,9 +72,11 @@ def team_cards(admins):
 
 def team_table_fields(caller, admins):
     """Team tables T2: `staff_tables_admin.row_fields` — here so `apps.courses.views_staff` reaches it
-    through its ONE scholarship door (`views_admin.scholarship_staff()`), as `team_cards` does."""
-    from . import staff_tables_admin
-    return staff_tables_admin.row_fields(caller, admins)
+    through its ONE scholarship door (`views_admin.scholarship_staff()`), as `team_cards` does. M1b (TD-606):
+    with each row's unfinished payment runs (`staff_work.runs_counts`, one query for the page), served as
+    `runs_in_progress` and read by the Admins Remove (`run_in_progress`)."""
+    from . import staff_tables_admin, staff_work
+    return staff_tables_admin.row_fields(caller, admins, runs=staff_work.runs_counts(admins))
 
 
 def staff_list_rows(caller, admins):

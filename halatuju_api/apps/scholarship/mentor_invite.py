@@ -290,14 +290,21 @@ def _switch_off(caller, mentor, login, *, refuse_scholars=False):
     ⚠ NEVER FOR A STAFF MENTOR (S7d): it would switch their STAFF login off — refused `staff_mentor`.
     ``refuse_scholars`` (O18, Deactivate): refused `has_scholars` while they mentor anybody, ``done``
     then being the count — the MENTOR row locked first (M1a's order, as `staff_mentor.stop`), so an
-    assignment committed after the count cannot be ended here (`mentoring.assign` takes that lock)."""
+    assignment committed after the count cannot be ended here (`mentoring.assign` takes that lock).
+    M1b review: the guard above judged a login read before any lock, so the LOGIN row is locked next
+    (Mentor → PartnerAdmin) and judged again: one made staff in between is refused `staff_mentor` and
+    nothing changes."""
     if is_staff_login(login):
         return False, 'staff_mentor'
     from . import mentoring
     now = timezone.now()
+    # ONE login queryset for the lock and the write below (the archive census counts this reader once).
+    logins = PartnerAdmin.objects.filter(pk=login.pk) if login is not None else None
     with transaction.atomic():
+        Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+        if logins is not None and is_staff_login(logins.select_for_update().first()):
+            return False, 'staff_mentor'
         if refuse_scholars:
-            Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
             n = mentoring.scholars_now([mentor.pk]).get(mentor.pk, 0)
             if n:
                 from .staff_mentor import HAS_SCHOLARS
@@ -307,7 +314,7 @@ def _switch_off(caller, mentor, login, *, refuse_scholars=False):
             return False, 'not_active'
         waiting = []
         if login is not None:
-            PartnerAdmin.objects.filter(pk=login.pk).update(is_active=False)
+            logins.update(is_active=False)
             waiting = list(invitations.open_only(
                 Invitation.objects.filter(audience=AUDIENCE, partner_admin=login)))
             Invitation.objects.filter(pk__in=[i.pk for i in waiting]).update(
