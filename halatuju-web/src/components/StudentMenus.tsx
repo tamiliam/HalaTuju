@@ -50,6 +50,8 @@ export interface NavGroup {
 }
 
 export interface Who {
+  /** Signed in but her NRIC step is unfinished: name and Log out only, no account-only links (TD-454). */
+  unverified?: boolean
   name: string
   contact: string
   initials: string
@@ -146,7 +148,7 @@ export function PhoneMenu({ open, onClose, who, incompleteCount }: PhoneMenuProp
   const groups: NavGroup[] = [
     { label: t('common.appName'), links: mainLinks },
     { label: t('scholarship.nav'), links: b40Links },
-    ...(who ? [{ links: accountLinks }] : []),
+    ...(who && !who.unverified ? [{ links: accountLinks }] : []),
   ]
   const router = useRouter()
   // Focus opens on the FIRST ITEM — Sign up, or Dashboard — never on a field (there is none) and
@@ -355,7 +357,7 @@ export function DesktopBar({ who, incompleteCount }: { who: Who | null; incomple
             </button>
             {drop === 'account' && (
               <div className="absolute right-0 top-full z-20 mt-1">
-                <AccountPanel who={who} links={accountLinks} pathname={pathname} onClose={() => setDrop(null)} />
+                <AccountPanel who={who} links={who.unverified ? [] : accountLinks} pathname={pathname} onClose={() => setDrop(null)} />
               </div>
             )}
           </div>

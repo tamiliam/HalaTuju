@@ -1167,6 +1167,8 @@
       "chooseCta": "Teruskan",
       "applyingTo": "Anda sedang memohon untuk:",
       "changeGift": "Tukar",
+      "giftCheckFailed": "Kami tidak dapat menyemak program yang anda mohon.",
+      "giftCheckRetry": "Cuba lagi",
       "seeOpen": "Lihat program yang masih dibuka",
       "alreadyApplied": "Anda sudah memohon untuk program ini pada tahun ini."
     },

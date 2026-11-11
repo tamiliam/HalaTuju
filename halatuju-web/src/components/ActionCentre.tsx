@@ -665,7 +665,7 @@ export default function ActionCentre({
           {sorted.map((item) => (
             // The post-award bank-details task is a bespoke upload-then-confirm card.
             item.code === 'bank_details_missing' ? (
-              <PostAwardTask kind="bank" key={item.id} item={item} token={token} onResolved={fetchItems} />
+              <PostAwardTask kind="bank" key={item.id} item={item} token={token} onResolved={fetchItems} limits={limits} />
             ) : item.code === 'vircle_setup_pending' ? (
               // Post-award Vircle setup: confirm the account is active + the mobile registered.
               <PostAwardTask

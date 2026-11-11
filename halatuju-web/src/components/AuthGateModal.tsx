@@ -258,7 +258,7 @@ export default function AuthGateModal() {
   const handleGoogleLogin = async () => {
     localStorage.setItem(
       KEY_PENDING_AUTH_ACTION,
-      JSON.stringify({ reason: authGateReason, courseId: authGateCourseId })
+      JSON.stringify({ reason: authGateReason, courseId: authGateCourseId, at: Date.now() })
     )
     setLoading(true)
     setError(null)

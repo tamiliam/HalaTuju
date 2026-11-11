@@ -1167,6 +1167,8 @@
       "chooseCta": "Continue",
       "applyingTo": "You are applying to:",
       "changeGift": "Change",
+      "giftCheckFailed": "We could not check which programme you are applying to.",
+      "giftCheckRetry": "Try again",
       "seeOpen": "See programmes that are open",
       "alreadyApplied": "You have already applied to this programme this year."
     },

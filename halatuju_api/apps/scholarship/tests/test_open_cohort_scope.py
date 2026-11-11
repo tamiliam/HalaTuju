@@ -252,6 +252,19 @@ class TestProgrammeNamedByTheApplyLink(TestCase):
         self.prog_b.save(update_fields=['is_active'])
         self.assertIsNone(services.resolve_open_cohort(programme_code='tenant-b-bursary'))
 
+    def test_a_round_under_an_INACTIVE_programme_does_not_make_the_bare_visit_ambiguous(self):
+        """TD-339: the chooser drops an inactive programme's round, so the bare resolver must too.
+        Before: one live gift + one open round under a deactivated programme read ambiguous with ONE
+        choice (no chooser, then a 409 at submit). Now the live gift is simply THE open round."""
+        self.prog_b.is_active = False
+        self.prog_b.save(update_fields=['is_active'])
+        self.assertEqual(services.resolve_open_cohort(), self.cohort_a)
+        self.client = APIClient()
+        body = self.client.get('/api/v1/scholarship/intake/').json()
+        self.assertTrue(body['open'])
+        self.assertEqual(body['programme_code'], 'tenant-a-bursary')
+        self.assertEqual(body['choices'], [])
+
     def test_two_open_intakes_of_the_SAME_programme_are_still_refused(self):
         """The link narrows to a programme, not to a round — so PF-1's shape can still occur
         one level down, and must still refuse rather than pick the newer year."""

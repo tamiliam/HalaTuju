@@ -159,7 +159,7 @@
       "src/components/ActionCentre.tsx": 696,
       "src/components/ScholarshipNextSteps.tsx": 828,
       "src/components/admin/IntakeYearTab.tsx": 718,
-      "src/lib/scholarship.ts": 1005,
+      "src/lib/scholarship.ts": 946,
       "src/sandbox/surfaces.tsx": 626
     },
     "eslint_disable_without_reason": [],

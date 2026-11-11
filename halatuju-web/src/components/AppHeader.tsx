@@ -51,7 +51,7 @@ export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
 }) {
   const { t } = useT()
   const pathname = usePathname()
-  const { session, isAuthenticated, showAuthGate } = useAuth()
+  const { session, isAuthenticated, isAnonymous, hasSession, showAuthGate } = useAuth()
   const { incompleteCount } = useProfileCompleteness()
   const [menuOpen, setMenuOpen] = useState(defaultMenuOpen)
   const [menus, setMenus] = useState<Menus | null>(null)
@@ -89,7 +89,11 @@ export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
 
   const meta = session?.user?.user_metadata
   const name: string = meta?.full_name || meta?.name || ''
-  const who: Who | null = isAuthenticated ? {
+  // TD-454: a Google sign-in still on its NRIC step (`needs-nric`) is signed in for the header — her name
+  // and Log out — though not `isAuthenticated`; the account-only links stay behind `isAuthenticated`.
+  const signedIn = isAuthenticated || (!!hasSession && !isAnonymous)
+  const who: Who | null = signedIn ? {
+    unverified: !isAuthenticated,
     name,
     contact: session?.user?.email || session?.user?.phone || '',
     initials: name ? name.split(/\s+/).filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?',

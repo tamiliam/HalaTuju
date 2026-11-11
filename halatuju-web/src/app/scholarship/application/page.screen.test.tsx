@@ -12,7 +12,7 @@
  *
  * `t` echoes its key.
  */
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipApplicationPage from './page'
 import * as api from '@/lib/api'
 
@@ -43,6 +43,7 @@ const serve = (...apps: { id: number; status: string; cohort_name?: string }[]) 
 beforeEach(() => {
   jest.resetAllMocks()
   mockApi.getStudentAward.mockResolvedValue({ offer: null, is_minor: false } as AwardReply)
+  mockApi.getScholarshipIntake.mockResolvedValue({ open: true } as Awaited<ReturnType<typeof api.getScholarshipIntake>>)
 })
 
 it('a lone SUBMITTED application shows the "received" card — not "you haven\'t applied"', async () => {
@@ -155,4 +156,22 @@ describe('TD-352 — one application at a time, said on the page (owner, 2026-10
     await screen.findByText('scholarship.application.multiple.title')
     expect(screen.queryByTestId(LINE)).toBeNull()
   })
+})
+
+// TD-354: the link is offered only when a programme is open; with none it is not a detour to the landing.
+it('the "closed" card drops the "see programmes" link when nothing is open', async () => {
+  mockApi.getScholarshipIntake.mockResolvedValue({ open: false } as Awaited<ReturnType<typeof api.getScholarshipIntake>>)
+  serve({ id: 1, status: 'rejected', cohort_name: ROUND })
+  render(<ScholarshipApplicationPage />)
+  expect(await screen.findByText('scholarship.application.finishedTitle')).toBeTruthy()
+  await waitFor(() => expect(mockApi.getScholarshipIntake).toHaveBeenCalled())
+  await act(async () => { await Promise.resolve() })
+  expect(screen.queryByText(/scholarship\.apply\.seeOpen/)).toBeNull()
+})
+
+it('the "closed" card keeps the link when the intake cannot be asked', async () => {
+  mockApi.getScholarshipIntake.mockRejectedValue(new Error('offline'))
+  serve({ id: 1, status: 'rejected', cohort_name: ROUND })
+  render(<ScholarshipApplicationPage />)
+  expect(await screen.findByText(/scholarship\.apply\.seeOpen/)).toBeTruthy()
 })

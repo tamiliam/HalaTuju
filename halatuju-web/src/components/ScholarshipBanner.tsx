@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications } from '@/lib/api'
 import { rememberBursaryFile } from '@/lib/storage'
+import { applicationScreen } from '@/lib/applicationScreen'
 
 /**
  * Dashboard banner that surfaces a live B40 application when there's something
@@ -25,7 +26,9 @@ export default function ScholarshipBanner() {
     getMyScholarshipApplications({ token })
       .then((res) => {
         if (!active) return
-        setAppStatus(res.applications[0]?.status ?? null)
+        // TD-341: the one application the screen rule names; with several, nothing (not whichever sorts first).
+        const screen = applicationScreen(res.applications)
+        setAppStatus(screen.kind === 'one' ? screen.app.status : null)
         // Maintenance S3: leave the header's "My Bursary" hint (server's `has_file`, never derived).
         rememberBursaryFile(res.applications.some((a) => a.has_file))
       })

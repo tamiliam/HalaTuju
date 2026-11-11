@@ -94,6 +94,13 @@ export const KEY_LOCALE = 'halatuju_locale'
 /** Pending auth action (pre-login intent) */
 export const KEY_PENDING_AUTH_ACTION = 'halatuju_pending_auth_action'
 
+/** TD-342: a pending action is stamped (`at`) when written and is stale after this long — a Google
+ *  sign-in abandoned and finished later must not send her back to an old gift. No `at` = older write = fresh. */
+export const PENDING_AUTH_TTL_MS = 30 * 60 * 1000
+export function isStalePendingAction(p: { at?: unknown } | null | undefined, now = Date.now()): boolean {
+  return typeof p?.at === 'number' && now - p.at > PENDING_AUTH_TTL_MS
+}
+
 /** Resume action after login (save course, generate report, etc.) */
 export const KEY_RESUME_ACTION = 'halatuju_resume_action'
 

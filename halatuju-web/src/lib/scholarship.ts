@@ -611,31 +611,8 @@ export { APPLY_RETURN_KEY, APPLY_STASH_KEY, hasApplyReturn, clearApplyReturn, se
 
 // The apply form's gift code (`?p=`) helpers live in the leaf `./applyProgramme` (2026-10-05).
 
-/**
- * The LIVE applications — the first thing `applicationScreen` (applicationScreen.ts) looks at to
- * decide which application the student's screen is about.
- *
- * The application screen used to take `applications[0]` — the same "assume one" shape the
- * backend carried in `_current_application`, and the same shape PF-1 fixed in
- * `resolve_open_cohort`. It is not a tie-break; it is a guess about which programme the student
- * is looking at, and with two live applications it silently shows one and hides the other. A
- * screen that cannot say which application it is showing must not show one — the chooser itself
- * is M4 of `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`.
- *
- * Live means the editable funnel plus the funded post-award states, mirroring the backend's
- * `POST_SHORTLIST_EDITABLE + _FUNDED_STATES`. ⚠ KEEP-IN-SYNC PAIR — if a status is added there,
- * add it here; a drift makes the two disagree about what the student is even working on.
- *
- * drift-test: halatuju-web/src/lib/__tests__/studentScreenDrift.test.ts
- */
-export const LIVE_APPLICATION_STATES = [
-  'shortlisted', 'profile_complete', 'interviewing', 'interviewed',
-  'awarded', 'active', 'maintenance',
-] as const
-
-export function liveApplications<T extends { status: string }>(apps: readonly T[]): T[] {
-  return apps.filter((a) => (LIVE_APPLICATION_STATES as readonly string[]).includes(a.status))
-}
+// The LIVE application states live in the leaf `./applicationStates` (TD-341); re-exported here.
+export { LIVE_APPLICATION_STATES, liveApplications } from './applicationStates'
 
 // The detour's stash is now THE APPLY DRAFT (Mobile M4): `./applyDraft` (write, read, peek, clear) —
 // a leaf, so its hook stays off /profile and /scholarship/application, which carry this module.

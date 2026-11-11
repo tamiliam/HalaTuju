@@ -45,3 +45,18 @@ it('any other sign-in still lands on the dashboard (control)', async () => {
   render(<AuthCallback />)
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/dashboard'), { timeout: 3000 })
 })
+
+it('TD-342: a stale (abandoned) apply sign-in does not send her back to the old gift', async () => {
+  const old = Date.now() - 2 * 60 * 60 * 1000
+  localStorage.setItem(KEY_PENDING_AUTH_ACTION, JSON.stringify({ reason: 'apply', at: old }))
+  sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'sabah')
+  render(<AuthCallback />)
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/dashboard'), { timeout: 3000 })
+})
+
+it('TD-342: a fresh stamped apply sign-in still returns to the form', async () => {
+  localStorage.setItem(KEY_PENDING_AUTH_ACTION, JSON.stringify({ reason: 'apply', at: Date.now() }))
+  sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'sabah')
+  render(<AuthCallback />)
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/scholarship/apply?p=sabah'), { timeout: 3000 })
+})
