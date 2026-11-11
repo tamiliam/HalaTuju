@@ -117,6 +117,20 @@ describe('TD-463: the award schedule sentence is composed in the reader language
     expect(scheduleSentence({ ...parts, start_month: 0 }, tFor('en'), 'en'))
       .toBe('RM250 per month × 12 payments (total RM3000).')
   })
+  // SHARED GOLDEN (G13 review): the same cases are asserted in
+  // halatuju_api/apps/scholarship/tests/test_award_signing_progress.py (SCHEDULE_GOLDEN), where the server
+  // builds these parts and this English line from one schedule row. Change both together.
+  const GOLDEN: [typeof parts, string][] = [
+    [{ monthly_amount: '250', count: 12, start_month: 7, total: '3000' },
+      'RM250 per month × 12 payments, starting July (total RM3000).'],
+    [{ monthly_amount: '250.50', count: 10, start_month: 3, total: '2505' },
+      'RM250.50 per month × 10 payments, starting March (total RM2505).'],
+    [{ monthly_amount: '300', count: 8, start_month: 0, total: '2400' },
+      'RM300 per month × 8 payments (total RM2400).'],
+  ]
+  it.each(GOLDEN)('the English template filled from %j equals the server English line', (p, serverLine) => {
+    expect(scheduleSentence(p, tFor('en'), 'en')).toBe(serverLine)
+  })
   it('the award page uses the composed sentence when the server serves parts', () => {
     expect(src('app/scholarship/award/page.tsx')).toContain('scheduleSentence(preview.payment_schedule_parts')
   })

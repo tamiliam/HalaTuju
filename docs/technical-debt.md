@@ -7564,6 +7564,10 @@ reveal that relies on hover (`group-hover:block`, `hover:` that shows content or
 a tap path, then turn the flag on and re-run mobile-check. **Fix:** grep `group-hover:` / `hover:block` / `hover:flex` /
 `hover:opacity-100` across `src`, fix each, adopt the flag in `tailwind.config`. *(B · S)*
 
+**2026-11-11 (A4.3):** flag on. The sweep (`phoneLeftovers.test.ts`) covers hover reveals only (`group-hover`,
+`hover:` or `peer-hover` that shows content); it does not check other hover styles. Two reveals left, both harmless:
+the always-visible toast dismiss and the desktop admin rail chip.
+
 ### [TD-454] A Google-signed-in student without a verified NRIC sees the signed-out header - low - **FIXED (2026-11-11, A4.1: AppHeader treats a session that is not anonymous as signed in for her name and Log out; the account-only links stay behind isAuthenticated; test in AppHeader.menu.test.tsx)**
 
 **Raised 2026-11-01 by the Mobile M2 review, pre-existing.** `AppHeader` keys "signed in" off `isAuthenticated`,

@@ -22,6 +22,18 @@ from apps.scholarship.tests.test_bursary_agreement import (
 )
 
 
+#: SHARED GOLDEN (TD-463): (monthly amount, payment count, first month, served parts, server English line).
+#: The same cases sit in halatuju-web/src/lib/__tests__/a42Language.test.ts.
+SCHEDULE_GOLDEN = [
+    ('250.00', 12, 7, {'monthly_amount': '250', 'count': 12, 'start_month': 7, 'total': '3000'},
+     'RM250 per month × 12 payments, starting July (total RM3000).'),
+    ('250.50', 10, 3, {'monthly_amount': '250.50', 'count': 10, 'start_month': 3, 'total': '2505'},
+     'RM250.50 per month × 10 payments, starting March (total RM2505).'),
+    ('300.00', 8, 0, {'monthly_amount': '300', 'count': 8, 'start_month': 0, 'total': '2400'},
+     'RM300 per month × 8 payments (total RM2400).'),
+]
+
+
 def _template(app):
     from apps.scholarship import contract_scope
     return contract_scope.template_for_application(app)
@@ -77,6 +89,35 @@ class TestAwardSigningProgress(TestCase):
         self.assertIn(f"RM{parts['monthly_amount']} per month", prev['payment_schedule'])
         self.assertIn(f"{parts['count']} payments", prev['payment_schedule'])
         self.assertIn(f"total RM{parts['total']}", prev['payment_schedule'])
+
+    def test_preview_of_a_row_with_no_start_month(self):
+        """TD-463 (G13 review): a row naming no first month serves start_month 0, and the English
+        line has no starting clause, so the web takes its scheduleLineNoStart template."""
+        from apps.scholarship import contracts
+        from apps.scholarship.models import PaymentScheduleRow
+        app = self._offered('sp0b')
+        row = contracts.schedule_row_for(_template(app), app)
+        PaymentScheduleRow.objects.filter(pk=row.pk).update(start_month=0)
+        prev = self._preview(app)
+        self.assertEqual(prev['payment_schedule_parts']['start_month'], 0)
+        self.assertNotIn('starting', prev['payment_schedule'])
+        self.assertTrue(prev['payment_schedule'].endswith(f"(total RM{prev['payment_schedule_parts']['total']})."))
+
+    def test_parts_and_english_line_match_the_shared_golden(self):
+        """TD-463 (G13 review): SHARED GOLDEN, the same cases are asserted in
+        halatuju-web/src/lib/__tests__/a42Language.test.ts, where the English catalogue template is
+        filled from the parts and must equal this server line, word for word. Change both together."""
+        from decimal import Decimal
+        from apps.scholarship import bursary
+        from apps.scholarship.contracts import schedule_summary_text
+        from apps.scholarship.models import PaymentScheduleRow
+        for amount, offsets, start, parts, line in SCHEDULE_GOLDEN:
+            with self.subTest(line=line):
+                row = PaymentScheduleRow(pathway='default', monthly_amount=Decimal(amount),
+                                         start_month=start, paid_offsets=list(range(offsets)))
+                self.assertEqual(schedule_summary_text(row, 'en'), line)
+                with patch('apps.scholarship.contracts.schedule_row_for', return_value=row):
+                    self.assertEqual(bursary.payment_schedule_parts(None, None), parts)
 
     def test_quiz_passed_on_this_template_is_read_back(self):
         app = self._offered('sp1')
