@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### A4.3 - phone layout leftovers (2026-11-11, branch a43, not pushed)
 
-- TD-457 fixed: `AppHeader` publishes its height as `--header-height` (`lib/headerHeight.ts`); the saved compare's
+- TD-457 fixed: `AppHeader` is marked `data-app-header`; the saved compare measures it into `--header-height` (`lib/headerHeight.ts`, kept out of the shared chunk) and its
   sticky course-name row sticks at `var(--header-height, <old calc>)`.
 - TD-490 fixed: the Programme Overview bar and line charts render the desktop and the phone picture, CSS shows one
   (`max-md:hidden` / `md:hidden`), so the first paint is right. The phone twin has no test ids; role and label on both.

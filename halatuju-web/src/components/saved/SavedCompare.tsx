@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useBottomBarInset } from '@/lib/bottomBarInset'
+import { useHeaderHeight } from '@/lib/headerHeight'
 
 /**
  * SAVED-COURSE COMPARE (Mobile M3). Until M3 a phone could not compare at all — the tick boxes
@@ -95,6 +96,7 @@ export default function SavedCompareView({ data, loading, onBack }: {
   onBack: () => void
 }) {
   const { t } = useT()
+  useHeaderHeight()
   // Phone: the first pick is always column one; column two is any of the others.
   const [second, setSecond] = useState(1)
   const a = data[0]

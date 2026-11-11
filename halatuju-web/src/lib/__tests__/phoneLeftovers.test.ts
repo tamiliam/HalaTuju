@@ -45,9 +45,10 @@ describe('TD-466 grade picker', () => {
 })
 
 describe('TD-450 (3) the Sheet clears the notch in landscape', () => {
-  it('its title row, body and footer pad by the left and right safe areas', () => {
+  it('its title row, body and footer use .sheet-pad-x, which pads by the left and right safe areas', () => {
     const s = readWeb('src/components/Sheet.tsx', 'the sheet is fixed, so the body insets do not reach it')
-    expect(s.match(/pl-\[max\(1\.25rem,env\(safe-area-inset-left\)\)\] pr-\[max\(1\.25rem,env\(safe-area-inset-right\)\)\]/g))
-      .toHaveLength(3)
+    expect(s.match(/sheet-pad-x/g)).toHaveLength(3)
+    const css = readWeb('src/app/globals.css', 'the class lives here')
+    expect(css).toMatch(/\.sheet-pad-x \{[^}]*max\(1\.25rem, env\(safe-area-inset-left\)\)[^}]*max\(1\.25rem, env\(safe-area-inset-right\)\)/)
   })
 })
