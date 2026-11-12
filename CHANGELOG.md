@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: v3.1.0 project audit closed (2026-11-12)
+
+Docs only, branch g15, not pushed. Closing section in `docs/audits/2026-11-05-project-audit.md`: baseline, interim and final readings, targets met and not met, named later sprints W1, F1, Gemini duplicate and F2 with the owner's dates; `td_open` 169 against 110 not met, no sprint set. Final Trend row and Reviews entry in `docs/code-health.md`. Freeze lifted in `docs/roadmap.md`.
+
 ### feat: sprint M2a - Team moves to /team, one page per group (team membership, 2026-11-12)
 
 Branch m2a (local, not pushed, not deployed). Web only; no API file changed, no migration. Brief

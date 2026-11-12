@@ -2,11 +2,11 @@
 
 Last updated: 2026-11-05 (audit sprint A0.3)
 
-## Status: v3.1.0 released, audit fix freeze in force
+## Status: v3.1.0 released, project audit closed 2026-11-12 (freeze lifted)
 
 HalaTuju is live at [halatuju.xyz](https://halatuju.xyz). v3.0.0 (2026-10-06) was a complete bursary platform; **v3.1.0 (2026-11-05)** added the staff team and permissions, phone-native pages, exact offer-letter reading, post-award student care and one Overview page per staff member. Notes: [`docs/releases/release-notes-v3.1.0.md`](releases/release-notes-v3.1.0.md); the reasons: [`docs/decisions.md`](decisions.md); every change: [`CHANGELOG.md`](../CHANGELOG.md).
 
-**The plan of record is the audit fix roadmap:** [`docs/plans/2026-11-05-audit-fix-roadmap.md`](plans/2026-11-05-audit-fix-roadmap.md) (from the project audit, [`docs/audits/2026-11-05-project-audit.md`](audits/2026-11-05-project-audit.md)). **Freeze:** no Team tables T5d and no offer-letter S7 (paid) until its fix sprints are done.
+**The plan of record is the audit fix roadmap:** [`docs/plans/2026-11-05-audit-fix-roadmap.md`](plans/2026-11-05-audit-fix-roadmap.md) (from the project audit, [`docs/audits/2026-11-05-project-audit.md`](audits/2026-11-05-project-audit.md)). **Freeze:** lifted at the audit close on 2026-11-12 (closing section of the audit report). Team tables T5d and offer-letter S7 (paid) each still need the owner's word and a sprint-start. Named later sprints still run: W1 (by 20 Nov), F1 (by 27 Nov), Gemini duplicate (by 4 Dec), F2 (by 11 Dec).
 
 Which feature flags are on in production: [`docs/deployment.md`](deployment.md), section "Live flag values". The open debt register: [`docs/technical-debt.md`](technical-debt.md). Plan files: [`docs/plans/`](plans/) (each has a Status line; finished ones are in `docs/plans/archive/`).
 
@@ -48,7 +48,7 @@ Waves, in order (detail and acceptance in the roadmap file): **Wave 0** ship wha
 - Phone/OTP login (CO-06): paid OTP, deferred. Students without a Google account still cannot use a phone number to sign in
 - Cold starts and build minutes (TD-523): minimum instances cost money under the RM10 budget
 
-## After the freeze
+## After the freeze (lifted 2026-11-12; each still needs the owner's word)
 
 - Offer-letter exact read **S7** (paid live re-read of the S6-changed letters) and **S8** (the keep-exact gate)
 - Team tables **T5d**; TD-501 (reviewer invite chooses one gift or every gift)
