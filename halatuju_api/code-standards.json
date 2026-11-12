@@ -650,10 +650,7 @@
       "apps/courses/views_staff.py::AdminInviteView.post": 151
     },
     "duplicated_names": {
-      "scholarship::_gemini_generate": 3,
-      "scholarship::banned_phrases": 3,
-      "scholarship::render": 3,
-      "scholarship::unknown_placeholders": 3
+      "scholarship::_gemini_generate": 3
     },
     "runtime_skips": {
       "apps/scholarship/tests/test_card_display.py": 1,

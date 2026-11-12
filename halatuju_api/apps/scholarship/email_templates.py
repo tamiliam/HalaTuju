@@ -146,3 +146,32 @@ def render(subject, body, scalars, blocks):
         html_parts.append('<p style="margin:0 0 14px;">' + safe.replace('\n', '<br>') + '</p>')
 
     return out_subject, '\n\n'.join(text_parts), ''.join(html_parts)
+
+
+# -- the per-family wrappers ---------------------------------------------------------------------
+# `partner_comms` and `sponsor_comms` each supplied byte-identical copies of these three wrappers,
+# differing only in WHICH vocabulary they pass in. They live here once, as factories; each family
+# binds its own vocabulary and exposes the result under the old public names.
+
+def family_unknown_placeholders(kind, *parts, placeholders):
+    """Tokens this kind does not supply, sorted. Empty means the template is safe to save."""
+    return unknown_placeholders(placeholders.get(kind, set()), *parts)
+
+
+def family_banned_phrases(*parts, banned):
+    """Refused phrasings present in `parts`, sorted. Empty means the copy is clean."""
+    return banned_phrases(banned, *parts)
+
+
+def family_render(kind, template, context, *, placeholders, structural, blocks_for, scalars):
+    """A stored template + one recipient's data -> `(subject, text_body, html_body)`.
+
+    EVERY structural token this kind DECLARES gets a block, even when the caller supplied no data
+    for it; otherwise an omitted one leaves a literal `{token}` in an inbox and no exception
+    reports it (see the partner/sponsor render history: H7, TD-261).
+    """
+    blocks = blocks_for(context)
+    for token in placeholders.get(kind, ()):
+        if token in structural:
+            blocks.setdefault(token, ('', ''))
+    return render(template.subject, template.body, scalars(context), blocks)
