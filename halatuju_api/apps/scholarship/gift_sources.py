@@ -35,7 +35,7 @@ from django.db.models import Count, Q
 from .models import ProgrammeReferralSource, ReferralSource
 
 #: The three fixed choices, after the gift's own sources (owner, 2026-10-08) — never rows here. The
-#: web holds the same three for their labels (drift-tested by `src/lib/__tests__/referralSources.test.ts`).
+#: web holds the same three for their labels (drift-tested by `src/lib/__tests__/referralSourcesDrift.test.ts`).
 #: A past answer naming any of them keeps its label everywhere, offered today or not.
 FIXED_CODES = ('halatuju', 'social', 'other')
 

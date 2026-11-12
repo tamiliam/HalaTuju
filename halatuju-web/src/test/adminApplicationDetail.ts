@@ -26,7 +26,7 @@
  * Asking for `verified_at` on the decline road is asking for a mark production never writes.
  * Keep the two stage tables in step.
  *
- * drift-test: halatuju-web/src/test/adminApplicationDetail.test.ts
+ * drift-test: halatuju-web/src/test/adminApplicationDetailDrift.test.ts
  *
  * ⚠ EVERY DATE IS A FIXED LITERAL, never `new Date()`. The screen formats dates, the deploy gate
  * runs on a machine in another timezone, and a fixture that says "now" makes a test that can

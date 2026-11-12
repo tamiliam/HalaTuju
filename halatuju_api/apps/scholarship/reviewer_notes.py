@@ -36,7 +36,7 @@ NOTE_STATUSES = ('profile_complete', 'interviewing')
 #: whitespace, the zero-width and direction marks, the soft hyphen, the Hangul fillers, the Braille
 #: blank, the Mongolian vowel separator and the BOM. A note made only of these looks empty, so it is
 #: refused (review R4). ⚠ The card's `INVISIBLE` (`view/ReviewerNotesCard.tsx`) must have this exact
-#: source; `ReviewerNotesCard.test.tsx` reads this line.
+#: source; `ReviewerNotesCardDrift.test.tsx` reads this line.
 _INVISIBLE = re.compile(r'[\t\n\v\f\r \x1c-\x1f\x85\xa0\xad\u115f\u1160\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u2064\u2800\u3000\u3164\ufeff\uffa0]')
 _EDGES = re.compile(f'^{_INVISIBLE.pattern}+|{_INVISIBLE.pattern}+$')
 

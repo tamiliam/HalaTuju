@@ -10,7 +10,6 @@ import {
   strIcNamedMembers,
   type StrSlotDoc,
 } from '@/lib/incomeWizard'
-import { readApi } from '@/test/apiSource'
 
 describe('strIcSlotMembers — TD-309, the IC that settles whose STR it is', () => {
   const str = (missing: string[], unreadable: string[] = [], uploaded_at = '2026-09-01T00:00:00Z'): StrSlotDoc =>
@@ -59,15 +58,6 @@ describe('strIcSlotMembers — TD-309, the IC that settles whose STR it is', () 
     expect(strIcNamedMembers([ic('mother')])).toEqual([])
     const older = str(['guardian'], [], '2026-08-01T00:00:00Z')
     expect(strIcNamedMembers([str([], [], '2026-09-15T00:00:00Z'), older])).toEqual([])
-  })
-
-  it('DRIFT: "latest" is the api\'s — live rows, `uploaded_at` then `id` descending (document_snapshot)', () => {
-    // The ordering above is a copy of the server's, so it is read from the server's source: if
-    // `SNAPSHOT_ORDER` or `latest_doc` changes shape, this goes red and the copy must follow.
-    const src = readApi('apps/scholarship/document_snapshot.py')
-    expect(src).toMatch(/^SNAPSHOT_ORDER = \('-uploaded_at', '-id'\)$/m)
-    expect(src).toMatch(/def latest_doc\([\s\S]*?return live_docs\(application, doc_type, member=member, members=members\)\.first\(\)/)
-    expect(src).toMatch(/def _live\(rows\):\s*\n\s*return \[d for d in rows if getattr\(d, 'superseded_at', None\) is None\]/)
   })
 
   it('the LATEST STR wins over an older one with different slots, whatever the list order', () => {

@@ -12,6 +12,7 @@ Branch c3 (not pushed; tests only, no app source changed, no budget raised). gua
 - test: settings hydration (TD-388) renders /settings, /onboarding/grades and /onboarding/stpm-grades with a Tamil-stored reader and reads the words back, instead of scanning three files for bare locale.
 - test: drift halves split into *Drift.test.ts (counted apart, TD-284): GenuinenessNote, ReviewerNotesCard, planPicker, docSeen. Same assertions, moved; the behaviour tests stay in the original files.
 - skipped: files whose source marker names them as the drift test (decisionReopenOffer, incomeWizard, interviewCompleteness, profileClaimCodes, referralSources, adminApplicationDetail), and structural guards that read the tree by nature (fonts, imports, env, mobile, theme, sandbox, cloudbuild).
+- C3b (A3.16b, same branch): stale test-file names in three comments fixed (ReviewerNotesCard.tsx, reviewer_notes.py, docSeen.ts now name the *Drift files); drift halves split out of decisionReopenOffer, interviewCompleteness, profileClaimCodes, referralSources (new *Drift.test.ts), incomeWizard (into incomeWizardDrift), adminApplicationDetail.test.ts renamed to adminApplicationDetailDrift.test.ts. `drift-test:` markers, the api-side guard manifest and docs/testing.md follow. Same assertions, comments only in source. guard% 9 -> 8.
 - TD-415 and TD-065 not done.
 
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)

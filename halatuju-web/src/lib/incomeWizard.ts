@@ -198,7 +198,7 @@ export interface StrSlotDoc {
  * mirrors `document_snapshot.latest_doc`: live documents (the student list is live-only) ordered
  * by `SNAPSHOT_ORDER` = `uploaded_at` descending, then `id` descending (TD-292) — the STR with the
  * greatest `uploaded_at` wins, and an exact tie goes to the greater `id`, as on the server.
- * drift-test: halatuju-web/src/lib/__tests__/incomeWizard.test.ts
+ * drift-test: halatuju-web/src/lib/__tests__/incomeWizardDrift.test.ts
  *
  * Members = `missing ∪ unreadable`, in `MEMBER_ORDER`, MINUS anyone who already owns a
  * `parent_ic` card (STR route: the earner; salary route: every ticked member), PLUS anyone with a
