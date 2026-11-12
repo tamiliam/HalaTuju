@@ -138,12 +138,12 @@ allowed through the freeze, and the lane is the only door they have.
   next review decides again.
 
 **Code-health decisions (read-only run on c1 at `8b98828`; the Trend row is not written, because this run was
-no-write).** `fix%` 51 to 52, WARN: accepted; TD-385 is fixed in the tool (the 61 sprint-own fixes are left out) and the
+no-write).** `fix%` 51 to 52, WARN: open, awaiting the owner's yes; TD-385 is fixed in the tool (the 61 sprint-own fixes are left out) and the
 reading is dominated by the 21 Lane B field-fix entries above, which are counted. `big` 13 to 1 and `long` 15 to 1: the
-audit's splits, kept. `dup` 4: accepted in the roadmap's interim reading (thin per-caller adapters). `supp` 92 to 20 and
+audit's splits, kept. `dup` 4: open; 1 after catch-up sprint C2 (branch c2), the last one (_gemini_generate) is a named later sprint after Gemini Phase 2. `supp` 92 to 20 and
 `td_open` 208 to 162: A3.15 and the C4 closures. **`xapp` 85 to 107, FAIL: not accepted.** Target is 50 and
 courses to scholarship 8 (now 21 edges); the Wave 3 splits multiplied the edges that one name crosses. **Promoted:
-roadmap item F2.** **`std` FAIL (looser): accepted, owner-approved.** The four first-load lines are the A1.1 Next 15 /
+roadmap item F2.** **`std` FAIL (looser): open, awaiting the owner's yes for this reading. The owner approved the budget raise itself on 2026-11-06 (option A; 9af9d820b, TD-506).** The four first-load lines are the A1.1 Next 15 /
 React 19 raise (`9af9d820b`), already ratcheted down twice since; the way down is further splits, not another raise. No
 budget was touched in this review.
 
@@ -527,6 +527,7 @@ is in this review's report to the lead).
   planted 0.05 margin (2 red), and run against today's build in both modes (local exit 0; at 0.25,
   local exit 1 naming both routes, gate exit 0 printing them). It converts a rule that lived only in
   `docs/lessons.md` and in a lead's brief ("the 0.30 kB floor") into a failing command.
+- **Workflow lines, proposed for the workspace repo (not this project):** (1) the lane's step 1 —
   count source files, and a migration, a new stored choice value, a new module or command, or a
   changed derivation is a sprint whatever the count; (2) the lane's step 4 — the log line carries the
   short SHA; (3) `sprint-close.md` step 12 — after a rebase or merge onto another session's work, the
