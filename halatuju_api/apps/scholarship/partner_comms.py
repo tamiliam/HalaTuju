@@ -35,6 +35,7 @@ Three things that are easy to get wrong and are therefore fixed here:
 Import direction: models + branding only. No view, no command, no email module imports here
 (the renderer takes plain data), so this stays cheap to test.
 """
+import functools
 import hashlib
 import re
 from html import escape as html_escape
@@ -163,10 +164,9 @@ WEEKLY_KINDS = ('weekly_summary', 'shortlisted_followup')
 _TOKEN_RE = re.compile(r'\{([a-z_]+)\}')
 
 
-def unknown_placeholders(kind, *parts):
-    """Placeholder tokens in `parts` that this kind does not supply — sorted, so an error
-    message is stable. Empty tuple means the template is safe to save."""
-    return email_templates.unknown_placeholders(PLACEHOLDERS.get(kind, set()), *parts)
+# Placeholder tokens in `parts` that this kind does not supply, sorted. Empty = safe to save.
+unknown_placeholders = functools.partial(
+    email_templates.family_unknown_placeholders, placeholders=PLACEHOLDERS)
 
 
 def structural_in_subject(kind, subject):
@@ -209,9 +209,8 @@ BANNED_PHRASES = email_templates.UNIVERSAL_BANNED + (
 )
 
 
-def banned_phrases(*parts):
-    """Conduit/ownership phrasings present in `parts`, sorted. Empty means the copy is clean."""
-    return email_templates.banned_phrases(BANNED_PHRASES, *parts)
+# Conduit/ownership phrasings present in `parts`, sorted. Empty means the copy is clean.
+banned_phrases = functools.partial(email_templates.family_banned_phrases, banned=BANNED_PHRASES)
 # ── who qualifies ─────────────────────────────────────────────────────────────
 
 def qualifying_partners():
@@ -626,22 +625,8 @@ def _scalars(context):
 # Substitute the scalar tokens; the shared implementation. The template text is escaped by the
 # caller BEFORE this runs (a `{token}` survives escaping), so `escape` applies to the VALUES.
 _fill = email_templates.fill
-def render(kind, template, context):
-    """A stored template + one organisation's data → `(subject, text_body, html_body)`.
-
-    The mechanics — blank-line paragraphs, structural-token blocks, escaping, subject
-    flattening — live in `email_templates.render`, shared with the sponsor family. What stays
-    HERE is the partner vocabulary: which scalars and which tables this family supplies.
-    """
-    # ⚠ EVERY structural token this kind DECLARES gets a block, even when the caller supplied no
-    # data for it. Without this, a caller that omits one leaves `{qc_comments}` sitting literally
-    # in a reviewer's inbox — the exact failure the placeholder allowlist exists to prevent, and
-    # one that no exception reports. Found by the existing "no placeholder survives" test the day
-    # the first block-valued token was added, which is the whole reason that test walks EVERY kind
-    # with a deliberately thin context.
-    blocks = _blocks_for(context)
-    for token in PLACEHOLDERS.get(kind, ()):
-        if token in STRUCTURAL_TOKENS:
-            blocks.setdefault(token, ('', ''))
-    return email_templates.render(
-        template.subject, template.body, _scalars(context), blocks)
+# A stored template + one recipient's data -> `(subject, text_body, html_body)`. The mechanics live
+# in `email_templates`; what stays HERE is the partner vocabulary: which scalars and tables it supplies.
+render = functools.partial(
+    email_templates.family_render, placeholders=PLACEHOLDERS, structural=STRUCTURAL_TOKENS,
+    blocks_for=_blocks_for, scalars=_scalars)

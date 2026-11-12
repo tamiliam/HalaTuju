@@ -13,6 +13,8 @@ became the second family, so there is one renderer and not two drifting copies.
 This module stays PURE: it decides what an email should say and whether it may be sent. It never
 touches SMTP. `sponsor_notify` does the sending, and nothing here can put a message in an inbox.
 """
+import functools
+
 from django.conf import settings
 
 from . import email_templates
@@ -96,14 +98,12 @@ BANNED_PHRASES = email_templates.UNIVERSAL_BANNED + (
 )
 
 
-def unknown_placeholders(kind, *parts):
-    """Tokens this kind does not supply, sorted. Empty means the template is safe to save."""
-    return email_templates.unknown_placeholders(PLACEHOLDERS.get(kind, set()), *parts)
+# Tokens this kind does not supply, sorted. Empty means the template is safe to save.
+unknown_placeholders = functools.partial(
+    email_templates.family_unknown_placeholders, placeholders=PLACEHOLDERS)
 
-
-def banned_phrases(*parts):
-    """Refused phrasings present in `parts`, sorted. Empty means the copy is clean."""
-    return email_templates.banned_phrases(BANNED_PHRASES, *parts)
+# Refused phrasings present in `parts`, sorted. Empty means the copy is clean.
+banned_phrases = functools.partial(email_templates.family_banned_phrases, banned=BANNED_PHRASES)
 
 
 # ── the gates ─────────────────────────────────────────────────────────────────
@@ -219,25 +219,11 @@ def _scalars(context):
     }
 
 
-def render(kind, template, context):
-    """A stored template + one recipient's data → `(subject, text_body, html_body)`.
-
-    `html_body` is the INNER html; the sender wraps it in the shared email shell. The mechanics
-    live in `email_templates.render`; what stays here is the sponsor vocabulary.
-    """
-    # ⚠ EVERY structural token this kind DECLARES gets a block, even when the caller supplied no
-    # data for it — the same line `partner_comms.render` has carried since its first block-valued
-    # token. Without it a caller that omits one leaves `{student_cards}` sitting literally in a
-    # DONOR's inbox, and no exception reports it. H7 found the asymmetry and proved no production
-    # path reached it (`sponsor_notify.send_student_alert` returns before rendering when it has
-    # no cards); TD-261 closed it on the owner's order, because "unreachable today" is a fact
-    # about today and this is the family that writes to people who have given us money.
-    blocks = _blocks_for(context)
-    for token in PLACEHOLDERS.get(kind, ()):
-        if token in STRUCTURAL_TOKENS:
-            blocks.setdefault(token, ('', ''))
-    return email_templates.render(
-        template.subject, template.body, _scalars(context), blocks)
+# A stored template + one recipient's data -> `(subject, text_body, html_body)`. The mechanics live
+# in `email_templates`; what stays HERE is the sponsor vocabulary: which scalars and tables it supplies.
+render = functools.partial(
+    email_templates.family_render, placeholders=PLACEHOLDERS, structural=STRUCTURAL_TOKENS,
+    blocks_for=_blocks_for, scalars=_scalars)
 
 
 # ── the log ───────────────────────────────────────────────────────────────────

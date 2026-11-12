@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: C2 - one home for banned_phrases, render and unknown_placeholders (2026-11-12)
+
+The partner and sponsor comms wrappers now bind the shared `email_templates.family_*` functions instead of carrying three same-named copies each (code health `dup` 4 to 1; only the Gemini-lane `_gemini_generate` is left). No behaviour change, public names unchanged, pinned first by `test_c2_pins.py`. Three `duplicated_names` entries removed from the `code-standards.json` budget; nothing raised.
+
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
 
 Branch g14 (not pushed, not deployed; no migration, no budget raised). Merged a44, a45, a46, a47 and a48 onto
