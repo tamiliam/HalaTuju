@@ -17,6 +17,33 @@ _(cleared at the 2026-11-05 review - counter reset; the fifteen small-lane entri
 - 2026-11-10 cd3b82e85 0a0b2828b fix: a super is no longer listed as a reviewer; profile_failed refusal wording (two unrelated one-liners)
 - 2026-11-07 3734bc0f5 fix: TD-525 payments badge skips the refused call for an orgless super (A1.x, sprint not identified)
 - 2026-11-10 5c37b085f ab4c8ae76 perf: apply page fetches closed cards lazily; StaffActions reason bubble fetched into the admin chunk (not placed in a roadmap sprint)
+- 2026-11-07 4c950f88a fix: API and docs for higher results owed (SPM only), request #54 household income, request #58 profile save,  (field fix, moved from sprint lines)
+- 2026-11-07 c8650ffb9 fix: web half - interview refusal inline, household income display, profile save, higher results owed (field fix, moved from sprint lines)
+- 2026-11-05 568982d2f fix: request #56 - a results name one letter off is a likely misread, not another person (field fix, moved from sprint lines)
+- 2026-11-05 710c03a63 fix: request #56 follow-up - look-alike letters only, and never on a suspect slip (field fix, moved from sprint lines)
+- 2026-11-05 9348a8beb fix: request 56 - an unchecked (not-final) results page gets no name tolerance (field fix, moved from sprint lines)
+- 2026-11-05 37cffbd10 fix: request 57 - mentor invite of an existing team member points to Mentors, Add Mentor (field fix, moved from sprint lines)
+- 2026-11-06 d86c8de00 fix: request #59 - a parent's IC second opinion is compared with that parent, not the student (field fix, moved from sprint lines)
+- 2026-11-06 63e46d27a fix: request #59 review lows - parent IC reference lookup cannot lose a paid read; edge tests (field fix, moved from sprint lines)
+- 2026-11-06 b6641f5d3 fix: request #59 - a parent's IC second opinion is compared with that parent, not the student (field fix, moved from sprint lines)
+- 2026-11-06 11f7d2873 fix: request #61 - a decision save that loses its answer says it may already be saved; engine_error has its ow (field fix, moved from sprint lines)
+- 2026-11-06 8e7a5fec2 fix: request #61 review - a dropped connection on Raise query / Request document still reads as no answer (field fix, moved from sprint lines)
+- 2026-11-06 99810782a fix: request #62 - a typed subject not on the results slip is flagged (please check); English slip names folde (field fix, moved from sprint lines)
+- 2026-11-06 0197cdfb0 fix: request #62 review - English names compare only (readers unchanged); a subject printed on the slip is nev (field fix, moved from sprint lines)
+- 2026-11-06 0479ee04c fix: request #62 review - a short slip read never raises extra (field fix, moved from sprint lines)
+- 2026-11-06 591bb2358 fix: request #62 - three exclusive routes for SPM grades (owner 2026-11-06): a tertiary student's SPM slip is  (field fix, moved from sprint lines)
+- 2026-11-06 b2882995f fix: request #62 - a tertiary student's SPM prereq is checked on the subjects entered (owner 2026-11-06) (field fix, moved from sprint lines)
+- 2026-11-06 75c0e57fa fix: request #62 review 2 - nothing compared means nothing shown; no tick without a checked subject (field fix, moved from sprint lines)
+- 2026-11-06 cdbf984e5 fix: request #62 - every SPM reader uses the SPM prereq for STPM/Matric/Diploma/Asasi students (owner 2026-11- (field fix, moved from sprint lines)
+- 2026-11-06 ca1476ba3 fix: request #62 review 3 - nothing checked means nothing shown; an unexplained hold now names its reason; no  (field fix, moved from sprint lines)
+- 2026-11-06 6257b2edd fix: request #62 follow-up - the SPM grades tick needs the slip's subjects to check out too (app 262) (field fix, moved from sprint lines)
+- 2026-11-06 8f51f232d fix: the STPM tick needs the whole slip to match - a printed STPM subject left out withholds it (owner 2026-11 (field fix, moved from sprint lines)
+- 2026-11-08 fc7eef0b1 fix: IIUM's English offer letters read as public-university offers (request #66) (field fix, moved from sprint lines)
+- 2026-11-11 2e19fc558 fix: TD-469 and TD-472 language control (owner D10) (field fix, moved from sprint lines)
+- 2026-11-11 0dbcb7d29 fix: account menu language row stays inside the menu (A48) (field fix, moved from sprint lines)
+- 2026-11-12 d11a4673e fix: A48 - menu language row shows B. Melayu on one line (owner) (field fix, moved from sprint lines)
+- 2026-11-11 6bec13ab8 fix: M1b - Suspend with open cases gets its own Suspend wording (was the old Revoke text) (field fix, moved from sprint lines)
+- 2026-11-11 87445f7e1 fix: TD-444 - staff invitations record who sent them (field fix, moved from sprint lines)
 
 ## Sprints since the last review
 
@@ -50,20 +77,19 @@ _Logged late on 2026-11-12 by catch-up sprint C1: the audit run (Waves 1-4, depl
 - 2026-11-12 A3.10-A3.13, A3.15, A3.17 (G11, G12) — 4d09143e0 bdd520ce6 b778d21d6 d9d9e1d15 00a83e400 dec8af1c5 24cfa1c1f 07da4e8fd b6363873b
 - 2026-11-12 G5 and G6 post-merge line-limit fixes — 0fec1c69b 7650adee6 7a38f8d47 b0cff100d
 - 2026-11-12 A4.1 apply and student screens — 8779e8f98 8caacb9bc
-- 2026-11-12 A4.2 Language, TD-469/472, A48 menu row — dc4655460 2e19fc558 0dbcb7d29 d11a4673e
+- 2026-11-12 A4.2 Language, TD-469/472, A48 menu row — dc4655460
 - 2026-11-12 A4.3 phone layout leftovers — 22c22f88c bcb3a518c
 - 2026-11-12 G13 core message slice — 8bd8933e2 34fd151a3
 - 2026-11-12 A4.4 cockpit and overview leftovers — f1abfcb91
 - 2026-11-12 A4.5 supplier bills cron, day-first dates — 72fd786ed 0c07254e1 f940bf30b
 - 2026-11-12 A4.6 sponsor pool by opaque ref — 1abce4f1d 07763060b
 - 2026-11-12 G14 merged Wave 4 gate failures — c00fce911
-- 2026-11-12 M1b Staff list web and review follow-ups — 6bec13ab8 ddba571d3
-- 2026-11-12 TD-444 staff invitations record who sent them — 87445f7e1
+- 2026-11-12 M1b Staff list web and review follow-ups — ddba571d3
 - 2026-11-12 Gemini Phase 1, 3.8 Flash with Flash fallback — 8993bec27 e5183cced
 - 2026-11-12 S1 Scholars permission, API half — 5fcb6e8cb
 - 2026-11-12 P1 activity log API and scroll box, i18n T2/T3/P1 — af435523f 1e46cd662 290b9678e
-- 2026-11-12 Lane B org requests #54, #56, #57, #58, #59, #61, #62 — 4c950f88a c8650ffb9 568982d2f 710c03a63 9348a8beb 37cffbd10 d86c8de00 63e46d27a b6641f5d3 11f7d2873 8e7a5fec2 da14eac5a 99810782a 0197cdfb0 0479ee04c 591bb2358 b2882995f 75c0e57fa cdbf984e5 ca1476ba3 6257b2edd 8f51f232d 44ee7d7f6 e2674743c 5afad21b0
-- 2026-11-12 Lane B org request #66, IIUM English offer letters — fc7eef0b1 6f203e7f1 a663a84e2 dc52986f3 d75b3e192 43ecb9210
+- 2026-11-12 Lane B org requests #54, #56, #57, #58, #59, #61, #62 — da14eac5a 44ee7d7f6 e2674743c 5afad21b0
+- 2026-11-12 Lane B org request #66, IIUM English offer letters — 6f203e7f1 a663a84e2 dc52986f3 d75b3e192 43ecb9210
 - 2026-11-12 Invitations I1 and I2 (one form per tab; one person per source) — 3bd60f90d ff3c6affa
 
 ## Reviews
@@ -444,7 +470,6 @@ is in this review's report to the lead).
   planted 0.05 margin (2 red), and run against today's build in both modes (local exit 0; at 0.25,
   local exit 1 naming both routes, gate exit 0 printing them). It converts a rule that lived only in
   `docs/lessons.md` and in a lead's brief ("the 0.30 kB floor") into a failing command.
-- **Workflow lines, proposed for the workspace repo (not this project):** (1) the lane's step 1 —
   count source files, and a migration, a new stored choice value, a new module or command, or a
   changed derivation is a sprint whatever the count; (2) the lane's step 4 — the log line carries the
   short SHA; (3) `sprint-close.md` step 12 — after a rebase or merge onto another session's work, the
