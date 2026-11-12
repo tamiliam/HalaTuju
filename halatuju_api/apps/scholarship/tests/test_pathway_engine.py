@@ -142,6 +142,39 @@ class TestStudentOfferCheck(SimpleTestCase):
                                               pnric='080725-04-0054'))
         self.assertEqual(chk2['name'], 'mismatch')
 
+    def test_req67_echoed_letter_plus_extra_name_parts_is_partial_not_mismatch(self):
+        # Request #67: the offer echoed one letter in the second name part AND printed five name
+        # parts against a three-part profile name. Either slip alone was tolerated; together the
+        # strict read said mismatch and only a full tolerant 'match' rescued, so the student's own
+        # letter blocked. It now reads 'partial' (amber), never red, and never blocks.
+        from apps.scholarship.doc_red_keys import person_red
+        fields = dict(YESWINDRAN_OFFER, candidate_name='KAVINAA MURRUGAN DEVI SELVAM RANI',
+                      candidate_nric='')
+        chk = student_offer_check(_offer_doc(fields, pname='KAVINAA MURUGAN DEVI',
+                                             pnric='080725-04-0054'))
+        self.assertEqual(chk['name'], 'partial')
+        self.assertFalse(person_red('offer_letter', chk))
+
+    def test_req67_fewer_offer_parts_with_echo_is_partial(self):
+        # The other direction: the letter carries FEWER parts than the profile, with an echo.
+        # name_match already calls the clean form of this 'partial'; the echo must not turn it red.
+        fields = dict(YESWINDRAN_OFFER, candidate_name='KAVINAA MURRUGAN', candidate_nric='')
+        chk = student_offer_check(_offer_doc(fields, pname='KAVINAA MURUGAN DEVI',
+                                             pnric='080725-04-0054'))
+        self.assertEqual(chk['name'], 'partial')
+
+    def test_req67_different_person_with_extra_parts_still_mismatches(self):
+        # No over-rescue: a different person's name stays red, with or without extra name parts.
+        from apps.scholarship.doc_red_keys import person_red
+        for offer_name in ('PRIYA MURRUGAN DEVI SELVAM RANI',     # first name differs
+                           'KAVINAA RAJAN DEVI SELVAM RANI',      # second name differs
+                           'SITI AMINAH ABDULLAH'):               # nothing in common
+            fields = dict(YESWINDRAN_OFFER, candidate_name=offer_name, candidate_nric='')
+            chk = student_offer_check(_offer_doc(fields, pname='KAVINAA MURUGAN DEVI',
+                                                 pnric='080725-04-0054'))
+            self.assertEqual(chk['name'], 'mismatch', offer_name)
+            self.assertTrue(person_red('offer_letter', chk), offer_name)
+
     def test_grossly_different_nric_still_mismatches(self):
         # A genuinely different person's NRIC (many digits differ) is still a real mismatch.
         fields = dict(YESWINDRAN_OFFER, candidate_nric='990101050101')

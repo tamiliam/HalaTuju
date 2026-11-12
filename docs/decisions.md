@@ -1,5 +1,17 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — Request #67: an offer-letter name with a read slip AND extra name parts is "partly matches", never "different name" (bug, no charge; owner scheduled 2026-11-12)
+
+**The fault:** the offer letter's read echoed one letter in a name part AND the letter printed five name parts against a three-part profile name. Each slip alone was already tolerated: the echo by the #48 rescue (2026-07-08, `relationship_name_match` → `match`), the extra parts by `name_match`'s own `partial`. Together, the strict read said `mismatch`, and the #48 rescue accepted only a full tolerant `match`, so the student's own letter raised `offer_letter_mismatch` and blocked submission. The offer NRIC matched exactly.
+
+**The rule:** `pathway_engine._name_status` now keeps the tolerant matcher's `partial` as well as its `match`. Tolerant `partial` means every part of the shorter name is found, slip-tolerantly (doubled letter, w/v, trailing h, one letter in a part of 5+), in the longer one: the same thing `name_match` calls `partial` on a clean read. It is amber for the reviewer and never a block (every gate keys on `mismatch`). A name with no slip-tolerant subset (a genuinely different person) still mismatches and blocks.
+
+**Scope:** offer letter only. The IC, results slips, parent and income identity checks are untouched. Read-time only: no stored field, no re-read, existing letters take it at once. `VERDICT_ENGINE_VERSION` 2026-11-13.1.
+
+**Known risk, accepted:** a sibling's offer letter whose name contains every part of the student's name, with extra parts, reads amber instead of red. The offer NRIC check is separate and still flags a different person's IC.
+
+**Not covered here:** why the student's profile name and IC read hold only three of the five name parts (a possible MyKad second-line read gap). Follow-up, not part of this fix.
+
 ## 2026-11-12 — Admin permissions are stored v2 page keys, not a role label (architect D1-D12; Sprint M2b)
 
 **Taken by the architect** in the M2b brief (`docs/plans/2026-11-12-m2b-admin-permissions-brief.md`), under the

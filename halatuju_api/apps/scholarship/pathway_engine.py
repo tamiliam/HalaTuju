@@ -34,8 +34,16 @@ def _name_status(candidate: str, profile_name: str, extracted: bool) -> str:
     corroboration read by image OCR, which echoes/doubles letters ("LAKSMITHAA" for LAKSMITHA,
     #48). So a ``name_match`` mismatch is RESCUED when the tolerant same-person-across-two-
     documents matcher reads a clean match (doubled letter / w–v / boundary noise) — the exact
-    counterpart of ``_nric_close`` below for the offer NRIC. Only a full tolerant 'match'
-    rescues; a genuinely different name still flags."""
+    counterpart of ``_nric_close`` below for the offer NRIC. A genuinely different name still flags.
+
+    Request #67 (2026-11-13): the tolerant matcher's 'partial' is kept too, never dropped back to
+    'mismatch'. The letter echoed one letter AND printed five name parts against a three-part
+    profile name. Each slip alone was tolerated (the echo → 'match'; the extra parts →
+    name_match's own 'partial'), but together the strict read said 'mismatch' and the rescue
+    accepted only a full 'match', so the student's own letter blocked. Tolerant 'partial' means
+    every part of the shorter name is found, slip-tolerantly, in the longer one: exactly what
+    name_match calls 'partial' on a clean read. So it is amber for the reviewer, never a block.
+    A name that shares no slip-tolerant subset (a genuinely different person) still mismatches."""
     if not candidate:
         return 'unreadable' if extracted else 'pending'
     if not profile_name:
@@ -43,8 +51,9 @@ def _name_status(candidate: str, profile_name: str, extracted: bool) -> str:
     verdict = name_match(candidate, profile_name)
     if verdict == 'mismatch':
         from .vision import relationship_name_match
-        if relationship_name_match(candidate, profile_name) == 'match':
-            return 'match'
+        tolerant = relationship_name_match(candidate, profile_name)
+        if tolerant in ('match', 'partial'):
+            return tolerant
     return verdict
 
 

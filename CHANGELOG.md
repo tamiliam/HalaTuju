@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #67 - an offer letter with a read slip and extra name parts reads "partly matches", not "different name" (2026-11-13)
+- The offer letter's read echoed one letter AND the letter printed more name parts than the profile. Each slip alone was tolerated, but together the strict check said `mismatch` and the #48 rescue accepted only a full tolerant `match`, so `offer_letter_mismatch` blocked the student's own letter.
+- `pathway_engine._name_status` now keeps the tolerant matcher's `partial` too: amber for the reviewer, never a block. A genuinely different name still mismatches. Offer letter only; read-time only, so no re-read is needed.
+- `VERDICT_ENGINE_VERSION` 2026-11-13.1. Tests: 3 in `test_pathway_engine.py` (bite-tested: the two partial cases fail on the old code).
+
 ### feat: sprint M2b - admin permissions are stored keys, not a role label (2026-11-12)
 
 Branch m2b (local, not pushed, not deployed). Brief `docs/plans/2026-11-12-m2b-admin-permissions-brief.md`;
