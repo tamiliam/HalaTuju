@@ -343,9 +343,11 @@ Superseded on 2026-11-05 by the full fix roadmap, `docs/plans/2026-11-05-audit-f
 
 ## Closing section
 
-Written 2026-11-12, `project-audit.md` step 8. Final reading: `code_health.py --full --write` on branch g15 at
-`011a25fb0` (live main), window 2026-08-14 onward; `wat_lint` on the same tree. The Trend row and a Reviews entry are
-in `docs/code-health.md`. Targets are the roadmap's (section 1.2; interim pass marks section 6).
+Written 2026-11-12, `project-audit.md` step 8. Final reading: `code_health.py --full`, taken read-only (no `--write`) on branch g15 at
+`011a25fb0` (live main), window 2026-08-14 onward; `wat_lint` on the same tree. **The Trend row is held back on purpose:**
+writing it would reset the `xapp` and `std` limits to today's worse values without the owner's yes. It will be written once W1 (`std`)
+and F2 (`xapp`) bring the readings back, or the owner says yes to a new baseline. Against the 2026-11-05 baseline the tool reads
+2 FAIL: `std` (owner-accepted until Fri 20 Nov, W1) and `xapp` (NOT accepted, F2 by 11 Dec). Targets are the roadmap's (section 1.2; interim pass marks section 6).
 
 **What moved.** The structure work landed: `big` 13 to 1, `long` 15 to 1, `supp` 92 to 20, `mirror` 3 to 0, `guard%` 12 to
 8, `hot#1` 32.4 to 18, `dup` 4 to 1, `td_open` 219 to 169. `xapp` got worse (85 to 107) because the Wave 3 splits made
@@ -385,7 +387,7 @@ follow-ons". On the date, the acceptance lapses and the reading goes back to the
 
 | Reading | Named later sprint | Owner's deadline |
 |---|---|---|
-| `std` (page weight) | W1 | Build 16-18 Nov, deploy by Fri 20 Nov, with the owner's yes. The accepted FAIL lapses on 20 Nov. |
+| `std` (page weight) | W1 | FAIL against the 2026-11-05 baseline, owner-accepted until Fri 20 Nov. Build 16-18 Nov, deploy by Fri 20 Nov, with the owner's yes. The acceptance lapses on 20 Nov. |
 | `fix%` 52 (WARN, accepted) | F1 slip-check matrix | Rule table approved by Wed 18 Nov, build 19-24 Nov, deploy by Fri 27 Nov. Proof at the 11 Dec small audit: `fix%` below 52, no new slip-check field fix after F1. |
 | `dup` 1 (`_gemini_generate`) | Gemini duplicate | By Fri 4 Dec, after Gemini Phase 2. |
 | `xapp` 107 | F2 cross-app imports | By the monthly small audit on Fri 11 Dec. The log records `xapp` as NOT accepted. |
