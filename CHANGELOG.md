@@ -22,10 +22,15 @@ architect decisions D1-D12 (decisions.md "Admin permissions are stored v2 page k
   row's preset written out first); each `finance` row with a list, active or revoked, gets the organisation-read
   pages (so a later Restore gives back what the label opened); the row id 9 named by the owner gets the admin
   page preset while active (its only gain). One `migration` audit row per change; idempotent;
-  the reverse removes exactly what it added and NULLs a list left equal to its preset.
+  the reverse removes exactly what it added and puts NULL back only on a row that was NULL (its audit row's
+  kind `edit_null` records it). The hand-run SQL is a re-runnable DATA block, a LEDGER block
+  (`WHERE NOT EXISTS`) and a POST-DEPLOY CHECK that must return zero rows (else re-run the DATA block only);
+  a test pins its CASE and WHERE to `plan_row`.
 - web: the Permissions tab draws the page keys by group (Organisation, Programme, Engagement, Money), locked
   with the server's reason where they cannot be stored; a change brings its page's view; history and chips word
-  a page key as "<page>: <level>" (`permName`). New strings `admin.permV2.*` in en, ms and ta.
+  a page key as "<page>: <level>" (`permName`). New strings `admin.permV2.*` in en, ms and ta. A NULL row
+  (the server's `custom` false) shows no "Custom" chip and no Reset until a switch is changed: a NULL
+  finance row holds its preset without storing a page key.
 - web (D11): the Mentors tab (`mayReadMentors` -> `mentors_read`), a scholar's mentor (`mentoring_read`),
   Team -> Emails and the cockpit's witness card (`sources`) read the server's door from `page_keys`; an older
   payload keeps the role lists.

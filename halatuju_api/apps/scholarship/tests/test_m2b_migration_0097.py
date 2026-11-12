@@ -42,6 +42,25 @@ class FrozenConstants(TestCase):
         self.assertIn(f'id={M.ROW_ID}', flat)
         self.assertNotIn('staff_permissions_v2', open(M.__file__).read().split('"""', 2)[2])
 
+    def test_the_hand_sql_picks_and_grows_rows_as_plan_row_does(self):
+        # Review (b): the test database cannot run jsonb, so the text is pinned. The admin preset goes to
+        # `role = 'admin' OR (id = ROW_ID AND is_active)` (a team role, by the WHERE), the rest get ORG_READ,
+        # in the DATA block and the POST-DEPLOY CHECK alike; the same WHERE picks the rows in both.
+        flat = ''.join(M.__doc__.split())
+        lst = lambda keys: '[' + ','.join(f'"{k}"' for k in keys) + ']'
+        is_admin = f"role='admin'OR(id={M.ROW_ID}ANDis_active)"
+        self.assertEqual(flat.count(f"CASEWHEN{is_admin}THEN'{lst(M.ADMIN_PRESET)}'ELSE'{lst(M.ORG_READ)}'END"), 2)
+        where = ("WHEREroleIN(" + ','.join(f"'{r}'" for r in M.TEAM_ROLES) + ")"
+                 "AND(permissionsISNULLORjsonb_typeof(permissions)='array')"
+                 f"AND({is_admin}OR(role='finance'ANDpermissionsISNOTNULL))")
+        self.assertEqual(flat.count(where), 2)
+        self.assertEqual(M.TEAM_ROLES, ('admin', 'finance', 'qc', 'reviewer'))
+        self.assertIn(f"CASEWHENwas_nullTHEN'{M.NULL_KIND}'ELSE'edit'END", flat)
+        # the ledger row is its own re-runnable block; the check says what to do when it is not zero
+        self.assertIn("WHERENOTEXISTS(SELECT1FROMdjango_migrations", flat)
+        self.assertNotIn('VALUES(', flat)
+        self.assertIn('Ifnotzero,re-runtheDATAblockonly.', flat)
+
 
 class PlanRow(TestCase):
     """The pure rule, for each row shape (no database)."""
@@ -98,7 +117,8 @@ class ForwardAndBack(TestCase):
         cls.reviewer = person('reviewer', ['review', 'see_all'])
         cls.qc = person('qc')
         cls.revoked_admin = person('admin', ['see_all'], is_active=False)
-        cls.revoked_fin = person('finance', ['payments_approve', 'see_all'], is_active=False)  # not the preset
+        cls.revoked_fin = person('finance', ['payments_approve'], is_active=False)
+        cls.admin_as_preset = person('admin', list(ADMIN))       # a stored list equal to its preset
         cls.lead = person('org_admin')
         cls.lead_reviewing = person('org_admin', ['review'])
         cls.untouched = (cls.fin_null, cls.reviewer, cls.qc, cls.lead, cls.lead_reviewing)
@@ -106,6 +126,7 @@ class ForwardAndBack(TestCase):
     def _before(self):
         return {a.pk: PartnerAdmin.objects.get(pk=a.pk).permissions
                 for a in (self.admin_list, self.admin_null, self.fin_list, self.revoked_admin, self.revoked_fin,
+                          self.admin_as_preset,
                           *self.untouched)}
 
     def perms(self, a):
@@ -114,9 +135,10 @@ class ForwardAndBack(TestCase):
     def test_forward_writes_each_shape_with_one_truthful_audit_row(self):
         changed = M.store_v2_keys(live_apps, None)
         self.assertEqual(sorted(changed), sorted([self.admin_list.pk, self.admin_null.pk, self.fin_list.pk,
-                                                  self.revoked_admin.pk, self.revoked_fin.pk]))
+                                                  self.revoked_admin.pk, self.revoked_fin.pk,
+                                                  self.admin_as_preset.pk]))
         self.assertEqual(self.perms(self.revoked_admin), ['see_all', *v2.ADMIN_PRESET_V2])
-        self.assertEqual(self.perms(self.revoked_fin), ['payments_approve', 'see_all', *v2.ORG_READ_V2])
+        self.assertEqual(self.perms(self.revoked_fin), ['payments_approve', *v2.ORG_READ_V2])
         self.assertEqual(self.perms(self.admin_list), ['see_all', 'scholars', 'spending', *v2.ADMIN_PRESET_V2])
         self.assertEqual(self.perms(self.admin_null), [*ADMIN, *v2.ADMIN_PRESET_V2])
         self.assertEqual(self.perms(self.fin_list), ['payments_approve', 'see_all', *v2.ORG_READ_V2])
@@ -127,7 +149,8 @@ class ForwardAndBack(TestCase):
         null_row = rows[self.admin_null.pk]
         self.assertEqual((null_row.kind, null_row.role, null_row.changed_by_email, null_row.changed_by_role,
                           null_row.before, null_row.after),
-                         ('edit', 'admin', '', 'migration', ADMIN, [*ADMIN, *v2.ADMIN_PRESET_V2]))
+                         (M.NULL_KIND, 'admin', '', 'migration', ADMIN, [*ADMIN, *v2.ADMIN_PRESET_V2]))
+        self.assertEqual(rows[self.admin_as_preset.pk].kind, 'edit')            # a list, so not NULL_KIND
         self.assertEqual(null_row.target_email, self.admin_null.email or '')
 
     def test_it_is_idempotent(self):
@@ -135,7 +158,7 @@ class ForwardAndBack(TestCase):
         after = self._before()
         self.assertEqual(M.store_v2_keys(live_apps, None), [])
         self.assertEqual(self._before(), after)
-        self.assertEqual(StaffPermissionChange.objects.count(), 5)
+        self.assertEqual(StaffPermissionChange.objects.count(), 6)
 
     def test_backwards_restores_every_row_and_removes_only_its_audit_rows(self):
         before = self._before()
@@ -146,6 +169,8 @@ class ForwardAndBack(TestCase):
         M.store_v2_keys(live_apps, None)
         M.remove_v2_keys(live_apps, None)
         self.assertEqual(self._before(), before)                     # the NULL admin is NULL again
+        self.assertEqual(self.perms(self.admin_as_preset), ADMIN)    # review (c): a list equal to its preset
+        self.assertEqual(self.perms(self.revoked_fin), ['payments_approve'])      # stays a list, exactly
         self.assertEqual(list(StaffPermissionChange.objects.values_list('pk', flat=True)), [other.pk])
 
     def test_backwards_keeps_a_key_a_lead_added_since_and_leaves_a_custom_list_custom(self):

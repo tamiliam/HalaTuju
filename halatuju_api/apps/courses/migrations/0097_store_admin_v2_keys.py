@@ -24,21 +24,27 @@ is not written and gets no audit row.
 THE OLD IMAGE IGNORES THE NEW KEYS: `staff_permissions.clean` keeps catalogue keys only, so a list holding
 v2 keys reads exactly as before until the new image ships (migrate-first, the 0095 precedent).
 
-THE AUDIT STAYS TRUTHFUL. Each row changed gets one `staff_permission_changes` row: kind 'edit', the
-list before (the preset when the row was NULL) and after, `changed_by_email` '' and `changed_by_role`
-'migration'. The keys are APPENDED, in catalogue order, so the hand-applied SQL below writes exactly what
-this code writes. The constants are FROZEN here (a migration never imports app code);
-`test_m2b_migration_0097` proves they equal the live ones.
+THE AUDIT STAYS TRUTHFUL. Each row changed gets one `staff_permission_changes` row: the list before (the
+preset when the row was NULL) and after, `changed_by_email` '' and `changed_by_role` 'migration'. Its kind
+records whether the row was NULL: 'edit' for a stored list, NULL_KIND ('edit_null') for a NULL row (the
+history draws both as an edit; 0095's reverse reads kind 'edit' only), so the reverse is EXACT. The keys are
+APPENDED, in catalogue order, so the hand-applied SQL below writes exactly what this code writes. The
+constants are FROZEN here (a migration never imports app code); `test_m2b_migration_0097` proves they equal
+the live ones and pins the SQL's CASE and WHERE text to `plan_row` (the test database cannot run jsonb).
 
-SQL (MIGRATE-FIRST, by hand, one transaction; the release note carries it with its pre-check):
+SQL, MIGRATE-FIRST, by hand. Run the DATA block, then the LEDGER block, then the POST-DEPLOY CHECK (the
+release note carries them with the pre-check).
+
+DATA block (one transaction; safe to re-run: a key already held is never added, a row that gains nothing is
+not written and gets no audit row):
     BEGIN;
     WITH plan AS (
-      SELECT id, email, owning_organisation_id, role,
+      SELECT id, email, owning_organisation_id, role, (permissions IS NULL) AS was_null,
              COALESCE(permissions, (CASE role WHEN 'admin' THEN '["see_all","scholars","spending","payments_prepare"]'
                                               WHEN 'finance' THEN '["payments_approve"]'
                                               WHEN 'qc' THEN '["see_all","qc"]'
                                               ELSE '["review"]' END)::jsonb) AS base,
-             (CASE WHEN role = 'admin' OR id = 9
+             (CASE WHEN role = 'admin' OR (id = 9 AND is_active)
                    THEN '["invitations.view","team.view","sources.view","sources.edit","sponsors.view",
                           "sponsors.edit","announcements.view","announcements.edit","surveys.view",
                           "surveys.edit","development.view","development.edit","mentoring.view",
@@ -56,17 +62,37 @@ SQL (MIGRATE-FIRST, by hand, one transaction; the release note carries it with i
     ), audit AS (
       INSERT INTO staff_permission_changes (target_id, target_email, organisation_id, kind, role, before,
                                             after, changed_by_email, changed_by_role, created_at)
-      SELECT id, COALESCE(email, ''), owning_organisation_id, 'edit', role, base, after, '', 'migration', now()
+      SELECT id, COALESCE(email, ''), owning_organisation_id, CASE WHEN was_null THEN 'edit_null' ELSE 'edit' END,
+             role, base, after, '', 'migration', now()
         FROM grown WHERE after <> base
     )
     UPDATE partner_admins p SET permissions = g.after FROM grown g WHERE p.id = g.id AND g.after <> g.base;
-    INSERT INTO django_migrations (app, name, applied) VALUES ('courses', '0097_store_admin_v2_keys', now());
     COMMIT;
 
-Reverse: only the audit rows this migration wrote (changed_by_role 'migration', kind 'edit', no actor, and
-what `after` adds to `before` is a non-empty set of ADMIN_PRESET keys — 0095's rows add `scholars`) are
-read. Exactly the keys each one added come off the row it names; a list left equal to its role's preset
-goes back to NULL (the editor's own rule: a preset is stored as NULL). Only those audit rows go.
+LEDGER block (safe to re-run):
+    INSERT INTO django_migrations (app, name, applied)
+    SELECT 'courses', '0097_store_admin_v2_keys', now()
+     WHERE NOT EXISTS (SELECT 1 FROM django_migrations
+                        WHERE app = 'courses' AND name = '0097_store_admin_v2_keys');
+
+POST-DEPLOY CHECK (read-only): every row of a planned shape that does NOT hold all its planned keys. It
+must return ZERO rows. If not zero, re-run the DATA block only.
+    SELECT id, role FROM partner_admins
+     WHERE role IN ('admin', 'finance', 'qc', 'reviewer')
+       AND (permissions IS NULL OR jsonb_typeof(permissions) = 'array')
+       AND (role = 'admin' OR (id = 9 AND is_active) OR (role = 'finance' AND permissions IS NOT NULL))
+       AND NOT COALESCE(permissions, '[]'::jsonb) @> (CASE WHEN role = 'admin' OR (id = 9 AND is_active)
+                   THEN '["invitations.view","team.view","sources.view","sources.edit","sponsors.view",
+                          "sponsors.edit","announcements.view","announcements.edit","surveys.view",
+                          "surveys.edit","development.view","development.edit","mentoring.view",
+                          "mentoring.edit"]'
+                   ELSE '["invitations.view","team.view","sponsors.view"]' END)::jsonb;
+
+Reverse: only the audit rows this migration wrote (changed_by_role 'migration', kind 'edit' or NULL_KIND, no
+actor, and what `after` adds to `before` is a non-empty set of ADMIN_PRESET keys — 0095's rows add
+`scholars`) are read. Exactly the keys each one added come off the row it names. A row that was NULL
+(NULL_KIND) goes back to NULL when what is left is exactly its `before`; every other row keeps the exact
+list left (a stored list equal to its preset stays a list). Only those audit rows go.
 """
 from django.db import migrations
 
@@ -88,6 +114,8 @@ ADMIN_PRESET = ('invitations.view', 'team.view', 'sources.view', 'sources.edit',
 #: The one reviewer the owner confirmed, by id only (O8). Never a name.
 ROW_ID = 9
 BY_ROLE = 'migration'
+#: The audit kind for a row that was NULL (stored the preset) before; a stored list's row is kind 'edit'.
+NULL_KIND = 'edit_null'
 
 
 def plan_row(pk, role, is_active, stored, *, row_id=ROW_ID):
@@ -134,20 +162,21 @@ def store_v2_keys(apps, schema_editor):
         before, after = plan
         PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=after)
         StaffPermissionChange.objects.create(
-            target_id=admin.pk, target_email=admin.email or '',
-            organisation_id=admin.owning_organisation_id, kind='edit', role=admin.role,
+            target_id=admin.pk, target_email=admin.email or '', organisation_id=admin.owning_organisation_id,
+            kind=NULL_KIND if admin.permissions is None else 'edit', role=admin.role,
             before=before, after=after, changed_by_email='', changed_by_role=BY_ROLE)
         changed.append(admin.pk)
     return changed
 
 
 def remove_v2_keys(apps, schema_editor):
-    """Reverse: take off exactly the keys each of this migration's audit rows added, NULL a list left
-    equal to its role's preset, then delete only those audit rows. Returns the ids changed."""
+    """Reverse: take off exactly the keys each of this migration's audit rows added, put NULL back only on
+    a row that was NULL (and is otherwise unchanged), then delete only those audit rows. Returns the ids
+    changed."""
     PartnerAdmin = apps.get_model('courses', 'PartnerAdmin')
     StaffPermissionChange = apps.get_model('scholarship', 'StaffPermissionChange')
     candidates = StaffPermissionChange.objects.filter(
-        changed_by_role=BY_ROLE, changed_by_email='', kind='edit')
+        changed_by_role=BY_ROLE, changed_by_email='', kind__in=('edit', NULL_KIND))
     rows = [row for row in candidates.order_by('id') if _ours(row)]
     changed = []
     for row in rows:
@@ -156,8 +185,8 @@ def remove_v2_keys(apps, schema_editor):
         if admin is None or not isinstance(admin.permissions, list) or not added & set(admin.permissions):
             continue
         kept = [k for k in admin.permissions if k not in added]
-        PartnerAdmin.objects.filter(pk=admin.pk).update(
-            permissions=None if tuple(kept) == PRESETS.get(admin.role) else kept)
+        was_null = row.kind == NULL_KIND and kept == list(row.before)
+        PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=None if was_null else kept)
         changed.append(admin.pk)
     StaffPermissionChange.objects.filter(pk__in=[row.pk for row in rows]).delete()
     return changed

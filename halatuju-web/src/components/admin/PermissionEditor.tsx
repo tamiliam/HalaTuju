@@ -287,7 +287,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const fullPreset = [...view.preset, ...(view.v2_preset ?? [])]
   const presetHere = scope ? (view.table_presets?.[table as TeamTable] ?? mine(fullPreset)) : fullPreset
   const resetTo = scope ? [...want.filter((k) => !scope.includes(k)), ...presetHere] : fullPreset
-  const custom = !sameSet(mine(want), presetHere)
+  // Review (d): a NULL row (the server's `custom` false) holds its preset although it stores no page key
+  // (a NULL finance row reads the organisation through its Admins seat), so until something is changed it
+  // is never "Custom" and Reset has nothing to do. The server answers; the web does not re-derive it.
+  const onPreset = view.custom === false && !dirty
+  const custom = !onPreset && !sameSet(mine(want), presetHere)
   // Review fix 1: a Reviewer or QC holding neither key would vanish from People; the server refuses
   // it (`would_leave_people`) and the hint says why before the refusal arrives.
   const unlisted = ['reviewer', 'qc'].includes(view.role)
@@ -337,7 +341,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         </button>
         {/* T3 review: no "back to the preset" for somebody not active or sitting in no table. */}
         {view.is_active && !(tables && tables.length === 0) && (
-        <button type="button" disabled={busy || sameSet(want, resetTo)} data-testid="perm-reset"
+        <button type="button" disabled={busy || onPreset || sameSet(want, resetTo)} data-testid="perm-reset"
           onClick={() => { setSaved(false); setWant(resetTo) }}
           className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
           {t('admin.permEditor.reset', { preset })}
