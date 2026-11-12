@@ -6,6 +6,7 @@ OLD rule (the `admin` / `finance` labels seated their holder at Admins; the `adm
 work pages), then put through migration 0097's `plan_row` and read with the NEW code (stored keys only).
 The tables, the v2 page keys and every door in `staff_tables.DOOR_KEYS` must answer the same.
 """
+import copy
 from importlib import import_module
 
 from django.test import TestCase
@@ -73,7 +74,10 @@ class NobodyChanges(TestCase):
             'org_admin': shape('org_admin'),
             'org_admin, stored [review] (a lead added to Reviewers)': shape('org_admin', ['review']),
             'super': make_admin('admin', owning_org=org, super_admin=True),
-            'inactive admin': shape('admin', ['see_all'], is_active=False),
+            'revoked admin': shape('admin', ['see_all'], is_active=False),
+            'revoked admin, NULL': shape('admin', is_active=False),
+            'revoked finance, stored': shape('finance', ['payments_approve'], is_active=False),
+            'revoked finance, NULL': shape('finance', is_active=False),
             'partner': shape('partner'),
         }
         cls.named = shape('reviewer', ['review', 'see_all', 'spending'])
@@ -110,3 +114,18 @@ class NobodyChanges(TestCase):
         self.assertFalse(old - new)
         self.assertTrue(st.may_do_admin_work(after))
         self.assertEqual(st.tables(after), _old_tables(self.named))
+
+    def test_a_revoked_row_restored_after_the_migration_gets_back_what_it_had(self):
+        # Architect, 2026-11-12 (supersedes D10's "inactive untouched"): 0097 covers revoked admin and
+        # finance rows, so a later Restore (`views_staff.py`, a bare `is_active=True`) changes nobody's pages.
+        for name in ('revoked admin', 'revoked admin, NULL', 'revoked finance, stored', 'revoked finance, NULL'):
+            with self.subTest(shape=name):
+                restored_before = copy.copy(self.shapes[name])
+                restored_before.is_active = True
+                old_tables, old_keys = _old_tables(restored_before), _old_effective(restored_before)
+                after = self.migrate(self.shapes[name])
+                PartnerAdmin.objects.filter(pk=after.pk).update(is_active=True)
+                back = PartnerAdmin.objects.get(pk=after.pk)
+                self.assertEqual(st.tables(back), old_tables)
+                self.assertEqual(v2.effective_v2(back), old_keys)
+                self.assertEqual({d: st.opens_door(back, d) for d in st.DOOR_KEYS}, _doors(set(old_keys)))

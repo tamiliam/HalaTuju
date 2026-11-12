@@ -3,20 +3,22 @@ STORED v2 page keys, before the code stops reading the labels.
 
 Until M2b the label `admin` opened the admin work pages and seated its holder at the Admins table (which
 opens the organisation read pages); `finance` seated its holder at Admins. M2b reads stored keys instead,
-so this data step writes, for each ACTIVE row:
+so this data step writes, for each row ACTIVE OR REVOKED (architect, 2026-11-12, superseding D10's "inactive
+untouched": a later Restore, a bare `is_active=True`, then gives back what the label opened):
 
   role `admin`               the stored list, or the admin preset materialised when it is NULL, plus every
                              key of ADMIN_PRESET below it lacks (the organisation read + admin work pages);
   role `finance`, a list     plus every key of ORG_READ it lacks (what the Admins seat opened, nothing more);
   role `finance`, NULL       untouched: its preset key `payments_approve` already seats it at Admins, so the
                              same pages open with no write (and no "Custom" chip appears);
-  the row with id ROW_ID     (a reviewer or QC the owner confirmed, who sits at Admins through an old key)
+  the row with id ROW_ID,    (a reviewer or QC the owner confirmed, who sits at Admins through an old key)
+  when ACTIVE
                              its list (or its preset) plus every key of ADMIN_PRESET it lacks — the one
                              person whose pages GROW (owner ruling O8);
-  anything else              untouched: an inactive row, the lead tier, a super, a partner, a mentor login.
+  anything else              untouched: the lead tier, a super, a partner, a mentor login.
 
 Live (read-only count, 2026-11-12): 2 active admin rows and 1 active finance row, all with a stored list;
-the row ROW_ID stored. Idempotent: a key already held is never added again, and a row that gains nothing
+the row ROW_ID stored; 0 revoked admin or finance rows. Idempotent: a key already held is never added again, and a row that gains nothing
 is not written and gets no audit row.
 
 THE OLD IMAGE IGNORES THE NEW KEYS: `staff_permissions.clean` keeps catalogue keys only, so a list holding
@@ -43,9 +45,9 @@ SQL (MIGRATE-FIRST, by hand, one transaction; the release note carries it with i
                           "mentoring.edit"]'
                    ELSE '["invitations.view","team.view","sponsors.view"]' END)::jsonb AS adds
         FROM partner_admins
-       WHERE is_active AND role IN ('admin', 'finance', 'qc', 'reviewer')
+       WHERE role IN ('admin', 'finance', 'qc', 'reviewer')
          AND (permissions IS NULL OR jsonb_typeof(permissions) = 'array')
-         AND (role = 'admin' OR id = 9 OR (role = 'finance' AND permissions IS NOT NULL))
+         AND (role = 'admin' OR (id = 9 AND is_active) OR (role = 'finance' AND permissions IS NOT NULL))
     ), grown AS (
       SELECT plan.*, base || COALESCE((SELECT jsonb_agg(k ORDER BY n)
                                          FROM jsonb_array_elements_text(adds) WITH ORDINALITY AS a(k, n)
@@ -91,11 +93,11 @@ BY_ROLE = 'migration'
 def plan_row(pk, role, is_active, stored, *, row_id=ROW_ID):
     """``(before, after)`` lists for one row, or None when this migration leaves it alone. Pure: the
     forward step and the test factory (`row_id=None`) both read it."""
-    if not is_active or role not in TEAM_ROLES:
+    if role not in TEAM_ROLES:                     # active or revoked alike (architect, 2026-11-12)
         return None
     if stored is not None and not isinstance(stored, list):
         return None
-    if role == 'admin' or (row_id is not None and pk == row_id):
+    if role == 'admin' or (is_active and row_id is not None and pk == row_id):
         adds = ADMIN_PRESET
     elif role == 'finance' and stored is not None:
         adds = ORG_READ
@@ -123,7 +125,7 @@ def store_v2_keys(apps, schema_editor):
     PartnerAdmin = apps.get_model('courses', 'PartnerAdmin')
     StaffPermissionChange = apps.get_model('scholarship', 'StaffPermissionChange')
     changed = []
-    for admin in (PartnerAdmin.objects.filter(role__in=TEAM_ROLES, is_active=True)
+    for admin in (PartnerAdmin.objects.filter(role__in=TEAM_ROLES)
                   .only('id', 'email', 'role', 'is_active', 'owning_organisation_id', 'permissions')
                   .order_by('id')):
         plan = plan_row(admin.pk, admin.role, admin.is_active, admin.permissions)

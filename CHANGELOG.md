@@ -18,9 +18,10 @@ architect decisions D1-D12 (decisions.md "Admin permissions are stored v2 page k
   in the same list (refusals `never_grantable`, `lead_tier`, `alias_permission`); without the flag the stored page
   keys are kept. Add to Admins stores `ADMIN_PRESET_V2`; leaving Admins strips every page key; an invitation or a
   role change to `admin` starts with `ADMIN_PRESET_V2`. "Custom" weighs the old part and the page part separately.
-- data: 0097 stores what the labels opened: each active `admin` gets the admin page preset (a NULL row's preset
-  written out first); each active `finance` row with a list gets the organisation-read pages; the row id 9 named
-  by the owner gets the admin page preset (its only gain). One `migration` audit row per change; idempotent;
+- data: 0097 stores what the labels opened: each `admin`, active or revoked, gets the admin page preset (a NULL
+  row's preset written out first); each `finance` row with a list, active or revoked, gets the organisation-read
+  pages (so a later Restore gives back what the label opened); the row id 9 named by the owner gets the admin
+  page preset while active (its only gain). One `migration` audit row per change; idempotent;
   the reverse removes exactly what it added and NULLs a list left equal to its preset.
 - web: the Permissions tab draws the page keys by group (Organisation, Programme, Engagement, Money), locked
   with the server's reason where they cannot be stored; a change brings its page's view; history and chips word
