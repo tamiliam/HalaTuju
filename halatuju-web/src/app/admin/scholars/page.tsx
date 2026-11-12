@@ -55,7 +55,7 @@ function StaffScholarsPage() {
   const { t } = useT()
   // Sprint S1 (S1-h): staff who mentor open it by their mentor record, as My students.
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
-  const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)   // T5c P4: the server's door
+  const seesMentors = opensDoorOr(role, 'mentoring_read', MENTORING_ROLES)   // T5c P4: the server's door
   const programme = useProgrammeParam()
   // Anyone viewing AS A MENTOR has no gift to choose (S1-h: the server lists their own current students,
   // across gifts): a mentor login (the shell asks no scopes for it, `AppShell`), and staff who mentor

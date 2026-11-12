@@ -131,7 +131,7 @@ function StaffScholarFile() {
   // controls, the activity form, a letter's Resend and the Applications link are not drawn for it.
   const asMentor = file.mentor_view === true
   // T5c P4: each tab on its server door (an older payload keeps the role lists).
-  const seesMentors = asMentor || opensDoorOr(role, 'mentoring', MENTORING_ROLES)
+  const seesMentors = asMentor || opensDoorOr(role, 'mentoring_read', MENTORING_ROLES)
   const seesSurveys = asMentor || opensDoorOr(role, 'surveys', SURVEY_ROLES)
   const seesGrowth = asMentor || opensDoorOr(role, 'development', GROWTH_ROLES)
   const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)

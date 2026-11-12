@@ -35,6 +35,7 @@ export const REVIEW_TONE: Record<string, string> = {
 
 /** S7b: the roles that see a scholar's mentor — the Mentoring tab, the list's Mentor column and its
  *  two pills, the Overview's mentor card: super, org_admin, admin (the Mentors roster's readers). The
- *  SERVER's rule is `mentoring.may_act` (it leaves the keys out for anyone else); this only decides
- *  whether to draw a tab the server would refuse. */
+ *  SERVER's rule is `mentoring.may_read_mentoring` (door `mentoring_read`; it leaves the keys out for
+ *  anyone else); since M2b (D11) the pages ask that door from the served `page_keys`, and this list
+ *  answers only for an older payload. It decides only whether to draw a tab the server would refuse. */
 export const MENTORING_ROLES: readonly string[] = ['super', 'org_admin', 'admin']

@@ -110,8 +110,8 @@ export function AssignAndWitness({
       {/* ── Witness organisation — directly below Reviewer assigned (owner 2026-07-22; it used
             to sit full-width BELOW the whole cockpit grid, far from the related controls).
             Three gates, all required:
-              • role      — super/admin/org_admin (`canManageSources`; the Admin role manages
-                            sources + witnesses, unlike reviewer assignment)
+              • role      — the `sources` door (`canManageSources`; M2b: `sources.edit`, held by
+                            super/admin/org_admin — they manage sources + witnesses, unlike assignment)
               • sourceless — a student WITH a referring org is witnessed by that org, so the
                             control would be meaningless for them
               • stage     — `showsWitnessCard`: from AWAITING QC onward. Only an AWARDED student

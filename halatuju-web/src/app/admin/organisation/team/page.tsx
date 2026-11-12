@@ -14,6 +14,9 @@ import {
 } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
 import { MENTORS_READ_ROLES, mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
+
+/** The roles the Emails tab was offered to before M2b: the fallback for a payload with no `page_keys`. */
+const EMAIL_EDIT_ROLES = ['super', 'org_admin', 'admin'] as const
 import { lazySource } from '@/components/source/LazySource'
 import { turnaroundBand } from '@/lib/reviewerDetail'
 import {
@@ -115,7 +118,9 @@ export default function AdminReviewersList() {
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
-  const mayEditEmails = ['super', 'org_admin', 'admin'].includes(effectiveRole(role))
+  // Sprint M2b (D11): on the server's door — the tab's cards save through the partner-email endpoints
+  // (`_SourcesBase`, door `sources` = `sources.edit`); an older payload keeps the role list.
+  const mayEditEmails = opensDoorOr(role, 'sources', EMAIL_EDIT_ROLES)
   // T3: the Mentors tab — exactly who read the old Mentors page (the server's `mentor_invite.may_read`).
   const mayMentors = mayReadMentors(role)
   // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened: only a
