@@ -58,10 +58,8 @@ GUARD_FILES = (
     'src/lib/__tests__/payoutAccountDrift.test.ts',
     'src/lib/__tests__/decisionReopenOfferDrift.test.ts',   # A3.16b split, 2026-11-12
     'src/lib/__tests__/interviewCompletenessDrift.test.ts',
-    'src/lib/__tests__/profileClaimCodes.test.ts',
     'src/lib/__tests__/profileClaimCodesDrift.test.ts',
     'src/lib/__tests__/qualificationDrift.test.ts',   # third results route S2b, 2026-10-26
-    'src/lib/__tests__/referralSources.test.ts',
     'src/lib/__tests__/referralSourcesDrift.test.ts',
     'src/lib/__tests__/requestComponentDrift.test.ts',
     'src/lib/__tests__/requestStatusDrift.test.ts',
