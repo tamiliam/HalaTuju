@@ -7,13 +7,64 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-11-05 review - counter reset; the fifteen small-lane entries are named in that review, and line by line in git at the commit before it)_
 
-- 2026-11-10 b8bdf9cc feat(web): team-membership small change - InfoTip above the page; O9 no phone on Team Admins; O10 org admin's name opens their page; O11 no email in the person header (web: InfoTipBubble, StaffAdmin, reviewers/page, PersonHeader + tests; decisions.md, CHANGELOG)
+- 2026-11-10 b8bdf9ccb ba65a15af 8d9011780 feat(web): team-membership small change - InfoTip above the page; O9 no phone on Team Admins; O10 org admin's name opens their page; O11 no email in the person header (web: InfoTipBubble, StaffAdmin, reviewers/page, PersonHeader + tests; decisions.md, CHANGELOG)
+- 2026-11-11 7edc65985 fix: read the tax line on Supabase receipts (TPTHYS-00012)
+- 2026-11-10 77e7b71f3 fix: JWT middleware treats PyJWKClientError (unknown kid) as an invalid token, not a 500
+- 2026-11-10 17efc70ff refactor: sandbox surface page reads its segment with useParams (Next 15 async params)
+- 2026-11-10 1e79c3521 fix: Matric and Form 6 ranking items get their academic bonus and field preference
+- 2026-11-08 a29381e5e 43a4b727a 3a9c78b2f 6c58efae5 fix: degree students - funding estimate, university schedule, undeclared higher results (not placed in a roadmap sprint)
+- 2026-11-08 754e31072 f5e7b8774 fix: interview submit auto-finalise outside every transaction; a reviewer can move a booked interview to later the same day (TD-137)
+- 2026-11-10 cd3b82e85 0a0b2828b fix: a super is no longer listed as a reviewer; profile_failed refusal wording (two unrelated one-liners)
+- 2026-11-07 3734bc0f5 fix: TD-525 payments badge skips the refused call for an orgless super (A1.x, sprint not identified)
+- 2026-11-10 5c37b085f ab4c8ae76 perf: apply page fetches closed cards lazily; StaffActions reason bubble fetched into the admin chunk (not placed in a roadmap sprint)
 
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
 
 _(cleared at the 2026-11-05 review; the sprint lines it read are named in that review, and line by line in git at the commit before it)_
+
+_Logged late on 2026-11-12 by catch-up sprint C1: the audit run (Waves 1-4, deployed as groups G3-G14) and the other sessions' work were never recorded. SHAs are as on main; the sprint lines in commit subjects ("sprint X") are already read by the check._
+- 2026-11-12 A1.1 header logo (A1.1) — 42e3c45a5
+- 2026-11-12 A1.5 QC and lifecycle locks, review rounds 1-3 — 71fba3889 f2b58b43e cb1dd706a
+- 2026-11-12 A1.6 TD-347 parent call re-arms the sign deadline — 9ce461dfe d1fe1e355
+- 2026-11-12 A1.7 uploads cannot overwrite — 0a8fc1357 1f536e72b
+- 2026-11-12 A1.8 review follow-ups — 15a75a30b
+- 2026-11-12 A1.9a/b PII and request hygiene, review follow-ups, TD-458 — e60d3bfcb 142e35c5a 28bca446b
+- 2026-11-12 A1.10a/b permission doors, TD-064, TD-496 — 671c6b383 a0133952b 8ee5eedc3 b0964721e
+- 2026-11-12 A1.11a follow-up — a07f63dd3
+- 2026-11-12 A1.13 and A1.13b award withdrawal (maker and checker) — 4980b2b7a df17fa90e 62e092dad ea36e267e e1e3ea258 8138854ec 6e11556e4 779524e0a
+- 2026-11-12 Multi-gift reviewers (TD-531), two parts — 32fc32271 778f88714
+- 2026-11-12 G3 and G4 gate fixes, bundle budgets (TD-529) — 22776f59f 6196d2379 71422a270 1857013c6
+- 2026-11-12 A2.2 reprocess-ic-vision time budget — a8efd64c7 882b65d90
+- 2026-11-12 A2.3 and A2.3b queued read, draft off the assign request — e448d3e3c 401f91e17 e599c5631 23f333ba2
+- 2026-11-12 A2.4 slow reads — b4617a0a6 78fcb90cf
+- 2026-11-12 A2.6 no student told by silence, and G7 review — 504c160e2 fa0fcfc2c a4ca30416 9845854a8
+- 2026-11-12 Staff nudges wording — 11e49b458
+- 2026-11-12 A3.2/A3.3 scholarship views package, officer cockpit — 5bb0b617e 38c999743 0b1240356 3c7880ba3 8cfadb081
+- 2026-11-12 A3.4 verdict engine splits — cb7804c24 d50d6b89d 00e68502e
+- 2026-11-12 A3.5 courses views package — fce766cbb
+- 2026-11-12 A3.6 engine splits — b84ee559f 4707978ec 1134bcd96
+- 2026-11-12 A3.7 serializer packages — a5ad2ceda b822ffd6d
+- 2026-11-12 A3.9 profile page split — 489bf2881 6bab5c9c7
+- 2026-11-12 A3.10-A3.13, A3.15, A3.17 (G11, G12) — 4d09143e0 bdd520ce6 b778d21d6 d9d9e1d15 00a83e400 dec8af1c5 24cfa1c1f 07da4e8fd b6363873b
+- 2026-11-12 G5 and G6 post-merge line-limit fixes — 0fec1c69b 7650adee6 7a38f8d47 b0cff100d
+- 2026-11-12 A4.1 apply and student screens — 8779e8f98 8caacb9bc
+- 2026-11-12 A4.2 Language, TD-469/472, A48 menu row — dc4655460 2e19fc558 0dbcb7d29 d11a4673e
+- 2026-11-12 A4.3 phone layout leftovers — 22c22f88c bcb3a518c
+- 2026-11-12 G13 core message slice — 8bd8933e2 34fd151a3
+- 2026-11-12 A4.4 cockpit and overview leftovers — f1abfcb91
+- 2026-11-12 A4.5 supplier bills cron, day-first dates — 72fd786ed 0c07254e1 f940bf30b
+- 2026-11-12 A4.6 sponsor pool by opaque ref — 1abce4f1d 07763060b
+- 2026-11-12 G14 merged Wave 4 gate failures — c00fce911
+- 2026-11-12 M1b Staff list web and review follow-ups — 6bec13ab8 ddba571d3
+- 2026-11-12 TD-444 staff invitations record who sent them — 87445f7e1
+- 2026-11-12 Gemini Phase 1, 3.8 Flash with Flash fallback — 8993bec27 e5183cced
+- 2026-11-12 S1 Scholars permission, API half — 5fcb6e8cb
+- 2026-11-12 P1 activity log API and scroll box, i18n T2/T3/P1 — af435523f 1e46cd662 290b9678e
+- 2026-11-12 Lane B org requests #54, #56, #57, #58, #59, #61, #62 — 4c950f88a c8650ffb9 568982d2f 710c03a63 9348a8beb 37cffbd10 d86c8de00 63e46d27a b6641f5d3 11f7d2873 8e7a5fec2 da14eac5a 99810782a 0197cdfb0 0479ee04c 591bb2358 b2882995f 75c0e57fa cdbf984e5 ca1476ba3 6257b2edd 8f51f232d 44ee7d7f6 e2674743c 5afad21b0
+- 2026-11-12 Lane B org request #66, IIUM English offer letters — fc7eef0b1 6f203e7f1 a663a84e2 dc52986f3 d75b3e192 43ecb9210
+- 2026-11-12 Invitations I1 and I2 (one form per tab; one person per source) — 3bd60f90d ff3c6affa
 
 ## Reviews
 
