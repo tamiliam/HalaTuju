@@ -56,9 +56,13 @@ GUARD_FILES = (
     'src/lib/__tests__/incomeEvidenceHomes.test.ts',
     'src/lib/__tests__/officerGateDrift.test.ts',
     'src/lib/__tests__/payoutAccountDrift.test.ts',
+    'src/lib/__tests__/decisionReopenOfferDrift.test.ts',   # A3.16b split, 2026-11-12
+    'src/lib/__tests__/interviewCompletenessDrift.test.ts',
     'src/lib/__tests__/profileClaimCodes.test.ts',
+    'src/lib/__tests__/profileClaimCodesDrift.test.ts',
     'src/lib/__tests__/qualificationDrift.test.ts',   # third results route S2b, 2026-10-26
     'src/lib/__tests__/referralSources.test.ts',
+    'src/lib/__tests__/referralSourcesDrift.test.ts',
     'src/lib/__tests__/requestComponentDrift.test.ts',
     'src/lib/__tests__/requestStatusDrift.test.ts',
     'src/lib/__tests__/soft-evidence-drift.test.ts',
@@ -68,7 +72,7 @@ GUARD_FILES = (
     'src/lib/__tests__/studentScreenDrift.test.ts',
     'src/lib/__tests__/themeContrastDrift.test.ts',
     'src/lib/__tests__/webMirrorDrift.test.ts',
-    'src/test/adminApplicationDetail.test.ts',
+    'src/test/adminApplicationDetailDrift.test.ts',
     #: Not a test — the shared reader every drift test above goes through. If it moves, all of
     #: them die at import at once, which is precisely the H13 failure at nineteen times the size.
     'src/test/apiSource.ts',

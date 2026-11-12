@@ -7,7 +7,7 @@
  * at submit and at Approve/Decline (`halatuju_api/apps/scholarship/interview_completeness.py`);
  * this module is the cockpit's copy of its "answered" rule, so the buttons stay asleep exactly
  * when the server would refuse them — and the reviewer is told why.
- * drift-test: halatuju-web/src/lib/__tests__/interviewCompleteness.test.ts
+ * drift-test: halatuju-web/src/lib/__tests__/interviewCompletenessDrift.test.ts
  */
 
 export interface AgendaFinding { verdict?: string; rationale?: string }

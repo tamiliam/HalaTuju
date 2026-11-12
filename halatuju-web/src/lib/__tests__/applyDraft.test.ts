@@ -5,8 +5,6 @@
  * `app/scholarship/apply/page.draft.test.tsx`; sign-out's wipe in `studentSignOut.test.ts`.
  * Storage is this tab's (jsdom's sessionStorage); time is jest's clock.
  */
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import { act, renderHook } from '@testing-library/react'
 import {
   APPLY_DRAFT_KEY, APPLY_DRAFT_MAX_AGE_MS, DRAFT_EXCLUDED, clearApplyDraft,
@@ -162,11 +160,35 @@ describe('useApplyDraft — when it is written', () => {
 })
 
 describe('it never leaves the device', () => {
-  it('the draft module imports nothing that talks to the network', () => {
-    const src = readFileSync(join(__dirname, '..', 'applyDraft.ts'), 'utf8')
-    const imports = Array.from(src.matchAll(/from '([^']+)'/g)).map((m) => m[1])
-    expect(imports.sort()).toEqual(['./applyReturn', './scholarship', 'react'])
-    expect(src).toMatch(/import type \{ ApplyFormState \} from '\.\/scholarship'/)   // a type only
-    expect(src).not.toMatch(/\bfetch\(|XMLHttpRequest|sendBeacon|@\/lib\/api/)
+  // Behaviour, not source text: drive every write path (the timer, the tab hiding, the page going
+  // away, an explicit write, a read-back, a clear) with every network door spied, and assert none
+  // opened. A new `fetch(` / beacon / XHR in the module would fail here whatever it is named.
+  it('writing, reading, clearing and hiding the tab never touch the network', () => {
+    const doors = {
+      fetch: jest.fn(), sendBeacon: jest.fn(), xhrOpen: jest.spyOn(XMLHttpRequest.prototype, 'open'),
+    }
+    const origFetch = (globalThis as { fetch?: unknown }).fetch
+    const origBeacon = (navigator as { sendBeacon?: unknown }).sendBeacon
+    ;(globalThis as { fetch?: unknown }).fetch = doors.fetch
+    Object.defineProperty(navigator, 'sendBeacon', { value: doors.sendBeacon, configurable: true })
+    try {
+      renderHook(() => useApplyDraft(FORM, 'u1', 'bp', 'family', true))
+      act(() => { jest.advanceTimersByTime(500) })
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+      act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+      act(() => { window.dispatchEvent(new Event('pagehide')) })
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
+      writeApplyDraft(FORM, HER, 'results')
+      expect(readApplyDraft(HER)).not.toBeNull()          // it did write and read: the spies saw a live path
+      clearApplyDraft()
+      expect(raw()).toBeNull()
+      expect(doors.fetch).not.toHaveBeenCalled()
+      expect(doors.sendBeacon).not.toHaveBeenCalled()
+      expect(doors.xhrOpen).not.toHaveBeenCalled()
+    } finally {
+      ;(globalThis as { fetch?: unknown }).fetch = origFetch
+      Object.defineProperty(navigator, 'sendBeacon', { value: origBeacon, configurable: true })
+      doors.xhrOpen.mockRestore()
+    }
   })
 })

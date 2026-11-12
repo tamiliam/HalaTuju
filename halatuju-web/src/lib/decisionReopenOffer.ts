@@ -8,7 +8,7 @@
  * view does not move. So while a decline is pending the card offers that cancel in Reopen's place,
  * never a Reopen that would answer 400. The pending test mirrors the api's: either marker set.
  *
- * drift-test: halatuju-web/src/lib/__tests__/decisionReopenOffer.test.ts
+ * drift-test: halatuju-web/src/lib/__tests__/decisionReopenOfferDrift.test.ts
  */
 export type DecisionReopenOffer = 'reopen' | 'cancelPendingDecline' | null
 

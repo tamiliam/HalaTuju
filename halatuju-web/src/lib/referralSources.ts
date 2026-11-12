@@ -9,7 +9,7 @@
  * by the server (`referral_source_not_offered`); the form re-reads the list and asks again.
  *
  * ⚠ The fixed three are a CONSTANT the server also holds (`gift_sources.FIXED_CODES`) — a mirror,
- * so it is guarded, not trusted. drift-test: halatuju-web/src/lib/__tests__/referralSources.test.ts
+ * so it is guarded, not trusted. drift-test: halatuju-web/src/lib/__tests__/referralSourcesDrift.test.ts
  *
  * Request #44 (2026-10-25): a gift may switch off `halatuju` and `social`; the intake then serves
  * `fixed_sources`, the fixed codes THIS gift offers, and the form lists only those. `other` is on

@@ -1,19 +1,16 @@
 /**
- * TD-253 — the cockpit's interview-completeness rule, and THE DRIFT TEST named by the
- * `drift-test:` marker in `src/lib/interviewCompleteness.ts`.
+ * TD-253 — the cockpit's interview-completeness rule, by behaviour. THE DRIFT TEST named by the
+ * `drift-test:` marker in `src/lib/interviewCompleteness.ts` is `interviewCompletenessDrift.test.ts`.
  *
  * The api refuses an unanswered agenda item at submit and at Approve/Decline
  * (`apps/scholarship/interview_completeness.py`). If the cockpit's idea of "answered" drifts from
  * the api's, the buttons either wake for a case the server then refuses (a dead click with an
  * English error), or stay asleep on a case the server would accept (a reviewer stranded with no
- * way to say what is missing). So the verdict set is read out of the api module and compared.
+ * way to say what is missing). The drift file reads the verdict set out of the api module.
  */
 import {
-  ANSWER_VERDICTS, BLANK, REVIEWER_STAGE, interviewGateApplies, isAnswered, missingAgendaItems,
+  interviewGateApplies, isAnswered, missingAgendaItems,
 } from '@/lib/interviewCompleteness'
-import { readApi } from '@/test/apiSource'
-
-const MODULE = 'apps/scholarship/interview_completeness.py'
 
 describe('what counts as an answer (owner, 2026-09-18)', () => {
   it('a pressed verdict, with no words', () => {
@@ -85,38 +82,5 @@ describe('invisible characters are silence on both sides', () => {
   })
   it('a visible character beside them is', () => {
     for (const t of ANSWERS) expect(isAnswered({ verdict: '', rationale: t })).toBe(true)
-  })
-})
-
-describe('DRIFT: the api reads blanks and the reviewer stage the same way', () => {
-  const src = readApi(MODULE)
-  it('the blank character class is the same source, character for character (F6)', () => {
-    const m = src.match(/_BLANK = re\.compile\(r'([^']*)'\)/)
-    if (!m) throw new Error(`drift test: no _BLANK = re.compile(r'...') in ${MODULE} — follow it.`)
-    expect(m[1].length).toBeGreaterThan(20)
-    expect(BLANK.source).toBe(m[1])
-  })
-  it('the reviewer-stage statuses are the same set (F4)', () => {
-    const m = src.match(/_REVIEWER_STAGE = \(([^)]*)\)/)
-    if (!m) throw new Error(`drift test: no _REVIEWER_STAGE = (...) in ${MODULE} — follow it.`)
-    const api = (m[1].match(/'([a-z_]+)'/g) ?? []).map((x) => x.slice(1, -1))
-    expect(api.length).toBeGreaterThanOrEqual(3)
-    expect([...api].sort()).toEqual([...REVIEWER_STAGE].sort())
-  })
-})
-
-describe('DRIFT: the api counts the same verdicts as answers', () => {
-  const src = readApi(MODULE)
-  const m = src.match(/_ANSWER_VERDICTS\s*=\s*frozenset\(\{([^}]*)\}\)/)
-  it('the api set is where this test expects it', () => {
-    if (!m) {
-      throw new Error(`drift test: no _ANSWER_VERDICTS = frozenset({...}) in ${MODULE}. The rule `
-        + 'has moved — follow it, never delete the assertion.')
-    }
-  })
-  it('and the two sets are identical', () => {
-    const api = new Set(((m?.[1] ?? '').match(/'([a-z_]+)'/g) ?? []).map((s) => s.slice(1, -1)))
-    expect(api.size).toBeGreaterThanOrEqual(3)
-    expect([...api].sort()).toEqual([...ANSWER_VERDICTS].sort())
   })
 })

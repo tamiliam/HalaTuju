@@ -182,7 +182,7 @@ may only fall.
 
 | File | What it is |
 |---|---|
-| `adminApplicationDetail.ts` | `buildApplicationDetail(stage, overrides?)` — a complete, type-correct `AdminScholarshipDetail` at a NAMED STAGE. It mirrors the stage table above, including the two roads to QC, and `adminApplicationDetail.test.ts` reads `factories.py` and fails if the two stage lists drift apart. |
+| `adminApplicationDetail.ts` | `buildApplicationDetail(stage, overrides?)` — a complete, type-correct `AdminScholarshipDetail` at a NAMED STAGE. It mirrors the stage table above, including the two roads to QC, and `adminApplicationDetailDrift.test.ts` reads `factories.py` and fails if the two stage lists drift apart. |
 | `renderCockpit.tsx` | Mounts the real `src/app/admin/scholarship/[id]/view.tsx` for a given ROLE, with i18n, the admin-auth context, the router and `@/lib/admin-api` mocked, every on-mount call primed, and **any `console.error` failing the test**. |
 | `view.decision` / `view.closed` / `view.roles` / `view.actions` `.test.tsx` | 59 rendered tests, beside the page. |
 

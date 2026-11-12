@@ -39,7 +39,7 @@ from django.db.models import Q
 #: What does NOT count as a typed answer: Unicode whitespace and the zero-width/BOM characters,
 #: spelled out character by character so it means the same thing in both languages (review F6:
 #: Python's `str.strip` and JS's `trim` disagree — U+FEFF is whitespace to one and not the other).
-#: The cockpit's `BLANK` must have this exact source; `interviewCompleteness.test.ts` compares them.
+#: The cockpit's `BLANK` must have this exact source; `interviewCompletenessDrift.test.ts` compares them.
 _BLANK = re.compile(r'[\t\n\v\f\r \x1c-\x1f\x85\xa0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u3000\ufeff]')
 
 #: The verdicts that are an answer on their own. '' is "not classified yet"; 'deleted' is handled

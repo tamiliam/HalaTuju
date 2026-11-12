@@ -13,7 +13,7 @@
  * The refusal vocabulary is the SERVER'S (`REFUSAL_CODES` in that module); this map is kept in
  * step by a test that reads the Python file, so a code added there and not given copy here
  * fails the build rather than reaching a student as a blank panel.
- * drift-test: halatuju-web/src/lib/__tests__/profileClaimCodes.test.ts
+ * drift-test: halatuju-web/src/lib/__tests__/profileClaimCodesDrift.test.ts
  */
 
 /** A challenge channel, as a bare TYPE. Never an address or a number. */

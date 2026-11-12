@@ -7,8 +7,7 @@
  * worded by its code.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { INVISIBLE, ReviewerNotesCard, looksEmpty, noteLength } from './ReviewerNotesCard'
-import { readApi } from '@/test/apiSource'
+import { ReviewerNotesCard, looksEmpty, noteLength } from './ReviewerNotesCard'
 import { addReviewerNote, getReviewerNotes, type ReviewerNotes } from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api', () => ({ getReviewerNotes: jest.fn(), addReviewerNote: jest.fn() }))
@@ -130,15 +129,7 @@ it('counts characters as the server does (trimmed, code points)', () => {
 // ── The independent review of 2d1ae890 (R4, R6) ─────────────────────────────────────────────────
 const ch = (...codes: number[]) => String.fromCharCode(...codes)
 
-describe('DRIFT: the card trims and blanks exactly as the server does (R4)', () => {
-  it('the invisible character class is the same source, character for character', () => {
-    const src = readApi('apps/scholarship/reviewer_notes.py')
-    const m = src.match(/_INVISIBLE = re\.compile\(r'([^']*)'\)/)
-    if (!m) throw new Error('drift test: no _INVISIBLE = re.compile(r...) in reviewer_notes.py — follow it.')
-    expect(m[1].length).toBeGreaterThan(40)
-    expect(INVISIBLE.source).toBe(m[1])
-  })
-
+describe('the card trims and blanks invisible characters (R4; server parity is ReviewerNotesCardDrift.test.tsx)', () => {
   it('a note of invisible characters only looks empty', () => {
     for (const code of [0xad, 0x2800, 0x3164, 0x115f, 0x1160, 0x180e, 0x200b, 0x200e, 0x2060, 0xfeff, 0xffa0]) {
       expect(looksEmpty(` ${ch(code, code)} `)).toBe(true)

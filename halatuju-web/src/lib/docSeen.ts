@@ -8,7 +8,7 @@
  * listed reads as "another kind of document", so a raw code never reaches the reviewer. A value that
  * is not a code at all (free words from an older read) is shown as it is.
  *
- * The list is pinned to the api's own constants by `docSeen.test.ts` (a drift test).
+ * The list is pinned to the api's own constants by `docSeenDrift.test.ts` (a drift test).
  */
 export const DOC_SEEN_CODES = [
   // results_doc families (SPM slip / certificate, birth certificate, EPF, STR)

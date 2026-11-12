@@ -24,7 +24,7 @@ const CODES = ['writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_lon
 
 /** What does not count as writing. ⚠ THE SERVER'S `_INVISIBLE` (`apps/scholarship/reviewer_notes.py`), source for
  *  source: `trim()` alone disagrees with it (U+FEFF, the Hangul fillers), and then the 2,000 boundary and the
- *  blank check would answer differently here and there. `ReviewerNotesCard.test.tsx` compares the two. */
+ *  blank check would answer differently here and there. `ReviewerNotesCardDrift.test.tsx` compares the two. */
 export const INVISIBLE = /[\t\n\v\f\r \x1c-\x1f\x85\xa0\xad\u115f\u1160\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u2064\u2800\u3000\u3164\ufeff\uffa0]/
 const EDGES = new RegExp(`^${INVISIBLE.source}+|${INVISIBLE.source}+$`, 'g')
 const ALL_INVISIBLE = new RegExp(INVISIBLE.source, 'g')

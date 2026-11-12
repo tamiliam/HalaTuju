@@ -7,8 +7,6 @@
  * `CourseRequirementSerializer` serves them: pathway "mara", an open row with nothing but its remarks,
  * and the KKTM diplomas whose remark carries the page's own heading (the remedial-Maths note).
  */
-import fs from 'fs'
-import path from 'path'
 import { fireEvent, render, screen } from '@testing-library/react'
 
 import RequirementsCard, { type CourseRequirements } from '@/components/RequirementsCard'
@@ -25,8 +23,9 @@ interface Row {
     req_bumiputera: boolean
   }
 }
-const F2 = path.join(__dirname, '..', '..', '..', 'halatuju_api', 'data', 'tvet', 'tvet_new_courses_F2.json')
-const rows: Row[] = JSON.parse(fs.readFileSync(F2, 'utf-8')).courses
+// The reviewed data file itself, loaded as data (no source-text read).
+const F2 = require('../../../halatuju_api/data/tvet/tvet_new_courses_F2.json')
+const rows: Row[] = F2.courses
 
 const served = (row: Row, over: Partial<CourseRequirements> = {}): CourseRequirements => ({
   source_type: 'tvet', pathway_type: 'mara', general: [], special: [], subject_group_req: null,

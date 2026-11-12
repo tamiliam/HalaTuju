@@ -7,13 +7,11 @@
  * Matriculation offer letter is not a results document;
  * every other non-genuine document keeps the general note. `t` echoes its key.
  *
- * drift-test: the `doc_seen` codes and `final_owed` are the backend's own (`genuineness/matric_poly_doc.py`,
- * `genuineness/bands.py`), read below.
+ * The DRIFT half (the `doc_seen` codes and `final_owed` are the backend's own) is `GenuinenessNoteDrift.test.tsx`.
  */
 import { render, screen } from '@testing-library/react'
 import { GenuinenessNote, genuinenessNoteKey } from './checklists'
 import type { ApplicantDocument } from '@/lib/api'
-import { readApi } from '@/test/apiSource'
 import enMessages from '@/messages/en.json'
 import msMessages from '@/messages/ms.json'
 import taMessages from '@/messages/ta.json'
@@ -41,15 +39,6 @@ describe('GenuinenessNote — the owner-ruled higher-results pages (M4b)', () =>
     expect(genuinenessNoteKey(undefined)).toBe('scholarship.docs.genuineness.note')
     const { container } = render(<GenuinenessNote doc={doc('genuine', 'matric_transcript')} t={t} />)
     expect(container.textContent).toBe('')
-  })
-
-  test('the codes are the backend\'s own', () => {
-    const src = readApi('apps/scholarship/genuineness/matric_poly_doc.py')
-    for (const code of ['matric_result_slip', 'poly_result_slip', 'poly_portal_page', 'matric_offer_letter',
-      'matric_transcript_not_final', 'poly_transcript_not_final']) {
-      expect(src).toContain(`'${code}'`)
-    }
-    expect(readApi('apps/scholarship/genuineness/bands.py')).toContain("FINAL_OWED = 'final_owed'")
   })
 })
 
