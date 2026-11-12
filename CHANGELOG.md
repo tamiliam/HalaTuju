@@ -22,6 +22,8 @@ Branch m2a (local, not pushed, not deployed). Web only; no API file changed, no 
   `aria-current="page"` (U4). A page opened for someone not in its group replaces itself with their first group
   page (Admins, Reviewers, Mentors), keeping only `#permissions`, or the Staff tab when they are in none (U5). The
   rules are pure functions in `lib/teamPaths.ts`; `StaffList.pageOf` uses the same order.
+  An INACTIVE person (a revoked reviewer, a suspended mentor) is never moved: the server serves `tables: []` for
+  them, and a closed account's record must still open (ruling 2026-09-09; lead's review).
 - Every in-app link, `mobileClass.ts`, `pageWidth.ts`, `docs/mobile-ledger.md` and the sandbox surfaces
   (`m8-reviewer-detail`, `t3-mentor-person`, ids kept) follow the new paths. No new message keys.
 - test: `lib/__tests__/teamPaths.test.ts`, `teamRedirects.test.ts`, `person/GroupPages.split.test.tsx`; T3's

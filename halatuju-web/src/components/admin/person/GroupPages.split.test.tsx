@@ -164,6 +164,27 @@ describe('item 6: the wrong group replaces itself', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/team?tab=staff'))
   })
 
+  // Lead's review (2026-11-12): the server serves `tables: []` for an inactive login, and the 2026-09-09
+  // ruling keeps a closed account's record OPEN — so an inactive person is never moved on.
+  it('a revoked reviewer\'s page opens (the Reviewers table still links it)', async () => {
+    mR.getReviewerDetail.mockResolvedValue(reviewerDetail(person({ tables: [], is_active: false }), { is_active: false }))
+    render(<ReviewerGroupPage id={5} />)
+    await header()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(screen.getByTestId('person-profile')).toBeTruthy()
+  })
+
+  it('a suspended pure mentor\'s page opens (the Mentors table still links it)', async () => {
+    const gone = person({ admin_id: 9, mentor_id: null, tables: [], mentor_only: true, is_active: false })
+    mM.getMentorDetail.mockResolvedValue(mentorDetail(gone, {
+      mentor: mentorRow({ id: 3, status: 'inactive', deactivated_at: '2026-11-01T00:00:00Z' }) }))
+    render(<MentorGroupPage id={3} />)
+    await header()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(await screen.findByTestId('mentor-work')).toBeTruthy()
+    expect(screen.queryByTestId('person-action-row')).toBeNull()      // no Remove from Mentors for them
+  })
+
   it('a person in the page\'s group stays', async () => {
     mR.getReviewerDetail.mockResolvedValue(reviewerDetail(person()))
     render(<ReviewerGroupPage id={5} />)

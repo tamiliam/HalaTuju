@@ -48,9 +48,15 @@ export function firstGroupPage(tables: readonly string[] | null | undefined, ids
  * `admins/<id>?table=reviewers` link, a reviewer-only person opened at `/team/admins/<id>`) is replaced by
  * the first group page they are in, keeping nothing of the query but `#permissions`; in no group, the
  * Staff tab (U5). Null = they belong here, stay.
+ *
+ * ⚠ AN INACTIVE PERSON (a revoked reviewer, a suspended mentor) IS NEVER MOVED: the server serves
+ * `tables: []` for any inactive login (`staff_tables.tables`, `mentors_now`), which is not "in no group",
+ * and a closed account's record must still OPEN (ruling 2026-09-09) — the Reviewers and Mentors tables
+ * link them. Their page opens as it did before M2a; U5 is for ACTIVE people in no group.
  */
-export function wrongGroupTarget(here: TeamGroup, person: PersonIds & { tables?: readonly string[] | null },
-  hash: string): string | null {
+export function wrongGroupTarget(here: TeamGroup,
+  person: PersonIds & { tables?: readonly string[] | null; is_active?: boolean }, hash: string): string | null {
+  if (person.is_active === false) return null
   if ((person.tables ?? []).includes(here)) return null
   const first = firstGroupPage(person.tables, person)
   if (!first) return teamTabHref('staff')

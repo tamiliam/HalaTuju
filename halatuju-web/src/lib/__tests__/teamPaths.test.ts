@@ -45,11 +45,11 @@ describe('firstGroupPage: Admins, then Reviewers, then Mentors', () => {
 })
 
 describe('wrongGroupTarget', () => {
-  const ROHINI = { admin_id: 2, mentor_id: null, tables: ['admins', 'reviewers'] }
+  const TWO_GROUPS = { admin_id: 2, mentor_id: null, tables: ['admins', 'reviewers'] }
 
   it('stays when the person is in the page\'s group', () => {
-    expect(wrongGroupTarget('reviewers', ROHINI, '')).toBeNull()
-    expect(wrongGroupTarget('admins', ROHINI, '#permissions')).toBeNull()
+    expect(wrongGroupTarget('reviewers', TWO_GROUPS, '')).toBeNull()
+    expect(wrongGroupTarget('admins', TWO_GROUPS, '#permissions')).toBeNull()
   })
 
   it('a reviewer-only person at the admin page goes to their reviewer page', () => {
@@ -58,8 +58,8 @@ describe('wrongGroupTarget', () => {
   })
 
   it('keeps #permissions and nothing else', () => {
-    expect(wrongGroupTarget('mentors', ROHINI, '#permissions')).toBe('/admin/organisation/team/admins/2#permissions')
-    expect(wrongGroupTarget('mentors', ROHINI, '#other')).toBe('/admin/organisation/team/admins/2')
+    expect(wrongGroupTarget('mentors', TWO_GROUPS, '#permissions')).toBe('/admin/organisation/team/admins/2#permissions')
+    expect(wrongGroupTarget('mentors', TWO_GROUPS, '#other')).toBe('/admin/organisation/team/admins/2')
   })
 
   it('a pure mentor at the reviewer page goes to the mentor page by mentor id', () => {
@@ -69,6 +69,20 @@ describe('wrongGroupTarget', () => {
 
   it('in no group: the Staff tab (U5)', () => {
     expect(wrongGroupTarget('admins', { admin_id: 7, tables: [] }, '#permissions'))
+      .toBe('/admin/organisation/team?tab=staff')
+  })
+
+  // Lead's review of M2a (2026-11-12, the 2026-09-09 ruling: a closed account's record still OPENS). The
+  // server serves `tables: []` for any inactive login, so the rule must not read that as "in no group".
+  it('never moves a revoked or suspended person: their page opens as it did before M2a', () => {
+    expect(wrongGroupTarget('reviewers', { admin_id: 5, tables: [], is_active: false }, '')).toBeNull()
+    expect(wrongGroupTarget('mentors', { admin_id: 9, mentor_id: null, tables: [], is_active: false }, '')).toBeNull()
+    expect(wrongGroupTarget('admins', { admin_id: 5, tables: ['reviewers'], is_active: false }, '#permissions'))
+      .toBeNull()
+  })
+
+  it('an ACTIVE person in no group still goes to Staff (U5)', () => {
+    expect(wrongGroupTarget('reviewers', { admin_id: 5, tables: [], is_active: true }, ''))
       .toBe('/admin/organisation/team?tab=staff')
   })
 })
