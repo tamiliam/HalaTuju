@@ -18,6 +18,7 @@ WHAT IS HERE
 - `DoorKeysTable` (T5c P4a) — every door asks `staff_tables.opens_door(<who>, '<door>')`; its keys live
   only in `staff_tables.DOOR_KEYS`, the table the web's menu drift test reads.
 """
+from importlib import import_module
 import json
 import os
 import re
@@ -32,7 +33,8 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
-from apps.scholarship.tests.factories import _M0097, make_admin, make_org
+from apps.scholarship.tests.factories import make_admin, make_org
+_M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
 
 #: The live shapes (investigation F; T1 matrix `SHAPES`), plus qc / super / partner for completeness.
 SHAPES = {

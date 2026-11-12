@@ -6,13 +6,16 @@ the payment chain) never see a v2 key, so the old image is safe on rows 0097 has
 seats nobody by itself, so an `admin` row the data step has not reached LOSES Admins (the step is
 required).
 """
+from importlib import import_module
+
 from django.test import TestCase
 
 from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
-from apps.scholarship.tests.factories import _M0097, make_admin, make_org
+from apps.scholarship.tests.factories import make_admin, make_org
+_M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
 
 
 class AdminPreset(TestCase):

@@ -33,6 +33,7 @@ from apps.scholarship.models import (
     SponsorProfile,
 )
 from apps.scholarship.tests.contract_helpers import brightpath_org
+from apps.scholarship.tests.factories import make_admin
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 ADULT_NRIC = '000101-10-1233'
@@ -434,10 +435,9 @@ class TestSourcesAdminAPI(TestCase):
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='gl-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Rev', email='r@x.com')
-        # The Admin role manages sources too (owner 2026-07-19); qc does NOT.
-        cls.adm = PartnerAdmin.objects.create(
-            supabase_user_id='gl-adm', role='admin', is_active=True,
-            owning_organisation=cls.org, name='Adm', email='a@x.com')
+        # The Admin role manages sources too (owner 2026-07-19); qc does NOT. M2b: the factory, so the
+        # row holds the page keys migration 0097 stored (an admin's live shape).
+        cls.adm = make_admin('admin', owning_org=cls.org, uid='gl-adm', name='Adm', email='a@x.com')
         cls.qc = PartnerAdmin.objects.create(
             supabase_user_id='gl-qc', role='qc', is_active=True,
             owning_organisation=cls.org, name='Qc', email='qc@x.com')

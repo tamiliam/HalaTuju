@@ -15,11 +15,12 @@ import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, PartnerOrganisation
+from apps.courses.models import PartnerOrganisation
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     Donation, Programme, Sponsor, SponsorProgrammeMembership,
 )
+from apps.scholarship.tests.factories import make_admin
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 _CREDITS = '/api/v1/admin/scholarship/credits/'
@@ -51,9 +52,9 @@ class _Base(TestCase):
                 sponsor=cls.sponsor, programme=prog, status='approved')
 
         def admin(uid, role, name, email, org, super_flag=False, active=True):
-            return PartnerAdmin.objects.create(
-                supabase_user_id=uid, role='super' if super_flag else role, is_active=active,
-                owning_organisation=org, name=name, email=email)
+            # M2b: the factory, so an `admin` holds the page keys migration 0097 stored (its live shape).
+            return make_admin(role, owning_org=org, uid=uid, name=name, email=email, super_admin=super_flag,
+                              is_active=active)
 
         cls.maker = admin('ce-mk', 'admin', 'Maker One', 'maker@x.com', cls.org_a)
         cls.approver = admin('ce-ap', 'org_admin', 'Approver One', 'appr@x.com', cls.org_a)

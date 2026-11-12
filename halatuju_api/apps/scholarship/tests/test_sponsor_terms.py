@@ -18,8 +18,9 @@ from rest_framework.test import APIClient
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses.models import PartnerAdmin, PartnerOrganisation
+from apps.courses.models import PartnerOrganisation
 from apps.scholarship import sponsor_terms
+from apps.scholarship.tests.factories import make_admin
 from apps.scholarship.models import (
     Sponsor, SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion,
 )
@@ -36,10 +37,8 @@ def _token(uid):
 
 
 def _admin(org, role, uid, email, *, is_super=False):
-    return PartnerAdmin.objects.create(
-        owning_organisation=org, supabase_user_id=uid, email=email, name=email.split('@')[0],
-        role='super' if is_super else role, is_active=True,
-    )
+    # M2b: the factory, so an `admin` holds the page keys migration 0097 stored (its live shape).
+    return make_admin(role, owning_org=org, uid=uid, email=email, name=email.split('@')[0], super_admin=is_super)
 
 
 def _draft(version='v1', *, sections=1, quizzed=True):

@@ -5,6 +5,7 @@ this file pins the RULE: which table each shape sits at, that the gate is a UNIO
 (nobody loses a page), that the key half admits only the Admins table, and that `see_all` held as `qc`'s
 dependency is no admin hat.
 """
+from importlib import import_module
 from itertools import chain, combinations
 
 from django.test import TestCase
@@ -14,7 +15,8 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import Mentor
-from apps.scholarship.tests.factories import _M0097, make_admin, make_org
+from apps.scholarship.tests.factories import make_admin, make_org
+_M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
 
 
 def _subsets(keys):
