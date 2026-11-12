@@ -5,9 +5,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-11-05 review - counter reset; the fifteen small-lane entries are named in that review, and line by line in git at the commit before it)_
+_(cleared at the 2026-11-12 review - counter reset; the 37 small-lane entries are clustered in that review, and line by line in git at the commit before it)_
 
-- 2026-11-10 b8bdf9cc feat(web): team-membership small change - InfoTip above the page; O9 no phone on Team Admins; O10 org admin's name opens their page; O11 no email in the person header (web: InfoTipBubble, StaffAdmin, reviewers/page, PersonHeader + tests; decisions.md, CHANGELOG)
 
 ## Sprints since the last review
 
@@ -15,7 +14,142 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 
 _(cleared at the 2026-11-05 review; the sprint lines it read are named in that review, and line by line in git at the commit before it)_
 
+_NOT cleared at the 2026-11-12 review, on purpose: `code_health` reads this section to leave a sprint's own review-round fixes out of `fix%`, and clearing it would raise the reading for no change in the code (TD-611). The next review decides again._
+
+_Logged late on 2026-11-12 by catch-up sprint C1: the audit run (Waves 1-4, deployed as groups G3-G14) and the other sessions' work were never recorded. SHAs are as on main; the sprint lines in commit subjects ("sprint X") are already read by the check._
+- 2026-11-12 A1.1 header logo (A1.1) — 42e3c45a5
+- 2026-11-12 A1.5 QC and lifecycle locks, review rounds 1-3 — 71fba3889 f2b58b43e cb1dd706a
+- 2026-11-12 A1.6 TD-347 parent call re-arms the sign deadline — 9ce461dfe d1fe1e355
+- 2026-11-12 A1.7 uploads cannot overwrite — 0a8fc1357 1f536e72b
+- 2026-11-12 A1.8 review follow-ups — 15a75a30b
+- 2026-11-12 A1.9a/b PII and request hygiene, review follow-ups, TD-458 — e60d3bfcb 142e35c5a 28bca446b
+- 2026-11-12 A1.10a/b permission doors, TD-064, TD-496 — 671c6b383 a0133952b 8ee5eedc3 b0964721e
+- 2026-11-12 A1.11a follow-up — a07f63dd3
+- 2026-11-12 A1.13 and A1.13b award withdrawal (maker and checker) — 4980b2b7a df17fa90e 62e092dad ea36e267e e1e3ea258 8138854ec 6e11556e4 779524e0a
+- 2026-11-12 Multi-gift reviewers (TD-531), two parts — 32fc32271 778f88714
+- 2026-11-12 G3 and G4 gate fixes, bundle budgets (TD-529) — 22776f59f 6196d2379 71422a270 1857013c6
+- 2026-11-12 A2.2 reprocess-ic-vision time budget — a8efd64c7 882b65d90
+- 2026-11-12 A2.3 and A2.3b queued read, draft off the assign request — e448d3e3c 401f91e17 e599c5631 23f333ba2
+- 2026-11-12 A2.4 slow reads — b4617a0a6 78fcb90cf
+- 2026-11-12 A2.6 no student told by silence, and G7 review — 504c160e2 fa0fcfc2c a4ca30416 9845854a8
+- 2026-11-12 Staff nudges wording — 11e49b458
+- 2026-11-12 A3.2/A3.3 scholarship views package, officer cockpit — 5bb0b617e 38c999743 0b1240356 3c7880ba3 8cfadb081
+- 2026-11-12 A3.4 verdict engine splits — cb7804c24 d50d6b89d 00e68502e
+- 2026-11-12 A3.5 courses views package — fce766cbb
+- 2026-11-12 A3.6 engine splits — b84ee559f 4707978ec 1134bcd96
+- 2026-11-12 A3.7 serializer packages — a5ad2ceda b822ffd6d
+- 2026-11-12 A3.9 profile page split — 489bf2881 6bab5c9c7
+- 2026-11-12 A3.10-A3.13, A3.15, A3.17 (G11, G12) — 4d09143e0 bdd520ce6 b778d21d6 d9d9e1d15 00a83e400 dec8af1c5 24cfa1c1f 07da4e8fd b6363873b
+- 2026-11-12 G5 and G6 post-merge line-limit fixes — 0fec1c69b 7650adee6 7a38f8d47 b0cff100d
+- 2026-11-12 A4.1 apply and student screens — 8779e8f98 8caacb9bc
+- 2026-11-12 A4.2 Language, TD-469/472, A48 menu row — dc4655460
+- 2026-11-12 A4.3 phone layout leftovers — 22c22f88c bcb3a518c
+- 2026-11-12 G13 core message slice — 8bd8933e2 34fd151a3
+- 2026-11-12 A4.4 cockpit and overview leftovers — f1abfcb91
+- 2026-11-12 A4.5 supplier bills cron, day-first dates — 72fd786ed 0c07254e1 f940bf30b
+- 2026-11-12 A4.6 sponsor pool by opaque ref — 1abce4f1d 07763060b
+- 2026-11-12 G14 merged Wave 4 gate failures — c00fce911
+- 2026-11-12 M1b Staff list web and review follow-ups — ddba571d3
+- 2026-11-12 Gemini Phase 1, 3.8 Flash with Flash fallback — 8993bec27 e5183cced
+- 2026-11-12 S1 Scholars permission, API half — 5fcb6e8cb
+- 2026-11-12 P1 activity log API and scroll box, i18n T2/T3/P1 — af435523f 1e46cd662 290b9678e
+- 2026-11-12 Lane B org requests #54, #56, #57, #58, #59, #61, #62 — da14eac5a 44ee7d7f6 e2674743c 5afad21b0
+- 2026-11-12 Lane B org request #66, IIUM English offer letters — 6f203e7f1 a663a84e2 dc52986f3 d75b3e192 43ecb9210
+- 2026-11-12 Invitations I1 and I2 (one form per tab; one person per source) — 3bd60f90d ff3c6affa
+
 ## Reviews
+
+### 2026-11-12 — thirty-seven small changes (catch-up), 5 → 12 Nov: one checking engine was patched nineteen times in a week, and the lane carried sprint-sized work for the fourth review running
+
+**What was read.** The 37 `## Pending` entries (45 commits) and the 39 sprint lines, with the commits behind them
+(`git show --stat` on every SHA; diffs where a file list was not enough). 21 of the 37 entries are Lane B org requests
+(#54, #56, #57, #58, #59, #61, #62, #66) and their review rounds; they were moved back here from the sprint lines by
+catch-up sprint C1 so that `code_health` counts them as field fixes. **They stay here and stay counted. Nothing in
+this review moves a field fix onto a sprint line.**
+
+**Reflect.** The 37 touched, by weight: the results-slip checking engine (`academic_engine.py`, `academic_compare.py`,
+`verdict_engine.py`, `verdict_academic.py`, `higher_results.py`, `exam_questions.py`; 11 commits on the two compare files
+alone since 4 Nov) and its web copy (`checklists.tsx`, `ApplicantCards.tsx`, `documents.ts`); the staff and Team
+surfaces (InfoTip, StaffAdmin, PersonHeader, reviewers list, invitations); the interview and decision writes; the
+account menu; two document readers; the apply page. Real defects: all of the slip-checking fixes (a typed subject
+passing a slip it was not on; a parent's IC compared with the student; a tick with nothing checked), the JWT 500 on an
+unknown key id, the lost-answer save, the super listed as a reviewer, the degree student paid on the wrong schedule.
+Not defects: the three InfoTip commits (one feature, its review follow-up, one refactor), the two perf commits, the
+`useParams` move (a Next 15 leftover), the IIUM reader (a new case, not a bug in an old one).
+
+**Cohere. Seven clusters.**
+
+1. **Results-slip checking, 19 entries, 22 commits, 5 → 11 Nov (#54, #56, #58, #59, #62, the degree-student group,
+   the STPM tick). A pattern, and the sprint-sized one.** Request #62 alone took nine commits and three review rounds;
+   the review rounds each found the next route x slip-state the build had not tried ("nothing compared means nothing
+   shown", "nothing checked means nothing shown", "the STPM tick needs the whole slip"). The owner's ruling also moved
+   twice in two days (three exclusive routes on 6 Nov, then the STPM whole-slip rule), and the rule lives in
+   `decisions.md` prose, not in one table. The same files were rebuilt in parts by the audit's A3.4 and A3.6 splits
+   during the same weeks, so the hotspot reading is not yet a fair picture. **Promoted: roadmap item F1 "Slip-check
+   matrix" (Catch-up follow-ons).** It is also the guardrail (below).
+2. **Write errors that leave the user not knowing, 3 entries, 4 commits (#61 twice, the interview submit).** `adminMutate`
+   was taught to mark a lost connection; the review then found a second caller (Raise query / Request document) that did
+   not use it. That is a fix that depends on every caller remembering, the lane's own "convention, not a fix" line.
+   **Promoted: TD-608** (move the wording to the choke-point; a test that fails on a caller that bypasses it).
+3. **Team and staff surfaces, 5 entries, 8 commits (O9-O11 with its two InfoTip commits, #57, the super-as-reviewer
+   one-liner, the Suspend wording, `invited_by`).** Not a cluster: five unrelated one-liners on surfaces the T-sprints
+   had just shipped, each asked by the owner in use, each with a test and a changelog line. No promotion. **One
+   decision reconciled:** `cd3b82e85` reversed the 2026-10-19 permission-table rule that listed a super on the
+   Reviewers tab; the test table was updated, `decisions.md` was not. Entered now (2026-11-12, "A super is not a
+   reviewer").
+4. **The account menu language row, 3 entries, 3 commits (TD-469/472, A48 twice).** The first fix made the row fit;
+   the second made "B. Melayu" fit on one line. A layout fix whose second pass is a longer language is the phone-check
+   gap: the check runs in English. **Promoted: TD-609** (a guardrail, not a sprint).
+5. **Document readers, 2 entries (the Supabase receipt tax line; IIUM's English offer letters, #66).** Two cases the
+   readers did not know, found on real documents. #66 bumped `MODEL_VERSION` 1.25.0 to 1.26.0 inside the lane, which
+   the 2026-07 review wrote down as "never a small change"; it had an owner-approved plan note, a decisions entry
+   and one named re-run (doc 5105). Accepted as an owner-approved crossing, with the count of rows it affects stated
+   in its own entry. The receipt parser carries no model version and added no module. No cluster.
+6. **Web load and Next 15 leftovers, 3 entries (lazy apply cards, StaffActions bubble, `useParams`, the payments
+   badge call an orgless super is refused).** Budget and upgrade work the audit started; the two new modules the
+   lint WARNs on are the lazy-load wrappers. Accepted as part of A1.1 / TD-529 / TD-525. Not a pattern of its own.
+7. **Engine one-offs, 2 entries (Matric and Form 6 ranking items missing the academic bonus; the JWT middleware's
+   unknown key id).** Each is one defect with its regression test. The ranking one is a route that forgot a rule the
+   other routes had; it is one instance, so no guardrail yet.
+
+**The lane crossed the sprint line again (the third-accept rule).** `wat_lint` WARNs that 10 of the 37 entries add a new
+module or touch more than 5 source files (the degree-student group: 8 source files and `stpm_names.py`; the higher-owed
+fix: 9; the two lazy-load wrappers; and others). The 2026-10-06, 2026-10-28 and 2026-11-05 reviews each named a sprint-sized change in the lane
+and accepted it. **A fourth accept is a TD, not an accept: TD-610.** The honest reason is on the table: Lane B requests are
+allowed through the freeze, and the lane is the only door they have.
+
+**Anticipate: guardrails proposed (none built here).**
+- **G1, the slip-check matrix (inside F1).** One parametrised test, `apps/scholarship/tests/test_slip_check_matrix.py`,
+  with a row for every cell of route (SPM, STPM, Matric, Diploma, Asasi, degree-bound) x slip state (checked, not
+  final, suspect, short read, extra typed subject, subject missing from the slip, undeclared) naming the expected tick,
+  flag and wording key; plus a static test that every value in `results_route.destination()`'s range has a row. A
+  change to `academic_compare.py` that adds a branch with no matrix row fails the second test.
+- **G2, TD-608:** the "may already be saved" wording is the DEFAULT error text of `adminMutate` (`network_failure`),
+  not an opt-in of each caller; a web test that fails on any `admin-api` mutation helper whose catch path reads a raw
+  `err.message` for a status-0 error.
+- **G3, TD-609:** `npm run mobile-check` also renders the account menu in `ms` and `ta` (the longest labels).
+- **G4, TD-610 (a workspace tool, to the owner):** `wat_lint` `check_pending_files` turns the sprint-size WARN into a FAIL
+  unless the entry carries `plan:<docs/plans path that exists>`, which is what a Lane B request already has.
+- **G5, TD-611 (a workspace tool):** `code_health.sprint_shas` reads only the live `## Sprints since the last review`
+  section, and the review clears it, so every review silently raises `fix%` by the sprint-own fixes it forgets
+  (61 commits here). The fix is a `## Closed sprint lines` section the tool also reads and `wat_lint`
+  does not count. **Until then this review does NOT clear the sprint lines** (a deliberate departure from "clear that
+  section too"): clearing them would only make the reading worse for no real change in the code. They stay, and the
+  next review decides again.
+
+**Code-health decisions (read-only run on c1 at `8b98828`; the Trend row is not written, because this run was
+no-write).** `fix%` 51 to 52, WARN: open, awaiting the owner's yes; TD-385 is fixed in the tool (the 61 sprint-own fixes are left out) and the
+reading is dominated by the 21 Lane B field-fix entries above, which are counted. `big` 13 to 1 and `long` 15 to 1: the
+audit's splits, kept. `dup` 4: open; 1 after catch-up sprint C2 (branch c2), the last one (_gemini_generate) is a named later sprint after Gemini Phase 2. `supp` 92 to 20 and
+`td_open` 208 to 162: A3.15 and the C4 closures. **`xapp` 85 to 107, FAIL: not accepted.** Target is 50 and
+courses to scholarship 8 (now 21 edges); the Wave 3 splits multiplied the edges that one name crosses. **Promoted:
+roadmap item F2.** **`std` FAIL (looser): open, awaiting the owner's yes for this reading. The owner approved the budget raise itself on 2026-11-06 (option A; 9af9d820b, TD-506).** The four first-load lines are the A1.1 Next 15 /
+React 19 raise (`9af9d820b`), already ratcheted down twice since; the way down is further splits, not another raise. No
+budget was touched in this review.
+
+**Promoted, summarised:** F1 slip-check matrix (sprint), F2 cross-app edges (sprint); TD-608, TD-609, TD-610, TD-611 in the register; one `decisions.md` entry. Open Items Index: not
+regenerated in this pass (C4 closed the done entries the same day and the audit's own interim count stands at 162);
+four entries are added below it and the next regeneration reads them.
 
 ### 2026-11-05 — fifteen small changes and twenty-five unlogged commits, 28 Oct → 5 Nov: the Overview cards were patched four times after their sprint, and the lane carried a sprint-sized request
 

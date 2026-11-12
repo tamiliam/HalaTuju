@@ -19535,3 +19535,10 @@ Foundation Studies would be caught too), and IIUM's office printed only ABOVE th
 signatory and no office line after it (rule 5 has no anchor). A "… Group" / "Kumpulan" signatory IS refused.
 **Backfill:** doc 5105, one cockpit Re-run after deploy (paid; owner's yes).
 **Revisit if:** a second English-letter public university appears.
+
+## 2026-11-12 - A super is not a reviewer (owner, 2026-11-07; recorded at the Consolidation Review)
+
+**Decision:** A person with `role = super` is not listed on Team -> Reviewers, has no reviewer page there, and cannot be paused or gift-scoped as a reviewer. The reviewers query (`views_admin/reviewers.py`, `_ReviewersBase._reviewers`) excludes supers for every viewer, matching `staff_tables.in_reviewers`. Case assignment is unchanged.
+**Supersedes in part:** the 2026-10-19 permission-table rule (`test_permission_presets.py`, `reviewers_tab_lists`) that listed a super on the Reviewers tab alongside team members holding `review` or `qc`; the table's `today` and `rule` were changed in `cd3b82e85`, and this entry is the missing record.
+**Why:** the owner, 2026-11-07: "I am listed as a reviewer. I am not really."
+**Revisit if:** a super is ever asked to take cases like a reviewer; that is a gift assignment, not a list entry.
