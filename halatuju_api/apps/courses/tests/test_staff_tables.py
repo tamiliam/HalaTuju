@@ -14,7 +14,7 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import Mentor
-from apps.scholarship.tests.factories import make_admin, make_org
+from apps.scholarship.tests.factories import _M0097, make_admin, make_org
 
 
 def _subsets(keys):
@@ -100,10 +100,13 @@ class PageGate(TestCase):
         cls.org = make_org()
 
     def test_the_gate_answers_the_t1_role_rule_for_every_custom_set(self):
-        # Every role × every custom set (unsaved rows: a pure read): T1's rule, restated, still answers.
+        # Every role × every custom set (unsaved rows: a pure read): T1's rule, restated, still answers
+        # for the stored lists migration 0097 left (M2b: the label opens nothing by itself any more).
         for role in ('admin', 'finance', 'qc', 'reviewer', 'org_admin'):
             for keys in _subsets(('review', 'see_all', 'qc', 'spending', 'payments_approve')):
                 a = PartnerAdmin(role=role, permissions=list(keys), is_active=True)
+                plan = _M0097.plan_row(None, role, True, list(keys), row_id=None)  # M2b: the rows 0097 left
+                a.permissions = plan[1] if plan else a.permissions
                 read = role in ('org_admin', 'admin', 'finance') or st.in_admins(a)
                 work = role in ('org_admin', 'admin')
                 self.assertEqual((st.may_read_org(a), st.may_do_admin_work(a)), (read, work), (role, keys))

@@ -14,6 +14,7 @@ import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
+from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -41,7 +42,9 @@ class _Base(TestCase):
             owning_organisation=cls.bp, name='Suresh', email='oa@x.com')
         cls.admin = PartnerAdmin.objects.create(
             supabase_user_id='admin-uid', role='admin', is_active=True,
-            owning_organisation=cls.bp, name='Admin', email='admin@x.com')
+            owning_organisation=cls.bp, name='Admin', email='admin@x.com',
+            # M2b (D10): the shape migration 0097 leaves an admin in (preset materialised + ADMIN_PRESET_V2).
+            permissions=['see_all', 'scholars', 'spending', 'payments_prepare', *v2.ADMIN_PRESET_V2])
         cls.qc = PartnerAdmin.objects.create(
             supabase_user_id='qc-uid', role='qc', is_active=True,
             owning_organisation=cls.bp, name='QC', email='qc@x.com')
@@ -312,8 +315,8 @@ class TestFinanceRoleInvites(_Base):
         r = self._invite('oa-uid', {'email': 'sam@x.com', 'name': 'Sam', 'role': 'admin'})
         self.assertEqual(r.status_code, 201)
         a = PartnerAdmin.objects.get(email='sam@x.com')
-        # Sprint S1: an Admin starts at Applications and Scholars.
-        self.assertEqual((a.role, a.permissions), ('admin', ['see_all', 'scholars']))
+        # Sprint S1: an Admin starts at Applications and Scholars; M2b: plus the admin pages it opened by label.
+        self.assertEqual((a.role, a.permissions), ('admin', ['see_all', 'scholars', *v2.ADMIN_PRESET_V2]))
         self.assertEqual(a.owning_organisation_id, self.bp.id)   # caller's org, forced
 
     def test_super_invites_finance(self):

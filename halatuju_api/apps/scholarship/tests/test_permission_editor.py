@@ -16,6 +16,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.courses import staff_permissions as sp
+from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import payments
 from apps.scholarship.models import PaymentRun, StaffPermissionChange
@@ -212,7 +213,8 @@ class TestSavingAndHistory(TestCase):
                       f' role=reviewer before=review after=review,spending', line)
 
     def test_the_preset_is_stored_as_null_and_an_unchanged_save_writes_nothing(self):
-        target = make_admin('admin', owning_org=self.org)
+        # M2b: NULL is only for the old preset with NO v2 key, so this is an admin row before 0097.
+        target = make_admin('admin', owning_org=self.org, pre_m2b=True)
         r = _patch(self.org_admin, target, ['payments_prepare', 'see_all', 'scholars', 'spending'])
         self.assertEqual((r.json()['changed'], r.json()['custom']), (False, False))
         self.assertFalse(StaffPermissionChange.objects.exists())
@@ -608,7 +610,8 @@ class TestPersonPageReadsTheHistory(TestCase):
                          ('edit', 'admin', ['payments_approve'], []))
         self.assertEqual((second['added'], second['removed']), ([], ['spending']))
         self.assertEqual((first['by'], first['by_super']), ('Priya Lead', False))
-        self.assertTrue(first['at'] and first['before'] == ['see_all', 'scholars', 'payments_prepare'])
+        self.assertTrue(first['at'] and first['before'] == ['see_all', 'scholars', 'payments_prepare',
+                                                            *v2.ADMIN_PRESET_V2])   # M2b: v2 part kept
 
     def test_the_history_is_capped_and_an_invitee_is_not_signed_in(self):
         fresh = make_admin('finance', owning_org=self.org)

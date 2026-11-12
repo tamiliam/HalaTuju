@@ -22,7 +22,10 @@ screen says it BEFORE the click, from the same holders the payment chain reads.
 
 ⚠ STORED AS THE PRESET WHEN IT IS THE PRESET. A set equal to the role's preset is saved as NULL, so
 "custom" stays derivable (`permissions IS NOT NULL`) and a Change role later lands on the new preset.
+M2b: v2 page keys are stored in the same list (`asked_set`); NULL only when no v2 key is held.
 """
+import copy
+
 from django.db import transaction
 
 #: The dry run's consequence codes, worded by the screen (`admin.permEditor.effect.*`).
@@ -65,7 +68,8 @@ def editable_keys():
 
 
 def asked_set(asked):
-    """The asked list as a tuple in catalogue order, or `PermissionChangeRefused`.
+    """The asked list as a tuple — today's keys in catalogue order, then the v2 page keys in `V2_KEYS`
+    order (M2b D7) — or `PermissionChangeRefused`.
 
     ⚠ It REFUSES what `staff_permissions.clean` would quietly drop: the editor must never save
     something other than what the person saw.
@@ -73,21 +77,64 @@ def asked_set(asked):
     ⚠ TEAM TABLES T5b: `qc` IMPLIES `see_all` (`staff_permissions.IMPLIES`) — "QC is self-sufficient".
     `['qc']` is no longer refused (`qc_needs_see_all` is retired); it is answered as `see_all + qc`, the
     set `clean` reads it as, so `after`, the history row and the stored list all say what the person can
-    really do. The editor already ticks `see_all` with `qc` (`PermissionEditor`), so the screen agrees."""
+    really do. The editor already ticks `see_all` with `qc` (`PermissionEditor`), so the screen agrees.
+
+    M2b: a v2 page key is stored only when `GRANTABLE_V2`; its page's view comes with it
+    (`with_implied_views`). Refused: `NEVER_GRANTABLE` (`never_grantable`), any other lead-only key
+    (`lead_tier`, until M3) and a key an old key already means (`alias_permission`: tick the old key)."""
     from apps.courses import staff_permissions as sp
+    v2 = _v2()
     if not isinstance(asked, (list, tuple)) or not all(isinstance(k, str) for k in asked):
         raise PermissionChangeRefused(
             'bad_request', 400, 'permissions must be a list of permission names.')
-    unknown = sorted({k for k in asked if k not in sp.CATALOGUE})
+    unknown = sorted({k for k in asked if k not in sp.CATALOGUE and k not in v2.CATALOGUE_V2})
     if unknown:
         raise PermissionChangeRefused(
             'unknown_permission', 400, f'Unknown permission: {", ".join(unknown)}.', unknown=unknown)
-    if any(k in sp.LEAD_TIER_ONLY for k in asked):
+    page = [k for k in asked if k in v2.CATALOGUE_V2]
+    never = sorted({k for k in page if v2.refusal_reason(k) == 'never_grantable'})
+    if never:
+        raise PermissionChangeRefused(
+            'never_grantable', 400, f'{", ".join(never)} stays with the organisation admin. It can '
+            'never be given to a team member.', keys=never)
+    if any(k in sp.LEAD_TIER_ONLY for k in asked) or any(v2.refusal_reason(k) == 'lead_only' for k in page):
         raise PermissionChangeRefused(
             'lead_tier', 400, 'Managing the team stays with the organisation admin. It cannot be '
             'given to a team member.')
-    held = sp.with_implied(asked)
-    return tuple(k for k in sp.CATALOGUE if k in held)
+    alias = sorted({k for k in page if v2.refusal_reason(k) == 'alias'})
+    if alias:
+        raise PermissionChangeRefused(
+            'alias_permission', 400, f'{", ".join(alias)} is given by an existing permission. Tick '
+            'that one instead.', keys=alias)
+    held = sp.with_implied([k for k in asked if k in sp.CATALOGUE])
+    return (*(k for k in sp.CATALOGUE if k in held), *v2.with_implied_views(page))
+
+
+def _v2():
+    """`staff_permissions_v2`, through this module (the V2Importers allowlist names it, M2b)."""
+    from apps.courses import staff_permissions_v2
+    return staff_permissions_v2
+
+
+def held_set(target):
+    """What `target` holds as the editor sees it: `resolve` (today's keys), then `stored_v2` (M2b)."""
+    from apps.courses import staff_permissions as sp
+    return (*sp.resolve(target), *_v2().stored_v2(target))
+
+
+def v2_editor(target):
+    """M2b D9: the v2 page keys by group for the Permissions tab — each ``{key, page, level, grantable,
+    reason, held}`` (``held`` = `effective_v2`, what opens today; ``reason`` = why it cannot be ticked)
+    — ``v2_held``, the STORED grantable keys the editor's ticks start from, and ``v2_preset``, the role's
+    v2 part (`V2_PRESETS`) that "Custom" and Reset weigh it against — served, so the web keeps no copy."""
+    v2 = _v2()
+    effective = set(v2.effective_v2(target))
+    groups = [{'group': g, 'keys': [
+        {'key': k, 'page': row[1], 'level': row[2], 'grantable': v2.refusal_reason(k) is None,
+         'reason': v2.refusal_reason(k), 'held': k in effective}
+        for k, row in v2.CATALOGUE_V2.items() if row[0] == g]} for g in v2.GROUPS]
+    return {'v2_keys': groups, 'v2_held': list(v2.stored_v2(target)),
+            'v2_preset': list(v2.V2_PRESETS.get(target.role, ()))}
 
 
 #: The roles People lists on the REVIEWERS tab only (`adminStaff.byCategory`), and the keys that put
@@ -195,19 +242,25 @@ def plan_change(target, asked, *, by=None):
     """What saving ``asked`` for ``target`` would do, or `PermissionChangeRefused`. Read-only.
 
     Returns ``{'before', 'after', 'added', 'removed', 'stored', 'custom', 'consequences'}`` — the
-    keys as lists in catalogue order; ``stored`` is what the column will hold (None = the preset)."""
+    keys as lists, today's in catalogue order then the v2 page keys (`held_set`); ``stored`` is what
+    the column will hold (None = the preset: M2b D7, only when the old part IS the role's preset and
+    no v2 key is asked)."""
     from apps.courses import staff_permissions as sp
     _refuse_target(target, by)
     after = asked_set(asked)
-    before = sp.resolve(target)
+    before = held_set(target)
     _refuse_unlisted(target, after)
     _refuse_stranding(target, before, after)
-    stored = None if after == sp.preset_for(target.role) else list(after)
+    v2 = _v2()
+    old = tuple(k for k in after if k in sp.CATALOGUE)
+    stored = None if old == sp.preset_for(target.role) and old == after else list(after)
+    shadow = copy.copy(target)
+    shadow.permissions = stored
     return {
         'before': list(before), 'after': list(after),
         'added': [k for k in after if k not in before],
         'removed': [k for k in before if k not in after],
-        'stored': stored, 'custom': stored is not None,
+        'stored': stored, 'custom': sp.is_custom(shadow), 'v2_held': list(v2.stored_v2(shadow)),
         'consequences': consequences(target, before, after),
     }
 
@@ -232,9 +285,12 @@ def record(target, before, after, *, by, kind):
     return row
 
 
-def change_permissions(target_id, asked, *, by, dry_run=False):
+def change_permissions(target_id, asked, *, by, dry_run=False, with_v2=True):
     """Plan, and unless ``dry_run`` apply, the change. Returns ``(target, plan)``; ``plan['changed']``
     says whether anything was written.
+
+    M2b: ``with_v2=False`` is a caller that cannot see v2 keys (a browser tab opened before M2b): the
+    target's stored v2 keys are KEPT, never stripped by a list that could not show them.
 
     The row is LOCKED for the plan and the write (see the module docstring), and the UPDATE carries
     the role and the active flag it planned against, belt and braces."""
@@ -243,6 +299,8 @@ def change_permissions(target_id, asked, *, by, dry_run=False):
         target = PartnerAdmin.objects.select_for_update().filter(pk=target_id, archived_at=None).first()
         if target is None:
             raise PermissionChangeRefused('not_found', 404, 'Admin not found')
+        if not with_v2 and isinstance(asked, (list, tuple)):
+            asked = [*asked, *_v2().stored_v2(target)]
         plan = plan_change(target, asked, by=by)
         # #39 S4 review fix 10: "changed" means what the person can DO changed. A list that resolves
         # to the same keys (a reordered or hand-written one) writes nothing and records nothing.

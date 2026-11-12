@@ -178,19 +178,34 @@ def holds(admin, key):
 
 def is_custom(admin):
     """True when a team member's set was saved by hand (`permissions IS NOT NULL`). A list equal to
-    the preset is stored as NULL by the editor (Sprint 4), so this is derivable, never stored."""
-    return (admin is not None and not admin.is_super and admin.role in PRESETS
-            and getattr(admin, 'permissions', None) is not None)
+    the preset is stored as NULL by the editor (Sprint 4), so this is derivable, never stored.
+
+    M2b D7: an `admin` whose OLD keys are the preset and whose stored v2 keys are exactly
+    `ADMIN_PRESET_V2` holds the Admin preset (a list only because v2 keys cannot be NULL) — not custom."""
+    if not (admin is not None and not admin.is_super and admin.role in PRESETS
+            and getattr(admin, 'permissions', None) is not None):
+        return False
+    old, v2_held, v2_preset = _two_parts(admin)
+    return not (admin.role == 'admin' and old == preset_for('admin') and v2_held == v2_preset)
+
+
+def _two_parts(admin):
+    """``(old keys, stored v2 keys, the role's v2 preset)`` — M2b compares each part to its own preset."""
+    from . import staff_permissions_v2 as v2      # v2 imports this leaf: read lazily, no cycle
+    return resolve(admin), v2.stored_v2(admin), v2.V2_PRESETS.get(admin.role, ())
 
 
 def preset_diff(admin):
     """``(added, removed)``: the keys a team member holds BEYOND their preset, and the preset keys
     they do NOT hold — what People's permission chips show (Sprint 4). Both empty on the preset, and
-    for anybody whose set is not editable (the lead tier, a super, a partner)."""
+    for anybody whose set is not editable (the lead tier, a super, a partner). M2b: the v2 part is
+    compared with the role's v2 preset (`staff_permissions_v2.V2_PRESETS`), after the old."""
     if not is_custom(admin):
         return [], []
-    held, preset = resolve(admin), preset_for(admin.role)
-    return [k for k in held if k not in preset], [k for k in preset if k not in held]
+    held, v2_held, v2_preset = _two_parts(admin)
+    preset = preset_for(admin.role)
+    return ([k for k in held if k not in preset] + [k for k in v2_held if k not in v2_preset],
+            [k for k in preset if k not in held] + [k for k in v2_preset if k not in v2_held])
 
 
 def org_staff(organisation):

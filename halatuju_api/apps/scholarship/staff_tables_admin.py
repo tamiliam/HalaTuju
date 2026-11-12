@@ -133,14 +133,18 @@ def table_presets(target):
     """`{admins: [...], reviewers: [...]}` — each table's PRESET for ``target``, what the person page's
     Permissions tab compares a table's keys with ("Custom", owner O12; M1b draws one table's section).
     The role label's preset as that table shows it; where the label gives that table nothing (a reviewer
-    seated at Admins), what an Add to that table gives (`ADD_KEYS`). Lead (M1a addendum)."""
+    seated at Admins), what an Add to that table gives (`ADD_KEYS`). Lead (M1a addendum). M2b D7/D9: the
+    Admins preset ends with its v2 page keys — the label's (`V2_PRESETS`), else what an Add stores."""
     from apps.courses import staff_permissions as sp
+    from . import staff_permissions_admin as spa
+    v2 = spa._v2()
     shown = {ADMINS: ADMIN_TABLE_KEYS, REVIEWERS: REVIEWER_TABLE_KEYS}
     preset = sp.preset_for(target.role)
     out = {}
     for table, keys in shown.items():
         mine = [k for k in preset if k in keys]
         out[table] = mine or [k for k in ADD_KEYS[table] if k in keys]
+    out[ADMINS] += list(v2.V2_PRESETS.get(target.role, v2.ADMIN_PRESET_V2))
     return out
 
 
@@ -267,6 +271,32 @@ def _plan_remove(target, table, open_n, to_no_group=False):
     return {'role': role, 'before': before, 'after': after, 'stored': _stored_set(role, after)}
 
 
+def _v2_part(target, table, action, out):
+    """M2b D8: the stored v2 page keys a table change leaves, appended to the plan's `before` / `after`
+    (and so to its `stored` list and history). An Add to Admins, or a change that makes them `admin`,
+    adds `ADMIN_PRESET_V2`; leaving Admins (a Remove from it, or becoming a mentor login / "No group")
+    strips every v2 key; anything else keeps them. The lead tier stores none. NULL only when the old
+    part is the new role's preset and no v2 key is left (`asked_set`'s rule). True when the admin work
+    pages become stored (the confirm's `opens_admin_pages`)."""
+    from apps.courses import staff_permissions as sp
+    from . import staff_permissions_admin as spa
+    v2 = spa._v2()
+    if out.get('lead'):
+        return False
+    before_v2 = [] if (target.is_mentor or target.is_member) else list(v2.stored_v2(target))
+    if out.get('to_mentor') or out.get('to_member') or (action == 'remove' and table == ADMINS):
+        after_v2 = []
+    elif (action == 'add' and table == ADMINS) or (out['role'] == 'admin' and out['role'] != target.role):
+        after_v2 = list(v2.v2_order({*before_v2, *v2.ADMIN_PRESET_V2}))
+    else:
+        after_v2 = before_v2
+    old_after = tuple(out['after'])
+    out['before'], out['after'] = [*out['before'], *before_v2], [*old_after, *after_v2]
+    out['stored'] = None if old_after == sp.preset_for(out['role']) and not after_v2 else list(out['after'])
+    work = set(v2.ADMIN_WORK_V2)
+    return work <= set(after_v2) and not work <= set(before_v2)
+
+
 def _refuse_to_mentor(target, open_n):
     """T3: only Mentors would be left — accepted as a mentor login where that shape is safe. True, or
     `Refused`."""
@@ -312,6 +342,7 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
     _refuse_basic(target)
     out = (_plan_add(target, table) if action == 'add'
            else _plan_remove(target, table, open_n, to_no_group))
+    opens_admin_pages = _v2_part(target, table, action, out)
     out['role_from'] = target.role
     out['role_changed'] = out['role'] != target.role
     lead = out.pop('lead', False)
@@ -331,12 +362,10 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
     out['finance_check_off'] = bool(CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
                                     and target.owning_organisation_id is not None
                                     and not staff_lifecycle.other_active_checker(target))
-    # Lead ruling Q2b: said in plain words on the confirm.
-    # Review 2026-11-03: a change that makes them role `admin` OPENS the admin work pages (the `admin`
-    # label's own grant in the v2 vocabulary, LABEL_GRANTS) — a Remove from Reviewers (Q2b) or a mentor
-    # login added to Admins.
-    # It can be a GAIN, so the confirm says so in plain words.
-    out['opens_admin_pages'] = bool(out['role_changed'] and out['role'] == 'admin')
+    # Lead ruling Q2b: said in plain words on the confirm. M2b: the change STORES the admin work pages
+    # (`_v2_part`) — an Add to Admins, a Remove from Reviewers that makes them `admin` (Q2b), a mentor
+    # login added to Admins. It can be a GAIN, so the confirm says so in plain words.
+    out['opens_admin_pages'] = opens_admin_pages
     out['added'] = [k for k in out['after'] if k not in out['before']]
     out['removed'] = [k for k in out['before'] if k not in out['after']]
     return out

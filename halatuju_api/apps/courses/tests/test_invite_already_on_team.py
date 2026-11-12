@@ -17,6 +17,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.courses.tests.test_admin_auth import TEST_JWT_SECRET, _token
 from apps.scholarship.tests.factories import make_admin
@@ -125,7 +126,7 @@ class AlreadyOnTheTeam(TestCase):
         self.assertEqual(r.status_code, 201, r.content)
         row.refresh_from_db()
         self.assertEqual((row.role, row.is_active, row.permissions),
-                         ('admin', True, ['see_all', 'scholars']))
+                         ('admin', True, ['see_all', 'scholars', *v2.ADMIN_PRESET_V2]))   # M2b: + v2 preset
         self.assertEqual(row.permission_set, ('see_all', 'scholars'))
 
     def test_a_switched_off_colleague_who_has_signed_in_is_sent_to_restore(self):

@@ -17,6 +17,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.courses import staff_permissions as sp
+from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import invitations, payments
 from apps.scholarship.models import Invitation, PaymentRun
@@ -345,7 +346,8 @@ class TestInviteAgainAfterCancel(TestCase):
         account.refresh_from_db()
         self.assertEqual((account.is_active, account.role, account.name), (True, 'admin', 'Again'))
         # Team tables T2: brought back as an Admin, they start at the minimum — never the old set.
-        self.assertEqual(account.permissions, ['see_all', 'scholars'])   # S1: and Scholars
+        # S1: and Scholars; M2b: plus the admin pages the label opened (ADMIN_PRESET_V2).
+        self.assertEqual(account.permissions, ['see_all', 'scholars', *v2.ADMIN_PRESET_V2])
         new = Invitation.objects.filter(partner_admin=account).exclude(pk=old.pk).get()
         self.assertEqual((new.role, new.credential_issued, invitations.status_of(new)),
                          ('admin', True, 'invited'))
@@ -528,7 +530,8 @@ class TestDeleteRemovesTheLogin(TestCase):
         self.assertIn(password, mail.outbox[-1].body)
         again = PartnerAdmin.objects.get(email=target.email)
         self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'admin'))
-        self.assertEqual(again.permissions, ['see_all', 'scholars'])   # T2 / S1: the minimum
+        # T2 / S1: the minimum; M2b: plus ADMIN_PRESET_V2.
+        self.assertEqual(again.permissions, ['see_all', 'scholars', *v2.ADMIN_PRESET_V2])
 
     def test_a_login_that_is_also_a_student_survives(self):
         target = make_admin('admin', owning_org=self.org)

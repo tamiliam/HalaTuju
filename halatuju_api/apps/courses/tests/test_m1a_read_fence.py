@@ -8,6 +8,7 @@ it to their team; the person page's `person` block keeps it under today's rule.
 """
 from django.utils import timezone
 
+from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin
 from apps.courses.staff_delete_rules import delete_fields
 from apps.courses.staff_fence import staff_target_readable
@@ -103,14 +104,16 @@ class TestTablePresets(_Base):
             with self.subTest(role=role):
                 presets = staff_tables_admin.table_presets(make_admin(role, owning_org=self.org))
                 self.assertEqual(set(presets), {'admins', 'reviewers'})
-                self.assertTrue(set(presets['admins']) <= set(staff_tables_admin.ADMIN_TABLE_KEYS))
+                # M2b D7/D9: the Admins preset ends with its v2 page keys.
+                self.assertTrue(set(presets['admins'])
+                                <= {*staff_tables_admin.ADMIN_TABLE_KEYS, *v2.ADMIN_PRESET_V2})
                 self.assertTrue(set(presets['reviewers']) <= set(staff_tables_admin.REVIEWER_TABLE_KEYS))
                 self.assertTrue(presets['admins'] and presets['reviewers'])
 
     def test_a_reviewer_reads_review_and_an_admin_add_where_their_label_gives_nothing(self):
         presets = staff_tables_admin.table_presets(make_admin('reviewer', owning_org=self.org))
         self.assertEqual(presets['reviewers'], ['review'])
-        self.assertEqual(set(presets['admins']), set(staff_tables_admin.ADD_KEYS['admins']))
+        self.assertEqual(set(presets['admins']), {*staff_tables_admin.ADD_KEYS['admins'], *v2.ADMIN_PRESET_V2})
 
     def test_the_person_get_carries_them(self):
         target = make_admin('reviewer', owning_org=self.org, first_seen_at=NOW())

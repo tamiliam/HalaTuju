@@ -6,13 +6,17 @@ Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T5, owner "approve all",
 pack: the lead's T5 investigation, sections A (page inventory) and F (catalogue + live shapes).
 
 ⚠ A GATE FOR THE ORGANISATION / ADMIN-WORK PAGE DOORS SINCE T5c (P1): `staff_tables.opens` reads
-`effective_v2` (decisions.md "Team tables T5c", the door -> key table). ONLY `staff_tables` imports
-this module (`test_permission_catalogue_v2.V2Importers`, an allowlist); a door module asks
-`staff_tables.opens_door(admin, '<door>')`, whose keys are `staff_tables.DOOR_KEYS` (T5c P4a). The rest (review / QC / payments / spending / the
-lead-only pages) still opens through `staff_permissions.resolve` / `has_perm` and role checks; T5d-T5f
-convert them; T5g opens the editor (and `asked_set`) to v2 keys. Until then a stored `permissions` list
-holds TODAY's keys only: the save door (`staff_permissions_admin.asked_set`) refuses a v2 key as
-`unknown_permission`, and `staff_permissions.clean` drops one on read.
+`effective_v2` (decisions.md "Team tables T5c", the door -> key table). Only the allowlisted modules
+import this one (`test_permission_catalogue_v2.V2Importers`); a door module asks
+`staff_tables.opens_door(admin, '<door>')`, whose keys are `staff_tables.DOOR_KEYS` (T5c P4a). The rest
+(review / QC / payments / spending / the lead-only pages) still opens through `staff_permissions.resolve`
+/ `has_perm` and role checks.
+
+Sprint M2b (2026-11-12, decisions.md "M2b"): the GRANTABLE v2 page keys are STORED in the same
+`permissions` list as today's keys (`stored_v2`), saved by the editor (`staff_permissions_admin.asked_set`)
+and seeded by migration 0097. The `admin` role LABEL no longer grants anything by itself (`LABEL_GRANTS`
+is gone). `staff_permissions.clean` still drops every v2 key, so the old-key readers (`resolve`,
+`holders`, the payment chain) never see one.
 
 ⚠ THIS IS A LEAF, like `staff_permissions` and `staff_tables`: it imports nothing from `apps.scholarship`.
 The role-label grants below that live in scholarship code (the wallet-credit chain) are restated as
@@ -128,29 +132,67 @@ ALIASES = {
 }
 
 #: The organisation READ pages (Organisation, Invitations, Team, Sponsors + credits ledger). A team
-#: member at the ADMINS table (`staff_tables.in_admins`: the `admin` / `finance` label, or an admin key
-#: — T1) holds them (`TABLE_GRANTS`); `staff_tables.may_read_org` opens on all of them (T5c).
+#: member at the ADMINS table (`staff_tables.in_admins`: an admin key, or since M2b a stored v2 key)
+#: holds them (`TABLE_GRANTS`); `staff_tables.may_read_org` opens on all of them (T5c).
 #: T5c P4a: the one spelling is `staff_tables.DOOR_KEYS` (the door -> key table); read from there.
 ORG_READ_V2 = staff_tables.DOOR_KEYS['org_read']
 
 #: The organisation WORK pages, never finance: Sources and the witness override, Mentors read and the
 #: roster, Announcements, Surveys, Development, sponsor terms and sponsor / partner emails, and on a
 #: scholar the mentoring tab (`mentoring.py`), scholar growth (`development.py`) and scholar surveys
-#: (`surveys.py`). The `admin` LABEL holds them (`LABEL_GRANTS`; T1's `ADMIN_WORK_ROLES` was
-#: org_admin / admin, and the lead tier holds every key); `staff_tables.may_do_admin_work` opens on all.
+#: (`surveys.py`). Since M2b a person holds them by STORED keys (`ADMIN_PRESET_V2`, migration 0097);
+#: `staff_tables.may_do_admin_work` opens on all.
 ADMIN_WORK_V2 = staff_tables.DOOR_KEYS['admin_work']
 
 #: What a TABLE seat grants (T1 derivation, `staff_tables`). Only the Admins table grants page keys.
 TABLE_GRANTS = {staff_tables.ADMINS: ORG_READ_V2}
 
-#: What a ROLE LABEL still grants by itself today. `admin`: the admin-work pages (above), and it records,
-#: maker-signs and voids a wallet credit (`sponsorship.py`, `credit_steps.step_refusal`) — scholarship
-#: code this leaf cannot import. TD-475 (A1.10a): `finance` grants nothing by itself any more — the
-#: credit's middle check is the KEY `payments_approve` (`ALIASES`), and `sponsors.view` comes with the
-#: Admins table seat the label (or the key) already gives (`TABLE_GRANTS`).
-LABEL_GRANTS = {
-    'admin': (*ADMIN_WORK_V2,),
-}
+#: M2b D4: the v2 page keys an Admin starts with — what the `admin` LABEL and its Admins seat opened
+#: before M2b, derived from the two door sets (never retyped), in `CATALOGUE_V2` order. No money key, no
+#: lead-only key (`test_m2b_stored_v2`).
+ADMIN_PRESET_V2 = tuple(k for k in CATALOGUE_V2 if k in {*ORG_READ_V2, *ADMIN_WORK_V2})
+
+#: M2b: each label's v2 part — what migration 0097 stored for it, what `preset_diff` / `table_presets`
+#: compare a stored v2 part with. `finance` read the organisation through its Admins seat, nothing more.
+V2_PRESETS = {'admin': ADMIN_PRESET_V2, 'finance': ORG_READ_V2}
+
+#: M2b D3: never offered to anyone but the lead tier, not even after M3 (refused with its own code).
+#: `manage_team` (an old key) is lead-tier only already (`staff_permissions.LEAD_TIER_ONLY`).
+NEVER_GRANTABLE = ('billing.edit', 'requests.approve')
+
+#: The v2 keys an old key already MEANS (`ALIASES`): money, Applications, Scholars and the credit check.
+#: They are ticked through the old key, so the editor never stores their v2 spelling (M2b): a stored
+#: alias would do nothing today and silently start to count when M4 converts those gates.
+ALIAS_V2 = tuple(k for k in CATALOGUE_V2 if any(k in keys for keys in ALIASES.values()))
+
+#: The v2 page keys the editor may STORE (M2b): neither lead-only (M3) nor an alias. Today this is
+#: exactly `ADMIN_PRESET_V2` (`test_m2b_stored_v2` pins it).
+GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if not CATALOGUE_V2[k][3] and k not in ALIAS_V2)
+
+
+def refusal_reason(key):
+    """Why the editor may not store the v2 page key `key`: 'never_grantable', 'lead_only', 'alias',
+    or None when it may (`GRANTABLE_V2`)."""
+    if key in NEVER_GRANTABLE:
+        return 'never_grantable'
+    if CATALOGUE_V2[key][3]:
+        return 'lead_only'
+    if key in ALIAS_V2:
+        return 'alias'
+    return None
+
+
+def stored_v2(admin):
+    """M2b D2: the GRANTABLE v2 page keys stored in `admin.permissions`, in `V2_KEYS` order. A NULL
+    (or non-list) value stores none. A key the editor can never store (lead-only, never-grantable, an
+    alias, unknown) is ignored, as `staff_permissions.clean` ignores an unknown old key; the hats
+    `review` / `qc` are old keys and are read by `resolve`, never here. Says nothing about `is_active`
+    (the callers do)."""
+    stored = getattr(admin, 'permissions', None) if admin is not None else None
+    if not isinstance(stored, (list, tuple)):
+        return ()
+    held = {k for k in stored if isinstance(k, str)}
+    return tuple(k for k in GRANTABLE_V2 if k in held)
 
 
 def v2_order(keys):
@@ -192,8 +234,9 @@ def lead_v2(admin):
 
 
 def effective_v2(admin):
-    """The v2 keys `admin` EFFECTIVELY holds: their resolved old keys through `ALIASES`, plus what their
-    T1 table and their role LABEL open (`TABLE_GRANTS`, `LABEL_GRANTS`).
+    """The v2 keys `admin` EFFECTIVELY holds: their resolved old keys through `ALIASES`, what their T1
+    table opens (`TABLE_GRANTS`) and, since M2b, their STORED v2 keys (`stored_v2`). The role label
+    grants nothing by itself any more (M2b D5; migration 0097 stored what it gave).
 
       super            -> every v2 key (as `resolve` answers every old key)
       org_admin        -> `lead_v2`
@@ -202,7 +245,7 @@ def effective_v2(admin):
       anyone else      -> nothing (a referral partner, a source user, a mentor login)
 
     ⚠ A GATE SINCE T5c (P1): `staff_tables.opens` reads it for the page doors. So it must NEVER ask a
-    door (`staff_tables.may_*`) — it reads the tables and labels those doors were built from. It does NOT
+    door (`staff_tables.may_*`) — it reads the tables and keys those doors were built from. It does NOT
     drop a key whose ruling-7 dependency is missing (`dependency_gaps` reports that; T5d decides)."""
     if admin is None:
         return ()
@@ -217,5 +260,5 @@ def effective_v2(admin):
     held = set(through_aliases(sp.resolve(admin)))
     if staff_tables.in_admins(admin):     # the one table that grants page keys (no mentor query)
         held.update(TABLE_GRANTS[staff_tables.ADMINS])
-    held.update(LABEL_GRANTS.get(admin.role, ()))
+    held.update(stored_v2(admin))
     return with_implied_views(held)

@@ -144,6 +144,8 @@ class AdminStaffPermissionsView(_AdminBase):
                          'table_presets': staff_tables_admin.table_presets(target),
                          'permissions': list(sp.resolve(target)),
                          'custom': sp.is_custom(target), 'keys': list(spa.editable_keys()),
+                         # M2b D9: the v2 page keys by group (`v2_keys`) and the stored ones (`v2_held`).
+                         **spa.v2_editor(target),
                          # Team tables T3 (owner): the Permissions tab shows one section per table the
                          # person sits in (Admin permissions, Reviewer permissions). Read-only.
                          'tables': list(staff_tables.tables(target)),
@@ -165,8 +167,9 @@ class AdminStaffPermissionsView(_AdminBase):
                              'code': 'bad_request'}, status=status.HTTP_400_BAD_REQUEST)
         dry_run = body.get('dry_run') is True          # S4 review fix 10: only a JSON true
         try:
+            # M2b: a tab that predates v2 keys does not send `v2: true` — its save keeps the stored ones.
             target, plan = spa.change_permissions(target.pk, body['permissions'], by=admin,
-                                                  dry_run=dry_run)
+                                                  dry_run=dry_run, with_v2=body.get('v2') is True)
         except spa.PermissionChangeRefused as refused:
             return Response({'error': refused.message, 'code': refused.code, **refused.extra},
                             status=refused.status)
@@ -175,8 +178,10 @@ class AdminStaffPermissionsView(_AdminBase):
                         admin.email or '', target.pk, target.role, ','.join(plan['before']) or '-',
                         ','.join(plan['after']) or '-')
         return Response({'id': target.pk, 'role': target.role, 'dry_run': dry_run,
-                         'changed': plan['changed'], 'permissions': plan['after'],
-                         'custom': plan['custom'], 'added': plan['added'],
+                         'changed': plan['changed'], 'custom': plan['custom'],
+                         # M2b: `permissions` stays today's keys (what a pre-M2b tab reads); `v2_held` the rest.
+                         'permissions': [k for k in plan['after'] if k in spa.editable_keys()],
+                         'v2_held': plan['v2_held'], 'added': plan['added'],
                          'removed': plan['removed'], 'consequences': plan['consequences']})
 
 

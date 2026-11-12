@@ -11,8 +11,10 @@ and the mentor link (`PartnerAdmin.mentors_now`). There is no column to keep in 
 a changed key and a stopped mentor are all answered the moment they happen.
 
 THE DERIVATION (decisions.md 2026-11-03, "Team tables T1"):
-  Admins    — the lead tier (`org_admin`) or a super; the preset labels `admin` / `finance`; or a TEAM
-              member holding an ADMIN KEY (`ADMIN_KEYS`). ⚠ `see_all` held ALONGSIDE `qc` is what
+  Admins    — the lead tier (`org_admin`) or a super; or a TEAM member holding an ADMIN KEY
+              (`ADMIN_KEYS`) or, since M2b, a stored v2 page key (`staff_permissions_v2.stored_v2`;
+              the labels `admin` / `finance` no longer seat anyone by themselves — migration 0097
+              stored what they gave). ⚠ `see_all` held ALONGSIDE `qc` is what
               `qc` itself brings (`staff_permissions.IMPLIES`, T5b; a dependency before), not an admin
               hat: the QC preset holds `see_all` + `qc`, a saved `['qc']` reads the same, and both are
               Reviewers (owner ruling 8: "a QC person is a Reviewer with qc").
@@ -47,8 +49,8 @@ ADMIN_KEYS = ('see_all', 'scholars', 'spending', 'payments_prepare', 'payments_c
 # S1 (2026-11-09): + `scholars`
 #: The keys that put a TEAM member at the Reviewers table.
 REVIEWER_KEYS = ('review', 'qc')
-#: The preset labels that ARE a table by themselves (whatever a custom set later says).
-ADMIN_ROLES = ('admin', 'finance')
+#: The preset labels that ARE a table by themselves (whatever a custom set later says). M2b: no admin
+#: label is any more (`in_admins`).
 REVIEWER_ROLES = ('reviewer', 'qc')
 
 
@@ -74,7 +76,9 @@ def in_admins(admin):
         return True
     if not _team_member(admin):
         return False
-    return admin.role in ADMIN_ROLES or bool(admin_keys(admin))
+    # M2b D6: an old admin key OR a stored v2 page key; the label seats nobody by itself any more.
+    from . import staff_permissions_v2 as v2      # the leaf pair (see `opens`)
+    return bool(admin_keys(admin)) or bool(v2.stored_v2(admin))
 
 
 def in_reviewers(admin):
@@ -98,7 +102,7 @@ def tables(admin):
 def opens(admin, *keys):
     """THE PAGE GATE since Team tables T5c (P1): does `admin` hold EVERY v2 page key in `keys`
     (`staff_permissions_v2.effective_v2`, which reads the stored keys through the aliases, the Admins
-    table and the role label — no migration)? A super holds every key. An inactive row holds none (the
+    table and, since M2b, the stored v2 page keys)? A super holds every key. An inactive row holds none (the
     sign-in already refuses it: `views_admin.get_admin` reads `is_active=True`). The org fence stays the
     caller's (`_org_scoped` / `_org_allows`), untouched.
 
@@ -120,7 +124,7 @@ def opens(admin, *keys):
 #: `opens_door(admin, '<door>')` — no door names its keys inline — so this dict is the whole door ->
 #: key table (decisions.md "Team tables T5c") and the web's drift test reads it alone. `org_read` /
 #: `admin_work` are the two union sets (`may_read_org`, `may_do_admin_work`); the v2 module's
-#: `ORG_READ_V2` / `ADMIN_WORK_V2` (and so `TABLE_GRANTS` / `LABEL_GRANTS`) are read FROM here.
+#: `ORG_READ_V2` / `ADMIN_WORK_V2` (and so `TABLE_GRANTS` / `ADMIN_PRESET_V2`) are read FROM here.
 #: Keys are checked against the catalogue by `test_permission_catalogue_v2` (this leaf cannot import v2
 #: at load time: v2 imports it).
 DOOR_KEYS = {
@@ -195,10 +199,15 @@ def may_do_admin_work(admin):
 #: `scholars` (the Scholars page no longer rides on `see_all`); payment keys are ticked afterwards on
 #: Team. Every other role starts at its preset (NULL). An OLD pending invitation is untouched: its row was written
 #: when it was sent, so it accepts onto today's preset.
+#: M2b: an invited (or restored) Admin ALSO starts with `ADMIN_PRESET_V2` — the pages the `admin` label
+#: opened by itself before M2b (`invite_permissions`).
 INVITE_START = {'admin': ('see_all', 'scholars')}
 
 
 def invite_permissions(role):
     """The `permissions` value a NEW invitation's row is written with: a list, or None (the preset)."""
     start = INVITE_START.get(role)
-    return list(start) if start is not None else None
+    if start is None:
+        return None
+    from . import staff_permissions_v2 as v2
+    return [*start, *v2.ADMIN_PRESET_V2] if role == 'admin' else list(start)

@@ -209,7 +209,13 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
         before = staff_permissions.resolve(target)
         # T2 (review 2026-11-03): the person's resolved keys are KEPT exactly — stored NULL only when they
         # equal the new role's preset. A switch never gives or takes a key.
-        kept = None if tuple(before) == staff_permissions.preset_for(new_role) else list(before)
+        # M2b: the stored v2 keys are kept too, and a switch TO `admin` stores `ADMIN_PRESET_V2` — the
+        # admin work pages the `admin` label opened by itself before M2b, so the switch does what it did.
+        v2 = staff_permissions_admin._v2()
+        v2_before = v2.stored_v2(target)
+        v2_after = v2.v2_order({*v2_before, *(v2.ADMIN_PRESET_V2 if new_role == 'admin' else ())})
+        kept = (None if tuple(before) == staff_permissions.preset_for(new_role) and not v2_after
+                else [*before, *v2_after])
         fields = {'role': new_role, 'permissions': kept}
         # ⚠ A pause is KEPT between reviewer and QC on purpose: both are review roles that can be
         # assigned work, so "no new work for now" still means something; only Finance clears it.
@@ -223,8 +229,9 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
         if target.is_staff_mentor and new_role not in PartnerAdmin.STAFF_MENTOR_ROLES:
             from . import staff_mentor
             staff_mentor.leave(target, by=getattr(by, 'email', '') or '')
-        if plan['permissions_reset']:
-            staff_permissions_admin.record(target, before, staff_permissions.resolve(target),
+        if plan['permissions_reset'] or v2_after != v2_before:
+            staff_permissions_admin.record(target, [*before, *v2_before],
+                                           [*staff_permissions.resolve(target), *v2_after],
                                            by=by, kind='role_change')
     return target, plan
 

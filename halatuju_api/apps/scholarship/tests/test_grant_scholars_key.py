@@ -23,6 +23,7 @@ class GrantScholarsKey(TestCase):
         org = make_org()
 
         def person(role, keys=None, **kw):
+            kw.setdefault('pre_m2b', True)  # 0095 ran on rows written before M2b's 0097
             return make_admin(role, owning_org=org, permissions=keys, **kw) if keys is not None \
                 else make_admin(role, owning_org=org, **kw)
         cls.gain = {

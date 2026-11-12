@@ -12,7 +12,7 @@ WHAT IS HERE
   answers exactly today's tuple for each shape.
 - `Coverage`    — each shape x each of TODAY's doors, asked of the REAL gate function: a door that opens
   today must be covered by v2 keys in the shape's set. No door is left unmapped (the one that was, the graduation list, was retired: TD-496).
-- `NotYetWritable` — a v2 key cannot be saved and is dropped on read.
+- (`NotYetWritable` retired in M2b: v2 keys are stored now — `test_m2b_stored_v2`, `test_m2b_permission_save`.)
 - `V2Importers` (T5c, replacing T5a's `NotYetAGate`, lead ruling R6) — only `staff_tables` imports the
   v2 module, and only the allowlisted door modules decide by v2 keys (`staff_tables.opens`).
 - `DoorKeysTable` (T5c P4a) — every door asks `staff_tables.opens_door(<who>, '<door>')`; its keys live
@@ -32,7 +32,7 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
-from apps.scholarship.tests.factories import make_admin, make_org
+from apps.scholarship.tests.factories import _M0097, make_admin, make_org
 
 #: The live shapes (investigation F; T1 matrix `SHAPES`), plus qc / super / partner for completeness.
 SHAPES = {
@@ -109,6 +109,10 @@ def _make(spec, org):
     if fields:
         PartnerAdmin.objects.filter(pk=a.pk).update(**fields)
         a.refresh_from_db()
+        plan = _M0097.plan_row(a.pk, a.role, a.is_active, a.permissions, row_id=None)   # M2b: as live
+        if plan:
+            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+            a.refresh_from_db()
     return a
 
 
@@ -170,7 +174,7 @@ class Vocabulary(TestCase):
             self.assertEqual(v2.ALIASES[old], ('payments.view', new))
         # TD-475 (A1.10a): `payments_approve` is also the wallet credit's checker seat.
         self.assertEqual(v2.ALIASES['payments_approve'], ('payments.view', 'payments.approve', 'sponsors.check'))
-        self.assertNotIn('finance', v2.LABEL_GRANTS)
+        self.assertFalse(hasattr(v2, 'LABEL_GRANTS'))     # M2b D5: no label grants a key by itself
         for targets in v2.ALIASES.values():
             self.assertTrue(set(targets) <= set(v2.V2_KEYS))
 
@@ -419,28 +423,10 @@ class LandingContent(TestCase):
             self.assertEqual(both, {True, False}, f'{key}: the rule is vacuous over the live shapes')
 
 
-class NotYetWritable(TestCase):
-
-    def test_the_save_door_refuses_every_v2_page_key(self):
-        from apps.scholarship.staff_permissions_admin import PermissionChangeRefused, asked_set
-        for key in v2.CATALOGUE_V2:
-            with self.subTest(key=key):
-                with self.assertRaises(PermissionChangeRefused) as caught:
-                    asked_set(['review', key])
-                self.assertEqual(caught.exception.code, 'unknown_permission')
-
-    def test_a_hand_written_v2_key_is_dropped_on_read(self):
-        org = make_org()
-        a = make_admin('reviewer', owning_org=org)
-        PartnerAdmin.objects.filter(pk=a.pk).update(permissions=['review', 'students.view', 'payments.approve'])
-        a.refresh_from_db()
-        self.assertEqual(sp.resolve(a), ('review',))
-        self.assertEqual(set(v2.effective_v2(a)), {'review'})
-
-
-#: Team tables T5c (lead ruling R6, replacing T5a's `NotYetAGate`): the ONLY module outside the tests that
-#: may import the v2 module. Every door asks `staff_tables.opens`, never v2 directly.
-V2_IMPORTERS = {'courses/staff_tables.py'}
+#: Team tables T5c (lead ruling R6, replacing T5a's `NotYetAGate`): the ONLY modules outside the tests that
+#: may import the v2 module. Every door asks `staff_tables.opens`, never v2 directly. M2b: + the stored-key
+#: readers (`is_custom`) and the editor's rules (the table writes reach it through `spa._v2`).
+V2_IMPORTERS = {'courses/staff_tables.py', 'courses/staff_permissions.py', 'scholarship/staff_permissions_admin.py'}
 
 #: The modules whose doors decide by v2 keys (`staff_tables.opens(`). It GROWS DOOR BY DOOR: a new door
 #: is added here in the same commit as its parity test (`test_team_tables_t5c_doors`), so an unplanned
@@ -550,7 +536,7 @@ class DoorKeysTable(TestCase):
         self.assertIs(v2.ORG_READ_V2, st.DOOR_KEYS['org_read'])
         self.assertIs(v2.ADMIN_WORK_V2, st.DOOR_KEYS['admin_work'])
         self.assertEqual(v2.TABLE_GRANTS[st.ADMINS], st.DOOR_KEYS['org_read'])
-        self.assertEqual(v2.LABEL_GRANTS['admin'], st.DOOR_KEYS['admin_work'])
+        self.assertEqual(set(v2.ADMIN_PRESET_V2), {*st.DOOR_KEYS['org_read'], *st.DOOR_KEYS['admin_work']})
 
     def test_the_table_is_the_p1_p2_door_table(self):
         # decisions.md "Team tables T5c", the door -> key table, written out by hand.

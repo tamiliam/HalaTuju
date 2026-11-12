@@ -15,7 +15,7 @@ from django.test import TestCase, override_settings
 from django.urls import get_resolver
 from django.utils import timezone
 
-from apps.courses import staff_permissions, staff_tables
+from apps.courses import staff_permissions, staff_permissions_v2, staff_tables
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import staff_tables_admin as sta
 from apps.scholarship.models import Mentor
@@ -174,8 +174,11 @@ class MemberDoorsTest(TestCase):
         user = _member(self.org)
         target, plan = sta.change(user.pk, sta.ADMINS, 'add', by=self.lead)
         target.refresh_from_db()
-        self.assertEqual((target.role, target.permissions), ('admin', None))
+        # M2b (D8): the admin preset is stored on both parts (old preset + ADMIN_PRESET_V2), and is not Custom.
+        self.assertEqual((target.role, target.permissions),
+                         ('admin', [*staff_permissions.preset_for('admin'), *staff_permissions_v2.ADMIN_PRESET_V2]))
         self.assertEqual(list(staff_permissions.resolve(target)), list(staff_permissions.preset_for('admin')))
+        self.assertFalse(staff_permissions.is_custom(target))
         self.assertEqual(staff_tables.tables(target), ('admins',))
         self.assertFalse(target.mentors_now)   # the kept link stays deactivated
 
