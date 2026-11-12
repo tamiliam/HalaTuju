@@ -7,8 +7,6 @@
  * serves them: an open row may carry nothing but its remarks (age, health), and that text must still
  * show; the chip is the row's PATHWAY (ILJTM / ILKBS / MARA / "Latihan Kemahiran").
  */
-import fs from 'fs'
-import path from 'path'
 import { fireEvent, render, screen } from '@testing-library/react'
 
 import RequirementsCard, { type CourseRequirements } from '@/components/RequirementsCard'
@@ -21,8 +19,9 @@ interface Row {
   family: string
   requirement: { complex_requirements: CourseRequirements['complex_requirements']; remarks: string }
 }
-const F1 = path.join(__dirname, '..', '..', '..', 'halatuju_api', 'data', 'tvet', 'tvet_new_courses_F1.json')
-const rows: Row[] = JSON.parse(fs.readFileSync(F1, 'utf-8')).courses
+// The reviewed data file itself, loaded as data (no source-text read).
+const F1 = require('../../../halatuju_api/data/tvet/tvet_new_courses_F1.json')
+const rows: Row[] = F1.courses
 const PATHWAY: Record<string, string> = { iljtm: 'iljtm', ilkbs: 'ilkbs', mara: 'mara' }
 const pathwayOf = (row: Row) => PATHWAY[row.family] || 'tvet_other'
 

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### test: A3.16b catch-up sprint C3 - source-reading tests to behaviour (2026-11-12)
+
+Branch c3 (not pushed; tests only, no app source changed, no budget raised). guard% 11 -> 9.
+- test: RequirementsCard anyOf / tvetF1 / tvetF2 load their reviewed JSON as data, not as file text (3 files).
+- test: applyDraft 'never leaves the device' now drives every write path with fetch, sendBeacon and XHR spied, instead of grepping the imports.
+- test: settings hydration (TD-388) renders /settings, /onboarding/grades and /onboarding/stpm-grades with a Tamil-stored reader and reads the words back, instead of scanning three files for bare locale.
+- test: drift halves split into *Drift.test.ts (counted apart, TD-284): GenuinenessNote, ReviewerNotesCard, planPicker, docSeen. Same assertions, moved; the behaviour tests stay in the original files.
+- skipped: files whose source marker names them as the drift test (decisionReopenOffer, incomeWizard, interviewCompleteness, profileClaimCodes, referralSources, adminApplicationDetail), and structural guards that read the tree by nature (fonts, imports, env, mobile, theme, sandbox, cloudbuild).
+- TD-415 and TD-065 not done.
+
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
 
 Branch g14 (not pushed, not deployed; no migration, no budget raised). Merged a44, a45, a46, a47 and a48 onto

@@ -12,7 +12,6 @@ import {
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
-import { readApi } from '@/test/apiSource'
 import {
   PATHWAY_ORDER, chosenProgrammeFromApi, chosenProgrammeToApi, profileToApplyDefaults,
 } from '@/lib/scholarship'
@@ -75,10 +74,6 @@ describe('the steps each pathway asks for', () => {
     }
     expect((ms as { scholarship: { apply: { plan: { pathway: Record<string, string> } } } }).scholarship.apply.plan.pathway)
       .toMatchObject({ university: 'Universiti', mara: 'Kolej atau institut MARA' })
-  })
-  it('the MARA division id is the server MARA_DIVISION', () => {
-    const src = readApi('apps/courses/views_offerings.py')
-    expect(src).toMatch(new RegExp(`^MARA_DIVISION = '${MARA_DIVISION_ID}'`, 'm'))
   })
   it('a division pick is SHOWN under MARA and STORED as university; a MARA campus stays mara', () => {
     const division = { courseId: 'OP4-KEJ', courseName: 'Diploma Kejuruteraan', fieldKey: '', institutionId: 'MARA-BPT' }
