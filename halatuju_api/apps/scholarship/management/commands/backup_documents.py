@@ -6,7 +6,11 @@ a bucket wipe or a bad delete would lose them irrecoverably. This command walks
 the whole private bucket and mirrors every object into a GCS bucket in the same
 GCP project, so the documents are recoverable off-platform.
 
-Run weekly via the internal cron endpoint (CronRunView job 'backup-documents').
+Run weekly (Mon 03:00 MYT) by Cloud Scheduler firing the ``release-decisions`` Cloud Run
+JOB with ``--args=manage.py,run_cron_job,backup-documents`` (2026-11-12). It used to POST the
+internal cron endpoint, but the run outgrew the 300 s request timeout (504 every Monday, nothing
+recorded); a job has no request timeout. The endpoint job 'backup-documents' still exists for a
+manual run, but a large backlog will time out there.
 
 Config: ``settings.DOCUMENT_BACKUP_BUCKET`` (destination GCS bucket). Auth to GCS
 is via the runtime service account (ADC); Supabase access uses the service key

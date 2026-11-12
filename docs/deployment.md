@@ -166,6 +166,11 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    `assign-emails` (every 15 min, `email` family). `scholarship/urls.py` is at 599 of 600 lines: add no routes there.
    **Own timeout (SP-14):** met by the time budget; a separate Cloud Run Job was NOT adopted (it would bypass
    `cron_health.run_job`, so the System health light would read it as missed). Optional later, not done.
+   **Exception — the document backup runs as a JOB (TD-612, 2026-11-12):** `backup-documents` outgrew the
+   300 s request (504 every Monday, nothing recorded). Scheduler `halatuju-doc-backup` now calls the Run Admin
+   API `jobs:run` on `release-decisions` with an args override `manage.py,run_cron_job,backup-documents` and
+   `taskTimeout` 3600s. `run_cron_job` goes through `cron_health.run_job`, so the light records it as before.
+   The job needs `DOCUMENT_BACKUP_BUCKET=halatuju-doc-backups` in its own env (item 8: env is not synced).
    **System health light (2026-10-28):** every cron run's outcome is recorded (`cron_health.run_job`,
    the body of `CronRunView`) and every email send's (`EMAIL_BACKEND` is now
    `apps.scholarship.mail_backend.RecordingSMTPBackend`, the SMTP backend plus one bookkeeping line) in
@@ -241,7 +246,7 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 > **Client IP warning (A1.9a).** The caller's address is the RIGHTMOST `X-Forwarded-For` hop (`halatuju/throttling.py`), which assumes the browser calls the API `run.app` URL directly. If a proxy or load balancer is ever put in front, every user will share one IP and the throttles (and the admin-login lock) must be changed first. IPv6 throttle keys use the /64 network; signing records keep the full address.
 
 | `SENTRY_DSN` | Error tracking (no PII sent; the `X-Search-Term` header is scrubbed, `halatuju/sentry_scrub.py`) |
-| `DOCUMENT_BACKUP_BUCKET` | GCS bucket `backup_documents` mirrors the private document bucket into |
+| `DOCUMENT_BACKUP_BUCKET` | GCS bucket `backup_documents` mirrors the private document bucket into (`halatuju-doc-backups`). ⚠ Also set on the `release-decisions` JOB, which runs the weekly backup since TD-612 |
 | `SGD_TO_MYR_RATE` | S$ → RM for Singapore payslips (in-review cases only) |
 | `MAX_DOC_SIZE_BYTES`, `MAX_DOCS_PER_APPLICATION`, `MAX_OTHER_DOCS`, `DOC_STAGE_MAX_ATTEMPTS` | Upload limits and the re-upload circuit-breaker |
 | `DOC_ASSIST_RATE_LIMIT_PER_HOUR`, `DOC_ASSIST_ONLY_WHEN_UNCERTAIN`, `IC_GEMINI_FALLBACK_ENABLED` (default ON), `DOC_GENUINENESS_CHECK_ENABLED` | Paid AI reads on upload |

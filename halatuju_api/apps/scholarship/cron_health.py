@@ -66,7 +66,7 @@ EXPECTED_CADENCE = {
     'sync-vircle-sheet': DAILY,              # 07:05
     'vision-outage': DAILY,                  # 02:00
     # weekly (Mondays)
-    'backup-documents': WEEKLY,              # 03:00
+    'backup-documents': WEEKLY,              # 03:00 — via the release-decisions JOB (run_cron_job)
     'course-data-check': WEEKLY,             # 03:00
     'partner-digests': WEEKLY,               # 08:00
     'sponsor-digests': WEEKLY,               # 09:00

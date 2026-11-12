@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: the weekly document backup runs as a Cloud Run job (TD-612, 2026-11-12)
+
+API only; no migration, no web change. The weekly `backup-documents` run was cut off at the 300 s request
+timeout every Monday since at least 18 Oct, so the off-platform copy fell about 1,100 documents behind and the
+System health light read "has not run".
+- New `manage.py run_cron_job <job>`: runs one `CronRunView.JOBS` entry through `cron_health.run_job` (recorded
+  for the light as before; flags only from the registry), exits non-zero on failure, refuses an unknown job.
+- Scheduler `halatuju-doc-backup` moves from the endpoint POST to the `release-decisions` job
+  (`--args=manage.py,run_cron_job,backup-documents`, one-hour task timeout); the job gains
+  `DOCUMENT_BACKUP_BUCKET`. `EXPECTED_CADENCE` unchanged. Docs: `deployment.md` item 9, env table.
+- test: `test_run_cron_job.py`.
+
 ### feat: sprint M2a - Team moves to /team, one page per group (team membership, 2026-11-12)
 
 Branch m2a (local, not pushed, not deployed). Web only; no API file changed, no migration. Brief

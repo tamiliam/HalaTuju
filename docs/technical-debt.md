@@ -8900,3 +8900,21 @@ the same way when `cohort.programme` is inactive, with a test for the explicit-c
 ### [TD-611] `code_health` forgets a sprint's own fixes when the Consolidation Review clears the sprint section - low (workspace tool)
 
 **Raised 2026-11-12 by the Consolidation Review (proposed, not built).** `code_health.sprint_shas` reads only `## Sprints since the last review`, and `small-change-lane.md` Part B says to clear that section at every review. The 90-day `fix%` window still holds those commits, so each review would raise `fix%` by the sprint-own fixes it forgot (61 at the 2026-11-12 reading). This review therefore left the section in place. Proposed fix: the review moves the cleared lines to a `## Closed sprint lines` section that `sprint_shas` also reads and `wat_lint` does not count as backlog, and the section is pruned when a line is older than the window. *(workspace - S)*
+
+### [TD-612] The weekly document backup outgrew the web request and never finished - medium - **RESOLVED 2026-11-12** (`run_cron_job`; tests `test_run_cron_job.py`)
+
+**Raised 2026-11-12 from the owner's System health screenshot** ("'Document backup' has not run since checking began
+14 days ago (expected weekly)"). Scheduler `halatuju-doc-backup` (Mon 03:00 MYT) POSTed
+`/internal/cron/backup-documents/`, and `backup_documents` ran inside that web request. The private bucket has grown
+to about 4,300 objects (about 3.4 GB; about 700 new a week), so every run since at least 18 Oct was cut off at the
+service's 300 s request timeout (504). The command is incremental, so each run copied what it could, but uploads
+arrived faster than a cut-off run copied them: the off-platform copy held 3,215 objects, at least about 1,100
+documents short. `cron_health.run_job` records only a run that returns, so no outcome was ever recorded and the light
+read "has not run". **Fix:** `manage.py run_cron_job <job>` runs a `CronRunView.JOBS` entry through
+`cron_health.run_job` (so the light records it exactly as an endpoint run; flags come only from the registry), exits
+non-zero on failure, and refuses an unknown job. The Scheduler fires the `release-decisions` Cloud Run JOB with
+`--args=manage.py,run_cron_job,backup-documents` and a one-hour task timeout instead of POSTing the endpoint
+(`docs/deployment.md` item 9). The job carries `DOCUMENT_BACKUP_BUCKET`. `EXPECTED_CADENCE` is unchanged (same key,
+same weekly cadence). Known limit: `release-decisions` has `maxRetries: 1`, so a failed run is retried once; that is
+safe for the idempotent backup, and the command's docstring warns against pointing a job that sends anything at it.
+*(B · S)*
