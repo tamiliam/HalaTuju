@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M2b - admin permissions are stored keys, not a role label (2026-11-12)
+
+Branch m2b (local, not pushed, not deployed). Brief `docs/plans/2026-11-12-m2b-admin-permissions-brief.md`;
+architect decisions D1-D12 (decisions.md "Admin permissions are stored v2 page keys"). ⚠ Migration
+`courses/0097_store_admin_v2_keys` (data only) must be applied BY HAND to production BEFORE the push.
+- api: `PartnerAdmin.permissions` now also stores v2 page keys (`staff_permissions_v2.stored_v2`). The `admin`
+  label no longer opens pages by itself (`LABEL_GRANTS` gone) and neither `admin` nor `finance` seats anyone at
+  Admins by itself (`ADMIN_ROLES` gone): `in_admins` is an old admin key OR a stored page key. `ADMIN_PRESET_V2` =
+  the organisation-read and admin-work pages; `NEVER_GRANTABLE` = `billing.edit`, `requests.approve`.
+- api: the permission editor's GET serves `v2_keys` (by group, each with `grantable` and the refusal `reason`),
+  `v2_held` and `v2_preset`; `table_presets.admins` ends with the page preset. PATCH with `v2: true` takes page keys
+  in the same list (refusals `never_grantable`, `lead_tier`, `alias_permission`); without the flag the stored page
+  keys are kept. Add to Admins stores `ADMIN_PRESET_V2`; leaving Admins strips every page key; an invitation or a
+  role change to `admin` starts with `ADMIN_PRESET_V2`. "Custom" weighs the old part and the page part separately.
+- data: 0097 stores what the labels opened: each active `admin` gets the admin page preset (a NULL row's preset
+  written out first); each active `finance` row with a list gets the organisation-read pages; the row id 9 named
+  by the owner gets the admin page preset (its only gain). One `migration` audit row per change; idempotent;
+  the reverse removes exactly what it added and NULLs a list left equal to its preset.
+- web: the Permissions tab draws the page keys by group (Organisation, Programme, Engagement, Money), locked
+  with the server's reason where they cannot be stored; a change brings its page's view; history and chips word
+  a page key as "<page>: <level>" (`permName`). New strings `admin.permV2.*` in en, ms and ta.
+- web (D11): the Mentors tab (`mayReadMentors` -> `mentors_read`), a scholar's mentor (`mentoring_read`),
+  Team -> Emails and the cockpit's witness card (`sources`) read the server's door from `page_keys`; an older
+  payload keeps the role lists.
+- test: `test_m2b_stored_v2.py`, `test_m2b_permission_save.py`, `test_m2b_migration_0097.py`,
+  `test_m2b_nobody_changes.py` (every live row shape keeps its tables, page keys and doors; only row 9 gains),
+  `PermissionEditorPages.test.tsx`, `m2bDoorMirrors.test.ts`.
+- Deferred: D12 (TD-503 part 1, the sponsor-vet predicate) to M3.
+
 ### fix: the weekly document backup runs as a Cloud Run job (TD-612, 2026-11-12)
 
 API only; no migration, no web change. The weekly `backup-documents` run was cut off at the 300 s request

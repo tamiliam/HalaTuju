@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-12 — Admin permissions are stored v2 page keys, not a role label (architect D1-D12; Sprint M2b)
+
+**Taken by the architect** in the M2b brief (`docs/plans/2026-11-12-m2b-admin-permissions-brief.md`), under the
+owner's one principle: on ship day nobody's pages change, except the one row the owner named by id (9, O8), who
+gains the admin work pages.
+
+| | Decision | As built |
+|---|---|---|
+| D1 | v2 keys live in `PartnerAdmin.permissions` beside the old keys; no schema change | as decided |
+| D2 | `stored_v2(admin)` in `staff_permissions_v2`; NULL stores none | reads only GRANTABLE keys (a lead-only, never-grantable or alias key in the list is ignored, as `clean` ignores an unknown old key) |
+| D3 | `NEVER_GRANTABLE` = `billing.edit`, `requests.approve`, own error code | `never_grantable`; other lead-only keys keep `lead_tier`; an ALIAS key (one an old key already means) is refused too, `alias_permission` |
+| D4 | `ADMIN_PRESET_V2` = `ORG_READ_V2` + `ADMIN_WORK_V2`, derived | as decided; `V2_PRESETS` = admin -> it, finance -> `ORG_READ_V2` |
+| D5 | `effective_v2` drops the label grant, adds the stored keys | `LABEL_GRANTS` deleted |
+| D6 | `in_admins`: an old admin key or a stored page key | `ADMIN_ROLES` deleted (nothing else read it; M4's money checks read the role directly) |
+| D7 | NULL only when the old part is the preset and there is no page key; Custom per part | the page part is weighed against `V2_PRESETS[role]`; the exemption covers `admin` only; PATCH takes page keys only with `v2: true` (an older web keeps them) |
+| D8 | Add to Admins stores `ADMIN_PRESET_V2`; leaving strips every page key | as decided; an invitation as `admin` and a role change to `admin` start with it too |
+| D9 | GET serves `v2_keys`, `v2_held`; `table_presets` gains the page preset; the editor draws the groups | the GET also serves `v2_preset`, so the web holds NO copy of `ADMIN_PRESET_V2` / `NEVER_GRANTABLE` (serve, never derive; nothing for a drift test to hold) |
+| D10 | Migration 0097, by hand, before the push | a NULL `finance` row is left NULL: its preset already seats it at Admins by a key, so its pages do not move |
+| D11 | Web label mirrors read the doors | Mentors tab -> `mentors_read`; a scholar's mentor -> `mentoring_read`; Team -> Emails and the witness card -> `sources`. `view.tsx` had no freeze note (G8's A3.3 split is already in the base), so it was switched. The role lists stay as the older-payload answer |
+| D12 | TD-503 part 1 if cheap | **deferred to M3**: moving the `sponsors_to_vet` card onto the door would take the card from the two admins and finance today (against the one principle), TD-503 calls its scope the owner's, and the parity test has no room |
+
+**Why.** The label opened pages nobody could see or change on the Permissions tab; a stored key is shown, edited
+and audited like any other. `test_m2b_nobody_changes.py` holds the principle for every live row shape, including
+an `org_admin` who also reviews (`['review']`), whom 0097 does not touch.
+
+**Revisit if:** M3 lets a lead grant lead-only keys (D3's `lead_tier` refusal), or M4 moves the money label checks.
+
 ## 2026-11-11 — Team URLs move to /team; each group has its own person page (owner, direct; for Sprint M2)
 
 **Ruled by the owner, directly, on 2026-11-11.** **SUPERSEDES** the 2026-11-09 entry "One person page for every team
