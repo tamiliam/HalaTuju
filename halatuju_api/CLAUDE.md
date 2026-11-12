@@ -169,14 +169,20 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 ### STATE AT 2026-11-05 — T5c P5b + P5c LIVE (main 3c39489b, api-01255-zsm, web-01084-l6b; no migration)
 
 - One "Overview" row and page: per-person pending cards (`GET admin/scholarship/my-pending/`, `apps/scholarship/my_pending.py`) above the programme cards. Unassigned means ready to assign (`queries_sla.ready_to_assign`); cards open the filtered applications list (`?ready=1`, `?band=`, `?status`, `?assigned=me`) or `?tab=action`. Owner phone check OK 2026-11-05. Open lows: TD-502 to TD-505.
-- **NEXT, in order:** (1) push v3.1.0 (`Settings/_workflows/release.md`; notes `docs/releases/release-notes-v3.1.0.md`; the local tag sits on the security-patch commit; push needs the owner's yes); (2) the Next 15 upgrade as audit fix sprint 1 (TD-506; a security fix, so the freeze allows it); (3) TD-501 (reviewer invite must choose one gift or every gift; staff invites take no gift otherwise; Opus build, adversarial review, owner phone check); (4) the full project audit (`Settings/_workflows/project-audit.md`) on the new tag, after TD-501. **FREEZE in force: no T5d, no offer S7** until the audit's fix sprints are done.
+- **NEXT, in order:** (1) push v3.1.0 (`Settings/_workflows/release.md`; notes `docs/releases/release-notes-v3.1.0.md`; the local tag sits on the security-patch commit; push needs the owner's yes); (2) the Next 15 upgrade as audit fix sprint 1 (TD-506; a security fix, so the freeze allows it); (3) TD-501 (reviewer invite must choose one gift or every gift; staff invites take no gift otherwise; Opus build, adversarial review, owner phone check); (4) the full project audit (`Settings/_workflows/project-audit.md`) on the new tag, after TD-501. (Freeze LIFTED 2026-11-12: the audit is closed; see the 2026-11-12 state below.)
+
+### STATE AT 2026-11-12 — v3.1.0 audit CLOSED (live main 011a25fb0, api-01291-g4w, web-01115-n96)
+
+- Audit closing section: `docs/audits/2026-11-05-project-audit.md`. The final code_health reading was read-only; the Trend row is held back so no agent re-baselines a worse reading.
+- **Owner-dated readings (lapse on the date, then FAIL the close):** `std` FAIL until Fri 20 Nov (W1 page weight); `fix%` 52 WARN until Fri 27 Nov (F1 slip-check matrix); `dup` 1 (`_gemini_generate`) by Fri 4 Dec; `xapp` 107 FAIL, NOT accepted, F2 by the 11 Dec small audit. Detail: `docs/consolidation-log.md` and `docs/plans/2026-11-05-audit-fix-roadmap.md` (Catch-up follow-ons).
+- **NEXT, in order:** W1 (build 16-18 Nov, deploy by 20 Nov); F1 (owner approves the rule table by Wed 18 Nov; Opus build; deploy by 27 Nov); then T5d / offer S7 (S7 is paid; owner yes).
 
 ### Older state blocks and the other streams (full text in `docs/sprint-history.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05")
 
 - Team tables T5a, T5b and T5c P1 (the `staff_tables.opens` door gate, `qc` implies `see_all`, `qc_separation.refusal`, the v2 permission catalogue), Requests list R1 (`org_requests_queue.needs_action_q` is the ONE Needs-action rule) and T5c Part 5 (Programmes landing; open TD-500, TD-501): rules and gotchas are in that section. A new page is gated the old way AND gets a v2 key, except the merged Overview.
 - **Offer letters read exactly:** S1-S6 live. **NEXT = S7 (paid; owner yes)**, then S8. Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. New evasions go to TD for S7 unless they block a real public letter.
 - **Mobile-native arc:** COMPLETE (M0-M8). Rules `docs/mobile-standard.md`, ledger `docs/mobile-ledger.md`; every UI change runs `npm run mobile-check`.
-- **FREEZE:** no T5d, no offer S7 until the audit fix sprints are done (roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md`).
+- **Freeze LIFTED 2026-11-12** (audit closed). T5d and offer S7 may start after W1 and F1 (roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md`).
 
 ## Known Issues & Future Work
 
