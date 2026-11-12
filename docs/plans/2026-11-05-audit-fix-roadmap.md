@@ -1301,3 +1301,39 @@ The speed numbers are read from live logs by a Haiku agent 7 days after each spe
 Docs-only sprints (A0.2, A0.3) deploy nothing.
 
 That makes 15 deploy groups, about 17 pushes counting G1's two.
+
+---
+
+## Catch-up follow-ons
+
+_Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026-11-12). Planning only: nothing here is built or approved. Each item needs the owner's yes and a sprint-start before it begins. They add no feature, page or model, so they sit inside the freeze._
+
+#### F1 Slip-check matrix
+
+- **Goal:** The rules that compare what a student typed with what the results slip shows live in one table with one test, so the next request is a row, not a fourth review round.
+- **Why:** 19 field-fix entries (22 commits, 5 to 11 Nov: #54, #56, #58, #59, #62, the degree-student group, the STPM tick) all landed in `academic_engine.py`, `academic_compare.py`, `verdict_engine.py`, `verdict_academic.py` and `higher_results.py`. Request #62 alone took nine commits and three review rounds, and the owner's ruling moved twice (`decisions.md`, 2026-11-06 and after).
+- **Scope:**
+  - Settle the rule table with the owner FIRST (route x slip state -> tick, flag, wording key). The 2026-11-05 lesson from the My activity cards: ask before the first build.
+  - `apps/scholarship/tests/test_slip_check_matrix.py`: a parametrised test with one row per cell of route (SPM, STPM, Matric, Diploma, Asasi, degree-bound) x slip state (checked, not final, suspect, short read, extra typed subject, subject missing from the slip, undeclared higher results).
+  - A static test that every value `results_route.destination()` can return has a row; a branch added to `academic_compare.py` with no row fails.
+  - Move any branch the matrix shows is duplicated between the compare files and the verdict engine to one home. Behaviour kept: the matrix is written against today's answers first, and any cell the owner changes is a recorded decision.
+- **Acceptance:** the matrix passes on today's code before any code moves; one place per rule; `decisions.md` names the table as the rule's source.
+- **Readings moved:** hot#1 (the compare files), fix% over the next window.
+- **Complexity:** M.
+- **Model:** Opus build and review (eligibility and identity-adjacent); adversarial review before any push.
+- **Deploy:** one group; owner phone check, because ticks and flags show to officers.
+
+#### F2 Cross-app imports, second pass
+
+- **Goal:** Bring `xapp` back toward the Wave 3 target (50 edges; courses -> scholarship 8).
+- **Why:** The 2026-11-12 reading is 107 edges (85 on 2026-11-05): scholarship -> courses 75 edges (384 import statements), courses -> scholarship 21 (target 8), reports -> courses 9. The splits of A3.2 to A3.7 divided single modules into packages whose pieces each import the same names, which the reading counts again. A3.12 and A3.13 did not reverse it.
+- **Scope:**
+  - Read the 107 by name and sort them: edges the splits multiplied, edges that are a real cycle, edges to a public module.
+  - For the first group, one import point per package (an `__init__` or a `public` module per app), as `apps.courses.public` already does.
+  - For the real cycles, move the shared piece down to a third module, not a lazy import.
+  - Tighten `courses_to_scholarship_imports` in `halatuju_api/code-standards.json` only in the same commit that earns it (never loosen).
+- **Acceptance:** xapp at or below the roadmap target, or a dated owner decision that the target is wrong, with the reading re-measured in both cases.
+- **Readings moved:** xapp, possibly long and big.
+- **Complexity:** M to L.
+- **Model:** Sonnet, with an Opus read of any move that touches money or identity modules.
+- **Deploy:** one group; no behaviour change, so no phone check.

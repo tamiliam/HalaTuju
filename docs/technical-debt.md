@@ -8884,3 +8884,19 @@ endpoint (`apps/scholarship/views/applications.py`, around line 97) resolves its
 An explicit `cohort_code` returns the round straight away, though, and the view only re-checks `cohort.is_open`. So a
 submit that names an open round under a deactivated programme is accepted. Fix: after the `is_open` re-check, refuse
 the same way when `cohort.programme` is inactive, with a test for the explicit-code path. *(A · S)*
+
+### [TD-608] A lost connection on an admin write is worded by each caller, not by the choke-point - low
+
+**Raised 2026-11-12 by the Consolidation Review (proposed guardrail, not built).** Request #61 taught `adminMutate` (`halatuju-web/src/lib/admin-api/client.ts`) to mark a fetch that gets no response (`code: 'network_failure'`, `status: 0`), and the cockpit's decision save to show "Your decision may already be saved". The review then found a second caller (Raise query / Request document, `OutstandingPanel.tsx`) still showing "no answer". A fix that every future caller has to remember is a convention (`small-change-lane.md`, the rail on future callers). Fix: make that wording the default message of the error `adminMutate` throws for status 0, so a new caller gets it without writing anything; then add a web test that fails on any `admin-api` helper whose error path shows a raw `err.message` for a status-0 error. Tests exist today only per caller (`view.decision.test.tsx`, `view.requestDoc.test.tsx`). *(A - S)*
+
+### [TD-609] The phone check runs the account menu in English only - low
+
+**Raised 2026-11-12 by the Consolidation Review (proposed guardrail, not built).** Three commits in two days fixed one account-menu language row (TD-469/472, then A48 twice): first it overflowed, then "B. Melayu" did not fit on one line. `npm run mobile-check` renders in English, the shortest locale. Fix: render the account menu (and any menu or chip row the check already covers) in `ms` and `ta` as well, against the same baseline; if `mobile-check` cannot set a locale, add the option there first. *(A - S)*
+
+### [TD-610] The small lane keeps carrying sprint-sized work, and `wat_lint` only WARNs - medium (workspace tool, owner decision)
+
+**Raised 2026-11-12 by the Consolidation Review: the fourth review running.** The 2026-10-06, 2026-10-28 and 2026-11-05 reviews each found sprint-sized changes in the lane and accepted them; this review finds 10 of 37 entries that add a new module or touch more than 5 source files (the degree-student group: 8 source files and `stpm_names.py`; the higher-owed fix: 9; the lazy-load wrappers). The third accept of the same WARN is a TD, so this is it. Cause: Lane B org requests are allowed through the freeze and the lane is their only door. Proposed rule (a change to `Settings/_tools/wat_lint.py` `check_pending_files`, for the owner to approve, not made here): the sprint-size breach is a FAIL, not a WARN, unless the pending entry carries `plan:<path>` naming a file that exists under `docs/plans/` (a Lane B request already writes one; #66 did). A request that is sprint-sized and has no plan is then stopped at the log, not found at the review. *(workspace - S)*
+
+### [TD-611] `code_health` forgets a sprint's own fixes when the Consolidation Review clears the sprint section - low (workspace tool)
+
+**Raised 2026-11-12 by the Consolidation Review (proposed, not built).** `code_health.sprint_shas` reads only `## Sprints since the last review`, and `small-change-lane.md` Part B says to clear that section at every review. The 90-day `fix%` window still holds those commits, so each review would raise `fix%` by the sprint-own fixes it forgot (61 at the 2026-11-12 reading). This review therefore left the section in place. Proposed fix: the review moves the cleared lines to a `## Closed sprint lines` section that `sprint_shas` also reads and `wat_lint` does not count as backlog, and the section is pruned when a line is older than the window. *(workspace - S)*

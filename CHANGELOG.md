@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 - docs (C4): closed 32 technical-debt entries that were already fixed, each with a commit or file evidence in the entry; `td_open` 194 -> 162. No code changed.
+- docs (C1 Consolidation Review, 2026-11-12): 37 pending small changes clustered (seven clusters), `## Pending` cleared, two roadmap follow-ons (F1 slip-check matrix, F2 cross-app imports), TD-608 to TD-611, one decisions entry. Field fixes stay counted. No code, test or budget changed.
 
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
 
