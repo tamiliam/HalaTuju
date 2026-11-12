@@ -147,6 +147,18 @@ roadmap item F2.** **`std` FAIL (looser): open, awaiting the owner's yes for thi
 React 19 raise (`9af9d820b`), already ratcheted down twice since; the way down is further splits, not another raise. No
 budget was touched in this review.
 
+**Owner decision on the two open readings (2026-11-12, verbatim: "yes to the above plan and Option A").** Both
+readings are accepted by the owner, each with an end date. On the end date the acceptance lapses: the reading then
+FAILs the next sprint close and goes back to the owner. No agent may extend it.
+- **`std` FAIL (looser): accepted until Fri 2026-11-20.** Fixed by roadmap item W1 (page weight): build 16-18 Nov,
+  deploy by 20 Nov with the owner's yes. Target: the pre-Next-15 first-load lines; if the Next 15 runtime makes that
+  impossible, the measured numbers go to the owner for a dated re-baseline decision.
+- **`fix%` 52, WARN: accepted until Fri 2026-11-27.** Fixed by roadmap item F1 (slip-check matrix): the owner approves
+  the rule table by Wed 18 Nov; build 19-24 Nov (Opus build and review); owner phone check; deploy by 27 Nov. Proof at
+  the monthly small audit (about 11 Dec): `fix%` below 52 and no new slip-check field fix after F1 ships.
+- **Other named later sprints, same rule:** `dup` 1 (`_gemini_generate`) by Fri 2026-12-04, after Gemini Phase 2;
+  `xapp` (F2) by the monthly small audit on 2026-12-11.
+
 **Promoted, summarised:** F1 slip-check matrix (sprint), F2 cross-app edges (sprint); TD-608, TD-609, TD-610, TD-611 in the register; one `decisions.md` entry. Open Items Index: not
 regenerated in this pass (C4 closed the done entries the same day and the audit's own interim count stands at 162);
 four entries are added below it and the next regeneration reads them.

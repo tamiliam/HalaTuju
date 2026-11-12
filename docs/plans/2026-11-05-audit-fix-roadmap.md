@@ -1324,6 +1324,7 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
 - **Complexity:** M.
 - **Model:** Opus build and review (eligibility and identity-adjacent); adversarial review before any push.
 - **Deploy:** one group; owner phone check, because ticks and flags show to officers.
+- **Deadline (owner, 2026-11-12):** rule table approved by the owner by Wed 18 Nov; build 19-24 Nov; deploy by Fri 27 Nov. The owner's acceptance of the `fix%` 52 WARN lapses on 27 Nov (`docs/consolidation-log.md`, 2026-11-12). Proof at the ~11 Dec small audit: `fix%` below 52, no new slip-check field fix after F1.
 
 #### F2 Cross-app imports, second pass
 
@@ -1339,3 +1340,17 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
 - **Complexity:** M to L.
 - **Model:** Sonnet, with an Opus read of any move that touches money or identity modules.
 - **Deploy:** one group; no behaviour change, so no phone check.
+- **Deadline (owner, 2026-11-12):** by the monthly small audit on Fri 11 Dec.
+
+#### W1 Page weight
+
+- **Goal:** `std` passes again. The four first-load lines raised for Next 15 / React 19 (A1.1, `9af9d820b`, TD-506) come back down: `/profile` (202.2 kB), `/scholarship/application` (218.6), `/scholarship/apply` (198.8) and the median (157.6).
+- **Scope:** measure each route's first-load chunks; split or lazy-load what a first paint does not need (the TD-416 method); lower each line in `code-standards.json` only in the commit that earns it (never raise).
+- **Acceptance:** the lines are back at their pre-Next-15 values, or, if the Next 15 runtime makes that impossible, the measured floor goes to the owner for a dated re-baseline decision. jest, `npm run gates`, bundle budget and mobile-check green; no behaviour change.
+- **Complexity:** M. **Model:** Sonnet; fresh review. **Deploy:** one group, with the owner's yes.
+- **Deadline (owner, 2026-11-12):** build 16-18 Nov; deploy by Fri 20 Nov. The owner's acceptance of the `std` FAIL lapses on 20 Nov.
+
+#### Gemini duplicate (`_gemini_generate`)
+
+- **Goal:** `dup` 0. The last duplicate name lives in the Gemini lane (`apply_copy_draft.py`, `__init__.py`, `sponsor_terms.py`); tenancy rule 6 and the `patch()` targets depend on the name, so the fix is designed with that lane after Gemini Phase 2 is live.
+- **Deadline (owner, 2026-11-12):** by Fri 4 Dec.
