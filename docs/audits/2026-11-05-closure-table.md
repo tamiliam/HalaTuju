@@ -120,3 +120,13 @@ Built 2026-11-12 from the audit (`docs/audits/2026-11-05-project-audit.md`), `do
 | CH-10 | low | Suppressions 92 | fixed+tested | 9e132c949 (A3.14), 00a83e400 (A3.15); budgets lowered in the code-standards tests; supp 92 to 20 | Target (30) met. |
 | CH-11 | medium | Debt count rose 203 to 219 | deferred | 11 Dec monthly small audit (no sprint) | td_open 219 to 169, target 110 NOT met. Closing: no sprint was set and the owner has recorded no decision on it. |
 | CH-12 | low | Register near-misses to tidy | fixed-untested | 627e6fe53 (A0.2) | Docs only. |
+
+## Live check, 12 Nov 2026 (read-only, owner's yes)
+
+The three owner SQL steps ARE applied on the live database. Read back from the catalogue:
+
+- **SEC-11:** partner_organisations has one policy only, "service_role all" (roles service_role, ALL). The public read policy is gone. Status: fixed (live).
+- **SEC-14:** 16 "service_role all" policies exist (the 15 tables + partner_organisations); no RLS table is left without a policy. Status: fixed (live).
+- **SEC-18 bucket half:** b40-documents is private, file_size_limit 26214400 (25 MB), 13 allowed types (application/octet-stream not allowed). Status: fixed (live); TD-467 can close.
+
+Revised counts: deferred 24 -> 21; the three move to fixed (live, read back; no automated test).
