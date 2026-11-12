@@ -1,6 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
+import { permName } from './permName'
 
 /**
  * People's permission chips (request #39 Sprint 4): beside a person's role, what their set adds to
@@ -8,7 +9,8 @@ import { useT } from '@/lib/i18n'
  * so a settled team reads exactly as before.
  *
  * ⚠ THE SERVER DECIDES THE DIFFERENCE (`permissions_added` / `permissions_removed`, served on both
- * People lists). This file holds no copy of the presets — `lib/staffPermissions.ts` says why.
+ * People lists). This file holds no copy of the presets — `lib/staffPermissions.ts` says why. Since M2b
+ * the difference may name a v2 page key (`permName` words it).
  */
 export default function PermissionChips({ row }: {
   row: { custom?: boolean; permissions_added?: string[]; permissions_removed?: string[] }
@@ -24,13 +26,13 @@ export default function PermissionChips({ row }: {
       </span>
       {added.map((k) => (
         <span key={`+${k}`} className="rounded-full bg-info-100 px-2 py-0.5 text-[11px] text-info-700">
-          + {t(`admin.perm.${k}.name`)}
+          + {permName(t, k)}
         </span>
       ))}
       {removed.map((k) => (
         <span key={`-${k}`}
           className="rounded-full bg-ground-100 px-2 py-0.5 text-[11px] text-ground-500 line-through">
-          {t(`admin.perm.${k}.name`)}
+          {permName(t, k)}
         </span>
       ))}
     </span>

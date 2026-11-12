@@ -1,6 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
+import { permName } from './permName'
 import { formatDateTime } from '@/lib/formatDate'
 import type { StaffPermissionChangeRow } from '@/lib/admin-api/admins'
 
@@ -23,7 +24,7 @@ export default function PermissionHistory({ rows, name, role }: {
 }) {
   const { t } = useT()
   const roleName = (r: string) => t(`admin.role.${r}`)
-  const perm = (k: string) => t(`admin.perm.${k}.name`)
+  const perm = (k: string) => permName(t, k)          // M2b: a v2 page key reads "<page>: <level>"
 
   const what = (r: StaffPermissionChangeRow): string => {
     if (r.kind === 'role_change') return t('admin.permHistory.roleReset', { role: roleName(r.role) })

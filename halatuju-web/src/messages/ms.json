@@ -8475,6 +8475,48 @@
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Permohonan”, jadi ia dihidupkan bersamanya."
     },
+    "permV2": {
+      "title": "Halaman",
+      "intro": "Setiap halaman yang boleh dibuka oleh orang ini. Suis yang dikunci dipegang melalui kebenaran lain, atau hanya untuk pentadbir organisasi.",
+      "group": {
+        "organisation": "Organisasi",
+        "programme": "Program",
+        "engagement": "Penglibatan",
+        "money": "Wang"
+      },
+      "page": {
+        "invitations": "Jemputan",
+        "team": "Pasukan",
+        "sources": "Sumber",
+        "sponsors": "Penaja",
+        "billing": "Pengebilan",
+        "requests": "Permintaan",
+        "settings": "Tetapan",
+        "students": "Permohonan",
+        "scholars": "Penerima biasiswa",
+        "contracts": "Kontrak",
+        "programmes": "Tetapan program",
+        "announcements": "Pengumuman",
+        "surveys": "Tinjauan",
+        "development": "Pembangunan",
+        "mentoring": "Bimbingan mentor",
+        "payments": "Pembayaran",
+        "spending": "Perbelanjaan"
+      },
+      "level": {
+        "view": "lihat",
+        "edit": "ubah",
+        "prepare": "sediakan",
+        "check": "semak",
+        "approve": "luluskan"
+      },
+      "name": "{page}: {level}",
+      "reason": {
+        "never_grantable": "Hanya pentadbir organisasi, sentiasa.",
+        "lead_only": "Hanya pentadbir organisasi, buat masa ini.",
+        "alias": "Datang bersama kebenaran di atas."
+      }
+    },
     "person": {
       "tabsAria": "Panel individu",
       "tabProfile": "Profil",

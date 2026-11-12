@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Toggle from '@/components/Toggle'
 import PermissionHistory from './PermissionHistory'
+import { permName } from './permName'
 import { useT } from '@/lib/i18n'
 import {
   getStaffPermissions, saveStaffPermissions,
-  type StaffPermissionsPlan, type StaffPermissionsView,
+  type StaffPermissionsPlan, type StaffPermissionsView, type StaffV2Key,
 } from '@/lib/admin-api/admins'
 
 /**
@@ -39,7 +40,14 @@ import {
  * stays ticked and locked while Quality check is on; turning it off never takes Quality check away.
  * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
  * server served, changed only by the switches on screen (and the key Quality check brings).
- * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
+ * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`.
+ *
+ * Sprint M2b (D9, 2026-11-12): under "Admin permissions", the PAGES, one heading per group (the server's
+ * `v2_keys`, in its order) and a switch per page key. What the server will not let anyone here store is
+ * drawn LOCKED with its reason (`never_grantable`, `lead_only`, `alias`), on when it opens for them today.
+ * The set is ONE list — today's keys and the stored page keys (`v2_held`) — saved with `v2: true`; the
+ * server adds a page's view to its change, and the switches follow its answer. "Custom" and Reset weigh
+ * the page switches against the role's own (`v2_preset`, or the Admins table's `table_presets`). */
 export const TABLE_KEYS = {
   admins: ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
     'award_withdraw_request', 'award_withdraw_approve'],
@@ -67,11 +75,16 @@ type Refusal = { message: string; code: string }
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((k) => b.includes(k))
 
+/** M2b: the whole set a card starts from — today's keys, then the stored page keys. */
+const heldBy = (v: { permissions: string[]; v2_held?: string[] }) => [...v.permissions, ...(v.v2_held ?? [])]
+/** The page a v2 key opens (`sponsors.edit` -> `sponsors`); a key of today has none. */
+const pageOf = (key: string) => (key.includes('.') ? key.slice(0, key.indexOf('.')) : null)
+
 export default function PermissionEditor({ adminId, name, token, onSaved, initial, table }: PermissionEditorProps) {
   const { t } = useT()
   const [view, setView] = useState<StaffPermissionsView | null>(initial ?? null)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [want, setWant] = useState<string[]>(initial?.permissions ?? [])
+  const [want, setWant] = useState<string[]>(initial ? heldBy(initial) : [])
   const [plan, setPlan] = useState<StaffPermissionsPlan | null>(null)
   const [refusal, setRefusal] = useState<Refusal | null>(null)
   const [busy, setBusy] = useState(false)
@@ -83,12 +96,13 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     if (initial) return
     let live = true
     getStaffPermissions(adminId, { token })
-      .then((v) => { if (live) { setView(v); setWant(v.permissions) } })
+      .then((v) => { if (live) { setView(v); setWant(heldBy(v)) } })
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }
   }, [adminId, token, initial])
 
-  const dirty = !!view && !sameSet(want, view.permissions)
+  const held = view ? heldBy(view) : []
+  const dirty = !!view && !sameSet(want, held)
 
   // Every change asks the server what saving would do; an unchanged set asks nothing.
   useEffect(() => {
@@ -115,16 +129,24 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   // key before (held without Quality check), so turning Quality check off never leaves somebody seated at
   // Admins by a key nobody ticked (T2's rule, kept). In Admins the switch is on screen and stays as it is.
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
+  // M2b: a page's view goes with its change, and off with it (the server stores the view anyway).
+  const grantable = useMemo(() => new Set((view?.v2_keys ?? []).flatMap((g) => g.keys)
+    .filter((k) => k.grantable).map((k) => k.key)), [view])
   const flip = useCallback((key: string, on: boolean) => {
     setSaved(false)
     setWant((cur) => {
       let next = on ? [...cur, key] : cur.filter((k) => k !== key)
+      const page = pageOf(key)
+      if (page && on && !key.endsWith('.view') && grantable.has(`${page}.view`) && !next.includes(`${page}.view`)) {
+        next = [...next, `${page}.view`]
+      }
+      if (page && !on && key.endsWith('.view')) next = next.filter((k) => pageOf(k) !== page)
       if (key === 'qc' && on && !next.includes('see_all')) next = [...next, 'see_all']
       // By their SEAT, not by what is drawn (O12): opened from Reviewers, an Admin's key stays theirs.
       if (!seatedAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       return next
     })
-  }, [seatedAdmins, seeAllWasAdmin])
+  }, [seatedAdmins, seeAllWasAdmin, grantable])
 
   if (loadFailed) {
     return <p className="text-sm text-critical-600">{t('admin.permEditor.loadFailed', { name })}</p>
@@ -150,8 +172,8 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     setBusy(true)
     try {
       const p = await saveStaffPermissions(adminId, want, false, { token })
-      setView({ ...view, permissions: p.permissions, custom: p.custom })
-      setWant(p.permissions)
+      setView({ ...view, permissions: p.permissions, custom: p.custom, v2_held: p.v2_held ?? view.v2_held })
+      setWant(heldBy({ permissions: p.permissions, v2_held: p.v2_held ?? view.v2_held }))
       setSaved(true)
       onSaved?.()
       // Re-read for the Changes list: the new line is the server's, with its own time and author.
@@ -165,7 +187,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     } finally { setBusy(false) }
   }
 
-  const names = (keys: string[]) => keys.map((k) => `“${t(`admin.perm.${k}.name`)}”`).join(', ')
+  const names = (keys: string[]) => keys.map((k) => `“${permName(t, k)}”`).join(', ')
   const line = (): string => {
     if (saved) return t('admin.permEditor.saved', { name: who })
     if (!dirty) return t('admin.permEditor.noChange', { name: who })
@@ -182,7 +204,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     const on = want.includes(key)
     // Applications is locked on while Quality check holds it (TD-499).
     const locked = key === 'see_all' && want.includes('qc')
-    const changed = on !== view.permissions.includes(key)
+    const changed = on !== held.includes(key)
     return (
       <div key={key} data-key={key} className="flex items-center justify-between gap-4 py-2.5">
         <div className="min-w-0">
@@ -215,14 +237,56 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
       </div>
     )
   }
+  // M2b: one page key. Locked when nobody here may store it, on when it opens for them today.
+  const pageRow = (k: StaffV2Key) => {
+    const on = k.grantable ? want.includes(k.key) : k.held
+    const changed = k.grantable && on !== held.includes(k.key)
+    return (
+      <div key={k.key} data-key={k.key} className="flex items-center justify-between gap-4 py-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-ground-900">
+            {permName(t, k.key)}
+            {changed && (
+              <span className="rounded-full bg-primary-50 px-2 py-px text-[11px] font-semibold text-primary-700">
+                {t('admin.permEditor.changed')}
+              </span>
+            )}
+          </div>
+          {k.reason && (
+            <div className="text-xs text-ground-500" data-testid={`v2-reason-${k.key}`}>
+              {t(`admin.permV2.reason.${k.reason}`)}</div>
+          )}
+        </div>
+        <Toggle on={on} disabled={fixed || busy || !k.grantable} label={permName(t, k.key)}
+          onChange={(v) => flip(k.key, v)} />
+      </div>
+    )
+  }
+  const pages = (view.v2_keys ?? []).filter((g) => g.keys.length > 0)
+  const pageGroups = pages.length === 0 ? null : (
+    <div className="mt-2 border-t border-ground-100 pt-3" data-testid="perm-section-pages">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ground-500">{t('admin.permV2.title')}</h3>
+      <p className="mb-1 text-xs text-ground-500">{t('admin.permV2.intro')}</p>
+      {pages.map((g) => (
+        <div key={g.group} className="mt-2" data-testid={`perm-pages-${g.group}`}>
+          <h4 className="text-xs font-semibold text-ground-700">{t(`admin.permV2.group.${g.group}`)}</h4>
+          {g.keys.map(pageRow)}
+        </div>
+      ))}
+    </div>
+  )
+
   // A key the server adds later still gets a switch, under the sections, rather than vanishing.
   const known: readonly string[] = [...TABLE_KEYS.admins, ...TABLE_KEYS.reviewers]
   const other = view.keys.filter((k) => !known.includes(k))
-  // O12: opened from one table, "Custom" and Reset weigh that table's keys only.
-  const scope: readonly string[] | null = table ? TABLE_KEYS[table] : null
+  // O12: opened from one table, "Custom" and Reset weigh that table's keys only (M2b: the Admins table's
+  // keys include the page keys, and its served preset ends with the role's own).
+  const scope: readonly string[] | null = table === 'admins' ? [...TABLE_KEYS.admins, ...Array.from(grantable)]
+    : table ? TABLE_KEYS[table] : null
   const mine = (keys: readonly string[]) => (scope ? keys.filter((k) => scope.includes(k)) : [...keys])
-  const presetHere = scope ? (view.table_presets?.[table as TeamTable] ?? mine(view.preset)) : view.preset
-  const resetTo = scope ? [...want.filter((k) => !scope.includes(k)), ...presetHere] : view.preset
+  const fullPreset = [...view.preset, ...(view.v2_preset ?? [])]
+  const presetHere = scope ? (view.table_presets?.[table as TeamTable] ?? mine(fullPreset)) : fullPreset
+  const resetTo = scope ? [...want.filter((k) => !scope.includes(k)), ...presetHere] : fullPreset
   const custom = !sameSet(mine(want), presetHere)
   // Review fix 1: a Reviewer or QC holding neither key would vanish from People; the server refuses
   // it (`would_leave_people`) and the hint says why before the refusal arrives.
@@ -246,6 +310,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
       <p className="mb-2 mt-0.5 text-sm text-ground-500" data-testid={fixed ? 'perm-fixed' : undefined}>
         {fixed ? t('admin.permEditor.fixed', { name: who }) : t('admin.permEditor.subtitle', { preset })}</p>
       {inAdmins && group('perm-section-admins', t('admin.team.colKeys.admins'), TABLE_KEYS.admins)}
+      {inAdmins && pageGroups}
       {inReviewers && group('perm-section-reviewers', t('admin.team.colKeys.reviewers'), TABLE_KEYS.reviewers)}
       {unlisted && !fixed && (
         <p className="text-xs text-caution-700" data-testid="unlisted-hint">

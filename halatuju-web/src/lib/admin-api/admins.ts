@@ -295,6 +295,29 @@ export interface StaffPermissionsView {
   table_presets?: Partial<Record<TeamTableName, string[]>>
   /** Sprint T3: the person page's header and Profile tab. */
   person?: TeamPersonBlock
+  /** Sprint M2b (D9): every v2 page key by group, as the server reads it — absent from an older api. */
+  v2_keys?: StaffV2Group[]
+  /** M2b: the STORED v2 page keys the switches start from (`permissions` stays today's keys). */
+  v2_held?: string[]
+  /** M2b: the role's own v2 part ("Custom" and Reset weigh the v2 switches against it). */
+  v2_preset?: string[]
+}
+
+/** M2b: one v2 page key. `grantable` false = drawn locked, with `reason`: `never_grantable` (the lead
+ *  alone, for ever), `lead_only` (the lead alone, until M3) or `alias` (it comes with a switch above).
+ *  `held` = it opens for them today, however it got there. */
+export interface StaffV2Key {
+  key: string
+  page: string
+  level: string
+  grantable: boolean
+  reason: 'never_grantable' | 'lead_only' | 'alias' | null
+  held: boolean
+}
+
+export interface StaffV2Group {
+  group: string
+  keys: StaffV2Key[]
 }
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set
@@ -327,6 +350,8 @@ export interface StaffPermissionsPlan {
   added: string[]
   removed: string[]
   consequences: string[]
+  /** M2b: the stored v2 page keys the set would hold (`permissions` is today's keys only). */
+  v2_held?: string[]
 }
 
 export async function getStaffPermissions(adminId: number, options?: ApiOptions) {
@@ -334,11 +359,13 @@ export async function getStaffPermissions(adminId: number, options?: ApiOptions)
 }
 
 /** Save a set, or with `dryRun` ask what saving it would do. A refusal throws with the server's
- *  sentence and its `code` (`has_open_cases`, `would_leave_people`, …). */
+ *  sentence and its `code` (`has_open_cases`, `would_leave_people`, `never_grantable`, …).
+ *  M2b: `permissions` is the WHOLE set, today's keys and the v2 page keys together, so it says `v2: true`
+ *  (a tab without the flag keeps the stored v2 keys untouched). */
 export async function saveStaffPermissions(adminId: number, permissions: string[], dryRun: boolean,
                                            options?: ApiOptions) {
   return adminMutate<StaffPermissionsPlan>(`/api/v1/admin/admins/${adminId}/permissions/`, 'PATCH',
-    { permissions, dry_run: dryRun }, options)
+    { permissions, dry_run: dryRun, v2: true }, options)
 }
 
 /** Suspend (`revoke`) or restore a staff sign-in. A refusal throws with `code` and the whole body

@@ -8475,6 +8475,48 @@
       },
       "qcBrings": "Quality check needs the Admin permission “Applications”, so it is switched on with it."
     },
+    "permV2": {
+      "title": "Pages",
+      "intro": "Each page this person may open. A locked switch is held through another permission, or is for the organisation admin only.",
+      "group": {
+        "organisation": "Organisation",
+        "programme": "Programme",
+        "engagement": "Engagement",
+        "money": "Money"
+      },
+      "page": {
+        "invitations": "Invitations",
+        "team": "Team",
+        "sources": "Sources",
+        "sponsors": "Sponsors",
+        "billing": "Billing",
+        "requests": "Requests",
+        "settings": "Settings",
+        "students": "Applications",
+        "scholars": "Scholars",
+        "contracts": "Contracts",
+        "programmes": "Programme settings",
+        "announcements": "Announcements",
+        "surveys": "Surveys",
+        "development": "Development",
+        "mentoring": "Mentoring",
+        "payments": "Payments",
+        "spending": "Spending"
+      },
+      "level": {
+        "view": "view",
+        "edit": "change",
+        "prepare": "prepare",
+        "check": "check",
+        "approve": "approve"
+      },
+      "name": "{page}: {level}",
+      "reason": {
+        "never_grantable": "Only the organisation admin, always.",
+        "lead_only": "Only the organisation admin, for now.",
+        "alias": "Comes with a permission above."
+      }
+    },
     "person": {
       "tabsAria": "Person panels",
       "tabProfile": "Profile",
