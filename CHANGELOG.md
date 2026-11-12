@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- docs (C4): closed 32 technical-debt entries that were already fixed, each with a commit or file evidence in the entry; `td_open` 194 -> 162. No code changed.
+
 ### merge: G14 - Wave 4 (A4.4 to A4.8) on one branch, plus review fixes (2026-11-11)
 
 Branch g14 (not pushed, not deployed; no migration, no budget raised). Merged a44, a45, a46, a47 and a48 onto
