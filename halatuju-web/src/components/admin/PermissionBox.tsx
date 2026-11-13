@@ -68,7 +68,7 @@ export function BoxShell({ title, on, of, testId, children }: {
           <path d="M5 7.5l5 5 5-5" />
         </svg>
         <h3 className="flex-1 text-[15px] font-semibold text-ground-900">{title}</h3>
-        <span className="whitespace-nowrap rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-700"
+        <span className="whitespace-nowrap rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-700"
           data-testid={`${testId}-count`}>
           {t('admin.permEditor.boxCount', { n: String(on), m: String(of) })}
         </span>

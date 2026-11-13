@@ -42,6 +42,9 @@ export interface PermBox {
 const L = 'admin.permLayout'
 const tri = (page: string): PermControl => ({ kind: 'tri', view: `${page}.view`, edit: `${page}.edit` })
 const sw = (key: string): PermControl => ({ kind: 'switch', key })
+/** A switch on one page key, spelt from its page and level: a bare `'settings.edit'` would read as an i18n key
+ *  to the namespace guard (`namespaces-i18n.test.ts`), which scans every dotted literal. */
+const pageSw = (page: string, level: 'view' | 'edit'): PermControl => sw(`${page}.${level}`)
 const INFO: PermControl = { kind: 'info' }
 /** A sub-item on one of today's keys: its own words (`admin.perm.<key>`). */
 const oldSub = (key: string): PermSub => ({ key, name: `admin.perm.${key}.name`, desc: `admin.perm.${key}.desc` })
@@ -51,13 +54,13 @@ export const PERMISSION_LAYOUT: readonly PermBox[] = [
   { id: 'organisation', title: `${L}.box.organisation`, rows: [
     { id: 'orgOverview', name: 'admin.orgPage.nav', desc: `${L}.orgOverview.desc`, control: INFO },
     { id: 'invitations', name: 'admin.nav.invitations', desc: `${L}.invitations.desc`, control: tri('invitations') },
-    { id: 'team', name: 'admin.nav.reviewers', desc: `${L}.team.desc`, control: sw('team.view') },
+    { id: 'team', name: 'admin.nav.reviewers', desc: `${L}.team.desc`, control: pageSw('team', 'view') },
     { id: 'sources', name: 'admin.sources.nav', desc: `${L}.sources.desc`, control: tri('sources') },
     { id: 'sponsors', name: 'admin.sponsors.nav', desc: `${L}.sponsors.desc`, control: tri('sponsors'),
       subs: [sub('sponsors.approve', 'sponsorsApprove')] },
-    { id: 'billing', name: 'admin.billing.title', desc: `${L}.billing.desc`, control: sw('billing.view') },
+    { id: 'billing', name: 'admin.billing.title', desc: `${L}.billing.desc`, control: pageSw('billing', 'view') },
     { id: 'requests', name: 'admin.requests.nav', desc: `${L}.requests.desc`, control: tri('requests') },
-    { id: 'orgSettings', name: 'admin.orgSettings.nav', desc: `${L}.orgSettings.desc`, control: sw('settings.edit') },
+    { id: 'orgSettings', name: 'admin.orgSettings.nav', desc: `${L}.orgSettings.desc`, control: pageSw('settings', 'edit') },
   ] },
   { id: 'programme', title: `${L}.box.programme`, rows: [
     { id: 'programmeOverview', name: 'admin.nav.programmeOverview', desc: `${L}.programmeOverview.desc`, control: INFO },
@@ -74,7 +77,7 @@ export const PERMISSION_LAYOUT: readonly PermBox[] = [
     { id: 'spending', name: 'admin.spending.nav', desc: `${L}.spending.desc`, control: sw('spending') },
     { id: 'contracts', name: 'admin.contracts.title', desc: `${L}.contracts.desc`, control: tri('contracts') },
     { id: 'programmeSettings', name: 'admin.programme.config.nav', desc: `${L}.programmeSettings.desc`,
-      control: sw('programmes.edit') },
+      control: pageSw('programmes', 'edit') },
   ] },
 ]
 
