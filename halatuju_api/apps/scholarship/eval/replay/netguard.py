@@ -1,10 +1,13 @@
 """The socket guard (design 3.2): no outgoing connection from Python except to the database host.
 
-`socket.socket.connect` / `connect_ex` are replaced for the length of the block; every client library
-that speaks HTTP (requests, httpx, google clients, the metadata server that would hand out the job's
-service-account token) goes through them, so a reach for Gemini, Vision, Storage, Brevo or Vircle raises
-`NetworkRefused`. The database driver (libpq, C) opens its own socket and is not seen here; ``allow``
-lists the database host's addresses so a pure-Python driver would still work.
+`socket.socket.connect` / `connect_ex` are replaced for the length of the block; a client library that
+speaks HTTP from PYTHON sockets (requests, httpx, urllib, the google-auth call to the metadata server)
+goes through them, so such a reach for Gemini, Storage, Brevo or Vircle raises `NetworkRefused`.
+
+NOT covered: anything that opens its socket in C. gRPC clients (the Vision client can use gRPC) and the
+database driver (libpq) do. What stops a gRPC reach is that the job holds no key and its service account
+has no role but reading its one secret (owner steps), plus `guards.shut_doors`, which makes the Vision
+entry points raise. ``allow`` lists the database host's addresses so a pure-Python driver would still work.
 """
 import contextlib
 import socket

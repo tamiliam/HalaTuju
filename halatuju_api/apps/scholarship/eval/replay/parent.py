@@ -1,29 +1,39 @@
 """The replay's parent process (design 3.5): the job's entry point, `python -m replay.parent`.
 
-1. Preflight: no forbidden key in the environment; the `replay_ro` URL on the session pooler port 5432.
+1. Preflight, BEFORE Django is set up (its setup would query): no forbidden key in the environment; the
+   `replay_ro` URL on the session pooler port 5432.
 2. Opens ONE `REPEATABLE READ, READ ONLY` transaction (never committed) and exports its snapshot.
-3. Prints the case counts (`--counts-only` stops here: R1's first live step).
-4. Starts three children - old, new, new_again - each in its own venv and tree with a MINIMAL environment
-   (the replay URL, the path, the settings module; nothing else), each joining the snapshot.
+   `--counts-only` prints the case counts and stops here (R1's first live step).
+3. Starts three children - old, new, new_again - each in its own venv and tree with a MINIMAL environment
+   (the replay URL, the path, the settings module, the run's scrub salt; nothing else), each joining the
+   snapshot. The JOIN HANDSHAKE: the parent waits until each child has written `joined` (or exited, or is
+   killed after `JOIN_TIMEOUT_S`), prints the case counts, and rolls its transaction back at once, so it
+   is not held open while the engines run.
+4. Waits for the children.
 5. Compares: per record `same`, `differs` (old against new), `could_not_run` (either side raised) or
    `noise` (new against new_again differ: the engine is not deterministic; left out of A/B). The A/B
    split by the ruling catalogue is R2.
 Everything printed goes through the scrubber; an error is printed by class name only.
 """
 import argparse
+import importlib
 import json
 import os
 import subprocess
 import sys
+import time
 from collections import Counter, defaultdict
 
 from . import guards, netguard
-from .child import parse_instant
+from . import scrub as scrub_module
+from .child import parse_instant, setup_django
 from .scrub import count_dropped, error_record, scrub
 
 RUN_SIDES = ('old', 'new', 'new_again')
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
 CHILD_TIMEOUT_S = 3 * 60 * 60
+#: How long the parent waits for every child to join; below the parent's idle-in-transaction limit.
+JOIN_TIMEOUT_S = 10 * 60
 
 
 def emit(obj, out=print):
@@ -47,10 +57,12 @@ def case_counts():
 
 
 def child_env(env, side_root, harness_dir):
-    """The child's WHOLE environment: nothing from the parent but the replay URL and the path."""
+    """The child's WHOLE environment: nothing from the parent but the replay URL, the path and the run's
+    scrub salt (so every side hashes alike)."""
     return {
         'PATH': env.get('PATH', '/usr/bin:/bin'),
         guards.DB_ENV: env.get(guards.DB_ENV, ''),
+        scrub_module.SALT_ENV: env.get(scrub_module.SALT_ENV, ''),
         'PYTHONPATH': os.pathsep.join([harness_dir, os.path.join(side_root, 'halatuju_api')]),
         'DJANGO_SETTINGS_MODULE': 'replay.settings',
         'PYTHONDONTWRITEBYTECODE': '1',
@@ -177,19 +189,57 @@ def parse_args(argv):
     return args
 
 
+def _has_joined(path):
+    try:
+        with open(path, encoding='utf-8') as fh:
+            return any(json.loads(line).get('event') == 'joined' for line in fh if line.strip())
+    except (OSError, ValueError):                       # not written yet, or a half-written line
+        return False
+
+
+def wait_for_joins(paths, procs, *, timeout=JOIN_TIMEOUT_S, sleep=time.sleep, now=time.monotonic, poll=0.5):
+    """{side: 'joined' | 'exited' | 'timed_out'}: waits until every child has written `joined` (it is inside
+    the snapshot) or has exited. A child still waiting after ``timeout`` seconds is killed."""
+    status, start = {}, now()
+    while True:
+        for s in procs:
+            if s in status:
+                continue
+            if _has_joined(paths[s]):
+                status[s] = 'joined'
+            elif procs[s].poll() is not None:
+                status[s] = 'exited'
+        if len(status) == len(procs):
+            return status
+        if now() - start >= timeout:
+            for s in procs:
+                if s not in status:
+                    procs[s].kill()
+                    status[s] = 'timed_out'
+            return status
+        sleep(poll)
+
+
 def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=case_counts):
+    """The exporting transaction is open only until every child has joined its snapshot (`joins`), plus
+    the case counts; it is rolled back BEFORE the children run their engines."""
     guards.check_environment(env)
     host, port = guards.check_database_url(env.get(guards.DB_ENV))
     sess = session or (lambda: guards.read_only_session(export=True))
+    importlib.import_module(f'{__package__}.engine_map')   # R2 adapters register their codes, as in each child
     os.makedirs(args.workdir, exist_ok=True)
-    with netguard.refuse_network(netguard.db_addresses(host, port)), sess() as snapshot:
-        emit({'event': 'start', 'old_commit': _commit(args.old_root), 'new_commit': _commit(args.new_root),
-              'months': args.months.split(','), 'snapshot_joined': bool(snapshot)}, out)
-        emit({'event': 'counts', **counts()}, out)
-        if args.counts_only:
-            return {}
-        paths = {s: os.path.join(args.workdir, f'{s}.jsonl') for s in RUN_SIDES}
-        procs = {s: spawn(args, s, snapshot, paths[s], env) for s in RUN_SIDES}
+    child_vars = {**env, scrub_module.SALT_ENV: scrub_module.new_salt()}   # one keyed hash on all three sides
+    with netguard.refuse_network(netguard.db_addresses(host, port)):
+        with sess() as snapshot:
+            emit({'event': 'start', 'old_commit': _commit(args.old_root), 'new_commit': _commit(args.new_root),
+                  'months': args.months.split(','), 'snapshot_joined': bool(snapshot)}, out)
+            if args.counts_only:
+                emit({'event': 'counts', **counts()}, out)
+                return {}
+            paths = {s: os.path.join(args.workdir, f'{s}.jsonl') for s in RUN_SIDES}
+            procs = {s: spawn(args, s, snapshot, paths[s], child_vars) for s in RUN_SIDES}
+            emit({'event': 'joins', **wait_for_joins(paths, procs)}, out)
+            emit({'event': 'counts', **counts()}, out)
         codes = {s: procs[s].wait(timeout=CHILD_TIMEOUT_S) for s in RUN_SIDES}
     sides = {}
     for s in RUN_SIDES:
@@ -205,8 +255,9 @@ def main(argv=None):
     logging.disable(logging.CRITICAL)
     try:
         args = parse_args(argv)
-        import django
-        django.setup()
+        guards.check_environment(os.environ)            # the checks come BEFORE Django: its setup queries
+        guards.check_database_url(os.environ.get(guards.DB_ENV))
+        setup_django()
         run_replay(args, env=os.environ)
     except SystemExit:
         raise

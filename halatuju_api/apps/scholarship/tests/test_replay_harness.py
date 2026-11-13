@@ -3,18 +3,24 @@
 The parent runs in-process with an in-process "spawn": each side is `child.run` inside the same guards
 the job uses (the SQLite test database stands in for the snapshot, `allow_sqlite`). The engine map is
 checked against THIS tree. No live database, no network, no key, no real engine adapter (R2)."""
+import contextlib
 import datetime
+import io
 import json
+import logging
 import os
 import re
 import tempfile
 import types
 from unittest import mock
 
+from django.apps import apps as django_apps
+from django.db import connection
 from django.test import SimpleTestCase, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
-from apps.scholarship.eval.replay import child, engine_map, guards, parent
+from apps.scholarship.eval.replay import child, engine_map, guards, parent, scrub
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.tests.factories import make_application
 
@@ -84,6 +90,22 @@ ANSWERS = {
 }
 
 
+#: What the fake adapters register, as an R2 adapter would (engine names, record fields, statuses).
+FAKE_CODES = tuple(ANSWERS) + ('status', 'app', 'amount', 'n', 'month', 'months', 'probable', 'unclear',
+                               'submitted', 'unreachable')
+
+
+def _register_fake_codes(test):
+    patcher = mock.patch.object(scrub, '_REGISTERED', set())
+    patcher.start()
+    test.addCleanup(patcher.stop)
+    scrub.register_codes(FAKE_CODES)
+
+
+def _done_proc():
+    return types.SimpleNamespace(wait=lambda timeout=None: 0, poll=lambda: 0, kill=lambda: None)
+
+
 def _spawn(args, side, snapshot, out_path, env):
     """In-process stand-in for `parent.spawn_child`: the side's run inside the job's own guards."""
     engines = [_Engine(n, side, ANSWERS[n]) for n in sorted(ANSWERS)]
@@ -91,9 +113,9 @@ def _spawn(args, side, snapshot, out_path, env):
         def write(obj):
             fh.write(json.dumps(child.scrub(obj), sort_keys=True) + '\n')
         child.run_side(side=side, engines=engines, instant=child.parse_instant(args.instant),
-                  months=args.months.split(','), write=write, snapshot=snapshot,
-                  session=lambda: guards.read_only_session(snapshot=snapshot, allow_sqlite=True))
-    return types.SimpleNamespace(wait=lambda timeout=None: 0)
+                       months=args.months.split(','), write=write, snapshot=snapshot, load=lambda: None,
+                       session=lambda: guards.read_only_session(snapshot=snapshot, allow_sqlite=True))
+    return _done_proc()
 
 
 class HarnessEndToEndTest(TestCase):
@@ -103,6 +125,7 @@ class HarnessEndToEndTest(TestCase):
         self.workdir = tmp.name
         self.apps = [make_application('submitted'), make_application('submitted')]
         _CALLS['n'] = 0
+        _register_fake_codes(self)
 
     def _run(self, *extra):
         args = parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
@@ -133,6 +156,8 @@ class HarnessEndToEndTest(TestCase):
         sides = [x for x in lines if x.get('event') == 'side']
         self.assertEqual([(s['side'], s['exit'], s['fatal']) for s in sides],
                          [('old', 0, []), ('new', 0, []), ('new_again', 0, [])])
+        joins = next(x for x in lines if x.get('event') == 'joins')
+        self.assertEqual({joins[s] for s in parent.RUN_SIDES}, {'joined'})
 
     def test_the_clock_engine_reads_the_pinned_month(self):
         self._run()
@@ -175,6 +200,114 @@ class HarnessEndToEndTest(TestCase):
                     {guards.DB_ENV: LOCAL_URL.replace(':5432', ':6543')}):
             with self.assertRaises(guards.WriteRefused):
                 parent.run_replay(args, env=env, out=lambda s: None, spawn=mock.Mock())
+
+
+class JoinHandshakeTest(SimpleTestCase):
+    """The parent's exporting transaction ends as soon as every child has joined the snapshot."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.workdir = tmp.name
+        _register_fake_codes(self)
+
+    def test_the_parent_rolls_back_once_every_child_joined_and_before_any_child_finishes(self):
+        state = {'open': False, 'open_at_wait': []}
+
+        @contextlib.contextmanager
+        def session():
+            state['open'] = True
+            try:
+                yield '00000003-0000001B-1'
+            finally:
+                state['open'] = False
+
+        def spawn(args, side, snapshot, out_path, env):
+            with open(out_path, 'w', encoding='utf-8') as fh:
+                fh.write(json.dumps({'event': 'joined', 'side': side}, sort_keys=True) + '\n')
+
+            def wait(timeout=None):
+                state['open_at_wait'].append(state['open'])
+                return 0
+            return types.SimpleNamespace(wait=wait, poll=lambda: None, kill=mock.Mock())
+
+        args = parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
+                                  '--old-root', self.workdir, '--new-root', self.workdir])
+        lines = []
+        parent.run_replay(args, env={guards.DB_ENV: LOCAL_URL, 'PATH': '/bin'}, out=lines.append, spawn=spawn,
+                          session=session, counts=lambda: {'applications': 0})
+        self.assertEqual(state['open_at_wait'], [False, False, False])
+        events = [json.loads(line).get('event') for line in lines]
+        self.assertLess(events.index('joins'), events.index('counts'))    # the wait holds no table lock
+
+    def test_a_child_that_never_joins_is_stopped_and_the_wait_ends(self):
+        paths = {s: os.path.join(self.workdir, f'{s}.jsonl') for s in parent.RUN_SIDES}
+        with open(paths['old'], 'w', encoding='utf-8') as fh:
+            fh.write('{"event": "joined", "side": "old"}\n')
+        procs = {'old': types.SimpleNamespace(poll=lambda: None, kill=mock.Mock()),
+                 'new': types.SimpleNamespace(poll=lambda: 3, kill=mock.Mock()),          # exited, never joined
+                 'new_again': types.SimpleNamespace(poll=lambda: None, kill=mock.Mock())}  # never joins
+        ticks = iter(range(0, 10 ** 6, 10))
+        status = parent.wait_for_joins(paths, procs, timeout=60, sleep=lambda s: None, now=lambda: next(ticks))
+        self.assertEqual(status, {'old': 'joined', 'new': 'exited', 'new_again': 'timed_out'})
+        procs['new_again'].kill.assert_called_once_with()
+        procs['old'].kill.assert_not_called()
+
+
+class ParentMainTest(TestCase):
+    def test_a_bad_url_is_refused_before_django_setup_and_before_any_query(self):
+        level = logging.root.manager.disable
+        self.addCleanup(logging.disable, level)
+        for url in (LOCAL_URL.replace(':5432', ':6543'), LOCAL_URL.replace('replay_ro.abcdefgh', 'postgres.abcdefgh')):
+            buf = io.StringIO()
+            with tempfile.TemporaryDirectory() as tmp, \
+                    mock.patch.dict(os.environ, {guards.DB_ENV: url, 'PATH': os.environ.get('PATH', '')}, clear=True), \
+                    mock.patch('django.setup') as setup, CaptureQueriesContext(connection) as queries, \
+                    contextlib.redirect_stdout(buf):
+                code = parent.main(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', tmp])
+            self.assertEqual(code, 3, url)
+            setup.assert_not_called()
+            self.assertEqual(len(queries), 0)
+            self.assertEqual(json.loads(buf.getvalue()), {'event': 'fatal', 'error': 'WriteRefused'})
+
+
+class CourseDataTest(TestCase):
+    """The engines' course data comes from the snapshot: loaded inside the session, never at start-up."""
+
+    def setUp(self):
+        self.cfg = django_apps.get_app_config('courses')
+        saved = dict(vars(self.cfg))
+
+        def restore():
+            self.cfg.__dict__.clear()
+            self.cfg.__dict__.update(saved)
+        self.addCleanup(restore)
+
+    def test_course_data_is_loaded_after_the_snapshot_join_never_before(self):
+        order = []
+
+        @contextlib.contextmanager
+        def session():
+            order.append('join')
+            yield None
+            order.append('rollback')
+
+        child.run_side(side='new', engines=[], instant=child.parse_instant(INSTANT), months=['2026-11', '2026-12'],
+                       write=lambda obj: order.append(obj.get('event')), session=session,
+                       load=lambda: order.append('load'))
+        self.assertEqual(order, ['join', 'joined', 'load', 'done', 'rollback'])
+
+    def test_the_startup_course_load_is_held_back(self):
+        with mock.patch('django.setup', side_effect=self.cfg.ready), CaptureQueriesContext(connection) as queries:
+            child.setup_django()
+        self.assertEqual(len(queries), 0)
+
+    def test_course_data_loads_through_the_read_only_filter_and_nothing_stale_survives(self):
+        self.cfg.course_pathway_map = {'MADE-UP-STALE': 'tvet'}
+        with CaptureQueriesContext(connection) as queries, guards.read_only_session(allow_sqlite=True):
+            child.load_course_data()
+        self.assertGreater(len(queries), 0)
+        self.assertNotIn('MADE-UP-STALE', self.cfg.course_pathway_map)
 
 
 class ChildMainTest(SimpleTestCase):
@@ -223,6 +356,31 @@ class OwnerFilesTest(SimpleTestCase):
         for banned in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'GRANT ALL', 'DEFAULT PRIVILEGES',
                        'DEFAULT_TRANSACTION_READ_ONLY', ' SUPERUSER', 'GRANT POSTGRES', 'SERVICE_ROLE'):
             self.assertNotIn(banned, text)
+
+    def test_the_role_expires_and_the_checks_cover_create_definer_functions_and_bypassrls(self):
+        stmts = _sql_statements('replay_ro_create.sql')
+        role = next(s for s in stmts if s.upper().startswith('CREATE ROLE'))
+        self.assertIn("VALID UNTIL 'REPLACE-WITH-RUN-DATE-PLUS-7-DAYS'", role)
+        begin, commit = stmts.index('BEGIN'), stmts.index('COMMIT')
+        prechecks, checks = stmts[:begin], stmts[commit + 1:]
+        self.assertTrue(prechecks and checks)
+        self.assertTrue(all(s.upper().startswith('SELECT') for s in prechecks + checks), prechecks + checks)
+        self.assertIn('version()', ' '.join(prechecks))
+        self.assertIn("rolname = 'postgres'", ' '.join(prechecks))
+        self.assertIn('rolbypassrls', ' '.join(prechecks))
+        text = ' '.join(checks)
+        for needle in ("has_schema_privilege('replay_ro', 'public', 'CREATE')", 'prosecdef',
+                       "has_function_privilege('replay_ro', p.oid, 'EXECUTE')"):
+            self.assertIn(needle, text)
+        with open(os.path.join(OWNER_DIR, 'replay_ro_create.sql'), encoding='utf-8') as fh:
+            self.assertIn('per-table read policy fallback', fh.read())
+
+    def test_the_steps_forbid_deploys_during_the_run_and_name_the_timeouts(self):
+        with open(STEPS_DOC, encoding='utf-8') as fh:
+            text = fh.read()
+        for needle in ('No deploy and no migration', 'SET LOCAL lock_timeout',
+                       'SET LOCAL idle_in_transaction_session_timeout'):
+            self.assertIn(needle, text)
 
     def test_the_drop_file_removes_the_role(self):
         self.assertIn('DROP ROLE replay_ro', _sql_statements('replay_ro_drop.sql'))

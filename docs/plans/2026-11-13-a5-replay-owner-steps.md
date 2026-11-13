@@ -20,8 +20,11 @@ them first and use that one:
 
 ## 1. The read-only role (Supabase SQL editor)
 
-Run `halatuju_api/apps/scholarship/eval/replay/owner/replay_ro_create.sql` with a real password in place
-of the placeholder, and paste the two CHECK answers back to the lead. The connection string is the
+Run the PRE-CHECK at the top of `halatuju_api/apps/scholarship/eval/replay/owner/replay_ro_create.sql`
+first (Postgres version, and whether `postgres` has BYPASSRLS; if not, use the per-table read policy
+fallback in the same file). Then run the rest with a real password and the expiry date (run date plus 7
+days) in place of the two placeholders, and paste the CHECK answers back to the lead, including the
+CREATE-on-public answer and the list of SECURITY DEFINER functions `replay_ro` can run. The connection string is the
 **session pooler, port 5432** (never 6543), user `replay_ro.<project ref>`:
 
 `postgresql://replay_ro.<project ref>:<password>@<session pooler host>:5432/postgres`
@@ -76,6 +79,13 @@ No environment variables are set: the image carries only `TZ`, `DJANGO_SETTINGS_
 If anything has to change later, use `--update-secrets` / `--update-env-vars`, never the `--set-` forms.
 
 ## 5. Run it: counts first, then the replay
+
+**No deploy and no migration while the job runs** (api, web or any Supabase change): the job holds
+read transactions, and a migration waiting on them would queue every other query behind it. The job
+also gives way on its own: each of its transactions sets `SET LOCAL lock_timeout` (5s) and
+`SET LOCAL idle_in_transaction_session_timeout` (12 minutes for the parent, which ends its transaction
+once all three children have joined the snapshot; 2 minutes for each child), so a stuck replay cannot
+block the live site for long.
 
 The `^@^` prefix tells gcloud to split the arguments on `@`, because the months contain a comma.
 `<INSTANT>` is the snapshot time with a timezone, for example `2026-11-20T18:00:00+08:00`.

@@ -78,6 +78,27 @@ class StatementFilterTest(SimpleTestCase):
     def test_only_the_parent_may_export_its_snapshot(self):
         self.assertEqual(self._pass('SELECT pg_export_snapshot()', may_export=True), 'ran')
 
+    def test_more_than_one_statement_is_refused(self):
+        for sql in ('SELECT 1; COMMIT; DELETE FROM x', 'SELECT 1; SELECT 2', 'SELECT 1;;', 'SHOW x; RESET ALL'):
+            with self.assertRaises(guards.WriteRefused, msg=sql):
+                self._pass(sql)
+        self.assertEqual(self._pass('SELECT 1;'), 'ran')                # one trailing ; is fine
+
+    def test_quoted_schema_qualified_and_unlisted_function_calls_are_refused(self):
+        for sql in ('SELECT "nextval"(1)', 'SELECT "setval"(1, 2)', "SELECT pg_catalog.nextval('s')",
+                    'SELECT public.made_up_fn(1)', 'SELECT "public"."made_up_fn"(1)', 'SELECT nextval (1)',
+                    'SELECT dblink_exec(1)', 'SELECT pg_sleep(100)', 'SELECT nextval/**/(1)',
+                    'SELECT 1 -- a comment', 'SELECT * FROM made_up_fn(1)', 'SELECT U&"nextval"(1)'):
+            with self.assertRaises(guards.WriteRefused, msg=sql):
+                self._pass(sql)
+
+    def test_listed_functions_and_sql_keywords_still_pass(self):
+        for sql in ('SELECT COUNT(*) AS "__count" FROM "t"', 'SELECT "a" FROM "t" WHERE "b" IN (%s, %s)',
+                    'SELECT COALESCE(SUM("t"."x"), 0) AS "s" FROM "t"',
+                    'SELECT (1) AS "a" FROM "t" WHERE EXISTS (SELECT 1 FROM "u" WHERE ("u"."k" = %s)) LIMIT 1',
+                    'SELECT LOWER("t"."c") FROM "t" WHERE NOT ("t"."m" = %s)'):
+            self.assertEqual(self._pass(sql), 'ran', sql)
+
     def test_it_reuses_the_reviewed_dry_run_filter(self):
         self.assertIs(guards.WriteRefused, s4.WriteRefused)
         with mock.patch.object(guards, 'refuse_writes', wraps=s4.refuse_writes) as reused:
@@ -93,7 +114,20 @@ class TransactionTest(SimpleTestCase):
     def test_the_first_statements_make_the_transaction_read_only_and_prove_it(self):
         cur = _FakeCursor()
         self.assertIsNone(guards.begin_snapshot(cur))
-        self.assertEqual(cur.sql, [guards.ISOLATION_SQL, 'SHOW transaction_read_only', 'SHOW transaction_isolation'])
+        self.assertEqual(cur.sql[0], guards.ISOLATION_SQL)
+        self.assertEqual(cur.sql[-2:], ['SHOW transaction_read_only', 'SHOW transaction_isolation'])
+
+    def test_the_transaction_gives_way_with_transaction_level_timeouts(self):
+        for export in (False, True):
+            cur = _FakeCursor()
+            guards.begin_snapshot(cur, export=export)
+            sets = [s for s in cur.sql if s.startswith('SET LOCAL')]
+            self.assertEqual([s.split(' =')[0] for s in sets],
+                             ['SET LOCAL lock_timeout', 'SET LOCAL idle_in_transaction_session_timeout'])
+            for s in sets:                                      # the filter lets exactly these through
+                self.assertEqual(guards.refuse_non_reads(lambda *a: 'ran', s, (), False, {}), 'ran')
+        with self.assertRaises(guards.WriteRefused):
+            guards.refuse_non_reads(lambda *a: 'ran', "SET LOCAL lock_timeout = '0'", (), False, {})
 
     def test_a_child_joins_the_snapshot_before_any_read_and_the_parent_exports_it(self):
         cur = _FakeCursor()
@@ -150,6 +184,20 @@ class PreflightTest(SimpleTestCase):
                 guards.check_database_url(url)
             self.assertNotIn('pw-not-real', str(cm.exception))
 
+    def test_only_sslmode_require_or_verify_may_ride_in_the_url(self):
+        for q in ('sslmode=require', 'sslmode=verify-ca', 'sslmode=verify-full'):
+            self.assertEqual(guards.check_database_url(GOOD_URL + '?' + q), ('pooler.example.test', 5432))
+        for q in ('assume_role=postgres', 'hostaddr=10.0.0.1', 'service=made-up', 'sslmode=disable',
+                  'sslmode=prefer', 'sslmode=require&sslmode=disable', 'sslmode=require&application_name=x',
+                  'target_session_attrs=any', 'sslmode', 'passfile=x'):
+            with self.assertRaises(guards.WriteRefused, msg=q):
+                guards.check_database_url(GOOD_URL + '?' + q)
+
+    def test_libpq_pg_variables_are_refused(self):
+        for name in ('PGHOST', 'PGUSER', 'PGPASSWORD', 'PGOPTIONS', 'PGSERVICE', 'PGSSLMODE', 'PGSERVICEFILE'):
+            with self.assertRaises(guards.WriteRefused, msg=name):
+                guards.check_environment({guards.DB_ENV: GOOD_URL, name: 'made-up'})
+
 
 class SessionTest(TestCase):
     """Layers 3 to 5 on the test database: refused, rolled back, doors shut, the run goes on."""
@@ -193,6 +241,15 @@ class SessionTest(TestCase):
             self.assertEqual(guards.run_case(lambda: mail.send_mail('s', 'b', 'a@example.test', ['b@example.test'])),
                              {'error': 'MailRefused'})
 
+    def test_the_vision_word_reader_is_shut(self):
+        # The client is a stand-in, so even with the door open (the bug) nothing can reach Google: gRPC
+        # opens its sockets in C, past the socket guard.
+        with mock.patch('google.cloud.vision.ImageAnnotatorClient') as client, netguard.refuse_network(), \
+                guards.read_only_session(allow_sqlite=True):
+            self.assertEqual(guards.run_case(lambda: vision._vision_words(b'not-an-image', 'image/png')),
+                             {'error': 'Unreachable'})
+        client.assert_not_called()
+
     def test_an_error_is_recorded_by_class_name_never_its_message(self):
         def boom():
             raise ValueError('Siti binti Ahmad 010203141234')
@@ -229,8 +286,19 @@ class NetworkGuardTest(SimpleTestCase):
             srv.close()
 
 
+#: What an R2 adapter would register for these tests (made-up record fields and codes).
+_TEST_CODES = ('status', 'unresolved', 'app', 'amount', 'merit', 'params', 'course', 'month', 'eligible', 'row',
+               'sum', 'commit', 'ok', 'probable', 'higher_results_not_declared', 'tick:name', 'UP6500001')
+
+
 class ScrubTest(SimpleTestCase):
-    """The output scrubber: only codes, amounts, hashes and ids leave."""
+    """The output scrubber: only registered codes, amounts, hashes and ids leave; other text is hashed."""
+
+    def setUp(self):
+        patcher = mock.patch.object(scrub, '_REGISTERED', set())
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        scrub.register_codes(_TEST_CODES)
 
     def test_codes_amounts_hashes_ids_and_months_are_kept(self):
         rec = {'status': 'probable', 'unresolved': ['higher_results_not_declared', 'tick:name'], 'app': 278,
@@ -248,19 +316,47 @@ class ScrubTest(SimpleTestCase):
         for value in ('Siti binti Ahmad', 'AHMAD', 'Probable', '010203141234', '010203-14-1234', 10203141234,
                       '0123456789', 123456789, 'a.person@example.test', 'No 1, Jalan Mawar', 'A+',
                       datetime.date(2006, 1, 2), b'bytes', 'RM 3000', float('nan'), {'nested': 'Two Words'}):
-            out = scrub.scrub({'v': value})
+            out = scrub.scrub({'status': value})
             self.assertGreater(scrub.count_dropped(out), 0, repr(value))
             if isinstance(value, str):
                 self.assertNotIn(value, json.dumps(out))
 
+    def test_lowercase_names_ics_phones_and_passports_never_leave_as_written(self):
+        for value in ('siti', 'ahmad.bin.ali', 'ic:010203-14-1234', 'applications/123/010203-14-1234',
+                      'tel:012-3456789', 'A12345678', 'muthusamy', 'defaced', 'kumar_a_l_raju'):
+            out = scrub.scrub({'status': value, 'unresolved': [value]})
+            self.assertNotIn(value, json.dumps(out), value)
+            self.assertEqual(scrub.count_dropped(out), 2, value)
+            self.assertTrue(out['status'].startswith(scrub.SCRUB_HASH_PREFIX), value)
+        self.assertEqual(scrub.scrub({'status': 'siti'}), scrub.scrub({'status': 'siti'}))     # still comparable
+
     def test_a_key_that_is_not_a_code_is_dropped_with_its_value(self):
-        out = scrub.scrub({'Siti binti Ahmad': 'probable', 'ok': 1})
-        self.assertEqual(out, {'!dropped_keys': 1, 'ok': 1})
+        out = scrub.scrub({'Siti binti Ahmad': 'probable', 'siti': 1, 'ahmad_bin_ali': 2, 'ok': 1})
+        self.assertEqual(out, {'!dropped_keys': 3, 'ok': 1})
         self.assertEqual(scrub.scrub(out), out)                   # scrubbing twice changes nothing
+
+    def test_only_registered_codes_leave_and_the_registry_takes_codes_only(self):
+        self.assertEqual(scrub.scrub({'status': 'made_up_code'})['status'][:3], scrub.SCRUB_HASH_PREFIX)
+        scrub.register_codes(['made_up_code'])
+        self.assertEqual(scrub.scrub({'status': 'made_up_code'}), {'status': 'made_up_code'})
+        for bad in ('Two Words', '', 'x' * 80, 'a\nb'):
+            with self.assertRaises(ValueError, msg=bad):
+                scrub.register_codes([bad])
+        for code in ('event', 'side', 'old', 'new', 'new_again', 'same', 'differs', 'could_not_run', 'noise',
+                     'joined', 'totals', 'fatal'):
+            self.assertIn(code, scrub.R1_CODES)
 
     def test_an_error_leaves_as_its_class_name_only(self):
         self.assertEqual(scrub.error_record(KeyError('Siti binti Ahmad')), {'error': 'KeyError'})
-        self.assertEqual(scrub.scrub({'error': 'Siti binti Ahmad 0102'})['error'], scrub.DROPPED)
+        self.assertEqual(scrub.scrub(scrub.error_record(KeyError('x'))), {'error': 'KeyError'})
+        self.assertEqual(scrub.scrub({'event': 'fatal', 'error': 'WriteRefused'}),
+                         {'event': 'fatal', 'error': 'WriteRefused'})
+        for rec in ({'error': 'Siti binti Ahmad 0102'}, {'error': 'Muthusamy'}, {'error': 'muthusamy'},
+                    {'status': {'error': 'Muthusamy'}}, {'unresolved': [{'error': 'Muthusamy'}]}):
+            self.assertNotIn('uthusamy', json.dumps(scrub.scrub(rec)), rec)
+            self.assertNotIn('Siti', json.dumps(scrub.scrub(rec)), rec)
+        mixed = scrub.scrub({'status': 'probable', 'error': 'KeyError'})    # not an error record
+        self.assertTrue(mixed['error'].startswith(scrub.SCRUB_HASH_PREFIX))
 
 
 _PROBE = '''import datetime

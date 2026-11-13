@@ -1,13 +1,16 @@
 """The replay's read-only guards (design 3.4 and 3.5). Nothing here writes; everything here refuses.
 
 * `check_environment` - the job starts only when no key that could write, pay or send is present.
-* `check_database_url` - the `replay_ro` role, through the SESSION pooler port 5432 (never 6543), with no
-  startup `options` (a session-level setting would ride in there).
+* `check_database_url` - the `replay_ro` role, through the SESSION pooler port 5432 (never 6543); the only
+  query parameter allowed is `sslmode=require|verify-ca|verify-full` (`options`, `service`, `hostaddr`...
+  would steer the connection or set session-level settings). libpq's PG* variables are forbidden too.
 * `refuse_non_reads` - the statement filter: the reviewed `offer_s4_dry_run.refuse_writes`, plus row locks
-  (`FOR UPDATE` and kin), `SELECT ... INTO` and the write-capable functions; only the exact snapshot
-  preamble below is let through on top.
-* `read_only_session` - ONE transaction: `REPEATABLE READ, READ ONLY` at TRANSACTION level (never a
-  session setting), proved with `SHOW`, optionally exporting or joining a snapshot, ALWAYS rolled back.
+  (`FOR UPDATE` and kin), `SELECT ... INTO`, more than one statement, comments, and any function call
+  that is schema-qualified or not in ALLOWED_FUNCTIONS; only the exact snapshot preamble and the two
+  transaction-level timeouts below are let through on top.
+* `read_only_session` - ONE transaction: `REPEATABLE READ, READ ONLY` and `SET LOCAL` lock / idle
+  timeouts at TRANSACTION level (never a session setting), proved with `SHOW`, optionally exporting or
+  joining a snapshot, ALWAYS rolled back.
 * `run_case` - one case inside its own savepoint, always rolled back; any refusal or error becomes
   `{"error": "<ClassName>"}` and the run goes on.
 """
@@ -31,17 +34,30 @@ SESSION_POOLER_PORT = 5432
 TRANSACTION_POOLER_PORT = 6543
 
 #: Name prefixes of anything that writes, pays, sends or reads Storage. Present and non-empty = refuse.
+#: `PG` covers libpq's own variables (PGHOST, PGUSER, PGPASSWORD, PGOPTIONS, PGSERVICE, PGSSLMODE...),
+#: which would otherwise steer the connection around the checked URL.
 FORBIDDEN_ENV_PREFIXES = (
-    'DATABASE_URL', 'DB_', 'GEMINI', 'OPENAI', 'ANTHROPIC', 'GOOGLE_', 'GCS_', 'AWS_', 'SUPABASE_',
+    'DATABASE_URL', 'DB_', 'PG', 'GEMINI', 'OPENAI', 'ANTHROPIC', 'GOOGLE_', 'GCS_', 'AWS_', 'SUPABASE_',
     'BREVO', 'ANYMAIL', 'EMAIL_HOST', 'SENDGRID', 'MAILGUN', 'TWILIO_', 'VIRCLE_', 'CRON_SECRET',
     'SENTRY', 'AIRTABLE', 'DOCUMENT_BACKUP', 'SPONSOR_MOCK',
 )
+#: The ONLY URL query parameter allowed, and its only values (an encrypted connection, never off).
+ALLOWED_SSLMODES = ('require', 'verify-ca', 'verify-full')
 
 ISOLATION_SQL = 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY'
+#: Transaction-level (SET LOCAL) timeouts: the job gives way instead of blocking. A statement that would
+#: wait for a lock gives up after LOCK_TIMEOUT; a transaction left idle is ended by the server. The
+#: parent waits for the children to join, so its idle limit is longer than the join wait.
+LOCK_TIMEOUT = '5s'
+IDLE_TIMEOUT_CHILD = '2min'
+IDLE_TIMEOUT_PARENT = '12min'
+_LOCK_SQL = f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT}'"
+_IDLE_SQL = "SET LOCAL idle_in_transaction_session_timeout = '{}'"
 _SNAPSHOT_ID = re.compile(r'^[0-9A-F]{1,16}-[0-9A-F]{1,16}(-[0-9]{1,10})?$')
 #: The ONLY statements let through that `refuse_writes` would refuse: the transaction preamble.
 _PREAMBLE = re.compile(r"^(SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
                        r"|SET TRANSACTION SNAPSHOT '[0-9A-F]{1,16}-[0-9A-F]{1,16}(-[0-9]{1,10})?')$")
+_TIMEOUT_SQL = frozenset({_LOCK_SQL, _IDLE_SQL.format(IDLE_TIMEOUT_CHILD), _IDLE_SQL.format(IDLE_TIMEOUT_PARENT)})
 #: Reads that still take a lock or write: row locks, SELECT INTO a table, sequences, advisory locks,
 #: configuration, large objects, remote links, notifications, killing other backends.
 _READ_THAT_WRITES = re.compile(
@@ -49,6 +65,22 @@ _READ_THAT_WRITES = re.compile(
     r'|\b(nextval|setval|set_config|pg_advisory\w*|pg_try_advisory\w*|lo_\w+|dblink\w*|pg_notify'
     r'|pg_terminate_backend|pg_cancel_backend|pg_reload_conf|pg_export_snapshot)\s*\(', re.I)
 _EXPORT_SQL = 'SELECT pg_export_snapshot()'
+#: Something followed by `(`: an optional `.` before it (a schema-qualified call), then a quoted name
+#: (`"nextval"`, `U&"..."`) or a bare word.
+_CALL = re.compile(r'(\.\s*)?(?:(?:U&)?"((?:[^"]|"")*)"|\b([A-Za-z_][A-Za-z0-9_$]*))\s*\(')
+#: Bare SQL words that may stand before `(` without being a call.
+_SQL_WORDS = frozenset({
+    'select', 'from', 'where', 'and', 'or', 'not', 'in', 'exists', 'as', 'on', 'join', 'any', 'all', 'some',
+    'when', 'then', 'else', 'case', 'having', 'by', 'distinct', 'union', 'except', 'intersect', 'with',
+    'over', 'filter', 'between', 'is', 'like', 'ilike', 'limit', 'offset', 'using', 'values', 'lateral',
+})
+#: The only functions a replay read may call: what the ORM and the course-data load emit. Lower case;
+#: a quoted name must match exactly. R2 adds to it only when a refused read shows up as could_not_run.
+ALLOWED_FUNCTIONS = frozenset({
+    'count', 'sum', 'avg', 'min', 'max', 'coalesce', 'nullif', 'greatest', 'least', 'cast', 'lower', 'upper',
+    'length', 'trim', 'abs', 'round', 'floor', 'ceil', 'extract', 'date_trunc', 'array_agg', 'string_agg',
+    'json', 'json_extract', 'json_type', 'jsonb_typeof', 'jsonb_array_length',
+})
 
 
 class MailRefused(BaseException):
@@ -99,8 +131,11 @@ def check_database_url(url):
         raise WriteRefused('replay: the database URL must name the session pooler port 5432')
     if (parts.username or '').split('.', 1)[0] != ROLE:
         raise WriteRefused(f'replay: the database user must be the {ROLE} role')
-    if any(k.lower() == 'options' for k in parse_qs(parts.query)):
-        raise WriteRefused('replay: startup options are refused (they set session-level settings)')
+    query = parse_qs(parts.query, keep_blank_values=True)
+    if (set(query) - {'sslmode'} or len(query.get('sslmode', ['require'])) != 1
+            or query.get('sslmode', ['require'])[0] not in ALLOWED_SSLMODES
+            or (parts.query and not query)):
+        raise WriteRefused('replay: the URL may carry only sslmode=require, verify-ca or verify-full')
     if not parts.hostname:
         raise WriteRefused('replay: the database URL has no host')
     return parts.hostname, port
@@ -111,13 +146,31 @@ def refuse_non_reads(execute, sql, params, many, context):
     """`execute_wrapper`: the snapshot preamble passes; a read that locks or writes is refused; the rest
     goes through the reviewed `offer_s4_dry_run.refuse_writes`, which refuses every non-read."""
     s = str(sql or '').strip()
-    if _PREAMBLE.match(s):
+    if _PREAMBLE.match(s) or s in _TIMEOUT_SQL:
         return execute(sql, params, many, context)
     if s == _EXPORT_SQL and getattr(context.get('connection'), '_replay_may_export', False):
         return execute(sql, params, many, context)
-    if _READ_THAT_WRITES.search(s):
-        raise WriteRefused(f'replay: refused a locking or writing read: {s.split()[0] if s.split() else ""}')
+    first = s.split()[0] if s.split() else ''
+    if ';' in (s[:-1] if s.endswith(';') else s) or '--' in s or '/*' in s:
+        raise WriteRefused(f'replay: refused more than one statement or a comment: {first}')
+    if _READ_THAT_WRITES.search(s) or _refused_call(s):
+        raise WriteRefused(f'replay: refused a locking, writing or unlisted call: {first}')
     return refuse_writes(execute, sql, params, many, context)
+
+
+def _refused_call(s):
+    """True when ``s`` calls a function that is schema-qualified, quoted unlike the allow-list, or not
+    in ALLOWED_FUNCTIONS. Bare SQL words before `(` (IN, EXISTS, AS...) are not calls."""
+    for m in _CALL.finditer(s):
+        qualified, quoted, bare = m.group(1), m.group(2), m.group(3)
+        if qualified:
+            return True
+        if quoted is not None:
+            if quoted not in ALLOWED_FUNCTIONS:
+                return True
+        elif bare.lower() not in ALLOWED_FUNCTIONS and bare.lower() not in _SQL_WORDS:
+            return True
+    return False
 
 
 # ── The transaction (layers 2 and 3) ──────────────────────────────────────────────────────────
@@ -130,10 +183,14 @@ def valid_snapshot_id(snapshot):
 
 def begin_snapshot(cursor, *, snapshot=None, export=False):
     """The transaction's FIRST statements: repeatable read + read only for THIS transaction, joining
-    ``snapshot`` if given; then proved with SHOW. Returns the exported snapshot id when ``export``."""
+    ``snapshot`` if given; the transaction-level timeouts (the exporting parent waits for the children, so
+    its idle limit is the longer one); then proved with SHOW. Returns the exported snapshot id when
+    ``export``."""
     cursor.execute(ISOLATION_SQL)
     if snapshot:
         cursor.execute(f"SET TRANSACTION SNAPSHOT '{valid_snapshot_id(snapshot)}'")
+    cursor.execute(_LOCK_SQL)
+    cursor.execute(_IDLE_SQL.format(IDLE_TIMEOUT_PARENT if export else IDLE_TIMEOUT_CHILD))
     cursor.execute('SHOW transaction_read_only')
     row = cursor.fetchone()
     if not row or str(row[0]).lower() != 'on':
@@ -161,6 +218,7 @@ DOORS = (
     ('apps.scholarship.vision', '_fetch_image_bytes', 'Storage'),
     ('apps.scholarship.vision', '_call_gemini_json', 'Gemini'),
     ('apps.scholarship.vision', '_vision_document_text', 'Vision'),
+    ('apps.scholarship.vision', '_vision_words', 'Vision'),
     ('apps.scholarship.usage', 'record_usage', 'the usage meter'),
     ('google.genai', 'Client', 'Gemini'),
 )
