@@ -27,7 +27,8 @@ export default function MentorOnlyPermissions({ adminId, name, mayAdd, token, on
   return (
     <section className="bg-ground-0 rounded-xl shadow-sm border px-4 sm:px-5 py-4 space-y-3" data-testid="mentor-only-permissions">
       <h2 className="text-base font-semibold text-ground-900">{t('admin.permEditor.title', { name })}</h2>
-      <div className="text-sm text-ground-700 space-y-1.5">
+      {/* M2d (D10): the same box as the Permissions tab's, contents unchanged. */}
+      <div className="space-y-1.5 rounded-lg border border-ground-200 px-4 py-3 text-sm text-ground-700" data-testid="mentor-only-box">
         <p>{t('admin.person.mentorOnly.intro', { name })}</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>{t('admin.person.mentorOnly.students')}</li>

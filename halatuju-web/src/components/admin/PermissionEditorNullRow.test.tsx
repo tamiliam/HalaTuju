@@ -3,12 +3,11 @@
  *
  * Sprint M2b review (d): a NULL row (permissions stored as NULL = the role's preset) stores no page key,
  * yet holds its preset — a NULL finance row reads the organisation through its Admins seat. The server
- * says it is not custom (`custom: false`), so the Permissions tab shows no "Custom" chip and Reset has
- * nothing to do, from the whole tab and from the Admins table alike, until somebody changes a switch.
+ * says it is not custom (`custom: false`), so Reset has nothing to do, from the whole tab and from the
+ * Admins table alike, until somebody changes a switch. (Sprint M2d, D6: there is no "Custom" chip at all.)
  */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import PermissionEditor from './PermissionEditor'
-import { permName } from './permName'
 import * as api from '@/lib/admin-api/admins'
 
 jest.mock('@/lib/i18n', () => ({
@@ -44,7 +43,6 @@ const NULL_ADMIN: api.StaffPermissionsView = {
   tables: ['admins'], v2_keys: groups(ADMIN_V2), v2_held: [], v2_preset: ADMIN_V2,
   table_presets: { admins: ['see_all', 'scholars', 'spending', 'payments_prepare', ...ADMIN_V2], reviewers: ['review'] },
 }
-const tr = (x: string, p?: Record<string, string>) => (p ? `${x}(${Object.entries(p).map(([a, b]) => `${a}=${b}`).join(';')})` : x)
 
 async function open(view: api.StaffPermissionsView, table?: 'admins') {
   mockApi.getStaffPermissions.mockResolvedValue(view)
@@ -63,7 +61,7 @@ afterEach(cleanup)
 
 for (const [label, view] of [['a NULL finance row', NULL_FINANCE], ['a NULL admin row', NULL_ADMIN]] as const) {
   for (const table of [undefined, 'admins'] as const) {
-    it(`${label} is not Custom and has nothing to reset (${table ?? 'whole tab'})`, async () => {
+    it(`${label} has nothing to reset (${table ?? 'whole tab'})`, async () => {
       await open(view, table)
       expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
       expect((screen.getByTestId('perm-reset') as HTMLButtonElement).disabled).toBe(true)
@@ -71,9 +69,11 @@ for (const [label, view] of [['a NULL finance row', NULL_FINANCE], ['a NULL admi
   }
 }
 
-it('a NULL finance row turns Custom once a switch is changed, as the server will then say', async () => {
+it('a NULL finance row has something to reset once a switch is changed, as the server will then say', async () => {
   await open(NULL_FINANCE)
-  fireEvent.click(screen.getByRole('switch', { name: permName(tr, 'see_all') }))
-  await waitFor(() => expect(screen.getByText('admin.permEditor.custom')).toBeTruthy())
+  fireEvent.click(screen.getByRole('switch', { name: 'admin.scholarship.nav' }))     // M2d: Applications
+  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalledWith(7,
+    ['payments_approve', 'see_all'], true, { token: 'tok' }))
   expect((screen.getByTestId('perm-reset') as HTMLButtonElement).disabled).toBe(false)
+  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
 })

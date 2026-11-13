@@ -302,8 +302,10 @@ export interface StaffPermissionsView {
   v2_keys?: StaffV2Group[]
   /** M2b: the STORED v2 page keys the switches start from (`permissions` stays today's keys). */
   v2_held?: string[]
-  /** M2b: the role's own v2 part ("Custom" and Reset weigh the v2 switches against it). */
+  /** M2b: the role's own v2 part (Reset weighs the v2 switches against it). */
   v2_preset?: string[]
+  /** M2d (D7, ruling 7): the pages short of Scholars as held — a note, never a refusal. */
+  v2_gaps?: string[]
 }
 
 /** M2b: one v2 page key. `grantable` false = drawn locked, with `reason`: `never_grantable` (the lead
@@ -355,6 +357,8 @@ export interface StaffPermissionsPlan {
   consequences: string[]
   /** M2b: the stored v2 page keys the set would hold (`permissions` is today's keys only). */
   v2_held?: string[]
+  /** M2d (D7): the pages the set would leave short of Scholars (`consequences` then ends `scholars_needed`). */
+  v2_gaps?: string[]
 }
 
 export async function getStaffPermissions(adminId: number, options?: ApiOptions) {

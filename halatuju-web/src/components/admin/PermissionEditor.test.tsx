@@ -3,8 +3,10 @@
  *
  * "What <name> can do" — the staff-permission editor (request #39 Sprint 4), against the design of
  * record the owner approved on 2026-10-21: two groups of site Toggles, Quality check bringing See
- * all students (TD-499: it IMPLIES it, as the server says), a "Custom" chip and "changed" markers, a consequence line worded from the SERVER's
+ * all students (TD-499: it IMPLIES it, as the server says), "changed" markers, a consequence line worded from the SERVER's
  * dry run (never re-derived here), the server's refusal shown as it is, Save and Reset.
+ * Sprint M2d: the Admins keys sit in the by-page boxes (`lib/permissionLayout.ts`), a page's switch named
+ * by the sidebar's label; no "Custom" chip (D6).
  */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import PermissionEditor from './PermissionEditor'
@@ -36,7 +38,12 @@ const plan = (over: Partial<api.StaffPermissionsPlan>): api.StaffPermissionsPlan
   added: [], removed: [], consequences: [], ...over,
 })
 
-const toggle = (key: string) => screen.getByRole('switch', { name: `admin.perm.${key}.name` })
+/** M2d: a page's own switch carries the sidebar's label; a sub-item and a Reviewers key their own words. */
+const LABEL: Record<string, string> = {
+  see_all: 'admin.scholarship.nav', scholars: 'admin.scholars.nav', spending: 'admin.spending.nav',
+}
+const label = (key: string) => LABEL[key] ?? `admin.perm.${key}.name`
+const toggle = (key: string) => screen.getByRole('switch', { name: label(key) })
 const isOn = (key: string) => toggle(key).getAttribute('aria-checked') === 'true'
 
 async function open(view: api.StaffPermissionsView = ROHINI, onSaved = jest.fn()) {
@@ -51,14 +58,17 @@ beforeEach(() => jest.clearAllMocks())
 it('shows the two groups of toggles the server serves, from the person\'s current set', async () => {
   await open()
   expect(screen.getByText('admin.permEditor.title(name=Rohini)')).toBeTruthy()
-  expect(screen.getByText('admin.permEditor.subtitle(preset=admin.role.reviewer)')).toBeTruthy()
+  expect(screen.getByText('admin.permEditor.intro(name=Rohini)')).toBeTruthy()       // M2d D6
+  expect(screen.queryByText(/admin\.permEditor\.subtitle/)).toBeNull()
   // T3: one section per table she sits in (both, here); the old Students / Money groups are gone.
   const admins = screen.getByTestId('perm-section-admins')
   const reviewers = screen.getByTestId('perm-section-reviewers')
-  expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
+  expect(within(admins).getByText('admin.permLayout.box.organisation')).toBeTruthy()
+  expect(within(admins).getByText('admin.permLayout.box.programme')).toBeTruthy()
+  // M2d: in sidebar order — Applications, Scholars (and its withdrawals), Payments' three, Spending.
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
-    ['see_all', 'scholars', 'spending', 'payments_prepare', 'payments_check', 'payments_approve',
-      'award_withdraw_request', 'award_withdraw_approve'].map((k) => `admin.perm.${k}.name`))   // S1: Scholars after Applications
+    ['see_all', 'scholars', 'award_withdraw_request', 'award_withdraw_approve', 'payments_prepare',
+      'payments_check', 'payments_approve', 'spending'].map(label))
   expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['admin.perm.review.name', 'admin.perm.qc.name'])
   expect(screen.queryByText('admin.permEditor.students')).toBeNull()
@@ -116,7 +126,7 @@ it('asks the server for a dry run and words the line from its answer (Rohini\'s 
     { token: 'tok' })
   await waitFor(() => expect(screen.getByRole('status').textContent).toBe(
     'admin.permEditor.gives(name=Rohini;list=“admin.perm.spending.name”) admin.permEditor.nothingElse'))
-  expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()                 // beside the preset
+  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()                 // M2d D6: no chip
   expect(screen.getAllByText('admin.permEditor.changed')).toHaveLength(1)          // one row moved
 })
 
@@ -182,17 +192,14 @@ it('saves for real, tells the page, and says it is done', async () => {
   expect(onSaved).toHaveBeenCalledTimes(1)
   expect(screen.getByRole('status').textContent).toBe('admin.permEditor.saved(name=Rohini)')
   expect(screen.queryByText('admin.permEditor.changed')).toBeNull()      // the new set is the baseline
-  expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
 })
 
 it('resets to the preset in one press', async () => {
   const custom = { ...ROHINI, permissions: ['review', 'spending'], custom: true }
   mockApi.saveStaffPermissions.mockResolvedValue(plan({ removed: ['spending'] }))
   await open(custom)
-  expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
   fireEvent.click(screen.getByText('admin.permEditor.reset(preset=admin.role.reviewer)'))
   expect(isOn('spending')).toBe(false)
-  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
   await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalledWith(
     7, ['review'], true, { token: 'tok' }))
 })
@@ -277,6 +284,33 @@ describe('Changes', () => {
     expect(items[1].textContent).toContain('by=admin.permHistory.team')
     // A data migration's change (sprint S1) says so, never a blank "by".
     expect(items[2].textContent).toContain('by=admin.permHistory.migration')
+  })
+
+  it('M2d D9: more than three keys read as a summary, with Show / Hide for the full list', async () => {
+    const on = ['spending', 'scholars', 'team.view', 'sponsors.view']
+    await open({ ...ROHINI, history: [
+      change({ added: on, removed: ['payments_approve'] }),
+      change({ added: ['spending', 'scholars'], removed: ['qc'] }),            // three: inline as before
+      change({ kind: 'role_change', role: 'qc' }),
+    ] })
+    const items = within(screen.getByTestId('permission-history')).getAllByRole('listitem')
+    expect(items[0].textContent).toContain('admin.permHistory.countOn(n=4) · admin.permHistory.countOff(n=1)')
+    expect(within(items[0]).queryByTestId('perm-history-full')).toBeNull()
+    const show = within(items[0]).getByRole('button', { name: 'admin.permHistory.show' })
+    expect(show.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(show)
+    expect(show.getAttribute('aria-expanded')).toBe('true')
+    expect(show.textContent).toBe('admin.permHistory.hide')
+    const full = within(items[0]).getByTestId('perm-history-full').textContent ?? ''
+    expect(full).toContain('admin.permHistory.on(perm=admin.perm.spending.name)')
+    expect(full).toContain('admin.permHistory.off(perm=admin.perm.payments_approve.name)')
+    expect(full.split(' · ')).toHaveLength(5)
+    fireEvent.click(show)
+    expect(within(items[0]).queryByTestId('perm-history-full')).toBeNull()
+    expect(within(items[1]).queryByRole('button')).toBeNull()
+    expect(items[1].textContent).toContain('admin.permHistory.off(perm=admin.perm.qc.name)')
+    expect(within(items[2]).queryByRole('button')).toBeNull()                 // a role reset reads as one
+    expect(items[2].textContent).toContain('admin.permHistory.roleReset(role=admin.role.qc)')
   })
 
   it('says there is nothing yet, naming the set the person holds', async () => {
@@ -409,12 +443,14 @@ describe('M1b (owner O12): opened from one table, the card draws that table only
     expect(screen.queryByTestId('perm-section-admins')).toBeNull()
   })
 
-  it('"Custom" weighs that table\'s keys against table_presets[table]', async () => {
-    await openFrom('reviewers')        // reviewer keys ['review'] = preset ['review'] -> not custom
-    expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
+  it('Reset weighs that table\'s keys against table_presets[table] (M2d: no chip, Reset alone)', async () => {
+    const reset = () => screen.getByTestId('perm-reset') as HTMLButtonElement
+    await openFrom('reviewers')        // reviewer keys ['review'] = preset ['review'] -> nothing to undo
+    expect(reset().disabled).toBe(true)
     cleanup()
-    await openFrom('admins')           // admin keys ['spending'] vs preset [] -> custom
-    expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
+    await openFrom('admins')           // admin keys ['spending'] vs preset [] -> Reset has work
+    expect(reset().disabled).toBe(false)
+    expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
   })
 
   it('saving never drops the keys of the hidden section', async () => {

@@ -8434,7 +8434,7 @@
       },
       "payments_approve": {
         "name": "Approve payment runs",
-        "desc": "Releases payments from Vircle to students. Never on a run they prepared."
+        "desc": "Releases payments from Vircle to students. Never on a run they prepared. Also checks sponsor credits."
       },
       "award_withdraw_request": {
         "name": "Ask to withdraw an award",
@@ -8447,11 +8447,19 @@
     },
     "permEditor": {
       "title": "What {name} can do",
-      "subtitle": "Starts from the {preset} set. Switch on extra permissions when they need them.",
+      "intro": "Choose what {name} can see and do. Changes apply when you save.",
+      "notAssignable": "Not assignable yet.",
+      "boxCount": "{n} of {m} on",
+      "level": {
+        "none": "No access",
+        "view": "View",
+        "edit": "View and change"
+      },
+      "scholarsNote": "{pages} show scholars by name. Switch on Scholars as well, or this person will see those pages without the scholars' files.",
       "custom": "Custom",
       "changed": "changed",
       "save": "Save changes",
-      "reset": "Reset to {preset}",
+      "reset": "Reset to {preset} set",
       "footnote": "You cannot change your own permissions or an organisation admin's.",
       "noChange": "No change from what {name} can do now.",
       "gives": "Saving gives {name}: {list}.",
@@ -8474,19 +8482,84 @@
         "credit_check_on": "Wallet credits gain a finance check straight away: {name} checks each credit before the organisation admin countersigns it, except credits {name} recorded.",
         "withdraw_request_and_approve": "{name} can ask for award withdrawals and approve them, but never their own request.",
         "withdraw_last_checker": "Taking this from {name} leaves nobody who can approve award withdrawals: requests in this organisation will wait with nobody to decide them.",
-        "withdraw_approve_needs_view": "{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide."
+        "withdraw_approve_needs_view": "{name} can approve award withdrawals only if they can also see all cases. Give them that too, or they cannot decide.",
+        "scholars_needed": "{name} will see pages that name scholars, but not the scholars' files, until Scholars is on too."
       },
       "qcBrings": "Quality check needs the Admin permission “Applications”, so it is switched on with it."
     },
-    "permV2": {
-      "title": "Pages",
-      "intro": "Each page this person may open. A locked switch is held through another permission, or is for the organisation admin only.",
-      "group": {
+    "permLayout": {
+      "box": {
         "organisation": "Organisation",
-        "programme": "Programme",
-        "engagement": "Engagement",
-        "money": "Money"
+        "programme": "Programme"
       },
+      "orgOverview": {
+        "desc": "Opens with any switch on this tab."
+      },
+      "invitations": {
+        "desc": "See invitations sent to join the team."
+      },
+      "team": {
+        "desc": "See the team tables and the Mentors list."
+      },
+      "sources": {
+        "desc": "Referral sources and the witness override."
+      },
+      "sponsors": {
+        "desc": "Sponsor terms, emails and recorded credits."
+      },
+      "billing": {
+        "desc": "See usage and bills."
+      },
+      "requests": {
+        "desc": "Requests to the HalaTuju team."
+      },
+      "orgSettings": {
+        "desc": "Change organisation details."
+      },
+      "programmeOverview": {
+        "desc": "Every gift once any switch in these two boxes is on; otherwise only the gifts with cases assigned to them."
+      },
+      "scholars": {
+        "desc": "The Scholars page and every scholar's file."
+      },
+      "announcements": {
+        "desc": "Messages to scholars."
+      },
+      "surveys": {
+        "desc": "Surveys and their answers."
+      },
+      "development": {
+        "desc": "Modules and each scholar’s progress."
+      },
+      "mentoring": {
+        "desc": "The mentoring tab on each scholar."
+      },
+      "payments": {
+        "desc": "Opens with any of the three below."
+      },
+      "spending": {
+        "desc": "See and sort how scholars spend their money."
+      },
+      "contracts": {
+        "desc": "Award contract templates."
+      },
+      "programmeSettings": {
+        "desc": "Gift set-up and intake years."
+      },
+      "sponsorsApprove": {
+        "name": "Approve sponsor credits",
+        "desc": "The final step before a credit counts."
+      },
+      "assign": {
+        "name": "Assign and nudge reviewers",
+        "desc": "Never to themselves."
+      },
+      "approveAwards": {
+        "name": "Approve awards",
+        "desc": "The final decision on an application."
+      }
+    },
+    "permV2": {
       "page": {
         "invitations": "Invitations",
         "team": "Team",
@@ -8513,12 +8586,7 @@
         "check": "check",
         "approve": "approve"
       },
-      "name": "{page}: {level}",
-      "reason": {
-        "never_grantable": "Only the organisation admin, always.",
-        "lead_only": "Only the organisation admin, for now.",
-        "alias": "Comes with a permission above."
-      }
+      "name": "{page}: {level}"
     },
     "person": {
       "tabsAria": "Person panels",
@@ -8565,8 +8633,12 @@
       "roleReset": "Reset to the {role} set by a role change",
       "byAt": "By {by}, {at}",
       "team": "the HalaTuju team",
-      "migration": "a system migration",
-      "empty": "No changes yet. {name} has the {role} set."
+      "migration": "the system update",
+      "empty": "No changes yet. {name} has the {role} set.",
+      "countOn": "{n} switched on",
+      "countOff": "{n} switched off",
+      "show": "Show",
+      "hide": "Hide"
     },
     "permissionsReset": "Their custom permissions go back to the new role’s set.",
     "systemHealth": {

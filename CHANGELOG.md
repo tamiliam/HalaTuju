@@ -12,6 +12,35 @@ Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four l
 /profile 202.2 -> 200.8, median 157.6 -> 157.5; /scholarship/application 218.6 -> 218.7 (owner ruling 13 Nov, option 1: 0.1 kB, part of this dated re-baseline, keeps the 0.25 kB room); /scholarship/apply unchanged. TD-506 closed; W1
 acceptance marked met. No app code changed.
 
+### feat: sprint M2d - the Permissions tab, laid out by page (2026-11-13)
+
+Branch m2d (local, not pushed, not deployed), cut from m2c. Brief `docs/plans/2026-11-13-m2d-permissions-tab-brief.md`;
+design of record the mock-up the owner approved on 2026-11-13. No migration, no data step.
+- web (D1): ONE layout, `lib/permissionLayout.ts`: two boxes, Organisation and Programme, page rows in sidebar
+  order, each naming the key(s) it drives. Each power appears once. A guard test (`permissionLayout.test.ts`) reads
+  `CATALOGUE_V2`, `NEVER_GRANTABLE`, `ALIASES` and `ADMIN_KEYS` from the API source and fails if a served key is not
+  placed exactly once or hidden.
+- web (D2, D3): "No access / View / View and change" (44 px radiogroup) for a page with a view and a change; one switch
+  for a one-key page; sub-items for Sponsors, Applications, Scholars and Payments. Keys marked `never_grantable` or
+  `alias` are not drawn and stay in the saved set. Approve payment runs adds "Also checks sponsor credits."
+- web (D4): a `lead_only` control is disabled with a padlock and shows what opens today; one legend line,
+  "Not assignable yet." No reason text, no "for now".
+- web (D5): each box collapses (`aria-expanded`), both open on load, with a live "N of M on" count.
+- web (D6): no Custom chip, no old subtitle, no Pages or group headings. The new intro is "Choose what {name} can see
+  and do. Changes apply when you save." Reset reads "Reset to {preset} set".
+- web (D8): the consequence line, Reset and Save sit in a sticky, safe-area-aware bar at the foot of the card.
+- web (D9): a history row naming more than three keys reads as a summary with Show / Hide. The 0097 rows read "the
+  system update".
+- web (D10): the Reviewers section and the mentor view use the same box style; their contents are unchanged.
+- api (D7): `v2_editor` serves `v2_gaps` (the Engagement pages short of Scholars, read through `ALIASES`). The dry run
+  and the save answer `v2_gaps` and end `consequences` with `scholars_needed` when the asked set has a gap. It is a
+  note, not a refusal. The web shows a caution note from the dry run while changed, and from `v2_gaps` at rest.
+- test: `test_m2d_scholars_gaps.py` (9); `permissionLayout.test.ts` (6); the editor suites rewritten for the layout
+  without weakening any assertion about the saved set, plus the three-way, padlock and legend, counts and collapse,
+  the Scholars note from both sources, hidden keys saved as held, and history Show / Hide.
+- New TDs: TD-618 (the Overview sentences are not pinned to the door code), TD-619 (`mobile-check` does not open a
+  person page).
+
 ### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
 
 Branch m2c (local, not pushed, not deployed). Brief `docs/plans/2026-11-13-m2c-members-tab-brief.md`; owner

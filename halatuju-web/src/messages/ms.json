@@ -8434,7 +8434,7 @@
       },
       "payments_approve": {
         "name": "Luluskan larian pembayaran",
-        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya."
+        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya. Juga menyemak kredit penaja."
       },
       "award_withdraw_request": {
         "name": "Minta tarik balik anugerah",
@@ -8447,11 +8447,19 @@
     },
     "permEditor": {
       "title": "Apa yang boleh dilakukan oleh {name}",
-      "subtitle": "Bermula daripada set {preset}. Hidupkan kebenaran tambahan apabila diperlukan.",
+      "intro": "Pilih apa yang boleh dilihat dan dilakukan oleh {name}. Perubahan berkuat kuasa apabila anda menyimpan.",
+      "notAssignable": "Belum boleh ditugaskan.",
+      "boxCount": "{n} daripada {m} dihidupkan",
+      "level": {
+        "none": "Tiada akses",
+        "view": "Lihat",
+        "edit": "Lihat dan ubah"
+      },
+      "scholarsNote": "{pages} menunjukkan penerima biasiswa mengikut nama. Hidupkan Penerima biasiswa juga, atau orang ini akan melihat halaman itu tanpa fail penerima biasiswa.",
       "custom": "Tersuai",
       "changed": "diubah",
       "save": "Simpan perubahan",
-      "reset": "Set semula kepada {preset}",
+      "reset": "Set semula kepada set {preset}",
       "footnote": "Anda tidak boleh mengubah kebenaran anda sendiri atau kebenaran pentadbir organisasi.",
       "noChange": "Tiada perubahan daripada apa yang boleh dilakukan oleh {name} sekarang.",
       "gives": "Menyimpan memberi {name}: {list}.",
@@ -8474,19 +8482,84 @@
         "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
         "withdraw_request_and_approve": "{name} boleh meminta tarik balik anugerah dan meluluskannya, tetapi tidak sekali-kali permintaannya sendiri.",
         "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
-        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
+        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan.",
+        "scholars_needed": "{name} akan melihat halaman yang menamakan penerima biasiswa, tetapi bukan fail mereka, sehingga Penerima biasiswa turut dihidupkan."
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Permohonan”, jadi ia dihidupkan bersamanya."
     },
-    "permV2": {
-      "title": "Halaman",
-      "intro": "Setiap halaman yang boleh dibuka oleh orang ini. Suis yang dikunci dipegang melalui kebenaran lain, atau hanya untuk pentadbir organisasi.",
-      "group": {
+    "permLayout": {
+      "box": {
         "organisation": "Organisasi",
-        "programme": "Program",
-        "engagement": "Penglibatan",
-        "money": "Wang"
+        "programme": "Program"
       },
+      "orgOverview": {
+        "desc": "Dibuka dengan mana-mana suis pada tab ini."
+      },
+      "invitations": {
+        "desc": "Lihat jemputan yang dihantar untuk menyertai pasukan."
+      },
+      "team": {
+        "desc": "Lihat jadual pasukan dan senarai Mentor."
+      },
+      "sources": {
+        "desc": "Sumber rujukan dan pilihan organisasi saksi."
+      },
+      "sponsors": {
+        "desc": "Terma penaja, e-mel dan kredit yang direkodkan."
+      },
+      "billing": {
+        "desc": "Lihat penggunaan dan bil."
+      },
+      "requests": {
+        "desc": "Permintaan kepada pasukan HalaTuju."
+      },
+      "orgSettings": {
+        "desc": "Ubah butiran organisasi."
+      },
+      "programmeOverview": {
+        "desc": "Setiap pemberian sebaik sahaja mana-mana suis dalam dua kotak ini dihidupkan; jika tidak, hanya pemberian yang mempunyai kes yang ditugaskan kepadanya."
+      },
+      "scholars": {
+        "desc": "Halaman Penerima biasiswa dan fail setiap penerima biasiswa."
+      },
+      "announcements": {
+        "desc": "Mesej kepada penerima biasiswa."
+      },
+      "surveys": {
+        "desc": "Tinjauan dan jawapannya."
+      },
+      "development": {
+        "desc": "Modul dan kemajuan setiap penerima biasiswa."
+      },
+      "mentoring": {
+        "desc": "Tab bimbingan mentor pada setiap penerima biasiswa."
+      },
+      "payments": {
+        "desc": "Dibuka dengan mana-mana satu daripada tiga di bawah."
+      },
+      "spending": {
+        "desc": "Lihat dan susun cara penerima biasiswa membelanjakan wang mereka."
+      },
+      "contracts": {
+        "desc": "Templat kontrak anugerah."
+      },
+      "programmeSettings": {
+        "desc": "Persediaan pemberian dan tahun pengambilan."
+      },
+      "sponsorsApprove": {
+        "name": "Luluskan kredit penaja",
+        "desc": "Langkah terakhir sebelum sesuatu kredit dikira."
+      },
+      "assign": {
+        "name": "Tugaskan dan ingatkan penilai",
+        "desc": "Tidak sekali-kali kepada diri sendiri."
+      },
+      "approveAwards": {
+        "name": "Luluskan anugerah",
+        "desc": "Keputusan muktamad bagi sesuatu permohonan."
+      }
+    },
+    "permV2": {
       "page": {
         "invitations": "Jemputan",
         "team": "Pasukan",
@@ -8513,12 +8586,7 @@
         "check": "semak",
         "approve": "luluskan"
       },
-      "name": "{page}: {level}",
-      "reason": {
-        "never_grantable": "Hanya pentadbir organisasi, sentiasa.",
-        "lead_only": "Hanya pentadbir organisasi, buat masa ini.",
-        "alias": "Datang bersama kebenaran di atas."
-      }
+      "name": "{page}: {level}"
     },
     "person": {
       "tabsAria": "Panel individu",
@@ -8565,8 +8633,12 @@
       "roleReset": "Diset semula kepada set {role} oleh perubahan peranan",
       "byAt": "Oleh {by}, {at}",
       "team": "pasukan HalaTuju",
-      "migration": "migrasi sistem",
-      "empty": "Belum ada perubahan. {name} mempunyai set {role}."
+      "migration": "kemas kini sistem",
+      "empty": "Belum ada perubahan. {name} mempunyai set {role}.",
+      "countOn": "{n} dihidupkan",
+      "countOff": "{n} dimatikan",
+      "show": "Tunjuk",
+      "hide": "Sembunyi"
     },
     "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu.",
     "systemHealth": {

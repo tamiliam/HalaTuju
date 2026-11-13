@@ -8946,3 +8946,21 @@ safe for the idempotent backup, and the command's docstring warns against pointi
 ### [TD-617] Are PISMP, MARA preparation and American Degree Program students degree-bound for money? - owner decision (money)
 
 **Raised 2026-11-13 by the F1 re-check.** Are PISMP, MARA preparation and American Degree Program students degree-bound for the award, the funding estimate and the after-submit owed cap? Today: yes by name. Needs an owner money ruling. Detail: `results_route.degree_bound` reads a degree from the programme NAME when there is no catalogue course id, so a 'pismp' code under "Ijazah Sarjana Muda Pendidikan", a "Program Persediaan Ijazah Luar Negara" (MARA) and the "American Degree Program" are degree-bound: RM2,000 for 12 months (`award._sized_as_stpm`), the 'degree' funding estimate (`funding_estimate.classify_pathway`) and, once submitted with SPM only, the owed higher-results cap (`higher_owed`). F1 withheld only the BEFORE-SUBMIT ask from them (`results_route._q7_widening_withheld`); the money and owed rules were left exactly as on main because F1 may not move money. If the owner rules they are not degree-bound, the change is to `degree_bound` itself, with an adversarial review and the owner's phone check. *(owner decision - S)*
+
+### [TD-618] The two Overview rows on the Permissions tab are worded from the door code, and nothing pins them - low
+
+**Raised 2026-11-13 by sprint M2d (D2).** The Organisation and Programme rows in `halatuju-web/src/lib/permissionLayout.ts`
+have no control; their sentences (`admin.permLayout.orgOverview.desc`, `admin.permLayout.programmeOverview.desc`) say
+when each Overview opens. They were checked by hand against `staff_tables` (the Organisation Overview opens with any
+Admins key, stored page key or Reviewers key; the Programme Overview opens by role and shows every gift only with
+`sees_every_gift`). The mock-up's "Opens with any page in this box" was not true and was reworded. If a door changes,
+the sentence will be wrong and no test will fail. Fix: serve the two sentences' facts from the API (or pin the door
+sets with a drift test beside `permissionLayout.test.ts`). *(A - S)*
+
+### [TD-619] `mobile-check` does not open a person page, so the Permissions tab's sticky save bar is checked by hand only - low
+
+**Raised 2026-11-13 by sprint M2d (D8).** The save bar (`PermissionEditor.tsx`, `SaveBar`) is `sticky bottom-0` and
+safe-area aware. The admin shell has no bottom bar, so nothing collides with it today. But `mobile-check/targets.ts`
+covers no Team person page (`/admin/organisation/team/admins/<id>`), so a future bottom bar or an overflowing
+three-way at 360 px would not be caught. Fix: add one person page with the Permissions tab open to the targets, with
+a fixture admin, and refresh the baseline. *(A - S)*

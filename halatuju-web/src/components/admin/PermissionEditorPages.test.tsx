@@ -1,11 +1,13 @@
 /**
  * @jest-environment jsdom
  *
- * Sprint M2b (D9): the Permissions tab draws the v2 PAGE keys by group, under "Admin permissions" — a
- * switch per key the server lets this viewer store, the rest LOCKED with the server's reason; the set is
- * one list (today's keys + the stored page keys); "Custom" and Reset weigh the page part against the
- * role's own (`v2_preset`, or the Admins table's `table_presets`). Nothing here re-derives who may hold
- * what: `grantable`, `reason` and `held` are served.
+ * Sprint M2b (D9), laid out BY PAGE in sprint M2d: the v2 PAGE keys sit in the Organisation and Programme
+ * boxes (`lib/permissionLayout.ts`) — a three-way choice for a page with a view and a change, a switch for a
+ * one-key page — the ones the server lets nobody here store drawn disabled with a padlock under ONE legend
+ * line, the `never_grantable` and `alias` keys not drawn at all but kept in the saved set. The set is one list
+ * (today's keys + the stored page keys); Reset weighs the page part against the role's own (`v2_preset`, or
+ * the Admins table's `table_presets`). Nothing here re-derives who may hold what: `grantable`, `reason`,
+ * `held` and `v2_gaps` are served.
  */
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import PermissionEditor from './PermissionEditor'
@@ -50,8 +52,14 @@ const plan = (over: Partial<api.StaffPermissionsPlan>): api.StaffPermissionsPlan
   added: [], removed: [], consequences: [], v2_held: PRESET_V2, ...over,
 })
 const name = (key: string) => permName((x, p) => (p ? `${x}(${Object.entries(p).map(([a, b]) => `${a}=${b}`).join(';')})` : x), key)
-const toggle = (key: string) => screen.getByRole('switch', { name: name(key) })
-const isOn = (key: string) => toggle(key).getAttribute('aria-checked') === 'true'
+const teamSwitch = () => screen.getByRole('switch', { name: 'admin.nav.reviewers' }) as HTMLButtonElement
+/** A page's three-way (named by the sidebar's label) and one of its options. */
+const radio = (page: string, level: 'none' | 'view' | 'edit') => within(screen.getByRole('radiogroup', { name: page }))
+  .getByRole('radio', { name: `admin.permEditor.level.${level}` }) as HTMLButtonElement
+const level = (page: string) => (['none', 'view', 'edit'] as const)
+  .find((l) => radio(page, l).getAttribute('aria-checked') === 'true')
+const SPONSORS = 'admin.sponsors.nav'
+const INVITATIONS = 'admin.nav.invitations'
 
 async function open(view: api.StaffPermissionsView = ADMIN, table?: 'admins' | 'reviewers') {
   mockApi.getStaffPermissions.mockResolvedValue(view)
@@ -62,78 +70,178 @@ async function open(view: api.StaffPermissionsView = ADMIN, table?: 'admins' | '
 beforeEach(() => { jest.clearAllMocks(); mockApi.saveStaffPermissions.mockResolvedValue(plan({})) })
 afterEach(cleanup)
 
-it('draws the page keys by group, the stored ones on, the rest locked with the server reason', async () => {
+it('draws each page once, in its box; a locked option with a padlock under one legend; hidden keys not drawn', async () => {
   await open()
-  const pages = screen.getByTestId('perm-section-pages')
-  expect(within(pages).getByText('admin.permV2.title')).toBeTruthy()
-  expect(within(pages).getByText('admin.permV2.group.organisation')).toBeTruthy()
-  expect(within(pages).getByText('admin.permV2.group.programme')).toBeTruthy()
-  expect(isOn('team.view')).toBe(true)
-  expect((toggle('team.view') as HTMLButtonElement).disabled).toBe(false)
-  for (const [key, reason] of [['invitations.edit', 'lead_only'], ['billing.edit', 'never_grantable'],
-    ['students.view', 'alias']]) {
-    expect((toggle(key) as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByTestId(`v2-reason-${key}`).textContent).toBe(`admin.permV2.reason.${reason}`)
+  const org = screen.getByTestId('perm-box-organisation')
+  expect(within(org).getByText('admin.permLayout.box.organisation')).toBeTruthy()
+  expect(within(org).getByRole('radiogroup', { name: INVITATIONS })).toBeTruthy()
+  expect(teamSwitch().getAttribute('aria-checked')).toBe('true')
+  expect(teamSwitch().disabled).toBe(false)
+  expect(level(SPONSORS)).toBe('edit')
+  // D4: Invitations' "View and change" is lead_only — that option alone disabled, with a padlock; off (not held).
+  expect(level(INVITATIONS)).toBe('view')
+  expect(radio(INVITATIONS, 'edit').disabled).toBe(true)
+  expect(radio(INVITATIONS, 'view').disabled).toBe(false)
+  expect(radio(INVITATIONS, 'none').disabled).toBe(false)
+  expect(within(radio(INVITATIONS, 'edit')).getByTestId('perm-padlock')).toBeTruthy()
+  expect(screen.getAllByTestId('perm-legend')).toHaveLength(1)
+  expect(screen.getByTestId('perm-legend').textContent).toBe('admin.permEditor.notAssignable')
+  // D3: never_grantable and alias keys are not drawn; the old key's row stands in (Applications is see_all).
+  for (const key of ['billing.edit', 'students.view']) expect(screen.queryByRole('switch', { name: name(key) })).toBeNull()
+  expect(screen.queryByText('admin.billing.title')).toBeNull()                 // the row has nothing served
+  expect(screen.getByRole('switch', { name: 'admin.scholarship.nav' }).getAttribute('aria-checked')).toBe('true')
+  // D6: no Pages heading, no group headings, no reasons, no "Custom".
+  for (const gone of [/admin\.permV2\.(title|intro|group|reason)/, /admin\.permEditor\.custom/]) {
+    expect(screen.queryAllByText(gone)).toHaveLength(0)
   }
-  expect(isOn('students.view')).toBe(true)            // held through Applications, and says so
-  expect(isOn('billing.edit')).toBe(false)
-  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()    // on its preset, both parts
+  expect(screen.queryByTestId('perm-other')).toBeNull()                        // every served key is placed
   expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
 })
 
-it('sends the whole set — today\'s keys and the page keys — and a change brings its page view', async () => {
-  mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+it('the three-way sends the right set: View and change, View, then No access', async () => {
   await open({ ...ADMIN, v2_held: ['invitations.view', 'team.view'] })
-  fireEvent.click(toggle('sponsors.edit'))
-  expect(isOn('sponsors.view')).toBe(true)
+  const base = [...ADMIN.permissions, 'invitations.view', 'team.view']
+  expect(level(SPONSORS)).toBe('none')
+  fireEvent.click(radio(SPONSORS, 'edit'))
+  expect(level(SPONSORS)).toBe('edit')
   await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
-    [...ADMIN.permissions, 'invitations.view', 'team.view', 'sponsors.edit', 'sponsors.view'], true, { token: 'tok' }))
-  fireEvent.click(toggle('sponsors.view'))           // a page's view off takes its change with it
-  expect(isOn('sponsors.edit')).toBe(false)
-  // back to the set it holds: nothing to ask, nothing to save
+    [...base, 'sponsors.view', 'sponsors.edit'], true, { token: 'tok' }))
+  fireEvent.click(radio(SPONSORS, 'view'))
+  expect(level(SPONSORS)).toBe('view')
+  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+    [...base, 'sponsors.view'], true, { token: 'tok' }))
+  fireEvent.click(radio(SPONSORS, 'none'))                    // back to the set it holds: nothing to ask
+  expect(level(SPONSORS)).toBe('none')
   expect(screen.getByText('admin.permEditor.noChange(name=Staff One)')).toBeTruthy()
-  expect(mockApi.saveStaffPermissions).toHaveBeenCalledTimes(1)
+  expect(mockApi.saveStaffPermissions).toHaveBeenCalledTimes(2)
 })
 
-it('"Custom" and Reset weigh the page part against the role\'s own', async () => {
-  mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+it('"No access" clears the whole page, and the locked option never moves', async () => {
   await open()
-  fireEvent.click(toggle('team.view'))
-  expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
+  fireEvent.click(radio(SPONSORS, 'none'))
+  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+    [...ADMIN.permissions, 'invitations.view', 'team.view'], true, { token: 'tok' }))
+  fireEvent.click(radio(INVITATIONS, 'edit'))                 // disabled: nothing happens
+  expect(level(INVITATIONS)).toBe('view')
+})
+
+it('hidden keys are never drawn yet still saved as held', async () => {
+  await open({ ...ADMIN, v2_held: [...PRESET_V2, 'billing.edit'] })
+  expect(screen.queryByRole('switch', { name: name('billing.edit') })).toBeNull()
+  fireEvent.click(teamSwitch())
+  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+    [...ADMIN.permissions, 'invitations.view', 'sponsors.view', 'sponsors.edit', 'billing.edit'], true, { token: 'tok' }))
+})
+
+it('Reset weighs the page part against the role\'s own', async () => {
+  await open()
+  const reset = () => screen.getByTestId('perm-reset') as HTMLButtonElement
+  fireEvent.click(teamSwitch())
   await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalled())
-  fireEvent.click(screen.getByTestId('perm-reset'))
-  expect(isOn('team.view')).toBe(true)
-  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
+  expect(reset().disabled).toBe(false)
+  fireEvent.click(reset())
+  expect(teamSwitch().getAttribute('aria-checked')).toBe('true')
+  expect(screen.getByText('admin.permEditor.reset(preset=admin.role.admin)')).toBeTruthy()
 })
 
 it('opened from the Admins table, the served table preset (with its page keys) is the preset', async () => {
   await open(ADMIN, 'admins')
-  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
-  fireEvent.click(toggle('sponsors.edit'))
-  expect(screen.getByText('admin.permEditor.custom')).toBeTruthy()
+  expect((screen.getByTestId('perm-reset') as HTMLButtonElement).disabled).toBe(true)
+  fireEvent.click(radio(SPONSORS, 'view'))
+  expect((screen.getByTestId('perm-reset') as HTMLButtonElement).disabled).toBe(false)
   await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalled())
 })
 
 it('opened from the Reviewers table, no page keys are drawn', async () => {
   await open({ ...ADMIN, role: 'reviewer', tables: ['admins', 'reviewers'], permissions: ['review'] }, 'reviewers')
-  expect(screen.queryByTestId('perm-section-pages')).toBeNull()
+  expect(screen.queryByTestId('perm-section-admins')).toBeNull()
+  expect(screen.queryByRole('radiogroup')).toBeNull()
 })
 
 it('a save keeps the page keys the server answers with', async () => {
   mockApi.saveStaffPermissions.mockResolvedValue(plan({ dry_run: false, v2_held: ['invitations.view', 'sponsors.view'] }))
   await open()
-  fireEvent.click(toggle('team.view'))
-  await waitFor(() => expect(screen.getByText('admin.permEditor.save')).toBeTruthy())
+  fireEvent.click(teamSwitch())
   await waitFor(() => expect((screen.getByText('admin.permEditor.save') as HTMLButtonElement).disabled).toBe(false))
   fireEvent.click(screen.getByText('admin.permEditor.save'))
-  await waitFor(() => expect(isOn('sponsors.edit')).toBe(false))
-  expect(isOn('sponsors.view')).toBe(true)
+  await waitFor(() => expect(level(SPONSORS)).toBe('view'))
+  expect(teamSwitch().getAttribute('aria-checked')).toBe('false')
 })
 
-it('an older api with no page keys draws no Pages section and sends today\'s keys as before', async () => {
+it('an older api with no page keys draws no page control and sends today\'s keys as before', async () => {
   await open({ ...ADMIN, v2_keys: undefined, v2_held: undefined, v2_preset: undefined })
-  expect(screen.queryByTestId('perm-section-pages')).toBeNull()
-  expect(screen.queryByText('admin.permEditor.custom')).toBeNull()
+  expect(screen.queryByRole('radiogroup')).toBeNull()
+  expect(screen.queryByTestId('perm-legend')).toBeNull()
+  fireEvent.click(screen.getByRole('switch', { name: 'admin.spending.nav' }))
+  await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+    ['see_all', 'scholars', 'payments_prepare'], true, { token: 'tok' }))
+})
+
+describe('D5: the boxes count and collapse', () => {
+  it('"N of M on" moves with the working set; a locked control is not counted', async () => {
+    await open()
+    // Invitations (a three-way, once), Team, Sponsors: three enabled controls, all on.
+    expect(screen.getByTestId('perm-box-organisation-count').textContent).toBe('admin.permEditor.boxCount(n=3;m=3)')
+    // Applications, Scholars + 2, Payments' 3, Spending: eight; Applications, Scholars, Prepare, Spending on.
+    expect(screen.getByTestId('perm-box-programme-count').textContent).toBe('admin.permEditor.boxCount(n=4;m=8)')
+    fireEvent.click(teamSwitch())
+    fireEvent.click(radio(SPONSORS, 'view'))                  // still on: a three-way is on unless "No access"
+    expect(screen.getByTestId('perm-box-organisation-count').textContent).toBe('admin.permEditor.boxCount(n=2;m=3)')
+    fireEvent.click(radio(INVITATIONS, 'none'))
+    expect(screen.getByTestId('perm-box-organisation-count').textContent).toBe('admin.permEditor.boxCount(n=1;m=3)')
+  })
+
+  it('both open on load; collapsing hides the rows and keeps the working set', async () => {
+    await open()
+    const box = screen.getByTestId('perm-box-organisation')
+    const head = within(box).getByRole('button', { expanded: true })
+    fireEvent.click(teamSwitch())
+    fireEvent.click(head)
+    expect(head.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('switch', { name: 'admin.nav.reviewers' })).toBeNull()   // hidden rows leave the tree
+    expect(screen.getByTestId('perm-box-programme').querySelector('[aria-expanded="true"]')).toBeTruthy()
+    fireEvent.click(head)
+    expect(teamSwitch().getAttribute('aria-checked')).toBe('false')
+    expect(screen.getAllByText('admin.permEditor.changed').length).toBeGreaterThan(0)
+  })
+})
+
+describe('D7: the Scholars note, as the server tells it', () => {
+  const note = () => screen.queryByTestId('perm-scholars-note')
+
+  it('at rest from v2_gaps; while changed from the dry run', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({ v2_gaps: ['announcements', 'surveys'],
+      consequences: ['scholars_needed'] }))
+    await open({ ...ADMIN, v2_gaps: ['surveys'] })
+    expect(note()?.textContent).toBe('admin.permEditor.scholarsNote(pages=admin.permV2.page.surveys)')
+    fireEvent.click(teamSwitch())
+    await waitFor(() => expect(note()?.textContent).toBe(
+      'admin.permEditor.scholarsNote(pages=admin.permV2.page.announcements, admin.permV2.page.surveys)'))
+    expect(screen.getByRole('status').textContent).toContain('admin.permEditor.effect.scholars_needed(name=Staff One)')
+    expect((screen.getByText('admin.permEditor.save') as HTMLButtonElement).disabled).toBe(false)   // not a refusal
+  })
+
+  it('a change that closes the gap clears it; none served, none shown', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({ v2_gaps: [] }))
+    await open({ ...ADMIN, v2_gaps: ['surveys'] })
+    fireEvent.click(teamSwitch())
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenCalled())
+    await waitFor(() => expect(note()).toBeNull())
+    cleanup()
+    await open()
+    expect(note()).toBeNull()
+  })
+
+  it('a fixed card shows no note, no legend and no save bar', async () => {
+    // As the server serves a fixed card: each key's `held` says what opens today.
+    const asHeld = GROUPS.map((g) => ({ ...g, keys: g.keys.map((x) => ({ ...x, held: x.held || PRESET_V2.includes(x.key) })) }))
+    await open({ ...ADMIN, editable: false, v2_gaps: ['surveys'], v2_keys: asHeld })
+    expect(note()).toBeNull()
+    expect(screen.queryByTestId('perm-legend')).toBeNull()
+    expect(screen.queryByTestId('perm-save-bar')).toBeNull()
+    expect(radio(SPONSORS, 'view').disabled).toBe(true)
+    expect(level(SPONSORS)).toBe('edit')                    // D4: shows what it holds
+  })
 })
 
 describe('permName: a v2 page key reads "<page>: <level>"', () => {
@@ -143,7 +251,7 @@ describe('permName: a v2 page key reads "<page>: <level>"', () => {
       'admin.permV2.name(page=admin.permV2.page.sponsors;level=admin.permV2.level.edit)')
   })
 
-  it('has every page, level, group and reason in all three languages', () => {
+  it('has every page and level in all three languages', () => {
     const pages = ['invitations', 'team', 'sources', 'sponsors', 'billing', 'requests', 'settings', 'students',
       'scholars', 'contracts', 'programmes', 'announcements', 'surveys', 'development', 'mentoring', 'payments',
       'spending']
@@ -151,8 +259,8 @@ describe('permName: a v2 page key reads "<page>: <level>"', () => {
       const v2 = (m as { admin: { permV2: Record<string, Record<string, string> | string> } }).admin.permV2
       expect(Object.keys(v2.page as object).sort()).toEqual([...pages].sort())
       expect(Object.keys(v2.level as object).sort()).toEqual(['approve', 'check', 'edit', 'prepare', 'view'])
-      expect(Object.keys(v2.group as object).sort()).toEqual(['engagement', 'money', 'organisation', 'programme'])
-      expect(Object.keys(v2.reason as object).sort()).toEqual(['alias', 'lead_only', 'never_grantable'])
+      expect(v2.group).toBeUndefined()            // M2d D6: no group headings, no reasons
+      expect(v2.reason).toBeUndefined()
     }
   })
 
