@@ -4,10 +4,6 @@ Written 2026-11-13 by tamiliam's build agent. **No code was changed.** This page
 **today** (live `origin/main` 70a51cdc7; the g15 branch holds the same slip-check code) when it compares a
 student's results document with what she typed. Roadmap entry: `2026-11-05-audit-fix-roadmap.md`, F1.
 
-> **OWNER RULING 2026-11-13: APPROVED.** The owner said "proceed" to "answer the 8 questions; 'yes to all'
-> is fine". So every recommendation in Part 2 (Q1 to Q8) is the rule. This table, with those answers, is the
-> source of the slip-check rules for the F1 build.
-
 ## How to read this page
 
 The officer sees two things for each results document:
