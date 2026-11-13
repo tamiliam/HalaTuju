@@ -93,7 +93,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
 #   .3 TD-404 ANAK=AK, BINTI=BT/BTE; .4 STPM S3 scored (+1A); .5 TD-410 a suspect proof shows no income;
 #   2026-11-13.2 — F1 slip-check rule table (owner 2026-11-13, Q1-Q4, Q6, Q7): a short SPM read names what it missed (no tick); STPM mirrors SPM (short read unchecked, extra red on a full read, a +/- difference amber on an AI read, red on the exact read); a higher result in the SPM slot holds no clean card back; one degree test (degree_bound) for the pre-submit ask
-VERDICT_ENGINE_VERSION = '2026-11-13.3'   # 11-13.3 F1 review: an AI STPM read never says extra (unchecked); an SPM read short of the printed count is never complete (academic_slip_rows_unread); an SPM-entry pathway code or a preparatory name is not a degree by name.
+#   2026-11-13.3 — F1 review: an AI STPM read never says extra (unchecked); an SPM read short of the printed count is never complete (academic_slip_rows_unread); an SPM-entry pathway code or a preparatory name is not a degree by name.
+VERDICT_ENGINE_VERSION = '2026-11-13.4'   # 11-13.4 F1 re-check: .3's degree narrowing is withdrawn from degree_bound / destination (the award, funding estimate and after-submit owed cap are as on origin/main again, so a matric / asasi / diploma / pismp code under a degree name, a preparatory name or the American Degree Program is owed and capped as before); it applies to the before-submit ask only (TD-617).
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

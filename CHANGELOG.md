@@ -36,10 +36,10 @@ rulings R1-R5 (decisions.md "Members tab and the lifecycle rules"; R6 is M3). No
 
 ### fix: sprint F1 - adversarial review fixes (2026-11-13)
 
-Branch f1 (local, not pushed). Verdict engine 2026-11-13.3. decisions.md 2026-11-13 "F1 adversarial review".
+Branch f1 (local, not pushed). Verdict engine 2026-11-13.4 (was .3). decisions.md 2026-11-13 "F1 adversarial review".
 - Q3: an AI STPM read that skipped a row no longer calls the typed subject "not on the slip" (red); it is unchecked (amber, named). Red extra is the exact read's only.
 - Q1: an SPM slip printing more subjects than the read caught is never complete, even when every typed subject was found: amber Subjects, at best Probable, new item `academic_slip_rows_unread` (EN/MS/TA).
-- Q7 narrowed: a PISMP / Asasi / Matriculation / Diploma pathway code wins over a degree-sounding name, and a "Persediaan" / "Degree Program" name is not a degree; an old Form Six code + degree name is still asked before submit.
+- Q7 narrowed, BEFORE-SUBMIT ASK ONLY (re-check; verdict engine 2026-11-13.4): a PISMP pathway code, a "Persediaan" name or the "American Degree Program" is not asked for higher results before submit; an old Form Six code + degree name still is. `degree_bound` / `destination` are unchanged from main, so the award, the funding estimate and the after-submit owed cap do not move (pinned against main's values). Money question for the owner: TD-617.
 - `higher_results_grade_uncertain` is on the interview agenda (copy EN/MS/TA). Reviewer manual: the not-equal marker is always amber.
 - Tests: matrix rows for the printed-count short read, the AI skipped row and a +/- alone; behaviour tests replace a docstring grep and a self-built table; Q5 and Q8 pinned.
 

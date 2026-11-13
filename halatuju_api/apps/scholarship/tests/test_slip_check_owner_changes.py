@@ -12,7 +12,7 @@ from apps.scholarship.academic_engine import read_slip
 from apps.scholarship.higher_results import _compare_stpm, red_chips, student_higher_check
 from apps.scholarship.tests.test_slip_check_matrix import (
     DEGREE, EXACT_READ, GENUINE, SHORT_ROWS, SPM_HELD, SPM_ROWS, STPM_GRADES, STPM_HELD, STPM_ROWS,
-    _academic, _app, _doc, spm_read, stpm_read)
+    SUBMITTED, UNSURE, _academic, _app, _doc, spm_read, stpm_read)
 
 
 class Q1SpmShortRead(TestCase):
@@ -120,25 +120,83 @@ class Q7OneDegreeTest(TestCase):
         return {'chosen_pathway': code, 'pathway_certainty': 'sure',
                 'chosen_programme': {'course_name': name, 'institution': 'X'}}
 
-    def test_spm_entry_programmes_with_degree_words_ask_nothing_before_submit(self):
-        # Review 2026-11-13: a preparatory name, and an SPM-entry pathway code over a degree name.
+    def test_pismp_preparatory_and_american_degree_program_are_not_asked_before_submit(self):
+        # Review 2026-11-13, narrowed: the widening is withheld from the before-submit ask ONLY;
+        # they stay degree-bound for the award, the funding estimate and the owed cap (TD-617).
         for code, name in (('tvet_other', 'American Degree Program'),
                            ('mara', 'Program Persediaan Ijazah Luar Negara'),
                            ('pismp', 'Ijazah Sarjana Muda Pendidikan')):
             with self.subTest(name):
                 app = _app(SPM_HELD, self._plan(code, name))
-                self.assertFalse(results_route.degree_bound(app))
+                self.assertTrue(results_route.degree_bound(app))
                 self.assertEqual(results_route.higher_need(app), '')
 
-    def test_a_preparatory_name_with_no_code_is_not_a_degree(self):
-        app = _app(SPM_HELD, self._plan('', 'Program Persediaan Ijazah Luar Negara'))
-        self.assertEqual(results_route.destination(app), results_route.UNDECIDED)
-        self.assertFalse(results_route.degree_bound(app))
+    def test_a_degree_programme_name_with_no_code_is_asked_before_submit(self):
+        # "Degree Programme" is not the American Degree Program.
+        app = _app(SPM_HELD, self._plan('', 'Bachelor of Engineering (Hons) Degree Programme'))
+        self.assertEqual(results_route.higher_need(app), 'required_with_slip')
+
+    def test_251_stale_form_six_code_under_a_degree_programme_is_degree_bound_and_sized_as_one(self):
+        # #251's shape: 'stpm' + "... Degree Programme ..." + no course id. Degree-bound, so RM2,000
+        # and the 'degree' estimate (origin/main), never Form Six sizing; asked before submit (Q7).
+        from apps.scholarship.award import proposed_award_amount
+        from apps.scholarship.funding_estimate import classify_pathway
+        app = _app(SPM_HELD, self._plan('stpm', "Bachelor's Degree Programme in Accounting"))
+        self.assertTrue(results_route.degree_bound(app))
+        self.assertEqual(str(proposed_award_amount(app)), '2000')
+        self.assertEqual(classify_pathway(app), 'degree')
+        self.assertEqual(results_route.higher_need(app), 'required_with_slip')
+
+    @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+    def test_a_matric_code_under_a_degree_name_keeps_the_owed_cap(self):
+        from apps.scholarship import higher_owed
+        app = _app(SPM_HELD, self._plan('matric', 'Ijazah Sarjana Muda Kejuruteraan'), SUBMITTED)
+        _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
+        self.assertTrue(results_route.degree_bound(app))
+        self.assertTrue(higher_owed.undeclared(app))
+        fact = _academic(app)
+        self.assertEqual(fact['status'], UNSURE)
+        self.assertIn('higher_results_not_declared', {i['code'] for i in fact['unresolved']})
 
     def test_form_six_code_never_wins_over_a_degree_name(self):
         # The owner's Q7 case stays: an old Form Six code + a degree course name is asked before submit.
         app = _app(SPM_HELD, self._plan('stpm', 'Ijazah Sarjana Muda Kejuruteraan Awam'))
         self.assertEqual(results_route.higher_need(app), 'required_with_slip')
+
+
+class Q7MoneyUnchangedFromMain(TestCase):
+    """F1 must not move money. Expected values were produced by running origin/main's own
+    `results_route.py` (award.py and funding_estimate.py are byte-identical to origin/main) on
+    these exact applications (SPM held, no course id), 2026-11-13: the award amount
+    (`proposed_award_amount`; None = course start unknown) and the funding route (`classify_pathway`)."""
+    EXPECTED = [   # (pathway code, programme name, award, funding route) - origin/main
+        ('stpm', "Bachelor's Degree Programme in Accounting", '2000', 'degree'),
+        ('stpm', 'Ijazah Sarjana Muda Kejuruteraan Awam', '2000', 'degree'),
+        ('stpm', 'Tingkatan Enam', None, 'stpm'),
+        ('stpm', '', None, 'stpm'),
+        ('matric', 'Ijazah Sarjana Muda Kejuruteraan', '2000', 'degree'),
+        ('asasi', 'Ijazah Sarjana Muda Sains', '2000', 'degree'),
+        ('diploma', 'Ijazah Sarjana Muda Perakaunan', '2000', 'degree'),
+        ('pismp', 'Ijazah Sarjana Muda Pendidikan', '2000', 'degree'),
+        ('mara', 'Program Persediaan Ijazah Luar Negara', '2000', 'degree'),
+        ('tvet_other', 'American Degree Program', '2000', 'degree'),
+        ('', 'American Degree Program', '2000', 'degree'),
+        ('', 'Bachelor of Engineering (Hons) Degree Programme', '2000', 'degree'),
+        ('', 'Program Persediaan Ijazah Luar Negara', '2000', 'degree'),
+        ('university', 'Ijazah Sarjana Muda Undang-Undang', '2000', 'degree'),
+        ('university', 'Diploma Kejuruteraan Mekanikal', '2000', 'university'),
+        ('poly', 'Diploma Kejuruteraan Elektrik', '2000', 'poly'),
+    ]
+
+    def test_award_and_funding_route_equal_main(self):
+        from apps.scholarship.award import proposed_award_amount
+        from apps.scholarship.funding_estimate import classify_pathway
+        for code, name, award, route in self.EXPECTED:
+            with self.subTest(code=code, name=name):
+                app = _app(SPM_HELD, {'chosen_pathway': code, 'pathway_certainty': 'sure',
+                                      'chosen_programme': {'course_name': name, 'institution': 'X'}})
+                amount = proposed_award_amount(app)
+                self.assertEqual((None if amount is None else str(amount), classify_pathway(app)), (award, route))
 
 
 class Q4StpmAmberOnTheInterviewAgenda(TestCase):

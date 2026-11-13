@@ -63,9 +63,9 @@ export const REVIEWER_FAQ: QA[] = [
         in the SPM slip card no longer holds a clean Academic card back from <strong>Certain</strong> when her
         higher-results card is clean. And a course counts as a <strong>degree</strong> by the same test everywhere:
         if its name says it is a degree, she is asked for her higher results before she submits, even when an old
-        Form Six pathway is saved with it. A preparatory programme (&ldquo;Persediaan&rdquo;, &ldquo;Degree
-        Program&rdquo;) is not a degree by its name, and a PISMP, Asasi, Matriculation or Diploma pathway wins over
-        the name, because those take SPM entry.</>,
+        Form Six pathway is saved with it. Three are not asked before submit: a PISMP pathway, a preparatory
+        programme (&ldquo;Persediaan&rdquo;) and the &ldquo;American Degree Program&rdquo;. The award, the
+        funding estimate and the owed-results check after submit treat every course as they did before.</>,
     },
     {
       q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,

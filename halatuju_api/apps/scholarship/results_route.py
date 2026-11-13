@@ -101,8 +101,6 @@ def destination(application) -> str:
     elif (prog.get('course_name') or '').strip():
         from .offer_pathway import detect_pathway_type
         kind = detect_pathway_type(prog.get('course_name') or '', prog.get('institution') or '')
-        if kind == 'degree' and not _degree_by_name(prog):
-            kind = ''                     # F1 review: a preparatory programme is not a degree by name
         out = DEGREE if kind == 'degree' else POST_SPM if kind in _POST_SPM_TYPES else UNDECIDED
     else:
         out = UNDECIDED
@@ -129,29 +127,27 @@ def degree_bound(application) -> bool:
     prog = prog if isinstance(prog, dict) else {}
     if str(prog.get('course_id') or '').strip():
         return False
-    # F1 review (2026-11-13): an SPM-entry pathway code the student chose wins over a degree-sounding
-    # NAME (PISMP's "Ijazah Sarjana Muda Pendidikan" is SPM-entry). NOT Form Six: a stale 'stpm' code
-    # under a degree name stays degree-bound (#251, the owner's Q7 case).
-    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() in _CODE_OVER_NAME:
-        return False
-    return _degree_by_name(prog)
-
-
-#: F1 review: SPM-entry pathway codes whose own programme names may read as a degree.
-_CODE_OVER_NAME = frozenset({'pismp', 'asasi', 'matric', 'diploma'})
-#: F1 review: a preparatory programme ("Program Persediaan Ijazah Luar Negara", "American Degree
-#: Program") names a degree it leads to, not the one she is studying for.
-_PREPARATORY_NAME = re.compile(r'persediaan|degree\s+program', re.IGNORECASE)
-
-
-def _degree_by_name(prog: dict) -> bool:
-    """Does the chosen programme's NAME read as a degree (`detect_pathway_type`), a preparatory
-    programme's name excepted (`_PREPARATORY_NAME`)?"""
     name = (prog.get('course_name') or '').strip()
-    if not name or _PREPARATORY_NAME.search(name):
-        return False
     from .offer_pathway import detect_pathway_type
-    return detect_pathway_type(name, prog.get('institution') or '') == 'degree'
+    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
+
+
+#: F1 review (2026-11-13), BEFORE-SUBMIT ASK ONLY (`higher_need`): a PISMP code (SPM-entry under
+#: "Ijazah Sarjana Muda Pendidikan"), a preparatory programme ("Program Persediaan Ijazah Luar
+#: Negara") and the "American Degree Program" (the exact phrase, never "Degree Programme") keep
+#: origin/main's before-submit answer. `degree_bound` / `destination` - shared with the award, the
+#: funding estimate and the after-submit owed cap - are NOT narrowed (a money ruling, TD-617).
+_NOT_ASKED_CODES = frozenset({'pismp'})
+_NOT_ASKED_NAME = re.compile(r'persediaan|american\s+degree\s+program(?!me)', re.IGNORECASE)
+
+
+def _q7_widening_withheld(application) -> bool:
+    """True when F1 Q7's wider before-submit ask (`degree_bound`) does not apply (`_NOT_ASKED_*`)."""
+    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() in _NOT_ASKED_CODES:
+        return True
+    prog = getattr(application, 'chosen_programme', None)
+    name = (prog.get('course_name') or '') if isinstance(prog, dict) else ''
+    return bool(_NOT_ASKED_NAME.search(name))
 
 
 def _already_passed(application, code) -> bool:
@@ -179,13 +175,18 @@ def higher_need(application) -> str:
 
     F1 Q7 (owner 2026-11-13, rule table): "going to a degree" is `degree_bound` here too - the same
     wider test the after-submit owed rule (`higher_owed._needs_higher`), funding and award ask - so a
-    stale post-SPM pathway code under a degree course NAME is asked before submit, not capped after."""
+    stale post-SPM pathway code under a degree course NAME is asked before submit, not capped after.
+    F1 review (2026-11-13): that widening is withheld for a PISMP code, a preparatory name and the
+    American Degree Program (`_q7_widening_withheld`) - those keep origin/main's answer below."""
     from apps.courses.public import is_tertiary
     tertiary = is_tertiary(held(application))
-    if degree_bound(application):
+    if degree_bound(application) and not _q7_widening_withheld(application):
         return 'required' if tertiary else 'required_with_slip'
-    if destination(application) == POST_SPM:
+    dest = destination(application)               # origin/main's rule, unchanged
+    if dest == POST_SPM:
         return ''
+    if dest == DEGREE:
+        return 'required' if tertiary else 'required_with_slip'
     return 'required' if tertiary else ''
 
 
