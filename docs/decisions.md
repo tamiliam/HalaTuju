@@ -8,11 +8,17 @@
 
 **Guard:** the layout name is taken only when it CONTAINS the line-order name (letters and digits compared), so it can add name parts but never replace the name with another line. No word boxes (a test seam, a failed read) = the old read, unchanged. Parents' cards use the same reader.
 
+**Two more guards, from the corpus check (2026-11-13, 820 cards on file, paid read, owner's word):** the first version fixed 13 students' names but made 30 good names worse. A structure-only follow-up read showed two causes. (1) Lines rebuilt from word boxes alone can glue two words or pick up a stray word on the same baseline: every name line Vision did not also print as a text line made a good name worse, and none fixed one. A name line must now be one of Vision's own text lines (letters and digits compared). (2) Where no blank line showed under the name, the address's first line, when it had no opening word such as JALAN, was taken as a second name line (4 cards). The name must now END at the blank line: a block cut short by the three-line cap or by an address-like line, or with no blank line under it, is set aside. In both cases the old line-order read stands.
+
 **Also:** the postcode no longer needs a word boundary on its right (`47000SUNGAI BULOH` was no postcode, so no address); a spaced "A / L" in a name is closed up to "A/L".
 
 **Scope:** the stored IC read (`vision_name`, `vision_address`) on the next read of a card. No verdict logic changes, so `VERDICT_ENGINE_VERSION` is not bumped; existing cards change only when re-read.
 
-**Not checked yet:** real cards. Word boxes are not stored, so checking the change against the cards on file, and re-reading the 15 students' cards after release, are paid Vision reads that need the owner's word.
+**Addresses:** on about 180 cards the old address opened with the name line itself. The address read now skips the name lines, so those addresses lose that line. That is intended.
+
+**Not fixed yet:** apps 358, 573 and 602. The layout read takes their first name line only. Their next line does not pass as a name line, so they read as before.
+
+**Not checked yet:** the guarded version against the cards that changed. Word boxes are not stored, so that re-check, and re-reading the students' cards after release, are paid Vision reads that need the owner's word.
 
 ## 2026-11-13 — Every Team table heading sorts, except Action (owner, Sprint M2d addendum A2)
 

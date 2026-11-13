@@ -166,6 +166,21 @@ class TestLayoutLeavesGoodReadsAlone(SimpleTestCase):
         _, text = card(['KUMAR A/L RAJA'], ADDRESS)
         self.assertEqual(read(words, text)['name'], 'KUMAR A/L RAJA')
 
+    def test_a_line_vision_did_not_print_is_never_used(self):
+        # Corpus check (2026-11-13): word boxes alone glued a stray word onto a good one-line
+        # name on 10 cards, turning a match into a mismatch. Vision's text line has no such word.
+        words, text = card(['KUMAR A/L RAJA'], ADDRESS)
+        last = max((w for w in words if w['cy'] == 240.0), key=lambda w: w['cx'])
+        x = last['cx'] + last['wlen'] / 2 + 0.6 * H
+        words += _words('MALAYSIA', x, 240.0)
+        self.assertEqual(read(words, text)['name'], 'KUMAR A/L RAJA')
+
+    def test_no_blank_line_under_the_name_takes_nothing_extra(self):
+        # Corpus check: with no blank line showing, an address's first line without an opener
+        # ("PEKAN LAMA") was taken as a second name line. Without the blank line, add nothing.
+        r = read(*card(['WONG KAR WAI', 'PEKAN LAMA'], ['47000 SUNGAI BULOH', 'SELANGOR'], gap=False))
+        self.assertEqual(r['name'], 'WONG KAR WAI')
+
     def test_no_ic_number_on_the_card(self):
         words, text = card(['KAVITHA A/P MUNUSAMY', 'NAIDU'], ADDRESS, nric='ABCDEF')
         self.assertIsNone(_layout_read(words, text, ''))

@@ -470,13 +470,22 @@ def _layout_read(words, text: str, nric: str):
             rest.append(ln)
         else:
             block.append(ln)
-    # Prefer Vision's own text line where one reads the same as the layout line (its spacing
-    # and punctuation are the card's); else the layout line. Either way "A / L" is closed up.
+    # The name must END at the blank line. A block cut short by the three-line cap or by an
+    # address-like line, or with no blank line under it, may have taken the address's first
+    # line (a corpus check, 2026-11-13: four cards gained a line that was the address's).
+    end = block[-1]
+    if not rest or rest[0]['v'] - end['v'] <= gap_at:
+        return None
+    # Every name line must be one Vision itself printed as a text line. Rebuilt from word boxes
+    # alone, a line can glue two words or pick up a stray word on the same baseline; in the
+    # corpus check every line Vision did not print made a good name worse, and none fixed one.
     by_key = {}
     for t in (text or '').splitlines():
         by_key.setdefault(_compact(t), t.strip())
+    if any(_compact(ln['text']) not in by_key for ln in block):
+        return None
     name_lines = [_SPACED_MARKER.sub(lambda m: f'{m.group(1)}/{m.group(2)}'.upper(),
-                                     by_key.get(_compact(ln['text'])) or ln['text']) for ln in block]
+                                     by_key[_compact(ln['text'])]) for ln in block]
     # A slash the OCR dropped ("THEEPICAA AP" then the surname) is closed up as the line-order
     # read does — only where a further name line follows the marker.
     fixed = []
