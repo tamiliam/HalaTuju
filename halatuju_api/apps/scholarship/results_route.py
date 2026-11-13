@@ -152,14 +152,17 @@ def higher_need(application) -> str:
     needs post-SPM results, so a degree-bound student holding ONLY SPM is REQUIRED to upload them
     too — before submit; a submitted application keeps its frozen requirement. Her SPM slip stays
     REQUIRED as well, so she always has academic evidence on file, and the card tells her plainly
-    to enter her higher results or choose a post-SPM pathway."""
+    to enter her higher results or choose a post-SPM pathway.
+
+    F1 Q7 (owner 2026-11-13, rule table): "going to a degree" is `degree_bound` here too - the same
+    wider test the after-submit owed rule (`higher_owed._needs_higher`), funding and award ask - so a
+    stale post-SPM pathway code under a degree course NAME is asked before submit, not capped after."""
     from apps.courses.public import is_tertiary
-    dest = destination(application)
-    if dest == POST_SPM:
-        return ''
     tertiary = is_tertiary(held(application))
-    if dest == DEGREE:
+    if degree_bound(application):
         return 'required' if tertiary else 'required_with_slip'
+    if destination(application) == POST_SPM:
+        return ''
     return 'required' if tertiary else ''
 
 

@@ -71,6 +71,8 @@ def cgpa_read(kind, cgpa):
 
 
 GENUINE, SUSPECT = {'status': 'genuine'}, {'status': 'suspect'}
+#: The stored record of the deterministic STPM exact read (`higher_results._read_higher`).
+EXACT_READ = {'capture': 'deterministic', 'parser_version': 'stpm_parse_1'}
 
 
 def not_final(seen):
@@ -91,8 +93,8 @@ def _app(profile, plan, stage='shortlisted'):
     return make_application(stage, student=student, **plan)
 
 
-def _doc(app, doc_type, fields, auth=None, **kw):
-    vf = {'fields': fields, 'student_verdict': 'ok', 'error': ''}
+def _doc(app, doc_type, fields, auth=None, stored=None, **kw):
+    vf = {'fields': fields, 'student_verdict': 'ok', 'error': '', **(stored or {})}
     if auth is not None:
         vf['authenticity'] = auth
     return create_document(application=app, doc_type=doc_type, storage_path=f'test/{doc_type}',
@@ -104,7 +106,7 @@ class Case:
     profile: dict
     plan: dict
     slip: tuple = None        # (fields, authenticity) of the SPM-slot upload, or None
-    higher: tuple = None      # (fields, authenticity) of the higher-results upload, or None
+    higher: tuple = None      # (fields, authenticity[, stored record keys]) of the higher upload, or None
     stage: str = 'shortlisted'   # Table F: 'profile_complete' (the owed / undeclared rules are post-submit)
 
 
@@ -158,8 +160,10 @@ MATRIX = [
     U('A', 'not_final', NO_FINAL_RULE),
     R('A', 'suspect', Case(SPM_HELD, POST_SPM, slip=(spm_read(SPM_ROWS), SUSPECT)), PROBABLE,
       unresolved=('document_not_genuine',), evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
-    R('A', 'short_read', Case(SPM_HELD, POST_SPM, slip=(spm_read(SHORT_ROWS), GENUINE)), CERTAIN,
-      evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    # Q1 (changed 2026-11-13): the subjects the short read missed are named; no tick, at best Probable.
+    R('A', 'short_read', Case(SPM_HELD, POST_SPM, slip=(spm_read(SHORT_ROWS), GENUINE)), PROBABLE,
+      unresolved=('academic_grades_unchecked',), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='pending', results='pending')),
     R('A', 'extra_typed', Case({**SPM_HELD, 'grades': {**SPM_TYPED, 'chem': 'A'}}, POST_SPM,
                                slip=(spm_read(SPM_ROWS), GENUINE)), PROBABLE,
       unresolved=('academic_extra_subjects',), evidence=(NAME_OK,), slip_chips=slip_chips(subjects='mismatch')),
@@ -176,11 +180,13 @@ MATRIX = [
     U('B', 'not_final', NO_FINAL_RULE),
     R('B', 'suspect', Case(STPM_HELD, DEGREE, higher=(stpm_read(), SUSPECT)), PROBABLE,
       unresolved=('document_not_genuine',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
-    R('B', 'short_read', Case(STPM_HELD, DEGREE, higher=(stpm_read(STPM_ROWS[1:]), GENUINE)), CERTAIN,
-      evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+    # Q2 (changed 2026-11-13): Pengajian Am not read = a short read; what it missed is named, holds Certain.
+    R('B', 'short_read', Case(STPM_HELD, DEGREE, higher=(stpm_read(STPM_ROWS[1:]), GENUINE)), PROBABLE,
+      unresolved=('academic_grades_unchecked',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='pending')),
+    # Q3 (changed 2026-11-13): an entered STPM subject not on a full read is flagged, red like missing.
     R('B', 'extra_typed', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'BIOLOGY': 'C'}}, DEGREE,
-                               higher=(stpm_read(), GENUINE)), CERTAIN,
-      evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+                               higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('academic_extra_subjects',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='mismatch')),
     R('B', 'subject_missing', Case({**STPM_HELD, 'stpm_grades': {k: v for k, v in STPM_GRADES.items()
                                                                 if k != 'CHEMISTRY'}}, DEGREE,
                                    higher=(stpm_read(), GENUINE)), PROBABLE,
@@ -234,7 +240,8 @@ MATRIX = [
       unresolved=(NOT_DECLARED, 'document_not_genuine'), evidence=(NAME_OK, 'grades_verified'),
       slip_chips=slip_chips()),
     R('F', 'short_read', Case(SPM_HELD, DEGREE, slip=(spm_read(SHORT_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
-      unresolved=(NOT_DECLARED,), evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+      unresolved=(NOT_DECLARED, 'academic_grades_unchecked'), evidence=(NAME_OK,),       # Q1
+      slip_chips=slip_chips(subjects='pending', results='pending')),
     R('F', 'extra_typed', Case({**SPM_HELD, 'grades': {**SPM_TYPED, 'chem': 'A'}}, DEGREE,
                                slip=(spm_read(SPM_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
       unresolved=('academic_extra_subjects', NOT_DECLARED), evidence=(NAME_OK,),
@@ -278,14 +285,21 @@ EXTRA = [
     # Table F before submit: the live rule requires the higher results, so none on file is Fail.
     R('F', 'checked_before_submit', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE)), FAIL,
       unresolved=('higher_results_missing',), slip_chips=slip_chips()),
-    # Table B grade difference: a +/- STPM difference (typed A, slip A-) on an AI read.
+    # Table B grade difference, Q4 (changed 2026-11-13): a +/- STPM difference (typed A, slip A-) on an
+    # AI read is amber "check by eye"; the PNGK it moves is still a red CGPA difference.
     R('B', 'pm_grade_ai_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
                                     higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('higher_results_grade_uncertain', 'higher_results_cgpa_mismatch'), evidence=HIGHER_OK[:2],
+      higher_chips=higher_chips(cgpa='mismatch', grades='pending')),
+    # Q4: the same difference on the deterministic exact read (letter and point agree) stays red.
+    R('B', 'pm_grade_exact_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
+                                       higher=(stpm_read(), GENUINE, EXACT_READ)), PROBABLE,
       unresolved=('higher_results_grade_mismatch', 'higher_results_cgpa_mismatch'), evidence=HIGHER_OK[:2],
       higher_chips=higher_chips(cgpa='mismatch', grades='mismatch')),
-    # Q6: a higher result in the SPM slot of a tertiary holder with a clean higher card.
+    # Q6 (changed 2026-11-13): a higher result in the SPM slot of a tertiary holder is named, but does
+    # not hold a clean higher card.
     R('G', 'higher_in_spm_slot', Case(STPM_HELD, DEGREE, slip=(stpm_read(), None),
-                                      higher=(stpm_read(), GENUINE)), PROBABLE,
+                                      higher=(stpm_read(), GENUINE)), CERTAIN,
       unresolved=('results_slip_is_higher',), evidence=HIGHER_OK + (NAME_OK,),
       slip_chips=slip_chips(subjects='not_spm', results='not_spm'), higher_chips=higher_chips(grades='match')),
 ]

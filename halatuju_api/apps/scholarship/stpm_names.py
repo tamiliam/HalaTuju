@@ -50,6 +50,12 @@ _STPM_NAMES = {
 }
 
 
+def stpm_label(key) -> str:
+    """The Malay name a slip prints for an entered subject key ("BIOLOGI"), to NAME a subject the
+    student entered that a read did not show (F1 Q2 / Q3); the key itself when it is not known."""
+    return _STPM_NAMES[key][0].upper() if key in _STPM_NAMES else str(key)
+
+
 def _squash(s):
     return re.sub(r'[^a-z0-9]', '', (s or '').lower())
 

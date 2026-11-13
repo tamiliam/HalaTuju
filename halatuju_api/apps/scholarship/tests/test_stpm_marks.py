@@ -84,9 +84,16 @@ class TestTheStpmMarks(TestCase):
         self.assertEqual(m['all_subjects'], 'mismatch')
 
     def test_a_grade_that_differs_is_not_all_subjects(self):
+        # A different letter (B+ typed, C read) is a difference on any read.
+        app = _app()
+        _doc(app, {**READ, 'results': ROWS[:3] + [{'subject': 'KIMIA', 'grade': 'C'}]})
+        self.assertEqual(stpm_marks(app)['all_subjects'], 'mismatch')
+
+    def test_a_plus_minus_difference_on_an_ai_read_is_not_all_subjects_either(self):
+        # F1 Q4 (rule table 2026-11-13): B+ typed, B read by the AI is unsure, not a mismatch.
         app = _app()
         _doc(app, {**READ, 'results': ROWS[:3] + [{'subject': 'KIMIA', 'grade': 'B'}]})
-        self.assertEqual(stpm_marks(app)['all_subjects'], 'mismatch')
+        self.assertEqual(stpm_marks(app)['all_subjects'], 'pending')
 
     def test_no_document_has_no_all_subjects(self):
         self.assertEqual(stpm_marks(_app())['all_subjects'], '')

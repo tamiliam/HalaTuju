@@ -14,7 +14,8 @@ is a display + verdict + ask concern only:
 * **Show the gap** — the Academic fact carries ``higher_results_not_on_file`` (the cockpit's
   Documents drawer draws the "STPM results" slot as Missing from it, the value served, never
   re-derived in the browser).
-* **Verdict** — that fact cannot be Certain: capped at Probable ('review'), with the reason named.
+* **Verdict** — that fact cannot be Certain or Probable: capped at Unsure ('recommend', `cap`,
+  owner 2026-11-06 #388; it was Probable from 2026-10-27), with the reason named.
 * **Ask** — one system Check-2 document request (`ASK_CODE`, `check2_queries.DOC_SPECS`), raised
   by the sync's own stage rules (machine asks only in the Completed stage) and closed by the
   sync's housekeeping once a live higher-results upload ANSWERS it (`answered`, S4's
@@ -23,7 +24,7 @@ is a display + verdict + ask concern only:
   `owed_kind` requires to be tertiary). No SPM ask, ever (D9 unchanged).
 
 Who it applies to (`_owed`): SUBMITTED; results held tertiary (`exam_questions.is_tertiary`,
-incl. D1's read-time promotion); bound for a university degree (`results_route.destination`); a
+incl. D1's read-time promotion); bound for a university degree (`results_route.degree_bound`); a
 programme that asks for results at all; a frozen requirement that does NOT already require the
 higher results (those already read the higher card and raise their own S3 ticket); and no higher
 result already sitting in the SPM card (S4's wrong-slip note speaks for that one).

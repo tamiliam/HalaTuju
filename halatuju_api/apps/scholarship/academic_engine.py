@@ -672,7 +672,7 @@ def student_slip_check(doc) -> dict:
                 'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': []}
 
     subjects = ('not_compared' if not cmp['compared'] else 'mismatch' if cmp['missing'] or cmp['extra']
-                else 'match')   # #62: extra = typed, not on it
+                else 'pending' if cmp.get('subjects_open') else 'match')   # #62: extra; F1 Q1: short read
     if not cmp['compared'] or not cmp['have_grades']:   # #62 review 2: nothing compared, nothing shown
         results = 'not_compared' if not cmp['compared'] else 'pending'
     elif cmp['mismatched']:

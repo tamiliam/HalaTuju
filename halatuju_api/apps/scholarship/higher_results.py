@@ -245,17 +245,34 @@ def entered_stpm(profile):
     return {k: entered_grade_value(g) for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
 
 
-def _compare_stpm(profile, fields):
-    """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
-    grades that differ from the slip's. Unrecognised printed subjects: `unrecognised_stpm`."""
+def _compare_stpm(profile, fields, unrecognised=(), exact=False):
+    """(missing, mismatched, uncertain, extra, unchecked) — printed STPM subjects the student did not
+    enter, and entered grades that differ from the slip's. Unrecognised printed subjects:
+    `unrecognised_stpm`. F1 (owner 2026-11-13, rule table Q2-Q4), the SPM rules mirrored:
+    Q2 a SHORT read (Pengajian Am not among the recognised rows, or a row no rule recognises) checked
+       only what it caught: the entered subjects it did not show are `unchecked` (named, no tick);
+    Q3 on a FULL read, an entered subject the slip does not print is `extra` (red, as missing is);
+    Q4 a difference in the +/- only (same letter) is `uncertain` ("check by eye") unless `exact` - the
+       deterministic exact read, whose letter and point agree - where it stays a mismatch."""
+    from .stpm_names import stpm_label
     entered = entered_stpm(profile)
-    missing, mismatched = [], []
+    missing, mismatched, uncertain, seen = [], [], [], set()
     for name, key, slip in stpm_rows(fields):
+        seen.add(key)
         if key not in entered:
             missing.append(name)
         elif slip and slip != entered[key]:
-            mismatched.append({'subject': name, 'typed': entered[key], 'slip': slip})
-    return missing, mismatched
+            row = {'subject': name, 'typed': entered[key], 'slip': slip}
+            pm_only = not exact and slip[:1] == str(entered[key])[:1]
+            (uncertain if pm_only else mismatched).append(row)
+    rest = [stpm_label(k) for k, g in entered.items() if g and k not in seen] if seen else []
+    short = 'PA' not in seen or bool(unrecognised)
+    return missing, mismatched, uncertain, ([] if short else rest), (rest if short else [])
+
+
+def _exact_stpm(vf) -> bool:
+    """F1 Q4: is this the deterministic STPM exact read (`_read_higher`: capture + parser version)?"""
+    return vf.get('capture') == 'deterministic' and str(vf.get('parser_version') or '').startswith('stpm_parse')
 
 
 def _stpm_exam_year(fields) -> str:
@@ -311,17 +328,17 @@ def student_higher_check(doc) -> dict:
         cgpa_status = 'mismatch'
     else:
         cgpa_status = 'pending'       # a figure we cannot tell is cumulative: never a note (fix 7)
-    missing, mismatched, unrecognised = [], [], []
+    missing, mismatched, unrecognised, uncertain, extra, unchecked = [], [], [], [], [], []
     grades_status = ''
     if kind_held == 'stpm' and read and kind_status != 'spm' and undeclared:
         grades_status = 'not_compared'            # grey: nothing declared to compare against
     elif kind_held == 'stpm' and read and kind_status != 'spm':
-        missing, mismatched = _compare_stpm(profile, f)
         # No silent drop (2026-11-07): a row an STPM read prints that no name rule recognises is
         # named, and the whole slip cannot read as matching while it stands.
         unrecognised = unrecognised_stpm(f) if detected == 'stpm' else []
-        grades_status = 'mismatch' if (missing or mismatched) else (
-            'match' if f.get('results') and not unrecognised else 'pending')
+        missing, mismatched, uncertain, extra, unchecked = _compare_stpm(profile, f, unrecognised, _exact_stpm(vf))
+        grades_status = 'mismatch' if (missing or mismatched or extra) else (     # F1 Q3: extra is red
+            'match' if f.get('results') and not (unrecognised or uncertain or unchecked) else 'pending')
     readable = None if not read else bool(
         sv not in ('wrong_doc', 'unreadable') and (slip_cgpa is not None or f.get('results')
                                                    or (f.get('candidate_name') or '').strip()))
@@ -345,7 +362,8 @@ def student_higher_check(doc) -> dict:
         'exam': (f.get('exam') or '').strip(), 'kind_held': kind_held, 'kind_detected': detected,
         'kind_status': kind_status, 'cgpa_slip': slip_cgpa, 'cgpa_entered': entered,
         'cgpa_status': cgpa_status, 'grades_status': grades_status, 'missing': missing,
-        'mismatched': mismatched, 'unrecognised': unrecognised, 'readable': readable, 'note': note, 'note_kind': note_kind,
+        'mismatched': mismatched, 'unrecognised': unrecognised, 'uncertain': uncertain, 'extra': extra,
+        'unchecked': unchecked, 'readable': readable, 'note': note, 'note_kind': note_kind,
         'note_path': RESULTS_PAGE.get(note_kind, ''),
         # The note's two ACTIONS (move it / SPM only) are open only before the Step-4 Submit
         # (review fix 1+2); after it the reviewer's own request route is the way.
@@ -435,6 +453,12 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_subjects_unrecognised', subjects=', '.join(chk['unrecognised'])))
     for m in chk['mismatched']:
         unresolved.append(_item('higher_results_grade_mismatch', **m))
+    for m in chk['uncertain']:           # F1 Q4: a +/- difference the read cannot be sure of (amber)
+        unresolved.append(_item('higher_results_grade_uncertain', **m))
+    if chk['extra']:                     # F1 Q3: entered, not on a full read (the SPM key, the same words)
+        unresolved.append(_item('academic_extra_subjects', subjects=', '.join(chk['extra'])))
+    if chk['unchecked']:                 # F1 Q2: entered, but a short read could not check it
+        unresolved.append(_item('academic_grades_unchecked', subjects=', '.join(chk['unchecked'])))
     not_final = final_owed(doc)          # owner ruling B (M4b): the final transcript is still owed
     if not_final:
         unresolved.append(_item('higher_results_not_final', held=kind, kind=chk['kind_held']))
@@ -452,7 +476,12 @@ def verdict_academic(application, spm_fact):
         from .academic_engine import read_slip
         idle = not spm_fact['unresolved'] and not spm_slip_compare(
             application.profile, read_slip(_latest_doc(application, 'results_slip')))['compared']
-        clean = clean and (spm_fact['status'] == 'verified' or idle)
+        # F1 Q6 (owner 2026-11-13, rule table): a higher result in her OPTIONAL SPM slot is named, but
+        # holds nothing back - her real higher-results upload is the card's evidence.
+        from apps.courses.public import is_tertiary, results_held
+        wrong_slot = (is_tertiary(results_held(application.profile))
+                      and {i['code'] for i in spm_fact['unresolved']} == {'results_slip_is_higher'})
+        clean = clean and (spm_fact['status'] == 'verified' or idle or wrong_slot)
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
 
 

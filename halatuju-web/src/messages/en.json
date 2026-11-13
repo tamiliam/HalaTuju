@@ -4927,6 +4927,7 @@
           "higher_results_subjects_missing": "STPM subjects on the slip but not entered: {subjects}.",
           "higher_results_subjects_unrecognised": "A subject on the results could not be recognised, so the slip cannot be confirmed as matching: {subjects}.",
           "higher_results_grade_mismatch": "{subject}: typed {typed}, but the STPM slip reads {slip}. Check.",
+          "higher_results_grade_uncertain": "{subject}: typed {typed}, but our read of the STPM slip shows {slip} — a ± difference we can't be sure of. Check it by eye against the slip.",
           "higher_results_not_checked": "Genuineness of higher results is NOT checked yet (no pattern for these documents) — check the document by eye."
         }
       },

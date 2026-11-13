@@ -85,7 +85,9 @@ class TestPoint1And2UndeclaredComparesNothing(TestCase):
         app = _submitted(profile=STPM_196)
         doc = _doc(app, 'higher_results', CERT_196, results_kind='stpm')
         chk = student_higher_check(doc)
-        self.assertEqual((chk['kind_status'], chk['grades_status']), ('match', 'mismatch'))
+        # F1 Q4 (rule table 2026-11-13): PA B+ typed, B read by the AI is unsure (amber), not red.
+        self.assertEqual((chk['kind_status'], chk['grades_status']), ('match', 'pending'))
+        self.assertEqual([u['subject'] for u in chk['uncertain']], ['PENGJIAN AM'])   # as read
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
@@ -173,8 +175,10 @@ class TestPoint6OnTheCard(TestCase):
         app = _submitted(profile=STPM_196)
         _doc(app, 'higher_results', CERT_196, results_kind='stpm')
         f = _academic(app)
-        pa = [i for i in f['unresolved'] if i['code'] == 'higher_results_grade_mismatch']
+        # F1 Q4 (rule table 2026-11-13): a +/- difference on an AI read shows as unsure, not red.
+        pa = [i for i in f['unresolved'] if i['code'] == 'higher_results_grade_uncertain']
         self.assertEqual([(i['params']['typed'], i['params']['slip']) for i in pa], [('B+', 'B')])
+        self.assertNotIn('higher_results_grade_mismatch', _codes(f['unresolved']))
 
     def test_279_the_set_can_tick(self):
         app = _submitted(profile=STPM_279)

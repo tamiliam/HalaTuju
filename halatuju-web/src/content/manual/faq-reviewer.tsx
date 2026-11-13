@@ -48,6 +48,21 @@ export const REVIEWER_FAQ: QA[] = [
         grades and she is never told to change them; where her page shows the higher-results card she is offered a one-tap move into it.</>,
     },
     {
+      q: <>The Academic card says a grade <strong>could not be checked</strong>, or a ± difference needs <strong>checking by eye</strong>. Why is it not a tick or a red mark?</>,
+      a: <>Since 13 November 2026 the SPM and STPM checks follow the same rules. When the read of her slip
+        <strong> missed rows</strong> (for STPM: Pengajian Am was not read, or a row was not recognised), the card
+        names the subjects it could not check, gives no tick, and the case stays at most <strong>Probable</strong>
+        &mdash; read those grades on the slip yourself. On a full STPM read, a subject she entered that the slip does
+        not print is a <strong>red</strong> difference, as it is for SPM. When her STPM grade and the slip differ only
+        by the <strong>+ or &minus;</strong> (A against A&minus;, B+ against B), the card shows it in amber and asks you to
+        check it by eye, because the read can be wrong about a small sign; it stays red when the system read the
+        slip&rsquo;s text exactly rather than by AI. A different letter is always red. A higher result she put
+        in the SPM slip card no longer holds a clean Academic card back from <strong>Certain</strong> when her
+        higher-results card is clean. And a course counts as a <strong>degree</strong> by the same test everywhere:
+        if its name says it is a degree, she is asked for her higher results before she submits, even when the
+        pathway saved with it says otherwise.</>,
+    },
+    {
       q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,
       a: <>Before submitting, she either chose &ldquo;Continue with SPM results only&rdquo; &mdash; the STPM,
         Matriculation, Asasi or Diploma results she had entered were removed, her SPM results were kept, and

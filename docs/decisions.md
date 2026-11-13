@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — F1 slip-check matrix: the owner's six rule changes, Q1-Q4, Q6, Q7 (Q5 and Q8 keep today's rules)
+
+**Source:** the owner-approved rule table `docs/plans/2026-11-13-f1-slip-check-rule-table.md` (approved 13 Nov; every Part 2 recommendation is the rule). The whole grid is pinned by `tests/test_slip_check_matrix.py`; each change has its own regression test in `tests/test_slip_check_owner_changes.py`. `VERDICT_ENGINE_VERSION` 2026-11-13.2. Read-time only: no migration, no re-read, existing documents take the rules at once.
+
+- **Q1 (2026-11-13) — a short SPM read names what it missed.** When the read caught fewer rows than she typed (`short_read`), her typed subjects it did not reach are `unchecked`: named on the card (`academic_grades_unchecked`), no tick (chips Subjects and Results amber, `pending`), `complete` false. Before, a short read could still tick.
+- **Q2 (2026-11-13) — a short STPM read is the same.** An STPM read is short when Pengajian Am is not among the recognised rows, or a row is unrecognised. The entered subjects it did not show are `unchecked` (named, no tick, amber), never "extra".
+- **Q3 (2026-11-13) — extra on a full STPM read is red.** On a full read, an entered STPM subject the slip does not print is `academic_extra_subjects` and a red difference (`grades_status` mismatch, one red chip), as for SPM. Before, STPM ignored it.
+- **Q4 (2026-11-13) — a +/- difference on an AI read is amber.** When the typed and read STPM grade share the letter (B+ against B), the AI read is not trusted to settle it: `higher_results_grade_uncertain`, amber (`pending`), "check by eye" (the SPM rule `academic_grade_uncertain`, mirrored). On the deterministic exact read (`capture` deterministic, `parser_version` stpm_parse*) it stays a red `higher_results_grade_mismatch`. A different letter is red on any read.
+- **Q6 (2026-11-13) — a higher result in the optional SPM slot holds no clean card back.** For a student who holds higher results, when the SPM fact's only open item is `results_slip_is_higher`, the higher-results card's clean state is not held back from Certain. The item is still named.
+- **Q7 (2026-11-13) — one degree test.** `results_route.higher_need` now uses `degree_bound` (which also reads the course name), the same test the rest of the route uses. A stale post-SPM pathway code under a degree-named course asks for higher results before submit. `higher_owed`'s docstring now names `degree_bound` and its Unsure cap (since #388).
+
 ## 2026-11-13 — Request #67: an offer-letter name with a read slip AND extra name parts is "partly matches", never "different name" (bug, no charge; owner scheduled 2026-11-12)
 
 **The fault:** the offer letter's read echoed one letter in a name part AND the letter printed five name parts against a three-part profile name. Each slip alone was already tolerated: the echo by the #48 rescue (2026-07-08, `relationship_name_match` → `match`), the extra parts by `name_match`'s own `partial`. Together, the strict read said `mismatch`, and the #48 rescue accepted only a full tolerant `match`, so the student's own letter raised `offer_letter_mismatch` and blocked submission. The offer NRIC matched exactly.

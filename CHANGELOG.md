@@ -34,6 +34,14 @@ rulings R1-R5 (decisions.md "Members tab and the lifecycle rules"; R6 is M3). No
   `memberTable.test.ts`, `StaffList.test.tsx` and `team/page.test.tsx` cases for the table, the alias, the
   reason, the banner and Remove on a suspended reviewer.
 
+### feat: sprint F1 - slip-check matrix and the owner's rule changes (2026-11-13)
+
+Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f1-slip-check-rule-table.md` (owner-approved 13 Nov).
+- Step 1: `test_slip_check_matrix.py` pins every slip-check cell (results held x slot x read state): band, codes, evidence, drawer chips.
+- Step 2: the duplicated rules read from one home each (red chips from `student_slip_check`, `comparable` computed once, one compare per reader). No behaviour change.
+- Step 3: owner changes Q1-Q4, Q6, Q7 (decisions.md 2026-11-13). Q1 a short SPM read names its unchecked subjects, no tick. Q2 a short STPM read (Pengajian Am not read, or an unrecognised row) names them too. Q3 an entered STPM subject not on a full read is red. Q4 an STPM +/- difference on an AI read is amber (`higher_results_grade_uncertain`, new en/ms/ta copy), red on the exact read. Q6 a higher result in the SPM slot holds no clean card back. Q7 `higher_need` uses `degree_bound`. `higher_owed` docstring corrected (Unsure cap). `VERDICT_ENGINE_VERSION` 2026-11-13.2. Reviewer FAQ and Guide updated.
+- Tests: `test_slip_check_owner_changes.py` (13); three older tests moved to the Q4 rule (`test_stpm_marks`, `test_higher_undeclared_followup`).
+
 ### fix: request #67 - an offer letter with a read slip and extra name parts reads "partly matches", not "different name" (2026-11-13)
 - The offer letter's read echoed one letter AND the letter printed more name parts than the profile. Each slip alone was tolerated, but together the strict check said `mismatch` and the #48 rescue accepted only a full tolerant `match`, so `offer_letter_mismatch` blocked the student's own letter.
 - `pathway_engine._name_status` now keeps the tolerant matcher's `partial` too: amber for the reviewer, never a block. A genuinely different name still mismatches. Offer letter only; read-time only, so no re-read is needed.
