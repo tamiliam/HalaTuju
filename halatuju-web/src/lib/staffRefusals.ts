@@ -34,6 +34,8 @@ export const COUNTED: Record<string, string> = {
 const PLAIN = new Set([
   'last_table', 'mentors_only', 'lead_fixed', 'qc_sees_all', 'not_arrived', 'self', 'last_org_admin',
   'sole_org_admin', 'has_unfinished_work', 'staff_mentor',
+  // M2c (owner R2): Delete is only from No group.
+  'in_a_group',
   // 409 on an Erase whose person gained work on record since the list was read: the list reloads.
   'has_work',
 ])

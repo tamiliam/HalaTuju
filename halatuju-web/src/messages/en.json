@@ -9718,6 +9718,7 @@
       "self": "You cannot do this to your own account.",
       "last_org_admin": "They are the organisation’s only admin. Make someone else an organisation admin first.",
       "sole_org_admin": "They are this organisation’s only admin, so they cannot be suspended or deleted.",
+      "in_a_group": "Remove them from every group first.",
       "has_unfinished_work": "They still have unfinished work. Hand it on first.",
       "has_work": "They now have work on record, so they cannot be erased. The list has been refreshed: check what Delete will do now and try again.",
       "staff_mentor": "This mentor is a staff member: use Remove from Mentors on the Mentors table.",
@@ -9738,16 +9739,16 @@
       }
     },
     "staff": {
-      "tab": "Staff",
+      "tab": "Members",
       "suspend": "Suspend",
       "suspendConfirm": "Suspend {name}? They cannot sign in until they are restored. Their groups and records stay as they are.",
-      "suspendConfirmOpen": "Suspend {name}? They have {n} open cases. Those stay assigned to them, and they cannot open them until they are restored.",
+      "suspendConfirmOpen": "Suspend {name}? They have {n} open cases. Those stay assigned to them, and they cannot open them until they are restored. The Members tab shows how many cases suspended members hold.",
       "restoreConfirm": "Restore {name}? They can sign in again, in the groups they had.",
       "suspended": "{name} is suspended.",
       "restored": "{name} is restored.",
       "archived": "{name} was deleted. Their name stays on past records.",
       "erased": "{name} was deleted.",
-      "loadFailed": "The staff list could not be loaded.",
+      "loadFailed": "The members list could not be loaded.",
       "empty": "Nobody has joined the team yet.",
       "noGroup": "No group",
       "statusActive": "Active",
@@ -9756,7 +9757,16 @@
       "outcome": {
         "archive": "Archive: their sign-in is removed and they leave the team, but their name stays on past records. This cannot be undone.",
         "erase": "Erase: their sign-in and their record are removed completely. This cannot be undone."
-      }
+      },
+      "colGroups": "Groups",
+      "search": "Search by name",
+      "filterAll": "Everyone",
+      "noMatch": "Nobody matches that.",
+      "suspendedCases": {
+        "one": "1 open case is held by a suspended member. Restore them or reassign the case.",
+        "many": "{n} open cases are held by suspended members. Restore them or reassign the cases."
+      },
+      "showSuspended": "Show suspended members"
     }
   },
   "documentsTab": {

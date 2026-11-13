@@ -366,3 +366,104 @@ describe('M1b review', () => {
     await waitFor(() => expect((screen.getByTestId('staff-toggle-1') as HTMLButtonElement).disabled).toBe(false))
   })
 })
+
+describe('M2c (owner R4): the Members table — sort, search, status filter, pages', () => {
+  const order = () => screen.getAllByTestId(/^staff-row-/).map((r) => r.getAttribute('data-testid'))
+  const many = (n: number) => Array.from({ length: n }, (_, i) =>
+    row({ id: 100 + i, name: `Member ${String(i + 1).padStart(2, '0')}` }))
+
+  it('is a table: one row per member, each cell named for the phone layout', async () => {
+    await draw()
+    const tr = screen.getByTestId('staff-row-1')
+    expect(tr.tagName).toBe('TR')
+    const labels = Array.from(tr.querySelectorAll('td[data-label]')).map((td) => td.getAttribute('data-label'))
+    expect(labels).toEqual(['admin.staff.colGroups', 'admin.reviewers.colStatus', 'admin.reviewers.colLastSeen'])
+  })
+
+  it('sorts by name first, then by Groups (No group first) and Status (suspended first) on a click', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: [...TEAM].reverse() })
+    await draw()
+    expect(order()).toEqual(TEAM.map((r) => `staff-row-${r.id}`))           // A to G, whatever the server's order
+    fireEvent.click(screen.getByRole('button', { name: /admin\.staff\.colGroups/ }))
+    expect(order()[0]).toBe('staff-row-4')                                   // Devi, in No group
+    fireEvent.click(screen.getByRole('button', { name: /admin\.reviewers\.colStatus/ }))
+    expect(order()[0]).toBe('staff-row-5')                                   // Elan, suspended
+    fireEvent.click(screen.getByRole('button', { name: /admin\.reviewers\.colStatus/ }))
+    expect(order()[order().length - 1]).toBe('staff-row-5')
+  })
+
+  it('searches the name, case aside, and says so when nobody matches', async () => {
+    await draw()
+    fireEvent.change(screen.getByTestId('staff-search'), { target: { value: '  chitra ' } })
+    expect(order()).toEqual(['staff-row-3'])
+    fireEvent.change(screen.getByTestId('staff-search'), { target: { value: 'nobody' } })
+    expect(screen.queryAllByTestId(/^staff-row-/)).toHaveLength(0)
+    expect(screen.getByTestId('staff-no-match').textContent).toBe('admin.staff.noMatch')
+  })
+
+  it('filters by status', async () => {
+    await draw()
+    fireEvent.change(screen.getByTestId('staff-filter'), { target: { value: 'suspended' } })
+    expect(order()).toEqual(['staff-row-5'])
+    fireEvent.change(screen.getByTestId('staff-filter'), { target: { value: 'active' } })
+    expect(order()).not.toContain('staff-row-5')
+    expect(order()).toHaveLength(TEAM.length - 1)
+  })
+
+  it('pages a long list with the shared defaults (25 a page) and draws no pager for a short one', async () => {
+    await draw()
+    expect(screen.queryByLabelText(/page/i, { selector: 'select' })).toBeNull()
+    expect(document.body.textContent).not.toMatch(/›|Next/)
+    mockApi.getStaffList.mockResolvedValue({ staff: many(30) })
+    render(<StaffList token="tok" canManage viewerSuper={false} />)
+    await waitFor(() => expect(screen.getAllByTestId(/^staff-row-1\d\d$/)).toHaveLength(25))
+    expect(screen.queryByTestId('staff-row-125')).toBeNull()                  // Member 26: page 2
+  })
+})
+
+describe('M2c (owner R2): Delete only from No group', () => {
+  it('greys Delete for somebody still in a group, with "Remove them from every group first."', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: [
+      row({ id: 8, name: 'Hema Example', groups: ['reviewers'], deletable: false, delete_never: 'in_a_group' })] })
+    await draw()
+    expect(line(8).queryByTestId('staff-delete')).toBeNull()
+    const b = within(line(8).getByTestId('staff-delete-greyed')).getByText('admin.delete')
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)!.textContent).toBe('admin.refusal.in_a_group')
+    fireEvent.click(b)
+    expect(screen.queryByTestId('typed-confirm-go')).toBeNull()
+  })
+
+  it('a 409 `in_a_group` (the list was stale) reads in words and reads the list again', async () => {
+    mockApi.deleteAdmin.mockRejectedValue(Object.assign(new Error('Server sentence.'),
+      { status: 409, code: 'in_a_group', body: { code: 'in_a_group', groups: ['reviewers'] } }))
+    await draw()
+    fireEvent.click(line(4).getByTestId('staff-delete'))
+    fireEvent.change(document.getElementById('typed-confirm')!, { target: { value: 'Devi Example' } })
+    fireEvent.click(screen.getByTestId('typed-confirm-go'))
+    expect(await screen.findByText('admin.refusal.in_a_group')).toBeTruthy()
+    await waitFor(() => expect(mockApi.getStaffList).toHaveBeenCalledTimes(2))
+  })
+})
+
+describe('M2c (owner R1): the open cases suspended members hold', () => {
+  it('says how many, and its button filters the table to the suspended', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: TEAM, suspended_cases: 3 })
+    await draw()
+    expect(screen.getByTestId('staff-suspended-cases').textContent).toContain('admin.staff.suspendedCases.many {"n":"3"}')
+    fireEvent.click(screen.getByTestId('staff-show-suspended'))
+    expect(screen.getAllByTestId(/^staff-row-/).map((r) => r.getAttribute('data-testid'))).toEqual(['staff-row-5'])
+    expect(screen.queryByTestId('staff-show-suspended')).toBeNull()        // already showing them
+  })
+
+  it('one case reads in the singular', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: TEAM, suspended_cases: 1 })
+    await draw()
+    expect(screen.getByTestId('staff-suspended-cases').textContent).toContain('admin.staff.suspendedCases.one {"n":"1"}')
+  })
+
+  it('no banner at zero, or when the count is not sent (a reader who may not manage)', async () => {
+    mockApi.getStaffList.mockResolvedValue({ staff: TEAM, suspended_cases: 0 })
+    await draw()
+    expect(screen.queryByTestId('staff-suspended-cases')).toBeNull()
+  })
+})

@@ -112,8 +112,9 @@ export default function AdminReviewersList() {
   // gets Staff. Visibility only: the endpoint is the fence.
   const mayStaff = opensDoorOr(role, 'team_roster', MENTORS_READ_ROLES)
   type Panel = 'staff' | 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
-  const [chosen, setPanel] = useState<Panel | null>(
-    asked === 'admins' || asked === 'mentors' || asked === 'reviewers' || asked === 'staff' ? asked : null)
+  // M2c (owner R4): the tab reads "Members"; its key stays `staff`, and `?tab=members` opens it too.
+  const [chosen, setPanel] = useState<Panel | null>(asked === 'members' ? 'staff'
+    : asked === 'admins' || asked === 'mentors' || asked === 'reviewers' || asked === 'staff' ? asked : null)
   const panel: Panel = (chosen === null || chosen === 'staff') ? (mayStaff ? 'staff' : 'reviewers') : chosen
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The

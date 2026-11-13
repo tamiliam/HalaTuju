@@ -9718,6 +9718,7 @@
       "self": "Anda tidak boleh melakukan ini pada akaun anda sendiri.",
       "last_org_admin": "Mereka satu-satunya pentadbir organisasi. Lantik orang lain sebagai pentadbir organisasi dahulu.",
       "sole_org_admin": "Mereka satu-satunya pentadbir organisasi ini, jadi mereka tidak boleh digantung atau dipadam.",
+      "in_a_group": "Keluarkan mereka daripada setiap kumpulan dahulu.",
       "has_unfinished_work": "Mereka masih ada kerja yang belum selesai. Serahkan kepada orang lain dahulu.",
       "has_work": "Kini terdapat rekod kerja mereka, jadi mereka tidak boleh dihapuskan. Senarai telah dimuat semula: semak apa yang akan dilakukan oleh Padam sekarang dan cuba lagi.",
       "staff_mentor": "Mentor ini ialah kakitangan: gunakan Keluarkan daripada Mentor dalam jadual Mentor.",
@@ -9738,16 +9739,16 @@
       }
     },
     "staff": {
-      "tab": "Kakitangan",
+      "tab": "Ahli",
       "suspend": "Gantung",
       "suspendConfirm": "Gantung {name}? Mereka tidak boleh log masuk sehingga dipulihkan. Kumpulan dan rekod mereka kekal seperti sedia ada.",
-      "suspendConfirmOpen": "Gantung {name}? Mereka ada {n} kes terbuka. Kes itu kekal ditugaskan kepada mereka, dan mereka tidak boleh membukanya sehingga dipulihkan.",
+      "suspendConfirmOpen": "Gantung {name}? Mereka ada {n} kes terbuka. Kes itu kekal ditugaskan kepada mereka, dan mereka tidak boleh membukanya sehingga dipulihkan. Tab Ahli menunjukkan bilangan kes yang dipegang oleh ahli yang digantung.",
       "restoreConfirm": "Pulihkan {name}? Mereka boleh log masuk semula, dalam kumpulan yang sama seperti dahulu.",
       "suspended": "{name} telah digantung.",
       "restored": "{name} telah dipulihkan.",
       "archived": "{name} telah dipadam. Nama mereka kekal pada rekod lama.",
       "erased": "{name} telah dipadam.",
-      "loadFailed": "Senarai kakitangan tidak dapat dimuatkan.",
+      "loadFailed": "Senarai ahli tidak dapat dimuatkan.",
       "empty": "Belum ada sesiapa yang menyertai pasukan.",
       "noGroup": "Tiada kumpulan",
       "statusActive": "Aktif",
@@ -9756,7 +9757,16 @@
       "outcome": {
         "archive": "Arkib: log masuk mereka dibuang dan mereka keluar daripada pasukan, tetapi nama mereka kekal pada rekod lama. Ini tidak boleh dibatalkan.",
         "erase": "Padam terus: log masuk dan rekod mereka dibuang sepenuhnya. Ini tidak boleh dibatalkan."
-      }
+      },
+      "colGroups": "Kumpulan",
+      "search": "Cari mengikut nama",
+      "filterAll": "Semua",
+      "noMatch": "Tiada yang sepadan.",
+      "suspendedCases": {
+        "one": "1 kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes itu.",
+        "many": "{n} kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes-kes itu."
+      },
+      "showSuspended": "Tunjukkan ahli yang digantung"
     }
   },
   "documentsTab": {

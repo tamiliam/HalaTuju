@@ -156,16 +156,19 @@ export interface StaffRow {
    *  `reviewers.open_cases`, `mentors.scholars_now`. Always all three groups. */
   work: { admins: Record<string, number>; reviewers: { open_cases: number }; mentors: { scholars_now: number } }
   deletable: boolean
-  delete_never: null | 'self' | 'not_manageable' | 'sole_org_admin' | 'has_unfinished_work'
+  /** M2c (owner R2): `in_a_group` = still in a group (an organisation admin's own Admins seat aside); Delete is
+   *  only from No group. */
+  delete_never: null | 'self' | 'not_manageable' | 'sole_org_admin' | 'in_a_group' | 'has_unfinished_work'
   /** What a Delete does: `archive` keeps their name on past records; `erase` removes the row. */
   delete_outcome: 'erase' | 'archive' | null
   revocable: boolean
 }
 
-/** The Staff list. A super may name an `organisation`; everybody else reads their own. */
+/** The Staff list. A super may name an `organisation`; everybody else reads their own. M2c (owner R1):
+ *  `suspended_cases` = the open cases suspended members still hold, sent only to whoever manages the team. */
 export async function getStaffList(options?: ApiOptions, organisation?: number) {
   const q = organisation === undefined ? '' : `?organisation=${organisation}`
-  return adminFetch<{ staff: StaffRow[] }>(`/api/v1/admin/staff/${q}`, options)
+  return adminFetch<{ staff: StaffRow[]; suspended_cases?: number }>(`/api/v1/admin/staff/${q}`, options)
 }
 
 export async function getAdmins(options?: ApiOptions, phones = false) {

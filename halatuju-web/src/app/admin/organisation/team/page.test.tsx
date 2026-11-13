@@ -777,6 +777,14 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(within(table()).queryByTestId('remove-greyed-reviewers')).toBeNull()
   })
 
+  it('M2c (owner R3): a SUSPENDED reviewer keeps Remove — the served `remove` decides, not `is_active`', async () => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], is_active: false, tables: [],
+      remove: { reviewers: null } }], programmes: giftChoices })
+    render(<AdminReviewersList />)
+    await waitFor(() => expect(within(table()).getByTestId('remove-from-reviewers')).toBeTruthy())
+    expect(within(table()).getByText('admin.reviewers.status.revoked')).toBeTruthy()
+  })
+
   it('Add Reviewer lists the server candidates and adds the one picked', async () => {
     mockApi.getTeamCandidates.mockResolvedValue({ table: 'reviewers', candidates: [
       { id: 32, name: 'Suresh T', email: 'suresh@example.org', lead: true, mentor_only: false,
@@ -909,6 +917,13 @@ describe('M1b: Team -> Staff, the first tab and the default', () => {
     tabParam = 'nonsense'
     render(<AdminReviewersList />)
     expect(await screen.findByTestId('team-staff-screen')).toBeTruthy()
+  })
+
+  it('M2c (owner R4): `?tab=members` opens the same tab (its key stays `staff`)', async () => {
+    tabParam = 'members'
+    render(<AdminReviewersList />)
+    expect(await screen.findByTestId('team-staff-screen')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'admin.staff.tab' }).getAttribute('aria-selected')).toBe('true')
   })
 
   it('`?tab=reviewers` still opens the Reviewers table', async () => {
