@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — Every Team table heading sorts, except Action (owner, Sprint M2d addendum A2)
+
+**The rule:** on Members, Admins, Reviewers, Mentors and Invitations every heading sorts except Action. It supersedes the earlier ruling that kept Last seen a plain heading.
+
+- Ties break by name, A to Z whichever way the column points. "Not recorded" goes LAST in both directions on Last seen; a first click shows the newest first. "Also in" sorts by the group names as the cell shows them, with "—" last. Status uses the Members order: revoked, paused, active (Invitations: cancelled, expired, no reply, invited, accepted).
+- One `SortHeader` for all of them. The arrow shows on the active column only: after the label, or before it on a right-aligned number column.
+- Sorting stays in the browser: every one of these tables arrives whole. The rules have one home, `lib/teamSort.ts`.
+
 ## 2026-11-13 — A case goes only to a reviewer who has signed in (owner, Sprint M2d addendum A1)
 
 **The rule:** a NEW case may be given only to somebody who has signed in at least once. "Signed in" is `first_seen_at` set, and it has ONE home, `staff_lifecycle.has_signed_in`; the payment chain's `_signed_in` (an eligible approver) asks the same function rather than keeping its own copy.

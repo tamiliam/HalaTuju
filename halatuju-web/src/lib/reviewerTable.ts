@@ -3,12 +3,17 @@
  *
  * `tableView` owns the mechanics; this owns what each column MEANS when you sort by it — the same
  * split as `sponsorTable`. Every header is sortable except Languages, which is a set, not a scale.
+ *
+ * M2d A2 (owner, 2026-11-13): Also in and Last seen sort too (`lib/teamSort` has the shared rules), Status
+ * is the Members table's order (revoked, paused, active), and every column breaks its ties by name.
  */
 import type { AdminReviewer } from './admin-api'
+import { STAFF_STATUS_RANK, alsoInColumn, byName, lastSeenColumn } from './teamSort'
+import { staffStatusKey } from './staffStatus'
 import { byNumber, byText, sortRows, type SortDir } from './tableView'
 
 export const REVIEWER_SORT_KEYS = [
-  'name', 'role', 'awaitingReview', 'interviewing', 'completed', 'turnaround', 'status',
+  'name', 'role', 'alsoIn', 'awaitingReview', 'interviewing', 'completed', 'turnaround', 'status', 'lastSeen',
 ] as const
 export type ReviewerSortKey = (typeof REVIEWER_SORT_KEYS)[number]
 
@@ -16,11 +21,13 @@ export type ReviewerSortKey = (typeof REVIEWER_SORT_KEYS)[number]
 export const REVIEWER_SORT_LABEL: Record<ReviewerSortKey, string> = {
   name: 'admin.reviewers.colName',
   role: 'admin.reviewers.colRole',
+  alsoIn: 'admin.team.colAlsoIn',
   awaitingReview: 'admin.reviewers.colAwaiting',
   interviewing: 'admin.reviewers.colInterviewing',
   completed: 'admin.reviewers.colCompleted',
   turnaround: 'admin.reviewers.colTurnaround',
   status: 'admin.reviewers.colStatus',
+  lastSeen: 'admin.reviewers.colLastSeen',
 }
 
 /**
@@ -37,12 +44,13 @@ export const ROLE_ORDER: Record<string, number> = {
 }
 
 /**
- * **Paused first** (the same principle as the sponsors' status column, 2026-07-28): a status
+ * **The exception first** (the same principle as the sponsors' status column, 2026-07-28): a status
  * column exists to find the exception, and on a list of thirteen volunteers the exception is the
- * person who has stepped back. Active-first would bury them.
+ * person who has stepped back. Active-first would bury them. M2d A2: the Members table's order, so a
+ * revoked row (which reads "Revoked", `staffStatus`) comes before a paused one.
  */
 export function statusRank(r: AdminReviewer): number {
-  return r.paused ? 0 : 1
+  return STAFF_STATUS_RANK[staffStatusKey(r)]
 }
 
 /**
@@ -65,15 +73,18 @@ export const DEFAULT_SORT: { key: ReviewerSortKey; dir: SortDir } = {
  * Name, role and status open ascending.
  */
 const FIRST_DIR: Record<ReviewerSortKey, SortDir> = {
-  name: 'asc', role: 'asc', awaitingReview: 'desc', interviewing: 'desc', completed: 'desc',
-  turnaround: 'desc', status: 'asc',
+  name: 'asc', role: 'asc', alsoIn: 'asc', awaitingReview: 'desc', interviewing: 'desc', completed: 'desc',
+  turnaround: 'desc', status: 'asc', lastSeen: 'desc',
 }
 
 export function firstDirFor(key: ReviewerSortKey): SortDir {
   return FIRST_DIR[key]
 }
 
-const COMPARE: Record<ReviewerSortKey, (a: AdminReviewer, b: AdminReviewer) => number> = {
+type Compare = (a: AdminReviewer, b: AdminReviewer) => number
+const LAST_SEEN = lastSeenColumn<AdminReviewer>()
+
+const COMPARE: Record<Exclude<ReviewerSortKey, 'alsoIn'>, Compare> = {
   name: (a, b) => byText(a.name, b.name),
   role: (a, b) => byNumber(ROLE_ORDER[a.role] ?? 99, ROLE_ORDER[b.role] ?? 99),
   // Each half breaks its ties on the other, so equal rows still order by the whole caseload.
@@ -84,6 +95,7 @@ const COMPARE: Record<ReviewerSortKey, (a: AdminReviewer, b: AdminReviewer) => n
   completed: (a, b) => byNumber(a.completed, b.completed),
   turnaround: (a, b) => byNumber(a.turnaround_days, b.turnaround_days),
   status: (a, b) => byNumber(statusRank(a), statusRank(b)),
+  lastSeen: LAST_SEEN.compare,
 }
 
 /**
@@ -93,13 +105,19 @@ const COMPARE: Record<ReviewerSortKey, (a: AdminReviewer, b: AdminReviewer) => n
  * bottom whichever way the column points. `null` there means we have no measurement — treating it
  * as 0 would make "sort by slowest" put every brand-new volunteer at the fast end and every
  * "fastest" sort crown somebody who has never decided a case. Six of the thirteen are in that
- * state today, so this is the common row, not the edge one.
+ * state today, so this is the common row, not the edge one. Last seen and Also in do the same for
+ * "Not recorded" and "—" (M2d A2). `t` gives Also in its words — the order is the words shown.
  */
 export function sortReviewers(
   rows: AdminReviewer[], key: ReviewerSortKey, dir: SortDir,
+  t: (k: string) => string = (k) => k,
 ): AdminReviewer[] {
-  const isUnknown = key === 'turnaround'
-    ? (r: AdminReviewer) => r.turnaround_days === null
+  if (key === 'alsoIn') {
+    const c = alsoInColumn<AdminReviewer>('reviewers', t)
+    return sortRows(rows, c.compare, dir, c.unknown, byName)
+  }
+  const isUnknown = key === 'turnaround' ? (r: AdminReviewer) => r.turnaround_days === null
+    : key === 'lastSeen' ? LAST_SEEN.unknown
     : undefined
-  return sortRows(rows, COMPARE[key], dir, isUnknown)
+  return sortRows(rows, COMPARE[key], dir, isUnknown, byName)
 }

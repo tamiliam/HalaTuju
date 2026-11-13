@@ -15,6 +15,11 @@ import {
   type MentorsPayload, type ReviewerGiftTag, type ScholarStanding,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
+import SortHeader from '@/components/admin/SortHeader'
+import {
+  alsoInColumn, byName, lastSeenColumn, sortTeamRows, staffStatusRank, useTeamSort, type TeamColumn,
+} from '@/lib/teamSort'
+import { byDate, byNumber } from '@/lib/tableView'
 import Sheet from '@/components/Sheet'
 import ReviewerGiftsCell from '@/components/admin/ReviewerGifts'
 import StaffMentorSheet from './StaffMentorSheet'
@@ -102,6 +107,23 @@ export type AlsoInChips = ComponentType<{ row: { tables?: string[]; lead?: boole
 
 export const mentorHref = (id: number) => `/admin/organisation/team/mentors/${id}`
 
+/** M2d A2 (owner, 2026-11-13): every heading but Action sorts (`lib/teamSort`): the figures start with the
+ *  most, a date the latest; no meeting yet, no concern data (a caller without `scholars`) and "Not recorded"
+ *  go last both ways. Status is Members' order (Revoked before Active). Server order until a click. */
+const FIGURES = ['scholarsNow', 'meetings90', 'lastMeeting', 'concernsOpen'] as const
+type MentorCol = 'name' | 'alsoIn' | (typeof FIGURES)[number] | 'status' | 'lastSeen'
+const mentorColumns = (t: T): Record<MentorCol, TeamColumn<MentorRow>> => ({
+  name: { compare: byName },
+  alsoIn: alsoInColumn<MentorRow>('mentors', t),
+  scholarsNow: { compare: (a, b) => byNumber(a.scholars_now ?? 0, b.scholars_now ?? 0), first: 'desc' },
+  meetings90: { compare: (a, b) => byNumber(a.meetings_90 ?? 0, b.meetings_90 ?? 0), first: 'desc' },
+  lastMeeting: { compare: (a, b) => byDate(a.last_meeting, b.last_meeting), unknown: (m) => !m.last_meeting, first: 'desc' },
+  concernsOpen: { compare: (a, b) => byNumber(a.concerns_open, b.concerns_open), unknown: (m) => m.concerns_open === null, first: 'desc' },
+  status: { compare: (a, b) => byNumber(staffStatusRank({ is_active: a.status === 'active' }),
+    staffStatusRank({ is_active: b.status === 'active' })) },
+  lastSeen: lastSeenColumn<MentorRow>(),
+})
+
 /** `adding` / `onAddClose`: the Team page's Add Mentor button (on its tab row) opens the sheet here. */
 export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   AlsoIn: AlsoInChips
@@ -117,6 +139,9 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
   const [banner, setBanner] = useState<Banner>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [removing, setRemoving] = useState<MentorRow | null>(null)
+  const columns = mentorColumns(t)
+  const { sort, onSort } = useTeamSort(columns)
+  const sortTh = (col: MentorCol, label: string) => <SortHeader col={col} label={t(label)} sort={sort} onSort={onSort} />
 
   const load = useCallback(async () => {
     if (!token) return
@@ -143,7 +168,7 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
 
   // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor switched
   // off before arriving is not listed: a re-invite on Invitations brings them back. `listed` has the rule.
-  const rows = (data?.mentors ?? []).filter(listed)
+  const rows = sortTeamRows((data?.mentors ?? []).filter(listed), columns, sort)
   // A staff mentor removed from Mentors drops off the list; Add Mentor offers them back (`resume`).
   // M1b: never a member (No group) — Add Mentor brings them back as a mentor through the Team tables' Add.
   const returning = (data?.mentors ?? []).filter((m) => m.staff_role && m.staff_role !== 'member'
@@ -202,13 +227,11 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
               <table className="w-full text-sm">
                 <thead className="border-b bg-ground-50">
                   <tr>
-                    <th className={TH}>{t('admin.nameHeader')}</th>
-                    <th className={TH}>{t('admin.team.colAlsoIn')}</th>
-                    {['scholarsNow', 'meetings90', 'lastMeeting', 'concernsOpen'].map((c) => (
-                      <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>
-                    ))}
-                    <th className={TH}>{t('admin.statusHeader')}</th>
-                    <th className={TH}>{t('admin.reviewers.colLastSeen')}</th>
+                    {sortTh('name', 'admin.nameHeader')}
+                    {sortTh('alsoIn', 'admin.team.colAlsoIn')}
+                    {FIGURES.map((c) => <SortHeader key={c} col={c} label={t(`${K}.col.${c}`)} sort={sort} onSort={onSort} />)}
+                    {sortTh('status', 'admin.statusHeader')}
+                    {sortTh('lastSeen', 'admin.reviewers.colLastSeen')}
                     <th className={TH}>{t('admin.actionHeader')}</th>
                   </tr>
                 </thead>

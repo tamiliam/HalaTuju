@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/formatDate'
 import { COUNTED, refusalOf, refusalWords } from '@/lib/staffRefusals'
 import { firstGroupPage } from '@/lib/teamPaths'
 import {
-  DEFAULT_MEMBER_SORT, MEMBER_FILTERS, MEMBER_SORT_LABEL, filterMembers, sortMembers,
+  DEFAULT_MEMBER_SORT, MEMBER_FILTERS, MEMBER_FIRST_DIR, MEMBER_SORT_LABEL, filterMembers, sortMembers,
   type MemberFilter, type MemberSortKey,
 } from '@/lib/memberTable'
 import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
@@ -167,7 +167,7 @@ export default function StaffList({ token, canManage, viewerSuper, onChanged }: 
   // between pages. Above the early returns: hooks keep their order.
   const shown = sortMembers(filterMembers(rows ?? [], query, status), sort.key, sort.dir)
   const paged = usePagedRows(shown)
-  const onSort = (col: MemberSortKey) => setSort(nextSort(sort, col))
+  const onSort = (col: MemberSortKey) => setSort(nextSort(sort, col, MEMBER_FIRST_DIR[col]))
 
   if (failed && !rows) return <p className="text-critical-600" role="alert">{t('admin.staff.loadFailed')}</p>
   if (!rows) return <p className="mt-8 text-center text-ground-500">{t('common.loading')}</p>
@@ -219,7 +219,7 @@ export default function StaffList({ token, canManage, viewerSuper, onChanged }: 
                     <SortHeader col="name" label={t(MEMBER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
                     <SortHeader col="groups" label={t(MEMBER_SORT_LABEL.groups)} sort={sort} onSort={onSort} />
                     <SortHeader col="status" label={t(MEMBER_SORT_LABEL.status)} sort={sort} onSort={onSort} />
-                    <th className={TH}>{t('admin.reviewers.colLastSeen')}</th>
+                    <SortHeader col="lastSeen" label={t(MEMBER_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
                     {canManage && <th className={TH}>{t('admin.actionHeader')}</th>}
                   </tr>
                 </thead>

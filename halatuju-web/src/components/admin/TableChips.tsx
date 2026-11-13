@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { teamChipLabel } from '@/lib/teamSort'
 
 /**
  * The Team tables' chips — "Admin", "Reviewer", "Mentor", "Admin (lead)" — in ONE place, so the tables'
@@ -39,7 +40,7 @@ export default function TableChips({ tables, lead, except, testId = 'table-chips
     <span className="inline-flex flex-wrap items-center gap-1" data-testid={testId}>
       {shown.map((x) => {
         const pill = `rounded-full px-2 py-0.5 text-[11px] font-medium ${CHIP[x] ?? 'bg-ground-100'}`
-        const label = x === 'admins' && lead ? t('admin.team.chip.lead') : t(`admin.team.chip.${x}`)
+        const label = teamChipLabel(x, lead, t)
         const href = x === current ? undefined : hrefs?.[x]
         return href ? (
           <Link key={x} href={href} data-testid={`chip-link-${x}`}

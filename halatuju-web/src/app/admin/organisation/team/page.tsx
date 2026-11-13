@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import { TEAM_PATH, groupPageHref } from '@/lib/teamPaths'
-import TableFrame from '@/components/admin/TableFrame'
+import TableFrame, { TH } from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import {
   listReviewers, type AdminItem, type AdminReviewer,
@@ -174,7 +174,7 @@ export default function AdminReviewersList() {
 
   // Sort the whole list, then page the sorted result — the other order would sort one page at a
   // time and shuffle rows between pages.
-  const sorted = sortReviewers(reviewers, sort.key, sort.dir)
+  const sorted = sortReviewers(reviewers, sort.key, sort.dir, t)
   // T2: the Admins table's rows — by the served `tables` for anyone active, by the old label for a
   // revoked person (who sits at no table but must keep their Restore), and by the label for a payload
   // from before T2 (no `tables`).
@@ -362,23 +362,18 @@ export default function AdminReviewersList() {
               <tr>
                 <SortHeader col="name" label={t('admin.nameHeader')} sort={sort} onSort={onSort} />
                 {/* T2: "Also in" replaces the Role column. T3: no permission column (the person's page). */}
-                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
-                  {t('admin.team.colAlsoIn')}
-                </th>
+                <SortHeader col="alsoIn" label={t(REVIEWER_SORT_LABEL.alsoIn)} sort={sort} onSort={onSort} />
                 <SortHeader col="awaitingReview" label={t(REVIEWER_SORT_LABEL.awaitingReview)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="interviewing" label={t(REVIEWER_SORT_LABEL.interviewing)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="completed" label={t(REVIEWER_SORT_LABEL.completed)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="turnaround" label={t(REVIEWER_SORT_LABEL.turnaround)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="status" label={t(REVIEWER_SORT_LABEL.status)} sort={sort} onSort={onSort} />
-                {/* Plain headers, not sortable: "last seen" sorts by a column that is empty for
-                    anybody predating it, which would bunch "not recorded" at one end and read as
-                    an ordering of people. The action column has nothing to sort by at all. */}
-                <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-ground-600">
-                  {t('admin.reviewers.colLastSeen')}
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-ground-600">
-                  {t('admin.actionHeader')}
-                </th>
+                {/* Last seen sorts since M2d A2: the owner overruled the old "plain header" ruling on
+                    2026-11-13 (it held that the column, empty for anybody predating it, would bunch
+                    "not recorded" at one end and read as an ordering of people). "Not recorded" now goes
+                    LAST in both directions (`lib/teamSort`). Action alone has nothing to sort by. */}
+                <SortHeader col="lastSeen" label={t(REVIEWER_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
+                <th className={TH}>{t('admin.actionHeader')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ground-100">

@@ -9,6 +9,11 @@ import {
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
+import SortHeader from '@/components/admin/SortHeader'
+import {
+  alsoInColumn, byName, lastSeenColumn, sortTeamRows, staffStatusRank, useTeamSort, type TeamColumn,
+} from '@/lib/teamSort'
+import { byNumber } from '@/lib/tableView'
 import { formatDate } from '@/lib/formatDate'
 import PermissionChips from '@/components/admin/PermissionChips'
 import StaffAvatar from '@/components/admin/StaffAvatar'
@@ -60,7 +65,18 @@ function roleBadge(rl: string) {
   return roleBadgeClass(rl)
 }
 
-export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
+/** M2d A2 (owner, 2026-11-13): Team -> Admins sorts on every heading but Action (`lib/teamSort` has the
+ *  shared rules). Until a heading is clicked the rows keep the server's order. Team mode only: the platform's
+ *  staff screens draw this table unsorted, as before. */
+type AdminCol = 'name' | 'alsoIn' | 'status' | 'lastSeen'
+const adminColumns = (t: (k: string) => string): Record<AdminCol, TeamColumn<AdminItem>> => ({
+  name: { compare: byName },
+  alsoIn: alsoInColumn<AdminItem>('admins', t),
+  status: { compare: (a, b) => byNumber(staffStatusRank(a), staffStatusRank(b)) },
+  lastSeen: lastSeenColumn<AdminItem>(),
+})
+
+export function StaffTable({ rows: given, showOrg = false, canAct = true, busyId, onResend, onToggle,
                              onChangeRole, nameHref, soleOrgAdmin, team, showPhone = false, viewerSuper = false }: {
   rows: AdminItem[]
   showOrg?: boolean
@@ -89,6 +105,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   showPhone?: boolean
 }) {
   const { t } = useT()
+  const columns = adminColumns(t)
+  const { sort, onSort } = useTeamSort(columns)
+  const rows = team ? sortTeamRows(given, columns, sort) : given
+  const sortTh = (col: AdminCol, label: string) => <SortHeader col={col} label={t(label)} sort={sort} onSort={onSort} />
   // Team (owner 2026-11-08): read like Reviewers and Mentors — the email under the name, a Last seen
   // column after Status, the shared header style. The platform's staff screens keep their layout.
   // Four base columns either way: Name, Email (Team: Last seen instead), Role / Also in, Status.
@@ -240,12 +260,12 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
       <table className="w-full text-sm">
         <thead className="border-b bg-ground-50">
           <tr>
-            <th className={th}>{t('admin.nameHeader')}</th>
+            {team ? sortTh('name', 'admin.nameHeader') : <th className={th}>{t('admin.nameHeader')}</th>}
             {!team && <th className={th}>{t('admin.emailHeader')}</th>}
             {showOrg && <th className={th}>{t('admin.orgHeader')}</th>}
-            <th className={th}>{t(team ? 'admin.team.colAlsoIn' : 'admin.roleHeader')}</th>
-            <th className={th}>{t('admin.statusHeader')}</th>
-            {team && <th className={th}>{t('admin.reviewers.colLastSeen')}</th>}
+            {team ? sortTh('alsoIn', 'admin.team.colAlsoIn') : <th className={th}>{t('admin.roleHeader')}</th>}
+            {team ? sortTh('status', 'admin.statusHeader') : <th className={th}>{t('admin.statusHeader')}</th>}
+            {team && sortTh('lastSeen', 'admin.reviewers.colLastSeen')}
             {canAct && <th className={th}>{t('admin.actionHeader')}</th>}
           </tr>
         </thead>

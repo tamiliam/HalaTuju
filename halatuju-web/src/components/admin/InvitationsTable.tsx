@@ -7,6 +7,9 @@ import { useT } from '@/lib/i18n'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import type { InvitationRow } from '@/lib/admin-api'
 import { teamLabelRole } from '@/lib/staffRole'
+import SortHeader from '@/components/admin/SortHeader'
+import { byName, sortTeamRows, useTeamSort, type TeamColumn } from '@/lib/teamSort'
+import { byNumber, byText } from '@/lib/tableView'
 
 /** The gift line under a SPONSOR invitation's name (I3): "Every gift", else the gifts' names, else
  *  the one-gift `programme_name` (a payload from before I3); '' when it names none. */
@@ -15,6 +18,24 @@ export function giftLine(r: InvitationRow, everyWord: string): string {
   if (r.gifts && r.gifts.length > 0) return r.gifts.map((g) => g.name).join(', ')
   return r.programme_name || ''
 }
+
+/** M2d A2 (owner, 2026-11-13): the exception first, as on Members — a cancelled invitation, then an
+ *  expired one, then no reply, then still within its window, then accepted. */
+export const INVITATION_STATUS_RANK: Record<InvitationRow['status'], number> = {
+  revoked: 0, expired: 1, no_reply: 2, invited: 3, accepted: 4,
+}
+
+type InviteCol = 'lead' | 'name' | 'email' | 'role' | 'status'
+const inviteColumns = (t: (k: string) => string, leadText?: (r: InvitationRow) => string,
+): Record<InviteCol, TeamColumn<InvitationRow>> => ({
+  lead: { compare: (a, b) => byText(leadText?.(a), leadText?.(b)) },
+  name: { compare: byName },
+  email: { compare: (a, b) => byText(a.email, b.email) },
+  // By the words the cell shows, so the order is the one the reader sees.
+  role: { compare: (a, b) => byText(a.role ? t(`admin.role.${teamLabelRole(a.role)}`) : '',
+    b.role ? t(`admin.role.${teamLabelRole(b.role)}`) : '') },
+  status: { compare: (a, b) => byNumber(INVITATION_STATUS_RANK[a.status] ?? 9, INVITATION_STATUS_RANK[b.status] ?? 9) },
+})
 
 /**
  * One kind's invitations. Same five columns as every other table on the console —
@@ -52,6 +73,9 @@ export function giftLine(r: InvitationRow, everyWord: string): string {
  * restack as cards (`TableFrame phoneRows`, each cell named by its `data-label`). ⚠ A MENTOR row's
  * Cancel is the MENTOR revoke (`admin/mentors/<id>/revoke/`) passed in by `MentorRoster` — the
  * generic Cancel refuses a mentor invitation by design; only the word on the link is shared.
+ *
+ * M2d A2 (owner, 2026-11-13): every heading but Action sorts, ties by name, in the client (the waiting list
+ * arrives whole); the server's order until a heading is clicked. The lead column sorts by its `sortText`.
  */
 export default function InvitationsTable({ rows, canAct, busyId, onResend, onCancel, canCancel,
                                            canResend, showRole = true, lead, rowTestId, empty }: {
@@ -69,8 +93,9 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
   canResend?: (r: InvitationRow) => boolean
   /** Whether this kind's invitations carry a staff role. False for sponsors, sources and mentors. */
   showRole?: boolean
-  /** An optional FIRST column (I1: the Source tab's source name). Its heading is already in words. */
-  lead?: { header: string; cell: (r: InvitationRow) => React.ReactNode }
+  /** An optional FIRST column (I1: the Source tab's source name). Its heading is already in words; it sorts
+   *  by `sortText`, the words its cell shows (M2d A2). */
+  lead?: { header: string; cell: (r: InvitationRow) => React.ReactNode; sortText: (r: InvitationRow) => string }
   /** The row's test id (default `invitation-row-<id>`). */
   rowTestId?: (r: InvitationRow) => string
   /** What to say when there is nothing to list. ⚠ **THE EMPTY STATE IS NOW THE USUAL STATE** —
@@ -80,7 +105,9 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
   empty?: React.ReactNode
 }) {
   const { t } = useT()
-  const paged = usePagedRows(rows)
+  const columns = inviteColumns(t, lead?.sortText)
+  const { sort, onSort } = useTeamSort(columns)
+  const paged = usePagedRows(sortTeamRows(rows, columns, sort))
 
   if (rows.length === 0) {
     return (
@@ -97,7 +124,8 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
     const when = r.status === 'accepted' ? r.accepted_at : r.sent_at
     return when ? `${label} (${formatDate(when)})` : label
   }
-  const headers = ['nameHeader', 'emailHeader', ...(showRole ? ['roleHeader'] : []), 'statusHeader', 'actionHeader']
+  const headers: [InviteCol, string][] = [['name', 'nameHeader'], ['email', 'emailHeader'],
+    ...(showRole ? [['role', 'roleHeader'] as [InviteCol, string]] : []), ['status', 'statusHeader']]
   const word = (h: string) => t(`admin.${h}`)
 
   return (
@@ -110,10 +138,11 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
         <table className="w-full text-sm">
           <thead className="border-b bg-ground-50">
             <tr>
-              {lead && <th className={TH}>{lead.header}</th>}
-              {headers.map((h) => (
-                <th key={h} className={TH}>{word(h)}</th>
+              {lead && <SortHeader col="lead" label={lead.header} sort={sort} onSort={onSort} />}
+              {headers.map(([col, h]) => (
+                <SortHeader key={col} col={col} label={word(h)} sort={sort} onSort={onSort} />
               ))}
+              <th className={TH}>{word('actionHeader')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">

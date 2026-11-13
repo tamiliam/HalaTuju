@@ -210,7 +210,7 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
       {/* I1: the one waiting table every tab draws, with the source's name as its lead column.
           Resend is the source-user resend, Cancel the page's own; both only where `mayAct`. */}
       <InvitationsTable rows={waiting} canAct={canManage} busyId={busyId} showRole={false}
-        lead={{ header: t(`${K}.col.source`), cell: (row) => row.source_name || '—' }}
+        lead={{ header: t(`${K}.col.source`), cell: (row) => row.source_name || '—', sortText: (row) => row.source_name || '' }}
         rowTestId={(row) => `source-waiting-${row.id}`}
         onResend={resend} onCancel={onCancel}
         canResend={(row) => mayAct(row.admin_id)} canCancel={(row) => mayAct(row.admin_id)}

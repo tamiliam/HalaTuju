@@ -102,12 +102,17 @@ export function byDate(a: string | null | undefined, b: string | null | undefine
  * `desc` reverses the comparison for real values only. A comparator that has already decided a
  * blank or null sorts last (returning ±1 regardless of direction) keeps that answer, so flipping
  * the column never drags the unknowns to the top.
+ *
+ * `tie` (M2d A2, owner 2026-11-13): how rows the column cannot tell apart order — equal values, or two
+ * unknowns. It is applied AFTER the direction, so the Team tables' "ties break by name" reads A to Z
+ * whichever way the column points.
  */
 export function sortRows<T>(
   rows: T[],
   compare: (a: T, b: T) => number,
   dir: SortDir,
   isUnknown?: (row: T) => boolean,
+  tie?: (a: T, b: T) => number,
 ): T[] {
   const out = [...rows]
   out.sort((a, b) => {
@@ -115,17 +120,17 @@ export function sortRows<T>(
       const ua = isUnknown(a)
       const ub = isUnknown(b)
       if (ua !== ub) return ua ? 1 : -1      // unknowns last, both directions
-      if (ua && ub) return 0
+      if (ua && ub) return tie ? tie(a, b) : 0
     }
     const c = compare(a, b)
-    return dir === 'asc' ? c : -c
+    return (dir === 'asc' ? c : -c) || (tie ? tie(a, b) : 0)
   })
   return out
 }
 
 /** Click a header: same column flips direction, a new column starts at `firstDir`. */
 export function nextSort<K extends string>(
-  current: { key: K; dir: SortDir }, clicked: K, firstDir: SortDir = 'asc',
+  current: { key: K | null; dir: SortDir }, clicked: K, firstDir: SortDir = 'asc',
 ): { key: K; dir: SortDir } {
   if (current.key !== clicked) return { key: clicked, dir: firstDir }
   return { key: clicked, dir: current.dir === 'asc' ? 'desc' : 'asc' }

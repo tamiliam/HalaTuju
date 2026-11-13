@@ -4,11 +4,15 @@
  * split as `reviewerTable`.
  *
  * ⚠ SEARCH IS ON THE NAME ONLY: a Members row carries no email (owner O16), so there is nothing else to match.
+ *
+ * M2d A2 (owner, 2026-11-13): Last seen sorts too, "Not recorded" last both ways (`lib/teamSort`); every
+ * column breaks its ties by name, A to Z whichever way it points.
  */
 import type { StaffRow } from './admin-api'
+import { byName, lastSeenColumn } from './teamSort'
 import { byNumber, byText, sortRows, type SortDir } from './tableView'
 
-export const MEMBER_SORT_KEYS = ['name', 'groups', 'status'] as const
+export const MEMBER_SORT_KEYS = ['name', 'groups', 'status', 'lastSeen'] as const
 export type MemberSortKey = (typeof MEMBER_SORT_KEYS)[number]
 
 /** Which i18n label heads each sortable column. */
@@ -16,6 +20,7 @@ export const MEMBER_SORT_LABEL: Record<MemberSortKey, string> = {
   name: 'admin.nameHeader',
   groups: 'admin.staff.colGroups',
   status: 'admin.reviewers.colStatus',
+  lastSeen: 'admin.reviewers.colLastSeen',
 }
 
 /** The server's own order (`name, id`), so the first paint matches what the list showed before M2c. */
@@ -38,14 +43,20 @@ export const statusRank = (r: StaffRow) => (r.suspended ? 0 : 1)
 // Plain code-point order: `byText` puts a blank (No group) last, and No group belongs first ascending.
 const byRank = (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0)
 
+const LAST_SEEN = lastSeenColumn<StaffRow>()
+
 const COMPARE: Record<MemberSortKey, (a: StaffRow, b: StaffRow) => number> = {
   name: (a, b) => byText(a.name, b.name),
-  groups: (a, b) => byRank(groupsRank(a), groupsRank(b)) || byText(a.name, b.name),
-  status: (a, b) => byNumber(statusRank(a), statusRank(b)) || byText(a.name, b.name),
+  groups: (a, b) => byRank(groupsRank(a), groupsRank(b)),
+  status: (a, b) => byNumber(statusRank(a), statusRank(b)),
+  lastSeen: LAST_SEEN.compare,
 }
 
+/** A click on Last seen starts at the most recent; the others A to Z. */
+export const MEMBER_FIRST_DIR: Partial<Record<MemberSortKey, SortDir>> = { lastSeen: 'desc' }
+
 export function sortMembers(rows: StaffRow[], key: MemberSortKey, dir: SortDir): StaffRow[] {
-  return sortRows(rows, COMPARE[key], dir)
+  return sortRows(rows, COMPARE[key], dir, key === 'lastSeen' ? LAST_SEEN.unknown : undefined, byName)
 }
 
 /** The rows a search and a status filter leave: the name contains the words typed, case and spacing aside. */

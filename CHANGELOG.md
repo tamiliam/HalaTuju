@@ -46,6 +46,15 @@ design of record the mock-up the owner approved on 2026-11-13. No migration, no 
   `assign_reviewer` refuses `not_signed_in` after revoked and paused, before the gift; en/ms/ta wording. A holder
   re-pick is still a no-op; held cases untouched; no data step. `test_m2d_assign_signed_in.py` (12); existing tests
   that assign now sign their target in.
+- web (A2, owner addendum): every Team table heading sorts except Action (Members, Admins, Reviewers, Mentors,
+  Invitations; Emails and Terms have no table). One `SortHeader`: the arrow shows on the active column only, after
+  the label, or before it on a right-aligned number column so the heading ends where the figures end ("Awaiting
+  review" no longer reads as centred). Shared rules in `lib/teamSort.ts`: ties by name A to Z in both directions
+  (`sortRows`' new `tie`), "Not recorded" last in both directions on Last seen (first click newest first), "Also
+  in" by the group names shown with "—" last, Status in the Members order (revoked, paused, active). Client-side
+  only: every one of these tables arrives whole. Release note: the owner's phone check also covers the assign
+  picker and sorting.
+- test: `teamSort.test.ts` (11), `teamSortHeaders.test.tsx` (6), `team/page.sort.test.tsx` (5).
 
 ### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
 
