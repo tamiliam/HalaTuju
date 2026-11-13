@@ -38,7 +38,7 @@ def _unused(uid):
             'identities': [{'provider': 'email'}], 'app_metadata': {'must_change_password': True}}
 
 
-def _no_group(target):
+def no_group(target):
     """Sprint M2c (owner R2): Delete only from "No group". The end state of the Removes, set directly: a
     staff row becomes a `member` with no keys, and its Mentor (if any) is stamped deactivated."""
     if target.mentor_id:
@@ -78,6 +78,10 @@ class _Base(TestCase):
             return authed_client(caller).post('/api/v1/admin/invite/', body, format='json')
 
 
+# Sprint M2c: public names for a test in another app (`test_cross_app_private_imports` refuses a `_x` there).
+ArchiveCase, reviewed = _Base, _reviewed
+
+
 class TestStaffDeleteErasesOrArchives(_Base):
     def test_no_records_is_erased_as_today_even_with_the_flag(self):
         target = make_admin('reviewer', owning_org=self.org)
@@ -98,7 +102,7 @@ class TestStaffDeleteErasesOrArchives(_Base):
     def test_records_with_the_flag_archive_the_row(self):
         target = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
         uid = target.supabase_user_id
-        _reviewed(_no_group(target))
+        _reviewed(no_group(target))
         inv = invitations.create_or_refresh(audience='staff', email=target.email, name=target.name,
                                             role='reviewer', organisation=self.org, invited_by=self.lead,
                                             partner_admin=target)
@@ -222,7 +226,7 @@ class TestReinviteRestoresTheSameRow(_Base):
     def _archived(self, role='reviewer', **kw):
         target = make_admin(role, owning_org=self.org, first_seen_at=timezone.now(),
                             permissions=['review', 'spending'], **kw)
-        app = _reviewed(_no_group(target))
+        app = _reviewed(no_group(target))
         self.assertEqual(self.delete(self.lead, target, ARCHIVE).status_code, 200)
         target.refresh_from_db()
         return target, app
@@ -283,7 +287,7 @@ class TestMentorDoorArchiveAndRestore(_Base):
         login = make_admin('mentor', owning_org=self.org, first_seen_at=timezone.now())
         MentorAssignment.objects.create(application=make_application('active'), mentor=login.mentor,
                                         ended_at=None if open_assignment else timezone.now())
-        return login if open_assignment else _no_group(login)   # M2c (R2): Deactivated before a Delete
+        return login if open_assignment else no_group(login)   # M2c (R2): Deactivated before a Delete
 
     def _delete_mentor(self, login, body=None):
         return self.delete(self.lead, login, body, url=f'/api/v1/admin/mentors/{login.mentor_id}/')

@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.courses import staff_gift
 from apps.courses.models import PartnerAdmin
-from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, _Base, _no_group, _reviewed
+from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, _Base, no_group, _reviewed
 from apps.scholarship import invitations, staff_lifecycle, staff_permissions_admin, staff_tables_admin
 from apps.scholarship.models import Invitation, MentorAssignment
 from apps.scholarship.tests.factories import authed_client, make_admin, make_application
@@ -29,7 +29,7 @@ class TestArchivedStaffOnNoList(_Base):
         self.invs = {a.pk: invitations.create_or_refresh(
             audience='staff', email=a.email, name=a.name, role='reviewer', organisation=self.org,
             invited_by=self.lead, partner_admin=a, credential_issued=True) for a in (self.target, self.live)}
-        _reviewed(_no_group(self.target))
+        _reviewed(no_group(self.target))
         self.assertEqual(self.delete(self.lead, self.target, ARCHIVE).status_code, 200)
         # A row archived before M2c (owner R2) still carries its group's role: every list must hide it.
         PartnerAdmin.objects.filter(pk=self.target.pk).update(role='reviewer')
@@ -98,7 +98,7 @@ class TestArchivedMentorOffTheMentorsTab(_Base):
         self.live = make_admin('mentor', owning_org=self.org, first_seen_at=timezone.now())
         MentorAssignment.objects.create(application=make_application('active'), mentor=self.login.mentor,
                                         ended_at=timezone.now())
-        _no_group(self.login)
+        no_group(self.login)
         r = self.delete(self.lead, self.login, ARCHIVE, url=f'/api/v1/admin/mentors/{self.login.mentor_id}/')
         self.assertEqual(r.status_code, 200, r.content[:200])
 

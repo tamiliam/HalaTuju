@@ -10,7 +10,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin
-from apps.courses.tests.test_m1a_archive_restore import _Base, _no_group, _reviewed
+from apps.courses.tests.test_m1a_archive_restore import _Base, no_group, _reviewed
 from apps.scholarship.models import MentorAssignment
 from apps.scholarship.models import StaffProfile
 from apps.scholarship.tests.factories import authed_client, make_admin, make_application, make_org
@@ -126,11 +126,11 @@ class TestDeleteAnswers(_StaffList):
         self.assertEqual(self._answer(self.super, self.lead), ('sole_org_admin', None, False))
 
     def test_no_records_erases(self):
-        target = _no_group(_joined('reviewer', self.org))       # M2c (owner R2): Delete from "No group"
+        target = no_group(_joined('reviewer', self.org))       # M2c (owner R2): Delete from "No group"
         self.assertEqual(self._answer(self.lead, target), (None, 'erase', True))
 
     def test_records_archive(self):
-        target = _no_group(_joined('reviewer', self.org))
+        target = no_group(_joined('reviewer', self.org))
         _reviewed(target)
         self.assertEqual(self._answer(self.lead, target), (None, 'archive', True))
 
@@ -138,14 +138,14 @@ class TestDeleteAnswers(_StaffList):
         target = _joined('reviewer', self.org)
         make_application('assigned', reviewer=target)
         self.assertEqual(self._answer(self.lead, target), ('in_a_group', None, False))   # M2c: asked first
-        _no_group(target)
+        no_group(target)
         self.assertEqual(self._answer(self.lead, target), ('has_unfinished_work', None, False))
         self.assertEqual(self.rows(self.lead)[target.pk]['work']['reviewers']['open_cases'], 1)
 
     def test_a_mentor_login_with_no_records_erases(self):
         login = _joined('mentor', self.org)
         self.assertEqual(self._answer(self.lead, login), ('in_a_group', None, False))   # M2c: Mentors counts
-        _no_group(login)
+        no_group(login)
         self.assertEqual(self._answer(self.lead, login), (None, 'erase', True))
         self.assertTrue(self.rows(self.lead)[login.pk]['revocable'])
 
@@ -153,7 +153,7 @@ class TestDeleteAnswers(_StaffList):
         login = _joined('mentor', self.org)
         MentorAssignment.objects.create(application=make_application('active'), mentor=login.mentor,
                                         ended_at=NOW())
-        _no_group(login)
+        no_group(login)
         self.assertEqual(self._answer(self.lead, login), (None, 'archive', True))
 
     def test_a_mentor_login_with_a_scholar_now_stays_in_mentors(self):
@@ -163,7 +163,7 @@ class TestDeleteAnswers(_StaffList):
         self.assertEqual(self.rows(self.lead)[login.pk]['work']['mentors']['scholars_now'], 1)
 
     def test_another_organisation_s_mentor_is_not_the_lead_s(self):
-        login = _no_group(_joined('mentor', make_org()))
+        login = no_group(_joined('mentor', make_org()))
         self.assertEqual(self.rows(self.super)[login.pk]['delete_never'], None)
         self.assertNotIn(login.pk, self.rows(self.lead))
 

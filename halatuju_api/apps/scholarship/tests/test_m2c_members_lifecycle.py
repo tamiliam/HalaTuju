@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from apps.courses import staff_tables
 from apps.courses.models import PartnerAdmin
-from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, _Base, _no_group, _reviewed
+from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, ArchiveCase, no_group, reviewed
 from apps.scholarship import staff_lifecycle, staff_mentor, staff_permissions_admin
 from apps.scholarship import staff_tables_admin as sta
 from apps.scholarship.models import ScholarshipApplication
@@ -42,7 +42,7 @@ def _holding(reviewer, status, *, reopened=False):
     return app
 
 
-class TestOneRuleForOpenCases(_Base):
+class TestOneRuleForOpenCases(ArchiveCase):
     """C2: the three copies of the rule, at every status (one parametrised test)."""
 
     def _readings(self, reviewer):
@@ -81,7 +81,7 @@ class TestOneRuleForOpenCases(_Base):
         self.assertEqual(ScholarshipApplication.objects.get(pk=app.pk).assigned_to_id, reviewer.pk)
 
 
-class TestSuspendedCasesBanner(_Base):
+class TestSuspendedCasesBanner(ArchiveCase):
     """C4 (owner R1): the open cases held by suspended people, served with the list (brief C4 fallback)."""
 
     def _body(self, caller):
@@ -119,7 +119,7 @@ class TestSuspendedCasesBanner(_Base):
         self.assertEqual(count(), before)
 
 
-class TestDeleteOnlyFromNoGroup(_Base):
+class TestDeleteOnlyFromNoGroup(ArchiveCase):
     """C5 (owner R2): `in_a_group`, after sole_org_admin and before has_unfinished_work."""
 
     def _row(self, caller, target):
@@ -139,7 +139,7 @@ class TestDeleteOnlyFromNoGroup(_Base):
         self.gone.assert_not_called()
 
     def test_no_group_is_deletable(self):
-        target = _no_group(_joined('reviewer', self.org))
+        target = no_group(_joined('reviewer', self.org))
         self.assertEqual(self._row(self.lead, target), (None, True))
         self.assertEqual(self.delete(self.lead, target).status_code, 200)
         self.assertFalse(PartnerAdmin.objects.filter(pk=target.pk).exists())
@@ -158,7 +158,7 @@ class TestDeleteOnlyFromNoGroup(_Base):
         login = _joined('mentor', self.org)
         r = self.delete(self.lead, login, url=f'/api/v1/admin/mentors/{login.mentor_id}/')
         self.assertEqual((r.status_code, r.json()['code'], r.json()['groups']), (409, 'in_a_group', ['mentors']))
-        _no_group(login)
+        no_group(login)
         r = self.delete(self.lead, login, url=f'/api/v1/admin/mentors/{login.mentor_id}/')
         self.assertEqual(r.status_code, 200, r.content[:200])
 
@@ -184,7 +184,7 @@ class TestDeleteOnlyFromNoGroup(_Base):
         self.assertEqual(self._row(self.super, self.lead), ('sole_org_admin', False))
 
 
-class TestRemoveWhileSuspended(_Base):
+class TestRemoveWhileSuspended(ArchiveCase):
     """C6 (owner R3): Remove for a suspended person, with today's work checks."""
 
     def _remove(self, table, target, **extra):
@@ -197,7 +197,7 @@ class TestRemoveWhileSuspended(_Base):
 
     def test_no_open_cases_the_remove_works_and_they_stay_suspended(self):
         target = _joined('reviewer', self.org, is_active=False)
-        _reviewed(target)
+        reviewed(target)
         self.assertEqual(self._list_remove(target), {'reviewers': sta.LAST_TABLE})
         r = self._remove('reviewers', target, to_no_group=True)
         self.assertEqual(r.status_code, 200, r.content[:300])
