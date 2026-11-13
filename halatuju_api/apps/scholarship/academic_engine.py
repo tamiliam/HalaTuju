@@ -658,20 +658,19 @@ def student_slip_check(doc) -> dict:
     was_skewed = isinstance(skew, (int, float)) and abs(skew) >= 25.0
 
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    # Three exclusive routes (owner 2026-11-06): tertiary = the SPM prereq only; none = 'not_compared'.
+    from .academic_compare import spm_slip_compare
+    cmp = spm_slip_compare(profile, data)
     if not data['names']:
         # No subject rows: "extraction hasn't run / was skipped" (PENDING) vs "Gemini ran but
         # couldn't read the subject table" (UNREADABLE — re-upload; a bare candidate-name is this).
-        from apps.courses.public import spm_slip_comparable   # #62 review 3: only the name speaks
-        s = ('not_compared' if not spm_slip_comparable(profile, _SUBJECT_BM)
+        s = ('not_compared' if not cmp['comparable']     # #62 review 3: only the name speaks
              else 'pending' if (not sv) or sv == 'review_manually' else 'unreadable')
         return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
                 'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
                 'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': []}
 
-    # Three exclusive routes (owner 2026-11-06): tertiary = the SPM prereq only; none = 'not_compared'.
-    from .academic_compare import spm_slip_compare
-    cmp = spm_slip_compare(profile, data)
     subjects = ('not_compared' if not cmp['compared'] else 'mismatch' if cmp['missing'] or cmp['extra']
                 else 'match')   # #62: extra = typed, not on it
     if not cmp['compared'] or not cmp['have_grades']:   # #62 review 2: nothing compared, nothing shown

@@ -78,7 +78,6 @@ def _academic_red_chips(application):
     """RED academic content chips — Name (slip in a different name), Subjects (a slip subject the
     student never entered, or a typed one not on the slip — #62), Results (a CONFIRMED typed-vs-slip grade mismatch). 0–3. An uncertain
     grade (band disagreement) and an unread slip are grey/pending, not red."""
-    from .academic_engine import read_slip, _slip_name_status
     from . import higher_results
     # Third route S3b: a higher-results applicant's card counts the higher card's chips, plus the
     # SPM slip's when one is on file (the same pair `higher_results.verdict_academic` reads).
@@ -86,19 +85,18 @@ def _academic_red_chips(application):
     slip = _latest_doc(application, 'results_slip')
     if slip is None:
         return n
-    n += 1 if _slip_name_status(slip) == 'mismatch' else 0
-    from .wrong_slip import higher_kind
-    if higher_kind(slip):              # S4 (#43): a higher result here is never SPM-compared
-        return n
-    data = read_slip(slip)
-    if data['names']:
-        from .academic_compare import spm_slip_compare     # owner 2026-11-06: three exclusive routes
-        cmp = spm_slip_compare(application.profile, data)   # not compared = empty lists, no chip
-        if cmp['missing'] or cmp['extra']:     # request #62: ONE Subjects chip, either way round
-            n += 1
-        if cmp['mismatched']:
-            n += 1
-    return n
+    return n + spm_red_chips(slip)
+
+
+def spm_red_chips(slip) -> int:
+    """F1 (duplicate 1): the SPM card's RED chips ARE the drawer's red chips — Name, Subjects (missing
+    or extra, #62: ONE chip either way round), Results (a confirmed grade mismatch) — read off the one
+    home, ``academic_engine.student_slip_check``. A higher result in the SPM slot (S4, #43) reads
+    'not_spm' there, never compared; an unread slip reads pending; a tertiary holder with nothing
+    compared reads 'not_compared': none of those is red."""
+    from .academic_engine import student_slip_check
+    chk = student_slip_check(slip)
+    return sum(1 for k in ('name', 'subjects', 'results') if chk[k] == 'mismatch')
 
 
 # A pathway identity chip (Name / IC) is RED only when its value MISMATCHES — another person (the owner's

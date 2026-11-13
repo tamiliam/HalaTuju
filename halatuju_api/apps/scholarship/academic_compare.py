@@ -190,8 +190,11 @@ def spm_slip_compare(profile, slip) -> dict:
     (``unchecked``: a short read, a printed row with no readable grade), it is not complete, and the
     verdict names them ("please check by eye") so a hold always has its reason."""
     from apps.courses.public import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
-    if spm_slip_comparable(profile, _SUBJECT_BM):
-        cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True}
+    # F1 (duplicate 4): "is there anything to compare?" is asked HERE only; every reader takes
+    # ``comparable`` off this result (the verdict, the drawer) instead of asking again.
+    comparable = spm_slip_comparable(profile, _SUBJECT_BM)
+    if comparable:
+        cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True, 'comparable': True}
         if not profile or not is_tertiary(results_held(profile)):
             return {**cmp, 'checked_count': cmp['slip_count'], 'unchecked': []}
         # #62 review 2: a tick needs at least one entered subject grade-checked on the slip (never
@@ -203,4 +206,4 @@ def spm_slip_compare(profile, slip) -> dict:
     blank = compare_academics({}, slip)
     return {**blank, 'missing': [], 'extra': [], 'mismatched': [], 'uncertain': [],
             'have_grades': False, 'complete': False, 'accurate': False, 'compared': False,
-            'checked_count': 0, 'unchecked': []}
+            'comparable': comparable, 'checked_count': 0, 'unchecked': []}
