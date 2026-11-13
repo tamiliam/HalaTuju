@@ -120,10 +120,14 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
   const body = viewBody('AdminAssignReviewerView')
 
   test('every caller assigns only someone in Reviewers; a non-super only their own org (T1, read as written)', () => {
-    expect(body).toMatch(/not may_assign_to\(admin, reviewer\)/)
+    // M2d A1: the endpoint's pre-check is `may_hand_to` (the T1 rule) so a person who has not signed in
+    // reaches the service and is told `not_signed_in`; `may_assign_to` (what the picker serves) is
+    // `may_hand_to` AND signed in, so the two still cannot disagree on anyone the picker offers.
+    expect(body).toMatch(/not may_hand_to\(admin, reviewer\)/)
     expect(body).toMatch(/is_active=True/)
     expect(body).toMatch(/bad_assignee/)
-    const rule = pyFunc(servicesSrc, 'may_assign_to')
+    expect(pyFunc(servicesSrc, 'may_assign_to')).toMatch(/return has_signed_in\(target\) and may_hand_to\(caller, target\)/)
+    const rule = pyFunc(servicesSrc, 'may_hand_to')
     expect(rule).toMatch(/staff_tables\.in_reviewers\(target\) and is_review_target\(target\)/)
     expect(rule).toMatch(/caller\.role == 'org_admin'/)
     expect(rule).toMatch(/target\.owning_organisation_id == caller\.owning_organisation_id/)
