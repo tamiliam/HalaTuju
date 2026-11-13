@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — F1 adversarial review: six fixes to the slip-check build (the rule table's Q1, Q3, Q7 as the owner approved them)
+
+**Source:** the F1 adversarial review of branch f1; the rule is still `docs/plans/2026-11-13-f1-slip-check-rule-table.md` Part 2. `VERDICT_ENGINE_VERSION` 2026-11-13.3.
+
+- **Q3 — only the exact read can say "not on the slip".** An AI STPM read that skipped a row (3 of 4 read, Pengajian Am among them, every row recognised) is indistinguishable from a slip that does not print it. So `_compare_stpm` treats every non-exact read as short: an entered subject it did not show is `unchecked` (amber, named, `academic_grades_unchecked`). `extra` (red) is the deterministic exact read's alone.
+- **Q1 — a short SPM read is never complete.** When the slip prints more subjects than the read caught ("JUMLAH MATA PELAJARAN : ENAM", five read) but every typed subject was found, nothing typed is unchecked, yet a row was never seen. `spm_slip_compare` (SPM holder) now sets `complete` false and `subjects_open` on any short read (amber Subjects chip, at best Probable), and names the reason with a new item `academic_slip_rows_unread` when no typed subject is left to name.
+- **Q7 — narrowed.** `degree_bound` no longer reads a degree from the NAME when the student's pathway code is an SPM-entry one (pismp, asasi, matric, diploma: PISMP's "Ijazah Sarjana Muda Pendidikan"), nor from a preparatory name ("Persediaan", "Degree Program"; also in `destination`'s name step). A Form Six ('stpm') code does not win: the owner's Q7 case (old Form Six code + degree name) is still asked before submit.
+- **Interview agenda.** `higher_results_grade_uncertain` joins `_NEEDS_INTERVIEW_AMBERS`, as `academic_grade_uncertain` is.
+- **Manual.** The amber not-equal marker beside a grade is always amber; the reviewer manual now says to read the severity on the Academic card. No UI change.
+- **Tests.** The docstring-grep test and the self-built degree-bound table are replaced by behaviour tests; new matrix rows for the printed-count short read, the AI skipped row and a +/- difference that alone holds Certain; Q5 (unscored Asasi / private Diploma stop at Probable) and Q8 (every unreachable cell has a probe) are pinned.
+
 ## 2026-11-13 — F1 slip-check matrix: the owner's six rule changes, Q1-Q4, Q6, Q7 (Q5 and Q8 keep today's rules)
 
 **Source:** the owner-approved rule table `docs/plans/2026-11-13-f1-slip-check-rule-table.md` (approved 13 Nov; every Part 2 recommendation is the rule). The whole grid is pinned by `tests/test_slip_check_matrix.py`; each change has its own regression test in `tests/test_slip_check_owner_changes.py`. `VERDICT_ENGINE_VERSION` 2026-11-13.2. Read-time only: no migration, no re-read, existing documents take the rules at once.

@@ -46,7 +46,8 @@ def _interview_agenda(application):
 # it's still picked up; the historical name is kept. Over-the-line income is phrased for the
 # INTERVIEWER only (never a student message — owner decision 4).
 _NEEDS_INTERVIEW_AMBERS = ('income_unverified_needs_interview', 'income_above_b40_line',
-                           'academic_grade_uncertain', 'ic_service_down')
+                           'academic_grade_uncertain', 'higher_results_grade_uncertain',   # F1 Q4: STPM mirror
+                           'ic_service_down')
 
 
 def interview_agenda_full(application):

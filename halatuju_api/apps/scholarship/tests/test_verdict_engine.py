@@ -173,10 +173,13 @@ class TestAcademicGrades(_Base):
                         name_match='found', fields={'results': results})
 
     def test_complete_and_accurate_is_verified(self):
-        self.profile.grades = {'bm': 'A-', 'eng': 'A+'}
+        # F1 review: a read without all four compulsory subjects is SHORT, never complete.
+        self.profile.grades = {'bm': 'A-', 'eng': 'A+', 'math': 'A', 'hist': 'B+'}
         self.profile.save()
         self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
-                    {'subject': 'Bahasa Inggeris', 'grade': 'A+'}])
+                    {'subject': 'Bahasa Inggeris', 'grade': 'A+'},
+                    {'subject': 'Matematik', 'grade': 'A'},
+                    {'subject': 'Sejarah', 'grade': 'B+'}])
         f = _facts(self.app)['academic']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('grades_verified', _codes(f['evidence']))
@@ -219,11 +222,13 @@ class TestAcademicGrades(_Base):
         # Regression (Sharvani): a perfectly-read slip (sv='ok') whose supporting-doc
         # vision_name_match happens to be 'not_found' must NOT be flagged "could not be
         # read". The slip's OWN sv-authoritative name check governs → verified.
-        self.profile.grades = {'bm': 'A-', 'eng': 'A+'}
+        self.profile.grades = {'bm': 'A-', 'eng': 'A+', 'math': 'A', 'hist': 'B+'}
         self.profile.save()
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='not_found',
                  fields={'results': [{'subject': 'Bahasa Melayu', 'grade': 'A-'},
-                                     {'subject': 'Bahasa Inggeris', 'grade': 'A+'}]})
+                                     {'subject': 'Bahasa Inggeris', 'grade': 'A+'},
+                                     {'subject': 'Matematik', 'grade': 'A'},
+                                     {'subject': 'Sejarah', 'grade': 'B+'}]})
         f = _facts(self.app)['academic']
         self.assertNotIn('results_slip_unreadable', _codes(f['unresolved']))
         self.assertIn('results_slip_name_ok', _codes(f['evidence']))

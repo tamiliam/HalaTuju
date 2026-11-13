@@ -35,6 +35,7 @@ silently as SPM.
 from __future__ import annotations
 
 import logging
+import re
 
 from django.utils import timezone
 
@@ -100,6 +101,8 @@ def destination(application) -> str:
     elif (prog.get('course_name') or '').strip():
         from .offer_pathway import detect_pathway_type
         kind = detect_pathway_type(prog.get('course_name') or '', prog.get('institution') or '')
+        if kind == 'degree' and not _degree_by_name(prog):
+            kind = ''                     # F1 review: a preparatory programme is not a degree by name
         out = DEGREE if kind == 'degree' else POST_SPM if kind in _POST_SPM_TYPES else UNDECIDED
     else:
         out = UNDECIDED
@@ -126,9 +129,29 @@ def degree_bound(application) -> bool:
     prog = prog if isinstance(prog, dict) else {}
     if str(prog.get('course_id') or '').strip():
         return False
+    # F1 review (2026-11-13): an SPM-entry pathway code the student chose wins over a degree-sounding
+    # NAME (PISMP's "Ijazah Sarjana Muda Pendidikan" is SPM-entry). NOT Form Six: a stale 'stpm' code
+    # under a degree name stays degree-bound (#251, the owner's Q7 case).
+    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() in _CODE_OVER_NAME:
+        return False
+    return _degree_by_name(prog)
+
+
+#: F1 review: SPM-entry pathway codes whose own programme names may read as a degree.
+_CODE_OVER_NAME = frozenset({'pismp', 'asasi', 'matric', 'diploma'})
+#: F1 review: a preparatory programme ("Program Persediaan Ijazah Luar Negara", "American Degree
+#: Program") names a degree it leads to, not the one she is studying for.
+_PREPARATORY_NAME = re.compile(r'persediaan|degree\s+program', re.IGNORECASE)
+
+
+def _degree_by_name(prog: dict) -> bool:
+    """Does the chosen programme's NAME read as a degree (`detect_pathway_type`), a preparatory
+    programme's name excepted (`_PREPARATORY_NAME`)?"""
     name = (prog.get('course_name') or '').strip()
+    if not name or _PREPARATORY_NAME.search(name):
+        return False
     from .offer_pathway import detect_pathway_type
-    return bool(name) and detect_pathway_type(name, prog.get('institution') or '') == 'degree'
+    return detect_pathway_type(name, prog.get('institution') or '') == 'degree'
 
 
 def _already_passed(application, code) -> bool:

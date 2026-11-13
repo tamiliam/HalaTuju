@@ -4504,6 +4504,7 @@
           "income_unverified_needs_interview": "Sahkan sumber dan jumlah pendapatan isi rumah (tidak formal / tiada slip gaji) semasa temubual.",
           "income_above_b40_line": "Pendapatan isi rumah membaca melebihi had pendapatan pemberian ini (kira-kira RM {amount} berbanding RM {ceiling} sekapita) — terokai gambaran kewangan penuh semasa temubual. Nota penemubual sahaja: jangan sebut angka ini kepada pelajar sebagai mesej.",
           "academic_grade_uncertain": "Satu gred tidak dapat disahkan dengan slip keputusan — sahkan keputusan sebenar pelajar semasa temubual.",
+          "higher_results_grade_uncertain": "Satu gred STPM tidak dapat disahkan dengan slip keputusan STPM — sahkan keputusan sebenar pelajar semasa temubual.",
           "ic_service_down": "Identiti tidak dapat disahkan automatik (masalah perkhidmatan ID) — sahkan MyKad pelajar semasa temubual."
         },
         "motivation": {
@@ -4857,6 +4858,7 @@
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_extra_subjects": "Dimasukkan oleh pelajar tetapi tiada pada slip: {subjects}. Semak dengan mata: mungkin salah taip, atau baris yang terlepas semasa bacaan.",
           "academic_grades_unchecked": "Dimasukkan oleh pelajar, tetapi bacaan tidak dapat menyemak gred pada slip: {subjects}. Sila semak dengan mata pada slip.",
+          "academic_slip_rows_unread": "Bacaan tidak sampai ke setiap baris mata pelajaran pada slip, jadi mata pelajaran tidak dapat disahkan lengkap. Semak baris slip dengan mata.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",

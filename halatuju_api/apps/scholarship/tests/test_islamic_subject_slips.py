@@ -98,9 +98,12 @@ class TheSlipCheck(SimpleTestCase):
     """`student_slip_check` — what the student sees ("Not entered yet") and the coach reads."""
 
     def test_request_48_tasawwur_islam_entered_is_a_match(self):
+        # F1 review: all four compulsory rows, or the read is short and never a Subjects match.
         results = [{'subject': 'BAHASA MELAYU', 'grade': 'A-'}, {'subject': 'SEJARAH', 'grade': 'A'},
+                   {'subject': 'BAHASA INGGERIS', 'grade': 'B'}, {'subject': 'MATEMATIK', 'grade': 'A'},
                    {'subject': 'TASAWWUR ISLAM', 'grade': 'B+'}]
-        chk = student_slip_check(_gemini_doc(results, {'bm': 'A-', 'hist': 'A', 'tasawwur_islam': 'B+'}))
+        chk = student_slip_check(_gemini_doc(results, {'bm': 'A-', 'hist': 'A', 'eng': 'B', 'math': 'A',
+                                                       'tasawwur_islam': 'B+'}))
         self.assertEqual(chk['subjects'], 'match')
         self.assertEqual(chk['results'], 'match')
         self.assertEqual(chk['missing'], [])

@@ -28,6 +28,14 @@ class Q1SpmShortRead(TestCase):
         cmp = spm_slip_compare(app.profile, read_slip(_doc(app, 'results_slip', spm_read(SPM_ROWS))))
         self.assertEqual((cmp['unchecked'], cmp['complete']), ([], True))
 
+    def test_fewer_rows_than_the_slip_prints_is_never_complete(self):
+        # Review 2026-11-13: six printed, five read, all five typed found - nothing typed is unchecked,
+        # yet a row was never seen: not complete, Subjects open, the reason flagged.
+        app = _app(SPM_HELD, DEGREE)
+        cmp = spm_slip_compare(app.profile, read_slip(_doc(app, 'results_slip', spm_read(SPM_ROWS, 'ENAM'))))
+        self.assertEqual((cmp['short_read'], cmp['unchecked']), (True, []))
+        self.assertEqual((cmp['complete'], cmp['subjects_open'], cmp['rows_unread']), (False, True, True))
+
 
 class Q2toQ4StpmCompare(TestCase):
     def _profile(self, **grades):
@@ -45,11 +53,23 @@ class Q2toQ4StpmCompare(TestCase):
     def test_q2_nothing_recognised_names_nothing(self):
         self.assertEqual(_compare_stpm(self._profile(), stpm_read([])), ([], [], [], [], []))
 
-    def test_q3_extra_on_a_full_read_is_red(self):
+    def test_q3_extra_on_a_full_exact_read_is_red(self):
         app = _app({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'BIOLOGY': 'C'}}, DEGREE)
-        chk = student_higher_check(_doc(app, 'higher_results', stpm_read(), GENUINE))
+        chk = student_higher_check(_doc(app, 'higher_results', stpm_read(), GENUINE, EXACT_READ))
         self.assertEqual((chk['extra'], chk['grades_status']), (['BIOLOGI'], 'mismatch'))
         self.assertEqual(red_chips(app), 1)
+
+    def test_q3_a_row_an_ai_read_skipped_is_unchecked_not_extra(self):
+        # Review 2026-11-13: 3 of 4 rows read, Pengajian Am among them, every row recognised. The
+        # skipped KIMIA is amber and named, never a red "not on the slip".
+        app = _app(STPM_HELD, DEGREE)
+        chk = student_higher_check(_doc(app, 'higher_results', stpm_read(STPM_ROWS[:3]), GENUINE))
+        self.assertEqual((chk['extra'], chk['unchecked'], chk['grades_status']), ([], ['KIMIA'], 'pending'))
+        self.assertEqual(red_chips(app), 0)
+
+    def test_q3_the_same_skip_on_the_exact_read_is_red(self):
+        out = _compare_stpm(self._profile(), stpm_read(STPM_ROWS[:3]), exact=True)
+        self.assertEqual(out[3:], (['KIMIA'], []))
 
     def test_q4_plus_minus_on_an_ai_read_is_uncertain(self):
         out = _compare_stpm(self._profile(PHYSICS='A'), stpm_read())
@@ -95,3 +115,38 @@ class Q7OneDegreeTest(TestCase):
     def test_a_post_spm_course_still_asks_nothing(self):
         app = _app(SPM_HELD, {'chosen_pathway': 'matric', 'pathway_certainty': 'sure', 'chosen_programme': {}})
         self.assertEqual(results_route.higher_need(app), '')
+
+    def _plan(self, code, name):
+        return {'chosen_pathway': code, 'pathway_certainty': 'sure',
+                'chosen_programme': {'course_name': name, 'institution': 'X'}}
+
+    def test_spm_entry_programmes_with_degree_words_ask_nothing_before_submit(self):
+        # Review 2026-11-13: a preparatory name, and an SPM-entry pathway code over a degree name.
+        for code, name in (('tvet_other', 'American Degree Program'),
+                           ('mara', 'Program Persediaan Ijazah Luar Negara'),
+                           ('pismp', 'Ijazah Sarjana Muda Pendidikan')):
+            with self.subTest(name):
+                app = _app(SPM_HELD, self._plan(code, name))
+                self.assertFalse(results_route.degree_bound(app))
+                self.assertEqual(results_route.higher_need(app), '')
+
+    def test_a_preparatory_name_with_no_code_is_not_a_degree(self):
+        app = _app(SPM_HELD, self._plan('', 'Program Persediaan Ijazah Luar Negara'))
+        self.assertEqual(results_route.destination(app), results_route.UNDECIDED)
+        self.assertFalse(results_route.degree_bound(app))
+
+    def test_form_six_code_never_wins_over_a_degree_name(self):
+        # The owner's Q7 case stays: an old Form Six code + a degree course name is asked before submit.
+        app = _app(SPM_HELD, self._plan('stpm', 'Ijazah Sarjana Muda Kejuruteraan Awam'))
+        self.assertEqual(results_route.higher_need(app), 'required_with_slip')
+
+
+class Q4StpmAmberOnTheInterviewAgenda(TestCase):
+    def test_the_stpm_grade_amber_is_carried_to_the_interview(self):
+        # Review 2026-11-13: as the SPM `academic_grade_uncertain` is.
+        from apps.scholarship.views_admin.interviews import interview_agenda_full
+        app = _app({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE)
+        _doc(app, 'higher_results', stpm_read(cgpa='3.75'), GENUINE)
+        agenda = interview_agenda_full(app)
+        self.assertIn(('needs_interview', 'higher_results_grade_uncertain'),
+                      {(e['kind'], e['code']) for e in agenda})

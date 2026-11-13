@@ -253,7 +253,11 @@ def _compare_stpm(profile, fields, unrecognised=(), exact=False):
        only what it caught: the entered subjects it did not show are `unchecked` (named, no tick);
     Q3 on a FULL read, an entered subject the slip does not print is `extra` (red, as missing is);
     Q4 a difference in the +/- only (same letter) is `uncertain` ("check by eye") unless `exact` - the
-       deterministic exact read, whose letter and point agree - where it stays a mismatch."""
+       deterministic exact read, whose letter and point agree - where it stays a mismatch.
+    Q3 review (2026-11-13): only the EXACT read can tell a row the slip does not print from a row the
+       reader skipped (an AI read of 3 of 4 rows still holds Pengajian Am and recognises every row it
+       kept). So `extra` (red) is the exact read's alone; on an AI read an entered subject it did not
+       show is `unchecked` (amber, named), whatever else the read holds."""
     from .stpm_names import stpm_label
     entered = entered_stpm(profile)
     missing, mismatched, uncertain, seen = [], [], [], set()
@@ -266,7 +270,7 @@ def _compare_stpm(profile, fields, unrecognised=(), exact=False):
             pm_only = not exact and slip[:1] == str(entered[key])[:1]
             (uncertain if pm_only else mismatched).append(row)
     rest = [stpm_label(k) for k, g in entered.items() if g and k not in seen] if seen else []
-    short = 'PA' not in seen or bool(unrecognised)
+    short = not exact or 'PA' not in seen or bool(unrecognised)
     return missing, mismatched, uncertain, ([] if short else rest), (rest if short else [])
 
 

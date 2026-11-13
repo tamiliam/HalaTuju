@@ -4504,6 +4504,7 @@
           "income_unverified_needs_interview": "Confirm the household's income sources and amounts (informal / no payslip) at the interview.",
           "income_above_b40_line": "Household income reads above this gift's income limit (about RM {amount} vs RM {ceiling} per person) — explore the full financial picture at the interview. Interviewer note only: do not raise the figure with the student as a message.",
           "academic_grade_uncertain": "A grade could not be verified against the results slip — confirm the student's actual results at the interview.",
+          "higher_results_grade_uncertain": "An STPM grade could not be verified against the STPM results slip — confirm the student's actual results at the interview.",
           "ic_service_down": "Identity could not be auto-verified (an ID-service issue) — confirm the student's MyKad at the interview."
         },
         "motivation": {
@@ -4857,6 +4858,7 @@
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_extra_subjects": "Entered by the student but not on the slip: {subjects}. Check by eye: a typing slip, or a row the read missed.",
           "academic_grades_unchecked": "Entered by the student, but the read could not check the grade on the slip: {subjects}. Please check it by eye against the slip.",
+          "academic_slip_rows_unread": "The read did not reach every subject row on the slip, so the subjects cannot be confirmed as complete. Check the slip's rows by eye.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "academic_grade_band_mismatch": "{subject}: the slip clearly shows {slip} — the letter and the Malay band agree — but the student typed {typed}. The typed grade is wrong; ask the student to correct it.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",

@@ -34,6 +34,15 @@ rulings R1-R5 (decisions.md "Members tab and the lifecycle rules"; R6 is M3). No
   `memberTable.test.ts`, `StaffList.test.tsx` and `team/page.test.tsx` cases for the table, the alias, the
   reason, the banner and Remove on a suspended reviewer.
 
+### fix: sprint F1 - adversarial review fixes (2026-11-13)
+
+Branch f1 (local, not pushed). Verdict engine 2026-11-13.3. decisions.md 2026-11-13 "F1 adversarial review".
+- Q3: an AI STPM read that skipped a row no longer calls the typed subject "not on the slip" (red); it is unchecked (amber, named). Red extra is the exact read's only.
+- Q1: an SPM slip printing more subjects than the read caught is never complete, even when every typed subject was found: amber Subjects, at best Probable, new item `academic_slip_rows_unread` (EN/MS/TA).
+- Q7 narrowed: a PISMP / Asasi / Matriculation / Diploma pathway code wins over a degree-sounding name, and a "Persediaan" / "Degree Program" name is not a degree; an old Form Six code + degree name is still asked before submit.
+- `higher_results_grade_uncertain` is on the interview agenda (copy EN/MS/TA). Reviewer manual: the not-equal marker is always amber.
+- Tests: matrix rows for the printed-count short read, the AI skipped row and a +/- alone; behaviour tests replace a docstring grep and a self-built table; Q5 and Q8 pinned.
+
 ### feat: sprint F1 - slip-check matrix and the owner's rule changes (2026-11-13)
 
 Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f1-slip-check-rule-table.md` (owner-approved 13 Nov).

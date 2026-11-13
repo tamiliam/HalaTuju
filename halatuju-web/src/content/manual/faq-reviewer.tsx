@@ -52,15 +52,20 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Since 13 November 2026 the SPM and STPM checks follow the same rules. When the read of her slip
         <strong> missed rows</strong> (for STPM: Pengajian Am was not read, or a row was not recognised), the card
         names the subjects it could not check, gives no tick, and the case stays at most <strong>Probable</strong>
-        &mdash; read those grades on the slip yourself. On a full STPM read, a subject she entered that the slip does
-        not print is a <strong>red</strong> difference, as it is for SPM. When her STPM grade and the slip differ only
+        &mdash; read those grades on the slip yourself. When the SPM slip prints more subjects than the read caught,
+        the card says so and gives no Subjects tick, even when every subject she entered was found. On an STPM slip
+        the system read exactly (not by AI), a subject she entered that the slip does not print is a
+        <strong> red</strong> difference, as it is for SPM; on an AI read it is named as not checked (amber), because
+        the read may simply have skipped that row. When her STPM grade and the slip differ only
         by the <strong>+ or &minus;</strong> (A against A&minus;, B+ against B), the card shows it in amber and asks you to
         check it by eye, because the read can be wrong about a small sign; it stays red when the system read the
         slip&rsquo;s text exactly rather than by AI. A different letter is always red. A higher result she put
         in the SPM slip card no longer holds a clean Academic card back from <strong>Certain</strong> when her
         higher-results card is clean. And a course counts as a <strong>degree</strong> by the same test everywhere:
-        if its name says it is a degree, she is asked for her higher results before she submits, even when the
-        pathway saved with it says otherwise.</>,
+        if its name says it is a degree, she is asked for her higher results before she submits, even when an old
+        Form Six pathway is saved with it. A preparatory programme (&ldquo;Persediaan&rdquo;, &ldquo;Degree
+        Program&rdquo;) is not a degree by its name, and a PISMP, Asasi, Matriculation or Diploma pathway wins over
+        the name, because those take SPM entry.</>,
     },
     {
       q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,

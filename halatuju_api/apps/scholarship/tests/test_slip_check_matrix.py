@@ -53,8 +53,14 @@ SPM_ROWS = CORE_ROWS + [{'subject': 'FIZIK', 'grade': 'A'}]
 SHORT_ROWS = [r for r in SPM_ROWS if r['subject'] != 'MATEMATIK']   # a compulsory subject dropped
 
 
-def spm_read(rows):
-    return {'candidate_name': 'PRIYA', 'exam': 'SIJIL PELAJARAN MALAYSIA 2024', 'results': rows}
+def spm_read(rows, printed=None):
+    """An SPM slip read; `printed` = the subject total the slip prints ("JUMLAH MATA PELAJARAN : ENAM"),
+    carried the way a Gemini read keeps it (its word capture, `printed_subject_count`)."""
+    out = {'candidate_name': 'PRIYA', 'exam': 'SIJIL PELAJARAN MALAYSIA 2024', 'results': rows}
+    if printed:
+        words = f'SIJIL PELAJARAN MALAYSIA JUMLAH MATA PELAJARAN : {printed}'.split()
+        out['_slip_ocr_diag'] = {'reason': 'parse_none', 'capture': [{'text': w} for w in words]}
+    return out
 
 
 STPM_ROWS = [{'subject': 'PENGAJIAN AM', 'grade': 'A'}, {'subject': 'MATEMATIK (T)', 'grade': 'A-'},
@@ -183,9 +189,10 @@ MATRIX = [
     # Q2 (changed 2026-11-13): Pengajian Am not read = a short read; what it missed is named, holds Certain.
     R('B', 'short_read', Case(STPM_HELD, DEGREE, higher=(stpm_read(STPM_ROWS[1:]), GENUINE)), PROBABLE,
       unresolved=('academic_grades_unchecked',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='pending')),
-    # Q3 (changed 2026-11-13): an entered STPM subject not on a full read is flagged, red like missing.
+    # Q3 (changed 2026-11-13): an entered STPM subject not on a full EXACT read is flagged, red like
+    # missing (an AI read cannot tell "not printed" from "skipped": see EXTRA B:extra_typed_ai_read).
     R('B', 'extra_typed', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'BIOLOGY': 'C'}}, DEGREE,
-                               higher=(stpm_read(), GENUINE)), PROBABLE,
+                               higher=(stpm_read(), GENUINE, EXACT_READ)), PROBABLE,
       unresolved=('academic_extra_subjects',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='mismatch')),
     R('B', 'subject_missing', Case({**STPM_HELD, 'stpm_grades': {k: v for k, v in STPM_GRADES.items()
                                                                 if k != 'CHEMISTRY'}}, DEGREE,
@@ -285,12 +292,39 @@ EXTRA = [
     # Table F before submit: the live rule requires the higher results, so none on file is Fail.
     R('F', 'checked_before_submit', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE)), FAIL,
       unresolved=('higher_results_missing',), slip_chips=slip_chips()),
+    # Q1 review (2026-11-13): the slip prints SIX subjects, the read caught five, all five typed found.
+    # The sixth row was never seen, so no green Subjects chip and at best Probable, the reason named.
+    R('A', 'short_read_printed_count', Case(SPM_HELD, POST_SPM, slip=(spm_read(SPM_ROWS, 'ENAM'), GENUINE)),
+      PROBABLE, unresolved=('academic_slip_rows_unread',), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='pending')),
+    R('F', 'short_read_printed_count', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS, 'ENAM'), GENUINE),
+                                            stage=SUBMITTED), UNSURE,
+      unresolved=(NOT_DECLARED, 'academic_slip_rows_unread'), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='pending')),
+    # The printed count met (six printed, six read): a full read, Certain - so the row above is the count.
+    R('A', 'full_read_printed_count', Case({**SPM_HELD, 'grades': {**SPM_TYPED, 'chem': 'A'}}, POST_SPM,
+                                           slip=(spm_read(SPM_ROWS + [{'subject': 'KIMIA', 'grade': 'A'}], 'ENAM'),
+                                                 GENUINE)),
+      CERTAIN, evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    # Q3 review (2026-11-13): an AI read that skipped a row (3 of 4, Pengajian Am read, every row
+    # recognised) never calls the typed subject it skipped "not on the slip": amber, named.
+    R('B', 'skipped_row_ai_read', Case(STPM_HELD, DEGREE, higher=(stpm_read(STPM_ROWS[:3]), GENUINE)), PROBABLE,
+      unresolved=('academic_grades_unchecked',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='pending')),
+    R('B', 'extra_typed_ai_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'BIOLOGY': 'C'}}, DEGREE,
+                                       higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('academic_grades_unchecked',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='pending')),
     # Table B grade difference, Q4 (changed 2026-11-13): a +/- STPM difference (typed A, slip A-) on an
     # AI read is amber "check by eye"; the PNGK it moves is still a red CGPA difference.
     R('B', 'pm_grade_ai_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
                                     higher=(stpm_read(), GENUINE)), PROBABLE,
       unresolved=('higher_results_grade_uncertain', 'higher_results_cgpa_mismatch'), evidence=HIGHER_OK[:2],
       higher_chips=higher_chips(cgpa='mismatch', grades='pending')),
+    # Q4, the +/- alone: the slip's PNGK matches her typed grades (3.75), so the amber difference is
+    # the ONLY thing holding the card from Certain.
+    R('B', 'pm_grade_only', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
+                                 higher=(stpm_read(cgpa='3.75'), GENUINE)), PROBABLE,
+      unresolved=('higher_results_grade_uncertain',), evidence=HIGHER_OK,
+      higher_chips=higher_chips(grades='pending')),
     # Q4: the same difference on the deterministic exact read (letter and point agree) stays red.
     R('B', 'pm_grade_exact_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
                                        higher=(stpm_read(), GENUINE, EXACT_READ)), PROBABLE,
@@ -364,11 +398,51 @@ class SlipCheckMatrix(TestCase):
                 self.assertTrue(declared_kind(_app(held, DEGREE)))
 
     def test_matriculation_and_diploma_store_no_suspect(self):
-        # C3, D3, E3: the matric / polytechnic scorer stores genuine or nothing; Asasi is never scored.
-        from apps.scholarship.genuineness import matric_poly_doc
-        src = inspect.getsource(matric_poly_doc)
-        self.assertIn('No suspect is ever stored', src)
-        self.assertIn('Asasi are never scored', src)
+        # C3, D3, E3: the matric / polytechnic scorer returns genuine, a not-final ruling or nothing -
+        # never suspect - on any page, a weak or forged-looking one included; Asasi and a UiTM
+        # diploma are never scored at all.
+        from apps.scholarship.genuineness.matric_poly_doc import matric_poly_higher_genuineness as score
+        for text in PAGES_NEVER_SUSPECT:
+            with self.subTest(text[:40]):
+                self.assertNotEqual(score(text).get('status'), 'suspect')
+        for text in (ASASI_PAGE, UITM_DIPLOMA_PAGE):
+            with self.subTest(text[:40]):
+                self.assertEqual(score(text), {})
+
+    def test_every_unreachable_cell_has_a_probe(self):
+        # Q8: each "cannot happen" reason is one a probe above shows; no cell is waved through.
+        probed = {NO_FINAL_RULE, NO_SUBJECTS, DECLARED, *UNSCORED_REASONS}
+        self.assertEqual({r.unreachable for r in MATRIX if r.unreachable} - probed, set())
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class Q5UnscoredHigherResults(TestCase):
+    """Q5 (keep, owner 2026-11-13): Asasi and a non-polytechnic Diploma can never be scored, so even a
+    clean read stops at Probable, with "not checked" said on the card."""
+
+    def test_unscored_asasi_and_diploma_stop_at_probable(self):
+        for held, kind, cgpa in ((ASASI_HELD, 'asasi', '3.40'), (DIPLOMA_HELD, 'diploma', '3.20')):
+            with self.subTest(kind):
+                app = _app({**held, 'higher_institution_type': 'private'}, DEGREE)
+                _doc(app, 'higher_results', cgpa_read(kind, cgpa))
+                fact = _academic(app)
+                self.assertEqual(fact['status'], PROBABLE)
+                self.assertIn('higher_results_not_checked', {i['code'] for i in fact['evidence']})
+
+
+#: Pages fed to the matric / polytechnic scorer (C3, D3): weak, partial and forged-looking ones.
+PAGES_NEVER_SUSPECT = (
+    'KEMENTERIAN PENDIDIKAN MALAYSIA BAHAGIAN MATRIKULASI TRANSKRIP AKADEMIK SEMESTER I SEMESTER II '
+    'MATA NILAIAN PNGK 3.50',
+    'BAHAGIAN MATRIKULASI SLIP KEPUTUSAN PEPERIKSAAN SEMESTER I',
+    'POLITEKNIK SULTAN SALAHUDDIN ABDUL AZIZ SHAH TRANSKRIP AKADEMIK CODE COURSE CREDIT GRADE CGPA 3.20',
+    'TRANSKRIP AKADEMIK DIPLOMA PNGK 4.00 LULUS',
+)
+ASASI_PAGE = 'UNIVERSITI MALAYA PUSAT ASASI SAINS ASASI SAINS HAYAT KEPUTUSAN PEPERIKSAAN PNGK 3.40'
+UITM_DIPLOMA_PAGE = 'UNIVERSITI TEKNOLOGI MARA DIPLOMA SAINS TRANSKRIP AKADEMIK PNGK 3.20'
+UNSCORED_REASONS = ('matriculation pages are stored genuine or not checked, never suspect (ruling 4, 2026-10-29)',
+                    'diploma pages are stored genuine or not checked, never suspect (ruling 4, 2026-10-29)',
+                    'no Asasi page is ever scored')
 
 
 class RouteCoverage(TestCase):
@@ -404,7 +478,13 @@ class RouteCoverage(TestCase):
                     self.assertIn(self.TABLE_FOR[(held, dest)], tables)
 
     def test_degree_bound_has_a_table_both_ways(self):
-        # degree_bound True for an SPM holder = Table F; False = Table A.
-        self.assertEqual(inspect.signature(results_route.degree_bound).return_annotation, 'bool')
-        self.assertEqual({self.TABLE_FOR[('spm', results_route.DEGREE)],
-                          self.TABLE_FOR[('spm', results_route.POST_SPM)]}, {'F', 'A'})
+        # The REAL degree_bound on every SPM-holder row's own application: True on each Table F row,
+        # False on each Table A row - so both answers have a table and no row sits in the wrong one.
+        rows = [r for r in MATRIX + EXTRA if r.table in ('A', 'F') and r.case]
+        seen = set()
+        for r in rows:
+            with self.subTest(r.id):
+                got = results_route.degree_bound(_app(r.case.profile, r.case.plan, r.case.stage))
+                self.assertEqual(got, r.table == 'F')
+                seen.add(got)
+        self.assertEqual(seen, {True, False})

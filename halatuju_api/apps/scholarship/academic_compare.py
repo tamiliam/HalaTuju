@@ -198,9 +198,14 @@ def spm_slip_compare(profile, slip) -> dict:
         if not profile or not is_tertiary(results_held(profile)):
             # F1 Q1 (owner 2026-11-13, rule table): a SHORT read checked only the rows it caught - the
             # typed subjects it missed are named ("check by eye"), and it is not complete (no tick).
-            unchecked = cmp['typed_ungraded'] if cmp['short_read'] else []
+            # Review (2026-11-13): a short read is never complete, even when every TYPED subject was
+            # caught - the slip prints rows the read did not reach (a "JUMLAH MATA PELAJARAN : ENAM"
+            # slip read as five), so no green Subjects chip; `rows_unread` names that reason.
+            short = cmp['short_read']
+            unchecked = cmp['typed_ungraded'] if short else []
             return {**cmp, 'checked_count': cmp['slip_count'], 'unchecked': unchecked,
-                    'complete': cmp['complete'] and not unchecked, 'subjects_open': bool(unchecked)}
+                    'complete': cmp['complete'] and not short, 'subjects_open': short,
+                    'rows_unread': short and not unchecked}
         # #62 review 2: a tick needs at least one entered subject grade-checked on the slip (never
         # "All 0 grades match"); review 3: every entered subject must be checked (or flagged extra).
         checked, unchecked = cmp['typed_graded'], cmp['typed_ungraded']
