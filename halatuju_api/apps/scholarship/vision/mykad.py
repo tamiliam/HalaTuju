@@ -1,6 +1,7 @@
 """MyKad OCR-text parse: NRIC, name and address off the card (moved verbatim from ``vision.py``,
 audit sprint A3.1)."""
 
+import math
 import re
 
 from .names import _NAME_NOISE
@@ -212,7 +213,9 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
     return _guard_garbled(_with_broken_name_parts(max(candidates, key=len), lines))
 
 
-_MY_POSTCODE = re.compile(r'\b\d{5}\b')
+# Five digits standing alone as a number. Not ``\b`` on the right: OCR often glues the town to the
+# postcode ("47000SUNGAI BULOH"), and a word boundary never falls between a digit and a letter.
+_MY_POSTCODE = re.compile(r'(?<![\d-])\d{5}(?!\d)')
 
 # Words that prefix any MyKad address line — drop them so the displayed value
 # is just the address itself. Case-insensitive, anchored at the start of a line.
@@ -259,7 +262,7 @@ def _is_card_label_line(ln: str) -> bool:
     return bool(words) and all(w.upper() in _ADDRESS_LABEL_TOKENS for w in words)
 
 
-def _extract_address(text: str) -> str:
+def _extract_address(text: str, skip=()) -> str:
     """
     Best-effort MyKad address extraction. The MyKad front shows the holder's
     registered home address as 3 lines: street, ``<5-digit postcode> <city>``,
@@ -268,11 +271,15 @@ def _extract_address(text: str) -> str:
     pick up the very next line if it matches a known Malaysian state.
     Returns ``''`` when no postcode-anchored block is found.
 
+    ``skip``: the card's name lines as the layout read found them (request #67) — a name line
+    with no A/L, A/P, BIN or "@" is otherwise taken for the first line of the address.
+
     Soft signal only — admin can spot e.g. an outdated registered address that
     differs from what the student typed in the Story tab. No verdict computed.
     """
     if not text:
         return ''
+    skip_keys = {_compact(ln) for ln in skip if _compact(ln)}
     lines = [ln.strip() for ln in text.splitlines()]
     # Find the postcode line.
     postcode_idx = -1
@@ -306,7 +313,7 @@ def _extract_address(text: str) -> str:
         # soft-signal noise. The earlier "all-caps no-digits → drop" filter
         # was too aggressive — it dropped legit address lines like
         # "TAMAN SEMANGAT" / "KAMPUNG ABC" / "BANDAR XYZ".
-        if _NAME_NOISE.search(ln):
+        if _NAME_NOISE.search(ln) or _compact(ln) in skip_keys:
             continue
         # Strip a leading "Alamat" / "Address" label if Vision read one.
         ln = _ADDRESS_PREFIX_NOISE.sub('', ln).strip()
@@ -327,3 +334,158 @@ def _extract_address(text: str) -> str:
         seen.add(key)
         deduped.append(ln)
     return ', '.join(deduped)
+
+
+# ── The layout read (request #67) ─────────────────────────────────────────────────────────────
+# The flattened OCR text keeps the ORDER of the lines but loses where they sit, so the text read
+# above has to guess where the name ends — from A/L, A/P or BIN. A name that runs onto a second
+# line after a mid-line marker, or that has no marker at all (many Chinese, Christian and Iban
+# names), lost a line to the address. The card itself is unambiguous: the name is printed under
+# the IC number, and a blank line separates it from the address. The word boxes from the same
+# Vision call show that blank line, so the layout read uses it.
+
+def _compact(s: str) -> str:
+    """Letters and digits only, upper case — compares one read of a line with another however
+    the OCR spaced or punctuated it ("A / L" and "A/L" are the same line)."""
+    return re.sub(r'[^A-Z0-9]', '', (s or '').upper())
+
+
+# A line that opens with one of these is the start of an address, never a name's second line —
+# a guard for a card whose blank line the photo did not show.
+_ADDRESS_OPENERS = frozenset({
+    'NO', 'LOT', 'JALAN', 'JLN', 'TAMAN', 'TMN', 'KAMPUNG', 'KAMPONG', 'KG', 'BLOK', 'BLK',
+    'LORONG', 'LRG', 'PERSIARAN', 'LENGKOK', 'APARTMENT', 'APT', 'PANGSAPURI', 'FLAT', 'RUMAH',
+    'BANDAR', 'BDR', 'BATU', 'PPR', 'UNIT', 'TINGKAT', 'ESTATE', 'LADANG', 'MUKIM', 'SIMPANG',
+})
+
+_SPACED_MARKER = re.compile(r'\b([AaSsDd])\s*/\s*([LlPpOo])\b')
+
+
+def _median(xs):
+    xs = sorted(xs)
+    return xs[len(xs) // 2] if xs else 0.0
+
+
+def _card_lines(words) -> list[dict]:
+    """The card's printed lines, from the word boxes: words that sit on the same baseline AND
+    are close along it are one line; a wide horizontal gap starts another (the right-hand
+    column — WARGANEGARA, LELAKI, ISLAM — never joins a name or address line). Each line is
+    ``{'text', 'u0', 'v', 'h', 'n'}``: its start along the text, its height down the card, its
+    letter height and word count. The card is de-rotated by the words' median baseline angle,
+    so a tilted or sideways photo reads the same as an upright scan."""
+    ws = [w for w in words if (w.get('text') or '').strip()]
+    if not ws:
+        return []
+    theta = math.radians(_median([w['angle'] for w in ws if w.get('angle') is not None]))
+    cos, sin = math.cos(theta), math.sin(theta)
+    pts = []
+    for w in ws:
+        wh = w.get('wh') or w.get('h') or 0
+        wlen = w.get('wlen') or 0.8 * wh * len(w['text'])
+        u = w['cx'] * cos + w['cy'] * sin            # along the text
+        v = -w['cx'] * sin + w['cy'] * cos           # down the card
+        pts.append({'t': w['text'], 'u0': u - wlen / 2, 'u1': u + wlen / 2, 'v': v, 'h': wh})
+    lh = _median([p['h'] for p in pts if p['h']]) or 12.0
+    # Join each word to its neighbour on the same baseline (union-find over the close pairs).
+    parent = list(range(len(pts)))
+
+    def root(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for i, a in enumerate(pts):
+        for j in range(i + 1, len(pts)):
+            b = pts[j]
+            if abs(a['v'] - b['v']) > 0.5 * lh:
+                continue
+            gap = max(b['u0'] - a['u1'], a['u0'] - b['u1'])
+            if gap <= 1.5 * lh:
+                parent[root(i)] = root(j)
+    groups: dict = {}
+    for i, p in enumerate(pts):
+        groups.setdefault(root(i), []).append(p)
+    lines = []
+    for g in groups.values():
+        g.sort(key=lambda p: p['u0'])
+        text = g[0]['t']
+        for a, b in zip(g, g[1:]):
+            # A slash or a full stop the OCR boxed as its own word sits flush against its
+            # neighbours ("A" "/" "L") — no space there; a real word gap gets one.
+            text += ('' if b['u0'] - a['u1'] < 0.15 * lh else ' ') + b['t']
+        lines.append({'text': text, 'u0': g[0]['u0'], 'v': _median([p['v'] for p in g]),
+                      'h': _median([p['h'] for p in g]), 'n': len(g)})
+    lines.sort(key=lambda ln: ln['v'])
+    return lines
+
+
+def _name_part_line(text: str) -> bool:
+    """Could this line be part of a name: capitals, no digits, mostly letters, not card chrome,
+    not an address opener. Looser than _is_name_line on length — a second line can be one short
+    word ("LIM", "@ ALI")."""
+    if not text or any(ch.isdigit() for ch in text) or text.upper() != text:
+        return False
+    letters = sum(1 for ch in text if ch.isalpha())
+    if letters < 2 or letters / max(len(text.replace(' ', '')), 1) < 0.6:
+        return False
+    words = [w for w in re.split(r'[^A-Za-z]+', text) if w]
+    if not words or all(w.upper() in _MYKAD_HEADER_TOKENS | _ADDRESS_LABEL_TOKENS for w in words):
+        return False
+    return words[0].upper() not in _ADDRESS_OPENERS
+
+
+def _layout_read(words, text: str, nric: str):
+    """The name and address from where the lines sit on the card, or None when the layout
+    cannot be read with confidence (no word boxes, no IC number line, nothing name-like under
+    it) — the caller then keeps the line-order read. Returns ``{'name', 'name_lines',
+    'address'}``: ``name_lines`` as Vision's own text lines where they match (so the address
+    read can skip them), ``address`` the lines after the blank line (used only when the
+    postcode-anchored read finds nothing — a blurred or glued postcode)."""
+    if not words or not nric:
+        return None
+    lines = _card_lines(words)
+    key = _compact(nric)
+    at = next((i for i, ln in enumerate(lines) if key and key in _compact(ln['text'])), -1)
+    if at < 0:
+        return None
+    nric_ln = lines[at]
+    below = [ln for ln in lines[at + 1:]
+             if ln['v'] > nric_ln['v'] + 0.5 * (nric_ln['h'] or 1) and not _is_card_label_line(ln['text'])]
+    if not below:
+        return None
+    # The name's first line: the top line under the IC number on the card's left. The photo
+    # and its labels sit to the right, so a line far right of the IC number is not it.
+    lh = _median([ln['h'] for ln in below if ln['h']]) or nric_ln['h'] or 12.0
+    first = next((ln for ln in below if ln['u0'] <= nric_ln['u0'] + 6 * lh), None)
+    if first is None or not _name_part_line(first['text']):
+        return None
+    left = [ln for ln in below if abs(ln['u0'] - first['u0']) <= 1.5 * lh and ln['v'] >= first['v']]
+    # The ordinary line spacing on this card, and the blank line: a step clearly wider than it.
+    steps = [b['v'] - a['v'] for a, b in zip(left, left[1:]) if b['v'] - a['v'] > 0.5 * lh]
+    pitch = min(steps) if len(steps) >= 2 else 1.5 * lh
+    gap_at = 1.6 * pitch
+    block, rest = [left[0]], []
+    for prev, ln in zip(left, left[1:]):
+        if rest or ln['v'] - prev['v'] > gap_at or len(block) == 3 or not _name_part_line(ln['text']):
+            rest.append(ln)
+        else:
+            block.append(ln)
+    # Prefer Vision's own text line where one reads the same as the layout line (its spacing
+    # and punctuation are the card's); else the layout line. Either way "A / L" is closed up.
+    by_key = {}
+    for t in (text or '').splitlines():
+        by_key.setdefault(_compact(t), t.strip())
+    name_lines = [_SPACED_MARKER.sub(lambda m: f'{m.group(1)}/{m.group(2)}'.upper(),
+                                     by_key.get(_compact(ln['text'])) or ln['text']) for ln in block]
+    # A slash the OCR dropped ("THEEPICAA AP" then the surname) is closed up as the line-order
+    # read does — only where a further name line follows the marker.
+    fixed = []
+    for i, ln in enumerate(name_lines):
+        canon = _trailing_marker_canonical(ln) if i + 1 < len(name_lines) else ''
+        fixed.append(_replace_trailing_marker(ln, canon) if canon else ln)
+    name = _guard_garbled(re.sub(r'\s+', ' ', ' '.join(fixed)).strip())
+    if not name:
+        return None
+    address = ', '.join(a for a in (_ADDRESS_PREFIX_NOISE.sub('', ln['text']).strip()
+                                    for ln in rest[:5]) if a)
+    return {'name': name, 'name_lines': name_lines, 'address': address}

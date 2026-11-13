@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — Request #67 (scope 2): the MyKad name and address are read from the card's layout (bug, no charge; owner 2026-11-13)
+
+**The fault:** the MyKad read worked on Vision's flattened text, which keeps the order of the lines but not where they sit. It guessed where the name ended from A/L, A/P or BIN. A name that ran onto a second line after a mid-line marker, or had no marker at all (many Christian, Chinese and Iban names), lost that line, which then opened the address. Two names lost their FIRST line instead (the marker sat on the second). 15 BrightPath students (apps 181, 190, 243, 305, 358, 391, 399, 442, 530, 552, 559, 573, 581, 602, 626). The truncated name reads `partial`, so `_should_gemini_ic` never escalated it.
+
+**The rule:** `_vision_document_text` now also returns the word boxes from the same response (no extra Vision call). `mykad._layout_read` rebuilds the card's printed lines (same baseline AND close along it; the card is de-rotated by the median word angle, so a tilted or sideways photo reads the same) and takes the name as the left-aligned lines from under the IC number down to the blank line: a step wider than 1.6× the card's ordinary line spacing, at most three lines, every line name-like (capitals, no digits, not card chrome, not opening with an address word such as NO, LOT, JALAN, TAMAN, KAMPUNG). The address read skips those name lines; when it finds no postcode, the lines after the blank line are the address.
+
+**Guard:** the layout name is taken only when it CONTAINS the line-order name (letters and digits compared), so it can add name parts but never replace the name with another line. No word boxes (a test seam, a failed read) = the old read, unchanged. Parents' cards use the same reader.
+
+**Also:** the postcode no longer needs a word boundary on its right (`47000SUNGAI BULOH` was no postcode, so no address); a spaced "A / L" in a name is closed up to "A/L".
+
+**Scope:** the stored IC read (`vision_name`, `vision_address`) on the next read of a card. No verdict logic changes, so `VERDICT_ENGINE_VERSION` is not bumped; existing cards change only when re-read.
+
+**Not checked yet:** real cards. Word boxes are not stored, so checking the change against the cards on file, and re-reading the 15 students' cards after release, are paid Vision reads that need the owner's word.
+
 ## 2026-11-13 — Every Team table heading sorts, except Action (owner, Sprint M2d addendum A2)
 
 **The rule:** on Members, Admins, Reviewers, Mentors and Invitations every heading sorts except Action. It supersedes the earlier ruling that kept Last seen a plain heading.

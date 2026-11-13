@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #67 (scope 2) - the MyKad name keeps its second line; the address no longer opens with part of the name (2026-11-13)
+- The IC read guessed where the name ended from A/L, A/P or BIN in Vision's flattened text, so a name running onto a second line after a mid-line marker, or with no marker, lost that line to the address (15 BrightPath students; two lost the first line instead).
+- `mykad._layout_read` reads the card's layout from the word boxes of the same Vision call (`_vision_document_text` now returns `words`; no extra call): the name is the left-aligned lines from under the IC number down to the blank line; the address read skips them, and falls back to the lines after the blank line when no postcode is read. De-rotated, so a tilted or sideways photo reads the same. Taken only when it contains the line-order name (adds parts, never swaps the name). Parents' cards too.
+- The postcode may be glued to the town (`47000SUNGAI`); "A / L" is closed up to "A/L". `extract_text` still returns text and error only.
+- Stored reads change on the next read of a card; no verdict logic change, `VERDICT_ENGINE_VERSION` unchanged. Tests: `test_req67_ic_layout.py` (21).
+
 ### chore: W1 page weight - dated re-baseline of the first-load lines (2026-11-13)
 
 Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four lines raised for Next 15 / React 19

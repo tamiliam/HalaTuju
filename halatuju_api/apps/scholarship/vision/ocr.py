@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from ..pdf_pages import MIN_TEXT_LAYER_CHARS as _MIN_PDF_TEXT, usable_text_layer as _usable_text_layer
-from .mykad import _extract_address, _extract_name, _extract_nric
+from .mykad import _compact, _extract_address, _extract_name, _extract_nric, _layout_read
 from .gemini_read import _as_image_for_gemini
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
@@ -52,16 +52,44 @@ def _vision_document_text(image_bytes: bytes) -> dict:
         usage.record_usage(usage.VISION_OCR)   # billable Cloud Vision call — best-effort meter
         if resp.error and resp.error.message:
             return {'text': '', 'error': resp.error.message[:200]}
-        return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '', 'error': None}
+        # Request #67: the SAME response carries the word boxes. The MyKad read uses them to see
+        # the blank line between the name and the address; every other caller reads 'text' only.
+        return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '',
+                'words': _words_of(resp), 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
         logger.warning('Vision OCR failed: %s', e)
         return {'text': '', 'error': str(e)[:200]}
 
 
+def _words_of(resp) -> list:
+    """Per-word boxes from a Vision response: ``{text, cx, cy, h, angle, wlen, wh}``.
+    ``text_annotations[0]`` is the whole text; ``[1:]`` are the words. ``angle`` is the
+    baseline (vertex0→vertex1, degrees): 0 upright, ~±90 when the photo is sideways.
+    ``wlen`` / ``wh`` are the word's length and height along its OWN baseline, so they
+    stay right on a rotated photo (``h`` is the plain vertical extent, kept as it was)."""
+    words = []
+    for ann in resp.text_annotations[1:]:
+        vs = ann.bounding_poly.vertices
+        xs = [v.x for v in vs]
+        ys = [v.y for v in vs]
+        if not xs or not ys:
+            continue
+        angle = wlen = wh = None
+        if len(vs) >= 2:
+            angle = math.degrees(math.atan2(vs[1].y - vs[0].y, vs[1].x - vs[0].x))
+            wlen = math.hypot(vs[1].x - vs[0].x, vs[1].y - vs[0].y)
+        if len(vs) >= 3:
+            wh = math.hypot(vs[2].x - vs[1].x, vs[2].y - vs[1].y)
+        words.append({'text': ann.description,
+                      'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
+                      'h': max(ys) - min(ys), 'angle': angle, 'wlen': wlen, 'wh': wh})
+    return words
+
+
 def _vision_words(data: bytes, content_type: str = '') -> dict:
     """Google Vision DOCUMENT_TEXT_DETECTION → per-WORD boxes (kept, not flattened) for
     positional table parsing — used by the results-slip deterministic reader to pair
-    each subject with the grade on its own row. Returns ``{'words': [{text, cx, cy, h}],
+    each subject with the grade on its own row. Returns ``{'words': [see _words_of], 'text',
     'error'}``; rasterises a PDF first. Graceful — never raises. (A separate seam from
     ``_vision_document_text`` so tests can patch it independently.)"""
     img, _mime = _as_image_for_gemini(data, content_type)
@@ -84,24 +112,9 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
         # too, so one billable call can serve both the positional parsers (words) and the
         # text consumers (name/address match, label parsers). See ocr_document_full.
         text = resp.full_text_annotation.text if resp.full_text_annotation else ''
-        words = []
-        # text_annotations[0] is the whole text; [1:] are individual words with boxes.
-        for ann in resp.text_annotations[1:]:
-            vs = ann.bounding_poly.vertices
-            xs = [v.x for v in vs]
-            ys = [v.y for v in vs]
-            if not xs or not ys:
-                continue
-            # Baseline angle (top edge vertex0→vertex1, degrees): 0 upright, ~±90 when the
-            # photo is sideways. The deterministic parser de-rotates the table by this so a
-            # rotated slip still parses instead of falling back to Gemini (which transposes).
-            angle = None
-            if len(vs) >= 2:
-                angle = math.degrees(math.atan2(vs[1].y - vs[0].y, vs[1].x - vs[0].x))
-            words.append({'text': ann.description,
-                          'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
-                          'h': max(ys) - min(ys), 'angle': angle})
-        return {'words': words, 'text': text, 'error': None}
+        # The baseline angle lets the deterministic slip parser de-rotate a sideways photo
+        # instead of falling back to Gemini (which transposes).
+        return {'words': _words_of(resp), 'text': text, 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful
         logger.warning('Vision word OCR failed: %s', e)
         return {'words': [], 'text': '', 'error': str(e)[:200]}
@@ -125,10 +138,21 @@ def extract_mykad(data: bytes, content_type: str = '') -> dict:
         return {'nric': '', 'name': '', 'address': '', 'error': r['error']}
     text = r['text']
     nric = _extract_nric(text)
+    name = _extract_name(text, nric)
+    address = _extract_address(text)
+    # Request #67: where the word boxes came back, read the card's layout — the name runs from
+    # the IC number down to the blank line, the address follows it. This recovers a name's
+    # second line (or first) that the line-order read drops into the address. The layout read
+    # is only taken when it CONTAINS the line-order name, so it can add name parts, never swap
+    # the name for another line.
+    layout = _layout_read(r.get('words') or [], text, nric)
+    if layout and _compact(name) in _compact(layout['name']):
+        name = layout['name']
+        address = _extract_address(text, skip=layout['name_lines']) or layout['address']
     return {
         'nric': nric,
-        'name': _extract_name(text, nric),
-        'address': _extract_address(text),
+        'name': name,
+        'address': address,
         'error': None,
     }
 
@@ -171,7 +195,8 @@ def extract_text(data: bytes, content_type: str = '') -> dict:
         if img is None:
             return {'text': '', 'error': 'Bad image data.'}
         data = img
-    return _v._vision_document_text(data)
+    r = _v._vision_document_text(data)
+    return {'text': r.get('text', ''), 'error': r.get('error')}   # text only: the boxes are the MyKad read's
 
 
 def _doc_usage_ctx(doc, source='doc_extract'):
