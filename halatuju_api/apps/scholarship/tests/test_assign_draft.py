@@ -32,8 +32,8 @@ class TestFirstAssignDraft(TestCase):
     def setUp(self):
         self.app = make_application('profile_complete')
         self.super = make_admin(super_admin=True)
-        self.reviewer = make_admin('reviewer', owning_org=self.app.owning_organisation, name='Rohini')
-        self.reviewer2 = make_admin('reviewer', owning_org=self.app.owning_organisation, name='Kavin')
+        self.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=self.app.owning_organisation, name='Rohini')
+        self.reviewer2 = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=self.app.owning_organisation, name='Kavin')
 
     def _assign(self, reviewer):
         assignment.assign_reviewer(self.app, reviewer=reviewer, by_admin=self.super)
@@ -120,7 +120,7 @@ class TestFirstAssignDraft(TestCase):
             self.assertEqual(assign_draft.draft_pending(time.monotonic())['done'], 1)
         other = make_application('profile_complete')
         assignment.assign_reviewer(other, reviewer=make_admin(
-            'reviewer', owning_org=other.owning_organisation), by_admin=self.super)
+            'reviewer', owning_org=other.owning_organisation, first_seen_at=timezone.now()), by_admin=self.super)
         SponsorProfile.objects.filter(application=other).update(
             finalise_claimed_at=old, finalise_attempts=assign_draft.MAX_ATTEMPTS)
         with patch(GENERATE) as gen:
@@ -203,6 +203,6 @@ class TestFlagOff(TestCase):
         sup = make_admin(super_admin=True)
         with patch(GENERATE) as gen:
             assignment.assign_reviewer(app, reviewer=make_admin(
-                'reviewer', owning_org=app.owning_organisation), by_admin=sup)
+                'reviewer', owning_org=app.owning_organisation, first_seen_at=timezone.now()), by_admin=sup)
         gen.assert_not_called()
         self.assertFalse(SponsorProfile.objects.filter(application=app).exists())

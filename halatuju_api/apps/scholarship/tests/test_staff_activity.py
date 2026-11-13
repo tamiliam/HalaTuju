@@ -58,7 +58,7 @@ class _Base(TestCase):
         cls.superadmin = make_admin('super', super_admin=True)
         cls.org_admin = make_admin('org_admin', owning_org=cls.org)
         cls.reviewer = make_admin('reviewer', owning_org=cls.org)
-        cls.reviewer2 = make_admin('reviewer', owning_org=cls.org)
+        cls.reviewer2 = make_admin('reviewer', owning_org=cls.org, first_seen_at=timezone.now())   # M2d A1
         cls.qc = make_admin('qc', owning_org=cls.org)
 
     def app(self, stage, **kw):

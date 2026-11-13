@@ -36,7 +36,7 @@ class PhaseCBase(TestCase):
             name='Super', email='super@example.com',
         )
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id=REVIEWER, role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id=REVIEWER, role='reviewer', is_active=True,
             owning_organisation=org, name='Reviewer', email='reviewer@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(

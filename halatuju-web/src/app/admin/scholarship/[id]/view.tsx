@@ -136,7 +136,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const interview = useInterview(ctx)
   const requests = useRequests(ctx)
   const postAward = usePostAward(ctx, canManageSources)
-  const actions = useCaseActions(ctx)
+  const actions = useCaseActions(ctx, admins)
   const { officerVerdict, loadVerdictState } = verdict
   const { findings, loadInterviewState } = interview
   // The load below needs the CURRENT hooks' handlers and `t`, but must fire on `token`/`id` alone: the

@@ -231,9 +231,10 @@ function StaffScholarshipList() {
     } catch (e) {
       const code = e instanceof Error ? e.message : ''
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'not_assignable', 'findings_submitted', 'gift_mismatch']
+                     'not_assignable', 'findings_submitted', 'gift_mismatch', 'not_signed_in']
       setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
-        ? t(`admin.scholarship.assign.error.${code}`)
+        ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
+          ? { name: reviewers.find((r) => r.id === reviewerId)?.name ?? '' } : undefined)
         : t('admin.scholarship.assignError') }))
     }
   }

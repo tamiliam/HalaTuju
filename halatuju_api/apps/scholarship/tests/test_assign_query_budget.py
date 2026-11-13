@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 from django.db import connection
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.test.utils import CaptureQueriesContext
 from django.urls import resolve
 
@@ -56,8 +57,8 @@ class TestTheAssignQueryBudget(TestCase):
         fixture = key.split('::')[2]
         org = make_org()
         cohort = make_cohort(programme=make_programme(organisation=org), owning_organisation=org)
-        first = make_admin('reviewer', owning_org=org, name='First')
-        second = make_admin('reviewer', owning_org=org, name='Second')
+        first = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=org, name='First')
+        second = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=org, name='Second')
 
         def case():
             if fixture == 'reassign':

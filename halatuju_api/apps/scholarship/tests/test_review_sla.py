@@ -101,10 +101,10 @@ class EveryCallerReadsTheOneClockTests(TestCase):
     def setUpTestData(cls):
         cls.org = PartnerOrganisation.objects.create(code='sla-callers', name='SLA Callers')
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='sla-rev', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='sla-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Rohini', email='rohini@sla.test')
         cls.other_reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='sla-rev2', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='sla-rev2', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Bala', email='bala@sla.test')
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='sla-su', role='super', is_active=True,

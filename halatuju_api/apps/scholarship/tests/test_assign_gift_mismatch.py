@@ -10,6 +10,7 @@ No real student data: every name and address here is synthetic.
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.scholarship import services
 from apps.scholarship.models import AssignmentEvent, ScholarshipApplication
@@ -31,8 +32,8 @@ class _Base(TestCase):
         cls.gift_b = make_programme(organisation=cls.bp, name_en='Gift B')
         cls.oa = make_admin('org_admin', owning_org=cls.bp, uid='gm-oa')
         cls.boss = make_admin('super', super_admin=True, uid='gm-su')
-        cls.rev_a = make_admin('reviewer', owning_org=cls.bp, programme=cls.gift_a, uid='gm-ra')
-        cls.rev_every = make_admin('reviewer', owning_org=cls.bp, uid='gm-re')
+        cls.rev_a = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.bp, programme=cls.gift_a, uid='gm-ra')
+        cls.rev_every = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.bp, uid='gm-re')
 
     def _case(self, programme, **kw):
         return make_application('profile_complete', cohort=make_cohort(programme=programme), **kw)

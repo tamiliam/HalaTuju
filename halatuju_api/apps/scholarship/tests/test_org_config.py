@@ -192,7 +192,7 @@ class TestOrganisationConfigurationEndpoint(TestCase):
             supabase_user_id='oa-b', role='org_admin', is_active=True,
             owning_organisation=cls.org_b, name='OrgAdmin B', email='oab@x.com')
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-a', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rev-a', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Reviewer A', email='reva@x.com')
         cls.superadmin = PartnerAdmin.objects.create(
             supabase_user_id='super-uid', role='super', is_active=True,
@@ -638,7 +638,7 @@ class TestPerOrgReviewClocks(TestCase):
         cls.cohort = _org_cohort('rc-a', cls.org)
         cls.null_cohort = _org_cohort('rc-null', None)
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rc-rev', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rc-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Reviewer RC', email='rc-rev@x.com')
 
     def _assigned_app(self, cohort, suffix, *, days_ago):
@@ -689,7 +689,7 @@ class TestPerOrgReviewClocks(TestCase):
         _configure(self.org, 'review_sla_days', 7)   # the floor since org-timing S1 (was 5)
         app = self._assigned_app(self.cohort, 'c1', days_ago=0)
         other = PartnerAdmin.objects.create(
-            supabase_user_id='rc-rev2', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rc-rev2', role='reviewer', is_active=True,
             owning_organisation=self.org, name='Reviewer Two', email='rc-rev2@x.com')
         superadmin = PartnerAdmin.objects.create(
             supabase_user_id='rc-super', role='super', is_active=True,
@@ -736,7 +736,7 @@ class TestPerOrgStaffClocks(TestCase):
             supabase_user_id='sc-oa', role='org_admin', is_active=True,
             owning_organisation=cls.org, name='OrgAdmin SC', email='sc-oa@x.com')
         cls.rev = PartnerAdmin.objects.create(
-            supabase_user_id='sc-rev', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='sc-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Reviewer SC', email='sc-rev@x.com')
 
     def setUp(self):
@@ -781,7 +781,7 @@ class TestPerOrgStaffClocks(TestCase):
         from django.core.management import call_command
         _configure(self.org, 'temp_password_ttl_days', 1)
         PartnerAdmin.objects.create(
-            supabase_user_id='sc-null', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='sc-null', role='reviewer', is_active=True,
             owning_organisation=None, name='Platform Rev', email='sc-null@x.com')
         issued = (timezone.now() - timedelta(days=3)).isoformat()
         meta = {'must_change_password': True, 'temp_password_issued_at': issued}
@@ -876,7 +876,7 @@ class TestPerOrgInterviewRules(TestCase):
         cls.cohort = _org_cohort('sd-a', cls.org)
         cls.null_cohort = _org_cohort('sd-null', None)
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='sd-rev', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='sd-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Reviewer SD', email='sd-rev@x.com')
 
     def _app(self, cohort, suffix):

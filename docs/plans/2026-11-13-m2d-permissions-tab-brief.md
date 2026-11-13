@@ -91,3 +91,29 @@ phone width in light and dark.
 - A layout that misses a key would hide a power: the D1 guard fails the build instead.
 - The three-way writes two keys at once; the server's dry run stays the judge (refusals unchanged).
 - Shared files with M2c (`messages/*.json`): rebase on main after M2c lands, before the gates.
+
+## Addendum (owner, 2026-11-13)
+
+Two items, each its own commit after D1-D10, before the full gates.
+
+**A1. A reviewer must have signed in before they can be given a case.**
+- "Signed in" = `first_seen_at IS NOT NULL`, ONE home (`staff_lifecycle.has_signed_in`); `payments_chain` points at
+  it, no copy.
+- `may_assign_to` is False for a target who has not signed in. `assign_reviewer` refuses the NEW code
+  `not_signed_in`, en/ms/ta: "{name} hasn't signed in yet. Cases can go to them once they have." Order: revoked,
+  paused, not_signed_in, gift.
+- The picker leaves them out (not greyed): serve, never derive. Re-picking the current holder stays a no-op (T1-d);
+  held cases untouched; no data step.
+- Tests: picker omits them; assign refuses `not_signed_in`; a signed-in reviewer unchanged; holder re-pick still a
+  no-op; `payments_chain`'s own tests unchanged. Grep for other doors that hand out cases. A `decisions.md` entry.
+
+**A2. Every Team-page table header sortable except Action** (Members, Admins, Reviewers, Mentors, Emails, Terms,
+Invitations).
+- One SortHeader pattern, the same arrow placement. A right-aligned number column's header lines up its right edge
+  with the figures ("Awaiting review" on Reviewers was centred with the arrow pushed right).
+- "Last seen": "Not recorded" LAST in both directions (the owner overruled the earlier comment on 2026-11-13).
+  "Also in": by the group names as shown. Status: the same order as Members. Ties break by name.
+- Sorting stays client-side; a server-paginated table that cannot sort a column correctly is reported, not faked.
+- Tests: headers are sortable buttons except Action; Last seen puts Not recorded last both ways.
+
+Release note: the owner's phone check also covers the assign picker and sorting.

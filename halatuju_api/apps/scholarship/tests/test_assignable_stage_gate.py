@@ -34,10 +34,10 @@ class _Base(TestCase):
             supabase_user_id='s', email='s@x.com', name='Super',
             is_active=True, role='super')
         cls.r1 = PartnerAdmin.objects.create(
-            supabase_user_id='r1', email='r1@x.com', name='R1',
+            first_seen_at=timezone.now(), supabase_user_id='r1', email='r1@x.com', name='R1',
             is_active=True, role='reviewer')
         cls.r2 = PartnerAdmin.objects.create(
-            supabase_user_id='r2', email='r2@x.com', name='R2',
+            first_seen_at=timezone.now(), supabase_user_id='r2', email='r2@x.com', name='R2',
             is_active=True, role='reviewer')
 
     def _app(self, status, *, assigned=None):

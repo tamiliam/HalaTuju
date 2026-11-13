@@ -78,7 +78,7 @@ from .ready_profiles import (
 )
 from .assignment import (
     ASSIGNABLE_STATUSES, R1_SUPER_TARGET_ROLES, _UNASSIGN_BLOCKED_STATUSES, _can_review,
-    assign_reviewer, is_assignable, is_review_target, may_assign_to, reconcile_income_route,
+    assign_reviewer, is_assignable, is_review_target, may_assign_to, may_hand_to, reconcile_income_route,
     set_paused, switch_income_route,
 )
 from .query_emails import (

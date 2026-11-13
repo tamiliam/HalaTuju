@@ -39,7 +39,7 @@ class _Base(TestCase):
         cls.gift = make_programme(organisation=cls.bp, name_en='Gift T1')
         cls.boss = make_admin('super', super_admin=True, uid='t1-su')
         cls.oa = make_admin('org_admin', owning_org=cls.bp, uid='t1-oa')
-        cls.reviewer = make_admin('reviewer', owning_org=cls.bp, uid='t1-rv')
+        cls.reviewer = make_admin('reviewer', owning_org=cls.bp, uid='t1-rv', first_seen_at=timezone.now())
         cls.far_reviewer = make_admin('reviewer', owning_org=cls.other, uid='t1-far')
         # Outside Reviewers — every one an R1 super target before T1 (bar the super).
         cls.seer = make_admin('admin', owning_org=cls.bp, permissions=['see_all'], uid='t1-ad')
@@ -105,7 +105,8 @@ class TestAQcPersonWithoutReviewOrQc(_Base):
         self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
 
     def test_a_qc_keeping_see_all_stays_assignable(self):
-        seeing = make_admin('qc', owning_org=self.bp, permissions=['see_all'], uid='t1-qc1')
+        seeing = make_admin('qc', owning_org=self.bp, permissions=['see_all'], uid='t1-qc1',
+                            first_seen_at=timezone.now())
         self.assertTrue(self._rows(self.boss)[seeing.id]['assignable'])
         self.assertTrue(self._rows(self.oa)[seeing.id]['assignable'])
 
@@ -135,7 +136,8 @@ class TestAnOrgAdminGivesCasesToTheirOwnReviewers(_Base):
 
 class TestAnOrgAdminWhoJoinedReviewers(_Base):
     def test_they_are_assignable_and_taken(self):
-        joined = make_admin('org_admin', owning_org=self.bp, permissions=['review'], uid='t1-jn')
+        joined = make_admin('org_admin', owning_org=self.bp, permissions=['review'], uid='t1-jn',
+                            first_seen_at=timezone.now())
         self.assertTrue(staff_tables.in_reviewers(joined))
         self.assertTrue(self._rows(self.boss)[joined.id]['assignable'])
         self.assertTrue(self._rows(self.oa)[joined.id]['assignable'])

@@ -85,6 +85,18 @@ def staff_list_rows(caller, admins):
     return staff_list.list_rows(caller, admins)
 
 
+def has_signed_in(admin):
+    """Has this person EVER opened the console (`first_seen_at`, stamped by `get_admin` on their first
+    request)? THE ONE HOME of "signed in" (sprint M2d A1, owner 2026-11-13). Two rules read it:
+      - a payment run's step holder (`payments_chain`, review fix 4, 2026-10-19): somebody who has never
+        signed in cannot sign a run, so they must not take the step away from somebody who can;
+      - a NEW case (`services.assignment`): a reviewer who has never signed in is not given one — the
+        picker leaves them out and `assign_reviewer` refuses `not_signed_in`. A case they already hold
+        is untouched.
+    The moment they sign in, both rules let them in."""
+    return getattr(admin, 'first_seen_at', None) is not None
+
+
 #: A case still OPEN for the officer who holds it (owner R5, sprint M2c): every status before the award
 #: (`models/applications.py` status order). An awarded student stays `assigned_to` their reviewer, who still
 #: sees them, but the case no longer blocks a Remove, a role switch or a Delete. NOT `IN_PLAY_STATUSES`

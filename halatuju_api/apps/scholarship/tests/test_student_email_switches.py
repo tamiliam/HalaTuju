@@ -151,7 +151,7 @@ class TestInterviewerAssigned(TestCase):
     def setUp(self):
         self.app = make_application('profile_complete', notify_email='s@example.test')
         self.super = make_admin(super_admin=True)
-        self.reviewer = make_admin('reviewer', owning_org=self.app.owning_organisation)
+        self.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=self.app.owning_organisation)
 
     @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
     def test_off(self, send):
@@ -175,7 +175,7 @@ class TestInterviewerAssigned(TestCase):
 @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
 class TestInterviewReminders(TestCase):
     def setUp(self):
-        self.reviewer = make_admin('reviewer', email='rohini@example.com')
+        self.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), email='rohini@example.com')
 
     def _booked(self, hours):
         return make_application('interviewing', notify_email='priya@example.com', assigned_to=self.reviewer,

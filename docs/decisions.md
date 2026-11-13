@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-13 — A case goes only to a reviewer who has signed in (owner, Sprint M2d addendum A1)
+
+**The rule:** a NEW case may be given only to somebody who has signed in at least once. "Signed in" is `first_seen_at` set, and it has ONE home, `staff_lifecycle.has_signed_in`; the payment chain's `_signed_in` (an eligible approver) asks the same function rather than keeping its own copy.
+
+- `services.assignment.may_assign_to` is `has_signed_in(target) and may_hand_to(caller, target)`. `may_hand_to` keeps the T1 rule (in Reviewers, able to hold the case, the caller's reach) unchanged.
+- `assign_reviewer` refuses the new code `not_signed_in` ("{name} hasn't signed in yet. Cases can go to them once they have."). Refusal order: revoked, paused, `not_signed_in`, then the gift.
+- The picker (`assignable-admins`) serves `assignable` False for them, so neither web picker offers them: they are left out, not greyed. The row itself is still served, because the cockpit names the CURRENT holder from that list (bug #66). The web derives nothing.
+- Re-picking the current holder is still the no-op (T1-d); a case they already hold is untouched. No data step, no migration.
+- The endpoint's org-admin pre-check asks `may_hand_to`, so a person who has not signed in reaches the service and is told `not_signed_in`, not `bad_assignee`.
+
+**Doors:** `views_admin/verdict.AdminAssignReviewerView` is the only endpoint that hands out a case, and `services/assignment.assign_reviewer` the only writer of `assigned_to` (management commands only read it; test factories set it directly).
+
+**Known risk, accepted:** `first_seen_at` is NULL ("not recorded") for staff who predate the column and have not signed in since it was added. Such a reviewer is treated as never signed in, and is not offered a new case, until their next sign-in records it.
+
 ## 2026-11-13 — F1 adversarial review: six fixes to the slip-check build (the rule table's Q1, Q3, Q7 as the owner approved them)
 
 **Source:** the F1 adversarial review of branch f1; the rule is still `docs/plans/2026-11-13-f1-slip-check-rule-table.md` Part 2. `VERDICT_ENGINE_VERSION` 2026-11-13.3.

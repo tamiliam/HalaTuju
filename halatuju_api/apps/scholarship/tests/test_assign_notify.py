@@ -27,9 +27,9 @@ class TestAssignNotifyQueue(TestCase):
     def setUp(self):
         self.app = make_application('profile_complete', notify_email='s@example.test')
         self.super = make_admin(super_admin=True)
-        self.reviewer = make_admin('reviewer', owning_org=self.app.owning_organisation,
+        self.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=self.app.owning_organisation,
                                    name='Rohini', email='rohini@example.test')
-        self.reviewer2 = make_admin('reviewer', owning_org=self.app.owning_organisation,
+        self.reviewer2 = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=self.app.owning_organisation,
                                     name='Kavin', email='kavin@example.test')
 
     def _assign(self, reviewer):

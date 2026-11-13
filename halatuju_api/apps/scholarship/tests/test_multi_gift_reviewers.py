@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 from django.apps import apps as django_apps
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses import staff_gift
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, ReviewerGift
@@ -51,7 +52,7 @@ class _Base(TestCase):
         cls.other_oa = make_admin('org_admin', owning_org=cls.other_org, uid='mg-oa2')
         cls.boss = make_admin('super', super_admin=True, uid='mg-su')
         cls.plain = make_admin('admin', owning_org=cls.bp, uid='mg-ad')
-        cls.reviewer = make_admin('reviewer', owning_org=cls.bp, uid='mg-r1')
+        cls.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.bp, uid='mg-r1')
 
     def _case(self, programme):
         return make_application('profile_complete', cohort=make_cohort(programme=programme))

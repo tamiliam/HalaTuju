@@ -19,6 +19,7 @@ Every door the brief lists, driven through the real endpoints:
 """
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
@@ -346,6 +347,7 @@ class OrgAdminJoinsReviewers(_Base):
 
     def test_they_join_the_reviewers_list_and_the_assignment_picker(self):
         from apps.scholarship.services import may_assign_to
+        PartnerAdmin.objects.filter(pk=self.lead.pk).update(first_seen_at=timezone.now())   # M2d A1
         listed = lambda: {r['id'] for r in authed_client(self.lead).get(  # noqa: E731 — short local helper in a test
             '/api/v1/admin/reviewers/').json()['reviewers']}
         self.assertNotIn(self.lead.pk, listed())

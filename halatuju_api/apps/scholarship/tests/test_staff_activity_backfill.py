@@ -114,7 +114,7 @@ class TestNoTwinOfALiveRow(_World):
         """The live action STAMPS its event a moment BEFORE it writes its live row, so the cut-off
         alone would rebuild it (found by this test): the twin check is what stops that."""
         self._event()
-        other = make_admin('reviewer', owning_org=self.org)
+        other = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())   # M2d A1
         assign_reviewer(self.app, reviewer=other, by_admin=self.oa)   # live: event + live row
         live = AssignmentEvent.objects.order_by('-id').first()
         self.assertLess(live.created_at, StaffActivity.objects.get(backfilled=False).created_at)

@@ -17,6 +17,7 @@ dependency)."* decisions.md "Team tables T5b".
 from unittest import mock
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import qc_separation
@@ -70,11 +71,11 @@ class QcAloneReads(TestCase):
         cls.preset = make_admin('qc', owning_org=cls.org)
         cls.qc_only = _set(make_admin('qc', owning_org=cls.org), ['qc'])
         cls.admin_qc = _set(make_admin('admin', owning_org=cls.org), ['qc'])
-        cls.reviewer_qc = _set(make_admin('reviewer', owning_org=cls.org), ['review', 'qc'])
+        cls.reviewer_qc = _set(make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.org), ['review', 'qc'])
         cls.twins = (
             (cls.qc_only, cls.preset),
             (cls.admin_qc, _set(make_admin('admin', owning_org=cls.org), ['see_all', 'qc'])),
-            (cls.reviewer_qc, _set(make_admin('reviewer', owning_org=cls.org), ['review', 'see_all', 'qc'])),
+            (cls.reviewer_qc, _set(make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.org), ['review', 'see_all', 'qc'])),
         )
 
     def test_qc_alone_resolves_to_the_preset(self):
@@ -132,7 +133,7 @@ class SeparationGuard(TestCase):
         cls.org = cls.cohort.owning_organisation
         cls.super = make_admin('super', super_admin=True)
         cls.lead = make_admin('org_admin', owning_org=cls.org)
-        cls.reviewer = make_admin('reviewer', owning_org=cls.org)
+        cls.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.org)
         cls.qc = make_admin('qc', owning_org=cls.org)            # the one who did the work
         cls.other_qc = make_admin('qc', owning_org=cls.org)      # unrelated
 
@@ -242,7 +243,7 @@ class ThroughTheDoors(TestCase):
     def setUpTestData(cls):
         cls.cohort = make_cohort()
         cls.org = cls.cohort.owning_organisation
-        cls.reviewer = make_admin('reviewer', owning_org=cls.org)
+        cls.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=cls.org)
         cls.qc = _set(make_admin('qc', owning_org=cls.org), ['qc'])     # qc alone, no stored see_all
         cls.other_qc = make_admin('qc', owning_org=cls.org)
 

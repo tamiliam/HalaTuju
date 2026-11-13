@@ -28,7 +28,8 @@ export function askCopy(ask: CockpitAsk, nudgeLabel: string) {
     : { title: `${s}.cooloff.holdAward`, question: `${s}.cooloff.holdConfirm`, dismissible: false }
 }
 
-export function useCaseActions(ctx: CockpitCtx) {
+/** `admins` = the picker's list, to NAME somebody the server refused as `not_signed_in` (M2d A1). */
+export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: number; name: string }> = []) {
   const { id, token, t, setApp, setBusy, setError } = ctx
   const [ask, setAsk] = useState<CockpitAsk | null>(null)
 
@@ -93,9 +94,10 @@ export function useCaseActions(ctx: CockpitCtx) {
     catch (e) {
       const code = e instanceof Error ? e.message : ''
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'findings_submitted', 'gift_mismatch']
+                     'findings_submitted', 'gift_mismatch', 'not_signed_in']
       setError(known.includes(code)
-        ? t(`admin.scholarship.assign.error.${code}`)
+        ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
+          ? { name: admins.find((a) => a.id === adminId)?.name ?? '' } : undefined)
         : t('admin.scholarship.assignError'))
     } finally { setBusy('') }
   }

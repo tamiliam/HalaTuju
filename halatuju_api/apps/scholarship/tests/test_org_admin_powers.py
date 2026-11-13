@@ -54,7 +54,7 @@ class _Base(TestCase):
         # Own-org app is pre-assigned to a reviewer so the assignment tests can exercise
         # the (unconditional) REASSIGN path without tripping the first-assign readiness gate.
         cls.rev = PartnerAdmin.objects.create(
-            supabase_user_id='pow-rev', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='pow-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Rev', email='prev@x.com')
         cls.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=cls.cohort_a, profile=prof_a, status='interviewed', assigned_to=cls.rev,
@@ -75,7 +75,7 @@ class _Base(TestCase):
             supabase_user_id='pow-qc', role='qc', is_active=True,
             owning_organisation=cls.org_a, name='QC', email='pqc@x.com')
         cls.rev2 = PartnerAdmin.objects.create(
-            supabase_user_id='pow-rev2', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='pow-rev2', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Rev2', email='prev2@x.com')
         cls.admin = PartnerAdmin.objects.create(
             supabase_user_id='pow-admin', role='admin', is_active=True,
@@ -84,7 +84,7 @@ class _Base(TestCase):
             supabase_user_id='pow-oa-b', role='org_admin', is_active=True,
             owning_organisation=cls.org_b, name='OAB', email='poab@x.com')
         cls.rev_b = PartnerAdmin.objects.create(
-            supabase_user_id='pow-rev-b', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='pow-rev-b', role='reviewer', is_active=True,
             owning_organisation=cls.org_b, name='RevB', email='prevb@x.com')
 
     def setUp(self):

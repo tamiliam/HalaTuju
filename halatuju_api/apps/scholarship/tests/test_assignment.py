@@ -31,11 +31,11 @@ class TestReviewerAssignment(TestCase):
             name='Super', email='super@example.com',
         )
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rev-uid', role='reviewer', is_active=True,
             name='Reviewer', email='rev@example.com',
         )
         cls.reviewer2 = PartnerAdmin.objects.create(
-            supabase_user_id='rev2-uid', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rev2-uid', role='reviewer', is_active=True,
             name='Reviewer Two', email='rev2@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(

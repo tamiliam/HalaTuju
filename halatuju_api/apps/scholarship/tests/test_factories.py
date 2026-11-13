@@ -93,7 +93,7 @@ class TestTheFactoryMatchesTheProduct(TestCase):
         # The B40 fence compares the admin's `owning_organisation` with the application's, so
         # a non-super acting on these cases must sit inside the cohort's organisation.
         org = cls.cohort.owning_organisation
-        cls.reviewer = make_admin('reviewer', owning_org=org)
+        cls.reviewer = make_admin('reviewer', first_seen_at=timezone.now(), owning_org=org)
         cls.qc = make_admin('qc', owning_org=org)
         cls.superadmin = make_admin('super', super_admin=True)
         # ONE patch around both walks: the verdict engine's document read. See the module
@@ -487,7 +487,7 @@ class TestTheSupportingRows(TestCase):
         """Safe under `pytest -n auto`, and safe within one test: a fixed literal here would be
         a unique-constraint failure the day two fixtures met."""
         students = [make_student() for _ in range(3)]
-        admins = [make_admin('reviewer') for _ in range(3)]
+        admins = [make_admin('reviewer', first_seen_at=timezone.now()) for _ in range(3)]
         cohorts = [make_cohort() for _ in range(3)]
         self.assertEqual(len({s.supabase_user_id for s in students}), 3)
         self.assertEqual(len({s.nric for s in students}), 3)
@@ -532,7 +532,7 @@ class TestTheSupportingRows(TestCase):
             admin = make_admin(role)
             self.assertEqual(admin.role, role)
             self.assertEqual(admin.is_super, role == 'super')    # the role alone (TD-064)
-        self.assertEqual(make_admin('reviewer', super_admin=True).role, 'super')
+        self.assertEqual(make_admin('reviewer', first_seen_at=timezone.now(), super_admin=True).role, 'super')
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -545,7 +545,7 @@ class TestTheSharedToken(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_an_admin_object_and_its_uid_give_the_same_token(self):
-        admin = make_admin('reviewer')
+        admin = make_admin('reviewer', first_seen_at=timezone.now())
         self.assertEqual(factories.auth_token(admin),
                          factories.auth_token(admin.supabase_user_id))
 

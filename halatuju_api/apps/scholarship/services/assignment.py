@@ -73,7 +73,17 @@ def may_assign_to(caller, target):
     saved set took every key away could not open it, and `_can_review` would refuse them anyway.
     ⚠ The GIFT is not asked here (it needs the case): `assign_reviewer` refuses `gift_mismatch`.
     ⚠ A case already held is never touched by this: `assign_reviewer` skips it for a re-pick of the
-    current holder, so re-saving the same name is a no-op, not a refusal (T1-d)."""
+    current holder, so re-saving the same name is a no-op, not a refusal (T1-d).
+    ⚠ M2d A1 (owner 2026-11-13): and they must have SIGNED IN (`staff_lifecycle.has_signed_in`). The
+    picker serves `assignable` False for somebody who never has, so neither picker offers them — yet
+    the row stays in the list, because the cockpit names the CURRENT holder from it (bug #66)."""
+    from ..staff_lifecycle import has_signed_in
+    return has_signed_in(target) and may_hand_to(caller, target)
+
+
+def may_hand_to(caller, target):
+    """`may_assign_to` less the sign-in test (M2d A1): `assign_reviewer` asks the sign-in test on its
+    own, AFTER revoked and paused, so the refusal it gives names the bigger fact first."""
     from apps.courses import staff_tables
     if not (staff_tables.in_reviewers(target) and is_review_target(target)):
         return False
@@ -274,7 +284,7 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
             # since the endpoint asked. T1-d: re-picking the CURRENT holder is the no-op below, never
             # a refusal, so a case an admin held before T1 keeps its holder.
             holder = reviewer.pk == application.assigned_to_id
-            if by_admin is not None and not holder and not may_assign_to(by_admin, reviewer):
+            if by_admin is not None and not holder and not may_hand_to(by_admin, reviewer):
                 raise AssignmentError('not_reviewer')
         if reviewer is not None and not _can_review(reviewer):
             # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
@@ -287,6 +297,13 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
                 'not_reviewer' if not getattr(reviewer, 'is_active', False)
                 else 'reviewer_paused' if getattr(reviewer, 'paused_at', None) is not None
                 else 'not_reviewer')
+        # M2d A1 (owner 2026-11-13): a NEW case only goes to somebody who has signed in — asked after
+        # revoked and paused (the bigger facts), before the gift. Re-picking the current holder is
+        # still the no-op below (T1-d): a case they already hold is never taken away by this.
+        if reviewer is not None and reviewer.pk != application.assigned_to_id:
+            from ..staff_lifecycle import has_signed_in
+            if not has_signed_in(reviewer):
+                raise AssignmentError('not_signed_in')
 
         current = application.assigned_to
         if (current.id if current else None) == (reviewer.id if reviewer else None):

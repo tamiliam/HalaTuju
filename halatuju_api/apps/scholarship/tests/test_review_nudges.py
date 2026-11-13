@@ -18,7 +18,7 @@ class ReviewNudgeTests(TestCase):
     def setUpTestData(cls):
         cls.org = PartnerOrganisation.objects.create(code='nudge-test-org', name='Nudge Test Org')
         cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rev-uid', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Rohini', email='rohini@example.com')
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='orgadmin-uid', role='org_admin', is_active=True,
@@ -119,7 +119,7 @@ class ReviewNudgeTests(TestCase):
     def test_reassignment_resets_nudge_stamps(self):
         from apps.scholarship.services import assign_reviewer
         other = PartnerAdmin.objects.create(
-            supabase_user_id='rev2-uid', role='reviewer', is_active=True,
+            first_seen_at=timezone.now(), supabase_user_id='rev2-uid', role='reviewer', is_active=True,
             name='Bala', email='bala@example.com')
         app = self._app(assigned_days_ago=11)
         call_command('send_review_nudges')           # sends overdue, stamps it

@@ -75,12 +75,13 @@ def _holders(organisation_id, key, cache=None):
 
 
 def _signed_in(admin):
-    """Has this person EVER opened the console (`first_seen_at`, stamped by `get_admin` on their first
-    request)? Review fix 4 (2026-10-19): a holder who has never signed in cannot sign a run, so they
-    must not take the step away from somebody who can. Production that day: BrightPath's only Finance
-    person had never signed in — counting them would have left every run waiting for nobody. The
-    moment they sign in, they become eligible. A super never needs this (supers are never holders)."""
-    return getattr(admin, 'first_seen_at', None) is not None
+    """Has this person EVER opened the console? Review fix 4 (2026-10-19): a holder who has never signed
+    in cannot sign a run, so they must not take the step away from somebody who can. Production that day:
+    BrightPath's only Finance person had never signed in — counting them would have left every run
+    waiting for nobody. The moment they sign in, they become eligible. A super never needs this (supers
+    are never holders). The test itself lives in ONE place, `staff_lifecycle.has_signed_in` (M2d A1)."""
+    from .staff_lifecycle import has_signed_in
+    return has_signed_in(admin)
 
 
 def _is_lead_tier(admin):

@@ -166,9 +166,9 @@ class TestTheSendersFixedOn20260818(TestCase):
 
     def test_a_reviewer_assignment_bills_the_tenant(self):
         from apps.scholarship import services
-        first = make_admin('reviewer', uid='rv-1', name='First',
+        first = make_admin('reviewer', first_seen_at=timezone.now(), uid='rv-1', name='First',
                            email='first@example.com', owning_org=self.org)
-        second = make_admin('reviewer', uid='rv-2', name='Second',
+        second = make_admin('reviewer', first_seen_at=timezone.now(), uid='rv-2', name='Second',
                             email='second@example.com', owning_org=self.org)
         actor = make_admin('super', uid='su-1', super_admin=True, name='Su',
                            email='su@example.com')

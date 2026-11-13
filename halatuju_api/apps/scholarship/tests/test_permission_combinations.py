@@ -234,8 +234,10 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
     def test_assignment_only_to_reviewers(self):
         # T1 (owner D7, 2026-11-09): an org admin assigns anyone in the Reviewers table of their own
         # organisation. #39 S3 asked for `review`; QC people are Reviewers (owner ruling 8), so they
-        # are assignable now too.
-        _grant(self.qc, ['see_all', 'qc'])                    # the qc preset, written out
+        # are assignable now too. M2d A1: only somebody who has signed in, so every target has.
+        PartnerAdmin.objects.filter(pk__in=[self.qc.pk, self.maker.pk, self.finance.pk, self.reviewer.pk]).update(
+            first_seen_at=date(2026, 7, 1))
+        _grant(self.qc, ['see_all', 'qc'])                  # the qc preset, written out
         _grant(self.maker, ['see_all', 'qc'])                  # an admin given QC: a Reviewer by `qc`
         _grant(self.reviewer, ['spending'])                    # a reviewer with Review taken away
         for target in (self.qc, self.maker):

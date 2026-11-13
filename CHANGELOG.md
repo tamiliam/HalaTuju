@@ -40,6 +40,12 @@ design of record the mock-up the owner approved on 2026-11-13. No migration, no 
   the Scholars note from both sources, hidden keys saved as held, and history Show / Hide.
 - New TDs: TD-618 (the Overview sentences are not pinned to the door code), TD-619 (`mobile-check` does not open a
   person page).
+- api, web (A1, owner addendum): a NEW case goes only to somebody who has signed in. One home for "signed in",
+  `staff_lifecycle.has_signed_in` (`first_seen_at` set); `payments_chain._signed_in` asks it. `may_assign_to` is
+  False for them, so the picker serves `assignable` False and neither picker offers them (the row stays, bug #66).
+  `assign_reviewer` refuses `not_signed_in` after revoked and paused, before the gift; en/ms/ta wording. A holder
+  re-pick is still a no-op; held cases untouched; no data step. `test_m2d_assign_signed_in.py` (12); existing tests
+  that assign now sign their target in.
 
 ### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
 
