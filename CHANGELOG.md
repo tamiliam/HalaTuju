@@ -10,17 +10,30 @@ Branch a4 (not pushed, not deployed). Tests only; no app source, permission, set
 - test: `test_access_matrix.py` walks every route off the live resolver (439 route and method pairs; only Django
   admin and the health probe are skipped, each with a reason) and calls each one as 17 JWT callers (super, org A
   lead, admin, qc, assigned and unassigned reviewer, finance, partner, member, source user, mentor, org B lead,
-  students A and B, sponsors A and B, anonymous), plus the cron-family, Vircle and Twilio secret callers on the
-  three internal routes: 7,475 cases, about 60 s. `allow` must not get 401/403/404, `hide` must be refused (404
-  accepted), everyone else must get 401/403.
+  students A and B, sponsors A and B, anonymous), plus all four cron-family keys (money, paid, email,
+  maintenance), Vircle and Twilio secret callers on the three internal routes: about 7,480 cases, about 60 s.
+  `allow` must not get 401/403/404, nor any 5xx, nor 415; `hide` must be refused (404 accepted); everyone else
+  must get 401/403. A function view or regex route the walker cannot read fails outright; the skip list is
+  locked to its two entries; the pair floor is 435.
 - test: `access_manifest.json` says who may use each pair; a served pair with no entry, or an entry for a pair no
-  longer served, fails (the ratchet). `object` names the seeded object on the 165 pairs where the cross-tenant or
-  cross-owner refusal is asserted; the rest are marked UNCOVERED in `note`. Flags: `HOLE:` (none) and
-  `INTENT-UNCLEAR:` (sponsor review and sponsor detail across organisations, the assignable-admins list).
-  Holes are asserted as current behaviour, not xfail, because the code-standards guard forbids xfail.
+  longer served, fails (the ratchet). `object` names the seeded object on 160 of the 236 id-bearing pairs, and is
+  only accepted when proved on the same object: the owner allowed AND a cross caller hidden, or a same-rank peer
+  (org B lead, student B, sponsor B, unassigned reviewer) refused. The rest are super-only or single-role routes
+  with no peer in the world, platform-level, or public. An entry nobody can reach must carry `UNCOVERED:` (35,
+  each with a reason) or `STATE:` (2, the owner is state-refused, so the 403 is not a fence); the 64 hidden-only
+  entries are now 37. Flags also: `HOLE:` (none) and `INTENT-UNCLEAR:` (sponsor review and sponsor detail across
+  organisations, the assignable-admins list, and sponsor terms: platform-level, so any organisation's lead may
+  author and publish them). Holes are asserted as current behaviour, not xfail (the code-standards guard forbids it).
+- test: `pinned` fixes the exact status for an allowed caller: `BUG:` (listed in `known_bugs`, the test fails once
+  the bug is fixed) or `ENV:` (AI or storage switched off in tests: 503; a file upload sent JSON: 415).
 - test: `access_world.py` seeds two organisations on dummy data; the dark flags are on, sockets to anything but
-  loopback are refused and the cron runner is mocked, so no call reaches a paid or outside service.
-- Found, not fixed: PUT `/api/v1/profile/` answers 500 to every signed-in non-student (staff and sponsors).
+  loopback are refused, the cron runner, PDF and storage are mocked, so no call reaches a paid or outside service.
+  Student B now holds an awarded case with an offered sponsorship (award, comprehension and guarantor-phone routes
+  reach their rightful caller); a signed agreement with a template (witness, countersign); admin A holds
+  `award_withdraw_request`; `BODIES` are built from the world, so credits, payment runs, invites and team changes
+  reach their cross-organisation body checks (org B's lead now gets 404 there, not 400).
+- Not covered by this matrix: maker-checker inside payment runs and credits (M4's own tests).
+- Found, not fixed (known bug, pinned): PUT `/api/v1/profile/` answers 500 to every signed-in non-student (staff and sponsors).
 - docs: `docs/security/2026-11-13-supabase-policy-review.md`.
 
 ### feat: sprint M2b - admin permissions are stored keys, not a role label (2026-11-12)

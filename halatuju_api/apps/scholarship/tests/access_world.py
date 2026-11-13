@@ -9,9 +9,17 @@ object a URL can name, all on dummy data (`@example.test`, the factory's fake NR
                     hers. Every staff role of the organisation sits beside it.
   ORGANISATION B  — the neighbour. Its org admin (the strongest non-super tier) is the
                     cross-tenant caller: an org-A object must be refused to it.
-  STUDENT B       — a second scholar in organisation A, with her own case, so a refusal of
-                    student A's objects to her is a real cross-owner refusal, not "no account".
+  STUDENT B       — a second scholar in organisation A, with her own AWARDED case and an OFFERED
+                    sponsorship from sponsor A, so the award, comprehension and guarantor-phone
+                    routes answer her (their rightful caller), and a refusal of student A's
+                    objects to her is a real cross-owner refusal, not "no account".
   SPONSOR B       — an approved sponsor who funds nobody: the cross-owner sponsor.
+
+Also seeded so money and identity paths are reached, not state-refused: a signed bursary agreement
+(with a contract template) for the witness and countersign routes, admin A holding
+`award_withdraw_request` for the withdrawal-request route (on `app_w`), a draft sponsor-terms
+version, and `BODIES` built from the world (real sponsor, programme, amount and date) so the
+cross-organisation body checks on credits, payment runs, invites and team changes are reached.
 
 ⚠ THE URL KWARGS ARE FILLED FROM `OBJECT_IDS`, MOST SPECIFIC ROUTE PREFIX FIRST. A route whose id
 names an object that is not built here falls back to student A's application id, and the manifest
@@ -57,7 +65,10 @@ JWT_ROLES = (
 #: Callers that authenticate with a shared secret instead of a JWT. They carry no JWT, so on every
 #: other route they ARE the anonymous caller (only the three internal views read these headers —
 #: `cron.py` X-Cron-Secret, `cron.py` X-Vircle-Secret, `intake.py` X-Twilio-Signature).
-SECRET_ROLES = ('cron_money', 'cron_email', 'vircle', 'twilio')
+SECRET_ROLES = ('cron_money', 'cron_paid', 'cron_email', 'cron_maintenance', 'vircle', 'twilio')
+#: The cron-family caller -> its family key name in `TEST_SECRETS['CRON_FAMILY_SECRETS']`.
+CRON_ROLES = {'cron_money': 'money', 'cron_paid': 'paid', 'cron_email': 'email',
+              'cron_maintenance': 'maintenance'}
 INTERNAL_ROUTES = ('api/v1/internal/cron/<str:job>/', 'api/v1/internal/vircle/airtable/',
                    'api/v1/scholarship/whatsapp/inbound/')
 
@@ -70,7 +81,7 @@ TEST_SECRETS = dict(
     VIRCLE_AIRTABLE_SECRET='test-vircle-secret',
     TWILIO_AUTH_TOKEN='test-twilio-token',
 )
-#: The cron job the sweep names: a MONEY-family job, so the email-family key must be refused.
+#: The cron job the sweep names: a MONEY-family job, so every other family's key must be refused.
 CRON_JOB = 'award-students-batch'
 
 
@@ -83,6 +94,13 @@ def roles_for(route):
 #: ``(route prefix, {kwarg: world attribute})``, most specific first. The first prefix that the
 #: route starts with and that names the kwarg wins; then `DEFAULT_IDS` by kwarg name.
 OBJECT_IDS = (
+    # The maker's request acts only on an AWARDED case: student A's is active, so the route
+    # names the awarded case `app_w` (a request already pending there answers past the seat).
+    ('api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/', {'pk': 'app_w'}),
+    # A sponsor may cancel only an OFFERED award inside the cool-off: `sponsorship_o`.
+    ('api/v1/sponsor/sponsorships/<int:pk>/cancel/', {'pk': 'sponsorship_o'}),
+    ('api/v1/admin/scholarship/contract-templates/', {'pk': 'template_a'}),
+    ('api/v1/admin/scholarship/sponsor-terms/', {'pk': 'terms_a'}),
     ('api/v1/admin/scholarship/billing/corrections/', {'pk': 'correction_a'}),
     ('api/v1/admin/scholarship/billing/receipts/', {'pk': 'receipt_a'}),
     ('api/v1/admin/scholarship/billing/invoices/', {'pk': 'invoice_a'}),
@@ -151,11 +169,37 @@ DEFAULT_IDS = {'kind': 'weekly_summary', 'action': 'x', 'table': 'reviewers',
 #: The request body per route (else ``{}``). Where a view checks the body BEFORE the seat or the
 #: fence, an empty body answers 400 to everybody and hides who could act; these bodies carry the
 #: request past that check so the seat and the fence are what answer.
+#:
+#: ⚠ A BODY MAY BE A CALLABLE OF THE WORLD, so an id the body carries is a REAL organisation-A id.
+#: The money and team routes name their sponsor, gift, admin or date in the body, not the URL; an
+#: empty body met a 400 before any cross-organisation check, so org B's admin was never asked the
+#: real question. These bodies are valid for organisation A, so org B's admin reaches the check
+#: that must refuse it an org-A gift / admin (the cross-tenant BODY fence).
 BODIES = {
     'api/v1/admin/sponsors/<int:pk>/review/': {'action': 'approve'},
     'api/v1/admin/scholarship/withdrawal-requests/<int:pk>/refuse/': {'reason': 'Access matrix'},
     'api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/':
         {'explanation': 'Access matrix'},
+    # credits: the sponsor exists, so the programme guard (org-scoped) is what answers org B.
+    'api/v1/admin/scholarship/credits/': lambda w: {
+        'sponsor_id': w.sponsor_a.pk, 'programme_id': w.gift_a.pk, 'amount': '100.00',
+        'external_reference': 'AM-CREDIT'},
+    # payment runs: a valid date in a month no run holds yet, and organisation A's gift code.
+    'api/v1/admin/scholarship/payment-runs/': lambda w: {
+        'payment_date': (w.today + datetime.timedelta(days=45)).isoformat(),
+        'payment_month': (w.today + datetime.timedelta(days=62)).strftime('%Y-%m'),
+        'programme': w.gift_a.code},
+    # invites: a sponsor invited INTO organisation A's gift (org B's admin must be refused it).
+    'api/v1/admin/invitations/': lambda w: {
+        'audience': 'sponsor', 'email': 'am-invitee@example.test', 'name': 'Invitee',
+        'programme_id': w.gift_a.pk, 'programme_ids': [w.gift_a.pk]},
+    # staff invite: names organisation A in the body; an org admin's invite must land in their own.
+    'api/v1/admin/invite/': lambda w: {
+        'email': 'am-staff@example.test', 'name': 'Staff Invitee', 'role': 'reviewer',
+        'org_id': w.org_a.pk},
+    # team change: organisation A's unassigned reviewer, a dry run (nothing would be saved).
+    'api/v1/admin/team/<str:table>/': lambda w: {
+        'admin_id': w.reviewer_a2.pk, 'action': 'remove', 'dry_run': True},
 }
 
 
@@ -198,10 +242,8 @@ class World:
         url = self.fill(route)
         client = self.clients[role]
         headers = {}
-        if role == 'cron_money':
-            headers['HTTP_X_CRON_SECRET'] = TEST_SECRETS['CRON_FAMILY_SECRETS']['money']
-        elif role == 'cron_email':
-            headers['HTTP_X_CRON_SECRET'] = TEST_SECRETS['CRON_FAMILY_SECRETS']['email']
+        if role in CRON_ROLES:
+            headers['HTTP_X_CRON_SECRET'] = TEST_SECRETS['CRON_FAMILY_SECRETS'][CRON_ROLES[role]]
         elif role == 'vircle':
             headers['HTTP_X_VIRCLE_SECRET'] = TEST_SECRETS['VIRCLE_AIRTABLE_SECRET']
         if route == 'api/v1/scholarship/whatsapp/inbound/':
@@ -209,7 +251,10 @@ class World:
                 headers['HTTP_X_TWILIO_SIGNATURE'] = twilio_signature('http://testserver' + url)
             return client.generic(method.upper(), url, data='',
                                   content_type='application/x-www-form-urlencoded', **headers)
-        return client.generic(method.upper(), url, data=json.dumps(BODIES.get(route, {})),
+        body = BODIES.get(route, {})
+        if callable(body):
+            body = body(self)
+        return client.generic(method.upper(), url, data=json.dumps(body),
                               content_type='application/json', **headers)
 
 
@@ -235,10 +280,11 @@ def build_world():
         SemesterResult, Sponsor, SponsorProgrammeMembership, Sponsorship,
     )
     from apps.scholarship.models import ApplicantDocument, Announcement, DevelopmentModule, Survey
+    from apps.scholarship.models import BursaryAgreement, ContractTemplate, SponsorTermsVersion
 
     w = World()
     now = timezone.now()
-    today = datetime.date.today()
+    today = w.today = datetime.date.today()
 
     # ── organisation A ──
     w.org_a = make_org()
@@ -251,6 +297,10 @@ def build_world():
     w.super = make_admin('reviewer', super_admin=True)
     w.org_admin_a = make_admin('org_admin', owning_org=w.org_a)
     w.admin_a = make_admin('admin', owning_org=w.org_a)
+    # The withdrawal MAKER's seat (`award_withdraw_request`) is in no preset and not in the lead
+    # tier, so without it nobody could ask for a withdrawal and the route would prove nothing.
+    w.admin_a.permissions = list(w.admin_a.permissions or []) + ['award_withdraw_request']
+    w.admin_a.save(update_fields=['permissions'])
     w.qc_a = make_admin('qc', owning_org=w.org_a)
     w.reviewer_a = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
     w.reviewer_a2 = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
@@ -265,7 +315,9 @@ def build_world():
     w.student_b = make_shortlistable_student()
     w.app_a = make_application('active', cohort=w.cohort_a, student=w.student_a,
                                reviewer=w.reviewer_a, source=w.source_obj_a)
-    w.app_b = make_application('active', cohort=w.cohort_a, student=w.student_b,
+    # Student B's case is AWARDED with an OFFER open (below), so the award, comprehension and
+    # guarantor-PIN routes have a rightful caller: they act on the caller's own current case.
+    w.app_b = make_application('awarded', cohort=w.cohort_a, student=w.student_b,
                                reviewer=w.reviewer_a2)
     MentorAssignment.objects.create(application=w.app_a, mentor=w.mentor_obj_a)
 
@@ -285,6 +337,10 @@ def build_world():
                                          programme=w.gift_a, status=Donation.STATUS_CONFIRMED)
     w.sponsorship_a = Sponsorship.objects.create(sponsor=w.sponsor_a, application=w.app_a,
                                                  amount=Decimal('2000'), status='active')
+    # Sponsor A's OFFER to student B, inside the cool-off (no good-news email yet): the one
+    # state a sponsor's cancel acts on, and the offer student B's award routes answer.
+    w.sponsorship_o = Sponsorship.objects.create(sponsor=w.sponsor_a, application=w.app_b,
+                                                 amount=Decimal('2000'), status='offered')
     w.tranche_a = Disbursement.objects.create(application=w.app_a, sponsorship=w.sponsorship_a,
                                               amount=Decimal('500'), status='scheduled',
                                               sequence=1)
@@ -336,6 +392,16 @@ def build_world():
     w.report_a = GeneratedReport.objects.create(
         student=w.student_a, title='T', content='C', student_profile_snapshot={},
         eligible_courses_snapshot=[], model_used='none')
+    # Signed by the student and guarantor, awaiting the foundation's countersignature; the
+    # witness organisation is the source the case names (`bursary._resolve_witness_org`).
+    # (Its template is the gift's draft `template_a`, which the template id routes name too.)
+    w.template_a = ContractTemplate.objects.create(
+        organisation=w.org_a, programme=w.gift_a, version='am-1', status='draft', title_en='T')
+    w.agreement_a = BursaryAgreement.objects.create(
+        application=w.app_a, version='am-v1', sponsorship=w.sponsorship_a, template=w.template_a,
+        pdf_storage_path=f'{w.app_a.pk}/agreement.pdf', student_signed_at=now,
+        guarantor_signed_at=now)
+    w.terms_a = SponsorTermsVersion.objects.create(version='am-draft', title_en='Terms')
     w.pool_ref_a = pool.pool_ref(w.app_a.pk)
     Consent.objects.get_or_create(application=w.app_a, consent_type='share_with_sponsors',
                                   defaults={'version': 't', 'is_active': True})

@@ -1,5 +1,5 @@
 {
- "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py.",
+ "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py. pinned = an allowed caller whose exact status is fixed (BUG: a real app fault the test fails on once fixed; ENV: a test-environment limit such as AI or storage switched off). Flags: HOLE (a real gap), INTENT-UNCLEAR (current behaviour recorded, intent unconfirmed), UNCOVERED (nobody can be allowed in this world, so no fence is proved), STATE (the owner is refused for a state reason, so the 403 is not a fence). NOT COVERED by this matrix: maker-checker inside payment runs and credits (the second-person approval rule) is M4 own test work.",
  "skips": [
   {
    "route": "admin/",
@@ -11,6 +11,118 @@
   }
  ],
  "holes": [],
+ "known_bugs": [
+  "PUT api/v1/profile/"
+ ],
+ "pinned": [
+  {
+   "route": "api/v1/admin/me/photo/",
+   "method": "post",
+   "status": 415,
+   "callers": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "reason": "ENV: a file upload sent JSON; DRF refuses the body after the gate"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
+   "method": "post",
+   "status": 503,
+   "callers": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
+   "method": "post",
+   "status": 503,
+   "callers": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/import-docx/",
+   "method": "post",
+   "status": 415,
+   "callers": [
+    "super",
+    "org_admin_a"
+   ],
+   "reason": "ENV: a file upload sent JSON; DRF refuses the body after the gate"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/ai-rerun/",
+   "method": "post",
+   "status": 503,
+   "callers": [
+    "super"
+   ],
+   "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/sign-upload/",
+   "method": "post",
+   "status": 503,
+   "callers": [
+    "super",
+    "org_admin_a"
+   ],
+   "reason": "ENV: storage signing switched off in tests (no storage credentials)"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/import-docx/",
+   "method": "post",
+   "status": 415,
+   "callers": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "reason": "ENV: a file upload sent JSON; DRF refuses the body after the gate"
+  },
+  {
+   "route": "api/v1/profile/",
+   "method": "put",
+   "status": 500,
+   "callers": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "reason": "BUG: profile PUT 500 for non-students"
+  }
+ ],
  "entries": [
   {
    "route": "api/v1/admin/admin-emails/",
@@ -52,7 +164,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/admins/<int:admin_id>/permissions/",
@@ -66,7 +178,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/admins/<int:admin_id>/permissions/",
@@ -80,7 +192,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/admins/<int:admin_id>/resend/",
@@ -94,7 +206,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/admins/<int:admin_id>/revoke/",
@@ -108,7 +220,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/admins/<int:admin_id>/role/",
@@ -122,7 +234,7 @@
    ],
    "object": "reviewer_a2",
    "flags": [],
-   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/course-data/",
@@ -167,9 +279,9 @@
     "reviewer_a2"
    ],
    "hide": [],
-   "object": "grad_message_a",
+   "object": null,
    "flags": [],
-   "note": "object grad_message_a: reached by super, reviewer_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/invitations/",
@@ -191,10 +303,11 @@
    "method": "post",
    "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -211,7 +324,7 @@
    ],
    "object": "invitation_a",
    "flags": [],
-   "note": "object invitation_a: super only, no tenant caller reaches it"
+   "note": "object invitation_a: reached by super; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/invite/",
@@ -376,9 +489,9 @@
     "mentor_a"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: reached by mentor_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/mentor/students/<int:pk>/modules/<int:mid>/file/",
@@ -388,8 +501,10 @@
     "mentor_a"
    ],
    "object": null,
-   "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no mentoring module file"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/mentor/students/<int:pk>/sessions/",
@@ -398,9 +513,9 @@
     "mentor_a"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: reached by mentor_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/mentors/",
@@ -428,7 +543,7 @@
    ],
    "object": "mentor_obj_a",
    "flags": [],
-   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/mentors/<int:pk>/",
@@ -443,7 +558,7 @@
    ],
    "object": "mentor_obj_a",
    "flags": [],
-   "note": "object mentor_obj_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object mentor_obj_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/mentors/<int:pk>/",
@@ -457,7 +572,7 @@
    ],
    "object": "mentor_obj_a",
    "flags": [],
-   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/mentors/<int:pk>/<str:action>/",
@@ -471,7 +586,7 @@
    ],
    "object": "mentor_obj_a",
    "flags": [],
-   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/mentors/<int:pk>/gifts/",
@@ -485,7 +600,7 @@
    ],
    "object": "mentor_obj_a",
    "flags": [],
-   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/mentors/staff/",
@@ -581,9 +696,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_a",
+   "object": null,
    "flags": [],
-   "note": "object org_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/reviewer-profile/",
@@ -642,7 +757,7 @@
    ],
    "object": "reviewer_a",
    "flags": [],
-   "note": "object reviewer_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+   "note": "object reviewer_a: reached by super, org_admin_a, admin_a, finance_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/reviewers/<int:pk>/pause/",
@@ -656,7 +771,7 @@
    ],
    "object": "reviewer_a",
    "flags": [],
-   "note": "object reviewer_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/reviewers/<int:pk>/programme/",
@@ -670,7 +785,7 @@
    ],
    "object": "reviewer_a",
    "flags": [],
-   "note": "object reviewer_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object reviewer_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/reviewers/system-emails/",
@@ -754,7 +869,7 @@
    ],
    "object": "announcement_a",
    "flags": [],
-   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/announcements/<int:pk>/",
@@ -769,7 +884,7 @@
    ],
    "object": "announcement_a",
    "flags": [],
-   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/announcements/<int:pk>/withdraw/",
@@ -784,7 +899,7 @@
    ],
    "object": "announcement_a",
    "flags": [],
-   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/",
@@ -818,7 +933,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/",
@@ -834,7 +949,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/anon-profile/publish/",
@@ -850,7 +965,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/assign/",
@@ -864,7 +979,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/award-amount/",
@@ -873,31 +988,31 @@
     "super"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/bursary-agreement/countersign/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/bursary-agreement/witness/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/cancel-decline/",
@@ -913,7 +1028,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/cancel-reopen/",
@@ -922,9 +1037,9 @@
     "super"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/close/",
@@ -940,7 +1055,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/disbursements/",
@@ -956,7 +1071,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/",
@@ -972,7 +1087,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/",
@@ -988,7 +1103,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
@@ -1004,7 +1119,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/guardian-call/",
@@ -1018,7 +1133,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/guardian-contact/",
@@ -1032,7 +1147,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/hold-award/",
@@ -1048,7 +1163,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
@@ -1065,7 +1180,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
@@ -1081,7 +1196,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/",
@@ -1098,7 +1213,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/",
@@ -1114,7 +1229,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/reopen/",
@@ -1130,7 +1245,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/submit/",
@@ -1146,7 +1261,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/maintenance/",
@@ -1162,7 +1277,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/nudge/",
@@ -1176,7 +1291,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/org-reject/",
@@ -1190,7 +1305,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/profile/",
@@ -1206,7 +1321,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/publish/",
@@ -1222,7 +1337,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/qc-decision/",
@@ -1237,7 +1352,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/record-verdict/",
@@ -1253,7 +1368,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/",
@@ -1270,7 +1385,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/",
@@ -1286,7 +1401,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/",
@@ -1302,7 +1417,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reject/",
@@ -1318,7 +1433,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/release-nric-lock/",
@@ -1327,9 +1442,9 @@
     "super"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reopen-decision/",
@@ -1338,9 +1453,9 @@
     "super"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reporting-date/",
@@ -1356,7 +1471,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/request-info/",
@@ -1372,7 +1487,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/resolution-items/",
@@ -1388,7 +1503,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
@@ -1405,7 +1520,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
@@ -1419,7 +1534,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
@@ -1435,7 +1550,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
@@ -1451,7 +1566,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/verdict-summary/",
@@ -1468,7 +1583,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/verify-accept/",
@@ -1484,18 +1599,20 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "admin_a"
+   ],
    "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "app_w",
    "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": "object app_w: reached by admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/witness/",
@@ -1510,7 +1627,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/assignable-admins/",
@@ -1567,7 +1684,9 @@
     "super"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no billing correction to delete"
+   ],
    "note": "nobody passes in this world"
   },
   {
@@ -1588,9 +1707,9 @@
     "super"
    ],
    "hide": [],
-   "object": "correction_a",
+   "object": null,
    "flags": [],
-   "note": "object correction_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/billing/corrections/<int:pk>/",
@@ -1600,8 +1719,10 @@
     "super"
    ],
    "object": null,
-   "flags": [],
-   "note": "object correction_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no billing correction"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/billing/costs/",
@@ -1637,7 +1758,7 @@
    ],
    "object": "org_a",
    "flags": [],
-   "note": "object org_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/billing/hours/<int:org_id>/",
@@ -1646,9 +1767,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_a",
+   "object": null,
    "flags": [],
-   "note": "object org_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/billing/invoices/",
@@ -1681,9 +1802,9 @@
     "super"
    ],
    "hide": [],
-   "object": "invoice_a",
+   "object": null,
    "flags": [],
-   "note": "object invoice_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/billing/invoices/<int:pk>/declaration/<str:action>/",
@@ -1696,7 +1817,7 @@
    ],
    "object": "invoice_a",
    "flags": [],
-   "note": "object invoice_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object invoice_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/billing/invoices/<int:pk>/pdf/",
@@ -1710,7 +1831,7 @@
    ],
    "object": "invoice_a",
    "flags": [],
-   "note": "object invoice_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object invoice_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/billing/issuer/",
@@ -1781,7 +1902,7 @@
    ],
    "object": "receipt_a",
    "flags": [],
-   "note": "object receipt_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object receipt_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/billing/usage/",
@@ -1825,41 +1946,44 @@
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/",
    "method": "patch",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/clauses/",
    "method": "put",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/clauses/<int:order>/generate-quiz/",
@@ -1871,125 +1995,135 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the seeded template has no clauses (quiz generation is an AI call)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/deploy/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "super"
+   ],
    "hide": [
-    "super",
-    "org_admin_a",
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/import-docx/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/preview/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/quiz-preview/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/revert/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/schedule/",
    "method": "put",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/submit/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/validate/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/vetting/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "template_a",
    "flags": [],
-   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+   "note": "object template_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/credits/",
@@ -2009,11 +2143,12 @@
   {
    "route": "api/v1/admin/scholarship/credits/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
-    "admin_a",
+    "admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
    "object": null,
@@ -2033,7 +2168,7 @@
    ],
    "object": "credit_a",
    "flags": [],
-   "note": "object credit_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object credit_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/credits/<int:pk>/sign/",
@@ -2049,7 +2184,7 @@
    ],
    "object": "credit_a",
    "flags": [],
-   "note": "object credit_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+   "note": "object credit_a: reached by super, org_admin_a, admin_a, finance_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/",
@@ -2092,7 +2227,7 @@
    ],
    "object": "module_a",
    "flags": [],
-   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/",
@@ -2107,7 +2242,7 @@
    ],
    "object": "module_a",
    "flags": [],
-   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/<str:action>/",
@@ -2122,7 +2257,7 @@
    ],
    "object": "module_a",
    "flags": [],
-   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/csv/",
@@ -2137,7 +2272,7 @@
    ],
    "object": "module_a",
    "flags": [],
-   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
@@ -2150,8 +2285,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development lesson file"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
@@ -2164,8 +2301,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development lesson file"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
@@ -2178,8 +2317,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development lesson"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/sign/",
@@ -2192,8 +2333,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development lesson"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/progress/",
@@ -2208,7 +2351,7 @@
    ],
    "object": "module_a",
    "flags": [],
-   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/progress/<int:app_id>/<str:action>/",
@@ -2221,8 +2364,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development progress row"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/development/<int:pk>/progress/<int:app_id>/<str:action>/",
@@ -2235,8 +2380,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development progress row"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/",
@@ -2250,7 +2397,7 @@
    "hide": [],
    "object": "tranche_a",
    "flags": [],
-   "note": "object tranche_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object tranche_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/intake-years/<int:pk>/",
@@ -2264,7 +2411,7 @@
    ],
    "object": "cohort_a",
    "flags": [],
-   "note": "object cohort_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object cohort_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/intake-years/<int:pk>/finish/",
@@ -2278,7 +2425,7 @@
    ],
    "object": "cohort_a",
    "flags": [],
-   "note": "object cohort_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object cohort_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/my-pending/",
@@ -2616,7 +2763,9 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the route takes a named email kind the world does not supply"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -2640,10 +2789,11 @@
    "allow": [
     "super",
     "org_admin_a",
-    "admin_a",
+    "admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -2662,7 +2812,7 @@
    ],
    "object": "run_a",
    "flags": [],
-   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/cancel/",
@@ -2677,7 +2827,7 @@
    ],
    "object": "run_a",
    "flags": [],
-   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/csv/",
@@ -2693,7 +2843,7 @@
    ],
    "object": "run_a",
    "flags": [],
-   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/",
@@ -2708,7 +2858,7 @@
    ],
    "object": "run_a",
    "flags": [],
-   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/sign/",
@@ -2724,7 +2874,7 @@
    ],
    "object": "run_a",
    "flags": [],
-   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/payments/funding-summary/",
@@ -2823,7 +2973,7 @@
    ],
    "object": "gift_a",
    "flags": [],
-   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/programmes/<int:pk>/",
@@ -2837,7 +2987,7 @@
    ],
    "object": "gift_a",
    "flags": [],
-   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/programmes/<int:pk>/apply-copy/draft/",
@@ -2851,7 +3001,7 @@
    ],
    "object": "gift_a",
    "flags": [],
-   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/programmes/<int:pk>/years/",
@@ -2865,7 +3015,7 @@
    ],
    "object": "gift_a",
    "flags": [],
-   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/programmes/<int:pk>/years/",
@@ -2879,7 +3029,7 @@
    ],
    "object": "gift_a",
    "flags": [],
-   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/",
@@ -2919,7 +3069,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/ai-rerun/",
@@ -2928,9 +3078,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/",
@@ -2939,9 +3089,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/approve/",
@@ -2951,8 +3101,10 @@
     "super"
    ],
    "object": null,
-   "flags": [],
-   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no request analysis"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/hours/",
@@ -2962,8 +3114,10 @@
     "super"
    ],
    "object": null,
-   "flags": [],
-   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no request analysis"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/withdraw/",
@@ -2973,8 +3127,10 @@
     "super"
    ],
    "object": null,
-   "flags": [],
-   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no request analysis"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/answer/",
@@ -2987,7 +3143,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/approve/",
@@ -3001,7 +3157,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/ask/",
@@ -3010,9 +3166,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/",
@@ -3026,7 +3182,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/<int:att_id>/",
@@ -3038,8 +3194,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no request attachment"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/sign-upload/",
@@ -3053,7 +3211,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/comments/",
@@ -3067,7 +3225,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/decline/",
@@ -3081,7 +3239,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/defer/",
@@ -3094,7 +3252,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/done/",
@@ -3103,9 +3261,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/modify/",
@@ -3118,7 +3276,7 @@
    ],
    "object": "org_request_a",
    "flags": [],
-   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object org_request_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/quote/",
@@ -3127,9 +3285,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/requote/",
@@ -3138,9 +3296,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/schedule/",
@@ -3149,9 +3307,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/<int:pk>/triage/",
@@ -3160,9 +3318,9 @@
     "super"
    ],
    "hide": [],
-   "object": "org_request_a",
+   "object": null,
    "flags": [],
-   "note": "object org_request_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/requests/count/",
@@ -3189,7 +3347,7 @@
    "hide": [],
    "object": "resolution_a",
    "flags": [],
-   "note": "object resolution_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+   "note": "object resolution_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/",
@@ -3220,7 +3378,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/activity/",
@@ -3236,7 +3394,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/activity/",
@@ -3251,7 +3409,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/contract/",
@@ -3267,7 +3425,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/development/",
@@ -3283,7 +3441,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/development/<int:mid>/file/",
@@ -3297,8 +3455,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no development module file"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/",
@@ -3314,7 +3474,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/",
@@ -3329,7 +3489,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/<int:lid>/<str:action>/",
@@ -3344,22 +3504,23 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/<int:lid>/pdf/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
-    "mentor_a",
+    "mentor_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "object": null,
+   "object": "app_a",
    "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/preview/",
@@ -3374,7 +3535,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/",
@@ -3390,7 +3551,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/<str:action>/",
@@ -3405,7 +3566,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/sessions/",
@@ -3420,7 +3581,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/money/",
@@ -3436,7 +3597,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/results/",
@@ -3452,7 +3613,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/results/<int:result_id>/review/",
@@ -3467,7 +3628,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/surveys/",
@@ -3483,7 +3644,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scopes/",
@@ -3563,7 +3724,7 @@
    ],
    "object": "source_obj_a",
    "flags": [],
-   "note": "object source_obj_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object source_obj_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/spending/",
@@ -3646,7 +3807,9 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the route takes a named email kind the world does not supply"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -3674,19 +3837,21 @@
    ],
    "hide": [],
    "object": null,
-   "flags": [],
+   "flags": [
+    "INTENT-UNCLEAR: sponsor terms are platform-level (no organisation); any organisation's admin may author them and an org_admin may publish the terms every sponsor accepts (publish opened to org_admin 2026-07-28)"
+   ],
    "note": ""
   },
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
@@ -3694,41 +3859,45 @@
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/",
    "method": "patch",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
-   "flags": [],
+   "flags": [
+    "INTENT-UNCLEAR: sponsor terms are platform-level (no organisation); any organisation's admin may author them and an org_admin may publish the terms every sponsor accepts (publish opened to org_admin 2026-07-28)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/import-docx/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
-   "flags": [],
+   "flags": [
+    "INTENT-UNCLEAR: sponsor terms are platform-level (no organisation); any organisation's admin may author them and an org_admin may publish the terms every sponsor accepts (publish opened to org_admin 2026-07-28)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/preview/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
@@ -3736,29 +3905,32 @@
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/publish/",
    "method": "post",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
-    "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
-   "flags": [],
+   "flags": [
+    "INTENT-UNCLEAR: sponsor terms are platform-level (no organisation); any organisation's admin may author them and an org_admin may publish the terms every sponsor accepts (publish opened to org_admin 2026-07-28)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/sections/",
    "method": "put",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
-   "flags": [],
+   "flags": [
+    "INTENT-UNCLEAR: sponsor terms are platform-level (no organisation); any organisation's admin may author them and an org_admin may publish the terms every sponsor accepts (publish opened to org_admin 2026-07-28)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -3772,19 +3944,21 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the seeded terms have no sections (quiz generation is an AI call)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
    "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/validate/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "super",
     "org_admin_a",
     "admin_a",
     "org_admin_b"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
@@ -3830,7 +4004,7 @@
    ],
    "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/surveys/<int:pk>/",
@@ -3845,7 +4019,7 @@
    ],
    "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/surveys/<int:pk>/<str:action>/",
@@ -3860,7 +4034,7 @@
    ],
    "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/surveys/<int:pk>/csv/",
@@ -3875,7 +4049,7 @@
    ],
    "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/surveys/<int:pk>/results/",
@@ -3890,7 +4064,7 @@
    ],
    "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/system-health/",
@@ -3931,7 +4105,7 @@
    ],
    "object": "withdrawal_a",
    "flags": [],
-   "note": "object withdrawal_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object withdrawal_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/withdrawal-requests/<int:pk>/cancel/",
@@ -3944,7 +4118,7 @@
    ],
    "object": "withdrawal_a",
    "flags": [],
-   "note": "object withdrawal_a: reached by admin_a; refused to org_admin_b"
+   "note": "object withdrawal_a: reached by admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/withdrawal-requests/<int:pk>/refuse/",
@@ -3957,7 +4131,7 @@
    ],
    "object": "withdrawal_a",
    "flags": [],
-   "note": "object withdrawal_a: reached by org_admin_a; refused to org_admin_b"
+   "note": "object withdrawal_a: reached by org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/set-password/",
@@ -3993,7 +4167,7 @@
    ],
    "object": "source_a",
    "flags": [],
-   "note": "object source_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object source_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/source-users/<int:pk>/revoke/",
@@ -4007,7 +4181,7 @@
    ],
    "object": "source_a",
    "flags": [],
-   "note": "object source_a: reached by super, org_admin_a; refused to org_admin_b"
+   "note": "object source_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/source/applications/",
@@ -4027,20 +4201,20 @@
     "source_a"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: reached by source_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/source/applications/<int:pk>/agreement/",
    "method": "get",
-   "allow": [],
-   "hide": [
+   "allow": [
     "source_a"
    ],
+   "hide": [],
    "object": null,
    "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": ""
   },
   {
    "route": "api/v1/admin/source/applications/<int:pk>/witness/",
@@ -4049,9 +4223,9 @@
     "source_a"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: reached by source_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/source/overview/",
@@ -4104,9 +4278,9 @@
     "source_a"
    ],
    "hide": [],
-   "object": "app_a",
+   "object": null,
    "flags": [],
-   "note": "object app_a: reached by source_a; refused to org_admin_b"
+   "note": ""
   },
   {
    "route": "api/v1/admin/sponsors/",
@@ -4138,7 +4312,7 @@
    "flags": [
     "INTENT-UNCLEAR: org_admin_b and finance_a read sponsor A whole. The money and students inside are fenced in _sponsor_detail_dict, but that fencing is not asserted here."
    ],
-   "note": "object sponsor_a: UNCOVERED, shared, not owner-fenced (org_admin_b allowed)"
+   "note": ""
   },
   {
    "route": "api/v1/admin/sponsors/<int:pk>/membership/",
@@ -4150,8 +4324,10 @@
     "org_admin_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object sponsor_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no sponsor membership to change"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/admin/sponsors/<int:pk>/review/",
@@ -4166,7 +4342,7 @@
    "flags": [
     "INTENT-UNCLEAR: org_admin_b (another organisation) can approve, reject or suspend sponsor A. Sponsor vetting is platform-level with no organisation fence; whether any org admin should vet a sponsor another organisation brought in is not stated."
    ],
-   "note": "object sponsor_a: UNCOVERED, shared, not owner-fenced (org_admin_b allowed)"
+   "note": ""
   },
   {
    "route": "api/v1/admin/sponsors/pending-count/",
@@ -4231,9 +4407,9 @@
     "super"
    ],
    "hide": [],
-   "object": "student_a",
+   "object": null,
    "flags": [],
-   "note": "object student_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/students/<str:user_id>/",
@@ -4244,9 +4420,9 @@
    "hide": [
     "partner_a"
    ],
-   "object": "student_a",
+   "object": null,
    "flags": [],
-   "note": "object student_a: super only, no tenant caller reaches it"
+   "note": ""
   },
   {
    "route": "api/v1/admin/students/export/",
@@ -4265,10 +4441,11 @@
    "method": "post",
    "allow": [
     "super",
-    "org_admin_a",
+    "org_admin_a"
+   ],
+   "hide": [
     "org_admin_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only"
@@ -4297,7 +4474,7 @@
    "hide": [],
    "object": null,
    "flags": [],
-   "note": "object org_a_code: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+   "note": ""
   },
   {
    "route": "api/v1/calculate/cgpa/",
@@ -4361,7 +4538,9 @@
     "anon"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no course catalogue (public read-only data)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4439,7 +4618,9 @@
     "anon"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no institution (public read-only data)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4451,7 +4632,7 @@
    "hide": [],
    "object": null,
    "flags": [],
-   "note": "object cron_job: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence"
+   "note": ""
   },
   {
    "route": "api/v1/internal/vircle/airtable/",
@@ -4497,7 +4678,9 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no admission outcome"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4509,7 +4692,9 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no admission outcome"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4664,7 +4849,9 @@
     "anon"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no email verification token"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4765,7 +4952,7 @@
    ],
    "object": "report_a",
    "flags": [],
-   "note": "object report_a: reached by student_a; refused to student_b"
+   "note": "object report_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/reports/generate/",
@@ -4812,7 +4999,9 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no saved course"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4824,7 +5013,9 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no saved course"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
@@ -4862,7 +5053,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/",
@@ -4872,8 +5063,10 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "STATE: the owner (student_a) is refused because the application is not shortlisted; the other student is hidden"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/confirm/",
@@ -4886,7 +5079,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/graduation-message/",
@@ -4899,7 +5092,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/graduation-message/",
@@ -4912,7 +5105,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/income-route/",
@@ -4922,8 +5115,10 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "STATE: the owner (student_a) is refused because the application is not active; the other student is hidden"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/interview/",
@@ -4936,7 +5131,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/interview/book/",
@@ -4949,7 +5144,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/interview/cancel/",
@@ -4962,7 +5157,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/interview/message/",
@@ -4975,7 +5170,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/interview/request-alternatives/",
@@ -4988,7 +5183,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/onboarding-complete/",
@@ -5001,7 +5196,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
@@ -5014,7 +5209,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
@@ -5027,7 +5222,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
@@ -5040,7 +5235,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/semester-results/",
@@ -5053,7 +5248,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/applications/<int:pk>/semester-results/",
@@ -5066,7 +5261,7 @@
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by student_a; refused to student_b"
+   "note": "object app_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/apply-gate/",
@@ -5095,7 +5290,9 @@
   {
    "route": "api/v1/scholarship/award/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "student_b"
+   ],
    "hide": [],
    "object": null,
    "flags": [],
@@ -5104,7 +5301,9 @@
   {
    "route": "api/v1/scholarship/award/comprehension-quiz/",
    "method": "get",
-   "allow": [],
+   "allow": [
+    "student_b"
+   ],
    "hide": [],
    "object": null,
    "flags": [],
@@ -5113,7 +5312,9 @@
   {
    "route": "api/v1/scholarship/award/comprehension/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "student_b"
+   ],
    "hide": [],
    "object": null,
    "flags": [],
@@ -5122,7 +5323,9 @@
   {
    "route": "api/v1/scholarship/award/guarantor/verify-phone/check/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "student_b"
+   ],
    "hide": [],
    "object": null,
    "flags": [],
@@ -5131,7 +5334,9 @@
   {
    "route": "api/v1/scholarship/award/guarantor/verify-phone/send/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "student_b"
+   ],
    "hide": [],
    "object": null,
    "flags": [],
@@ -5164,9 +5369,10 @@
   {
    "route": "api/v1/scholarship/bursary-agreement/",
    "method": "get",
-   "allow": [],
+   "allow": [
+    "student_a"
+   ],
    "hide": [
-    "student_a",
     "student_b"
    ],
    "object": null,
@@ -5177,10 +5383,11 @@
    "route": "api/v1/scholarship/bursary/contract/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5189,10 +5396,11 @@
    "route": "api/v1/scholarship/bursary/funds/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5201,10 +5409,11 @@
    "route": "api/v1/scholarship/bursary/growth/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5213,13 +5422,14 @@
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
-   "object": null,
+   "object": "module_a",
    "flags": [],
-   "note": "object module_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+   "note": "object module_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/lessons/<int:lid>/<str:action>/",
@@ -5230,8 +5440,10 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no growth lesson"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/lessons/<int:lid>/<str:action>/",
@@ -5242,8 +5454,10 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the world seeds no growth lesson"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/",
@@ -5254,20 +5468,23 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the seeded growth module has no task"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/",
    "method": "post",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
-   "object": null,
+   "object": "module_a",
    "flags": [],
-   "note": "object module_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+   "note": "object module_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/<str:step>/",
@@ -5278,8 +5495,10 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the seeded growth module has no task"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/<str:step>/",
@@ -5290,17 +5509,20 @@
     "student_b"
    ],
    "object": null,
-   "flags": [],
-   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "flags": [
+    "UNCOVERED: the seeded growth module has no task"
+   ],
+   "note": ""
   },
   {
    "route": "api/v1/scholarship/bursary/letters/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5316,28 +5538,30 @@
    ],
    "object": "letter_a",
    "flags": [],
-   "note": "object letter_a: reached by student_a; refused to student_b"
+   "note": "object letter_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/bursary/letters/<int:lid>/pdf/",
    "method": "get",
-   "allow": [],
+   "allow": [
+    "student_a"
+   ],
    "hide": [
-    "student_a",
     "student_b"
    ],
-   "object": null,
+   "object": "letter_a",
    "flags": [],
-   "note": "object letter_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": "object letter_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/bursary/mentoring/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5346,10 +5570,11 @@
    "route": "api/v1/scholarship/bursary/news/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5358,10 +5583,11 @@
    "route": "api/v1/scholarship/bursary/news/read/",
    "method": "post",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5370,10 +5596,11 @@
    "route": "api/v1/scholarship/bursary/summary/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5382,10 +5609,11 @@
    "route": "api/v1/scholarship/bursary/surveys/",
    "method": "get",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
    "object": null,
    "flags": [],
    "note": ""
@@ -5394,13 +5622,14 @@
    "route": "api/v1/scholarship/bursary/surveys/<int:pk>/answers/",
    "method": "post",
    "allow": [
-    "student_a",
+    "student_a"
+   ],
+   "hide": [
     "student_b"
    ],
-   "hide": [],
-   "object": null,
+   "object": "survey_a",
    "flags": [],
-   "note": "object survey_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+   "note": "object survey_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/consent/",
@@ -5461,7 +5690,7 @@
    ],
    "object": "document_a",
    "flags": [],
-   "note": "object document_a: reached by student_a; refused to student_b"
+   "note": "object document_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/documents/<int:pk>/help/",
@@ -5474,7 +5703,7 @@
    ],
    "object": "document_a",
    "flags": [],
-   "note": "object document_a: reached by student_a; refused to student_b"
+   "note": "object document_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/documents/<int:pk>/read/",
@@ -5487,7 +5716,7 @@
    ],
    "object": "document_a",
    "flags": [],
-   "note": "object document_a: reached by student_a; refused to student_b"
+   "note": "object document_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/documents/sign-upload/",
@@ -5587,7 +5816,7 @@
    ],
    "object": "resolution_a",
    "flags": [],
-   "note": "object resolution_a: reached by student_a; refused to student_b"
+   "note": "object resolution_a: reached by student_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/scholarship/results/refile-to-higher/",
@@ -5721,7 +5950,7 @@
    ],
    "object": "pool_ref_a",
    "flags": [],
-   "note": "object pool_ref_a: reached by sponsor_a; refused to sponsor_b"
+   "note": "object pool_ref_a: reached by sponsor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/sponsor/notifications/",
@@ -5771,7 +6000,7 @@
    "hide": [],
    "object": null,
    "flags": [],
-   "note": "object pool_ref_a: UNCOVERED, shared, not owner-fenced (sponsor_b allowed)"
+   "note": ""
   },
   {
    "route": "api/v1/sponsor/pool/<str:ref>/fund/",
@@ -5783,7 +6012,7 @@
    "hide": [],
    "object": null,
    "flags": [],
-   "note": "object pool_ref_a: UNCOVERED, shared, not owner-fenced (sponsor_b allowed)"
+   "note": ""
   },
   {
    "route": "api/v1/sponsor/pool/count/",
@@ -5877,14 +6106,15 @@
   {
    "route": "api/v1/sponsor/sponsorships/<int:pk>/cancel/",
    "method": "post",
-   "allow": [],
+   "allow": [
+    "sponsor_a"
+   ],
    "hide": [
-    "sponsor_a",
     "sponsor_b"
    ],
-   "object": null,
+   "object": "sponsorship_o",
    "flags": [],
-   "note": "object sponsorship_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+   "note": "object sponsorship_o: reached by sponsor_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/sponsor/standing-gift/",
@@ -5972,7 +6202,9 @@
     "sponsor_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: no active sponsor terms are seeded (seeding them would gate sponsors on every other route)"
+   ],
    "note": "nobody passes in this world"
   },
   {
@@ -5998,7 +6230,9 @@
     "sponsor_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: no active sponsor terms are seeded (seeding them would gate sponsors on every other route)"
+   ],
    "note": "nobody passes in this world"
   },
   {
@@ -6048,7 +6282,9 @@
     "sponsor_b"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no donation pool"
+   ],
    "note": "nobody passes in this world"
   },
   {
@@ -6061,7 +6297,9 @@
     "anon"
    ],
    "object": null,
-   "flags": [],
+   "flags": [
+    "UNCOVERED: the world seeds no STPM course (public read-only data)"
+   ],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
   },
   {
