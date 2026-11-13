@@ -41,9 +41,11 @@ from .models import PartnerAdmin
 
 logger = logging.getLogger('apps.courses.views_admin')
 
-#: What `archive_locked` did: ``error`` (`has_unfinished_work` with ``work``, `login_cleanup_failed`) or
+#: What `archive_locked` did: ``error`` (`in_a_group` / `has_unfinished_work` with ``work``, `login_cleanup_failed`) or
 #: None, and the login plan to carry out after the commit (`staff_lifecycle.retire_login`).
 Archived = namedtuple('Archived', 'error work plan account uid')
+#: M2c (owner R2): still in a group (the groups ride in ``work``); refused before any work is counted.
+IN_A_GROUP = 'in_a_group'
 
 
 def _modules():
@@ -92,9 +94,13 @@ def archive_locked(caller, row):
     ⚠ M1a review ("refuse, never end"): the linked MENTOR row is locked before the scholars are counted
     (a no-op when the door already holds it, as both doors do), so an assignment committed after the
     count cannot be ended by the mentoring leave below — `mentoring.assign` takes the same lock."""
+    from . import staff_tables
     staff_lifecycle, invitations, staff_work = _modules()
     if row.mentor_id is not None:
         _mentor_model().objects.select_for_update().filter(pk=row.mentor_id).first()
+    groups = staff_tables.groups_to_leave(row)    # M2c (owner R2): Delete only from "No group"
+    if groups:
+        return Archived(IN_A_GROUP, groups, None, None, None)
     work = staff_work.unfinished(row)
     if staff_work.any_work(work):
         return Archived('has_unfinished_work', work, None, None, None)
@@ -115,7 +121,15 @@ def archive_locked(caller, row):
     return Archived(None, None, plan, account, uid)
 
 
+def in_a_group_refusal(name, groups):
+    """M2c (owner R2): 409 `in_a_group` with the groups still to leave (`staff_tables.groups_to_leave`)."""
+    return Response({'error': f'{name} is still in a group. Remove them from every group first.',
+                     'code': IN_A_GROUP, 'groups': groups}, status=409)
+
+
 def _refused(name, done):
+    if done.error == IN_A_GROUP:
+        return in_a_group_refusal(name, done.work)
     if done.error == 'has_unfinished_work':
         return Response({'error': f'{name} still has work waiting on them. Finish or hand it over first.',
                          'code': 'has_unfinished_work', 'work': done.work}, status=409)

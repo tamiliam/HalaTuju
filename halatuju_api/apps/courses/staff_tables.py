@@ -99,6 +99,29 @@ def tables(admin):
                  if rule(admin))
 
 
+def seated(admin):
+    """``admin`` as their groups read: a SUSPENDED row read as if active, so its groups are the ones a
+    Restore gives back (M1a, `staff_list._groups`; M2c R3: a Remove of a suspended person). Never saved."""
+    if admin is None or admin.is_active:
+        return admin
+    import copy
+    back = copy.copy(admin)
+    back.is_active = True
+    return back
+
+
+def groups_to_leave(admin):
+    """Sprint M2c (owner R2): the groups ``admin`` must be removed from before a Delete — `seated`'s groups,
+    Mentors included, less a seat their role cannot be removed from (until M3: the lead tier's own seat at
+    Admins), so an organisation admin stays deletable as before. Empty = "No group". Someone who never signed
+    in has none to leave: they live on Invitations (owner O1), a Remove refuses them `not_arrived`, and the
+    narrow "never started" Delete stays theirs."""
+    if admin.first_seen_at is None:
+        return []
+    lead = sp.is_lead_tier(admin)
+    return [t for t in tables(seated(admin)) if not (lead and t == ADMINS)]
+
+
 def opens(admin, *keys):
     """THE PAGE GATE since Team tables T5c (P1): does `admin` hold EVERY v2 page key in `keys`
     (`staff_permissions_v2.effective_v2`, which reads the stored keys through the aliases, the Admins

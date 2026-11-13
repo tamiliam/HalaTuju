@@ -10,6 +10,11 @@ The read gate is `AdminListView`'s (`team_roster`). A super sees every organisat
 OWN organisation only, and `manageable` (the write fence, per row) is false wherever they may not act. The
 row fields and the fixed query budget: `apps.scholarship.staff_list`, reached through the ONE courses →
 scholarship door (`views_admin.scholarship_staff()`). No phone and no email (O9, O16).
+
+Sprint M2c (owner R1): `suspended_cases`, for a viewer holding `manage_team` only, is the open cases (the
+`staff_lifecycle.OPEN_CASE_STATUSES` rule) held by the SUSPENDED people listed - summed from the rows, so
+no extra query. It is a banner on the Members tab, not an Overview card: `my-pending` is at its admitted
+query count and the ledger is never raised (brief C4 fallback).
 """
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -45,4 +50,8 @@ class StaffListView(PartnerAdminMixin, APIView):
             if admin.owning_organisation_id is None:
                 people = people.none()
         _, staff_lifecycle = scholarship_staff()
-        return Response({'staff': staff_lifecycle.staff_list_rows(admin, people)})
+        rows = staff_lifecycle.staff_list_rows(admin, people)
+        body = {'staff': rows}
+        if admin.has_perm('manage_team'):   # M2c (owner R1): the banner, read from the rows (no query)
+            body['suspended_cases'] = sum(r['work']['reviewers']['open_cases'] for r in rows if r['suspended'])
+        return Response(body)

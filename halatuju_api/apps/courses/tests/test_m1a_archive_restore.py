@@ -38,6 +38,17 @@ def _unused(uid):
             'identities': [{'provider': 'email'}], 'app_metadata': {'must_change_password': True}}
 
 
+def _no_group(target):
+    """Sprint M2c (owner R2): Delete only from "No group". The end state of the Removes, set directly: a
+    staff row becomes a `member` with no keys, and its Mentor (if any) is stamped deactivated."""
+    if target.mentor_id:
+        Mentor.objects.filter(pk=target.mentor_id).update(deactivated_at=timezone.now())
+    if not target.is_mentor:
+        PartnerAdmin.objects.filter(pk=target.pk).update(role=PartnerAdmin.MEMBER_ROLE, permissions=None)
+    target.refresh_from_db()
+    return target
+
+
 def _reviewed(target, app=None):
     """A closed trace (footprint, nothing waiting): ``target`` recorded a verdict on ``app``."""
     app = app or make_application('submitted')
@@ -87,7 +98,7 @@ class TestStaffDeleteErasesOrArchives(_Base):
     def test_records_with_the_flag_archive_the_row(self):
         target = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
         uid = target.supabase_user_id
-        _reviewed(target)
+        _reviewed(_no_group(target))
         inv = invitations.create_or_refresh(audience='staff', email=target.email, name=target.name,
                                             role='reviewer', organisation=self.org, invited_by=self.lead,
                                             partner_admin=target)
@@ -100,7 +111,7 @@ class TestStaffDeleteErasesOrArchives(_Base):
         self.assertIsNotNone(target.archived_at)
         self.assertEqual((target.is_active, target.supabase_user_id, target.archived_by_email),
                          (False, None, self.lead.email))
-        self.assertEqual(target.role, 'reviewer')                    # kept: the name stays on records
+        self.assertEqual(target.role, 'member')                      # kept as it was (M2c: "No group")
         self.assertEqual(StaffActivity.objects.filter(actor=target).count(), 1)
         self.gone.assert_called_once()
         self.assertEqual(self.gone.call_args[0][0], uid)
@@ -211,7 +222,7 @@ class TestReinviteRestoresTheSameRow(_Base):
     def _archived(self, role='reviewer', **kw):
         target = make_admin(role, owning_org=self.org, first_seen_at=timezone.now(),
                             permissions=['review', 'spending'], **kw)
-        app = _reviewed(target)
+        app = _reviewed(_no_group(target))
         self.assertEqual(self.delete(self.lead, target, ARCHIVE).status_code, 200)
         target.refresh_from_db()
         return target, app
@@ -272,7 +283,7 @@ class TestMentorDoorArchiveAndRestore(_Base):
         login = make_admin('mentor', owning_org=self.org, first_seen_at=timezone.now())
         MentorAssignment.objects.create(application=make_application('active'), mentor=login.mentor,
                                         ended_at=None if open_assignment else timezone.now())
-        return login
+        return login if open_assignment else _no_group(login)   # M2c (R2): Deactivated before a Delete
 
     def _delete_mentor(self, login, body=None):
         return self.delete(self.lead, login, body, url=f'/api/v1/admin/mentors/{login.mentor_id}/')
@@ -295,9 +306,10 @@ class TestMentorDoorArchiveAndRestore(_Base):
         self.gone.assert_called_once()
 
     def test_a_scholar_mentored_now_refuses(self):
+        # M2c (owner R2): a scholar now keeps them in Mentors, and "in a group" is asked first.
         login = self._mentor(open_assignment=True)
         r = self._delete_mentor(login, ARCHIVE)
-        self.assertEqual((r.status_code, r.json()['code']), (409, 'has_unfinished_work'))
+        self.assertEqual((r.status_code, r.json()['code'], r.json()['groups']), (409, 'in_a_group', ['mentors']))
         login.refresh_from_db()
         self.assertIsNone(login.archived_at)
 

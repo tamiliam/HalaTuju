@@ -28,8 +28,9 @@ otherwise keep them seated — their `role`:
 ⚠ A KEY SET EQUAL TO THE (new) ROLE'S PRESET IS STORED AS NULL, as the editor stores it, so "custom" stays
 derivable. A preset row is MATERIALISED before a key is added, so nobody loses anything by an Add.
 
-⚠ REFUSED: the person's LAST table ("revoke instead"); a revoked or inactive row; a super; anyone outside
-the caller's remit (the view answers 404 for those).
+⚠ REFUSED: the person's LAST table ("revoke instead"); an Add for a revoked or inactive row (since M2c, owner
+R3, a suspended person may be REMOVED, under the same work checks, planned on the groups a Restore gives
+back: `staff_tables.seated`); a super; anyone outside the caller's remit (the view answers 404 for those).
 
 ⚠ TEAM TABLES T3 (2026-11-03): THE LAST STAFF TABLE WHEN THEY STILL MENTOR. T2 refused it ("only Mentors
 would be left", until T3). It is now accepted ONLY where the shape is already one 7a / 7d support — a
@@ -165,12 +166,14 @@ def may_become_mentor(target, open_n):
             and target.first_seen_at is not None and not open_n)
 
 
-def _refuse_basic(target):
+def _refuse_basic(target, remove=False):
+    """``remove`` (M2c, owner R3): a suspended person may still be REMOVED from a group, under the same work
+    checks; an Add (and the permission editor's own `_refuse_target`) still refuses `not_active`."""
     from apps.courses import staff_permissions as sp
     if target.is_super or not (target.role in sp.TEAM_ROLES or target.role == sp.LEAD_ROLE
                                or target.is_mentor or target.is_member):   # M1a: "No group" joins one
         raise Refused('not_eligible', 400, 'Only a member of this organisation’s team can sit in a table.')
-    if not target.is_active:
+    if not target.is_active and not remove:
         raise Refused('not_active', 400,
                       f"{target.name}'s access is revoked. Restore them before changing their tables.")
 
@@ -336,10 +339,14 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
     """What adding / removing would do, or `Refused`. Read-only apart from the work counts.
     ``to_no_group`` (M1a, owner O6): a Remove of the LAST group lands on "No group" (role `member`)
     instead of `last_table`. Without it, today's answer."""
+    from apps.courses import staff_tables
     from . import staff_lifecycle, staff_permissions_admin as spa
     if table not in TABLES or action not in ('add', 'remove'):
         raise Refused('bad_request', 400, 'table must be admins or reviewers; action add or remove.')
-    _refuse_basic(target)
+    _refuse_basic(target, remove=action == 'remove')
+    live = target.is_active
+    # M2c (owner R3): a suspended person's Remove is planned on their groups as a Restore gives them back.
+    target = staff_tables.seated(target) if action == 'remove' else target
     out = (_plan_add(target, table) if action == 'add'
            else _plan_remove(target, table, open_n, to_no_group))
     opens_admin_pages = _v2_part(target, table, action, out)
@@ -359,7 +366,7 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
     # CHECKER_KEY`), so it goes off when this change takes the key from the organisation's last active
     # holder — whatever their label (was: leaving the Finance LABEL).
     from .credit_steps import CHECKER_KEY
-    out['finance_check_off'] = bool(CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
+    out['finance_check_off'] = bool(live and CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
                                     and target.owning_organisation_id is not None
                                     and not staff_lifecycle.other_active_checker(target))
     # Lead ruling Q2b: said in plain words on the confirm. M2b: the change STORES the admin work pages
@@ -420,12 +427,12 @@ def open_case_counts(admin_ids):
     """`{admin_id: open cases}` in ONE query — `staff_lifecycle.open_cases`'s rule, for a page of rows."""
     from django.db.models import Count, Q
     from .models import ScholarshipApplication
-    from .services.apply_gate import IN_PLAY_STATUSES
+    from .staff_lifecycle import OPEN_CASE_STATUSES
     ids = [i for i in admin_ids if i is not None]
     if not ids:
         return {}
     rows = (ScholarshipApplication.objects.filter(assigned_to_id__in=ids)
-            .filter(Q(status__in=IN_PLAY_STATUSES) | Q(decision_reopened_at__isnull=False))
+            .filter(Q(status__in=OPEN_CASE_STATUSES) | Q(decision_reopened_at__isnull=False))
             .values('assigned_to_id').annotate(n=Count('id')))
     return {r['assigned_to_id']: r['n'] for r in rows}
 
@@ -451,10 +458,10 @@ def row_fields(caller, admins, *, open_counts=None, runs=None):
     counts = open_counts if open_counts is not None else open_case_counts([a.pk for a in rows])
     out = {}
     for a in rows:
-        remove = {}
+        remove, seat = {}, staff_tables.seated(a)     # M2c (owner R3): a suspended row's Remove too
         for table in TABLES:
-            if a.is_active and _in(a, table) and may_act(caller, a, table):
-                remove[table] = row_refusal(a, table, counts.get(a.pk, 0),
+            if _in(seat, table) and may_act(caller, a, table):
+                remove[table] = row_refusal(seat, table, counts.get(a.pk, 0),
                                             None if runs is None else runs.get(a.pk, 0))
         out[a.pk] = {'tables': list(staff_tables.tables(a)), 'lead': sp.is_lead_tier(a),
                      'admin_keys': table_keys(a, ADMINS), 'reviewer_keys': table_keys(a, REVIEWERS),
@@ -484,7 +491,7 @@ def change(target_id, table, action, *, by, dry_run=False, to_no_group=False):
         fields = {'permissions': p['stored']}
         if p['role_changed']:
             fields['role'] = p['role']
-        rows = PartnerAdmin.objects.filter(pk=target.pk, role=p['role_from'], is_active=True)
+        rows = PartnerAdmin.objects.filter(pk=target.pk, role=p['role_from'], is_active=target.is_active)
         if p['becomes_mentor']:
             # T3: the mentor link and the mentor record must still be live as the row is written (the
             # lock above holds the login; a Stop mentoring racing this one stamps the mentor first).

@@ -120,14 +120,14 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
                'recommended': 0, 'declined': 0, 'rejected_after_review': 0, 'awaiting_qc': 0,
                'unaccounted': 0, '_days': [], '_open_cases': 0}
            for i in ids}
-    from ..services.apply_gate import IN_PLAY_STATUSES
+    from ..staff_lifecycle import is_open_case
     for aid, status, assigned_at, decided_at, verdict, recommended_at, reopened in rows.values_list(
             'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict',
             'recommended_at', 'decision_reopened_at'):
         slot = out[aid]
         # Team tables T2: `staff_lifecycle.open_cases`'s count, read in this same query (Remove from
         # Reviewers is refused while it is above zero). Internal: never serialised by `_reviewer_dict`.
-        if status in IN_PLAY_STATUSES or reopened is not None:
+        if is_open_case(status, reopened):
             slot['_open_cases'] += 1
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:

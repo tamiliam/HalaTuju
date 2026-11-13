@@ -139,7 +139,8 @@ def add_member(caller, target):
 def remove_mentor_login(caller, mentor, login):
     """M1a: Team → Mentors → Remove for a MENTOR LOGIN (its only group): it becomes "No group" (role
     `member`, the link kept, the Mentor stamped deactivated; sign-in kept). ``(scholars, error)``:
-    `not_active` (switched off, or the mentor already deactivated), `not_arrived` (never signed in — the
+    `not_active` (the mentor already deactivated; since M2c, owner R3, a suspended login is NOT refused: it
+    leaves Mentors under the same scholar check, and stays suspended), `not_arrived` (never signed in — the
     invitation is Revoke's), `has_scholars` (with the count). Under the login lock `stop` takes.
 
     ⚠ M1a review: the MENTOR row is locked FIRST, then the login — the order `delete_mentor`,
@@ -152,7 +153,7 @@ def remove_mentor_login(caller, mentor, login):
         row = PartnerAdmin.objects.select_for_update().filter(pk=getattr(login, 'pk', None)).first()
         if locked is None or row is None or not row.is_mentor or row.mentor_id != mentor.pk:
             return 0, 'not_active'
-        if not row.is_active or locked.deactivated_at is not None:
+        if locked.deactivated_at is not None:      # M2c (owner R3): a SUSPENDED login may still leave
             return 0, 'not_active'
         if row.first_seen_at is None:
             return 0, 'not_arrived'

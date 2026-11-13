@@ -10,7 +10,7 @@ are refused with the same code, because both are "not a switch this screen makes
 ⚠ **A SWITCH MAY NOT STRAND WORK.** `finance` has no B40 scope at all (`_b40_scope` → 'none') and is
 not a review target (`services.is_review_target`), so an admin with cases assigned to them would leave
 those cases with an owner who cannot open them. Refused while they hold any in-play case
-(`apply_gate.IN_PLAY_STATUSES` — the assigned reviewer still acts after an award, S6) and while a
+(`OPEN_CASE_STATUSES` — a case stops being open once the student is awarded, R5 M2c) and while a
 payment run they made or signed is still waiting (as finance they would be its APPROVER and could
 not sign it again: the three-distinct-signers rule). Reviewer ↔ QC strands nothing — both are review roles and keep their
 assigned cases; the QC self-check guard still stops anybody QC-ing a verdict they recorded.
@@ -85,15 +85,27 @@ def staff_list_rows(caller, admins):
     return staff_list.list_rows(caller, admins)
 
 
+#: A case still OPEN for the officer who holds it (owner R5, sprint M2c): every status before the award
+#: (`models/applications.py` status order). An awarded student stays `assigned_to` their reviewer, who still
+#: sees them, but the case no longer blocks a Remove, a role switch or a Delete. NOT `IN_PLAY_STATUSES`
+#: (`apply_gate`), which means "an application still in play" for the gate, closure and reminders.
+OPEN_CASE_STATUSES = ('submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed',
+                      'recommended')
+
+
+def is_open_case(status, reopened_at):
+    """One case row against the rule `open_cases` counts in SQL (a reopened decision is open at any status)."""
+    return status in OPEN_CASE_STATUSES or reopened_at is not None
+
+
 def open_cases(admin):
-    """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
+    """How many cases ``admin`` still HOLDS: pre-award applications assigned to them, and — #39 S4
     review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which
     can sit at `rejected` while it waits for the assigned officer to decide again. Both the
     permission editor's stranding rule and Admin → Finance read this one count."""
     from .models import ScholarshipApplication
-    from .services.apply_gate import IN_PLAY_STATUSES
     return ScholarshipApplication.objects.filter(assigned_to=admin).filter(
-        Q(status__in=IN_PLAY_STATUSES) | Q(decision_reopened_at__isnull=False)).count()
+        Q(status__in=OPEN_CASE_STATUSES) | Q(decision_reopened_at__isnull=False)).count()
 
 
 #: A payment run still on its way — anything short of `completed` / `cancelled`.

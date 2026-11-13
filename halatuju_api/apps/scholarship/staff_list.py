@@ -17,13 +17,13 @@ Row fields:
   `manageable`      the write fence: `_staff_target_manageable` for staff, `mentor_invite.manageable` for a
                     mentor login. A `team_read` reader who is neither a super nor an org admin: false
   `delete_never`    why no Delete is drawn, or None: `self`, `not_manageable` (also a role never deleted),
-                    `sole_org_admin`, `has_unfinished_work` (owner O7: anything still waiting on them)
+                    `sole_org_admin`, `in_a_group` (M2c, owner R2: still in a group, Mentors included — the
+                    lead tier's own seat at Admins does not count, `staff_tables.groups_to_leave`),
+                    `has_unfinished_work` (owner O7: anything still waiting on them)
   `delete_outcome`  what Delete does when it may: `erase` (no records) or `archive` (records; the web sends
                     `{"archive": true}`); None when `delete_never` is set
   `revocable`       the Suspend / Restore toggle (staff: `delete_fields`; a mentor login: manageable)
 """
-import copy
-
 from apps.courses import staff_tables
 from apps.courses import staff_permissions as sp
 from apps.courses.staff_delete_rules import delete_fields, sole_org_admin_ids
@@ -37,11 +37,7 @@ STAFF, MENTOR = 'staff', 'mentor'
 
 def _groups(a):
     """The groups ``a`` sits in; a suspended row is read as if active (the groups a Restore gives back)."""
-    if a.is_active:
-        return list(staff_tables.tables(a))
-    back = copy.copy(a)
-    back.is_active = True
-    return list(staff_tables.tables(back))
+    return list(staff_tables.tables(staff_tables.seated(a)))
 
 
 def _mentor_records(admins):
@@ -60,6 +56,8 @@ def _never(caller, a, rules, work):
         return 'not_manageable'
     if rules['alone']:
         return 'sole_org_admin'
+    if staff_tables.groups_to_leave(a):      # M2c (owner R2): Delete only from "No group"
+        return 'in_a_group'
     if staff_work.any_work(work):
         return 'has_unfinished_work'
     return None

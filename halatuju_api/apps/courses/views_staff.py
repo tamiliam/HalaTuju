@@ -173,6 +173,8 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
                                  'code': 'not_deletable'}, status=400)
             if is_sole_org_admin(target, lock=True):   # T2 review N4: the guard Revoke has
                 return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
+            if groups := staff_tables.groups_to_leave(target):    # M2c (owner R2): Delete only from "No group"
+                return staff_archive.in_a_group_refusal(target.name, groups)
             work = staff_footprint.footprint(target)
             if work:
                 return Response({'error': f'{target.name} has work on record and can only be '

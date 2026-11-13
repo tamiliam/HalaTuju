@@ -375,7 +375,7 @@ class AdminMentorView(_MentorsBase):
         admin, mentor, login, err = self._target(request, pk)
         if err:
             return err
-        from apps.courses.staff_archive import archive_asked
+        from apps.courses.staff_archive import archive_asked, in_a_group_refusal
         from .. import mentor_archive
         try:   # M1a: `{"archive": true}` archives a mentor with records (`mentor_archive`); else today's
             refusal, detail = ((archive_asked(request.data) and mentor_archive.archive(admin, mentor, login))
@@ -388,6 +388,8 @@ class AdminMentorView(_MentorsBase):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_found':
             return _error(refusal, status.HTTP_404_NOT_FOUND)
+        if refusal == 'in_a_group':          # M2c (owner R2): Remove from Mentors first
+            return in_a_group_refusal(login.name if login is not None else '', detail)
         if refusal == 'archived':
             return Response({'message': 'Mentor archived. Their name stays on past records.', 'archived': True,
                              'login': detail})

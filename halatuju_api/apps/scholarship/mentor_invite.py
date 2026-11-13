@@ -500,14 +500,15 @@ def delete_mentor(caller, mentor, login):
 
     ``(error, detail)``: on success ``(None, <the login word for the AUDIT line>)``; else `staff_mentor`
     (a staff member who also mentors — deleted from Team -> Admins / Reviewers, where their mentoring
-    counts as work), `not_found`, `has_work` with the footprint counts, or `login_cleanup_failed`.
+    counts as work), `not_found`, `in_a_group` with the groups (M2c, owner R2: a signed-in mentor login
+    still in Mentors), `has_work` with the footprint counts, or `login_cleanup_failed`.
 
     ⚠ THE FOOTPRINT REFUSES FIRST. Any mentoring assignment ever (ended too), any session, any concern —
     `staff_footprint.MENTOR_TRACES`, keyed on the mentor itself — and every email stamp of the login.
     `MentorAssignment.mentor` / `MentoringSession.mentor` stay PROTECT as the database's backstop. The
     mentor row is LOCKED first: in Postgres a new assignment's foreign key waits on that lock, so work
     landing between the check and the delete cannot slip through."""
-    from apps.courses import supabase_admin
+    from apps.courses import staff_tables, supabase_admin
     from . import staff_lifecycle
     if is_staff_login(login):
         return 'staff_mentor', None
@@ -520,6 +521,9 @@ def delete_mentor(caller, mentor, login):
             return 'staff_mentor', None
         if row is not None and row.is_archived:   # M1a: out of reach by id (the scope hides it too)
             return 'not_found', None
+        groups = staff_tables.groups_to_leave(row) if row is not None else []
+        if groups:                                # M2c (owner R2): Delete only from "No group"
+            return 'in_a_group', groups
         work = mentor_work(row, locked)
         if work:
             return 'has_work', work

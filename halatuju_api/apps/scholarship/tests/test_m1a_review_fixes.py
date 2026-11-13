@@ -22,7 +22,7 @@ from apps.courses import staff_archive, staff_reinvite
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import mentoring, staff_mentor
 from apps.scholarship.models import Mentor
-from apps.courses.tests.test_m1a_archive_restore import DELETE, READ, SUPABASE, _reviewed, _unused
+from apps.courses.tests.test_m1a_archive_restore import DELETE, READ, SUPABASE, _no_group, _reviewed, _unused
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
 from apps.scholarship.tests.test_m1a_remove_rules import _signed_in
 from apps.scholarship.tests.test_mentoring import _scholar, make_mentor
@@ -116,8 +116,8 @@ class TestArchiveUnderTheMentorLock(_Base):
     def setUp(self):
         super().setUp()
         self.mentor = Mentor.objects.create(organisation=self.org)
-        self.target = make_admin('reviewer', owning_org=self.org, mentor=self.mentor,
-                                 first_seen_at=timezone.now())
+        self.target = _no_group(make_admin('reviewer', owning_org=self.org, mentor=self.mentor,
+                                           first_seen_at=timezone.now()))   # M2c (R2): Delete from No group
 
     def test_archive_locked_counts_the_scholars_under_the_mentor_lock(self):
         with patch(PLAN, return_value=('none', None)):
