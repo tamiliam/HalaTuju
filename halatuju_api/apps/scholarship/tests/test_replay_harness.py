@@ -94,11 +94,14 @@ ANSWERS = {
 #: What the fake adapters register, as an R2 adapter would (engine names, record fields, statuses).
 FAKE_CODES = tuple(ANSWERS) + ('status', 'app', 'amount', 'n', 'month', 'months', 'probable', 'unclear',
                                'submitted', 'unreachable')
+#: The fake records' int fields, added to `scrub.INT_KEYS` as an R2 adapter's would be (by review).
+FAKE_INT_KEYS = frozenset({'app', 'amount', 'n'})
 
 
 def _register_fake_codes(test):
     for patcher in (mock.patch.object(scrub, '_REGISTERED', set()),
-                    mock.patch.dict(scrub._STATE, frozen=False)):          # engine_map froze it on import
+                    mock.patch.dict(scrub._STATE, frozen=False),           # engine_map froze it on import
+                    mock.patch.object(scrub, 'INT_KEYS', scrub.INT_KEYS | FAKE_INT_KEYS)):
         patcher.start()
         test.addCleanup(patcher.stop)
     scrub.register_codes(FAKE_CODES)
@@ -214,7 +217,11 @@ class JoinHandshakeTest(SimpleTestCase):
         _register_fake_codes(self)
 
     def test_the_parent_rolls_back_once_every_child_joined_and_before_any_child_finishes(self):
-        state = {'open': False, 'open_at_wait': []}
+        state = {'open': False, 'open_at_wait': [], 'open_at_counts': None}
+
+        def counts():
+            state['open_at_counts'] = state['open']
+            return {'applications': 0}
 
         @contextlib.contextmanager
         def session():
@@ -237,10 +244,11 @@ class JoinHandshakeTest(SimpleTestCase):
                                   '--old-root', self.workdir, '--new-root', self.workdir])
         lines = []
         parent.run_replay(args, env={guards.DB_ENV: LOCAL_URL, 'PATH': '/bin'}, out=lines.append, spawn=spawn,
-                          session=session, counts=lambda: {'applications': 0})
+                          session=session, counts=counts)
         self.assertEqual(state['open_at_wait'], [False, False, False])
+        self.assertTrue(state['open_at_counts'])                    # counted inside the same snapshot
         events = [json.loads(line).get('event') for line in lines]
-        self.assertLess(events.index('counts'), events.index('joins'))
+        self.assertLess(events.index('joins'), events.index('counts'))
 
     def _args(self):
         return parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
@@ -251,7 +259,7 @@ class JoinHandshakeTest(SimpleTestCase):
     def _session():
         yield '00000003-0000001B-1'
 
-    def test_the_counts_run_before_any_child_starts(self):
+    def test_the_counts_run_only_after_every_child_has_joined_so_the_wait_holds_no_table_lock(self):
         order = []
 
         def counts():
@@ -264,15 +272,22 @@ class JoinHandshakeTest(SimpleTestCase):
                 fh.write(json.dumps({'event': 'joined', 'side': side}) + '\n')
             return _done_proc()
 
-        lines = []
-        parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
-                          session=self._session, counts=counts)
-        self.assertEqual(order, ['counts', 'spawn', 'spawn', 'spawn'])
-        events = [json.loads(line).get('event') for line in lines]
-        self.assertLess(events.index('counts'), events.index('joins'))
+        real_wait = parent.wait_for_joins
 
-    def test_side_files_left_by_an_earlier_run_are_deleted_before_any_child_starts(self):
-        for name in ('old.jsonl', 'new.jsonl', 'new_again.jsonl', 'stale.jsonl'):
+        def wait(paths, procs, **kw):
+            order.append('wait')
+            return real_wait(paths, procs, **kw)
+
+        lines = []
+        with mock.patch.object(parent, 'wait_for_joins', wait):
+            parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
+                              session=self._session, counts=counts)
+        self.assertEqual(order, ['spawn', 'spawn', 'spawn', 'wait', 'counts'])
+        events = [json.loads(line).get('event') for line in lines]
+        self.assertLess(events.index('joins'), events.index('counts'))
+
+    def test_only_the_three_side_files_of_an_earlier_run_are_deleted_before_any_child_starts(self):
+        for name in ('old.jsonl', 'new.jsonl', 'new_again.jsonl', 'stale.jsonl', 'notes.jsonl'):
             with open(os.path.join(self.workdir, name), 'w', encoding='utf-8') as fh:
                 fh.write('{"engine": "same", "key": [1], "record": {"status": "probable"}}\n')
         seen = []
@@ -284,7 +299,7 @@ class JoinHandshakeTest(SimpleTestCase):
         lines = []
         parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
                           session=self._session, counts=dict)
-        self.assertEqual(seen[0], [])
+        self.assertEqual(seen[0], ['notes.jsonl', 'stale.jsonl'])      # nothing but the side files
         sides = [json.loads(x) for x in lines if json.loads(x).get('event') == 'side']
         self.assertEqual([s['records'] for s in sides], [0, 0, 0])
 
@@ -471,7 +486,9 @@ class OwnerFilesTest(SimpleTestCase):
         with open(STEPS_DOC, encoding='utf-8') as fh:
             text = fh.read()
         for needle in ('No deploy and no migration', 'SET LOCAL lock_timeout',
-                       'SET LOCAL idle_in_transaction_session_timeout'):
+                       'SET LOCAL idle_in_transaction_session_timeout',
+                       'HARD RULE: no deploy, no migration, no ALTER while the replay job runs', 'quiet window',
+                       'stop the job first', 'gcloud run jobs executions cancel', 'TD-620'):
             self.assertIn(needle, text)
 
     def test_the_drop_file_removes_the_role(self):

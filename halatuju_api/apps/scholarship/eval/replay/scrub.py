@@ -17,15 +17,20 @@ for the name of a loaded exception class; anywhere else its value is hashed like
 
 What leaves as written:
   * None, True, False;
-  * an int below 10**8 (an id or a count; an IC or a phone number held as a number is longer);
+  * an int below 10**8 ONLY under a key in `INT_KEYS` (the counts, totals and case keys the harness
+    emits); any other int is DROPPED. An 8-digit landline (41234567) or an IC split into parts
+    ([990101, 14, 5678]) is below the cap, so the cap alone never made an int safe;
   * a Decimal / float below 10**8, written as a 2-decimal amount (the same cap as a text amount);
   * a string that is: a known code; a hash `h:<8-16 hex>` or `!h:<12 hex>`; an amount `-?\\d{1,8}.\\d\\d`;
-    a month `YYYY-MM`; and, ONLY under the `old_commit` / `new_commit` keys, a commit hash (7-40 hex
-    with at least one letter AND one digit: a lower-cased passport has that shape too).
+    a month `YYYY-MM`; and, ONLY under `old_commit` / `new_commit` in the top-level `start` event the
+    parent emits, a commit hash (7-40 hex with at least one letter a-f AND one digit: a lower-cased
+    passport has that shape too, so it is honoured nowhere else).
 
 The registry is FROZEN once `engine_map` is imported (it imports the adapters, which register first);
-a later `register_codes` raises. A code that looks like an IC, a phone, a passport or a long number is
-refused even before then. Each child refuses to start without the parent's salt (`use_salt`).
+a later `register_codes` raises. A code is checked with its separators (`_ . : / -`) removed, and is
+refused when what is left holds a run of six or more digits (an IC, a phone, a long number, `d010203`)
+or one or two letters and 7-9 digits (a passport), even before the freeze. Each child refuses to start
+without the parent's salt (`use_salt`).
 """
 import hashlib
 import hmac
@@ -44,19 +49,25 @@ _HASH = re.compile(r'^h:[0-9a-f]{8,16}$')
 _SCRUB_HASH = re.compile(r'^!h:[0-9a-f]{12}$')
 _AMOUNT = re.compile(r'^-?\d{1,8}\.\d{2}$')
 _MONTH = re.compile(r'^20\d{2}-(0[1-9]|1[0-2])$')
-_COMMIT = re.compile(r'^(?=[0-9]*[a-f])(?=[a-f]*[0-9])[0-9a-f]{7,40}$')
-#: Keys under which a commit-hash-shaped string may leave as written.
+#: 7-40 hex with at least one letter a-f and one digit (so neither an all-digit IC nor a word).
+_COMMIT = re.compile(r'^(?=[0-9a-f]*[a-f])(?=[0-9a-f]*[0-9])[0-9a-f]{7,40}$')
+#: Keys under which a commit-hash-shaped string may leave as written: ONLY in the top-level `start` event.
 _COMMIT_KEYS = frozenset({'old_commit', 'new_commit'})
+#: The only keys under which an int leaves as written (directly or inside a list): the case counts, the
+#: per-engine totals, a side's exit code / record / drop counts, and a case `key` (an id). R2 adds its own
+#: count, amount and index keys HERE, by review; nothing registers them at run time.
+INT_KEYS = frozenset({
+    'key', 'exit', 'records', 'dropped', 'failed_modules',
+    'applications', 'documents_live', 'payable', 'profiles_spm', 'profiles_stpm', 'sponsors',
+    'same', 'differs', 'could_not_run', 'noise',
+})
 #: What `register_codes` accepts: one token, no spaces, at most 64 characters...
 _CODE_SHAPE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_:./-]{0,63}$')
-#: ...and none of these anywhere in it: six or more digits alone, an IC (YYMMDD-PB-NNNN, dashes
-#: optional), a phone (+60 / 0 then 8-11 digits, one dash or space allowed), a passport (one letter
-#: and 7-9 digits).
-_PERSONAL_SHAPES = re.compile(
-    r'^\d{6,}$'
-    r'|(?<!\d)\d{6}-?\d{2}-?\d{4}(?!\d)'
-    r'|(?<!\d)(?:\+?6)?0\d{1,2}[- ]?\d{6,8}(?!\d)'
-    r'|(?<![A-Za-z])[A-Za-z]\d{7,9}(?!\d)')
+#: ...and, once its separators are removed (`_SEPARATORS`), none of these anywhere in it: a run of six or
+#: more digits (an IC however split, a phone, a long number, `d010203`), or one or two letters and 7-9
+#: digits (a passport, `AB1234567`).
+_SEPARATORS = re.compile(r'[_.:/\- ]')
+_PERSONAL_SHAPES = re.compile(r'\d{6,}|[A-Za-z]{1,2}\d{7,9}')
 #: Keys an error record (or a fatal event) may carry beside `error`.
 _ERROR_RECORD_KEYS = frozenset({'error', 'event', 'side', 'engine'})
 
@@ -93,8 +104,8 @@ def register_codes(codes):
     if _STATE['frozen']:
         raise RegistryFrozen('replay: the code registry is frozen')
     codes = list(codes)
-    bad = [c for c in codes
-           if not isinstance(c, str) or not _CODE_SHAPE.match(c) or _PERSONAL_SHAPES.search(c)]
+    bad = [c for c in codes if not isinstance(c, str) or not _CODE_SHAPE.match(c)
+           or _PERSONAL_SHAPES.search(_SEPARATORS.sub('', c))]
     if bad:
         raise ValueError(f'replay: {len(bad)} value(s) are not codes')
     _REGISTERED.update(codes)
@@ -142,7 +153,7 @@ def text_hash(value):
 
 def amount(value):
     """A 2-decimal amount string, or DROPPED when it is not a finite number or not below MAX_INT (the
-    same cap as a text amount: an IC or a phone held as a Decimal is longer)."""
+    same cap as a text amount: a full IC or mobile number held as a Decimal is longer)."""
     try:
         d = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError):
@@ -158,11 +169,11 @@ def _passes_as_written(s):
                 or s == DROPPED)
 
 
-def _leaf(value):
+def _leaf(value, ints):
     if value is None or isinstance(value, bool):
         return value
     if isinstance(value, int):
-        return value if abs(value) < MAX_INT else DROPPED
+        return value if ints and abs(value) < MAX_INT else DROPPED
     if isinstance(value, float):
         return amount(value) if math.isfinite(value) else DROPPED
     if isinstance(value, Decimal):
@@ -194,18 +205,25 @@ def _is_error_name(value):
 def scrub(value):
     """A copy of ``value`` with every non-conforming leaf hashed or dropped and every dict key that is not
     a known code dropped. Lists and tuples become lists; sets become sorted lists."""
+    return _scrub(value, top=True, ints=False)
+
+
+def _scrub(value, *, top, ints):
+    """``top``: ``value`` is the whole line (only there may a `start` event carry its commit hashes).
+    ``ints``: ``value`` sits under a key in INT_KEYS (a list under one passes it to its items)."""
     if isinstance(value, dict):
         error_shaped = 'error' in value and set(value) <= _ERROR_RECORD_KEYS
+        start_event = top and value.get('event') == 'start'
         out = {}
         for k, v in value.items():
             if k == 'error' and error_shaped and _is_error_name(v):
                 out[k] = v
             elif k == '!dropped_keys' and type(v) is int and 0 <= v < MAX_INT:   # an already-scrubbed record
                 out[k] = out.get(k, 0) + v
-            elif k in _COMMIT_KEYS and isinstance(v, str) and _COMMIT.match(v):
+            elif start_event and k in _COMMIT_KEYS and isinstance(v, str) and _COMMIT.match(v):
                 out[k] = v
             elif is_code(k):
-                out[k] = scrub(v)
+                out[k] = _scrub(v, top=False, ints=k in INT_KEYS)
             else:
                 out.setdefault('!dropped_keys', 0)
                 out['!dropped_keys'] += 1
@@ -213,10 +231,10 @@ def scrub(value):
             out['!dropped_keys'] = min(out['!dropped_keys'], MAX_INT - 1)
         return out
     if isinstance(value, (list, tuple)):
-        return [scrub(v) for v in value]
+        return [_scrub(v, top=False, ints=ints) for v in value]
     if isinstance(value, (set, frozenset)):
-        return sorted((scrub(v) for v in value), key=repr)
-    return _leaf(value)
+        return sorted((_scrub(v, top=False, ints=ints) for v in value), key=repr)
+    return _leaf(value, ints)
 
 
 def count_dropped(value):

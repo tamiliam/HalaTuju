@@ -202,6 +202,19 @@ class PreflightTest(SimpleTestCase):
         self.assertEqual(guards.check_database_url(GOOD_URL.replace('pw-not-real', 'pw,not,real')),
                          ('pooler.example.test', 5432))                   # a comma in the password is fine
 
+    def test_an_encoded_host_list_socket_path_or_odd_host_is_refused(self):
+        # dj_database_url URL-decodes the host: h1%2Ch2 reaches libpq as h1,h2 (two hosts to try).
+        for host in ('h1%2Ch2:5432', 'h1%2ch2:5432', 'pooler.example.test%2C:5432', '%2Ch1:5432',
+                     '%2Fvar%2Frun%2Fpostgresql:5432', '%2Ftmp:5432', '[::1]:5432', 'h1%20h2:5432',
+                     'pooler_example.test:5432', '-pooler.example.test:5432', 'pooler..example.test:5432'):
+            url = f'postgresql://replay_ro.abcdefgh:pw-not-real@{host}/postgres'
+            with self.assertRaises(guards.WriteRefused, msg=host) as cm:
+                guards.check_database_url(url)
+            self.assertNotIn('pw-not-real', str(cm.exception))
+        for host in ('aws-0-ap-southeast-1.pooler.supabase.com', '127.0.0.1', 'localhost'):
+            url = f'postgresql://replay_ro.abcdefgh:pw-not-real@{host}:5432/postgres'
+            self.assertEqual(guards.check_database_url(url), (host, 5432))
+
     def test_libpq_pg_variables_are_refused(self):
         for name in ('PGHOST', 'PGUSER', 'PGPASSWORD', 'PGOPTIONS', 'PGSERVICE', 'PGSSLMODE', 'PGSERVICEFILE'):
             with self.assertRaises(guards.WriteRefused, msg=name):
@@ -297,7 +310,7 @@ class NetworkGuardTest(SimpleTestCase):
 
 #: What an R2 adapter would register for these tests (made-up record fields and codes).
 _TEST_CODES = ('status', 'unresolved', 'app', 'amount', 'merit', 'params', 'course', 'month', 'eligible', 'row',
-               'sum', 'commit', 'ok', 'probable', 'higher_results_not_declared', 'tick:name', 'UP6500001')
+               'sum', 'commit', 'ok', 'probable', 'higher_results_not_declared', 'tick:name', 'UP65A')
 
 
 class ScrubTest(SimpleTestCase):
@@ -305,7 +318,8 @@ class ScrubTest(SimpleTestCase):
 
     def setUp(self):
         for patcher in (mock.patch.object(scrub, '_REGISTERED', set()),
-                        mock.patch.dict(scrub._STATE, frozen=False)):      # engine_map froze it on import
+                        mock.patch.dict(scrub._STATE, frozen=False),       # engine_map froze it on import
+                        mock.patch.object(scrub, 'INT_KEYS', scrub.INT_KEYS | {'app'})):  # as R2 would add
             patcher.start()
             self.addCleanup(patcher.stop)
         scrub.register_codes(_TEST_CODES)
@@ -313,13 +327,12 @@ class ScrubTest(SimpleTestCase):
     def test_codes_amounts_hashes_ids_and_months_are_kept(self):
         rec = {'status': 'probable', 'unresolved': ['higher_results_not_declared', 'tick:name'], 'app': 278,
                'amount': Decimal('3000'), 'merit': 87.5, 'params': scrub.text_hash('anything'),
-               'course': 'UP6500001', 'month': '2026-12', 'eligible': True, 'row': None, 'sum': '1200.00',
-               'old_commit': '442b21f4d'}
+               'course': 'UP65A', 'month': '2026-12', 'eligible': True, 'row': None, 'sum': '1200.00'}
         out = scrub.scrub(rec)
         self.assertEqual(scrub.count_dropped(out), 0)
         self.assertEqual((out['amount'], out['merit']), ('3000.00', '87.50'))
         self.assertEqual({k: out[k] for k in ('status', 'app', 'course', 'month', 'eligible', 'row', 'sum')},
-                         {'status': 'probable', 'app': 278, 'course': 'UP6500001', 'month': '2026-12',
+                         {'status': 'probable', 'app': 278, 'course': 'UP65A', 'month': '2026-12',
                           'eligible': True, 'row': None, 'sum': '1200.00'})
 
     def test_names_ics_phones_addresses_dates_and_free_text_are_dropped(self):
@@ -341,8 +354,8 @@ class ScrubTest(SimpleTestCase):
         self.assertEqual(scrub.scrub({'status': 'siti'}), scrub.scrub({'status': 'siti'}))     # still comparable
 
     def test_a_key_that_is_not_a_code_is_dropped_with_its_value(self):
-        out = scrub.scrub({'Siti binti Ahmad': 'probable', 'siti': 1, 'ahmad_bin_ali': 2, 'ok': 1})
-        self.assertEqual(out, {'!dropped_keys': 3, 'ok': 1})
+        out = scrub.scrub({'Siti binti Ahmad': 'probable', 'siti': 1, 'ahmad_bin_ali': 2, 'ok': True})
+        self.assertEqual(out, {'!dropped_keys': 3, 'ok': True})
         self.assertEqual(scrub.scrub(out), out)                   # scrubbing twice changes nothing
 
     def test_only_registered_codes_leave_and_the_registry_takes_codes_only(self):
@@ -376,15 +389,39 @@ class ScrubTest(SimpleTestCase):
             self.assertEqual(scrub.amount(value), scrub.DROPPED, repr(value))
         self.assertEqual(scrub.scrub({'amount': Decimal('99999999.99')}), {'amount': '99999999.99'})
 
-    def test_a_commit_hash_shape_leaves_as_written_only_under_the_commit_keys(self):
-        out = scrub.scrub({'old_commit': '442b21f4d', 'new_commit': '5ccd952a7', 'status': 'a12345678',
-                           'commit': '442b21f4d', 'unresolved': ['a12345678']})
+    def test_a_commit_hash_shape_leaves_as_written_only_in_the_top_level_start_event(self):
+        start = {'event': 'start', 'old_commit': '442b21f4d', 'new_commit': '5ccd952a7'}
+        self.assertEqual(scrub.scrub(start), start)
+        out = scrub.scrub({'event': 'start', 'old_commit': '442b21f4d', 'new_commit': '5ccd952a7',
+                           'status': 'a12345678', 'commit': '442b21f4d', 'unresolved': ['a12345678']})
         self.assertEqual((out['old_commit'], out['new_commit']), ('442b21f4d', '5ccd952a7'))
         self.assertNotIn('a12345678', json.dumps(out))
         self.assertTrue(out['status'].startswith(scrub.SCRUB_HASH_PREFIX))
         self.assertTrue(out['commit'].startswith(scrub.SCRUB_HASH_PREFIX))
         self.assertEqual(scrub.count_dropped(out), 3)
-        self.assertTrue(scrub.scrub({'old_commit': 'Siti binti Ahmad'})['old_commit'].startswith('!h:'))
+        self.assertTrue(scrub.scrub({'event': 'start', 'old_commit': 'Siti binti Ahmad'})['old_commit']
+                        .startswith('!h:'))
+        for rec in ({'fields': {'old_commit': 'a12345678'}}, {'old_commit': 'a12345678'},
+                    {'event': 'counts', 'old_commit': 'a12345678'},
+                    {'unresolved': [{'event': 'start', 'old_commit': 'a12345678'}]},
+                    {'event': 'start', 'fields': {'event': 'start', 'new_commit': 'a12345678'}}):
+            self.assertNotIn('a12345678', json.dumps(scrub.scrub(rec)), rec)       # nested or not `start`
+        for digits in ('123456789012', '0102031412'):
+            out = scrub.scrub({'event': 'start', 'old_commit': digits})
+            self.assertNotIn(digits, json.dumps(out), digits)              # all digits is never a commit
+
+    def test_an_int_leaves_only_under_a_count_or_key_field(self):
+        kept = {'event': 'counts', 'applications': 12, 'records': 3, 'exit': -9, 'key': [278, 1],
+                'same': 4, 'app': 278}
+        self.assertEqual(scrub.scrub(kept), kept)
+        for rec in ({'status': 41234567}, {'unresolved': [990101, 14, 5678]}, {'row': 12},
+                    {'fields': {'status': 123}}, {'sum': (990101, 14)}, {'unresolved': {41234567}}):
+            out = scrub.scrub(rec)
+            self.assertGreater(scrub.count_dropped(out), 0, rec)
+            for n in ('41234567', '990101', '5678', '123'):
+                self.assertNotIn(n, json.dumps(out), rec)
+        self.assertEqual(scrub.scrub(41234567), scrub.DROPPED)                 # not under any key
+        self.assertEqual(scrub.scrub({'key': [{'status': 990101}]}), {'key': [{'status': scrub.DROPPED}]})
 
     def test_the_dropped_keys_count_is_capped_like_any_int(self):
         out = scrub.scrub({'!dropped_keys': 990101145678, 'ok': 1})
@@ -396,11 +433,14 @@ class ScrubTest(SimpleTestCase):
 
     def test_the_registry_refuses_ic_phone_passport_and_long_number_shapes(self):
         for bad in ('010203141234', '010203-14-1234', 'ic:010203-14-1234', 'tel:012-3456789', '0123456789',
-                    '+60123456789', 'A12345678', 'a12345678', 'pp:A1234567', '123456', '99999999'):
+                    '+60123456789', 'A12345678', 'a12345678', 'pp:A1234567', '123456', '99999999',
+                    'ic_010203_14_1234', 'ic.010203.14.1234', 'ic/010203/14/1234', 'AB1234567', 'ab12345678',
+                    'tel:012-345-6789', 'tel_03_4123_4567', 'd010203', 'x.0102.03', 'UP6500001',
+                    'pp_ab_1234_567'):
             with self.assertRaises(ValueError, msg=bad):
                 scrub.register_codes([bad])
             self.assertFalse(scrub.is_code(bad), bad)
-        scrub.register_codes(['UP6500001', 'tick:name', 'payments.schedule_row', '2026', 'row_12345'])
+        scrub.register_codes(['UP65A', 'tick:name', 'payments.schedule_row', '2026', 'row_12345', 'r1_2_3'])
 
 
 class RegistryFreezeTest(SimpleTestCase):
@@ -414,42 +454,185 @@ class RegistryFreezeTest(SimpleTestCase):
                 scrub.register_codes(['made_up_code'])
             self.assertFalse(scrub.is_code('made_up_code'))
 
-    def test_every_register_codes_call_in_the_replay_package_passes_string_literals(self):
-        root = os.path.dirname(scrub.__file__)
-        files = [os.path.join(d, f) for d, _, fs in os.walk(root) for f in fs if f.endswith('.py')]
-        self.assertGreater(len(files), 5)
-        bad = [f'{os.path.basename(p)}:{line}' for p in files for line in _non_literal_registrations(p)]
+    def test_no_code_under_apps_registers_codes_or_touches_the_registry_except_by_literal_calls(self):
+        files = [os.path.join(d, f) for d, dirs, fs in os.walk(APPS_DIR) for f in fs
+                 if f.endswith('.py') and not _is_test_file(d, f)]
+        self.assertGreater(len(files), 100)
+        scrub_file = os.path.normcase(os.path.abspath(scrub.__file__))
+        self.assertIn(scrub_file, [os.path.normcase(os.path.abspath(p)) for p in files])
+        bad = [f'{os.path.relpath(p, APPS_DIR)}:{line}' for p in files
+               for line in _registry_tampering(p, is_scrub=os.path.normcase(os.path.abspath(p)) == scrub_file)]
         self.assertEqual(bad, [])
 
-    def test_the_static_check_catches_a_non_literal_call(self):
+    def test_the_static_check_catches_a_bad_call_an_alias_and_a_direct_mutation(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, 'adapter.py')
             with open(path, 'w', encoding='utf-8') as fh:
-                fh.write('from . import scrub\nscrub.register_codes(("ok_code", "b"))\n'
-                         'register_codes(["x"])\nscrub.register_codes(names)\n'
-                         'register_codes([n for n in x])\nscrub.register_codes(("a", 1))\n'
-                         'register_codes({"a"}, extra)\n')
-            self.assertEqual(_non_literal_registrations(path), [4, 5, 6, 7])
+                fh.write(_BAD_ADAPTER)
+            self.assertEqual(_registry_tampering(path),
+                             [3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 24])
+            path = os.path.join(tmp, 'scrub.py')
+            with open(path, 'w', encoding='utf-8') as fh:
+                fh.write(_BAD_SCRUB)
+            self.assertEqual(_registry_tampering(path, is_scrub=True), [11, 13, 15, 16, 18, 20])
+        self.assertEqual(_registry_tampering(scrub.__file__, is_scrub=True), [])
 
 
-def _non_literal_registrations(path):
-    """Line numbers of each `register_codes(...)` call in ``path`` whose only argument is not a literal
-    tuple, set or list of string literals."""
+#: One line per pattern; the test names the lines that must be caught (1-2, 5-6 and 22-23 are fine).
+_BAD_ADAPTER = """from . import scrub
+from . import scrub as sc
+from .scrub import register_codes as rc
+from .scrub import _REGISTERED
+scrub.register_codes(("ok_code", "b"))
+register_codes(["x"])
+scrub.register_codes(names)
+register_codes([n for n in x])
+scrub.register_codes(("a", 1))
+register_codes({"a"}, extra)
+rc2 = scrub.register_codes
+sc._REGISTERED.add("x")
+scrub._REGISTERED.update({"x"})
+scrub._REGISTERED |= {"x"}
+scrub._STATE["frozen"] = False
+sc._STATE.update(frozen=False)
+setattr(scrub, "_REGISTERED", set())
+apps.scholarship.eval.replay.scrub._STATE["frozen"] = False
+importlib.reload(scrub)
+scrub.INT_KEYS = frozenset({"phone"})
+vars(scrub)["_STATE"]["frozen"] = False
+x = scrub.text_hash("a")
+y = scrub.SALT_ENV
+from apps.scholarship.eval.replay.scrub import _STATE as st
+"""
+
+#: A scrub module that unfreezes, mutates or rebinds the registry outside its three owners.
+_BAD_SCRUB = """_REGISTERED = set()
+_STATE = {'salt': None, 'frozen': False}
+def register_codes(codes):
+    _REGISTERED.update(codes)
+def freeze_registry():
+    _STATE['frozen'] = True
+def is_code(s):
+    return s in _REGISTERED
+def new_salt():
+    _STATE['salt'] = 'x'
+    _STATE['frozen'] = False
+def sneak(c):
+    _REGISTERED.add(c)
+def reset():
+    global _STATE
+    _STATE = {}
+def other():
+    _STATE.update(frozen=False)
+def freeze_registry_two(k):
+    _STATE[k] = False
+"""
+
+APPS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(REPLAY_DIR)))
+#: Names a non-scrub module may not spell as a string (setattr / getattr / vars tricks).
+_REGISTRY_NAMES = frozenset({'register_codes', '_REGISTERED', '_STATE', 'INT_KEYS', 'R1_CODES'})
+#: In scrub.py: the only functions that may touch `_REGISTERED`, and the only one that may set `frozen`.
+_REGISTRY_OWNERS = frozenset({'register_codes', 'is_code'})
+
+
+def _is_test_file(directory, name):
+    parts = os.path.normpath(directory).split(os.sep)
+    return 'tests' in parts or name.startswith('test_') or name in ('tests.py', 'conftest.py')
+
+
+def _literal_codes_call(node):
+    """True when the call's only argument is a literal tuple, set or list of string literals."""
+    import ast
+    arg = node.args[0] if len(node.args) == 1 and not node.keywords else None
+    return isinstance(arg, (ast.Tuple, ast.Set, ast.List)) and all(
+        isinstance(e, ast.Constant) and isinstance(e.value, str) for e in arg.elts)
+
+
+def _registry_tampering(path, *, is_scrub=False):
+    """Sorted line numbers in ``path`` that register codes or touch the scrub registry any way but a
+    `register_codes(<literal strings>)` call: a non-literal call, an aliased import or reference of
+    `register_codes`, any private, rebinding or deleting use of the scrub module's attributes, a reload of
+    it, a registry name spelled as a string; and, in scrub.py itself (``is_scrub``), `_REGISTERED` used
+    outside `register_codes` / `is_code`, `frozen` set to anything but True or outside `freeze_registry`,
+    and `_STATE` rebound, declared global or changed by a method."""
     import ast
     with open(path, encoding='utf-8') as fh:
-        tree = ast.parse(fh.read())
-    lines = []
+        src = fh.read()
+    if not is_scrub and not any(n in src for n in _REGISTRY_NAMES | {'scrub'}):
+        return []
+    tree = ast.parse(src)
+    lines, aliases, call_funcs = set(), set(), set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', None)
-        if name != 'register_codes':
-            continue
-        arg = node.args[0] if len(node.args) == 1 and not node.keywords else None
-        if not (isinstance(arg, (ast.Tuple, ast.Set, ast.List))
-                and all(isinstance(e, ast.Constant) and isinstance(e.value, str) for e in arg.elts)):
-            lines.append(node.lineno)
+        if isinstance(node, ast.ImportFrom):
+            from_scrub = (node.module or '').split('.')[-1] == 'scrub'
+            for a in node.names:
+                if a.name == 'scrub':
+                    aliases.add(a.asname or 'scrub')
+                if from_scrub and (a.name.startswith('_')
+                                   or (a.name == 'register_codes' and a.asname not in (None, a.name))):
+                    lines.add(node.lineno)
+        elif isinstance(node, ast.Import):
+            aliases.update(a.asname for a in node.names if a.asname and a.name.split('.')[-1] == 'scrub')
+        elif isinstance(node, ast.Call):
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', None)
+            if name == 'register_codes':
+                call_funcs.add(id(func))
+                if not _literal_codes_call(node):
+                    lines.add(node.lineno)
+
+    def is_scrub_module(expr):
+        return (isinstance(expr, ast.Name) and expr.id in aliases) or (
+            isinstance(expr, ast.Attribute) and expr.attr == 'scrub')
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute):
+            if node.attr == '_REGISTERED' or (is_scrub_module(node.value) and (
+                    node.attr.startswith('_') or not isinstance(node.ctx, ast.Load))):
+                lines.add(node.lineno)
+            elif node.attr == 'register_codes' and id(node) not in call_funcs:
+                lines.add(node.lineno)
+        elif isinstance(node, ast.Name) and node.id == 'register_codes' and id(node) not in call_funcs:
+            lines.add(node.lineno)
+        elif isinstance(node, ast.Constant) and not is_scrub and node.value in _REGISTRY_NAMES:
+            lines.add(node.lineno)
+        elif isinstance(node, ast.Call) and getattr(node.func, 'attr', getattr(node.func, 'id', None)) == 'reload' \
+                and any(is_scrub_module(a) for a in node.args):
+            lines.add(node.lineno)
+    if is_scrub:
+        lines |= _scrub_module_tampering(tree)
+    return sorted(lines)
+
+
+def _scrub_module_tampering(tree):
+    import ast
+    lines = set()
+    owners = [(None, stmt) for stmt in tree.body if not isinstance(stmt, ast.FunctionDef)]
+    owners += [(stmt.name, stmt) for stmt in tree.body if isinstance(stmt, ast.FunctionDef)]
+    for fname, top in owners:
+        for node in ast.walk(top):
+            if isinstance(node, ast.Global) and {'_STATE', '_REGISTERED'} & set(node.names):
+                lines.add(node.lineno)
+            elif isinstance(node, ast.Name) and node.id == '_REGISTERED' and fname not in _REGISTRY_OWNERS \
+                    and not (fname is None and isinstance(node.ctx, ast.Store)):
+                lines.add(node.lineno)
+            elif isinstance(node, ast.Name) and node.id == '_STATE' and fname is not None \
+                    and not isinstance(node.ctx, ast.Load):
+                lines.add(node.lineno)
+            elif isinstance(node, ast.Attribute) and getattr(node.value, 'id', None) == '_STATE':
+                lines.add(node.lineno)                                  # _STATE.update(...) and kin
+            elif isinstance(node, ast.Assign):
+                for t in node.targets:
+                    if isinstance(t, ast.Subscript) and getattr(t.value, 'id', None) == '_STATE':
+                        key = t.slice.value if isinstance(t.slice, ast.Constant) else None
+                        if key is None or (key == 'frozen' and not (
+                                fname == 'freeze_registry' and isinstance(node.value, ast.Constant)
+                                and node.value.value is True)):
+                            lines.add(node.lineno)
+            elif isinstance(node, (ast.AugAssign, ast.Delete)) and any(
+                    isinstance(t, ast.Subscript) and getattr(t.value, 'id', None) == '_STATE'
+                    for t in getattr(node, 'targets', [getattr(node, 'target', None)])):
+                lines.add(node.lineno)
     return lines
 
 

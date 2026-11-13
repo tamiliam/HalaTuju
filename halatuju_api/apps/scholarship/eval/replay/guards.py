@@ -43,6 +43,9 @@ FORBIDDEN_ENV_PREFIXES = (
 )
 #: The ONLY URL query parameter allowed, and its only values (an encrypted connection, never off).
 ALLOWED_SSLMODES = ('require', 'verify-ca', 'verify-full')
+#: The one host the URL may name, once URL-decoded: a DNS name or an IPv4 address (dot-separated labels of
+#: letters, digits and inner dashes). No comma (a host list), no `/` (a socket directory), no `%`, no `[`.
+_SINGLE_HOST = re.compile(r'^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$')
 
 ISOLATION_SQL = 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY'
 #: Transaction-level (SET LOCAL) timeouts: the job gives way instead of blocking. A statement that would
@@ -115,7 +118,7 @@ def check_environment(env):
 
 def check_database_url(url):
     """(host, port) of a replay URL that passes; WriteRefused otherwise. The message never quotes the URL."""
-    from urllib.parse import parse_qs, urlsplit
+    from urllib.parse import parse_qs, unquote, urlsplit
     if not url:
         raise WriteRefused(f'replay: {DB_ENV} is not set')
     parts = urlsplit(url)
@@ -138,9 +141,12 @@ def check_database_url(url):
         raise WriteRefused('replay: the URL may carry only sslmode=require, verify-ca or verify-full')
     if not parts.hostname:
         raise WriteRefused('replay: the database URL has no host')
-    if ',' in parts.netloc.rpartition('@')[2]:          # libpq reads h1,h2 as a list of hosts to try
+    # dj_database_url URL-decodes the host, and libpq reads `h1,h2` as a list of hosts to try (and a
+    # leading `/` as a socket directory): check the DECODED host part, and accept only one DNS name.
+    host = unquote(parts.hostname)
+    if ',' in unquote(parts.netloc.rpartition('@')[2]) or not _SINGLE_HOST.match(host):
         raise WriteRefused('replay: the database URL must name exactly one host')
-    return parts.hostname, port
+    return host, port
 
 
 # ── The statement filter (layer 4) ────────────────────────────────────────────────────────────

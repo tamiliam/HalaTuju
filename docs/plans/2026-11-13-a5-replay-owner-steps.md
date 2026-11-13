@@ -80,12 +80,25 @@ If anything has to change later, use `--update-secrets` / `--update-env-vars`, n
 
 ## 5. Run it: counts first, then the replay
 
-**No deploy and no migration while the job runs** (api, web or any Supabase change): the job holds
-read transactions, and a migration waiting on them would queue every other query behind it. The job
-also gives way on its own: each of its transactions sets `SET LOCAL lock_timeout` (5s) and
-`SET LOCAL idle_in_transaction_session_timeout` (12 minutes for the parent, which ends its transaction
-once all three children have joined the snapshot; 2 minutes for each child), so a stuck replay cannot
-block the live site for long.
+> **HARD RULE: no deploy, no migration, no ALTER while the replay job runs.** This covers the api, the
+> web and any Supabase change (a schema change from the dashboard or the MCP too). Run the job in a
+> quiet window (late evening, no deploy planned, no other job touching the database). If a deploy
+> cannot wait, **stop the job first** with the command below (the execution name is in the
+> output of the run command, or `gcloud run jobs executions list`), and deploy only once it shows as
+> cancelled.
+
+```
+gcloud run jobs executions cancel <EXECUTION> --region asia-southeast1 --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
+```
+
+**No deploy and no migration while the job runs**, because each child holds ONE read transaction for
+the whole run (up to 3 hours). An `ALTER` on a table the job has read waits for that transaction to
+end, and every live query on the table then queues behind the waiting `ALTER`: the site stalls. The
+job's own timeouts do not prevent this: `SET LOCAL lock_timeout` (5s) only stops the JOB waiting on a
+lock, and `SET LOCAL idle_in_transaction_session_timeout` (12 minutes for the parent, 2 minutes for each
+child) only ends a transaction left idle. The parent reads no table while it waits for the children to
+join, counts the cases only after they have joined, then ends its transaction at once. The deploy-side
+fix (the migrate step sets its own `lock_timeout`, so an `ALTER` fails fast) is TD-620.
 
 The `^@^` prefix tells gcloud to split the arguments on `@`, because the months contain a comma.
 `<INSTANT>` is the snapshot time with a timezone, for example `2026-11-20T18:00:00+08:00`.

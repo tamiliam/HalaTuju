@@ -4,12 +4,14 @@
    `replay_ro` URL on the session pooler port 5432.
 2. Opens ONE `REPEATABLE READ, READ ONLY` transaction (never committed) and exports its snapshot.
    `--counts-only` prints the case counts and stops here (R1's first live step).
-3. Prints the case counts, deletes any `*.jsonl` an earlier run left in the workdir, then starts three
-   children - old, new, new_again - each in its own venv and tree with a MINIMAL environment (the
-   replay URL, the path, the settings module, the run's scrub salt; nothing else), each joining the
-   snapshot. The JOIN HANDSHAKE: the parent waits until each child has written `joined` (or exited, or is
-   killed after `JOIN_TIMEOUT_S`) and rolls its transaction back at once, so it is not held open while
-   the engines run.
+3. Deletes the three side files (`old.jsonl`, `new.jsonl`, `new_again.jsonl`) an earlier run left in the
+   workdir, then starts three children - old, new, new_again - each in its own venv and tree with a
+   MINIMAL environment (the replay URL, the path, the settings module, the run's scrub salt; nothing
+   else), each joining the snapshot. The JOIN HANDSHAKE: the parent waits until each child has written
+   `joined` (or exited, or is killed after `JOIN_TIMEOUT_S`). Its transaction has read NO table yet, so
+   the wait holds no table lock (a migration's ALTER is never queued behind it). Only then does it count
+   the cases (same snapshot) and roll its transaction back at once, so it is not held open while the
+   engines run.
 4. Waits for the children. On any error or timeout once a child has started, every child still running
    is killed.
 5. Compares: per record `same`, `differs` (old against new), `could_not_run` (either side raised) or
@@ -223,12 +225,13 @@ def wait_for_joins(paths, procs, *, timeout=JOIN_TIMEOUT_S, sleep=time.sleep, no
 
 
 def clear_side_files(workdir):
-    """{side: path}, after deleting every `*.jsonl` left in ``workdir`` by an earlier run, so a side that
-    writes nothing can never be read as an old run's records."""
-    for name in os.listdir(workdir):
-        if name.endswith('.jsonl'):
-            os.remove(os.path.join(workdir, name))
-    return {s: os.path.join(workdir, f'{s}.jsonl') for s in RUN_SIDES}
+    """{side: path}, after deleting those three side files if an earlier run left them, so a side that
+    writes nothing can never be read as an old run's records. Nothing else in ``workdir`` is touched."""
+    paths = {s: os.path.join(workdir, f'{s}.jsonl') for s in RUN_SIDES}
+    for path in paths.values():
+        if os.path.lexists(path):
+            os.remove(path)
+    return paths
 
 
 def stop_children(procs):
@@ -239,9 +242,10 @@ def stop_children(procs):
 
 
 def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=case_counts):
-    """The case counts run BEFORE any child starts; the exporting transaction then stays open only until
-    every child has joined its snapshot (`joins`) and is rolled back BEFORE the children run their
-    engines. Whatever goes wrong once a child has started, every child still running is killed."""
+    """The exporting transaction reads no table while it waits for every child to join its snapshot
+    (`joins`), so the wait holds no table lock; the case counts run AFTER the joins, in the same snapshot,
+    and the transaction is rolled back BEFORE the children run their engines (`--counts-only`: the counts
+    and stop). Whatever goes wrong once a child has started, every child still running is killed."""
     guards.check_environment(env)
     host, port = guards.check_database_url(env.get(guards.DB_ENV))
     sess = session or (lambda: guards.read_only_session(export=True))
@@ -254,13 +258,14 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
             with sess() as snapshot:
                 emit({'event': 'start', 'old_commit': _commit(args.old_root), 'new_commit': _commit(args.new_root),
                       'months': args.months.split(','), 'snapshot_joined': bool(snapshot)}, out)
-                emit({'event': 'counts', **counts()}, out)
                 if args.counts_only:
+                    emit({'event': 'counts', **counts()}, out)
                     return {}
                 paths = clear_side_files(args.workdir)
                 for s in RUN_SIDES:
                     procs[s] = spawn(args, s, snapshot, paths[s], child_vars)
                 emit({'event': 'joins', **wait_for_joins(paths, procs)}, out)
+                emit({'event': 'counts', **counts()}, out)      # after the joins: no lock held while waiting
             codes = {s: procs[s].wait(timeout=CHILD_TIMEOUT_S) for s in RUN_SIDES}
     finally:
         stop_children(procs)
