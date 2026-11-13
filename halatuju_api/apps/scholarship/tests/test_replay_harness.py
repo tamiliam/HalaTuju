@@ -6,6 +6,7 @@ checked against THIS tree. No live database, no network, no key, no real engine 
 import datetime
 import json
 import os
+import re
 import tempfile
 import types
 from unittest import mock
@@ -193,3 +194,57 @@ class ChildMainTest(SimpleTestCase):
         with self.assertRaises(ValueError):
             child.parse_instant('2026-11-20T18:00:00')
         self.assertEqual(child.parse_instant(INSTANT), datetime.datetime(2026, 11, 20, 18, tzinfo=datetime.timezone.utc))
+
+
+OWNER_DIR = os.path.join(os.path.dirname(guards.__file__), 'owner')
+STEPS_DOC = os.path.join(os.path.dirname(guards.__file__), *(['..'] * 5), 'docs', 'plans',
+                         '2026-11-13-a5-replay-owner-steps.md')
+
+
+def _sql_statements(name):
+    with open(os.path.join(OWNER_DIR, name), encoding='utf-8') as fh:
+        code = '\n'.join(line.split('--')[0] for line in fh)
+    return [' '.join(s.split()) for s in code.split(';') if s.strip()]
+
+
+class OwnerFilesTest(SimpleTestCase):
+    """The owner steps are written, not run: the role gets SELECT only; the gcloud rules hold."""
+
+    def test_the_role_is_granted_select_and_schema_usage_and_nothing_else(self):
+        stmts = _sql_statements('replay_ro_create.sql')
+        grants = [s for s in stmts if s.upper().startswith('GRANT')]
+        self.assertEqual(grants, ['GRANT USAGE ON SCHEMA public TO replay_ro',
+                                  'GRANT SELECT ON ALL TABLES IN SCHEMA public TO replay_ro'])
+        role = next(s for s in stmts if s.upper().startswith('CREATE ROLE'))
+        for word in ('NOSUPERUSER', 'NOCREATEDB', 'NOCREATEROLE', 'NOREPLICATION', 'CONNECTION LIMIT'):
+            self.assertIn(word, role)
+        self.assertIn("PASSWORD 'REPLACE-WITH-A-LONG-RANDOM-PASSWORD'", role)    # a placeholder, never a real one
+        text = ' '.join(stmts).upper()
+        for banned in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'GRANT ALL', 'DEFAULT PRIVILEGES',
+                       'DEFAULT_TRANSACTION_READ_ONLY', ' SUPERUSER', 'GRANT POSTGRES', 'SERVICE_ROLE'):
+            self.assertNotIn(banned, text)
+
+    def test_the_drop_file_removes_the_role(self):
+        self.assertIn('DROP ROLE replay_ro', _sql_statements('replay_ro_drop.sql'))
+
+    def test_the_image_checks_both_engine_maps_and_bakes_in_no_key(self):
+        with open(os.path.join(OWNER_DIR, 'Dockerfile.replay'), encoding='utf-8') as fh:
+            text = fh.read()
+        self.assertIn('replay.engine_map --side old', text)
+        self.assertIn('replay.engine_map --side new', text)
+        self.assertIn('ENTRYPOINT ["/replay/new/venv/bin/python", "-m", "replay.parent"]', text)
+        envs = ' '.join(line for line in text.splitlines() if not line.startswith('#'))
+        for banned in ('DATABASE_URL', 'GEMINI', 'SUPABASE', 'SECRET', 'GOOGLE_', 'BREVO', 'VIRCLE'):
+            self.assertNotIn(banned, envs)
+
+    def test_every_gcloud_command_names_account_and_project_and_never_sets_config_or_env(self):
+        with open(STEPS_DOC, encoding='utf-8') as fh:
+            text = fh.read()
+        commands = [line.strip('`') for line in text.splitlines() if line.lstrip('`').startswith('gcloud ')]
+        self.assertGreaterEqual(len(commands), 10)
+        for cmd in commands:
+            self.assertIn('--account tamiliam@gmail.com', cmd)
+            self.assertIn('--project gen-lang-client-0871147736', cmd)
+            self.assertNotIn('config set', cmd)
+            self.assertNotIn('--set-env-vars', cmd)
+        self.assertIsNone(re.search(r':6543\b', text))
