@@ -63,8 +63,9 @@ export const REVIEWER_FAQ: QA[] = [
         in the SPM slip card no longer holds a clean Academic card back from <strong>Certain</strong> when her
         higher-results card is clean. And a course counts as a <strong>degree</strong> by the same test everywhere:
         if its name says it is a degree, she is asked for her higher results before she submits, even when an old
-        Form Six pathway is saved with it. Three are not asked before submit: a PISMP pathway, a preparatory
-        programme (&ldquo;Persediaan&rdquo;) and the &ldquo;American Degree Program&rdquo;. The award, the
+        Form Six pathway is saved with it. Three keep the earlier rule, with no new ask before submit: a PISMP pathway, a preparatory
+        programme (&ldquo;Persediaan&rdquo;) and the &ldquo;American Degree Programme&rdquo; (spelt either way). A saved
+        catalogue course decides by the course, not by its name. The award, the
         funding estimate and the owed-results check after submit treat every course as they did before.</>,
     },
     {

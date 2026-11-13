@@ -131,6 +131,32 @@ class Q7OneDegreeTest(TestCase):
                 self.assertTrue(results_route.degree_bound(app))
                 self.assertEqual(results_route.higher_need(app), '')
 
+    def test_american_degree_programme_spellings_are_not_asked_before_submit(self):
+        for name in ('American Degree Programme', 'American Degree Programmes',
+                     'american  degree   programme', 'AMERICAN DEGREE PROGRAM', 'American Degree Programs'):
+            with self.subTest(name):
+                app = _app(SPM_HELD, self._plan('tvet_other', name))
+                self.assertEqual(results_route.higher_need(app), '')
+
+    def test_american_degree_transfer_program_and_plain_degree_programme_are_still_asked(self):
+        for name in ('American Degree Transfer Program', 'Degree Programme in Business'):
+            with self.subTest(name):
+                app = _app(SPM_HELD, self._plan('tvet_other', name))
+                self.assertEqual(results_route.higher_need(app), 'required_with_slip')
+
+    def test_stpm_holder_on_an_american_degree_programme_keeps_the_main_answer(self):
+        app = _app(STPM_HELD, self._plan('tvet_other', 'American Degree Programme'))
+        self.assertTrue(results_route._q7_widening_withheld(app))
+        # A tertiary (STPM) holder already holds higher results: nothing more is asked before submit.
+        self.assertEqual(results_route.higher_need(app), '')
+
+    def test_a_saved_catalogue_course_id_decides_by_the_course_not_the_name(self):
+        plan = self._plan('stpm', 'Ijazah Sarjana Muda Kejuruteraan Awam')
+        plan['chosen_programme']['course_id'] = 'SOME-COURSE'
+        app = _app(SPM_HELD, plan)
+        self.assertFalse(results_route.degree_bound(app))
+        self.assertEqual(results_route.higher_need(app), '')
+
     def test_a_degree_programme_name_with_no_code_is_asked_before_submit(self):
         # "Degree Programme" is not the American Degree Program.
         app = _app(SPM_HELD, self._plan('', 'Bachelor of Engineering (Hons) Degree Programme'))

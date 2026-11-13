@@ -41,6 +41,7 @@ Branch f1 (local, not pushed). Verdict engine 2026-11-13.4 (was .3). decisions.m
 - Q1: an SPM slip printing more subjects than the read caught is never complete, even when every typed subject was found: amber Subjects, at best Probable, new item `academic_slip_rows_unread` (EN/MS/TA).
 - Q7 narrowed, BEFORE-SUBMIT ASK ONLY (re-check; verdict engine 2026-11-13.4): a PISMP pathway code, a "Persediaan" name or the "American Degree Program" is not asked for higher results before submit; an old Form Six code + degree name still is. `degree_bound` / `destination` are unchanged from main, so the award, the funding estimate and the after-submit owed cap do not move (pinned against main's values). Money question for the owner: TD-617.
 - `higher_results_grade_uncertain` is on the interview agenda (copy EN/MS/TA). Reviewer manual: the not-equal marker is always amber.
+- Q7 spelling: "American Degree Programme(s)" (British) is the same programme as "American Degree Program" for the before-submit ask; "American Degree Transfer Program" and plain "Degree Programme" unchanged. Reviewer FAQ reworded ("keep the earlier rule"; a saved catalogue course decides by the course, not the name). Verdict engine NOT bumped (still .4, unshipped on this branch; no money code touched).
 - Tests: matrix rows for the printed-count short read, the AI skipped row and a +/- alone; behaviour tests replace a docstring grep and a self-built table; Q5 and Q8 pinned.
 
 ### feat: sprint F1 - slip-check matrix and the owner's rule changes (2026-11-13)

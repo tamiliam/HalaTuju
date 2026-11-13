@@ -134,11 +134,11 @@ def degree_bound(application) -> bool:
 
 #: F1 review (2026-11-13), BEFORE-SUBMIT ASK ONLY (`higher_need`): a PISMP code (SPM-entry under
 #: "Ijazah Sarjana Muda Pendidikan"), a preparatory programme ("Program Persediaan Ijazah Luar
-#: Negara") and the "American Degree Program" (the exact phrase, never "Degree Programme") keep
+#: Negara") and the "American Degree Program"/"Programme(s)" (never a plain "Degree Programme") keep
 #: origin/main's before-submit answer. `degree_bound` / `destination` - shared with the award, the
 #: funding estimate and the after-submit owed cap - are NOT narrowed (a money ruling, TD-617).
 _NOT_ASKED_CODES = frozenset({'pismp'})
-_NOT_ASKED_NAME = re.compile(r'persediaan|american\s+degree\s+program(?!me)', re.IGNORECASE)
+_NOT_ASKED_NAME = re.compile(r'persediaan|american\s+degree\s+program(?:me)?s?\b', re.IGNORECASE)
 
 
 def _q7_widening_withheld(application) -> bool:
