@@ -391,3 +391,7 @@ No AI call, no paid API.
 
 Baseline `v3.1.0` and the case scope (every real case past draft, all gifts and intakes) are the lead's
 recommendation in sections 2 and 3; the owner may change either.
+
+> **OWNER RULING 2026-11-13: APPROVED.** The owner said "proceed" to "A5: yes to all". Decisions 1 to 3 are
+> yes, and the baseline and case scope stand. The owner still creates and drops `replay_ro`, builds and runs
+> the job, and reads the report (R3); none of that happens without a fresh yes at the time.
