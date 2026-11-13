@@ -19581,3 +19581,15 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Supersedes in part:** the 2026-10-19 permission-table rule (`test_permission_presets.py`, `reviewers_tab_lists`) that listed a super on the Reviewers tab alongside team members holding `review` or `qc`; the table's `today` and `rule` were changed in `cd3b82e85`, and this entry is the missing record.
 **Why:** the owner, 2026-11-07: "I am listed as a reviewer. I am not really."
 **Revisit if:** a super is ever asked to take cases like a reviewer; that is a gift assignment, not a list entry.
+
+## 2026-11-12 - Members tab and the lifecycle rules (owner rulings R1-R6; built in M2c, R6 in M3)
+
+**Decision:**
+- **R1** Suspend stays immediate even when the person holds open cases. A lead sees those cases on a card, "Cases held by suspended reviewers".
+- **R2** Delete only from "No group": a person must be removed from every group first. The never-self, never-sole-org-admin and never-super rules stay; archive vs erase is unchanged.
+- **R3** Remove from a group is allowed while the person is suspended, with the same work checks as for an active person.
+- **R4** The Team page's Staff tab is called Members (`?tab=staff` keeps working). Its list gets sortable headers, a search field and pagination, like the other admin tables.
+- **R5** An open case ends at awarded: count submitted to recommended, plus a reopened decision. This is not `IN_PLAY_STATUSES`, which stays the apply gate's list. `assigned_to` is kept after award, so the reviewer still sees their past students.
+- **R6** No implicit powers, org admin included: an org admin's powers come from explicit keys per group, like everyone else's. Only the O15 three (`manage_team`, `billing.edit`, `requests.approve`) stay lead-only. This is M3, with a data step for the org_admin rows.
+**Why:** the owner, 2026-11-12, after an awarded case kept an org admin undeletable: "the relationship between the reviewer and student should end at awarded ... the reviewer should still be able to see 'their' students"; "Even for org admin, the permissions should be explicit. In that way, we do not have any implicit or hidden powers." R1-R3 were agreed from the architect's table of the suspend, remove and delete rules ("Sounds good").
+**Revisit if:** a post-award step (renewal, maintenance) needs the reviewer to act again. Then "open" would need a new status range, not `assigned_to` changes.
