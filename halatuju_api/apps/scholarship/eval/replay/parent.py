@@ -106,13 +106,13 @@ def classify(old, new, again):
     return 'same' if old == new else 'differs'
 
 
-def differing_fields(old, new):
+def changed_fields(old, new):
     if isinstance(old, dict) and isinstance(new, dict):
         return sorted(k for k in set(old) | set(new) if old.get(k) != new.get(k))
     return ['value']
 
 
-def compare(sides):
+def compare_sides(sides):
     """[(engine, key, outcome, old, new)] over every key any side produced, sorted."""
     keys = sorted(set().union(*(set(s) for s in sides.values())))
     rows = []
@@ -138,7 +138,7 @@ def report(rows, out=print):
             continue
         line = {'engine': engine, 'key': key, 'outcome': outcome}
         if outcome == 'differs':
-            fields = differing_fields(old, new)
+            fields = changed_fields(old, new)
             line.update(fields=fields,
                         old={f: (old.get(f) if isinstance(old, dict) else old) for f in fields},
                         new={f: (new.get(f) if isinstance(new, dict) else new) for f in fields})
@@ -177,12 +177,12 @@ def parse_args(argv):
     return args
 
 
-def run(args, *, env, out=print, spawn=spawn_child, session=None, counts=case_counts):
+def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=case_counts):
     guards.check_environment(env)
     host, port = guards.check_database_url(env.get(guards.DB_ENV))
     sess = session or (lambda: guards.read_only_session(export=True))
     os.makedirs(args.workdir, exist_ok=True)
-    with netguard.refuse_network(netguard.resolve(host, port)), sess() as snapshot:
+    with netguard.refuse_network(netguard.db_addresses(host, port)), sess() as snapshot:
         emit({'event': 'start', 'old_commit': _commit(args.old_root), 'new_commit': _commit(args.new_root),
               'months': args.months.split(','), 'snapshot_joined': bool(snapshot)}, out)
         emit({'event': 'counts', **counts()}, out)
@@ -197,7 +197,7 @@ def run(args, *, env, out=print, spawn=spawn_child, session=None, counts=case_co
         emit({'event': 'side', 'side': s, 'exit': codes[s], 'records': len(sides[s]),
               'fatal': [{'error': e.get('error')} for e in events if e.get('event') == 'fatal'],
               'dropped': count_dropped(list(sides[s].values()))}, out)
-    return report(compare(sides), out)
+    return report(compare_sides(sides), out)
 
 
 def main(argv=None):
@@ -207,7 +207,7 @@ def main(argv=None):
         args = parse_args(argv)
         import django
         django.setup()
-        run(args, env=os.environ)
+        run_replay(args, env=os.environ)
     except SystemExit:
         raise
     except BaseException as exc:                        # by class name only, never the message

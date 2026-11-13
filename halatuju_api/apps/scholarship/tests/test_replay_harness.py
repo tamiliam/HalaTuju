@@ -26,7 +26,7 @@ class EngineMapTest(SimpleTestCase):
     """Every engine named in design section 1 resolves in this (the new) tree; a miss is named."""
 
     def test_every_engine_resolves_in_the_new_tree(self):
-        found = engine_map.resolve('new')
+        found = engine_map.resolve_tree('new')
         self.assertEqual(set(found), set(engine_map.ENGINES))
         self.assertTrue(all(callable(f) for f in found.values()))
 
@@ -34,7 +34,7 @@ class EngineMapTest(SimpleTestCase):
         bogus = dict(engine_map.ENGINES, **{'bogus.engine': ('apps.scholarship.nope:x',) * 2})
         with mock.patch.object(engine_map, 'ENGINES', bogus):
             with self.assertRaises(engine_map.Unresolved) as cm:
-                engine_map.resolve('new')
+                engine_map.resolve_tree('new')
             self.assertIn('bogus.engine', str(cm.exception))
             lines = []
             self.assertEqual(engine_map.main(['--side', 'new'], out=lines.append), 1)
@@ -90,7 +90,7 @@ def _spawn(args, side, snapshot, out_path, env):
     with open(out_path, 'w', encoding='utf-8') as fh:
         def write(obj):
             fh.write(json.dumps(child.scrub(obj), sort_keys=True) + '\n')
-        child.run(side=side, engines=engines, instant=child.parse_instant(args.instant),
+        child.run_side(side=side, engines=engines, instant=child.parse_instant(args.instant),
                   months=args.months.split(','), write=write, snapshot=snapshot,
                   session=lambda: guards.read_only_session(snapshot=snapshot, allow_sqlite=True))
     return types.SimpleNamespace(wait=lambda timeout=None: 0)
@@ -108,7 +108,7 @@ class HarnessEndToEndTest(TestCase):
         args = parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
                                   '--old-root', self.workdir, '--new-root', self.workdir, *extra])
         lines = []
-        totals = parent.run(args, env={guards.DB_ENV: LOCAL_URL, 'PATH': '/bin'}, out=lines.append,
+        totals = parent.run_replay(args, env={guards.DB_ENV: LOCAL_URL, 'PATH': '/bin'}, out=lines.append,
                             spawn=_spawn, session=lambda: guards.read_only_session(export=True, allow_sqlite=True))
         return totals, [json.loads(line) for line in lines]
 
@@ -160,7 +160,7 @@ class HarnessEndToEndTest(TestCase):
         args = parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
                                   '--counts-only'])
         lines = []
-        parent.run(args, env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
+        parent.run_replay(args, env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
                    session=lambda: guards.read_only_session(export=True, allow_sqlite=True))
         spawn.assert_not_called()
         counts = json.loads(lines[1])
@@ -174,7 +174,7 @@ class HarnessEndToEndTest(TestCase):
         for env in ({guards.DB_ENV: LOCAL_URL, 'GEMINI_API_KEY': 'x'},
                     {guards.DB_ENV: LOCAL_URL.replace(':5432', ':6543')}):
             with self.assertRaises(guards.WriteRefused):
-                parent.run(args, env=env, out=lambda s: None, spawn=mock.Mock())
+                parent.run_replay(args, env=env, out=lambda s: None, spawn=mock.Mock())
 
 
 class ChildMainTest(SimpleTestCase):

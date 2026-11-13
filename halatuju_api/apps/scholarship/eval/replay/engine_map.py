@@ -2,7 +2,7 @@
 NEW tree (live main). Some moved after v3.1.0 (A3.4, A3.6, A3.8): `contracts.py` became `contracts/`,
 `sponsorship.py` became `sponsorship/`.
 
-`resolve(side)` imports every path for one tree and raises `Unresolved` naming each one that does not
+`resolve_tree(side)` imports every path for one tree and raises `Unresolved` naming each one that does not
 resolve, so a moved name can never be compared against nothing. The image build runs
 `python -m replay.engine_map --side old` and `--side new` in each tree's own venv and fails on exit 1.
 
@@ -61,7 +61,7 @@ def path_for(name, side):
     return ENGINES[name][SIDES[side]]
 
 
-def _load(path):
+def _import_path(path):
     module, _, attr = path.partition(':')
     obj = importlib.import_module(module)
     for part in attr.split('.'):
@@ -71,12 +71,12 @@ def _load(path):
     return obj
 
 
-def resolve(side):
+def resolve_tree(side):
     """{name: callable} for every engine in ``side``'s tree; Unresolved listing every miss."""
     found, missing = {}, []
     for name in sorted(ENGINES):
         try:
-            found[name] = _load(path_for(name, side))
+            found[name] = _import_path(path_for(name, side))
         except Exception:
             missing.append(f'{name} -> {path_for(name, side)}')
     if missing:
@@ -89,7 +89,7 @@ def main(argv=None, out=print):
     ap.add_argument('--side', choices=sorted(SIDES), required=True)
     args = ap.parse_args(argv)
     try:
-        found = resolve(args.side)
+        found = resolve_tree(args.side)
     except Unresolved as exc:
         out(f'engine map: {args.side} tree UNRESOLVED: {exc}')
         return 1

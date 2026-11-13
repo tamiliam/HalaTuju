@@ -44,7 +44,7 @@ def run_engines(engines, *, months, write):
     return n
 
 
-def run(*, side, engines, instant, months, write, snapshot=None, session=None, allow=()):
+def run_side(*, side, engines, instant, months, write, snapshot=None, session=None, allow=()):
     """One side's run inside every guard. ``session`` is for the tests (the SQLite test database)."""
     sess = session or (lambda: guards.read_only_session(snapshot=snapshot))
     with netguard.refuse_network(allow), sess(), clock.pinned_clock(instant):
@@ -81,13 +81,13 @@ def main(argv=None, env=None):
             django.setup()
             failed = clock.preload()
             from . import engine_map
-            resolved = engine_map.resolve(TREE_OF[args.side])
+            resolved = engine_map.resolve_tree(TREE_OF[args.side])
             names = [n for n in args.engines.split(',') if n] or sorted(engine_map.ADAPTERS)
             engines = [engine_map.ADAPTERS[n](resolved) for n in names]
             write({'side': args.side, 'event': 'preload', 'failed_modules': len(failed)})
-            run(side=args.side, engines=engines, instant=parse_instant(args.instant),
+            run_side(side=args.side, engines=engines, instant=parse_instant(args.instant),
                 months=args.months.split(','), write=write, snapshot=args.snapshot or None,
-                allow=netguard.resolve(host, port))
+                allow=netguard.db_addresses(host, port))
         except BaseException as exc:                    # by class name only, never the message
             write({'side': args.side, 'event': 'fatal', **error_record(exc)})
             return 3

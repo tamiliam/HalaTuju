@@ -14,7 +14,7 @@ class NetworkRefused(BaseException):
     """An outgoing connection to anything but the database. A BaseException: no `except Exception` hides it."""
 
 
-def resolve(host, port):
+def db_addresses(host, port):
     """Every (ip, port) ``host`` resolves to, for the allow list. Resolved once, before the guard is up."""
     try:
         infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
