@@ -217,7 +217,9 @@ describe('D7: the Scholars note, as the server tells it', () => {
     fireEvent.click(teamSwitch())
     await waitFor(() => expect(note()?.textContent).toBe(
       'admin.permEditor.scholarsNote(pages=admin.permV2.page.announcements, admin.permV2.page.surveys)'))
-    expect(screen.getByRole('status').textContent).toContain('admin.permEditor.effect.scholars_needed(name=Staff One)')
+    // Said once, by the note: the save bar's line does not repeat it (M2d review fix).
+    expect(screen.getByRole('status').textContent).not.toContain('scholars_needed')
+    expect(screen.getByRole('status').textContent).toContain('admin.permEditor.nothingElse')
     expect((screen.getByText('admin.permEditor.save') as HTMLButtonElement).disabled).toBe(false)   // not a refusal
   })
 

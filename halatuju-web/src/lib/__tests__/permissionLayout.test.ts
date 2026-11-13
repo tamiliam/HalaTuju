@@ -15,7 +15,11 @@ import ta from '@/messages/ta.json'
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 
 const V2 = readApi('apps/courses/staff_permissions_v2.py')
-const CATALOGUE = [...V2.matchAll(/^\s+'([a-z_]+\.[a-z_]+)':\s*\(\w+,\s*'[a-z_]+',\s*\w+,\s*\w+\)/gm)].map((m) => m[1])
+const CATALOGUE = [...V2.matchAll(/^\s+'([a-z0-9_]+\.[a-z0-9_]+)':\s*\(\w+,\s*'[a-z0-9_]+',\s*\w+,\s*\w+\)/gm)].map((m) => m[1])
+// Review fix (M2d): every dotted key in the CATALOGUE_V2 block, whatever its tuple looks like, so a row
+// the strict pattern above cannot read fails the sanity test instead of slipping past the guard.
+const V2_BLOCK = V2.slice(V2.indexOf('CATALOGUE_V2 = {'), V2.indexOf('\n}', V2.indexOf('CATALOGUE_V2 = {')))
+const CATALOGUE_LOOSE = [...V2_BLOCK.matchAll(/^\s+'([a-z0-9_]+\.[a-z0-9_]+)':/gm)].map((m) => m[1])
 const NEVER = pySeq(V2, 'NEVER_GRANTABLE')
 const ALIAS = Object.values(pyDictOfSeqs(V2, 'ALIASES')).flat().filter((k) => CATALOGUE.includes(k))
 const HIDDEN = new Set([...NEVER, ...ALIAS])
@@ -24,6 +28,7 @@ const SERVED = [...ADMIN_KEYS, ...CATALOGUE]
 
 it('reads the api (parse sanity)', () => {
   expect(CATALOGUE.length).toBeGreaterThanOrEqual(36)
+  expect([...CATALOGUE].sort()).toEqual([...CATALOGUE_LOOSE].sort())   // no catalogue row escapes the strict read
   expect(NEVER).toEqual(['billing.edit', 'requests.approve'])
   expect(ALIAS.length).toBeGreaterThanOrEqual(8)
   expect([...TABLE_KEYS.admins]).toEqual(ADMIN_KEYS)            // the editor's Admins keys are the server's

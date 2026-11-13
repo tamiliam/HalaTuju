@@ -116,8 +116,10 @@ function consequenceLine(t: Translate, who: string, saved: boolean, dirty: boole
   const parts: string[] = []
   if (plan.added.length) parts.push(t('admin.permEditor.gives', { name: who, list: names(plan.added) }))
   if (plan.removed.length) parts.push(t('admin.permEditor.takes', { name: who, list: names(plan.removed) }))
-  for (const c of plan.consequences) parts.push(t(`admin.permEditor.effect.${c}`, { name: who }))
-  if (!plan.consequences.length) parts.push(t('admin.permEditor.nothingElse'))
+  // Review fix (M2d): `scholars_needed` is worded once, by the caution note (D7), never here as well.
+  const effects = plan.consequences.filter((c) => c !== 'scholars_needed')
+  for (const c of effects) parts.push(t(`admin.permEditor.effect.${c}`, { name: who }))
+  if (!effects.length) parts.push(t('admin.permEditor.nothingElse'))
   return parts.join(' ')
 }
 

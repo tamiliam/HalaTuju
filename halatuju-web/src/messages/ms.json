@@ -8483,8 +8483,7 @@
         "credit_check_on": "Kredit dompet terus mendapat semakan kewangan: {name} menyemak setiap kredit sebelum pentadbir organisasi menandatangani balas, kecuali kredit yang {name} rekodkan.",
         "withdraw_request_and_approve": "{name} boleh meminta tarik balik anugerah dan meluluskannya, tetapi tidak sekali-kali permintaannya sendiri.",
         "withdraw_last_checker": "Jika ini ditarik daripada {name}, tiada sesiapa lagi boleh meluluskan tarik balik anugerah: permintaan dalam organisasi ini akan menunggu tanpa sesiapa untuk memutuskannya.",
-        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan.",
-        "scholars_needed": "{name} akan melihat halaman yang menamakan penerima biasiswa, tetapi bukan fail mereka, sehingga Penerima biasiswa turut dihidupkan."
+        "withdraw_approve_needs_view": "{name} boleh meluluskan tarik balik anugerah hanya jika mereka juga boleh melihat semua kes. Berikan itu juga, atau mereka tidak dapat membuat keputusan."
       },
       "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Permohonan”, jadi ia dihidupkan bersamanya."
     },
