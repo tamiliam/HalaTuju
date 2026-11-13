@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four lines raised for Next 15 / React 19
 (A1.1, TD-506) cannot return to pre-Next-15 values (shared chunk 104 kB, was 87.2). Measured on a production build:
 /profile 200.3, /scholarship/apply 198.5, /scholarship/application 218.4, median 157.0. `code-standards.json` budget:
-/profile 202.2 -> 200.8, median 157.6 -> 157.5; the other two lines unchanged (never raised). TD-506 closed; W1
+/profile 202.2 -> 200.8, median 157.6 -> 157.5; /scholarship/application 218.6 -> 218.7 (owner ruling 13 Nov, option 1: 0.1 kB, part of this dated re-baseline, keeps the 0.25 kB room); /scholarship/apply unchanged. TD-506 closed; W1
 acceptance marked met. No app code changed.
 
 ### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
