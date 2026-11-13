@@ -331,7 +331,8 @@ class TestConsequences(TestCase):
 
     def test_someone_who_never_signed_in_changes_nothing_until_they_do(self):
         target = make_admin('admin', owning_org=self.org)                      # first_seen_at NULL
-        self.assertEqual(self._says(target, ['see_all', 'payments_approve']),
+        # M2d: `scholars` kept, so the stored Engagement pages raise no `scholars_needed` here.
+        self.assertEqual(self._says(target, ['see_all', 'scholars', 'payments_approve']),
                          ['not_signed_in', 'credit_check_on'])    # the credit check counts them now
 
     def test_the_first_keyed_holder_arms_the_wallet_credit_check(self):

@@ -181,7 +181,7 @@ class AdminStaffPermissionsView(_AdminBase):
                          'changed': plan['changed'], 'custom': plan['custom'],
                          # M2b: `permissions` stays today's keys (what a pre-M2b tab reads); `v2_held` the rest.
                          'permissions': [k for k in plan['after'] if k in spa.editable_keys()],
-                         'v2_held': plan['v2_held'], 'added': plan['added'],
+                         'v2_held': plan['v2_held'], 'v2_gaps': plan['v2_gaps'], 'added': plan['added'],
                          'removed': plan['removed'], 'consequences': plan['consequences']})
 
 

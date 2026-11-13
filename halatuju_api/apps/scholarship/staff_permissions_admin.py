@@ -49,6 +49,11 @@ WITHDRAW_LAST_CHECKER = 'withdraw_last_checker'
 #: it — `award_withdrawal_chain.reads_every_case`). Holding the key without it decides nothing, so the
 #: screen says so when a change leaves a person in that state.
 WITHDRAW_APPROVE_NEEDS_VIEW = 'withdraw_approve_needs_view'
+#: M2d D7 (ruling 7): the set SAVED would hold an Engagement page (Announcements, Surveys, Development,
+#: Mentoring) without Scholars — those pages name scholars, so they need every scholar's file
+#: (`staff_permissions_v2.DEPENDS_ON_V2`). A note, never a refusal: nothing blocks the save. Added by
+#: `plan_change` only, so the role and table changes that share `consequences` do not grow a code.
+SCHOLARS_NEEDED = 'scholars_needed'
 _READS_ALL = frozenset({'see_all', 'qc'})
 _WD_REQUEST, _WD_APPROVE = 'award_withdraw_request', 'award_withdraw_approve'
 
@@ -134,7 +139,22 @@ def v2_editor(target):
          'reason': v2.refusal_reason(k), 'held': k in effective}
         for k, row in v2.CATALOGUE_V2.items() if row[0] == g]} for g in v2.GROUPS]
     return {'v2_keys': groups, 'v2_held': list(v2.stored_v2(target)),
-            'v2_preset': list(v2.V2_PRESETS.get(target.role, ()))}
+            'v2_preset': list(v2.V2_PRESETS.get(target.role, ())),
+            # M2d D7: the pages short of Scholars for the person as held, for the tab's note at rest.
+            'v2_gaps': scholars_gaps(held_set(target))}
+
+
+def scholars_gaps(keys):
+    """M2d D7: the PAGES (`CATALOGUE_V2` page names, in catalogue order) that `keys` — today's keys and
+    v2 page keys, as `held_set` or `asked_set` spell them — open without their ruling-7 dependency.
+    Today's keys are read through `ALIASES` (`scholars` IS `scholars.view`), after `IMPLIES`."""
+    from apps.courses import staff_permissions as sp
+    v2 = _v2()
+    old = sp.with_implied(k for k in keys if k in sp.CATALOGUE)
+    held = {*v2.through_aliases(old), *(k for k in keys if k in v2.CATALOGUE_V2)}
+    gaps = v2.dependency_gaps(held)
+    pages = [row[1] for k, row in v2.CATALOGUE_V2.items() if k in gaps]
+    return list(dict.fromkeys(pages))
 
 
 #: The roles People lists on the REVIEWERS tab only (`adminStaff.byCategory`), and the keys that put
@@ -241,10 +261,12 @@ def _approve_without_view(keys):
 def plan_change(target, asked, *, by=None):
     """What saving ``asked`` for ``target`` would do, or `PermissionChangeRefused`. Read-only.
 
-    Returns ``{'before', 'after', 'added', 'removed', 'stored', 'custom', 'consequences'}`` — the
+    Returns ``{'before', 'after', 'added', 'removed', 'stored', 'custom', 'v2_held', 'v2_gaps',
+    'consequences'}`` — the
     keys as lists, today's in catalogue order then the v2 page keys (`held_set`); ``stored`` is what
     the column will hold (None = the preset: M2b D7, only when the old part IS the role's preset and
-    no v2 key is asked)."""
+    no v2 key is asked). M2d D7: ``v2_gaps`` are the pages ``after`` holds short of Scholars, and
+    ``consequences`` ends with `SCHOLARS_NEEDED` whenever there is one."""
     from apps.courses import staff_permissions as sp
     _refuse_target(target, by)
     after = asked_set(asked)
@@ -256,12 +278,14 @@ def plan_change(target, asked, *, by=None):
     stored = None if old == sp.preset_for(target.role) and old == after else list(after)
     shadow = copy.copy(target)
     shadow.permissions = stored
+    gaps = scholars_gaps(after)
     return {
         'before': list(before), 'after': list(after),
         'added': [k for k in after if k not in before],
         'removed': [k for k in before if k not in after],
         'stored': stored, 'custom': sp.is_custom(shadow), 'v2_held': list(v2.stored_v2(shadow)),
-        'consequences': consequences(target, before, after),
+        'v2_gaps': gaps,
+        'consequences': [*consequences(target, before, after), *([SCHOLARS_NEEDED] if gaps else [])],
     }
 
 
