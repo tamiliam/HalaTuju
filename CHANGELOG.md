@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
+
+Branch m2c (local, not pushed, not deployed). Brief `docs/plans/2026-11-13-m2c-members-tab-brief.md`; owner
+rulings R1-R5 (decisions.md "Members tab and the lifecycle rules"; R6 is M3). No migration, no data step.
+- api (R5, C2): one rule for an open case, `staff_lifecycle.OPEN_CASE_STATUSES` (submitted .. recommended) or
+  reopened (`is_open_case`), read by all three copies (`staff_lifecycle.open_cases`,
+  `staff_tables_admin.open_case_counts`, `views_admin/reviewers`). An awarded, active or maintenance case no
+  longer blocks a Remove or a Delete. `assigned_to` is kept, so a reviewer still lists their awarded students.
+  `IN_PLAY_STATUSES` (apply gate, closure, reminders) is unchanged.
+- api (R2, C5): a new Delete never-rule `in_a_group` ("Remove them from every group first."), after
+  `sole_org_admin` and before `has_unfinished_work`, on the Members list and on both Delete doors (admins,
+  mentors). Groups are read from the active copy, Mentors included. Until M3 an organisation admin's own Admins
+  seat (which they cannot be removed from) does not count, so an organisation admin is deletable as before. A
+  mentor login must leave Mentors before Delete.
+- api (R3, C6): Remove from Admins / Reviewers / Mentors is allowed for a suspended person, with the same work
+  checks; the row's `remove` is built from the active copy. Add and permission edits still refuse `not_active`.
+- api (R1, C4): `GET admin/staff/` sends `suspended_cases` (open cases held by suspended members, summed from
+  the rows, no new query) to whoever manages the team. It is a banner on the Members tab, not an Overview card:
+  `my-pending` is at its admitted query count (11/11) and the ledger is not raised.
+- web (R4, C1, C3): Team -> Staff reads **Members** (ms "Ahli", ta "உறுப்பினர்கள்"); the key stays `staff` and
+  `?tab=members` opens it too. The list is a table: sortable Name / Groups / Status (`lib/memberTable.ts`), a name
+  search (the rows carry no email, O16), a status filter, pages with the shared sizes; below md the same table
+  restacks as rows (`TableFrame phoneRows`). The banner's button filters the table to the suspended.
+- web (C5, C7): Delete is greyed with the `in_a_group` reason; the Suspend confirm for open cases points to the
+  Members tab's count. New strings in en, ms and ta.
+- test: `test_m2c_members_lifecycle.py` (every status across the three readers, the banner count and who sees
+  it, Delete from No group, Remove while suspended); archive and delete tests now empty the groups first;
+  `memberTable.test.ts`, `StaffList.test.tsx` and `team/page.test.tsx` cases for the table, the alias, the
+  reason, the banner and Remove on a suspended reviewer.
+
 ### fix: request #67 - an offer letter with a read slip and extra name parts reads "partly matches", not "different name" (2026-11-13)
 - The offer letter's read echoed one letter AND the letter printed more name parts than the profile. Each slip alone was tolerated, but together the strict check said `mismatch` and the #48 rescue accepted only a full tolerant `match`, so `offer_letter_mismatch` blocked the student's own letter.
 - `pathway_engine._name_status` now keeps the tolerant matcher's `partial` too: amber for the reviewer, never a block. A genuinely different name still mismatches. Offer letter only; read-time only, so no re-read is needed.
