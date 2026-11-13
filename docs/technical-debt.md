@@ -8918,3 +8918,24 @@ non-zero on failure, and refuses an unknown job. The Scheduler fires the `releas
 same weekly cadence). Known limit: `release-decisions` has `maxRetries: 1`, so a failed run is retried once; that is
 safe for the idempotent backup, and the command's docstring warns against pointing a job that sends anything at it.
 *(B · S)*
+
+### [TD-613] A reopened or diverted case whose reviewer has left cannot change hands - medium
+
+**Raised 2026-11-13 by the M2c review; the owner chose to ship and fix after.** Under R5, an awarded case no longer stops someone leaving Reviewers or being deleted, and `assigned_to` is kept. If the case later comes back, it is stuck:
+- A QC reopen is refused by `reopen._strands_assignee` with `reviewer_cannot_review` until the person is re-added or restored. An archived person may not be restorable.
+- `award_revert` with a birth-state divert sends the case to `interviewed` with its old holder. `interviewed` is not in `ASSIGNABLE_STATUSES` (`services/assignment.py`), so it cannot be reassigned.
+- Side effects: a holder in No group becomes undeletable, and an archived holder is invisible to the suspended-cases banner.
+
+**Fix:** allow reassignment of an open case whose holder can no longer review (inactive, archived, or without `review`), from any open status. Let reopen and revert succeed and flag the case for reassignment instead of refusing. Add tests for both paths. *(A · M)*
+
+### [TD-614] The Remove confirm for a suspended person can show finance warnings that do nothing - low
+
+**Raised 2026-11-13 by the M2c review.** In `plan_table_change` (around line 359), `spa.consequences` is not gated on the person being live. When a suspended person is removed, the confirm can list payment-run consequences that will not happen. Fix: gate those consequence codes on `is_active`, and add a test. *(A · S)*
+
+### [TD-615] An invitee who never signed in can be deleted while in a group - low
+
+**Raised 2026-11-13 by the M2c review.** `staff_tables.groups_to_leave` returns `[]` for someone with no first sign-in, so the R2 rule "delete only from No group" is skipped for an invitee placed in a group. Fix: read group membership directly instead of through sign-in state, and add a test. *(A · S)*
+
+### [TD-616] Some delete payloads ignore the `in_a_group` rule - low
+
+**Raised 2026-11-13 by the M2c review.** `staff_delete_rules.delete_fields` has no `in_a_group` check, so the payloads from `views_staff.py` (around :516), `reviewers.py` (around :232), `views_admin/staff.py` (around :156) and the mentors `_delete_fields` can say "deletable" while `/admin/staff/` refuses. The web is unaffected today because it reads the staff list. The server still refuses the delete. Fix: put the check in `delete_fields`, so every caller gets it. *(A · S)*

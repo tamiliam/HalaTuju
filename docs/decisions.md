@@ -19593,3 +19593,11 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 - **R6** No implicit powers, org admin included: an org admin's powers come from explicit keys per group, like everyone else's. Only the O15 three (`manage_team`, `billing.edit`, `requests.approve`) stay lead-only. This is M3, with a data step for the org_admin rows.
 **Why:** the owner, 2026-11-12, after an awarded case kept an org admin undeletable: "the relationship between the reviewer and student should end at awarded ... the reviewer should still be able to see 'their' students"; "Even for org admin, the permissions should be explicit. In that way, we do not have any implicit or hidden powers." R1-R3 were agreed from the architect's table of the suspend, remove and delete rules ("Sounds good").
 **Revisit if:** a post-award step (renewal, maintenance) needs the reviewer to act again. Then "open" would need a new status range, not `assigned_to` changes.
+
+## 2026-11-13 - R5's edges: leaving Reviewers ends sight of past students; a stranded case is TD-613
+
+**Decision:**
+- R5's "the reviewer still sees their past students" holds only while the person stays in Reviewers. Someone removed from Reviewers (or deleted) loses `review`, so they see none of the students they reviewed. No new read rule is added.
+- M2c ships with a known gap: once a person can leave Reviewers while holding awarded cases, a case that later comes back to them (a QC reopen of a funded case, or an award revert that diverts to `interviewed`) is stuck. Reopen refuses with `reviewer_cannot_review` and says how to recover. A diverted case cannot be reassigned because `interviewed` is not in `ASSIGNABLE_STATUSES`. The follow-up is TD-613: allow reassignment when the holder can no longer review.
+**Why:** the M2c review (2026-11-13) found both edges. The owner chose "Ship M2c, fix after" and "Yes, leaving ends access" (2026-11-13).
+**Revisit if:** a former reviewer needs read access to their old students, for example for a renewal. That would be a new permission and a sprint of its own.
