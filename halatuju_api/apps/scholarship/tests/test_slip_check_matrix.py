@@ -1,0 +1,396 @@
+"""F1 slip-check matrix: one row per cell of the owner-approved rule table.
+
+Source of every expected value: ``docs/plans/2026-11-13-f1-slip-check-rule-table.md`` (approved
+2026-11-13, Q1 to Q8 as recommended). Seven tables (A SPM holder post-SPM, B STPM, C Matriculation,
+D Diploma, E Asasi, F degree-bound SPM holder, G the optional SPM slip of a tertiary holder) x seven
+slip states. Each reachable cell pins the drawer chips, the Academic band and the wording keys;
+each unreachable cell (Q8) is pinned as "cannot happen" by a probe that shows why.
+
+A new route, a new slip state or a changed answer is a ROW here first. The static test at the end
+fails when `results_route.destination()` can return a value no table covers.
+"""
+import ast
+import inspect
+from dataclasses import dataclass, field
+
+from django.test import TestCase, override_settings
+
+from apps.courses.models import FieldTaxonomy, StpmCourse
+from apps.scholarship import results_route
+from apps.scholarship.academic_engine import student_slip_check
+from apps.scholarship.genuineness.bands import NOT_CHECKED, NOT_FINAL_SEEN
+from apps.scholarship.higher_results import student_higher_check
+from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.tests.factories import create_document, make_application, make_student
+from apps.scholarship.verdict_engine import build_verdict
+
+DEGREE_ID = 'UH6481099'
+CERTAIN, PROBABLE, UNSURE, FAIL = 'verified', 'review', 'recommend', 'gap'
+SUBMITTED = 'profile_complete'
+
+# ── Profiles ───────────────────────────────────────────────────────────────────────────────────
+CORE_TYPED = {'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'B'}
+SPM_TYPED = {**CORE_TYPED, 'phy': 'A'}
+STPM_GRADES = {'PA': 'A', 'MATH_T': 'A-', 'PHYSICS': 'A-', 'CHEMISTRY': 'B+'}    # PNGK 3.67
+SPM_HELD = dict(exam_type='spm', results_exam_type='spm', grades=SPM_TYPED)
+STPM_HELD = dict(exam_type='stpm', results_exam_type='stpm', grades=SPM_TYPED, stpm_grades=STPM_GRADES,
+                 stpm_cgpa=3.67, completed_qualifications=['spm', 'stpm'])
+MATRIC_HELD = dict(exam_type='matric', results_exam_type='matric', grades=SPM_TYPED, higher_cgpa=3.5,
+                   higher_koko=8, completed_qualifications=['spm', 'matric'])
+DIPLOMA_HELD = dict(exam_type='diploma', results_exam_type='diploma', grades=SPM_TYPED, higher_cgpa=3.2,
+                    higher_institution_type='public', completed_qualifications=['spm', 'diploma'])
+ASASI_HELD = dict(exam_type='asasi', results_exam_type='asasi', grades=SPM_TYPED, higher_cgpa=3.4,
+                  completed_qualifications=['spm', 'asasi'])
+
+DEGREE = {'chosen_pathway': '', 'pathway_certainty': 'sure',
+          'chosen_programme': {'course_id': DEGREE_ID, 'course_name': 'Ijazah Sarjana Muda X'}}
+POST_SPM = {'chosen_pathway': 'matric', 'pathway_certainty': 'sure', 'chosen_programme': {}}
+
+# ── Reads ──────────────────────────────────────────────────────────────────────────────────────
+CORE_ROWS = [{'subject': 'BAHASA MELAYU', 'grade': 'A'}, {'subject': 'BAHASA INGGERIS', 'grade': 'A'},
+             {'subject': 'MATEMATIK', 'grade': 'A'}, {'subject': 'SEJARAH', 'grade': 'B'}]
+SPM_ROWS = CORE_ROWS + [{'subject': 'FIZIK', 'grade': 'A'}]
+SHORT_ROWS = [r for r in SPM_ROWS if r['subject'] != 'MATEMATIK']   # a compulsory subject dropped
+
+
+def spm_read(rows):
+    return {'candidate_name': 'PRIYA', 'exam': 'SIJIL PELAJARAN MALAYSIA 2024', 'results': rows}
+
+
+STPM_ROWS = [{'subject': 'PENGAJIAN AM', 'grade': 'A'}, {'subject': 'MATEMATIK (T)', 'grade': 'A-'},
+             {'subject': 'FIZIK', 'grade': 'A-'}, {'subject': 'KIMIA', 'grade': 'B+'}]
+
+
+def stpm_read(rows=STPM_ROWS, cgpa='3.67'):
+    return {'candidate_name': 'PRIYA', 'exam': 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025', 'cgpa': cgpa,
+            'cgpa_label': 'PNGK', 'results_kind_detected': 'stpm', 'results': rows}
+
+
+def cgpa_read(kind, cgpa):
+    return {'candidate_name': 'PRIYA', 'cgpa': cgpa, 'cgpa_label': 'PNGK', 'results_kind_detected': kind}
+
+
+GENUINE, SUSPECT = {'status': 'genuine'}, {'status': 'suspect'}
+
+
+def not_final(seen):
+    return {'status': NOT_CHECKED, 'doc_seen': seen}
+
+
+# ── Builders ───────────────────────────────────────────────────────────────────────────────────
+def _degree_course():
+    FieldTaxonomy.objects.get_or_create(key='f1-matrix', defaults={
+        'name_en': 'X', 'name_ms': 'X', 'name_ta': 'X', 'image_slug': 'x'})
+    StpmCourse.objects.get_or_create(course_id=DEGREE_ID, defaults={
+        'course_name': 'Ijazah Sarjana Muda X', 'university': 'Universiti Malaya', 'field_key_id': 'f1-matrix'})
+
+
+def _app(profile, plan, stage='shortlisted'):
+    _degree_course()
+    student = make_student(name='Priya', nric='030101-14-1234', **profile)
+    return make_application(stage, student=student, **plan)
+
+
+def _doc(app, doc_type, fields, auth=None, **kw):
+    vf = {'fields': fields, 'student_verdict': 'ok', 'error': ''}
+    if auth is not None:
+        vf['authenticity'] = auth
+    return create_document(application=app, doc_type=doc_type, storage_path=f'test/{doc_type}',
+                           vision_fields=vf, **kw)
+
+
+@dataclass
+class Case:
+    profile: dict
+    plan: dict
+    slip: tuple = None        # (fields, authenticity) of the SPM-slot upload, or None
+    higher: tuple = None      # (fields, authenticity) of the higher-results upload, or None
+    stage: str = 'shortlisted'   # Table F: 'profile_complete' (the owed / undeclared rules are post-submit)
+
+
+@dataclass
+class Row:
+    table: str
+    state: str
+    case: Case = None
+    band: str = ''
+    unresolved: frozenset = frozenset()
+    evidence: frozenset = frozenset()
+    slip_chips: dict = field(default_factory=dict)     # student_slip_check: name / subjects / results
+    higher_chips: dict = field(default_factory=dict)   # student_higher_check: name / kind / cgpa / grades
+    unreachable: str = ''                              # Q8: why the cell cannot happen
+
+    @property
+    def id(self):
+        return f'{self.table}:{self.state}'
+
+
+def R(table, state, case, band, unresolved=(), evidence=(), slip_chips=None, higher_chips=None):
+    return Row(table, state, case, band, frozenset(unresolved), frozenset(evidence),
+               slip_chips or {}, higher_chips or {})
+
+
+def U(table, state, reason):
+    return Row(table, state, unreachable=reason)
+
+
+def slip_chips(name='match', subjects='match', results='match'):
+    return {'name': name, 'subjects': subjects, 'results': results}
+
+
+def higher_chips(name='match', kind='match', cgpa='match', grades=''):
+    return {'name': name, 'kind_status': kind, 'cgpa_status': cgpa, 'grades_status': grades}
+
+
+STATES = ('checked', 'not_final', 'suspect', 'short_read', 'extra_typed', 'subject_missing',
+          'undeclared_higher')
+NAME_OK = 'results_slip_name_ok'
+NOT_DECLARED = 'higher_results_not_declared'
+HIGHER_OK = ('higher_results_name_ok', 'higher_results_kind_ok', 'higher_results_cgpa_ok')
+NO_FINAL_RULE = 'no "not final" rule reads this page (NOT_FINAL_SEEN: matriculation / polytechnic only)'
+NO_SUBJECTS = 'CGPA only: no subject is compared on this route'
+DECLARED = 'a tertiary holder has declared her higher results'
+
+MATRIX = [
+    # ── Table A: SPM holder, post-SPM course ──
+    R('A', 'checked', Case(SPM_HELD, POST_SPM, slip=(spm_read(SPM_ROWS), GENUINE)), CERTAIN,
+      evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    U('A', 'not_final', NO_FINAL_RULE),
+    R('A', 'suspect', Case(SPM_HELD, POST_SPM, slip=(spm_read(SPM_ROWS), SUSPECT)), PROBABLE,
+      unresolved=('document_not_genuine',), evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    R('A', 'short_read', Case(SPM_HELD, POST_SPM, slip=(spm_read(SHORT_ROWS), GENUINE)), CERTAIN,
+      evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    R('A', 'extra_typed', Case({**SPM_HELD, 'grades': {**SPM_TYPED, 'chem': 'A'}}, POST_SPM,
+                               slip=(spm_read(SPM_ROWS), GENUINE)), PROBABLE,
+      unresolved=('academic_extra_subjects',), evidence=(NAME_OK,), slip_chips=slip_chips(subjects='mismatch')),
+    R('A', 'subject_missing', Case({**SPM_HELD, 'grades': CORE_TYPED}, POST_SPM,
+                                   slip=(spm_read(SPM_ROWS), GENUINE)), PROBABLE,
+      unresolved=('academic_missing_subjects',), evidence=(NAME_OK,), slip_chips=slip_chips(subjects='mismatch')),
+    R('A', 'undeclared_higher', Case(SPM_HELD, POST_SPM, slip=(stpm_read(), None)), PROBABLE,
+      unresolved=('results_slip_is_higher', 'results_slip_missing'), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='not_spm', results='not_spm')),
+
+    # ── Table B: STPM holder ──
+    R('B', 'checked', Case(STPM_HELD, DEGREE, higher=(stpm_read(), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+    U('B', 'not_final', NO_FINAL_RULE),
+    R('B', 'suspect', Case(STPM_HELD, DEGREE, higher=(stpm_read(), SUSPECT)), PROBABLE,
+      unresolved=('document_not_genuine',), evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+    R('B', 'short_read', Case(STPM_HELD, DEGREE, higher=(stpm_read(STPM_ROWS[1:]), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+    R('B', 'extra_typed', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'BIOLOGY': 'C'}}, DEGREE,
+                               higher=(stpm_read(), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK, higher_chips=higher_chips(grades='match')),
+    R('B', 'subject_missing', Case({**STPM_HELD, 'stpm_grades': {k: v for k, v in STPM_GRADES.items()
+                                                                if k != 'CHEMISTRY'}}, DEGREE,
+                                   higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('higher_results_subjects_missing',), evidence=HIGHER_OK[:2],
+      higher_chips=higher_chips(cgpa='pending', grades='mismatch')),
+    U('B', 'undeclared_higher', DECLARED),
+
+    # ── Table C: Matriculation holder ──
+    R('C', 'checked', Case(MATRIC_HELD, DEGREE, higher=(cgpa_read('matric', '3.50'), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK, higher_chips=higher_chips()),
+    R('C', 'not_final', Case(MATRIC_HELD, DEGREE, higher=(cgpa_read('matric', '3.50'),
+                                                          not_final('matric_result_slip'))), PROBABLE,
+      unresolved=('higher_results_not_final',), evidence=HIGHER_OK, higher_chips=higher_chips()),
+    U('C', 'suspect', 'matriculation pages are stored genuine or not checked, never suspect (ruling 4, 2026-10-29)'),
+    U('C', 'short_read', NO_SUBJECTS),
+    U('C', 'extra_typed', NO_SUBJECTS),
+    U('C', 'subject_missing', NO_SUBJECTS),
+    U('C', 'undeclared_higher', DECLARED),
+
+    # ── Table D: Diploma holder (Q5: keep) ──
+    R('D', 'checked', Case(DIPLOMA_HELD, DEGREE, higher=(cgpa_read('diploma', '3.20'), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK, higher_chips=higher_chips()),
+    R('D', 'not_final', Case(DIPLOMA_HELD, DEGREE, higher=(cgpa_read('diploma', '3.20'),
+                                                           not_final('poly_result_slip'))), PROBABLE,
+      unresolved=('higher_results_not_final',), evidence=HIGHER_OK, higher_chips=higher_chips()),
+    U('D', 'suspect', 'diploma pages are stored genuine or not checked, never suspect (ruling 4, 2026-10-29)'),
+    U('D', 'short_read', NO_SUBJECTS),
+    U('D', 'extra_typed', NO_SUBJECTS),
+    U('D', 'subject_missing', NO_SUBJECTS),
+    U('D', 'undeclared_higher', DECLARED),
+
+    # ── Table E: Asasi holder (Q5: keep) ──
+    R('E', 'checked', Case(ASASI_HELD, DEGREE, higher=(cgpa_read('asasi', '3.40'), None)), PROBABLE,
+      evidence=HIGHER_OK + ('higher_results_not_checked',), higher_chips=higher_chips()),
+    U('E', 'not_final', NO_FINAL_RULE),
+    U('E', 'suspect', 'no Asasi page is ever scored'),
+    U('E', 'short_read', NO_SUBJECTS),
+    U('E', 'extra_typed', NO_SUBJECTS),
+    U('E', 'subject_missing', NO_SUBJECTS),
+    U('E', 'undeclared_higher', DECLARED),
+
+    # ── Table F: SPM holder going to a degree (submitted: the owed / undeclared rules) ──
+    R('F', 'checked', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
+      unresolved=(NOT_DECLARED,), evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    R('F', 'not_final', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE),
+                             higher=(cgpa_read('matric', '3.50'), not_final('matric_result_slip')), stage=SUBMITTED),
+      UNSURE, unresolved=('higher_results_not_final', 'higher_results_undeclared'),
+      evidence=(NAME_OK, 'higher_results_name_ok', 'grades_verified'),
+      slip_chips=slip_chips(), higher_chips=higher_chips(kind='', cgpa='pending')),
+    R('F', 'suspect', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), SUSPECT), stage=SUBMITTED), UNSURE,
+      unresolved=(NOT_DECLARED, 'document_not_genuine'), evidence=(NAME_OK, 'grades_verified'),
+      slip_chips=slip_chips()),
+    R('F', 'short_read', Case(SPM_HELD, DEGREE, slip=(spm_read(SHORT_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
+      unresolved=(NOT_DECLARED,), evidence=(NAME_OK, 'grades_verified'), slip_chips=slip_chips()),
+    R('F', 'extra_typed', Case({**SPM_HELD, 'grades': {**SPM_TYPED, 'chem': 'A'}}, DEGREE,
+                               slip=(spm_read(SPM_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
+      unresolved=('academic_extra_subjects', NOT_DECLARED), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='mismatch')),
+    R('F', 'subject_missing', Case({**SPM_HELD, 'grades': CORE_TYPED}, DEGREE,
+                                   slip=(spm_read(SPM_ROWS), GENUINE), stage=SUBMITTED), UNSURE,
+      unresolved=('academic_missing_subjects', NOT_DECLARED), evidence=(NAME_OK,),
+      slip_chips=slip_chips(subjects='mismatch')),
+    R('F', 'undeclared_higher', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE),
+                                     higher=(cgpa_read('matric', '3.50'), GENUINE), stage=SUBMITTED), UNSURE,
+      unresolved=('higher_results_undeclared',), evidence=(NAME_OK, 'higher_results_name_ok', 'grades_verified'),
+      slip_chips=slip_chips(), higher_chips=higher_chips(kind='', cgpa='pending')),
+
+    # ── Table G: the optional SPM slip of a tertiary holder (STPM here; the rule is one for all four) ──
+    R('G', 'checked', Case({**STPM_HELD, 'spm_prereq_grades': CORE_TYPED}, DEGREE,
+                           slip=(spm_read(CORE_ROWS), GENUINE), higher=(stpm_read(), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK + (NAME_OK, 'grades_verified'), slip_chips=slip_chips(),
+      higher_chips=higher_chips(grades='match')),
+    U('G', 'not_final', NO_FINAL_RULE),
+    R('G', 'suspect', Case({**STPM_HELD, 'spm_prereq_grades': CORE_TYPED}, DEGREE,
+                           slip=(spm_read(CORE_ROWS), SUSPECT), higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('document_not_genuine',), evidence=HIGHER_OK + (NAME_OK, 'grades_verified'),
+      slip_chips=slip_chips(), higher_chips=higher_chips(grades='match')),
+    R('G', 'short_read', Case({**STPM_HELD, 'spm_prereq_grades': CORE_TYPED}, DEGREE,
+                              slip=(spm_read(SHORT_ROWS), GENUINE), higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('academic_grades_unchecked',), evidence=HIGHER_OK + (NAME_OK,),
+      slip_chips=slip_chips(results='pending'), higher_chips=higher_chips(grades='match')),
+    R('G', 'extra_typed', Case({**STPM_HELD, 'spm_prereq_grades': {**CORE_TYPED, 'chem': 'A'}}, DEGREE,
+                               slip=(spm_read(SPM_ROWS), GENUINE), higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('academic_extra_subjects',), evidence=HIGHER_OK + (NAME_OK,),
+      slip_chips=slip_chips(subjects='mismatch'), higher_chips=higher_chips(grades='match')),
+    R('G', 'subject_missing', Case({**STPM_HELD, 'spm_prereq_grades': CORE_TYPED}, DEGREE,
+                                   slip=(spm_read(SPM_ROWS), GENUINE), higher=(stpm_read(), GENUINE)), CERTAIN,
+      evidence=HIGHER_OK + (NAME_OK, 'grades_verified'), slip_chips=slip_chips(),
+      higher_chips=higher_chips(grades='match')),
+    U('G', 'undeclared_higher', DECLARED),
+]
+
+#: Cells outside the 7 states that the table also rules on (grade differences, Q4, Q6).
+EXTRA = [
+    # Table F before submit: the live rule requires the higher results, so none on file is Fail.
+    R('F', 'checked_before_submit', Case(SPM_HELD, DEGREE, slip=(spm_read(SPM_ROWS), GENUINE)), FAIL,
+      unresolved=('higher_results_missing',), slip_chips=slip_chips()),
+    # Table B grade difference: a +/- STPM difference (typed A, slip A-) on an AI read.
+    R('B', 'pm_grade_ai_read', Case({**STPM_HELD, 'stpm_grades': {**STPM_GRADES, 'PHYSICS': 'A'}}, DEGREE,
+                                    higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('higher_results_grade_mismatch', 'higher_results_cgpa_mismatch'), evidence=HIGHER_OK[:2],
+      higher_chips=higher_chips(cgpa='mismatch', grades='mismatch')),
+    # Q6: a higher result in the SPM slot of a tertiary holder with a clean higher card.
+    R('G', 'higher_in_spm_slot', Case(STPM_HELD, DEGREE, slip=(stpm_read(), None),
+                                      higher=(stpm_read(), GENUINE)), PROBABLE,
+      unresolved=('results_slip_is_higher',), evidence=HIGHER_OK + (NAME_OK,),
+      slip_chips=slip_chips(subjects='not_spm', results='not_spm'), higher_chips=higher_chips(grades='match')),
+]
+
+
+def _academic(app):
+    return next(f for f in build_verdict(ScholarshipApplication.objects.get(pk=app.pk)) if f['fact'] == 'academic')
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class SlipCheckMatrix(TestCase):
+    def _check(self, row):
+        c = row.case
+        app = _app(c.profile, c.plan, c.stage)
+        slip = _doc(app, 'results_slip', *c.slip) if c.slip else None
+        higher = _doc(app, 'higher_results', *c.higher) if c.higher else None
+        fact = _academic(app)
+        got = {
+            'band': fact['status'],
+            'unresolved': {i['code'] for i in fact['unresolved']},
+            'evidence': {i['code'] for i in fact['evidence']},
+            'slip_chips': {k: student_slip_check(slip)[k] for k in row.slip_chips} if slip else {},
+            'higher_chips': {k: student_higher_check(higher)[k] for k in row.higher_chips} if higher else {},
+        }
+        want = {'band': row.band, 'unresolved': set(row.unresolved), 'evidence': set(row.evidence),
+                'slip_chips': row.slip_chips, 'higher_chips': row.higher_chips}
+        return [f'{row.id} {k}: got {got[k]!r}, want {want[k]!r}' for k in want if got[k] != want[k]]
+
+    def test_every_reachable_cell(self):
+        # Every cell is checked and every difference reported at once (one cell's change names itself).
+        wrong = [line for row in MATRIX + EXTRA if not row.unreachable for line in self._check(row)]
+        self.assertEqual(wrong, [], '\n'.join(wrong))
+
+    def test_the_matrix_has_one_row_per_cell(self):
+        cells = [(r.table, r.state) for r in MATRIX]
+        self.assertEqual(len(cells), len(set(cells)))
+        self.assertEqual(set(cells), {(t, s) for t in 'ABCDEFG' for s in STATES})
+        self.assertEqual(sum(1 for r in MATRIX if r.unreachable), 21)     # Q8: 21 cannot happen
+
+    # ── Q8: the unreachable cells, each shown to be unreachable ──
+
+    def test_not_final_is_matriculation_and_polytechnic_only(self):
+        # A2, B2, E2, G2: the only pages read as "not final" are matriculation / polytechnic ones.
+        self.assertTrue(NOT_FINAL_SEEN)
+        self.assertTrue(all(s.split('_')[0] in ('matric', 'poly') for s in NOT_FINAL_SEEN))
+
+    def test_cgpa_routes_compare_no_subject(self):
+        # C/D/E short read, extra typed, subject missing: a CGPA-route read with subject rows and a
+        # typed STPM list still compares no subject.
+        for held, kind in ((MATRIC_HELD, 'matric'), (DIPLOMA_HELD, 'diploma'), (ASASI_HELD, 'asasi')):
+            with self.subTest(kind):
+                app = _app({**held, 'stpm_grades': STPM_GRADES}, DEGREE)
+                doc = _doc(app, 'higher_results', {**cgpa_read(kind, '3.50'), 'results': STPM_ROWS})
+                chk = student_higher_check(doc)
+                self.assertEqual((chk['grades_status'], chk['missing'], chk['mismatched']), ('', [], []))
+
+    def test_a_tertiary_holder_is_never_undeclared(self):
+        # B7, C7, D7, E7, G7: the undeclared state needs SPM-only results held.
+        from apps.scholarship.higher_owed import declared_kind
+        for held in (STPM_HELD, MATRIC_HELD, DIPLOMA_HELD, ASASI_HELD):
+            with self.subTest(held['exam_type']):
+                self.assertTrue(declared_kind(_app(held, DEGREE)))
+
+    def test_matriculation_and_diploma_store_no_suspect(self):
+        # C3, D3, E3: the matric / polytechnic scorer stores genuine or nothing; Asasi is never scored.
+        from apps.scholarship.genuineness import matric_poly_doc
+        src = inspect.getsource(matric_poly_doc)
+        self.assertIn('No suspect is ever stored', src)
+        self.assertIn('Asasi are never scored', src)
+
+
+class RouteCoverage(TestCase):
+    """Static: every value `results_route.destination()` (and `degree_bound()`) can return, for
+    every results-held kind, maps to a table that has all seven states."""
+
+    #: (results held, destination) -> table. Tertiary holders read the higher card on any route.
+    TABLE_FOR = {('spm', results_route.POST_SPM): 'A', ('spm', results_route.UNDECIDED): 'A',
+                 ('spm', results_route.DEGREE): 'F'}
+    TABLE_FOR.update({(k, d): t for k, t in (('stpm', 'B'), ('matric', 'C'), ('diploma', 'D'), ('asasi', 'E'))
+                      for d in (results_route.DEGREE, results_route.POST_SPM, results_route.UNDECIDED)})
+
+    def _returned(self, fn):
+        """The module constants `fn` can return (the names it assigns to `out` / returns)."""
+        tree = ast.parse(inspect.getsource(fn).lstrip())
+        names = set()
+        for node in ast.walk(tree):
+            value = node.value if isinstance(node, (ast.Assign, ast.Return)) else None
+            if isinstance(node, ast.Assign) and not any(getattr(t, 'id', '') == 'out' for t in node.targets):
+                value = None
+            if value is not None:
+                names |= {n.id for n in ast.walk(value) if isinstance(n, ast.Name)
+                          and isinstance(getattr(results_route, n.id, None), str)}
+        return {getattr(results_route, n) for n in names}
+
+    def test_every_destination_has_a_table(self):
+        values = self._returned(results_route.destination)
+        self.assertEqual(values, {results_route.DEGREE, results_route.POST_SPM, results_route.UNDECIDED})
+        tables = {r.table for r in MATRIX}
+        for held in ('spm', 'stpm', 'matric', 'diploma', 'asasi'):
+            for dest in values:
+                with self.subTest(held=held, dest=dest):
+                    self.assertIn(self.TABLE_FOR[(held, dest)], tables)
+
+    def test_degree_bound_has_a_table_both_ways(self):
+        # degree_bound True for an SPM holder = Table F; False = Table A.
+        self.assertEqual(inspect.signature(results_route.degree_bound).return_annotation, 'bool')
+        self.assertEqual({self.TABLE_FOR[('spm', results_route.DEGREE)],
+                          self.TABLE_FOR[('spm', results_route.POST_SPM)]}, {'F', 'A'})
