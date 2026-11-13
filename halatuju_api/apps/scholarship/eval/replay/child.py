@@ -16,7 +16,7 @@ import os
 import sys
 
 from . import clock, guards, netguard
-from .scrub import error_record, scrub
+from .scrub import error_record, scrub, use_salt
 
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
 
@@ -123,6 +123,7 @@ def main(argv=None, env=None):
         try:
             guards.check_environment(env)
             host, port = guards.check_database_url(env.get(guards.DB_ENV))
+            use_salt(env)                               # the parent's salt, or refuse to start
             setup_django()
             failed = clock.preload()
             from . import engine_map

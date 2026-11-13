@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import tempfile
 import types
 from unittest import mock
@@ -96,9 +97,10 @@ FAKE_CODES = tuple(ANSWERS) + ('status', 'app', 'amount', 'n', 'month', 'months'
 
 
 def _register_fake_codes(test):
-    patcher = mock.patch.object(scrub, '_REGISTERED', set())
-    patcher.start()
-    test.addCleanup(patcher.stop)
+    for patcher in (mock.patch.object(scrub, '_REGISTERED', set()),
+                    mock.patch.dict(scrub._STATE, frozen=False)):          # engine_map froze it on import
+        patcher.start()
+        test.addCleanup(patcher.stop)
     scrub.register_codes(FAKE_CODES)
 
 
@@ -238,7 +240,75 @@ class JoinHandshakeTest(SimpleTestCase):
                           session=session, counts=lambda: {'applications': 0})
         self.assertEqual(state['open_at_wait'], [False, False, False])
         events = [json.loads(line).get('event') for line in lines]
-        self.assertLess(events.index('joins'), events.index('counts'))    # the wait holds no table lock
+        self.assertLess(events.index('counts'), events.index('joins'))
+
+    def _args(self):
+        return parent.parse_args(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', self.workdir,
+                                  '--old-root', self.workdir, '--new-root', self.workdir])
+
+    @staticmethod
+    @contextlib.contextmanager
+    def _session():
+        yield '00000003-0000001B-1'
+
+    def test_the_counts_run_before_any_child_starts(self):
+        order = []
+
+        def counts():
+            order.append('counts')
+            return {'applications': 0}
+
+        def spawn(args, side, snapshot, out_path, env):
+            order.append('spawn')
+            with open(out_path, 'w', encoding='utf-8') as fh:
+                fh.write(json.dumps({'event': 'joined', 'side': side}) + '\n')
+            return _done_proc()
+
+        lines = []
+        parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
+                          session=self._session, counts=counts)
+        self.assertEqual(order, ['counts', 'spawn', 'spawn', 'spawn'])
+        events = [json.loads(line).get('event') for line in lines]
+        self.assertLess(events.index('counts'), events.index('joins'))
+
+    def test_side_files_left_by_an_earlier_run_are_deleted_before_any_child_starts(self):
+        for name in ('old.jsonl', 'new.jsonl', 'new_again.jsonl', 'stale.jsonl'):
+            with open(os.path.join(self.workdir, name), 'w', encoding='utf-8') as fh:
+                fh.write('{"engine": "same", "key": [1], "record": {"status": "probable"}}\n')
+        seen = []
+
+        def spawn(args, side, snapshot, out_path, env):
+            seen.append(sorted(f for f in os.listdir(self.workdir) if f.endswith('.jsonl')))
+            return _done_proc()                         # writes nothing: an old file would read as records
+
+        lines = []
+        parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lines.append, spawn=spawn,
+                          session=self._session, counts=dict)
+        self.assertEqual(seen[0], [])
+        sides = [json.loads(x) for x in lines if json.loads(x).get('event') == 'side']
+        self.assertEqual([s['records'] for s in sides], [0, 0, 0])
+
+    def test_every_running_child_is_killed_when_the_parent_fails_after_they_start(self):
+        for failure in ('wait_timeout', 'join_error'):
+            procs = {}
+
+            def spawn(args, side, snapshot, out_path, env):
+                def wait(timeout=None):
+                    raise subprocess.TimeoutExpired('child', timeout)
+                running = side != 'new'                 # `new` has already exited: not killed
+                procs[side] = types.SimpleNamespace(wait=wait, poll=lambda r=running: None if r else 3,
+                                                    kill=mock.Mock())
+                return procs[side]
+
+            patch = (mock.patch.object(parent, 'wait_for_joins', side_effect=RuntimeError('made-up'))
+                     if failure == 'join_error' else mock.patch.object(parent, 'wait_for_joins', return_value={}))
+            with patch, self.assertRaises((subprocess.TimeoutExpired, RuntimeError), msg=failure):
+                parent.run_replay(self._args(), env={guards.DB_ENV: LOCAL_URL}, out=lambda s: None, spawn=spawn,
+                                  session=self._session, counts=dict)
+            self.assertEqual(set(procs), set(parent.RUN_SIDES), failure)
+            procs['old'].kill.assert_called_once_with()
+            procs['new_again'].kill.assert_called_once_with()
+            procs['new'].kill.assert_not_called()
 
     def test_a_child_that_never_joins_is_stopped_and_the_wait_ends(self):
         paths = {s: os.path.join(self.workdir, f'{s}.jsonl') for s in parent.RUN_SIDES}
@@ -322,6 +392,28 @@ class ChildMainTest(SimpleTestCase):
         self.assertEqual(json.loads(text), {'side': 'old', 'event': 'fatal', 'error': 'WriteRefused'})
         self.assertNotIn('secret-value-123', text)
         self.assertNotIn('GEMINI', text)
+
+    def test_a_child_without_the_parents_salt_refuses_to_start(self):
+        argv = ['--side', 'old', '--instant', INSTANT, '--months', '2026-11,2026-12']
+        for salt in (None, '', 'too-short'):
+            env = {guards.DB_ENV: LOCAL_URL}
+            if salt is not None:
+                env[scrub.SALT_ENV] = salt
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(scrub._STATE, salt=None), \
+                    mock.patch.object(child, 'setup_django', side_effect=AssertionError) as setup:
+                out = os.path.join(tmp, 'old.jsonl')
+                self.assertEqual(child.main(argv + ['--out', out], env=env), 3)
+                with open(out, encoding='utf-8') as fh:
+                    self.assertEqual(json.loads(fh.read()), {'side': 'old', 'event': 'fatal', 'error': 'SaltMissing'})
+                self.assertIsNone(scrub._STATE['salt'])
+            setup.assert_not_called()
+        given = 'f' * 32
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(scrub._STATE, salt=None), \
+                mock.patch.object(child, 'setup_django', side_effect=KeyError) as setup:
+            child.main(argv + ['--out', os.path.join(tmp, 'old.jsonl')],
+                       env={guards.DB_ENV: LOCAL_URL, scrub.SALT_ENV: given})
+            self.assertEqual(scrub._STATE['salt'], given)       # the parent's salt is the one used
+        setup.assert_called_once_with()
 
     def test_the_instant_must_carry_a_timezone(self):
         with self.assertRaises(ValueError):

@@ -138,6 +138,8 @@ def check_database_url(url):
         raise WriteRefused('replay: the URL may carry only sslmode=require, verify-ca or verify-full')
     if not parts.hostname:
         raise WriteRefused('replay: the database URL has no host')
+    if ',' in parts.netloc.rpartition('@')[2]:          # libpq reads h1,h2 as a list of hosts to try
+        raise WriteRefused('replay: the database URL must name exactly one host')
     return parts.hostname, port
 
 

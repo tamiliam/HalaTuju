@@ -12,6 +12,8 @@ import argparse
 import importlib
 import sys
 
+from . import scrub
+
 S = 'apps.scholarship.'
 
 #: name -> (old 'module:attr', new 'module:attr'). Paths checked against both trees on 2026-11-13.
@@ -50,7 +52,11 @@ ENGINES = {
 SIDES = {'old': 0, 'new': 1}
 
 #: name -> adapter factory (R2). An adapter has `.name`, `.cases()` (keys) and `.run(key, months)`.
+#: Each adapter module registers its codes at import, ABOVE the freeze below.
 ADAPTERS = {}
+
+# Every adapter is imported by now: no code may be registered after this line (scrub.register_codes).
+scrub.freeze_registry()
 
 
 class Unresolved(Exception):

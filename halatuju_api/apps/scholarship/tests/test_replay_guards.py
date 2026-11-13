@@ -193,6 +193,15 @@ class PreflightTest(SimpleTestCase):
             with self.assertRaises(guards.WriteRefused, msg=q):
                 guards.check_database_url(GOOD_URL + '?' + q)
 
+    def test_a_url_naming_more_than_one_host_is_refused(self):
+        for host in ('h1,h2:5432', 'pooler.example.test,other.example.test:5432', 'h1:5432,h2:5432', ',h1:5432'):
+            url = f'postgresql://replay_ro.abcdefgh:pw-not-real@{host}/postgres'
+            with self.assertRaises(guards.WriteRefused, msg=host) as cm:
+                guards.check_database_url(url)
+            self.assertNotIn('pw-not-real', str(cm.exception))
+        self.assertEqual(guards.check_database_url(GOOD_URL.replace('pw-not-real', 'pw,not,real')),
+                         ('pooler.example.test', 5432))                   # a comma in the password is fine
+
     def test_libpq_pg_variables_are_refused(self):
         for name in ('PGHOST', 'PGUSER', 'PGPASSWORD', 'PGOPTIONS', 'PGSERVICE', 'PGSSLMODE', 'PGSERVICEFILE'):
             with self.assertRaises(guards.WriteRefused, msg=name):
@@ -295,16 +304,17 @@ class ScrubTest(SimpleTestCase):
     """The output scrubber: only registered codes, amounts, hashes and ids leave; other text is hashed."""
 
     def setUp(self):
-        patcher = mock.patch.object(scrub, '_REGISTERED', set())
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for patcher in (mock.patch.object(scrub, '_REGISTERED', set()),
+                        mock.patch.dict(scrub._STATE, frozen=False)):      # engine_map froze it on import
+            patcher.start()
+            self.addCleanup(patcher.stop)
         scrub.register_codes(_TEST_CODES)
 
     def test_codes_amounts_hashes_ids_and_months_are_kept(self):
         rec = {'status': 'probable', 'unresolved': ['higher_results_not_declared', 'tick:name'], 'app': 278,
                'amount': Decimal('3000'), 'merit': 87.5, 'params': scrub.text_hash('anything'),
                'course': 'UP6500001', 'month': '2026-12', 'eligible': True, 'row': None, 'sum': '1200.00',
-               'commit': '442b21f4d'}
+               'old_commit': '442b21f4d'}
         out = scrub.scrub(rec)
         self.assertEqual(scrub.count_dropped(out), 0)
         self.assertEqual((out['amount'], out['merit']), ('3000.00', '87.50'))
@@ -357,6 +367,90 @@ class ScrubTest(SimpleTestCase):
             self.assertNotIn('Siti', json.dumps(scrub.scrub(rec)), rec)
         mixed = scrub.scrub({'status': 'probable', 'error': 'KeyError'})    # not an error record
         self.assertTrue(mixed['error'].startswith(scrub.SCRUB_HASH_PREFIX))
+
+    def test_a_decimal_or_float_at_or_above_the_cap_is_dropped(self):
+        for value in (Decimal('990101145678'), Decimal('-990101145678'), 990101145678.0, Decimal('100000000'),
+                      Decimal('99999999.999'), Decimal('1E+30')):
+            out = scrub.scrub({'amount': value})
+            self.assertEqual(out, {'amount': scrub.DROPPED}, repr(value))
+            self.assertEqual(scrub.amount(value), scrub.DROPPED, repr(value))
+        self.assertEqual(scrub.scrub({'amount': Decimal('99999999.99')}), {'amount': '99999999.99'})
+
+    def test_a_commit_hash_shape_leaves_as_written_only_under_the_commit_keys(self):
+        out = scrub.scrub({'old_commit': '442b21f4d', 'new_commit': '5ccd952a7', 'status': 'a12345678',
+                           'commit': '442b21f4d', 'unresolved': ['a12345678']})
+        self.assertEqual((out['old_commit'], out['new_commit']), ('442b21f4d', '5ccd952a7'))
+        self.assertNotIn('a12345678', json.dumps(out))
+        self.assertTrue(out['status'].startswith(scrub.SCRUB_HASH_PREFIX))
+        self.assertTrue(out['commit'].startswith(scrub.SCRUB_HASH_PREFIX))
+        self.assertEqual(scrub.count_dropped(out), 3)
+        self.assertTrue(scrub.scrub({'old_commit': 'Siti binti Ahmad'})['old_commit'].startswith('!h:'))
+
+    def test_the_dropped_keys_count_is_capped_like_any_int(self):
+        out = scrub.scrub({'!dropped_keys': 990101145678, 'ok': 1})
+        self.assertNotIn('990101145678', json.dumps(out))
+        self.assertLess(out['!dropped_keys'], scrub.MAX_INT)
+        self.assertEqual(scrub.scrub({'!dropped_keys': scrub.MAX_INT - 1, 'siti': 1})['!dropped_keys'],
+                         scrub.MAX_INT - 1)
+        self.assertEqual(scrub.scrub({'!dropped_keys': 2, 'siti': 1}), {'!dropped_keys': 3})
+
+    def test_the_registry_refuses_ic_phone_passport_and_long_number_shapes(self):
+        for bad in ('010203141234', '010203-14-1234', 'ic:010203-14-1234', 'tel:012-3456789', '0123456789',
+                    '+60123456789', 'A12345678', 'a12345678', 'pp:A1234567', '123456', '99999999'):
+            with self.assertRaises(ValueError, msg=bad):
+                scrub.register_codes([bad])
+            self.assertFalse(scrub.is_code(bad), bad)
+        scrub.register_codes(['UP6500001', 'tick:name', 'payments.schedule_row', '2026', 'row_12345'])
+
+
+class RegistryFreezeTest(SimpleTestCase):
+    """Codes come only from the adapters' import-time literals: frozen once engine_map is imported."""
+
+    def test_the_registry_is_frozen_once_the_engine_map_is_imported(self):
+        importlib.import_module('apps.scholarship.eval.replay.engine_map')
+        self.assertTrue(scrub._STATE['frozen'])
+        with mock.patch.object(scrub, '_REGISTERED', set()):
+            with self.assertRaises(scrub.RegistryFrozen):
+                scrub.register_codes(['made_up_code'])
+            self.assertFalse(scrub.is_code('made_up_code'))
+
+    def test_every_register_codes_call_in_the_replay_package_passes_string_literals(self):
+        root = os.path.dirname(scrub.__file__)
+        files = [os.path.join(d, f) for d, _, fs in os.walk(root) for f in fs if f.endswith('.py')]
+        self.assertGreater(len(files), 5)
+        bad = [f'{os.path.basename(p)}:{line}' for p in files for line in _non_literal_registrations(p)]
+        self.assertEqual(bad, [])
+
+    def test_the_static_check_catches_a_non_literal_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'adapter.py')
+            with open(path, 'w', encoding='utf-8') as fh:
+                fh.write('from . import scrub\nscrub.register_codes(("ok_code", "b"))\n'
+                         'register_codes(["x"])\nscrub.register_codes(names)\n'
+                         'register_codes([n for n in x])\nscrub.register_codes(("a", 1))\n'
+                         'register_codes({"a"}, extra)\n')
+            self.assertEqual(_non_literal_registrations(path), [4, 5, 6, 7])
+
+
+def _non_literal_registrations(path):
+    """Line numbers of each `register_codes(...)` call in ``path`` whose only argument is not a literal
+    tuple, set or list of string literals."""
+    import ast
+    with open(path, encoding='utf-8') as fh:
+        tree = ast.parse(fh.read())
+    lines = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', None)
+        if name != 'register_codes':
+            continue
+        arg = node.args[0] if len(node.args) == 1 and not node.keywords else None
+        if not (isinstance(arg, (ast.Tuple, ast.Set, ast.List))
+                and all(isinstance(e, ast.Constant) and isinstance(e.value, str) for e in arg.elts)):
+            lines.append(node.lineno)
+    return lines
 
 
 _PROBE = '''import datetime

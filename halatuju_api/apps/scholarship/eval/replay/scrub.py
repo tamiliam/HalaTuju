@@ -18,14 +18,18 @@ for the name of a loaded exception class; anywhere else its value is hashed like
 What leaves as written:
   * None, True, False;
   * an int below 10**8 (an id or a count; an IC or a phone number held as a number is longer);
-  * a Decimal / float, written as a 2-decimal amount;
-  * a string that is: a known code; a hash `h:<8-16 hex>` or `!h:<12 hex>`; an amount `-?\\d+.\\d\\d`;
-    a month `YYYY-MM`; a commit hash (7-40 hex with at least one letter AND one digit).
+  * a Decimal / float below 10**8, written as a 2-decimal amount (the same cap as a text amount);
+  * a string that is: a known code; a hash `h:<8-16 hex>` or `!h:<12 hex>`; an amount `-?\\d{1,8}.\\d\\d`;
+    a month `YYYY-MM`; and, ONLY under the `old_commit` / `new_commit` keys, a commit hash (7-40 hex
+    with at least one letter AND one digit: a lower-cased passport has that shape too).
+
+The registry is FROZEN once `engine_map` is imported (it imports the adapters, which register first);
+a later `register_codes` raises. A code that looks like an IC, a phone, a passport or a long number is
+refused even before then. Each child refuses to start without the parent's salt (`use_salt`).
 """
 import hashlib
 import hmac
 import math
-import os
 import re
 import secrets
 from decimal import Decimal, InvalidOperation
@@ -41,8 +45,18 @@ _SCRUB_HASH = re.compile(r'^!h:[0-9a-f]{12}$')
 _AMOUNT = re.compile(r'^-?\d{1,8}\.\d{2}$')
 _MONTH = re.compile(r'^20\d{2}-(0[1-9]|1[0-2])$')
 _COMMIT = re.compile(r'^(?=[0-9]*[a-f])(?=[a-f]*[0-9])[0-9a-f]{7,40}$')
-#: What `register_codes` accepts: one token, no spaces, at most 64 characters.
+#: Keys under which a commit-hash-shaped string may leave as written.
+_COMMIT_KEYS = frozenset({'old_commit', 'new_commit'})
+#: What `register_codes` accepts: one token, no spaces, at most 64 characters...
 _CODE_SHAPE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_:./-]{0,63}$')
+#: ...and none of these anywhere in it: six or more digits alone, an IC (YYMMDD-PB-NNNN, dashes
+#: optional), a phone (+60 / 0 then 8-11 digits, one dash or space allowed), a passport (one letter
+#: and 7-9 digits).
+_PERSONAL_SHAPES = re.compile(
+    r'^\d{6,}$'
+    r'|(?<!\d)\d{6}-?\d{2}-?\d{4}(?!\d)'
+    r'|(?<!\d)(?:\+?6)?0\d{1,2}[- ]?\d{6,8}(?!\d)'
+    r'|(?<![A-Za-z])[A-Za-z]\d{7,9}(?!\d)')
 #: Keys an error record (or a fatal event) may carry beside `error`.
 _ERROR_RECORD_KEYS = frozenset({'error', 'event', 'side', 'engine'})
 
@@ -58,29 +72,46 @@ R1_CODES = frozenset({
     'unknown', 'Missing',
 })
 _REGISTERED = set()
+#: `frozen`: set by `freeze_registry` (engine_map, at import). `salt`: the run's HMAC key.
+_STATE = {'salt': None, 'errors': frozenset(), 'frozen': False}
+SALT_MIN_LEN = 32
+
+
+class RegistryFrozen(RuntimeError):
+    """`register_codes` was called after the registry was frozen."""
+
+
+class SaltMissing(RuntimeError):
+    """A child was started without the parent's scrub salt."""
 
 
 def register_codes(codes):
-    """Add ``codes`` (an R2 adapter's statuses, field names, engine names) to the registry. Each must be
-    a single token (`_CODE_SHAPE`); anything else raises ValueError, so free text cannot be registered."""
+    """Add ``codes`` (an R2 adapter's statuses, field names, engine names) to the registry, at the
+    adapter module's import. Each must be a single token (`_CODE_SHAPE`) with no IC, phone, passport or
+    long-number shape in it; anything else raises ValueError, so free text cannot be registered. After
+    `freeze_registry` every call raises RegistryFrozen."""
+    if _STATE['frozen']:
+        raise RegistryFrozen('replay: the code registry is frozen')
     codes = list(codes)
-    bad = [c for c in codes if not isinstance(c, str) or not _CODE_SHAPE.match(c)]
+    bad = [c for c in codes
+           if not isinstance(c, str) or not _CODE_SHAPE.match(c) or _PERSONAL_SHAPES.search(c)]
     if bad:
         raise ValueError(f'replay: {len(bad)} value(s) are not codes')
     _REGISTERED.update(codes)
+
+
+def freeze_registry():
+    """No more codes: called once `engine_map` (and with it every adapter) has been imported."""
+    _STATE['frozen'] = True
 
 
 def is_code(s):
     return isinstance(s, str) and (s in R1_CODES or s in _REGISTERED)
 
 
-_STATE = {'salt': None, 'errors': frozenset()}
-
-
 def _salt():
-    if _STATE['salt'] is None:
-        given = os.environ.get(SALT_ENV, '')
-        _STATE['salt'] = given if len(given) >= 32 else secrets.token_hex(16)
+    if _STATE['salt'] is None:                          # the parent before `new_salt`; never a child
+        _STATE['salt'] = secrets.token_hex(16)
     return _STATE['salt'].encode('ascii')
 
 
@@ -88,6 +119,15 @@ def new_salt():
     """A fresh run salt (the parent's): used here and returned for the children's environment."""
     _STATE['salt'] = secrets.token_hex(16)
     return _STATE['salt']
+
+
+def use_salt(env):
+    """A child's salt: the parent's, from ``env``. SaltMissing (the child refuses to start) when it is
+    absent or short, so a child can never hash with a salt of its own making."""
+    given = env.get(SALT_ENV, '')
+    if not isinstance(given, str) or len(given) < SALT_MIN_LEN:
+        raise SaltMissing(f'replay: {SALT_ENV} is not set')
+    _STATE['salt'] = given
 
 
 def _keyed(s):
@@ -101,19 +141,21 @@ def text_hash(value):
 
 
 def amount(value):
-    """A 2-decimal amount string, or DROPPED when it is not a finite number."""
+    """A 2-decimal amount string, or DROPPED when it is not a finite number or not below MAX_INT (the
+    same cap as a text amount: an IC or a phone held as a Decimal is longer)."""
     try:
         d = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError):
         return DROPPED
-    if not d.is_finite():
+    if not d.is_finite() or abs(d) >= MAX_INT:
         return DROPPED
-    return str(d.quantize(Decimal('0.01')))
+    q = d.quantize(Decimal('0.01'))
+    return DROPPED if abs(q) >= MAX_INT else str(q)
 
 
 def _passes_as_written(s):
     return bool(is_code(s) or _HASH.match(s) or _SCRUB_HASH.match(s) or _AMOUNT.match(s) or _MONTH.match(s)
-                or _COMMIT.match(s) or s == DROPPED)
+                or s == DROPPED)
 
 
 def _leaf(value):
@@ -158,13 +200,17 @@ def scrub(value):
         for k, v in value.items():
             if k == 'error' and error_shaped and _is_error_name(v):
                 out[k] = v
-            elif k == '!dropped_keys' and type(v) is int:        # an already-scrubbed record
+            elif k == '!dropped_keys' and type(v) is int and 0 <= v < MAX_INT:   # an already-scrubbed record
                 out[k] = out.get(k, 0) + v
+            elif k in _COMMIT_KEYS and isinstance(v, str) and _COMMIT.match(v):
+                out[k] = v
             elif is_code(k):
                 out[k] = scrub(v)
             else:
                 out.setdefault('!dropped_keys', 0)
                 out['!dropped_keys'] += 1
+        if '!dropped_keys' in out:
+            out['!dropped_keys'] = min(out['!dropped_keys'], MAX_INT - 1)
         return out
     if isinstance(value, (list, tuple)):
         return [scrub(v) for v in value]
