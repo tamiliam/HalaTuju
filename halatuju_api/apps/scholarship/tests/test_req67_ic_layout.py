@@ -123,6 +123,20 @@ class TestLayoutRecoversTheWholeName(SimpleTestCase):
         r = read(*card(['THEEPA AP', 'SELVARAJ'], ADDRESS))
         self.assertEqual(r['name'], 'THEEPA A/P SELVARAJ')
 
+    def test_address_set_tighter_than_the_name(self):
+        # Apps 358, 573, 602: the name's lines sit wider apart than the address's, and one
+        # address step is tighter still. Measured against the tightest step, the name's own
+        # line spacing looked like the blank line and its second line was lost.
+        printed = [('KAD PENGENALAN MALAYSIA', 60, 16), (NRIC, 200, 16),
+                   ('FARAH NADIA BINTI MOHD', 240, H), ('YUSOF', 262, H),          # name: 22 apart
+                   ('NO 12 JALAN MAWAR 3', 308, H), ('TAMAN SRI MUDA', 326, H),     # blank line: 46
+                   ('47000 SUNGAI BULOH', 344, H), ('SELANGOR', 356, H)]          # address: 18, 12
+        words = [w for t, y, h in printed for w in _words(t, LEFT, y, h)]
+        text = '\n'.join(t for t, *_ in printed) + '\n'
+        r = read(words, text)
+        self.assertEqual(r['name'], 'FARAH NADIA BINTI MOHD YUSOF')
+        self.assertEqual(r['address'], 'NO 12 JALAN MAWAR 3, TAMAN SRI MUDA, 47000 SUNGAI BULOH, SELANGOR')
+
     def test_rotated_photo_reads_the_same(self):
         words, text = card(['KAVITHA A/P MUNUSAMY', 'NAIDU'], ADDRESS)
         for deg in (90, -90, 8, 180):

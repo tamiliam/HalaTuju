@@ -16,9 +16,11 @@
 
 **Addresses:** on about 180 cards the old address opened with the name line itself. The address read now skips the name lines, so those addresses lose that line. That is intended.
 
-**Not fixed yet:** apps 358, 573 and 602. The layout read takes their first name line only. Their next line does not pass as a name line, so they read as before.
+**The line spacing is the card's typical step, not its tightest (second re-check, 2026-11-13):** apps 358, 573 and 602 still lost their second line. The measured spacing showed why: the address is often set tighter than the name, and one tight step (a closely set last line) made the name's own spacing look like the blank line. The ordinary spacing is now the lower median of the steps, and the blank line is a step wider than 1.5× it. Replayed on the 45 cards with measured spacing, this changes exactly those three and nothing else.
 
-**Not checked yet:** the guarded version against the cards that changed. Word boxes are not stored, so that re-check, and re-reading the students' cards after release, are paid Vision reads that need the owner's word.
+**Results of the guarded version (re-check of the ~290 cards that changed, paid, owner's word):** no name got worse into "different name". 13 students' cards and about 12 parents' cards now read "match" that did not. Three cards go from "match" to "partly matches" (app 177's student card, the parents' cards on 25 and 217). On each, a second line sits at the name's own spacing with a clear blank line under it, so it is most likely a real name part the typed name lacks. "Partly matches" is amber for the reviewer, never a block.
+
+**Not checked yet:** the spacing change on real cards (replayed only). Word boxes are not stored, so re-reading the students' cards after release, are paid Vision reads that need the owner's word.
 
 ## 2026-11-13 — Every Team table heading sorts, except Action (owner, Sprint M2d addendum A2)
 

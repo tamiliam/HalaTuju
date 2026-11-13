@@ -461,9 +461,12 @@ def _layout_read(words, text: str, nric: str):
         return None
     left = [ln for ln in below if abs(ln['u0'] - first['u0']) <= 1.5 * lh and ln['v'] >= first['v']]
     # The ordinary line spacing on this card, and the blank line: a step clearly wider than it.
-    steps = [b['v'] - a['v'] for a, b in zip(left, left[1:]) if b['v'] - a['v'] > 0.5 * lh]
-    pitch = min(steps) if len(steps) >= 2 else 1.5 * lh
-    gap_at = 1.6 * pitch
+    # The TYPICAL step (the lower median), not the tightest: the address is often set tighter
+    # than the name, and one tight step made the name's own line spacing look like the blank
+    # line (apps 358, 573, 602 lost their second line; corpus check 2026-11-13).
+    steps = sorted(b['v'] - a['v'] for a, b in zip(left, left[1:]) if b['v'] - a['v'] > 0.5 * lh)
+    pitch = steps[(len(steps) - 1) // 2] if len(steps) >= 2 else 1.5 * lh
+    gap_at = 1.5 * pitch
     block, rest = [left[0]], []
     for prev, ln in zip(left, left[1:]):
         if rest or ln['v'] - prev['v'] > gap_at or len(block) == 3 or not _name_part_line(ln['text']):
