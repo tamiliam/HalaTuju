@@ -1,0 +1,6146 @@
+{
+ "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py.",
+ "skips": [
+  {
+   "route": "admin/",
+   "reason": "Django admin site: its own session login, not the API"
+  },
+  {
+   "route": "api/v1/health/",
+   "reason": "liveness probe: public by design, no data"
+  }
+ ],
+ "holes": [],
+ "entries": [
+  {
+   "route": "api/v1/admin/admin-emails/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/admins/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/permissions/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/permissions/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/resend/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/revoke/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/admins/<int:admin_id>/role/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a2",
+   "flags": [],
+   "note": "object reviewer_a2: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/course-data/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/course-data/check/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/dashboard/",
+   "method": "get",
+   "allow": [
+    "super",
+    "partner_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/graduation-messages/<int:pk>/review/",
+   "method": "post",
+   "allow": [
+    "super",
+    "reviewer_a",
+    "reviewer_a2"
+   ],
+   "hide": [],
+   "object": "grad_message_a",
+   "flags": [],
+   "note": "object grad_message_a: reached by super, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/invitations/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/invitations/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/invitations/<int:pk>/cancel/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": "invitation_a",
+   "flags": [],
+   "note": "object invitation_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/invite/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/activity/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/password/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/photo/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/me/photo/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/mentor/students/",
+   "method": "get",
+   "allow": [
+    "mentor_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/mentor/students/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "mentor_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentor/students/<int:pk>/modules/<int:mid>/file/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "mentor_a"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/mentor/students/<int:pk>/sessions/",
+   "method": "post",
+   "allow": [
+    "mentor_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/mentors/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "mentor_obj_a",
+   "flags": [],
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "mentor_obj_a",
+   "flags": [],
+   "note": "object mentor_obj_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "mentor_obj_a",
+   "flags": [],
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/<int:pk>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "mentor_obj_a",
+   "flags": [],
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/<int:pk>/gifts/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "mentor_obj_a",
+   "flags": [],
+   "note": "object mentor_obj_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/mentors/staff/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/mentors/staff/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/orgs/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/profile/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "source_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/profile/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/referral-partners/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/referral-partners/<int:org_id>/",
+   "method": "patch",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_a",
+   "flags": [],
+   "note": "object org_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/reviewer-profile/",
+   "method": "get",
+   "allow": [
+    "super",
+    "reviewer_a",
+    "reviewer_a2",
+    "mentor_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/reviewer-profile/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "reviewer_a",
+    "reviewer_a2",
+    "mentor_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/reviewers/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/reviewers/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a",
+   "flags": [],
+   "note": "object reviewer_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/reviewers/<int:pk>/pause/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a",
+   "flags": [],
+   "note": "object reviewer_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/reviewers/<int:pk>/programme/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "reviewer_a",
+   "flags": [],
+   "note": "object reviewer_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/reviewers/system-emails/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/role/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/announcements/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/announcements/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/announcements/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "announcement_a",
+   "flags": [],
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/announcements/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "announcement_a",
+   "flags": [],
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/announcements/<int:pk>/withdraw/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "announcement_a",
+   "flags": [],
+   "note": "object announcement_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/anon-profile/publish/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/assign/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/award-amount/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/bursary-agreement/countersign/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/bursary-agreement/witness/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/cancel-decline/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/cancel-reopen/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/close/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/disbursements/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/guardian-call/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/guardian-contact/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/hold-award/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/reopen/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/submit/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/maintenance/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/nudge/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/org-reject/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/profile/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/publish/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/qc-decision/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/record-verdict/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reject/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/release-nric-lock/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reopen-decision/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reporting-date/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/request-info/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/resolution-items/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/verdict-summary/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/verify-accept/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/witness/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/assignable-admins/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [
+    "INTENT-UNCLEAR: every active staff login (partner and finance included) reads its own organisation assignment list with the internal per-reviewer corrections tally, which the code says is for whoever assigns reviewers."
+   ],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/bill-to/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/bill-to/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/corrections/",
+   "method": "delete",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/corrections/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/corrections/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "correction_a",
+   "flags": [],
+   "note": "object correction_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/corrections/<int:pk>/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object correction_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/costs/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/costs/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/hours/<int:org_id>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_a",
+   "flags": [],
+   "note": "object org_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/hours/<int:org_id>/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_a",
+   "flags": [],
+   "note": "object org_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/invoices/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/invoices/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/invoices/<int:pk>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "invoice_a",
+   "flags": [],
+   "note": "object invoice_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/invoices/<int:pk>/declaration/<str:action>/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "invoice_a",
+   "flags": [],
+   "note": "object invoice_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/invoices/<int:pk>/pdf/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "invoice_a",
+   "flags": [],
+   "note": "object invoice_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/issuer/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/issuer/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/overdue/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/rates/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/rates/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/receipts/<int:pk>/pdf/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "receipt_a",
+   "flags": [],
+   "note": "object receipt_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/billing/usage/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/clauses/",
+   "method": "put",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/clauses/<int:order>/generate-quiz/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/deploy/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/import-docx/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/preview/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/quiz-preview/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/revert/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/schedule/",
+   "method": "put",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/submit/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/validate/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/vetting/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/credits/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/credits/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/credits/<int:pk>/cancel/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "credit_a",
+   "flags": [],
+   "note": "object credit_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/credits/<int:pk>/sign/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "credit_a",
+   "flags": [],
+   "note": "object credit_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "module_a",
+   "flags": [],
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "module_a",
+   "flags": [],
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "module_a",
+   "flags": [],
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/csv/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "module_a",
+   "flags": [],
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
+   "method": "delete",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/lessons/<int:lid>/file/sign/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/progress/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "module_a",
+   "flags": [],
+   "note": "object module_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/progress/<int:app_id>/<str:action>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/development/<int:pk>/progress/<int:app_id>/<str:action>/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [],
+   "object": "tranche_a",
+   "flags": [],
+   "note": "object tranche_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/intake-years/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "cohort_a",
+   "flags": [],
+   "note": "object cohort_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/intake-years/<int:pk>/finish/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "cohort_a",
+   "flags": [],
+   "note": "object cohort_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/my-pending/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/my-programmes/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/configuration/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/configuration/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/letter-templates/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/letter-templates/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/overview-layout/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/overview-layout/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/overview-layout/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/student-emails/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/student-emails/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/student-emails/switch/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/publish/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/publish/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/publish/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/publish/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/revert/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/revert/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/revert/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/organisation/theme/revert/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/partner-emails/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/partner-emails/<str:kind>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "run_a",
+   "flags": [],
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/cancel/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "run_a",
+   "flags": [],
+   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/csv/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "run_a",
+   "flags": [],
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "run_a",
+   "flags": [],
+   "note": "object run_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payment-runs/<int:pk>/sign/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "run_a",
+   "flags": [],
+   "note": "object run_a: reached by super, org_admin_a, admin_a, finance_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/payments/funding-summary/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programme-overview/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programme/configuration/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programme/configuration/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/apply-copy/draft/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/years/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/years/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/ai-rerun/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/approve/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/hours/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/analysis/<int:aid>/withdraw/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/answer/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/approve/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/ask/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/<int:att_id>/",
+   "method": "delete",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object org_request_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/attachments/sign-upload/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/comments/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/decline/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/defer/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/done/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/modify/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/quote/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/requote/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/schedule/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/<int:pk>/triage/",
+   "method": "post",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "org_request_a",
+   "flags": [],
+   "note": "object org_request_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/scholarship/requests/count/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/resolution-items/<int:item_id>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "hide": [],
+   "object": "resolution_a",
+   "flags": [],
+   "note": "object resolution_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/activity/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/activity/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/contract/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/development/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/development/<int:mid>/file/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/<int:lid>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/<int:lid>/pdf/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/letters/preview/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/mentoring/sessions/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/money/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/results/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/results/<int:result_id>/review/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/surveys/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, admin_a, mentor_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scopes/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "source_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/source-names/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sources/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sources/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sources/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "source_obj_a",
+   "flags": [],
+   "note": "object source_obj_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/spending/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/spending/category/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/spending/flag/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/spending/flag/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-emails/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-emails/<str:kind>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/import-docx/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/preview/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/publish/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/sections/",
+   "method": "put",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/sections/<int:order>/generate-quiz/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/sponsor-terms/<int:pk>/validate/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "survey_a",
+   "flags": [],
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/<int:pk>/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "survey_a",
+   "flags": [],
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/<int:pk>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "survey_a",
+   "flags": [],
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/<int:pk>/csv/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "survey_a",
+   "flags": [],
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/surveys/<int:pk>/results/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "survey_a",
+   "flags": [],
+   "note": "object survey_a: reached by super, org_admin_a, admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/system-health/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/verdict-metrics/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/scholarship/withdrawal-requests/<int:pk>/approve/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "withdrawal_a",
+   "flags": [],
+   "note": "object withdrawal_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/withdrawal-requests/<int:pk>/cancel/",
+   "method": "post",
+   "allow": [
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "withdrawal_a",
+   "flags": [],
+   "note": "object withdrawal_a: reached by admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/withdrawal-requests/<int:pk>/refuse/",
+   "method": "post",
+   "allow": [
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "withdrawal_a",
+   "flags": [],
+   "note": "object withdrawal_a: reached by org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/set-password/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source-users/<int:pk>/resend/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "source_a",
+   "flags": [],
+   "note": "object source_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/source-users/<int:pk>/revoke/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "source_a",
+   "flags": [],
+   "note": "object source_a: reached by super, org_admin_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/source/applications/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source/applications/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by source_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/source/applications/<int:pk>/agreement/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "source_a"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/source/applications/<int:pk>/witness/",
+   "method": "post",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by source_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/source/overview/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source/profile/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source/profile/",
+   "method": "patch",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source/scholars/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/source/scholars/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "source_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by source_a; refused to org_admin_b"
+  },
+  {
+   "route": "api/v1/admin/sponsors/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/sponsors/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [
+    "INTENT-UNCLEAR: org_admin_b and finance_a read sponsor A whole. The money and students inside are fenced in _sponsor_detail_dict, but that fencing is not asserted here."
+   ],
+   "note": "object sponsor_a: UNCOVERED, shared, not owner-fenced (org_admin_b allowed)"
+  },
+  {
+   "route": "api/v1/admin/sponsors/<int:pk>/membership/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object sponsor_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/sponsors/<int:pk>/review/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [
+    "INTENT-UNCLEAR: org_admin_b (another organisation) can approve, reject or suspend sponsor A. Sponsor vetting is platform-level with no organisation fence; whether any org admin should vet a sponsor another organisation brought in is not stated."
+   ],
+   "note": "object sponsor_a: UNCOVERED, shared, not owner-fenced (org_admin_b allowed)"
+  },
+  {
+   "route": "api/v1/admin/sponsors/pending-count/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/sponsorships/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "finance_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/staff/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/students/",
+   "method": "get",
+   "allow": [
+    "super",
+    "partner_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/students/<str:user_id>/",
+   "method": "delete",
+   "allow": [
+    "super"
+   ],
+   "hide": [],
+   "object": "student_a",
+   "flags": [],
+   "note": "object student_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/students/<str:user_id>/",
+   "method": "get",
+   "allow": [
+    "super"
+   ],
+   "hide": [
+    "partner_a"
+   ],
+   "object": "student_a",
+   "flags": [],
+   "note": "object student_a: super only, no tenant caller reaches it"
+  },
+  {
+   "route": "api/v1/admin/students/export/",
+   "method": "get",
+   "allow": [
+    "super",
+    "partner_a"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/admin/team/<str:table>/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only"
+  },
+  {
+   "route": "api/v1/admin/team/<str:table>/candidates/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only"
+  },
+  {
+   "route": "api/v1/branding/<slug:code>/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object org_a_code: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+  },
+  {
+   "route": "api/v1/calculate/cgpa/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/calculate/merit/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/calculate/pathways/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/courses/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/courses/<str:course_id>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/courses/offerings/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/courses/search/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/eligibility/check/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/fields/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/institutions/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/institutions/<str:institution_id>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/internal/cron/<str:job>/",
+   "method": "post",
+   "allow": [
+    "cron_money"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object cron_job: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence"
+  },
+  {
+   "route": "api/v1/internal/vircle/airtable/",
+   "method": "post",
+   "allow": [
+    "vircle"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/outcomes/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/outcomes/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/outcomes/<int:outcome_id>/",
+   "method": "delete",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/outcomes/<int:outcome_id>/",
+   "method": "put",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/profile/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/",
+   "method": "put",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/claim-nric/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/claim-nric/confirm-code/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/claim-nric/send-code/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/sync/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/verify-email/<uuid:token>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/profile/verify-email/send/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/verify-phone/check/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/profile/verify-phone/send/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/quiz/questions/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/quiz/submit/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/ranking/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/reports/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/reports/<int:report_id>/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "report_a",
+   "flags": [],
+   "note": "object report_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/reports/generate/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/saved-courses/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/saved-courses/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/saved-courses/<str:course_id>/",
+   "method": "delete",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/saved-courses/<str:course_id>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/applications/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/applications/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/",
+   "method": "patch",
+   "allow": [],
+   "hide": [
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/confirm/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/graduation-message/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/graduation-message/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/income-route/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object app_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/interview/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/interview/book/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/interview/cancel/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/interview/message/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/interview/request-alternatives/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/onboarding-complete/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
+   "method": "delete",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/promotional-consent/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/semester-results/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/applications/<int:pk>/semester-results/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/apply-gate/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/award/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/award/",
+   "method": "post",
+   "allow": [],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/award/comprehension-quiz/",
+   "method": "get",
+   "allow": [],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/award/comprehension/",
+   "method": "post",
+   "allow": [],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/award/guarantor/verify-phone/check/",
+   "method": "post",
+   "allow": [],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/award/guarantor/verify-phone/send/",
+   "method": "post",
+   "allow": [],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bank-account/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bank-account/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary-agreement/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/contract/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/funds/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/lessons/<int:lid>/<str:action>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/lessons/<int:lid>/<str:action>/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/<str:step>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/growth/<int:pk>/task/<str:step>/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object module_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/letters/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/letters/<int:lid>/<str:action>/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "letter_a",
+   "flags": [],
+   "note": "object letter_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/letters/<int:lid>/pdf/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object letter_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/scholarship/bursary/mentoring/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/news/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/news/read/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/summary/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/surveys/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/bursary/surveys/<int:pk>/answers/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object survey_a: UNCOVERED, shared, not owner-fenced (student_b allowed)"
+  },
+  {
+   "route": "api/v1/scholarship/consent/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/consent/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/documents/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/documents/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/documents/<int:pk>/",
+   "method": "delete",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "document_a",
+   "flags": [],
+   "note": "object document_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/documents/<int:pk>/help/",
+   "method": "get",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "document_a",
+   "flags": [],
+   "note": "object document_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/documents/<int:pk>/read/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "document_a",
+   "flags": [],
+   "note": "object document_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/documents/sign-upload/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/guardian-contact/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/guardian-contact/",
+   "method": "put",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/income/<str:member>/help/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only"
+  },
+  {
+   "route": "api/v1/scholarship/intake/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/resolution-items/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/resolution-items/<int:pk>/resolve/",
+   "method": "post",
+   "allow": [
+    "student_a"
+   ],
+   "hide": [
+    "student_b"
+   ],
+   "object": "resolution_a",
+   "flags": [],
+   "note": "object resolution_a: reached by student_a; refused to student_b"
+  },
+  {
+   "route": "api/v1/scholarship/results/refile-to-higher/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/results/refile-to-spm/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/results/spm-only/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/scholarship/whatsapp/inbound/",
+   "method": "post",
+   "allow": [
+    "twilio"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/activity/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/community/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/graduation-messages/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/impact/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/me/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/my-students/<str:ref>/",
+   "method": "get",
+   "allow": [
+    "sponsor_a"
+   ],
+   "hide": [
+    "sponsor_b"
+   ],
+   "object": "pool_ref_a",
+   "flags": [],
+   "note": "object pool_ref_a: reached by sponsor_a; refused to sponsor_b"
+  },
+  {
+   "route": "api/v1/sponsor/notifications/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/pool/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/pool/<str:ref>/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object pool_ref_a: UNCOVERED, shared, not owner-fenced (sponsor_b allowed)"
+  },
+  {
+   "route": "api/v1/sponsor/pool/<str:ref>/fund/",
+   "method": "post",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "object pool_ref_a: UNCOVERED, shared, not owner-fenced (sponsor_b allowed)"
+  },
+  {
+   "route": "api/v1/sponsor/pool/count/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/referrals/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/referrals/",
+   "method": "post",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/register/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/sponsorships/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/sponsorships/<int:pk>/cancel/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "object sponsorship_a: UNCOVERED, no owner reaches it in this world (refused before the fence: missing state, file or seat), so a refusal here may be the role gate, not the owner fence; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/sponsor/standing-gift/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/standing-gift/",
+   "method": "put",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/statement/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/terms/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/terms/accept/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/sponsor/terms/quiz/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/sponsor/trust/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/wallet/",
+   "method": "get",
+   "allow": [
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/sponsor/wallet/donate/",
+   "method": "post",
+   "allow": [],
+   "hide": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "member_a",
+    "source_a",
+    "mentor_a",
+    "org_admin_b",
+    "student_a",
+    "student_b",
+    "sponsor_a",
+    "sponsor_b"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "nobody passes in this world"
+  },
+  {
+   "route": "api/v1/stpm/courses/<str:course_id>/",
+   "method": "get",
+   "allow": [],
+   "hide": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "object": null,
+   "flags": [],
+   "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/stpm/eligibility/check/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/stpm/quiz/questions/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/stpm/quiz/resolve/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/stpm/quiz/submit/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/stpm/ranking/",
+   "method": "post",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  },
+  {
+   "route": "api/v1/stpm/search/",
+   "method": "get",
+   "allow": [
+    "student_a",
+    "student_b",
+    "anon"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": ""
+  }
+ ]
+}

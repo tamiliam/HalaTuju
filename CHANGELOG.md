@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### test: advisor action 4, part 1 - the role-by-endpoint access matrix (2026-11-13)
+
+Branch a4 (not pushed, not deployed). Tests only; no app source, permission, setting, migration or budget changed.
+- test: `test_access_matrix.py` walks every route off the live resolver (439 route and method pairs; only Django
+  admin and the health probe are skipped, each with a reason) and calls each one as 17 JWT callers (super, org A
+  lead, admin, qc, assigned and unassigned reviewer, finance, partner, member, source user, mentor, org B lead,
+  students A and B, sponsors A and B, anonymous), plus the cron-family, Vircle and Twilio secret callers on the
+  three internal routes: 7,475 cases, about 60 s. `allow` must not get 401/403/404, `hide` must be refused (404
+  accepted), everyone else must get 401/403.
+- test: `access_manifest.json` says who may use each pair; a served pair with no entry, or an entry for a pair no
+  longer served, fails (the ratchet). `object` names the seeded object on the 165 pairs where the cross-tenant or
+  cross-owner refusal is asserted; the rest are marked UNCOVERED in `note`. Flags: `HOLE:` (none) and
+  `INTENT-UNCLEAR:` (sponsor review and sponsor detail across organisations, the assignable-admins list).
+  Holes are asserted as current behaviour, not xfail, because the code-standards guard forbids xfail.
+- test: `access_world.py` seeds two organisations on dummy data; the dark flags are on, sockets to anything but
+  loopback are refused and the cron runner is mocked, so no call reaches a paid or outside service.
+- Found, not fixed: PUT `/api/v1/profile/` answers 500 to every signed-in non-student (staff and sponsors).
+- docs: `docs/security/2026-11-13-supabase-policy-review.md`.
+
 ### feat: sprint M2b - admin permissions are stored keys, not a role label (2026-11-12)
 
 Branch m2b (local, not pushed, not deployed). Brief `docs/plans/2026-11-12-m2b-admin-permissions-brief.md`;
