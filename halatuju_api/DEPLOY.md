@@ -3,6 +3,7 @@
 ## What a push to live does now (H2, 2026-09-18; trigger branch moved from main to live, 2026-11-14)
 
 A push to `main` only saves. The two triggers fire on `^live$`: publish with `git push origin <tested-main-sha>:live` (fast-forward, never force).
+Publishing runs as a release train (owner, 14 Nov 2026): at most 3 a day, at 11:00, 16:00 and 21:00 Malaysia time, one batch and one owner yes each, run by one release lead; a hotfix may go any time with the owner's yes. The batch list comes from commit trailers (`Phone-check`, `Migration`, `Services`). Steps: `Settings/_workflows/release-train.md` in the workspace repo; tool: `Settings/_tools/release_queue.py queue --project <repo>`.
 
 Both Cloud Build triggers run a **committed config file** — `halatuju_api/cloudbuild.yaml` and
 `halatuju-web/cloudbuild.yaml` — instead of the inline block that used to live in the console.

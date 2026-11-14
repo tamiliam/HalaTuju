@@ -3,6 +3,8 @@
 > **DEPLOY RULE (owner, 14 Nov 2026).** Pushing to `main` only SAVES; it never deploys.
 > To publish: `git push origin <tested-main-sha>:live` (fast-forward only, never force). The triggers fire on `live`.
 > Each publish needs the owner's yes. Details: `docs/deployment.md`.
+> Publishes happen only at 11:00, 16:00 and 21:00 Malaysia time (max 3 a day), one batch, run by one release lead; a hotfix may go any time with the owner's yes. Workflow: `Settings/_workflows/release-train.md`.
+> End your final commit with trailers: `Phone-check: <plain line>`, `Migration: <name> (additive|non-additive)`, `Services: api|web|both`. Take a TD number only when pushing to `main`: `python Settings/_tools/release_queue.py next-td --project <this repo>`.
 
 This is the operating manual, kept SHORT on purpose: it loads into every session and helper agent, so
 it is paid for on every call. It holds the rules that cause real damage if missed, the gate commands,

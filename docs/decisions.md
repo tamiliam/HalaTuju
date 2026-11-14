@@ -1,5 +1,9 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-14 — Release train: main collects finished work; `live` moves at most 3 times a day (owner ruling)
+
+Sessions build and review in their own worktree. `main` takes only finished work (tested, reviewed, scope approved). A publish (`git push origin <sha>:live`, fast-forward only) happens only at 11:00, 16:00 or 21:00 Malaysia time, as one batch with one owner yes, run by one release lead (first to write the claim line). A hotfix for a broken live site may go any time with the owner's yes. Each sprint or small change ends its final commit with `Phone-check:`, `Migration:` and `Services:` trailers; the release list and one combined phone-check list are built from them. A TD number is taken only when pushing to `main`, from the tool, after a fetch (two sessions once both took TD-620). Standing rules stay: owner yes, migrations by the owner, no publish during the A5 replay, at most 2 deploys per feature, adversarial review and phone check for eligibility, money and identity. Workflow `Settings/_workflows/release-train.md`; tool `Settings/_tools/release_queue.py`.
+
 ## 2026-11-14 — TD-617: PISMP stays a degree for money; an SPM-only PISMP student is never owed higher results; ADP and overseas preparation are a red Pathway fact (owner ruling, option 1)
 
 **PISMP (A):** PISMP stays a degree for the funding estimate and the award (RM2,000 either way). An SPM-route PISMP student (she holds SPM only) is never owed higher results, before or after she submits: no "results not declared / not on file" line, no Academic cap, no owed ask. A PISMP student who has entered STPM or Matriculation results keeps today's checks.

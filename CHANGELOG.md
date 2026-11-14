@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: release train - at most 3 publishes a day (11:00, 16:00, 21:00 MYT), commit trailers, TD numbers from the tool (2026-11-14)
+
 ### fix: TD-617 re-check - a 'pismp' code with entered STPM/matric results is asked before submit, as it is owed after (2026-11-14)
 - `results_route._q7_widening_withheld` withholds on the 'pismp' code only when `higher_owed.declared_kind` is empty (IPG or UPSI) and `is_pismp` holds, so a stale 'pismp' code at UPSI (not PISMP) is asked before submit as it is owed after; SPM-only PISMP (IPG) stays not asked, not owed. `VERDICT_ENGINE_VERSION` 2026-11-14.3; money pin unchanged. Test: `PismpCodeWithHigherResultsIsAsked`.
 
