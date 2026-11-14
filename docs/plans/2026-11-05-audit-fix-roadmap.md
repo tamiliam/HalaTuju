@@ -1335,7 +1335,7 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
   - For the first group, one import point per package (an `__init__` or a `public` module per app), as `apps.courses.public` already does.
   - For the real cycles, move the shared piece down to a third module, not a lazy import.
   - Tighten `courses_to_scholarship_imports` in `halatuju_api/code-standards.json` only in the same commit that earns it (never loosen).
-- **Acceptance:** xapp at or below the roadmap target, or a dated owner decision that the target is wrong, with the reading re-measured in both cases.
+- **Acceptance:** xapp at or below the roadmap target, or a dated owner decision that the target is wrong, with the reading re-measured in both cases. **MET 2026-11-14: xapp 109 -> 49** (read-only reading on the merged branch; full api suite 14,273 passed). Two packages built in parallel (P1 scholarship -> courses through `apps.courses.public`; P2 courses and reports through `apps.scholarship.public`), import-only, each with an Opus adversarial review. Caveat for the owner: the count falls mainly because each app now reaches the other through one door; 45 names still reach straight in (staff/org/theme layer, model classes, five `views_admin` helpers, two `views_offerings` constants). Moving those to a third place is a separate, later sprint (F2b), owner's call. `courses_to_scholarship_imports` (16 statements, all through `public`) is unchanged; target 8 not reachable by doors.
 - **Readings moved:** xapp, possibly long and big.
 - **Complexity:** M to L.
 - **Model:** Sonnet, with an Opus read of any move that touches money or identity modules.
