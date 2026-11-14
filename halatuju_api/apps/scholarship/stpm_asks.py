@@ -39,8 +39,8 @@ def holds_completed_stpm(profile) -> bool:
     `completed_qualifications`), or — a legacy row from before the form recorded completions — a
     typed STPM CGPA with no grades at all (the old form saved its CGPA only on completion). A Form
     Six student's exploratory course-guide grades carry neither, so she is never asked."""
-    from apps.courses.public import results_held
-    if profile is None or results_held(profile) != 'stpm':
+    from apps.courses import public as courses_public
+    if profile is None or courses_public.results_held(profile) != 'stpm':
         return False
     recorded = (getattr(profile, 'results_exam_type', '') or '').strip().lower() == 'stpm'
     listed = 'stpm' in (getattr(profile, 'completed_qualifications', None) or [])
@@ -52,12 +52,12 @@ def wanted(application) -> set:
     """The codes this application needs asked now (a subset of `CODES`). Only after Submit, and
     only for a profile holding completed STPM results — a switch to SPM or the third route closes
     both."""
-    from apps.courses.stpm_pngk import pngk_from_grades
+    from apps.courses import public as courses_public
     profile = getattr(application, 'profile', None)
     if application.profile_completed_at is None or not holds_completed_stpm(profile):
         return set()
     out = set()
-    if pngk_from_grades(getattr(profile, 'stpm_grades', None)) is None:
+    if courses_public.pngk_from_grades(getattr(profile, 'stpm_grades', None)) is None:
         out.add(GRADES_CODE)
     if getattr(profile, 'stpm_koko_unconfirmed', None) is True:
         out.add(KOKO_CODE)

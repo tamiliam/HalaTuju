@@ -112,11 +112,12 @@ class TestADivisionPickIsStoredAsUniversity:
         assert (stray.pathway, stray.start_month) == ('default', 7)
 
     def test_a_continuing_student_is_still_asked_for_her_semester_result(self, monkeypatch):
+        from apps.courses import public as courses_public
         from apps.scholarship import pathway_engine
         from apps.scholarship.income_engine import epf_evidence
         monkeypatch.setattr(epf_evidence, '_docs_or_none', lambda app: [])
         monkeypatch.setattr(epf_evidence, '_has_read_doc', lambda app, kind: False)
-        monkeypatch.setattr(epf_evidence, 'heading_for', lambda prof: 'spm')
+        monkeypatch.setattr(courses_public, 'heading_for', lambda prof: 'spm')
         monkeypatch.setattr(pathway_engine, 'started_before_cohort', lambda app: True)
         assert epf_evidence.semester_result_gap(self._app()) is True
         assert epf_evidence.semester_result_gap(self._app(chosen_pathway='mara')) is False

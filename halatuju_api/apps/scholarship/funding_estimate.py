@@ -188,8 +188,8 @@ def _tvet_category(course_id) -> str:
     'mara_diploma' (decision 9), at any other level → 'mara_cert' (decision 12); everything else
     ('tvet_other', a course whose campuses span families, a course not in the catalogue) → 'tvet'
     (decision 12)."""
-    from apps.courses.course_pathway import course_pathway_type
-    family = course_pathway_type(course_id)
+    from apps.courses import public as courses_public
+    family = courses_public.course_pathway_type(course_id)
     if family in _TVET_FAMILY_CATEGORY:
         return _TVET_FAMILY_CATEGORY[family]
     if family == 'mara':

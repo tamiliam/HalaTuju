@@ -12,9 +12,7 @@ gated behind the ``SPONSOR_POOL_ENABLED`` flag (off until lawyer sign-off).
 import hashlib
 import re
 
-from apps.courses.public import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
-                                 results_held, spm_grades_for)
-from apps.courses.stpm_pngk import stpm_cgpa_of
+from apps.courses import public as courses_public
 
 from .school_names import school_name_core
 from .shortlisting import count_spm_a_grades
@@ -66,15 +64,15 @@ def academic_band(profile):
     usable CGPA. `emails.sponsor_cards._acad_score` parses this line."""
     if profile is None:
         return ''
-    held = results_held(profile)
+    held = courses_public.results_held(profile)
     if held == 'stpm':
-        cgpa = stpm_cgpa_of(profile)      # CGPA sprint C2: from the grades, else the stored figure
+        cgpa = courses_public.stpm_cgpa_of(profile)      # CGPA sprint C2: from the grades, else the stored figure
         return f'STPM · PNGK {cgpa}' if cgpa is not None else 'STPM'
-    if held in THIRD_ROUTE:
-        label = QUALIFICATION_LABELS[held]
-        cgpa = overall_cgpa(profile)
+    if held in courses_public.THIRD_ROUTE:
+        label = courses_public.QUALIFICATION_LABELS[held]
+        cgpa = courses_public.overall_cgpa(profile)
         return f'{label} · CGPA {cgpa:.2f}' if cgpa is not None else label
-    a = count_spm_a_grades(spm_grades_for(profile))
+    a = count_spm_a_grades(courses_public.spm_grades_for(profile))
     return f"SPM · {a} A{'' if a == 1 else 's'}"
 
 

@@ -8,6 +8,8 @@ without them noticing.
 
 Part 2 (A3.13) adds the two models `reports` reads, `StudentProfile` and `FieldTaxonomy`.
 
+Package F2-1 adds the catalogue and merit helpers scholarship used to import from their home files.
+
 Part 1 re-exports the `exam_questions` names scholarship uses (the held-qualification, SPM-grade,
 CGPA and merit readers). Later parts add the models, the staff helpers and the rest.
 
@@ -39,7 +41,18 @@ from .exam_questions import (
     spm_slip_comparable,
     third_route_overall,
 )
+from .course_pathway import course_pathway_type
+from .csv_safe import csv_cell
+from .engine import calculate_merit_score, prepare_merit_inputs
 from .models import FieldTaxonomy, StudentProfile
+from .pismp_taxonomy import aliran_of
+from .search import _digits_expr as digits_expr
+from .search import apply_people_search, people_search_term
+from .stpm_engine import STPM_CGPA_POINTS, calculate_stpm_cgpa
+from .stpm_pngk import pngk_from_grades, stpm_cgpa_of
+from .tvet_families import family_of
+from .tvet_institutions import HELD
+from .utils import tidy_parentage_marker
 
 __all__ = [
     'QUALIFICATION_LABELS', 'THIRD_ROUTE', 'ResultsHeldField', 'completed_qualifications',
@@ -47,6 +60,10 @@ __all__ = [
     'merit_100', 'overall_cgpa', 'overall_from', 'results_held', 'spm_grades_for',
     'spm_grades_none_label', 'spm_slip_comparable', 'third_route_overall',
     'FieldTaxonomy', 'StudentProfile',
+    'course_pathway_type', 'csv_cell', 'calculate_merit_score', 'prepare_merit_inputs',
+    'aliran_of', 'digits_expr', 'apply_people_search', 'people_search_term',
+    'STPM_CGPA_POINTS', 'calculate_stpm_cgpa', 'pngk_from_grades', 'stpm_cgpa_of',
+    'family_of', 'HELD', 'tidy_parentage_marker',
     'register_stpm_document_witness',
 ]
 

@@ -82,9 +82,8 @@ def _fold_words(text):
 def catalogue_places():
     """{closed-list key: the place words of that family's catalogued campuses} — from the API's TVET catalogue
     (`apps.courses.tvet_institutions.HELD` + the UP_TVET catalogue snapshots), organisation words taken out."""
-    from apps.courses.tvet_families import family_of
-    from apps.courses.tvet_institutions import HELD
-    names = [name for name, _sub, _state in HELD.values()]
+    from apps.courses import public as courses_public
+    names = [name for name, _sub, _state in courses_public.HELD.values()]
     for fname in _CATALOGUE_FILES:
         try:
             with open(os.path.join(_DATA_DIR, fname), encoding='utf-8') as fh:
@@ -93,7 +92,7 @@ def catalogue_places():
             continue
     out = {key: set() for key in _FAMILY_KEY.values()}
     for name in names:
-        key = _FAMILY_KEY.get(family_of(name))
+        key = _FAMILY_KEY.get(courses_public.family_of(name))
         if key:
             out[key].update(_fold_words(name))
     return {key: frozenset(w for w in words if not is_org_word(w)) for key, words in out.items()}
@@ -103,9 +102,8 @@ def catalogue_places():
 def catalogue_campuses():
     """{closed-list key: the campus place PHRASES of that family's catalogued campuses ("PETALING JAYA", "MIRI")} —
     the word runs of each catalogue name that are no institute / agency / organisation word."""
-    from apps.courses.tvet_families import family_of
-    from apps.courses.tvet_institutions import HELD
-    names = [name for name, _sub, _state in HELD.values()]
+    from apps.courses import public as courses_public
+    names = [name for name, _sub, _state in courses_public.HELD.values()]
     for fname in _CATALOGUE_FILES:
         try:
             with open(os.path.join(_DATA_DIR, fname), encoding='utf-8') as fh:
@@ -117,7 +115,7 @@ def catalogue_campuses():
         w for ts in AGENCY_TOKENS.values() for w in ts} | {'KAMPUS', 'CAWANGAN', 'GIATMARA', 'JTM', 'MJII', 'TECH'}
     out = {key: set() for key in _FAMILY_KEY.values()}
     for name in names:
-        key = _FAMILY_KEY.get(family_of(name))
+        key = _FAMILY_KEY.get(courses_public.family_of(name))
         if not key:
             continue
         run = []

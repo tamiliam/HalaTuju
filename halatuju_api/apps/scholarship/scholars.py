@@ -23,7 +23,7 @@ import re
 
 from django.db.models import Count, Exists, F, OuterRef, Q, Subquery
 
-from apps.courses.search import _digits_expr
+from apps.courses import public as courses_public
 
 from . import card_display, maintenance_scope, standing
 from .results_review import PENDING, accepted, latest_accepted
@@ -216,8 +216,8 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdu
             | Q(profile__contact_email__icontains=text) | Q(notify_email__icontains=text))
     digits = re.sub(r'\D', '', text)
     if digits:
-        qs = qs.annotate(_nric_digits=_digits_expr('profile__nric'),
-                         _phone_digits=_digits_expr('profile__contact_phone'))
+        qs = qs.annotate(_nric_digits=courses_public.digits_expr('profile__nric'),
+                         _phone_digits=courses_public.digits_expr('profile__contact_phone'))
         cond |= Q(_nric_digits__icontains=digits) | Q(_phone_digits__icontains=digits)
     if text.isdigit():
         cond |= Q(pk=int(text))

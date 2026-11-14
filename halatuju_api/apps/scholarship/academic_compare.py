@@ -189,13 +189,13 @@ def spm_slip_compare(profile, slip) -> dict:
     compared (``compared`` False: no tick, no hold). When some were checked but others could not be
     (``unchecked``: a short read, a printed row with no readable grade), it is not complete, and the
     verdict names them ("please check by eye") so a hold always has its reason."""
-    from apps.courses.public import is_tertiary, results_held, spm_grades_for, spm_slip_comparable
+    from apps.courses import public as courses_public
     # F1 (duplicate 4): "is there anything to compare?" is asked HERE only; every reader takes
     # ``comparable`` off this result (the verdict, the drawer) instead of asking again.
-    comparable = spm_slip_comparable(profile, _SUBJECT_BM)
+    comparable = courses_public.spm_slip_comparable(profile, _SUBJECT_BM)
     if comparable:
-        cmp = {**compare_academics(spm_grades_for(profile), slip), 'compared': True, 'comparable': True}
-        if not profile or not is_tertiary(results_held(profile)):
+        cmp = {**compare_academics(courses_public.spm_grades_for(profile), slip), 'compared': True, 'comparable': True}
+        if not profile or not courses_public.is_tertiary(courses_public.results_held(profile)):
             # F1 Q1 (owner 2026-11-13, rule table): a SHORT read checked only the rows it caught - the
             # typed subjects it missed are named ("check by eye"), and it is not complete (no tick).
             # Review (2026-11-13): a short read is never complete, even when every TYPED subject was

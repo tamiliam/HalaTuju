@@ -11,7 +11,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 
-from apps.courses.public import spm_grades_for
+from apps.courses import public as courses_public
 from .shared import _P, _meter_email, logger
 
 
@@ -108,7 +108,7 @@ def english_only_email(application) -> bool:
         return False
     # SPM English from the ONE reader (a tertiary holder's SPM prereq only, owner 2026-11-06);
     # none on file -> '' -> bilingual, the safe default.
-    eng = str(spm_grades_for(profile).get('eng', '') or '').strip().upper().replace('−', '-')
+    eng = str(courses_public.spm_grades_for(profile).get('eng', '') or '').strip().upper().replace('−', '-')
     return eng in ('A+', 'A')
 
 

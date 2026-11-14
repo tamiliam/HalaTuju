@@ -9,7 +9,7 @@ from datetime import datetime, timezone as _tz
 
 from django.utils.dateparse import parse_date
 
-from apps.courses.public import spm_grades_for
+from apps.courses import public as courses_public
 
 from ..document_snapshot import SNAPSHOT_ORDER
 from ..school_names import keep_our_town
@@ -295,7 +295,7 @@ def _standardise_preu_track(application, pw, prog, op, fields):
         track = op.parse_stpm_stream(prog)
         if not track:
             profile = getattr(application, 'profile', None)
-            track = op.infer_stpm_bidang(spm_grades_for(profile),  # tertiary: prereq only (#62)
+            track = op.infer_stpm_bidang(courses_public.spm_grades_for(profile),  # tertiary: prereq only (#62)
                                          getattr(profile, 'stream_subjects', None))
     if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
         application.pre_u_track = track
@@ -462,7 +462,6 @@ def plan_bumi_realign(application, offer, chk):
 
     ``new_pathway`` is the course's own picker pathway (``course_pathway_type``), so the payment
     calendar, the funding estimate and the semester-result ask read the course she now holds."""
-    from apps.courses.course_pathway import course_pathway_type
     from .. import card_display
     from .. import offer_pathway as op
     from ..family import CONFIRMED_CP_SOURCES
@@ -501,7 +500,7 @@ def plan_bumi_realign(application, offer, chk):
         {'institution_id': ''} if 'institution_id' in cp else {}, match['institution'])
     new_cp.update(course_id=match['course_id'], course_name=match['course_name'],
                   source='offer_letter_auto')
-    return '', new_cp, course_pathway_type(match['course_id'])
+    return '', new_cp, courses_public.course_pathway_type(match['course_id'])
 
 
 def realign_bumi_only_pick(application, offer, chk):

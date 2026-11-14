@@ -82,7 +82,7 @@ def plan_offer_link(application, offer, chk):
     a picker value (``degree``); a picker value is the student's or a confirm's and is kept — UNLESS the
     realignment would take this record too, when the link gives the realignment's own answer, so the
     two never leave a record different by the order they ran in (round-3 review)."""
-    from apps.courses.course_pathway import course_pathway_type
+    from apps.courses import public as courses_public
     from .. import offer_pathway as op
     from ..pathway_engine import is_confirmation_letter, offer_band
     from .querying import querying_locked
@@ -118,7 +118,7 @@ def plan_offer_link(application, offer, chk):
         new_cp['source'] = cp.get('source') if cp.get('source') in OFFER_SOURCES else 'offer_letter_auto'
         # ALWAYS the course's own pathway (round-6 review): an empty pick has no course to protect, and a
         # degree left on `poly` would be paid on the polytechnic calendar.
-        return '', new_cp, course_pathway_type(new_cp['course_id'])
+        return '', new_cp, courses_public.course_pathway_type(new_cp['course_id'])
     if not labels_describe(cp['course_name'], new_cp['course_name']):
         return 'labels_disagree', None, ''
     if not _label_names_campus(cp.get('institution') or '', new_cp, (chk.get('issuer') or '').strip()):
@@ -130,12 +130,12 @@ def _link_pathway(application, offer, chk, new_cp, pathway):
     """The pathway a link writes: the realignment's own answer when the realignment would take the
     record too (one row whichever runs first), else the course's picker pathway only over a blank or a
     non-picker value (``degree``)."""
-    from apps.courses.course_pathway import course_pathway_type
+    from apps.courses import public as courses_public
     from .offer_sync import plan_bumi_realign
     realign = plan_bumi_realign(application, offer, chk)
     if not realign[0]:
         return realign[2]
-    return '' if pathway in picker_pathways() else course_pathway_type(new_cp['course_id'])
+    return '' if pathway in picker_pathways() else courses_public.course_pathway_type(new_cp['course_id'])
 
 
 def is_empty_pick(cp):

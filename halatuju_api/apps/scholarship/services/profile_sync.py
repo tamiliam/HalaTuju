@@ -7,8 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`. Then, on 20
 """
 from django.utils import timezone
 
-from apps.courses.public import results_held, spm_grades_for
-from apps.courses.stpm_pngk import stpm_cgpa_of
+from apps.courses import public as courses_public
 
 from ..shortlisting import count_spm_a_grades
 
@@ -146,7 +145,7 @@ def build_intake_snapshot(profile, app_data):
             'referral_source': (app_data.get('referral_source') or '')[:50],
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
-            'stpm_cgpa': stpm_cgpa_of(p),     # CGPA sprint C2: the figure the gate used (grades first)
+            'stpm_cgpa': courses_public.stpm_cgpa_of(p),     # CGPA sprint C2: the figure the gate used (grades first)
             'stpm_koko': getattr(p, 'stpm_koko', None) if p else None,   # C2: the merit's co-curriculum
             # Third results route S2a: what was declared for Matriculation / Asasi / Diploma, and
             # the results held at submit (the "highest completed" rule's answer then).
@@ -155,8 +154,8 @@ def build_intake_snapshot(profile, app_data):
             'higher_institution_type': getattr(p, 'higher_institution_type', '') if p else '',
             'completed_qualifications': list(getattr(p, 'completed_qualifications', None) or [])
                                         if p else [],
-            'results_held': results_held(p) if p else '',
-            'spm_a_count': count_spm_a_grades(spm_grades_for(p)),   # tertiary: SPM prereq only (#62)
+            'results_held': courses_public.results_held(p) if p else '',
+            'spm_a_count': count_spm_a_grades(courses_public.spm_grades_for(p)),   # tertiary: SPM prereq only (#62)
             'household_income': getattr(p, 'household_income', None) if p else None,
             'household_size': getattr(p, 'household_size', None) if p else None,
             'receives_str': bool(getattr(p, 'receives_str', False)) if p else False,

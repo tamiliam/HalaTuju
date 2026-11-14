@@ -10,7 +10,7 @@ from __future__ import annotations
 import datetime
 
 from ..document_snapshot import has_live_doc, live_docs
-from apps.courses.public import heading_for
+from apps.courses import public as courses_public
 from .freshness import _INCOME_DOC_CURRENT_MONTHS
 from .identity_checks import _cluster_docs
 from .relationships import _MEMBER_ORDER
@@ -152,7 +152,7 @@ def school_leaving_cert_gap(application):
     The DECLARED exam is the right question here (TD-218): a student heading for STPM is in Form
     Six, still at school, and has no leaving certificate to send — whatever results she holds."""
     prof = getattr(application, 'profile', None)
-    if (heading_for(prof) or 'spm') != 'spm':
+    if (courses_public.heading_for(prof) or 'spm') != 'spm':
         return False
     docs = _docs_or_none(application)
     if docs is None or _has_read_doc(application, 'school_leaving_cert'):

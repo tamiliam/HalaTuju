@@ -75,7 +75,7 @@ class SpmOnlyView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
-        from apps.courses.public import is_tertiary
+        from apps.courses import public as courses_public
         from .views import _current_application
         app = _current_application(request.user_id)
         if app is None or app.profile is None:
@@ -83,7 +83,7 @@ class SpmOnlyView(APIView):
         refused = _refuse_after_submit(app)
         if refused:
             return refused
-        if not is_tertiary(results_route.held(app)):
+        if not courses_public.is_tertiary(results_route.held(app)):
             return Response({'error': 'nothing_to_clear', 'code': 'nothing_to_clear'},
                             status=status.HTTP_400_BAD_REQUEST)
         doc = _higher_doc(app, request.data.get('document_id'))

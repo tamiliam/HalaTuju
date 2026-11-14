@@ -182,15 +182,15 @@ def is_pismp(application) -> bool:
 
 def _already_passed(application, code) -> bool:
     """A pre-U code (or her own held kind) recorded as the pathway of a TERTIARY holder."""
-    from apps.courses.public import is_tertiary
+    from apps.courses import public as courses_public
     kind = held(application)
-    return is_tertiary(kind) and (code in _PASSED_PRE_U or code == kind)
+    return courses_public.is_tertiary(kind) and (code in _PASSED_PRE_U or code == kind)
 
 
 def held(application) -> str:
     """The results held (`exam_questions.results_held`) for this application's student."""
-    from apps.courses.public import results_held
-    return results_held(getattr(application, 'profile', None))
+    from apps.courses import public as courses_public
+    return courses_public.results_held(getattr(application, 'profile', None))
 
 
 def higher_need(application) -> str:
@@ -211,9 +211,9 @@ def higher_need(application) -> str:
     TD-617 (owner 2026-11-14): a PISMP student (`is_pismp`) who declared no higher results is never
     asked; one who declared them keeps the answer below. "Declared" is `higher_owed.declared_kind`,
     the after-submit rule's own test, so a legacy row's entered STPM grades count on both sides."""
-    from apps.courses.public import is_tertiary
+    from apps.courses import public as courses_public
     from .higher_owed import declared_kind
-    tertiary = is_tertiary(held(application))
+    tertiary = courses_public.is_tertiary(held(application))
     if is_pismp(application) and not declared_kind(application):
         return ''
     if degree_bound(application) and not _q7_widening_withheld(application):
@@ -248,9 +248,9 @@ def map_documents(application, resolved: dict) -> dict:
 
 def held_kind(application) -> str:
     """The results held, when tertiary; '' otherwise."""
-    from apps.courses.public import is_tertiary
+    from apps.courses import public as courses_public
     kind = held(application)
-    return kind if is_tertiary(kind) else ''
+    return kind if courses_public.is_tertiary(kind) else ''
 
 
 def upload_kind(application, request_code: str = '') -> str:
@@ -431,10 +431,10 @@ def clear_to_spm(application, *, by: str = 'student') -> dict:
     at the first submit on the results she had then. A note is ALWAYS recorded for the reviewer
     (`results_change_notes`, shown on the cockpit's Academic card, fix 3) — she may have been
     shortlisted on the CGPA she now removes. Audited. Returns the note."""
-    from apps.courses.public import overall_cgpa, results_held
+    from apps.courses import public as courses_public
     profile = application.profile
-    before = results_held(profile)
-    cgpa = overall_cgpa(profile)
+    before = courses_public.results_held(profile)
+    cgpa = courses_public.overall_cgpa(profile)
     grades = dict(profile.grades or {})
     if not grades and isinstance(profile.spm_prereq_grades, dict) and profile.spm_prereq_grades:
         grades = dict(profile.spm_prereq_grades)

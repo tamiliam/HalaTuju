@@ -56,9 +56,7 @@ Consequences worth stating rather than discovering:
 """
 from dataclasses import dataclass
 
-from apps.courses.public import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
-                                 results_held, spm_grades_for, third_route_overall)
-from apps.courses.stpm_pngk import stpm_cgpa_of
+from apps.courses import public as courses_public
 
 from .birth_state import check as check_birth_state
 
@@ -124,21 +122,20 @@ def spm_merit(profile):
     The arithmetic itself is not copied — `prepare_merit_inputs` / `calculate_merit_score` in
     `apps.courses.engine` are the single source, and are what the course selector uses too.
     """
-    grades = spm_grades_for(profile)   # the ONE SPM reader (tertiary: SPM prereq only, #62)
+    grades = courses_public.spm_grades_for(profile)   # the ONE SPM reader (tertiary: SPM prereq only, #62)
     if not grades:
         return None
     # The engine's core uses 'history'; profiles store it as 'hist'. Without the rename History
     # reads as a fail and the merit is understated — the same fix the admin list carries.
     if 'hist' in grades:
         grades['history'] = grades.pop('hist')
-    from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
-    s1, s2, s3 = prepare_merit_inputs(grades, getattr(profile, 'stream_subjects', None) or None)
+    s1, s2, s3 = courses_public.prepare_merit_inputs(grades, getattr(profile, 'stream_subjects', None) or None)
     coq = getattr(profile, 'coq_score', None)
-    result = calculate_merit_score(s1, s2, s3, coq if coq is not None else 0)
+    result = courses_public.calculate_merit_score(s1, s2, s3, coq if coq is not None else 0)
     return round(result['final_merit'], 1)
 
 
-def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
+def _academic_ok(profile, cohort, cgpa_of=courses_public.stpm_cgpa_of):
     """The results test, applying only the requirements this cohort actually sets. `cgpa_of` reads
     an STPM holder's CGPA — `stpm_pngk.stpm_cgpa_of` always, except in the CGPA backfill preview
     (`backfill_stpm_cgpa`), which passes the stored figure to show the gate as it was before C2.
@@ -161,7 +158,7 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
     # 'submitted' application with decision_released_at NULL in ANY cohort and resets
     # decision_due_at so the release job emails the new verdict — 0 such applications and no
     # Scheduler job on that door (lead, 2026-10-02).
-    exam = (results_held(profile) or 'spm') if profile else 'spm'
+    exam = (courses_public.results_held(profile) or 'spm') if profile else 'spm'
 
     # ⚠ OWNER RULING D16c (2026-10-27): A BLANK `min_stpm_pngk` MAKES THE INTAKE SPM-ONLY. It used
     # to mean "no STPM-level test, so pass"; an STPM / Matriculation / Asasi / Diploma holder on such
@@ -169,9 +166,9 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
     # results page's SPM block ONLY - three exclusive routes, owner 2026-11-06; `grades` unread). NOT the merit bar (D3: SPM applicants only — their
     # co-curriculum and stream are written only by the SPM grades step, so a merit would be guessed
     # low). With a floor set, both branches below are unchanged.
-    spm_only = (exam == 'stpm' or exam in THIRD_ROUTE) and cohort.min_stpm_pngk is None
+    spm_only = (exam == 'stpm' or exam in courses_public.THIRD_ROUTE) and cohort.min_stpm_pngk is None
     if spm_only:
-        return _spm_bars(profile, cohort, spm_grades_for(profile), spm_held=False)
+        return _spm_bars(profile, cohort, courses_public.spm_grades_for(profile), spm_held=False)
 
     if exam == 'stpm':
         floor = cohort.min_stpm_pngk
@@ -182,17 +179,17 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
             return True, ''
         return False, f'PNGK {p} below {floor}'
 
-    if exam in THIRD_ROUTE:
+    if exam in courses_public.THIRD_ROUTE:
         # STPM-equivalent (third results route S2a): the same `min_stpm_pngk` floor, on the OVERALL
         # CGPA (Matriculation / Asasi 0.9 x CGPA + 0.1 x koko/10 x 4; Diploma as is). The STPM
         # branch above is left byte-identical (it compares the stored figure raw). The reason
         # names the qualification, because a reviewer reads it: "Matriculation CGPA 2.70 below 2.90".
         floor = cohort.min_stpm_pngk
-        label = QUALIFICATION_LABELS[exam]
+        label = courses_public.QUALIFICATION_LABELS[exam]
         raw = getattr(profile, 'higher_cgpa', None)
         if raw is None:
             return False, f'{label} CGPA not provided'
-        overall = third_route_overall(exam, raw, getattr(profile, 'higher_koko', None))
+        overall = courses_public.third_route_overall(exam, raw, getattr(profile, 'higher_koko', None))
         if overall is None:
             if exam != 'diploma' and getattr(profile, 'higher_koko', None) is None:
                 return False, f'{label} co-curriculum score not provided'
@@ -201,7 +198,7 @@ def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
             return True, ''
         return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
 
-    return _spm_bars(profile, cohort, spm_grades_for(profile))   # SPM holder here: her `grades`
+    return _spm_bars(profile, cohort, courses_public.spm_grades_for(profile))   # SPM holder here: her `grades`
 
 
 def _spm_bars(profile, cohort, grades, spm_held=True):
@@ -315,7 +312,7 @@ def evaluate(application, cohort):
     # accepted by UA, so it does not qualify for this route at all. Out of scope, not a shortfall:
     # 'ineligible', whatever the CGPA and whether or not the intake sets a CGPA floor. Not stated
     # fails closed (the form always asks; only a hand-sent profile lacks it).
-    if profile is not None and results_held(profile) == 'diploma' and not diploma_is_public(profile):
+    if profile is not None and courses_public.results_held(profile) == 'diploma' and not courses_public.diploma_is_public(profile):
         stated = (getattr(profile, 'higher_institution_type', '') or '').strip().lower()
         if stated == 'private':
             why = ('Diploma from a private college: only diplomas from public institutions count '

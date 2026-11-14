@@ -1,6 +1,6 @@
 """Display names for the admin views: the reviewer name looked up by email (PartnerAdmin), the applicant full name and the verified email."""
 
-from apps.courses.utils import tidy_parentage_marker
+from apps.courses import public as courses_public
 
 
 def _admin_name_by_email(email):
@@ -28,7 +28,7 @@ def _full_name(application):
     Marker-only: it cannot alter a letter or the spacing between name words."""
     declared = (getattr(application, 'declaration_name', '') or '').strip()
     name = declared or (getattr(application.profile, 'name', '') if application.profile else '')
-    return tidy_parentage_marker(name.upper())
+    return courses_public.tidy_parentage_marker(name.upper())
 
 
 def _verified_email(application):

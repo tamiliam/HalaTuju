@@ -202,10 +202,10 @@ def _offer_in_results_card(application):
 
 
 def _held_label(application):
-    from apps.courses.public import QUALIFICATION_LABELS
+    from apps.courses import public as courses_public
     from .higher_results import anchor_doc, student_higher_check
     kind = student_higher_check(anchor_doc(application, 'higher_results'))['kind_held']
-    return QUALIFICATION_LABELS.get(kind, kind)
+    return courses_public.QUALIFICATION_LABELS.get(kind, kind)
 
 
 def _apply_genuineness_ladder(application, facts):

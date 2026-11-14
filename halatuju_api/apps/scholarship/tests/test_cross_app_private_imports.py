@@ -26,7 +26,6 @@ ALLOWED = frozenset({
     ('scholarship/mentor_gift.py', 'apps.courses.staff_gift', '_gift_refusal'),
     ('scholarship/mentor_gift.py', 'apps.courses.staff_gift', '_not_found'),
     ('scholarship/sponsor_invite_gifts.py', 'apps.courses.staff_gift', '_as_id'),
-    ('scholarship/scholars.py', 'apps.courses.search', '_digits_expr'),
     ('scholarship/staff_tables_admin.py', 'apps.courses.views_admin', '_staff_target_manageable'),
     ('scholarship/views_admin/staff.py', 'apps.courses.views_admin', '_staff_target_manageable'),
     ('scholarship/tests/test_mentor_is_not_staff.py', 'apps.courses.views_admin',
@@ -130,9 +129,9 @@ class TestNoNewPrivateCrossAppImports(SimpleTestCase):
                          f'line; or the scanner broke): {missing}')
 
     def test_the_allowlist_only_shrinks(self):
-        # 14 scholarship -> courses pairs (10 old + 4 M1a baseline) + 7 courses -> scholarship test pairs. Lower this when a
+        # 13 scholarship -> courses pairs (9 old + 4 M1a baseline) + 7 courses -> scholarship test pairs. Lower this when a
         # line is deleted; raising it means a new private import got waved through.
-        self.assertLessEqual(len(ALLOWED), 21)
+        self.assertLessEqual(len(ALLOWED), 20)
 
 
 class TestTheScannerItself(SimpleTestCase):

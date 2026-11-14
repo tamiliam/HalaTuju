@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import re
 
-from apps.courses.public import spm_grades_for
+from apps.courses import public as courses_public
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .pathway_engine import distinctive_tokens
@@ -174,7 +174,7 @@ def infer_pismp_aliran(profile) -> str:
     'sjkt', Bahasa Cina → 'sjkc', else 'sk'. A picker DEFAULT the student confirms (the offer letter
     doesn't state the aliran), never authoritative. Safe on a missing/blank profile → 'sk'. Returns
     the LOWERCASE aliran code the FE picker + storage use (PISMP_ALIRAN_ORDER: sk/sjkc/sjkt/khas)."""
-    subs = {str(k).lower() for k in spm_grades_for(profile)}   # tertiary: SPM prereq only (#62)
+    subs = {str(k).lower() for k in courses_public.spm_grades_for(profile)}   # tertiary: SPM prereq only (#62)
     ss = getattr(profile, 'stream_subjects', None)
     if isinstance(ss, (list, tuple)):
         subs |= {str(s).lower() for s in ss}
@@ -574,7 +574,6 @@ def pismp_courses_for_bidang(bidang: str) -> list:
     if not want:
         return []
     from apps.courses.models import Course
-    from apps.courses.pismp_taxonomy import aliran_of
     out = []
     # source_type lives on the OneToOne CourseRequirement, not Course itself.
     for c in Course.objects.filter(requirement__source_type='pismp').values('course_id', 'course'):
@@ -582,7 +581,7 @@ def pismp_courses_for_bidang(bidang: str) -> list:
         base = _ALIRAN_SUFFIX_RE.sub('', name).strip()
         if distinctive_tokens(base) == want:
             out.append({'course_id': c['course_id'], 'course_name': name,
-                        'aliran': aliran_of(name, c['course_id'])})
+                        'aliran': courses_public.aliran_of(name, c['course_id'])})
     out.sort(key=lambda x: x['aliran'])
     return out
 

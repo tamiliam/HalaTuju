@@ -12,7 +12,7 @@ import io
 from django.db.models import Count
 from django.utils import timezone
 
-from apps.courses.csv_safe import csv_cell
+from apps.courses import public as courses_public
 # The Sprint 8 audience rule, ONE home: the organisation's files in maintenance, in the gift.
 from .announcements import audience_apps
 from .models import Survey, SurveyEmail, SurveyResponse
@@ -114,7 +114,7 @@ def results(s):
 
 
 # A CSV cell that a spreadsheet cannot run; its one home is apps.courses.csv_safe (TD-515, A1.9).
-_cell = csv_cell
+_cell = courses_public.csv_cell
 
 
 def _csv_value(q, value):

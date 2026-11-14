@@ -4,11 +4,41 @@ from django.test import SimpleTestCase
 from apps.courses import exam_questions, public
 
 
+# The F2 package 1 re-exports: public name -> (home module, name there).
+_CATALOGUE_HOMES = {
+    'course_pathway_type': ('course_pathway', 'course_pathway_type'),
+    'csv_cell': ('csv_safe', 'csv_cell'),
+    'calculate_merit_score': ('engine', 'calculate_merit_score'),
+    'prepare_merit_inputs': ('engine', 'prepare_merit_inputs'),
+    'aliran_of': ('pismp_taxonomy', 'aliran_of'),
+    'digits_expr': ('search', '_digits_expr'),
+    'apply_people_search': ('search', 'apply_people_search'),
+    'people_search_term': ('search', 'people_search_term'),
+    'STPM_CGPA_POINTS': ('stpm_engine', 'STPM_CGPA_POINTS'),
+    'calculate_stpm_cgpa': ('stpm_engine', 'calculate_stpm_cgpa'),
+    'pngk_from_grades': ('stpm_pngk', 'pngk_from_grades'),
+    'stpm_cgpa_of': ('stpm_pngk', 'stpm_cgpa_of'),
+    'family_of': ('tvet_families', 'family_of'),
+    'HELD': ('tvet_institutions', 'HELD'),
+    'tidy_parentage_marker': ('utils', 'tidy_parentage_marker'),
+}
+
+
 class TestTheFacadeIsTheSameObjects(SimpleTestCase):
+    def test_every_catalogue_name_is_the_home_module_object(self):
+        from importlib import import_module
+        for name, (module, home_name) in _CATALOGUE_HOMES.items():
+            with self.subTest(name=name):
+                self.assertIn(name, public.__all__)
+                home = import_module('apps.courses.' + module)
+                self.assertIs(getattr(public, name), getattr(home, home_name))
+
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
             if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy'):
                 continue            # not exam_questions names; pinned in test_scholarship_public_facade
+            if name in _CATALOGUE_HOMES:
+                continue            # catalogue / merit names; pinned in the next test
             with self.subTest(name=name):
                 self.assertIs(getattr(public, name), getattr(exam_questions, name))
 

@@ -1,7 +1,7 @@
 """The student-facing read of an application."""
 
 from rest_framework import serializers
-from apps.courses.public import ResultsHeldField, spm_grades_for
+from apps.courses import public as courses_public
 from ..serializers_maintenance import StudentMaintenanceFields
 from ..models import FundingNeed, ScholarshipApplication
 from .application import FundingNeedSerializer
@@ -20,7 +20,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
     profile_id = serializers.CharField(
         source='profile.pk', read_only=True, allow_null=True,
     )
-    exam_type = ResultsHeldField()   # live: the results we HOLD, not the declared exam (TD-218)
+    exam_type = courses_public.ResultsHeldField()   # live: the results we HOLD, not the declared exam (TD-218)
     stpm_pngk = serializers.FloatField(source='profile.stpm_pngk', read_only=True)   # CGPA sprint C2
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
@@ -119,7 +119,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
 
     def get_spm_a_count(self, obj):
         from ..shortlisting import count_spm_a_grades
-        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
+        return count_spm_a_grades(courses_public.spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
     def get_funding_need(self, obj):
         try:

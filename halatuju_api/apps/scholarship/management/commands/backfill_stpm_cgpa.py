@@ -62,10 +62,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from apps.courses.public import merit_100, overall_from, results_held
+from apps.courses import public as courses_public
 from apps.courses.models import StudentProfile
-from apps.courses.stpm_engine import STPM_CGPA_POINTS, calculate_stpm_cgpa
-from apps.courses.stpm_pngk import pngk_from_grades
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.shortlisting import _academic_ok
 
@@ -101,11 +99,11 @@ def derive_koko(profile, pre_deploy=False):
     koko_now = getattr(profile, 'stpm_koko', None)
     stored = _stored(profile)
     grades = profile.stpm_grades if isinstance(profile.stpm_grades, dict) else {}
-    calc = pngk_from_grades(grades)
-    if stored is not None and 0 < stored <= 4.0 and any(g in STPM_CGPA_POINTS for g in grades.values()):
+    calc = courses_public.pngk_from_grades(grades)
+    if stored is not None and 0 < stored <= 4.0 and any(g in courses_public.STPM_CGPA_POINTS for g in grades.values()):
         old = calc is None or _differs(stored, calc)
         if (old and (koko_now is None or calc is not None)) or (pre_deploy and koko_now is None):
-            return _from_old_figure(stored, calculate_stpm_cgpa(grades))
+            return _from_old_figure(stored, courses_public.calculate_stpm_cgpa(grades))
     if koko_now is not None:
         return float(koko_now), True
     return None, False
@@ -123,13 +121,13 @@ def _from_old_figure(stored, average):
     rounded = raw.quantize(KOKO_STEP, rounding=ROUND_HALF_UP)
     clamped = min(max(rounded, Decimal(0)), Decimal(KOKO_MAX))
     koko = float(clamped)
-    return koko, clamped == rounded and abs(overall_from(average, koko) - stored) < _SAME
+    return koko, clamped == rounded and abs(courses_public.overall_from(average, koko) - stored) < _SAME
 
 
 def _after(profile, koko):
     """An unsaved copy of the profile as the readers will see it once `--apply` has written."""
     p = copy(profile)
-    calc = pngk_from_grades(profile.stpm_grades)
+    calc = courses_public.pngk_from_grades(profile.stpm_grades)
     if calc is not None:
         p.stpm_cgpa = calc
     p.stpm_koko = koko
@@ -162,10 +160,10 @@ def preview_rows(applications, pre_deploy=False):
     rows = []
     for app in applications:
         p = app.profile
-        if p is None or results_held(p) != 'stpm':
+        if p is None or courses_public.results_held(p) != 'stpm':
             continue
         stored = _stored(p)
-        calc = pngk_from_grades(p.stpm_grades)
+        calc = courses_public.pngk_from_grades(p.stpm_grades)
         after = calc if calc is not None else stored
         koko, clean = derive_koko(p, pre_deploy)
         gate_before = _gate(p, app.cohort, lambda _p, v=stored: v)
@@ -174,7 +172,7 @@ def preview_rows(applications, pre_deploy=False):
             'application': app.id, 'status': app.status,
             'stored': stored, 'calculated': calc, 'cgpa_after': after,
             'koko': koko, 'koko_clean': clean, 'koko_stored': p.stpm_koko is not None and koko == p.stpm_koko,
-            'merit_before': _merit_before(stored), 'merit_after': merit_100(_after(p, koko)),
+            'merit_before': _merit_before(stored), 'merit_after': courses_public.merit_100(_after(p, koko)),
             'gate_before': gate_before, 'gate_after': gate_after,
             'changed': _differs(stored, after), 'gate_flips': gate_before != gate_after,
         })
@@ -194,7 +192,7 @@ def profiles_to_write(koko_only=False):
         if koko is not None and koko != p.stpm_koko:
             write['stpm_koko'] = koko
             unclean += not clean
-        calc = pngk_from_grades(p.stpm_grades)
+        calc = courses_public.pngk_from_grades(p.stpm_grades)
         if not koko_only and koko is not None and calc is not None and _differs(_stored(p), calc):
             write['stpm_cgpa'] = calc
         if write:

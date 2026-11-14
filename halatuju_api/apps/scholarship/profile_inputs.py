@@ -11,7 +11,7 @@ application's documents (the STR / JKM claim gates and the Statement of Intent) 
 """
 import re
 
-from apps.courses.public import spm_grades_for, spm_grades_none_label
+from apps.courses import public as courses_public
 
 from .models import FundingNeed
 from .profile_prompts import _BUCKET_LABELS, _BUCKET_ORDER
@@ -181,9 +181,9 @@ def _grades_summary(profile):
     """Summarise SPM results (`spm_grades_for`: a tertiary holder's SPM prereq only) WITHOUT naming
     subjects: the A-grade count, the band mix and the broad subject GROUPS they span (no ethnicity
     via vernacular subjects). None: 'not provided', or `spm_grades_none_label` for tertiary."""
-    grades = spm_grades_for(profile)
+    grades = courses_public.spm_grades_for(profile)
     if not grades:
-        return spm_grades_none_label(profile, 'not provided')
+        return courses_public.spm_grades_none_label(profile, 'not provided')
     bands = {'A+': 0, 'A': 0, 'A-': 0}
     total = 0
     groups_seen = set()

@@ -25,7 +25,7 @@ document kind from `student_higher_check`. Nothing here feeds a verdict band or 
 """
 from __future__ import annotations
 
-from apps.courses.public import results_held
+from apps.courses import public as courses_public
 
 #: The calculated PNGK and the printed one are both two-place figures, so they agree exactly; the
 #: 0.01 (plus float slack) only absorbs a print that rounds the last place the other way. ONE
@@ -48,12 +48,11 @@ def _cgpa_mark(chk, calculated, fields):
 def stpm_marks(application):
     """The marks above for one application, or None when it does not hold STPM results."""
     profile = getattr(application, 'profile', None)
-    if profile is None or results_held(profile) != 'stpm':
+    if profile is None or courses_public.results_held(profile) != 'stpm':
         return None
-    from apps.courses.stpm_pngk import pngk_from_grades
     from .document_snapshot import latest_doc
     from .higher_results import _fields, entered_stpm, stpm_rows, student_higher_check
-    calculated = pngk_from_grades(getattr(profile, 'stpm_grades', None))
+    calculated = courses_public.pngk_from_grades(getattr(profile, 'stpm_grades', None))
     doc = latest_doc(application, 'higher_results')
     chk = student_higher_check(doc) if doc is not None else None
     # The same door `student_higher_check` opens for its own grade comparison: a read STPM page,

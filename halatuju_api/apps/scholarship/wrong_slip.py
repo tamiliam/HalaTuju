@@ -152,13 +152,13 @@ def academic_fact(slip, kind, evidence, unresolved):
     Review finding 2: for an applicant the SPM slip is REQUIRED of who holds no tertiary results,
     the higher result does not fill that slot — `results_slip_missing` stays (so its system ticket is
     never closed by it). A tertiary holder is never asked for SPM by the system (D9)."""
-    from apps.courses.public import QUALIFICATION_LABELS, is_tertiary, results_held
+    from apps.courses import public as courses_public
     from . import requirements
     from .verdict_engine import _fact, _item
-    unresolved.append(_item('results_slip_is_higher', kind=QUALIFICATION_LABELS.get(kind, kind)))
+    unresolved.append(_item('results_slip_is_higher', kind=courses_public.QUALIFICATION_LABELS.get(kind, kind)))
     app = getattr(slip, 'application', None)
     if (app is not None and requirements.resolve(app, 'document').get('results_slip') == 'required'
-            and not is_tertiary(results_held(getattr(app, 'profile', None)))):
+            and not courses_public.is_tertiary(courses_public.results_held(getattr(app, 'profile', None)))):
         unresolved.append(_item('results_slip_missing'))
     return _fact('academic', 'review', evidence, unresolved)
 

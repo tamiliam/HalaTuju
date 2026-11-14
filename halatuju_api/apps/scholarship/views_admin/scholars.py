@@ -22,7 +22,7 @@ from rest_framework import status
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
-from apps.courses.search import people_search_term
+from apps.courses import public as courses_public
 
 from .. import activity, activity_people, mentor_desk, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
@@ -139,7 +139,7 @@ class AdminScholarListView(_ScholarsBase):
         qs = scholars.filter_rows(scholars.annotate(scoped(closed), with_internal=staff),
                                   substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1',
-                                  search=people_search_term(request, 'search'),  # TD-421
+                                  search=courses_public.people_search_term(request, 'search'),  # TD-421
                                   below=below if wanted == 'below_minimum' else None,
                                   overdue=overdue if wanted == 'results_overdue' else None,
                                   mentoring=q.get('mentoring', '') if sees_mentors else '')

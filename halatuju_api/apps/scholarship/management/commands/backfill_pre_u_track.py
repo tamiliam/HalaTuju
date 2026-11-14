@@ -6,7 +6,7 @@ only, never overwrites a deliberate pick. Going forward the track is kept curren
 """
 from django.core.management.base import BaseCommand
 
-from apps.courses.public import spm_grades_for
+from apps.courses import public as courses_public
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ScholarshipApplication, ApplicantDocument
 from apps.scholarship import offer_pathway as op
@@ -48,7 +48,7 @@ class Command(BaseCommand):
                 track = op.parse_matric_track(prog)
             else:
                 track = op.parse_stpm_stream(prog) or op.infer_stpm_bidang(
-                    spm_grades_for(app.profile),
+                    courses_public.spm_grades_for(app.profile),
                     getattr(app.profile, 'stream_subjects', None))
             if not track or track == cur:
                 skipped += 1

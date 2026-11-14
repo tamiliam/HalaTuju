@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import re
 
-from apps.courses.public import spm_grades_for  # one SPM-grade reader (S3b)
+from apps.courses import public as courses_public  # one SPM-grade reader (S3b)
 
 _STR = {'type': 'string'}
 
@@ -223,8 +223,7 @@ def _entered_cgpa(profile, kind):
     if profile is None:
         return None
     if kind == 'stpm':
-        from apps.courses.stpm_pngk import pngk_from_grades
-        return pngk_from_grades(getattr(profile, 'stpm_grades', None))
+        return courses_public.pngk_from_grades(getattr(profile, 'stpm_grades', None))
     return _as_cgpa(getattr(profile, 'higher_cgpa', None))
 
 
@@ -301,20 +300,19 @@ def student_higher_check(doc) -> dict:
     `kind_status`: 'match' | 'different' | 'spm' | '' (cannot tell). `readable` is None until
     read. `note`: 'spm_slip' | 'kind_differs' | 'grades_differ' | '' — the ONE note to show (D13),
     in that order; `note_kind` is the results page the note's link opens."""
-    from apps.courses.public import is_tertiary, results_held
     from .academic_engine import _slip_name_status
     vf, f = _fields(doc)
     sv = vf.get('student_verdict')
     read = bool(sv) and sv != 'review_manually'
     app = getattr(doc, 'application', None)
     profile = getattr(app, 'profile', None)
-    held = results_held(profile)
-    kind_held = held if is_tertiary(held) else (getattr(doc, 'results_kind', '') or '')
+    held = courses_public.results_held(profile)
+    kind_held = held if courses_public.is_tertiary(held) else (getattr(doc, 'results_kind', '') or '')
     # 2026-11-07 (app 278): a kind from the slot or a team split, NOT her declaration — she declared
     # no higher results (`higher_owed.declared_kind`), so there is nothing to compare: no kind tick,
     # no grade / subject claim (owner: "a tick only when documentary evidence matches it").
     from .higher_owed import declared_kind
-    undeclared = bool(kind_held) and not is_tertiary(held) and app is not None and not declared_kind(app)
+    undeclared = bool(kind_held) and not courses_public.is_tertiary(held) and app is not None and not declared_kind(app)
     detected = (f.get('results_kind_detected') or '') if read else ''
     kind_status = ('' if not detected or not kind_held else 'spm' if detected == 'spm'
                    else '' if undeclared else 'match' if detected == kind_held else 'different')
@@ -443,13 +441,12 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_unverified'))
     elif not chk['readable']:
         unresolved.append(_item('higher_results_unreadable'))
-    from apps.courses.public import QUALIFICATION_LABELS as name   # the sponsor line's words
-    kind = name.get(chk['kind_held'], chk['kind_held'])
+    kind = courses_public.QUALIFICATION_LABELS.get(chk['kind_held'], chk['kind_held'])
     if chk['kind_status'] == 'spm':
         unresolved.append(_item('higher_results_is_spm', held=kind))
     elif chk['kind_status'] == 'different':
         unresolved.append(_item('higher_results_kind_differs', held=kind,
-                                seen=name.get(chk['kind_detected'], chk['kind_detected'])))
+                                seen=courses_public.QUALIFICATION_LABELS.get(chk['kind_detected'], chk['kind_detected'])))
     elif chk['kind_status'] == 'match':
         evidence.append(_item('higher_results_kind_ok', held=kind))
     if chk['cgpa_status'] == 'match':
@@ -490,8 +487,7 @@ def verdict_academic(application, spm_fact):
             application.profile, read_slip(_latest_doc(application, 'results_slip')))['compared']
         # F1 Q6 (owner 2026-11-13, rule table): a higher result in her OPTIONAL SPM slot is named, but
         # holds nothing back - her real higher-results upload is the card's evidence.
-        from apps.courses.public import is_tertiary, results_held
-        wrong_slot = (is_tertiary(results_held(application.profile))
+        wrong_slot = (courses_public.is_tertiary(courses_public.results_held(application.profile))
                       and {i['code'] for i in spm_fact['unresolved']} == {'results_slip_is_higher'})
         clean = clean and (spm_fact['status'] == 'verified' or idle or wrong_slot)
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)

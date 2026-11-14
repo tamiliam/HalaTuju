@@ -1,6 +1,6 @@
 """The people and identity getters of the cockpit payload (names, school, source, funding need, sponsor profile)."""
 
-from apps.courses.public import spm_grades_for
+from apps.courses import public as courses_public
 from ..models import FundingNeed, SponsorProfile
 from ..serializers import FundingNeedSerializer
 from .application_list import SponsorProfileSerializer, _application_merit_score, held_qualification
@@ -48,14 +48,13 @@ class ServesTheDetailPeople:
 
     def get_spm_a_count(self, obj):
         from ..shortlisting import count_spm_a_grades
-        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
+        return count_spm_a_grades(courses_public.spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
 
     def get_qualification(self, obj):
         return held_qualification(obj.profile)
 
     def get_overall_cgpa(self, obj):
-        from apps.courses.public import overall_cgpa
-        return overall_cgpa(getattr(obj, 'profile', None))
+        return courses_public.overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)

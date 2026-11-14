@@ -30,7 +30,7 @@ import time
 
 from django.conf import settings
 
-from apps.courses.public import held_summary
+from apps.courses import public as courses_public
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure
@@ -260,7 +260,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         school=pval('school'),
         # The results we HOLD, not the exam declared (TD-325; owner ruling TD-324: results held =
         # the highest completed qualification). A Form Six explorer is 'spm' here, not 'stpm'.
-        qualification=(held_summary(profile) or 'n/a'),
+        qualification=(courses_public.held_summary(profile) or 'n/a'),
         merit=_merit(application),
         grades_summary=_grades_summary(profile),
         stpm_pngk=pval('stpm_pngk', 'n/a'),     # CGPA sprint C2: from the grades

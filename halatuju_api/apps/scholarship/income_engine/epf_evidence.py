@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from .identity_checks import _cluster_docs
 from .informal import informal_payslip_claimed, member_is_informal
-from apps.courses.public import heading_for
+from apps.courses import public as courses_public
 from .occupation import _NON_EARNING_OCC, _docs_or_none, _has_read_doc, _member_occupation
 
 
@@ -42,7 +42,7 @@ def semester_result_gap(application):
     if docs is None or _has_read_doc(application, 'semester_result'):
         return False
     prof = getattr(application, 'profile', None)
-    if heading_for(prof) == 'stpm':
+    if courses_public.heading_for(prof) == 'stpm':
         from ..results_route import held_kind
         if not held_kind(application):
             return True

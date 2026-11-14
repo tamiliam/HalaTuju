@@ -5,7 +5,9 @@ old name is re-exported here, so `from apps.scholarship.serializers import X` ke
 
 # Everything the old module imported stays reachable under its old name.
 from rest_framework import serializers
-from apps.courses.public import ResultsHeldField, spm_grades_for
+from apps.courses import public as courses_public
+ResultsHeldField = courses_public.ResultsHeldField      # old names stay reachable (A3.7 pins)
+spm_grades_for = courses_public.spm_grades_for
 from .. import pool, results_review
 from ..family import PROFESSION_CODES, form_guardians_shape
 from ..serializers_maintenance import StudentMaintenanceFields

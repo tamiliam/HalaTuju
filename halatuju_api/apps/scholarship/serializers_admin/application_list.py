@@ -1,7 +1,7 @@
 """The officer list: the sponsor profile, the held qualification and the application list row."""
 
 from rest_framework import serializers
-from apps.courses.public import results_held, spm_grades_for
+from apps.courses import public as courses_public
 from ..models import ScholarshipApplication, SponsorProfile
 from .. import serializers_admin_gift as _gift
 from .names import _full_name
@@ -40,7 +40,7 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
 #   (who clears a programme's grade bar), `pool` (the sponsor's academic line) and `vision` (whether
 #   the SPM slip parser runs) now read this rule. A change to it moves who is shortlisted and which
 #   parser runs, not only a label: characterise it first (`tests/test_exam_questions.py`).
-held_qualification = results_held
+held_qualification = courses_public.results_held
 
 
 def _application_merit_score(obj):
@@ -110,12 +110,11 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
         return held_qualification(obj.profile)
 
     def get_overall_cgpa(self, obj):
-        from apps.courses.public import overall_cgpa
-        return overall_cgpa(getattr(obj, 'profile', None))
+        return courses_public.overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)
 
     def get_spm_a_count(self, obj):
         from ..shortlisting import count_spm_a_grades
-        return count_spm_a_grades(spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)
+        return count_spm_a_grades(courses_public.spm_grades_for(obj.profile))   # tertiary: SPM prereq only (#62)

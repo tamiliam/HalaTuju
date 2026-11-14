@@ -98,8 +98,8 @@ def _name(app):
 
 def level_of(profile):
     """The qualification we hold results for: `spm` / `stpm` / `matric` / `asasi` / `diploma` / ''."""
-    from apps.courses.public import results_held
-    return results_held(profile)
+    from apps.courses import public as courses_public
+    return courses_public.results_held(profile)
 
 
 def missing_items(applications):
