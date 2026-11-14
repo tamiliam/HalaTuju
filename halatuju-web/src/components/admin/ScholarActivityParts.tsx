@@ -132,9 +132,14 @@ export function ActivityComposer({ onSave }: {
         className="block w-full resize-none rounded-lg border border-ground-300 px-3 py-2 text-sm focus:ring-2 focus:ring-info-500" />
       {open && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-sm text-ground-700">
-            <Toggle on={internal} onChange={setInternal} label={t('admin.scholars.activity.staffOnly')} />
-            {t('admin.scholars.activity.staffOnly')}
+          <span className="min-w-0 max-w-full">
+            <span className="flex items-center gap-2 text-sm text-ground-700">
+              <Toggle on={internal} onChange={setInternal} label={t('admin.scholars.activity.staffOnly')} />
+              {t('admin.scholars.activity.staffOnly')}
+            </span>
+            <span className="mt-1 block text-xs text-ground-500" data-testid="activity-staff-only-hint">
+              {t('admin.scholars.activity.staffOnlyHint')}
+            </span>
           </span>
           <span className="flex items-center gap-2">
             <button type="button" onClick={() => close()} disabled={busy}

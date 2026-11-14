@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getTeamAdminEmails } from '@/lib/admin-api'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
-import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
+import Link from 'next/link'
 
 type T = (key: string, params?: Record<string, string>) => string
 
@@ -15,8 +15,8 @@ type T = (key: string, params?: Record<string, string>) => string
 //     names each sender), served as keys and worded here. No switch, no editor — "editable later".
 //   * Reviewer emails is `ReviewerEmailsCard`, moved whole (the five with their switches, and the six we
 //     maintain under them). Not rewritten.
-//   * Mentor emails is `InvitationEmailsCard` showing only `invite_mentor` — the SAME card and the SAME
-//     template Invitations -> Emails edits: one source, two doors, no copy.
+//   * Mentor emails is a one-line pointer (M2d E6): invitation emails, the mentor's included, are edited
+//     in ONE place, Invitations -> Emails. No card here, so no second door to the same template.
 // The tab is offered exactly as before (`mayEditEmails` on the Team page); every endpoint is the fence.
 
 function Section({ title, testId, children }: { title: string; testId: string; children: React.ReactNode }) {
@@ -71,9 +71,13 @@ export default function TeamEmails({ token, t }: { token: string | null; t: T })
         <ReviewerEmailsCard token={token} t={t} />
       </Section>
       <Section title={t('admin.team.emails.mentorTitle')} testId="team-emails-mentor">
-        <InvitationEmailsCard token={token} t={t} only={['invite_mentor']}
-          note={t('admin.team.emails.mentorNone')} />
-        <p className="text-xs text-ground-500">{t('admin.team.emails.mentorAside')}</p>
+        <p className="rounded-xl border bg-ground-0 px-4 py-4 text-sm text-ground-600 shadow-sm sm:px-5"
+          data-testid="team-emails-mentor-pointer">
+          {t('admin.team.emails.mentorPointer')}{' '}
+          <Link href="/admin/organisation/staff" className="font-medium text-primary-600 hover:text-primary-800 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
+            {t('admin.team.emails.mentorPointerLink')}
+          </Link>
+        </p>
       </Section>
     </div>
   )

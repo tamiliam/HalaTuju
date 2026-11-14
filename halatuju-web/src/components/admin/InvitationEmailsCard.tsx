@@ -9,7 +9,7 @@ import {
 import PartnerTemplateEditor from '@/components/sources/PartnerTemplateEditor'
 
 /**
- * The Emails tab on Organisation → Invitations: the four invitation emails, editable.
+ * The Emails tab on Organisation → Invitations: the five invitation emails, editable.
  *
  * One per group on the page — admin, reviewer, source, sponsor — since 2026-08-04. Which letter a
  * staff invite actually reads is decided SERVER-SIDE from the same role map that groups the tables
@@ -89,7 +89,7 @@ export default function InvitationEmailsCard({ token, t, only, note }: {
                   {t(`admin.invitations.emails.when.${tpl.kind}`)}
                 </p>
                 {/* ⚠ NOTHING PER-ROW BEYOND ITS OWN NAME AND WHEN IT SENDS (owner, 2026-08-04).
-                    The locked-access note used to repeat on three of the four rows, and the source
+                    The locked-access note used to repeat on three of the then four rows, and the source
                     row said it was unsent twice over — once in its description and once in a note
                     of its own. Both facts are now stated ONCE, in the header. A caveat repeated
                     down a list stops being read. */}

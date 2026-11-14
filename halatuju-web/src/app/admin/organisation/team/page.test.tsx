@@ -281,14 +281,15 @@ describe('the Emails tab', () => {
     expect(screen.getByText('admin.team.emails.adminNote')).toBeTruthy()
   })
 
-  it('T4: the mentor section is the invitation card showing ONLY the mentor letter, with the line', async () => {
+  it('M2d E6: the mentor section is a one-line pointer to Invitations, with no editor of its own', async () => {
     await loaded()
     fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
     const mentor = screen.getByTestId('team-emails-mentor')
-    await waitFor(() => expect(within(mentor).getByText('admin.invitations.emails.kind.invite_mentor')).toBeTruthy())
-    expect(within(mentor).queryByText('admin.invitations.emails.kind.invite_admin')).toBeNull()
-    expect(within(mentor).getByTestId('invitation-emails-note').textContent).toBe('admin.team.emails.mentorNone')
-    expect(mockApi.getInvitationEmails).toHaveBeenCalled()
+    const pointer = within(mentor).getByTestId('team-emails-mentor-pointer')
+    expect(pointer.textContent).toContain('admin.team.emails.mentorPointer')
+    expect(within(pointer).getByRole('link').getAttribute('href')).toBe('/admin/organisation/staff')
+    expect(within(mentor).queryByTestId('invitation-emails-note')).toBeNull()
+    expect(mockApi.getInvitationEmails).not.toHaveBeenCalled()
   })
 
   it('opens on the reviewers list, not the emails — the list is what the page is for', async () => {
