@@ -23,7 +23,7 @@ import time
 
 from django.conf import settings
 
-from apps.courses.exam_questions import THIRD_ROUTE
+from apps.courses import public as courses_public
 
 from .prompts import get_prompt
 
@@ -337,7 +337,7 @@ def generate_report(grades, eligible_courses, insights,
     # Format data for prompt
     if exam_type == 'stpm':
         academic_context = _format_stpm_grades(stpm_grades, stpm_cgpa, muet_band)
-    elif exam_type in THIRD_ROUTE and higher:
+    elif exam_type in courses_public.THIRD_ROUTE and higher:
         # Third results route S2b: STPM-equivalent — the STPM prompt family (`get_prompt`), fed
         # the qualification's own results, never an empty "no STPM grades" block.
         academic_context = _format_higher_results(higher, grades)
@@ -374,7 +374,8 @@ def generate_report(grades, eligible_courses, insights,
 
             text = response.text
             # Course-selector report = platform-base work (org=NULL); billable Gemini call.
-            from apps.scholarship import usage
+            from apps.scholarship import public as scholarship_public
+            usage = scholarship_public.usage
             _it, _ot = usage.gemini_tokens(response)
             usage.record_usage(usage.GEMINI, model=model_name, source='report',
                                input_tokens=_it, output_tokens=_ot, organisation_id=None)
@@ -394,7 +395,8 @@ def generate_report(grades, eligible_courses, insights,
             logger.warning(f'Generation failed with {model_name}: {e}')
             continue
 
-    from apps.scholarship.gemini import cascade_failure
+    from apps.scholarship import public as scholarship_public
+    cascade_failure = scholarship_public.gemini.cascade_failure
     logger.warning(f'Gemini cascade exhausted — {cascade_failure(errors)}')
 
     # OpenAI fallback — try after Gemini cascade exhausted
@@ -418,7 +420,8 @@ def generate_report(grades, eligible_courses, insights,
             elapsed_ms = int((time.time() - start_ms) * 1000)
             text = completion.choices[0].message.content
             # OpenAI fallback for the course-selector report = platform-base (org=NULL).
-            from apps.scholarship import usage
+            from apps.scholarship import public as scholarship_public
+            usage = scholarship_public.usage
             _it, _ot = usage.openai_tokens(completion)
             usage.record_usage(usage.OPENAI, model='gpt-4o-mini', source='report',
                                input_tokens=_it, output_tokens=_ot, organisation_id=None)

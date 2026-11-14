@@ -57,8 +57,8 @@ def send_partner_welcome_email(*args, **kwargs):
     module. Three lazy imports instead would have been three statements where there is one, and
     the app-boundary standard counts statements.
     """
-    from apps.scholarship import emails
-    return emails.send_partner_welcome_email(*args, **kwargs)
+    from apps.scholarship import public as scholarship_public
+    return scholarship_public.emails.send_partner_welcome_email(*args, **kwargs)
 
 # Unambiguous alphabet — no O/0, I/l/1 — because this password gets read off a phone screen and
 # typed by hand, and a partner who mistypes it has no other way in.
@@ -179,7 +179,8 @@ def _invitations_for(admins):
     separately and joined in Python — the same discipline `_reviewer_workloads` documents.
     """
     try:
-        from apps.scholarship.models import Invitation
+        from apps.scholarship import public as scholarship_public
+        Invitation = scholarship_public.Invitation
         out = {}
         for inv in (Invitation.objects.filter(audience='staff', partner_admin__in=admins)
                     .order_by('partner_admin_id', '-created_at')):
@@ -194,9 +195,9 @@ def _invitation_dict(inv):
     """What the screen is told about one invitation. Allowlist; None when there is no record."""
     if inv is None:
         return None
-    from apps.scholarship import invitations
+    from apps.scholarship import public as scholarship_public
     return {
-        'status': invitations.status_of(inv),
+        'status': scholarship_public.invitations.status_of(inv),
         'sent_at': inv.last_sent_at.isoformat() if inv.last_sent_at else None,
         'send_count': inv.send_count,
         # ⚠ Tri-state on purpose. NULL is "not recorded" — every backfilled row is NULL, because
@@ -220,8 +221,8 @@ def _record_invitation(created_admin, role, organisation, *, invited_by, credent
     for `reviewer_profile_complete`.
     """
     try:
-        from apps.scholarship import invitations
-        return invitations.create_or_refresh(
+        from apps.scholarship import public as scholarship_public
+        return scholarship_public.invitations.create_or_refresh(
             audience='staff', email=created_admin.email, name=created_admin.name, role=role,
             organisation=organisation, partner_admin=created_admin,
             invited_by=invited_by,   # TD-444: the caller's admin; a Resend's refresh keeps the first
@@ -237,8 +238,8 @@ def _record_invitation_send(inv, ok, error='', actor=None):
     if inv is None:
         return
     try:
-        from apps.scholarship import invitations
-        invitations.record_send(inv, ok, error, actor=actor)
+        from apps.scholarship import public as scholarship_public
+        scholarship_public.invitations.record_send(inv, ok, error, actor=actor)
     except Exception:   # noqa: BLE001
         pass
 
@@ -305,13 +306,14 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         if _touch_seen(admin):
             staff_activity_hook.record(admin, 'first_sign_in')   # S3; best-effort, never raises
             try:
-                from apps.scholarship import invitations
-                invitations.accept_for_admin(admin)
+                from apps.scholarship import public as scholarship_public
+                scholarship_public.invitations.accept_for_admin(admin)
             except Exception:   # noqa: BLE001 — bookkeeping never blocks a sign-in
                 logger.warning('Could not close the invitation for %s', admin.email, exc_info=True)
         # reviewer_profile_complete: gates the reviewer's first-login landing (they stay on
         # /admin/profile until their compulsory fields are filled). True for every non-reviewer.
-        from apps.scholarship.reviewer_onboarding import reviewer_profile_complete
+        from apps.scholarship import public as scholarship_public
+        reviewer_profile_complete = scholarship_public.reviewer_profile_complete
         from . import org_config
         return Response({
             'is_admin': True,
@@ -585,8 +587,9 @@ def _fmt_json(value):
 
 def _scholarship_staff_modules():
     """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
-    from apps.scholarship import invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work
-    return staff_footprint, staff_lifecycle, mentoring, staff_mentor, invitations, staff_work   # M1a: + the last two
+    from apps.scholarship import public as scholarship_public
+    return (scholarship_public.staff_footprint, scholarship_public.staff_lifecycle, scholarship_public.mentoring,
+            scholarship_public.staff_mentor, scholarship_public.invitations, scholarship_public.staff_work)   # M1a: + the last two
 
 
 def scholarship_staff():
