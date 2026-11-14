@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### release: 14 Nov 16:00 MYT window - M3a and TD-617 web published (2026-11-14)
+- live 0fb384a76..cdb6d54be. api halatuju-api-01299-m7s (TD-617 + M3a), web halatuju-web-01120-5ld (TD-617 copy and FAQ).
+- Migration courses 0098 by hand, migrate-first: owner ran pre-check, DATA block and check; re-ran DATA block and check after the api took 100% (no change, 0 rows). Window closed.
+- Web build f7d8781a (14:07) failed on one flaky test (TD-624); re-run on live passed. That was TD-617's 2nd deploy (the cap). M3a: 1st deploy.
+- TD-624 (flaky apply-draft test) and TD-625 (16-row asked-before / not-owed-after mismatch) logged.
+
 ### docs: release train - at most 3 publishes a day (11:00, 16:00, 21:00 MYT), commit trailers, TD numbers from the tool (2026-11-14)
 
 ### fix: TD-617 re-check - a 'pismp' code with entered STPM/matric results is asked before submit, as it is owed after (2026-11-14)

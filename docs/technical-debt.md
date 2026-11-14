@@ -8998,3 +8998,19 @@ they fall back to the role, and `canFilterByAssignee` in `halatuju-web/src/app/a
 opens the assignee filter for the `admin` role by name. Once every served payload carries the keys (M3c), the
 fallbacks are dead code that can drift from the server. Fix: in M3c, read only the served keys, delete the role
 fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name in a gate. *(A - S)*
+
+### [TD-624] The apply-form draft test fails now and then on Cloud Build - low
+
+**Raised 2026-11-14 by the 14 Nov release.** `halatuju-web/src/app/scholarship/apply/page.draft.test.tsx:120` (an iOS
+tab kill, then ANOTHER student signs in on the tab: the draft must be deleted) failed once in the web build
+f7d8781a (1 of 7,509 tests) and passed 13/13 locally on the same code. The draft is deleted in an effect, and the test
+reads `sessionStorage` before the effect has surely run on a slow build machine. A flaky gate blocks a whole web
+publish. Fix: wait for the delete (`waitFor`) before the assertion, and run the file 20 times to prove it. *(A - S)*
+
+### [TD-625] A STPM/matric student with a stpm/matric/blank code and no degree name is asked before submit but not owed after - low
+
+**Raised 2026-11-14 by the TD-617 final check.** In the 105-row truth table, 16 rows (STPM or matric results held,
+course code stpm, matric or blank, no degree name) are asked for higher results before submit but not owed them
+after. The same 16 rows disagree on origin/main, so TD-617 did not cause it; the cause is the fallback at
+`results_route.py:226`. Also: the pismp check at `results_route.py:152` can never run. Eligibility work: owner ruling
+first, then a fix with the Opus adversarial review. *(A - M)*
