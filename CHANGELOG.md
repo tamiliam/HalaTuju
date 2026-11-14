@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### release: 14 Nov 21:00 MYT window - M2d follow-ups and F2 (cross-app doors) published (2026-11-14)
+- live cdb6d54be..902c4ac60. api halatuju-api-01300-7np (F2 packages 1 and 2, import-only), web halatuju-web-01121-x6g (M2d follow-ups E4, E6, E7, E8, E10). Both builds green; api health ok; site 200.
+- No migration. M2d follow-ups: 1st deploy. F2: 1st deploy. Owner phone check for M2d sent with the release report. Window closed.
+
 ### F2 package 1 - scholarship reaches courses catalogue and merit code through the public door
 - courses/public.py re-exports 15 catalogue and merit names (course_pathway_type, csv_cell, calculate_merit_score, prepare_merit_inputs, aliran_of, digits_expr, apply_people_search, people_search_term, STPM_CGPA_POINTS, calculate_stpm_cgpa, pngk_from_grades, stpm_cgpa_of, family_of, HELD, tidy_parentage_marker). 38 scholarship files now import the door (courses_public) and call courses_public.X. Import-only: no logic, value or evaluation order changed. Test patch of heading_for retargeted to the door; facade test pins the new names to their home objects.
 
