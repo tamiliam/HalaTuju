@@ -248,7 +248,9 @@ class AdminSponsorTermsPublishView(_SponsorTermsBase):
         try:
             # super OR org_admin. A plain `admin` may AUTHOR but not make it binding: they are
             # staff doing the work, not the people answerable for what a donor is bound by.
-            may_publish = surface_gates.may_vet_sponsors(admin)   # sponsors.approve (M3b G6)
+            # sponsors.approve (M3b G6); the terms bind every organisation's donors, so org admins and
+            # supers only (M3c fence; a granted team member is refused).
+            may_publish = surface_gates.may_approve_platform_sponsors(admin)
             sponsor_terms_mod.publish(terms, by_email=admin.email or '', allowed=may_publish)
         except sponsor_terms_mod.SponsorTermsError as exc:
             return _terms_err(exc)

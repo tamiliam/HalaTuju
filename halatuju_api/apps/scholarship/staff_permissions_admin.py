@@ -4,10 +4,14 @@
 The view (`views_admin/staff_permissions.py`) is the door — who may knock, the 404 fence, the AUDIT
 line. This module decides what a change may be, what it would do, and writes it with its history.
 
-⚠ WHOSE SET MAY CHANGE. Only a TEAM member's (`admin`, `finance`, `qc`, `reviewer`): never the
-organisation admin's (a fixed lead tier nobody edits), a super's, a referral partner's — and never
-your OWN. The view's `_staff_target_manageable` already stops an org_admin reaching anybody else; a
-super passes that fence for everyone, so `plan_change` refuses the rest here, for both callers.
+⚠ WHOSE SET MAY CHANGE. A TEAM member's (`admin`, `finance`, `qc`, `reviewer`), and since M3c (D1) an
+organisation admin's — by a SUPER only; never a super's, a referral partner's — and never your OWN.
+The view's `_staff_target_manageable` already stops an org_admin reaching anybody else; a super passes
+that fence for everyone, so `plan_change` refuses the rest here, for both callers (`may_edit`).
+
+⚠ M3c (A12): YOU GIVE ONLY WHAT YOU HOLD. Somebody who is not a super may add a key of the organisation
+admin's set (`ORG_ADMIN_SET`) only when it opens for them too (`not_held`). `review`, the payment seats
+and `award_withdraw_request` are outside that set and stay exempt, as before (decisions.md "M3c").
 
 ⚠ A CHANGE MAY NOT STRAND A CASE (the S3 as-built notes). Somebody holding in-play cases keeps
 `review`; and if they reach those cases through `see_all` (an admin or qc given work by a super, R1),
@@ -85,8 +89,13 @@ def asked_set(asked):
     really do. The editor already ticks `see_all` with `qc` (`PermissionEditor`), so the screen agrees.
 
     M2b: a v2 page key is stored only when `GRANTABLE_V2`; its page's view comes with it
-    (`with_implied_views`). Refused: `NEVER_GRANTABLE` (`never_grantable`), any other lead-only key
-    (`lead_tier`, until M3) and a key an old key already means (`alias_permission`: tick the old key)."""
+    (`with_implied_views`). Refused: `NEVER_GRANTABLE` (`never_grantable`), `manage_team` (`lead_tier`)
+    and a key an old key already means (`alias_permission`: tick the old key).
+
+    M3c (A9): the lead-only page keys are no longer refused here (whether the editor holds them is
+    `plan_change`'s A12 question). A view one of them implies that an old key means (`students.edit` /
+    `.approve` -> `students.view` = `see_all`; `scholars.approve` -> `scholars.view` = `scholars`) is
+    stored through that old key (`VIEW_ALIAS_OLD`), never its v2 spelling."""
     from apps.courses import staff_permissions as sp
     v2 = _v2()
     if not isinstance(asked, (list, tuple)) or not all(isinstance(k, str) for k in asked):
@@ -102,7 +111,7 @@ def asked_set(asked):
         raise PermissionChangeRefused(
             'never_grantable', 400, f'{", ".join(never)} stays with the organisation admin. It can '
             'never be given to a team member.', keys=never)
-    if any(k in sp.LEAD_TIER_ONLY for k in asked) or any(v2.refusal_reason(k) == 'lead_only' for k in page):
+    if any(k in sp.LEAD_TIER_ONLY for k in asked):
         raise PermissionChangeRefused(
             'lead_tier', 400, 'Managing the team stays with the organisation admin. It cannot be '
             'given to a team member.')
@@ -111,8 +120,10 @@ def asked_set(asked):
         raise PermissionChangeRefused(
             'alias_permission', 400, f'{", ".join(alias)} is given by an existing permission. Tick '
             'that one instead.', keys=alias)
-    held = sp.with_implied([k for k in asked if k in sp.CATALOGUE])
-    return (*(k for k in sp.CATALOGUE if k in held), *v2.with_implied_views(page))
+    pages = v2.with_implied_views(page)
+    held = sp.with_implied([*(k for k in asked if k in sp.CATALOGUE),
+                            *(v2.VIEW_ALIAS_OLD[k] for k in pages if k in v2.VIEW_ALIAS_OLD)])
+    return (*(k for k in sp.CATALOGUE if k in held), *(k for k in pages if k not in v2.ALIAS_V2))
 
 
 def _v2():
@@ -121,25 +132,55 @@ def _v2():
     return staff_permissions_v2
 
 
-def held_set(target):
-    """What `target` holds as the editor sees it: `resolve` (today's keys), then `stored_v2` (M2b)."""
+def stored_page_keys(target):
+    """M3c: the v2 page keys ``target``'s row stores, as the editor reads them — an organisation admin's
+    through `org_admin_v2` (NULL reads as the full set), anybody else's through `stored_v2`."""
     from apps.courses import staff_permissions as sp
-    return (*sp.resolve(target), *_v2().stored_v2(target))
+    v2 = _v2()
+    return v2.org_admin_v2(target) if sp.is_lead_tier(target) else v2.stored_v2(target)
 
 
-def v2_editor(target):
+def held_set(target):
+    """What `target` holds as the editor sees it: `resolve` (today's keys), then the stored v2 page keys
+    (`stored_page_keys`; M2b, M3c)."""
+    from apps.courses import staff_permissions as sp
+    return (*sp.resolve(target), *stored_page_keys(target))
+
+
+def not_held(asked, by):
+    """M3c (A12): the keys of ``asked`` that ``by`` may NOT give because they do not open for ``by`` —
+    only keys of the organisation admin's set (`ORG_ADMIN_SET`) count; a super gives anything. An old
+    key opens through `resolve`, a v2 page key through `effective_v2`. In the order asked."""
+    from apps.courses import staff_permissions as sp
+    v2 = _v2()
+    if by is None or by.is_super:
+        return []
+    old, page = set(sp.resolve(by)), set(v2.effective_v2(by))
+    return [k for k in asked if k in v2.ORG_ADMIN_SET and k not in (old if k in sp.CATALOGUE else page)]
+
+
+def v2_editor(target, by=None):
     """M2b D9: the v2 page keys by group for the Permissions tab — each ``{key, page, level, grantable,
     reason, held}`` (``held`` = `effective_v2`, what opens today; ``reason`` = why it cannot be ticked)
     — ``v2_held``, the STORED grantable keys the editor's ticks start from, and ``v2_preset``, the role's
     v2 part (`V2_PRESETS`) that "Custom" and Reset weigh it against — served, so the web keeps no copy."""
+    from apps.courses import staff_permissions as sp
     v2 = _v2()
     effective = set(v2.effective_v2(target))
+    # M3c (A12): a key the viewer cannot give is served with the reason 'not_held'.
+    cannot = set(not_held(v2.CATALOGUE_V2, by))
+
+    def reason(k):
+        return v2.refusal_reason(k) or ('not_held' if k in cannot else None)
     groups = [{'group': g, 'keys': [
-        {'key': k, 'page': row[1], 'level': row[2], 'grantable': v2.refusal_reason(k) is None,
-         'reason': v2.refusal_reason(k), 'held': k in effective}
+        {'key': k, 'page': row[1], 'level': row[2], 'grantable': reason(k) is None,
+         'reason': reason(k), 'held': k in effective}
         for k, row in v2.CATALOGUE_V2.items() if row[0] == g]} for g in v2.GROUPS]
-    return {'v2_keys': groups, 'v2_held': list(v2.stored_v2(target)),
-            'v2_preset': list(v2.V2_PRESETS.get(target.role, ())),
+    lead = sp.is_lead_tier(target)
+    return {'v2_keys': groups, 'v2_held': list(stored_page_keys(target)),
+            'v2_preset': list(v2.ORG_ADMIN_V2 if lead else v2.V2_PRESETS.get(target.role, ())),
+            # M3c (A12): today's keys the viewer cannot give (the v2 ones carry 'not_held').
+            'keys_not_held': not_held(editable_keys(), by),
             # M2d D7: the pages short of Scholars for the person as held, for the tab's note at rest.
             'v2_gaps': scholars_gaps(held_set(target))}
 
@@ -175,12 +216,25 @@ def _refuse_unlisted(target, after):
             'an Admin instead.')
 
 
+def may_edit(target, by):
+    """Whether ``by`` may change ``target``'s permissions at all (the card's ``editable``, after the view's
+    manage fence): a team member's, or since M3c (D1) an organisation admin's when ``by`` is a super —
+    never your own, never a super's or a referral partner's, never a revoked person's."""
+    from apps.courses import staff_permissions as sp
+    if by is not None and target.pk == by.pk:
+        return False
+    if target.is_super or not target.is_active:
+        return False
+    return target.role in sp.TEAM_ROLES or (sp.is_lead_tier(target) and by is not None and by.is_super)
+
+
 def _refuse_target(target, by):
     from apps.courses import staff_permissions as sp
     if by is not None and target.pk == by.pk:
         raise PermissionChangeRefused(
             'own_permissions', 403, 'You cannot change your own permissions.')
-    if target.is_super or target.role not in sp.TEAM_ROLES:
+    lead_by_super = sp.is_lead_tier(target) and by is not None and by.is_super
+    if target.is_super or (target.role not in sp.TEAM_ROLES and not lead_by_super):
         raise PermissionChangeRefused(
             'not_editable', 400, "An organisation admin's, a super's or a referral partner's "
                                  'permissions are fixed and cannot be edited here.')
@@ -271,11 +325,20 @@ def plan_change(target, asked, *, by=None):
     _refuse_target(target, by)
     after = asked_set(asked)
     before = held_set(target)
+    lead = sp.is_lead_tier(target)
+    if lead:
+        after = _lead_after(after)
+    gives = not_held([k for k in after if k not in before], by)
+    if gives:
+        raise PermissionChangeRefused(
+            'not_held', 403, 'You can only give a permission you hold yourself.', keys=gives)
     _refuse_unlisted(target, after)
     _refuse_stranding(target, before, after)
-    v2 = _v2()
     old = tuple(k for k in after if k in sp.CATALOGUE)
-    stored = None if old == sp.preset_for(target.role) and old == after else list(after)
+    if lead:     # M3c (D1): always a list; `manage_team` is by role, never stored (`LEAD_BY_ROLE`)
+        stored = [k for k in after if k not in sp.LEAD_BY_ROLE]
+    else:
+        stored = None if old == sp.preset_for(target.role) and old == after else list(after)
     shadow = copy.copy(target)
     shadow.permissions = stored
     gaps = scholars_gaps(after)
@@ -283,10 +346,28 @@ def plan_change(target, asked, *, by=None):
         'before': list(before), 'after': list(after),
         'added': [k for k in after if k not in before],
         'removed': [k for k in before if k not in after],
-        'stored': stored, 'custom': sp.is_custom(shadow), 'v2_held': list(v2.stored_v2(shadow)),
+        'stored': stored, 'custom': sp.is_custom(shadow), 'v2_held': list(stored_page_keys(shadow)),
         'v2_gaps': gaps,
         'consequences': [*consequences(target, before, after), *([SCHOLARS_NEEDED] if gaps else [])],
     }
+
+
+#: M3c (D1, E1): the payment seats an organisation admin holds BY ROLE until M4 (`LEAD_MONEY_UNTIL_M4`,
+#: the payment chain's fallback). A super's edit may not store them: refused with `money_by_role`.
+LEAD_MONEY_OLD = ('payments_prepare', 'payments_check', 'payments_approve')
+
+
+def _lead_after(after):
+    """M3c (D1): an organisation admin's asked set as the row will hold it — `manage_team` put back BY
+    ROLE (the editor never offers it), in catalogue order; a payment seat refused (by role until M4)."""
+    from apps.courses import staff_permissions as sp
+    money = [k for k in after if k in LEAD_MONEY_OLD]
+    if money:
+        raise PermissionChangeRefused(
+            'money_by_role', 400, "An organisation admin's payment powers come with the role until "
+            'payments move to permissions. They cannot be changed here.', keys=money)
+    old = sp.with_implied([*(k for k in after if k in sp.CATALOGUE), *sp.LEAD_BY_ROLE])
+    return (*(k for k in sp.CATALOGUE if k in old), *(k for k in after if k not in sp.CATALOGUE))
 
 
 def record(target, before, after, *, by, kind):
@@ -313,9 +394,7 @@ def history_held(target):
     """What ``target`` holds, as a history row records it: `resolve`, then the stored v2 page keys (an
     organisation admin's through `org_admin_v2`, whose NULL reads as the full set; anybody else's through
     `stored_v2`)."""
-    from apps.courses import staff_permissions as sp
-    v2 = _v2()
-    return [*sp.resolve(target), *(v2.org_admin_v2(target) if sp.is_lead_tier(target) else v2.stored_v2(target))]
+    return list(held_set(target))
 
 
 def record_role_reset(old, new, *, by):
@@ -340,7 +419,7 @@ def change_permissions(target_id, asked, *, by, dry_run=False, with_v2=True):
         if target is None:
             raise PermissionChangeRefused('not_found', 404, 'Admin not found')
         if not with_v2 and isinstance(asked, (list, tuple)):
-            asked = [*asked, *_v2().stored_v2(target)]
+            asked = [*asked, *stored_page_keys(target)]
         plan = plan_change(target, asked, by=by)
         # #39 S4 review fix 10: "changed" means what the person can DO changed. A list that resolves
         # to the same keys (a reordered or hand-written one) writes nothing and records nothing.

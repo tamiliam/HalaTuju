@@ -22,7 +22,10 @@ M = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 M0095 = import_module('apps.courses.migrations.0095_grant_scholars_key')
 OLD = list(sp.ORG_ADMIN_KEYS)
-FULL = [*sp.ORG_ADMIN_KEYS, *v2.ORG_ADMIN_V2]
+#: M3c (D5): `scholars.approve` joined the live set after 0098; migration 0099 appends it, so 0098's own
+#: planned list is the live set without it (`test_m3c_migration_0099` holds the two together).
+M3C_KEYS = ('scholars.approve',)
+FULL = [*sp.ORG_ADMIN_KEYS, *(k for k in v2.ORG_ADMIN_V2 if k not in M3C_KEYS)]
 REVIEWING = ['review', *FULL]
 
 
@@ -35,9 +38,9 @@ class FrozenConstants(TestCase):
         self.assertEqual(M.ROLE, sp.LEAD_ROLE)
         self.assertEqual(M.REVIEW, sp.LEAD_MAY_ADD)
         self.assertEqual(M.OLD_KEYS, tuple(sp.ORG_ADMIN_KEYS))
-        self.assertEqual(M.V2_KEYS, tuple(v2.ORG_ADMIN_V2))
+        self.assertEqual(M.V2_KEYS, tuple(k for k in v2.ORG_ADMIN_V2 if k not in M3C_KEYS))
         self.assertEqual(M.PLANNED, (FULL, REVIEWING))
-        self.assertEqual(list(v2.ORG_ADMIN_SET), FULL)
+        self.assertEqual([k for k in v2.ORG_ADMIN_SET if k not in M3C_KEYS], FULL)
 
     def test_nothing_held_by_role_or_an_alias_is_written(self):
         for key in (*sp.LEAD_BY_ROLE, *v2.LEAD_BY_ROLE_V2, *v2.LEAD_MONEY_UNTIL_M4, *v2.ALIAS_V2):

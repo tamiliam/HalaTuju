@@ -5,7 +5,8 @@ Every converted gate is asked for every row shape, as M3a's data step 0098 left 
 role rule it replaced (`a super, or an organisation admin`). The pair gates (who may act on whom) are asked
 for every caller and target, with the old caller arm (`caller.role == 'org_admin'`) patched back in for the
 "before" read. Then the keys are shown to be what decides: an organisation admin whose stored list lacks a
-key is refused that gate, and a team row that stores a lead-only key is still refused. Last, E3 at the
+key is refused that gate. (M3c, A9: a team row that stores a lead key now opens that gate — it is GRANTED;
+`GRANTED` below. Before M3c no editor could save such a row, so no live row changes.) Last, E3 at the
 service, the endpoint and the picker, for a super and an organisation admin, and a case still given to an
 organisation admin in Reviewers by somebody else.
 
@@ -55,6 +56,14 @@ GATES = {
 
 def _old_gate(a):
     return a.is_super or a.role == 'org_admin'
+
+
+#: M3c (A9, decisions.md "M3c"): the one shape whose answers change ON PURPOSE — a team row storing lead
+#: keys is a granted team member now. Its gates open exactly where it holds the key (never requests.approve,
+#: which stays NEVER_GRANTABLE). No live row had this shape: the editor refused `lead_only` until M3c.
+GRANTED = 'admin storing lead-only v2 keys'
+GRANTED_GATES = {'G3 settings.edit', 'G3 the Overview layout', 'G5 assign (students.edit)', 'G5 students.edit',
+                 'G5 students.approve', 'G7 billing.view', 'G9 contracts.view', 'G9 contracts.edit'}
 
 
 def _old_has_perm(self, key):
@@ -115,7 +124,7 @@ class EveryGateReadsTheSame(TestCase):
                 continue
             for gate, new in GATES.items():
                 with self.subTest(shape=name, gate=gate):
-                    self.assertEqual(bool(new(a)), _old_gate(a))
+                    self.assertEqual(bool(new(a)), _old_gate(a) or (name == GRANTED and gate in GRANTED_GATES))
 
     def test_the_invoices_screen_answers_as_before_with_billing_on_and_off(self):
         for live in (False, True):
@@ -124,7 +133,7 @@ class EveryGateReadsTheSame(TestCase):
                     if a.is_active:
                         with self.subTest(shape=name, live=live):
                             self.assertEqual(surface_gates.may_read_invoices(a),
-                                             a.is_super or (live and a.role == 'org_admin'))
+                                             a.is_super or (live and (a.role == 'org_admin' or name == GRANTED)))
 
     def test_the_pair_gates_answer_as_before_for_every_caller_and_target(self):
         rows = self.rows()
@@ -148,6 +157,9 @@ class EveryGateReadsTheSame(TestCase):
                 continue
             for t, target in rows.items():
                 old = _old_may_hand_to(caller, target)
+                if c == GRANTED:     # M3c: students.edit granted, so it hands cases in its organisation
+                    old = (st.in_reviewers(target) and assignment.is_review_target(target)
+                           and target.owning_organisation_id == caller.owning_organisation_id)
                 with self.subTest(caller=c, target=t):
                     self.assertEqual(assignment.may_hand_to(caller, target), old and caller.pk != target.pk)
                 if old and caller.pk == target.pk:
@@ -156,7 +168,7 @@ class EveryGateReadsTheSame(TestCase):
 
 
 class TheKeysDecide(TestCase):
-    """The gate reads the stored key: a list without it is refused; a team row cannot store one."""
+    """The gate reads the stored key: a list without it is refused (a granted team row: `test_m3c_granting`)."""
 
     def setUp(self):
         self.org = make_org()

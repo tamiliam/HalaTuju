@@ -23,6 +23,7 @@ from apps.scholarship.tests.factories import make_admin, make_org
 
 M = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
+M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')
 
 
 def _old_resolve(a):
@@ -106,10 +107,11 @@ class NobodyChanges(TestCase):
         plan = M.plan_row(a.pk, a.role, a.is_active, a.permissions, row_id=row_id)
         if plan is not None:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
-        a = PartnerAdmin.objects.get(pk=a.pk)
-        plan = M0098.plan_row(a.role, a.permissions)          # M3a: the next data step, in order
-        if plan is not None:
-            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+        for step in (M0098, M0099):                            # M3a, M3c: the next data steps, in order
+            a = PartnerAdmin.objects.get(pk=a.pk)
+            plan = step.plan_row(a.role, a.permissions)
+            if plan is not None:
+                PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
         return PartnerAdmin.objects.get(pk=a.pk)
 
     def test_every_shape_keeps_its_tables_its_keys_and_every_door(self):

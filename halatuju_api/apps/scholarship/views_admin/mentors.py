@@ -224,10 +224,13 @@ def mentor_kind_extras(caller, mentor_ids):
     """The Invitations page's Mentor tab (S7b follow-up): `{mentors: [...]}` — the Mentors page's own
     rows (`mentor_rows`, with `manageable`) for the mentors behind the waiting invitations. The ids
     come from invitations already fenced to the caller's organisation; the mentors are fenced again
-    here (a super: any organisation)."""
-    from .. import mentor_invite
+    here (a super: any organisation).
+
+    M3c E5 (owner ruling 2026-11-15): served to whoever opens the Invitations page (`may_read_team`),
+    no longer only the Mentors page's readers; each row's `manageable` still says who may act."""
+    from .. import surface_gates
     from ..models import Mentor
-    if not mentor_invite.may_read(caller):     # review fix 1: the roster's own readers only
+    if not surface_gates.may_read_team(caller):
         return {'mentors': []}
     qs = Mentor.objects.filter(pk__in=list(mentor_ids))
     if not getattr(caller, 'is_super', False):

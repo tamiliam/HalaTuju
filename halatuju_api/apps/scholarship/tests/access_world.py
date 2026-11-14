@@ -301,6 +301,15 @@ def build_world():
     # tier, so without it nobody could ask for a withdrawal and the route would prove nothing.
     w.admin_a.permissions = list(w.admin_a.permissions or []) + ['award_withdraw_request']
     w.admin_a.save(update_fields=['permissions'])
+    # M3c (A9 / A12): a team member GRANTED, through the real editor, every key an organisation admin may
+    # give. Outside JWT_ROLES (the manifest does not list it): `test_access_matrix` holds it to
+    # org admin A's answers route by route, except `GRANTED_DIFFERS`.
+    w.admin_granted_a = make_admin('admin', owning_org=w.org_a)
+    from apps.courses import staff_permissions_v2 as v2
+    from apps.scholarship import staff_permissions_admin as spa
+    spa.change_permissions(w.admin_granted_a.pk, [*w.admin_granted_a.permissions, *v2.ORG_ADMIN_SET],
+                           by=w.org_admin_a, with_v2=True)
+    w.admin_granted_a.refresh_from_db()
     w.qc_a = make_admin('qc', owning_org=w.org_a)
     w.reviewer_a = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
     w.reviewer_a2 = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
@@ -443,4 +452,5 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
+    w.clients['admin_granted_a'] = authed_client(w.admin_granted_a, APIClient(raise_request_exception=False))
     return w

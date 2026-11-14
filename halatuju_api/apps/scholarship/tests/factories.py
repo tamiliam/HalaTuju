@@ -288,6 +288,10 @@ def make_cohort(*, programme=_UNSET, **kw):
 
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
+_M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')
+#: M3c: the list a live organisation admin row stores after 0098 then 0099 (0099 APPENDS
+#: `scholars.approve`, so it sits last, not in catalogue order). `make_admin('org_admin')` makes it.
+ORG_ADMIN_MIGRATED = (*_M0098.PLANNED[0], _M0099.KEY)
 
 
 def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False, uid=None, pre_m2b=False,
@@ -312,7 +316,8 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
 
     ⚠ M3a: an `org_admin` row is made in its PRODUCTION shape after migration 0098 — the organisation
     admin's keys stored (`0098.plan_row`; `review` kept when ``permissions`` names it). ``pre_m3=True``
-    (or ``pre_m2b=True``) makes the row as it stood before that data step.
+    (or ``pre_m2b=True``) makes the row as it stood before that data step. M3c: then 0099 adds
+    `scholars.approve` (`0099.plan_row`), as every live stored list holds it.
     """
     if role not in dict(PartnerAdmin.ROLE_CHOICES):
         raise _StageError(
@@ -346,10 +351,11 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
             PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
             admin.permissions = plan[1]
     if not (pre_m2b or pre_m3) and not super_admin:
-        plan = _M0098.plan_row(admin.role, admin.permissions)
-        if plan is not None:
-            PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
-            admin.permissions = plan[1]
+        for step in (_M0098, _M0099):
+            plan = step.plan_row(admin.role, admin.permissions)
+            if plan is not None:
+                PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
+                admin.permissions = plan[1]
     if gifts:
         from apps.courses import staff_gift
         staff_gift.set_gifts(admin, gifts)

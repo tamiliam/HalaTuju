@@ -748,15 +748,14 @@ class TestTheMentorInvitationIsEditable(TestCase):
 class TestFollowUpReviewFixes(_Base):
     """The adversarial review of the S7b follow-up (2026-11-01): four findings, a test each."""
 
-    # ── 1. finance never reads mentors through Invitations ─────────────────────────────────
-    def test_finance_gets_nothing_of_the_mentor_kind(self):
+    # ── 1. REWRITTEN M3c E5 (owner 2026-11-15: "if an admin could view invitations, it should be able
+    #       view mentor as well"): whoever opens Invitations reads its Mentor kind, never its actions ──
+    def test_finance_reads_the_mentor_kind_but_may_act_on_nothing(self):
         self.invite()
         finance = make_admin('finance', owning_org=self.org)
         body = authed_client(finance).get(INVITE + '?kind=mentor').json()
-        self.assertEqual((body['invitations'], body['waiting']['mentor'], body['totals']['mentor']), ([], 0, 0))
-        self.assertNotIn('mentors', body)
-        self.assertNotIn('Priya', str(body))
-        # The roster's own readers still see it.
+        self.assertEqual((len(body['invitations']), body['waiting']['mentor'], body['totals']['mentor']), (1, 1, 1))
+        self.assertEqual([m['manageable'] for m in body['mentors']], [False])
         self.assertEqual(authed_client(self.viewer).get(INVITE + '?kind=mentor').json()['waiting']['mentor'], 1)
 
     # ── 2. no structural token in an invitation's subject ─────────────────────────────────

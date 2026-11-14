@@ -127,11 +127,20 @@ class TestFenceAndRefusals(TestCase):
             body = authed_client(self.org_admin).get(_url(target)).json()
             self.assertEqual((body['editable'], body['manageable']), (False, False))
 
-    def test_a_super_still_cannot_edit_a_lead_tier_super_or_partner_row(self):
-        for target in (self.org_admin, self.partner):
-            r = _patch(self.super, target, ['review'])
-            self.assertEqual((r.status_code, r.json()['code']), (400, 'not_editable'))
-            self.assertFalse(authed_client(self.super).get(_url(target)).json()['editable'])
+    def test_a_super_still_cannot_edit_a_partner_row(self):
+        r = _patch(self.super, self.partner, ['review'])
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_editable'))
+        self.assertFalse(authed_client(self.super).get(_url(self.partner)).json()['editable'])
+
+    def test_a_super_edits_an_org_admin_card_since_m3c(self):
+        # M3c (D1): the organisation admin's card is editable by a super; manage_team stays by role.
+        self.assertTrue(authed_client(self.super).get(_url(self.org_admin)).json()['editable'])
+        r = _patch(self.super, self.org_admin, ['review'])
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.org_admin.refresh_from_db()
+        # The body names no page key, so the stored ones stay (M2b); they imply the two old views.
+        self.assertEqual(self.org_admin.permissions[:3], ['review', 'see_all', 'scholars'])
+        self.assertEqual(sp.resolve(self.org_admin), ('review', 'see_all', 'scholars', 'manage_team'))
 
     def test_nobody_edits_their_own_row(self):
         r = _patch(self.super, self.super, ['review'])

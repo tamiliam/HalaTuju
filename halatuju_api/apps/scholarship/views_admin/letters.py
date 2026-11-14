@@ -44,7 +44,9 @@ def _data(request):
 class _LettersBase(_ScholarsBase):
     @staticmethod
     def _senior(admin):
-        return bool(getattr(admin, 'is_super', False) or getattr(admin, 'role', '') == 'org_admin')
+        """Senior letters: `scholars.approve` (M3c D5; was the org_admin role)."""
+        from .. import surface_gates
+        return admin is not None and surface_gates.may_send_senior_letters(admin)
 
     def _kinds_for(self, admin, app):
         """The kinds THIS admin may issue on THIS file — the one rule the dialog and the POST share."""

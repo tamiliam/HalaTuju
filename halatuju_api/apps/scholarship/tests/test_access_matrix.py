@@ -267,3 +267,51 @@ def test_access(world, route, method, role):
         assert code in HIDE, f'{role} must be refused (404) {method.upper()} {route}, got {code}'
     else:
         assert code in DENY, f'{role} must be DENIED {method.upper()} {route}, got {code}'
+
+
+# ── M3c: a team member GRANTED the organisation admin's keys ────────────────────────────────────
+#: `access_world` seeds `admin_granted_a`: an `admin` of organisation A given, through the real editor,
+#: every key of `ORG_ADMIN_SET` (A9 / A12). It is held to org admin A's answer on every route: it gets
+#: through exactly where org admin A does, except the routes below — each one a power the ROLE still
+#: holds (`manage_team`, D4; the payment seats, E1, until M4) or a platform-wide power fenced to
+#: organisation admins and supers (the sponsor account and the sponsor terms, the M3c fence).
+GRANTED, GRANTED_LIKE = 'admin_granted_a', 'org_admin_a'
+GRANTED_DIFFERS = {
+    ('api/v1/admin/invite/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/', 'delete'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/revoke/', 'patch'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/resend/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/role/', 'patch'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/permissions/', 'get'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/admins/<int:admin_id>/permissions/', 'patch'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/reviewers/<int:pk>/pause/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/reviewers/<int:pk>/programme/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/team/<str:table>/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/team/<str:table>/candidates/', 'get'): 'manage_team: team changes stay with the organisation admin (D4)',
+    ('api/v1/admin/scholarship/requests/<int:pk>/approve/', 'post'): 'requests.approve: never grantable (O15)',
+    ('api/v1/admin/scholarship/requests/<int:pk>/decline/', 'post'): 'requests.approve: never grantable (O15)',
+    ('api/v1/admin/sponsors/<int:pk>/review/', 'post'): 'sponsor ACCOUNT vetting reaches every organisation (M3c fence)',
+    ('api/v1/admin/scholarship/sponsor-terms/<int:pk>/publish/', 'post'): 'the sponsor terms bind every organisation (M3c fence)',
+}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', [p for p in PAIRS if p[0] not in INTERNAL_ROUTES],
+                         ids=lambda v: v if isinstance(v, str) else None)
+def test_a_granted_team_member_opens_what_an_org_admin_does(world, route, method):
+    def passes(role):
+        cache.clear()
+        with transaction.atomic():
+            code = world.call(role, route, method).status_code
+            transaction.set_rollback(True)
+        return code not in HIDE
+    lead, granted = passes(GRANTED_LIKE), passes(GRANTED)
+    differs = (route, method) in GRANTED_DIFFERS
+    assert granted == (lead != differs), (
+        f'{method.upper()} {route}: org admin A {"passes" if lead else "is refused"}, the granted team member '
+        f'{"passes" if granted else "is refused"}' + (f' (listed: {GRANTED_DIFFERS[(route, method)]})'
+                                                      if differs else ''))
+
+
+def test_the_granted_differences_are_still_served():
+    assert set(GRANTED_DIFFERS) <= set(PAIRS)

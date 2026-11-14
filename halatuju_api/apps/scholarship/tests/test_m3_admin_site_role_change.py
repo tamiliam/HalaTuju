@@ -15,7 +15,7 @@ from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import StaffPermissionChange
-from apps.scholarship.tests.factories import admin_site_role_change, make_admin, make_org
+from apps.scholarship.tests.factories import ORG_ADMIN_MIGRATED, admin_site_role_change, make_admin, make_org
 
 
 def _reads(a):
@@ -33,7 +33,7 @@ class DemotingAMigratedOrgAdmin(TestCase):
         for role in ('reviewer', 'admin', 'finance'):
             with self.subTest(role=role):
                 lead = make_admin('org_admin', owning_org=self.org, permissions=['review'])
-                self.assertEqual(lead.permissions, ['review', *v2.ORG_ADMIN_SET])     # migrated by 0098
+                self.assertEqual(lead.permissions, ['review', *ORG_ADMIN_MIGRATED])  # migrated by 0098, 0099
                 held = [*sp.resolve(lead), *v2.org_admin_v2(lead)]
                 after = admin_site_role_change(lead, role)
                 self.assertEqual((after.role, after.permissions), (role, None))
@@ -86,7 +86,7 @@ class OnlyARoleChangeResets(TestCase):
     def test_a_save_that_keeps_the_role_keeps_the_keys_and_writes_nothing(self):
         lead = make_admin('org_admin', owning_org=make_org(), permissions=['review'])
         after = admin_site_role_change(lead, 'org_admin')
-        self.assertEqual(after.permissions, ['review', *v2.ORG_ADMIN_SET])
+        self.assertEqual(after.permissions, ['review', *ORG_ADMIN_MIGRATED])
         self.assertFalse(StaffPermissionChange.objects.exists())
 
     def test_with_no_audit_writer_the_change_is_refused_whole(self):
@@ -95,4 +95,4 @@ class OnlyARoleChangeResets(TestCase):
             with self.assertRaises(RuntimeError):
                 admin_site_role_change(lead, 'reviewer')
         row = PartnerAdmin.objects.get(pk=lead.pk)
-        self.assertEqual((row.role, row.permissions), ('org_admin', list(v2.ORG_ADMIN_SET)))
+        self.assertEqual((row.role, row.permissions), ('org_admin', list(ORG_ADMIN_MIGRATED)))

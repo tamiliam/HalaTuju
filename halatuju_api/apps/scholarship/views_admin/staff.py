@@ -128,8 +128,8 @@ class AdminStaffPermissionsView(_AdminBase):
         # so the card draws no dead switches; `is_active` lets it say "restore them first".
         # M1a (O10): a page opened through the read fence only (a fellow org admin) is view-only.
         manageable = _staff_target_manageable(admin, target)
-        editable = (manageable and not target.is_super and target.role in sp.TEAM_ROLES
-                    and target.pk != admin.pk and target.is_active)
+        # M3c (D1): one rule with the PATCH (`may_edit`): a super may edit an organisation admin's card.
+        editable = manageable and spa.may_edit(target, admin)
         # Sprint T2: the person page offers Revoke and Delete as the Admins table does — by one rule
         # (`staff_delete_rules.delete_fields`: work, deletable, delete_never, revocable).
         from apps.courses.staff_delete_rules import delete_fields
@@ -145,7 +145,7 @@ class AdminStaffPermissionsView(_AdminBase):
                          'permissions': list(sp.resolve(target)),
                          'custom': sp.is_custom(target), 'keys': list(spa.editable_keys()),
                          # M2b D9: the v2 page keys by group (`v2_keys`) and the stored ones (`v2_held`).
-                         **spa.v2_editor(target),
+                         **spa.v2_editor(target, admin),
                          # Team tables T3 (owner): the Permissions tab shows one section per table the
                          # person sits in (Admin permissions, Reviewer permissions). Read-only.
                          'tables': list(staff_tables.tables(target)),

@@ -36,6 +36,7 @@ from apps.courses.models import PartnerAdmin
 from apps.scholarship.tests.factories import make_admin, make_org
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')   # M3a: same app
+_M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')  # M3c: same app
 
 #: The live shapes (investigation F; T1 matrix `SHAPES`), plus qc / super / partner for completeness.
 SHAPES = {
@@ -66,7 +67,7 @@ _EVERY_PAGE_KEY = (
     'invitations.view', 'invitations.edit', 'team.view', 'sources.view', 'sources.edit',
     'sponsors.view', 'sponsors.edit', 'sponsors.check', 'sponsors.approve', 'billing.view',
     'billing.edit', 'requests.view', 'requests.edit', 'requests.approve', 'settings.edit',
-    'students.view', 'scholars.view', 'students.edit', 'students.approve', 'contracts.view',
+    'students.view', 'scholars.view', 'scholars.approve', 'students.edit', 'students.approve', 'contracts.view',
     'contracts.edit',
     'programmes.edit', *_ENGAGEMENT_ALL, 'payments.view', 'payments.prepare', 'payments.check',
     'payments.approve', 'spending.view', 'spending.edit')
@@ -116,10 +117,11 @@ def _make(spec, org):
         if plan:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
             a.refresh_from_db()
-        plan = _M0098.plan_row(a.role, a.permissions)                                    # M3a: as live
-        if plan:
-            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
-            a.refresh_from_db()
+        for step in (_M0098, _M0099):                                                    # M3a, M3c: as live
+            plan = step.plan_row(a.role, a.permissions)
+            if plan:
+                PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+                a.refresh_from_db()
     return a
 
 
@@ -145,7 +147,7 @@ class Vocabulary(TestCase):
         self.assertEqual(marked, {
             'programmes.edit', 'invitations.edit', 'sponsors.approve', 'billing.view', 'billing.edit',
             'requests.view', 'requests.edit', 'requests.approve', 'settings.edit', 'contracts.view',
-            'contracts.edit', 'students.edit', 'students.approve'})
+            'contracts.edit', 'students.edit', 'students.approve', 'scholars.approve'})   # M3c D5
 
     def test_every_higher_tier_implies_its_view_and_approve_never_implies_edit(self):
         for key, implied in v2.IMPLIES.items():
@@ -572,6 +574,8 @@ class DoorKeysTable(TestCase):
             'billing_read': ('billing.view',), 'requests_read': ('requests.view',),
             'requests_write': ('requests.edit',), 'requests_decide': ('requests.approve',),
             'contracts_read': ('contracts.view',), 'contracts_write': ('contracts.edit',),
+            # M3c (D5): the senior letters on a scholar's file.
+            'senior_letters': ('scholars.approve',),
         })
 
     def test_an_unknown_door_raises(self):

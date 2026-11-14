@@ -33,8 +33,9 @@ class AdminPreset(TestCase):
                 self.assertNotIn(key, v2.NEVER_GRANTABLE)
                 self.assertNotIn(key, v2.ALIAS_V2)
 
-    def test_exactly_the_preset_is_grantable(self):
-        self.assertEqual(v2.GRANTABLE_V2, v2.ADMIN_PRESET_V2)
+    def test_the_preset_is_grantable(self):
+        # M3c (A9): the lead-only keys are grantable too, so the preset is now a part of the set.
+        self.assertTrue(set(v2.ADMIN_PRESET_V2) < set(v2.GRANTABLE_V2))
 
     def test_the_label_presets(self):
         self.assertEqual(v2.V2_PRESETS, {'admin': v2.ADMIN_PRESET_V2, 'finance': v2.ORG_READ_V2})
@@ -55,13 +56,12 @@ class Refusals(TestCase):
             self.assertTrue(v2.CATALOGUE_V2[key][3], key)
 
     def test_every_catalogue_key_has_one_answer(self):
-        for key, (_g, _p, _t, lead_only) in v2.CATALOGUE_V2.items():
+        # M3c (A9): 'lead_only' is no longer an answer; a lead-only key is grantable.
+        for key in v2.CATALOGUE_V2:
             with self.subTest(key=key):
                 reason = v2.refusal_reason(key)
                 if key in v2.NEVER_GRANTABLE:
                     self.assertEqual(reason, 'never_grantable')
-                elif lead_only:
-                    self.assertEqual(reason, 'lead_only')
                 elif key in v2.ALIAS_V2:
                     self.assertEqual(reason, 'alias')
                 else:
@@ -101,7 +101,7 @@ class OrgAdminVocabulary(TestCase):
     def test_the_stored_v2_set_is_every_catalogue_key_less_never_grantable_and_aliases(self):
         expected = tuple(k for k in v2.CATALOGUE_V2 if k not in v2.NEVER_GRANTABLE and k not in v2.ALIAS_V2)
         self.assertEqual(v2.ORG_ADMIN_V2, expected)
-        self.assertEqual(len(v2.ORG_ADMIN_V2), 25)
+        self.assertEqual(len(v2.ORG_ADMIN_V2), 26)      # M3c (D5): + scholars.approve
         self.assertEqual(v2.ORG_ADMIN_SET, (*sp.ORG_ADMIN_KEYS, *v2.ORG_ADMIN_V2))
 
     def test_what_the_role_gives(self):
@@ -113,10 +113,11 @@ class OrgAdminVocabulary(TestCase):
             self.assertIn(key, v2.CATALOGUE_V2)
             self.assertNotIn(key, v2.ORG_ADMIN_V2)
 
-    def test_the_grantable_set_is_still_the_admin_preset(self):
-        self.assertEqual(tuple(v2.GRANTABLE_V2), tuple(v2.ADMIN_PRESET_V2))
+    def test_the_grantable_set_is_the_org_admin_set(self):
+        # M3c (A9): an org admin may give every key they store (A12 asks that they hold it).
+        self.assertEqual(tuple(v2.GRANTABLE_V2), tuple(v2.ORG_ADMIN_V2))
 
-    def test_stored_v2_reads_nothing_for_an_org_admin_until_m3c(self):
+    def test_stored_v2_reads_nothing_for_an_org_admin(self):
         row = PartnerAdmin(role='org_admin', permissions=list(v2.ORG_ADMIN_SET), is_active=True)
         self.assertEqual(v2.stored_v2(row), ())
         self.assertTrue(set(v2.ORG_ADMIN_V2) <= set(v2.effective_v2(row)))

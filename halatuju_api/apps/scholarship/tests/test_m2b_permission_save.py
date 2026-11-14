@@ -56,8 +56,6 @@ class Save(TestCase):
         rev = make_admin('reviewer', owning_org=self.org)
         for asked, code in ((['review', 'billing.edit'], 'never_grantable'),
                             (['review', 'requests.approve'], 'never_grantable'),
-                            (['review', 'settings.edit'], 'lead_tier'),
-                            (['review', 'invitations.edit'], 'lead_tier'),
                             (['review', 'manage_team'], 'lead_tier'),
                             (['review', 'students.view'], 'alias_permission'),
                             (['review', 'payments.approve'], 'alias_permission'),
@@ -68,6 +66,15 @@ class Save(TestCase):
         self.assertEqual(_patch(self.lead, rev, ['billing.edit'], v2=True).json()['keys'], ['billing.edit'])
         self.assertIsNone(self.fresh(rev).permissions)
         self.assertFalse(StaffPermissionChange.objects.exists())
+
+    def test_the_lead_keys_are_grantable_since_m3c(self):
+        # M3c (A9 / A12): the organisation admin gives any key of its own set; only manage_team stays lead-tier.
+        rev = make_admin('reviewer', owning_org=self.org)
+        for key in ('settings.edit', 'invitations.edit'):
+            with self.subTest(key=key):
+                r = _patch(self.lead, rev, ['review', key], v2=True)
+                self.assertEqual(r.status_code, 200, r.content[:300])
+                self.assertIn(key, self.fresh(rev).permissions)
 
     def test_null_only_for_the_old_preset_with_no_v2_key(self):
         a = make_admin('admin', owning_org=self.org, pre_m2b=True)          # a NULL row
@@ -129,7 +136,9 @@ class Get(TestCase):
         self.assertEqual(keys['billing.edit'] | {}, {'key': 'billing.edit', 'page': 'billing', 'level': 'edit',
                                                     'grantable': False, 'reason': 'never_grantable',
                                                     'held': False})
-        self.assertEqual((keys['settings.edit']['reason'], keys['students.view']['reason']), ('lead_only', 'alias'))
+        # M3c (A9): a lead key is grantable; `lead_only` is no reason any more.
+        self.assertEqual((keys['settings.edit']['reason'], keys['students.view']['reason']), (None, 'alias'))
+        self.assertTrue(keys['settings.edit']['grantable'])
         self.assertTrue(keys['students.view']['held'])                 # through `see_all`
         self.assertTrue(keys['team.view']['grantable'] and keys['team.view']['held'])
         self.assertEqual(body['v2_held'], list(v2.ADMIN_PRESET_V2))

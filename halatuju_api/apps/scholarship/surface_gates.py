@@ -96,6 +96,23 @@ def may_vet_sponsors(admin):
     return staff_tables.opens_door(admin, 'sponsor_vet')
 
 
+def may_approve_platform_sponsors(admin):
+    """Vet a sponsor ACCOUNT (`AdminSponsorReviewView`) and publish the sponsor TERMS
+    (`AdminSponsorTermsPublishView`): `sponsors.approve` AND a super or an organisation admin (M3c, the
+    fence decisions.md "M3c" names). Both are platform-level — a `Sponsor` and a `SponsorTermsVersion`
+    belong to no organisation — so they reach every one (D6). A team member GRANTED the key accepts
+    sponsors into their own organisation's gifts (`AdminSponsorMembershipView`, fenced by gift) and
+    nothing platform-wide. Every organisation admin keeps exactly what they had."""
+    from apps.courses import staff_permissions as sp
+    return may_vet_sponsors(admin) and bool(admin.is_super or sp.is_lead_tier(admin))
+
+
+def may_send_senior_letters(admin):
+    """Issue, resend or withdraw a SENIOR letter on a scholar's file (`letters._senior`): `scholars.approve`
+    (M3c D5; migration 0099 gives it to every organisation admin's row). The file is fenced by its view."""
+    return staff_tables.opens_door(admin, 'senior_letters')
+
+
 def requests_live():
     """`REQUESTS_ENABLED`: the Requests space answers 404 to everybody while it is off."""
     return bool(getattr(settings, 'REQUESTS_ENABLED', False))

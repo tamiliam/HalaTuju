@@ -29,7 +29,7 @@ from apps.courses.models import PartnerAdmin
 from apps.scholarship import invitations, staff_tables_admin as sta
 from apps.scholarship.models import Invitation, StaffPermissionChange
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
+    ORG_ADMIN_MIGRATED, TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
 )
 
 TEAM = '/api/v1/admin/team/{}/'
@@ -286,12 +286,12 @@ class Remove(_Base):
 class OrgAdminJoinsReviewers(_Base):
     def test_self_add_works_and_keeps_the_stored_keys_with_review_first(self):
         # M3a A6: the row is the shape 0098 left it in; Add adds 'review' and keeps every stored key.
-        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
+        self.assertEqual(self.fresh(self.lead).permissions, list(ORG_ADMIN_MIGRATED))
         self.assertIn(self.lead.pk, self.candidates(self.lead, 'reviewers'))
         r = self.act(self.lead, 'reviewers', self.lead, 'add')
         self.assertEqual(r.status_code, 200, r.content[:300])
         lead = self.fresh(self.lead)
-        self.assertEqual(lead.permissions, ['review', *v2.ORG_ADMIN_SET])
+        self.assertEqual(lead.permissions, ['review', *ORG_ADMIN_MIGRATED])
         self.assertEqual(lead.role, 'org_admin')
         self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
                                               'manage_team'))
@@ -308,23 +308,31 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertEqual(sp.resolve(lead), sp.preset_for('org_admin'))     # NULL reads as the full set
         self.assertFalse(lead.has_perm('payments_approve'))
 
-    def test_the_generic_editor_still_refuses_the_lead(self):
+    def test_the_generic_editor_opens_the_lead_to_a_super_only(self):
+        # M3c (D1): a super may edit an organisation admin's card; a fellow organisation admin may not.
         caller = make_admin('super', super_admin=True)
         r = authed_client(caller).patch(f'/api/v1/admin/admins/{self.lead.pk}/permissions/',
                                         {'permissions': ['review', 'see_all', 'qc']}, format='json')
-        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_editable'))
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        stored = self.fresh(self.lead).permissions        # a body without page keys keeps them (M2b)
+        self.assertEqual(stored[:4], ['review', 'see_all', 'scholars', 'qc'])   # scholars.approve implies scholars
+        self.assertEqual(set(stored[4:]), set(ORG_ADMIN_MIGRATED) - set(sp.ORG_ADMIN_KEYS))
+        fellow = make_admin('org_admin', owning_org=self.org)
+        r = authed_client(fellow).patch(f'/api/v1/admin/admins/{self.lead.pk}/permissions/',
+                                        {'permissions': ['see_all']}, format='json')
+        self.assertEqual(r.status_code, 404)
 
     def test_a_fellow_org_admin_cannot_add_them(self):
         fellow = make_admin('org_admin', owning_org=self.org)
         self.assertEqual(self.act(fellow, 'reviewers', self.lead, 'add').status_code, 404)
         self.assertNotIn(self.lead.pk, self.candidates(fellow, 'reviewers'))
-        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
+        self.assertEqual(self.fresh(self.lead).permissions, list(ORG_ADMIN_MIGRATED))
 
     def test_an_admin_cannot_add_an_org_admin_manage_team_is_no_door(self):
         adm = make_admin('admin', owning_org=self.org, permissions=['see_all', 'manage_team'])
         self.assertNotIn('manage_team', sp.resolve(adm))
         self.assertEqual(self.act(adm, 'reviewers', self.lead, 'add').status_code, 403)
-        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
+        self.assertEqual(self.fresh(self.lead).permissions, list(ORG_ADMIN_MIGRATED))
 
     def test_another_organisation_is_refused(self):
         theirs = make_admin('org_admin', owning_org=self.other)
@@ -335,7 +343,7 @@ class OrgAdminJoinsReviewers(_Base):
         caller = make_admin('super', super_admin=True)
         self.assertEqual(self.act(caller, 'reviewers', self.lead, 'add').status_code, 200)
         self.assertEqual(self.act(caller, 'reviewers', self.lead, 'remove').status_code, 200)
-        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))   # M3a A6: not NULL
+        self.assertEqual(self.fresh(self.lead).permissions, list(ORG_ADMIN_MIGRATED))   # M3a A6: not NULL
 
     def test_self_remove_takes_only_review_and_is_refused_with_open_cases(self):
         self.act(self.lead, 'reviewers', self.lead, 'add')
@@ -344,7 +352,7 @@ class OrgAdminJoinsReviewers(_Base):
         app.delete()
         self.assertEqual(self.act(self.lead, 'reviewers', self.lead, 'remove').status_code, 200)
         lead = self.fresh(self.lead)
-        self.assertEqual(lead.permissions, list(v2.ORG_ADMIN_SET))          # M3a A6: the keys stay
+        self.assertEqual(lead.permissions, list(ORG_ADMIN_MIGRATED))          # M3a A6: the keys stay
         self.assertEqual(sp.resolve(lead), sp.preset_for('org_admin'))
         self.assertEqual(st.tables(lead), ('admins',))
 

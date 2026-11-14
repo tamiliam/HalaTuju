@@ -29,6 +29,7 @@ from apps.scholarship.services import assignment
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
 
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
+M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')   # M3c: run after 0098
 REAL_RESOLVE = sp.resolve
 REAL_EFFECTIVE = v2.effective_v2
 #: The old keys whose holders the payment, withdrawal and review gates count.
@@ -123,9 +124,12 @@ class NobodyChanges(TestCase):
         return PartnerAdmin.objects.get(pk=a.pk)
 
     def migrate(self, a):
-        plan = M0098.plan_row(a.role, a.permissions)
-        if plan is not None:
-            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+        # M3c (D5): 0099 appends `scholars.approve` (the senior letters, until then by role) after 0098.
+        for step in (M0098, M0099):
+            a = self.load(a)
+            plan = step.plan_row(a.role, a.permissions)
+            if plan is not None:
+                PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
         return self.load(a)
 
     def read(self, a):
@@ -169,7 +173,7 @@ class NobodyChanges(TestCase):
         self.assertEqual(self.org_reads(), org_before)
 
     def test_the_two_live_shapes_become_the_planned_lists(self):
-        full = [*sp.ORG_ADMIN_KEYS, *v2.ORG_ADMIN_V2]
+        full = [*sp.ORG_ADMIN_KEYS, *M0098.V2_KEYS, M0099.KEY]
         self.assertEqual(self.migrate(self.shapes['org_admin, NULL (live shape 1)']).permissions, full)
         self.assertEqual(self.migrate(self.shapes['org_admin, ["review"] (live shape 2)']).permissions,
                          ['review', *full])
@@ -222,14 +226,14 @@ class ReviewersRoundTrip(TestCase):
         with _old_rules():
             old_start = (sp.resolve(start), v2.effective_v2(start), st.tables(start))
         added = self.act('add')
-        self.assertEqual(added.permissions, ['review', *v2.ORG_ADMIN_SET])
+        self.assertEqual(added.permissions, ['review', *start.permissions])    # M3c: 0099's order kept
         old_added = copy.copy(added)
         old_added.permissions = ['review']                              # what the old writer stored
         with _old_rules():
             expected = (sp.resolve(old_added), v2.effective_v2(old_added), st.tables(old_added))
         self.assertEqual((sp.resolve(added), v2.effective_v2(added), st.tables(added)), expected)
         removed = self.act('remove')
-        self.assertEqual(removed.permissions, list(v2.ORG_ADMIN_SET))
+        self.assertEqual(removed.permissions, start.permissions)
         self.assertEqual((sp.resolve(removed), v2.effective_v2(removed), st.tables(removed)), old_start)
 
     def test_add_on_a_null_row_stores_the_full_set_with_review(self):

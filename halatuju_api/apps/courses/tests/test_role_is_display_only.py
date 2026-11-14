@@ -20,6 +20,9 @@ function, and the GATE-LEFT counts are pinned so they only fall as M3b converts 
 
 M3b (2026-11-14): the 37 T5e gates read keys now and their entries are gone; no T5e entry is left. The 14 that
 stay (a TARGET read, or M4 / TD-613 / M3c) carry list K's reason, and `GATE_LEFT_PINNED` holds the whole set.
+
+M3c (2026-11-15): `letters._senior` reads `scholars.approve` (D5) and its GATE-LEFT entry is gone; the
+platform-level sponsor fence is the one PLATFORM lead read (see LEAD_CLASSES).
 """
 import ast
 import os
@@ -155,7 +158,8 @@ ALLOWLIST = {
     'courses/staff_tables.py::_team_member': ('DISPLAY', 'T5a tables',
         'table membership (which table a person is listed on)'),
     'courses/staff_tables.py::invite_permissions': ('DISPLAY', 'M2b presets',
-        'label -> the starting list an invite writes (the admin preset gains ADMIN_PRESET_V2); a write, not a gate'),
+        'label -> the starting list an invite writes (the admin preset gains ADMIN_PRESET_V2; an organisation '
+        'admin the full set, M3c D3); a write, not a gate'),
     'courses/staff_tables.py::in_reviewers': ('DISPLAY', 'T5a tables',
         'table membership'),
     'courses/views_admin.py::PartnerAdminMixin.get_partner_students': ('DISPLAY', 'account kind',
@@ -235,6 +239,8 @@ ALLOWLIST = {
         'who can be made a staff mentor (table rule)'),
     'scholarship/staff_permissions_admin.py::_refuse_target': ('DISPLAY', 'T5a tables',
         'which rows the Permissions editor can edit (team labels)'),
+    'scholarship/staff_permissions_admin.py::may_edit': ('DISPLAY', 'T5a tables',
+        'editable flag: team labels, or an organisation admin\'s card for a super (M3c D1); one rule with the PATCH'),
     'scholarship/staff_permissions_admin.py::_refuse_unlisted': ('DISPLAY', 'T5a tables',
         'keeps a reviewer-tab label listed'),
     'scholarship/staff_permissions_admin.py::change_permissions': ('DISPLAY', 'T5a tables',
@@ -307,9 +313,6 @@ ALLOWLIST = {
     'scholarship/views_admin/invitations.py::AdminInvitationCancelView.post': ('GATE-LEFT', 'target rule',
         'the invitation\'s and the account\'s role NOW (TARGET reads); the caller gate reads '
         'invitations.edit (M3b G2); list K'),
-    'scholarship/views_admin/letters.py::_LettersBase._senior': ('GATE-LEFT', 'M3c',
-        'senior letters by label: its key (`scholars.approve`, D5) is not in the catalogue yet and needs a data '
-        'step; deferred from M3b to M3c'),
     'scholarship/views_admin/lifecycle.py::AdminAssignableAdminsView.get': ('DISPLAY', 'account kind',
         'the LISTED set; who may be picked is the served may_assign_to flag'),
     'scholarship/views_admin/lifecycle.py::AdminScopeListView.get': ('DISPLAY', 'account kind',
@@ -354,8 +357,6 @@ ALLOWLIST = {
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/sponsorships.py::AdminSponsorDetailView.get': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
-    'scholarship/views_admin/staff.py::AdminStaffPermissionsView.get': ('DISPLAY', 'T5a tables',
-        'editable flag: team labels only'),
     'scholarship/views_admin/theme.py::AdminOrganisationThemeView._organisation_for': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/verdict.py::AdminCancelReopenView.post': ('OVERRIDE', 'owner override',
@@ -396,7 +397,10 @@ def test_scanner_catches_a_role_gate(tmp_path):
 #: M3a review: every LOAD of these names counts, so a call (`sp.is_lead_tier(x)`) and a reference passed
 #: on (`filter(sp.is_lead_tier, rows)`, `key=lead_reviews`) are both seen; `lead_reviews` asks the label too.
 LEAD_NAMES = {'is_lead_tier', '_is_lead_tier', 'lead_reviews', 'LEAD_ROLE'}
-LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT'}
+#: PLATFORM (M3c): a key's power over a PLATFORM-level object (one with no organisation, so the organisation
+#: fence cannot narrow it) stays with a super or an organisation admin; a granted team member's key opens it
+#: only inside their organisation. An open call in decisions.md (M3c), never a quiet gate.
+LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT', 'PLATFORM'}
 
 
 class _LeadScan(_Scan):
@@ -446,6 +450,8 @@ LEAD_READS = {
         'the editor reads no stored v2 key for an organisation admin until M3c makes the row editable'),
     'courses/staff_permissions_v2.py::effective_v2': (1, 'O15', 'M3a A2 / A3, TD-620',
         'billing.edit and requests.approve by role (O15); the money keys by role until M4 (TD-620)'),
+    'courses/staff_tables.py::invite_permissions': (1, 'DISPLAY', 'M3c D3',
+        'an organisation admin\'s invitation writes the organisation admin\'s full set (a write, not a gate)'),
     'courses/staff_tables.py::in_reviewers': (1, 'DISPLAY', 'T5a tables',
         'the Reviewers table lists an organisation admin who joined it (lead_reviews)'),
     'courses/staff_tables.py::in_admins': (1, 'TARGET', 'M3a A4',
@@ -458,12 +464,24 @@ LEAD_READS = {
     'scholarship/payments_chain.py::may_read': (1, 'M4', 'T5d / TD-620', 'who opens Payments'),
     'scholarship/payments_chain.py::may_prepare': (1, 'M4', 'T5d / TD-620', 'who creates a run'),
     'scholarship/payments_chain.py::_refusal': (1, 'M4', 'T5d / TD-620', 'why a step is refused'),
-    'scholarship/staff_permissions_admin.py::history_held': (1, 'DISPLAY', 'M3a review',
-        'the audit row of a Django-admin role change reads an organisation admin\'s page keys by role'),
+    'scholarship/staff_permissions_admin.py::stored_page_keys': (1, 'DISPLAY', 'M3c D1',
+        'an organisation admin\'s stored page keys are read strictly (NULL -> the full set), a team member\'s '
+        'through stored_v2'),
+    'scholarship/staff_permissions_admin.py::v2_editor': (1, 'DISPLAY', 'M3c D1',
+        'the editor\'s preset line: the organisation admin\'s full set for an organisation admin\'s card'),
+    'scholarship/staff_permissions_admin.py::may_edit': (1, 'TARGET', 'target rule',
+        'the TARGET is an organisation admin: only a super may edit that card (M3c D1)'),
+    'scholarship/staff_permissions_admin.py::_refuse_target': (1, 'TARGET', 'target rule',
+        'the TARGET is an organisation admin: only a super may save that card (M3c D1)'),
+    'scholarship/staff_permissions_admin.py::plan_change': (1, 'TARGET', 'target rule',
+        'the TARGET is an organisation admin: manage_team stays by role, the money keys by role until M4'),
     'scholarship/staff_person.py::on_reviewer_route': (2, 'DISPLAY', 'T3',
         'which route lists the target (an organisation admin only when they joined Reviewers)'),
     'scholarship/staff_person.py::person': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the person page'),
     'scholarship/staff_list.py::list_rows': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the Staff list'),
+    'scholarship/surface_gates.py::may_approve_platform_sponsors': (1, 'PLATFORM', 'M3c D6 fence',
+        'sponsor accounts and sponsor terms are PLATFORM-level (no organisation): a granted team member\'s '
+        'sponsors.approve may not vet them for every organisation, so the caller is a super or an org admin'),
     'scholarship/staff_tables_admin.py::may_act': (1, 'TARGET', 'target rule',
         'the TARGET is an organisation admin (Q4); the caller arms read manage_team since M3b G1'),
     'scholarship/staff_tables_admin.py::_refuse_basic': (1, 'TARGET', 'target rule',
@@ -512,7 +530,6 @@ GATE_LEFT_PINNED = {
     'scholarship/views_admin/invitations.py::AdminInvitationCancelView.post': 'target rule',
     'scholarship/services/assignment.py::is_review_target': 'TD-613',
     'scholarship/views_admin/applications.py::AdminApplicationDetailView.patch': 'M4',
-    'scholarship/views_admin/letters.py::_LettersBase._senior': 'M3c',
     'scholarship/credit_steps.py::step_refusal': 'T5d',
     'scholarship/payments_chain.py::fallback_approvers': 'T5d',
     'scholarship/sponsorship/credits.py::cancel_admin_credit': 'T5d',

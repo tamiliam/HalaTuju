@@ -103,7 +103,9 @@ class AdminSponsorListView(_AdminBase):
         )
         for s in rows:
             s.students_total = counts.get(s.id, 0)
-        return Response({'sponsors': [_sponsor_dict(s) for s in rows]})
+        # M3c: whether this caller may vet an account, so the screen draws no button the POST refuses.
+        return Response({'sponsors': [_sponsor_dict(s) for s in rows],
+                         'may_vet': surface_gates.may_approve_platform_sponsors(admin)})
 
 
 class AdminSponsorPendingCountView(_AdminBase):
@@ -258,7 +260,9 @@ class AdminSponsorReviewView(_AdminBase):
         if not admin:
             return self._deny()
         from .. import surface_gates
-        if not surface_gates.may_vet_sponsors(admin):   # sponsors.approve (M3b G6)
+        # sponsors.approve (M3b G6), and an account reaches every organisation: org admins and supers
+        # only (M3c fence; a granted team member is refused).
+        if not surface_gates.may_approve_platform_sponsors(admin):
             return self._deny_role()
         sponsor = Sponsor.objects.filter(pk=pk).first()
         if sponsor is None:

@@ -104,7 +104,7 @@ class TestThePersonBlock(TestCase):
         p = self._get(self.super, self._admin_url(self.lead)).json()
         self.assertTrue(p['person']['lead'])
         self.assertEqual(p['person']['tables'], ['admins'])
-        self.assertFalse(p['editable'])             # M2: drawn as locked switches
+        self.assertTrue(p['editable'])              # M3c (D1): a super edits an organisation admin's card
         # M1a (owner O10): a fellow org admin of the same organisation opens the page, view-only.
         fellow = self._get(self.lead, self._admin_url(make_admin('org_admin', owning_org=self.org))).json()
         self.assertEqual((fellow['editable'], fellow['manageable']), (False, False))

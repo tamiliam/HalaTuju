@@ -32,7 +32,9 @@ VIEW, EDIT, PREPARE, CHECK, APPROVE = 'view', 'edit', 'prepare', 'check', 'appro
 TIERS = (VIEW, EDIT, PREPARE, CHECK, APPROVE)
 
 #: Owner ruling 3: the organisation admin's lead-only powers become keys, but NO PRESET GRANTS THEM —
-#: only the org admin ticks them (T5g). Marked per row below.
+#: only the org admin ticks them (T5g). Marked per row below. Since M3c (A9) the flag is data only: an
+#: org admin may give a lead-only key to a team member (`staff_permissions_admin.asked_set`), but only
+#: one they hold themselves (A12, `not_held`).
 LEAD_ONLY = True
 
 #: key -> (group, page, tier, lead_only). In display order: group, then page, then tier.
@@ -58,6 +60,9 @@ CATALOGUE_V2 = {
     'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications (S1: not Scholars)
     # Sprint S1 (owner 2026-11-09): the Scholars page and every scholar's file — `scholars` (`ALIASES`).
     'scholars.view':         (PROGRAMME, 'scholars', VIEW, False),
+    # M3c (D5, 2026-11-15): the senior letters on a scholar's file (`letters._senior`); migration 0099
+    # gives it to every organisation admin's row.
+    'scholars.approve':      (PROGRAMME, 'scholars', APPROVE, LEAD_ONLY),
     'students.edit':         (PROGRAMME, 'students', EDIT, LEAD_ONLY),  # assign (never self), nudge
     'students.approve':      (PROGRAMME, 'students', APPROVE, LEAD_ONLY),
     'contracts.view':        (PROGRAMME, 'contracts', VIEW, LEAD_ONLY),
@@ -165,15 +170,22 @@ NEVER_GRANTABLE = ('billing.edit', 'requests.approve')
 #: alias would do nothing today and silently start to count when M4 converts those gates.
 ALIAS_V2 = tuple(k for k in CATALOGUE_V2 if any(k in keys for keys in ALIASES.values()))
 
-#: The v2 page keys the editor may STORE (M2b): neither lead-only (M3) nor an alias. Today this is
-#: exactly `ADMIN_PRESET_V2` (`test_m2b_stored_v2` pins it).
-GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if not CATALOGUE_V2[k][3] and k not in ALIAS_V2)
+#: The v2 page keys the editor may STORE: neither never-grantable nor an alias. M2b also left out the
+#: lead-only keys; M3c (A9) lets an org admin give those too, so this is now exactly `ORG_ADMIN_V2`
+#: (`test_m2b_stored_v2` pins it).
+GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k not in ALIAS_V2)
+
+#: M3c: an alias VIEW and the one old key that means it (`ALIASES`: `students.view` <- `see_all`,
+#: `scholars.view` <- `scholars`). A ticked `students.edit` / `scholars.approve` implies its page's view
+#: (`IMPLIES`); the editor stores that view through its old key, never its v2 spelling.
+VIEW_ALIAS_OLD = {keys[0]: old for old, keys in ALIASES.items()
+                  if len(keys) == 1 and keys[0] in CATALOGUE_V2 and CATALOGUE_V2[keys[0]][2] == VIEW}
 
 # ── Sprint M3a (2026-11-14, decisions.md "M3a"): the organisation admin's powers as STORED keys. ──────
 #: A1: the v2 page keys an organisation admin's row stores (migration 0098): every catalogue key that is
 #: neither NEVER_GRANTABLE (held by role, below) nor an alias (held through the old keys they store, or
-#: by role until M4, below). In `CATALOGUE_V2` order. The 11 lead-only keys are among them, and stay
-#: unassignable to a team member until M3c (A5).
+#: by role until M4, below). In `CATALOGUE_V2` order. The lead-only keys are among them; since M3c an
+#: org admin may give each one they hold to a team member (A9, A12).
 ORG_ADMIN_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k not in ALIAS_V2)
 
 #: The whole list an organisation admin's row stores (`review` comes on top only through Team ->
@@ -196,12 +208,11 @@ LEAD_MONEY_UNTIL_M4 = ('payments.view', 'payments.prepare', 'payments.check', 'p
 
 
 def refusal_reason(key):
-    """Why the editor may not store the v2 page key `key`: 'never_grantable', 'lead_only', 'alias',
-    or None when it may (`GRANTABLE_V2`)."""
+    """Why the editor may not store the v2 page key `key`: 'never_grantable', 'alias', or None when it
+    may (`GRANTABLE_V2`). M3c (A9): 'lead_only' is gone; whether the EDITOR holds the key is asked per
+    save (`staff_permissions_admin`, A12 `not_held`)."""
     if key in NEVER_GRANTABLE:
         return 'never_grantable'
-    if CATALOGUE_V2[key][3]:
-        return 'lead_only'
     if key in ALIAS_V2:
         return 'alias'
     return None
@@ -215,8 +226,8 @@ def stored_v2(admin):
     (the callers do).
 
     M3a: an organisation admin's row answers NONE here: their stored v2 keys are read by
-    `org_admin_v2`, and the editor's ticks for them (`v2_held`) stay empty, as before, until M3c makes
-    their card editable."""
+    `org_admin_v2` (strictly, NULL = the full set). Since M3c the editor reads them through
+    `staff_permissions_admin.stored_page_keys`, which asks that one."""
     stored = getattr(admin, 'permissions', None) if admin is not None else None
     if not isinstance(stored, (list, tuple)) or sp.is_lead_tier(admin):
         return ()
