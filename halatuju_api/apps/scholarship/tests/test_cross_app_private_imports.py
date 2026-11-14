@@ -174,24 +174,7 @@ class TestTheScannerItself(SimpleTestCase):
 # they build fixtures from the other app's factories and are counted by the budget, not here.
 
 # (file relative to apps/, imported module, name)
-DOOR_ALLOWED = frozenset({
-    # courses/views_admin.py: owned by the team-membership (M1) sessions; joins the facade when
-    # they land (TD-414). Nine distinct names.
-    ('courses/views_admin.py', 'apps.scholarship', 'emails'),
-    ('courses/views_admin.py', 'apps.scholarship', 'invitations'),
-    ('courses/views_admin.py', 'apps.scholarship', 'mentoring'),
-    ('courses/views_admin.py', 'apps.scholarship', 'staff_footprint'),
-    ('courses/views_admin.py', 'apps.scholarship', 'staff_lifecycle'),
-    ('courses/views_admin.py', 'apps.scholarship', 'staff_mentor'),
-    ('courses/views_admin.py', 'apps.scholarship', 'staff_work'),
-    ('courses/views_admin.py', 'apps.scholarship.models', 'Invitation'),
-    ('courses/views_admin.py', 'apps.scholarship.reviewer_onboarding',
-     'reviewer_profile_complete'),
-    # reports/report_engine.py: in the Gemini lane's hands; routes through the facades after it.
-    ('reports/report_engine.py', 'apps.courses.exam_questions', 'THIRD_ROUTE'),
-    ('reports/report_engine.py', 'apps.scholarship', 'usage'),
-    ('reports/report_engine.py', 'apps.scholarship.gemini', 'cascade_failure'),
-})
+DOOR_ALLOWED = frozenset()   # F2 package 2 emptied it: views_admin and report_engine use the doors
 # app -> the apps it must reach only through their `public` module
 DOOR_RULES = {'courses': ('scholarship',), 'reports': ('courses', 'scholarship')}
 
@@ -270,8 +253,8 @@ class TestBackEdgesGoThroughTheFacade(SimpleTestCase):
                          f'scanner broke): {missing}')
 
     def test_the_skip_list_only_shrinks(self):
-        # 9 (courses/views_admin.py) + 3 (reports/report_engine.py). Lower when a line goes.
-        self.assertLessEqual(len(DOOR_ALLOWED), 12)
+        # Emptied by F2 package 2; it must stay empty.
+        self.assertEqual(len(DOOR_ALLOWED), 0)
 
     def test_the_door_scanner_catches_each_spelling(self):
         cases = {
