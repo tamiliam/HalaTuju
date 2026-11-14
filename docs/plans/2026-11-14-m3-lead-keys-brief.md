@@ -1,4 +1,4 @@
-# Sprint M3 brief: lead powers become keys; the org admin's powers are explicit (DRAFT)
+# Sprint M3 brief: lead powers become keys; the org admin's powers are explicit 
 
 Parent plans: `docs/plans/2026-11-01-team-tables-roadmap.md` (T5 rulings 1-8; T5e "lead powers to keys"),
 `docs/plans/2026-11-11-m2-team-pages-brief.md`, `docs/plans/2026-11-12-m2b-admin-permissions-brief.md` (its M3 hand-off
@@ -7,8 +7,7 @@ list, D3, D12), `docs/plans/2026-11-13-m2c-members-tab-brief.md` (C5), `docs/pla
 rules").
 
 Runs after M2d is live. Build in worktree `.worktrees/m3` (branch `m3`, cut from main 37192bfa7, which holds M2d).
-Rebase on main before each part ships. **Do not push.** This brief is a DRAFT: the owner's decisions (D1-D7 below) come
-first; nothing is built until they are answered.
+Rebase on main before each part ships. **Do not push.** The owner answered D1-D7 on 2026-11-14: every one as recommended (see "Owner rulings" below).
 
 ## The one principle
 
@@ -356,7 +355,19 @@ The M2c brief's out-of-scope line names "the 2 org_admin data rows". Q1 confirms
 
 ## Decisions
 
-### For the owner. Each changes what someone can do or see, now or later
+### Owner rulings (2026-11-14, direct, in the architect's session): D1-D7 all as RECOMMENDED
+
+D1 super only, never their own. D2 the org admin and a super, an org admin only powers they hold. D3 a new org admin
+starts with everything. D4 team changes stay with the org admin (`manage_team`). D5 as G5-G9, with a new "Scholars
+approve" box for the suspension and termination letters. D6 "Sponsors: approve" is assignable, help text says vetting is
+platform-wide. D7 the "Sponsors to vet" card stays as it is.
+
+**Production counts (2026-11-14, read-only, counts only):** org_admin rows 2, both active, unarchived, signed in, one
+organisation; stored lists: 1 NULL, 1 `["review"]`. No org_admin row lacks an organisation. 0 non-lead rows already store
+a key M3 unlocks or `manage_team`. 1 active super. Org admins hold 0 open cases, 1 case in any status. Last courses
+migration `0097_store_admin_v2_keys`. Active team rows: admin 2, finance 1, reviewer 27 (qc 0, member 0).
+
+### For the owner. Each changes what someone can do or see, now or later (ANSWERED, above)
 
 | | Question, in plain words | Recommended | The alternative |
 |---|---|---|---|
