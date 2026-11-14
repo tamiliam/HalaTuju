@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Announcements, Surveys and Development draw at the wide width, like Scholars (2026-11-14)
+
+Owner's M2d phone check, item 4 (E8). The three pages lead with a many-column table but were not in `WIDE_ROUTES`, so `AppShell` gave them the reading width (896px) and they looked narrow beside Scholars (1280px). `lib/pageWidth.ts` now lists `/admin/programme/announcements`, `/surveys` and `/development` as wide; their new-item forms keep their own `max-w-3xl` card. `pageWidth.test.ts` pins all three beside Scholars. Web only, no migration. M2d follow-ups: 2nd deploy.
+
 ### feat: sprint M3b - the organisation admin's page powers read keys; nobody gives a case to themselves (2026-11-14)
 
 Saved to main; waits for a release window. No migration. Fresh review and Opus adversarial review: no findings that block. It needs M3a's 0098 to have run first (they publish together). Brief: `docs/plans/2026-11-14-m3-lead-keys-brief.md`. Release-note draft: `docs/releases/m3b-lead-gates-release-note-draft.md`.

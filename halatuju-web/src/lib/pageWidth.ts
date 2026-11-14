@@ -50,6 +50,12 @@ export const WIDE_ROUTES: readonly string[] = [
   // side, a full-width money chart and three cards under it. At the reading width the donut and
   // its eleven-line legend would sit on top of each other.
   '/admin/programme/overview',
+  // ⚠ ADDED 2026-11-14 (owner's M2d phone check, E8). Announcements, Surveys and Development each
+  // lead with a many-column table, like Scholars. They were never listed, so they fell to the
+  // reading width and looked narrow beside Scholars. Their forms keep their own max-w-3xl card.
+  '/admin/programme/announcements',
+  '/admin/programme/surveys',
+  '/admin/programme/development',
   '/admin/sources',
   '/admin/sponsors',
   '/admin/students',

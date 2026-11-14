@@ -76,6 +76,12 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     expect(pageWidthFor('/admin/programme/overview')).toBe('wide')
     // Common profile S5: the cards and a My activity column side by side.
     expect(pageWidthFor('/admin/profile')).toBe('wide')
+    // ⚠ Owner's M2d phone check (2026-11-14, E8): these three tables must match Scholars. They were
+    // unlisted, so they drew at the reading width and looked narrow.
+    expect(pageWidthFor('/admin/scholars')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/announcements')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/surveys')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/development')).toBe('wide')
   })
 
   test('a detail page that runs DOWN the page reads — the longer match wins', () => {
