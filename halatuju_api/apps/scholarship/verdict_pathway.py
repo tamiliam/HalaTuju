@@ -23,7 +23,8 @@ from .verdict_engine import _fact, _item
 
 
 #: TD-617 (owner 2026-11-14, option 1): the American Degree Program under MARA is fully funded, and
-#: HalaTuju does not support study abroad (MARA's "Program Persediaan ... Luar Negara"). The ADP
+#: HalaTuju does not support study abroad ("Program Persediaan ... Luar Negara", run by MARA, JPA or
+#: another sponsor: the name alone decides, never the sponsor). The ADP
 #: spelling is `results_route._NOT_ASKED_NAME`'s: never "American Degree Transfer Program", never a
 #: plain "Degree Programme".
 _FUNDED_OR_ABROAD = re.compile(r'american\s+degree\s+program(?:me)?s?\b|persediaan\b.*\bluar\s+negara\b',

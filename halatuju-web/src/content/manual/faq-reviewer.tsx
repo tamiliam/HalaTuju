@@ -67,11 +67,12 @@ export const REVIEWER_FAQ: QA[] = [
         programme (&ldquo;Persediaan&rdquo;) and the &ldquo;American Degree Programme&rdquo; (spelt either way). A saved
         catalogue course decides by the course, not by its name. The award and the
         funding estimate treat every course as they did before. One change by the owner&rsquo;s ruling of
-        14 November 2026: a <strong>PISMP</strong> student (the IPG teacher-training degree &mdash; a PISMP or
-        &ldquo;Perguruan&rdquo; programme, or an Institut Pendidikan Guru) who holds <strong>only SPM</strong> is
-        never owed higher results, before or after she submits, so her Academic card is not held back for them.
-        A PISMP student who holds STPM, Matriculation or STAM results is checked on them as before. An
-        &ldquo;Ijazah Sarjana Muda Pendidikan&rdquo; at a university (such as UPSI) is not PISMP.</>,
+        14 November 2026: a <strong>PISMP</strong> student (the IPG teacher-training degree &mdash; a PISMP,
+        &ldquo;Perguruan&rdquo; or &ldquo;Bachelor of Teaching&rdquo; programme, or an Institut Pendidikan Guru,
+        IPG, IPGM or IPGK) who holds <strong>only SPM</strong> is never owed higher results, before or after she
+        submits, so her Academic card is not held back for them. A PISMP student who has entered her STPM or
+        Matriculation results is checked on them as before. An &ldquo;Ijazah Sarjana Muda Pendidikan&rdquo; at a
+        university (such as UPSI) is not PISMP, even if a PISMP pathway is saved with it.</>,
     },
     {
       q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,
@@ -206,8 +207,8 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>The Pathway card is red with <strong>&ldquo;Fully funded or overseas programme&rdquo;</strong>. Why?</>,
       a: <>Her chosen programme is the <strong>American Degree Program</strong> under MARA, which is fully funded,
-        or a MARA preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;),
-        which this gift does not support (owner&rsquo;s ruling, 14 November 2026). It works like income above the
+        or a preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;, run by
+        MARA, JPA or another sponsor). This gift supports neither (owner&rsquo;s ruling, 14 November 2026). It works like income above the
         B40 line: the case is flagged and the usual recommendation is to decline, but it is not declined for you
         and the amount is unchanged. Confirm at interview &mdash; if she is in fact on a different programme,
         say so in your conclusion. The &ldquo;American Degree Transfer Program&rdquo; and an ordinary

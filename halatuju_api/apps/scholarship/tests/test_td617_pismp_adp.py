@@ -1,12 +1,12 @@
-"""TD-617 owner ruling (2026-11-14, option 1): PISMP, the American Degree Program and MARA overseas
+"""TD-617 owner ruling (2026-11-14, option 1): PISMP, the American Degree Program and overseas
 preparation.
 
 A. PISMP stays a degree for the award and the funding estimate (RM2,000 either way). An SPM-route
    PISMP student (SPM only: the 1-year preparatory + 4-year degree is ONE programme) is never owed
    higher results, before or after submit. A PISMP student holding STPM / matric results keeps the
    checks. "Ijazah Sarjana Muda Pendidikan" at a university (UPSI) is an ordinary degree.
-B. The American Degree Program (fully funded under MARA) and MARA's "Persediaan ... Luar Negara"
-   (overseas study, not supported) get a RED pathway fact, `pathway_funded_or_abroad`, an award
+B. The American Degree Program (fully funded under MARA) and "Persediaan ... Luar Negara" (overseas
+   study, not supported, whoever runs it: MARA, JPA or another sponsor) get a RED pathway fact, `pathway_funded_or_abroad`, an award
    CONFIDENT_DISQUALIFIER. The amount is untouched; the reviewer decides.
 
 Money: `MoneyPinnedToMain` compares the award amount and `funding_estimate.classify_pathway` for
@@ -137,6 +137,110 @@ class UniversityPendidikanUnchanged(TestCase):
                 fact = _academic(app)
                 self.assertEqual(fact['status'], UNSURE)
                 self.assertIn('higher_results_not_declared', {i['code'] for i in fact['unresolved']})
+
+
+class IsPismpMatches(TestCase):
+    """Review 2026-11-14 (finding 4): IPGM / IPGK and "Bachelor of Teaching" are PISMP; "Pendidikan" or
+    "Pengurusan" alone is not; and (finding 1) a 'pismp' code at a university is not."""
+    YES = (('', 'Ijazah Sarjana Muda', 'IPGM Kampus Ipoh'), ('', 'Ijazah Sarjana Muda', 'IPGK Tuanku Bainun'),
+           ('', 'Bachelor of Teaching (Hons)', 'X'), ('pismp', 'Ijazah Sarjana Muda Pendidikan', 'X'),
+           ('pismp', 'Ijazah Sarjana Muda Pendidikan', ''),
+           ('university', 'Program Ijazah Sarjana Muda Perguruan', 'Universiti Pendidikan Sultan Idris'),
+           ('pismp', 'Ijazah Sarjana Muda Pendidikan', 'Institut Pendidikan Guru Kampus Ipoh'))
+    NO = (('', 'Ijazah Sarjana Muda Pendidikan', 'X'), ('', 'Ijazah Sarjana Muda Pengurusan', 'X'),
+          ('', 'Bachelor of Education (TESL)', 'X'), ('', 'Diploma', 'IPGMX Kampus'),
+          ('pismp', 'Ijazah Sarjana Muda Pendidikan', 'Universiti Pendidikan Sultan Idris'),
+          ('pismp', 'Ijazah Sarjana Muda Pendidikan', 'UNIVERSITI MALAYA'))
+
+    def test_matches(self):
+        from types import SimpleNamespace
+        for code, name, inst in self.YES:
+            with self.subTest(name=name, inst=inst):
+                self.assertTrue(results_route.is_pismp(SimpleNamespace(**plan(code, name, inst))))
+        for code, name, inst in self.NO:
+            with self.subTest(name=name, inst=inst):
+                self.assertFalse(results_route.is_pismp(SimpleNamespace(**plan(code, name, inst))))
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class PismpCodeAtUniversityKeepsMain(TestCase):
+    """Review finding 1: a 'pismp' code over "Ijazah Sarjana Muda Pendidikan" at UPSI, SPM only, is a
+    university degree - origin/main's rules: not asked before submit (F1's withheld code), owed,
+    asked and capped after."""
+
+    def test_spm_only_upsi_with_pismp_code_is_owed_after_submit(self):
+        upsi = plan('pismp', 'Ijazah Sarjana Muda Pendidikan', 'Universiti Pendidikan Sultan Idris')
+        self.assertEqual(results_route.higher_need(_app(SPM_HELD, upsi)), '')     # as main
+        app = _app(SPM_HELD, upsi, SUBMITTED)
+        _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
+        app = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertFalse(results_route.is_pismp(app))
+        self.assertTrue(higher_owed.undeclared(app))
+        self.assertEqual(higher_owed.ask_codes(app), {higher_owed.DECLARE_ASK_CODE})
+        fact = _academic(app)
+        self.assertEqual(fact['status'], UNSURE)
+        self.assertIn('higher_results_not_declared', {i['code'] for i in fact['unresolved']})
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class PismpBeforeAndAfterSubmitAgree(TestCase):
+    """Review finding 2: SPM held with STPM grades entered (a legacy row: she DECLARED STPM), PISMP at
+    an IPG under a degree code. After submit `declared_kind` is 'stpm' and she is owed; before submit
+    she must be asked too (it was '' - "not asked, then capped")."""
+    LEGACY = {**SPM_HELD, 'stpm_grades': STPM_HELD['stpm_grades'], 'stpm_cgpa': 3.67}
+    PISMP = ('degree', 'Program Ijazah Sarjana Muda Perguruan', 'IPG Kampus Ipoh')
+
+    def test_declared_stpm_is_asked_before_submit_and_owed_after(self):
+        self.assertEqual(results_route.higher_need(_app(self.LEGACY, plan(*self.PISMP))), 'required_with_slip')
+        app = _app(self.LEGACY, plan(*self.PISMP), SUBMITTED)
+        self.assertEqual(higher_owed.declared_kind(app), 'stpm')
+        self.assertTrue(higher_owed._needs_higher(app))
+
+    def test_both_sides_agree_for_every_pismp_profile(self):
+        for profile in (SPM_HELD, self.LEGACY, STPM_HELD, MATRIC_HELD):
+            with self.subTest(profile=profile['results_exam_type'], legacy=profile is self.LEGACY):
+                before = results_route.higher_need(_app(profile, plan(*self.PISMP)))
+                after = higher_owed._needs_higher(_app(profile, plan(*self.PISMP), SUBMITTED))
+                self.assertEqual(bool(before), after)
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class PismpFrozenRequiredDoesNotAnchor(TestCase):
+    """Review finding 3: a submitted SPM-only PISMP application whose snapshot froze higher_results
+    'required' (before the ruling) reads her SPM card: no red Academic `higher_results_missing`, so no
+    student ticket and no QC red floor. The snapshot is NOT rewritten."""
+
+    def _frozen(self, profile):
+        app = _app(profile, plan('degree', 'Program Ijazah Sarjana Muda Perguruan', 'IPG Kampus Ipoh'), SUBMITTED)
+        _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
+        snap = app.requirements_snapshot or {}
+        app.requirements_snapshot = {**snap, 'documents': {**(snap.get('documents') or {}),
+                                                           'results_slip': 'required', 'higher_results': 'required'}}
+        app.save(update_fields=['requirements_snapshot'])
+        return ScholarshipApplication.objects.get(pk=app.pk)
+
+    def test_spm_only_pismp_reads_the_spm_card(self):
+        from apps.scholarship import higher_results, requirements
+        from apps.scholarship.resolution import _ticketable_unresolved
+        from apps.scholarship.verdict_ladder import _academic_red_chips
+        app = self._frozen(SPM_HELD)
+        self.assertEqual(requirements.resolve(app, 'document')['higher_results'], 'required')   # untouched
+        self.assertFalse(higher_results.anchors_on_higher(app))
+        fact = _academic(app)
+        self.assertNotEqual(fact['status'], 'gap')
+        codes = {i['code'] for i in fact['unresolved']}
+        self.assertFalse(codes & {'higher_results_missing', 'higher_results_not_declared',
+                                  'higher_results_not_on_file'})
+        self.assertNotIn('higher_results_missing', _ticketable_unresolved(app))     # no student ticket
+        self.assertEqual(higher_owed.final_owed_kind(app), '')
+        self.assertEqual(higher_owed.ask_codes(app), set())
+        self.assertEqual(_academic_red_chips(app), 0)
+
+    def test_declared_stpm_pismp_still_anchors(self):
+        from apps.scholarship import higher_results
+        app = self._frozen(STPM_HELD)
+        self.assertTrue(higher_results.anchors_on_higher(app))
+        self.assertIn('higher_results_missing', {i['code'] for i in _academic(app)['unresolved']})
 
 
 class FundedOrAbroadIsRed(TestCase):

@@ -219,9 +219,9 @@ export const roleReviewer: ManualChapter = {
         separate from your recommendation), set a <strong>recommended assistance amount</strong>, write a short
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
-        (for example, income is verified but sits above the B40 line, or the Pathway card is red because the
-        programme is the fully funded American Degree Program under MARA or a MARA preparation programme for
-        study abroad).
+        (for example, income is verified but sits above the B40 line, or the Pathway card is red with
+        &ldquo;Fully funded or overseas programme&rdquo;: the American Degree Program under MARA, or a preparation
+        programme for study abroad run by MARA, JPA or another sponsor).
           <span className="mt-2 block rounded-lg border border-caution-200 bg-caution-50 p-3"><strong>Save is a
           one-way step from your side.</strong> It records the decision and sends the case on for QC; only a
           super-admin can reopen it afterwards. Check the facts before you save.</span></>

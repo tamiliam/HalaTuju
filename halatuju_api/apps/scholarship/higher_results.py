@@ -398,8 +398,16 @@ def anchors_on_higher(application) -> bool:
     """Is the Academic fact about the higher results? When they are the REQUIRED upload (live D12
     rule, or frozen at submit) — or, for an application submitted before S3a that OWES them (#388,
     `higher_owed`), once a higher-results upload is on file. Every other application submitted
-    before S3a, and every SPM route, keeps the SPM card unchanged."""
-    from . import higher_owed, requirements
+    before S3a, and every SPM route, keeps the SPM card unchanged.
+
+    TD-617 (owner 2026-11-14): a SUBMITTED PISMP student (`results_route.is_pismp`) who declared no
+    higher results (`higher_owed.declared_kind`) never anchors here, even under a snapshot frozen
+    with them 'required' before the ruling: her SPM card is the Academic card. The snapshot itself
+    (and every gate that reads it) is untouched."""
+    from . import higher_owed, requirements, results_route
+    if (getattr(application, 'profile_completed_at', None) is not None
+            and results_route.is_pismp(application) and not higher_owed.declared_kind(application)):
+        return False
     return (requirements.resolve(application, 'document').get('higher_results') == 'required'
             or higher_owed.late_anchor(application))
 

@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### fix: TD-617 owner ruling - an SPM-only PISMP student is never owed higher results; ADP and MARA overseas preparation turn Pathway red (2026-11-14)
+### fix: TD-617 review - PISMP test narrowed and widened, before/after submit agree, frozen 'required' snapshots (2026-11-14)
+- `results_route.is_pismp`: the code 'pismp' no longer counts when the institution is a university (`\buniversit`), so a 'pismp' code on a UPSI "Ijazah Sarjana Muda Pendidikan" keeps origin/main's rules (owed, asked and capped after submit). A PISMP / Perguruan name or an IPG still counts. Now also matches "IPGM" / "IPGK" (`\bipg[mk]?\b`) and "Bachelor of Teaching"; "Pendidikan" and "Pengurusan" alone still do not.
+- `results_route.higher_need`: the before-submit PISMP exemption tests `higher_owed.declared_kind` (the after-submit rule's own test), so SPM held with STPM grades entered is asked before submit, not "not asked, then capped".
+- `higher_results.anchors_on_higher`: a submitted PISMP application with no declared higher results does not anchor on higher results even when its snapshot froze 'required'. Its Academic card is the SPM card, so it no longer shows red `higher_results_missing`, raises no student ticket and sets no QC red floor. The snapshot and the gates that read it (`consent_blockers`, `completeness`) are untouched.
+- Copy: "Persediaan ... Luar Negara" is described as a preparation programme for study abroad run by MARA, JPA or another sponsor (en/ms/ta, FAQ, guide); the FAQ names STPM or Matriculation, not STAM.
+- `VERDICT_ENGINE_VERSION` 2026-11-14.2. Money pin (1,716 inputs) still equal to origin/main. Tests: `test_td617_pismp_adp.py` (IsPismpMatches, PismpCodeAtUniversityKeepsMain, PismpBeforeAndAfterSubmitAgree, PismpFrozenRequiredDoesNotAnchor).
+
+### fix: TD-617 owner ruling - an SPM-only PISMP student is never owed higher results; ADP and overseas preparation turn Pathway red (2026-11-14)
 - Branch td617 (local, not pushed, not deployed). Owner ruling 2026-11-14, option 1. No migration.
-- PISMP (`results_route.is_pismp`: the code 'pismp', a PISMP or Perguruan name, or an IPG) with SPM only is never owed higher results: `higher_owed._needs_higher` (after submit) and `results_route.higher_need` (before submit). A PISMP student with STPM, Matriculation or STAM results keeps today's checks; a UPSI "Ijazah Sarjana Muda Pendidikan" is unchanged.
-- `verdict_pathway.funded_or_abroad`: an American Degree Program or MARA "Persediaan ... Luar Negara" name turns Pathway red with `pathway_funded_or_abroad` (en/ms/ta copy), added to `award.CONFIDENT_DISQUALIFIERS`. The award amount is unchanged and nothing is declined automatically.
+- PISMP (`results_route.is_pismp`: the code 'pismp', a PISMP or Perguruan name, or an IPG) with SPM only is never owed higher results: `higher_owed._needs_higher` (after submit) and `results_route.higher_need` (before submit). A PISMP student who has entered STPM or Matriculation results keeps today's checks; a UPSI "Ijazah Sarjana Muda Pendidikan" is unchanged.
+- `verdict_pathway.funded_or_abroad`: an American Degree Program or "Persediaan ... Luar Negara" (MARA, JPA or another sponsor) name turns Pathway red with `pathway_funded_or_abroad` (en/ms/ta copy), added to `award.CONFIDENT_DISQUALIFIERS`. The award amount is unchanged and nothing is declined automatically.
 - Money pinned: award amount and `funding_estimate.classify_pathway` for 1,716 inputs equal origin/main (`fixtures/td617_money_pin.json`).
 - `VERDICT_ENGINE_VERSION` 2026-11-14.1. Reviewer FAQ and guide updated. Tests: `test_td617_pismp_adp.py`.
 

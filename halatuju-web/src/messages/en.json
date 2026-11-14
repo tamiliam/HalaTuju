@@ -4868,7 +4868,7 @@
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
           "offer_not_official": "Scored not an offer letter (a private / IPTS offer, a private wing, or not an offer at all) — a fail; the student is asked for a public institution's offer letter.",
           "offer_issuer_not_checked": "Offer from {issuer} — a public TVET issuer we don't have a pattern for yet, so it was NOT checked. Check the letter by eye.",
-          "pathway_funded_or_abroad": "Fully funded or overseas programme ({programme}) — not supported by this gift. The American Degree Program under MARA is fully funded, and study abroad is not supported. Recommend reject unless the interview shows the student is on a different programme.",
+          "pathway_funded_or_abroad": "Fully funded or overseas programme ({programme}) — not supported by this gift. The American Degree Program under MARA is fully funded, and a preparation programme for study abroad (MARA, JPA or another sponsor) is not supported. Recommend reject unless the interview shows the student is on a different programme.",
           "offer_not_read_yet": "The offer letter has not been read yet — our document check has not run on it or was unavailable. It is not the student's fault, so do not ask for a clearer copy. If it stays unread, check the letter by eye.",
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
