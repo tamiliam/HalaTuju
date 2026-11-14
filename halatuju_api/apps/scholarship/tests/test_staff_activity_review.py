@@ -177,7 +177,9 @@ class TestM3ADemotedViewerLosesTheNames(TestCase):
 
     def test_names_while_org_admin_and_neutral_words_once_demoted(self):
         self.assertEqual(set(self._states().values()), {'visible'})
-        PartnerAdmin.objects.filter(pk=self.me.pk).update(role='reviewer')
+        # Since M3a an organisation admin STORES its keys, so a demotion resets them, as every app path that
+        # gives a row a new role does (`staff_tables.invite_permissions`); NULL is the reviewer preset.
+        PartnerAdmin.objects.filter(pk=self.me.pk).update(role='reviewer', permissions=None)
         self.assertEqual(self._states(), {kind: 'hidden' for kind in self.subjects})
 
 

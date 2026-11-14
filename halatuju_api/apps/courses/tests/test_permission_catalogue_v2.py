@@ -35,6 +35,7 @@ from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.tests.factories import make_admin, make_org
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
+_M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')   # M3a: same app
 
 #: The live shapes (investigation F; T1 matrix `SHAPES`), plus qc / super / partner for completeness.
 SHAPES = {
@@ -112,6 +113,10 @@ def _make(spec, org):
         PartnerAdmin.objects.filter(pk=a.pk).update(**fields)
         a.refresh_from_db()
         plan = _M0097.plan_row(a.pk, a.role, a.is_active, a.permissions, row_id=None)   # M2b: as live
+        if plan:
+            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+            a.refresh_from_db()
+        plan = _M0098.plan_row(a.role, a.permissions)                                    # M3a: as live
         if plan:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
             a.refresh_from_db()

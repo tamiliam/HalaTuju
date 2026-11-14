@@ -70,6 +70,8 @@ def admin_keys(admin):
 
 
 def in_admins(admin):
+    """M3a (A4): the organisation admin sits at Admins BY ROLE, as the rule (no longer an exception
+    "until M3"): they hold the O15 three, which are Admins powers, whatever else their stored list says."""
     if admin is None or not getattr(admin, 'is_active', True):
         return False
     if admin.is_super or sp.is_lead_tier(admin):
@@ -112,8 +114,8 @@ def seated(admin):
 
 def groups_to_leave(admin):
     """Sprint M2c (owner R2): the groups ``admin`` must be removed from before a Delete — `seated`'s groups,
-    Mentors included, less a seat their role cannot be removed from (until M3: the lead tier's own seat at
-    Admins), so an organisation admin stays deletable as before. Empty = "No group". Someone who never signed
+    Mentors included, less a seat their role cannot be removed from (the organisation admin's own seat at
+    Admins, held by role since M3a A4), so an organisation admin stays deletable as before. Empty = "No group". Someone who never signed
     in has none to leave: they live on Invitations (owner O1), a Remove refuses them `not_arrived`, and the
     narrow "never started" Delete stays theirs."""
     if admin.first_seen_at is None:

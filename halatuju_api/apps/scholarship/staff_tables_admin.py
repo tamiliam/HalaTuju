@@ -201,9 +201,11 @@ def _plan_add(target, table):
         raise Refused('already_in', 400, f'{target.name} is already in this table.')
     before = list(sp.resolve(target))
     if sp.is_lead_tier(target):            # Reviewers only (may_act / _in keep Admins away)
+        # M3a (A6): `review` is ADDED to their stored list; every other key they store is kept.
+        from . import staff_permissions_admin as spa
         return {'role': target.role, 'before': before,
                 'after': list(sp._ordered((*before, sp.LEAD_MAY_ADD))),
-                'stored': [sp.LEAD_MAY_ADD], 'lead': True}
+                'stored': spa._v2().org_admin_list(target, review=True), 'lead': True}
     keys = ADD_KEYS[table]
     if keys[0] in before:
         # Only `see_all` can be here: brought by `qc` (T5b IMPLIES), it seats nobody at Admins. Refused as
@@ -259,8 +261,12 @@ def _plan_remove(target, table, open_n, to_no_group=False):
         return {'role': PartnerAdmin.MEMBER_ROLE, 'before': before, 'after': [], 'stored': None,
                 'to_member': True}
     if sp.is_lead_tier(target):
-        return {'role': target.role, 'before': before, 'after': list(sp.preset_for(target.role)),
-                'stored': None, 'lead': True}
+        # M3a (A6): only `review` comes off their stored list; every other key they store is kept (was
+        # NULL, which read as the fixed tier before M3a).
+        from . import staff_permissions_admin as spa
+        return {'role': target.role, 'before': before,
+                'after': [k for k in before if k != sp.LEAD_MAY_ADD],
+                'stored': spa._v2().org_admin_list(target, review=False), 'lead': True}
     if table == REVIEWERS:
         after = table_keys(target, ADMINS)        # exactly the Admins table's keys
         role = 'admin' if target.role in ('reviewer', 'qc') else target.role

@@ -5,6 +5,10 @@ Each live row shape is made as it stood BEFORE M2b (`pre_m2b=True`), read with a
 OLD rule (the `admin` / `finance` labels seated their holder at Admins; the `admin` label opened the admin
 work pages), then put through migration 0097's `plan_row` and read with the NEW code (stored keys only).
 The tables, the v2 page keys and every door in `staff_tables.DOOR_KEYS` must answer the same.
+
+M3a: the organisation admin's rows are read before with a copy of the lead tier's rule as it stood before
+M3a (`_old_resolve`, `_old_lead_v2`), and `migrate` also applies migration 0098 (`test_m3_nobody_changes`
+holds the M3a shapes themselves).
 """
 import copy
 from importlib import import_module
@@ -18,6 +22,20 @@ from apps.courses.models import PartnerAdmin
 from apps.scholarship.tests.factories import make_admin, make_org
 
 M = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
+M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
+
+
+def _old_resolve(a):
+    """`staff_permissions.resolve` as it stood before M3a: the organisation admin read as the fixed tier,
+    plus `review` when Team -> Reviewers added it."""
+    if a.role == sp.LEAD_ROLE and not a.is_super:
+        return sp._ordered((*sp.LEAD_TIER, *(('review',) if sp.lead_reviews(a) else ())))
+    return sp.resolve(a)
+
+
+def _old_lead_v2(a):
+    """`staff_permissions_v2.lead_v2` as it stood before M3a."""
+    return v2.v2_order((*v2.CATALOGUE_V2, *(('qc', 'review') if sp.lead_reviews(a) else ('qc',))))
 
 
 def _old_in_admins(a):
@@ -34,7 +52,9 @@ def _old_in_admins(a):
 def _old_effective(a):
     """`staff_permissions_v2.effective_v2` as it stood before M2b: the `admin` label granted the admin work
     pages (`LABEL_GRANTS`) and the label-or-key Admins seat granted the organisation read pages."""
-    if a.is_super or not a.is_active or a.role == sp.LEAD_ROLE or a.role not in sp.TEAM_ROLES:
+    if a.role == sp.LEAD_ROLE and a.is_active and not a.is_super:
+        return _old_lead_v2(a)                     # unchanged by M2b (the M3a copy of the lead rule)
+    if a.is_super or not a.is_active or a.role not in sp.TEAM_ROLES:
         return v2.effective_v2(a)                  # unchanged by M2b: no stored-key branch reached
     held = set(v2.through_aliases(sp.resolve(a)))
     if _old_in_admins(a):
@@ -86,6 +106,10 @@ class NobodyChanges(TestCase):
         plan = M.plan_row(a.pk, a.role, a.is_active, a.permissions, row_id=row_id)
         if plan is not None:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
+        a = PartnerAdmin.objects.get(pk=a.pk)
+        plan = M0098.plan_row(a.role, a.permissions)          # M3a: the next data step, in order
+        if plan is not None:
+            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
         return PartnerAdmin.objects.get(pk=a.pk)
 
     def test_every_shape_keeps_its_tables_its_keys_and_every_door(self):
@@ -97,7 +121,7 @@ class NobodyChanges(TestCase):
                 self.assertEqual(v2.effective_v2(after), old_keys)
                 self.assertEqual(st.page_keys(after), tuple(old_keys) if after.is_active else ())
                 self.assertEqual({d: st.opens_door(after, d) for d in st.DOOR_KEYS}, _doors(set(old_keys)))
-                self.assertEqual(sp.resolve(after), sp.resolve(before))       # the old part: untouched
+                self.assertEqual(sp.resolve(after), _old_resolve(before))     # the old part: untouched
 
     def test_the_label_alone_no_longer_seats_anyone(self):
         # the reason the data step is REQUIRED: unmigrated, the label-only admin loses Admins

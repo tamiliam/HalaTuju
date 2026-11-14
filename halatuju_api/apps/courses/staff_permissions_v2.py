@@ -169,6 +169,31 @@ ALIAS_V2 = tuple(k for k in CATALOGUE_V2 if any(k in keys for keys in ALIASES.va
 #: exactly `ADMIN_PRESET_V2` (`test_m2b_stored_v2` pins it).
 GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if not CATALOGUE_V2[k][3] and k not in ALIAS_V2)
 
+# ── Sprint M3a (2026-11-14, decisions.md "M3a"): the organisation admin's powers as STORED keys. ──────
+#: A1: the v2 page keys an organisation admin's row stores (migration 0098): every catalogue key that is
+#: neither NEVER_GRANTABLE (held by role, below) nor an alias (held through the old keys they store, or
+#: by role until M4, below). In `CATALOGUE_V2` order. The 11 lead-only keys are among them, and stay
+#: unassignable to a team member until M3c (A5).
+ORG_ADMIN_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k not in ALIAS_V2)
+
+#: The whole list an organisation admin's row stores (`review` comes on top only through Team ->
+#: Reviewers): the old part (`staff_permissions.ORG_ADMIN_KEYS`), then the v2 part. Migration 0098 holds
+#: a frozen copy (`test_m3_migration_0098`). It lives here, not in `staff_permissions`, because that leaf
+#: cannot import this one at load time.
+ORG_ADMIN_SET = (*sp.ORG_ADMIN_KEYS, *ORG_ADMIN_V2)
+
+#: A2 (owner O15): the two v2 keys an active organisation admin holds BY ROLE — never stored, never
+#: assignable (`NEVER_GRANTABLE`). The third of the O15 three is the old key `manage_team`
+#: (`staff_permissions.LEAD_BY_ROLE`).
+LEAD_BY_ROLE_V2 = NEVER_GRANTABLE
+
+#: A3 (TD-620): the MONEY CARRY-OVER, held by an active organisation admin BY ROLE until M4. No gate
+#: reads these v2 keys yet; storing their old-key spellings would arm or disarm the payment chain
+#: (`staff_permissions.holders`, the run's fallback), which is M4's. The one implicit grant left: M4
+#: removes it.
+LEAD_MONEY_UNTIL_M4 = ('payments.view', 'payments.prepare', 'payments.check', 'payments.approve',
+                       'sponsors.check')
+
 
 def refusal_reason(key):
     """Why the editor may not store the v2 page key `key`: 'never_grantable', 'lead_only', 'alias',
@@ -187,9 +212,13 @@ def stored_v2(admin):
     (or non-list) value stores none. A key the editor can never store (lead-only, never-grantable, an
     alias, unknown) is ignored, as `staff_permissions.clean` ignores an unknown old key; the hats
     `review` / `qc` are old keys and are read by `resolve`, never here. Says nothing about `is_active`
-    (the callers do)."""
+    (the callers do).
+
+    M3a: an organisation admin's row answers NONE here: their stored v2 keys are read by
+    `org_admin_v2`, and the editor's ticks for them (`v2_held`) stay empty, as before, until M3c makes
+    their card editable."""
     stored = getattr(admin, 'permissions', None) if admin is not None else None
-    if not isinstance(stored, (list, tuple)):
+    if not isinstance(stored, (list, tuple)) or sp.is_lead_tier(admin):
         return ()
     held = {k for k in stored if isinstance(k, str)}
     return tuple(k for k in GRANTABLE_V2 if k in held)
@@ -226,11 +255,25 @@ def through_aliases(old_keys):
     return v2_order(k for old in old_keys for k in ALIASES[old])
 
 
-def lead_v2(admin):
-    """The lead tier's v2 set: every page key, the `qc` hat (the lead tier holds `qc`), and `review`
-    when Team -> Reviewers added them (T2, `staff_permissions.lead_reviews`)."""
-    hats = ('qc', 'review') if sp.lead_reviews(admin) else ('qc',)
-    return v2_order((*CATALOGUE_V2, *hats))
+def org_admin_v2(admin):
+    """M3a (A1, A2): the v2 page keys an organisation admin's row STORES, in `V2_KEYS` order — read
+    strictly (only `ORG_ADMIN_V2` keys count), or all of `ORG_ADMIN_V2` when the row is NULL or not a
+    list (fail-safe: an invitation the old image wrote, read as the set migration 0098 writes)."""
+    stored = getattr(admin, 'permissions', None)
+    if not isinstance(stored, (list, tuple)):
+        return ORG_ADMIN_V2
+    held = {k for k in stored if isinstance(k, str)}
+    return tuple(k for k in ORG_ADMIN_V2 if k in held)
+
+
+def org_admin_list(admin, *, review):
+    """M3a (A6): the list an organisation admin's row stores after Team -> Reviewers Add (``review``
+    True) or Remove (False): their stored list — `ORG_ADMIN_SET` when NULL or not a list — with `review`
+    put first or taken out, and every other entry KEPT as it stands, in its order."""
+    stored = getattr(admin, 'permissions', None)
+    base = list(stored) if isinstance(stored, (list, tuple)) else list(ORG_ADMIN_SET)
+    rest = [k for k in base if k != sp.LEAD_MAY_ADD]
+    return [sp.LEAD_MAY_ADD, *rest] if review else rest
 
 
 def effective_v2(admin):
@@ -239,8 +282,12 @@ def effective_v2(admin):
     grants nothing by itself any more (M2b D5; migration 0097 stored what it gave).
 
       super            -> every v2 key (as `resolve` answers every old key)
-      org_admin        -> `lead_v2`
       inactive row     -> nothing (sign-in refuses it: `views_admin.get_admin` reads `is_active=True`)
+      org_admin        -> M3a (A2, A3): as a team member — `resolve` through `ALIASES`, the Admins
+                          table (their seat is by role, A4) and their stored v2 keys (`org_admin_v2`)
+                          — plus `LEAD_BY_ROLE_V2` (O15) and `LEAD_MONEY_UNTIL_M4` (TD-620) by role.
+                          For the set migration 0098 stores this is exactly the lead set before M3a
+                          (every page key, the `qc` hat, and `review` when Team -> Reviewers added it)
       team member      -> as above
       anyone else      -> nothing (a referral partner, a source user, a mentor login)
 
@@ -253,12 +300,14 @@ def effective_v2(admin):
         return V2_KEYS
     if not getattr(admin, 'is_active', True):
         return ()
-    if admin.role == sp.LEAD_ROLE:
-        return lead_v2(admin)
-    if admin.role not in sp.TEAM_ROLES:
+    lead = sp.is_lead_tier(admin)
+    if not lead and admin.role not in sp.TEAM_ROLES:
         return ()
     held = set(through_aliases(sp.resolve(admin)))
     if staff_tables.in_admins(admin):     # the one table that grants page keys (no mentor query)
         held.update(TABLE_GRANTS[staff_tables.ADMINS])
-    held.update(stored_v2(admin))
+    if lead:
+        held.update((*org_admin_v2(admin), *LEAD_BY_ROLE_V2, *LEAD_MONEY_UNTIL_M4))
+    else:
+        held.update(stored_v2(admin))
     return with_implied_views(held)

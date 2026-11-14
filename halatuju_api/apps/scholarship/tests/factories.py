@@ -287,10 +287,11 @@ def make_cohort(*, programme=_UNSET, **kw):
 
 
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
+_M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 
 
 def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False, uid=None, pre_m2b=False,
-               **kw):
+               pre_m3=False, **kw):
     """A ``PartnerAdmin``. ``role`` is any of ``PartnerAdmin.ROLE_CHOICES``; ``super_admin=True``
     sets the platform-super flag (which most permission code reads instead of the role).
 
@@ -308,6 +309,10 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     ⚠ M2b: an ACTIVE `admin` / `finance` row is made in its PRODUCTION shape after migration 0097 — the
     admin work / organisation read pages stored as v2 keys (`0097.plan_row`, never the row-id grant), as
     every such live row holds them. ``pre_m2b=True`` makes the row as it stood before the data step.
+
+    ⚠ M3a: an `org_admin` row is made in its PRODUCTION shape after migration 0098 — the organisation
+    admin's keys stored (`0098.plan_row`; `review` kept when ``permissions`` names it). ``pre_m3=True``
+    (or ``pre_m2b=True``) makes the row as it stood before that data step.
     """
     if role not in dict(PartnerAdmin.ROLE_CHOICES):
         raise _StageError(
@@ -337,6 +342,11 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
         role='super' if super_admin else role, org=org, **kw)
     if not pre_m2b and not super_admin:
         plan = _M0097.plan_row(admin.pk, admin.role, admin.is_active, admin.permissions, row_id=None)
+        if plan is not None:
+            PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
+            admin.permissions = plan[1]
+    if not (pre_m2b or pre_m3) and not super_admin:
+        plan = _M0098.plan_row(admin.role, admin.permissions)
         if plan is not None:
             PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
             admin.permissions = plan[1]

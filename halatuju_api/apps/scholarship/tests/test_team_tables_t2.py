@@ -9,8 +9,9 @@ Every door the brief lists, driven through the real endpoints:
 - REMOVE takes only that table's keys; refused on the LAST table ("revoke instead"), when only Mentors would
   be left (until T3), while open cases remain (Reviewers), and for the lead at Admins. Role moves only where
   the label would otherwise keep them seated (Q2a / Q2b: Rohini leaving Reviewers becomes an Admin).
-- THE ORG ADMIN joins Reviewers by a stored ['review'] (Q1); only themselves or a super (Q4); every other
-  key in that list is ignored; the generic editor still refuses the lead; self-QC still holds.
+- THE ORG ADMIN joins Reviewers by a stored 'review' (Q1); only themselves or a super (Q4). Since M3a (A1,
+  A6) the rest of their stored list is read and kept: Add puts 'review' first, Remove takes only 'review'.
+  The generic editor still refuses the lead; self-QC still holds.
 - Revoked people are never offered or added; a pure mentor login added becomes staff (7d link rules).
 - Invitations: Admin and Reviewer only; a new Admin stores exactly ['see_all', 'scholars'] (sprint S1), plus ADMIN_PRESET_V2 since M2b;
   an OLD pending finance / qc
@@ -283,27 +284,28 @@ class Remove(_Base):
 
 
 class OrgAdminJoinsReviewers(_Base):
-    def test_self_add_works_and_only_review_is_stored(self):
+    def test_self_add_works_and_keeps_the_stored_keys_with_review_first(self):
+        # M3a A6: the row is the shape 0098 left it in; Add adds 'review' and keeps every stored key.
+        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
         self.assertIn(self.lead.pk, self.candidates(self.lead, 'reviewers'))
         r = self.act(self.lead, 'reviewers', self.lead, 'add')
         self.assertEqual(r.status_code, 200, r.content[:300])
         lead = self.fresh(self.lead)
-        self.assertEqual(lead.permissions, ['review'])
+        self.assertEqual(lead.permissions, ['review', *v2.ORG_ADMIN_SET])
         self.assertEqual(lead.role, 'org_admin')
         self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
                                               'manage_team'))
         self.assertEqual(st.tables(lead), ('admins', 'reviewers'))
 
-    def test_every_other_key_on_an_org_admin_row_is_ignored(self):
-        PartnerAdmin.objects.filter(pk=self.lead.pk).update(
-            permissions=['payments_approve', 'payments_check', 'payments_prepare'])
+    def test_an_org_admin_row_is_read_strictly_since_m3a(self):
+        # M3a A1: the stored list is read (0098 replaced every leftover key); manage_team is by role (O15).
+        PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['payments_approve', 'payments_check'])
         lead = self.fresh(self.lead)
-        self.assertEqual(sp.resolve(lead), sp.preset_for('org_admin'))
+        self.assertEqual(sp.resolve(lead), ('payments_check', 'payments_approve', 'manage_team'))
         self.assertFalse(st.in_reviewers(lead))
-        PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['review', 'payments_approve'])
+        PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=None)
         lead = self.fresh(self.lead)
-        self.assertEqual(sp.resolve(lead), ('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
-                                              'manage_team'))
+        self.assertEqual(sp.resolve(lead), sp.preset_for('org_admin'))     # NULL reads as the full set
         self.assertFalse(lead.has_perm('payments_approve'))
 
     def test_the_generic_editor_still_refuses_the_lead(self):
@@ -316,13 +318,13 @@ class OrgAdminJoinsReviewers(_Base):
         fellow = make_admin('org_admin', owning_org=self.org)
         self.assertEqual(self.act(fellow, 'reviewers', self.lead, 'add').status_code, 404)
         self.assertNotIn(self.lead.pk, self.candidates(fellow, 'reviewers'))
-        self.assertIsNone(self.fresh(self.lead).permissions)
+        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
 
     def test_an_admin_cannot_add_an_org_admin_manage_team_is_no_door(self):
         adm = make_admin('admin', owning_org=self.org, permissions=['see_all', 'manage_team'])
         self.assertNotIn('manage_team', sp.resolve(adm))
         self.assertEqual(self.act(adm, 'reviewers', self.lead, 'add').status_code, 403)
-        self.assertIsNone(self.fresh(self.lead).permissions)
+        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))
 
     def test_another_organisation_is_refused(self):
         theirs = make_admin('org_admin', owning_org=self.other)
@@ -333,16 +335,17 @@ class OrgAdminJoinsReviewers(_Base):
         caller = make_admin('super', super_admin=True)
         self.assertEqual(self.act(caller, 'reviewers', self.lead, 'add').status_code, 200)
         self.assertEqual(self.act(caller, 'reviewers', self.lead, 'remove').status_code, 200)
-        self.assertIsNone(self.fresh(self.lead).permissions)
+        self.assertEqual(self.fresh(self.lead).permissions, list(v2.ORG_ADMIN_SET))   # M3a A6: not NULL
 
-    def test_self_remove_goes_back_to_null_and_is_refused_with_open_cases(self):
+    def test_self_remove_takes_only_review_and_is_refused_with_open_cases(self):
         self.act(self.lead, 'reviewers', self.lead, 'add')
         app = make_application('assigned', reviewer=self.lead, cohort=self.cohort)
         self.assertEqual(self.act(self.lead, 'reviewers', self.lead, 'remove').json()['code'], 'has_open_cases')
         app.delete()
         self.assertEqual(self.act(self.lead, 'reviewers', self.lead, 'remove').status_code, 200)
         lead = self.fresh(self.lead)
-        self.assertIsNone(lead.permissions)
+        self.assertEqual(lead.permissions, list(v2.ORG_ADMIN_SET))          # M3a A6: the keys stay
+        self.assertEqual(sp.resolve(lead), sp.preset_for('org_admin'))
         self.assertEqual(st.tables(lead), ('admins',))
 
     def test_they_join_the_reviewers_list_and_the_assignment_picker(self):

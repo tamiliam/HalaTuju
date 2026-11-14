@@ -13,6 +13,10 @@ Classes:
   GATE-LEFT     an access decision still made by a label, with the TD or sprint that owns converting it.
   GATE-UNPLANNED  a label gate with no owner (none found in P3).
 Adding a site: classify it, name its owner, and add it below; do NOT add a GATE-UNPLANNED without a TD.
+
+M3a (A10, 2026-11-14): a SECOND scan (`lead_counts`, `LEAD_READS`) reports every `is_lead_tier(` /
+`_is_lead_tier(` call and every `LEAD_ROLE` read, with an exact count per function, and the GATE-LEFT counts
+are pinned so they only fall as M3b converts the gates.
 """
 import ast
 import os
@@ -446,3 +450,130 @@ def test_scanner_catches_a_role_gate(tmp_path):
            "def h(admin):\n    return admin.is_super\n")
     (tmp_path / 'm.py').write_text(src)
     assert sorted(site_counts(str(tmp_path))) == ['m.py::f', 'm.py::g']
+
+
+# ── M3a (A10): the lead-tier reads the label scan does not see ───────────────────────────────────────
+# `sp.is_lead_tier(x)` / `payments_chain._is_lead_tier(x)` and a load of `LEAD_ROLE` decide by the
+# organisation admin's LABEL without spelling `.role ==` on the line, so the scan above missed them (the
+# brief's list S: 15 server places). This second scan reports every such read, with an EXACT count per
+# function, so a new lead gate cannot ship unseen. A GATE-LEFT entry is DELETED when its gate converts
+# (M3b), never reclassified to pass; the ones that stay carry list K's reason.
+LEAD_CALLS = {'is_lead_tier', '_is_lead_tier'}
+LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT'}
+
+
+class _LeadScan(_Scan):
+    def visit_Compare(self, node):          # the label scan's own hits are not this scan's
+        self.generic_visit(node)
+
+    def visit_Call(self, node):
+        fn = node.func
+        if (fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, 'id', '')) in LEAD_CALLS:
+            self._hit(node)
+        self.generic_visit(node)
+
+    def visit_Name(self, node):
+        if node.id == 'LEAD_ROLE' and isinstance(node.ctx, ast.Load):
+            self._hit(node)
+
+    def visit_Attribute(self, node):
+        if node.attr == 'LEAD_ROLE' and isinstance(node.ctx, ast.Load):
+            self._hit(node)
+        self.generic_visit(node)
+
+
+def lead_counts(root=APPS):
+    out = {}
+    for dp, dns, fns in os.walk(root):
+        dns[:] = [d for d in dns if d not in ('tests', 'migrations', '__pycache__')]
+        for fn in fns:
+            if not fn.endswith('.py') or fn.startswith('test_'):
+                continue
+            rel = os.path.relpath(os.path.join(dp, fn), root).replace(os.sep, '/')
+            with open(os.path.join(dp, fn), encoding='utf-8') as fh:
+                v = _LeadScan(rel)
+                v.visit(ast.parse(fh.read()))
+            for key, _ in v.found:
+                out[key] = out.get(key, 0) + 1
+    return out
+
+
+#: module::function -> (exact count, class, owner, one-line reason)
+LEAD_READS = {
+    'courses/staff_permissions.py::is_lead_tier': (1, 'DEFINITION', 'O15', 'defines the lead tier'),
+    'courses/staff_permissions.py::lead_reviews': (1, 'DEFINITION', 'T2 Q1',
+        'the organisation admin joins Reviewers by a stored `review`'),
+    'courses/staff_permissions.py::preset_for': (1, 'DEFINITION', 'M3a A2',
+        'the organisation admin\'s preset: ORG_ADMIN_KEYS plus manage_team by role'),
+    'courses/staff_permissions.py::resolve': (1, 'O15', 'M3a A2',
+        'the stored list read strictly; manage_team held BY ROLE, never stored'),
+    'courses/staff_permissions.py::team_holding': (2, 'DISPLAY', 'T5a tables',
+        'the Reviewers list also lists an organisation admin who joined it (lead_reviews)'),
+    'courses/staff_permissions_v2.py::stored_v2': (1, 'DISPLAY', 'M3c',
+        'the editor reads no stored v2 key for an organisation admin until M3c makes the row editable'),
+    'courses/staff_permissions_v2.py::effective_v2': (1, 'O15', 'M3a A2 / A3, TD-620',
+        'billing.edit and requests.approve by role (O15); the money keys by role until M4 (TD-620)'),
+    'courses/staff_tables.py::in_admins': (1, 'TARGET', 'M3a A4',
+        'the organisation admin always sits in Admins, by role'),
+    'courses/staff_tables.py::groups_to_leave': (1, 'TARGET', 'M3a A4',
+        'the Admins seat is held by role, so it is never a group to leave'),
+    'scholarship/payments_chain.py::_is_lead_tier': (1, 'M4', 'T5d / TD-620',
+        'the payment chain\'s lead-tier helper'),
+    'scholarship/payments_chain.py::_may_approve': (1, 'M4', 'T5d / TD-620', 'the fallback approver'),
+    'scholarship/payments_chain.py::may_read': (1, 'M4', 'T5d / TD-620', 'who opens Payments'),
+    'scholarship/payments_chain.py::may_prepare': (1, 'M4', 'T5d / TD-620', 'who creates a run'),
+    'scholarship/payments_chain.py::_refusal': (1, 'M4', 'T5d / TD-620', 'why a step is refused'),
+    'scholarship/staff_person.py::on_reviewer_route': (1, 'DISPLAY', 'T3',
+        'which route lists the target (an organisation admin only when they joined Reviewers)'),
+    'scholarship/staff_person.py::person': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the person page'),
+    'scholarship/staff_list.py::list_rows': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the Staff list'),
+    'scholarship/staff_tables_admin.py::may_act': (3, 'GATE-LEFT', 'M3b G1',
+        'the caller arm (an organisation admin acts) converts to manage_team; the target arm stays (Q4)'),
+    'scholarship/staff_tables_admin.py::_refuse_basic': (1, 'TARGET', 'target rule',
+        'which rows may sit in a table (an organisation admin may)'),
+    'scholarship/staff_tables_admin.py::table_keys': (1, 'DISPLAY', 'M3c',
+        'the chips an organisation admin\'s row shows (review only) until M3c reads the stored set'),
+    'scholarship/staff_tables_admin.py::_plan_add': (1, 'DISPLAY', 'M3a A6',
+        'the writer adds `review` alone to an organisation admin\'s stored list'),
+    'scholarship/staff_tables_admin.py::_plan_remove': (2, 'DISPLAY', 'M3a A6',
+        'the writer takes `review` alone from an organisation admin\'s stored list'),
+    'scholarship/staff_tables_admin.py::_cheap_refusal': (1, 'TARGET', 'target rule',
+        'LEAD_FIXED: the organisation admin always sits in Admins (A4)'),
+    'scholarship/staff_tables_admin.py::row_fields': (1, 'DISPLAY', 'served flag', 'the `lead` badge on a table row'),
+    'scholarship/views_admin/staff.py::AdminTeamCandidatesView.get': (1, 'DISPLAY', 'served flag',
+        'the `lead` badge on a candidate'),
+    'scholarship/views_admin/mentors.py::mentor_rows': (1, 'DISPLAY', 'served flag',
+        'the `lead` badge on a mentor\'s login'),
+}
+
+
+def test_every_lead_tier_read_is_allowlisted_with_its_exact_count():
+    sites = lead_counts()
+    unlisted = sorted(set(sites) - set(LEAD_READS))
+    assert not unlisted, 'lead-tier read outside LEAD_READS (classify it, or use a key): %s' % unlisted
+    stale = sorted(set(LEAD_READS) - set(sites))
+    assert not stale, 'LEAD_READS entry no longer in the source: remove it: %s' % stale
+    wrong = {k: (sites[k], LEAD_READS[k][0]) for k in sites if sites[k] != LEAD_READS[k][0]}
+    assert not wrong, 'lead-tier read count changed (found, listed): %s' % wrong
+    for key, (count, cls, owner, reason) in LEAD_READS.items():
+        assert count > 0 and cls in LEAD_CLASSES and owner and reason, key
+
+
+def test_the_gate_left_counts_are_pinned():
+    # M3b converts the T5e gates and DELETES their entries, so these numbers only ever fall. Raising one
+    # means a new label gate: classify it with an owner and a TD instead.
+    t5e = sorted(k for k, (cls, owner, _r) in ALLOWLIST.items() if cls == 'GATE-LEFT' and owner == 'T5e')
+    assert len(t5e) == 51, len(t5e)
+    lead_gates = sum(count for count, cls, _o, _r in LEAD_READS.values() if cls == 'GATE-LEFT')
+    assert lead_gates == 3, lead_gates
+
+
+def test_scanner_catches_a_lead_tier_gate(tmp_path):
+    src = ("LEAD_ROLE = 'org_admin'\n"
+           "def f(admin):\n    return sp.is_lead_tier(admin)\n"
+           "def g(admin):\n    return _is_lead_tier(admin) or is_lead_tier(admin)\n"
+           "def h(admin):\n    return admin.role == sp.LEAD_ROLE\n"
+           "def k(admin):\n    return admin.role in (LEAD_ROLE,)\n"
+           "def n(admin):\n    return admin.has_perm('manage_team')\n")
+    (tmp_path / 'm.py').write_text(src)
+    assert lead_counts(str(tmp_path)) == {'m.py::f': 1, 'm.py::g': 2, 'm.py::h': 1, 'm.py::k': 1}

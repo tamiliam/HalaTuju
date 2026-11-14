@@ -69,16 +69,25 @@ class Resolve(TestCase):
             with self.subTest(junk=str(junk)):
                 self.assertEqual(PartnerAdmin(role='reviewer', permissions=junk).permission_set, ())
 
-    def test_the_lead_tier_ignores_a_stored_list(self):
-        # Team tables T2 (lead ruling Q1): `review` is the ONE key an org admin's list may add (Team ->
-        # Reviewers -> Add); every other key in it is ignored, and the tier itself never changes.
+    def test_an_org_admin_reads_their_stored_list_plus_manage_team_by_role(self):
+        # Sprint M3a (A1, A2): an organisation admin's list is READ, strictly, as a team member's is, and
+        # `manage_team` comes by role (O15). Migration 0098 REPLACED every org admin's list first, so a
+        # leftover payment key is gone before it could be read (`test_m3_nobody_changes`).
         a = PartnerAdmin(role='org_admin', permissions=['payments_approve', 'payments_check'])
-        self.assertEqual(set(a.permission_set), set(sp.LEAD_TIER))
+        self.assertEqual(a.permission_set, ('payments_check', 'payments_approve', 'manage_team'))
         self.assertFalse(sp.is_custom(a))
         self.assertTrue(sp.is_lead_tier(a))
-        b = PartnerAdmin(role='org_admin', permissions=['review', 'payments_approve'])
-        self.assertEqual(set(b.permission_set), set(sp.LEAD_TIER) | {'review'})
+        b = PartnerAdmin(role='org_admin', permissions=['review', 'see_all', 'manage_team'])
+        self.assertEqual(b.permission_set, ('review', 'see_all', 'manage_team'))   # never stored, by role
         self.assertFalse(sp.is_custom(b))
+        # NULL (an invitation the old image wrote) or a non-list: the stored set, fail-safe.
+        for junk in (None, {'review': True}, 'review'):
+            with self.subTest(junk=str(junk)):
+                self.assertEqual(PartnerAdmin(role='org_admin', permissions=junk).permission_set,
+                                 sp.preset_for('org_admin'))
+        self.assertEqual(sp.preset_for('org_admin'), sp._ordered((*sp.ORG_ADMIN_KEYS, *sp.LEAD_BY_ROLE)))
+        self.assertEqual(sp.LEAD_BY_ROLE, ('manage_team',))
+        self.assertEqual(sp.ORG_ADMIN_KEYS, ('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve'))
 
     def test_a_super_holds_every_key_by_role(self):
         # TD-064 (A1.10b): the role is the only super marker; the legacy flag is gone.

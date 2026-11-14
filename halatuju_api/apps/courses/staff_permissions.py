@@ -10,7 +10,10 @@ THE MODEL
   chapter they open). `PartnerAdmin.permissions` NULL means "the preset of `role`", which is every
   person alive today and every future invitee — there is NO BACKFILL, on purpose (the 0123 lesson;
   the owner's own NULL-means-default pattern for `PartnerAdmin.programme`).
-- **The organisation lead** (`org_admin`) is a FIXED TIER that nobody edits (`LEAD_TIER`).
+- **The organisation lead** (`org_admin`): since sprint M3a (decisions.md "M3a") their keys are STORED
+  like everybody's (`ORG_ADMIN_KEYS`, written by migration 0098), read strictly, plus `manage_team` BY
+  ROLE (`LEAD_BY_ROLE`, owner O15). A NULL row reads as `ORG_ADMIN_KEYS` (fail-safe). Nobody edits
+  them yet (M3c).
 - **Platform roles** sit outside: a `super` passes every key (as `has_role` passes every role); a
   referral `partner` holds nothing.
 
@@ -84,22 +87,33 @@ PRESETS = {
     'finance': ('payments_approve',),    # Sprint 2 (owner, 2026-10-19): was payments_check
 }
 
-#: The organisation lead's fixed bundle. Never stored, never edited. Its other lead powers
+#: The organisation lead's bundle: what an organisation admin held before M3a, and what `preset_for`
+#: answers for the role (the "preset" the person page serves). Since M3a it is no longer read as a
+#: fixed tier: it is `ORG_ADMIN_KEYS` (stored) plus `LEAD_BY_ROLE` (by role). Its other lead powers
 #: (configuration, gifts, contracts, sponsors' acceptance, assigning cases, billing, requests, the
 #: parent's contact, creating / editing / cancelling runs without signing as maker, and approving a
-#: run under the FALLBACK when nobody else can) are not catalogue keys: they stay on
-#: `role == 'org_admin'` (`is_lead_tier`).
+#: run under the FALLBACK when nobody else can) are stored v2 keys since M3a
+#: (`staff_permissions_v2.ORG_ADMIN_V2`); until M3b their gates still read `role == 'org_admin'`
+#: (`is_lead_tier`).
 LEAD_ROLE = 'org_admin'
 LEAD_TIER = ('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team')   # Sprint 2:
 # payments_approve removed; A1.13b: the withdrawal CHECKER seat added (the org admin approves, never
 # requests); S1: `scholars` added
 
+#: Sprint M3a (A2, owner O15): the old key an organisation admin holds BY ROLE — never stored, never
+#: assignable (`LEAD_TIER_ONLY`). `staff_permissions_v2.LEAD_BY_ROLE_V2` holds the other two of the three.
+LEAD_BY_ROLE = ('manage_team',)
+
+#: Sprint M3a (A1): the old keys an organisation admin's row STORES (migration 0098) — `LEAD_TIER` less
+#: what the role gives (`LEAD_BY_ROLE`). Their v2 part is `staff_permissions_v2.ORG_ADMIN_V2`; both
+#: together are `staff_permissions_v2.ORG_ADMIN_SET`.
+ORG_ADMIN_KEYS = tuple(k for k in LEAD_TIER if k not in LEAD_BY_ROLE)
+
 #: Team tables T2 (owner ruling 5, lead ruling 2026-11-03): the ONE key an organisation admin may hold
-#: beyond the fixed tier — `review`, so they sit at the Reviewers table and can be assigned cases. It is
-#: stored in the row's `permissions` column (an org_admin's column was never read before T2, and live
-#: had no org_admin row with a value) and ONLY Team -> Reviewers -> Add / Remove writes it
-#: (`apps/scholarship/staff_tables_admin.py`). ⚠ EVERY OTHER KEY IN THAT LIST IS IGNORED: the lead tier
-#: stays fixed, and the generic permission editor still refuses the lead.
+#: beyond their bundle — `review`, so they sit at the Reviewers table and can be assigned cases. It is
+#: stored in the row's `permissions` column and ONLY Team -> Reviewers -> Add / Remove writes it
+#: (`apps/scholarship/staff_tables_admin.py`). M3a (A6): that writer adds or removes `review` alone and
+#: keeps the rest of the stored list; the generic permission editor still refuses the lead (M3c).
 LEAD_MAY_ADD = 'review'
 
 
@@ -146,8 +160,9 @@ def resolve(admin):
     """THE ONE DOOR: the keys `admin` holds, as a tuple in catalogue order.
 
       super        → every key (a super passes every check; payments still lets them fill ONE slot)
-      org_admin    → the lead tier, whatever `permissions` says (never editable) — plus `review`
-                     when Team -> Reviewers added them (T2, `lead_reviews`); nothing else is read
+      org_admin    → M3a (A2): `permissions` cleaned, STRICTLY (as a team member's, `review` included
+                     when Team -> Reviewers added it), or `ORG_ADMIN_KEYS` when it is NULL or not a
+                     list (fail-safe: never a lock-out); plus `manage_team` BY ROLE (`LEAD_BY_ROLE`)
       team member  → `permissions` cleaned, or the preset of `role` when it is NULL
       anyone else  → nothing (a referral partner, a SOURCE user — source sign-in S1 —, an unknown
                      role, None). A source user is never a team member, whatever `permissions` says.
@@ -157,9 +172,9 @@ def resolve(admin):
     if admin.is_super:
         return CATALOGUE
     if admin.role == LEAD_ROLE:
-        if lead_reviews(admin):
-            return _ordered((*LEAD_TIER, LEAD_MAY_ADD))
-        return preset_for(LEAD_ROLE)
+        stored = getattr(admin, 'permissions', None)
+        held = clean(stored) if isinstance(stored, (list, tuple)) else ORG_ADMIN_KEYS
+        return _ordered((*held, *LEAD_BY_ROLE))
     if admin.role not in PRESETS:
         return ()
     stored = getattr(admin, 'permissions', None)

@@ -95,6 +95,41 @@ class StoredV2(TestCase):
         self.assertTrue({'surveys.edit', 'surveys.view'} <= held)
 
 
+class OrgAdminVocabulary(TestCase):
+    """Sprint M3a (A1, A2, A3): the organisation admin's stored set and what the role still gives."""
+
+    def test_the_stored_v2_set_is_every_catalogue_key_less_never_grantable_and_aliases(self):
+        expected = tuple(k for k in v2.CATALOGUE_V2 if k not in v2.NEVER_GRANTABLE and k not in v2.ALIAS_V2)
+        self.assertEqual(v2.ORG_ADMIN_V2, expected)
+        self.assertEqual(len(v2.ORG_ADMIN_V2), 25)
+        self.assertEqual(v2.ORG_ADMIN_SET, (*sp.ORG_ADMIN_KEYS, *v2.ORG_ADMIN_V2))
+
+    def test_what_the_role_gives(self):
+        self.assertEqual(sp.LEAD_BY_ROLE, ('manage_team',))
+        self.assertEqual(v2.LEAD_BY_ROLE_V2, tuple(v2.NEVER_GRANTABLE))
+        self.assertEqual(v2.LEAD_MONEY_UNTIL_M4, ('payments.view', 'payments.prepare', 'payments.check',
+                                                  'payments.approve', 'sponsors.check'))      # TD-620
+        for key in (*v2.LEAD_BY_ROLE_V2, *v2.LEAD_MONEY_UNTIL_M4):
+            self.assertIn(key, v2.CATALOGUE_V2)
+            self.assertNotIn(key, v2.ORG_ADMIN_V2)
+
+    def test_the_grantable_set_is_still_the_admin_preset(self):
+        self.assertEqual(tuple(v2.GRANTABLE_V2), tuple(v2.ADMIN_PRESET_V2))
+
+    def test_stored_v2_reads_nothing_for_an_org_admin_until_m3c(self):
+        row = PartnerAdmin(role='org_admin', permissions=list(v2.ORG_ADMIN_SET), is_active=True)
+        self.assertEqual(v2.stored_v2(row), ())
+        self.assertTrue(set(v2.ORG_ADMIN_V2) <= set(v2.effective_v2(row)))
+
+    def test_org_admin_list_puts_review_first_and_keeps_every_other_key(self):
+        row = PartnerAdmin(role='org_admin', permissions=['see_all', 'review', 'team.view'])
+        self.assertEqual(v2.org_admin_list(row, review=True), ['review', 'see_all', 'team.view'])
+        self.assertEqual(v2.org_admin_list(row, review=False), ['see_all', 'team.view'])
+        null = PartnerAdmin(role='org_admin', permissions=None)
+        self.assertEqual(v2.org_admin_list(null, review=True), ['review', *v2.ORG_ADMIN_SET])
+        self.assertEqual(v2.org_admin_list(null, review=False), list(v2.ORG_ADMIN_SET))
+
+
 class OldReadersIgnoreV2(TestCase):
     """The old image's compat (migrate-first, the 0095 precedent): v2 keys in a list change nothing it reads."""
 
