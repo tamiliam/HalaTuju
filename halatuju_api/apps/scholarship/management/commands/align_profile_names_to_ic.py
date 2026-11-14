@@ -6,7 +6,8 @@ from ``vision.ic.run_vision_for_document`` just before the IC lock). A card read
 through that step — application 177's profile still holds a 3-word edit of the 5-word name its
 signature and its card agree on. This runs the same rule, once, over every profile's latest live
 student IC (``identity.latest_live_ic``): the card's number exactly the typed one, a clean read, and
-the card's name an exact ``name_match`` for the profile name or one of the profile's signatures.
+the card's name the same words as the profile name or one of the profile's signatures (a word glued
+or split by OCR does not count).
 Anything else is left alone. The signature (``declaration_name``) is never touched.
 
 Dry run by default; ``--apply`` writes (each write leaves an internal ``name_aligned_to_ic``

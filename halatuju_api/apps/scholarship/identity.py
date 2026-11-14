@@ -41,7 +41,7 @@ import re
 
 from .genuineness.bands import canonical_status, stored_status
 from .read_errors import IC_SECOND_OPINION_ERROR, ic_second_opinion_deferred
-from .vision import name_match, nric_close, nric_match
+from .vision import canonical_name_tokens, name_match, nric_close, nric_match
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
 # subset of the other — a name typed shorter or longer than the card carries.
@@ -250,12 +250,24 @@ def read_is_clean(doc):
     return vf.get('ic_second_opinion') in (None, '', 'ok')
 
 
+def _same_words(card_name, typed_name):
+    """D2's name test: the card and the typed name carry the SAME canonical words (equal token
+    sets; order and A/L / BIN markers aside), and ``name_match`` agrees (which keeps its TD-408
+    reversed-patronymic guard). Stricter than ``name_match == 'match'`` on purpose: that also
+    passes a word glued or split by OCR (MUHAMMAD AMIN against MUHAMMADAMIN), and an alignment
+    must never rewrite a correctly typed name into the card's OCR spacing."""
+    words = canonical_name_tokens(card_name)
+    return (bool(words) and words == canonical_name_tokens(typed_name)
+            and name_match(card_name, typed_name) == 'match')
+
+
 def name_alignment(doc):
     """What D2 says about this card, WITHOUT writing: ``(outcome, card_name)``.
 
     Aligns only when it is safe — the student's own, newest live card; a clean read; the card's
-    number exactly the typed one; and the card's name ``name_match == 'match'`` either the typed
-    profile name or the signature on any of this profile's applications. Anything less: no change."""
+    number exactly the typed one; and the card's name has exactly the SAME WORDS as the typed
+    profile name or the signature on any of this profile's applications (``_same_words``).
+    Anything less: no change."""
     if getattr(doc, 'doc_type', '') != 'ic':
         return NOT_STUDENT_IC, ''
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
@@ -273,7 +285,7 @@ def name_alignment(doc):
     typed = [(getattr(profile, 'name', '') or '').strip()]
     typed += list(profile.scholarship_applications.exclude(declaration_name='')
                   .values_list('declaration_name', flat=True))
-    if not any(t and name_match(card_name, t) == 'match' for t in typed):
+    if not any(t and _same_words(card_name, t) for t in typed):
         return NO_NAME_MATCH, card_name
     if _same_text(card_name, getattr(profile, 'name', '')):
         return ALREADY, card_name

@@ -3,14 +3,14 @@
 The owner's decisions D1-D6 (docs/plans/req67-scope3-ic-name-alignment-brief.md):
 
 * D1/D2 — the name read off the student's OWN MyKad becomes ``profile.name`` when that is safe:
-  exact NRIC, a clean read, and the card's name an exact ``name_match`` for the typed profile name
-  or one of the profile's signatures. The signature (``declaration_name``) is never rewritten.
+  exact NRIC, a clean read, and the card's name the SAME WORDS as the typed profile name or one of
+  the profile's signatures (a glued or split word is not). ``declaration_name`` is never rewritten.
 * D3 — once ``nric_verified`` is on, a STUDENT write may change the name only to the card's own:
   the /profile PUT is refused 403 ``name_locked``; the apply-form sync and the submit-time
   signature promotion keep the stored name silently.
 * D4 — a student card whose name reads SHORT of the typed name (a strict subset) asks the AI second
-  reader, and the AI's full name is taken when it matches; a deterministic match is never replaced;
-  parent cards keep their rule.
+  reader, and the AI's full name is taken when it matches; a deterministic match, or a read LONGER
+  than the typed name, is never replaced; parent cards keep their rule.
 * D5 — ``align_profile_names_to_ic``: dry run by default, ids and counts only.
 * D6 — align before the lock, so the lock compares the card with the name it will hold.
 
@@ -203,6 +203,22 @@ class WhenItDoesNotAlign(TestCase):
     def test_a_parents_card_never_names_the_student(self):
         self._refused(_ic(self.app, doc_type='parent_ic', member='father'), identity.NOT_STUDENT_IC)
 
+    def test_a_glued_or_split_word_is_not_the_same_words(self):
+        """``name_match`` forgives an OCR space glued or split (MUHAMMAD AMIN ~ MUHAMMADAMIN); the
+        alignment does not: it would rewrite a correctly typed name into the card's OCR spacing."""
+        for typed, card, nric in (
+                ('MUHAMMAD AMIN BIN ZULKIFLI', 'MUHAMMADAMIN BIN ZULKIFLI', '060707-07-7072'),
+                ('MUHAMMADAMIN BIN ZULKIFLI', 'MUHAMMAD AMIN BIN ZULKIFLI', '060707-07-7073')):
+            with self.subTest(typed=typed, card=card):
+                self.assertEqual(vision.name_match(card, typed), 'match')     # the tolerance exists
+                profile = _student(typed, nric)
+                app = make_application(student=profile, declaration_name=typed)
+                doc = _ic(app, name=card, nric=nric)
+                self.assertEqual(identity.align_name_to_ic(doc), identity.NO_NAME_MATCH)
+                self.assertEqual(_name_of(profile), typed)
+                self.assertFalse(StudentActivity.objects.filter(
+                    event=EVENT_NAME_ALIGNED_TO_IC, application=app).exists())
+
 
 # ── D4: the 559 short read ─────────────────────────────────────────────────────────────────────
 
@@ -239,6 +255,22 @@ class The559Shape(TestCase):
     def test_the_switch_still_turns_the_second_reader_off(self):
         _read(self.doc, name=FIRST4, nric=NRIC7)
         self.assertEqual(self.doc.vision_name, FIRST4)
+
+    def test_a_longer_read_is_never_replaced_by_a_shorter_one(self):
+        """The deterministic read is LONGER than the typed name (5 words over her 3-word edit); it
+        escalates for a missing NRIC, and the AI reads only her 3 typed words. The 5 words stay:
+        D4 takes the AI name only over a read SHORT of the typed name."""
+        profile = _student(SHORT_EDIT, NRIC)
+        app = make_application(student=profile)
+        doc = _ic(app, name='', nric='')
+        g = _read(doc, name=CARD, nric='', second={'nric': NRIC, 'name': SHORT_EDIT, 'address': ''})
+        g.assert_called_once()                                    # escalated: no number was read
+        self.assertEqual(doc.vision_nric, NRIC)                   # the AI's number is taken
+        self.assertEqual(doc.vision_name, CARD)                   # but not its shorter name
+        self.assertEqual(_name_of(profile), SHORT_EDIT)           # and nothing aligns on 'partial'
+        out = vision._merge_ic_reads({'nric': '', 'name': CARD}, {'nric': NRIC, 'name': SHORT_EDIT},
+                                     profile, own_card=True)
+        self.assertEqual(out['name'], CARD)
 
     def test_the_merge_never_overrides_a_deterministic_match(self):
         out = vision._merge_ic_reads({'nric': NRIC7, 'name': FULL7}, {'nric': NRIC7, 'name': FIRST4},

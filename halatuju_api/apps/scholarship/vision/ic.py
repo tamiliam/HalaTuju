@@ -59,9 +59,11 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
     ``names``, ANY of which may agree), never the student's profile — same bar, the right person.
 
     ``own_card`` (D4, #67 scope 3 — the student's own ``ic`` only): Gemini's name ALSO wins when it
-    is an exact ``match`` for a reference name and the deterministic read is not — the short,
-    ``partial`` read of application 559. A deterministic ``match`` still stands. Parent cards
-    (``own_card`` False) keep the rule above exactly."""
+    is an exact ``match`` for a reference name AND the deterministic read is a strict SUBSET of
+    that name (``_short_of_typed``) — the short, ``partial`` read of application 559. Never when
+    the deterministic read is LONGER than the typed name (a superset): a longer read is never
+    replaced by a shorter one, whatever made the read escalate. A deterministic ``match`` still
+    stands. Parent cards (``own_card`` False) keep the rule above exactly."""
     p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
     p_names = [n for n in (getattr(profile, 'names', None) or [getattr(profile, 'name', '') or '']) if n] if profile else []
     out = dict(det)
@@ -78,7 +80,9 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
         elif (any(name_match(gname, n) != 'mismatch' for n in p_names)
               and all(name_match(out['name'], n) == 'mismatch' for n in p_names)):
             out['name'] = gname
-        elif (own_card and any(name_match(gname, n) == 'match' for n in p_names)
+        elif (own_card
+              and any(name_match(gname, n) == 'match' and _short_of_typed(out['name'], n)
+                      for n in p_names)
               and all(name_match(out['name'], n) != 'match' for n in p_names)):
             out['name'] = gname   # D4: the whole name, where the deterministic read was short
     gaddr = (g.get('address') or '').strip()
