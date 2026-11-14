@@ -80,8 +80,8 @@ const asStaffRow = (row: InvitationRow) =>
  *
  * ⚠ **SOURCE (source sign-in S2, 2026-10-30)** is its own form and roster
  * (`components/sources/SourceInvite`): pick a source or add a new one, name its person; then who
- * has not replied (Resend / Cancel). Super and org_admin invite; the Sources page's "Invite a
- * source" lands here with `?kind=source`. One person per source (I2, 2026-11-08): a joined source
+ * has not replied (Resend / Cancel). Super and org_admin invite; `?kind=source` opens this tab
+ * (the Sources page now only points here, E7 2026-11-14). One person per source (I2, 2026-11-08): a joined source
  * leaves the dropdown, and its person — with Remove — is on the Sources page, not here.
  *
  * ⚠ **MENTOR (student maintenance S7b follow-up, 2026-11-01)** follows the source pattern exactly
@@ -159,7 +159,7 @@ export default function OrganisationInvitationsPage() {
     setSGiftMissing(false)
   }, [giftKey])
 
-  // `?kind=source` (the Sources page's "Invite a source") opens that tab. Read once, on mount, from
+  // `?kind=source` opens that tab. Read once, on mount, from
   // `window.location` — `useSearchParams` would need a Suspense boundary in a page file.
   useEffect(() => {
     const asked = new URLSearchParams(window.location.search).get('kind')
