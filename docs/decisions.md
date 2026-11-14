@@ -24,6 +24,47 @@
 
 **Why:** it lets us combine several pushes into one deploy, and a push to `main` no longer surprises anyone. Rollback: re-import the trigger exports in `docs/infra/` (`…-main-2026-11-14.yaml`).
 
+## 2026-11-14 — The organisation admin's powers are stored keys, read strictly (architect A1-A6, A10; Sprint M3a)
+
+**Taken by the architect** in the M3 brief (`docs/plans/2026-11-14-m3-lead-keys-brief.md`; D1-D7 answered as
+recommended). M3a is the first of three parts: it stores the keys and reads them; M3b moves the gates onto them;
+M3c makes them grantable and changes the web. Under the one principle: on ship day nobody's access changes.
+
+| | Decision | As built |
+|---|---|---|
+| A1 | 0098 REPLACES each `org_admin` list with the OA set, every lifecycle state, audited, reversible, migrate-first | as decided. Set = `review` (only if held) + `ORG_ADMIN_KEYS` + `ORG_ADMIN_V2`; kind `edit_null` for a NULL row, whose `before` is `ORG_ADMIN_KEYS`; a non-list value is left alone; the reverse restores only a row still holding exactly what it wrote |
+| A2 | The O15 three are held by role | `resolve` adds `manage_team` (`LEAD_BY_ROLE`); `effective_v2` adds `billing.edit`, `requests.approve` (`LEAD_BY_ROLE_V2 = NEVER_GRANTABLE`). The stored list is read STRICTLY (`clean`); NULL or a non-list reads as the full set (fail-safe, never a lock-out) |
+| A3 | Money by role until M4 | `LEAD_MONEY_UNTIL_M4` added for an active OA in `effective_v2` (TD-620) |
+| A4 | The Admins seat stays by role | `in_admins` and `groups_to_leave` unchanged; the docstrings drop "until M3" |
+| A6 | Reviewers Add / Remove keeps the OA's other keys | `staff_permissions_v2.org_admin_list(admin, review=)`: `review` first on Add, removed on Remove, the rest kept; a NULL row is written as the full set |
+| A10 | The scanner sees lead-tier reads | `LEAD_READS`: exact count per function for `is_lead_tier(` / `_is_lead_tier(` / `LEAD_ROLE`; GATE-LEFT counts pinned (51 label T5e entries, 3 lead reads) so they only fall |
+
+**Deviations, and why.**
+- **`scholars.approve` (D5) is not added in M3a, so 0098 does not write it.** Adding it to `CATALOGUE_V2` fails the web
+  guard `permissionLayout.test.ts` (it reads the catalogue from the API source and refuses an unplaced key) and would
+  draw a new control on the live Permissions tab, so M3a would no longer be server-only. Whoever adds the key (M3b's
+  senior-letters gate, or M3c with the layout row) adds it to every `org_admin` row with a small data step, or 0098 is
+  amended before it is applied. The architect decides which.
+- `staff_tables_admin.table_keys` (S7) and `staff_tables.invite_permissions` (S9, D3) move to M3c: the first would
+  change the served chips, the second needs the editor. A new or re-invited OA stores NULL, which reads as the full
+  set, exactly as before.
+- `ORG_ADMIN_SET` lives in `staff_permissions_v2` (it needs both catalogues; `staff_permissions` is the leaf).
+- `stored_v2` returns nothing for an OA until M3c, so the editor's served `v2_held` is unchanged.
+
+**Window risk, accepted (migrate-first).** Between 0098 and the deploy the OLD image's Reviewers writers set an OA's
+list to `["review"]` or NULL. NULL reads safely; `["review"]` would read as `review` + `manage_team` only, so the
+release note re-runs the DATA block after the deploy and the POST-DEPLOY CHECK must return zero rows. Do not change
+an OA's role or Reviewers seat in the window.
+
+**A role change by hand now must reset the keys.** Once an OA stores its list, an `UPDATE … SET role = 'reviewer'`
+that leaves `permissions` in place carries the OA's keys over to the new role (the app's own paths never do:
+`change_role` and the Team tables refuse an OA, and Restore / re-invite write `invite_permissions(role)`).
+`test_staff_activity_review`'s demotion now sets `permissions = NULL` too. Any hand data fix that changes an
+`org_admin` row's role must set `permissions` in the same statement.
+
+**Revisit if:** M3b converts a GATE-LEFT site (delete its entry, never reclassify), or M4 moves the money keys
+(TD-620).
+
 ## 2026-11-13 — Request #67 (scope 2): the MyKad name and address are read from the card's layout (bug, no charge; owner 2026-11-13)
 
 **The fault:** the MyKad read worked on Vision's flattened text, which keeps the order of the lines but not where they sit. It guessed where the name ended from A/L, A/P or BIN. A name that ran onto a second line after a mid-line marker, or had no marker at all (many Christian, Chinese and Iban names), lost that line, which then opened the address. Two names lost their FIRST line instead (the marker sat on the second). 15 BrightPath students (apps 181, 190, 243, 305, 358, 391, 399, 442, 530, 552, 559, 573, 581, 602, 626). The truncated name reads `partial`, so `_should_gemini_ic` never escalated it.

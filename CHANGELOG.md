@@ -30,6 +30,34 @@ All notable changes to this project will be documented in this file.
 - The postcode may be glued to the town (`47000SUNGAI`); "A / L" is closed up to "A/L". `extract_text` still returns text and error only.
 - Stored reads change on the next read of a card; no verdict logic change, `VERDICT_ENGINE_VERSION` unchanged. Tests: `test_req67_ic_layout.py` (24).
 
+### feat: sprint M3a - the organisation admin's powers are stored keys (2026-11-14)
+
+Branch m3 (local, not pushed, not deployed). Brief `docs/plans/2026-11-14-m3-lead-keys-brief.md` (part M3a of three;
+D1-D7 as recommended, A1-A12 as decided). Server only. Nobody's access changes.
+- data (A1): migration `courses/0098_store_org_admin_keys.py`, BY HAND, migrate-first. Every `org_admin` row (active,
+  revoked, archived, pending) has its list REPLACED by `review` (only if held) + `ORG_ADMIN_KEYS` (the lead tier less
+  `manage_team`) + `ORG_ADMIN_V2` (25 v2 keys). One audit row per changed row (`edit_null` for a NULL row); reversible
+  exactly; idempotent. The docstring carries the DATA, LEDGER and POST-DEPLOY CHECK blocks. A non-list value and every
+  other role are left alone.
+- api (A2): `staff_permissions.resolve` reads an organisation admin's stored list strictly, plus `manage_team` by
+  role (`LEAD_BY_ROLE`); NULL or a non-list reads as the full set (fail-safe). `effective_v2` reads the stored v2
+  keys (`org_admin_v2`), the Admins table grant, `billing.edit` / `requests.approve` by role (`LEAD_BY_ROLE_V2`) and
+  the money keys by role until M4 (`LEAD_MONEY_UNTIL_M4`, A3, TD-620). `lead_v2` is gone. `stored_v2` reads nothing
+  for an organisation admin until M3c makes the row editable.
+- api (A4): the organisation admin keeps the Admins seat by role; `in_admins` / `groups_to_leave` docstrings say so.
+- api (A6): Team -> Reviewers Add / Remove on an organisation admin adds or removes `review` alone and keeps the rest
+  of the stored list (`org_admin_list`); it no longer writes `["review"]` or NULL over it.
+- api: `staff_person.opens_elsewhere` reads the viewer's `manage_team` instead of the lead-tier label.
+- test (A10): `test_role_is_display_only.py` gains a second scan for `is_lead_tier(` / `_is_lead_tier(` calls and
+  `LEAD_ROLE` reads, with an exact count per function (`LEAD_READS`), pinned GATE-LEFT counts, and a self-test.
+- test: `test_m3_nobody_changes.py` (every live shape, before with copies of the old rules, after with the new code,
+  across resolve, v2 keys, menu, tables, doors, pending cards, sections, assignment, payment gates, holders,
+  `opens_elsewhere`, Restore and the Reviewers round trip); `test_m3_migration_0098.py` (frozen constants, pinned
+  SQL, forward / reverse / re-run, alongside 0097 and 0095); the factories make an `org_admin` row in its post-0098
+  shape (`pre_m3=True` for the old one).
+- deferred: the new `scholars.approve` box (D5) is not added, so 0098 does not write it (see decisions.md M3a);
+  `table_keys` and `invite_permissions` move to M3c.
+
 ### chore: W1 page weight - dated re-baseline of the first-load lines (2026-11-13)
 
 Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four lines raised for Next 15 / React 19

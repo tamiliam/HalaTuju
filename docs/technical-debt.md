@@ -8966,3 +8966,35 @@ safe-area aware. The admin shell has no bottom bar, so nothing collides with it 
 covers no Team person page (`/admin/organisation/team/admins/<id>`), so a future bottom bar or an overflowing
 three-way at 360 px would not be caught. Fix: add one person page with the Permissions tab open to the targets, with
 a fixture admin, and refresh the baseline. *(A - S)*
+
+### [TD-620] An organisation admin's money keys are still held by role (`LEAD_MONEY_UNTIL_M4`) - medium
+
+**Raised 2026-11-14 by sprint M3a (A3).** `staff_permissions_v2.effective_v2` adds `payments.view`,
+`payments.prepare`, `payments.check`, `payments.approve` and `sponsors.check` to every active organisation admin by
+role, and migration 0098 deliberately does not store them, so the stored list does not yet say everything an
+organisation admin can do. The payment seats (who may prepare, check and approve a run) are M4's. Fix: in M4, store
+the money keys an organisation admin should hold, drop `LEAD_MONEY_UNTIL_M4` and its pins in
+`test_m2b_stored_v2.OrgAdminVocabulary`, and move the five `payments_chain` entries of `LEAD_READS` off the role. *(A - S)*
+
+### [TD-621] `SECTIONS_BY_ROLE` still decides the Overview sections for the other roles - low
+
+**Raised 2026-11-14 by sprint M3a.** `programme_overview.SECTIONS_BY_ROLE` picks the Overview's sections by role.
+M3 moves the organisation admin's reads onto keys; the `admin`, `qc`, `finance`, `reviewer` and `partner` rows stay
+by role, so a person given a key on the Permissions tab may not see the section that key implies. Fix: derive each
+section from the keys that open it (one rule in `staff_tables`), then delete the non-OA rows and pin with a test
+that every section has a key. *(A - S)*
+
+### [TD-622] `R1_SUPER_TARGET_ROLES` is a role list in the assignment rules - low
+
+**Raised 2026-11-14 by sprint M3a.** `services/assignment.R1_SUPER_TARGET_ROLES` (`admin`, `qc`, `org_admin`) says
+whom a platform super may hand a case to, by role. It cannot retire until the reviewer target is a key for every
+role (TD-613). Fix: after TD-613, ask the target's keys (`review`) instead of its role, drop the constant and its
+entry in the A10 allowlist. *(A - S)*
+
+### [TD-623] The web still falls back to the role for older payloads, and `canFilterByAssignee` has an `admin` arm - low
+
+**Raised 2026-11-14 by sprint M3a.** The admin pages read the served keys, but where an older API payload has no keys
+they fall back to the role, and `canFilterByAssignee` in `halatuju-web/src/app/admin/scholarship/page.tsx` still
+opens the assignee filter for the `admin` role by name. Once every served payload carries the keys (M3c), the
+fallbacks are dead code that can drift from the server. Fix: in M3c, read only the served keys, delete the role
+fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name in a gate. *(A - S)*
