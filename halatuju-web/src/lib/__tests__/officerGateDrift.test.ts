@@ -25,6 +25,7 @@ import { ORG_REJECT_FROM, canOrgReject, assignOptions } from '@/lib/officerCockp
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { ROLE_NAMES } from '@/lib/navigation'
 import { pySeq, readApi } from '@/test/apiSource'
+import { DOOR_KEYS } from '@/lib/pageDoors'
 
 /**
  * ⚠ `services.py` became the PACKAGE `services/` at code health H15 (2026-09-20), and the two
@@ -101,8 +102,15 @@ describe('the org-admin reject gate — the ROLE half', () => {
   const body = viewBody('AdminOrgRejectView')
 
   test('the view still narrows to super or org_admin', () => {
-    expect(body).toMatch(/if not \(admin\.is_super or admin\.role == 'org_admin'\):/)
+    // M3b G5: the narrowing is the `students.approve` door (`surface_gates.may_decide`), no longer a role
+    // test. The role arm must NOT creep back in, and the door must be the one that opens on that key.
+    expect(body).toMatch(/if not surface_gates\.may_decide\(admin\):/)
     expect(body).toMatch(/_deny_role\(\)/)
+    expect(body).not.toMatch(/admin\.role == 'org_admin'/)
+    expect(readApi('apps/scholarship/surface_gates.py')).toMatch(
+      /def may_decide\(admin\):[\s\S]*?opens_door\(admin, 'decide'\)/)
+    expect(readApi('apps/courses/staff_tables.py')).toMatch(/'decide':\s*\('students\.approve',\)/)
+    expect(DOOR_KEYS.decide).toEqual(['students.approve'])
   })
 
   test('the cockpit offers the card to those two roles and refuses every other', () => {
@@ -129,7 +137,15 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
     expect(pyFunc(servicesSrc, 'may_assign_to')).toMatch(/return has_signed_in\(target\) and may_hand_to\(caller, target\)/)
     const rule = pyFunc(servicesSrc, 'may_hand_to')
     expect(rule).toMatch(/staff_tables\.in_reviewers\(target\) and is_review_target\(target\)/)
-    expect(rule).toMatch(/caller\.role == 'org_admin'/)
+    // M3b E3: nobody hands a case to themselves, a super included; M3b G5: the org admin's arm reads
+    // the `assign` door (`students.edit`), not the role.
+    expect(rule).toMatch(/if caller\.pk == target\.pk:\s*return False/)
+    expect(rule).toMatch(/surface_gates\.may_assign\(caller\)/)
+    expect(rule).not.toMatch(/caller\.role == 'org_admin'/)
+    expect(readApi('apps/scholarship/surface_gates.py')).toMatch(
+      /def may_assign\(admin\):[\s\S]*?opens_door\(admin, 'assign'\)/)
+    expect(readApi('apps/courses/staff_tables.py')).toMatch(/'assign':\s*\('students\.edit',\)/)
+    expect(DOOR_KEYS.assign).toEqual(['students.edit'])
     expect(rule).toMatch(/target\.owning_organisation_id == caller\.owning_organisation_id/)
     expect(rule).toMatch(/if caller\.is_super:/)
   })

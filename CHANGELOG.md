@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: M3b web drift tests and the settings.edit string (2026-11-14)
+
+Three web tests were left red by sprint M3b. `officerGateDrift.test.ts` still pinned the old role checks: the org-reject view now pins `surface_gates.may_decide` (the `students.approve` door, with no role arm left), and the assignment rule now pins the E3 self-assign refusal (`caller.pk == target.pk`) and the `assign` door (`students.edit`) in place of `caller.role == 'org_admin'`, both checked against the server door table too. `namespaces-i18n.test.ts` read the permission key `settings.edit` in `lib/pageDoors.ts` as a message key (it shares the `settings` namespace name); that one file is now skipped by the scan, so no new copy was added in any language and no Tamil review is needed. Tests only, no API or gate change, no migration.
+
 ### feat: sprint SUP1 - fewer support emails: query emails name each item, Action Centre fallback, consent explains itself (2026-11-14)
 - From a study of 137 student support threads (Help Me / Need Information). Saved to main; waits for a release window and the owner's yes. No migration.
 - P1 email: the "a few things we need" email and the reminder now count the SAME way (`services/query_items.open_items_for_email`), recount just before sending (the reminder now syncs Check 2 first, like the raised email), send nothing at 0, and list each open item by its title. A private item (a parent's death or status, guardianship, income, STR, a sibling's funding) and every reviewer-typed item read as "A question from our team"; the full title stays in the Action Centre. Both mails (and request-info) reply to the support address. The reminder has its own subject. Owner-approved wording: no "just reply to this email", real plurals (no "item(s)"), Tamil "அண்மைய". Email golden regenerated for this owner-approved copy (9 entries: query_raised, query_reminder, request_info x en/ms/ta).

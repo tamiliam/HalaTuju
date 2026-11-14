@@ -117,6 +117,14 @@ const LOOKS_LIKE_A_FILE = /\.(ts|tsx|js|jsx|json|py|md|css|sql)$/
 interface Reference { key: string; where: string }
 
 /**
+ * Files whose dotted literals are PERMISSION KEYS, not message keys. `lib/pageDoors.ts` maps each door to
+ * keys such as `settings.edit`, and M3b (A11) added one whose first word is also a message namespace
+ * (`settings`). It is never passed to `t()`, so demanding a string for it would add dead copy in three
+ * languages. Only this one file is skipped; every other source file is still scanned.
+ */
+const PERMISSION_KEY_FILES = new Set(['lib/pageDoors.ts'])
+
+/**
  * Every `'<namespace>.<dotted path>'` literal in production source, with the file and line it
  * came from — a missing key is only actionable if you can be told where it is asked for.
  *
@@ -130,6 +138,7 @@ function scanReferences(): Reference[] {
   const out: Reference[] = []
   for (const file of collectSource(SRC_DIR, [], false)) {
     const where = path.relative(SRC_DIR, file).split(path.sep).join('/')
+    if (PERMISSION_KEY_FILES.has(where)) continue
     stripComments(fs.readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
       const re = new RegExp(`['"\`]((?:${NS_ALTERNATION})\\.[\\w.]+?)(?=['"\`])`, 'g')
       for (const key of captureGroup1(re, line)) {
