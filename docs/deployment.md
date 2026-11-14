@@ -25,8 +25,10 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
 
 ### How a change reaches production
 
-1. **A push to `main` IS a deploy request, and for HalaTuju it needs the owner's yes** (`push = deploy`).
-   Two Cloud Build triggers run committed configs — `halatuju_api/cloudbuild.yaml` (files
+1. **A push to `main` only SAVES; it never deploys (owner, 14 Nov 2026).** To PUBLISH, fast-forward the `live`
+   branch to a tested `main` commit: `git push origin <sha>:live` (never force; `live` only moves forward along
+   `main`). Each publish needs the owner's yes. Run `gh auth switch --user tamiliam` before each push and
+   `--user tamilfoundation` after. Two Cloud Build triggers (they fire on `^live$`) run committed configs — `halatuju_api/cloudbuild.yaml` (files
    `halatuju_api/**`, ignoring `docs/**` and this file) and `halatuju-web/cloudbuild.yaml`
    (`halatuju-web/**`, ignoring `docs/**`). Root `docs/**` and `CHANGELOG.md` deploy nothing.
 2. **The tests are the gate.** Each build runs its suite in parallel with `docker build`; Push and

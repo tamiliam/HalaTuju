@@ -1,0 +1,33 @@
+# CURRENT STATE - the halatuju-api Cloud Build trigger after 2026-11-14, firing on ^live$.
+# Publish by fast-forwarding live to a tested main commit: git push origin <sha>:live (see docs/decisions.md).
+# Re-import: gcloud beta builds triggers import --source=<this file> --project gen-lang-client-0871147736 --account tamiliam@gmail.com
+# (gcloud builds triggers update github returned INVALID_ARGUMENT, so use beta export/import.)
+description: Build and deploy to Cloud Run service halatuju-api on push to "^live$"
+filename: halatuju_api/cloudbuild.yaml
+github:
+  name: HalaTuju
+  owner: tamiliam
+  push:
+    branch: ^live$
+id: 2ad67204-4fb2-4c01-995b-4073b4c12ac1
+ignoredFiles:
+- docs/**
+- halatuju_api/CLAUDE.md
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+includedFiles:
+- halatuju_api/**
+name: rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez
+serviceAccount: projects/gen-lang-client-0871147736/serviceAccounts/90344691621-compute@developer.gserviceaccount.com
+substitutions:
+  REPO_NAME: halatuju
+  _AR_HOSTNAME: asia-southeast1-docker.pkg.dev
+  _AR_PROJECT_ID: gen-lang-client-0871147736
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _DEPLOY_REGION: asia-southeast1
+  _PLATFORM: managed
+  _SERVICE_NAME: halatuju-api
+  _TRIGGER_ID: 2ad67204-4fb2-4c01-995b-4073b4c12ac1
+tags:
+- gcp-cloud-build-deploy-cloud-run
+- gcp-cloud-build-deploy-cloud-run-managed
+- halatuju-api

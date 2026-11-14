@@ -1,6 +1,8 @@
 # HalaTuju API - Cloud Run Deployment
 
-## What a push to main does now (since H2, 2026-09-18)
+## What a push to live does now (H2, 2026-09-18; trigger branch moved from main to live, 2026-11-14)
+
+A push to `main` only saves. The two triggers fire on `^live$`: publish with `git push origin <tested-main-sha>:live` (fast-forward, never force).
 
 Both Cloud Build triggers run a **committed config file** — `halatuju_api/cloudbuild.yaml` and
 `halatuju-web/cloudbuild.yaml` — instead of the inline block that used to live in the console.
@@ -20,6 +22,10 @@ Both Cloud Build triggers run a **committed config file** — `halatuju_api/clou
 - **Rollback.** `docs/infra/cloudbuild-trigger-api-inline-2026-09-18.yaml` and
   `…-web-inline-2026-09-18.yaml` are the exact trigger exports from before the switch. Re-import
   one with `gcloud builds triggers import --source=<file>` to go back to the un-gated inline build.
+- **Trigger branch rollback (2026-11-14).** `docs/infra/cloudbuild-trigger-{api,web}-main-2026-11-14.yaml` are the exports from
+  when the triggers fired on `^main$`; `…-live-2026-11-14.yaml` is the current state. Re-import with
+  `gcloud beta builds triggers import --source=<file> --project gen-lang-client-0871147736 --account tamiliam@gmail.com`.
+  `gcloud builds triggers update github` returned INVALID_ARGUMENT, so use beta export/import.
 - **⚠ Triggers still do NOT run `migrate`.** This project is migrate-first: apply the migration to
   production *before* pushing the code that needs it.
 

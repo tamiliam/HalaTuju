@@ -1,0 +1,35 @@
+# ROLLBACK ARTEFACT - the halatuju-api Cloud Build trigger as it stood on 2026-11-14, firing on ^main$,
+# before it was moved to ^live$ (a push to main now only saves; see docs/decisions.md).
+# Re-import: gcloud beta builds triggers import --source=<this file> --project gen-lang-client-0871147736 --account tamiliam@gmail.com
+# (gcloud builds triggers update github returned INVALID_ARGUMENT, so use beta export/import.)
+createTime: '2026-03-15T08:39:43.457576871Z'
+description: Build and deploy to Cloud Run service halatuju-api on push to "^main$"
+filename: halatuju_api/cloudbuild.yaml
+github:
+  name: HalaTuju
+  owner: tamiliam
+  push:
+    branch: ^main$
+id: 2ad67204-4fb2-4c01-995b-4073b4c12ac1
+ignoredFiles:
+- docs/**
+- halatuju_api/CLAUDE.md
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+includedFiles:
+- halatuju_api/**
+name: rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez
+resourceName: projects/gen-lang-client-0871147736/locations/global/triggers/2ad67204-4fb2-4c01-995b-4073b4c12ac1
+serviceAccount: projects/gen-lang-client-0871147736/serviceAccounts/90344691621-compute@developer.gserviceaccount.com
+substitutions:
+  REPO_NAME: halatuju
+  _AR_HOSTNAME: asia-southeast1-docker.pkg.dev
+  _AR_PROJECT_ID: gen-lang-client-0871147736
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _DEPLOY_REGION: asia-southeast1
+  _PLATFORM: managed
+  _SERVICE_NAME: halatuju-api
+  _TRIGGER_ID: 2ad67204-4fb2-4c01-995b-4073b4c12ac1
+tags:
+- gcp-cloud-build-deploy-cloud-run
+- gcp-cloud-build-deploy-cloud-run-managed
+- halatuju-api

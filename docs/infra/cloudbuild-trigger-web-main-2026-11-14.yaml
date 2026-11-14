@@ -1,0 +1,34 @@
+# ROLLBACK ARTEFACT - the halatuju-web Cloud Build trigger as it stood on 2026-11-14, firing on ^main$,
+# before it was moved to ^live$ (a push to main now only saves; see docs/decisions.md).
+# Re-import: gcloud beta builds triggers import --source=<this file> --project gen-lang-client-0871147736 --account tamiliam@gmail.com
+# (gcloud builds triggers update github returned INVALID_ARGUMENT, so use beta export/import.)
+createTime: '2026-03-15T08:38:06.161337720Z'
+description: Build and deploy to Cloud Run service halatuju-web on push to "^main$"
+filename: halatuju-web/cloudbuild.yaml
+github:
+  name: HalaTuju
+  owner: tamiliam
+  push:
+    branch: ^main$
+id: 664dc878-4294-43ac-9f53-e00411809141
+ignoredFiles:
+- docs/**
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+includedFiles:
+- halatuju-web/**
+name: rmgpgab-halatuju-web-asia-southeast1-tamiliam-HalaTuju--maaix
+resourceName: projects/gen-lang-client-0871147736/locations/global/triggers/664dc878-4294-43ac-9f53-e00411809141
+serviceAccount: projects/gen-lang-client-0871147736/serviceAccounts/90344691621-compute@developer.gserviceaccount.com
+substitutions:
+  REPO_NAME: halatuju
+  _AR_HOSTNAME: asia-southeast1-docker.pkg.dev
+  _AR_PROJECT_ID: gen-lang-client-0871147736
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _DEPLOY_REGION: asia-southeast1
+  _PLATFORM: managed
+  _SERVICE_NAME: halatuju-web
+  _TRIGGER_ID: 664dc878-4294-43ac-9f53-e00411809141
+tags:
+- gcp-cloud-build-deploy-cloud-run
+- gcp-cloud-build-deploy-cloud-run-managed
+- halatuju-web

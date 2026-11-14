@@ -2,7 +2,7 @@
 #
 # WHAT THIS FILE IS
 #   The Cloud Build trigger "rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez"
-#   (GitHub push to ^main$, project gen-lang-client-0871147736, region global) runs this file via
+#   (GitHub push to ^live$, project gen-lang-client-0871147736, region global) runs this file via
 #   `filename: halatuju_api/cloudbuild.yaml`. The build runs from the REPOSITORY ROOT, so paths
 #   below are repo-relative (`halatuju_api/Dockerfile`), not relative to this file.
 #   Build, Push, Deploy and SyncReleaseJob are an exact reproduction of the inline steps they
@@ -18,7 +18,7 @@
 # HOTFIX BYPASS — a flaky test must never block a hotfix.
 #   Run the trigger manually with the tests skipped (this keeps the trigger's substitutions):
 #     gcloud builds triggers run rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez \
-#       --branch=main --substitutions=_SKIP_TESTS=1 \
+#       --branch=live --substitutions=_SKIP_TESTS=1 \
 #       --region=global --account tamiliam@gmail.com --project gen-lang-client-0871147736
 #   The test step then prints a loud banner instead of running. Whoever uses it must record the
 #   skip in the sprint retrospective.

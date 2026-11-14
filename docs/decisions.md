@@ -1,5 +1,11 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-14 — Deploy is decoupled from push: the `live` branch (owner 2026-11-14)
+
+**The rule:** the two Cloud Build triggers (api, web) fire on `^live$`, not `^main$`. A push to `main` only SAVES. To publish, fast-forward `live` to a tested `main` commit (`git push origin <sha>:live`, never force; `live` only moves forward along `main`). The path filters are unchanged. The owner's yes is still needed before each publish. `origin/live` was cut at 66c58c607, the commit that was live.
+
+**Why:** it lets us combine several pushes into one deploy, and a push to `main` no longer surprises anyone. Rollback: re-import the trigger exports in `docs/infra/` (`…-main-2026-11-14.yaml`).
+
 ## 2026-11-13 — Request #67 (scope 2): the MyKad name and address are read from the card's layout (bug, no charge; owner 2026-11-13)
 
 **The fault:** the MyKad read worked on Vision's flattened text, which keeps the order of the lines but not where they sit. It guessed where the name ended from A/L, A/P or BIN. A name that ran onto a second line after a mid-line marker, or had no marker at all (many Christian, Chinese and Iban names), lost that line, which then opened the address. Two names lost their FIRST line instead (the marker sat on the second). 15 BrightPath students (apps 181, 190, 243, 305, 358, 391, 399, 442, 530, 552, 559, 573, 581, 602, 626). The truncated name reads `partial`, so `_should_gemini_ic` never escalated it.
