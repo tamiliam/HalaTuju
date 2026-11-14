@@ -3,7 +3,7 @@
 **Audit commit:** tag v3.1.0 / `442b21f4` (every lens read this commit).
 **Workflow:** `Settings/_workflows/project-audit.md`. Five lenses (code health, completeness, redundancy, speed, security), then a fresh Opus verification of every high, security and money finding.
 **New debt entries:** TD-512 to TD-523 (range claimed after the highest number found on main and all open branches, TD-506, with a gap of five left for Lane B).
-**Status:** report written, awaiting the owner's ranking (step 6). The freeze is on: security fixes, live-defect hotfixes and operations only.
+**Status:** CLOSED 2026-11-12 (see the Closing section: final reading, targets not met with their named later sprints, freeze lifted).
 
 ## Summary (ten lines)
 
@@ -343,7 +343,72 @@ Superseded on 2026-11-05 by the full fix roadmap, `docs/plans/2026-11-05-audit-f
 
 ## Closing section
 
-(To be written when the fix roadmap is done.)
+Written 2026-11-12, `project-audit.md` step 8. Final reading: `code_health.py --full`, taken read-only (no `--write`) on branch g15 at
+`011a25fb0` (live main), window 2026-08-14 onward; `wat_lint` on the same tree. **The Trend row is held back on purpose:**
+writing it would reset the `xapp` and `std` limits to today's worse values without the owner's yes. It will be written once W1 (`std`)
+and F2 (`xapp`) bring the readings back, or the owner says yes to a new baseline. Against the 2026-11-05 baseline the tool reads
+2 FAIL: `std` (owner-accepted until Fri 20 Nov, W1) and `xapp` (NOT accepted, F2 by 11 Dec). Targets are the roadmap's (section 1.2; interim pass marks section 6).
+
+**What moved.** The structure work landed: `big` 13 to 1, `long` 15 to 1, `supp` 92 to 20, `mirror` 3 to 0, `guard%` 12 to
+8, `hot#1` 32.4 to 18, `dup` 4 to 1, `td_open` 219 to 169. `xapp` got worse (85 to 107) because the Wave 3 splits made
+each package import the same names again. `std` is still FAIL: the four first-load lines raised for Next 15 / React 19
+have not come back down.
+
+### Readings, side by side
+
+Baseline = this audit (v3.1.0, 2026-11-05). Interim = as recorded at the G13 reading (2026-11-11) and the Consolidation
+Review (2026-11-12); a dash means no interim value was recorded. Final = today.
+
+| Reading | Baseline | Interim (pass mark) | Final | Target | Met? |
+|---|---|---|---|---|---|
+| fix% | 51 | 52 (-) | 52 (WARN) | <= 60, commit-type rule in force, TD-385 decided | Met. Rule is in `halatuju_api/CLAUDE.md`; TD-385 is fixed in the tool (61 sprint-own fixes left out). |
+| hot#1 | vision.py 32.4 | - (< 20) | verdict_engine.py 18 | < 20; today's top 5 under 15 | Number met. "Top 5 under 15" not met: 18, 13 and 12.2 are the top three (`verdict_engine.py`, `results_doc.py`, `views_admin.py`). |
+| big | 13 | 1 (<= 7) | 1 | <= 6 | Met |
+| long | 15 | 1 (<= 6) | 1 | <= 5 | Met |
+| dup | 4 | 4, then 1 after C2 (0) | 1 (`_gemini_generate`) | 0 | **Not met** |
+| xapp | 85 | 107 (<= 55) | 107 (courses to scholarship 21) | <= 50; courses to scholarship <= 8 | **Not met** |
+| supp | 92 | 20 (<= 35) | 20 | <= 30 | Met |
+| skip | 0 | 0 | 0 | 0 | Met |
+| mirror | 3 | - (0) | 0 | 0 (widening the guard past `src/lib`, TD-362, not re-checked here) | Met on the reading |
+| guard% | 12 | 11 after A3.16a (<= 9) | 8 | <= 8 | Met |
+| td_open | 219 (208 in the Trend) | 162 (<= 140) | 169 | <= 110 | **Not met** |
+| unused / tsc / i18n | 0 / 0 / ok | - | 0 / 0 / ok | hold | Met |
+| std | FAIL | FAIL (PASS) | FAIL (four web lines looser) | PASS | **Not met** |
+| wat_lint | FAIL | - | 0 fail, 1 warn (Reference Pointers 20 entries, a workspace memory item) | PASS | Met |
+| Consolidation Review | Overdue | - | Done 2026-11-12 | Done and on time | Met |
+| Four speed numbers (record-verdict, reprocess job, upload, assign) | about 50 s, p95 232-260 s, 27.2 s, 39-49 s | - | Not read in this close | all four met | **Not established.** They need live logs 7 days after each deploy; this docs-only close read none, so none is claimed. |
+| Bundle headroom | 0.4 to 1.2 kB | - | Not re-measured (no `next build`) | >= 3 kB | **Not established**; the roadmap's own correction says 2 kB is the most a ratcheted line can hold. |
+
+### Targets not met, and whose they are
+
+Each named sprint and date is the owner's, as recorded in `docs/consolidation-log.md` (2026-11-12, "Owner decision on
+the two open readings", the owner's words "yes to the above plan and Option A") and the roadmap section "Catch-up
+follow-ons". On the date, the acceptance lapses and the reading goes back to the owner; no agent extends it.
+
+| Reading | Named later sprint | Owner's deadline |
+|---|---|---|
+| `std` (page weight) | W1 | FAIL against the 2026-11-05 baseline, owner-accepted until Fri 20 Nov. Build 16-18 Nov, deploy by Fri 20 Nov, with the owner's yes. The acceptance lapses on 20 Nov. |
+| `fix%` 52 (WARN, accepted) | F1 slip-check matrix | Rule table approved by Wed 18 Nov, build 19-24 Nov, deploy by Fri 27 Nov. Proof at the 11 Dec small audit: `fix%` below 52, no new slip-check field fix after F1. |
+| `dup` 1 (`_gemini_generate`) | Gemini duplicate | By Fri 4 Dec, after Gemini Phase 2. |
+| `xapp` 107 | F2 cross-app imports | By the monthly small audit on Fri 11 Dec. The log records `xapp` as NOT accepted. |
+| `td_open` 169 (target 110) | None | **Not met. No sprint was set for it and the owner has recorded no decision on it.** The monthly small audit on 11 Dec reviews it. `td_open` is information only and a good audit can raise it (failure mode in the workflow); it moved 219 to 169 here. |
+
+Also open and not claimed as met: the `hot#1` "top 5 under 15" clause (no sprint named) and the two readings marked
+"not established" above (speed and bundle headroom need live logs and a `next build`).
+
+### Freeze
+
+`project-audit.md` step 8 reads "Lift the freeze" as the last act of the close. It does not require the owner's yes, so
+it is recorded here: **the audit freeze is lifted as of this closing section.** What that does and does not change:
+
+- The blanket rule "no new features, pages or models" ends. Security fixes, hotfixes and Lane B requests were already allowed.
+- The named later sprints above (W1, F1, F2, Gemini duplicate) still run, each with the owner's yes and a sprint-start.
+- Anything new (Team tables T5d, offer-letter S7, which is paid) still needs the owner's word, as the workflow's last
+  failure mode says. Lifting the freeze is not approval to build them.
+- `docs/roadmap.md` is updated to match. The two lines in `halatuju_api/CLAUDE.md` that still say FREEZE (lines 172 and
+  179) are left for the owner to change; no CLAUDE.md was edited.
+
+The fix roadmap is not fully done (Wave 4 items waiting on the owner, such as TD-338, and the catch-up sprints above remain). The close follows the roadmap's section 6 step "a fresh full reading after Wave 4".
 
 ## Appendix A: every open debt item (sweep 2026-11-05)
 

@@ -280,6 +280,9 @@ System health light read "has not run".
   (`--args=manage.py,run_cron_job,backup-documents`, one-hour task timeout); the job gains
   `DOCUMENT_BACKUP_BUCKET`. `EXPECTED_CADENCE` unchanged. Docs: `deployment.md` item 9, env table.
 - test: `test_run_cron_job.py`.
+### docs: v3.1.0 project audit closed (2026-11-12)
+
+Docs only, branch g15, not pushed. Closing section in `docs/audits/2026-11-05-project-audit.md`: baseline, interim and final readings, targets met and not met, named later sprints W1, F1, Gemini duplicate and F2 with the owner's dates; `td_open` 169 against 110 not met, no sprint set. Final reading taken read-only; the Trend row is held back on purpose (writing it would reset the `xapp` and `std` limits without the owner's yes), so `docs/code-health.md` is unchanged. Freeze lifted in `docs/roadmap.md`.
 
 ### feat: sprint M2a - Team moves to /team, one page per group (team membership, 2026-11-12)
 
