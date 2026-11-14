@@ -146,9 +146,10 @@ class TheStudentsOwnIc(TestCase):
         self.assertEqual(self._gate()[0], [])
 
     def test_a_re_run_of_the_same_image_during_an_outage_reuses_the_answer_and_asks_no_one(self):
+        from apps.scholarship.profile_engine import MODEL_CASCADE
         ic = _doc(self.app)
         _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME,
-              second={'nric': STUDENT_NRIC, 'name': STUDENT_NAME, 'address': ''})
+              second={'nric': STUDENT_NRIC, 'name': STUDENT_NAME, 'address': '', '_model': MODEL_CASCADE[0]})
         r, g = _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME, second={'_error': _402})
         g.assert_not_called()
         self.assertFalse(r.get('stale_kept'))

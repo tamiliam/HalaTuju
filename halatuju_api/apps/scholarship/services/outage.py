@@ -99,6 +99,8 @@ def _gemini_read_window(since, until):
             vision_fields__has_key='ic_second_opinion',
     ).values_list('application_id', 'vision_fields'):
         outcome = ic_second_opinion_outcome(vf)
+        if outcome == 'skip':       # #67: a reused stored answer asked no one
+            continue
         attempts += 1
         if outcome == 'ok':
             successes += 1
@@ -124,8 +126,14 @@ def gemini_read_outcome(vf):
 
 
 def ic_second_opinion_outcome(vf):
-    """The IC's REQUIRED Gemini second opinion: 'ok', 'failed' ('ours') or None ('theirs')."""
-    outcome = (vf if isinstance(vf, dict) else {}).get('ic_second_opinion')
+    """The IC's REQUIRED Gemini second opinion: 'ok', 'failed' ('ours') or None ('theirs'); 'skip'
+    when the read reused a stored answer (``ic_second_reading.reused``, #67 scope 3): it stays 'ok'
+    for the read, but Gemini was not asked, so it proves nothing about the service."""
+    vf = vf if isinstance(vf, dict) else {}
+    reading = vf.get('ic_second_reading')
+    if isinstance(reading, dict) and reading.get('reused'):
+        return 'skip'
+    outcome = vf.get('ic_second_opinion')
     return 'ok' if outcome == 'ok' else ('failed' if outcome == 'ours' else None)
 
 

@@ -5,8 +5,8 @@ Since #67 scope 3 every IC read aligns the name as it lands (``identity.align_na
 from ``vision.ic.run_vision_for_document`` just before the IC lock). A card read EARLIER never went
 through that step — application 177's profile still holds a 3-word edit of the 5-word name its
 signature and its card agree on. This runs the same rule, once, over every profile's latest live
-student IC (``identity.latest_live_ic``: her own slot, not a household member's or a requested
-card): the card's number exactly the typed one, a clean read, and the card's name the same words in
+student IC (``identity.latest_live_ic``: not a household member's; a card an officer asked for
+counts): the card's number exactly the typed one, a clean read, and the card's name the same words in
 the same order as the profile name or one of the profile's signatures (only case, spaces and marker
 spacing tidied: a glued or split word, a dropped or different connector, BIN for BINTI, a missing
 apostrophe or the words in another order does not count).

@@ -128,8 +128,8 @@ class ProfileView(APIView):
         ic_flags, ic_card_nric, ic_card_name = [], '', ''
         try:
             identity_rules = _scholarship_public().identity
-            # The student's own live card: a REPLACED card, a household member's card and a
-            # reviewer-requested upload decide nothing. The name lock reads the same card.
+            # The student's own live card (one an officer asked for counts): a REPLACED card and a
+            # household member's card decide nothing. The name lock reads the same card.
             ic = identity_rules.latest_live_ic(profile)
             if ic is not None and profile.name and profile.nric:
                 cmp_ = identity_rules.compare(ic, profile)

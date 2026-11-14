@@ -50,9 +50,11 @@ def reread_preflight(command, opts, *, refuse=True):
                        f'on the job, as on the halatuju-api service, or pass {ALLOW_WITHOUT_GENUINENESS}.')
 
 
-def reextract_document(doc, *, reslot=False) -> bool:
+def reextract_document(doc, *, reslot=False, fresh=True) -> bool:
     """Re-run the automatic read for one document, dispatched by type. Returns True when a
     known read ran, False for a type with no automatic check (caller decides what to do).
+    ``fresh`` (#67 scope 3, third pass M1): an officer's Re-run and the bulk re-read commands are
+    deliberate, so the IC second opinion asks again rather than reuse a stored answer.
     ``reslot`` (A2.8a review): the hourly sweep's re-read stands in for an upload read our outage
     deferred, so it files an EPF found in the salary-slip slot as an EPF, exactly as the upload's
     read does (the one step, ``views._reslot_income_doc``). An officer's Re-run and the bulk
@@ -60,7 +62,7 @@ def reextract_document(doc, *, reslot=False) -> bool:
     from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
     app = doc.application
     if doc.doc_type in ('ic', 'parent_ic'):
-        _vision.run_vision_for_document(doc)               # MyKad OCR → vision_nric/name columns
+        _vision.run_vision_for_document(doc, fresh=fresh)  # MyKad OCR → vision_nric/name columns
     elif doc.doc_type in TEXT_READ_DOC_TYPES:
         _vision.read_text_document(doc)                    # letter of intent → vision_fields['text']
     elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:

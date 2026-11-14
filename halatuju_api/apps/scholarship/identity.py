@@ -192,16 +192,19 @@ NO_NAME_MATCH = 'no_name_match'      # neither the typed name nor any signature 
 
 def latest_live_ic(profile):
     """The student's own IC read that speaks for them now: their newest ``ic`` document, not
-    replaced (``superseded_at``), with a name read off it, in the student's own slot — not a
-    household member's card (``household_member``) and not a reviewer-requested upload
-    (``request_code``). ``/profile``'s flags read this same card (``ProfileView._identity_state``),
-    so the padlock, the flags and the name lock read one card."""
+    replaced (``superseded_at``), with a name read off it, and not a household member's card
+    (``household_member``). A card an officer ASKED for (the Action Centre uploads it with the
+    request's ``request_code``) is hers too, and is often the only live one: that upload supersedes
+    her apply-form copy (``DocumentListCreateView._stale_ids``). No request code is ever another
+    person's ``ic`` (a parent's card is ``parent_ic``; a results-slip code never names an ``ic``), so
+    none is excluded. ``/profile``'s flags read this same card (``ProfileView._identity_state``),
+    so the padlock, the flags, the alignment and the name lock read one card."""
     if profile is None or getattr(profile, 'pk', None) is None:
         return None
     from .models import ApplicantDocument
     return (ApplicantDocument.objects
             .filter(application__profile=profile, doc_type='ic', superseded_at__isnull=True,
-                    household_member='', request_code='')
+                    household_member='')
             .exclude(vision_name='').order_by('-id').first())
 
 

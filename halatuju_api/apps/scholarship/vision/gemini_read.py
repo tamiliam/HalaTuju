@@ -3,6 +3,7 @@ document, and the IC second opinion (moved verbatim from ``vision.py``, audit sp
 
 ``halatuju/ai_registry.py`` registers this file as the ``doc_read`` job."""
 
+import hashlib
 import json
 import logging
 from typing import Optional
@@ -38,6 +39,12 @@ _IC_GEMINI_PROMPT = (
     'If a field is unclear, leave it empty. Do NOT invent or guess.'
 )
 
+#: Which question the IC second opinion asks (#67 scope 3, third pass M1): a stored answer is
+#: reused only for the same image, model AND this version. Derived from the prompt and the schema,
+#: so editing either changes it without anyone remembering to bump it.
+IC_SECOND_OPINION_PROMPT_VERSION = hashlib.sha256(
+    (_IC_GEMINI_PROMPT + json.dumps(_IC_GEMINI_SCHEMA, sort_keys=True)).encode('utf-8')).hexdigest()[:16]
+
 # ── Genuineness fingerprint (verification-assurance roadmap, Sprint 1) ─────────
 # A SEPARATE concern from field extraction: does the image look like a genuine photo/scan
 # of a physical MyKad, or a typed sheet / screenshot / printout? Multimodal — Gemini inspects
@@ -63,12 +70,14 @@ def _as_image_for_gemini(data: bytes, content_type: str):
 
 
 def _gemini_ic_second_opinion(data: bytes, content_type: str) -> dict:
-    """Ask Gemini to re-read the MyKad image → {'nric','name','address'} or {'_error'}.
-    Never raises (the seam degrades gracefully)."""
+    """Ask Gemini to re-read the MyKad image → {'nric','name','address','_model'} or {'_error'}.
+    ``_model`` is the cascade model that answered (kept with the answer, so a model change asks
+    again). Never raises (the seam degrades gracefully)."""
     img, mime = _as_image_for_gemini(data, content_type)
     if img is None:
         return {'_error': 'no image for gemini'}
-    return _v._call_gemini_json(_IC_GEMINI_PROMPT, _IC_GEMINI_SCHEMA, image=img, mime_type=mime)
+    return _v._call_gemini_json(_IC_GEMINI_PROMPT, _IC_GEMINI_SCHEMA, image=img, mime_type=mime,
+                                with_model=True)
 
 
 def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = None,

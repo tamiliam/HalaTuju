@@ -319,7 +319,7 @@ class Command(BaseCommand):
     def _run_extractor(self, doc, _vision):
         dt = doc.doc_type
         if dt in ('ic', 'parent_ic'):
-            _vision.run_vision_for_document(doc)
+            _vision.run_vision_for_document(doc, fresh=True)   # an eval measures the model: always ask
         elif dt == 'statement_of_intent':
             _vision.read_text_document(doc)
         else:   # supporting docs: OCR → name/address match → Gemini field extraction

@@ -16,6 +16,9 @@ The owner's decisions D1-D6 (docs/plans/req67-scope3-ic-name-alignment-brief.md)
   student signed. A deterministic match, or a read LONGER than the typed name, is never replaced;
   parent cards keep their rule.
 * D5 — ``align_profile_names_to_ic``: dry run by default, ids and counts only.
+* Third pass — a card an officer asked for is her card (H1); a kept second-opinion answer is reused
+  only by an automatic re-run of the same image, model and prompt (M1), and never counts as the
+  service answering (L1).
 * D6 — align before the lock, so the lock compares the card with the name it will hold; two
   separate never-raise steps, so a failed alignment never costs the lock.
 
@@ -78,17 +81,53 @@ def _ic(app, *, name=CARD, nric=NRIC, doc_type='ic', member='', error='', vf=Non
                            vision_error=error, vision_fields=fields, **kw)
 
 
-def _read(doc, *, name, nric, second=None):
+def _lead_model():
+    from apps.scholarship.profile_engine import MODEL_CASCADE
+    return MODEL_CASCADE[0]
+
+
+def _answers(second):
+    """The mocked second reader: ``second`` as the lead model's answer (``None``: must not be asked)."""
+    if second is None:
+        return AssertionError('no second opinion')
+    return lambda *a, **k: {'_model': _lead_model(), **second}
+
+
+def _read(doc, *, name, nric, second=None, fresh=False):
     """The real MyKad pipeline: Vision answers ``name``/``nric``; the mocked Gemini answers ``second``
     (``None``: it must not be asked). Returns the Gemini mock."""
     ocr = {'nric': nric, 'name': name, 'address': '', 'error': None}
-    g_side = (lambda *a, **k: dict(second)) if second is not None else AssertionError('no second opinion')
     with patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
             patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
-            patch('apps.scholarship.vision._gemini_ic_second_opinion', side_effect=g_side) as g:
-        vision.run_vision_for_document(doc)
+            patch('apps.scholarship.vision._gemini_ic_second_opinion', side_effect=_answers(second)) as g:
+        vision.run_vision_for_document(doc, fresh=fresh)
     doc.refresh_from_db()
     return g
+
+
+def upload_and_read_ic(test, app, tag, *, name=CARD, nric=NRIC, second=None, request_code=''):
+    """An IC upload through the real API, then its queued read (``upload_read.run_read``: read, judge,
+    promote). ``request_code`` is the Action Centre's upload for an officer's request. Only Storage,
+    Vision, Gemini and the genuineness model are mocked. Returns the document."""
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(app.profile)}')
+    ocr = {'nric': nric, 'name': name, 'address': '', 'error': None}
+    body = {'doc_type': 'ic', 'storage_path': issued_key(app, 'ic', tag), 'content_type': 'image/jpeg',
+            'original_filename': f'{tag}.jpg', 'size': 1000}
+    if request_code:
+        body['request_code'] = request_code
+    with override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                           DOC_GENUINENESS_CHECK_ENABLED=True, IC_GEMINI_FALLBACK_ENABLED=True), \
+            patch('apps.scholarship.storage.object_exists', return_value=True), \
+            patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE + tag.encode()), \
+            patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
+            patch('apps.scholarship.vision.ic_genuineness', return_value={'status': 'genuine'}), \
+            patch('apps.scholarship.vision._gemini_ic_second_opinion', side_effect=_answers(second)):
+        r = client.post('/api/v1/scholarship/documents/', body, format='json')
+        test.assertEqual(r.status_code, 201, r.content)
+        outcome, _ = upload_read.run_read(r.json()['id'])
+    test.assertEqual(outcome, 'done')
+    return ApplicantDocument.objects.get(pk=r.json()['id'])
 
 
 def _name_of(profile):
@@ -170,23 +209,8 @@ class ThroughARealUpload(TestCase):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(self.profile)}')
 
-    def _upload_and_read(self, tag, second=None):
-        ocr = {'nric': NRIC, 'name': CARD, 'address': '', 'error': None}
-        g_side = ((lambda *a, **k: dict(second)) if second is not None
-                  else AssertionError('no second opinion'))
-        with patch('apps.scholarship.storage.object_exists', return_value=True), \
-                patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
-                patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
-                patch('apps.scholarship.vision.ic_genuineness', return_value={'status': 'genuine'}), \
-                patch('apps.scholarship.vision._gemini_ic_second_opinion', side_effect=g_side):
-            r = self.client.post('/api/v1/scholarship/documents/', {
-                'doc_type': 'ic', 'storage_path': issued_key(self.app, 'ic', tag),
-                'content_type': 'image/jpeg', 'original_filename': f'{tag}.jpg', 'size': 1000},
-                format='json')
-            self.assertEqual(r.status_code, 201, r.content)
-            outcome, _ = upload_read.run_read(r.json()['id'])
-        self.assertEqual(outcome, 'done')
-        return ApplicantDocument.objects.get(pk=r.json()['id'])
+    def _upload_and_read(self, tag, second=None, **kw):
+        return upload_and_read_ic(self, self.app, tag, second=second, **kw)
 
     def test_a_short_profile_name_with_the_signature_on_the_card_ends_aligned_and_locked(self):
         doc = self._upload_and_read('first')
@@ -222,6 +246,48 @@ class ThroughARealUpload(TestCase):
         doc = self._upload_and_read('second')
         self.assertIsNone(doc.superseded_at)
         self.assertEqual(_name_of(self.profile), CARD)
+
+    def test_a_card_an_officer_asked_for_is_her_card(self):
+        """Third pass H1: her own card read a wrong digit (no lock, no alignment); an officer asks for
+        a new IC; the Action Centre's upload carries the request's code and supersedes her own copy,
+        so it is her ONLY live card. It gives the flags, the take-the-name offer, the alignment and
+        the lock (it used to be skipped as a requested upload: locked on the short name, no fix)."""
+        own = self._upload_and_read('own', nric=OTHER_NRIC,
+                                    second={'nric': OTHER_NRIC, 'name': CARD, 'address': ''})
+        self.profile.refresh_from_db()
+        self.assertEqual((self.profile.name, self.profile.nric_verified), (SHORT_EDIT, False))
+        asked = self._upload_and_read('asked', request_code='officer_3')
+        own.refresh_from_db()
+        self.assertIsNotNone(own.superseded_at)                  # the requested copy replaced hers
+        self.assertEqual((asked.request_code, asked.superseded_at), ('officer_3', None))
+        self.assertEqual(identity.latest_live_ic(self.profile).pk, asked.pk)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.name, CARD)                # aligned on the promotion
+        self.assertTrue(self.profile.nric_verified)              # and locked against that name
+        # An admin edits the name short again: the card still speaks, so she can take it back.
+        self.profile.name = SHORT_EDIT
+        self.profile.save(update_fields=['name'])
+        self.assertTrue(identity.name_card_takeable(self.profile))
+        self.assertTrue(identity.name_change_allowed(self.profile, CARD))
+        with override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET):
+            d = self.client.get('/api/v1/profile/').json()
+        self.assertEqual((d['ic_card_nric'], d['ic_card_name']), (NRIC, CARD))
+        self.assertTrue(d['name_locked'])
+        self.assertTrue(d['name_card_takeable'])
+
+    def test_a_blank_first_read_then_the_requested_card_ends_aligned_and_locked(self):
+        """Third pass H1, the reviewer's run 2: her own card reads no name at all (nor does the second
+        reader); the card an officer then asks for reads the whole name, and that one aligns and locks."""
+        self._upload_and_read('own', name='', second={'nric': NRIC, 'name': '', 'address': ''})
+        self.profile.refresh_from_db()
+        self.assertEqual((self.profile.name, self.profile.nric_verified), (SHORT_EDIT, False))
+        self.assertIsNone(identity.latest_live_ic(self.profile))      # a card with no name speaks for no one
+        asked = self._upload_and_read('asked', request_code='officer_4')
+        self.assertIsNone(asked.superseded_at)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.name, CARD)
+        self.assertTrue(self.profile.nric_verified)
+        self.assertEqual(identity.compare(asked, self.profile)['name'], 'match')
 
 
 class WhenItAligns(TestCase):
@@ -386,7 +452,8 @@ class The559Shape(TestCase):
                 patch('apps.scholarship.vision.extract_mykad',
                       return_value={'nric': NRIC7, 'name': FIRST4, 'address': '', 'error': None}), \
                 patch('apps.scholarship.vision._gemini_ic_second_opinion',
-                      return_value={'nric': NRIC7, 'name': FULL7, 'address': ''}) as g:
+                      return_value={'nric': NRIC7, 'name': FULL7, 'address': '',
+                                    '_model': _lead_model()}) as g:
             vision.run_vision_for_document(self.doc)
         g.assert_called_once()                                     # a new image is a new question
         for vf in ({'ic_second_opinion': 'ours', IC_SECOND_OPINION_ERROR: 'All AI models failed: 503'},
@@ -401,6 +468,67 @@ class The559Shape(TestCase):
                 g = _read(self.doc, name=FIRST4, nric=NRIC7,
                           second={'nric': NRIC7, 'name': FULL7, 'address': ''})
                 g.assert_called_once()
+
+    def test_the_answer_kept_names_its_model_and_prompt(self):
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        kept = self.doc.vision_fields['ic_second_reading']
+        self.assertEqual(kept['model'], _lead_model())
+        self.assertEqual(kept['prompt'], vision.IC_SECOND_OPINION_PROMPT_VERSION)
+        self.assertNotIn('reused', kept)
+
+    def test_another_model_or_another_prompt_asks_again(self):
+        """Third pass M1: the stored answer was one model's answer to one question; Gemini Phase 2
+        (a new lead model) or a prompt change asks again, and keeps the new answer."""
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        with patch('apps.scholarship.profile_engine.MODEL_CASCADE', ['gemini-next-flash']):
+            g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                      second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g.assert_called_once()
+        self.assertEqual(self.doc.vision_fields['ic_second_reading']['model'], 'gemini-next-flash')
+        with patch('apps.scholarship.vision.IC_SECOND_OPINION_PROMPT_VERSION', 'a-new-question'):
+            g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                      second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g.assert_called_once()
+
+    def test_a_deliberate_re_read_always_asks_again(self):
+        """Third pass M1: an officer's Re-run, ``reextract_document`` and the re-read commands pass
+        ``fresh``; only an automatic re-run reuses."""
+        from apps.scholarship.reextract import reextract_document
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g = _read(self.doc, name=FIRST4, nric=NRIC7, fresh=True,
+                  second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g.assert_called_once()
+        ocr = {'nric': NRIC7, 'name': FIRST4, 'address': '', 'error': None}
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
+                patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
+                patch('apps.scholarship.vision._gemini_ic_second_opinion',
+                      side_effect=_answers({'nric': NRIC7, 'name': FULL7, 'address': ''})) as g:
+            self.assertTrue(reextract_document(self.doc))
+        g.assert_called_once()
+        self.doc.refresh_from_db()
+        self.assertEqual(self.doc.vision_name, FULL7)
+
+    def test_a_reused_answer_is_not_counted_as_gemini_answering(self):
+        """Third pass L1: a reused answer keeps 'ok' (the read is clean, it aligns and locks), but the
+        outage alert and the health light never count it as the service answering."""
+        from datetime import timedelta
+        from apps.scholarship.services import outage, system_health
+        since = timezone.now() - timedelta(minutes=5)
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        until = timezone.now() + timedelta(minutes=5)
+        self.assertEqual(outage._gemini_read_window(since, until)[:2], (1, 1))   # a real answer counts
+        self.assertEqual(len(system_health._gemini_events(until)), 1)
+        _read(self.doc, name=FIRST4, nric=NRIC7)                   # reused: asking would raise
+        vf = self.doc.vision_fields
+        self.assertTrue(vf['ic_second_reading']['reused'])
+        self.assertEqual(vf['ic_second_reading']['model'], _lead_model())
+        self.assertEqual(vf['ic_second_opinion'], 'ok')
+        self.assertTrue(identity.read_is_clean(self.doc))
+        self.assertEqual(outage.ic_second_opinion_outcome(vf), 'skip')
+        self.assertEqual(outage._gemini_read_window(since, until)[:2], (0, 0))
+        self.assertEqual(system_health._gemini_events(until), [])
+        _read(self.doc, name=FIRST4, nric=NRIC7)                   # a reused answer is reused again
+        self.assertTrue(self.doc.vision_fields['ic_second_reading']['reused'])
 
     def test_a_second_reading_that_is_not_her_name_is_not_taken(self):
         g = _read(self.doc, name=FIRST4, nric=NRIC7,
@@ -569,14 +697,14 @@ class NameChangeAllowed(TestCase):
                 ApplicantDocument.objects.filter(pk=self.card.pk).update(superseded_at=None)
         self.assertTrue(identity.name_change_allowed(self.profile, CARD))
 
-    def test_her_own_slot_only_speaks(self):
-        """Second pass L6: a newer household member's card or a reviewer-requested upload is never
-        her live card (``latest_live_ic`` reads her own slot, as /profile's flags do)."""
+    def test_a_household_members_card_never_speaks_for_her(self):
+        """Second pass L6: a newer household member's card is never her live card (``latest_live_ic``,
+        as /profile's flags). A card an officer asked for IS hers: see
+        ``ThroughARealUpload.test_a_card_an_officer_asked_for_is_her_card``."""
         father = _ic(self.app, name='GANESAN A/L MOORTHY', nric='700101-10-5511', member='father')
-        asked = _ic(self.app, name='SOMEONE ELSE ENTIRELY', nric=NRIC, request_code='officer_3')
         self.assertEqual(identity.latest_live_ic(self.profile).pk, self.card.pk)
-        self.assertLess(self.card.pk, min(father.pk, asked.pk))
-        self.assertFalse(identity.name_change_allowed(self.profile, 'SOMEONE ELSE ENTIRELY'))
+        self.assertLess(self.card.pk, father.pk)
+        self.assertFalse(identity.name_change_allowed(self.profile, 'GANESAN A/L MOORTHY'))
         self.card.delete()
         self.assertIsNone(identity.latest_live_ic(self.profile))
 

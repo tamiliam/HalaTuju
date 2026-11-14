@@ -120,8 +120,11 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
     return out
 
 
-#: Where an IC read keeps the second reader's own answer (#67 scope 3, second pass L5), with the
-#: hash of the image it read, so a re-run of the SAME image reuses it instead of paying again.
+#: Where an IC read keeps the second reader's own answer (#67 scope 3, second pass L5): the hash of
+#: the image it read, the model that answered and the prompt version, so an AUTOMATIC re-run of the
+#: same image, to the same model with the same question, reuses it instead of paying again. A reused
+#: answer is marked ``reused`` so the outage alert and the health light never count it as Gemini
+#: answering (third pass L1).
 IC_SECOND_READING = 'ic_second_reading'
 
 
@@ -129,24 +132,40 @@ def _image_hash(image: bytes) -> str:
     return hashlib.sha256(image).hexdigest()
 
 
+def _current_ic_model() -> str:
+    """The model an IC second opinion asks first now (the cascade's lead)."""
+    from ..profile_engine import MODEL_CASCADE
+    return MODEL_CASCADE[0] if MODEL_CASCADE else ''
+
+
 def _stored_second_reading(doc, image: bytes):
-    """The second reader's answer this document already holds for THIS image, or None. Only an
-    answer that came back usable (``ic_second_opinion`` 'ok') is reused: an errored or deferred
-    one (an outage mark) is asked again, and a card never asked (no stored answer, e.g. a card
-    read before this was kept) asks as before."""
+    """The second reader's answer this document already holds for THIS image, model and prompt, or
+    None. Only an answer that came back usable (``ic_second_opinion`` 'ok') is reused: an errored or
+    deferred one (an outage mark) is asked again, and a card never asked (no stored answer, e.g. a
+    card read before this was kept) asks as before. A model or prompt change (Gemini Phase 2, a
+    prompt fix) asks again: the stored answer was the old model's to the old question."""
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     stored = vf.get(IC_SECOND_READING)
     if (vf.get('ic_second_opinion') != 'ok' or vf.get(IC_SECOND_OPINION_ERROR)
-            or not isinstance(stored, dict) or stored.get('image') != _image_hash(image)):
+            or not isinstance(stored, dict) or stored.get('image') != _image_hash(image)
+            or not stored.get('model') or stored.get('model') != _current_ic_model()
+            or stored.get('prompt') != _v.IC_SECOND_OPINION_PROMPT_VERSION):
         return None
     return {k: stored.get(k) or '' for k in ('nric', 'name', 'address')}
+
+
+def _prior_reading(doc) -> dict:
+    """The stored second reading, without its ``reused`` mark (a copy)."""
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    stored = vf.get(IC_SECOND_READING)
+    return {k: v for k, v in (stored if isinstance(stored, dict) else {}).items() if k != 'reused'}
 
 
 # Supporting-document genuineness (str / birth_certificate / epf) now lives in
 # genuineness/supporting_doc.py and is re-exported at the end of this module.
 
 
-def run_vision_for_document(doc) -> dict:
+def run_vision_for_document(doc, *, fresh=False) -> dict:
     """
     Run Vision on an ``ApplicantDocument`` (expected ``doc_type='ic'``) and
     persist the result on the row. Returns the result dict. Never raises;
@@ -154,6 +173,9 @@ def run_vision_for_document(doc) -> dict:
 
     When the deterministic read is low-confidence (see ``_should_gemini_ic``), a
     cost-gated Gemini second opinion re-reads the card image and is merged in.
+    An automatic re-run reuses a stored answer for the same image, model and prompt
+    (``_stored_second_reading``); ``fresh=True`` (an officer's Re-run, ``reextract_document``,
+    a re-read or eval command) always asks again.
 
     Flag-gated genuineness fingerprint (``DOC_GENUINENESS_CHECK_ENABLED``): a soft
     "does this look like a real MyKad?" multimodal read, stored in
@@ -174,14 +196,20 @@ def run_vision_for_document(doc) -> dict:
                 profile = getattr(doc.application, 'profile', None)
                 own_card = getattr(doc, 'doc_type', '') == 'ic'   # D4: the student's own card only
                 if _v._should_gemini_ic(result, profile, own_card=own_card):
-                    # L5: a re-run of the same image reuses the answer it already paid for.
-                    g = _stored_second_reading(doc, image)
+                    # L5: an automatic re-run of the same image reuses the answer it already paid
+                    # for (same model, same question); a deliberate re-read asks again.
+                    g = None if fresh else _stored_second_reading(doc, image)
+                    reused = g is not None
                     if g is None:
                         with usage.usage_context(source='ic_fallback'):  # inherits org/app
                             g = _v._gemini_ic_second_opinion(image, doc.content_type)
                     if not g.get('_error'):
-                        second_reading = {k: (g.get(k) or '') for k in ('nric', 'name', 'address')}
-                        second_reading['image'] = _image_hash(image)
+                        if reused:      # the stored answer as it was, its model and prompt kept
+                            second_reading = {**_prior_reading(doc), 'reused': True}
+                        else:
+                            second_reading = {k: (g.get(k) or '') for k in ('nric', 'name', 'address')}
+                            second_reading.update(image=_image_hash(image), model=g.get('_model') or '',
+                                                  prompt=_v.IC_SECOND_OPINION_PROMPT_VERSION)
                         from ..income_engine import parent_ic_reference   # #59: a parent's card, its own person
                         ref = parent_ic_reference(doc) if getattr(doc, 'doc_type', '') == 'parent_ic' else profile
                         result = _v._merge_ic_reads(result, g, ref, own_card=own_card)

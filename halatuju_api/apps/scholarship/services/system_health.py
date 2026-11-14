@@ -123,9 +123,13 @@ def _gemini_events(now):
                        vision_run_at__lte=now, vision_fields__has_key='ic_second_opinion')
                .order_by('-vision_run_at')
                .values_list('vision_run_at', 'vision_fields__ic_second_opinion',
-                            'vision_fields__ic_second_opinion_error')[:LAST_OK_SCAN])
-    for stamp, opinion, err in seconds:
-        events.append((stamp, ic_second_opinion_outcome({'ic_second_opinion': opinion}), err or ''))
+                            'vision_fields__ic_second_opinion_error',
+                            'vision_fields__ic_second_reading__reused')[:LAST_OK_SCAN])
+    for stamp, opinion, err, reused in seconds:
+        outcome = ic_second_opinion_outcome({'ic_second_opinion': opinion,
+                                             'ic_second_reading': {'reused': bool(reused)}})
+        if outcome != 'skip':       # #67: a reused stored answer asked no one
+            events.append((stamp, outcome, err or ''))
     events.sort(key=lambda e: e[0], reverse=True)
     return events
 

@@ -743,7 +743,7 @@ class TestAdminScholarship(TestCase):
     def test_admin_rerun_vision_on_ic(self, mock_vision):
         from django.utils import timezone as _tz
 
-        def update_doc(doc):
+        def update_doc(doc, **_kw):
             doc.vision_nric = '030101-14-1234'
             doc.vision_name = 'PRIYA D/O KRISHNAN'
             doc.vision_run_at = _tz.now()
@@ -756,6 +756,7 @@ class TestAdminScholarship(TestCase):
         r = self.client.post(self._rerun_vision_url(ic.id))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(mock_vision.called)
+        self.assertIs(mock_vision.call_args.kwargs.get('fresh'), True)   # #67: an officer's Re-run asks again
         body = r.json()
         self.assertEqual(body['vision_nric'], '030101-14-1234')
         self.assertEqual(body['vision_name'], 'PRIYA D/O KRISHNAN')

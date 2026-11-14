@@ -326,16 +326,36 @@ class ProfileGetPins(TestCase):
         self.assertTrue(d['nric_locked'])
         self.assertTrue(d['name_locked'])           # #67 scope 3: the name rides on the same lock
 
-    def test_a_household_members_or_requested_card_decides_nothing(self):
-        # #67 scope 3 (L6): the flags read the student's own slot only, as the name lock does.
+    def test_a_household_members_card_decides_nothing(self):
+        # #67 scope 3 (L6): a household member's card is never the student's, as for the name lock.
         s = make_student(name='BALA A/L SAMY', nric='070101-14-1234')
         app = make_application('submitted', student=s)
         create_document(app, 'ic', vision_name='SOMEONE ELSE', vision_nric='070101-14-9999',
                         household_member='father')
-        create_document(app, 'ic', vision_name='ANOTHER NAME', vision_nric='070101-14-8888',
-                        request_code='officer_3')
         d = self._get(s.supabase_user_id)
         self.assertEqual((d['ic_flags'], d['ic_card_nric'], d['ic_card_name']), ([], '', ''))
+
+    def test_a_card_an_officer_asked_for_gives_the_flags(self):
+        # #67 scope 3 third pass (H1), through the real upload: her own card read a wrong digit and is
+        # flagged; the card an officer asked for supersedes it and is the one the flags read.
+        from apps.scholarship.tests.test_req67_ic_name_alignment import upload_and_read_ic
+        s = make_student(name='BALA A/L SAMY', nric='070101-14-1234')
+        app = make_application('shortlisted', student=s)
+        misread = '070101-14-1284'
+        upload_and_read_ic(self, app, 'own', name='BALA A/L SAMY', nric=misread,
+                           second={'nric': misread, 'name': 'BALA A/L SAMY', 'address': ''})
+        d = self._get(s.supabase_user_id)
+        self.assertEqual(d['ic_card_nric'], misread)
+        self.assertNotEqual(d['ic_flags'], [])
+        asked = upload_and_read_ic(self, app, 'asked', name='BALA A/L SAMY', nric='070101-14-1234',
+                                   request_code='officer_3')
+        self.assertEqual((asked.request_code, asked.superseded_at), ('officer_3', None))
+        d = self._get(s.supabase_user_id)
+        self.assertEqual((d['ic_flags'], d['ic_card_nric'], d['ic_card_name']),
+                         ([], '070101-14-1234', 'BALA A/L SAMY'))
+        self.assertTrue(d['nric_locked'])
+        self.assertTrue(d['name_locked'])
+        self.assertFalse(d['name_card_takeable'])       # her name is already the card's
 
     def test_the_card_name_is_takeable_only_when_the_lock_would_take_it(self):
         # #67 scope 3 (L1): locked, her own genuine well-read card, a different name -> offered.
