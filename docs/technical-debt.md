@@ -9032,3 +9032,14 @@ yet scheduled. *(W - M)*
 organisation may hand a case to a reviewer who also has none (`None == None`). The role rule before M3b had the same
 gap, and `_scoped_application` probably refuses first; no such row is known in production. Fix: also require
 `caller.owning_organisation_id is not None`, as `manageable_if_restored` already does, with a test. *(A - S)*
+
+### [TD-628] A Documents-page IC upload after an officer-requested IC goes live with no keep-the-better check - low
+
+**Raised 2026-11-15 by the #67 scope 3 adversarial review (third pass, finding 2).** An IC an officer asks for (Action
+Centre, `request_code='officer_N'`) supersedes the student's own-slot copy (`views/documents.py` `_stale_ids`). If the
+student later re-uploads an IC on the Documents page, that own-slot upload finds no live copy in its own slot, so
+`promotion.should_promote` promotes it unchecked and both cards stay live; the newest answers (`identity.latest_live_ic`,
+`ic_identity_blockers`). The same holds between two request codes. Existed before #67; no identity harm (the exact-NRIC
+and clean-read gates refuse another person's card for the name, the lock and alignment), but a worse copy can displace a
+good one. Fix: make the `ic` sweep symmetric (an `ic` upload counts every live non-household `ic` as stale/existing,
+whatever the request code), with a real-upload test. *(A - S)*
