@@ -14,7 +14,12 @@ the two ever differ, the docstring wins.
 - **A role change on the Django admin screen now resets the row's permissions** to the new role's starting set
   and records it in the permission history (kind `role_change`).
 
-## Migration — MIGRATE-FIRST, by hand, before the push
+## Migration — MIGRATE-FIRST, by hand, just before the `live` publish
+
+Since 14 Nov a push to `main` only saves; moving `live` deploys. M3a may sit on `main` for any length of time with
+NOTHING applied. Run steps 1-2 only when the `live` publish that carries M3a is about to happen, and step 4 straight
+after it, so the window stays minutes long. If several sprints publish together, this is that publish's
+migrate-first step.
 
 `courses` `0098_store_org_admin_keys` (data only, reversible). Every `org_admin` row, in every lifecycle state,
 has its list REPLACED by `review` (only if held today) + the five old keys + the 25 v2 page keys. One
@@ -82,7 +87,7 @@ COMMIT;
 Expect `UPDATE 2` (one NULL row, one `["review"]` row) and `INSERT 0 1`. The old image reads an organisation
 admin's list for `review` only, and `review` is kept, so it is safe to apply before the push.
 
-### 3. Push (api), then CONFIRM the new api revision serves 100% of the traffic
+### 3. Publish (`git push origin <sha>:live`, owner's yes), then CONFIRM the new api revision serves 100% of the traffic
 
 ### 4. Re-run the DATA block (step 2, word for word), then the POST-DEPLOY CHECK
 

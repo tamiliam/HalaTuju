@@ -32,7 +32,7 @@ All notable changes to this project will be documented in this file.
 
 ### fix: sprint M3a - review fixes (2026-11-14)
 
-Branch m3 (local, not pushed, not deployed). Release-note draft `docs/releases/m3a-org-admin-keys-release-note-draft.md`.
+Saved on main 2026-11-14, NOT published; 0098 runs by hand only with the `live` publish that carries it (release note). Release-note draft `docs/releases/m3a-org-admin-keys-release-note-draft.md`.
 - api: the Django admin screen (`PartnerAdminAdmin`) sets `permissions = NULL` on any save that changes `role`, in one
   transaction, with a `staff_permission_changes` row of kind `role_change` (`changed_by_role` 'django_admin') written
   through the editor's writer via the registered hook `staff_activity_hook.record_role_reset`; no writer, no
