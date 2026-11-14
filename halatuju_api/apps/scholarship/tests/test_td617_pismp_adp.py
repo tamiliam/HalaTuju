@@ -165,12 +165,12 @@ class IsPismpMatches(TestCase):
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
 class PismpCodeAtUniversityKeepsMain(TestCase):
     """Review finding 1: a 'pismp' code over "Ijazah Sarjana Muda Pendidikan" at UPSI, SPM only, is a
-    university degree - origin/main's rules: not asked before submit (F1's withheld code), owed,
-    asked and capped after."""
+    university degree, not PISMP: owed, asked and capped after submit. Re-check 2026-11-14: she is
+    asked before submit too (the code no longer withholds when `is_pismp` is False)."""
 
     def test_spm_only_upsi_with_pismp_code_is_owed_after_submit(self):
         upsi = plan('pismp', 'Ijazah Sarjana Muda Pendidikan', 'Universiti Pendidikan Sultan Idris')
-        self.assertEqual(results_route.higher_need(_app(SPM_HELD, upsi)), '')     # as main
+        self.assertEqual(results_route.higher_need(_app(SPM_HELD, upsi)), 'required_with_slip')
         app = _app(SPM_HELD, upsi, SUBMITTED)
         _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
         app = ScholarshipApplication.objects.get(pk=app.pk)
@@ -232,6 +232,15 @@ class PismpCodeWithHigherResultsIsAsked(TestCase):
         app = ScholarshipApplication.objects.get(pk=app.pk)
         self.assertFalse(higher_owed._needs_higher(app))
         self.assertEqual(higher_owed.owed_kind(app), '')
+
+    def test_spm_only_at_upsi_is_asked_before_and_owed_after(self):
+        upsi = plan('pismp', self.NAME, self.PLACES[1])
+        self.assertEqual(results_route.higher_need(_app(SPM_HELD, upsi)), 'required_with_slip')
+        app = _app(SPM_HELD, upsi, SUBMITTED)
+        _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
+        app = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertTrue(higher_owed._needs_higher(app))
+        self.assertTrue(higher_owed.undeclared(app))
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
