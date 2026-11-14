@@ -146,13 +146,26 @@ def _align_name_after_promotion(doc):
     """#67 scope 3 (D2): the student's own IC has just been promoted into the live slot, so it is
     now the card that speaks for them. The read ran while the upload was STAGED (not yet live), so
     the in-read alignment (``vision.ic.run_vision_for_document``) answered ``not_latest`` there; it
-    is asked again here. A system write (the name lock never blocks it). Never raises: an upload
-    never fails over a name."""
+    is asked again here. A system write (the name lock never blocks it).
+
+    The read's own lock step also ran while staged, against the OLD name, so a name this aligns
+    (a misspelt or reordered profile name, the signature the card's exact words) would otherwise
+    stay unlocked: when it aligns, the lock is taken again here, against the name it now holds.
+    Two separate never-raise steps, as in the read: an upload never fails over a name, and a
+    failed lock never undoes the alignment."""
+    from . import identity
+    outcome = None
     try:
-        from . import identity
-        identity.align_name_to_ic(doc)
+        outcome = identity.align_name_to_ic(doc)
     except Exception:      # a promotion must survive a failed alignment
         logger.exception('ic name alignment after promotion failed for document %s', doc.id)
+    if outcome != identity.ALIGNED:
+        return
+    try:
+        from .vision.ic import _lock_nric_if_confirmed
+        _lock_nric_if_confirmed(doc)
+    except Exception:      # a promotion must survive a failed lock
+        logger.exception('ic lock after promotion failed for document %s', doc.id)
 
 
 def judge(app, doc, *, staged, stale_ids, existing_live):

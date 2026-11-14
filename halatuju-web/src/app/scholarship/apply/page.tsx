@@ -385,7 +385,8 @@ export default function ScholarshipApplyPage() {
   const nricLocked = !!profile?.nric_verified
   // #67 scope 3: the name is held to the IC by the same stored lock — read-only, with the tick
   // (`nameLocked` / `lockedName` above). The "matches your IC" note only when it does; otherwise
-  // the one fix she has is on /profile ("Use the name on my IC").
+  // the one fix she has is on /profile ("Use the name on my IC"), pointed to only when the server
+  // would take it (`name_card_takeable`), else support.
   const nameIsTheCards = sameLettersAsCard(lockedName, profile?.ic_card_name)
 
   const sections: Record<TabKey, React.ReactNode> = {
@@ -408,7 +409,7 @@ export default function ScholarshipApplyPage() {
           {nameLocked && (
             <p className="mt-1 text-xs text-ground-500">
               {t(nameIsTheCards ? 'profile.nameLockedNote'
-                : profile?.ic_card_name ? 'profile.nameFromCardOnProfile' : 'profile.nameLockedContact')}
+                : profile?.name_card_takeable ? 'profile.nameFromCardOnProfile' : 'profile.nameLockedContact')}
             </p>
           )}
           {/* Mismatch with the declaration signature blocks submit — flag it here too,

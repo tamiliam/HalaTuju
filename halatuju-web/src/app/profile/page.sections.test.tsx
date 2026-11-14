@@ -193,7 +193,8 @@ describe('identity section', () => {
 
   // #67 scope 3 review: a locked name that is NOT the card's (an old short edit) has one way out.
   it('a locked name that is not the card\'s offers the card\'s name, and sends only that', async () => {
-    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'TEST A/P STUDENT', ic_flags: ['name_incomplete'] })
+    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'TEST A/P STUDENT', ic_flags: ['name_incomplete'],
+      name_card_takeable: true })
     editSection(0)
     expect(screen.queryByText('profile.nameLockedNote')).toBeNull()      // it does not match: no "matches" note
     expect(screen.getByText('profile.icFixable.nameFromCard')).toBeTruthy()
@@ -207,11 +208,20 @@ describe('identity section', () => {
 
   it('a refused card name (403 name_locked: not her card) says so and changes nothing', async () => {
     updateMock.mockRejectedValueOnce(Object.assign(new Error('403'), { bodyCode: 'name_locked' }))
-    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'SOMEONE ELSE' })
+    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'SOMEONE ELSE', name_card_takeable: true })
     editSection(0)
     await act(async () => { fireEvent.click(screen.getByText('profile.useCardName')) })
     await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
     expect((screen.getByLabelText('profile.name') as HTMLInputElement).value).toBe('TEST')
+  })
+
+  // #67 scope 3 second pass (L1): never offered when the server would refuse it.
+  it('a locked name the server would not let her change to the card\'s is not offered the card\'s', async () => {
+    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'TEST A/P STUDENT', ic_flags: ['name_incomplete'],
+      name_card_takeable: false })
+    editSection(0)
+    expect(screen.queryByText('profile.useCardName')).toBeNull()
+    expect(screen.getByText('profile.nameLockedContact')).toBeTruthy()
   })
 
   it('a locked name with no card to compare says only that it is held', async () => {
@@ -230,12 +240,32 @@ describe('identity section', () => {
     expect(screen.queryByText('profile.nameLockedNote')).toBeNull()
   })
 
-  it('a server refusal of a locked name (403 name_locked) says so', async () => {
+  // #67 scope 3 second pass (L3): a page loaded before the lock still sends the name.
+  it('a stale page refused over the name (403 name_locked) saves the rest once without it, then shows it held', async () => {
     updateMock.mockRejectedValueOnce(Object.assign(new Error('403'), { bodyCode: 'name_locked' }))
     await mount()
     editSection(0)
+    fireEvent.change(screen.getByLabelText('profile.name'), { target: { value: 'A NEW NAME' } })
+    profileMock.mockResolvedValue({ ...BASE, name_locked: true })       // what the re-load finds
+    await save()
+    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2))
+    expect(updateMock.mock.calls[0][0]).toHaveProperty('name', 'A NEW NAME')
+    const retry = updateMock.mock.calls[1][0]
+    expect(retry).not.toHaveProperty('name')
+    expect(retry).toMatchObject({ address: '12 Jalan A', contact_phone: '012-345 6789' })   // the rest rides
+    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedOthersSaved', 'error'))
+    editSection(0)
+    expect((screen.getByLabelText('profile.name') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByLabelText('profile.name') as HTMLInputElement).value).toBe('TEST STUDENT')
+  })
+
+  it('a refusal with no name sent is said, and not retried', async () => {
+    updateMock.mockRejectedValueOnce(Object.assign(new Error('403'), { bodyCode: 'name_locked' }))
+    await mount({ name_locked: true, ic_card_name: 'TEST STUDENT' })
+    editSection(0)
     await save()
     await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
+    expect(updateMock).toHaveBeenCalledTimes(1)
   })
 
   it('shows the card flags and what is fixable when the IC is editable', async () => {

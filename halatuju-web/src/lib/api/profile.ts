@@ -46,6 +46,9 @@ export interface StudentProfile {
   ic_flags?: string[]
   ic_card_nric?: string
   ic_card_name?: string
+  // #67 scope 3: the server would take the card's name as the locked name ("Use the name on my
+  // IC"): their own card, exact number, cleanly read, genuine, and a different name.
+  name_card_takeable?: boolean
   name?: string
   school?: string
   nric?: string

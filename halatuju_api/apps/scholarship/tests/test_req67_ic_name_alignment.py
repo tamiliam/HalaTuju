@@ -61,9 +61,16 @@ def _student(name, nric, **kw):
 
 
 def _ic(app, *, name=CARD, nric=NRIC, doc_type='ic', member='', error='', vf=None, **kw):
-    """A card whose read is already stored (genuine, so the lock can be taken)."""
+    """A card whose read is already stored (genuine, so the lock can be taken). A second card in the
+    same slot REPLACES the live one, as an upload does (the older is superseded), so the newest
+    card is the student's own live card (``latest_live_ic`` reads that slot only)."""
     fields = {'authenticity': {'status': 'genuine'}, 'capture': 'deterministic'}
     fields.update(vf or {})
+    if 'request_code' not in kw and kw.get('superseded_at') is None:
+        ApplicantDocument.objects.filter(
+            application=app, doc_type=doc_type, household_member=member, request_code='',
+            superseded_at__isnull=True).update(superseded_at=timezone.now())
+        kw['request_code'] = ''
     kw.setdefault('storage_path', f'test/{doc_type}/{ApplicantDocument.objects.count()}')
     kw.setdefault('content_type', 'image/jpeg')
     return create_document(application=app, doc_type=doc_type, household_member=member,
@@ -163,14 +170,15 @@ class ThroughARealUpload(TestCase):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(self.profile)}')
 
-    def _upload_and_read(self, tag):
+    def _upload_and_read(self, tag, second=None):
         ocr = {'nric': NRIC, 'name': CARD, 'address': '', 'error': None}
+        g_side = ((lambda *a, **k: dict(second)) if second is not None
+                  else AssertionError('no second opinion'))
         with patch('apps.scholarship.storage.object_exists', return_value=True), \
                 patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
                 patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
                 patch('apps.scholarship.vision.ic_genuineness', return_value={'status': 'genuine'}), \
-                patch('apps.scholarship.vision._gemini_ic_second_opinion',
-                      side_effect=AssertionError('no second opinion')):
+                patch('apps.scholarship.vision._gemini_ic_second_opinion', side_effect=g_side):
             r = self.client.post('/api/v1/scholarship/documents/', {
                 'doc_type': 'ic', 'storage_path': issued_key(self.app, 'ic', tag),
                 'content_type': 'image/jpeg', 'original_filename': f'{tag}.jpg', 'size': 1000},
@@ -190,6 +198,23 @@ class ThroughARealUpload(TestCase):
         self.assertTrue(StudentActivity.objects.filter(
             application=self.app, event=EVENT_NAME_ALIGNED_TO_IC).exists())
 
+    def test_a_name_that_does_not_match_the_card_ends_aligned_and_locked(self):
+        """Second pass M1: the read's lock step ran while the card was staged, against the OLD
+        name, and a mismatch does not lock; the promotion aligns the name to the signature (the
+        card's exact words) and then takes the lock against the name it now holds."""
+        from apps.scholarship.vision.names import name_match
+        misspelt = 'NIRMALAH DEVY A/P GANESEN MURTHY'
+        self.assertEqual(name_match(CARD, misspelt), 'mismatch')      # the shape under test
+        self.profile.name = misspelt
+        self.profile.save(update_fields=['name'])
+        # A typed name the card disagrees with asks the second reader; it reads the card the same.
+        doc = self._upload_and_read('first', second={'nric': NRIC, 'name': CARD, 'address': ''})
+        self.assertIsNone(doc.superseded_at)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.name, CARD)
+        self.assertTrue(self.profile.nric_verified)
+        self.assertEqual(self.app.__class__.objects.get(pk=self.app.pk).declaration_name, CARD)
+
     def test_a_replacement_card_aligns_too(self):
         self._upload_and_read('first')
         self.profile.name = SHORT_EDIT          # (an admin edit, say: the system write still aligns)
@@ -200,10 +225,12 @@ class ThroughARealUpload(TestCase):
 
 
 class WhenItAligns(TestCase):
-    def test_a_match_against_the_profile_name_alone_aligns_to_the_cards_order(self):
-        profile = _student('MOORTHY NIRMALA DEVI A/P GANESAN', NRIC)      # same words, other order
+    def test_the_profile_name_typed_in_another_case_is_already_the_cards(self):
+        """Same words in the same order, only case and marker spacing apart: nothing to write (the stored
+        name is tidied the same way). Same words in another order: see ``WhenItDoesNotAlign``."""
+        profile = _student('nirmala devi a / p ganesan moorthy', NRIC)
         app = make_application(student=profile)                           # nothing signed
-        self.assertEqual(identity.align_name_to_ic(_ic(app)), identity.ALIGNED)
+        self.assertEqual(identity.align_name_to_ic(_ic(app)), identity.ALREADY)
         self.assertEqual(_name_of(profile), CARD)
 
     def test_a_signature_on_another_of_her_applications_counts(self):
@@ -253,6 +280,16 @@ class WhenItDoesNotAlign(TestCase):
         self.app.declaration_name = SHORT_EDIT
         self.app.save(update_fields=['declaration_name'])
         self._refused(_ic(self.app), identity.NO_NAME_MATCH)
+
+    def test_the_same_words_in_another_order_are_not_the_typed_name(self):
+        """Second pass L2: the card's two name lines read swapped (MOORTHY first) are the same
+        words, but not in the order she typed or signed: no write."""
+        self._refused(_ic(self.app, name='MOORTHY NIRMALA DEVI A/P GANESAN'), identity.NO_NAME_MATCH)
+        profile = _student('GANESAN MOORTHY NIRMALA DEVI A/P', '080515-10-4400')
+        app = make_application(student=profile, declaration_name='GANESAN MOORTHY NIRMALA DEVI A/P')
+        self.assertEqual(identity.align_name_to_ic(_ic(app, nric='080515-10-4400')),
+                         identity.NO_NAME_MATCH)
+        self.assertEqual(_name_of(profile), 'GANESAN MOORTHY NIRMALA DEVI A/P')
 
     def test_an_older_card_does_not_speak_for_her(self):
         old = _ic(self.app)
@@ -324,6 +361,46 @@ class The559Shape(TestCase):
         self.profile.refresh_from_db()
         self.assertEqual(identity.compare(self.doc, self.profile)['name'], 'match')
         self.assertTrue(self.profile.nric_verified)
+
+    def test_a_card_never_asked_asks_and_keeps_the_answer_with_its_image(self):
+        """Second pass L5: 559's card was read before any answer was kept, so it asks."""
+        self.assertNotIn('ic_second_reading', self.doc.vision_fields)
+        g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                  second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g.assert_called_once()
+        kept = self.doc.vision_fields['ic_second_reading']
+        self.assertEqual((kept['nric'], kept['name']), (NRIC7, FULL7))
+        self.assertEqual(len(kept['image']), 64)                   # a sha256 of the image, not the image
+
+    def test_a_rerun_of_the_same_image_reuses_the_answer_and_never_asks_again(self):
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g = _read(self.doc, name=FIRST4, nric=NRIC7)               # asking would raise
+        g.assert_not_called()
+        self.assertEqual(self.doc.vision_name, FULL7)              # the same merge, from the kept answer
+        self.assertEqual(self.doc.vision_fields['capture'], 'ai')
+        self.assertEqual(self.doc.vision_fields['ic_second_opinion'], 'ok')
+
+    def test_another_image_or_an_errored_or_deferred_answer_asks_again(self):
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE + b' another'), \
+                patch('apps.scholarship.vision.extract_mykad',
+                      return_value={'nric': NRIC7, 'name': FIRST4, 'address': '', 'error': None}), \
+                patch('apps.scholarship.vision._gemini_ic_second_opinion',
+                      return_value={'nric': NRIC7, 'name': FULL7, 'address': ''}) as g:
+            vision.run_vision_for_document(self.doc)
+        g.assert_called_once()                                     # a new image is a new question
+        for vf in ({'ic_second_opinion': 'ours', IC_SECOND_OPINION_ERROR: 'All AI models failed: 503'},
+                   {'ic_second_opinion': 'theirs'}):
+            with self.subTest(vf=vf):
+                self.doc.refresh_from_db()
+                stored = dict(self.doc.vision_fields)
+                stored.update(vf)
+                stored['ic_second_reading'] = dict(stored['ic_second_reading'])
+                self.doc.vision_fields = stored
+                self.doc.save(update_fields=['vision_fields'])
+                g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                          second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+                g.assert_called_once()
 
     def test_a_second_reading_that_is_not_her_name_is_not_taken(self):
         g = _read(self.doc, name=FIRST4, nric=NRIC7,
@@ -489,7 +566,19 @@ class NameChangeAllowed(TestCase):
                 newer = _ic(self.app, **kw)
                 self.assertFalse(identity.name_change_allowed(self.profile, name))
                 newer.delete()
+                ApplicantDocument.objects.filter(pk=self.card.pk).update(superseded_at=None)
         self.assertTrue(identity.name_change_allowed(self.profile, CARD))
+
+    def test_her_own_slot_only_speaks(self):
+        """Second pass L6: a newer household member's card or a reviewer-requested upload is never
+        her live card (``latest_live_ic`` reads her own slot, as /profile's flags do)."""
+        father = _ic(self.app, name='GANESAN A/L MOORTHY', nric='700101-10-5511', member='father')
+        asked = _ic(self.app, name='SOMEONE ELSE ENTIRELY', nric=NRIC, request_code='officer_3')
+        self.assertEqual(identity.latest_live_ic(self.profile).pk, self.card.pk)
+        self.assertLess(self.card.pk, min(father.pk, asked.pk))
+        self.assertFalse(identity.name_change_allowed(self.profile, 'SOMEONE ELSE ENTIRELY'))
+        self.card.delete()
+        self.assertIsNone(identity.latest_live_ic(self.profile))
 
     def test_unlocked_anything_goes(self):
         self.profile.nric_verified = False

@@ -3040,6 +3040,7 @@
     "nameLockedNote": "Ini ialah nama pada IC anda, jadi ia tidak boleh diubah di sini lagi. Jika ia salah, sila hubungi kami.",
     "nameLockedContact": "Nama anda terikat pada IC anda yang telah disahkan, jadi ia tidak boleh diubah di sini. Jika ia salah, sila hubungi kami.",
     "nameLockedError": "Nama anda dikunci kepada IC anda yang telah disahkan, jadi ia hanya boleh ditukar kepada nama pada IC anda. Jika itu salah, sila hubungi kami.",
+    "nameLockedOthersSaved": "Perubahan anda yang lain telah disimpan. Nama anda dikunci kepada IC anda yang telah disahkan, jadi ia tidak ditukar. Jika ia salah, sila hubungi kami.",
     "nameFromCardHint": "IC anda telah disahkan, jadi nama anda hanya boleh nama pada IC anda: {name}",
     "useCardName": "Guna nama pada IC saya",
     "nameFromCardSaved": "Nama anda kini sepadan dengan IC anda.",

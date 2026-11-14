@@ -92,50 +92,62 @@ export function useProfileEditor(f: ProfileForm) {
       }
     }
     setSaving(true)
+    const payload: Record<string, unknown> = {
+      // #67 scope 3: a locked name is held to the IC — not sent, so no other edit is refused over it.
+      ...(nameEditable ? { name } : {}),
+      // nric is read-only on PUT — only the claim path above can change it.
+      ...(gender ? { gender } : {}),
+      nationality,
+      bumiputera: savedBumiputera,   // a Foreign student is never Bumiputera: null (the server agrees)
+      preferred_state: state,
+      address,
+      postal_code: postalCode,
+      city,
+      email,
+      contact_email: contactEmail,
+      contact_phone: contactPhone,
+      whatsapp_opt_in: whatsappOptIn,
+      household_income: householdIncome ? parseInt(householdIncome, 10) : null,
+      household_size: householdSize ? parseInt(householdSize, 10) : null,
+      colorblind,
+      disability,
+      angka_giliran: angkaGiliran,
+      school,
+      // Structured family roster (the backend copies it onto an open application).
+      father_name: family.fatherName.trim(),
+      father_occupation: family.fatherOccupation,
+      father_occupation_other: family.fatherOccupation === 'other' ? family.fatherOccupationOther.trim() : '',
+      mother_name: family.motherName.trim(),
+      mother_occupation: family.motherOccupation,
+      mother_occupation_other: family.motherOccupation === 'other' ? family.motherOccupationOther.trim() : '',
+      other_family_members: family.otherFamilyMembers,
+      siblings_in_school: family.siblingsInSchool,
+      siblings_in_tertiary: family.siblingsInTertiary,
+      // Pathway / "Your Plans" (the backend copies it onto an open application).
+      pathway_certainty: pathwayForm.pathwayCertainty,
+      chosen_pathway: pathwayForm.chosenPathway,
+      pre_u_track: pathwayForm.preUTrack,
+      pre_u_institution: pathwayForm.preUInstitution,
+      // Write back the SNAKE shape /apply uses + the cockpit/verdict read (course_name /
+      // institution), so a /profile edit can't drift the stored programme's keys.
+      chosen_programme: chosenProgrammeToApi(pathwayForm.chosenProgramme),
+      pathways_considered: pathwayForm.pathwaysConsidered,
+      uncertainty_reasons: pathwayForm.uncertaintyReasons,
+      uncertainty_note: pathwayForm.uncertaintyNote,
+    }
     try {
-      await updateProfile({
-        // #67 scope 3: a locked name is held to the IC — not sent, so no other edit is refused over it.
-        ...(nameEditable ? { name } : {}),
-        // nric is read-only on PUT — only the claim path above can change it.
-        ...(gender ? { gender } : {}),
-        nationality,
-        bumiputera: savedBumiputera,   // a Foreign student is never Bumiputera: null (the server agrees)
-        preferred_state: state,
-        address,
-        postal_code: postalCode,
-        city,
-        email,
-        contact_email: contactEmail,
-        contact_phone: contactPhone,
-        whatsapp_opt_in: whatsappOptIn,
-        household_income: householdIncome ? parseInt(householdIncome, 10) : null,
-        household_size: householdSize ? parseInt(householdSize, 10) : null,
-        colorblind,
-        disability,
-        angka_giliran: angkaGiliran,
-        school,
-        // Structured family roster (the backend copies it onto an open application).
-        father_name: family.fatherName.trim(),
-        father_occupation: family.fatherOccupation,
-        father_occupation_other: family.fatherOccupation === 'other' ? family.fatherOccupationOther.trim() : '',
-        mother_name: family.motherName.trim(),
-        mother_occupation: family.motherOccupation,
-        mother_occupation_other: family.motherOccupation === 'other' ? family.motherOccupationOther.trim() : '',
-        other_family_members: family.otherFamilyMembers,
-        siblings_in_school: family.siblingsInSchool,
-        siblings_in_tertiary: family.siblingsInTertiary,
-        // Pathway / "Your Plans" (the backend copies it onto an open application).
-        pathway_certainty: pathwayForm.pathwayCertainty,
-        chosen_pathway: pathwayForm.chosenPathway,
-        pre_u_track: pathwayForm.preUTrack,
-        pre_u_institution: pathwayForm.preUInstitution,
-        // Write back the SNAKE shape /apply uses + the cockpit/verdict read (course_name /
-        // institution), so a /profile edit can't drift the stored programme's keys.
-        chosen_programme: chosenProgrammeToApi(pathwayForm.chosenProgramme),
-        pathways_considered: pathwayForm.pathwaysConsidered,
-        uncertainty_reasons: pathwayForm.uncertaintyReasons,
-        uncertainty_note: pathwayForm.uncertaintyNote,
-      }, { token })
+      try {
+        await updateProfile(payload, { token })
+      } catch (err) {
+        // #67 scope 3: a page loaded before the lock still sends the name, and the server refuses
+        // the whole save (403 `name_locked`). Save the rest once without it, so no other edit is
+        // lost, then re-load the profile so the name shows as held to the IC.
+        if ((err as { bodyCode?: string } | null)?.bodyCode !== 'name_locked' || !('name' in payload)) throw err
+        const rest = Object.fromEntries(Object.entries(payload).filter(([k]) => k !== 'name'))
+        await updateProfile(rest, { token })
+        await loadData()
+        showToast(t('profile.nameLockedOthersSaved'), 'error')
+      }
 
       // Keep localStorage in sync so onboarding uses the same values
       const prev = JSON.parse(localStorage.getItem(KEY_PROFILE) || '{}')

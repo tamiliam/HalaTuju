@@ -57,6 +57,9 @@ export function useProfileForm() {
   const [icFlagCodes, setIcFlagCodes] = useState<string[]>([])
   const [icCardNric, setIcCardNric] = useState('')
   const [icCardName, setIcCardName] = useState('')
+  // #67 scope 3: the server would take the card's name (`name_card_takeable`). Default false:
+  // a payload without it never offers a change the server may refuse.
+  const [nameCardTakeable, setNameCardTakeable] = useState(false)
   const [nricDraft, setNricDraft] = useState('')      // the in-progress correction
   const [nricError, setNricError] = useState('')
   // Structured family roster — the durable profile-level home (two-way synced with
@@ -106,7 +109,7 @@ export function useProfileForm() {
   const icEditable = canEditIc({ nric_locked: nricLocked })
   const nameEditable = canEditName({ name_locked: nameLocked })
   // #67 scope 3 review: a locked name that is not the card's can still be put right — to the card's.
-  const takeCardNameOffered = canTakeCardName(nameLocked, name, icCardName)
+  const takeCardNameOffered = canTakeCardName(nameLocked, name, icCardName, nameCardTakeable)
   const nameIsTheCards = sameLettersAsCard(name, icCardName)
   const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable, takeCardNameOffered)
 
@@ -138,6 +141,7 @@ export function useProfileForm() {
       setIcFlagCodes(profileData.ic_flags || [])
       setIcCardNric(profileData.ic_card_nric || '')
       setIcCardName(profileData.ic_card_name || '')
+      setNameCardTakeable(profileData.name_card_takeable === true)
       // Through formatIc, not raw: 11 production profiles store the number with no dashes
       // (050202022022), so the editable box would show a wall of digits. formatIc strips and
       // re-inserts, so it is a no-op for the properly formatted rows — and saving an edit now

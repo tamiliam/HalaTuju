@@ -42,7 +42,7 @@ import re
 from .genuineness.bands import canonical_status, stored_status
 from .read_errors import IC_SECOND_OPINION_ERROR, ic_second_opinion_deferred
 from .vision import name_match, nric_close, nric_match
-from .vision.names import same_letters, same_raw_words
+from .vision.names import same_letters, same_word_sequence
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
 # subset of the other — a name typed shorter or longer than the card carries.
@@ -192,13 +192,16 @@ NO_NAME_MATCH = 'no_name_match'      # neither the typed name nor any signature 
 
 def latest_live_ic(profile):
     """The student's own IC read that speaks for them now: their newest ``ic`` document, not
-    replaced (``superseded_at``), with a name read off it. The same card ``/profile`` shows the
-    flags for, so the padlock, the flags and the name lock read one card."""
+    replaced (``superseded_at``), with a name read off it, in the student's own slot — not a
+    household member's card (``household_member``) and not a reviewer-requested upload
+    (``request_code``). ``/profile``'s flags read this same card (``ProfileView._identity_state``),
+    so the padlock, the flags and the name lock read one card."""
     if profile is None or getattr(profile, 'pk', None) is None:
         return None
     from .models import ApplicantDocument
     return (ApplicantDocument.objects
-            .filter(application__profile=profile, doc_type='ic', superseded_at__isnull=True)
+            .filter(application__profile=profile, doc_type='ic', superseded_at__isnull=True,
+                    household_member='', request_code='')
             .exclude(vision_name='').order_by('-id').first())
 
 
@@ -243,6 +246,21 @@ def name_change_allowed(profile, new_name):
     return bool(card) and same_letters(card, new_name)
 
 
+def name_card_takeable(profile):
+    """May the student take their card's name in one tap ("Use the name on my IC" on /profile)?
+    Exactly when ``name_change_allowed`` would let them: the name is locked, their latest live card
+    speaks for them (``card_speaks_for``) and its name differs from the stored one. So the button
+    is never offered for a write the PUT refuses (an admin's lock with a newer unscored or
+    non-genuine card, a misread number, a second opinion pending or failed)."""
+    if profile is None or not name_locked(profile):
+        return False
+    ic = latest_live_ic(profile)
+    if ic is None or not card_speaks_for(ic, profile):
+        return False
+    card = (ic.vision_name or '').strip()
+    return bool(card) and not _same_text(card, getattr(profile, 'name', ''))
+
+
 def card_speaks_for(doc, profile):
     """Is this card the student's own, read well enough to hold their name to? The IC lock's own
     tests (``compare`` → ``locks_now``), less the name: a genuine card and the exact typed number;
@@ -266,21 +284,22 @@ def read_is_clean(doc):
 
 
 def _same_words(card_name, typed_name):
-    """D2's name test: the card and the typed name carry the SAME RAW words in any order
-    (``same_raw_words``: only case, spaces and marker spacing tidied; connectors, honorifics,
+    """D2's name test: the card and the typed name carry the SAME RAW words in the SAME order
+    (``same_word_sequence``: only case, spaces and marker spacing tidied; connectors, honorifics,
     digits and apostrophes are words), and ``name_match`` agrees (keeping its TD-408
     reversed-patronymic guard). Much stricter than ``name_match == 'match'`` on purpose: that
     forgives a glued or split word, a dropped A/L, BIN for BINTI, S/O for A/L and NUR'AIN for
-    NUR AIN, and an alignment must never rewrite a correctly typed name into a worse read."""
-    return same_raw_words(card_name, typed_name) and name_match(card_name, typed_name) == 'match'
+    NUR AIN, and an alignment must never rewrite a correctly typed name into a worse read. The
+    order counts too: a card whose two name lines were read swapped is not the typed name."""
+    return same_word_sequence(card_name, typed_name) and name_match(card_name, typed_name) == 'match'
 
 
 def name_alignment(doc):
     """What D2 says about this card, WITHOUT writing: ``(outcome, card_name)``.
 
     Aligns only when it is safe — the student's own, newest live card; a clean read; the card's
-    number exactly the typed one; and the card's name has exactly the SAME WORDS as the typed
-    profile name or the signature on any of this profile's applications (``_same_words``).
+    number exactly the typed one; and the card's name has exactly the SAME WORDS, in the same
+    order, as the typed profile name or the signature on any of this profile's applications (``_same_words``).
     Anything less: no change."""
     if getattr(doc, 'doc_type', '') != 'ic':
         return NOT_STUDENT_IC, ''

@@ -245,7 +245,9 @@ NEW_PROFILE = {
     'nric_verified': False, 'identity_verified': False, 'nric_locked': False,
     'name_locked': False,     # #67 scope 3 (2026-11-14): the name is held to the card with the IC lock
     'ic_flags': [],
-    'ic_card_nric': '', 'ic_card_name': '', 'angka_giliran': '', 'address': '', 'postal_code': '',
+    'ic_card_nric': '', 'ic_card_name': '',
+    'name_card_takeable': False,   # #67 scope 3 second pass: "Use the name on my IC" only when the PUT takes it
+    'angka_giliran': '', 'address': '', 'postal_code': '',
     'city': '', 'email': 'kid@example.test', 'contact_email': 'kid@example.test',
     'contact_email_verified': True, 'contact_phone': '', 'contact_phone_verified': False,
     'phone_verify_enabled': False, 'whatsapp_opt_in': True, 'household_income': None,
@@ -323,6 +325,28 @@ class ProfileGetPins(TestCase):
         self.assertTrue(d['identity_verified'])
         self.assertTrue(d['nric_locked'])
         self.assertTrue(d['name_locked'])           # #67 scope 3: the name rides on the same lock
+
+    def test_a_household_members_or_requested_card_decides_nothing(self):
+        # #67 scope 3 (L6): the flags read the student's own slot only, as the name lock does.
+        s = make_student(name='BALA A/L SAMY', nric='070101-14-1234')
+        app = make_application('submitted', student=s)
+        create_document(app, 'ic', vision_name='SOMEONE ELSE', vision_nric='070101-14-9999',
+                        household_member='father')
+        create_document(app, 'ic', vision_name='ANOTHER NAME', vision_nric='070101-14-8888',
+                        request_code='officer_3')
+        d = self._get(s.supabase_user_id)
+        self.assertEqual((d['ic_flags'], d['ic_card_nric'], d['ic_card_name']), ([], '', ''))
+
+    def test_the_card_name_is_takeable_only_when_the_lock_would_take_it(self):
+        # #67 scope 3 (L1): locked, her own genuine well-read card, a different name -> offered.
+        s = make_student(name='BALA SAMY', nric='070101-14-1234', nric_verified=True)
+        app = make_application('submitted', student=s)
+        doc = create_document(app, 'ic', vision_name='BALA A/L SAMY', vision_nric='070101-14-1234',
+                              vision_fields={'authenticity': {'status': 'genuine'}})
+        self.assertTrue(self._get(s.supabase_user_id)['name_card_takeable'])
+        doc.vision_fields = {'authenticity': {}}     # never scored genuine: the PUT would refuse it
+        doc.save(update_fields=['vision_fields'])
+        self.assertFalse(self._get(s.supabase_user_id)['name_card_takeable'])
 
     def test_a_decided_application_is_not_open(self):
         s = make_student()

@@ -13,8 +13,8 @@ from ..stpm_pngk import stpm_cgpa_payload
 
 def _scholarship_public():
     """`apps.scholarship.public`, F2's door, for this file's IC state and the #67 scope 3 name
-    lock (`identity.name_locked` / `name_change_allowed`). One lazy import statement for all four
-    uses: the app-boundary standard counts each `courses -> scholarship` statement, and a lazy
+    lock (`identity.latest_live_ic`, `name_locked`, `name_card_takeable`, `name_change_allowed`).
+    One lazy import statement for every use: the app-boundary standard counts each `courses -> scholarship` statement, and a lazy
     one never runs at app-load."""
     from apps.scholarship import public as scholarship_public
     return scholarship_public
@@ -41,10 +41,12 @@ class ProfileView(APIView):
         application_open = self._application_open(profile)
         identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name = self._identity_state(profile)
         name_locked = self._name_locked(profile)
+        name_card_takeable = self._name_card_takeable(profile)
 
         return Response(self._payload(
             profile, email, contact_email, contact_email_verified, merit_score, application_open,
             identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name, name_locked,
+            name_card_takeable,
         ))
 
     @staticmethod
@@ -125,13 +127,10 @@ class ProfileView(APIView):
                        or profile_claim.ic_held_by_birth_state_rule(profile))
         ic_flags, ic_card_nric, ic_card_name = [], '', ''
         try:
-            scholarship_public = _scholarship_public()
-            ApplicantDocument = scholarship_public.ApplicantDocument
-            identity_rules = scholarship_public.identity
-            ic = (ApplicantDocument.objects
-                  .filter(application__profile=profile, doc_type='ic',
-                          superseded_at__isnull=True)     # a REPLACED card decides nothing
-                  .exclude(vision_name='').order_by('-id').first())
+            identity_rules = _scholarship_public().identity
+            # The student's own live card: a REPLACED card, a household member's card and a
+            # reviewer-requested upload decide nothing. The name lock reads the same card.
+            ic = identity_rules.latest_live_ic(profile)
             if ic is not None and profile.name and profile.nric:
                 cmp_ = identity_rules.compare(ic, profile)
                 ic_flags = identity_rules.flags(cmp_)
@@ -149,8 +148,18 @@ class ProfileView(APIView):
         return _scholarship_public().identity.name_locked(profile)
 
     @staticmethod
+    def _name_card_takeable(profile):
+        """#67 scope 3: may /profile offer "Use the name on my IC"? Only when the PUT would take it
+        (`identity.name_card_takeable`, the server's own rule). A failure offers nothing."""
+        try:
+            return _scholarship_public().identity.name_card_takeable(profile)
+        except Exception:
+            return False
+
+    @staticmethod
     def _payload(profile, email, contact_email, contact_email_verified, merit_score, application_open,
-                 identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name, name_locked=False):
+                 identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name, name_locked=False,
+                 name_card_takeable=False):
         """The profile response body (key order is part of the contract the pins freeze)."""
         from django.conf import settings
         return {
@@ -176,6 +185,8 @@ class ProfileView(APIView):
             'ic_flags': ic_flags,
             'ic_card_nric': ic_card_nric,
             'ic_card_name': ic_card_name,
+            # #67 scope 3: the locked name may be set to the card's in one tap (the server agrees).
+            'name_card_takeable': name_card_takeable,
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'postal_code': profile.postal_code,

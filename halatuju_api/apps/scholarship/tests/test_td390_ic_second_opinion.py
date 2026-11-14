@@ -36,11 +36,11 @@ def _doc(application, doc_type='ic', **kw):
     return create_document(application=application, doc_type=doc_type, **kw)
 
 
-def _read(doc, *, nric, name, second):
+def _read(doc, *, nric, name, second, image=_IMAGE):
     """Run the real MyKad pipeline with Vision answering `nric`/`name` and the Gemini second
     opinion answering `second` (a dict — `{'_error': …}` or the fields it read)."""
     ocr = {'nric': nric, 'name': name, 'address': '', 'error': None}
-    with patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
+    with patch('apps.scholarship.vision._fetch_image_bytes', return_value=image), \
             patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
             patch('apps.scholarship.vision._gemini_ic_second_opinion', return_value=second) as g:
         result = vision.run_vision_for_document(doc)
@@ -136,9 +136,23 @@ class TheStudentsOwnIc(TestCase):
         _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME,
               second={'nric': STUDENT_NRIC, 'name': STUDENT_NAME, 'address': ''})
         self.assertEqual(ic.vision_nric, STUDENT_NRIC)
-        r, _ = _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME, second={'_error': _402})
+        # #67 scope 3: a re-run of the SAME image reuses the stored answer and asks no one, so the
+        # outage only reaches a re-run that has to ask again (here, the image bytes changed).
+        r, _ = _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME, second={'_error': _402},
+                     image=_IMAGE + b' re-fetched')
         self.assertTrue(r.get('stale_kept'))
         self.assertEqual(ic.vision_nric, STUDENT_NRIC)            # the completed read stands
+        self.assertFalse(read_errors.ic_second_opinion_deferred(ic))
+        self.assertEqual(self._gate()[0], [])
+
+    def test_a_re_run_of_the_same_image_during_an_outage_reuses_the_answer_and_asks_no_one(self):
+        ic = _doc(self.app)
+        _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME,
+              second={'nric': STUDENT_NRIC, 'name': STUDENT_NAME, 'address': ''})
+        r, g = _read(ic, nric=MISREAD_NRIC, name=STUDENT_NAME, second={'_error': _402})
+        g.assert_not_called()
+        self.assertFalse(r.get('stale_kept'))
+        self.assertEqual(ic.vision_nric, STUDENT_NRIC)
         self.assertFalse(read_errors.ic_second_opinion_deferred(ic))
         self.assertEqual(self._gate()[0], [])
 

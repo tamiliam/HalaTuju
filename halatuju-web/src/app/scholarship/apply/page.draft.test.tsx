@@ -276,9 +276,17 @@ describe('a locked name', () => {
 
   it('a locked name that is not the card\'s points to the fix on /profile, not "matches your IC"', async () => {
     seedApplyDraft(complete, 'personal', 'bp')
-    mountLocked({ name: 'PRIYA' })
+    mountLocked({ name: 'PRIYA', name_card_takeable: true })
     await screen.findByTestId('apply-gift-line')
     expect(await screen.findByText('profile.nameFromCardOnProfile')).toBeTruthy()
     expect(screen.queryByText('profile.nameLockedNote')).toBeNull()
+  })
+
+  it('a locked name the server would not let her change to the card\'s points to support only', async () => {
+    seedApplyDraft(complete, 'personal', 'bp')
+    mountLocked({ name: 'PRIYA', name_card_takeable: false })
+    await screen.findByTestId('apply-gift-line')
+    expect(await screen.findByText('profile.nameLockedContact')).toBeTruthy()
+    expect(screen.queryByText('profile.nameFromCardOnProfile')).toBeNull()
   })
 })

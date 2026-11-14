@@ -3040,6 +3040,7 @@
     "nameLockedNote": "This is the name on your IC, so it can no longer be changed here. If it's wrong, please contact us.",
     "nameLockedContact": "Your name is held to your verified IC, so it can't be changed here. If it's wrong, please contact us.",
     "nameLockedError": "Your name is locked to your verified IC, so it can only be changed to the name on your IC. If that's wrong, please contact us.",
+    "nameLockedOthersSaved": "Your other changes are saved. Your name is held to your verified IC, so it was not changed. If it's wrong, please contact us.",
     "nameFromCardHint": "Your IC is verified, so your name can only be the one on your IC: {name}",
     "useCardName": "Use the name on my IC",
     "nameFromCardSaved": "Your name now matches your IC.",

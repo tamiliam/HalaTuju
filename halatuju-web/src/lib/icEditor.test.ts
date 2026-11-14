@@ -23,10 +23,12 @@ describe('sameLettersAsCard', () => {
 
 describe('canTakeCardName', () => {
   it('is offered only to a LOCKED name that is not already the card\'s', () => {
-    expect(canTakeCardName(true, 'NUR AINA RAJU', 'NUR AINA A/P RAJU')).toBe(true)
-    expect(canTakeCardName(true, 'Nur Aina A/P Raju', 'NUR AINA A/P RAJU')).toBe(false)
-    expect(canTakeCardName(false, 'NUR AINA RAJU', 'NUR AINA A/P RAJU')).toBe(false)   // just edit it
-    expect(canTakeCardName(true, 'NUR AINA RAJU', '  ')).toBe(false)                   // no card name
+    expect(canTakeCardName(true, 'NUR AINA RAJU', 'NUR AINA A/P RAJU', true)).toBe(true)
+    expect(canTakeCardName(true, 'Nur Aina A/P Raju', 'NUR AINA A/P RAJU', true)).toBe(false)
+    expect(canTakeCardName(false, 'NUR AINA RAJU', 'NUR AINA A/P RAJU', true)).toBe(false)   // just edit it
+    expect(canTakeCardName(true, 'NUR AINA RAJU', '  ', true)).toBe(false)                   // no card name
+    // The server would refuse it (an unscored card, a misread number, a pending second opinion):
+    expect(canTakeCardName(true, 'NUR AINA RAJU', 'NUR AINA A/P RAJU', false)).toBe(false)
   })
 })
 

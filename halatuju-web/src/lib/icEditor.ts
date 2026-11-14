@@ -57,12 +57,13 @@ export function sameLettersAsCard(name: string | null | undefined, cardName: str
 
 /**
  * May a LOCKED student take the name on their card? (#67 scope 3 review.) The one name change a
- * locked record allows — offered whenever the stored name is not already the card's. The server
- * still decides whether the card speaks for them (their own, exact number, cleanly read, genuine)
- * and answers 403 `name_locked` if not.
+ * locked record allows. Offered only when the server says it would take it (`takeable`, the
+ * profile's `name_card_takeable`: their own card, exact number, cleanly read, genuine, and a name
+ * that differs), so the button never leads to a 403 `name_locked`; and never once the name on
+ * screen already is the card's.
  */
-export function canTakeCardName(nameLocked: boolean, name: string, cardName: string): boolean {
-  return nameLocked && !!cardName.trim() && !sameLettersAsCard(name, cardName)
+export function canTakeCardName(nameLocked: boolean, name: string, cardName: string, takeable: boolean): boolean {
+  return nameLocked && takeable && !!cardName.trim() && !sameLettersAsCard(name, cardName)
 }
 
 /**

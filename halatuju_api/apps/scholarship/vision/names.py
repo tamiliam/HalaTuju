@@ -43,7 +43,7 @@ def tidy_name(s: str) -> str:
     "KUMARA/L" become "a/l"; "@" stands alone). Every word stays a word: connectors (A/L, A/P,
     S/O, D/O, BIN, BINTI, @), honorifics, digits and apostrophes are NOT stripped — unlike
     ``canonical_name_tokens``. #67 scope 3: the strict comparisons behind writing or holding a
-    student's name (``same_raw_words``, ``same_letters``)."""
+    student's name (``same_raw_words``, ``same_word_sequence``, ``same_letters``)."""
     t = re.sub(r'\s*/\s*', '/', str(s or '').lower())
     t = _split_glued_markers(t)
     t = re.sub(r'\s*@\s*', ' @ ', t)
@@ -56,6 +56,14 @@ def same_raw_words(a: str, b: str) -> bool:
     split word (MUHAMMAD AMIN / MUHAMMADAMIN) is not the same words."""
     wa, wb = tidy_name(a).split(), tidy_name(b).split()
     return bool(wa) and sorted(wa) == sorted(wb)
+
+
+def same_word_sequence(a: str, b: str) -> bool:
+    """The same words in the same order, once tidied (``tidy_name``). ``same_raw_words`` and
+    also no reordering: a card whose two name lines were read swapped (RAJ KUMAR for KUMAR RAJ)
+    is not the typed name. What an alignment needs before it writes a student's name."""
+    wa, wb = tidy_name(a).split(), tidy_name(b).split()
+    return bool(wa) and wa == wb
 
 
 def same_letters(a: str, b: str) -> bool:

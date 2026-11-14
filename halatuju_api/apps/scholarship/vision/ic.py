@@ -1,6 +1,7 @@
 """The IC (MyKad) read: Vision first, the gated Gemini second opinion, the outage marks, and
 the NRIC lock (moved verbatim from ``vision.py``, audit sprint A3.1)."""
 
+import hashlib
 import logging
 from datetime import timedelta
 
@@ -119,6 +120,28 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
     return out
 
 
+#: Where an IC read keeps the second reader's own answer (#67 scope 3, second pass L5), with the
+#: hash of the image it read, so a re-run of the SAME image reuses it instead of paying again.
+IC_SECOND_READING = 'ic_second_reading'
+
+
+def _image_hash(image: bytes) -> str:
+    return hashlib.sha256(image).hexdigest()
+
+
+def _stored_second_reading(doc, image: bytes):
+    """The second reader's answer this document already holds for THIS image, or None. Only an
+    answer that came back usable (``ic_second_opinion`` 'ok') is reused: an errored or deferred
+    one (an outage mark) is asked again, and a card never asked (no stored answer, e.g. a card
+    read before this was kept) asks as before."""
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    stored = vf.get(IC_SECOND_READING)
+    if (vf.get('ic_second_opinion') != 'ok' or vf.get(IC_SECOND_OPINION_ERROR)
+            or not isinstance(stored, dict) or stored.get('image') != _image_hash(image)):
+        return None
+    return {k: stored.get(k) or '' for k in ('nric', 'name', 'address')}
+
+
 # Supporting-document genuineness (str / birth_certificate / epf) now lives in
 # genuineness/supporting_doc.py and is re-exported at the end of this module.
 
@@ -140,6 +163,7 @@ def run_vision_for_document(doc) -> dict:
     _ctx = _doc_usage_ctx(doc)
     image = _v._fetch_image_bytes(doc.storage_path)
     used_gemini = False
+    second_reading = None           # L5: the second reader's usable answer, kept for a re-run
     second, second_error = '', ''   # TD-390: the second opinion was 'ok' / failed on 'ours' / 'theirs'
     with _ctx:
         if image is None:
@@ -150,9 +174,14 @@ def run_vision_for_document(doc) -> dict:
                 profile = getattr(doc.application, 'profile', None)
                 own_card = getattr(doc, 'doc_type', '') == 'ic'   # D4: the student's own card only
                 if _v._should_gemini_ic(result, profile, own_card=own_card):
-                    with usage.usage_context(source='ic_fallback'):  # inherits org/app
-                        g = _v._gemini_ic_second_opinion(image, doc.content_type)
+                    # L5: a re-run of the same image reuses the answer it already paid for.
+                    g = _stored_second_reading(doc, image)
+                    if g is None:
+                        with usage.usage_context(source='ic_fallback'):  # inherits org/app
+                            g = _v._gemini_ic_second_opinion(image, doc.content_type)
                     if not g.get('_error'):
+                        second_reading = {k: (g.get(k) or '') for k in ('nric', 'name', 'address')}
+                        second_reading['image'] = _image_hash(image)
                         from ..income_engine import parent_ic_reference   # #59: a parent's card, its own person
                         ref = parent_ic_reference(doc) if getattr(doc, 'doc_type', '') == 'parent_ic' else profile
                         result = _v._merge_ic_reads(result, g, ref, own_card=own_card)
@@ -198,6 +227,10 @@ def run_vision_for_document(doc) -> dict:
             vf['ic_second_opinion'] = second
         else:
             vf.pop('ic_second_opinion', None)
+        if second_reading is not None:
+            vf[IC_SECOND_READING] = second_reading
+        else:
+            vf.pop(IC_SECOND_READING, None)
     if image is not None and getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
         with usage.usage_context(application=getattr(doc, 'application', None), source='genuineness'):
             auth = _v.ic_genuineness(image, doc.content_type)
