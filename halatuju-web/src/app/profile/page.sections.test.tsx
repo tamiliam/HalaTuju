@@ -178,6 +178,34 @@ describe('identity section', () => {
     expect(screen.getByText('profile.icLockedNote')).toBeTruthy()
   })
 
+  // #67 scope 3 (2026-11-14): the name is held to the IC by the same stored lock.
+  it('a locked name is read-only with the padlock and note, and the save does not send it', async () => {
+    await mount({ name_locked: true })
+    editSection(0)
+    expect((screen.getByLabelText('profile.name') as HTMLInputElement).disabled).toBe(true)
+    expect(screen.getByTestId('name-padlock')).toBeTruthy()
+    expect(screen.getByText('profile.nameLockedNote')).toBeTruthy()
+    await save()
+    await waitFor(() => expect(updateMock).toHaveBeenCalled())
+    expect(updateMock.mock.calls[0][0]).not.toHaveProperty('name')
+  })
+
+  it('an unlocked name stays editable with no padlock', async () => {
+    await mount({ name_locked: false })
+    editSection(0)
+    expect((screen.getByLabelText('profile.name') as HTMLInputElement).disabled).toBe(false)
+    expect(screen.queryByTestId('name-padlock')).toBeNull()
+    expect(screen.queryByText('profile.nameLockedNote')).toBeNull()
+  })
+
+  it('a server refusal of a locked name (403 name_locked) says so', async () => {
+    updateMock.mockRejectedValueOnce(Object.assign(new Error('403'), { bodyCode: 'name_locked' }))
+    await mount()
+    editSection(0)
+    await save()
+    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
+  })
+
   it('shows the card flags and what is fixable when the IC is editable', async () => {
     await mount({ nric_locked: false, ic_flags: ['name_differs'], ic_card_nric: '050202-02-2023', ic_card_name: 'CARD NAME' })
     editSection(0)

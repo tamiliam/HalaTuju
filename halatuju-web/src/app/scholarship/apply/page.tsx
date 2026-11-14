@@ -374,6 +374,8 @@ export default function ScholarshipApplyPage() {
 
   const lockedEmail = profile?.contact_email || profile?.email || ''
   const nricLocked = !!profile?.nric_verified
+  // #67 scope 3: the name is held to the IC by the same stored lock — read-only, with the tick.
+  const nameLocked = !!profile?.name_locked
 
   const sections: Record<TabKey, React.ReactNode> = {
     personal: (
@@ -381,7 +383,18 @@ export default function ScholarshipApplyPage() {
         <p className="text-xs text-ground-500">{t('scholarship.apply.aboutMeHint')}</p>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
-          <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
+          {nameLocked ? (
+            <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
+              <span>{form.name || '—'}</span>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-700">
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
+                {t('scholarship.apply.verified')}
+              </span>
+            </div>
+          ) : (
+            <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
+          )}
+          {nameLocked && <p className="mt-1 text-xs text-ground-500">{t('profile.nameLockedNote')}</p>}
           {/* Mismatch with the declaration signature blocks submit — flag it here too,
               since the About Me name (often a pre-filled handle) is the usual fix. */}
           {declarationNameMismatch(form) && (

@@ -56,11 +56,19 @@ describe('the IC field is gated by the stored lock', () => {
   })
 
   it('draws the padlock only when the IC is actually locked', () => {
-    // Both sites: the edit panel and the read-only summary row. Each padlock must sit inside
-    // an `!icEditable` conditional, so the count of conditionals matches the count of locks.
+    // Both IC sites: the edit panel and the read-only summary row; plus (#67 scope 3) the NAME
+    // in the edit panel, held by the same stored lock. Each padlock must sit inside an
+    // `!icEditable` / `!nameEditable` conditional, so the conditionals match the locks.
     const padlocks = src.match(/M16\.5 10\.5V6\.75a4\.5 4\.5 0 1 0-9 0v3\.75/g) || []
-    expect(padlocks.length).toBe(2)
-    expect((src.match(/\{!icEditable && \(/g) || []).length).toBe(padlocks.length)
+    expect(padlocks.length).toBe(3)
+    expect((src.match(/\{!icEditable && \(/g) || []).length).toBe(2)
+    expect((src.match(/\{!nameEditable && \(/g) || []).length).toBe(1)
+  })
+
+  it('gates the name on the stored name lock, never a bare attribute (#67 scope 3)', () => {
+    expect(src).toMatch(/const nameEditable = canEditName\(\{ name_locked: nameLocked \}\)/)
+    expect(src).toMatch(/disabled=\{!nameEditable\}/)
+    expect(src).toMatch(/setNameLocked\(profileData\.name_locked === true\)/)
   })
 
   it('formats the loaded number before putting it in the editable box', () => {

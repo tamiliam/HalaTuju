@@ -69,6 +69,10 @@ export function activityText(
     // A1.13 (TD-198): a super admin withdrew the award. The body is the internal reason (staff-only row).
     case 'award_withdrawn':
       return t('admin.scholars.event.award_withdrawn', { reason: a.body || '—' })
+    // #67 scope 3: the IC read made the card's name the profile name (staff-only row; the old name
+    // is kept in meta, as a mentor change keeps names).
+    case 'name_aligned_to_ic':
+      return t('admin.scholars.event.name_aligned_to_ic', { was: str(m.old) || '—' })
     default:
       return t('admin.scholars.event.other')
   }

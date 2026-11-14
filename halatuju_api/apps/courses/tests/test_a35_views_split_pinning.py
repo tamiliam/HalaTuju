@@ -242,7 +242,9 @@ NEW_PROFILE = {
     'grades': {}, 'gender': '', 'nationality': 'Warganegara', 'bumiputera': None, 'colorblind': False,
     'disability': False, 'student_signals': {}, 'preferred_state': '', 'preferred_call_language': '',
     'referral_source': None, 'guardians': [], 'name': '', 'school': '', 'nric': '',
-    'nric_verified': False, 'identity_verified': False, 'nric_locked': False, 'ic_flags': [],
+    'nric_verified': False, 'identity_verified': False, 'nric_locked': False,
+    'name_locked': False,     # #67 scope 3 (2026-11-14): the name is held to the card with the IC lock
+    'ic_flags': [],
     'ic_card_nric': '', 'ic_card_name': '', 'angka_giliran': '', 'address': '', 'postal_code': '',
     'city': '', 'email': 'kid@example.test', 'contact_email': 'kid@example.test',
     'contact_email_verified': True, 'contact_phone': '', 'contact_phone_verified': False,
@@ -320,6 +322,7 @@ class ProfileGetPins(TestCase):
         self.assertTrue(d['nric_verified'])
         self.assertTrue(d['identity_verified'])
         self.assertTrue(d['nric_locked'])
+        self.assertTrue(d['name_locked'])           # #67 scope 3: the name rides on the same lock
 
     def test_a_decided_application_is_not_open(self):
         s = make_student()

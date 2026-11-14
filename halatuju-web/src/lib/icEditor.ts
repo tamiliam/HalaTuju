@@ -35,6 +35,17 @@ export function canEditIc(profile: { nric_locked?: boolean } | null | undefined)
 }
 
 /**
+ * May the student edit their NAME? (#67 scope 3, 2026-11-14.)
+ *
+ * The name is held to the IC by the same stored lock as the number: once `name_locked` is true
+ * the server takes only the card's own name. Undefined means the payload predates the field —
+ * treat as EDITABLE, as the name always was (the server still refuses a locked change).
+ */
+export function canEditName(profile: { name_locked?: boolean } | null | undefined): boolean {
+  return !profile?.name_locked
+}
+
+/**
  * Show the real number while editing, the masked one at rest.
  *
  * Not cosmetic: the field rendered `maskIc(nric)` into a disabled input, so simply enabling it
@@ -64,8 +75,9 @@ export function hasIcFlags(flags: string[] | undefined): boolean {
 /**
  * Which side, if any, the student can act on.
  *
- * `nric` flags are actionable only while unlocked. A NAME flag is always actionable, because the
- * name field has always been editable and is not covered by the lock.
+ * `nric` flags are actionable only while unlocked. A NAME flag is actionable while the name is
+ * editable — always, until #67 scope 3 (2026-11-14) put the name under the same lock; a locked
+ * name the card disagrees with goes to support, like a locked number.
  *
  * `neither` is a real answer, not a fallback: a locked record whose number disagrees is exactly
  * the orphaned-claim case, and the honest thing is to tell them to contact us rather than point
@@ -74,9 +86,10 @@ export function hasIcFlags(flags: string[] | undefined): boolean {
 export function icFixableSide(
   flags: string[] | undefined,
   canEdit: boolean,
+  canEditNameField = true,
 ): 'nric' | 'name' | 'both' | 'neither' {
   const fs = icFlags(flags)
-  const nameFlag = fs.some((f) => f === 'name_incomplete' || f === 'name_differs')
+  const nameFlag = canEditNameField && fs.some((f) => f === 'name_incomplete' || f === 'name_differs')
   const nricFlag = fs.some((f) => f === 'nric_one_digit' || f === 'nric_differs')
   const nric = nricFlag && canEdit
   if (nric && nameFlag) return 'both'

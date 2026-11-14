@@ -37,6 +37,10 @@ export interface StudentProfile {
   // stored, one-way lock. Wiring the padlock to the badge would lock people with no
   // genuineness check and then unlock them again when they removed the evidence.
   nric_locked?: boolean
+  // #67 scope 3 (2026-11-14): the NAME rides on the same stored lock. Once true, the name may
+  // change only to the one on the student's IC (the server refuses anything else, 403
+  // `name_locked`), so the screen shows it read-only with the padlock.
+  name_locked?: boolean
   // What the uploaded card disagrees with, as codes the screen turns into copy. Never assert
   // which side is wrong — our OCR mangles names too (see apps #27 and #118).
   ic_flags?: string[]

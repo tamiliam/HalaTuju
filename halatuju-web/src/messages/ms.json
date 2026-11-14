@@ -3037,6 +3037,8 @@
     "icMasked": "Nombor IC",
     "icEditable": "Anda boleh membetulkannya sehingga kami mengesahkannya dengan IC yang anda muat naik.",
     "icLockedNote": "Telah disahkan dengan IC yang anda muat naik, jadi ini tidak boleh diubah lagi. Jika ia salah, sila hubungi kami.",
+    "nameLockedNote": "Telah disahkan dengan IC yang anda muat naik, jadi nama anda kini sepadan dengan IC anda dan tidak boleh diubah di sini lagi. Jika ia salah, sila hubungi kami.",
+    "nameLockedError": "Nama anda telah disahkan dengan IC anda dan dikunci. Untuk mengubahnya, sila hubungi kami.",
     "icInvalid": "Nombor IC itu nampaknya tidak sah. Sila periksa dan cuba lagi.",
     "icTaken": "Nombor IC itu sudah dimiliki akaun lain. Sila periksa, atau hubungi kami jika anda fikir ini satu kesilapan.",
     "icRefused": "Kami tidak dapat menerima nombor IC itu. Sila periksa, atau hubungi kami untuk bantuan.",
@@ -6844,7 +6846,8 @@
         "mentor_concern_handled": "Kebimbangan mentor ditandakan sebagai sudah ditangani",
         "session_logged_by_mentor": "Pertemuan direkodkan oleh mentor: {mode}, {minutes} min",
         "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}",
-        "award_withdrawn": "Anugerah ditarik balik (kakitangan sahaja) · {reason}"
+        "award_withdrawn": "Anugerah ditarik balik (kakitangan sahaja) · {reason}",
+        "name_aligned_to_ic": "Nama diselaraskan dengan IC (kakitangan sahaja) · sebelum ini {was}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",

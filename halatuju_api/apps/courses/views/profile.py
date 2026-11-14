@@ -11,6 +11,15 @@ from ..serializers import ProfileUpdateSerializer
 from ..stpm_pngk import stpm_cgpa_payload
 
 
+def _scholarship_public():
+    """`apps.scholarship.public`, F2's door, for this file's IC state and the #67 scope 3 name
+    lock (`identity.name_locked` / `name_change_allowed`). One lazy import statement for all four
+    uses: the app-boundary standard counts each `courses -> scholarship` statement, and a lazy
+    one never runs at app-load."""
+    from apps.scholarship import public as scholarship_public
+    return scholarship_public
+
+
 class ProfileView(APIView):
     """
     GET/PUT /api/v1/profile/
@@ -31,10 +40,11 @@ class ProfileView(APIView):
         merit_score = self._merit_score(profile)
         application_open = self._application_open(profile)
         identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name = self._identity_state(profile)
+        name_locked = self._name_locked(profile)
 
         return Response(self._payload(
             profile, email, contact_email, contact_email_verified, merit_score, application_open,
-            identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name,
+            identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name, name_locked,
         ))
 
     @staticmethod
@@ -115,7 +125,7 @@ class ProfileView(APIView):
                        or profile_claim.ic_held_by_birth_state_rule(profile))
         ic_flags, ic_card_nric, ic_card_name = [], '', ''
         try:
-            from apps.scholarship import public as scholarship_public
+            scholarship_public = _scholarship_public()
             ApplicantDocument = scholarship_public.ApplicantDocument
             identity_rules = scholarship_public.identity
             ic = (ApplicantDocument.objects
@@ -133,8 +143,14 @@ class ProfileView(APIView):
         return identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name
 
     @staticmethod
+    def _name_locked(profile):
+        """#67 scope 3 (D3): is the NAME held to the IC? The stored IC lock only — never the badge,
+        and not the TD-377 "Born in" hold (that holds the number, not the name)."""
+        return _scholarship_public().identity.name_locked(profile)
+
+    @staticmethod
     def _payload(profile, email, contact_email, contact_email_verified, merit_score, application_open,
-                 identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name):
+                 identity_verified, nric_locked, ic_flags, ic_card_nric, ic_card_name, name_locked=False):
         """The profile response body (key order is part of the contract the pins freeze)."""
         from django.conf import settings
         return {
@@ -155,6 +171,8 @@ class ProfileView(APIView):
             'identity_verified': identity_verified,
             # The padlock keys on THIS, never on identity_verified above.
             'nric_locked': nric_locked,
+            # #67 scope 3: the name is held to the card once the IC lock is on (read-only + padlock).
+            'name_locked': name_locked,
             'ic_flags': ic_flags,
             'ic_card_nric': ic_card_nric,
             'ic_card_name': ic_card_name,
@@ -223,6 +241,14 @@ class ProfileView(APIView):
         serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # #67 scope 3 (D3): once the IC lock is on, the name may change only to the card's own.
+        # Refused whole (nothing saved), like a locked NRIC — the screen shows the padlock note.
+        if 'name' in serializer.validated_data:
+            from .. import profile_claim
+            if not _scholarship_public().identity.name_change_allowed(
+                    profile, serializer.validated_data['name']):
+                return Response(dict(profile_claim.NAME_LOCKED), status=status.HTTP_403_FORBIDDEN)
 
         # Capture old contact values before save
         old_contact_email = profile.contact_email
@@ -305,6 +331,10 @@ class ProfileSyncView(APIView):
         data = request.data.copy()
         if (profile.name or '').strip():
             data.pop('name', None)
+        elif 'name' in data:
+            # #67 scope 3 (D3): a locked name is held to the card (silently, as above).
+            if not _scholarship_public().identity.name_change_allowed(profile, data.get('name')):
+                data.pop('name', None)
 
         serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
         if not serializer.is_valid():

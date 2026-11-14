@@ -167,7 +167,11 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en', 
     # capture. Promoting it means profile.name carries the real legal name from
     # submit onward, so every identity check, email and sponsor profile reads it
     # correctly. Stored verbatim (the admin views upper-case it via _full_name).
-    if signed and profile is not None and (getattr(profile, 'name', '') or '').strip() != signed:
+    # #67 scope 3 (D3): once the IC lock is on, only a signature the card agrees with is promoted;
+    # any other keeps the stored (card-held) name. The signature itself is stored as typed (D1).
+    from .. import identity
+    if (signed and profile is not None and (getattr(profile, 'name', '') or '').strip() != signed
+            and identity.name_change_allowed(profile, signed)):
         profile.name = signed
         profile.save(update_fields=['name', 'updated_at'])
 

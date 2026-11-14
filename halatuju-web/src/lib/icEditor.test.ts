@@ -1,5 +1,5 @@
 import {
-  canEditIc, hasIcFlags, icFieldValue, icFixableSide, icFlags,
+  canEditIc, canEditName, hasIcFlags, icFieldValue, icFixableSide, icFlags,
 } from './icEditor'
 
 /**
@@ -25,6 +25,21 @@ describe('canEditIc', () => {
     // the padlock on it would lock with no genuineness check and unlock on card deletion.
     const badge = { nric_locked: false, identity_verified: true } as Parameters<typeof canEditIc>[0]
     expect(canEditIc(badge)).toBe(true)
+  })
+})
+
+/** #67 scope 3 (2026-11-14): the name rides on the same stored lock, served as `name_locked`. */
+describe('canEditName', () => {
+  it('is editable unless the stored name lock is on', () => {
+    expect(canEditName({ name_locked: false })).toBe(true)
+    expect(canEditName({ name_locked: true })).toBe(false)
+  })
+
+  it('leaves a payload without the field editable, as the name always was', () => {
+    // The server still refuses a locked change (403 name_locked), so this is never a way in.
+    expect(canEditName({})).toBe(true)
+    expect(canEditName(null)).toBe(true)
+    expect(canEditName(undefined)).toBe(true)
   })
 })
 
@@ -71,10 +86,15 @@ describe('icFixableSide', () => {
     expect(icFixableSide(['nric_one_digit'], true)).toBe('nric')
   })
 
-  it('points at the name whether or not the IC is locked', () => {
-    // The name field has always been editable and the lock does not cover it.
+  it('points at the name while the name is editable, whether or not the IC is locked', () => {
     expect(icFixableSide(['name_incomplete'], false)).toBe('name')
     expect(icFixableSide(['name_differs'], true)).toBe('name')
+    expect(icFixableSide(['name_differs'], false, true)).toBe('name')
+  })
+
+  it('does not point at a LOCKED name (#67 scope 3): that goes to support', () => {
+    expect(icFixableSide(['name_differs'], false, false)).toBe('neither')
+    expect(icFixableSide(['nric_differs', 'name_incomplete'], true, false)).toBe('nric')
   })
 
   it('points at both when both differ and the number is still editable', () => {

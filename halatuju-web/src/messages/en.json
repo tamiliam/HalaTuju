@@ -3037,6 +3037,8 @@
     "icMasked": "IC Number",
     "icEditable": "You can correct this until we've confirmed it against your uploaded IC.",
     "icLockedNote": "Confirmed against your uploaded IC, so this can no longer be changed. If it's wrong, please contact us.",
+    "nameLockedNote": "Confirmed against your uploaded IC, so your name now matches your IC and can no longer be changed here. If it's wrong, please contact us.",
+    "nameLockedError": "Your name is verified against your IC and locked. To change it, please contact us.",
     "icInvalid": "That doesn't look like a valid IC number. Please check it and try again.",
     "icTaken": "That IC number already belongs to another account. Please check it, or contact us if you think this is a mistake.",
     "icRefused": "We couldn't accept that IC number. Please check it, or contact us for help.",
@@ -6844,7 +6846,8 @@
         "mentor_concern_handled": "Mentor concern marked as handled",
         "session_logged_by_mentor": "Mentoring meeting logged by the mentor: {mode}, {minutes} min",
         "session_logged_by_mentor_no_minutes": "Mentoring meeting logged by the mentor: {mode}",
-        "award_withdrawn": "Award withdrawn (staff only) · {reason}"
+        "award_withdrawn": "Award withdrawn (staff only) · {reason}",
+        "name_aligned_to_ic": "Name aligned to the IC (staff only) · was {was}"
       },
       "control": {
         "title": "Maintenance controls",

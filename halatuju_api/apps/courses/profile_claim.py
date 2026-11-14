@@ -300,6 +300,11 @@ def _caller_blocker(caller_sub):
 NRIC_LOCKED = {'error': 'Your NRIC is verified and locked. Contact support to change it.',
                'code': 'nric_locked'}
 
+#: #67 scope 3: the refusal a STUDENT name change gets once the IC lock is on and the new name is
+#: not the one on their card (`identity.name_change_allowed`). Mirrors `NRIC_LOCKED`.
+NAME_LOCKED = {'error': 'Your name is verified against your IC and locked. Contact support to change it.',
+               'code': 'name_locked'}
+
 
 def ic_held_by_birth_state_rule(profile):
     """TD-377: is this student's OWN IC held (as if locked) because an application on the profile

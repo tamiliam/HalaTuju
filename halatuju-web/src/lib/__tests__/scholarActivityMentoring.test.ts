@@ -39,3 +39,10 @@ it('S7c: a meeting the mentor logged, and the concern raised and handled', () =>
   expect(activityText(row('mentor_concern_handled', { count: 2 }), t))
     .toBe('admin.scholars.event.mentor_concern_handled')
 })
+
+it('#67 scope 3: the IC read aligned the name — the old name as "was", never raw JSON', () => {
+  expect(activityText(row('name_aligned_to_ic', { old: 'ANNA DEVI', new: 'ANNA DEVI A/P RAMU', document_id: 4 }), t))
+    .toBe('admin.scholars.event.name_aligned_to_ic|{"was":"ANNA DEVI"}')
+  expect(activityText(row('name_aligned_to_ic', {}), t))
+    .toBe('admin.scholars.event.name_aligned_to_ic|{"was":"—"}')
+})

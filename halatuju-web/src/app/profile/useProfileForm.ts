@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { formatIc } from '@/lib/ic-utils'
-import { canEditIc, icFixableSide } from '@/lib/icEditor'
+import { canEditIc, canEditName, icFixableSide } from '@/lib/icEditor'
 import { getProfile, getSavedCourses } from '@/lib/api'
 import { chosenProgrammeFromApi } from '@/lib/scholarship'
 import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
@@ -51,6 +51,9 @@ export function useProfileForm() {
   // Default true so a payload that predates the field renders locked rather than offering an
   // edit the server would refuse.
   const [nricLocked, setNricLocked] = useState(true)
+  // #67 scope 3: the name is held to the IC by the same stored lock (`name_locked`). Default
+  // false: a payload that predates the field leaves the name editable, as it always was.
+  const [nameLocked, setNameLocked] = useState(false)
   const [icFlagCodes, setIcFlagCodes] = useState<string[]>([])
   const [icCardNric, setIcCardNric] = useState('')
   const [icCardName, setIcCardName] = useState('')
@@ -101,7 +104,8 @@ export function useProfileForm() {
   // Derived once so the field, the padlock and the flag panel cannot disagree about whether
   // this student may edit. `icEditable` is the ONLY thing that grants the edit.
   const icEditable = canEditIc({ nric_locked: nricLocked })
-  const icFixable = icFixableSide(icFlagCodes, icEditable)
+  const nameEditable = canEditName({ name_locked: nameLocked })
+  const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable)
 
   const loadData = useCallback(async () => {
     if (!token) return
@@ -127,6 +131,7 @@ export function useProfileForm() {
       setDisability(!!profileData.disability)
       setIdentityVerified(!!profileData.identity_verified)
       setNricLocked(profileData.nric_locked !== false)
+      setNameLocked(profileData.name_locked === true)
       setIcFlagCodes(profileData.ic_flags || [])
       setIcCardNric(profileData.ic_card_nric || '')
       setIcCardName(profileData.ic_card_name || '')
@@ -260,6 +265,8 @@ export function useProfileForm() {
     setIdentityVerified,
     nricLocked,
     setNricLocked,
+    nameLocked,
+    setNameLocked,
     icFlagCodes,
     setIcFlagCodes,
     icCardNric,
@@ -316,6 +323,7 @@ export function useProfileForm() {
     malaysian,
     savedBumiputera,
     icEditable,
+    nameEditable,
     icFixable,
     thirdHeld,
     resultsPath,

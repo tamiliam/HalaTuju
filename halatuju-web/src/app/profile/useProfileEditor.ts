@@ -23,7 +23,7 @@ export function useProfileEditor(f: ProfileForm) {
   const { t } = useT()
   const { token, refreshProfile } = useAuth()
   const { showToast } = useToast()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, postcode } = f
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, nameEditable, postcode } = f
 
   // Optional "return to" target (e.g. ?next=/scholarship/apply) so an edit started
   // from the application flow can come straight back. Restricted to internal
@@ -94,7 +94,8 @@ export function useProfileEditor(f: ProfileForm) {
     setSaving(true)
     try {
       await updateProfile({
-        name,
+        // #67 scope 3: a locked name is held to the IC — not sent, so no other edit is refused over it.
+        ...(nameEditable ? { name } : {}),
         // nric is read-only on PUT — only the claim path above can change it.
         ...(gender ? { gender } : {}),
         nationality,
@@ -145,6 +146,11 @@ export function useProfileEditor(f: ProfileForm) {
       window.dispatchEvent(new Event('profile-updated'))
       return true
     } catch (err) {
+      // #67 scope 3: the server holds a locked name to the IC (403 `name_locked`).
+      if ((err as { bodyCode?: string } | null)?.bodyCode === 'name_locked') {
+        showToast(t('profile.nameLockedError'), 'error')
+        return false
+      }
       showToast('Failed to save profile. Please try again.', 'error')
       return false
     } finally {

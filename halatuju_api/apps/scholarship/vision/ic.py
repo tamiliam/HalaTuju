@@ -9,18 +9,30 @@ from django.utils import timezone
 
 from ..genuineness.bands import keep_stored_authenticity
 from ..read_errors import IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, is_ai_service_error
-from .names import name_match, nric_match
+from .names import canonical_name_tokens, name_match, nric_match
 from .ocr import _doc_usage_ctx
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
 
 
-def _should_gemini_ic(result: dict, profile) -> bool:
+def _short_of_typed(read_name: str, typed_name: str) -> bool:
+    """#67 scope 3 (D4): the card's name read as a strict SUBSET of the typed one — fewer canonical
+    words, every one of them in the typed name (``partial`` in the short direction). The shape of a
+    two-line MyKad name whose second line the layout read refused (application 559)."""
+    a, b = canonical_name_tokens(read_name), canonical_name_tokens(typed_name)
+    return bool(a) and a < b and name_match(read_name, typed_name) == 'partial'
+
+
+def _should_gemini_ic(result: dict, profile, own_card: bool = False) -> bool:
     """Escalate to the Gemini second opinion only when the deterministic read is
     low-confidence: a core field is missing, OR it disagrees with the profile the
     student typed (a likely OCR misread, not necessarily a real mismatch). A clean
-    read that matches the profile never escalates — keeping most uploads free."""
+    read that matches the profile never escalates — keeping most uploads free.
+
+    ``own_card`` (the student's own ``ic``, never a parent's — D4, #67 scope 3): a read whose
+    name is SHORTER than the typed name (a strict subset) escalates too, because a lost second
+    line of the name reads exactly like that. A read LONGER than the typed name does not."""
     if not getattr(settings, 'IC_GEMINI_FALLBACK_ENABLED', True):
         return False
     nric = (result.get('nric') or '').strip()
@@ -33,16 +45,23 @@ def _should_gemini_ic(result: dict, profile) -> bool:
         return True
     if p_name and name_match(name, p_name) == 'mismatch':
         return True
+    if own_card and p_name and _short_of_typed(name, p_name):
+        return True
     return False
 
 
-def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
+def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict:
     """Fold the Gemini read into the deterministic one — conservatively. Gemini wins a
     CORE field (nric/name) only when it agrees with the profile and the deterministic
     read did not (or the deterministic read was empty); the soft address always prefers
     the cleaner Gemini value when present. So a confident deterministic match is never
     overridden by the model. #59: a parent's card passes ``parent_ic_reference`` (that parent's
-    ``names``, ANY of which may agree), never the student's profile — same bar, the right person."""
+    ``names``, ANY of which may agree), never the student's profile — same bar, the right person.
+
+    ``own_card`` (D4, #67 scope 3 — the student's own ``ic`` only): Gemini's name ALSO wins when it
+    is an exact ``match`` for a reference name and the deterministic read is not — the short,
+    ``partial`` read of application 559. A deterministic ``match`` still stands. Parent cards
+    (``own_card`` False) keep the rule above exactly."""
     p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
     p_names = [n for n in (getattr(profile, 'names', None) or [getattr(profile, 'name', '') or '']) if n] if profile else []
     out = dict(det)
@@ -59,6 +78,9 @@ def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
         elif (any(name_match(gname, n) != 'mismatch' for n in p_names)
               and all(name_match(out['name'], n) == 'mismatch' for n in p_names)):
             out['name'] = gname
+        elif (own_card and any(name_match(gname, n) == 'match' for n in p_names)
+              and all(name_match(out['name'], n) != 'match' for n in p_names)):
+            out['name'] = gname   # D4: the whole name, where the deterministic read was short
     gaddr = (g.get('address') or '').strip()
     if gaddr:
         out['address'] = gaddr   # cleaner read (no card labels / truncation)
@@ -94,13 +116,14 @@ def run_vision_for_document(doc) -> dict:
             result = _v.extract_mykad(image, doc.content_type)   # Cloud Vision OCR (doc_extract)
             if not result.get('error'):
                 profile = getattr(doc.application, 'profile', None)
-                if _v._should_gemini_ic(result, profile):
+                own_card = getattr(doc, 'doc_type', '') == 'ic'   # D4: the student's own card only
+                if _v._should_gemini_ic(result, profile, own_card=own_card):
                     with usage.usage_context(source='ic_fallback'):  # inherits org/app
                         g = _v._gemini_ic_second_opinion(image, doc.content_type)
                     if not g.get('_error'):
                         from ..income_engine import parent_ic_reference   # #59: a parent's card, its own person
                         ref = parent_ic_reference(doc) if getattr(doc, 'doc_type', '') == 'parent_ic' else profile
-                        result = _v._merge_ic_reads(result, g, ref)
+                        result = _v._merge_ic_reads(result, g, ref, own_card=own_card)
                         used_gemini, second = True, 'ok'
                     else:
                         second_error = g['_error']
@@ -155,9 +178,13 @@ def run_vision_for_document(doc) -> dict:
         update_fields.append('vision_fields')
     doc.save(update_fields=update_fields)
     try:
+        # D6 (#67 scope 3): align the name to the card FIRST, so the lock below compares the card
+        # with the name it will hold. Both never raise past here.
+        from .. import identity
+        identity.align_name_to_ic(doc)          # a parent's card is refused inside (NOT_STUDENT_IC)
         _lock_nric_if_confirmed(doc)
     except Exception:               # noqa: BLE001 — an upload must survive a failed lock
-        logger.exception('ic lock failed for document %s', getattr(doc, 'id', None))
+        logger.exception('ic name alignment / lock failed for document %s', getattr(doc, 'id', None))
     return result
 
 

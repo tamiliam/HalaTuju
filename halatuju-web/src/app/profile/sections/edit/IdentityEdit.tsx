@@ -8,7 +8,7 @@ import type { SectionProps } from '../../useProfileEditor'
 /** The identity section's edit panel. Fetched as one chunk with the other four (see `useProfileEditors`). */
 export default function IdentityEdit({ f, ed }: SectionProps) {
   const { t } = useT()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nricDraft, setNricDraft, nricError, setNricError, saving, malaysian, icEditable, icFixable } = f
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nricDraft, setNricDraft, nricError, setNricError, saving, malaysian, icEditable, nameEditable, icFixable } = f
   const { cancelEditing, saveSection } = ed
   return (
     <div className="space-y-4">
@@ -81,12 +81,28 @@ export default function IdentityEdit({ f, ed }: SectionProps) {
       )}
       <div>
         <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.name')} <span className="text-critical-600">*</span></label>
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
-        />
+        <div className="relative">
+          {/* #67 scope 3: the name is held to the IC by the same STORED lock as the number
+              (`name_locked`), so it gets the same read-only box, padlock and note. */}
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            disabled={!nameEditable}
+            aria-label={t('profile.name')}
+            className={`w-full px-3 py-2.5 border rounded-lg text-sm ${
+              nameEditable
+                ? 'border-ground-300 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
+                : 'border-ground-200 bg-ground-50 text-ground-500 cursor-not-allowed pr-10'
+            }`}
+          />
+          {!nameEditable && (
+            <svg data-testid="name-padlock" className="w-4 h-4 text-ground-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+          )}
+        </div>
+        {!nameEditable && <p className="mt-1.5 text-xs text-ground-500">{t('profile.nameLockedNote')}</p>}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
