@@ -191,21 +191,29 @@ NO_NAME_MATCH = 'no_name_match'      # neither the typed name nor any signature 
 
 
 def latest_live_ic(profile):
-    """The student's own IC read that speaks for them now: their newest ``ic`` document, not
-    replaced (``superseded_at``), with a name read off it, and not a household member's card
-    (``household_member``). A card an officer ASKED for (the Action Centre uploads it with the
-    request's ``request_code``) is hers too, and is often the only live one: that upload supersedes
-    her apply-form copy (``DocumentListCreateView._stale_ids``). No request code is ever another
-    person's ``ic`` (a parent's card is ``parent_ic``; a results-slip code never names an ``ic``), so
-    none is excluded. ``/profile``'s flags read this same card (``ProfileView._identity_state``),
-    so the padlock, the flags, the alignment and the name lock read one card."""
+    """The student's own IC read that speaks for them now: their NEWEST live ``ic`` document (not
+    replaced: ``superseded_at``; not a household member's card: ``household_member``), or None when
+    that newest card has no name read off it. The newest card is taken FIRST and only then asked for
+    a name, so an older card never answers for a newer one that read blank.
+
+    A card an officer ASKED for (the Action Centre uploads it with the request's ``request_code``)
+    counts, and is often the only live one: that upload supersedes her apply-form copy
+    (``DocumentListCreateView._stale_ids``). An officer can word an "Applicant's IC" request so that
+    a parent's card arrives in that slot, so the request code proves nothing about whose card it is:
+    nothing here trusts it. What keeps another person's card from deciding her name is the exact-NRIC
+    and clean-read gates every caller applies (``card_speaks_for``, ``name_alignment``, the lock).
+    ``/profile``'s flags read this same card (``ProfileView._identity_state``), so the padlock, the
+    flags, the alignment and the name lock read one card."""
     if profile is None or getattr(profile, 'pk', None) is None:
         return None
     from .models import ApplicantDocument
-    return (ApplicantDocument.objects
-            .filter(application__profile=profile, doc_type='ic', superseded_at__isnull=True,
-                    household_member='')
-            .exclude(vision_name='').order_by('-id').first())
+    newest = (ApplicantDocument.objects
+              .filter(application__profile=profile, doc_type='ic', superseded_at__isnull=True,
+                      household_member='')
+              .order_by('-id').first())
+    if newest is None or not (newest.vision_name or '').strip():
+        return None
+    return newest
 
 
 def _same_text(a, b):

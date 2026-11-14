@@ -12,6 +12,7 @@ import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from django.db.models import Q
 from django.utils import timezone
 
 from ..cron_health import EXPECTED_CADENCE
@@ -118,17 +119,23 @@ def _gemini_events(now):
         outcome = gemini_read_outcome({'error': err or '', 'capture': capture})
         if outcome != 'skip':
             events.append((stamp, outcome, err or ''))
+    # #67: a reused stored answer asked no one. It is left out BEFORE the slice, so a run of
+    # automatic re-runs never crowds the real answers out of the newest ``LAST_OK_SCAN``. The two
+    # ``isnull`` terms keep the rows with no ``ic_second_reading`` or no ``reused`` key: a bare
+    # ``exclude`` drops those too (NOT over a missing JSON key is NULL, not true, on SQLite and on
+    # Postgres alike), and each term is a definite true for its own case.
     seconds = (ApplicantDocument.objects
                .filter(doc_type__in=('ic', 'parent_ic'), vision_run_at__gte=since,
                        vision_run_at__lte=now, vision_fields__has_key='ic_second_opinion')
+               .filter(Q(vision_fields__ic_second_reading__isnull=True)
+                       | Q(vision_fields__ic_second_reading__reused__isnull=True)
+                       | ~Q(vision_fields__ic_second_reading__reused=True))
                .order_by('-vision_run_at')
                .values_list('vision_run_at', 'vision_fields__ic_second_opinion',
-                            'vision_fields__ic_second_opinion_error',
-                            'vision_fields__ic_second_reading__reused')[:LAST_OK_SCAN])
-    for stamp, opinion, err, reused in seconds:
-        outcome = ic_second_opinion_outcome({'ic_second_opinion': opinion,
-                                             'ic_second_reading': {'reused': bool(reused)}})
-        if outcome != 'skip':       # #67: a reused stored answer asked no one
+                            'vision_fields__ic_second_opinion_error')[:LAST_OK_SCAN])
+    for stamp, opinion, err in seconds:
+        outcome = ic_second_opinion_outcome({'ic_second_opinion': opinion})
+        if outcome != 'skip':
             events.append((stamp, outcome, err or ''))
     events.sort(key=lambda e: e[0], reverse=True)
     return events

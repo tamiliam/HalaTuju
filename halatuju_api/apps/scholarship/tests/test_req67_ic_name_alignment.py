@@ -18,7 +18,8 @@ The owner's decisions D1-D6 (docs/plans/req67-scope3-ic-name-alignment-brief.md)
 * D5 — ``align_profile_names_to_ic``: dry run by default, ids and counts only.
 * Third pass — a card an officer asked for is her card (H1); a kept second-opinion answer is reused
   only by an automatic re-run of the same image, model and prompt (M1), and never counts as the
-  service answering (L1).
+  service answering (L1). Fourth pass: the newest live card is taken first, so an older card never
+  answers for a newer one that reads no name; a fallback model's answer is never reused.
 * D6 — align before the lock, so the lock compares the card with the name it will hold; two
   separate never-raise steps, so a failed alignment never costs the lock.
 
@@ -290,6 +291,31 @@ class ThroughARealUpload(TestCase):
         self.assertEqual(identity.compare(asked, self.profile)['name'], 'match')
 
 
+    def test_a_newer_card_that_reads_no_name_is_not_answered_for_by_an_older_one(self):
+        """Fourth pass: her own card, then officer_1's card (promoted, aligned and locked), then
+        officer_2's card, which reads no name. The NEWEST live card is taken first, and it has no name,
+        so no card speaks for her: officer_1's older card never answers in its place, and /profile
+        shows nothing from it."""
+        self._upload_and_read('own')
+        first = self._upload_and_read('asked-1', request_code='officer_1')
+        self.assertIsNone(first.superseded_at)
+        self.assertEqual(identity.latest_live_ic(self.profile).pk, first.pk)
+        blank = self._upload_and_read('asked-2', request_code='officer_2', name='',
+                                      second={'nric': NRIC, 'name': '', 'address': ''})
+        self.assertIsNone(blank.superseded_at)                     # promoted: the newest live card
+        self.assertEqual(blank.vision_name, '')
+        self.assertIsNone(identity.latest_live_ic(self.profile))
+        self.profile.refresh_from_db()
+        self.profile.name = SHORT_EDIT          # an admin edit: the older card must not offer its name
+        self.profile.save(update_fields=['name'])
+        self.assertFalse(identity.name_card_takeable(self.profile))
+        self.assertFalse(identity.name_change_allowed(self.profile, CARD))
+        with override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET):
+            d = self.client.get('/api/v1/profile/').json()
+        self.assertEqual((d['ic_card_nric'], d['ic_card_name']), ('', ''))
+        self.assertFalse(d['name_card_takeable'])
+
+
 class WhenItAligns(TestCase):
     def test_the_profile_name_typed_in_another_case_is_already_the_cards(self):
         """Same words in the same order, only case and marker spacing apart: nothing to write (the stored
@@ -528,6 +554,64 @@ class The559Shape(TestCase):
         self.assertEqual(outage._gemini_read_window(since, until)[:2], (0, 0))
         self.assertEqual(system_health._gemini_events(until), [])
         _read(self.doc, name=FIRST4, nric=NRIC7)                   # a reused answer is reused again
+        self.assertTrue(self.doc.vision_fields['ic_second_reading']['reused'])
+
+    def test_the_health_light_leaves_reused_answers_out_before_it_slices(self):
+        """Fourth pass: reused rows are dropped in the query, BEFORE the newest-``LAST_OK_SCAN``
+        slice, so newer automatic re-runs never crowd a real answer out of the health light."""
+        from datetime import timedelta
+        from apps.scholarship.services import system_health
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        real_stamp = self.doc.vision_run_at
+        later = _ic(make_application(student=_student('ANOTHER INVENTED NAME', '010101-01-0101'),
+                                     cohort=make_cohort(code='c-req67-health')),
+                    vf={'ic_second_opinion': 'ok', 'ic_second_reading': {'reused': True}})
+        ApplicantDocument.objects.filter(pk=later.pk).update(
+            vision_run_at=real_stamp + timedelta(seconds=30))       # the newest second opinion
+        with patch.object(system_health, 'LAST_OK_SCAN', 1):
+            events = system_health._gemini_events(real_stamp + timedelta(minutes=5))
+        self.assertEqual([(e[0], e[1]) for e in events], [(real_stamp, 'ok')])
+
+    def test_a_fallback_models_answer_is_kept_under_its_name_and_asked_again(self):
+        """Fourth pass M1: the lead model fails and the fallback answers. The answer is stored under
+        the FALLBACK's name, so the next automatic re-run (the lead the current model) asks once more;
+        the lead's answer is then the one reused."""
+        import json
+        from unittest.mock import MagicMock
+        from apps.scholarship.profile_engine import MODEL_CASCADE
+        lead, fallback = MODEL_CASCADE[0], MODEL_CASCADE[1]
+        answer = MagicMock(text=json.dumps({'nric': NRIC7, 'name': FULL7, 'address': ''}))
+        answer.usage_metadata.prompt_token_count = 10
+        answer.usage_metadata.candidates_token_count = 5
+        lead_down = {'down': True}
+
+        def generate_content(model, contents, config):
+            if model == lead and lead_down['down']:
+                raise RuntimeError('503 the lead model is unavailable')
+            return answer
+
+        ocr = {'nric': NRIC7, 'name': FIRST4, 'address': '', 'error': None}
+
+        def read():
+            with override_settings(GEMINI_API_KEY='test-key'), \
+                    patch('google.genai.Client') as client_cls, \
+                    patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
+                    patch('apps.scholarship.vision.extract_mykad', return_value=ocr):
+                client_cls.return_value.models.generate_content.side_effect = generate_content
+                vision.run_vision_for_document(self.doc)
+                asked = [c.kwargs['model'] for c in
+                         client_cls.return_value.models.generate_content.call_args_list]
+            self.doc.refresh_from_db()
+            return asked
+
+        self.assertEqual(read(), [lead, fallback])
+        self.assertEqual(self.doc.vision_fields['ic_second_reading']['model'], fallback)
+        self.assertEqual(self.doc.vision_name, FULL7)
+        lead_down['down'] = False
+        self.assertEqual(read(), [lead])                 # a fallback's answer is not reused: asked once more
+        self.assertEqual(self.doc.vision_fields['ic_second_reading']['model'], lead)
+        self.assertNotIn('reused', self.doc.vision_fields['ic_second_reading'])
+        self.assertEqual(read(), [])                     # the lead's own answer is reused
         self.assertTrue(self.doc.vision_fields['ic_second_reading']['reused'])
 
     def test_a_second_reading_that_is_not_her_name_is_not_taken(self):
