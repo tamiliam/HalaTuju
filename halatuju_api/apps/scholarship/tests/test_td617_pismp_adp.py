@@ -205,6 +205,36 @@ class PismpBeforeAndAfterSubmitAgree(TestCase):
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class PismpCodeWithHigherResultsIsAsked(TestCase):
+    """Re-check 2026-11-14: a 'pismp' code over a plain degree name ("Ijazah Sarjana Muda Pendidikan"),
+    at an IPG or at UPSI, for a student who entered STPM / matric results (or STPM grades on an old SPM
+    record), was not asked before submit (F1's withheld code) yet owed after. Before and after agree:
+    the code withholds only when no higher results were declared."""
+    LEGACY = {**SPM_HELD, 'stpm_grades': STPM_HELD['stpm_grades'], 'stpm_cgpa': 3.67}
+    NAME = 'Ijazah Sarjana Muda Pendidikan'
+    PLACES = ('IPG Kampus Ipoh', 'Universiti Pendidikan Sultan Idris')
+
+    def test_declared_higher_is_asked_before_submit_and_owed_after(self):
+        for profile, kind, need in ((STPM_HELD, 'stpm', 'required'), (MATRIC_HELD, 'matric', 'required'),
+                                    (self.LEGACY, 'stpm', 'required_with_slip')):
+            for inst in self.PLACES:
+                with self.subTest(kind=kind, legacy=profile is self.LEGACY, inst=inst):
+                    self.assertEqual(results_route.higher_need(_app(profile, plan('pismp', self.NAME, inst))),
+                                     need)
+                    app = _app(profile, plan('pismp', self.NAME, inst), SUBMITTED)
+                    self.assertTrue(higher_owed._needs_higher(app))
+                    self.assertEqual(higher_owed.owed_kind(app), kind)
+
+    def test_spm_only_at_ipg_is_neither_asked_nor_owed(self):
+        self.assertEqual(results_route.higher_need(_app(SPM_HELD, plan('pismp', self.NAME, self.PLACES[0]))), '')
+        app = _app(SPM_HELD, plan('pismp', self.NAME, self.PLACES[0]), SUBMITTED)
+        _doc(app, 'results_slip', spm_read(SPM_ROWS), GENUINE)
+        app = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertFalse(higher_owed._needs_higher(app))
+        self.assertEqual(higher_owed.owed_kind(app), '')
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
 class PismpFrozenRequiredDoesNotAnchor(TestCase):
     """Review finding 3: a submitted SPM-only PISMP application whose snapshot froze higher_results
     'required' (before the ruling) reads her SPM card: no red Academic `higher_results_missing`, so no

@@ -142,8 +142,12 @@ _NOT_ASKED_NAME = re.compile(r'persediaan|american\s+degree\s+program(?:me)?s?\b
 
 
 def _q7_widening_withheld(application) -> bool:
-    """True when F1 Q7's wider before-submit ask (`degree_bound`) does not apply (`_NOT_ASKED_*`)."""
-    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() in _NOT_ASKED_CODES:
+    """True when F1 Q7's wider before-submit ask (`degree_bound`) does not apply (`_NOT_ASKED_*`).
+    TD-617 recheck (owner 2026-11-14): the PISMP code withholds only when no higher results were
+    declared (`higher_owed.declared_kind`); one who entered STPM/matric is asked, as she is owed."""
+    from .higher_owed import declared_kind
+    code = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
+    if code in _NOT_ASKED_CODES and not declared_kind(application):
         return True
     prog = getattr(application, 'chosen_programme', None)
     name = (prog.get('course_name') or '') if isinstance(prog, dict) else ''

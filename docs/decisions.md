@@ -12,6 +12,8 @@
 
 **Money:** `degree_bound`, `destination`, `award.proposed_award_amount` and `funding_estimate.classify_pathway` are untouched. A pin of 1,716 inputs (code x name x institution x results held), generated on origin/main, is checked in `test_td617_pismp_adp.MoneyPinnedToMain`.
 
+**Re-check (2026-11-14.3):** F1's 'pismp'-code withholding (`_q7_widening_withheld`) applies only when no higher results were declared (`higher_owed.declared_kind`): a 'pismp' code with entered STPM/matric results (IPG or UPSI) is asked before submit, as she is owed after; an SPM-only student is never asked.
+
 **Frozen snapshots:** stored snapshots are not rewritten. A submitted PISMP application with no declared higher results whose snapshot froze `higher_results` 'required' does not anchor its Academic card on the higher results (`higher_results.anchors_on_higher`): it reads the SPM card, so no red `higher_results_missing`, no student ticket from it and no QC red floor from it. The readers of `anchors_on_higher` agree with it (the Academic card, the genuineness ladder's documents, the red chips, the anomaly check, `final_owed_kind`). The gates that read the snapshot directly (`consent_blockers`, `completeness`) are deliberately unchanged: this never touches a gate.
 
 **Version:** `VERDICT_ENGINE_VERSION` 2026-11-14.1, then 2026-11-14.2 after the adversarial review (the university exclusion for the code, IPGM / IPGK / Bachelor of Teaching, `declared_kind` before submit, the frozen-snapshot guard).

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: TD-617 re-check - a 'pismp' code with entered STPM/matric results is asked before submit, as it is owed after (2026-11-14)
+- `results_route._q7_widening_withheld` withholds on the 'pismp' code only when `higher_owed.declared_kind` is empty (IPG or UPSI); SPM-only keeps main's answer. `VERDICT_ENGINE_VERSION` 2026-11-14.3; money pin unchanged. Test: `PismpCodeWithHigherResultsIsAsked`.
+
 ### fix: TD-617 review - PISMP test narrowed and widened, before/after submit agree, frozen 'required' snapshots (2026-11-14)
 - `results_route.is_pismp`: the code 'pismp' no longer counts when the institution is a university (`\buniversit`), so a 'pismp' code on a UPSI "Ijazah Sarjana Muda Pendidikan" keeps origin/main's rules (owed, asked and capped after submit). A PISMP / Perguruan name or an IPG still counts. Now also matches "IPGM" / "IPGK" (`\bipg[mk]?\b`) and "Bachelor of Teaching"; "Pendidikan" and "Pengurusan" alone still do not.
 - `results_route.higher_need`: the before-submit PISMP exemption tests `higher_owed.declared_kind` (the after-submit rule's own test), so SPM held with STPM grades entered is asked before submit, not "not asked, then capped".
