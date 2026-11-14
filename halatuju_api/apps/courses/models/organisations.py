@@ -31,10 +31,10 @@ class PartnerOrganisationQuerySet(models.QuerySet):
         precisely the rows this excludes.
         """
         from django.db.models import Exists, OuterRef, Q
-        from apps.scholarship.public import Programme
+        from apps.scholarship import public as scholarship_public
         from ..models_staff import PartnerAdmin   # was a module-level name of the old models.py
 
-        owns_programme = Programme.objects.filter(
+        owns_programme = scholarship_public.Programme.objects.filter(
             organisation_id=OuterRef('pk'), is_active=True)
         has_org_admin = PartnerAdmin.objects.filter(
             owning_organisation_id=OuterRef('pk'), role='org_admin', is_active=True)

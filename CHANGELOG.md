@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### F2 package 1 - scholarship reaches courses catalogue and merit code through the public door
 - courses/public.py re-exports 15 catalogue and merit names (course_pathway_type, csv_cell, calculate_merit_score, prepare_merit_inputs, aliran_of, digits_expr, apply_people_search, people_search_term, STPM_CGPA_POINTS, calculate_stpm_cgpa, pngk_from_grades, stpm_cgpa_of, family_of, HELD, tidy_parentage_marker). 38 scholarship files now import the door (courses_public) and call courses_public.X. Import-only: no logic, value or evaluation order changed. Test patch of heading_for retargeted to the door; facade test pins the new names to their home objects.
 
+### F2 package 2 - courses and reports come through the doors (2026-11-14)
+Import-only. `apps/scholarship/public.py` now also re-exports invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work, usage, gemini, Invitation and reviewer_profile_complete; courses (views_admin, profile_claim, org_config_registry, models/organisations, views/profile, views/verification) and reports (report_engine, views, prompts) reach scholarship and courses through `public` instead of file by file. Cross-app reading: courses to scholarship 21 to 1, reports to courses 9 to 1, reports to scholarship 2 to 1 (total 109 to 80 with package 1 still to land). No logic, value or order changed; the facade pin test lists the new names; the door skip list (DOOR_ALLOWED) is emptied and pinned at 0.
+
 ### release: 14 Nov 16:00 MYT window - M3a and TD-617 web published (2026-11-14)
 - live 0fb384a76..cdb6d54be. api halatuju-api-01299-m7s (TD-617 + M3a), web halatuju-web-01120-5ld (TD-617 copy and FAQ).
 - Migration courses 0098 by hand, migrate-first: owner ran pre-check, DATA block and check; re-ran DATA block and check after the api took 100% (no change, 0 rows). Window closed.

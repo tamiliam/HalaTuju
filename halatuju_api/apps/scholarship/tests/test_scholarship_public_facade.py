@@ -12,13 +12,18 @@ from apps.scholarship import public as scholarship_public
 SCHOLARSHIP_HOMES = {
     'ApplicantDocument': 'apps.scholarship.models',
     'Programme': 'apps.scholarship.models',
+    'Invitation': 'apps.scholarship.models',
+    'reviewer_profile_complete': 'apps.scholarship.reviewer_onboarding',
     'DECIDED_STATUSES': 'apps.scholarship.family',
     'PROFILE_FAMILY_FIELDS': 'apps.scholarship.family',
     'PROFILE_PATHWAY_FIELDS': 'apps.scholarship.family',
     'copy_family_roster': 'apps.scholarship.family',
     'copy_pathway': 'apps.scholarship.family',
 }
-SCHOLARSHIP_MODULES = ('birth_state', 'constants', 'emails', 'identity', 'whatsapp')
+SCHOLARSHIP_MODULES = (
+    'birth_state', 'constants', 'emails', 'gemini', 'identity', 'invitations', 'mentoring',
+    'staff_footprint', 'staff_lifecycle', 'staff_mentor', 'staff_work', 'usage', 'whatsapp',
+)
 
 
 class TestScholarshipFacadeIsTheSameObjects(SimpleTestCase):

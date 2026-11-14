@@ -13,9 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from apps.courses.public import (
-    QUALIFICATION_LABELS, THIRD_ROUTE, StudentProfile, overall_cgpa, results_held, spm_grades_for,
-)
+from apps.courses import public as courses_public
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from .models import GeneratedReport
 from .report_engine import generate_report
@@ -73,14 +71,14 @@ class GenerateReportView(APIView):
             lang = 'bm'
 
         # Load student profile for grades and signals
-        profile, _ = StudentProfile.objects.get_or_create(
+        profile, _ = courses_public.StudentProfile.objects.get_or_create(
             supabase_user_id=request.user_id
         )
         grades = profile.grades or {}
         student_signals = profile.student_signals or {}
 
         # Enrich courses with field display names
-        from apps.courses.public import FieldTaxonomy
+        FieldTaxonomy = courses_public.FieldTaxonomy
         field_cache = {}
         for course in eligible_courses:
             fk = course.get('field_key') or course.get('field', '')
@@ -97,13 +95,13 @@ class GenerateReportView(APIView):
         # STPM with nothing behind it gets her SPM report, and a third-route card tapped with no
         # CGPA reads the SPM results held. Matriculation / Asasi / Diploma are STPM-equivalent and
         # carry their own results block.
-        held = results_held(profile) or 'spm'
+        held = courses_public.results_held(profile) or 'spm'
         higher = None
-        if held in THIRD_ROUTE:
+        if held in courses_public.THIRD_ROUTE:
             exam_type = held
-            grades = spm_grades_for(profile)
-            higher = {'label': QUALIFICATION_LABELS[held], 'cgpa': profile.higher_cgpa,
-                      'overall_cgpa': overall_cgpa(profile), 'koko': profile.higher_koko,
+            grades = courses_public.spm_grades_for(profile)
+            higher = {'label': courses_public.QUALIFICATION_LABELS[held], 'cgpa': profile.higher_cgpa,
+                      'overall_cgpa': courses_public.overall_cgpa(profile), 'koko': profile.higher_koko,
                       'muet_band': profile.muet_band}
         else:
             exam_type = 'stpm' if held == 'stpm' else 'spm'

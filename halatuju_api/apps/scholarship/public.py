@@ -15,10 +15,13 @@ Rules:
 - Callers import from here INSIDE a function, never at module level: this module loads the
   scholarship models, and the back-edge must not run at app-load (the code-standards budget
   `courses_to_scholarship_module_level_imports` stays 0).
-- Part 1 covers the five courses files that are free to move. `views_admin` (and the staff_*
-  files) still import scholarship directly; they join when their owning sprints land.
+- Sprint F2 package 2: `views_admin` and the reports app now come through here too (staff rules,
+  invitations, usage, the Gemini cascade message).
 """
-from . import birth_state, constants, emails, identity, whatsapp
+from . import (
+    birth_state, constants, emails, gemini, identity, invitations, mentoring, staff_footprint,
+    staff_lifecycle, staff_mentor, staff_work, usage, whatsapp,
+)
 from .family import (
     DECIDED_STATUSES,
     PROFILE_FAMILY_FIELDS,
@@ -26,10 +29,13 @@ from .family import (
     copy_family_roster,
     copy_pathway,
 )
-from .models import ApplicantDocument, Programme
+from .models import ApplicantDocument, Invitation, Programme
+from .reviewer_onboarding import reviewer_profile_complete
 
 __all__ = [
-    'ApplicantDocument', 'DECIDED_STATUSES', 'PROFILE_FAMILY_FIELDS', 'PROFILE_PATHWAY_FIELDS',
-    'Programme', 'birth_state', 'constants', 'copy_family_roster', 'copy_pathway', 'emails',
-    'identity', 'whatsapp',
+    'ApplicantDocument', 'DECIDED_STATUSES', 'Invitation', 'PROFILE_FAMILY_FIELDS',
+    'PROFILE_PATHWAY_FIELDS', 'Programme', 'birth_state', 'constants', 'copy_family_roster',
+    'copy_pathway', 'emails', 'gemini', 'identity', 'invitations', 'mentoring',
+    'reviewer_profile_complete', 'staff_footprint', 'staff_lifecycle', 'staff_mentor', 'staff_work',
+    'usage', 'whatsapp',
 ]
