@@ -20,7 +20,7 @@
 
 **Results of the guarded version (re-check of the ~290 cards that changed, paid, owner's word):** no name got worse into "different name". 13 students' cards and about 12 parents' cards now read "match" that did not. Three cards go from "match" to "partly matches" (app 177's student card, the parents' cards on 25 and 217). On each, a second line sits at the name's own spacing with a clear blank line under it, so it is most likely a real name part the typed name lacks. "Partly matches" is amber for the reviewer, never a block.
 
-**Not checked yet:** the spacing change on real cards (replayed only). Word boxes are not stored, so re-reading the students' cards after release, are paid Vision reads that need the owner's word.
+**Spacing change checked on real cards** (owner-approved paid read, 14 Nov, the same 284 cards plus 358, 573, 602): 358, 573 and 602 now match, with the full name. No other card's name changed. The three match→partial cards are unchanged; the owner checked 177's student card, which does have a two-line name. Seven cards no longer use the layout read and keep today's address. The other address differences between this read and the last one follow Vision's text varying between runs (the old code's results moved too). Re-reading the affected students' cards after release is a paid Vision read and needs the owner's word.
 
 ## 2026-11-13 — Every Team table heading sorts, except Action (owner, Sprint M2d addendum A2)
 
