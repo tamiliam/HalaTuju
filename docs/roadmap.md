@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-05 (audit sprint A0.3)
 
-## Status: v3.1.0 released, project audit closed 2026-11-12 (freeze lifted)
+## Status: v3.1.0 released, project audit closed 2026-11-12; feature freeze lifts Wed 18 Nov (owner ruling 2026-11-14, `docs/decisions.md`)
 
 HalaTuju is live at [halatuju.xyz](https://halatuju.xyz). v3.0.0 (2026-10-06) was a complete bursary platform; **v3.1.0 (2026-11-05)** added the staff team and permissions, phone-native pages, exact offer-letter reading, post-award student care and one Overview page per staff member. Notes: [`docs/releases/release-notes-v3.1.0.md`](releases/release-notes-v3.1.0.md); the reasons: [`docs/decisions.md`](decisions.md); every change: [`CHANGELOG.md`](../CHANGELOG.md).
 

@@ -188,7 +188,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - Team tables T5a, T5b and T5c P1 (the `staff_tables.opens` door gate, `qc` implies `see_all`, `qc_separation.refusal`, the v2 permission catalogue), Requests list R1 (`org_requests_queue.needs_action_q` is the ONE Needs-action rule) and T5c Part 5 (Programmes landing; open TD-500, TD-501): rules and gotchas are in that section. A new page is gated the old way AND gets a v2 key, except the merged Overview.
 - **Offer letters read exactly:** S1-S6 live. **NEXT = S7 (paid; owner yes)**, then S8. Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. New evasions go to TD for S7 unless they block a real public letter.
 - **Mobile-native arc:** COMPLETE (M0-M8). Rules `docs/mobile-standard.md`, ledger `docs/mobile-ledger.md`; every UI change runs `npm run mobile-check`.
-- **Freeze LIFTED 2026-11-12** (audit closed). T5d and offer S7 may start after W1 and F1 (roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md`).
+- **Freeze: lifts Wed 18 Nov** (owner ruling 2026-11-14, `docs/decisions.md`). Until then: post-audit work first (F2b stages 1-2, Gemini Phase 2, the `_gemini_generate` duplicate); other sessions fix bugs only. F2b stage 3 dropped. T5d and offer S7 after the lift, each with the owner's word.
 
 ## Known Issues & Future Work
 
