@@ -6,13 +6,14 @@ NEW tree (live main). Some moved after v3.1.0 (A3.4, A3.6, A3.8): `contracts.py`
 resolve, so a moved name can never be compared against nothing. The image build runs
 `python -m replay.engine_map --side old` and `--side new` in each tree's own venv and fails on exit 1.
 
-The adapters that turn a case into a call and an answer into a record are R2 (`ADAPTERS`, empty here).
+The adapters that turn a case into a call and an answer into a record are R2 (`ADAPTERS`, from `adapters`).
 """
 import argparse
 import importlib
 import sys
 
-from . import scrub
+from . import adapters as _adapters
+from . import rulings, scrub, vocab
 
 S = 'apps.scholarship.'
 
@@ -29,7 +30,9 @@ ENGINES = {
     'academic.semester_check': (S + 'academic_engine:semester_check',) * 2,
     'academic.student_school_leaving_check': (S + 'academic_engine:student_school_leaving_check',) * 2,
     'help.verdict_for_document': (S + 'help_engine:verdict_for_document',) * 2,
-    'gaps.generate_interview_gaps': (S + 'gap_engine:generate_interview_gaps',) * 2,
+    # generate_interview_gaps is a Gemini call (out of scope, 3.2): the replay compares the deterministic
+    # flags block it feeds the prompt, hashed (adapters._gap_flags).
+    'gaps.flags_summary': (S + 'gap_engine:_flags_summary',) * 2,
     'shortlist.evaluate': (S + 'shortlisting:evaluate',) * 2,
     'courses.check_eligibility': ('apps.courses.engine:check_eligibility',) * 2,
     'courses.compute_student_merit': ('apps.courses.eligibility_service:compute_student_merit',) * 2,
@@ -53,7 +56,9 @@ SIDES = {'old': 0, 'new': 1}
 
 #: name -> adapter factory (R2). An adapter has `.name`, `.cases()` (keys) and `.run(key, months)`.
 #: Each adapter module registers its codes at import, ABOVE the freeze below.
-ADAPTERS = {}
+ADAPTERS = dict(_adapters.ADAPTERS)
+#: The modules whose import registered their codes above the freeze below.
+REGISTERED_BY = (vocab, rulings, _adapters)
 
 # Every adapter is imported by now: no code may be registered after this line (scrub.register_codes).
 scrub.freeze_registry()

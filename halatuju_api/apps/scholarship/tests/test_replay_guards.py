@@ -309,7 +309,7 @@ class NetworkGuardTest(SimpleTestCase):
 
 
 #: What an R2 adapter would register for these tests (made-up record fields and codes).
-_TEST_CODES = ('status', 'unresolved', 'app', 'amount', 'merit', 'params', 'course', 'month', 'eligible', 'row',
+_TEST_CODES = ('status', 'unresolved', 'app', 'amount', 'merit', 'params', 'course', 'month', 'eligible', 'row', 'total',
                'sum', 'commit', 'ok', 'probable', 'higher_results_not_declared', 'tick:name', 'UP65A')
 
 
@@ -327,13 +327,13 @@ class ScrubTest(SimpleTestCase):
     def test_codes_amounts_hashes_ids_and_months_are_kept(self):
         rec = {'status': 'probable', 'unresolved': ['higher_results_not_declared', 'tick:name'], 'app': 278,
                'amount': Decimal('3000'), 'merit': 87.5, 'params': scrub.text_hash('anything'),
-               'course': 'UP65A', 'month': '2026-12', 'eligible': True, 'row': None, 'sum': '1200.00'}
+               'course': 'UP65A', 'month': '2026-12', 'eligible': True, 'row': None, 'total': '1200.00'}
         out = scrub.scrub(rec)
         self.assertEqual(scrub.count_dropped(out), 0)
         self.assertEqual((out['amount'], out['merit']), ('3000.00', '87.50'))
-        self.assertEqual({k: out[k] for k in ('status', 'app', 'course', 'month', 'eligible', 'row', 'sum')},
+        self.assertEqual({k: out[k] for k in ('status', 'app', 'course', 'month', 'eligible', 'row', 'total')},
                          {'status': 'probable', 'app': 278, 'course': 'UP65A', 'month': '2026-12',
-                          'eligible': True, 'row': None, 'sum': '1200.00'})
+                          'eligible': True, 'row': None, 'total': '1200.00'})
 
     def test_names_ics_phones_addresses_dates_and_free_text_are_dropped(self):
         for value in ('Siti binti Ahmad', 'AHMAD', 'Probable', '010203141234', '010203-14-1234', 10203141234,

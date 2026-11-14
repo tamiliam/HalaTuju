@@ -112,6 +112,14 @@ def _is_error(record):
     return isinstance(record, dict) and 'error' in record
 
 
+def answer(record):
+    """The engine's answer: the record without `facts` (the case facts the rulings read, which are never
+    compared: a tree that lacks a helper reads a fact as None without the engine changing)."""
+    if isinstance(record, dict) and 'facts' in record:
+        return {k: v for k, v in record.items() if k != 'facts'}
+    return record
+
+
 def classify(old, new, again):
     if old is None or new is None or again is None:
         return 'could_not_run'
@@ -119,13 +127,20 @@ def classify(old, new, again):
         return 'noise'
     if _is_error(old) or _is_error(new):
         return 'could_not_run'
-    return 'same' if old == new else 'differs'
+    return 'same' if answer(old) == answer(new) else 'differs'
 
 
 def changed_fields(old, new):
+    old, new = answer(old), answer(new)
     if isinstance(old, dict) and isinstance(new, dict):
         return sorted(k for k in set(old) | set(new) if old.get(k) != new.get(k))
     return ['value']
+
+
+def explain(engine, old, new):
+    """A `differs` record as ('expected', ruling ids) - class A - or ('unexplained', ids) - class B."""
+    from .rulings import classify_difference
+    return classify_difference(engine, old, new)
 
 
 def compare_sides(sides):
@@ -155,7 +170,9 @@ def report(rows, out=print):
         line = {'engine': engine, 'key': key, 'outcome': outcome}
         if outcome == 'differs':
             fields = changed_fields(old, new)
-            line.update(fields=fields,
+            klass, ids = explain(engine, old, new)
+            totals[engine][klass] += 1
+            line.update(fields=fields, **{'class': klass, 'rulings': ids},
                         old={f: (old.get(f) if isinstance(old, dict) else old) for f in fields},
                         new={f: (new.get(f) if isinstance(new, dict) else new) for f in fields})
         elif outcome == 'could_not_run':

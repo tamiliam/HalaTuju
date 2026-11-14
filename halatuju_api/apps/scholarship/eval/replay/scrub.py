@@ -20,9 +20,13 @@ What leaves as written:
   * an int below 10**8 ONLY under a key in `INT_KEYS` (the counts, totals and case keys the harness
     emits); any other int is DROPPED. An 8-digit landline (41234567) or an IC split into parts
     ([990101, 14, 5678]) is below the cap, so the cap alone never made an int safe;
-  * a Decimal / float below 10**8, written as a 2-decimal amount (the same cap as a text amount);
-  * a string that is: a known code; a hash `h:<8-16 hex>` or `!h:<12 hex>`; an amount `-?\\d{1,8}.\\d\\d`;
-    a month `YYYY-MM`; and, ONLY under `old_commit` / `new_commit` in the top-level `start` event the
+  * a Decimal / float below 10**8, written as a 2-decimal amount, and an amount string `-?\\d{1,8}.\\d\\d`,
+    ONLY under a key in `AMOUNT_KEYS` (R2: anywhere else a float or Decimal is DROPPED and an amount-shaped
+    string is hashed, so a figure that is not an amount cannot leave as one);
+  * a COURSE CODE (a catalogue id, design 3.2) ONLY under a key in `COURSE_KEYS`, and only when it has two
+    letters or more and is not one letter and 7-9 digits (`_course_code`). Course codes are NOT registered
+    codes: `UP6500001` has the passport shape the registry refuses, so they pass by key, never by registry;
+  * a string that is: a known code; a hash `h:<8-16 hex>` or `!h:<12 hex>`; a month `YYYY-MM`; and, ONLY under `old_commit` / `new_commit` in the top-level `start` event the
     parent emits, a commit hash (7-40 hex with at least one letter a-f AND one digit: a lower-cased
     passport has that shape too, so it is honoured nowhere else).
 
@@ -60,7 +64,20 @@ INT_KEYS = frozenset({
     'key', 'exit', 'records', 'dropped', 'failed_modules',
     'applications', 'documents_live', 'payable', 'profiles_spm', 'profiles_stpm', 'sponsors',
     'same', 'differs', 'could_not_run', 'noise',
+    # R2 (reviewed here, never at run time): ids in a record, and the comparer's own counts
+    'doc', 'template_id', 'expected', 'unexplained',
 })
+#: The only keys under which a Decimal / float or an amount-shaped string leaves as an amount (R2, 5a).
+AMOUNT_KEYS = frozenset({
+    'amount', 'amount_due', 'stored_award', 'monthly_amount', 'remaining', 'paid_to_date', 'balance', 'available_total',
+    'monthly', 'total', 'merit',
+})
+#: The only keys under which a course code leaves as written (R2, 5b): the course adapters' eligible sets,
+#: built ONLY from the catalogue's own ids (never from a student's data).
+COURSE_KEYS = frozenset({'eligible_courses'})
+#: Two letters or more; letters, digits and hyphens, at most 24; never one letter and 7-9 digits (a passport).
+_COURSE = re.compile(r'^(?=(?:[^A-Za-z]*[A-Za-z]){2})[A-Za-z0-9][A-Za-z0-9-]{1,23}$')
+_ONE_LETTER_PASSPORT = re.compile(r'^[A-Za-z]\d{7,9}$')
 #: What `register_codes` accepts: one token, no spaces, at most 64 characters...
 _CODE_SHAPE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_:./-]{0,63}$')
 #: ...and, once its separators are removed (`_SEPARATORS`), none of these anywhere in it: a run of six or
@@ -165,21 +182,31 @@ def amount(value):
 
 
 def _passes_as_written(s):
-    return bool(is_code(s) or _HASH.match(s) or _SCRUB_HASH.match(s) or _AMOUNT.match(s) or _MONTH.match(s)
-                or s == DROPPED)
+    return bool(is_code(s) or _HASH.match(s) or _SCRUB_HASH.match(s) or _MONTH.match(s) or s == DROPPED)
 
 
-def _leaf(value, ints):
+def _course_code(s):
+    return bool(_COURSE.match(s)) and not _ONE_LETTER_PASSPORT.match(s)
+
+
+def _leaf(value, key):
+    """``key``: the dict key the value sits under (a list passes its key to its items), or None."""
     if value is None or isinstance(value, bool):
         return value
     if isinstance(value, int):
-        return value if ints and abs(value) < MAX_INT else DROPPED
-    if isinstance(value, float):
-        return amount(value) if math.isfinite(value) else DROPPED
-    if isinstance(value, Decimal):
+        return value if key in INT_KEYS and abs(value) < MAX_INT else DROPPED
+    if isinstance(value, (float, Decimal)):
+        if key not in AMOUNT_KEYS or (isinstance(value, float) and not math.isfinite(value)):
+            return DROPPED
         return amount(value)
     if isinstance(value, str):
-        return value if _passes_as_written(value) else SCRUB_HASH_PREFIX + _keyed(value)
+        if _passes_as_written(value):
+            return value
+        if key in AMOUNT_KEYS and _AMOUNT.match(value):
+            return value
+        if key in COURSE_KEYS and _course_code(value):
+            return value
+        return SCRUB_HASH_PREFIX + _keyed(value)
     return DROPPED
 
 
@@ -205,12 +232,13 @@ def _is_error_name(value):
 def scrub(value):
     """A copy of ``value`` with every non-conforming leaf hashed or dropped and every dict key that is not
     a known code dropped. Lists and tuples become lists; sets become sorted lists."""
-    return _scrub(value, top=True, ints=False)
+    return _scrub(value, top=True, key=None)
 
 
-def _scrub(value, *, top, ints):
+def _scrub(value, *, top, key):
     """``top``: ``value`` is the whole line (only there may a `start` event carry its commit hashes).
-    ``ints``: ``value`` sits under a key in INT_KEYS (a list under one passes it to its items)."""
+    ``key``: the key ``value`` sits under (INT_KEYS, AMOUNT_KEYS and COURSE_KEYS read it; a list under
+    one passes it to its items)."""
     if isinstance(value, dict):
         error_shaped = 'error' in value and set(value) <= _ERROR_RECORD_KEYS
         start_event = top and value.get('event') == 'start'
@@ -223,7 +251,7 @@ def _scrub(value, *, top, ints):
             elif start_event and k in _COMMIT_KEYS and isinstance(v, str) and _COMMIT.match(v):
                 out[k] = v
             elif is_code(k):
-                out[k] = _scrub(v, top=False, ints=k in INT_KEYS)
+                out[k] = _scrub(v, top=False, key=k)
             else:
                 out.setdefault('!dropped_keys', 0)
                 out['!dropped_keys'] += 1
@@ -231,10 +259,10 @@ def _scrub(value, *, top, ints):
             out['!dropped_keys'] = min(out['!dropped_keys'], MAX_INT - 1)
         return out
     if isinstance(value, (list, tuple)):
-        return [_scrub(v, top=False, ints=ints) for v in value]
+        return [_scrub(v, top=False, key=key) for v in value]
     if isinstance(value, (set, frozenset)):
-        return sorted((_scrub(v, top=False, ints=ints) for v in value), key=repr)
-    return _leaf(value, ints)
+        return sorted((_scrub(v, top=False, key=key) for v in value), key=repr)
+    return _leaf(value, key)
 
 
 def count_dropped(value):

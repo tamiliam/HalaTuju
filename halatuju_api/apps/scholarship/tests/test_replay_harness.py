@@ -144,7 +144,7 @@ class HarnessEndToEndTest(TestCase):
         totals, lines = self._run()
         n = len(self.apps)
         self.assertEqual(dict(totals['same']), {'same': n})
-        self.assertEqual(dict(totals['differs']), {'differs': n})
+        self.assertEqual(dict(totals['differs']), {'differs': n, 'unexplained': n})  # R2: a differs record with no ruling is B
         self.assertEqual(dict(totals['noise']), {'noise': n})
         self.assertEqual(dict(totals['raises']), {'could_not_run': n})
         self.assertEqual(dict(totals['writes']), {'could_not_run': n})     # refused; the run went on
