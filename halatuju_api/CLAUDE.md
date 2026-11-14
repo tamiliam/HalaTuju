@@ -1,5 +1,9 @@
 # HalaTuju API — Architecture & Operations
 
+> **DEPLOY RULE (owner, 14 Nov 2026).** Pushing to `main` only SAVES; it never deploys.
+> To publish: `git push origin <tested-main-sha>:live` (fast-forward only, never force). The triggers fire on `live`.
+> Each publish needs the owner's yes. Details: `docs/deployment.md`.
+
 This is the operating manual, kept SHORT on purpose: it loads into every session and helper agent, so
 it is paid for on every call. It holds the rules that cause real damage if missed, the gate commands,
 and the current Next Sprint. The full text of everything else is in the docs below, word for word:
@@ -50,7 +54,7 @@ backed by Supabase PostgreSQL; `engine.py` is a GOLDEN MASTER (SPM 5,319, STPM 2
 GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Run `halatuju-api` / `halatuju-web`
 (asia-southeast1), Supabase Singapore. Read `docs/deployment.md` before any deploy or migration. The rules:
 
-- **A push to `main` IS a deploy request and needs the owner's yes** (`push = deploy`). Root `docs/**` and `CHANGELOG.md` deploy nothing; a file under `halatuju_api/` or `halatuju-web/` does.
+- **A push to `main` only SAVES (since 2026-11-14). Publishing = moving `live`, and needs the owner's yes.** Fast-forward `live` to a tested `main` commit: `git push origin <sha>:live` (never force). Path filters still apply: root `docs/**` and `CHANGELOG.md` deploy nothing; a file under `halatuju_api/` or `halatuju-web/` does.
 - **The tests are the gate** (api: `manage.py check`, `makemigrations --check`, `pytest -n auto`; web: `npm run gates` then `npm run bundle-budget -- --gate`). Run the gate's OWN command lines locally first. Never deploy more than twice per feature.
 - **MIGRATE-FIRST, by hand.** Triggers never run `migrate`: apply to production BEFORE the push (postgresql DDL, plus the `django_migrations` ledger row in the SAME transaction). Old image must stay safe: additive and nullable first. Catalogue rows a new gate hides go in AFTER the deploy.
 - ⚠ After an `UPDATE` touching a `DEFERRABLE INITIALLY DEFERRED` FK, run `SET CONSTRAINTS ALL IMMEDIATE;` before `CREATE INDEX` in the same transaction.
