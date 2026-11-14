@@ -6,6 +6,7 @@ import RequestsList from '@/components/admin/RequestsList'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import { useOrgScope } from '@/lib/orgScope'
 import { createOrgRequest, uploadOrgRequestAttachment } from '@/lib/admin-api'
 import { formatFileSize } from '@/lib/scholarship'
@@ -35,7 +36,9 @@ export default function AdminRequestsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = effectiveRole(role) === 'super'
-  const isOrgAdmin = role?.role === 'org_admin'
+  // M3c (list W): the submit form is the door `requests_write` (`requests.edit`). A super raises one only
+  // by naming an organisation, which this form does not do, so it stays theirs to answer.
+  const mayRaise = !isSuper && holdsDoor(role, 'requests_write')
 
   const [dark, setDark] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
@@ -43,7 +46,7 @@ export default function AdminRequestsPage() {
   // TD-228: the organisation crumb narrows this list (a super's; the server re-fences `?org=`).
   const { selected: org } = useOrgScope()
 
-  // Submit form (org_admin)
+  // Submit form (`requests.edit`)
   const [kind, setKind] = useState<'bug' | 'feature'>('bug')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -91,7 +94,7 @@ export default function AdminRequestsPage() {
   stageRef.current = (list: FileList) => stageFiles(list)
 
   useEffect(() => {
-    if (!isOrgAdmin) return           // only the submit form accepts screenshots
+    if (!mayRaise) return           // only the submit form accepts screenshots
     const handler = (e: ClipboardEvent) => {
       const pasted = e.clipboardData?.files
       if (!pasted || pasted.length === 0) return
@@ -101,7 +104,7 @@ export default function AdminRequestsPage() {
     }
     document.addEventListener('paste', handler)
     return () => document.removeEventListener('paste', handler)
-  }, [isOrgAdmin])
+  }, [mayRaise])
   const onDropFiles = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
@@ -168,7 +171,7 @@ export default function AdminRequestsPage() {
       {error && <div className="rounded-lg bg-critical-50 border border-critical-200 text-critical-600 p-3 mb-4">{error}</div>}
 
       {/* Submit form — org_admin only (the owner triages, never submits to itself) */}
-      {isOrgAdmin && (
+      {mayRaise && (
         <form onSubmit={submit} className="bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4 mb-8">
           <h2 className="font-semibold text-ground-900">{t('admin.requests.form.title')}</h2>
           <div>

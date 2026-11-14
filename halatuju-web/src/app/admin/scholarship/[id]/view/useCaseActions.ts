@@ -92,9 +92,10 @@ export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: numb
     // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page.
     try { await assignApplication(id, adminId, { token }); setApp(await getScholarshipApplication(id, { token })) }
     catch (e) {
-      const code = e instanceof Error ? e.message : ''
+      // M3c: a refusal with a `code` (`self_assign`) is read by it; the older ones put the code in `error`.
+      const code = (e as { code?: string }).code || (e instanceof Error ? e.message : '')
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'findings_submitted', 'gift_mismatch', 'not_signed_in']
+                     'findings_submitted', 'gift_mismatch', 'not_signed_in', 'self_assign']
       setError(known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
           ? { name: admins.find((a) => a.id === adminId)?.name ?? '' } : undefined)

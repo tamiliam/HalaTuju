@@ -7,7 +7,8 @@ import { getStaffPermissions, type StaffPermissionsView } from '@/lib/admin-api/
 import { getMentorDetail, type MentorDetail } from '@/lib/admin-api/mentors'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen, mayReadMentors } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen, mayReadMentors } from '@/lib/pageGuard'
+import { hasPerm } from '@/lib/staffPermissions'
 import { TEAM_PATH, wrongGroupTarget, type TeamGroup } from '@/lib/teamPaths'
 
 /**
@@ -97,13 +98,16 @@ export function usePersonPage(group: TeamGroup, id: number): PersonPage {
   const { token, role } = useAdminAuth()
   const router = useRouter()
   const viewerRole = effectiveRole(role)
-  const mayManage = viewerRole === 'super' || viewerRole === 'org_admin'
+  // M3c list W: the keys the server reads, not the role. A team person's actions need `manage_team` (the
+  // permissions GET, pause, gifts); a mentor's need the door `invitations` (`mentor_invite.manageable`).
+  const mayTeamManage = hasPerm(role, 'manage_team')
+  const mayManage = group === 'mentors' ? holdsDoor(role, 'invitations') : mayTeamManage
   const mayTeam = mayOpen(TEAM_PATH, role)
-  const may = { admins: mayTeam && mayManage, reviewers: mayTeam, mentors: mayReadMentors(role) }
+  const may = { admins: mayTeam && mayTeamManage, reviewers: mayTeam, mentors: mayReadMentors(role) }
   const refusal = !role ? null
     : group === 'mentors' ? (may.mentors ? null : 'apiErrors.superAdminRequired')
       : !mayTeam ? 'apiErrors.superAdminRequired'
-        : group === 'admins' && !mayManage ? 'admin.person.notAllowed' : null
+        : group === 'admins' && !mayTeamManage ? 'admin.person.notAllowed' : null
   const state = useTeamPerson({ group, id, token: refusal ? null : token })
   const person = state.data?.person
   const target = person

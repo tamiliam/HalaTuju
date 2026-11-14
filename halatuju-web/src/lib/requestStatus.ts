@@ -126,6 +126,10 @@ export type RequestAction =
  * Two of these names are the web's own: `accept` is the api's `approve` transition, and `withdraw`
  * is the api's `decline` performed BY the requester (one status change, distinguished on the api
  * side by `declined_by_role`). The drift test holds that map.
+ *
+ * M3c (list W): on the requestee side the KEYS decide (`doors`, from the served page keys; M3b G8): answer,
+ * defer, modify and comment need `requests.edit` (`write`); accept and withdraw need `requests.approve`
+ * (`decide`). Without `doors` (an older caller) every requestee action is offered, as before.
  * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 export function requestActionsFor(
@@ -133,23 +137,26 @@ export function requestActionsFor(
   status: string,
   triagedKind: string,
   hasUnansweredQuestions: boolean,
+  doors?: { write: boolean; decide: boolean },
 ): RequestAction[] {
   const out: RequestAction[] = []
+  const write = role === 'super' || !doors || doors.write
+  const decide = !doors || doors.decide
   // Available to BOTH sides and checked before the role split, because the discussion is the one
   // thing in this module that is not a privilege of one party (TD-201). The server opens it to the
-  // super and to any org_admin of the owning organisation.
-  if (canComment(status)) out.push('comment')
+  // super and to anyone of the owning organisation holding `requests.edit`.
+  if (canComment(status) && write) out.push('comment')
   if (role === 'org_admin') {
     // Answering stays open until the quote is ACCEPTED — wider than 'ask' deliberately. A question
     // asked before the quote was priced into it, so replying completes the record; a NEW question
     // after quoting could re-price it. Mirrors TRANSITIONS['answer'] in org_requests.py.
     // drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
-    if (hasUnansweredQuestions
+    if (write && hasUnansweredQuestions
         && (REQUEST_OPEN_FOR_SHAPING as readonly string[]).includes(status)) out.push('answer')
-    if (status === 'quoted' || status === 'deferred') out.push('accept')
-    if (status === 'quoted') out.push('defer')
-    if (status === 'quoted' || status === 'deferred') out.push('modify')
-    if (['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('withdraw')
+    if (decide && (status === 'quoted' || status === 'deferred')) out.push('accept')
+    if (write && status === 'quoted') out.push('defer')
+    if (write && (status === 'quoted' || status === 'deferred')) out.push('modify')
+    if (decide && ['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('withdraw')
     return out
   }
   // super (owner)

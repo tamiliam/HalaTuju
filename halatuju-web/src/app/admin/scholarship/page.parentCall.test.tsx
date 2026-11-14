@@ -10,9 +10,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import AdminScholarshipList from './page'
 import * as api from '@/lib/admin-api'
+import { servedViewer } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let authRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
+let authRole: { role: string; is_super_admin?: boolean } = servedViewer('org_admin')
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: authRole }) }))
 jest.mock('@/lib/admin-api')
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
@@ -33,7 +34,7 @@ beforeEach(() => {
 })
 
 it.each([
-  [{ role: 'org_admin' }], [{ role: 'super', is_super_admin: true }],
+  [servedViewer('org_admin')], [servedViewer('super')],
 ])('is offered to %o and pressing it asks for parent_call=needed', async (role) => {
   authRole = role
   render(<AdminScholarshipList />)

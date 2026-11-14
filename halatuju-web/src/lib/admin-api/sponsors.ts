@@ -150,7 +150,10 @@ export async function setSponsorMembership(
   return adminMutate(`/api/v1/admin/sponsors/${id}/membership/`, 'POST', body, options)
 }
 
-export async function listSponsors(status?: string, options?: ApiOptions): Promise<{ sponsors: AdminSponsor[] }> {
+/** `may_vet` (M3c): whether this viewer may vet an account, so the list draws no button the POST refuses. */
+export async function listSponsors(
+  status?: string, options?: ApiOptions
+): Promise<{ sponsors: AdminSponsor[]; may_vet?: boolean }> {
   const q = status ? `?status=${encodeURIComponent(status)}` : ''
   return adminFetch(`/api/v1/admin/sponsors/${q}`, options)
 }

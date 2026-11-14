@@ -101,16 +101,17 @@ const CASE_PERMS = ['review', 'see_all', 'scholars', 'qc']   // sprint S1: a sch
  *
  * ⚠ A CHIP IS A SHORTCUT, NEVER A FENCE. The list holds the person's own rows only; a row of a kind
  * whose chip is not offered (a power taken away since) is still under All. The role OR the
- * permission counts, so a power that is a role's (an admin recording a credit) is not missed.
+ * permission counts, so a power that is a role's (an admin recording a credit) is not missed. M3c: an
+ * organisation admin's chips come from its keys like everyone's (R6), so its role is not in the lists.
  */
 export function activityFilters(ctx: ProfileCardContext): ActivityFilter[] {
   const has = (keys: readonly string[]) => keys.some((k) => ctx.permissions?.includes(k))
   const role = ctx.role ?? ''
   const out: ActivityFilter[] = ['all']
-  if (ctx.isSuper || has(CASE_PERMS) || ['org_admin', 'admin', 'qc', 'reviewer', 'source_partner'].includes(role)) {
+  if (ctx.isSuper || has(CASE_PERMS) || ['admin', 'qc', 'reviewer', 'source_partner'].includes(role)) {
     out.push('students')
   }
-  if (ctx.isSuper || has(MONEY_PERMS) || ['org_admin', 'admin', 'finance'].includes(role)) out.push('money')
+  if (ctx.isSuper || has(MONEY_PERMS) || ['admin', 'finance'].includes(role)) out.push('money')
   out.push('profile')
   return out
 }

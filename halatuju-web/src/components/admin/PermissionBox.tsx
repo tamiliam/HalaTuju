@@ -14,8 +14,8 @@ import { controlKeys, type PermBox, type PermRow, type PermSub } from '@/lib/per
  * server's answer; a click goes back to the editor (`onSwitch`, `onTri`), which keeps the working set.
  */
 
-/** One key as the card draws it. `lock` = the server will not let anyone here store it yet (`lead_only`):
- *  a padlock, never a reason. `disabled` adds the card's own reasons (fixed, busy, Quality check). */
+/** One key as the card draws it. `lock` = the server will not let this viewer give it (M3c A12, `not_held`:
+ *  they do not hold it themselves): a padlock, never a reason. `disabled` adds the card's own reasons (fixed, busy, Quality check). */
 export interface KeyState {
   shown: boolean
   on: boolean
@@ -133,9 +133,13 @@ function Words({ name, desc, changed, locked }: { name: string; desc: string; ch
   )
 }
 
-/** A box's count (D5): M = its enabled controls (a three-way once, sub-items each), N = those on. */
-export function countBox(box: PermBox, ks: KeyStates): { on: number; of: number } {
-  const counted = box.rows.flatMap((r) => [
+/** E1 (M3c): rows worded BY ROLE on this card (row id -> the i18n key of its words): no control, no sub-items. */
+export type ByRole = Readonly<Record<string, string>>
+
+/** A box's count (D5): M = its enabled controls (a three-way once, sub-items each), N = those on. A row
+ *  worded by role counts nothing. */
+export function countBox(box: PermBox, ks: KeyStates, byRole?: ByRole): { on: number; of: number } {
+  const counted = box.rows.filter((r) => !byRole?.[r.id]).flatMap((r) => [
     ...(r.control.kind === 'info' ? [] : [ks(controlKeys(r.control)[0])]),
     ...(r.subs ?? []).map((s) => ks(s.key)),
   ]).filter((k) => k.shown && !k.lock)
@@ -146,15 +150,16 @@ export function countBox(box: PermBox, ks: KeyStates): { on: number; of: number 
 const rowShown = (r: PermRow, ks: KeyStates) => (r.control.kind === 'info' && !r.subs)
   || controlKeys(r.control).some((k) => ks(k).shown) || (r.subs ?? []).some((s) => ks(s.key).shown)
 
-export function LayoutBox({ box, ks, onSwitch, onTri }: {
+export function LayoutBox({ box, ks, onSwitch, onTri, byRole }: {
   box: PermBox
   ks: KeyStates
   onSwitch: (key: string, on: boolean) => void
   onTri: (view: string, edit: string, level: 0 | 1 | 2) => void
+  byRole?: ByRole
 }) {
   const { t } = useT()
-  const rows = box.rows.filter((r) => rowShown(r, ks))
-  const { on, of } = countBox(box, ks)
+  const rows = box.rows.filter((r) => !!byRole?.[r.id] || rowShown(r, ks))
+  const { on, of } = countBox(box, ks, byRole)
   const sub = (s: PermSub) => {
     const k = ks(s.key)
     if (!k.shown) return null
@@ -178,6 +183,14 @@ export function LayoutBox({ box, ks, onSwitch, onTri }: {
   return (
     <BoxShell title={t(box.title)} on={on} of={of} testId={`perm-box-${box.id}`}>
       {rows.map((r) => {
+        const roleWords = byRole?.[r.id]
+        if (roleWords) {
+          return (
+            <div key={r.id} data-row={r.id} data-by-role="true" className="grid gap-2 px-4 py-3">
+              <Words name={t(r.name)} desc={t(roleWords)} changed={false} locked={false} />
+            </div>
+          )
+        }
         const keys = controlKeys(r.control).map(ks)
         const subs = (r.subs ?? []).filter((s) => ks(s.key).shown)
         return (

@@ -32,7 +32,7 @@ import type { AdminRoleName } from '@/lib/navigation'
 import * as adminApi from '@/lib/admin-api'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { buildApplicationDetail, type BuildOptions, type Stage } from '@/test/adminApplicationDetail'
-import { servedPermissions } from '@/test/staffPresets'
+import { servedPageKeys, servedPermissions } from '@/test/staffPresets'
 
 jest.mock('@/lib/admin-api')
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
@@ -95,6 +95,7 @@ function authFor({ role, adminId, token = 'test-token', permissions }: CockpitAu
       is_super_admin: role === 'super',
       role,
       permissions: permissions ?? servedPermissions(role),
+      page_keys: servedPageKeys(role),   // M3c: the cockpit reads the server's doors
       admin_id: own,
       admin_name: 'Test Officer 04',
       org_name: 'Test Organisation',

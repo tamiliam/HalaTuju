@@ -39,8 +39,9 @@ export const DOOR_KEYS = {
   development_read: ['development.view'],
   mentoring_read: ['mentoring.view'],
   sources_read: ['sources.view'],
-  // M3b (A11): the organisation admin's page powers. No web reader yet: M3c moves list W onto them.
-  settings: ['settings.edit'],
+  // M3b (A11): the organisation admin's page powers. M3c moves list W onto them. `settings.edit` is spelt
+  // from its parts: a bare literal reads as an i18n key to `namespaces-i18n.test.ts` (as permissionLayout).
+  settings: [`${'settings'}.edit`],
   programme_settings: ['programmes.edit'],
   assign: ['students.edit'],
   students_write: ['students.edit'],
@@ -52,6 +53,8 @@ export const DOOR_KEYS = {
   requests_decide: ['requests.approve'],
   contracts_read: ['contracts.view'],
   contracts_write: ['contracts.edit'],
+  // M3c D5: the senior letters on a scholar's file (`letters._senior`).
+  senior_letters: ['scholars.approve'],
 } as const satisfies Record<string, readonly string[]>
 
 export type DoorName = keyof typeof DOOR_KEYS

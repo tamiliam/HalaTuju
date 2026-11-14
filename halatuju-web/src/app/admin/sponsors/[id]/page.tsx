@@ -9,8 +9,9 @@ import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import RecordState from '@/components/admin/RecordState'
 import { effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
-  canRecordCredit, canSetMembership, creditActions, creditArmed, creditableProgrammes, creditChain,
+  canRecordCredit, creditActions, creditArmed, creditableProgrammes, creditChain,
   creditErrorKey, hasNoMoney, membershipErrorKey, membershipRows, pendingTotal, seenBand,
   studentStage,
 } from '@/lib/sponsorDetail'
@@ -154,7 +155,7 @@ export default function AdminSponsorDetailPage() {
   const creditable = creditableProgrammes(detail)
   const mayRecord = canRecordCredit(viewerRole) && creditable.length > 0
   const gifts = membershipRows(detail)
-  const maySetGift = canSetMembership(viewerRole)
+  const maySetGift = holdsDoor(role, 'sponsor_vet')   // M3c list W: `sponsors.approve`
 
   /**
    * Accept into a gift, or take it back — then RE-FETCH the whole record.

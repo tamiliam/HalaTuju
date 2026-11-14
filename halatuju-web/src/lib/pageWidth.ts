@@ -93,6 +93,7 @@ export const READING_ROUTES: readonly string[] = [
   '/admin/students/',                // one student — a profile, read downwards
   '/admin/contracts/',               // one contract template — a long document
   '/admin/organisation/team/',       // one person's group page — a profile and a short history
+  '/admin/programme/surveys/',       // one survey's results — a bar per answer, then the answers, read down
 ]
 
 /** The width for a pathname. Unlisted → 'reading', which is the safe default: a page that is

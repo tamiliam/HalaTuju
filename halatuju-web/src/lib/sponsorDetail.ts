@@ -189,17 +189,11 @@ export function creditableProgrammes(
     .map((m) => ({ programme_id: m.programme_id as number, programme_name: m.programme_name }))
 }
 
-/**
- * Who may accept a benefactor into a gift, or take it back.
- *
- * ⚠ DELIBERATELY NARROWER THAN `canRecordCredit`, and in the other direction. Recording a
- * credit is bookkeeping an `admin` does; deciding **who may fund your students** is the
- * organisation's own decision, so it sits with `org_admin` — the same gate as sponsor
- * vetting. The server holds the same pair; this only decides whether to draw the panel.
+/*
+ * Who may accept a benefactor into a gift, or take it back: since M3c (list W) the server's door
+ * `sponsor_vet` (`sponsors.approve`), read on the page with `holdsDoor` — no role rule here. A team
+ * member granted the key reaches only their own organisation's gifts (the server fences by gift).
  */
-export function canSetMembership(viewerRole: string): boolean {
-  return viewerRole === 'super' || viewerRole === 'org_admin'
-}
 
 /** One gift, with where this benefactor stands in it. `status: ''` means NOT IN IT YET. */
 export interface MembershipRow {

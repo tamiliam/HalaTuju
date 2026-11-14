@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-15 — Sprint M3c: granting the organisation admin's keys; the builder's open calls (builder; for the architect to confirm)
+
+Branch m3c, not pushed. Part 1 (api) 075cee190; part 2 (web list W and docs) on top. Release-note draft: `docs/releases/m3c-granting-release-note-draft.md`.
+
+**E5 (owner ruling 2026-11-15, verbatim):** "Today there is no such thing as view only admin. There is admin. And there are permissions, which determines what the admin views and edits. And, in this case, if an admin could view invitations, it should be able view mentor as well."
+As built: whoever may open Invitations (`invitations.view` and `team.view`) sees the Mentor tab and its roster, read-only. Inviting, resending and cancelling a mentor or sponsor invitation need `invitations.edit` (the door `invitations`); a staff row's resend needs `manage_team`.
+
+The calls the brief left open:
+1. **The platform fence.** Sponsor ACCOUNT vetting (`sponsors/<id>/review/`) and the sponsor TERMS publish reach every organisation, so they ask `sponsors.approve` AND (a super or an organisation admin) (`may_approve_platform_sponsors`). A team member granted `sponsors.approve` accepts a sponsor into their own organisation's gifts only. The web reads the same: the sponsors list serves `may_vet`; the terms page publishes only for a super or an organisation admin holding the door. The gift pages fence their programme lookup by organisation (proved in `test_m3c_granting`).
+2. **`VIEW_ALIAS_OLD`.** A view that a lead key implies and an old key already means (`students.edit` / `.approve` -> `students.view` = `see_all`; `scholars.approve` -> `scholars.view` = `scholars`) is stored through the old key, never its v2 spelling.
+3. **A12: you give only what you hold.** A non-super may add a key of `ORG_ADMIN_SET` only when it opens for them (`not_held`; the web draws a padlock). `review`, the payment seats and `award_withdraw_request` are outside that set and stay exempt, as before.
+4. **`staff_tables_admin.table_keys` is unchanged** (no table seat moves in M3c).
+5. **`money_by_role` (D1, E1).** A super editing an organisation admin's card may not store a payment seat: refused `money_by_role`. The card's Payments row says the seats come with the role until payments move to keys: creator and fallback approver, never maker (until M4).
+6. **0099 appends** `scholars.approve` at the END of each stored list (nothing else moves), after 0098; a re-run of 0098 needs 0099's DATA block straight after it.
+7. **A team row that stores a lead key is now honoured** (it opens that gate): it is granted. Before M3c no editor could store one.
+8. **`GRANTED_DIFFERS`** (`test_access_matrix`): a team member granted every grantable key answers as org admin A on every route except 15, each listed with its reason (`manage_team`, `requests.approve` (O15), the platform fence).
+9. **TD-623 is deferred to a proposed part 3** (part 2 would pass the file cap). Not done: the web role fallbacks (`opensDoorOr` lists, `MAKER_ROLES`, `POSTER_ROLES`, `MENTORING_ROLES`, `MENTORS_READ_ROLES`, `CAN_EDIT_EMAILS`, `EMAIL_EDIT_ROLES`, the `canFilterByAssignee` admin arm, `canOrgReject`'s role fallback) and the A10 web scan. `canCancel`'s `r === 'super'` is a target rule and stays.
+10. **M3b's `officerGateDrift.test.ts` break is fixed** in part 2, and M3b's `pageDoors.ts` literal `'settings.edit'` (read as an i18n key by `namespaces-i18n.test.ts`) is spelt from its parts, as `permissionLayout.ts` does.
+11. **The pre-award close is the `decide` door** (`students.approve`, "Reject or close applications"); the FAQ now says so instead of "only a super or an organisation admin".
+12. **E8 width:** Announcements, Surveys and Development are wide like Scholars; a survey's results page reads down (reading width); a development module page stays wide (its progress table is 720px).
+
 ## 2026-11-14 — Sprint M3b: four builder calls the brief left open (builder; for the architect to confirm)
 
 The brief (`docs/plans/2026-11-14-m3-lead-keys-brief.md`) covers G1-G9, A7, A10, A11 and E3. A1-A12 hold as written. These four points were not settled in the brief:

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, type ComponentType } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { isSuperRole } from '@/lib/superRole'
+import { opensDoor } from '@/lib/pageDoors'
 import { STANDING_TONE } from '@/lib/scholars'
 import { STAFF_STATUS_TONE } from '@/lib/staffStatus'
 import { refusalWords, scholarsRefusal } from '@/lib/staffRefusals'
@@ -52,7 +52,7 @@ import { Greyed } from '@/components/admin/StaffActions'
  * `components/admin/person/MentorGroupPage`) ARE STAFF ONLY AND SHOW NO MEETING NOTE: figures, scholars,
  * dates, standing, concern state. Notes stay on each scholar's file. Who reads them = who reads this table
  * (`GET admin/mentors/<id>/`).
- * ⚠ `superRole` (a leaf), never `lib/navigation`: importing the route registry here split it into a shared
+ * ⚠ `pageDoors` (a leaf), never `lib/navigation` or `pageGuard`: importing the route registry here split it into a shared
  * chunk once — one more runtime entry every route pays for (S7b follow-up review fix 5). The Team page
  * decides who sees the tab (`pageGuard.mayReadMentors`) and hands in its own "Also in" chips.
  */
@@ -132,8 +132,8 @@ export default function TeamMentors({ AlsoIn, adding = false, onAddClose }: {
 }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const r = isSuperRole(role) ? 'super' : (role?.role ?? '')
-  const mayManage = ['super', 'org_admin'].includes(r)
+  // M3c list W: the server's door `invitations` (`mentor_invite.may_invite` / `manageable`), not the role.
+  const mayManage = opensDoor(role, 'invitations') === true
   const [data, setData] = useState<MentorsPayload | null>(null)
   const [failed, setFailed] = useState(false)
   const [banner, setBanner] = useState<Banner>(null)

@@ -113,7 +113,15 @@ describe('the org-admin reject gate — the ROLE half', () => {
     expect(DOOR_KEYS.decide).toEqual(['students.approve'])
   })
 
-  test('the cockpit offers the card to those two roles and refuses every other', () => {
+  test('M3c: with the served page keys the card follows the door, whatever the role', () => {
+    const status = backendRejectFrom[0]
+    for (const role of ROLE_NAMES) {
+      expect(canOrgReject({ isSuper: false, role, status, pageKeys: [...DOOR_KEYS.decide] })).toBe(true)
+      expect(canOrgReject({ isSuper: role === 'super', role, status, pageKeys: [] })).toBe(false)
+    }
+  })
+
+  test('an older payload (no page keys): the cockpit offers the card to those two roles and refuses every other', () => {
     const status = backendRejectFrom[0]
     expect(canOrgReject({ isSuper: true, role: null, status })).toBe(true)
     for (const role of ROLE_NAMES) {

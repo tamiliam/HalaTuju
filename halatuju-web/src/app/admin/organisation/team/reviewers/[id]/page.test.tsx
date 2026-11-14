@@ -21,7 +21,12 @@ let mockParamId = '5'
 const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({ useParams: () => ({ id: mockParamId }), useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
+type Viewer = { role: string; is_super_admin?: boolean; permissions?: string[] }
+// M3c list W: the page reads the SERVED `manage_team` (a super holds the catalogue; an organisation admin
+// holds it by role). A fixture without it is a viewer who may not manage the team.
+const ORG_ADMIN_VIEWER: Viewer = { role: 'org_admin', permissions: ['manage_team'] }
+const SUPER_VIEWER: Viewer = { role: 'reviewer', is_super_admin: true, permissions: ['manage_team'] }
+let viewerRole: Viewer = ORG_ADMIN_VIEWER
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -82,7 +87,7 @@ const DETAIL = withPerson(BASE)
 beforeEach(() => {
   jest.clearAllMocks()
   mockParamId = '5'
-  viewerRole = { role: 'org_admin' }
+  viewerRole = ORG_ADMIN_VIEWER
   mockApi.getReviewerDetail.mockResolvedValue(DETAIL)
 })
 
@@ -243,7 +248,7 @@ describe('pause, on somebody else\'s behalf', () => {
   })
 
   it('shows a super the control', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     await loaded()
     expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
   })
@@ -431,7 +436,7 @@ describe('#39 Sprint 4: the permission card, and Pause on the target rule of the
   })
 
   it('shows a super the tab too', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     await loaded()
     fireEvent.click(screen.getByText('admin.person.tabPermissions'))
     expect(screen.getByTestId('perm-editor')).toBeTruthy()
@@ -494,7 +499,7 @@ describe('M1b (owner O3): Suspend and Delete live on Team -> Staff, not on a rev
   })
 
   it('a super may still Pause that organisation admin, and has no Delete here either', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     await loaded({ role: 'org_admin', lead: true, is_active: true, pausable: true, deletable: true, work: {} } as Partial<api.AdminReviewerDetail>)
     expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
     expect(screen.queryByText('admin.delete')).toBeNull()

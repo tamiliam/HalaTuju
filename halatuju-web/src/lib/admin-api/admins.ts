@@ -306,17 +306,20 @@ export interface StaffPermissionsView {
   v2_preset?: string[]
   /** M2d (D7, ruling 7): the pages short of Scholars as held — a note, never a refusal. */
   v2_gaps?: string[]
+  /** M3c (A12): today's keys this viewer may not give (they do not hold them); the v2 ones say `not_held`. */
+  keys_not_held?: string[]
 }
 
-/** M2b: one v2 page key. `grantable` false = drawn locked, with `reason`: `never_grantable` (the lead
- *  alone, for ever), `lead_only` (the lead alone, until M3) or `alias` (it comes with a switch above).
- *  `held` = it opens for them today, however it got there. */
+/** M2b: one v2 page key. `grantable` false = not tickable here, with `reason`: `never_grantable` (the lead
+ *  alone, for ever), `alias` (it comes with a switch above) or, since M3c (A12), `not_held` (the viewer may
+ *  only give a key they hold themselves; taking it away is allowed). `held` = it opens for them today,
+ *  however it got there. */
 export interface StaffV2Key {
   key: string
   page: string
   level: string
   grantable: boolean
-  reason: 'never_grantable' | 'lead_only' | 'alias' | null
+  reason: 'never_grantable' | 'alias' | 'not_held' | null
   held: boolean
 }
 

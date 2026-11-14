@@ -31,8 +31,10 @@ import {
  * (`lib/permissionLayout.ts`, the ONE layout). Each power appears once: a page with a view and a change is a
  * three-way choice, a one-key page a switch, a page's further powers sub-items. A key the server marks
  * `never_grantable` or `alias` is not drawn (its old key's row stands in for an alias) and rides along in
- * the saved set untouched. A `lead_only` key is drawn disabled with a padlock, on when it opens today, under
- * ONE legend line. No "Custom" chip: every admin is set up individually (the server's `custom` still tells
+ * the saved set untouched. M3c (A12): a key the viewer may not give (`not_held`, or one of today's keys in
+ * `keys_not_held`) is drawn disabled with a padlock, on when it opens today, under ONE legend line — unless
+ * the person already holds it, when it may be taken away. E1: an organisation admin's card shows Payments as
+ * the role gives it (by role until payments move to keys), with no switches. No "Custom" chip: every admin is set up individually (the server's `custom` still tells
  * Reset whether there is anything to undo). The Engagement pages' need for Scholars is a note from the
  * server (`v2_gaps`, the dry run's), never a refusal.
  */
@@ -80,6 +82,8 @@ const pageOf = (key: string) => (key.includes('.') ? key.slice(0, key.indexOf('.
 /** D3: what the server marks so is never drawn. */
 const HIDDEN_REASONS: readonly (string | null)[] = ['never_grantable', 'alias']
 const OFF: KeyState = { shown: false, on: false, lock: false, disabled: true, changed: false }
+/** E1 (M3c): the rows an organisation admin's card words BY ROLE (row id -> its words), drawn without controls. */
+const BY_ROLE_ROWS: Readonly<Record<string, string>> = { payments: 'admin.permLayout.payments.byRole' }
 
 type Translate = ReturnType<typeof useT>['t']
 
@@ -92,16 +96,19 @@ function keyStates(view: StaffPermissionsView, served: Map<string, StaffV2Key>, 
     const v2 = served.get(key)
     if (v2) {
       if (HIDDEN_REASONS.includes(v2.reason)) return OFF
-      const lock = v2.reason === 'lead_only'
+      // A12: a key the viewer does not hold is locked — unless the person holds it already (it may go).
+      const keep = v2.reason === 'not_held' && held.includes(key)
+      const lock = v2.reason === 'not_held' && !keep
+      const tickable = (v2.grantable || keep) && !fixed
       // D4: a key nobody here may store shows what opens today; so does a fixed card (its set is the server's).
-      const on = v2.grantable && !fixed ? want.includes(key) : v2.held
-      return { shown: true, on, lock, disabled: frozen || lock,
-        changed: v2.grantable && !fixed && on !== held.includes(key) }
+      const on = tickable ? want.includes(key) : v2.held
+      return { shown: true, on, lock, disabled: frozen || lock, changed: tickable && on !== held.includes(key) }
     }
     if (!view.keys.includes(key)) return OFF
     const on = want.includes(key)
+    const lock = !!view.keys_not_held?.includes(key) && !held.includes(key)
     // Applications is locked on while Quality check holds it (TD-499).
-    return { shown: true, on, lock: false, disabled: frozen || (key === 'see_all' && want.includes('qc')),
+    return { shown: true, on, lock, disabled: frozen || lock || (key === 'see_all' && want.includes('qc')),
       changed: on !== held.includes(key) }
   }
 }
@@ -329,7 +336,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
   const placed: readonly string[] = [...LAYOUT_KEYS, ...TABLE_KEYS.reviewers]
   const other = !inAdmins ? [] : [...view.keys, ...Array.from(served.keys())]
     .filter((k) => !placed.includes(k) && ks(k).shown)
-  const locks = inAdmins && !fixed && LAYOUT_KEYS.some((k) => ks(k).shown && ks(k).lock)
+  const locks = !fixed && [...(inAdmins ? LAYOUT_KEYS : []), ...(inReviewers ? reviewerKeys : [])]
+    .some((k) => ks(k).shown && ks(k).lock)
+  // E1 (M3c): an organisation admin starts payment runs and is the fallback approver BY ROLE until M4 (the
+  // server refuses those keys on their card, `money_by_role`), so their Payments row says so, with no switches.
+  const byRole = view.role === 'org_admin' ? BY_ROLE_ROWS : undefined
 
   // O12: opened from one table, Reset weighs that table's keys only (M2b: the Admins table's keys include
   // the page keys, and its served preset ends with the role's own).
@@ -366,7 +377,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         {inAdmins && (
           <div className="grid gap-3" data-testid="perm-section-admins">
             {PERMISSION_LAYOUT.map((box) => (
-              <LayoutBox key={box.id} box={box} ks={ks} onSwitch={flip} onTri={choose} />
+              <LayoutBox key={box.id} box={box} ks={ks} onSwitch={flip} onTri={choose} byRole={byRole} />
             ))}
           </div>
         )}

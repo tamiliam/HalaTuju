@@ -13,7 +13,17 @@ import * as api from '@/lib/admin-api'
 import { TH } from '@/components/admin/TableFrame'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
+type Viewer = { role: string; is_super_admin?: boolean; permissions?: string[]; page_keys?: string[] }
+// M3c list W: the page reads the served keys, so each viewer carries what `/admin/role/` serves.
+// `manage_team` (staff invite / resend) and `invitations.edit` (every other invite, cancel) are the
+// lead tier's; `admin` and `finance` hold `invitations.view` + `team.view` (the page's door).
+const READ_KEYS = ['invitations.view', 'team.view', 'sponsors.view']
+const ORG_ADMIN: Viewer = { role: 'org_admin', permissions: ['manage_team'], page_keys: [...READ_KEYS, 'invitations.edit'] }
+const SUPER: Viewer = { role: 'super', is_super_admin: true, permissions: ['manage_team'],
+                        page_keys: [...READ_KEYS, 'invitations.edit'] }
+const ADMIN: Viewer = { role: 'admin', permissions: [], page_keys: READ_KEYS }
+const FINANCE: Viewer = { role: 'finance', permissions: [], page_keys: READ_KEYS }
+let viewerRole: Viewer = ORG_ADMIN
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -74,7 +84,7 @@ let reviewerGiftChoices: api.InvitationsPayload['programmes'] | undefined
 
 beforeEach(() => {
   jest.clearAllMocks()
-  viewerRole = { role: 'org_admin' }
+  viewerRole = ORG_ADMIN
   giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' }]
   reviewerGiftChoices = undefined
   mockApi.getInvitations.mockImplementation(async (kind) => payloadFor(kind))
@@ -209,7 +219,7 @@ describe('what each kind can do', () => {
   })
 
   it('⚠ shows Finance the Source roster read-only — no form, no actions', async () => {
-    viewerRole = { role: 'finance' }
+    viewerRole = FINANCE
     await loaded()
     await pick('source')
     await waitFor(() => expect(screen.getByTestId('source-roster')).toBeTruthy())
@@ -583,14 +593,14 @@ describe('cancelling an invitation sent by mistake (TD-214)', () => {
     expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
     unmount()
 
-    viewerRole = { role: 'super', is_super_admin: true }
+    viewerRole = SUPER
     render(<OrganisationInvitationsPage />)
     await waitFor(() => expect(screen.getByText('Org Head')).toBeTruthy())
     expect(screen.getByText('admin.invitations.cancel')).toBeTruthy()
   })
 
   it('⚠ offers it to nobody who may only look', async () => {
-    viewerRole = { role: 'finance' }
+    viewerRole = FINANCE
     render(<OrganisationInvitationsPage />)
     await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
     expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
@@ -605,7 +615,7 @@ describe('the page shell', () => {
   })
 
   it('shows finance the page with no invite form', async () => {
-    viewerRole = { role: 'finance' }
+    viewerRole = FINANCE
     render(<OrganisationInvitationsPage />)
     await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
     expect(screen.queryByText('admin.sendInvite')).toBeNull()
@@ -729,16 +739,17 @@ describe('a reviewer invite names its gifts', () => {
 describe('S7b follow-up: the Mentor kind, like Source', () => {
   afterEach(() => { window.history.replaceState({}, '', '/') })
 
-  it('shows the Mentor chip, with its waiting count, to super and org_admin only', async () => {
+  it('M3c E5: shows the Mentor chip, with its waiting count, to everyone who may view invitations', async () => {
+    // Owner, 2026-11-15: "there is no such thing as view only admin ... if an admin could view
+    // invitations, it should be able view mentor as well." Finance holds `invitations.view` too.
     mockApi.getInvitations.mockImplementation(async (kind) => ({ ...payloadFor(kind), waiting: { ...WAITING, mentor: 3 } }))
-    for (const [who, shown] of [[{ role: 'org_admin' }, true], [{ role: 'super', is_super_admin: true }, true],
-      [{ role: 'admin' }, false], [{ role: 'finance' }, false]] as const) {
+    for (const who of [ORG_ADMIN, SUPER, ADMIN, FINANCE]) {
       viewerRole = who
       const { unmount } = render(<OrganisationInvitationsPage />)
       await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
       const chip = screen.queryByText('admin.invitations.kindOne.mentor')
-      expect([who.role, !!chip]).toEqual([who.role, shown])
-      if (chip) expect(chip.closest('button')!.textContent).toContain('3')
+      expect([who.role, !!chip]).toEqual([who.role, true])
+      expect(chip!.closest('button')!.textContent).toContain('3')
       unmount()
     }
   })
@@ -751,12 +762,24 @@ describe('S7b follow-up: the Mentor kind, like Source', () => {
     expect(await screen.findByTestId('mentor-roster')).toBeTruthy()
   })
 
-  it('an admin asking for ?kind=mentor stays on Admins', async () => {
-    viewerRole = { role: 'admin' }
+  it('M3c E5: an admin (invitations.view, not .edit) sees the Mentor tab read-only: no form, no row actions', async () => {
+    viewerRole = ADMIN
+    mockApi.getInvitations.mockImplementation(async (kind) => (kind !== 'mentor' ? payloadFor(kind) : {
+      ...payloadFor(kind),
+      invitations: [row({ id: 51, name: 'Priya', email: 'priya@example.org', role: 'mentor', status: 'invited',
+                          accepted_at: null, admin_id: 99, mentor_id: 7 } as Partial<api.InvitationRow>)],
+      // Even a row the server marked manageable draws no action without the key on the viewer.
+      mentors: [{ id: 7, name: 'Priya', email: 'priya@example.org', manageable: true }],
+    } as unknown as api.InvitationsPayload))
     window.history.replaceState({}, '', '/admin/organisation/staff?kind=mentor')
     render(<OrganisationInvitationsPage />)
-    await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
-    expect(mockApi.getInvitations).not.toHaveBeenCalledWith('mentor', expect.anything())
+    await waitFor(() => expect(mockApi.getInvitations).toHaveBeenCalledWith('mentor', expect.anything()))
+    const roster = await screen.findByTestId('mentor-roster')
+    expect(await within(roster).findByText('Priya')).toBeTruthy()
+    expect(screen.queryByTestId('mentor-invite-form')).toBeNull()
+    expect(within(roster).queryByText('admin.resend')).toBeNull()
+    expect(within(roster).queryByText('admin.invitations.cancel')).toBeNull()
+    expect(screen.getByText('admin.administration.viewOnlyNote')).toBeTruthy()
   })
 })
 
@@ -777,7 +800,7 @@ describe('I1: one form and one waiting table on every tab', () => {
   }
 
   beforeEach(() => {
-    viewerRole = { role: 'super', is_super_admin: true }
+    viewerRole = SUPER
     mockApi.getInvitations.mockImplementation(async (kind) => {
       const base = payloadFor(kind)
       if (kind === 'reviewers') {

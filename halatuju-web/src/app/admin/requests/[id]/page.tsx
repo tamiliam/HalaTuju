@@ -8,17 +8,16 @@ import { formatDate, formatDateTime } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import { effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest,
   approveOrgRequestAnalysis, withdrawOrgRequestAnalysis, recordOrgRequestHours,
-  approveOrgRequest,
-  deferOrgRequest, modifyOrgRequest,
+  approveOrgRequest, deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
 } from '@/lib/admin-api'
 import {
-  statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor, effectiveKind,
-  filedKindDiffers,
+  statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor, effectiveKind, filedKindDiffers,
   hasUnansweredQuestions, canAttach, type RequestAction, analysisBadge, analysisBadgeKey,
   analysisBadgeTone, analysisApproveKind, analysisApproveCopy, hoursAnalysisId,
 } from '@/lib/requestStatus'
@@ -55,6 +54,7 @@ export default function AdminRequestDetailPage() {
 
   const isSuper = effectiveRole(role) === 'super'
   const reqRole: 'super' | 'org_admin' = isSuper ? 'super' : 'org_admin'
+  const doors = { write: isSuper || holdsDoor(role, 'requests_write'), decide: holdsDoor(role, 'requests_decide') }  // M3c list W
 
   const [req, setReq] = useState<OrgRequestDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -148,7 +148,7 @@ export default function AdminRequestDetailPage() {
   // kind) — so the quote / requote / schedule kind gates agree with the server (TD-263).
   const triagedKind = req.triaged_kind || req.kind || ''
   const unanswered = hasUnansweredQuestions(req.comments)
-  const actions = requestActionsFor(reqRole, req.status, triagedKind, unanswered)
+  const actions = requestActionsFor(reqRole, req.status, triagedKind, unanswered, doors)
   const has = (a: RequestAction) => actions.includes(a)
   const opt = { token: token! }
 
@@ -229,7 +229,7 @@ export default function AdminRequestDetailPage() {
       <OrgRequestAttachments
         requestId={id}
         attachments={req.attachments || []}
-        editable={canAttach(req.status) && (isSuper || reqRole === 'org_admin')}
+        editable={canAttach(req.status) && doors.write}
         token={token}
         onChange={setReq}
       />

@@ -103,6 +103,17 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     expect(pageWidthFor('/admin/sponsors/12')).toBe('wide')                 // two tables
   })
 
+  test('M3c E8: the programme lists are wide, like Scholars (owner phone check 2026-11-14)', () => {
+    // "Page width is still narrow": Announcements, Surveys and Development lead with tables.
+    expect(pageWidthFor('/admin/programme/announcements')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/surveys')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/development')).toBe('wide')
+    // One module's progress is a table across the page: wide by its prefix. One survey's results is a
+    // bar per answer and the answers, read down: it reads.
+    expect(pageWidthFor('/admin/programme/development/4')).toBe('wide')
+    expect(pageWidthFor('/admin/programme/surveys/9')).toBe('reading')
+  })
+
   test('a trailing slash and an unknown route both resolve', () => {
     expect(pageWidthFor('/admin/sources/')).toBe('wide')
     expect(pageWidthFor('/admin/something-new')).toBe('reading')

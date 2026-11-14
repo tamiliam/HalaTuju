@@ -142,7 +142,10 @@ describe('Team tables T5c P4: the doors are really read', () => {
     expect(NAV_ITEMS.filter((i) => i.door).map((i) => [i.id, i.door])).toEqual([
       ['staff', 'team_read'], ['reviewers', 'team_read'],
       ['sources', 'sources'], ['sponsors', 'sponsors_read'],
+      // M3c (list W): the organisation admin's pages read their M3b doors.
+      ['billing', 'billing_read'], ['requests', 'requests_read'], ['orgSettings', 'settings'],
       ['announcements', 'announcements'], ['surveys', 'surveys'], ['development', 'development'],
+      ['contracts', 'contracts_read'], ['programmeConfig', 'programme_settings'],
     ])
   })
 })

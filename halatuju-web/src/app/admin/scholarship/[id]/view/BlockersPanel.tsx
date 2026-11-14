@@ -14,11 +14,12 @@ import {
   nudgeButton,
 } from '@/lib/blockers'
 import { formatDate } from '@/lib/formatDate'
+import { holdsDoor } from '@/lib/pageGuard'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T, AdminRole } from './shared'
 
-export function BlockersPanel({ app, t, busy, isSuper, role, nudgeMsg, doNudge }: {
+export function BlockersPanel({ app, t, busy, role, nudgeMsg, doNudge }: {
   app: AdminScholarshipDetail
   t: T
   busy: string
@@ -82,7 +83,7 @@ export function BlockersPanel({ app, t, busy, isSuper, role, nudgeMsg, doNudge }
                  auto nudge fires once ~30 min after consent; this is the human follow-up. The
                  whole state (show / enabled / label / note) is server-computed (app.nudge). ── */}
             {(() => {
-              const nb = nudgeButton(app.nudge, isSuper || role?.role === 'org_admin')
+              const nb = nudgeButton(app.nudge, holdsDoor(role, 'students_write'))   // M3c list W: `students.edit`
               if (!nb.show) return null
               const at = app.nudge.available_at ? formatDate(app.nudge.available_at) : ''
               const sent = app.nudge.sent_at ? formatDate(app.nudge.sent_at) : ''

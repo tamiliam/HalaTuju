@@ -18,7 +18,12 @@ jest.mock('next/link', () => ({
     <a href={href}>{children}</a>,
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let viewerRole: { role: string; is_super_admin?: boolean; page_keys?: string[] } = { role: 'org_admin' }
+type Viewer = { role: string; is_super_admin?: boolean; permissions?: string[]; page_keys?: string[] }
+// M3c list W: the page reads the SERVED keys. The server serves `manage_team` to a super (the catalogue) and to an
+// organisation admin by role; a fixture without it is a viewer who may not manage the team.
+const ORG_ADMIN_VIEWER: Viewer = { role: 'org_admin', permissions: ['manage_team'] }
+const SUPER_VIEWER: Viewer = { role: 'reviewer', is_super_admin: true, permissions: ['manage_team'] }
+let viewerRole: Viewer = ORG_ADMIN_VIEWER
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -86,7 +91,7 @@ const ADMINS = [
 
 beforeEach(() => {
   jest.clearAllMocks()
-  viewerRole = { role: 'org_admin' }
+  viewerRole = ORG_ADMIN_VIEWER
   tabParam = 'reviewers'
   // One gift by default — today's BrightPath shape, where the gift line does not render.
   giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true }]
@@ -469,7 +474,7 @@ describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', 
   }
 
   it('O10: links the organisation admin for a super, whom the server lets manage them', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     await openWithLead({ ...LEAD, manageable: true })
     expect(hrefOf('Lead Person')).toBe('/admin/organisation/team/admins/21')
   })
@@ -490,7 +495,7 @@ describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', 
   })
 
   it('O10: a revoked organisation admin stays plain text, even for a super', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     await openWithLead({ ...LEAD, is_active: false, manageable: true })
     expect(hrefOf('Lead Person')).toBeNull()
   })
@@ -829,7 +834,10 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(await screen.findByTestId('team-mentors-screen')).toBeTruthy()
   })
 
+  // M3c list W: Add Mentor is on the server's door `invitations` (`mentor_invite.may_invite`), read off page_keys.
+  const MENTOR_KEYS = ['invitations.view', 'invitations.edit', 'team.view', 'mentoring.view']
   it('Add Mentor sits on the tab row too, and opens the Mentors screen\'s sheet (owner 2026-11-08)', async () => {
+    viewerRole = { ...ORG_ADMIN_VIEWER, page_keys: MENTOR_KEYS }
     await loaded()
     fireEvent.click(screen.getByText('admin.team.tabMentors'))
     const mentors = await screen.findByTestId('team-mentors-screen')
@@ -841,6 +849,16 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('yes')
     fireEvent.click(screen.getByTestId('mock-mentor-sheet-close'))
     expect(screen.getByTestId('team-mentors-screen').getAttribute('data-adding')).toBe('no')
+  })
+
+  it('M3c: offers Add Mentor to an admin granted Invitations "View and change", without Add Reviewer', async () => {
+    viewerRole = { role: 'admin', permissions: [], page_keys: MENTOR_KEYS }
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    await screen.findByTestId('team-mentors-screen')
+    expect(screen.getByTestId('team-add-mentors-open')).toBeTruthy()
+    fireEvent.click(screen.getByText('admin.reviewers.tabReviewers'))
+    expect(screen.queryByTestId('team-add-reviewers-open')).toBeNull()
   })
 
   it('⚠ no Add Mentor for a viewer who may not manage (admin)', async () => {
@@ -873,7 +891,7 @@ describe('M1b: the group tables keep Add and Remove only (owner O3, O4)', () => 
   })
 
   it('draws no Revoke, Restore or Delete on the Reviewers table or its phone cards — Remove only', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }      // even a super
+    viewerRole = SUPER_VIEWER      // even a super
     await loaded()
     for (const scope of [ui(), within(cards())]) {
       expect(scope.queryByText('admin.revoke')).toBeNull()
@@ -886,7 +904,7 @@ describe('M1b: the group tables keep Add and Remove only (owner O3, O4)', () => 
   })
 
   it('draws no Revoke or Delete on the Admins table either, even for a super', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+    viewerRole = SUPER_VIEWER
     mockApi.getAdmins.mockResolvedValue({ admins: [
       { ...ADMINS[0], deletable: true, work: {} }, { ...ADMINS[1], deletable: false, work: { payment_runs: 1 } },
     ] as unknown as api.AdminItem[] })

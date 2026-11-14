@@ -40,6 +40,15 @@ export function opensDoorOr(role: Served | null | undefined, door: DoorName, rol
 }
 
 /**
+ * Sprint M3c (list W): an IN-PAGE gate on a server door with NO role fallback — `opensDoor` with the
+ * served `page_keys`, and `false` when they are missing. Every `GET admin/role/` serves `page_keys` (T5c
+ * P4a), so the role is never read. Visibility only: the endpoint is the fence.
+ */
+export function holdsDoor(role: Served | null | undefined, door: DoorName): boolean {
+  return opensDoor(role, door) === true
+}
+
+/**
  * Team tables T3 (2026-11-03): who sees Team → **Mentors** and a mentor's detail page — exactly who read the
  * old Mentors page (its registry row's roles): the server's `mentor_invite.may_read`, which is
  * `staff_tables.may_do_admin_work` (the union door `admin_work`, still answered by role label here via

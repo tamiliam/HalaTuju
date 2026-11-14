@@ -36,7 +36,7 @@ const k = (key: string, grantable: boolean, reason: api.StaffV2Key['reason'], he
 })
 const GROUPS: api.StaffV2Group[] = [
   { group: 'organisation', keys: [
-    k('invitations.view', true, null), k('invitations.edit', false, 'lead_only'), k('team.view', true, null),
+    k('invitations.view', true, null), k('invitations.edit', false, 'not_held'), k('team.view', true, null),
     k('sponsors.view', true, null), k('sponsors.edit', true, null), k('billing.edit', false, 'never_grantable')] },
   { group: 'programme', keys: [k('students.view', false, 'alias', true)] },
 ]
@@ -78,7 +78,7 @@ it('draws each page once, in its box; a locked option with a padlock under one l
   expect(teamSwitch().getAttribute('aria-checked')).toBe('true')
   expect(teamSwitch().disabled).toBe(false)
   expect(level(SPONSORS)).toBe('edit')
-  // D4: Invitations' "View and change" is lead_only — that option alone disabled, with a padlock; off (not held).
+  // D4: Invitations' "View and change" is not_held (M3c A12) — that option alone disabled, with a padlock; off (not held).
   expect(level(INVITATIONS)).toBe('view')
   expect(radio(INVITATIONS, 'edit').disabled).toBe(true)
   expect(radio(INVITATIONS, 'view').disabled).toBe(false)

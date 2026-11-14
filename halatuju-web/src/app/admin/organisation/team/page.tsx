@@ -13,7 +13,7 @@ import {
   listReviewers, type AdminItem, type AdminReviewer,
 } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
-import { MENTORS_READ_ROLES, mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
+import { MENTORS_READ_ROLES, holdsDoor, mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
 
 /** The roles the Emails tab was offered to before M2b: the fallback for a payload with no `page_keys`. */
 const EMAIL_EDIT_ROLES = ['super', 'org_admin', 'admin'] as const
@@ -37,7 +37,7 @@ import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/Sta
 import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
 import type { TeamTableName } from '@/lib/admin-api'
 import StaffAvatar from '@/components/admin/StaffAvatar'
-import { TEAM_ROLES } from '@/lib/staffPermissions'
+import { TEAM_ROLES, hasPerm } from '@/lib/staffPermissions'
 
 // Organisation → **People**: the directory of everybody who is already in.
 //
@@ -124,11 +124,12 @@ export default function AdminReviewersList() {
   const mayEditEmails = opensDoorOr(role, 'sources', EMAIL_EDIT_ROLES)
   // T3: the Mentors tab — exactly who read the old Mentors page (the server's `mentor_invite.may_read`).
   const mayMentors = mayReadMentors(role)
-  // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened: only a
-  // super or an organisation admin may switch somebody off. `admin` and `finance` still READ the
-  // tab — the endpoint is the authority, and `soleOrgAdmin` keeps the last org_admin's Revoke off
-  // the screen because the backend refuses it anyway.
-  const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
+  // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened. M3c list W: the
+  // key the server reads (`manage_team`: a super, or an organisation admin by role). `admin` and
+  // `finance` still READ the tab — the endpoint is the authority, and `soleOrgAdmin` keeps the last
+  // org_admin's Revoke off the screen because the backend refuses it anyway.
+  const canManage = hasPerm(role, 'manage_team')
+  const mayAddMentor = mayMentors && holdsDoor(role, 'invitations')   // `mentor_invite.may_invite`
   const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
           resend, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
   const viewerSuper = effectiveRole(role) === 'super'
@@ -223,11 +224,11 @@ export default function AdminReviewersList() {
         ]} />
       </div>
       {/* T2: Add Admin / Add Reviewer / Add Mentor — an EXISTING member only; new people are invited on
-          Invitations. Offered to whoever may edit permissions on Team (super, org_admin); the endpoint
-          re-checks. */}
-      {canManage && (panel === 'admins' || panel === 'reviewers' || (panel === 'mentors' && mayMentors)) && (
+          Invitations. Admins / Reviewers on `manage_team`, Mentors on the door `invitations` (M3c); the
+          endpoint re-checks. */}
+      {(panel === 'mentors' ? mayAddMentor : canManage && (panel === 'admins' || panel === 'reviewers')) && (
         <button type="button" data-testid={`team-add-${panel}-open`}
-          onClick={() => (panel === 'mentors' ? setAddingMentor(true) : setAdding(panel))}
+          onClick={() => (panel === 'admins' || panel === 'reviewers' ? setAdding(panel) : setAddingMentor(true))}
           className="shrink-0 rounded-lg border border-transparent bg-brand-fill px-4 py-1.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
           {t(panel === 'mentors' ? 'admin.mentors.addMentor' : `admin.team.add.${panel}`)}
         </button>

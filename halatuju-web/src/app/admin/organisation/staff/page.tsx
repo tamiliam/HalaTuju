@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
+import { hasPerm } from '@/lib/staffPermissions'
 import { teamTabHref } from '@/lib/teamPaths'
 import {
   cancelInvitation, getInvitations, inviteSponsor,
@@ -86,8 +87,9 @@ const asStaffRow = (row: InvitationRow) =>
  *
  * ⚠ **MENTOR (student maintenance S7b follow-up, 2026-11-01)** follows the source pattern exactly
  * (`components/mentors/MentorInvite`): name + email, then the mentors who have not signed in yet with
- * the Mentors page's own Resend / Revoke. Shown to super and org_admin only (`mentor_invite.may_invite`);
- * the Mentors page's "Invite a mentor" lands here with `?kind=mentor`.
+ * the Mentors page's own Resend / Revoke. Read by whoever may view invitations (M3c E5); the form and
+ * the row actions only with `invitations.edit` (`mentor_invite.may_invite`). The Mentors page's
+ * "Invite a mentor" lands here with `?kind=mentor`.
  *
  * ⚠ **ONE FORM AND ONE WAITING TABLE ON ALL FIVE TABS (I1, 2026-11-08).** Every tab's form wears
  * `admin/InviteForm` (a label above every box, the tab's note under the fields, Send Invite at the
@@ -98,10 +100,13 @@ export default function OrganisationInvitationsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const r = effectiveRole(role)
-  const canManage = r === 'super' || r === 'org_admin'
+  // M3c list W: the keys the server reads. Sending or cancelling an invitation (sponsor, source,
+  // mentor) is the door `invitations` (`invitations.edit`); inviting or resending STAFF is
+  // `manage_team` (`AdminInviteView`, `AdminResendView`).
+  const mayInvite = holdsDoor(role, 'invitations')
+  const mayStaff = hasPerm(role, 'manage_team')
+  const canManage = mayInvite || mayStaff
   const mayView = mayOpen('/admin/organisation/staff', role)   // T1: with the served tables
-  // The Mentor chip only for the roles that may invite a mentor (super, org_admin).
-  const kinds = canManage ? KINDS : KINDS.filter((k) => k !== 'mentor')
 
   const { message, setMessage, busy, busyId, invite, resend } = useStaffAdmin(token)
   // Which SPONSOR row is mid-resend. The staff actions carry their own `busyId` from the hook;
@@ -151,6 +156,13 @@ export default function OrganisationInvitationsPage() {
 
   useEffect(() => { void load() }, [load])
 
+  // M3c E5 (owner ruling 2026-11-15): no view-only admin, only permissions. Whoever may view
+  // invitations reads the Mentor tab too, read-only without `invitations.edit`: the chip shows when
+  // the payload serves the Mentor kind or the viewer holds `invitations.view`.
+  const showMentor = !!data?.waiting && 'mentor' in data.waiting
+    || !!role?.page_keys?.includes('invitations.view')
+  const kinds = showMentor ? KINDS : KINDS.filter((k) => k !== 'mentor')
+
   // The sponsor ticks start again only when the gift CHOICES change (a new payload with other
   // gifts) — never on the reload after a resend or a cancel, which would wipe a half-made choice.
   const giftKey = (data?.programmes ?? []).map((p) => p.id).join(',')
@@ -163,10 +175,10 @@ export default function OrganisationInvitationsPage() {
   // `window.location` — `useSearchParams` would need a Suspense boundary in a page file.
   useEffect(() => {
     const asked = new URLSearchParams(window.location.search).get('kind')
-    // `?kind=mentor` only for the roles that see the Mentor chip; re-read once the role arrives.
-    const open = canManage ? KINDS : KINDS.filter((k) => k !== 'mentor')
+    // `?kind=mentor` only for a viewer who sees the Mentor chip; re-read once the role arrives.
+    const open = showMentor ? KINDS : KINDS.filter((k) => k !== 'mentor')
     if (asked && (open as string[]).includes(asked)) setKind(asked as InvitationKind)
-  }, [canManage])
+  }, [showMentor])
 
   // The Source tab draws only a Source payload — never the previous tab's rows while its own load.
   const sourceData = data?.kind === 'source' ? data : null
@@ -287,7 +299,7 @@ export default function OrganisationInvitationsPage() {
   // TD-501 (A1.3 review): the server's own list for the organisation the invite binds to, so a
   // super is never offered a gift that the invite would then refuse.
   const reviewerGiftChoices = data?.reviewer_programmes ?? []
-  const canInviteHere = canManage && (kind === 'sponsors' || invitable.length > 0)
+  const canInviteHere = kind === 'sponsors' ? mayInvite : mayStaff && invitable.length > 0
 
   return (
     <div>
@@ -333,9 +345,9 @@ export default function OrganisationInvitationsPage() {
 
           {kind === 'source' ? (
             // Source sign-in S2: inviting a source's person IS how a source is added now.
-            canManage && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
+            mayInvite && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
           ) : kind === 'mentor' ? (
-            canManage && <MentorInviteForm token={token} t={t} onDone={sourceDone}
+            mayInvite && <MentorInviteForm token={token} t={t} onDone={sourceDone}
               options={mentorData?.mentor_programmes ?? []} />
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
@@ -432,10 +444,10 @@ export default function OrganisationInvitationsPage() {
             {t('admin.invitations.loadFailed')}
           </p>
         ) : kind === 'source' ? (
-          <SourceRoster data={sourceData} token={token} t={t} canManage={canManage}
+          <SourceRoster data={sourceData} token={token} t={t} canManage={mayInvite}
             onCancel={(row) => { void cancel(row) }} onDone={sourceDone} />
         ) : kind === 'mentor' ? (
-          <MentorRoster data={mentorData} token={token} t={t} canManage={canManage} onDone={sourceDone} />
+          <MentorRoster data={mentorData} token={token} t={t} canManage={mayInvite} onDone={sourceDone} />
         ) : (<>
         <h2 className="mb-2 text-sm font-semibold text-ground-900">
           {t('admin.invitations.waitingHeading')}{' '}
@@ -463,7 +475,8 @@ export default function OrganisationInvitationsPage() {
               if (row.admin_id) void resend(asStaffRow(row)).then(load)
               else void resendSponsor(row)
             } : undefined}
-            onCancel={canManage ? (row: InvitationRow) => { void cancel(row) } : undefined}
+            canResend={(row: InvitationRow) => (row.admin_id ? mayStaff : mayInvite)}
+            onCancel={mayInvite ? (row: InvitationRow) => { void cancel(row) } : undefined}
             /* An org_admin cancels only what this page lets them invite (`invitable_roles`) —
                never an organisation admin's invitation; a sponsor row carries no role. A super
                cancels any. The server holds the same rule (404). */

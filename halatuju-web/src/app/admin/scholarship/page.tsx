@@ -17,6 +17,7 @@ import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseLis
 import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
 import { AssigneeOptions, AssignLangNote, AssignLegend, legendIdFor } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
@@ -56,13 +57,13 @@ function StaffScholarshipList() {
    * this page, so the page says it too. The endpoint refuses on its own — see `navigation.ts`.
    */
   const mayView = canAccess('/admin/scholarship', effRole, role?.permissions)
-  // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
-  // an org_admin assigns their own org's reviewers (backend fences the target + application).
-  const canAssign = isSuper || role?.role === 'org_admin'
+  // Assignment (the "Assigned" column + inline dropdown): the server's door `assign` (`students.edit`,
+  // M3c list W) — an org admin's own reviewers (backend fences the target + application).
+  const canAssign = holdsDoor(role, 'assign')
   // Only super + admin see every application, so only they benefit from the assignee filter.
   // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
   // the filter is redundant for them (and "Unassigned" would always return nothing).
-  const canFilterByAssignee = isSuper || role?.role === 'admin' || role?.role === 'org_admin'
+  const canFilterByAssignee = isSuper || role?.role === 'admin' || canAssign
   const { t } = useT()
   /*
    * ⚠ THE HEADING USED TO NAME THE TENANT'S FLAGSHIP, WHATEVER GIFT WAS PICKED.
@@ -229,9 +230,10 @@ function StaffScholarshipList() {
           : a),
       })
     } catch (e) {
-      const code = e instanceof Error ? e.message : ''
+      // M3c: a refusal with a `code` (`self_assign`) is read by it; the older ones put the code in `error`.
+      const code = (e as { code?: string }).code || (e instanceof Error ? e.message : '')
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'not_assignable', 'findings_submitted', 'gift_mismatch', 'not_signed_in']
+                     'not_assignable', 'findings_submitted', 'gift_mismatch', 'not_signed_in', 'self_assign']
       setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
           ? { name: reviewers.find((r) => r.id === reviewerId)?.name ?? '' } : undefined)

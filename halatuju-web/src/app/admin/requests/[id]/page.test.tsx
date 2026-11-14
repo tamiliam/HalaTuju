@@ -39,7 +39,10 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 // here, and rendering it would drag its upload plumbing into every case below.
 jest.mock('@/components/OrgRequestAttachments', () => ({ __esModule: true, default: () => null }))
 
-let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
+type Viewer = { role: string; is_super_admin?: boolean; page_keys?: string[] }
+// M3c list W: the requestee's controls read the SERVED keys (`requests.edit` writes, `requests.approve` decides).
+const ORG_ADMIN_VIEWER: Viewer = { role: 'org_admin', page_keys: ['requests.view', 'requests.edit', 'requests.approve'] }
+let viewerRole: Viewer = ORG_ADMIN_VIEWER
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -123,7 +126,7 @@ const commentBox = () => screen.queryByPlaceholderText('admin.requests.detail.co
 
 beforeEach(() => {
   jest.clearAllMocks()
-  viewerRole = { role: 'org_admin' }
+  viewerRole = ORG_ADMIN_VIEWER
 })
 
 describe('the thread renders as one stream', () => {
@@ -165,6 +168,12 @@ describe('the thread renders as one stream', () => {
 })
 
 describe('the comment box', () => {
+  it('M3c: is not offered to a member who may only view requests (`requests.view`, no `requests.edit`)', async () => {
+    viewerRole = { role: 'admin', page_keys: ['requests.view'] }
+    await show()
+    expect(screen.queryByPlaceholderText('admin.requests.detail.commentPlaceholder')).toBeNull()
+  })
+
   it('posts what was typed and clears itself', async () => {
     await show()
     mockApi.commentOrgRequest.mockResolvedValue(detail({ comments: [comment({ body: 'Noted.' })] }))
@@ -210,7 +219,7 @@ describe('the comment box', () => {
     'is offered to the requesting organisation at %s', async (status) => {
       // The owner's complaint that started this: a second org_admin could open the request and only
       // watch. They can already read it, so speaking adds no visibility.
-      viewerRole = { role: 'org_admin' }
+      viewerRole = ORG_ADMIN_VIEWER
       await show({ status })
       expect(commentBox()).toBeTruthy()
     })
@@ -218,7 +227,7 @@ describe('the comment box', () => {
 
 describe('the internal note is the owner’s alone', () => {
   it('offers no internal checkbox to the requesting organisation', async () => {
-    viewerRole = { role: 'org_admin' }
+    viewerRole = ORG_ADMIN_VIEWER
     await show()
     expect(screen.queryByText('admin.requests.detail.commentInternal')).toBeNull()
   })
@@ -262,7 +271,7 @@ describe("the engineer's analysis panel (TD-204)", () => {
   it('is OWNER-ONLY — an org_admin never sees the files or the hours', async () => {
     // Belt and braces on the frontend. The server puts no `analyses` key on an org payload at
     // all; this asserts the page would not render one even if it arrived.
-    viewerRole = { role: 'org_admin' }
+    viewerRole = ORG_ADMIN_VIEWER
     await show({ analyses: [approvedAnalysis()] })
     expect(screen.queryByText('admin.requests.owner.analysisTitle')).toBeNull()
     expect(screen.queryByText('apps/scholarship/referrals.py')).toBeNull()
@@ -406,7 +415,7 @@ describe("the engineer's analysis panel (TD-204)", () => {
   it('renders the engineer badge on the posted comment', async () => {
     // `author_kind` gained a fourth value; the thread builds its label key FROM that value, so a
     // missing i18n key prints a raw dotted path to the requester.
-    viewerRole = { role: 'org_admin' }
+    viewerRole = ORG_ADMIN_VIEWER
     await show({ comments: [comment({ author_kind: 'engineer' })] })
     expect(screen.getByText('admin.requests.detail.author.engineer')).toBeTruthy()
   })

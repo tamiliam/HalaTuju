@@ -21,7 +21,7 @@ jest.mock('next/link', () => ({
 jest.mock('next/navigation', () => ({ useParams: () => ({ id: '5' }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 
-let viewerRole: { role: string; is_super_admin?: boolean; permissions?: string[] } = { role: 'admin' }
+let viewerRole: { role: string; is_super_admin?: boolean; permissions?: string[]; page_keys?: string[] } = { role: 'admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
@@ -156,8 +156,9 @@ describe('recording a credit', () => {
  * hard-coded the flagship — so a second gift's first credit needed an engineer writing SQL.
  */
 describe('accepting into a gift', () => {
+  // M3c list W: the panel is on the server's door `sponsor_vet` (`sponsors.approve`), read off page_keys.
   const asOrgAdmin = async () => {
-    viewerRole = { role: 'org_admin' }
+    viewerRole = { role: 'org_admin', page_keys: ['sponsors.view', 'sponsors.edit', 'sponsors.approve'] }
     await open()
   }
 
@@ -203,6 +204,13 @@ describe('accepting into a gift', () => {
     expect(screen.queryByRole('button', { name: /giftAccept/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /giftTakeBack/ })).toBeNull()
     // …but the gifts are still LISTED, so they can see where the benefactor stands.
+    expect(screen.getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('M3c: reads the key, not the role — an organisation admin without `sponsors.approve` gets no control', async () => {
+    viewerRole = { role: 'org_admin', page_keys: ['sponsors.view', 'sponsors.edit'] }
+    await open()
+    expect(screen.queryByRole('button', { name: /giftAccept/ })).toBeNull()
     expect(screen.getByText('Sabah Bursary')).toBeTruthy()
   })
 

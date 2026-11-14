@@ -33,7 +33,7 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
 let mockRole: { role: string } = { role: 'org_admin' }
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: mockRole }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 

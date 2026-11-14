@@ -44,7 +44,7 @@ export function OrgRejectPanel({
             are one unit of change): role must match AdminOrgRejectView's super/org_admin guard,
             and the status must match services.ORG_REJECT_FROM. Rendering it anywhere else just
             produces a button that 403s or 400s. ─── */}
-      {canOrgReject({ isSuper, role: role?.role, status: app.status }) && (
+      {canOrgReject({ isSuper, role: role?.role, status: app.status, pageKeys: role?.page_keys }) && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-critical-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.title')}

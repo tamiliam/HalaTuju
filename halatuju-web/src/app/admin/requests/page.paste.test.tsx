@@ -24,13 +24,14 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 
 import AdminRequestsPage from './page'
 import * as api from '@/lib/admin-api'
+import { servedViewer } from '@/test/staffPresets'
 
 jest.mock('@/lib/admin-api')
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 /** The signed-in role, mutable between mounts — the AppShell.test.tsx pattern. Only an
  *  `org_admin` gets the submit form, and only the submit form gets a paste listener. */
-let mockRole: Record<string, unknown> = { role: 'org_admin', is_super_admin: false }
+let mockRole: Record<string, unknown> = servedViewer('org_admin')
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'test-token', role: mockRole }),
 }))
@@ -58,7 +59,7 @@ afterAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockRole = { role: 'org_admin', is_super_admin: false }
+  mockRole = servedViewer('org_admin')
   mockApi.getOrgRequests.mockResolvedValue({
     count: 0, total_pages: 1, page: 1, page_size: 25, requests: [], ids: [],
     summary: { action: 0, progress: 0, closed: 0, all: 0 },
@@ -141,7 +142,7 @@ describe('only the person who may submit gets a paste listener', () => {
   it('a super sees the list but no form, so a paste stages nothing', async () => {
     // The listener is wired to `isOrgAdmin` — the same gate as the form. A document-wide handler
     // on a page with nowhere to put the file would swallow the paste for no reason.
-    mockRole = { role: 'super', is_super_admin: true }
+    mockRole = servedViewer('super')
     render(<AdminRequestsPage />)
     await waitFor(() => expect(mockApi.getOrgRequests).toHaveBeenCalled())
     expect(screen.queryByText('admin.requests.attachments.dropZone')).toBeNull()

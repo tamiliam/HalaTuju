@@ -33,7 +33,7 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
 let viewer: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: viewer }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(viewer) }) }))
 // The three modules the barrel re-exports: mocked at the source, so the page's every import is the mock.
 jest.mock('@/lib/admin-api/admins')
 jest.mock('@/lib/admin-api/mentors')

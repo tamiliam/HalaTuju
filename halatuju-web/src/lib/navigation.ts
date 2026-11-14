@@ -147,11 +147,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         door: 'sponsors_read', gate: { mode: 'always' }, badge: 'pendingSponsors' },
+      // M3c (list W): Billing, Requests, Settings, Contracts and Configuration read their server door; the
+      // roles answer only an older payload (no `page_keys`).
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
-        scope: 'organisation', roles: ['super', 'org_admin'],
+        scope: 'organisation', roles: ['super', 'org_admin'], door: 'billing_read',
         gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
       { id: 'requests', href: '/admin/requests', labelKey: 'admin.requests.nav', chord: 'Q',
-        scope: 'organisation', roles: ['super', 'org_admin'],
+        scope: 'organisation', roles: ['super', 'org_admin'], door: 'requests_read',
         gate: { mode: 'probe', probe: 'requests', dark: 'hide' },
         badge: 'requestsWaiting' },
       // The organisation's own settings, echoing the shape of Programme → Configuration one level up
@@ -166,7 +168,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // longer label says whose settings, now that a programme has settings of its own. The route
       // and the `id` are unchanged — only the position and the word moved.
       { id: 'orgSettings', href: '/admin/organisation/settings', labelKey: 'admin.orgSettings.nav',
-        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
+        scope: 'organisation', roles: ['super', 'org_admin'], door: 'settings', gate: { mode: 'always' } },
     ],
   },
   {
@@ -285,9 +287,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // 2026-09-04). Same roles. No `needsProgramme` — with no gift chosen it lists every gift's.
       // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
-        scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
+        scope: 'programme', roles: ['super', 'org_admin'], door: 'contracts_read', gate: { mode: 'always' } },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
-        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
+        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], door: 'programme_settings',
+        gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },
     ],
   },

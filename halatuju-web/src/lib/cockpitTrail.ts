@@ -7,6 +7,7 @@
  */
 
 import { isPreSubmissionStage } from './cockpitStages'
+import { opensDoor } from './pageDoors'
 
 // ── Header lifecycle timeline ─────────────────────────────────────────────────
 
@@ -74,16 +75,18 @@ export const ORG_REJECT_FROM = new Set<string>(['shortlisted'])
  *
  * Deliberately NARROWER than every other per-application write. The API's
  * `_require_app_write` also admits a `qc` and the ASSIGNED reviewer, but
- * `AdminOrgRejectView` then narrows to super/org_admin — "rejection is a super feature;
- * the org admin is the super of the organisation" (owner). Mirror that narrowing here so
- * the card never offers what the endpoint refuses.
+ * `AdminOrgRejectView` then narrows to the door `decide` (`students.approve`, M3b G5; a super or an
+ * org admin until then). Mirror that narrowing here so the card never offers what the endpoint refuses.
+ * M3c (list W): with the served `pageKeys` the door decides; an older payload (none) keeps the role rule.
  *
  * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export function canOrgReject(
-  opts: { isSuper: boolean; role: string | null | undefined; status: string }
+  opts: { isSuper: boolean; role: string | null | undefined; status: string;
+          pageKeys?: readonly string[] | null }
 ): boolean {
-  const roleAllowed = opts.isSuper || opts.role === 'org_admin'
+  const roleAllowed = opensDoor({ page_keys: opts.pageKeys }, 'decide')
+    ?? (opts.isSuper || opts.role === 'org_admin')
   return roleAllowed && ORG_REJECT_FROM.has(opts.status)
 }
 

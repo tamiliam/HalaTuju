@@ -30,7 +30,7 @@ jest.mock('@/lib/i18n', () => ({
 }))
 let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(viewerRole) }),
 }))
 jest.mock('@/lib/admin-api/admins')
 let handed: api.StaffPermissionsView | undefined

@@ -33,3 +33,40 @@ export function servedPermissions(role: string): string[] {
       : STAFF_PRESETS[role] ?? []
   return CATALOGUE.filter((k) => held.includes(k))
 }
+
+const V2_SRC = readApi('apps/courses/staff_permissions_v2.py')
+/** `CATALOGUE_V2 = { 'page.level': (...), ... }`, its keys in order. Throws if the dict changes shape. */
+const CATALOGUE_V2: string[] = (() => {
+  const m = V2_SRC.match(/^CATALOGUE_V2 = \{([\s\S]*?)^\}/m)
+  if (!m) throw new Error('staffPresets: CATALOGUE_V2 is no longer a dict literal in staff_permissions_v2.py')
+  const out = [...m[1].matchAll(/^\s+'([a-z_]+\.[a-z_]+)':/gm)].map((x) => x[1])
+  if (out.length < 20) throw new Error('staffPresets: fewer than twenty v2 keys read')
+  return out
+})()
+const HATS = pySeq(V2_SRC, 'HATS')
+
+/**
+ * M3c (list W): what `GET /admin/role/` serves as `page_keys` for a super or an organisation admin on the
+ * full set — every v2 key, plus the hats (`review`, `qc`) their `permissions` hold (`staff_tables.page_keys`).
+ * The web now reads these doors instead of the role. Any other role answers `undefined` (an older payload):
+ * none of them holds an organisation admin's key on its preset.
+ */
+export function servedPageKeys(role: string): string[] | undefined {
+  if (role !== 'super' && role !== 'org_admin') return undefined
+  const held = servedPermissions(role)
+  return [...CATALOGUE_V2, ...HATS.filter((h) => held.includes(h))]
+}
+
+/** M3c: the signed-in officer as `GET /admin/role/` serves them on their preset (role, permissions, page_keys). */
+export function servedViewer(role: string) {
+  return { role, is_super_admin: role === 'super', permissions: servedPermissions(role), page_keys: servedPageKeys(role) }
+}
+
+/**
+ * M3c: a role-only fixture (`{ role, is_super_admin? }`) with what the server serves added — the super's
+ * keys when `is_super_admin`, else the role's. Fields the fixture sets itself win.
+ */
+export function withServedKeys<T extends { role: string; is_super_admin?: boolean }>(viewer: T) {
+  const served = servedViewer(viewer.is_super_admin ? 'super' : viewer.role)
+  return { permissions: served.permissions, page_keys: served.page_keys, ...viewer }
+}

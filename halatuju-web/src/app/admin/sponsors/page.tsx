@@ -88,6 +88,10 @@ export default function AdminSponsorsList() {
     wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
   const mayEditEmails = opensDoorOr(role, 'sponsor_emails', CAN_EDIT_EMAILS)   // T5c P4: the server's door
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
+  // M3c: the server says whether this viewer may vet an account (`may_vet`); an older server that
+  // does not say keeps the buttons, and its POST stays the authority.
+  const [mayVet, setMayVet] = useState(true)
+  const offered = (status: string) => (mayVet ? actionsFor(status) : [])
   // TD-502: the Overview's "sponsors to vet" card opens `?status=pending`, so the list matches its count.
   const wantedStatus = search?.get('status') ?? ''
   const [statusF, setStatusF] = useState(STATUS_OPTIONS.includes(wantedStatus) ? wantedStatus : '')
@@ -101,7 +105,7 @@ export default function AdminSponsorsList() {
     if (!token) return
     setLoading(true)
     listSponsors(statusF || undefined, { token })
-      .then((d) => setSponsors(d.sponsors))
+      .then((d) => { setSponsors(d.sponsors); setMayVet(d.may_vet !== false) })
       .catch(() => setError(tRef.current('admin.sponsors.loadFailed')))
       .finally(() => setLoading(false))
   }, [token, statusF, tRef])
@@ -217,9 +221,9 @@ export default function AdminSponsorsList() {
                 <p className="mt-1.5 whitespace-pre-wrap text-[11px] text-ground-500">{s.note}</p>
               )}
 
-              {actionsFor(s.status).length > 0 && (
+              {offered(s.status).length > 0 && (
                 <div className="mt-2.5 flex flex-wrap gap-2 border-t border-ground-100 pt-2.5">
-                  {actionsFor(s.status).map((a) => (
+                  {offered(s.status).map((a) => (
                     <button key={a} onClick={() => handleReview(s.id, a)} disabled={busyId === s.id}
                       className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${actionStyle[a]}`}>
                       {t(`admin.sponsors.action.${a}`)}
@@ -276,7 +280,7 @@ export default function AdminSponsorsList() {
                   <td className="px-4 py-3 text-ground-500">{formatDate(s.created_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      {actionsFor(s.status).map((a) => (
+                      {offered(s.status).map((a) => (
                         <button
                           key={a}
                           onClick={() => handleReview(s.id, a)}

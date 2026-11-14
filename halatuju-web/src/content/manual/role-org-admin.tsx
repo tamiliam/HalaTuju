@@ -189,6 +189,14 @@ export const roleOrgAdmin: ManualChapter = {
             <li>A revoked person&rsquo;s permissions can&rsquo;t be changed until you restore them.</li>
             <li>You cannot change your own permissions, another organisation admin&rsquo;s, or give anyone
             <em> Manage the team</em> &mdash; that stays with you.</li>
+            <li>You can only give a permission you hold yourself. One you do not hold shows a padlock.</li>
+            <li>Your own permissions are set the same way, by the platform team. Three stay with your role and are
+            never given to anyone: changing your team&rsquo;s permissions, paying the platform bill, and approving
+            requests that use paid hours.</li>
+            <li>Payments come with your role until payments move to permissions: you start payment runs and
+            approve one when nobody else can, but you never prepare one. Your card says so on the Payments row.</li>
+            <li><em>Suspend or end a scholarship</em> (under Scholars) sends the suspension and termination letters
+            on a scholar&rsquo;s file.</li>
           </ul>
           <span className="mt-2 block">The change takes effect on the person&rsquo;s next page. Every change is
           recorded &mdash; who changed what, from what to what, and when &mdash; and the latest changes are listed
@@ -201,7 +209,7 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>On <strong>Applications</strong> you get an <strong>Assigned</strong> column with an inline control
         to give a case to one of <em>your</em> reviewers (and the same control sits on each applicant&rsquo;s
-        page). You can only assign your own organisation&rsquo;s active reviewers. A case can only change hands
+        page). You can only assign your own organisation&rsquo;s active reviewers, and never to yourself. A case can only change hands
         while a review is live (Awaiting review / Interviewing) — the control is disabled otherwise.
         <span className="mt-2 block">To see who can take more, open <strong>People</strong>. Each reviewer shows
         two figures: <strong>Awaiting review</strong> (cases they have not started) and <strong>Interviewing</strong>

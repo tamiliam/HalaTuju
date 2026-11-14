@@ -112,8 +112,9 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>When do I <strong>close</strong> an application, and when do I decline it instead?</>,
       a: <>Before an award, <strong>Close</strong> works at two stages only: <strong>Submitted</strong> (the
         case did not move on) and <strong>Recommended</strong> (for example, no sponsor comes, the student stops
-        responding, or she says she no longer wants the scholarship). Only a super admin or an organisation
-        admin can close. At the other stages the Close card is hidden. Drop a stuck Shortlisted student with
+        responding, or she says she no longer wants the scholarship). Closing needs the permission
+        <em> Reject or close applications</em>: a super admin and an organisation admin hold it, and an
+        organisation admin can give it to a team member. At the other stages the Close card is hidden. Drop a stuck Shortlisted student with
         <strong> Reject</strong>. Once a reviewer has the case, the reviewer writes it in the interview findings
         and declines, and the decline goes to <strong>Quality check</strong>; nobody, a super admin included,
         can decline it directly. The student gets an email when a case is closed, and can apply again in a
@@ -127,6 +128,15 @@ export const FAQ: Record<Audience, QA[]> = {
         &mdash; it says what saving would do &mdash; and press <strong>Save changes</strong>. <strong>Reset</strong>
         returns them to their role&rsquo;s usual set, and <strong>Changes</strong> underneath lists who changed
         what, and when. See <em>Changing what someone can do</em> in your chapter of the Guide.</>,
+    },
+    {
+      q: <>What can an <strong>organisation admin</strong> do, and what stays with the role?</>,
+      a: <>Like everyone else, what you can do is your <strong>permissions</strong>, set on your page by the
+        platform team. Three stay with your role and are never given to anyone: changing your team&rsquo;s
+        permissions, paying the platform bill, and approving requests that use paid hours. Payments come with
+        the role until they move to permissions: you start payment runs and approve one when nobody else can,
+        but you never prepare one. You give cases to reviewers and nudge them, never to yourself, and you can
+        only give somebody a permission you hold yourself.</>,
     },
     {
       q: <>Why can&rsquo;t I switch off <strong>Review assigned students</strong> for somebody?</>,

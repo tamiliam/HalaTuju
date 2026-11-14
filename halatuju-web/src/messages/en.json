@@ -4248,7 +4248,8 @@
           "not_assignable": "A reviewer can only be assigned while the application is being reviewed (Completed or Interviewing). It's either not ready yet, or the review is already over.",
           "reviewer_paused": "They have paused themselves, so no new cases can be given to them. They can start again from their own profile, or you can bring them back on the Reviewers page.",
           "gift_mismatch": "This reviewer covers a different gift, so this case cannot be given to them. Choose a reviewer for this gift, or one who covers every gift.",
-          "not_signed_in": "{name} hasn't signed in yet. Cases can go to them once they have."
+          "not_signed_in": "{name} hasn't signed in yet. Cases can go to them once they have.",
+          "self_assign": "You cannot give a case to yourself."
         }
       },
       "reviewerNotes": {
@@ -5418,7 +5419,7 @@
       "onlyOrgAdmin": "Only an organisation admin can change your access.",
       "can": {
         "super": "Do everything, in every organisation.",
-        "org_admin": "Run your organisation: its team, gifts and settings.",
+        "org_admin": "Run your organisation. Three powers stay with you alone: changing your team’s permissions, paying the platform bill and approving requests that use paid hours.",
         "partner": "See the students your organisation referred.",
         "source_partner": "Follow the students who named you when they applied, and witness their agreements.",
         "profileOnly": "Keep your own profile up to date.",
@@ -8468,7 +8469,7 @@
     "permEditor": {
       "title": "What {name} can do",
       "intro": "Choose what {name} can see and do. Changes apply when you save.",
-      "notAssignable": "Not assignable yet.",
+      "notAssignable": "You can only give a permission you hold yourself.",
       "boxCount": "{n} of {m} on",
       "level": {
         "none": "No access",
@@ -8554,7 +8555,8 @@
         "desc": "The mentoring tab on each scholar."
       },
       "payments": {
-        "desc": "Opens with any of the three below."
+        "desc": "Opens with any of the three below.",
+        "byRole": "Comes with the role until payments move to permissions: they start payment runs and approve one when no one else can, but never prepare one."
       },
       "spending": {
         "desc": "See and sort how scholars spend their money."
@@ -8570,12 +8572,16 @@
         "desc": "The final step before a credit counts."
       },
       "assign": {
-        "name": "Assign and nudge reviewers",
-        "desc": "Never to themselves."
+        "name": "Give cases to reviewers and nudge them",
+        "desc": "Never to yourself."
       },
       "approveAwards": {
         "name": "Reject or close applications",
         "desc": "Stop an application before an award."
+      },
+      "scholarsApprove": {
+        "name": "Suspend or end a scholarship",
+        "desc": "Send the suspension and termination letters on a scholar’s file."
       }
     },
     "permV2": {

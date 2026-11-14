@@ -4248,7 +4248,8 @@
           "not_assignable": "Penyemak hanya boleh ditugaskan semasa permohonan sedang disemak (Selesai atau Temu Duga). Ia sama ada belum bersedia, atau semakan sudah tamat.",
           "reviewer_paused": "Beliau telah menjeda dirinya, jadi tiada kes baharu boleh diberikan kepadanya. Beliau boleh mula semula daripada profilnya sendiri, atau anda boleh membawanya kembali di halaman Penilai.",
           "gift_mismatch": "Penilai ini meliputi pemberian lain, jadi kes ini tidak boleh diberikan kepadanya. Pilih penilai untuk pemberian ini, atau penilai yang meliputi semua pemberian.",
-          "not_signed_in": "{name} belum log masuk lagi. Kes boleh diberikan kepadanya sebaik sahaja beliau log masuk."
+          "not_signed_in": "{name} belum log masuk lagi. Kes boleh diberikan kepadanya sebaik sahaja beliau log masuk.",
+          "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri."
         }
       },
       "reviewerNotes": {
@@ -5418,7 +5419,7 @@
       "onlyOrgAdmin": "Hanya pentadbir organisasi boleh mengubah akses anda.",
       "can": {
         "super": "Melakukan semua perkara, dalam setiap organisasi.",
-        "org_admin": "Mengurus organisasi anda: pasukan, pemberian dan tetapannya.",
+        "org_admin": "Mengurus organisasi anda. Tiga kuasa kekal pada anda sahaja: menukar kebenaran pasukan anda, membayar bil platform dan meluluskan permintaan yang menggunakan jam berbayar.",
         "partner": "Melihat pelajar yang dirujuk oleh organisasi anda.",
         "source_partner": "Mengikuti pelajar yang menamakan anda semasa memohon, dan menjadi saksi perjanjian mereka.",
         "profileOnly": "Mengemas kini profil anda sendiri.",
@@ -8468,7 +8469,7 @@
     "permEditor": {
       "title": "Apa yang boleh dilakukan oleh {name}",
       "intro": "Pilih apa yang boleh dilihat dan dilakukan oleh {name}. Perubahan berkuat kuasa apabila anda menyimpan.",
-      "notAssignable": "Belum boleh ditugaskan.",
+      "notAssignable": "Anda hanya boleh memberikan kebenaran yang anda sendiri pegang.",
       "boxCount": "{n} daripada {m} dihidupkan",
       "level": {
         "none": "Tiada akses",
@@ -8554,7 +8555,8 @@
         "desc": "Tab bimbingan mentor pada setiap penerima biasiswa."
       },
       "payments": {
-        "desc": "Dibuka dengan mana-mana satu daripada tiga di bawah."
+        "desc": "Dibuka dengan mana-mana satu daripada tiga di bawah.",
+        "byRole": "Datang bersama peranan sehingga pembayaran beralih kepada kebenaran: mereka memulakan larian pembayaran dan meluluskannya apabila tiada orang lain boleh, tetapi tidak sekali-kali menyediakannya."
       },
       "spending": {
         "desc": "Lihat dan susun cara penerima biasiswa membelanjakan wang mereka."
@@ -8570,12 +8572,16 @@
         "desc": "Langkah terakhir sebelum sesuatu kredit dikira."
       },
       "assign": {
-        "name": "Tugaskan dan ingatkan penilai",
+        "name": "Berikan kes kepada penilai dan ingatkan mereka",
         "desc": "Tidak sekali-kali kepada diri sendiri."
       },
       "approveAwards": {
         "name": "Tolak atau tutup permohonan",
         "desc": "Hentikan permohonan sebelum anugerah diberi."
+      },
+      "scholarsApprove": {
+        "name": "Gantung atau tamatkan biasiswa",
+        "desc": "Hantar surat penggantungan dan penamatan pada fail penerima biasiswa."
       }
     },
     "permV2": {

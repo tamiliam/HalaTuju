@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import { STATUS_TONE, isEditable, termsErrorKey } from '@/lib/sponsorTerms'
 import ClausesTab from '@/components/sponsors/terms/ClausesTab'
 import QuizRehearsal from '@/components/sponsors/terms/QuizRehearsal'
@@ -34,9 +35,10 @@ export default function SponsorTermsEditorPage() {
   const { t } = useT()
   const router = useRouter()
 
-  // Publish is a super OR an org_admin decision (owner, 2026-07-28). A plain `admin`
-  // authors but does not make a document binding on a donor.
-  const canPublish = ['super', 'org_admin'].includes(effectiveRole(role))
+  // M3c: publishing needs the door `sponsor_vet` (sponsors.approve) AND a super or an organisation
+  // admin, as `may_approve_platform_sponsors` reads it: the terms bind every organisation's donors, so a
+  // team member granted the key may not publish them. A plain `admin` authors but does not publish.
+  const canPublish = holdsDoor(role, 'sponsor_vet') && ['super', 'org_admin'].includes(effectiveRole(role))
   const [terms, setTerms] = useState<SponsorTermsDetail | null>(null)
   const [sections, setSections] = useState<SponsorTermsSection[]>([])
   const [validation, setValidation] = useState<SponsorTermsValidation | null>(null)

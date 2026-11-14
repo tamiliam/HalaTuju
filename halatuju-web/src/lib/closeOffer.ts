@@ -37,8 +37,9 @@ export interface CloseOffer {
 }
 
 /**
- * `orgSuper` — the viewer is a super or an org_admin. The api closes a PRE-award case for those two
- * only (`AdminCloseApplicationView`, the org-reject gate), so for anyone else the card is not
+ * `orgSuper` — the viewer opens the server's door `decide` (`students.approve`; a super or an org_admin
+ * until M3c, list W). The api closes a PRE-award case for those only (`AdminCloseApplicationView`,
+ * `surface_gates.may_decide`), so for anyone else the card is not
  * offered there at all rather than showing a button that answers 403.
  */
 export function closeOffer(status: string, orgSuper: boolean): CloseOffer {

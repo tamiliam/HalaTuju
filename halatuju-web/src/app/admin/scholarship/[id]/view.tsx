@@ -27,7 +27,7 @@ import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen, opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen, opensDoorOr } from '@/lib/pageGuard'
 import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
@@ -95,8 +95,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = effectiveRole(role) === 'super'
-  // Assignment (F7) is a super or org_admin power — an org_admin assigns their own org's reviewers.
-  const canAssign = isSuper || role?.role === 'org_admin'
+  // Assignment (F7): the server's door `assign` (`students.edit`, M3c list W) — an org admin's own reviewers.
+  const canAssign = holdsDoor(role, 'assign')
   // Sources / witness-org management: super + admin + org_admin (owner 2026-07-19). Distinct from
   // canAssign (reviewer assignment stays super/org_admin) — the Admin role manages sources/witness.
   // Sprint M2b (D11): on the server's door — the witness endpoint is `_SourcesBase` (door `sources`,
@@ -376,7 +376,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       </div>{/* end cockpit grid */}
 
       <PostAwardPanels
-        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={canAssign} mayOpenFile={mayOpen('/admin/scholars', role)}
+        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={holdsDoor(role, 'decide')} mayOpenFile={mayOpen('/admin/scholars', role)}
         bursary={bursary} bursaryMsg={bursaryMsg}
         doCountersignBursary={doCountersignBursary} doWitnessBursary={doWitnessBursary}
         disbAmount={disbAmount} setDisbAmount={setDisbAmount}
