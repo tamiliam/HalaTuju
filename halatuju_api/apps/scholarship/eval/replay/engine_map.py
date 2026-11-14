@@ -53,11 +53,26 @@ ENGINES = {
                                         S + 'sponsorship.wallet:sponsor_available_total'),
 }
 SIDES = {'old': 0, 'new': 1}
+#: The engine names are codes: each child writes one per record, and the parent, the ruling catalogue and
+#: the report read them back. Unregistered, the scrubber hashed every one (R2 review: no ruling could
+#: match, and the report filed every engine under 'other'). This is a literal, because the registry takes
+#: literals only (test_replay_guards). RulingRegistryTest asserts every ENGINES key is registered.
+scrub.register_codes((
+    'verdict.build_verdict', 'award.verdict_disqualifier', 'award.proposed_award_amount',
+    'award.course_start_unknown', 'resolution.doc_match_verdict', 'higher.match_verdict',
+    'higher.student_higher_check', 'academic.student_slip_check', 'academic.semester_check',
+    'academic.student_school_leaving_check', 'help.verdict_for_document', 'gaps.flags_summary',
+    'shortlist.evaluate', 'courses.check_eligibility', 'courses.compute_student_merit',
+    'courses.check_stpm_eligibility', 'requirements.required_documents', 'requirements.required_questions',
+    'funding.classify_pathway', 'funding.estimate_funding', 'payments.schedule_row', 'payments.eligibility',
+    'payments.default_amount', 'payments.paid_to_date', 'schedule.row_for', 'contracts.pick_schedule_row',
+    'contracts.schedule_calendar', 'sponsor.sponsor_balance', 'sponsor.sponsor_available_total',
+))
 
 #: name -> adapter factory (R2). An adapter has `.name`, `.cases()` (keys) and `.run(key, months)`.
 #: Each adapter module registers its codes at import, ABOVE the freeze below.
 ADAPTERS = dict(_adapters.ADAPTERS)
-#: The modules whose import registered their codes above the freeze below.
+#: The modules whose import registered their codes above the freeze below (this one adds ENGINES).
 REGISTERED_BY = (vocab, rulings, _adapters)
 
 # Every adapter is imported by now: no code may be registered after this line (scrub.register_codes).

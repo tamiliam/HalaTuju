@@ -7,14 +7,19 @@ facts, is never a unit). A record is A only when EVERY unit is matched by at lea
 report names every ruling that matched (a unit two rulings match is listed under both).
 
 Each test is NARROW: it reads the old and new value of ONE unit and non-personal case facts (`facts`:
-pathway code, degree-bound, start year unknown, stored award, document type). There is no "any change
-in X" rule. Too narrow is safe (the difference shows as B for the owner); too broad hides a regression.
+stored pathway code, degree-bound, start year unknown, stored award, Academic card). There is no "any
+change in X" rule. Too narrow is safe (the difference shows as B for the owner); too broad hides a
+regression.
+
+Every code a test compares is a REAL engine code and is registered here (`NAMED_CODES`): an unregistered
+code is hashed by the scrubber, so a test naming it could never match a real record (R2 review).
 
 Rulings catalogued but NOT encoded (their test is None) never match: their differences stay B until R3
 has seen a real record's shape and the owner confirms. So does every PENDING item (not shipped).
 No ruling exists for a "moves only" refactor (A3.1, A3.4, A3.6, A3.8, F1 step 2): a difference there is B
 by definition.
 """
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -25,10 +30,43 @@ scrub.register_codes((
     'R-TD465', 'R-TD465-UNKNOWN', 'R-DEG7-AWARD', 'R-DEG7-PATHWAY', 'R-DEG7-ESTIMATE', 'R-DEG7-SCHEDULE', 'R-56',
     'R-62', 'R-388', 'R-OWED', 'R-F1-Q1', 'R-F1-Q4', 'R-67', 'R-3ROUTES', 'R-278', 'R-F1-Q2', 'R-F1-Q3',
     'R-F1-Q6', 'TD-617', 'rulings', 'unit',
+    # Every code a ruling test below compares (NAMED_CODES; RulingRegistryTest asserts each is registered,
+    # and that every code-shaped literal in this module is).
+    'ilkbs', 'iljtm', 'kkom', 'tvet', 'tvet_other', 'mara', 'mara_cert', 'mara_diploma',
+    'results_slip_name_mismatch', 'results_slip_name_near', 'higher_results_name_mismatch',
+    'higher_results_name_near', 'academic_extra_subjects', 'academic_grades_unchecked',
+    'higher_results_not_on_file', 'higher_results_not_declared', 'higher_results_undeclared',
+    'academic_slip_rows_unread', 'higher_results_grade_mismatch', 'higher_results_grade_uncertain',
+    'verified', 'review', 'recommend', 'gap', 'stpm', 'degree', 'unknown', 'university', 'spm', 'academic_card',
 ))
 
+# --- the codes the tests compare ------------------------------------------------------------------------
+
 DEGREE_SCHEDULE_AWARDS = (None, '2000.00')
-TVET_PATHWAYS = frozenset({'ilkbs', 'iljtm', 'kkom', 'mara_cert', 'tvet', 'mara_diploma'})
+#: R-DEG7's unknown-to-TVET branch: the STORED chosen_pathway code (`facts.pathway_code`, read off the
+#: record, not computed by engine code) -> the estimate key(s) decisions 9-12 give it (`funding_estimate`).
+STORED_TVET = {
+    'ilkbs': frozenset({'ilkbs'}), 'iljtm': frozenset({'iljtm'}), 'kkom': frozenset({'kkom'}),
+    'tvet': frozenset({'tvet'}), 'tvet_other': frozenset({'tvet'}),
+    'mara': frozenset({'mara_cert', 'mara_diploma'}),
+}
+TVET_PATHWAYS = frozenset().union(*STORED_TVET.values())
+#: R-56: (red, amber) per card: the SPM slip (`verdict_academic`) and the higher results (`higher_results`).
+R56_PAIRS = (('results_slip_name_mismatch', 'results_slip_name_near'),
+             ('higher_results_name_mismatch', 'higher_results_name_near'))
+R62_CODES = frozenset({'academic_extra_subjects', 'academic_grades_unchecked'})
+R388_CODE = 'higher_results_not_on_file'                                    # higher_owed.NOTE_CODE
+OWED_CODES = frozenset({'higher_results_not_declared', 'higher_results_undeclared'})
+F1_Q1_CODES = frozenset({'academic_slip_rows_unread', 'academic_grades_unchecked'})
+F1_Q4_PAIR = ('higher_results_grade_mismatch', 'higher_results_grade_uncertain')
+STATUSES = ('verified', 'review', 'recommend', 'gap')
+PATHWAYS = ('stpm', 'degree', 'unknown', 'university')
+#: Every code any test compares. They are registered by the literal call at the top, because the registry
+#: takes literals only (test_replay_guards). RulingRegistryTest asserts each one is registered, and that every
+#: code-shaped literal in this module is, so a new test cannot name an unregistered code.
+NAMED_CODES = tuple(sorted(
+    set(STORED_TVET) | TVET_PATHWAYS | {c for pair in R56_PAIRS for c in pair} | R62_CODES | {R388_CODE}
+    | OWED_CODES | F1_Q1_CODES | set(F1_Q4_PAIR) | set(STATUSES) | set(PATHWAYS) | {'spm', 'academic_card'}))
 
 
 @dataclass(frozen=True)
@@ -46,6 +84,10 @@ class Unit:
         n = (self.new_record or {}).get('facts') or {}
         o = (self.old_record or {}).get('facts') or {}
         return {**o, **n}
+
+    def both_facts(self, key, value):
+        """True when the OLD and the NEW side's case facts both hold ``key`` == ``value``."""
+        return all(((r or {}).get('facts') or {}).get(key) == value for r in (self.old_record, self.new_record))
 
 
 @dataclass(frozen=True)
@@ -73,9 +115,13 @@ def _removed(u, key='unresolved'):
     return _items(u.old, key) - _items(u.new, key)
 
 
+def _status(part):
+    return part.get('status') if isinstance(part, dict) else None
+
+
 def _status_moves(u, allowed):
     """The fact's status is unchanged, or moved to one of ``allowed``."""
-    old, new = (u.old or {}).get('status'), (u.new or {}).get('status')
+    old, new = _status(u.old), _status(u.new)
     return old == new or new in allowed
 
 
@@ -83,16 +129,38 @@ def _evidence_only_lost(u):
     return not _added(u, 'evidence')
 
 
+def _params_by_item(part):
+    """{(section, code): sorted item hashes} from a fact's `params` (`normalise.item_params`)."""
+    out = defaultdict(list)
+    for entry in (part.get('params') or ()) if isinstance(part, dict) else ():
+        if isinstance(entry, list) and len(entry) == 3:
+            out[(entry[0], entry[1])].append(entry[2])
+    return {k: sorted(v, key=str) for k, v in out.items()}
+
+
+def _params_kept(u):
+    """Every item present on BOTH sides kept its params (one hash per item): a ruling about one item
+    never hides a params change on another."""
+    old, new = _params_by_item(u.old), _params_by_item(u.new)
+    return all(old[k] == new[k] for k in set(old) & set(new))
+
+
 def _adds_only(u, codes, *, statuses=('review',)):
-    """The fact gained at least one of ``codes``, nothing else, lost nothing, and its status stayed or
-    moved to one of ``statuses``. Present on both sides."""
+    """The fact gained at least one of ``codes`` and nothing else, lost nothing, its status stayed or
+    moved to one of ``statuses``, it gained no evidence, and every item it kept kept its params. Present
+    on both sides."""
     a = _added(u)
     return (bool(u.old) and bool(u.new) and bool(a) and a <= set(codes) and not _removed(u)
-            and _status_moves(u, statuses) and _evidence_only_lost(u))
+            and _status_moves(u, statuses) and _evidence_only_lost(u) and _params_kept(u))
 
 
 def _fact_is(u, *names):
     return u.engine == 'verdict.build_verdict' and u.field in names
+
+
+def _spm_card(u):
+    """The Academic fact sits on the SPM card on BOTH sides (`adapters.app_facts`: academic_card)."""
+    return u.both_facts('academic_card', 'spm')
 
 
 # --- the tests ----------------------------------------------------------------------------------------
@@ -104,7 +172,13 @@ def _td465_amount(u):
 
 
 def _td465_unknown(u):
-    return u.field == 'value' and u.old is False and u.new is True and u.facts.get('pathway_code') == 'stpm'
+    """Since v3.1.0 an STPM `course_start_unknown` can only go True -> False, and only for a degree-bound
+    student under a stale 'stpm' code (`award._sized_as_stpm`, decision 7). Gated on the stored code AND
+    degree_bound: with 'stpm' stored and NOT degree-bound the rule is unchanged, so a flip there (a
+    course-start read change) stays B. False -> True is never expected: it is a regression (B)."""
+    f = u.facts
+    return (u.field == 'value' and u.old is True and u.new is False and f.get('pathway_code') == 'stpm'
+            and f.get('degree_bound') is True)
 
 
 def _deg7_award(u):
@@ -113,9 +187,12 @@ def _deg7_award(u):
 
 
 def _deg7_pathway_change(old, new, facts):
+    """Unknown-to-TVET (decisions 10-12) is gated on the STORED pathway code read off the record
+    (`facts.pathway_code`), never on engine code: the new category must be the one decisions 9-12 give
+    that stored code (`STORED_TVET`). A TVET category reached from a programme name alone stays B."""
     if new == 'degree' and old != 'degree' and facts.get('degree_bound') is True:
         return True
-    return old == 'unknown' and new in TVET_PATHWAYS
+    return old == 'unknown' and new in STORED_TVET.get(facts.get('pathway_code'), ())
 
 
 def _deg7_classify(u):
@@ -126,8 +203,8 @@ def _deg7_estimate(u):
     """Any estimate field, but ONLY when the same record's pathway moved as R-DEG7 rules."""
     old_p = (u.old_record or {}).get('pathway')
     new_p = (u.new_record or {}).get('pathway')
-    return u.field in ('pathway', 'monthly', 'months', 'total', 'known', 'degree', 'practical', 'variable') \
-        and _deg7_pathway_change(old_p, new_p, u.facts)
+    fields = ('pathway', 'monthly', 'months', 'total', 'known', 'degree', 'practical', 'variable')
+    return u.field in fields and _deg7_pathway_change(old_p, new_p, u.facts)
 
 
 def _deg7_schedule(u):
@@ -141,49 +218,55 @@ def _deg7_schedule(u):
 
 
 def _r56(u):
-    """A results / IC name one look-alike letter off: the red name item becomes amber."""
-    return (_fact_is(u, 'identity', 'academic')
-            and _removed(u) & {'name_mismatch', 'higher_results_name_mismatch'}
-            and _added(u) <= {'name_near', 'higher_results_name_near'}
-            and _status_moves(u, ('review',)) and _evidence_only_lost(u))
+    """A results name one look-alike letter off: the red name item becomes its amber twin ON THE SAME
+    CARD - exactly that one item out and its twin in, nothing else."""
+    if not (_fact_is(u, 'academic') and _status_moves(u, ('review',)) and _evidence_only_lost(u)
+            and _params_kept(u)):
+        return False
+    return any(_removed(u) == {red} and _added(u) == {amber} for red, amber in R56_PAIRS)
 
 
 def _r62(u):
-    return _fact_is(u, 'academic') and _adds_only(u, {'academic_extra_subjects', 'academic_grades_unchecked'},
-                                                  statuses=('review', 'gap'))
+    """Request #62: a typed SPM subject not on the slip; amber (review) only. The SPM card only: both codes
+    are folded into the higher card too, where F1 Q2 / Q3 rule (not encoded)."""
+    return _fact_is(u, 'academic') and _spm_card(u) and _adds_only(u, R62_CODES, statuses=('review',))
 
 
 def _r388(u):
-    return _fact_is(u, 'academic') and _adds_only(u, {'higher_results_not_on_file'})
+    """#388 (2026-11-06): an Academic fact already capped for owed higher results (the note on BOTH
+    sides: v3.1.0 capped at Probable) falls from Probable / Certain to Unsure (`higher_owed.cap`:
+    'recommend'). Nothing added or removed: a new note is not this ruling (B)."""
+    return (_fact_is(u, 'academic') and R388_CODE in _items(u.old, 'unresolved')
+            and _items(u.old, 'unresolved') == _items(u.new, 'unresolved')
+            and _status(u.old) in ('verified', 'review') and _status(u.new) == 'recommend'
+            and _evidence_only_lost(u) and _params_kept(u))
 
 
 def _owed(u):
+    """2026-11-07: a degree-bound student owes higher results (`higher_owed.cap` / `cap_undeclared`): the
+    note is added and Probable / Certain fall to Unsure ('recommend'); a worse band stands."""
     return (_fact_is(u, 'academic') and u.facts.get('degree_bound') is True
-            and _adds_only(u, {'higher_results_not_declared', 'higher_results_undeclared'}))
+            and _adds_only(u, OWED_CODES, statuses=('recommend',)))
 
 
 def _f1_q1(u):
-    return _fact_is(u, 'academic') and _adds_only(u, {'academic_slip_rows_unread', 'academic_grades_unchecked'})
+    """F1 Q1: a short SPM read names what it missed. The SPM card only (Q2 / Q3 rule the higher card)."""
+    return _fact_is(u, 'academic') and _spm_card(u) and _adds_only(u, F1_Q1_CODES)
 
 
 def _f1_q4(u):
     """An STPM +/- difference on an AI read: red grade mismatch becomes amber grade uncertain."""
-    return (_fact_is(u, 'academic') and _removed(u) == {'higher_results_grade_mismatch'}
-            and _added(u) == {'higher_results_grade_uncertain'} and _status_moves(u, ('review',))
-            and _evidence_only_lost(u))
-
-
-def _r67(u):
-    """Request #67: an offer-letter name with a read slip AND extra name parts is no longer a block."""
-    return (_fact_is(u, 'pathway') and _removed(u) == {'offer_letter_mismatch'} and not _added(u)
-            and _status_moves(u, ('review', 'verified')) and _evidence_only_lost(u))
+    red, amber = F1_Q4_PAIR
+    return (_fact_is(u, 'academic') and _removed(u) == {red} and _added(u) == {amber}
+            and _status_moves(u, ('review',)) and _evidence_only_lost(u) and _params_kept(u))
 
 
 V = ('verdict.build_verdict',)
 CATALOGUE = (
     Ruling('R-TD465', 'decisions.md "TD-465 hotfix: an unknown STPM course-start year gives NO automatic '
            'amount - 2026-11-05"; b0bedd549', ('award.proposed_award_amount',), _td465_amount),
-    Ruling('R-TD465-UNKNOWN', 'same; roadmap A1.13 (one course-start read point)',
+    Ruling('R-TD465-UNKNOWN', 'same, with decision 7 (2026-11-07): a degree-bound student under a stale stpm '
+           'code is not sized as STPM, so the unknown-start stop lifts; 43a4b727a',
            ('award.course_start_unknown',), _td465_unknown),
     Ruling('R-DEG7-AWARD', 'decisions.md "A degree student gets a degree funding estimate; every skills / TVET '
            'course is estimated - 2026-11-07" (decision 7); 43a4b727a', ('award.proposed_award_amount',),
@@ -203,9 +286,11 @@ CATALOGUE = (
     Ruling('R-F1-Q1', 'decisions.md "2026-11-13 - F1 slip-check matrix: the owner\'s six rule changes, Q1-Q4, '
            'Q6, Q7"; verdict 2026-11-13.2, .3', V, _f1_q1),
     Ruling('R-F1-Q4', 'same (Q4)', V, _f1_q4),
-    Ruling('R-67', 'decisions.md "2026-11-13 - Request #67: an offer-letter name with a read slip AND extra '
-           'name parts ..."; verdict 2026-11-13.1', V, _r67),
     # Catalogued, NOT encoded (test None): the field shape must be seen on a real record first (R3).
+    # R-67: its code `offer_letter_mismatch` exists only in services/blockers.py; the verdict emits
+    # `offer_name_mismatch`, and widening the test to that would be too broad. Encode it in R3.
+    Ruling('R-67', 'decisions.md "2026-11-13 - Request #67: an offer-letter name with a read slip AND extra '
+           'name parts ..."; verdict 2026-11-13.1', V),
     Ruling('R-3ROUTES', 'decisions.md "2026-11-06 - Three exclusive routes for SPM grades"; 2026-11-06.2, .3',
            ('academic.student_slip_check', 'shortlist.evaluate', 'courses.check_eligibility')),
     Ruling('R-278', 'decisions.md "2026-11-07 - Undeclared higher results compare nothing; typo-tolerant STPM '

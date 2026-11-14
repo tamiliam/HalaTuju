@@ -274,6 +274,17 @@ R2 completes this list by reading every engine commit between the two baselines 
 commits) and every decisions.md entry dated 5 to 12 November. A commit with behaviour change and no owner ruling
 gets no entry: its differences land in B for the owner to see.
 
+**R2 review round (2026-11-14).** `rulings.CATALOGUE` encodes 12 rulings and lists 6 that are not encoded
+(R-67, R-3ROUTES, R-278, R-F1-Q2, R-F1-Q3, R-F1-Q6). These changes narrowed the catalogue:
+- R-67 moved to "listed" until R3.
+- R-TD465-UNKNOWN reads True becomes False, and only for a degree-bound student under a stored `stpm` code.
+- R-62 is amber (`review`) only, and only on the SPM card.
+- R-56 needs the paired near-match code on the same card.
+- R-388 is only Probable becoming Unsure (`recommend`).
+- R-OWED expects `recommend`.
+- R-DEG7's unknown-to-TVET branch is gated on the stored pathway code.
+- Every code a ruling names is registered with the scrubber. A test parses `rulings.py` to keep it that way.
+
 ### 4.4 A second lens: the record against today's rule (money and shortlist only)
 
 Separate from the old/new comparison. For each case: the **stored** `award_amount` against
@@ -376,6 +387,14 @@ No AI call, no paid API.
 - **Ranking** of courses (the Matric and Form 6 ranking fix of 10 November) is out of scope: it changes order, not
   eligibility or money. It can be added as one more adapter if the owner wants it.
 - **Whether a ruling was right.** An A item only shows the code does what the owner ruled.
+- **TVET and university course tables** (added in the R2 review). The course adapter runs the SPM requirements
+  table only, and STPM has its own adapter. A change in the TVET or university requirement tables is not
+  replayed.
+- **Bumiputera-only courses** (added in the R2 review). The Bumiputera answer is False on both sides, because it is course-guide
+  only (owner ruling 2026-10-28). This is a coverage gap, not a pass.
+- **Adapters on real shapes** (added in the R2 review). Only 4 of the 29 adapters have run on an application,
+  and that one came from the test factory. The other 25 are first checked on real record shapes in R3
+  (owner-steps section 7).
 
 ---
 

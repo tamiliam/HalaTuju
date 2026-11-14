@@ -4,10 +4,12 @@
     verdict's four facts in their fixed order;
   * a code that is registered leaves as written; any other text becomes `text_hash` (`h:<12 hex>`), so
     nothing reaches the scrubber as raw text (the scrubber would hash it too, but counts it as a finding);
-  * an amount becomes a 2-decimal string, and only under a key in `scrub.AMOUNT_KEYS`; an int only under
-    `scrub.INT_KEYS`; any other number is hashed like text;
-  * a date becomes `YYYY-MM` under a month key, else a hash; `params` are always one hash (they can hold
-    names);
+  * an amount becomes a 2-decimal string, and only under a key in `scrub.AMOUNT_KEYS`; EVERY int is
+    hashed like text (R2 review: `canon` never passes an int, not even under `scrub.INT_KEYS`, so an
+    8-digit phone in an engine answer cannot leave as written; an adapter that must write an id writes
+    it directly, outside `canon`); any other number is hashed like text;
+  * a date becomes `YYYY-MM` under a month key, else a hash; `params` are hashed, ONE HASH PER ITEM
+    (they can hold names; one hash per fact would hide a params change on another item);
   * a dict key that is not a code is folded into `other_keys` as `[hash(key), value]` pairs.
 """
 import datetime
@@ -40,17 +42,24 @@ def amt(value):
     return None if value is None else scrub.amount(value)
 
 
-def params_hash(items):
-    """One hash of every item's params, in item order (never the params themselves)."""
-    blob = [i.get('params') for i in (items or ()) if isinstance(i, dict)]
-    return scrub.text_hash(json.dumps(blob, sort_keys=True, default=str))
+def item_params(section, items):
+    """``[section, code, hash of that item's params]`` per item (never the params themselves): one hash
+    per ITEM, so a params change on an item a ruling does not touch still shows (`rulings._params_kept`)."""
+    out = []
+    for i in items or ():
+        params = i.get('params') if isinstance(i, dict) else None
+        c = code(i.get('code') if isinstance(i, dict) else i)
+        out.append([section, c, scrub.text_hash(json.dumps(params, sort_keys=True, default=str))])
+    return out
 
 
 def fact(f):
-    """One verdict fact: present, status, sorted unresolved and evidence codes, and a hash of the params."""
+    """One verdict fact: present, status, sorted unresolved and evidence codes, and one params hash per
+    item (`item_params`), sorted."""
     return {'fact': code(f.get('fact')), 'status': code(f.get('status')),
             'unresolved': codes(f.get('unresolved')), 'evidence': codes(f.get('evidence')),
-            'params': params_hash(list(f.get('unresolved') or ()) + list(f.get('evidence') or ()))}
+            'params': sorted(item_params('unresolved', f.get('unresolved'))
+                             + item_params('evidence', f.get('evidence')), key=str)}
 
 
 def canon(value, key=None):
@@ -71,8 +80,8 @@ def canon(value, key=None):
         return sorted((canon(v, key) for v in value), key=str)
     if value is None or isinstance(value, bool):
         return value
-    if isinstance(value, int):
-        return value if key in scrub.INT_KEYS and abs(value) < scrub.MAX_INT else scrub.text_hash(value)
+    if isinstance(value, int):                          # never as written, whatever the key (R2 review)
+        return scrub.text_hash(value)
     if isinstance(value, (float, Decimal)):
         return amt(value) if key in scrub.AMOUNT_KEYS else scrub.text_hash(value)
     if isinstance(value, (datetime.date, datetime.datetime)):

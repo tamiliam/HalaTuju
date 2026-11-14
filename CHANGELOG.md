@@ -928,6 +928,20 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 - Step 3: owner changes Q1-Q4, Q6, Q7 (decisions.md 2026-11-13). Q1 a short SPM read names its unchecked subjects, no tick. Q2 a short STPM read (Pengajian Am not read, or an unrecognised row) names them too. Q3 an entered STPM subject not on a full read is red. Q4 an STPM +/- difference on an AI read is amber (`higher_results_grade_uncertain`, new en/ms/ta copy), red on the exact read. Q6 a higher result in the SPM slot holds no clean card back. Q7 `higher_need` uses `degree_bound`. `higher_owed` docstring corrected (Unsure cap). `VERDICT_ENGINE_VERSION` 2026-11-13.2. Reviewer FAQ and Guide updated.
 - Tests: `test_slip_check_owner_changes.py` (13); three older tests moved to the Q4 rule (`test_stpm_marks`, `test_higher_undeclared_followup`).
 
+### fix: advisor action 5, sprint R2 review round - replay findings closed (2026-11-14)
+- Branch a5; not pushed, not deployed, the replay not run. Every R1 privacy guard is unchanged.
+- `engine_map.py`: the engine names are registered before the freeze. Before this, the scrubber hashed every engine name: no ruling could match, and the report filed every engine under 'other'.
+- `rulings.py`: every code a ruling names is registered (`NAMED_CODES`). The catalogue now has 12 encoded rulings and 6 listed (R-67 moved to listed until R3). Narrowed:
+  - R-388 is Probable becoming Unsure only; R-OWED expects Unsure.
+  - R-TD465-UNKNOWN is True becoming False, degree-bound only.
+  - R-62 is amber, SPM card only.
+  - R-56 needs its paired near-match code.
+  - R-DEG7's unknown-to-TVET branch is gated on the stored pathway code.
+  - Every ruling that adds items needs the other items' params unchanged.
+- `normalise.py`: every int is hashed; params are hashed one per item. `adapters.py`: `template_id`, `doc` and `academic_card` registered; an `academic_card` fact; `_merit` passes 5.0 for a null co-curricular score.
+- Docs: the R3 checklist (owner-steps section 7). Design section 6 gains three limits: the course adapter covers SPM requirements only; there is no Bumiputera answer; 25 of the 29 adapters are not yet checked on real record shapes.
+- Tests: `test_replay_r2.py` (41). It adds an end-to-end run: real engine names go through the child, a side file, `parent.report` and `report_md`. 21 tests fail on the previous head.
+
 ### feat: advisor action 5, sprint R2 - adapters, normaliser, ruling catalogue, comparer and report (2026-11-14)
 - Branch a5; not pushed, not deployed, the replay not run. R1 guards unchanged (salt, frozen registry, INT_KEYS, commit shape, URL check, counts after joins, side files, REPEATABLE READ READ ONLY).
 - `eval/replay/adapters.py`: an adapter per engine (29), cases per family (application, live document by type, payable application x month, profile, sponsor, sponsor x programme); application records carry non-personal `facts` the rulings read. `gaps.generate_interview_gaps` (a Gemini call) is replaced by the hash of its deterministic `_flags_summary` input.

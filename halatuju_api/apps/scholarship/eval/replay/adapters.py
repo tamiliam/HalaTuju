@@ -26,6 +26,9 @@ scrub.register_codes((
     'paid_to_date', 'balance', 'available_total', 'monthly_amount', 'paid_months', 'row', 'template',
     'variant', 'pathway', 'calendar', 'merit', 'reason', 'bucket', 'category', 'value', 'month',
     'class', 'expected', 'unexplained', 'fields',
+    # R2 review: the id keys in scrub.INT_KEYS (unregistered, the scrubber dropped them with their value),
+    # and the Academic card a verdict record sits on (`app_facts`).
+    'template_id', 'doc', 'academic_card', 'higher',
 ))
 
 APPLICATION = 'application'
@@ -93,8 +96,13 @@ def cases_for(kind, *, doc_types=None, months=()):
 # --- facts --------------------------------------------------------------------------------------------
 
 def app_facts(app):
-    """Non-personal case facts, as THIS side reads them (a helper this tree lacks gives None)."""
-    facts = {'pathway_code': N.code(getattr(app, 'chosen_pathway', None)),
+    """Non-personal case facts, as THIS side reads them (a helper this tree lacks gives None).
+
+    `pathway_code` is the STORED code, read straight off the record (trimmed and lower-cased, as every
+    engine reads it), never computed by engine code. `academic_card` is the card the Academic fact sits
+    on: 'higher' when `higher_results.anchors_on_higher` (both trees), else 'spm'."""
+    stored = (getattr(app, 'chosen_pathway', None) or '').strip().lower()
+    facts = {'pathway_code': N.code(stored),
              'stored_award': N.amt(getattr(app, 'award_amount', None)),
              'application_status': N.code(getattr(app, 'status', None))}
     try:
@@ -105,6 +113,12 @@ def app_facts(app):
         facts['degree_bound'] = bool(degree_bound(app))
     from apps.scholarship.award import course_start_unknown
     facts['start_unknown'] = bool(course_start_unknown(app))
+    try:
+        from apps.scholarship.higher_results import anchors_on_higher
+    except ImportError:
+        facts['academic_card'] = None
+    else:
+        facts['academic_card'] = 'higher' if anchors_on_higher(app) else 'spm'
     return facts
 
 
@@ -268,8 +282,12 @@ def _spm_courses(fn, key, r):
 
 
 def _merit(fn, key, r):
+    """As the profile page calls it (`courses.views.profile`): a null co-curricular score is 5.0 (passing
+    None raised TypeError in the engine), and the student's own stream picks."""
     p = _profile(key[0])
-    return {'merit': N.amt(fn({'grades': p.grades or {}, 'coq_score': getattr(p, 'coq_score', None)}))}
+    coq = getattr(p, 'coq_score', None)
+    return {'merit': N.amt(fn({'grades': p.grades or {}, 'coq_score': coq if coq is not None else 5.0,
+                               'stream_subjects': getattr(p, 'stream_subjects', None)}))}
 
 
 def _stpm_courses(fn, key, r):

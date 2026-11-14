@@ -126,3 +126,25 @@ gcloud artifacts docker images delete asia-southeast1-docker.pkg.dev/gen-lang-cl
 
 Then run `halatuju_api/apps/scholarship/eval/replay/owner/replay_ro_drop.sql` in the Supabase SQL editor
 and paste its CHECK answers (both empty) back to the lead.
+
+## 7. R3 checklist (the lead, before the owner reads the report)
+
+Added in the R2 review round. Each item is a known limit of the R2 harness; R3 either closes it or writes
+it into the report as a limit.
+
+- [ ] **Adapters on real record shapes.** Only 4 of the 29 adapters have run on an application, and that
+  application came from the test factory (award.proposed_award_amount, award.course_start_unknown,
+  funding.classify_pathway, verdict.build_verdict). The other **25** have never run against a real record. In
+  the counts-only run (step 5), check that each of the 25 finds its cases. In the full run, check that each
+  writes records with **0 dropped keys** and few C (could not run). An adapter with a C count close to its
+  case count is broken, not the engine.
+- [ ] **Course eligibility covers SPM requirements only.** `courses.check_eligibility` runs the SPM
+  requirements table (`requirements_df`). The TVET and university requirement tables are not replayed.
+  `courses.check_stpm_eligibility` covers STPM separately. A change in the TVET or university tables does not
+  show up in this replay at all. Write that limit into the report.
+- [ ] **No Bumiputera answer.** The course engine's Bumiputera flag is False on BOTH sides (owner ruling
+  2026-10-28: course-guide only). A change to how Bumiputera-only courses are decided is therefore not
+  tested. This is a coverage gap, not a pass.
+- [ ] **Rulings narrowed in R2.** R-67 is listed, not encoded, until R3 rules on its exact shape. Every
+  R-67 difference is B until then. R-DEG7's unknown-to-TVET branch matches only when the stored pathway
+  code maps to that TVET category. A category reached from a programme name alone stays B.
