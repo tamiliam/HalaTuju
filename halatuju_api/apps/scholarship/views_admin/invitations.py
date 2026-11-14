@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from apps.courses import staff_gift
 
+from .. import surface_gates
 from .reviewers import _ReviewersBase
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
@@ -199,7 +200,7 @@ class AdminInvitationsView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+        if not surface_gates.may_edit_invitations(admin):   # M3b G2: invitations.edit
             return self._deny_role()
 
         from .. import invitations as inv_service
@@ -288,7 +289,7 @@ class AdminInvitationCancelView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+        if not surface_gates.may_edit_invitations(admin):   # M3b G2: invitations.edit
             return self._deny_role()
         from .. import invitations as inv_service
         from ..models import Invitation

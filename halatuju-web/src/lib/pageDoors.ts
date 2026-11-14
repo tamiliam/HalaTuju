@@ -39,6 +39,19 @@ export const DOOR_KEYS = {
   development_read: ['development.view'],
   mentoring_read: ['mentoring.view'],
   sources_read: ['sources.view'],
+  // M3b (A11): the organisation admin's page powers. No web reader yet: M3c moves list W onto them.
+  settings: ['settings.edit'],
+  programme_settings: ['programmes.edit'],
+  assign: ['students.edit'],
+  students_write: ['students.edit'],
+  decide: ['students.approve'],
+  sponsor_vet: ['sponsors.approve'],
+  billing_read: ['billing.view'],
+  requests_read: ['requests.view'],
+  requests_write: ['requests.edit'],
+  requests_decide: ['requests.approve'],
+  contracts_read: ['contracts.view'],
+  contracts_write: ['contracts.edit'],
 } as const satisfies Record<string, readonly string[]>
 
 export type DoorName = keyof typeof DOOR_KEYS

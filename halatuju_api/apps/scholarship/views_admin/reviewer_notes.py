@@ -17,7 +17,7 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import reviewer_notes
+from .. import reviewer_notes, surface_gates
 from ..models.reviewer_notes import NOTE_MAX
 from .base import _AdminBase
 
@@ -33,7 +33,7 @@ _MESSAGES = {
 
 
 def _may_write(view, admin):
-    return view.has_role(admin, 'super') or admin.role == 'org_admin'
+    return surface_gates.may_work_students(admin)   # students.edit (M3b G5; a super holds every key)
 
 
 class AdminReviewerNotesView(_AdminBase):

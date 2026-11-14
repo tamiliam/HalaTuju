@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M3b - the organisation admin's page powers read keys; nobody gives a case to themselves (2026-11-14)
+
+Saved to main; waits for a release window. No migration. Fresh review and Opus adversarial review: no findings that block. It needs M3a's 0098 to have run first (they publish together). Brief: `docs/plans/2026-11-14-m3-lead-keys-brief.md`. Release-note draft: `docs/releases/m3b-lead-gates-release-note-draft.md`.
+- api: gates G1-G9 now ask a key instead of the role (`admin.is_super or role == 'org_admin'`). Team, staff, reviewers and invitation targets ask `manage_team`. The other gates ask the A11 doors added to `staff_tables.DOOR_KEYS`, each with its `surface_gates` predicate: `settings` (settings.edit, which also covers the Overview layout), `programme_settings` (programmes.edit), `assign` / `students_write` (students.edit), `decide` (students.approve), `sponsor_vet` (sponsors.approve), `billing_read` (billing.view), `requests_read` / `requests_write` / `requests_decide` (requests.*) and `contracts_read` / `contracts_write` (contracts.*). The 11 keys are still not grantable (M3c), so every page answers exactly as before for every role.
+- api: `programme_overview.SECTIONS_BY_ROLE`: the organisation admin's row is read section by section from `see_all` / `spending` (A7, `KEYED_ROWS`). D7 is unchanged.
+- api (owner E3): nobody, a super included, may give a case to themselves. `assignment.may_hand_to` answers False for caller == target. `assign_reviewer` raises `AssignmentError('self_assign')`. The assign endpoint answers `400 {'code': 'self_assign'}`. The picker still lists the caller's row, with `assignable: false`, because the cockpit names the current holder from it (bug #66). Re-saving the case's current holder is still a no-op. A super, or the other organisation admin, may still give an organisation admin in Reviewers a case.
+- web: `pageDoors.ts` copies the 12 new doors, because the drift test holds it equal to the server. No reader yet.
+- Scanner (A10): 37 GATE-LEFT entries were removed as their gates converted. The 14 that stay are re-labelled with their reason (target rule, TD-613, M4, M3c) and pinned in `GATE_LEFT_PINNED`; the lead-gate count is 0.
+- Tests: `test_m3b_gates_nobody_changes.py`. Each converted gate is compared with the role rule for every row shape, and each pair gate for every caller and target. Keys decide (an OA without a key is refused that gate). E3 is tested at the service, the endpoint and the picker, for a super and an OA. `test_team_tables_t2` is updated for E3.
+
 ### release: 14 Nov 21:00 MYT window - M2d follow-ups and F2 (cross-app doors) published (2026-11-14)
 - live cdb6d54be..902c4ac60. api halatuju-api-01300-7np (F2 packages 1 and 2, import-only), web halatuju-web-01121-x6g (M2d follow-ups E4, E6, E7, E8, E10). Both builds green; api health ok; site 200.
 - No migration. M2d follow-ups: 1st deploy. F2: 1st deploy. Owner phone check for M2d sent with the release report. Window closed.

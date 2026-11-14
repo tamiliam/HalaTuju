@@ -357,12 +357,17 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertFalse(may_assign_to(self.lead, self.lead))
         self.act(self.lead, 'reviewers', self.lead, 'add')
         self.assertIn(self.lead.pk, listed())
-        self.assertTrue(may_assign_to(self.fresh(self.lead), self.fresh(self.lead)))
-        rows = authed_client(self.lead).get('/api/v1/admin/scholarship/assignable-admins/').json()
-        rows = rows.get('admins', rows) if isinstance(rows, dict) else rows
-        mine = [a for a in rows if a.get('id') == self.lead.pk]
-        self.assertEqual(len(mine), 1)
-        self.assertTrue(mine[0].get('assignable'))
+        # M3b E3 (owner 2026-11-14): nobody gives a case to themselves; the other org admin and a super may.
+        self.assertFalse(may_assign_to(self.fresh(self.lead), self.fresh(self.lead)))
+        fellow = make_admin('org_admin', owning_org=self.org)
+        self.assertTrue(may_assign_to(fellow, self.fresh(self.lead)))
+        self.assertTrue(may_assign_to(make_admin('super', super_admin=True), self.fresh(self.lead)))
+        for caller, picks in ((self.lead, False), (fellow, True)):
+            rows = authed_client(caller).get('/api/v1/admin/scholarship/assignable-admins/').json()
+            rows = rows.get('admins', rows) if isinstance(rows, dict) else rows
+            mine = [a for a in rows if a.get('id') == self.lead.pk]
+            self.assertEqual(len(mine), 1)                      # still LISTED (bug #66)
+            self.assertIs(mine[0].get('assignable'), picks)
 
     def test_after_a_self_add_self_qc_still_blocks_their_own_reviewed_case(self):
         self.act(self.lead, 'reviewers', self.lead, 'add')

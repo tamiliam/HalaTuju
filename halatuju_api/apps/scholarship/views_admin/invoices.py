@@ -140,7 +140,7 @@ class _InvoiceBase(_AdminBase):
         if not admin:
             return None, False, self._deny()
         from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
-        is_super = self.has_role(admin, 'super')
+        is_super = admin.is_super
         # Same 404-first gate as the usage screen: every non-super keeps getting the dark 404
         # while `BILLING_USAGE_ENABLED` is off, so the invoices route adds no existence signal.
         if not is_super and not surface_gates.billing_live():

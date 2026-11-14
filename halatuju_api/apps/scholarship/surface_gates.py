@@ -34,15 +34,66 @@ def billing_live():
 
 
 def may_read_invoices(admin):
-    """The invoices screen (`_InvoiceBase._caller`): a super, or an org_admin while billing is live."""
+    """The invoices screen (`_InvoiceBase._caller`): `billing.view` (M3b G7), while billing is live for
+    anyone but a super (a super reads it always). Holders: a super, an organisation admin."""
     if admin is None:
         return False
-    return bool(admin.is_super or (billing_live() and admin.role == 'org_admin'))
+    return bool(admin.is_super or (billing_live() and staff_tables.opens_door(admin, 'billing_read')))
+
+
+def may_read_billing(admin):
+    """The usage and build-hours reads (`AdminBillingUsageView`, `AdminOrgBuildHoursView.get`):
+    `billing.view` (M3b G7). Paying the bill is `billing.edit` (O15), and no endpoint pays yet."""
+    return staff_tables.opens_door(admin, 'billing_read')
 
 
 def may_open_contracts(admin):
-    """The contract templates (`_ContractsBase._contract_admin`): a super or an org_admin."""
-    return admin is not None and (admin.is_super or admin.role == 'org_admin')
+    """READ the contract templates (`_ContractsBase`, a GET): `contracts.view` (M3b G9)."""
+    return staff_tables.opens_door(admin, 'contracts_read')
+
+
+def may_write_contracts(admin):
+    """WRITE a contract template (`_ContractsBase`, any other method): `contracts.edit` (M3b G9).
+    Deploying a template stays super only (OVERRIDE, in its view)."""
+    return staff_tables.opens_door(admin, 'contracts_write')
+
+
+def may_edit_settings(admin):
+    """The organisation's settings, theme and Overview layout: `settings.edit` (M3b G3)."""
+    return staff_tables.opens_door(admin, 'settings')
+
+
+def may_edit_programmes(admin):
+    """A gift's settings (programme configuration, the gift-scoped pages): `programmes.edit` (M3b G4)."""
+    return staff_tables.opens_door(admin, 'programme_settings')
+
+
+def may_edit_invitations(admin):
+    """Send or cancel an invitation (`views_admin/invitations.py`): `invitations.edit` (M3b G2)."""
+    return staff_tables.opens_door(admin, 'invitations')
+
+
+def may_assign(admin):
+    """Give a case to a reviewer (`AdminAssignReviewerView`, `assignment.may_hand_to`): `students.edit`
+    (M3b G5). Never to yourself (E3): that is the hand-off rule's, not this door's."""
+    return staff_tables.opens_door(admin, 'assign')
+
+
+def may_work_students(admin):
+    """Nudge a student, the parent-call filter, correct a guardian, write notes for the reviewer:
+    `students.edit` (M3b G5)."""
+    return staff_tables.opens_door(admin, 'students_write')
+
+
+def may_decide(admin):
+    """Drop a shortlisted applicant, close an application before award: `students.approve` (M3b G5)."""
+    return staff_tables.opens_door(admin, 'decide')
+
+
+def may_vet_sponsors(admin):
+    """Vet a sponsor account, accept a sponsor into a gift, publish sponsor terms: `sponsors.approve`
+    (M3b G6). Vetting a sponsor ACCOUNT reaches every organisation (owner decision D6)."""
+    return staff_tables.opens_door(admin, 'sponsor_vet')
 
 
 def requests_live():
@@ -51,5 +102,17 @@ def requests_live():
 
 
 def requests_role(admin):
-    """The roles that OPEN the Requests area (`_OrgRequestsBase._org_side`): org_admin or super."""
-    return admin is not None and (admin.is_super or admin.role == 'org_admin')
+    """READ the Requests area (`_OrgRequestsBase._org_side`, the pending card, the activity list):
+    `requests.view` (M3b G8). Holders: a super, an organisation admin."""
+    return staff_tables.opens_door(admin, 'requests_read')
+
+
+def may_write_requests(admin):
+    """Raise a request, answer, defer or modify a quote, comment, attach: `requests.edit` (M3b G8)."""
+    return staff_tables.opens_door(admin, 'requests_write')
+
+
+def may_decide_requests(admin):
+    """Approve or decline a quote: `requests.approve` (O15: an organisation admin holds it by role;
+    M3b G8)."""
+    return staff_tables.opens_door(admin, 'requests_decide')

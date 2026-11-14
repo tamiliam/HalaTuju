@@ -179,6 +179,19 @@ DOOR_KEYS = {
     'development_read':   ('development.view',),                # development.may_read_development
     'mentoring_read':     ('mentoring.view',),                  # mentoring.may_read_mentoring (the scholar tab's read)
     'sources_read':       ('sources.view',),                    # _SourcesBase GET; Team -> Admin emails
+    # ── M3b (A11): the organisation admin's page powers, each on its own key (surface_gates). ──
+    'settings':           ('settings.edit',),                   # settings, theme, Overview layout (G3)
+    'programme_settings': ('programmes.edit',),                 # a gift's settings (G4)
+    'assign':             ('students.edit',),                   # give a case to a reviewer, never yourself (G5)
+    'students_write':     ('students.edit',),                   # nudge, parent call, guardian, notes (G5)
+    'decide':             ('students.approve',),                # drop a shortlisted applicant, close (G5)
+    'sponsor_vet':        ('sponsors.approve',),                # vet, accept into a gift, publish terms (G6)
+    'billing_read':       ('billing.view',),                    # usage, build hours, invoices (G7)
+    'requests_read':      ('requests.view',),                   # the Requests area's reads (G8)
+    'requests_write':     ('requests.edit',),                   # raise, answer, defer, modify, comment (G8)
+    'requests_decide':    ('requests.approve',),                # approve / decline a quote (G8, O15)
+    'contracts_read':     ('contracts.view',),                  # contract templates, GET (G9)
+    'contracts_write':    ('contracts.edit',),                  # contract templates, writes (G9)
 }
 
 

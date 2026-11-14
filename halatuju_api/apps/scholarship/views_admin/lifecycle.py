@@ -11,6 +11,7 @@ from .. import reopen as reopen_service
 from .. import disbursement as disbursement_service
 from .. import maintenance as maintenance_service
 from .. import closure as closure_service
+from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
 from ..serializers_admin import AdminApplicationDetailSerializer
 
@@ -160,7 +161,7 @@ class AdminCloseApplicationView(_AdminBase):
             # The role gate is judged by the service on the LOCKED status (review round 2).
             closure_service.close_application(
                 app, closure_reason=request.data.get('closure_reason'), by_email=admin.email,
-                pre_award_allowed=bool(admin.is_super or admin.role == 'org_admin'), actor=admin)
+                pre_award_allowed=surface_gates.may_decide(admin), actor=admin)   # M3b G5: students.approve
         except closure_service.ClosureError as e:
             if e.code == 'forbidden':
                 return self._deny_role()
@@ -371,6 +372,8 @@ class AdminAssignableAdminsView(_AdminBase):
              'other_language': (a.reviewer_profile.spoken_other_language()
                                 if getattr(a, 'reviewer_profile', None) is not None else ''),
              'paused': a.paused_at is not None,
+             # M3b E3: False for the caller's own row (nobody gives a case to themselves). The row
+             # stays LISTED, so a case the caller already holds still names them (bug #66).
              'assignable': may_assign_to(admin, a),
              'gifts': staff_gift.gifts_payload(a),
              'corrections': corrections.get(a.id, 0)}

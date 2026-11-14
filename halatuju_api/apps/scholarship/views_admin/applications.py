@@ -17,6 +17,7 @@ from apps.courses import public as courses_public
 from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
 from .. import staff_activity
+from .. import surface_gates
 from ..document_snapshot import document_snapshot, snapshot_unless_open
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
@@ -138,7 +139,7 @@ class AdminApplicationListView(_AdminBase):
         # call. super + org_admin only (the roles that see the flag and Record call); inside the fence
         # above, because it narrows `qs` itself. Two queries for the whole set, never one per row.
         if request.GET.get('parent_call') == 'needed':
-            if not (admin.is_super or admin.role == 'org_admin'):
+            if not surface_gates.may_work_students(admin):   # students.edit (M3b G5)
                 return self._deny_role()
             from ..parent_call import needing_call_profile_ids
             qs = qs.filter(profile_id__in=needing_call_profile_ids(qs))
@@ -459,7 +460,7 @@ class AdminOrgRejectView(_AdminBase):
             return err
         # Narrow _require_app_write's set (super/org_admin/qc/assignee) to the two org-super
         # roles. Mirrors the vircle_id correction guard in AdminApplicationFlagsView.
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not surface_gates.may_decide(admin):   # students.approve (M3b G5)
             return self._deny_role()
         try:
             org_admin_reject(app, admin, request.data.get('comments'))
@@ -515,7 +516,7 @@ class AdminNudgeStudentView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not surface_gates.may_work_students(admin):   # students.edit (M3b G5)
             return self._deny_role()
         from ..nudge import is_applicable, nudge_state, send_nudge
         if not is_applicable(app):

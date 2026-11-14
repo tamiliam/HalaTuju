@@ -429,6 +429,10 @@ migration `0097_store_admin_v2_keys`. Active team rows: admin 2, finance 1, revi
   - list W, `permissionLayout.ts`, i18n en/ms/ta (with E1 money-seat display, E3 wording, E5 Mentor tab)
   - the Guide and FAQ lines on what an organisation admin does
   - web tests
+  - BEFORE any lead key becomes grantable (M3b adversarial review): fence `sponsors.approve` (sponsor vetting reaches
+    every organisation, D6) to the caller's organisation or keep it for organisation admins; and prove the gift pages
+    that open on `programmes.edit` (`gift_programmes.py`) fence their programme lookup for a non-organisation-admin
+    caller. Test both with a granted team member.
 
 Why not one sprint: about 75 files. Why not two: M3a with M3b is about 50 files, and M3b's adversarial review needs its
 own diff. M3a can ship with no owner-visible change. M3b and M3c each need the owner's phone check.

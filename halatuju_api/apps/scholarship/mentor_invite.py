@@ -108,7 +108,7 @@ def manageable(caller, mentor):
         return False
     if caller.is_super:
         return True
-    return (caller.role == 'org_admin' and caller.owning_organisation_id is not None
+    return (may_invite(caller) and caller.owning_organisation_id is not None   # M3b G2: invitations.edit
             and mentor.organisation_id == caller.owning_organisation_id)
 
 

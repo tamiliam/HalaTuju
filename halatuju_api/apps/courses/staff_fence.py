@@ -63,7 +63,7 @@ def manageable_if_restored(caller, target):
         return False        # not staff: a source user (S1; S2 has its doors), a mentor (S7a, ditto)
     if caller.is_super:
         return True
-    if caller.role == 'org_admin':
+    if caller.has_perm('manage_team'):      # M3b G1: the caller arm reads the key (O15: an OA's by role)
         if target.is_super or target.role not in _ORG_ADMIN_MANAGEABLE_ROLES:
             return False
         return (caller.owning_organisation_id is not None
@@ -82,6 +82,6 @@ def staff_target_readable(caller, target):
         return True
     if caller is None or target is None or target.is_archived or target.is_source_user or target.is_mentor:
         return False
-    return (caller.role == 'org_admin' and not target.is_super and target.role == 'org_admin'
+    return (caller.has_perm('manage_team') and not target.is_super and target.role == 'org_admin'
             and caller.owning_organisation_id is not None
             and target.owning_organisation_id == caller.owning_organisation_id)

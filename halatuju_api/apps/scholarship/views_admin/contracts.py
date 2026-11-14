@@ -126,7 +126,10 @@ class _ContractsBase(_AdminBase):
         if not admin:
             return None, self._deny()
         from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
-        if not surface_gates.may_open_contracts(admin):
+        # M3b G9: a read asks `contracts.view`, every other method `contracts.edit`.
+        may = (surface_gates.may_open_contracts if request.method in ('GET', 'HEAD', 'OPTIONS')
+               else surface_gates.may_write_contracts)
+        if not may(admin):
             return None, self._deny_role()
         return admin, None
 

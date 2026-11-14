@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from ..models import Programme
+from .. import surface_gates
 from .base import _AdminBase
 from .gifts import _programme_row, programme_delete_blocker, programme_delete_blockers
 
@@ -25,13 +26,11 @@ class _ProgrammeScopedBase(_AdminBase):
     programme is and who it asks for is the organisation's own decision, held by its administrator
     (the same rule and the same roles as the Layer 0 configuration screen)."""
 
-    ROLES = ('org_admin',)
-
     def _gate(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.has_role(admin, *self.ROLES):
+        if not surface_gates.may_edit_programmes(admin):   # programmes.edit (M3b G4)
             return None, self._deny_role()
         return admin, None
 

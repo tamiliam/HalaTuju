@@ -107,12 +107,12 @@ def may_act(caller, target, table):
         # tier's seat at Admins is fixed). Never a fellow organisation admin.
         if table != REVIEWERS:
             return False
-        return caller.is_super or (caller.role == sp.LEAD_ROLE and caller.pk == target.pk)
+        return caller.is_super or (caller.has_perm('manage_team') and caller.pk == target.pk)   # M3b G1
     if target.is_mentor:
         # A pure mentor login: the 7a actors (a super, or its own organisation's admin).
         if caller.is_super:
             return True
-        return (caller.role == sp.LEAD_ROLE and caller.owning_organisation_id is not None
+        return (caller.has_perm('manage_team') and caller.owning_organisation_id is not None   # M3b G1
                 and target.owning_organisation_id == caller.owning_organisation_id)
     return _staff_target_manageable(caller, target)
 

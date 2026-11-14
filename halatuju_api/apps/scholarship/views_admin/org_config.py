@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from ..models import Programme, ScholarshipApplication
 
+from .. import surface_gates
 from .base import _AdminBase
 
 
@@ -44,13 +45,11 @@ class AdminOrganisationConfigurationView(_AdminBase):
     writes an `AUDIT org_config_set` line carrying old → new ('default' = no stored value).
     """
 
-    ROLES = ('org_admin',)
-
     def _gate(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.has_role(admin, *self.ROLES):
+        if not surface_gates.may_edit_settings(admin):   # settings.edit (M3b G3)
             return None, self._deny_role()
         return admin, None
 
@@ -231,13 +230,11 @@ class AdminProgrammeConfigurationView(_AdminBase):
     D16): that is inferred from the intake's `min_stpm_pngk` (`results_route.gift_asks_higher`).
     """
 
-    ROLES = ('org_admin',)
-
     def _gate(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.has_role(admin, *self.ROLES):
+        if not surface_gates.may_edit_programmes(admin):   # programmes.edit (M3b G4)
             return None, self._deny_role()
         return admin, None
 

@@ -9024,3 +9024,11 @@ twice. Owner ruling: once a source has joined, its signed-in person IS its conta
 person's once joined, the source's contact fields before that). The owner also wants a source detail page: the
 source's name clickable, more about the organisation, and the students under it. A new page is its own sprint, not
 yet scheduled. *(W - M)*
+
+### [TD-627] Handing a case passes when neither side has an organisation - low
+
+**Raised 2026-11-14 by the M3b adversarial review.** `halatuju_api/apps/scholarship/services/assignment.py`
+`may_hand_to` ends with `target.owning_organisation_id == caller.owning_organisation_id`, so a non-super caller with no
+organisation may hand a case to a reviewer who also has none (`None == None`). The role rule before M3b had the same
+gap, and `_scoped_application` probably refuses first; no such row is known in production. Fix: also require
+`caller.owning_organisation_id is not None`, as `manageable_if_restored` already does, with a test. *(A - S)*

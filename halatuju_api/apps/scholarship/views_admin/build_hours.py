@@ -11,6 +11,7 @@ every importer are unchanged.
 from rest_framework import status
 from rest_framework.response import Response
 
+from .. import surface_gates
 from .base import _AdminBase, _MONTH_RE, _org_or_none
 
 
@@ -29,8 +30,8 @@ class AdminOrgBuildHoursView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        is_super = self.has_role(admin, 'super')
-        if not (is_super or admin.role == 'org_admin'):
+        is_super = admin.is_super
+        if not surface_gates.may_read_billing(admin):   # billing.view (M3b G7; a super holds every key)
             return self._deny_role()
         if not is_super and admin.owning_organisation_id != int(org_id):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)

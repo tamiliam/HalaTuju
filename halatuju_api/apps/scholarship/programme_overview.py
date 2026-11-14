@@ -54,7 +54,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import Q
 from django.utils import timezone
 
-from . import payments, spend_report
+from . import payments, spend_report, surface_gates
 from .spending_import import TX_SPEND
 
 _ZERO = Decimal('0.00')
@@ -83,13 +83,14 @@ SECTIONS_BY_ROLE = {
     'qc': ('qc',),
     'reviewer': ('mine',),
 }
+#: A7 (M3b): the organisation admin's row is read from its keys, section by section (0098 gives it both).
+KEYED_ROWS = {'org_admin': {'funnel': 'see_all', 'attention': 'see_all', 'applications_series': 'see_all',
+                            'money': 'spending', 'money_series': 'spending'}}
 
 
 def may_customise(admin):
-    """Who edits the organisation's layout: `org_admin`, and super (who passes every role
-    check — `PartnerAdminMixin.has_role`'s rule, spelled out here so this module stays free of
-    the view layer). The same answer `AdminOverviewLayoutView.ROLES` gives to a PUT."""
-    return bool(admin) and (admin.is_super or admin.role == 'org_admin')
+    """Who edits the organisation's layout: `settings.edit` (M3b G3), the door its PUT asks too."""
+    return surface_gates.may_edit_settings(admin)
 
 
 def sections_for(admin):
@@ -104,7 +105,8 @@ def sections_for(admin):
     if admin is None:
         return ()
     role = 'super' if getattr(admin, 'is_super', False) else getattr(admin, 'role', '')
-    return SECTIONS_BY_ROLE.get(role, ())
+    keys = KEYED_ROWS.get(role)
+    return tuple(x for x in SECTIONS_BY_ROLE.get(role, ()) if keys is None or admin.has_perm(keys[x]))
 
 
 # ── the fence ─────────────────────────────────────────────────────────────────────────────────

@@ -257,7 +257,8 @@ class AdminSponsorReviewView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        from .. import surface_gates
+        if not surface_gates.may_vet_sponsors(admin):   # sponsors.approve (M3b G6)
             return self._deny_role()
         sponsor = Sponsor.objects.filter(pk=pk).first()
         if sponsor is None:

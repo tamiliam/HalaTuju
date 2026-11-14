@@ -83,13 +83,20 @@ def may_assign_to(caller, target):
 
 def may_hand_to(caller, target):
     """`may_assign_to` less the sign-in test (M2d A1): `assign_reviewer` asks the sign-in test on its
-    own, AFTER revoked and paused, so the refusal it gives names the bigger fact first."""
+    own, AFTER revoked and paused, so the refusal it gives names the bigger fact first.
+
+    M3b E3 (owner 2026-11-14): NOBODY hands a case to themselves, a super included; another person
+    still may (a super or the other org admin can give one to an org admin in Reviewers).
+    M3b G5: the org admin's arm reads `students.edit` (the `assign` door), no longer the role."""
     from apps.courses import staff_tables
+    from .. import surface_gates
+    if caller.pk == target.pk:
+        return False
     if not (staff_tables.in_reviewers(target) and is_review_target(target)):
         return False
     if caller.is_super:
         return True
-    return (caller.role == 'org_admin'
+    return (surface_gates.may_assign(caller)
             and target.owning_organisation_id == caller.owning_organisation_id)
 
 
@@ -284,6 +291,8 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
             # since the endpoint asked. T1-d: re-picking the CURRENT holder is the no-op below, never
             # a refusal, so a case an admin held before T1 keeps its holder.
             holder = reviewer.pk == application.assigned_to_id
+            if by_admin is not None and not holder and reviewer.pk == by_admin.pk:
+                raise AssignmentError('self_assign')   # M3b E3: nobody gives a case to themselves
             if by_admin is not None and not holder and not may_hand_to(by_admin, reviewer):
                 raise AssignmentError('not_reviewer')
         if reviewer is not None and not _can_review(reviewer):

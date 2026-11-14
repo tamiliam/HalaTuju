@@ -66,7 +66,7 @@ def staff_invite_org(admin):
 
     An org_admin: their own organisation. A super: BrightPath (org #1; a per-org staff picker is
     future work). A partner or a new organisation admin is bound elsewhere and never comes here."""
-    if admin.role != 'org_admin' and admin.is_super:
+    if admin.is_super:      # M3b: the role arm was dead (a super's role is 'super', never 'org_admin')
         PartnerOrganisation = apps.get_model('courses', 'PartnerOrganisation')
         return PartnerOrganisation.objects.filter(code='brightpath').first()
     return admin.owning_organisation

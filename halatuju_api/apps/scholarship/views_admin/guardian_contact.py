@@ -14,7 +14,7 @@ Part of the `views_admin` package: re-exported from `views_admin/__init__.py`.
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import guardian_contact, parent_call
+from .. import guardian_contact, parent_call, surface_gates
 from .base import _AdminBase
 
 
@@ -30,7 +30,7 @@ def _guardian_gate(view, request, pk):
     app, admin, err = view._require_app_write(request, pk)
     if err:
         return None, None, err
-    if not (admin.is_super or admin.role == 'org_admin'):
+    if not surface_gates.may_work_students(admin):   # students.edit (M3b G5)
         return None, None, view._deny_role()
     if app.profile is None:
         return None, None, Response({'error': 'no_profile', 'code': 'no_profile'},

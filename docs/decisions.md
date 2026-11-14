@@ -1,5 +1,18 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-14 — Sprint M3b: four builder calls the brief left open (builder; for the architect to confirm)
+
+The brief (`docs/plans/2026-11-14-m3-lead-keys-brief.md`) covers G1-G9, A7, A10, A11 and E3. A1-A12 hold as written. These four points were not settled in the brief:
+
+1. **The picker keeps the caller's own row and marks it `assignable: false`.** The brief says the caller is not offered. The row stays because the cockpit names the current holder from this list (bug #66), and a case the caller already holds would otherwise show no holder. Re-saving the current holder is still a no-op (T1-d), so E3 refuses only a NEW self-assignment.
+2. **The refusal code is `self_assign`**, at the service (`AssignmentError('self_assign')`) and the endpoint (`400`, message "You cannot give a case to yourself."). The web has no copy for it yet and shows its generic assign error. M3c adds the i18n key along with the E3 wording.
+3. **The Requests Create (list POST) also asks `requests.edit`**, after `_org_side` (`requests.view`). Today both hold for exactly the same people. It stops a future OA with view-only Requests from raising a request.
+4. **`letters._senior` stays GATE-LEFT, labelled M3c.** Its door would be `scholars.approve` (D5). That key is not in `CATALOGUE_V2` (see the M3a deviations) and needs a data step, so converting it in M3b would need a migration.
+
+**Architect (2026-11-14): 1-4 confirmed.** A fresh review and an Opus adversarial review found no door opened or closed. Two notes:
+- E3 compares accounts, not people. A second account of the same person (a super inviting another address of their own as a reviewer) is not caught; email and login are unique per account, so the server cannot tell. Policy: one person, one staff account. Two organisation admins of one organisation may still give each other cases (by design).
+- Before M3c lets a team member be GRANTED a lead key, fence two doors: `sponsors.approve` opens sponsor vetting, which reaches every organisation (D6); and the gift pages open on `programmes.edit` alone, so check their programme lookup is fenced to the caller's organisation for a caller who is not an organisation admin. Carried in the brief's M3c list.
+
 ## 2026-11-14 — Post-audit work first; the feature freeze lifts on Wed 18 Nov; F2b stage 3 dropped; Gemini Phase 2 is one switch after a paid eval (owner ruling)
 
 The owner treats new features as frozen until the post-audit work is done; until then other sessions do bug fixes only. The post-audit work takes precedence over all other HalaTuju work, including builder slots (at most 2 at once). Order: F2b stage 1 (`xapp` 49 to about 30) on 15 Nov; F2b stage 2 (under 25) and Gemini Phase 2 on 16 Nov; the `_gemini_generate` duplicate fix right after Gemini Phase 2 (moved up from 4 Dec); publishes by 18 Nov. **F2b stage 3 (`xapp` to 10, the model imports) is dropped:** `xapp` already passes the gate, and the last edges are model imports with little real benefit. **Gemini Phase 2:** a paid eval of `gemini-3.8-flash` on the saved document fixtures first (owner yes given; the cost is counted and reported before the run), then every remaining `gemini-2.5-flash` job moves in one build, with 2.5 Flash kept as the fallback; the document readers get a `MODEL_VERSION` bump, an Opus review and the owner's phone check. **The freeze lifts on 18 Nov** once that code is live; the 27 Nov `fix%` reading and the 27-28 Nov A5 R3 replay are checks, not gates. Supersedes the "freeze lifted 2026-11-12" wording of the audit close, which the owner did not apply in practice.

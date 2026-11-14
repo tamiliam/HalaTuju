@@ -142,7 +142,7 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
 
     def delete(self, request, admin_id):
         admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role == 'org_admin'):
+        if not admin or not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return Response({'error': 'Super admin access required'}, status=403)
         staff_footprint, staff_lifecycle = scholarship_staff()
 
@@ -211,7 +211,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # Who may invite: the PLATFORM super (any staff role incl. a new org admin), OR an
         # ORGANISATION admin (org_admin) delegating programme staff within their OWN org.
         caller_super = admin.is_super
-        caller_org_admin = (admin.role == 'org_admin')
+        caller_org_admin = not caller_super and admin.has_perm('manage_team')   # M3b G1
         if not (caller_super or caller_org_admin):
             return Response({'error': 'Super admin access required'}, status=403)
 
@@ -377,7 +377,7 @@ class AdminResendView(PartnerAdminMixin, APIView):
 
     def post(self, request, admin_id):
         admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role == 'org_admin'):
+        if not admin or not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return Response({'error': 'Super admin access required'}, status=403)
 
         target = PartnerAdmin.objects.filter(id=admin_id).first()
@@ -532,7 +532,7 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
 
     def patch(self, request, admin_id):
         admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role == 'org_admin'):
+        if not admin or not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return Response({'error': 'Super admin access required'}, status=403)
         if str(admin_id) == str(admin.pk):   # M1a (O10, owner): no self-suspend
             return Response({'error': 'You cannot suspend your own account.', 'code': 'self'}, status=403)

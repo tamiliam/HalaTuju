@@ -10,6 +10,7 @@ Part of the `views_admin` package. Every name below is re-exported from
 from rest_framework.response import Response
 
 from .. import sponsor_terms as sponsor_terms_mod
+from .. import surface_gates
 from ..models import Sponsor
 from apps.courses import staff_tables
 
@@ -247,7 +248,7 @@ class AdminSponsorTermsPublishView(_SponsorTermsBase):
         try:
             # super OR org_admin. A plain `admin` may AUTHOR but not make it binding: they are
             # staff doing the work, not the people answerable for what a donor is bound by.
-            may_publish = admin.is_super or admin.role == 'org_admin'
+            may_publish = surface_gates.may_vet_sponsors(admin)   # sponsors.approve (M3b G6)
             sponsor_terms_mod.publish(terms, by_email=admin.email or '', allowed=may_publish)
         except sponsor_terms_mod.SponsorTermsError as exc:
             return _terms_err(exc)

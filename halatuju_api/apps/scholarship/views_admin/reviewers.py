@@ -416,7 +416,7 @@ class AdminReviewerPauseView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+        if not admin.has_perm('manage_team'):   # M3b G1 (who gets work, D4)
             return self._deny_role()
         # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
         # ⚠ NO `include_revoked` HERE, deliberately: pausing a closed account is meaningless, so a
@@ -457,7 +457,7 @@ class AdminReviewerProgrammeView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+        if not admin.has_perm('manage_team'):   # M3b G1 (who gets work, D4)
             return self._deny_role()
         # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
         # ⚠ A non-super with NO organisation makes `_side` return org_id None, which `_reviewers` reads

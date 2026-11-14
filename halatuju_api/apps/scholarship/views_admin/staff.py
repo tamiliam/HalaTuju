@@ -40,7 +40,7 @@ class AdminStaffRoleView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return self._deny_role()
         target = PartnerAdmin.objects.filter(pk=admin_id).first()
         if target is None or not _staff_target_manageable(admin, target):
@@ -104,7 +104,7 @@ class AdminStaffPermissionsView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return None, None, self._deny_role()
         # T3: the profile and the mentor link ride on this query (the person page's `person` block).
         target = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
@@ -244,7 +244,7 @@ class AdminTeamTableView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return self._deny_role()
         body = request.data if isinstance(request.data, dict) else None
         action = body.get('action') if body else None
@@ -294,7 +294,7 @@ class AdminTeamCandidatesView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return self._deny_role()
         if table not in sta.TABLES:
             return Response({'error': 'Not found', 'code': 'not_found'}, status=status.HTTP_404_NOT_FOUND)

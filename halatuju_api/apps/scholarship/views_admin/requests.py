@@ -83,13 +83,17 @@ class _OrgRequestsBase(_AdminBase):
             return None, self._deny_role()
         return admin, None
 
-    def _requestee(self, request, pk, *, allow_super=False):
+    def _requestee(self, request, pk, *, allow_super=False, decide=False):
         """A requestee WRITE (answer/defer/modify → org_admin only; approve/decline → +super).
+        M3b G8: the key, not the role: `requests.approve` when `decide` (approve, decline), else
+        `requests.edit`. A super holds every key, so `allow_super` is what still keeps one out.
         Returns (admin, req, None) or (None, None, err)."""
+        from .. import surface_gates
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not ((admin.role == 'org_admin') or (allow_super and admin.is_super)):
+        door = surface_gates.may_decide_requests if decide else surface_gates.may_write_requests
+        if not door(admin) or (admin.is_super and not allow_super):
             return None, None, self._deny_role()
         req = self._org_request_for(admin, pk)
         if req is None:
@@ -168,7 +172,9 @@ class AdminOrgRequestListView(_OrgRequestsBase):
         admin, err = self._org_side(request)
         if err:
             return err
-        from .. import org_requests
+        from .. import org_requests, surface_gates
+        if not surface_gates.may_write_requests(admin):   # requests.edit (M3b G8): raising one is a write
+            return self._deny_role()
         # Whose org the request belongs to: the org_admin's own; a super must name organisation_id.
         if admin.is_super:
             org_id = request.data.get('organisation_id')
@@ -291,7 +297,7 @@ class AdminOrgRequestApproveView(_OrgRequestsBase):
         gate = self._flag()
         if gate:
             return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
+        admin, req, err = self._requestee(request, pk, allow_super=True, decide=True)
         if err:
             return err
         from .. import org_requests
@@ -355,7 +361,7 @@ class AdminOrgRequestDeclineView(_OrgRequestsBase):
         gate = self._flag()
         if gate:
             return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
+        admin, req, err = self._requestee(request, pk, allow_super=True, decide=True)
         if err:
             return err
         from .. import org_requests

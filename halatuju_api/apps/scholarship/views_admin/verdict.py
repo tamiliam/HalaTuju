@@ -16,6 +16,7 @@ from .. import pool
 from .. import profile_finalise
 from .. import reopen as reopen_service
 from .. import staff_activity
+from .. import surface_gates
 from ..interview_completeness import decision_gate_applies, decision_refusal
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication
@@ -513,7 +514,7 @@ class AdminAssignReviewerView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
+        if not surface_gates.may_assign(admin):   # students.edit (M3b G5; a super holds every key)
             return self._deny_role()
         app, _err = self._scoped_application(request, pk)
         if _err:
@@ -526,7 +527,11 @@ class AdminAssignReviewerView(_AdminBase):
             if reviewer is None:
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if (not self.has_role(admin, 'super') and reviewer.pk != app.assigned_to_id
+            if reviewer.pk == admin.pk and reviewer.pk != app.assigned_to_id:
+                # M3b E3 (owner 2026-11-14): nobody, a super included, gives a case to themselves.
+                return Response({'error': 'You cannot give a case to yourself.', 'code': 'self_assign'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if (not admin.is_super and reviewer.pk != app.assigned_to_id
                     and not may_hand_to(admin, reviewer)):
                 # An org_admin assigns only their OWN org's Reviewers (T1, 2026-11-09; #39 S3 asked
                 # for `review`) — never a super, a cross-org target, or someone outside Reviewers.

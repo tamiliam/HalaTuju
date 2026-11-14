@@ -9,6 +9,7 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
+from .. import surface_gates
 from .base import _AdminBase
 
 
@@ -120,13 +121,11 @@ class AdminOverviewLayoutView(_AdminBase):
     tenancy: org-fenced on the derived organisation. Classified in test_org_fence.py.
     """
 
-    ROLES = ('org_admin',)
-
     def _gate(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.has_role(admin, *self.ROLES):
+        if not surface_gates.may_edit_settings(admin):   # settings.edit (M3b G3)
             return None, self._deny_role()
         return admin, None
 

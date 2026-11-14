@@ -565,6 +565,13 @@ class DoorKeysTable(TestCase):
             'announcements_read': ('announcements.view',), 'surveys_read': ('surveys.view',),
             'development_read': ('development.view',), 'mentoring_read': ('mentoring.view',),
             'sources_read': ('sources.view',),
+            # M3b (A11): the organisation admin's page powers, each on its own key.
+            'settings': ('settings.edit',), 'programme_settings': ('programmes.edit',),
+            'assign': ('students.edit',), 'students_write': ('students.edit',),
+            'decide': ('students.approve',), 'sponsor_vet': ('sponsors.approve',),
+            'billing_read': ('billing.view',), 'requests_read': ('requests.view',),
+            'requests_write': ('requests.edit',), 'requests_decide': ('requests.approve',),
+            'contracts_read': ('contracts.view',), 'contracts_write': ('contracts.edit',),
         })
 
     def test_an_unknown_door_raises(self):
