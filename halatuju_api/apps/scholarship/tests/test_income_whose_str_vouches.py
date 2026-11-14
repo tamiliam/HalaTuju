@@ -1222,7 +1222,7 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
         from django.core import mail
         from apps.scholarship.check2_queries import sync_check2_queries
         from apps.scholarship.emails.student_queries import (QUERY_RAISED_BODIES,
-                                                             QUERY_RAISED_SUBJECTS)
+                                                             QUERY_RAISED_SUBJECTS, count_words)
         from apps.scholarship.services import send_due_query_emails
         app = self._already_asked('salary')
         asked = app.resolution_items.get(code=_HU_STR)
@@ -1245,9 +1245,12 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
              + items.filter(source='system', code__in=STUDENT_DOC_REQUEST_CODES).count()
              + items.filter(source='officer').exclude(kind='human').count())
         self.assertEqual(sent.subject, QUERY_RAISED_SUBJECTS['en'].format(programme=app.cohort.name))
+        # SUP1: the body now lists the items by title; the count it states is still the sweep's.
+        listed = ''.join(f'{ln}\n' for ln in sent.body.splitlines() if ln.startswith('- ')) + '\n'
+        self.assertEqual(listed.count('- '), n)
         self.assertEqual(sent.body, QUERY_RAISED_BODIES['en'].format(
-            name=app.profile.name, programme=app.cohort.name, n=n,
-            link=sent.body.split('here: ')[1].split('\n')[0]))
+            name=app.profile.name, programme=app.cohort.name, n=n, items=listed,
+            link=sent.body.split('here: ')[1].split('\n')[0], **count_words(n)))
 
     def test_str_route_the_clarify_is_swapped_and_no_letter_is_asked(self):
         from apps.scholarship.check2_queries import sync_check2_queries

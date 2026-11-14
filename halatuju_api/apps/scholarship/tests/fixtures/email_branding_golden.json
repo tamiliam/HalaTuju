@@ -625,51 +625,63 @@
   },
   "query_raised.en": {
     "attachments": [],
-    "body": "Dear Aisyah,\n\nThank you for submitting your BrightPath Bursary application. We are reviewing it and need a little more from you — 2 item(s) (a few questions and/or documents) are waiting in your Action Centre. Please sign in and respond to each one here: http://localhost:3000/scholarship/application\n\nIt only takes a few minutes, and it helps us put your case forward well.\n\nThank you.",
+    "body": "Dear Aisyah,\n\nThank you for submitting your BrightPath Bursary application. We are reviewing it and need a little more from you. These 2 items are waiting in your Action Centre:\n\nPlease sign in and respond to each one here: http://localhost:3000/scholarship/application\n\nYour Action Centre always shows the latest list, so it is the best place to check what is still needed.\n\nIt only takes a few minutes, and it helps us put your case forward well.\n\nThank you.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "A few things we need for your BrightPath Bursary application"
   },
   "query_raised.ms": {
     "attachments": [],
-    "body": "Salam Aisyah,\n\nTerima kasih kerana menghantar permohonan BrightPath Bursary anda. Kami sedang menyemaknya dan memerlukan sedikit lagi daripada anda — 2 perkara (beberapa soalan dan/atau dokumen) menunggu di Pusat Tindakan anda. Sila log masuk dan lengkapkan setiap satu di sini: http://localhost:3000/scholarship/application\n\nIa hanya mengambil beberapa minit, dan ia membantu kami mengetengahkan kes anda dengan baik.\n\nTerima kasih.",
+    "body": "Salam Aisyah,\n\nTerima kasih kerana menghantar permohonan BrightPath Bursary anda. Kami sedang menyemaknya dan memerlukan sedikit lagi daripada anda. 2 perkara berikut menunggu di Pusat Tindakan anda:\n\nSila log masuk dan lengkapkan setiap satu di sini: http://localhost:3000/scholarship/application\n\nPusat Tindakan anda sentiasa menunjukkan senarai terkini, jadi itulah tempat terbaik untuk menyemak apa yang masih diperlukan.\n\nIa hanya mengambil beberapa minit, dan ia membantu kami mengetengahkan kes anda dengan baik.\n\nTerima kasih.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "Beberapa perkara yang kami perlukan untuk permohonan BrightPath Bursary anda"
   },
   "query_raised.ta": {
     "attachments": [],
-    "body": "அன்புள்ள Aisyah,\n\nஉங்கள் BrightPath Bursary விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. நாங்கள் அதை மதிப்பாய்வு செய்து வருகிறோம்; உங்களிடமிருந்து இன்னும் சிறிது தேவை — 2 விவரம்(கள்) (சில கேள்விகள் மற்றும்/அல்லது ஆவணங்கள்) உங்கள் செயல் மையத்தில் காத்திருக்கின்றன. தயவுசெய்து உள்நுழைந்து ஒவ்வொன்றுக்கும் இங்கே பதிலளிக்கவும்: http://localhost:3000/scholarship/application\n\nஇதற்கு சில நிமிடங்களே ஆகும்; இது உங்கள் வழக்கை நன்கு முன்வைக்க உதவும்.\n\nநன்றி.",
+    "body": "அன்புள்ள Aisyah,\n\nஉங்கள் BrightPath Bursary விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. நாங்கள் அதை மதிப்பாய்வு செய்து வருகிறோம்; உங்களிடமிருந்து இன்னும் சிறிது தேவை. பின்வரும் 2 விவரங்கள் உங்கள் செயல் மையத்தில் காத்திருக்கின்றன:\n\nதயவுசெய்து உள்நுழைந்து ஒவ்வொன்றுக்கும் இங்கே பதிலளிக்கவும்: http://localhost:3000/scholarship/application\n\nஉங்கள் செயல் மையம் எப்போதும் அண்மைய பட்டியலைக் காட்டும்; ஆகவே இன்னும் என்ன தேவை என்பதை அங்கே பார்க்கலாம்.\n\nஇதற்குச் சில நிமிடங்களே ஆகும்; இது உங்கள் வழக்கை நன்கு முன்வைக்க உதவும்.\n\nநன்றி.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "உங்கள் BrightPath Bursary விண்ணப்பத்திற்கு எங்களுக்குத் தேவையான சில விவரங்கள்"
   },
   "query_reminder.en": {
     "attachments": [],
-    "body": "Dear Aisyah,\n\nThere are 2 item(s) waiting in your Action Centre — a few questions and/or documents — to help us complete your BrightPath Bursary profile. Please sign in and respond to each one within about 3 day(s): http://localhost:3000/scholarship/application\n\nIf we do not hear back in time we will proceed with what we have, so it is best to respond.\n\nThank you.",
+    "body": "Dear Aisyah,\n\nA gentle reminder: 2 items are still waiting in your Action Centre to help us complete your BrightPath Bursary profile:\n\nPlease sign in and respond to each one within about 3 days: http://localhost:3000/scholarship/application\n\nYour Action Centre always shows the latest list, so it is the best place to check what is still needed.\n\nIf we do not hear back in time, we may have to review your application with the information we already have, so it helps to reply soon.\n\nThank you.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
-    "subject": "A few things we need for your BrightPath Bursary application"
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
+    "subject": "A reminder: a few things we still need for your BrightPath Bursary application"
   },
   "query_reminder.ms": {
     "attachments": [],
-    "body": "Salam Aisyah,\n\nTerdapat 2 perkara menunggu di Pusat Tindakan anda — beberapa soalan dan/atau dokumen — untuk membantu kami melengkapkan profil BrightPath Bursary anda. Sila log masuk dan lengkapkan setiap satu dalam kira-kira 3 hari: http://localhost:3000/scholarship/application\n\nJika kami tidak menerima maklum balas tepat pada masanya, kami akan teruskan dengan maklumat sedia ada, jadi eloklah membalas.\n\nTerima kasih.",
+    "body": "Salam Aisyah,\n\nSekadar peringatan: 2 perkara masih menunggu di Pusat Tindakan anda untuk membantu kami melengkapkan profil BrightPath Bursary anda:\n\nSila log masuk dan lengkapkan setiap satu dalam kira-kira 3 hari: http://localhost:3000/scholarship/application\n\nPusat Tindakan anda sentiasa menunjukkan senarai terkini, jadi itulah tempat terbaik untuk menyemak apa yang masih diperlukan.\n\nJika kami tidak menerima maklum balas tepat pada masanya, kami mungkin terpaksa menyemak permohonan anda dengan maklumat yang sedia ada, jadi eloklah membalas segera.\n\nTerima kasih.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
-    "subject": "Beberapa perkara yang kami perlukan untuk permohonan BrightPath Bursary anda"
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
+    "subject": "Peringatan: beberapa perkara yang masih kami perlukan untuk permohonan BrightPath Bursary anda"
   },
   "query_reminder.ta": {
     "attachments": [],
-    "body": "அன்புள்ள Aisyah,\n\nஉங்கள் BrightPath Bursary விவரக்குறிப்பை முழுமைப்படுத்த உதவ உங்கள் செயல் மையத்தில் 2 விவரம்(கள்) — சில கேள்விகள் மற்றும்/அல்லது ஆவணங்கள் — காத்திருக்கின்றன. தயவுசெய்து உள்நுழைந்து சுமார் 3 நாட்களுக்குள் ஒவ்வொன்றுக்கும் பதிலளிக்கவும்: http://localhost:3000/scholarship/application\n\nசரியான நேரத்தில் பதில் கிடைக்காவிட்டால், எங்களிடம் உள்ள தகவலுடன் தொடர்வோம், எனவே பதிலளிப்பது நல்லது.\n\nநன்றி.",
+    "body": "அன்புள்ள Aisyah,\n\nசிறிய நினைவூட்டல்: உங்கள் BrightPath Bursary விவரக்குறிப்பை முழுமைப்படுத்த உதவ, பின்வரும் 2 விவரங்கள் உங்கள் செயல் மையத்தில் இன்னும் காத்திருக்கின்றன:\n\nதயவுசெய்து உள்நுழைந்து சுமார் 3 நாட்களுக்குள் ஒவ்வொன்றுக்கும் பதிலளிக்கவும்: http://localhost:3000/scholarship/application\n\nஉங்கள் செயல் மையம் எப்போதும் அண்மைய பட்டியலைக் காட்டும்; ஆகவே இன்னும் என்ன தேவை என்பதை அங்கே பார்க்கலாம்.\n\nசரியான நேரத்தில் பதில் கிடைக்காவிட்டால், எங்களிடம் ஏற்கெனவே உள்ள தகவலைக் கொண்டே உங்கள் விண்ணப்பத்தை மதிப்பாய்வு செய்ய வேண்டியிருக்கலாம்; எனவே விரைவில் பதிலளிப்பது நல்லது.\n\nநன்றி.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
-    "subject": "உங்கள் BrightPath Bursary விண்ணப்பத்திற்கு எங்களுக்குத் தேவையான சில விவரங்கள்"
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
+    "subject": "நினைவூட்டல்: உங்கள் BrightPath Bursary விண்ணப்பத்திற்கு இன்னும் எங்களுக்குத் தேவையான சில விவரங்கள்"
   },
   "reminder_s1.en": {
     "attachments": [],
@@ -772,7 +784,9 @@
     "body": "Dear Aisyah,\n\nWe are reviewing your BrightPath Bursary application and need a little more from you:\n\nPlease upload your latest results slip.\n\nPlease sign in and add it to your application here: http://localhost:3000/scholarship/application\n\nThank you.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "Action needed on your BrightPath Bursary application"
   },
   "request_info.ms": {
@@ -780,7 +794,9 @@
     "body": "Salam Aisyah,\n\nKami sedang menyemak permohonan BrightPath Bursary anda dan memerlukan sedikit maklumat tambahan:\n\nPlease upload your latest results slip.\n\nSila log masuk dan tambahkannya pada permohonan anda di sini: http://localhost:3000/scholarship/application\n\nTerima kasih.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "Tindakan diperlukan untuk permohonan BrightPath Bursary anda"
   },
   "request_info.ta": {
@@ -788,7 +804,9 @@
     "body": "அன்புள்ள Aisyah,\n\nஉங்கள் BrightPath Bursary விண்ணப்பத்தை மதிப்பாய்வு செய்கிறோம், சிறிது கூடுதல் தகவல் தேவை:\n\nPlease upload your latest results slip.\n\nதயவுசெய்து உள்நுழைந்து உங்கள் விண்ணப்பத்தில் இதைச் சேர்க்கவும்: http://localhost:3000/scholarship/application\n\nநன்றி.",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
-    "reply_to": [],
+    "reply_to": [
+      "help@halatuju.xyz"
+    ],
     "subject": "உங்கள் BrightPath Bursary விண்ணப்பத்திற்கு நடவடிக்கை தேவை"
   },
   "reviewer_alternatives": {

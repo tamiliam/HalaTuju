@@ -4,12 +4,16 @@ The delayed "a query was raised" email and its reminders.
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+import logging
+
 from django.utils import timezone
 
 from .. import student_email_catalogue, usage as _usage
 from ..models import ScholarshipApplication
 from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_reminder_is_due, query_sla
+from .query_items import open_items_for_email
 
+logger = logging.getLogger('apps.scholarship.services')   # the package name (audit rule)
 
 # How long after submission to hold the "we have a few questions" email, so it reads as
 # a human review rather than an instant bot reply (the owner's call). PLATFORM default —
@@ -89,29 +93,25 @@ def send_due_query_emails(now=None):
                   profile_completed_at__isnull=False,
                   query_raised_notified_at__isnull=True)
           .select_related('cohort', 'profile'))
-    from ..resolution import STUDENT_DOC_REQUEST_CODES
     for app in qs:
         # Every open thing the student must act on counts — the Check-2 clarify questions +
         # the one-tap pathway confirm (sync_check2_queries) AND the "review assistant"
         # missing-compulsory-document requests (a `doc` system gap, created at submit by
         # confirm_profile). So a student whose only open item is "upload your birth
         # certificate" is still told to check their Action Centre.
-        queries = list(sync_check2_queries(app))
-        doc_requests = app.resolution_items.filter(
-            source='system', status='open', code__in=STUDENT_DOC_REQUEST_CODES).count()
-        # Reviewer-raised items (doc-request / clarify / explanation) also need the
-        # student to act — they always show in the Action Centre but were never counted
-        # toward this notification, so a reviewer doc-request/re-request went unnotified.
-        officer_open = (app.resolution_items
-                        .filter(source='officer', status='open').exclude(kind='human').count())
-        n_open = len(queries) + doc_requests + officer_open
-        if n_open == 0:
+        sync_check2_queries(app)
+        # SUP1: ONE shared recount, taken JUST before the send (the same list the reminder reads):
+        # check2 items + the document asks she can act on + the reviewer's items, open only. Nothing
+        # open = nothing sent, and no stamp, so a later item still reaches her.
+        titles = open_items_for_email(app, app.locale)
+        if not titles:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
         with _usage.usage_context(application=app):   # S6a: billed to her organisation
             send_query_raised_email(
                 to_email=app.notify_email, applicant_name=name,
-                programme_name=app.cohort.name, n_queries=n_open, lang=app.locale)
+                programme_name=app.cohort.name, n_queries=len(titles), lang=app.locale,
+                titles=titles)
         app.query_raised_notified_at = now
         app.save(update_fields=['query_raised_notified_at'])
         sent += 1
@@ -125,6 +125,7 @@ def send_query_reminders(now=None):
     infra. Idempotent via ``query_reminder_at`` (one reminder per application).
     Lapsed apps are NOT emailed (they already proceed-as-is). Returns ``{'reminded': n}``."""
     from django.conf import settings as _settings
+    from ..check2_queries import sync_check2_queries
     from ..emails import send_query_reminder_email
     if not getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False):
         return {'reminded': 0}   # student queries held until the questions are reviewed
@@ -148,12 +149,25 @@ def send_query_reminders(now=None):
         # switching it back on still reaches a student whose questions are still open.
         if not student_email_catalogue.may_send(app, 'question_reminder'):
             continue
+        # SUP1: recount just before the send with the SAME helper as the raised email (the old
+        # `sla['open_count']` counted clarify items only). Nothing open = nothing sent, no stamp.
+        # Sync first, as the raised sweep does, so an item she has since answered is closed.
+        # One bad application must not stop the sweep for everyone after it (review round).
+        try:
+            sync_check2_queries(app)
+        except Exception:
+            logger.warning('Reminder sync failed for application %s; skipped', app.pk,
+                           exc_info=True)
+            continue
+        titles = open_items_for_email(app, app.locale)
+        if not titles:
+            continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
         with _usage.usage_context(application=app):   # S6a: billed to her organisation
             send_query_reminder_email(
                 to_email=app.notify_email, applicant_name=name,
-                programme_name=app.cohort.name, n_queries=sla['open_count'],
-                days_left=max(sla['days_left'], 0), lang=app.locale)
+                programme_name=app.cohort.name, n_queries=len(titles),
+                days_left=max(sla['days_left'], 0), lang=app.locale, titles=titles)
         app.query_reminder_at = now
         app.save(update_fields=['query_reminder_at'])
         sent += 1

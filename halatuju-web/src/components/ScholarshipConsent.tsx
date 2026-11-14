@@ -204,6 +204,8 @@ export default function ScholarshipConsent({
   // keep the consent toggle + button disabled until the list is empty.
   const blockers = status?.blockers ?? []
   const notReady = blockers.length > 0
+  // SUP1: the "Partial match" note is about an IC, so it shows only when an IC item is listed.
+  const hasIcBlocker = blockers.some((b) => /^(parent_)?ic_/.test(b.split(':')[0]))
 
   const adultIncomplete = !checked
   const minorIncomplete =
@@ -327,19 +329,23 @@ export default function ScholarshipConsent({
               // year-qualified ones (TD-403, "str_stale:2025") name the year; everything else is
               // a plain blocker code.
               const [code, member] = b.split(':')
-              return (
-                <li key={b}>
-                  {member && isYearQualified(code)
-                    ? t(`scholarship.consent.blocker.${code}_year`, { year: member })
-                    : member
-                      ? t(`scholarship.consent.blocker.${code}_member`, {
-                          member: t(`scholarship.docs.income.wizard.member.${member}`),
-                        })
-                      : t(`scholarship.consent.blocker.${code}`)}
-                </li>
-              )
+              const key = member && isYearQualified(code)
+                ? `scholarship.consent.blocker.${code}_year`
+                : member
+                  ? `scholarship.consent.blocker.${code}_member`
+                  : `scholarship.consent.blocker.${code}`
+              const text = member && isYearQualified(code)
+                ? t(key, { year: member })
+                : member
+                  ? t(key, { member: t(`scholarship.docs.income.wizard.member.${member}`) })
+                  : t(key)
+              // An unknown code must never show a raw key: fall back to a safe generic line.
+              return <li key={b}>{text === key ? t('scholarship.consent.blocker.generic') : text}</li>
             })}
           </ul>
+          {hasIcBlocker && (
+            <p className="mt-2 text-xs">{t('scholarship.consent.partialMatchNote')}</p>
+          )}
         </InfoBox>
       )}
     </form>

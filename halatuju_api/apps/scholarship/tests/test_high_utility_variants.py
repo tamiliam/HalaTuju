@@ -371,8 +371,11 @@ class TestTheStrWordingIsTheSameQuestion(_Household):
 
 
 class TestTheEmailCarriesNoItemText(TestCase):
-    def test_the_query_email_takes_a_count_not_items(self):
+    def test_the_query_email_takes_a_count_and_titles_only(self):
+        """SUP1 (2026-11-14): the email now names each open item by its student-facing TITLE (the
+        `titles` list, from `services.query_items`), and still takes no item text beyond that —
+        no description, no params, no document content."""
         import inspect
         from apps.scholarship.emails.student_queries import send_query_raised_email
         self.assertEqual(list(inspect.signature(send_query_raised_email).parameters),
-                         ['to_email', 'applicant_name', 'programme_name', 'n_queries', 'lang'])
+                         ['to_email', 'applicant_name', 'programme_name', 'n_queries', 'lang', 'titles'])

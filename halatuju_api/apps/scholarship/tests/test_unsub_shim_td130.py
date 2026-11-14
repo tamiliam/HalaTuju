@@ -60,8 +60,8 @@ class TestTheShimRidesOnEveryDecisionAndQuerySend(SimpleTestCase):
         emails.send_query_raised_email(TO, 'Priya', 'B40', 2)
         raised = mail.outbox[1]
         self.assertEqual(raised.body, sq.QUERY_RAISED_BODIES['en'].format(
-            name='Priya', programme='B40', n=2,
-            link=f'{_P.frontend_url}/scholarship/application'))
+            name='Priya', programme='B40', n=2, items='',
+            link=f'{_P.frontend_url}/scholarship/application', **sq.count_words(2)))
 
     def test_a_tenant_decision_points_at_the_TENANTS_support_address(self):
         tenant = SimpleNamespace(email_support='help@tenant.example', email_from='t@tenant.example',

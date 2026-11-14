@@ -313,7 +313,15 @@ export function titleSourceFor(
     }
   }
   if (isOfficerItem(item)) {
-    return { kind: 'raw', text: item.prompt || '' }
+    // An unknown code with no prompt would paint a blank card: use a generic title instead.
+    if (!item.prompt) {
+      return {
+        kind: 'i18n',
+        titleKey: 'scholarship.actionCentre.generic.title',
+        descKey: 'scholarship.actionCentre.generic.desc',
+      }
+    }
+    return { kind: 'raw', text: item.prompt }
   }
   // 2026-11-07 (app 278): her higher-results document is already on file (the server's
   // `params.doc_on_file`, kept current by every Check-2 sync), so the ask is only to ENTER them.

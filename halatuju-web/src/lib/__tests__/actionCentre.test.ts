@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import {
   iconFor,
   computeProgress,
@@ -361,5 +363,72 @@ describe('latestDocFor (V6 reload-persistent coach, audit #15a)', () => {
     const t = '2026-07-03T00:00:00Z'
     expect(latestDocFor([doc(7, 'results_slip', t), doc(8, 'results_slip', t)], 'results_slip')?.id).toBe(8)
     expect(latestDocFor([doc(8, 'results_slip', t), doc(7, 'results_slip', t)], 'results_slip')?.id).toBe(8)
+  })
+})
+
+// Backend-emitter guard (lesson 674, sprint sup1): every system query code the backend can send must
+// be a KNOWN_CODE, or its card renders a raw key. Reads the backend SOURCE read-only (no import).
+describe('backend system query codes ⊆ KNOWN_CODES', () => {
+  const dir = path.resolve(__dirname, '../../../../halatuju_api/apps/scholarship')
+  const read = (f: string) => fs.readFileSync(path.join(dir, f), 'utf-8').split('\r\n').join('\n')
+  const block = (src: string, name: string): string => {
+    const m = src.match(new RegExp(String.raw`^${name} = \{[\s\S]*?^\}`, 'm'))
+    if (!m) throw new Error(`${name} block not found`)
+    return m[0]
+  }
+  const keys = (b: string) => [...b.matchAll(/^\s+'([a-z0-9_]+)':/gm)].map((m) => m[1])
+  const vals = (b: string) => [...b.matchAll(/:\s*'([a-z0-9_]+)'/g)].map((m) => m[1])
+  const consts = (src: string, names: string[]) =>
+    names.map((n) => {
+      const m = src.match(new RegExp(String.raw`^${n}\s*=\s*'([a-z0-9_]+)'`, 'm'))
+      if (!m) throw new Error(`${n} not found`)
+      return m[1]
+    })
+
+  const check2 = read('check2_queries.py')
+  const emitted = new Set<string>([
+    ...keys(block(read('resolution.py'), 'CODE_TO_TICKET')),
+    ...keys(block(read('higher_results.py'), 'TICKETS')),
+    ...keys(block(check2, 'CLARIFY_SPECS')),
+    ...keys(block(check2, 'DOC_SPECS')),
+    ...[...(check2.match(/^_PATHWAY_QUERY_KINDS = \{[^}]*\}/m)?.[0] ?? '').matchAll(/'([a-z_]+)':/g)].map((m) => m[1]),
+    ...vals(block(check2, '_MEMBER_EPF_CODE')),
+    ...vals(block(check2, '_MEMBER_PROOF_CODE')),
+    ...vals(block(check2, '_MEMBER_PENSION_CODE')),
+    ...consts(read('stpm_asks.py'), ['GRADES_CODE', 'KOKO_CODE']),
+    ...consts(read('higher_owed.py'), ['ASK_CODE', 'DECLARE_ASK_CODE']),
+    ...consts(read('resolution_postaward.py'), ['BANK_DETAILS_CODE', 'VIRCLE_CODE']),
+    ...consts(read('high_utility_variant.py'), ['PLAIN', 'NOINCOME', 'STR']),
+  ])
+  // Per-member "STR needs this person's IC" codes are built by an f-string in check2_queries.
+  for (const m of [...block(check2, '_MEMBER_PROOF_CODE').matchAll(/'([a-z]+)':\s*'/g)].map((x) => x[1])) {
+    for (const k of ['missing', 'unreadable']) emitted.add(`${m}_ic_for_str_${k}`)
+  }
+
+  it('reads a believable number of codes (the extraction itself did not break)', () => {
+    expect(emitted.size).toBeGreaterThan(80)
+    expect(emitted.has('ic_missing')).toBe(true)
+    expect(emitted.has('father_ic_for_str_missing')).toBe(true)
+    expect(emitted.has('vircle_setup_pending')).toBe(true)
+  })
+
+  it('every emitted code is a KNOWN_CODE', () => {
+    const known = new Set(KNOWN_CODES as readonly string[])
+    expect([...emitted].filter((c) => !known.has(c)).sort()).toEqual([])
+  })
+})
+
+describe('titleSourceFor: unknown code with no prompt', () => {
+  it('falls back to the generic i18n title instead of a blank card', () => {
+    expect(titleSourceFor({ source: 'system', code: 'brand_new_code', prompt: '' })).toEqual({
+      kind: 'i18n',
+      titleKey: 'scholarship.actionCentre.generic.title',
+      descKey: 'scholarship.actionCentre.generic.desc',
+    })
+  })
+
+  it('still shows an officer prompt verbatim when there is one', () => {
+    expect(titleSourceFor({ source: 'system', code: 'brand_new_code', prompt: 'Call us' }))
+      .toEqual({ kind: 'raw', text: 'Call us' })
   })
 })

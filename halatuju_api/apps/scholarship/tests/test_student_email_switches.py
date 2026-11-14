@@ -140,6 +140,9 @@ class TestQuestionReminder(TestCase):
     @LOCMEM
     @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
     def test_on_sends_metered_and_billed_to_her_organisation(self):
+        from apps.scholarship.models import ResolutionItem   # SUP1: the reminder recounts what is open
+        ResolutionItem.objects.create(application=self.app, source='check2', code='device_status_unknown',
+                                      kind='clarify', fact='other', status='open')
         with patch('apps.scholarship.services.query_emails.query_sla', return_value=self.SLA):
             self.assertEqual(query_emails.send_query_reminders()['reminded'], 1)
         self.assertEqual([m.to for m in mail.outbox], [['q@example.test']])

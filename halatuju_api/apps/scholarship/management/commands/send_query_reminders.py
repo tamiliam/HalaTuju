@@ -20,6 +20,7 @@ from apps.scholarship import student_email_catalogue
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import QUERY_SLA_ACTIVE_STATUSES, query_sla, send_query_reminders
 from apps.scholarship.services.queries_sla import query_reminder_is_due
+from apps.scholarship.services.query_items import open_student_items
 
 
 class Command(BaseCommand):
@@ -52,9 +53,12 @@ class Command(BaseCommand):
                 if not student_email_catalogue.may_send(app, 'question_reminder'):
                     self.stdout.write(f"  [dry-run] would skip app #{app.pk}: switched off by its organisation")
                     continue
+                n_open = len(open_student_items(app))   # SUP1: the live sweep's own recount
+                if not n_open:
+                    continue
                 self.stdout.write(
                     f"  [dry-run] would remind app #{app.pk} "
-                    f"({sla['open_count']} open, {sla['days_left']}d left) -> "
+                    f"({n_open} open, {sla['days_left']}d left) -> "
                     f"{app.notify_email or '(no email)'}")
                 n += 1
             self.stdout.write(self.style.SUCCESS(f"Query reminders: {n} would be sent"))

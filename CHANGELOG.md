@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint SUP1 - fewer support emails: query emails name each item, Action Centre fallback, consent explains itself (2026-11-14)
+- From a study of 137 student support threads (Help Me / Need Information). Saved to main; waits for a release window and the owner's yes. No migration.
+- P1 email: the "a few things we need" email and the reminder now count the SAME way (`services/query_items.open_items_for_email`), recount just before sending (the reminder now syncs Check 2 first, like the raised email), send nothing at 0, and list each open item by its title. A private item (a parent's death or status, guardianship, income, STR, a sibling's funding) and every reviewer-typed item read as "A question from our team"; the full title stays in the Action Centre. Both mails (and request-info) reply to the support address. The reminder has its own subject. Owner-approved wording: no "just reply to this email", real plurals (no "item(s)"), Tamil "அண்மைய". Email golden regenerated for this owner-approved copy (9 entries: query_raised, query_reminder, request_info x en/ms/ta).
+- P2 web: the Action Centre shows a safe fallback line for an item code it has no copy for, never a raw key.
+- P3 web: the consent page explains each blocker in plain words; the "Partial match" note shows only when an IC item is listed.
+- Tests: `test_query_email_items.py` (new), consent and Action Centre jest; golden updated.
+- Review round: every STR, EPF, earner-IC, sibling and household-spending code now reads as the plain team title (a test fails a new code in those families that is not listed); a reminder sync that fails skips that one application instead of stopping the sweep; one item reads "1 item is waiting", not "This 1 item".
+
 ### fix: Announcements, Surveys and Development draw at the wide width, like Scholars (2026-11-14)
 
 Owner's M2d phone check, item 4 (E8). The three pages lead with a many-column table but were not in `WIDE_ROUTES`, so `AppShell` gave them the reading width (896px) and they looked narrow beside Scholars (1280px). `lib/pageWidth.ts` now lists `/admin/programme/announcements`, `/surveys` and `/development` as wide; their new-item forms keep their own `max-w-3xl` card. `pageWidth.test.ts` pins all three beside Scholars. Web only, no migration. M2d follow-ups: 2nd deploy.
