@@ -1,6 +1,6 @@
 # Applicants export (Excel) — roadmap (2026-11-14)
 
-**Status:** PLAN, awaiting the owner's go to start the sprint. Not built. See §5 Timing (narrow freeze).
+**Status:** PLAN, awaiting the owner's go to start the sprint. Not built. See §5 Timing (narrow freeze). **Owner 2026-11-14: WAIT for the freeze to end (~4 Dec); not urgent.**
 
 **Why.** The owner made a one-off Excel of every applicant to `bpb-sabah-2026` (BrightPath) for its org admin
 on 2026-11-14 (a read-only script, then deleted; the file sits in the gitignored `docs/scholarship/`). The owner
