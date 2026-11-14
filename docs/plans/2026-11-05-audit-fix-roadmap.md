@@ -1348,7 +1348,7 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
 - **Scope:** measure each route's first-load chunks; split or lazy-load what a first paint does not need (the TD-416 method); lower each line in `code-standards.json` only in the commit that earns it (never raise).
 - **Acceptance:** the lines are back at their pre-Next-15 values, or, if the Next 15 runtime makes that impossible, the measured floor goes to the owner for a dated re-baseline decision. **MET 2026-11-13 by owner re-baseline** (Next 15 / React 19 runtime floor): /profile 200.8, median 157.5, /scholarship/apply 198.8 and /scholarship/application 218.6 unchanged; no app code changed. jest, `npm run gates`, bundle budget and mobile-check green; no behaviour change.
 - **Complexity:** M. **Model:** Sonnet; fresh review. **Deploy:** one group, with the owner's yes.
-- **Deadline (owner, 2026-11-12):** build 16-18 Nov; deploy by Fri 20 Nov. The owner's acceptance of the `std` FAIL lapses on 20 Nov.
+- **Deadline (owner, 2026-11-12):** build 16-18 Nov; deploy by Fri 20 Nov. The owner's acceptance of the `std` FAIL lapses on 20 Nov. **Moved by the owner on 2026-11-14 to Fri 11 Dec** (second acceptance; the first `--write` after F2 clears it; `docs/consolidation-log.md`).
 
 #### Gemini duplicate (`_gemini_generate`)
 
