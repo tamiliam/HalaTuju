@@ -118,8 +118,11 @@ The `invitations` door already exists (`staff_tables.py:167`).
 - `views_admin/gift_programmes.py`: `_ProgrammeScopedBase._gate` :34 (`ROLES` :28)
 
 **G5 Applications -> `students.edit` / `students.approve`. 9 functions move, 2 stay.** Today: super + OA.
-- `views_admin/verdict.py`: `AdminAssignReviewerView.post` :516, :529 -> `students.edit`. Ruling 6: never to yourself;
-  the service already refuses that.
+- `views_admin/verdict.py`: `AdminAssignReviewerView.post` :516, :529 -> `students.edit`. Ruling 6: never to yourself.
+  **CORRECTED 2026-11-14: nothing refuses that today** (`may_hand_to`, `assign_reviewer`, this view and the picker
+  `AdminAssignableAdminsView` in `views_admin/lifecycle.py` have no caller-is-target check). M3b ADDS it (owner E3):
+  `may_hand_to` refuses when the target is the caller, for every role, a super included; the picker leaves the caller
+  out. An org admin in Reviewers can still be given cases by a super or the other org admin.
 - `services/assignment.py`: `may_hand_to` :92 -> `students.edit`, and the target in the CALLER's organisation for a
   non-super.
 - `views_admin/applications.py`:
@@ -379,6 +382,18 @@ migration `0097_store_admin_v2_keys`. Active team rows: admin 2, finance 1, revi
 | D6 | Sponsor vetting approves a sponsor's ACCOUNT, which every organisation then relies on. Should "Sponsors: approve" be assignable? | **Yes**, with the box's help text saying it vets accounts for the whole platform (R6: only the O15 three stay fixed). | Vetting stays with org admins and supers, a fourth fixed power (amends R6). |
 | D7 | The "Sponsors to vet" card (D12, TD-503 part 1). Today two admins and finance see it but cannot vet. | **Leave the card as it is**: whoever sees Sponsors sees the count, and only vetters act. Nobody changes. | The card shows only to those who can vet. The two admins and finance lose it unless you give them "Sponsors: approve". |
 
+### Owner rulings on the M2d phone check (2026-11-14, direct): E1-E10 all as RECOMMENDED
+
+| | Ruling | Lands in |
+|---|---|---|
+| E1 | An org admin never prepares (signs as maker) a payment run; they stay creator and fallback approver until M4. The OA's card must show those money seats as they really are ("by role until payments move to keys"), not as OFF. | M3c (display); M4 / TD-620 (keys) |
+| E2 | An org admin approves withdrawals and never asks; a super may grant "ask" under D1 if an organisation has nobody else. | M3c (D1 editing) |
+| E3 | Never assign a case to yourself, enforced on the server (see G5). An OA who reviews may be given cases by a super or the other OA. Wording: "Give cases to reviewers and nudge them. Never to yourself." | M3b (refusal); M3c (wording) |
+| E4 | "Approve awards" is renamed "Reject or close applications — Stop an application before an award." Awarding stays with the sponsor's funding; signing stays with the super's countersign. | M2d follow-ups (copy, en/ms/ta) |
+| E5 | Show the Mentor invitations tab to whoever the server lets read it (read-only); the invite forms only to holders of `invitations.edit`. | M3c (list W) |
+| E6-E8, E10 | One home for invitation emails (Invitations -> Emails, a pointer on Team -> Emails); remove "Invite a source" with a pointer line; Announcements, Surveys and Development tables match Scholars; a hint under "Staff only" (default stays off). | M2d follow-ups |
+| E9 | Once a source has joined, its signed-in person is its contact; show one set of details. A source detail page is its own sprint (TD-626). | own sprint |
+
 ### Architect (do not re-open; flag if one cannot hold)
 
 | | Decision |
@@ -406,12 +421,12 @@ migration `0097_store_admin_v2_keys`. Active team rows: admin 2, finance 1, revi
   - Docs: CHANGELOG, decisions, technical-debt.
   - Nothing a person can do changes.
 - **M3b: server gates read keys (about 34 files).** G1 to G9 (45 functions), the new doors (A11), `SECTIONS_BY_ROLE`
-  (A7), D7, and the scanner entries deleted. The 11 keys are still not assignable, so every OA passes by the keys M3a
+  (A7), D7, the E3 self-assignment refusal, and the scanner entries deleted. The 11 keys are still not assignable, so every OA passes by the keys M3a
   stored, and everyone else is refused as today.
 - **M3c: granting and the web (about 25 files).**
   - `asked_set` / `plan_change` (A9, A12, D1)
   - `invite_permissions` (D3)
-  - list W, `permissionLayout.ts`, i18n en/ms/ta
+  - list W, `permissionLayout.ts`, i18n en/ms/ta (with E1 money-seat display, E3 wording, E5 Mentor tab)
   - the Guide and FAQ lines on what an organisation admin does
   - web tests
 

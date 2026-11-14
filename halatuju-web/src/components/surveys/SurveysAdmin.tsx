@@ -28,7 +28,7 @@ import { MAKER_ROLES, audienceLabel, giftHref } from './shared'
  */
 const K = 'admin.surveys'
 const TABS: readonly SurveyStatus[] = ['open', 'scheduled', 'draft', 'closed']
-const LINK = 'inline-flex min-h-11 items-center text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
+const LINK = 'inline-flex items-center max-md:min-h-11 text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
 
 type Editing = { row: SurveyRow | null } | null
 type Banner = { ok: boolean; text: string } | null
@@ -75,15 +75,15 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
 
   return (
     <div className="space-y-5" data-testid="surveys-admin">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ground-900">{t(`${K}.title`)}</h1>
-          <p className="text-sm text-ground-600">{t(`${K}.intro`)}</p>
+          <h1 className="text-2xl font-bold text-ground-900">{t(`${K}.title`)}</h1>
+          <p className="mt-1 text-sm text-ground-500">{t(`${K}.intro`)}</p>
         </div>
         {data && !editing && (
           <button type="button" onClick={() => { setEditing({ row: null }); setBanner(null) }}
             data-testid="survey-new"
-            className="min-h-11 shrink-0 rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
+            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 font-medium max-md:min-h-11 text-brand-fill-ink hover:bg-brand-fill-hover">
             {t(`${K}.new`)}
           </button>
         )}
@@ -126,7 +126,7 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
                   <th className={TH}><span className="sr-only">{t(`${K}.col.actions`)}</span></th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-ground-100">
                 {rows.map((s) => {
                   const by = s.author.name || s.author.email
                   return (

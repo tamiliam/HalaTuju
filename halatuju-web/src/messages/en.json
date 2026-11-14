@@ -3742,7 +3742,7 @@
         "label": "Witness"
       },
       "tabTerms": "Terms",
-      "invite": "Invite a source",
+      "addHint": "To add a source, invite its person on Invitations.",
       "colSignIn": "Sign-in",
       "signIn": {
         "none": "Not invited",
@@ -6782,6 +6782,7 @@
         "addLabel": "Add a note",
         "placeholder": "Add a note…",
         "staffOnly": "Staff only",
+        "staffOnlyHint": "Hidden from the scholar's mentor, and from the student if they can ever see this log.",
         "save": "Save",
         "cancel": "Cancel",
         "saved": "Entry saved.",
@@ -8556,8 +8557,8 @@
         "desc": "Never to themselves."
       },
       "approveAwards": {
-        "name": "Approve awards",
-        "desc": "The final decision on an application."
+        "name": "Reject or close applications",
+        "desc": "Stop an application before an award."
       }
     },
     "permV2": {
@@ -9700,8 +9701,8 @@
         "toLabel": "To:",
         "reviewerTitle": "Reviewer emails",
         "mentorTitle": "Mentor emails",
-        "mentorNone": "Mentors receive no other email from HalaTuju.",
-        "mentorAside": "Not counted here: a password reset a mentor asks for when signing in, and the emails of any other table they also sit at.",
+        "mentorPointer": "Invitation emails, the mentor's included, are edited on Invitations → Emails.",
+        "mentorPointerLink": "Open Invitations",
         "kind": {
           "payment_approval": "A payment run is waiting for approval",
           "payment_check": "A payment run is waiting for the finance check",

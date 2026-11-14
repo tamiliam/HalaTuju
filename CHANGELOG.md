@@ -10,6 +10,14 @@ All notable changes to this project will be documented in this file.
 ### F2 package 2 - courses and reports come through the doors (2026-11-14)
 Import-only. `apps/scholarship/public.py` now also re-exports invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work, usage, gemini, Invitation and reviewer_profile_complete; courses (views_admin, profile_claim, org_config_registry, models/organisations, views/profile, views/verification) and reports (report_engine, views, prompts) reach scholarship and courses through `public` instead of file by file. Cross-app reading: courses to scholarship 21 to 1, reports to courses 9 to 1, reports to scholarship 2 to 1 (total 109 to 80 with package 1 still to land). No logic, value or order changed; the facade pin test lists the new names; the door skip list (DOOR_ALLOWED) is emptied and pinned at 0.
 
+### feat: M2d follow-ups - permission rename, one home for invitation emails, Sources hint, matching tables, Staff only hint (2026-11-14)
+- Saved to main; waits for the next release window. Web only (E4, E6, E7, E8, E10); no API change.
+- E4: "Approve awards" is now "Reject or close applications" ("Stop an application before an award.") in en/ms/ta; the key still gates only the pre-award reject and close.
+- E6: Team -> Emails, Mentor section, is a one-line pointer to Invitations -> Emails (no second editor); the stale "four invitation emails" comment is fixed (five).
+- E7: Sources loses "Invite a source"; super and org admin see a line saying a source is added by inviting its person on Invitations.
+- E8: Announcements, Surveys and Development match Scholars: row links and "New" are 44px on phones only, dividers `divide-ground-100`, header bold with a ground-500 intro.
+- E10: a hint under the "Staff only" switch says the note is hidden from the scholar's mentor (and the student, if they can ever see the log); default stays off.
+
 ### release: 14 Nov 16:00 MYT window - M3a and TD-617 web published (2026-11-14)
 - live 0fb384a76..cdb6d54be. api halatuju-api-01299-m7s (TD-617 + M3a), web halatuju-web-01120-5ld (TD-617 copy and FAQ).
 - Migration courses 0098 by hand, migrate-first: owner ran pre-check, DATA block and check; re-ran DATA block and check after the api took 100% (no change, 0 rows). Window closed.

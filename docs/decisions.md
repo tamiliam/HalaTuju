@@ -28,6 +28,22 @@ Sessions build and review in their own worktree. `main` takes only finished work
 
 **Why:** it lets us combine several pushes into one deploy, and a push to `main` no longer surprises anyone. Rollback: re-import the trigger exports in `docs/infra/` (`…-main-2026-11-14.yaml`).
 
+## 2026-11-14 — The owner's M2d phone check: ten points, E1-E10 all as recommended (owner, direct)
+
+**Rulings:**
+- E1: an org admin never signs a payment run as its maker. They stay creator and fallback approver until M4, and the card shows those seats truthfully (M3c).
+- E2: an org admin approves withdrawals and never asks. A super may grant "ask" under D1.
+- E3: nobody, a super included, assigns a case to themselves. It is refused on the server in M3b; nothing refused it before, although T5.0 ruling 6 said so. An org admin who reviews may be given cases by a super or the other org admin.
+- E4: "Approve awards" becomes "Reject or close applications". That key gates only the pre-award reject and close. Awarding is the sponsor's funding, and the countersign is the super's.
+- E5: the Mentor invitations tab shows to whoever the server lets read it; inviting needs `invitations.edit` (M3c).
+- E6: invitation emails have one home, Invitations -> Emails.
+- E7: "Invite a source" leaves the Sources page, replaced by a pointer line.
+- E8: the Announcements, Surveys and Development tables match Scholars.
+- E9: a joined source's person is its contact, with one set of details. A source detail page is its own sprint (TD-626).
+- E10: "Staff only" gets a hint (it hides a note from the scholar's mentor) and stays off by default.
+
+**Where:** the M3 brief (`docs/plans/2026-11-14-m3-lead-keys-brief.md`, "Owner rulings on the M2d phone check"). E4, E6-E8 and E10 are web-only M2d follow-ups. None of the ten is TD-613.
+
 ## 2026-11-14 — The organisation admin's powers are stored keys, read strictly (architect A1-A6, A10; Sprint M3a)
 
 **Taken by the architect** in the M3 brief (`docs/plans/2026-11-14-m3-lead-keys-brief.md`; D1-D7 answered as

@@ -1,7 +1,6 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getSources, revokeSourceUser, updateSource, type SourceItem } from '@/lib/admin-api'
@@ -19,7 +18,8 @@ import { SignInBadge, Toggle } from '@/components/sources/shared'
 //
 // ⚠ NO ADD HERE SINCE SOURCE SIGN-IN S2 (2026-10-30): a source is created by INVITING ITS PERSON
 // (Invitations → Source; the old POST answers 410 `use_source_invitation`), so the button is a link
-// there — for super and org_admin only, who are the roles that may invite (owner: Admin does not).
+// there. M2d E7: the "Invite a source" link is gone; a one-line hint (`addHint`) tells super and
+// org_admin, who may invite (owner: Admin does not), where a source is added.
 // ⚠ EDIT LOCKS ONCE THE SOURCE HAS SIGNED IN (owner ruling 2026-10-30): its name and contact
 // details are then its own (its console's Profile) and a change is refused 409 `managed_by_source`.
 // The Active toggle stays the organisation's.
@@ -189,15 +189,10 @@ export default function SourcesPage() {
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.sources.title')}</h1>
           <p className="text-sm text-ground-500 mt-1">{t('admin.sources.subtitle')}</p>
+          {panel === 'orgs' && canInvite && (
+            <p className="text-sm text-ground-500 mt-1" data-testid="sources-add-hint">{t('admin.sources.addHint')}</p>
+          )}
         </div>
-        {/* A source is added by inviting its person (source sign-in S2) — a link to the Source tab
-            of Invitations, for the two roles that may invite. Only on the registry panel. */}
-        {panel === 'orgs' && canInvite && (
-          <Link href="/admin/organisation/staff?kind=source"
-            className="shrink-0 px-4 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover">
-            {t('admin.sources.invite')} →
-          </Link>
-        )}
       </div>
 
       <PanelTabs ariaLabelKey="admin.sources.tabsAria" active={panel} onSelect={setPanel}

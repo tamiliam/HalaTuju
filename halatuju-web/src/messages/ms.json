@@ -3742,7 +3742,7 @@
         "label": "Saksi"
       },
       "tabTerms": "Terma",
-      "invite": "Jemput sumber",
+      "addHint": "Untuk menambah sumber, jemput individu berkaitan di Jemputan.",
       "colSignIn": "Log masuk",
       "signIn": {
         "none": "Belum dijemput",
@@ -6782,6 +6782,7 @@
         "addLabel": "Tambah nota",
         "placeholder": "Tambah nota…",
         "staffOnly": "Kakitangan sahaja",
+        "staffOnlyHint": "Disembunyikan daripada mentor penerima biasiswa, dan daripada pelajar jika mereka dapat melihat log ini pada masa hadapan.",
         "save": "Simpan",
         "cancel": "Batal",
         "saved": "Catatan disimpan.",
@@ -8556,8 +8557,8 @@
         "desc": "Tidak sekali-kali kepada diri sendiri."
       },
       "approveAwards": {
-        "name": "Luluskan anugerah",
-        "desc": "Keputusan muktamad bagi sesuatu permohonan."
+        "name": "Tolak atau tutup permohonan",
+        "desc": "Hentikan permohonan sebelum anugerah diberi."
       }
     },
     "permV2": {
@@ -9700,8 +9701,8 @@
         "toLabel": "Kepada:",
         "reviewerTitle": "E-mel penilai",
         "mentorTitle": "E-mel mentor",
-        "mentorNone": "Mentor tidak menerima e-mel lain daripada HalaTuju.",
-        "mentorAside": "Tidak dikira di sini: e-mel tetapan semula kata laluan yang diminta mentor semasa log masuk, dan e-mel mana-mana jadual lain yang turut dianggotainya.",
+        "mentorPointer": "E-mel jemputan, termasuk untuk mentor, disunting di Jemputan → E-mel.",
+        "mentorPointerLink": "Buka Jemputan",
         "kind": {
           "payment_approval": "Larian pembayaran menunggu kelulusan",
           "payment_check": "Larian pembayaran menunggu semakan kewangan",

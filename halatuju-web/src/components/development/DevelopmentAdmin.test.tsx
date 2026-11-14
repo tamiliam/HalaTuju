@@ -60,6 +60,21 @@ it('lists the published ones with the server counts and only the offered actions
   expect(screen.queryByTestId('module-progress-2')).toBeNull()
 })
 
+it('M2d E8: the table and header match Scholars - phone-only 44px taps, ground-100 dividers, bold title', async () => {
+  mockApi.getModules.mockResolvedValue(payload([row({})]))
+  render(<DevelopmentAdmin programme="flag" />)
+  const tr = await screen.findByTestId('module-row-1')
+  expect(tr.parentElement?.className).toContain('divide-ground-100')
+  for (const el of Array.from(tr.querySelectorAll('a, button'))) {
+    expect(el.className).toContain('max-md:min-h-11')
+    expect(el.className).not.toMatch(/(^|\s)min-h-11/)
+  }
+  const h1 = screen.getByRole('heading', { level: 1 })
+  expect(h1.className).toContain('font-bold')
+  expect(h1.nextElementSibling?.className).toContain('text-ground-500')
+  expect(screen.getByTestId('module-new').className).not.toMatch(/(^|\s)min-h-11/)
+})
+
 it('refuses the roles outside super, org_admin and admin and calls nothing', () => {
   for (const r of ['reviewer', 'qc', 'finance', 'mentor', 'source_partner']) {
     mockRole = { role: r }

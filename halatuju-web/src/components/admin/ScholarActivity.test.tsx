@@ -161,7 +161,9 @@ it('the composer is one line until focused, and Esc on an empty box closes it', 
   expect(screen.queryByRole('switch')).toBeNull()
   fireEvent.focus(box)
   expect(box.rows).toBe(3)
-  expect(screen.getByRole('switch', { name: 'admin.scholars.activity.staffOnly' })).toBeTruthy()
+  const sw = screen.getByRole('switch', { name: 'admin.scholars.activity.staffOnly' })
+  expect(sw.getAttribute('aria-checked')).toBe('false')                     // the default stays off
+  expect(screen.getByTestId('activity-staff-only-hint').textContent).toBe('admin.scholars.activity.staffOnlyHint')
   fireEvent.keyDown(box, { key: 'Escape' })
   expect(box.rows).toBe(1)
   fireEvent.focus(box)

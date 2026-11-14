@@ -33,9 +33,10 @@ function merge(have: Entry[], more: Entry[]): Entry[] {
  * where they were). Side panel (`compact`): 6 per load,
  * mixed. Activity tab: 20 per load, with the All · Notes · System filter, applied ON THE SERVER (P1-f).
  *
- * ⚠ "Staff only" is the site `Toggle`, never a checkbox (house rule). Nothing in this log reaches a
- * student today — the flag is recorded now so the day a student view of the log exists, the rows an
- * officer meant for colleagues are already marked.
+ * ⚠ "Staff only" is the site `Toggle`, never a checkbox (house rule). It DOES hide a note from the
+ * scholar's mentor (M2d E10; the composer's hint says so). Nothing in this log reaches a student today —
+ * the flag is also recorded so the day a student view of the log exists, the rows an officer meant for
+ * colleagues are already marked. The default stays off.
  * ⚠ A system row is a translated sentence from its event code (`lib/scholarActivity.activityText`), never
  * the raw meta, so a payment's run reference reads as a sentence and nothing internal leaks as JSON.
  * ⚠ The photo links are signed for about an hour; they are never kept beyond this page.

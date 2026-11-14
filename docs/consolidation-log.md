@@ -158,6 +158,11 @@ FAILs the next sprint close and goes back to the owner. No agent may extend it.
   the monthly small audit (about 11 Dec): `fix%` below 52 and no new slip-check field fix after F1 ships.
 - **Other named later sprints, same rule:** `dup` 1 (`_gemini_generate`) by Fri 2026-12-04, after Gemini Phase 2;
   `xapp` (F2) by the monthly small audit on 2026-12-11.
+- **Owner decision 2026-11-14 (verbatim: "A. Move to 11 Dec."): `std` FAIL (looser) accepted until Fri 2026-12-11.**
+  This is the SECOND acceptance of `std`; a third becomes a TD item with its own sprint. Reason: W1 met its acceptance on
+  2026-11-13 by the owner's re-baseline (Next 15 / React 19 floor), so the FAIL is only the comparison against the last
+  written Trend row, which predates the 2026-11-06 raise. The row stays unwritten until F2 lands, so that `xapp` 109 is
+  not recorded as the new normal; the first `--write` after F2 clears `std`.
 
 **Promoted, summarised:** F1 slip-check matrix (sprint), F2 cross-app edges (sprint); TD-608, TD-609, TD-610, TD-611 in the register; one `decisions.md` entry. Open Items Index: not
 regenerated in this pass (C4 closed the done entries the same day and the audit's own interim count stands at 162);

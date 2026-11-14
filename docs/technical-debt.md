@@ -9014,3 +9014,13 @@ course code stpm, matric or blank, no degree name) are asked for higher results 
 after. The same 16 rows disagree on origin/main, so TD-617 did not cause it; the cause is the fallback at
 `results_route.py:226`. Also: the pismp check at `results_route.py:152` can never run. Eligibility work: owner ruling
 first, then a fix with the Opus adversarial review. *(A - M)*
+
+### [TD-626] The Sources table shows a joined source's contact twice, and a source has no page of its own - low
+
+**Raised 2026-11-14 by the owner's M2d phone check (ruling E9).** A Sources row shows the source's own contact fields
+(`contact_person`, `contact_email`, `phone`) and, under Sign-in, its signed-in person's name, email and phone. The
+invite copies the invitee's address into a blank `contact_email` (`source_invite.py`), so the same email often shows
+twice. Owner ruling: once a source has joined, its signed-in person IS its contact; show one set of details (the
+person's once joined, the source's contact fields before that). The owner also wants a source detail page: the
+source's name clickable, more about the organisation, and the students under it. A new page is its own sprint, not
+yet scheduled. *(W - M)*

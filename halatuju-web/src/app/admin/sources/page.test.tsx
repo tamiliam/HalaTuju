@@ -87,16 +87,16 @@ describe('Sources page panels', () => {
     expect(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }).getAttribute('aria-selected')).toBe('true')
   })
 
-  it('hides "Invite a source" on the emails panel — there is nothing there to invite', async () => {
+  it('hides the add-a-source hint on the emails panel — there is nothing there to add', async () => {
     render(<SourcesPage />)
     // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
     // you SEE is a CSS breakpoint, and jsdom applies none.
     await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
-    expect(screen.queryByText(/admin\.sources\.invite/)).toBeTruthy()
+    expect(screen.queryByTestId('sources-add-hint')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
     await waitFor(() => expect(screen.getByText('admin.sources.emails.title')).toBeTruthy())
-    expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
+    expect(screen.queryByTestId('sources-add-hint')).toBeNull()
   })
 
   it('keeps a half-finished edit across a trip to the emails panel and back', async () => {
@@ -221,12 +221,13 @@ describe('inviting a source, and the edit lock once it has joined', () => {
 
   beforeEach(() => { mockApi.getSources.mockResolvedValue({ sources: three }) })
 
-  it('offers no Add form — "Invite a source" links to the Source tab of Invitations', async () => {
+  it('offers no Add form and no invite link — a hint says a source is added on Invitations', async () => {
     render(<SourcesPage />)
     await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
-    const link = screen.getByText(/admin\.sources\.invite/).closest('a') as HTMLAnchorElement
-    expect(link.getAttribute('href')).toBe('/admin/organisation/staff?kind=source')
-    expect(screen.queryByText(/admin\.sources\.add/)).toBeNull()
+    expect(screen.getByTestId('sources-add-hint').textContent).toBe('admin.sources.addHint')
+    expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
+    expect(document.querySelector('a[href*="kind=source"]')).toBeNull()
+    expect(screen.queryByText(/admin\.sources\.add(?!Hint)/)).toBeNull()
     expect(screen.queryByLabelText(/admin\.sources\.code/)).toBeNull()
   })
 
@@ -235,6 +236,7 @@ describe('inviting a source, and the edit lock once it has joined', () => {
     render(<SourcesPage />)
     await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
     expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
+    expect(screen.queryByTestId('sources-add-hint')).toBeNull()
     // …but keeps the list, Edit and the switches.
     expect(screen.getAllByText('admin.sources.edit').length).toBe(2)
   })
