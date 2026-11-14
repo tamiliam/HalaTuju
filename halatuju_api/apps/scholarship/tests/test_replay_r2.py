@@ -313,6 +313,69 @@ class NarrowRulingsTest(SimpleTestCase):
                                            {'value': new, 'facts': facts})[0], klass)
 
 
+class RecheckFixesTest(SimpleTestCase):
+    """A5 R2 re-check: a worse band is never A (MED-1); a case fact the rulings gate on must hold on BOTH
+    sides, and any fact that changes between sides makes the record B (MED-2)."""
+
+    def test_a_move_out_of_gap_is_never_a(self):
+        # MED-1: red -> amber / Unsure while a note is added is a softened band, not the ruling.
+        cases = (
+            ('R-OWED', _verdict(_fact('academic', [], 'gap'),
+                                _fact('academic', ['higher_results_not_declared'], 'recommend'), degree_bound=True)),
+            ('R-62', _verdict(_fact('academic', [], 'gap'), _fact('academic', ['academic_extra_subjects']), **SPM)),
+            ('R-F1-Q1', _verdict(_fact('academic', [], 'gap'), _fact('academic', ['academic_slip_rows_unread']),
+                                 **SPM)),
+        )
+        for rid, (old, new) in cases:
+            with self.subTest(rid):
+                self.assertEqual(_classify(V, old, new), ('unexplained', []))
+
+    def test_a_move_from_unsure_up_to_probable_is_b(self):
+        old, new = _verdict(_fact('academic', [], 'recommend'), _fact('academic', ['academic_extra_subjects']), **SPM)
+        self.assertEqual(_classify(V, old, new), ('unexplained', []))
+
+    def test_verified_or_review_into_the_target_still_matches(self):
+        for status in ('verified', 'review'):
+            with self.subTest(status):
+                old, new = _verdict(_fact('academic', [], status),
+                                    _fact('academic', ['higher_results_not_declared'], 'recommend'), degree_bound=True)
+                self.assertEqual(_classify(V, old, new), ('expected', ['R-OWED']))
+
+    def test_degree_bound_on_the_new_side_only_is_b(self):
+        # MED-2: degree_bound is computed by engine code that is not itself replayed.
+        for old_db in (None, False):
+            o, n = {'degree_bound': old_db}, {'degree_bound': True}
+            cases = (
+                ('award.proposed_award_amount', {'amount': '3000.00', 'facts': o},
+                 {'amount': '2000.00', 'facts': n}),
+                ('funding.classify_pathway', {'value': 'stpm', 'facts': o}, {'value': 'degree', 'facts': n}),
+                ('payments.schedule_row', {'pathway': 'stpm', 'facts': {**o, 'stored_award': None}},
+                 {'pathway': 'university', 'facts': {**n, 'stored_award': None}}),
+                ('award.course_start_unknown', {'value': True, 'facts': {**o, 'pathway_code': 'stpm'}},
+                 {'value': False, 'facts': {**n, 'pathway_code': 'stpm'}}),
+                (V, {'verdict': [_fact('academic', [], 'verified')], 'facts': o},
+                 {'verdict': [_fact('academic', ['higher_results_not_declared'], 'recommend')], 'facts': n}),
+            )
+            for engine, old, new in cases:
+                with self.subTest(engine=engine, old_db=old_db):
+                    self.assertEqual(_classify(engine, old, new)[0], 'unexplained')
+
+    def test_any_fact_change_between_sides_is_b(self):
+        engine, (old, new), _ = PAIRS['R-TD465']
+        self.assertEqual(_classify(engine, old, new)[0], 'expected')
+        new = {**new, 'facts': {**new['facts'], 'stored_award': '3000.00'}}
+        self.assertEqual(_classify(engine, old, new)[0], 'unexplained')
+
+    def test_start_unknown_echoing_its_own_engine_answer_is_not_a_fact_change(self):
+        # The `start_unknown` fact IS `award.course_start_unknown`'s answer on each side (adapters.app_facts).
+        f = {'pathway_code': 'stpm', 'degree_bound': True}
+        old = {'value': True, 'facts': {**f, 'start_unknown': True}}
+        new = {'value': False, 'facts': {**f, 'start_unknown': False}}
+        self.assertEqual(_classify('award.course_start_unknown', old, new), ('expected', ['R-TD465-UNKNOWN']))
+        self.assertEqual(_classify('award.proposed_award_amount', {'amount': '3000.00', 'facts': old['facts']},
+                                   {'amount': '2000.00', 'facts': new['facts']})[0], 'unexplained')
+
+
 class ComparerAndReportTest(SimpleTestCase):
 
     def _rows(self):
@@ -424,22 +487,45 @@ class EndToEndTest(TestCase):
         totals = parent.report(rows, out=lines.append)
         self.assertEqual(totals['verdict.build_verdict']['expected'], 2)
         self.assertEqual(totals['verdict.build_verdict']['unexplained'], 1)
-        for e in ('award.proposed_award_amount', 'award.course_start_unknown', 'funding.classify_pathway'):
+        for e in ('award.proposed_award_amount', 'funding.classify_pathway'):
             self.assertEqual(totals[e]['expected'], 1, e)
+        # Case 4 (re-check MED-2): degree_bound None on the old side, True on the new is a fact change the
+        # rulings cannot see behind (engine code, not replayed), so R-TD465-UNKNOWN does not match: B.
+        self.assertEqual(totals['award.course_start_unknown']['unexplained'], 1)
         got = {(d['key'][0], d['class'], tuple(d['rulings'])) for d in map(json.loads, lines)
                if d.get('outcome') == 'differs'}
         self.assertEqual(got, {(1, 'expected', ('R-62',)), (2, 'expected', ('R-388',)), (6, 'unexplained', ()),
-                               (3, 'expected', ('R-TD465',)), (4, 'expected', ('R-TD465-UNKNOWN',)),
+                               (3, 'expected', ('R-TD465',)), (4, 'unexplained', ()),
                                (5, 'expected', ('R-DEG7-PATHWAY',))})
         md = report_md.render(rows, old_commit='442b21f4d', new_commit='abc1234')
         self.assertNotIn('| other |', md)
-        for fam_row in ('| verdict | 3 | 0 | 2 | 1 | 0 | 0 |', '| award | 2 | 0 | 2 | 0 | 0 | 0 |',
+        for fam_row in ('| verdict | 3 | 0 | 2 | 1 | 0 | 0 |', '| award | 2 | 0 | 1 | 1 | 0 | 0 |',
                         '| funding_estimate | 1 | 0 | 1 | 0 | 0 | 0 |'):
             self.assertIn(fam_row, md)
-        for rid in ('R-62', 'R-388', 'R-TD465', 'R-TD465-UNKNOWN', 'R-DEG7-PATHWAY'):
+        for rid in ('R-62', 'R-388', 'R-TD465', 'R-DEG7-PATHWAY'):
             self.assertIn(f'**{rid}** (1)', md)
+        self.assertNotIn('**R-TD465-UNKNOWN**', md)
         self.assertIn('| verdict.build_verdict | verdict | 1 | 6 |', md)
         self.assertNotIn('SITI', md + ''.join(lines))
+
+
+class RealAdapterToRulingTest(TestCase):
+    """A5 R2 re-check (LOW-3): a REAL engine adapter on a built application, through the real facts, the
+    scrubber, `parent.classify` and the rulings, to a ruling match. The new side is this tree's real
+    `classify_pathway`; the old side is the same adapter with the pre-decision-11 answer ('unknown')."""
+
+    def test_real_classify_pathway_reaches_r_deg7_pathway(self):
+        app = make_application(chosen_pathway='kkom')
+        name = 'funding.classify_pathway'
+        resolved = engine_map.resolve_tree('new')
+        new = scrub.scrub(engine_map.ADAPTERS[name](resolved).run((app.pk,)))
+        old = scrub.scrub(engine_map.ADAPTERS[name]({**resolved, name: lambda a: 'unknown'}).run((app.pk,)))
+        self.assertEqual(new['value'], 'kkom')
+        self.assertEqual(new['facts']['pathway_code'], 'kkom')
+        self.assertIs(new['facts']['degree_bound'], False)
+        self.assertEqual(scrub.count_dropped([old, new]), 0)
+        self.assertEqual(parent.classify(old, new, new), 'differs')
+        self.assertEqual(parent.explain(name, old, new), ('expected', ['R-DEG7-PATHWAY']))
 
 
 class AdapterTableTest(SimpleTestCase):

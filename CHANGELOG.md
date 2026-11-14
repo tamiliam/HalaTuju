@@ -928,6 +928,9 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 - Step 3: owner changes Q1-Q4, Q6, Q7 (decisions.md 2026-11-13). Q1 a short SPM read names its unchecked subjects, no tick. Q2 a short STPM read (Pengajian Am not read, or an unrecognised row) names them too. Q3 an entered STPM subject not on a full read is red. Q4 an STPM +/- difference on an AI read is amber (`higher_results_grade_uncertain`, new en/ms/ta copy), red on the exact read. Q6 a higher result in the SPM slot holds no clean card back. Q7 `higher_need` uses `degree_bound`. `higher_owed` docstring corrected (Unsure cap). `VERDICT_ENGINE_VERSION` 2026-11-13.2. Reviewer FAQ and Guide updated.
 - Tests: `test_slip_check_owner_changes.py` (13); three older tests moved to the Q4 rule (`test_stpm_marks`, `test_higher_undeclared_followup`).
 
+### fix: advisor action 5, sprint R2 re-check - a softened band or a one-sided degree-bound is never A (2026-11-14)
+- `rulings.py`: a status may stay or fall from Certain / Probable only (a move out of red is B, bar the R-56 / F1-Q4 twin swaps); degree rulings need degree-bound on BOTH sides, and any case fact that changes between sides makes the record B; a new test runs the real `classify_pathway` adapter to an R-DEG7-PATHWAY match (5 tests fail on the previous head).
+
 ### fix: advisor action 5, sprint R2 review round - replay findings closed (2026-11-14)
 - Branch a5; not pushed, not deployed, the replay not run. Every R1 privacy guard is unchanged.
 - `engine_map.py`: the engine names are registered before the freeze. Before this, the scrubber hashed every engine name: no ruling could match, and the report filed every engine under 'other'.

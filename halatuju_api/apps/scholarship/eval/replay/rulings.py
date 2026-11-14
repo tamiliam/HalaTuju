@@ -3,8 +3,11 @@
 A difference is EXPECTED (class A) only when an owner ruling below matches it; anything else is
 UNEXPLAINED (class B). A record's difference is cut into UNITS: for `verdict.build_verdict` one unit per
 fact that changed; for every other engine one unit per top-level field that changed (`facts`, the case
-facts, is never a unit). A record is A only when EVERY unit is matched by at least one ruling, and the
-report names every ruling that matched (a unit two rulings match is listed under both).
+facts, is never a unit). A record is A only when EVERY unit is matched by at least one ruling AND no case
+fact changed between the sides (`fact_changes`: a fact such as degree-bound is computed by engine code that
+is not replayed, so a gate one side alone sets is B), and the report names every ruling that matched (a unit
+two rulings match is listed under both). A status may stay, or fall from Certain / Probable into the
+ruling's band; a move out of red or up from Unsure is never A.
 
 Each test is NARROW: it reads the old and new value of ONE unit and non-personal case facts (`facts`:
 stored pathway code, degree-bound, start year unknown, stored award, Academic card). There is no "any
@@ -80,10 +83,11 @@ class Unit:
 
     @property
     def facts(self):
-        """The NEW side's case facts (old as fallback): the rule's non-personal gates."""
+        """The case facts BOTH sides agree on: the rule's non-personal gates. A fact the two sides read
+        differently is left out (it reads as None), and makes the record B anyway (`fact_changes`)."""
         n = (self.new_record or {}).get('facts') or {}
         o = (self.old_record or {}).get('facts') or {}
-        return {**o, **n}
+        return {k: v for k, v in n.items() if k in o and o[k] == v}
 
     def both_facts(self, key, value):
         """True when the OLD and the NEW side's case facts both hold ``key`` == ``value``."""
@@ -119,10 +123,17 @@ def _status(part):
     return part.get('status') if isinstance(part, dict) else None
 
 
-def _status_moves(u, allowed):
-    """The fact's status is unchanged, or moved to one of ``allowed``."""
+FALLS_FROM = ('verified', 'review')
+#: R-56 and R-F1-Q4 ARE an owner-ruled red -> amber: exactly one red item swapped for its amber twin.
+RED_TO_AMBER_FROM = ('gap',) + FALLS_FROM
+
+
+def _status_moves(u, allowed, from_=FALLS_FROM):
+    """The fact's status is unchanged, or moved from ``from_`` (default Certain / Probable: 'verified' /
+    'review') into one of ``allowed``. A move out of red ('gap') or up from Unsure is a softened band and
+    never a ruling (B), except for the two red -> amber twin rulings (`RED_TO_AMBER_FROM`)."""
     old, new = _status(u.old), _status(u.new)
-    return old == new or new in allowed
+    return old == new or (old in from_ and new in allowed)
 
 
 def _evidence_only_lost(u):
@@ -154,6 +165,12 @@ def _adds_only(u, codes, *, statuses=('review',)):
             and _status_moves(u, statuses) and _evidence_only_lost(u) and _params_kept(u))
 
 
+def _degree_bound(u):
+    """Degree-bound on BOTH sides: `results_route.degree_bound` is engine code that is not itself
+    replayed, so a candidate that newly sets it must never turn a degree ruling to A unseen."""
+    return u.both_facts('degree_bound', True)
+
+
 def _fact_is(u, *names):
     return u.engine == 'verdict.build_verdict' and u.field in names
 
@@ -178,25 +195,25 @@ def _td465_unknown(u):
     course-start read change) stays B. False -> True is never expected: it is a regression (B)."""
     f = u.facts
     return (u.field == 'value' and u.old is True and u.new is False and f.get('pathway_code') == 'stpm'
-            and f.get('degree_bound') is True)
+            and _degree_bound(u))
 
 
 def _deg7_award(u):
     return (u.field == 'amount' and u.old in ('3000.00', '1000.00', None) and u.new == '2000.00'
-            and u.facts.get('degree_bound') is True)
+            and _degree_bound(u))
 
 
-def _deg7_pathway_change(old, new, facts):
+def _deg7_pathway_change(old, new, u):
     """Unknown-to-TVET (decisions 10-12) is gated on the STORED pathway code read off the record
     (`facts.pathway_code`), never on engine code: the new category must be the one decisions 9-12 give
     that stored code (`STORED_TVET`). A TVET category reached from a programme name alone stays B."""
-    if new == 'degree' and old != 'degree' and facts.get('degree_bound') is True:
+    if new == 'degree' and old != 'degree' and _degree_bound(u):
         return True
-    return old == 'unknown' and new in STORED_TVET.get(facts.get('pathway_code'), ())
+    return old == 'unknown' and new in STORED_TVET.get(u.facts.get('pathway_code'), ())
 
 
 def _deg7_classify(u):
-    return u.field == 'value' and _deg7_pathway_change(u.old, u.new, u.facts)
+    return u.field == 'value' and _deg7_pathway_change(u.old, u.new, u)
 
 
 def _deg7_estimate(u):
@@ -204,7 +221,7 @@ def _deg7_estimate(u):
     old_p = (u.old_record or {}).get('pathway')
     new_p = (u.new_record or {}).get('pathway')
     fields = ('pathway', 'monthly', 'months', 'total', 'known', 'degree', 'practical', 'variable')
-    return u.field in fields and _deg7_pathway_change(old_p, new_p, u.facts)
+    return u.field in fields and _deg7_pathway_change(old_p, new_p, u)
 
 
 def _deg7_schedule(u):
@@ -213,14 +230,14 @@ def _deg7_schedule(u):
     old_p = (u.old_record or {}).get('pathway')
     new_p = (u.new_record or {}).get('pathway')
     f = u.facts
-    return (old_p == 'stpm' and new_p == 'university' and f.get('degree_bound') is True
+    return (old_p == 'stpm' and new_p == 'university' and _degree_bound(u)
             and f.get('stored_award') in DEGREE_SCHEDULE_AWARDS)
 
 
 def _r56(u):
     """A results name one look-alike letter off: the red name item becomes its amber twin ON THE SAME
     CARD - exactly that one item out and its twin in, nothing else."""
-    if not (_fact_is(u, 'academic') and _status_moves(u, ('review',)) and _evidence_only_lost(u)
+    if not (_fact_is(u, 'academic') and _status_moves(u, ('review',), RED_TO_AMBER_FROM) and _evidence_only_lost(u)
             and _params_kept(u)):
         return False
     return any(_removed(u) == {red} and _added(u) == {amber} for red, amber in R56_PAIRS)
@@ -245,7 +262,7 @@ def _r388(u):
 def _owed(u):
     """2026-11-07: a degree-bound student owes higher results (`higher_owed.cap` / `cap_undeclared`): the
     note is added and Probable / Certain fall to Unsure ('recommend'); a worse band stands."""
-    return (_fact_is(u, 'academic') and u.facts.get('degree_bound') is True
+    return (_fact_is(u, 'academic') and _degree_bound(u)
             and _adds_only(u, OWED_CODES, statuses=('recommend',)))
 
 
@@ -258,10 +275,10 @@ def _f1_q4(u):
     """An STPM +/- difference on an AI read: red grade mismatch becomes amber grade uncertain."""
     red, amber = F1_Q4_PAIR
     return (_fact_is(u, 'academic') and _removed(u) == {red} and _added(u) == {amber}
-            and _status_moves(u, ('review',)) and _evidence_only_lost(u) and _params_kept(u))
+            and _status_moves(u, ('review',), RED_TO_AMBER_FROM) and _evidence_only_lost(u) and _params_kept(u))
 
 
-V = ('verdict.build_verdict',)
+V =('verdict.build_verdict',)
 CATALOGUE = (
     Ruling('R-TD465', 'decisions.md "TD-465 hotfix: an unknown STPM course-start year gives NO automatic '
            'amount - 2026-11-05"; b0bedd549', ('award.proposed_award_amount',), _td465_amount),
@@ -327,10 +344,32 @@ def units(engine, old, new):
     return out
 
 
+#: An engine whose answer IS one of the case facts (`adapters.app_facts` calls the same function): that
+#: fact moving with the answer is the unit itself, not a separate fact change.
+ANSWER_FACT = {'award.course_start_unknown': 'start_unknown'}
+
+
+def fact_changes(engine, old, new):
+    """The case facts that differ between the sides (sorted). Facts are computed partly by engine code
+    that is not itself replayed (`degree_bound`), so any change makes the record B (A5 R2 re-check)."""
+    of = (old.get('facts') if isinstance(old, dict) else None) or {}
+    nf = (new.get('facts') if isinstance(new, dict) else None) or {}
+    echo = ANSWER_FACT.get(engine)
+    out = []
+    for k in sorted(set(of) | set(nf), key=str):
+        if of.get(k) == nf.get(k):
+            continue
+        if (k == echo and isinstance(old, dict) and isinstance(new, dict)
+                and of.get(k) == old.get('value') and nf.get(k) == new.get('value')):
+            continue
+        out.append(k)
+    return out
+
+
 def classify_difference(engine, old, new):
-    """('expected', [ruling ids]) when every changed unit matches a ruling, else ('unexplained', [ids of
-    the rulings that matched some unit])."""
-    matched, all_ok = set(), True
+    """('expected', [ruling ids]) when every changed unit matches a ruling AND no case fact changed
+    between the sides, else ('unexplained', [ids of the rulings that matched some unit])."""
+    matched, all_ok = set(), not fact_changes(engine, old, new)
     for u in units(engine, old, new):
         hits = {r.id for r in CATALOGUE if r.matches(u)}
         matched |= hits
