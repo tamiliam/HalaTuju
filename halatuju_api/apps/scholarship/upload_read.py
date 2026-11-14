@@ -142,6 +142,19 @@ def _read_copy(app, doc):
         _vision.read_text_document(doc)
 
 
+def _align_name_after_promotion(doc):
+    """#67 scope 3 (D2): the student's own IC has just been promoted into the live slot, so it is
+    now the card that speaks for them. The read ran while the upload was STAGED (not yet live), so
+    the in-read alignment (``vision.ic.run_vision_for_document``) answered ``not_latest`` there; it
+    is asked again here. A system write (the name lock never blocks it). Never raises: an upload
+    never fails over a name."""
+    try:
+        from . import identity
+        identity.align_name_to_ic(doc)
+    except Exception:      # a promotion must survive a failed alignment
+        logger.exception('ic name alignment after promotion failed for document %s', doc.id)
+
+
 def judge(app, doc, *, staged, stale_ids, existing_live):
     """Decide the slot of a document that HAS been read: the tag guard, JUDGE → PROMOTE, the dedupe,
     the resolution sync, the offer autofill and the re-ask notes. Returns the upload's response body."""
@@ -236,6 +249,8 @@ def judge(app, doc, *, staged, stale_ids, existing_live):
                     application=app, doc_type=doc.doc_type, household_member=doc.household_member,
                     request_code=doc.request_code, superseded_at__isnull=True, id__lt=doc.id).exists()
             doc.refresh_from_db()
+            if doc.doc_type == 'ic' and doc.superseded_at is None:
+                _align_name_after_promotion(doc)
         else:
             kept_previous = True
             # Circuit-breaker: don't trap a student forever on an unsatisfiable read. After K

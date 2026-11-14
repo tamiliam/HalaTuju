@@ -46,6 +46,26 @@ export function canEditName(profile: { name_locked?: boolean } | null | undefine
 }
 
 /**
+ * Is this name the card's own, letter for letter, once case and spaces are set aside? (#67 scope 3
+ * review.) The server's lock allows exactly that (it also tidies "A / P" to "A/P"); so does this,
+ * because spaces are dropped. No card name is never a match.
+ */
+export function sameLettersAsCard(name: string | null | undefined, cardName: string | null | undefined): boolean {
+  const letters = (s: string | null | undefined) => (s || '').toLowerCase().replace(/\s+/g, '')
+  return !!letters(cardName) && letters(name) === letters(cardName)
+}
+
+/**
+ * May a LOCKED student take the name on their card? (#67 scope 3 review.) The one name change a
+ * locked record allows — offered whenever the stored name is not already the card's. The server
+ * still decides whether the card speaks for them (their own, exact number, cleanly read, genuine)
+ * and answers 403 `name_locked` if not.
+ */
+export function canTakeCardName(nameLocked: boolean, name: string, cardName: string): boolean {
+  return nameLocked && !!cardName.trim() && !sameLettersAsCard(name, cardName)
+}
+
+/**
  * Show the real number while editing, the masked one at rest.
  *
  * Not cosmetic: the field rendered `maskIc(nric)` into a disabled input, so simply enabling it
@@ -76,8 +96,9 @@ export function hasIcFlags(flags: string[] | undefined): boolean {
  * Which side, if any, the student can act on.
  *
  * `nric` flags are actionable only while unlocked. A NAME flag is actionable while the name is
- * editable — always, until #67 scope 3 (2026-11-14) put the name under the same lock; a locked
- * name the card disagrees with goes to support, like a locked number.
+ * editable — always, until #67 scope 3 (2026-11-14) put the name under the same lock — or, once
+ * locked, while the student can take the card's own name (`canTakeCardNameField`, the "Use the
+ * name on my IC" action). Otherwise a locked name goes to support, like a locked number.
  *
  * `neither` is a real answer, not a fallback: a locked record whose number disagrees is exactly
  * the orphaned-claim case, and the honest thing is to tell them to contact us rather than point
@@ -87,9 +108,10 @@ export function icFixableSide(
   flags: string[] | undefined,
   canEdit: boolean,
   canEditNameField = true,
+  canTakeCardNameField = false,
 ): 'nric' | 'name' | 'both' | 'neither' {
   const fs = icFlags(flags)
-  const nameFlag = canEditNameField && fs.some((f) => f === 'name_incomplete' || f === 'name_differs')
+  const nameFlag = (canEditNameField || canTakeCardNameField) && fs.some((f) => f === 'name_incomplete' || f === 'name_differs')
   const nricFlag = fs.some((f) => f === 'nric_one_digit' || f === 'nric_differs')
   const nric = nricFlag && canEdit
   if (nric && nameFlag) return 'both'

@@ -1,6 +1,34 @@
 import {
-  canEditIc, canEditName, hasIcFlags, icFieldValue, icFixableSide, icFlags,
+  canEditIc, canEditName, canTakeCardName, hasIcFlags, icFieldValue, icFixableSide, icFlags,
+  sameLettersAsCard,
 } from './icEditor'
+
+/** #67 scope 3 review: the card's own name, letter for letter (case and spaces set aside). */
+describe('sameLettersAsCard', () => {
+  it('ignores case and spaces, including a glued or split word and "A / P"', () => {
+    expect(sameLettersAsCard('Nur Aina A/P Raju', 'NUR AINA A/P RAJU')).toBe(true)
+    expect(sameLettersAsCard('nur aina a / p raju', 'NUR AINA A/P RAJU')).toBe(true)
+    expect(sameLettersAsCard('NURAINA A/P RAJU', 'NUR AINA A/P RAJU')).toBe(true)
+  })
+
+  it('is not fooled by a short name, a reordering, digits, punctuation or a missing card', () => {
+    expect(sameLettersAsCard('NUR AINA RAJU', 'NUR AINA A/P RAJU')).toBe(false)
+    expect(sameLettersAsCard('RAJU NUR AINA A/P', 'NUR AINA A/P RAJU')).toBe(false)
+    expect(sameLettersAsCard('NUR AINA 1204 A/P RAJU', 'NUR AINA A/P RAJU')).toBe(false)
+    expect(sameLettersAsCard("NUR'AINA A/P RAJU", 'NUR AINA A/P RAJU')).toBe(false)
+    expect(sameLettersAsCard('NUR AINA', '')).toBe(false)
+    expect(sameLettersAsCard('', undefined)).toBe(false)
+  })
+})
+
+describe('canTakeCardName', () => {
+  it('is offered only to a LOCKED name that is not already the card\'s', () => {
+    expect(canTakeCardName(true, 'NUR AINA RAJU', 'NUR AINA A/P RAJU')).toBe(true)
+    expect(canTakeCardName(true, 'Nur Aina A/P Raju', 'NUR AINA A/P RAJU')).toBe(false)
+    expect(canTakeCardName(false, 'NUR AINA RAJU', 'NUR AINA A/P RAJU')).toBe(false)   // just edit it
+    expect(canTakeCardName(true, 'NUR AINA RAJU', '  ')).toBe(false)                   // no card name
+  })
+})
 
 /**
  * The padlock rule. These exist because the padlock was hard-coded from the day the field was
@@ -95,6 +123,11 @@ describe('icFixableSide', () => {
   it('does not point at a LOCKED name (#67 scope 3): that goes to support', () => {
     expect(icFixableSide(['name_differs'], false, false)).toBe('neither')
     expect(icFixableSide(['nric_differs', 'name_incomplete'], true, false)).toBe('nric')
+  })
+
+  it('points at a LOCKED name while the card\'s own name can be taken (review fix)', () => {
+    expect(icFixableSide(['name_incomplete'], false, false, true)).toBe('name')
+    expect(icFixableSide(['name_differs'], false, false, false)).toBe('neither')
   })
 
   it('points at both when both differ and the number is still editable', () => {

@@ -41,7 +41,8 @@ import re
 
 from .genuineness.bands import canonical_status, stored_status
 from .read_errors import IC_SECOND_OPINION_ERROR, ic_second_opinion_deferred
-from .vision import canonical_name_tokens, name_match, nric_close, nric_match
+from .vision import name_match, nric_close, nric_match
+from .vision.names import same_letters, same_raw_words
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
 # subset of the other — a name typed shorter or longer than the card carries.
@@ -219,10 +220,13 @@ def name_locked(profile):
 def name_change_allowed(profile, new_name):
     """May a STUDENT write ``new_name`` as their profile name? (D3.)
 
-    Always, while the IC is unlocked, and always when the name is unchanged. Once locked, only a
-    name that ``name_match == 'match'`` the latest live IC read — so a student can always set the
-    card's own name, and anything else goes through support. No card, nothing read: refused (a
-    lock with no card is an admin's lock, and the admin path is the way to change it).
+    Always, while the IC is unlocked, and always when the name is unchanged. Once locked, only the
+    name on the student's OWN latest live card (``card_speaks_for``: exact NRIC, a clean read, a
+    genuine card — the lock's own tests, via ``compare``), written as the card has it: equal once
+    case, spaces and marker spacing are tidied, or with a word glued or split (``same_letters``).
+    No digits, reordering, punctuation or added title. So a student can always set the card's own
+    name, and anything else goes through support. No card that speaks for them: refused (a lock
+    with no such card is an admin's lock, and the admin path is the way to change it).
 
     Callers: ``ProfileView.put`` (refuses 403 ``name_locked``), ``ProfileSyncView.post``,
     ``services.profile_sync.sync_profile_fields`` and the signature promotion in
@@ -233,8 +237,19 @@ def name_change_allowed(profile, new_name):
     if not name_locked(profile):
         return True
     ic = latest_live_ic(profile)
-    card = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
-    return bool(card) and bool((new_name or '').strip()) and name_match(card, new_name) == 'match'
+    if ic is None or not card_speaks_for(ic, profile):
+        return False
+    card = (ic.vision_name or '').strip()
+    return bool(card) and same_letters(card, new_name)
+
+
+def card_speaks_for(doc, profile):
+    """Is this card the student's own, read well enough to hold their name to? The IC lock's own
+    tests (``compare`` → ``locks_now``), less the name: a genuine card and the exact typed number;
+    plus a clean read (``read_is_clean``). Another person's card, a misread number or a card that
+    was never scored genuine never decides what the student may call themselves."""
+    comparison = compare(doc, profile)
+    return comparison['genuine'] and comparison['nric'] == 'match' and read_is_clean(doc)
 
 
 def read_is_clean(doc):
@@ -251,14 +266,13 @@ def read_is_clean(doc):
 
 
 def _same_words(card_name, typed_name):
-    """D2's name test: the card and the typed name carry the SAME canonical words (equal token
-    sets; order and A/L / BIN markers aside), and ``name_match`` agrees (which keeps its TD-408
-    reversed-patronymic guard). Stricter than ``name_match == 'match'`` on purpose: that also
-    passes a word glued or split by OCR (MUHAMMAD AMIN against MUHAMMADAMIN), and an alignment
-    must never rewrite a correctly typed name into the card's OCR spacing."""
-    words = canonical_name_tokens(card_name)
-    return (bool(words) and words == canonical_name_tokens(typed_name)
-            and name_match(card_name, typed_name) == 'match')
+    """D2's name test: the card and the typed name carry the SAME RAW words in any order
+    (``same_raw_words``: only case, spaces and marker spacing tidied; connectors, honorifics,
+    digits and apostrophes are words), and ``name_match`` agrees (keeping its TD-408
+    reversed-patronymic guard). Much stricter than ``name_match == 'match'`` on purpose: that
+    forgives a glued or split word, a dropped A/L, BIN for BINTI, S/O for A/L and NUR'AIN for
+    NUR AIN, and an alignment must never rewrite a correctly typed name into a worse read."""
+    return same_raw_words(card_name, typed_name) and name_match(card_name, typed_name) == 'match'
 
 
 def name_alignment(doc):
@@ -298,8 +312,11 @@ def align_name_to_ic(doc, *, write=True, source='ic_read'):
     The old value is kept on an INTERNAL ``name_aligned_to_ic`` activity row (``meta`` old/new, the
     same place a mentor change keeps names) and a log line with ids only. The signature is never
     touched. ``write=False`` answers the outcome and changes nothing (the backfill's dry run).
-    Called by ``vision.ic.run_vision_for_document`` just before the IC lock (D6) and by the
-    ``align_profile_names_to_ic`` command (D5). Returns the outcome code."""
+    Called by ``vision.ic.run_vision_for_document`` before the IC lock (D6: a card read in place,
+    e.g. the cockpit's Re-run), by ``upload_read.judge`` once a STAGED upload is promoted into the
+    slot (an upload is read while staged, when it is not yet the latest live card), and by the
+    ``align_profile_names_to_ic`` command (D5). A system write: the name lock never blocks it.
+    Returns the outcome code."""
     outcome, card_name = name_alignment(doc)
     if outcome != ALIGNED or not write:
         return outcome

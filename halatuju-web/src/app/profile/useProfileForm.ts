@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { formatIc } from '@/lib/ic-utils'
-import { canEditIc, canEditName, icFixableSide } from '@/lib/icEditor'
+import { canEditIc, canEditName, canTakeCardName, icFixableSide, sameLettersAsCard } from '@/lib/icEditor'
 import { getProfile, getSavedCourses } from '@/lib/api'
 import { chosenProgrammeFromApi } from '@/lib/scholarship'
 import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
@@ -105,7 +105,10 @@ export function useProfileForm() {
   // this student may edit. `icEditable` is the ONLY thing that grants the edit.
   const icEditable = canEditIc({ nric_locked: nricLocked })
   const nameEditable = canEditName({ name_locked: nameLocked })
-  const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable)
+  // #67 scope 3 review: a locked name that is not the card's can still be put right — to the card's.
+  const takeCardNameOffered = canTakeCardName(nameLocked, name, icCardName)
+  const nameIsTheCards = sameLettersAsCard(name, icCardName)
+  const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable, takeCardNameOffered)
 
   const loadData = useCallback(async () => {
     if (!token) return
@@ -324,6 +327,8 @@ export function useProfileForm() {
     savedBumiputera,
     icEditable,
     nameEditable,
+    takeCardNameOffered,
+    nameIsTheCards,
     icFixable,
     thirdHeld,
     resultsPath,

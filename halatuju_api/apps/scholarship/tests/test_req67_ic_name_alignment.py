@@ -3,16 +3,21 @@
 The owner's decisions D1-D6 (docs/plans/req67-scope3-ic-name-alignment-brief.md):
 
 * D1/D2 — the name read off the student's OWN MyKad becomes ``profile.name`` when that is safe:
-  exact NRIC, a clean read, and the card's name the SAME WORDS as the typed profile name or one of
-  the profile's signatures (a glued or split word is not). ``declaration_name`` is never rewritten.
-* D3 — once ``nric_verified`` is on, a STUDENT write may change the name only to the card's own:
-  the /profile PUT is refused 403 ``name_locked``; the apply-form sync and the submit-time
-  signature promotion keep the stored name silently.
+  exact NRIC, a clean read, and the card's name the SAME RAW WORDS as the typed profile name or one
+  of the profile's signatures (only case, spaces and marker spacing tidied: a glued or split word, a
+  dropped or different connector, BIN for BINTI, a missing apostrophe are not). On an upload it runs
+  once the staged card is promoted. ``declaration_name`` is never rewritten.
+* D3 — once ``nric_verified`` is on, a STUDENT write may change the name only to the card's own
+  (the student's own genuine card, exact NRIC, clean read; the card's name as written, or with a
+  word glued or split): the /profile PUT is refused 403 ``name_locked``; the apply-form sync and
+  the submit-time signature promotion keep the stored name silently.
 * D4 — a student card whose name reads SHORT of the typed name (a strict subset) asks the AI second
-  reader, and the AI's full name is taken when it matches; a deterministic match, or a read LONGER
-  than the typed name, is never replaced; parent cards keep their rule.
+  reader, and the AI's full name is taken when it matches; so does a read SHORT of a name the
+  student signed. A deterministic match, or a read LONGER than the typed name, is never replaced;
+  parent cards keep their rule.
 * D5 — ``align_profile_names_to_ic``: dry run by default, ids and counts only.
-* D6 — align before the lock, so the lock compares the card with the name it will hold.
+* D6 — align before the lock, so the lock compares the card with the name it will hold; two
+  separate never-raise steps, so a failed alignment never costs the lock.
 
 Every name and NRIC here is invented. No model is ever called (Storage, Vision and Gemini are mocked).
 """
@@ -26,11 +31,12 @@ from rest_framework.test import APIClient
 
 from apps.courses import profile_claim
 from apps.courses.models import StudentProfile
-from apps.scholarship import identity, vision
+from apps.scholarship import identity, upload_read, vision
 from apps.scholarship.models import ApplicantDocument, StudentActivity
 from apps.scholarship.models.activity import EVENT_NAME_ALIGNED_TO_IC
 from apps.scholarship.read_errors import IC_SECOND_OPINION_ERROR
 from apps.scholarship.services.profile_sync import sync_profile_fields
+from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import (
     auth_token, create_document, make_application, make_cohort, make_student,
 )
@@ -138,6 +144,59 @@ class The177Shape(TestCase):
         with patch.object(identity, 'align_name_to_ic', side_effect=RuntimeError('boom')):
             _read(doc, name=CARD, nric=NRIC)
         self.assertEqual(doc.vision_name, CARD)                  # the read is stored regardless
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.nric_verified)              # and the lock is still taken
+        self.assertEqual(self.profile.name, SHORT_EDIT)          # (the alignment did not run)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET='test-supabase-jwt-secret',
+                   DOC_GENUINENESS_CHECK_ENABLED=True, IC_GEMINI_FALLBACK_ENABLED=True)
+class ThroughARealUpload(TestCase):
+    """Review fix 1: an IC upload is STAGED (not live) while it is read, so the in-read alignment
+    answers ``not_latest``; the name aligns when the judged card is promoted into the slot. Through
+    the real API: the upload is queued, then ``upload_read.run_read`` reads, judges and promotes.
+    Only Storage, Vision, Gemini and the genuineness model are mocked."""
+
+    def setUp(self):
+        self.profile = _student(SHORT_EDIT, NRIC, supabase_user_id='req67-real-upload')
+        self.app = make_application('shortlisted', student=self.profile, declaration_name=CARD)
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(self.profile)}')
+
+    def _upload_and_read(self, tag):
+        ocr = {'nric': NRIC, 'name': CARD, 'address': '', 'error': None}
+        with patch('apps.scholarship.storage.object_exists', return_value=True), \
+                patch('apps.scholarship.vision._fetch_image_bytes', return_value=_IMAGE), \
+                patch('apps.scholarship.vision.extract_mykad', return_value=ocr), \
+                patch('apps.scholarship.vision.ic_genuineness', return_value={'status': 'genuine'}), \
+                patch('apps.scholarship.vision._gemini_ic_second_opinion',
+                      side_effect=AssertionError('no second opinion')):
+            r = self.client.post('/api/v1/scholarship/documents/', {
+                'doc_type': 'ic', 'storage_path': issued_key(self.app, 'ic', tag),
+                'content_type': 'image/jpeg', 'original_filename': f'{tag}.jpg', 'size': 1000},
+                format='json')
+            self.assertEqual(r.status_code, 201, r.content)
+            outcome, _ = upload_read.run_read(r.json()['id'])
+        self.assertEqual(outcome, 'done')
+        return ApplicantDocument.objects.get(pk=r.json()['id'])
+
+    def test_a_short_profile_name_with_the_signature_on_the_card_ends_aligned_and_locked(self):
+        doc = self._upload_and_read('first')
+        self.assertIsNone(doc.superseded_at)                     # promoted into the live slot
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.name, CARD)
+        self.assertTrue(self.profile.nric_verified)
+        self.assertEqual(identity.compare(doc, self.profile)['name'], 'match')
+        self.assertTrue(StudentActivity.objects.filter(
+            application=self.app, event=EVENT_NAME_ALIGNED_TO_IC).exists())
+
+    def test_a_replacement_card_aligns_too(self):
+        self._upload_and_read('first')
+        self.profile.name = SHORT_EDIT          # (an admin edit, say: the system write still aligns)
+        self.profile.save(update_fields=['name'])
+        doc = self._upload_and_read('second')
+        self.assertIsNone(doc.superseded_at)
+        self.assertEqual(_name_of(self.profile), CARD)
 
 
 class WhenItAligns(TestCase):
@@ -202,6 +261,32 @@ class WhenItDoesNotAlign(TestCase):
 
     def test_a_parents_card_never_names_the_student(self):
         self._refused(_ic(self.app, doc_type='parent_ic', member='father'), identity.NOT_STUDENT_IC)
+
+    def test_a_dropped_or_different_connector_or_apostrophe_is_not_the_same_words(self):
+        """``name_match`` strips connectors and punctuation, so each pair below is its 'match'; the
+        alignment keeps them as words, so none rewrites the typed name."""
+        probes = (('KUMAR RAJ', 'KUMAR A/L RAJ'), ('ALI BINTI ABU', 'ALI BIN ABU'),
+                  ('KUMAR S/O RAJ', 'KUMAR A/L RAJ'), ("NUR'AIN BINTI ISMAIL", 'NUR AIN BINTI ISMAIL'))
+        for n, (typed, card) in enumerate(probes):
+            with self.subTest(typed=typed, card=card):
+                self.assertEqual(vision.name_match(card, typed), 'match')     # the tolerance exists
+                nric = f'060707-07-71{n:02d}'
+                profile = _student(typed, nric)
+                app = make_application(student=profile, declaration_name=typed)
+                doc = _ic(app, name=card, nric=nric)
+                self.assertEqual(identity.align_name_to_ic(doc), identity.NO_NAME_MATCH)
+                self.assertEqual(_name_of(profile), typed)
+
+    def test_only_case_spaces_and_marker_spacing_are_tidied(self):
+        profile = _student('nirmala  devi a / p ganesan moorthy', '060707-07-7180')
+        app = make_application(student=profile)
+        profile.name = 'NIRMALA DEVI A/P GANESAN'                 # signed in full, edited short
+        profile.save(update_fields=['name'])
+        app.declaration_name = 'nirmala  devi a / p ganesan moorthy'
+        app.save(update_fields=['declaration_name'])
+        doc = _ic(app, name=CARD, nric='060707-07-7180')
+        self.assertEqual(identity.align_name_to_ic(doc), identity.ALIGNED)
+        self.assertEqual(_name_of(profile), CARD)
 
     def test_a_glued_or_split_word_is_not_the_same_words(self):
         """``name_match`` forgives an OCR space glued or split (MUHAMMAD AMIN ~ MUHAMMADAMIN); the
@@ -279,6 +364,61 @@ class The559Shape(TestCase):
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, IC_GEMINI_FALLBACK_ENABLED=True)
+class AShortReadOfHerSignature(TestCase):
+    """Review fix 6: the profile name was edited down to the 4 words the layout read, so the read
+    'matches' the profile; but she SIGNED the full 7. A read that is a strict subset of a signature
+    asks the second reader, and its name is taken when it is the signature's raw words."""
+
+    def setUp(self):
+        self.profile = _student(FIRST4, NRIC7)
+        self.app = make_application(student=self.profile, declaration_name=FULL7)
+        self.doc = _ic(self.app, name='', nric='')
+
+    def test_it_asks_takes_the_signed_words_and_aligns(self):
+        g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                  second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        g.assert_called_once()
+        self.assertEqual(self.doc.vision_name, FULL7)
+        self.assertEqual(_name_of(self.profile), FULL7)            # and the profile aligns to it
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.nric_verified)
+
+    def test_a_second_reading_that_is_not_the_signed_words_is_not_taken(self):
+        """'match' alone is not enough here: the AI's name must be the signature's own raw words."""
+        no_connector = FULL7.replace(' A/P', '')
+        self.assertEqual(vision.name_match(no_connector, FULL7), 'match')
+        g = _read(self.doc, name=FIRST4, nric=NRIC7,
+                  second={'nric': NRIC7, 'name': no_connector, 'address': ''})
+        g.assert_called_once()
+        self.assertEqual(self.doc.vision_name, FIRST4)
+        self.assertEqual(_name_of(self.profile), FIRST4)
+
+    def test_a_signature_on_another_of_her_applications_counts(self):
+        self.app.declaration_name = ''
+        self.app.save(update_fields=['declaration_name'])
+        make_application(student=self.profile, cohort=make_cohort(), declaration_name=FULL7)
+        _read(self.doc, name=FIRST4, nric=NRIC7, second={'nric': NRIC7, 'name': FULL7, 'address': ''})
+        self.assertEqual(self.doc.vision_name, FULL7)
+
+    def test_a_read_longer_than_the_signature_never_asks_and_is_never_shortened(self):
+        self.app.declaration_name = FIRST4
+        self.app.save(update_fields=['declaration_name'])
+        g = _read(self.doc, name=FULL7, nric=NRIC7)
+        g.assert_not_called()
+        self.assertEqual(self.doc.vision_name, FULL7)
+        out = vision._merge_ic_reads({'nric': NRIC7, 'name': FULL7}, {'nric': NRIC7, 'name': FIRST4},
+                                     self.profile, own_card=True)
+        self.assertEqual(out['name'], FULL7)
+
+    def test_only_her_own_card_asks_for_her_signature(self):
+        read = {'nric': NRIC7, 'name': FIRST4}
+        self.assertEqual(vision.name_match(FIRST4, self.profile.name), 'match')    # no other reason
+        self.assertFalse(vision._should_gemini_ic(read, self.profile))
+        self.assertTrue(vision._should_gemini_ic(read, self.profile, own_card=True))
+        out = vision._merge_ic_reads(read, {'nric': NRIC7, 'name': FULL7}, self.profile)
+        self.assertEqual(out['name'], FIRST4)                    # not her card: today's merge
+
+
 class ParentCardsAreUnaffected(TestCase):
     def test_a_short_read_is_not_a_reason_to_escalate_without_own_card(self):
         profile = _student(FULL7, NRIC7)
@@ -309,16 +449,47 @@ class NameChangeAllowed(TestCase):
     def setUp(self):
         self.profile = _student(CARD, NRIC, nric_verified=True)
         self.app = make_application(student=self.profile, declaration_name=CARD)
-        _ic(self.app)
+        self.card = _ic(self.app)
 
     def test_the_rule(self):
         allowed = identity.name_change_allowed
         self.assertTrue(allowed(self.profile, CARD))
         self.assertTrue(allowed(self.profile, '  nirmala  devi a / p ganesan moorthy '))   # unchanged
-        self.assertTrue(allowed(self.profile, 'Moorthy Nirmala Devi A/P Ganesan'))        # the card's words
-        self.assertFalse(allowed(self.profile, SHORT_EDIT))                              # partial
+        self.profile.name = SHORT_EDIT                       # locked on a short name: back to the card
+        self.assertTrue(allowed(self.profile, 'nirmala devi a / p ganesan moorthy'))      # the card, tidied
+        self.assertTrue(allowed(self.profile, 'NIRMALADEVI A/P GANESAN MOORTHY'))        # a word glued
+        self.assertTrue(allowed(self.profile, 'NIRMALA DEVI A/P GANE SAN MOORTHY'))      # a word split
+        self.assertFalse(allowed(self.profile, 'NIRMALA DEVI'))                          # partial
         self.assertFalse(allowed(self.profile, 'SOMEONE ELSE ENTIRELY'))
         self.assertFalse(allowed(self.profile, ''))
+
+    def test_name_match_tolerance_does_not_open_the_lock(self):
+        """Review fix 5: 'match' forgives digits, reordering, punctuation and titles; the lock does not."""
+        profile = _student('SHARMILA RAJU', '060707-07-7190', nric_verified=True)
+        _ic(make_application(student=profile, declaration_name='SHARMILA A/P RAJU'),
+            name='SHARMILA A/P RAJU', nric='060707-07-7190')
+        self.assertTrue(identity.name_change_allowed(profile, 'SHARMILA A/P RAJU'))
+        for probe in ('SHARMILA 1204 RAJU', 'RAJU SHARMILA', 'RAJU A/P SHARMILA', 'SHARMILA A/P RAJU!!',
+                      'SHARMILA. A/P RAJU', 'DATUK DR SHARMILA A/P RAJU', 'PUAN SHARMILA A/P RAJU'):
+            with self.subTest(probe=probe):
+                self.assertFalse(identity.name_change_allowed(profile, probe))
+
+    def test_only_her_own_well_read_genuine_card_speaks(self):
+        """Review fix 3: the latest live card must be HERS (exact NRIC), cleanly read and genuine."""
+        self.profile.name = SHORT_EDIT
+        cases = (('another person', {'name': 'SITI AMINAH BINTI YUSOF', 'nric': '991231-14-5550'},
+                  'SITI AMINAH BINTI YUSOF'),
+                 ('a misread number', {'nric': OTHER_NRIC}, CARD),
+                 ('never scored genuine', {'vf': {'authenticity': {}}}, CARD),
+                 ('scored not genuine', {'vf': {'authenticity': {'status': 'suspicious'}}}, CARD),
+                 ('an errored read', {'error': 'could not fetch image'}, CARD),
+                 ('a pending second opinion', {'vf': {'ic_second_opinion': 'ours'}}, CARD))
+        for label, kw, name in cases:
+            with self.subTest(label):
+                newer = _ic(self.app, **kw)
+                self.assertFalse(identity.name_change_allowed(self.profile, name))
+                newer.delete()
+        self.assertTrue(identity.name_change_allowed(self.profile, CARD))
 
     def test_unlocked_anything_goes(self):
         self.profile.nric_verified = False
@@ -350,9 +521,24 @@ class TheProfilePut(TestCase):
         self.assertEqual((self.profile.name, self.profile.school), (CARD, 'SMK ASAL'))
 
     def test_the_cards_own_name_is_accepted(self):
-        r = self._put(name='moorthy nirmala devi a/p ganesan')
+        self.profile.name = SHORT_EDIT
+        self.profile.save(update_fields=['name'])
+        r = self._put(name='nirmala devi a / p ganesan moorthy')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(_name_of(self.profile), 'MOORTHY NIRMALA DEVI A/P GANESAN')
+        self.assertEqual(_name_of(self.profile), CARD)
+
+    def test_a_reordered_name_is_refused(self):
+        self.assertEqual(self._put(name='MOORTHY NIRMALA DEVI A/P GANESAN').status_code, 403)
+
+    def test_another_persons_card_does_not_open_the_lock(self):
+        """Review fix 3: a genuine card with someone else's number, uploaded as the latest live IC,
+        cannot be used to take that person's name."""
+        app = ApplicantDocument.objects.filter(application__profile=self.profile).first().application
+        _ic(app, name='SITI AMINAH BINTI YUSOF', nric='991231-14-5550')
+        r = self._put(name='SITI AMINAH BINTI YUSOF')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.json()['code'], 'name_locked')
+        self.assertEqual(_name_of(self.profile), CARD)
 
     def test_an_unchanged_name_always_passes(self):
         r = self._put(name=CARD.lower(), school='SMK BARU')
@@ -385,8 +571,11 @@ class TheFormSyncAndThePromotion(TestCase):
         self.profile.refresh_from_db()
         self.assertEqual((self.profile.name, self.profile.school), (CARD, 'SMK BARU'))
 
-    def test_the_apply_form_sync_takes_the_cards_own_words(self):
-        self.assertIn('name', sync_profile_fields(self.profile, {'name': 'Moorthy Nirmala Devi A/P Ganesan'}))
+    def test_the_apply_form_sync_takes_the_cards_own_name(self):
+        self.profile.name = SHORT_EDIT
+        self.profile.save(update_fields=['name'])
+        self.assertIn('name', sync_profile_fields(self.profile, {'name': 'Nirmala Devi A/P Ganesan Moorthy'}))
+        self.assertEqual(_name_of(self.profile), CARD)
 
     def test_the_submit_promotion_keeps_a_locked_name_and_stores_the_signature_verbatim(self):
         from apps.scholarship.services.intake import create_application
@@ -452,6 +641,24 @@ class TheBackfillCommand(TestCase):
         for secret in (CARD, SHORT_EDIT, NRIC, 'SITI', '060707'):
             self.assertNotIn(secret, out.upper())
         self.assertEqual(_name_of(self.drift), SHORT_EDIT)
+
+    def test_one_bad_row_is_counted_and_never_stops_the_pass(self):
+        real = identity.align_name_to_ic
+
+        def flaky(doc, **kw):
+            if doc.application_id == self.drift_app.id:
+                raise RuntimeError('boom')
+            return real(doc, **kw)
+        with patch.object(identity, 'align_name_to_ic', side_effect=flaky), \
+                self.assertLogs('apps.scholarship.management.commands.align_profile_names_to_ic',
+                                level='WARNING'):
+            out = self._run('--apply')
+        self.assertIn(f'app {self.drift_app.id}: failed (see the log)', out)
+        self.assertIn('2 checked, 0 aligned', out)
+        self.assertIn('failed 1', out)
+        self.assertIn('nric_differs 1', out)                     # the other row was still checked
+        for secret in (CARD, SHORT_EDIT, NRIC, 'SITI', '060707', 'BOOM'):
+            self.assertNotIn(secret, out.upper())
 
     def test_apply_writes_once_and_a_second_run_finds_it_already_done(self):
         self.assertIn('2 checked, 1 aligned', self._run('--apply'))

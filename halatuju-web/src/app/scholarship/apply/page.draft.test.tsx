@@ -242,3 +242,43 @@ describe('the submit doors (Mobile M4)', () => {
     expect(screen.getByTestId('apply-draft-note').textContent).toBe('scholarship.apply.commitNote')
   })
 })
+
+// #67 scope 3 review fix 9: a LOCKED name is the profile's (held to her IC). A restored draft (or a
+// pre-filled handle) must not be shown as the verified name, nor the signature checked against it.
+describe('a locked name', () => {
+  const CARD = 'PRIYA A/P RAJAN'
+  const mountLocked = (extra: object = {}) => render(
+    <AuthContext.Provider value={{ status: 'ready', token: 'tkn', session: testSession, showAuthGate: () => {},
+      profile: { ...profile, name: CARD, name_locked: true, ic_card_name: CARD, ...extra } } as never}>
+      <ScholarshipApplyPage />
+    </AuthContext.Provider>,
+  )
+
+  it('shows and checks the profile name, never the draft\'s', async () => {
+    seedApplyDraft(complete, 'personal', 'bp')            // the draft still holds the old 'Priya'
+    mountLocked()
+    await screen.findByTestId('apply-gift-line')
+    expect(await screen.findByText(CARD)).toBeTruthy()
+    expect(screen.queryByText('Priya')).toBeNull()
+    expect(screen.getByText('profile.nameLockedNote')).toBeTruthy()
+  })
+
+  it('a signature of the draft name is refused; the card name submits it, sending the card name', async () => {
+    seedApplyDraft(complete, 'support', 'bp')
+    mountLocked()
+    await screen.findByTestId('apply-gift-line')
+    await consentAndSign('Priya')                         // the draft's name: not hers any more
+    expect(screen.getByText('scholarship.apply.declaration.mismatch')).toBeTruthy()
+    await signAndSubmit(CARD)
+    await waitFor(() => expect(submit).toHaveBeenCalled())
+    expect(submit.mock.calls[0][0].name).toBe(CARD)
+  })
+
+  it('a locked name that is not the card\'s points to the fix on /profile, not "matches your IC"', async () => {
+    seedApplyDraft(complete, 'personal', 'bp')
+    mountLocked({ name: 'PRIYA' })
+    await screen.findByTestId('apply-gift-line')
+    expect(await screen.findByText('profile.nameFromCardOnProfile')).toBeTruthy()
+    expect(screen.queryByText('profile.nameLockedNote')).toBeNull()
+  })
+})

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from ..genuineness.bands import keep_stored_authenticity
 from ..read_errors import IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, is_ai_service_error
-from .names import canonical_name_tokens, name_match, nric_match
+from .names import canonical_name_tokens, name_match, nric_match, same_raw_words
 from .ocr import _doc_usage_ctx
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
@@ -24,6 +24,22 @@ def _short_of_typed(read_name: str, typed_name: str) -> bool:
     return bool(a) and a < b and name_match(read_name, typed_name) == 'partial'
 
 
+def _signatures(profile) -> list:
+    """The truthfulness-declaration names this student signed (``declaration_name`` on each of
+    their applications) — D4's second reference on their OWN card: a profile name edited short
+    after signing must not make a short read look complete (#67 scope 3, review). [] for anything
+    that is not a saved student profile (a parent's reference, a test stand-in)."""
+    apps = getattr(profile, 'scholarship_applications', None) if getattr(profile, 'pk', None) else None
+    if apps is None:
+        return []
+    try:
+        return [n.strip() for n in apps.exclude(declaration_name='')
+                .values_list('declaration_name', flat=True) if (n or '').strip()]
+    except Exception:      # a reference lookup never costs the read
+        logger.warning('ic read: could not list signatures', exc_info=True)
+        return []
+
+
 def _should_gemini_ic(result: dict, profile, own_card: bool = False) -> bool:
     """Escalate to the Gemini second opinion only when the deterministic read is
     low-confidence: a core field is missing, OR it disagrees with the profile the
@@ -32,7 +48,9 @@ def _should_gemini_ic(result: dict, profile, own_card: bool = False) -> bool:
 
     ``own_card`` (the student's own ``ic``, never a parent's — D4, #67 scope 3): a read whose
     name is SHORTER than the typed name (a strict subset) escalates too, because a lost second
-    line of the name reads exactly like that. A read LONGER than the typed name does not."""
+    line of the name reads exactly like that — and so does one SHORTER than a name the student
+    signed (``_signatures``), however short the profile name was later edited. A read LONGER than
+    the typed name does not."""
     if not getattr(settings, 'IC_GEMINI_FALLBACK_ENABLED', True):
         return False
     nric = (result.get('nric') or '').strip()
@@ -46,6 +64,8 @@ def _should_gemini_ic(result: dict, profile, own_card: bool = False) -> bool:
     if p_name and name_match(name, p_name) == 'mismatch':
         return True
     if own_card and p_name and _short_of_typed(name, p_name):
+        return True
+    if own_card and any(_short_of_typed(name, sig) for sig in _signatures(profile)):
         return True
     return False
 
@@ -63,7 +83,11 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
     that name (``_short_of_typed``) — the short, ``partial`` read of application 559. Never when
     the deterministic read is LONGER than the typed name (a superset): a longer read is never
     replaced by a shorter one, whatever made the read escalate. A deterministic ``match`` still
-    stands. Parent cards (``own_card`` False) keep the rule above exactly."""
+    stands. Also on the own card: Gemini's name wins when it is the SAME WORDS as a name the
+    student signed (``same_raw_words``) and the deterministic read is a strict subset of that
+    signature — even if the read matches a profile name edited short after signing. Every branch
+    lengthens the read; none shortens it. Parent cards (``own_card`` False) keep the rule above
+    exactly."""
     p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
     p_names = [n for n in (getattr(profile, 'names', None) or [getattr(profile, 'name', '') or '']) if n] if profile else []
     out = dict(det)
@@ -85,6 +109,10 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
                       for n in p_names)
               and all(name_match(out['name'], n) != 'match' for n in p_names)):
             out['name'] = gname   # D4: the whole name, where the deterministic read was short
+        elif (own_card
+              and any(same_raw_words(gname, sig) and _short_of_typed(out['name'], sig)
+                      for sig in _signatures(profile))):
+            out['name'] = gname   # D4: the signed name, where the read and the profile were short
     gaddr = (g.get('address') or '').strip()
     if gaddr:
         out['address'] = gaddr   # cleaner read (no card labels / truncation)
@@ -181,14 +209,19 @@ def run_vision_for_document(doc) -> dict:
         doc.vision_fields = vf
         update_fields.append('vision_fields')
     doc.save(update_fields=update_fields)
+    # D6 (#67 scope 3): align the name to the card FIRST, so the lock below compares the card with
+    # the name it will hold. Two separate never-raise blocks: a failed alignment never costs the
+    # lock. A STAGED upload is not the live card yet, so it aligns on promotion instead
+    # (``upload_read.judge``); a card read in place (Re-run, re-extract) aligns here.
     try:
-        # D6 (#67 scope 3): align the name to the card FIRST, so the lock below compares the card
-        # with the name it will hold. Both never raise past here.
         from .. import identity
         identity.align_name_to_ic(doc)          # a parent's card is refused inside (NOT_STUDENT_IC)
+    except Exception:               # an upload must survive a failed alignment
+        logger.exception('ic name alignment failed for document %s', getattr(doc, 'id', None))
+    try:
         _lock_nric_if_confirmed(doc)
     except Exception:               # noqa: BLE001 — an upload must survive a failed lock
-        logger.exception('ic name alignment / lock failed for document %s', getattr(doc, 'id', None))
+        logger.exception('ic lock failed for document %s', getattr(doc, 'id', None))
     return result
 
 

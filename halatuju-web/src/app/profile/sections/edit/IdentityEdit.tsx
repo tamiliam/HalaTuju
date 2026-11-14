@@ -8,8 +8,8 @@ import type { SectionProps } from '../../useProfileEditor'
 /** The identity section's edit panel. Fetched as one chunk with the other four (see `useProfileEditors`). */
 export default function IdentityEdit({ f, ed }: SectionProps) {
   const { t } = useT()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nricDraft, setNricDraft, nricError, setNricError, saving, malaysian, icEditable, nameEditable, icFixable } = f
-  const { cancelEditing, saveSection } = ed
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nricDraft, setNricDraft, nricError, setNricError, saving, malaysian, icEditable, nameEditable, takeCardNameOffered, nameIsTheCards, icFixable } = f
+  const { cancelEditing, saveSection, takeCardName } = ed
   return (
     <div className="space-y-4">
       <div>
@@ -75,7 +75,9 @@ export default function IdentityEdit({ f, ed }: SectionProps) {
             )}
           </dl>
           <p className="mt-2 text-xs text-caution-800">
-            {t(`profile.icFixable.${icFixable}`)}
+            {t(icFixable === 'name' && !nameEditable
+              ? 'profile.icFixable.nameFromCard'
+              : `profile.icFixable.${icFixable}`)}
           </p>
         </div>
       )}
@@ -102,7 +104,26 @@ export default function IdentityEdit({ f, ed }: SectionProps) {
             </svg>
           )}
         </div>
-        {!nameEditable && <p className="mt-1.5 text-xs text-ground-500">{t('profile.nameLockedNote')}</p>}
+        {/* #67 scope 3 review: "matches your IC" only when it does. A locked name that is not the
+            card's (an old short edit, say) gets the one change it may make: to the card's name. */}
+        {!nameEditable && !takeCardNameOffered && (
+          <p className="mt-1.5 text-xs text-ground-500">
+            {t(nameIsTheCards ? 'profile.nameLockedNote' : 'profile.nameLockedContact')}
+          </p>
+        )}
+        {takeCardNameOffered && (
+          <div className="mt-1.5 space-y-1.5">
+            <p className="text-xs text-ground-600">{t('profile.nameFromCardHint', { name: icCardName })}</p>
+            <button
+              type="button"
+              onClick={takeCardName}
+              disabled={saving}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-brand-shape text-primary-700 bg-primary-50 hover:bg-primary-100 disabled:opacity-50"
+            >
+              {t('profile.useCardName')}
+            </button>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

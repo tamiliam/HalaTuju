@@ -38,6 +38,34 @@ def _split_glued_markers(s: str) -> str:
     return _GLUED_MARKER_AFTER.sub(r'\1 \2', s)
 
 
+def tidy_name(s: str) -> str:
+    """A name with ONLY its case, runs of spaces and marker spacing tidied ("A / L" and a glued
+    "KUMARA/L" become "a/l"; "@" stands alone). Every word stays a word: connectors (A/L, A/P,
+    S/O, D/O, BIN, BINTI, @), honorifics, digits and apostrophes are NOT stripped — unlike
+    ``canonical_name_tokens``. #67 scope 3: the strict comparisons behind writing or holding a
+    student's name (``same_raw_words``, ``same_letters``)."""
+    t = re.sub(r'\s*/\s*', '/', str(s or '').lower())
+    t = _split_glued_markers(t)
+    t = re.sub(r'\s*@\s*', ' @ ', t)
+    return ' '.join(t.split())
+
+
+def same_raw_words(a: str, b: str) -> bool:
+    """The same words, any order, once tidied (``tidy_name``): equal word MULTISETS. KUMAR RAJ is
+    not KUMAR A/L RAJ, BIN is not BINTI, A/L is not S/O, NUR AIN is not NUR'AIN, and a glued or
+    split word (MUHAMMAD AMIN / MUHAMMADAMIN) is not the same words."""
+    wa, wb = tidy_name(a).split(), tidy_name(b).split()
+    return bool(wa) and sorted(wa) == sorted(wb)
+
+
+def same_letters(a: str, b: str) -> bool:
+    """The same characters in the same order once tidied and every space removed: the card's own
+    name, or that name with a word glued or split. Nothing else (no digits added, no reordering,
+    no punctuation, no title)."""
+    sa, sb = tidy_name(a).replace(' ', ''), tidy_name(b).replace(' ', '')
+    return bool(sa) and sa == sb
+
+
 def _canonical_nric(s: str) -> str:
     """Strip hyphens, spaces, and non-digits. Returns ''-on-blank."""
     return re.sub(r'\D', '', s or '')

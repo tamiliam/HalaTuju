@@ -180,14 +180,46 @@ describe('identity section', () => {
 
   // #67 scope 3 (2026-11-14): the name is held to the IC by the same stored lock.
   it('a locked name is read-only with the padlock and note, and the save does not send it', async () => {
-    await mount({ name_locked: true })
+    await mount({ name_locked: true, ic_card_name: 'Test  Student' })
     editSection(0)
     expect((screen.getByLabelText('profile.name') as HTMLInputElement).disabled).toBe(true)
     expect(screen.getByTestId('name-padlock')).toBeTruthy()
     expect(screen.getByText('profile.nameLockedNote')).toBeTruthy()
+    expect(screen.queryByText('profile.useCardName')).toBeNull()
     await save()
     await waitFor(() => expect(updateMock).toHaveBeenCalled())
     expect(updateMock.mock.calls[0][0]).not.toHaveProperty('name')
+  })
+
+  // #67 scope 3 review: a locked name that is NOT the card's (an old short edit) has one way out.
+  it('a locked name that is not the card\'s offers the card\'s name, and sends only that', async () => {
+    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'TEST A/P STUDENT', ic_flags: ['name_incomplete'] })
+    editSection(0)
+    expect(screen.queryByText('profile.nameLockedNote')).toBeNull()      // it does not match: no "matches" note
+    expect(screen.getByText('profile.icFixable.nameFromCard')).toBeTruthy()
+    profileMock.mockResolvedValue({ ...BASE, name_locked: true, name: 'TEST A/P STUDENT', ic_card_name: 'TEST A/P STUDENT' })
+    await act(async () => { fireEvent.click(screen.getByText('profile.useCardName')) })
+    await waitFor(() => expect(updateMock).toHaveBeenCalledWith({ name: 'TEST A/P STUDENT' }, expect.anything()))
+    expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameFromCardSaved', 'success')
+    await waitFor(() => expect(screen.getByText('profile.nameLockedNote')).toBeTruthy())
+    expect(screen.queryByText('profile.useCardName')).toBeNull()
+  })
+
+  it('a refused card name (403 name_locked: not her card) says so and changes nothing', async () => {
+    updateMock.mockRejectedValueOnce(Object.assign(new Error('403'), { bodyCode: 'name_locked' }))
+    await mount({ name_locked: true, name: 'TEST', ic_card_name: 'SOMEONE ELSE' })
+    editSection(0)
+    await act(async () => { fireEvent.click(screen.getByText('profile.useCardName')) })
+    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
+    expect((screen.getByLabelText('profile.name') as HTMLInputElement).value).toBe('TEST')
+  })
+
+  it('a locked name with no card to compare says only that it is held', async () => {
+    await mount({ name_locked: true })
+    editSection(0)
+    expect(screen.getByText('profile.nameLockedContact')).toBeTruthy()
+    expect(screen.queryByText('profile.nameLockedNote')).toBeNull()
+    expect(screen.queryByText('profile.useCardName')).toBeNull()
   })
 
   it('an unlocked name stays editable with no padlock', async () => {

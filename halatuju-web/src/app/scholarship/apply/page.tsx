@@ -1,7 +1,7 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -34,6 +34,7 @@ import {
   APPLY_FIELD_LABEL_KEYS,
 } from '@/lib/scholarship'
 import { applyPlanPatch } from '@/lib/planPicker'
+import { sameLettersAsCard } from '@/lib/icEditor'
 import { applyCard } from '@/lib/applyCopy'
 import { useApplyGate, applyPageExit } from '@/lib/useApplyGate'   // the SERVER's verdict; no web rule
 import { useApplyGift, isProgrammeRequired, isOtherConflict, clearApplyProgramme } from '@/lib/useApplyGift'
@@ -95,6 +96,13 @@ export default function ScholarshipApplyPage() {
   // degree) reads the RESULTS we hold, not the declared exam (TD-325; owner ruling TD-324):
   // `profileAcademicSummary` reads the served `results_held` — the same rule as the Results step.
   const examType: Qualification = profileAcademicSummary(profile).examType
+  // #67 scope 3: a LOCKED name is the profile's (held to her IC), never what the form holds — a
+  // restored draft or a pre-filled handle would otherwise be shown as verified, and the signature
+  // checked against it. Every display and check of the name reads this, not `form`.
+  const nameLocked = !!profile?.name_locked
+  const lockedName = nameLocked ? (profile?.name || '') : ''
+  const checkedForm = useMemo(
+    () => (nameLocked ? { ...form, name: lockedName } : form), [form, nameLocked, lockedName])
   // Where the Plans step draws "Eligible only": the card header, beside the step's title.
   const [switchSlot, setSwitchSlot] = useState<HTMLElement | null>(null)
   // ⚠ THE RESULTS STEP NAMES NO EXAM. It used to read "My SPM Results" / "My STPM Results" off
@@ -184,12 +192,12 @@ export default function ScholarshipApplyPage() {
   // unconditional — Rules of Hooks. (Computes the tab index from `tab` directly.)
   useEffect(() => {
     if (!error) return
-    const errKey = applyFormError(form, examType)
+    const errKey = applyFormError(checkedForm, examType)
     const next = errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= TAB_ORDER.indexOf(tab)
       ? t(`scholarship.apply.error.${errKey}`)
       : null
     setError((prev) => (prev === next ? prev : next))
-  }, [form, examType, tab, error, t])
+  }, [checkedForm, examType, tab, error, t])
 
   // Edit/add results → run the full onboarding (grades, electives, co-curricular,
   // "a few more details"), then return here. Save THE DRAFT first (landing back on Results) so her
@@ -215,7 +223,7 @@ export default function ScholarshipApplyPage() {
   // surface it there. Errors that belong only to a later step don't block - fixed when she gets there.
   const goNext = () => {
     const at = TAB_ORDER.indexOf(tab)
-    const errKey = applyFormError(form, examType)
+    const errKey = applyFormError(checkedForm, examType)
     if (errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= at) {
       setError(t(`scholarship.apply.error.${errKey}`))
       setTab(ERROR_TAB[errKey] ?? 'personal')
@@ -232,7 +240,7 @@ export default function ScholarshipApplyPage() {
     if (submitting) return
     // Enter / "Go" on a phone keyboard before the last step means NEXT - never "submit the whole form".
     if (tab !== TAB_ORDER[TAB_ORDER.length - 1]) { goNext(); return }
-    const errKey = applyFormError(form, examType)
+    const errKey = applyFormError(checkedForm, examType)
     if (errKey) {
       setError(t(`scholarship.apply.error.${errKey}`))
       setTab(ERROR_TAB[errKey] ?? 'personal')
@@ -260,7 +268,8 @@ export default function ScholarshipApplyPage() {
     }
 
     try {
-      const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
+      // #67 scope 3: `checkedForm` — a locked name is the profile's, the one the signature was checked against.
+      const payload = buildApplicationPayload(checkedForm) as unknown as Record<string, unknown>
       // PF-1: the code the "You are applying to" line was resolved from (`useApplyGift`).
       if (gift.code) payload.programme_code = gift.code
       await submitScholarshipApplication(payload, locale, { token })
@@ -374,8 +383,10 @@ export default function ScholarshipApplyPage() {
 
   const lockedEmail = profile?.contact_email || profile?.email || ''
   const nricLocked = !!profile?.nric_verified
-  // #67 scope 3: the name is held to the IC by the same stored lock — read-only, with the tick.
-  const nameLocked = !!profile?.name_locked
+  // #67 scope 3: the name is held to the IC by the same stored lock — read-only, with the tick
+  // (`nameLocked` / `lockedName` above). The "matches your IC" note only when it does; otherwise
+  // the one fix she has is on /profile ("Use the name on my IC").
+  const nameIsTheCards = sameLettersAsCard(lockedName, profile?.ic_card_name)
 
   const sections: Record<TabKey, React.ReactNode> = {
     personal: (
@@ -385,7 +396,7 @@ export default function ScholarshipApplyPage() {
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
           {nameLocked ? (
             <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
-              <span>{form.name || '—'}</span>
+              <span>{lockedName || '—'}</span>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-700">
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
                 {t('scholarship.apply.verified')}
@@ -394,10 +405,15 @@ export default function ScholarshipApplyPage() {
           ) : (
             <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
           )}
-          {nameLocked && <p className="mt-1 text-xs text-ground-500">{t('profile.nameLockedNote')}</p>}
+          {nameLocked && (
+            <p className="mt-1 text-xs text-ground-500">
+              {t(nameIsTheCards ? 'profile.nameLockedNote'
+                : profile?.ic_card_name ? 'profile.nameFromCardOnProfile' : 'profile.nameLockedContact')}
+            </p>
+          )}
           {/* Mismatch with the declaration signature blocks submit — flag it here too,
               since the About Me name (often a pre-filled handle) is the usual fix. */}
-          {declarationNameMismatch(form) && (
+          {declarationNameMismatch(checkedForm) && (
             <p className="mt-1 text-sm text-critical-600">{t('scholarship.apply.declaration.mismatch')}</p>
           )}
         </div>
@@ -633,7 +649,7 @@ export default function ScholarshipApplyPage() {
               autoComplete="off"
               onChange={(e) => update('declarationName', e.target.value)}
             />
-            {declarationNameMismatch(form) && (
+            {declarationNameMismatch(checkedForm) && (
               <p className="mt-1 text-sm text-critical-600">{t('scholarship.apply.declaration.mismatch')}</p>
             )}
             <p className="mt-1 text-xs text-ground-500">{t('scholarship.apply.declaration.signHelp')}</p>
