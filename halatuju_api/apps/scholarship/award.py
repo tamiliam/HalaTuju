@@ -87,7 +87,9 @@ def course_start_unknown(application):
 # Verdict codes that DEFAULT the proposal to "no amount". Confident negatives only —
 # a clear, evidence-backed reason this pathway/income is outside the accepted criteria.
 # (Genuinely-uncertain "settle at interview" codes are deliberately excluded.)
-CONFIDENT_DISQUALIFIERS = ('offer_not_official', 'income_above_b40_line')
+# TD-617 (owner 2026-11-14): `pathway_funded_or_abroad` (the American Degree Program under MARA is
+# fully funded; overseas study is not supported) is one too. The flag only; the amount is unchanged.
+CONFIDENT_DISQUALIFIERS = ('offer_not_official', 'income_above_b40_line', 'pathway_funded_or_abroad')
 
 
 def verdict_disqualifier(verdict):

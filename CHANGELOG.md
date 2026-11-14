@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: TD-617 owner ruling - an SPM-only PISMP student is never owed higher results; ADP and MARA overseas preparation turn Pathway red (2026-11-14)
+- Branch td617 (local, not pushed, not deployed). Owner ruling 2026-11-14, option 1. No migration.
+- PISMP (`results_route.is_pismp`: the code 'pismp', a PISMP or Perguruan name, or an IPG) with SPM only is never owed higher results: `higher_owed._needs_higher` (after submit) and `results_route.higher_need` (before submit). A PISMP student with STPM, Matriculation or STAM results keeps today's checks; a UPSI "Ijazah Sarjana Muda Pendidikan" is unchanged.
+- `verdict_pathway.funded_or_abroad`: an American Degree Program or MARA "Persediaan ... Luar Negara" name turns Pathway red with `pathway_funded_or_abroad` (en/ms/ta copy), added to `award.CONFIDENT_DISQUALIFIERS`. The award amount is unchanged and nothing is declined automatically.
+- Money pinned: award amount and `funding_estimate.classify_pathway` for 1,716 inputs equal origin/main (`fixtures/td617_money_pin.json`).
+- `VERDICT_ENGINE_VERSION` 2026-11-14.1. Reviewer FAQ and guide updated. Tests: `test_td617_pismp_adp.py`.
+
 ### fix: request #67 (scope 2) - the MyKad name keeps its second line; the address no longer opens with part of the name (2026-11-13)
 - The IC read guessed where the name ended from A/L, A/P or BIN in Vision's flattened text, so a name running onto a second line after a mid-line marker, or with no marker, lost that line to the address (15 BrightPath students; two lost the first line instead).
 - `mykad._layout_read` reads the card's layout from the word boxes of the same Vision call (`_vision_document_text` now returns `words`; no extra call): the name is the left-aligned lines from under the IC number down to the blank line; the address read skips them, and falls back to the lines after the blank line when no postcode is read. De-rotated, so a tilted or sideways photo reads the same. Taken only when it contains the line-order name (adds parts, never swaps the name), every name line is one Vision itself printed, and the name ends at the blank line (both guards from the corpus check: glued or stray words, and an address line taken as a name line). The blank line is measured against the card's typical line spacing, not its tightest (apps 358, 573, 602). Parents' cards too.

@@ -14,10 +14,32 @@ Every collaborator a test patches at its source (``pathway_engine.student_offer_
 """
 from __future__ import annotations
 
+import re
+
 from .genuineness.bands import NOT_CHECKED, stored_status
 from .genuineness.offer_issuers import not_checked_issuer
 from .read_errors import read_deferred
 from .verdict_engine import _fact, _item
+
+
+#: TD-617 (owner 2026-11-14, option 1): the American Degree Program under MARA is fully funded, and
+#: HalaTuju does not support study abroad (MARA's "Program Persediaan ... Luar Negara"). The ADP
+#: spelling is `results_route._NOT_ASKED_NAME`'s: never "American Degree Transfer Program", never a
+#: plain "Degree Programme".
+_FUNDED_OR_ABROAD = re.compile(r'american\s+degree\s+program(?:me)?s?\b|persediaan\b.*\bluar\s+negara\b',
+                               re.IGNORECASE)
+
+
+def funded_or_abroad(application, fact):
+    """The pathway fact, RED ('gap') with `pathway_funded_or_abroad` named when the chosen programme's
+    name is one of `_FUNDED_OR_ABROAD` (an award CONFIDENT_DISQUALIFIER: the cockpit flag shows). The
+    reviewer still decides; the award amount is untouched (a pure function of the pathway)."""
+    prog = getattr(application, 'chosen_programme', None)
+    name = (prog.get('course_name') or '') if isinstance(prog, dict) else ''
+    if _FUNDED_OR_ABROAD.search(name):
+        fact['status'] = 'gap'
+        fact['unresolved'].append(_item('pathway_funded_or_abroad', programme=name))
+    return fact
 
 
 def _no_declared_pathway(application):

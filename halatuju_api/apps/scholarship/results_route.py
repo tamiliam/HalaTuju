@@ -150,6 +150,25 @@ def _q7_widening_withheld(application) -> bool:
     return bool(_NOT_ASKED_NAME.search(name))
 
 
+#: TD-617 (owner 2026-11-14, option 1): PISMP, the IPG teacher-training degree (Tajaan KPM). Its SPM
+#: route is one 5-year programme (a preparatory year + the degree): an SPM-only PISMP student never
+#: owes higher results. Known by the code, a PISMP / "Perguruan" programme name, or an IPG. NEVER
+#: "Pendidikan" alone: "Ijazah Sarjana Muda Pendidikan" at a university (UPSI) is an ordinary degree.
+_PISMP_NAME = re.compile(r'\bpismp\b|\bperguruan\b', re.IGNORECASE)
+_IPG_INSTITUTION = re.compile(r'\binstitut\s+pendidikan\s+guru\b|\bipg\b', re.IGNORECASE)
+
+
+def is_pismp(application) -> bool:
+    """TD-617: the chosen programme is PISMP (code 'pismp', a PISMP / Perguruan name, or an IPG).
+    Not money: the award and the funding estimate still read `degree_bound` only."""
+    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'pismp':
+        return True
+    prog = getattr(application, 'chosen_programme', None)
+    prog = prog if isinstance(prog, dict) else {}
+    return bool(_PISMP_NAME.search(prog.get('course_name') or '')
+                or _IPG_INSTITUTION.search(prog.get('institution') or ''))
+
+
 def _already_passed(application, code) -> bool:
     """A pre-U code (or her own held kind) recorded as the pathway of a TERTIARY holder."""
     from apps.courses.public import is_tertiary
@@ -177,9 +196,13 @@ def higher_need(application) -> str:
     wider test the after-submit owed rule (`higher_owed._needs_higher`), funding and award ask - so a
     stale post-SPM pathway code under a degree course NAME is asked before submit, not capped after.
     F1 review (2026-11-13): that widening is withheld for a PISMP code, a preparatory name and the
-    American Degree Program (`_q7_widening_withheld`) - those keep origin/main's answer below."""
+    American Degree Program (`_q7_widening_withheld`) - those keep origin/main's answer below.
+    TD-617 (owner 2026-11-14): an SPM-only PISMP student (`is_pismp`) is never asked; one holding
+    higher results keeps the answer below."""
     from apps.courses.public import is_tertiary
     tertiary = is_tertiary(held(application))
+    if not tertiary and is_pismp(application):
+        return ''
     if degree_bound(application) and not _q7_widening_withheld(application):
         return 'required' if tertiary else 'required_with_slip'
     dest = destination(application)               # origin/main's rule, unchanged

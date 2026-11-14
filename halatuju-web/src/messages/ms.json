@@ -4868,6 +4868,7 @@
           "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
           "offer_not_official": "Dinilai bukan surat tawaran (tawaran swasta / IPTS, cawangan swasta, atau bukan tawaran langsung) — gagal; pelajar diminta surat tawaran institusi awam.",
           "offer_issuer_not_checked": "Tawaran daripada {issuer} — penerbit TVET awam yang coraknya belum kami miliki, jadi surat ini TIDAK disemak. Semak surat ini sendiri.",
+          "pathway_funded_or_abroad": "Program dibiayai penuh atau di luar negara ({programme}) — tidak disokong oleh pemberian ini. American Degree Program di bawah MARA dibiayai penuh, dan pengajian di luar negara tidak disokong. Disyorkan tolak kecuali temu duga menunjukkan pelajar mengikuti program lain.",
           "offer_not_read_yet": "Surat tawaran belum dibaca — semakan dokumen kami belum dijalankan atau tidak tersedia. Ini bukan salah pelajar, jadi jangan minta salinan yang lebih jelas. Jika ia masih belum dibaca, semak surat ini sendiri.",
           "course_unspecified": "Belum memilih kursus/bidang — pelajar telah ditanya apa yang mereka rancang untuk belajar.",
           "sibling_level_unknown": "Pecahan adik-beradik sekolah lwn pengajian tinggi belum direkod — pelajar telah diminta memecahkan jumlah itu.",

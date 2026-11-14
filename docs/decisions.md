@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-14 — TD-617: PISMP stays a degree for money; an SPM-only PISMP student is never owed higher results; ADP and MARA overseas preparation are a red Pathway fact (owner ruling, option 1)
+
+**PISMP (A):** PISMP stays a degree for the funding estimate and the award (RM2,000 either way). An SPM-route PISMP student (she holds SPM only) is never owed higher results, before or after she submits: no "results not declared / not on file" line, no Academic cap, no owed ask. A PISMP student who holds STPM, Matriculation or STAM results keeps today's checks.
+
+**What counts as PISMP:** `results_route.is_pismp` — the code 'pismp'; a programme name containing "PISMP" or "Perguruan" (this covers "Program Persediaan PISMP"); or an institution that is an IPG ("Institut Pendidikan Guru", "IPG"). "Ijazah Sarjana Muda Pendidikan" at a university (UPSI) is not PISMP, and "Pendidikan" alone is not. An old 'stpm' code with "Ijazah Sarjana Muda Pendidikan" is still asked.
+
+**Where:** after submit, `higher_owed._needs_higher` returns False for PISMP with no declared higher results (`declared_kind`), which covers the owed cap, the undeclared ask and the ask codes in one place. Before submit, `results_route.higher_need` returns '' for a PISMP student with no tertiary results held. This widens F1's before-submit exemption from the code 'pismp' to the name and IPG tests too, so "never owed" holds both sides.
+
+**ADP and MARA overseas preparation (B):** `verdict_pathway.funded_or_abroad` turns the Pathway fact red ('gap') with `pathway_funded_or_abroad` when the chosen programme's name is the American Degree Program (the existing spelling: never "American Degree Transfer Program", never a plain "Degree Programme") or "Persediaan ... Luar Negara". The code is an `award.CONFIDENT_DISQUALIFIER` (the cockpit's award_disqualifier flag) and, like `income_above_b40_line`, it sets QC's red-fact floor (an accept needs a recorded reason). The amount does not change, and nothing is declined automatically.
+
+**Money:** `degree_bound`, `destination`, `award.proposed_award_amount` and `funding_estimate.classify_pathway` are untouched. A pin of 1,716 inputs (code x name x institution x results held), generated on origin/main, is checked in `test_td617_pismp_adp.MoneyPinnedToMain`.
+
+**Version:** `VERDICT_ENGINE_VERSION` 2026-11-14.1. Stored snapshots are not rewritten: an application frozen with a "higher results required" snapshot before this keeps it.
+
 ## 2026-11-13 — Request #67 (scope 2): the MyKad name and address are read from the card's layout (bug, no charge; owner 2026-11-13)
 
 **The fault:** the MyKad read worked on Vision's flattened text, which keeps the order of the lines but not where they sit. It guessed where the name ended from A/L, A/P or BIN. A name that ran onto a second line after a mid-line marker, or had no marker at all (many Christian, Chinese and Iban names), lost that line, which then opened the address. Two names lost their FIRST line instead (the marker sat on the second). 15 BrightPath students (apps 181, 190, 243, 305, 358, 391, 399, 442, 530, 552, 559, 573, 581, 602, 626). The truncated name reads `partial`, so `_should_gemini_ic` never escalated it.

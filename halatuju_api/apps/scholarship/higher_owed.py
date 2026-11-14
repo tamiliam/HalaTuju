@@ -33,7 +33,9 @@ EVERY DEGREE STUDENT MUST HAVE THEM (owner 2026-11-07, apps 158 / 168 / 247, wid
 a student bound for a university degree — or already studying for one — must have STPM /
 Matriculation / Asasi / Diploma results on file; Check 2 checks that she DECLARED them and asks for
 the document. Exempt: a UA diploma and PISMP (SPM entry: `results_route.destination` POST_SPM, and
-an offer read as 'diploma' / 'pismp'), and an intake that asks no higher results (D16c).
+an offer read as 'diploma' / 'pismp'), and an intake that asks no higher results (D16c). TD-617
+(owner 2026-11-14): ANY PISMP student (`results_route.is_pismp`) who declared no higher results is
+exempt too, even one degree-bound by name (a 'pismp' code over "Ijazah Sarjana Muda Pendidikan").
 
 * **Declared** (`declared_kind`): the results held when tertiary, else a LEGACY row's entered higher
   results (STPM grades / CGPA, or a third-route CGPA under a third-route exam) whose recorded
@@ -118,7 +120,8 @@ def _spm_only(application) -> bool:
 
 def _needs_higher(application) -> bool:
     """SUBMITTED, on an intake that asks higher results (D16c), a programme that asks for results,
-    degree-bound, and no higher result already sitting in the SPM card (S4's wrong slip, #43: they
+    degree-bound, not an SPM-route PISMP student (TD-617, owner 2026-11-14: PISMP that declared no
+    higher results; one holding STPM / matric results keeps the checks), and no higher result already sitting in the SPM card (S4's wrong slip, #43: they
     ARE on file — the card says so itself)."""
     from . import requirements, results_route
     if getattr(application, 'profile_completed_at', None) is None:
@@ -129,6 +132,8 @@ def _needs_higher(application) -> bool:
         return False
     if not results_route.degree_bound(application):
         return False
+    if results_route.is_pismp(application) and not declared_kind(application):
+        return False                     # TD-617: an SPM-route PISMP student never owes them
     from .verdict_engine import _latest_doc
     from .wrong_slip import higher_kind
     return not higher_kind(_latest_doc(application, 'results_slip'))

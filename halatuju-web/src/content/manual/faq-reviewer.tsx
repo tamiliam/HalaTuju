@@ -65,8 +65,13 @@ export const REVIEWER_FAQ: QA[] = [
         if its name says it is a degree, she is asked for her higher results before she submits, even when an old
         Form Six pathway is saved with it. Three keep the earlier rule, with no new ask before submit: a PISMP pathway, a preparatory
         programme (&ldquo;Persediaan&rdquo;) and the &ldquo;American Degree Programme&rdquo; (spelt either way). A saved
-        catalogue course decides by the course, not by its name. The award, the
-        funding estimate and the owed-results check after submit treat every course as they did before.</>,
+        catalogue course decides by the course, not by its name. The award and the
+        funding estimate treat every course as they did before. One change by the owner&rsquo;s ruling of
+        14 November 2026: a <strong>PISMP</strong> student (the IPG teacher-training degree &mdash; a PISMP or
+        &ldquo;Perguruan&rdquo; programme, or an Institut Pendidikan Guru) who holds <strong>only SPM</strong> is
+        never owed higher results, before or after she submits, so her Academic card is not held back for them.
+        A PISMP student who holds STPM, Matriculation or STAM results is checked on them as before. An
+        &ldquo;Ijazah Sarjana Muda Pendidikan&rdquo; at a university (such as UPSI) is not PISMP.</>,
     },
     {
       q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,
@@ -197,6 +202,16 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>The offer letter doesn&rsquo;t match the stated pathway — what do I do?</>,
       a: <>Note it and ask in the interview (or raise a query). They may have updated their plan; you can also ask
         them to upload the latest offer letter, which replaces the old one.</>,
+    },
+    {
+      q: <>The Pathway card is red with <strong>&ldquo;Fully funded or overseas programme&rdquo;</strong>. Why?</>,
+      a: <>Her chosen programme is the <strong>American Degree Program</strong> under MARA, which is fully funded,
+        or a MARA preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;),
+        which this gift does not support (owner&rsquo;s ruling, 14 November 2026). It works like income above the
+        B40 line: the case is flagged and the usual recommendation is to decline, but it is not declined for you
+        and the amount is unchanged. Confirm at interview &mdash; if she is in fact on a different programme,
+        say so in your conclusion. The &ldquo;American Degree Transfer Program&rdquo; and an ordinary
+        &ldquo;Degree Programme&rdquo; are not affected.</>,
     },
     {
       q: <>The student has completed a semester or two — should I ask for more?</>,
