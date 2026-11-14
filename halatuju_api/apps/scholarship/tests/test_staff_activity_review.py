@@ -17,7 +17,7 @@ from apps.scholarship.models import (
     StaffProfile,
 )
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
+    TEST_JWT_SECRET, admin_site_role_change, authed_client, make_admin, make_application, make_cohort, make_org,
 )
 
 V = staff_activity.V
@@ -177,9 +177,9 @@ class TestM3ADemotedViewerLosesTheNames(TestCase):
 
     def test_names_while_org_admin_and_neutral_words_once_demoted(self):
         self.assertEqual(set(self._states().values()), {'visible'})
-        # Since M3a an organisation admin STORES its keys, so a demotion resets them, as every app path that
-        # gives a row a new role does (`staff_tables.invite_permissions`); NULL is the reviewer preset.
-        PartnerAdmin.objects.filter(pk=self.me.pk).update(role='reviewer', permissions=None)
+        # The demotion goes through the real path: the Django admin screen's form and `save_model` (since
+        # M3a it resets the stored keys, so the organisation admin's keys never carry over).
+        admin_site_role_change(self.me, 'reviewer')
         self.assertEqual(self._states(), {kind: 'hidden' for kind in self.subjects})
 
 

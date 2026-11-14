@@ -30,6 +30,24 @@ All notable changes to this project will be documented in this file.
 - The postcode may be glued to the town (`47000SUNGAI`); "A / L" is closed up to "A/L". `extract_text` still returns text and error only.
 - Stored reads change on the next read of a card; no verdict logic change, `VERDICT_ENGINE_VERSION` unchanged. Tests: `test_req67_ic_layout.py` (24).
 
+### fix: sprint M3a - review fixes (2026-11-14)
+
+Branch m3 (local, not pushed, not deployed). Release-note draft `docs/releases/m3a-org-admin-keys-release-note-draft.md`.
+- api: the Django admin screen (`PartnerAdminAdmin`) sets `permissions = NULL` on any save that changes `role`, in one
+  transaction, with a `staff_permission_changes` row of kind `role_change` (`changed_by_role` 'django_admin') written
+  through the editor's writer via the registered hook `staff_activity_hook.record_role_reset`; no writer, no
+  save. A demoted organisation admin reads as the new role's preset; a promoted admin / finance row reads as the full
+  organisation-admin set with no payment seat. Hand SQL must do the same (`docs/deployment.md`, item 3).
+- data: 0098's DATA block writes the ledger row in its own transaction (no separate LEDGER block), treats a stored
+  jsonb `null` as NULL, and its docstring states the window (until the DATA block is re-run after the new image
+  carries 100% of the traffic; no Team -> Reviewers Add / Remove on an organisation admin before that) and that the
+  reverse runs only after an image rollback. The reverse reads the NEWEST 0098 audit row per row, so
+  forward / reverse / forward / reverse is exact.
+- test: `test_m3_admin_site_role_change.py`; `test_staff_activity_review`'s demotion goes through the admin screen
+  again; `test_m3_migration_0098.py` pins the jsonb-null, ledger and warning text and the double round trip; the
+  lead-tier scan counts every read of `is_lead_tier` / `_is_lead_tier` / `lead_reviews` / `LEAD_ROLE` (a call or a
+  reference), re-pinned.
+
 ### feat: sprint M3a - the organisation admin's powers are stored keys (2026-11-14)
 
 Branch m3 (local, not pushed, not deployed). Brief `docs/plans/2026-11-14-m3-lead-keys-brief.md` (part M3a of three;
@@ -37,7 +55,7 @@ D1-D7 as recommended, A1-A12 as decided). Server only. Nobody's access changes.
 - data (A1): migration `courses/0098_store_org_admin_keys.py`, BY HAND, migrate-first. Every `org_admin` row (active,
   revoked, archived, pending) has its list REPLACED by `review` (only if held) + `ORG_ADMIN_KEYS` (the lead tier less
   `manage_team`) + `ORG_ADMIN_V2` (25 v2 keys). One audit row per changed row (`edit_null` for a NULL row); reversible
-  exactly; idempotent. The docstring carries the DATA, LEDGER and POST-DEPLOY CHECK blocks. A non-list value and every
+  exactly; idempotent. The docstring carries the DATA block (the ledger row inside it) and the POST-DEPLOY CHECK. A non-list value and every
   other role are left alone.
 - api (A2): `staff_permissions.resolve` reads an organisation admin's stored list strictly, plus `manage_team` by
   role (`LEAD_BY_ROLE`); NULL or a non-list reads as the full set (fail-safe). `effective_v2` reads the stored v2

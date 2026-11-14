@@ -27,3 +27,7 @@ class ScholarshipConfig(AppConfig):
         from apps.courses import staff_activity_hook
         from .staff_activity import record
         staff_activity_hook.RECORDER = record
+        # M3a review (2026-11-14): the Django admin screen (`apps/courses/admin.py`) audits a role change
+        # through the editor's own writer, registered here for the same app-boundary reason.
+        from .staff_permissions_admin import record_role_reset
+        staff_activity_hook.PERMISSION_RECORDER = record_role_reset

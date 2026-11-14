@@ -38,6 +38,8 @@ C, S = 'courses/', 'scholarship/'
 #: ``path::qualname`` -> (sites in it, class, why).
 CENSUS = {
     # ── courses ────────────────────────────────────────────────────────────────────────────────────
+    C + 'admin.py::PartnerAdminAdmin.save_model': (1, 'OWN_ROW',
+        'M3a review: locks the row the Django admin screen is saving, to audit its role change'),
     C + 'management/commands/backfill_admin_seen.py::Command.handle': (3, 'FILTERED', 'uid set AND not archived'),
     C + 'management/commands/expire_temp_passwords.py::Command.handle': (1, 'SHAPE', 'needs a login UID'),
     C + 'models/organisations.py::PartnerOrganisationQuerySet.tenants': (1, 'ACTIVE', 'an active org admin'),

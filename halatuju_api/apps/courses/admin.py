@@ -93,3 +93,23 @@ class PartnerAdminAdmin(admin.ModelAdmin):
     # Request #39: read-only here until Sprint 4's editor, which enforces the rules (lead tier,
     # qc => see_all, open cases, history). A hand edit here would bypass every one of them.
     readonly_fields = ['permissions']
+
+    def save_model(self, request, obj, form, change):
+        """M3a review (2026-11-14): `role` stays editable here, so a save that CHANGES it also sets
+        `permissions` to NULL and writes one `staff_permission_changes` row (kind 'role_change', as
+        `staff_lifecycle.change_role`). Since M3a an organisation admin STORES its keys; without the reset
+        they would carry over to the new role. NULL is exactly the pre-M3a reading: a demoted organisation
+        admin gets the new role's preset, and a promoted row reads as the full organisation-admin set."""
+        if not (change and 'role' in form.changed_data):
+            return super().save_model(request, obj, form, change)
+        from types import SimpleNamespace
+        from django.db import transaction
+        from . import staff_activity_hook
+        with transaction.atomic():
+            old = PartnerAdmin.objects.select_for_update().get(pk=obj.pk)
+            obj.permissions = None
+            super().save_model(request, obj, form, change)
+            user = request.user
+            by = SimpleNamespace(email=getattr(user, 'email', '') or getattr(user, 'username', ''),
+                                 is_super=False, role='django_admin')
+            staff_activity_hook.record_role_reset(old, obj, by=by)

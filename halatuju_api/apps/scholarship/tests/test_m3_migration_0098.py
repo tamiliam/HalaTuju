@@ -61,15 +61,36 @@ class HandSql(TestCase):
                    f"||'{_lst(M.OLD_KEYS + M.V2_KEYS)}'::jsonb")
         self.assertEqual(self.flat.count(planned), 2)
         where = (f"WHERErole='{M.ROLE}'"
-                 "AND(permissionsISNULLORjsonb_typeof(permissions)='array')")
+                 "AND(permissionsISNULLORjsonb_typeof(permissions)IN('array','null'))")
         self.assertEqual(self.flat.count(where), 2)
+        self.assertNotIn("jsonb_typeof(permissions)='array')", self.flat)
 
     def test_a_null_row_is_based_on_the_old_keys_and_audited_with_the_null_kind(self):
-        self.assertIn(f"COALESCE(permissions,'{_lst(M.OLD_KEYS)}'::jsonb)ASbase", self.flat)
+        self.assertIn(f"COALESCE(NULLIF(permissions,'null'::jsonb),'{_lst(M.OLD_KEYS)}'::jsonb)ASbase", self.flat)
         self.assertIn(f"CASEWHENwas_nullTHEN'{M.NULL_KIND}'ELSE'edit'END", self.flat)
         self.assertEqual(self.flat.count('was_nullORafter<>base'), 1)
         self.assertIn('(g.was_nullORg.after<>g.base)', self.flat)
         self.assertIn(f"'','{M.BY_ROLE}',now()", self.flat)
+
+    def test_a_stored_json_null_is_read_as_null_as_the_python_reads_it(self):
+        # Django reads a jsonb `null` as None, so `plan_row` treats it as NULL; the SQL must too, in the
+        # data block's `was_null` and in the post-deploy check's.
+        self.assertEqual(self.flat.count("(permissionsISNULLORpermissions='null'::jsonb)ASwas_null"), 2)
+        self.assertEqual(M.plan_row(M.ROLE, None), (OLD, FULL))
+
+    def test_the_ledger_row_is_written_in_the_data_blocks_own_transaction(self):
+        data = self.flat.split('DATAblock(onetransaction', 1)[1].split('POST-DEPLOYCHECK(read-only', 1)[0]
+        body = data.split('BEGIN;', 1)[1].split('COMMIT;', 1)[0]
+        self.assertIn('UPDATEpartner_adminsp', body)
+        self.assertIn("INSERTINTOdjango_migrations", body)
+        self.assertEqual(self.flat.count('INSERTINTOdjango_migrations'), 1)
+        self.assertNotIn('LEDGERblock', self.flat)
+
+    def test_the_window_and_the_reverse_carry_their_warnings(self):
+        for words in ('100%ofthetraffic', 'donotuseTeam->ReviewersAdd/Removeonanorganisationadmin',
+                      'ONLYAFTERtheimageisrolledback', 'mustsetpermissions=NULL', 'NEWEST'):
+            with self.subTest(words=words):
+                self.assertIn(words, self.flat.replace('`', ''))
 
     def test_the_ledger_and_the_check_are_safe_to_re_run(self):
         self.assertIn("WHERENOTEXISTS(SELECT1FROMdjango_migrations", self.flat)
@@ -198,6 +219,27 @@ class ForwardAndBack(TestCase):
         self.assertEqual(self.perms(self.lead_reviewing), REVIEWING)
         self.assertIsNone(self.perms(self.lead_revoked))
         self.assertFalse(StaffPermissionChange.objects.filter(changed_by_role='migration').exists())
+
+    def test_forward_reverse_forward_reverse_is_exact(self):
+        before = self.snapshot()
+        for _ in range(2):
+            M.store_org_admin_keys(live_apps, None)
+            M.restore_org_admin_lists(live_apps, None)
+            self.assertEqual(self.snapshot(), before)
+            self.assertFalse(StaffPermissionChange.objects.exists())
+
+    def test_with_two_audit_rows_the_newest_decides(self):
+        # A window write, then the DATA block re-run: the first run took NULL to FULL, an old-image writer
+        # stored [], the re-run took [] to FULL. Both rows end at FULL; the reverse puts back what the
+        # NEWEST one found ([]), never the older row's NULL.
+        M.store_org_admin_keys(live_apps, None)
+        PartnerAdmin.objects.filter(pk=self.lead_null.pk).update(permissions=[])
+        self.assertEqual(M.store_org_admin_keys(live_apps, None), [self.lead_null.pk])
+        self.assertEqual(StaffPermissionChange.objects.filter(target_id=self.lead_null.pk).count(), 2)
+        M.restore_org_admin_lists(live_apps, None)
+        self.assertEqual(self.perms(self.lead_null), [])
+        self.assertIsNone(self.perms(self.lead_revoked))                  # one row: as before
+        self.assertFalse(StaffPermissionChange.objects.exists())
 
 
 class AlongsideEarlierMigrations(TestCase):

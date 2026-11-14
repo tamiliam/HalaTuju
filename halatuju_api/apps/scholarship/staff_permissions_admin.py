@@ -309,6 +309,22 @@ def record(target, before, after, *, by, kind):
     return row
 
 
+def history_held(target):
+    """What ``target`` holds, as a history row records it: `resolve`, then the stored v2 page keys (an
+    organisation admin's through `org_admin_v2`, whose NULL reads as the full set; anybody else's through
+    `stored_v2`)."""
+    from apps.courses import staff_permissions as sp
+    v2 = _v2()
+    return [*sp.resolve(target), *(v2.org_admin_v2(target) if sp.is_lead_tier(target) else v2.stored_v2(target))]
+
+
+def record_role_reset(old, new, *, by):
+    """M3a review (2026-11-14): the Django admin screen changed ``new``'s role and set its `permissions` to
+    NULL; ``old`` is the row as it was. One 'role_change' row (as `staff_lifecycle.change_role`), through
+    `record`. Registered as `staff_activity_hook.PERMISSION_RECORDER`."""
+    return record(new, history_held(old), history_held(new), by=by, kind='role_change')
+
+
 def change_permissions(target_id, asked, *, by, dry_run=False, with_v2=True):
     """Plan, and unless ``dry_run`` apply, the change. Returns ``(target, plan)``; ``plan['changed']``
     says whether anything was written.

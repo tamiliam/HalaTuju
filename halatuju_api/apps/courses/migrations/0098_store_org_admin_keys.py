@@ -22,9 +22,18 @@ Live (read-only count, 2026-11-14): 2 `org_admin` rows, both active and signed i
 
 THE OLD IMAGE IGNORES THE NEW KEYS: it reads an organisation admin's list for `review` only, and `review` is
 kept, so every page and button answers as before until the new image ships (migrate-first, the 0097
-precedent). ⚠ Between this step and the deploy, do not change an organisation admin's role or Team ->
-Reviewers seat: the old image's writers overwrite the list (`["review"]` or NULL). NULL reads safely as the
-full set; the POST-DEPLOY re-run below rewrites either.
+precedent). (Display only: in that time the old image's Permissions editor shows a migrated organisation
+admin's page keys as ticked; nothing it gates reads them.)
+
+⚠ THE WINDOW lasts from this step until the DATA block is RE-RUN after the new image carries 100% of the
+traffic — not merely until the deploy. Until that re-run, do not change an organisation admin's role and do
+not use Team -> Reviewers Add / Remove on an organisation admin: the old image's writers overwrite the list
+(`["review"]` or NULL). NULL reads safely as the full set; `["review"]` would read as `review` and
+`manage_team` only. The re-run rewrites either. A role change BY HAND (SQL), at any time, must set
+`permissions = NULL` in the same statement, or the stored keys carry over to the new role.
+
+A stored jsonb `null` is read as NULL, as the Python does (Django reads it as None): the SQL below treats
+`permissions = 'null'::jsonb` exactly like SQL NULL.
 
 THE AUDIT STAYS TRUTHFUL. Each row changed gets one `staff_permission_changes` row: the list before (for a
 NULL row, ORG_ADMIN_KEYS — what the NULL stood for, in keys a row can store) and after, `changed_by_email`
@@ -33,15 +42,18 @@ stored list, so the reverse is EXACT. The constants are FROZEN here (a migration
 `test_m3_migration_0098` proves they equal the live ones and pins the SQL's CASE and WHERE text to
 `plan_row` (the test database cannot run jsonb).
 
-SQL, MIGRATE-FIRST, by hand. Run the DATA block, then the LEDGER block; after the deploy, re-run the DATA
-block and run the POST-DEPLOY CHECK (the release note carries them with the pre-check).
+SQL, MIGRATE-FIRST, by hand. Run the DATA block (it writes the ledger row in the same transaction); after the
+new image carries all the traffic, re-run the DATA block and run the POST-DEPLOY CHECK (the release note
+carries them with the pre-check).
 
-DATA block (one transaction; safe to re-run: a row already equal to its planned list is not written and
-gets no audit row):
+DATA block (one transaction, the ledger row included; safe to re-run: a row already equal to its planned
+list is not written and gets no audit row, and the ledger row is written once):
     BEGIN;
     WITH plan AS (
-      SELECT id, email, owning_organisation_id, role, (permissions IS NULL) AS was_null,
-             COALESCE(permissions, '["see_all","scholars","qc","spending","award_withdraw_approve"]'::jsonb) AS base,
+      SELECT id, email, owning_organisation_id, role,
+             (permissions IS NULL OR permissions = 'null'::jsonb) AS was_null,
+             COALESCE(NULLIF(permissions, 'null'::jsonb),
+                      '["see_all","scholars","qc","spending","award_withdraw_approve"]'::jsonb) AS base,
              (CASE WHEN permissions ? 'review' THEN '["review"]' ELSE '[]' END)::jsonb
              || '["see_all","scholars","qc","spending","award_withdraw_approve","invitations.view",
                   "invitations.edit","team.view","sources.view","sources.edit","sponsors.view","sponsors.edit",
@@ -51,7 +63,7 @@ gets no audit row):
                   "development.edit","mentoring.view","mentoring.edit"]'::jsonb AS after
         FROM partner_admins
        WHERE role = 'org_admin'
-         AND (permissions IS NULL OR jsonb_typeof(permissions) = 'array')
+         AND (permissions IS NULL OR jsonb_typeof(permissions) IN ('array', 'null'))
     ), audit AS (
       INSERT INTO staff_permission_changes (target_id, target_email, organisation_id, kind, role, before,
                                             after, changed_by_email, changed_by_role, created_at)
@@ -60,19 +72,17 @@ gets no audit row):
         FROM plan WHERE was_null OR after <> base
     )
     UPDATE partner_admins p SET permissions = g.after FROM plan g WHERE p.id = g.id AND (g.was_null OR g.after <> g.base);
-    COMMIT;
-
-LEDGER block (safe to re-run):
     INSERT INTO django_migrations (app, name, applied)
     SELECT 'courses', '0098_store_org_admin_keys', now()
      WHERE NOT EXISTS (SELECT 1 FROM django_migrations
                         WHERE app = 'courses' AND name = '0098_store_org_admin_keys');
+    COMMIT;
 
 POST-DEPLOY CHECK (read-only, after re-running the DATA block): every organisation admin row that is NULL or
 whose list is not exactly its planned list. It must return ZERO rows. If not zero, re-run the DATA block only.
-    SELECT id, (permissions IS NULL) AS was_null FROM partner_admins
+    SELECT id, (permissions IS NULL OR permissions = 'null'::jsonb) AS was_null FROM partner_admins
      WHERE role = 'org_admin'
-       AND (permissions IS NULL OR jsonb_typeof(permissions) = 'array')
+       AND (permissions IS NULL OR jsonb_typeof(permissions) IN ('array', 'null'))
        AND permissions IS DISTINCT FROM ((CASE WHEN permissions ? 'review' THEN '["review"]' ELSE '[]' END)::jsonb
              || '["see_all","scholars","qc","spending","award_withdraw_approve","invitations.view",
                   "invitations.edit","team.view","sources.view","sources.edit","sponsors.view","sponsors.edit",
@@ -81,11 +91,14 @@ whose list is not exactly its planned list. It must return ZERO rows. If not zer
                   "announcements.view","announcements.edit","surveys.view","surveys.edit","development.view",
                   "development.edit","mentoring.view","mentoring.edit"]'::jsonb);
 
-Reverse: only the audit rows this migration wrote (changed_by_role 'migration', no actor, kind 'edit' or
-NULL_KIND, role 'org_admin', and `after` exactly one of the two planned lists) are read. A row still holding
-exactly that `after` goes back to its `before` (NULL for NULL_KIND); a row changed since is left as it is.
-Only those audit rows go. ⚠ Django reverses this step before 0097 and 0095; 0095's reverse would also read
-an audit row here that adds `scholars`, so never run 0095's reverse by hand while this step is applied.
+Reverse: ⚠ ONLY AFTER the image is rolled back to one before M3a. Under the M3a image a reversed
+`["review"]` row reads as `review` and `manage_team` alone (the strict read), which cripples that
+organisation admin. Only the audit rows this migration wrote (changed_by_role 'migration', no actor, kind
+'edit' or NULL_KIND, role 'org_admin', and `after` exactly one of the two planned lists) are read, and for each
+row only the NEWEST of them (a re-run of the DATA block after a window write leaves two). A row still holding
+exactly that row's `after` goes back to its `before` (NULL for NULL_KIND); a row changed since is left as it
+is. Only those audit rows go. ⚠ Django reverses this step before 0097 and 0095; 0095's reverse would also
+read an audit row here that adds `scholars`, so never run 0095's reverse by hand while this step is applied.
 """
 from django.db import migrations
 
@@ -148,15 +161,19 @@ def store_org_admin_keys(apps, schema_editor):
 
 
 def restore_org_admin_lists(apps, schema_editor):
-    """Reverse: put back each row this migration wrote that still holds what it wrote — its `before`, or
-    NULL for a row that was NULL — then delete only this migration's audit rows. Returns the ids changed."""
+    """Reverse: put back each row this migration wrote that still holds what its NEWEST audit row here
+    wrote — that row's `before`, or NULL for a row that was NULL — then delete only this migration's audit
+    rows. Returns the ids changed."""
     PartnerAdmin = apps.get_model('courses', 'PartnerAdmin')
     StaffPermissionChange = apps.get_model('scholarship', 'StaffPermissionChange')
     candidates = StaffPermissionChange.objects.filter(
         changed_by_role=BY_ROLE, changed_by_email='', kind__in=('edit', NULL_KIND), role=ROLE)
     rows = [row for row in candidates.order_by('id') if _ours(row)]
+    newest = {}
+    for row in rows:                       # ascending ids: the last one seen per row is the newest
+        newest[row.target_id] = row
     changed = []
-    for row in rows:
+    for row in newest.values():
         admin = PartnerAdmin.objects.filter(pk=row.target_id).only('id', 'role', 'permissions').first()
         if admin is None or admin.role != ROLE or admin.permissions != row.after:
             continue

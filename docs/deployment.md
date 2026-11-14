@@ -134,6 +134,13 @@ Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps t
    prod's (rebuild or ask the owner; never edit `old` by hand to match). ROLLBACK: `--reverse --apply` (new →
    old, the same compare-and-set; `--sql --reverse` is its read-only check), then a re-revision. The
    `not_applied` differences in the file wait for the owner; nothing applies them.
+   **A staff role change BY HAND (SQL) must set `permissions = NULL` in the same statement** (M3a, 2026-11-14):
+   `UPDATE partner_admins SET role = 'reviewer', permissions = NULL WHERE id = …`. Since courses 0098 an
+   organisation admin STORES its keys, so a role change that leaves the list in place carries them to the new
+   role (and a list kept on promotion would give a team member's old keys, such as a payment seat, to an
+   organisation admin). NULL reads as the new role's preset. The Django admin screen does this itself and writes
+   a `staff_permission_changes` row (kind `role_change`); hand SQL does not, so write that row too if the
+   history matters.
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.

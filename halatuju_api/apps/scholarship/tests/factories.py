@@ -356,6 +356,31 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     return admin
 
 
+def admin_site_role_change(admin, role):
+    """Change ``admin``'s role on the Django admin screen (`apps/courses/admin.py`), through its own form and
+    ``save_model``, as a Django superuser would. Returns the row re-read. (M3a review: the real path for a
+    role change outside the app's own writers.)"""
+    from django.contrib import admin as django_admin
+    from django.contrib.auth import get_user_model
+    from django.forms.models import model_to_dict
+    from django.test import RequestFactory
+    from apps.courses.admin import PartnerAdminAdmin
+    user = get_user_model().objects.filter(username='site-admin').first() or \
+        get_user_model().objects.create_superuser('site-admin', 'site-admin@example.test', 'x')
+    request = RequestFactory().post('/django-admin/')
+    request.user = user
+    model_admin = PartnerAdminAdmin(PartnerAdmin, django_admin.site)
+    row = PartnerAdmin.objects.get(pk=admin.pk)
+    form_class = model_admin.get_form(request, row, change=True)
+    data = {k: ('' if v is None else v) for k, v in model_to_dict(row, fields=form_class.base_fields).items()}
+    data['role'] = role
+    form = form_class(data=data, instance=row)
+    if not form.is_valid():
+        raise AssertionError(f'the admin form refused the change: {form.errors.as_json()}')
+    model_admin.save_model(request, form.save(commit=False), form, change=True)
+    return PartnerAdmin.objects.get(pk=admin.pk)
+
+
 def make_student(**kw):
     """A ``StudentProfile`` — a unique uid, an obviously fake but FORMAT-VALID NRIC, a name.
 

@@ -37,7 +37,7 @@ M3c makes them grantable and changes the web. Under the one principle: on ship d
 | A3 | Money by role until M4 | `LEAD_MONEY_UNTIL_M4` added for an active OA in `effective_v2` (TD-620) |
 | A4 | The Admins seat stays by role | `in_admins` and `groups_to_leave` unchanged; the docstrings drop "until M3" |
 | A6 | Reviewers Add / Remove keeps the OA's other keys | `staff_permissions_v2.org_admin_list(admin, review=)`: `review` first on Add, removed on Remove, the rest kept; a NULL row is written as the full set |
-| A10 | The scanner sees lead-tier reads | `LEAD_READS`: exact count per function for `is_lead_tier(` / `_is_lead_tier(` / `LEAD_ROLE`; GATE-LEFT counts pinned (51 label T5e entries, 3 lead reads) so they only fall |
+| A10 | The scanner sees lead-tier reads | `LEAD_READS`: exact count per function for every read of `is_lead_tier` / `_is_lead_tier` / `lead_reviews` / `LEAD_ROLE` (a call or a reference passed on, widened at review); GATE-LEFT counts pinned (51 label T5e entries, 3 lead reads) so they only fall |
 
 **Deviations, and why.**
 - **`scholars.approve` (D5) is not added in M3a, so 0098 does not write it.** Adding it to `CATALOGUE_V2` fails the web
@@ -51,16 +51,26 @@ M3c makes them grantable and changes the web. Under the one principle: on ship d
 - `ORG_ADMIN_SET` lives in `staff_permissions_v2` (it needs both catalogues; `staff_permissions` is the leaf).
 - `stored_v2` returns nothing for an OA until M3c, so the editor's served `v2_held` is unchanged.
 
-**Window risk, accepted (migrate-first).** Between 0098 and the deploy the OLD image's Reviewers writers set an OA's
-list to `["review"]` or NULL. NULL reads safely; `["review"]` would read as `review` + `manage_team` only, so the
-release note re-runs the DATA block after the deploy and the POST-DEPLOY CHECK must return zero rows. Do not change
-an OA's role or Reviewers seat in the window.
+**Window risk, accepted (migrate-first).** From 0098 until the DATA block is RE-RUN after the new image carries
+100% of the traffic (not merely until the deploy), the OLD image's Reviewers writers set an OA's list to
+`["review"]` or NULL. NULL reads safely; `["review"]` would read as `review` + `manage_team` only, so the release
+note re-runs the DATA block then and the POST-DEPLOY CHECK must return zero rows. Until that re-run, do not change
+an OA's role and do not use Team -> Reviewers Add / Remove on an OA. The reverse runs only AFTER the image is
+rolled back (under the M3a image a reversed `["review"]` row would cripple that OA), and it reads only the NEWEST
+0098 audit row per OA, so forward / reverse / forward / reverse is exact. A stored jsonb `null` is treated as
+NULL in the hand SQL, as Django reads it. The ledger row is written inside the DATA block's own transaction.
 
-**A role change by hand now must reset the keys.** Once an OA stores its list, an `UPDATE … SET role = 'reviewer'`
-that leaves `permissions` in place carries the OA's keys over to the new role (the app's own paths never do:
-`change_role` and the Team tables refuse an OA, and Restore / re-invite write `invite_permissions(role)`).
-`test_staff_activity_review`'s demotion now sets `permissions = NULL` too. Any hand data fix that changes an
-`org_admin` row's role must set `permissions` in the same statement.
+**A role change resets the keys (review fix).** Once an OA stores its list, a role change that left `permissions`
+in place would carry the OA's keys over to the new role, and a promotion would keep a team member's 0097 list
+(possibly a payment seat). The app's own paths never change an OA's role (`change_role` and the Team tables refuse
+an OA, and Restore / re-invite write `invite_permissions(role)`). The Django admin screen (`PartnerAdminAdmin`,
+where `role` is editable and `permissions` read-only) now sets `permissions = NULL` on any save that changes
+`role`, in one transaction, and writes a `staff_permission_changes` row of the EXISTING kind `role_change`
+(`changed_by_role` 'django_admin') through the editor's own writer, reached by the registered hook
+`staff_activity_hook.record_role_reset` (the courses -> scholarship import budget is full). No writer
+registered refuses the save whole. `test_staff_activity_review`'s demotion goes through that screen.
+**Known gap: hand SQL.** A hand data fix that changes a row's role must set `permissions = NULL` in the same
+statement (`docs/deployment.md`, "How a change reaches production", item 3); nothing enforces it.
 
 **Revisit if:** M3b converts a GATE-LEFT site (delete its entry, never reclassify), or M4 moves the money keys
 (TD-620).

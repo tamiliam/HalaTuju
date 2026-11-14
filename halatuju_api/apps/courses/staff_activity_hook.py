@@ -26,3 +26,19 @@ def record(actor, verb, subject=None, meta=None):
     except Exception:   # the writer is best-effort already; this guards the hand-over itself
         logger.warning('staff activity hand-over failed for %r', verb, exc_info=True)
     return None
+
+
+#: `apps.scholarship.staff_permissions_admin.record_role_reset`, which writes through the ONE writer of a
+#: `staff_permission_changes` row; set by `ScholarshipConfig.ready` (M3a review, 2026-11-14: the Django admin
+#: screen's role change is audited like the app's own writers). None = not registered.
+PERMISSION_RECORDER = None
+
+
+def record_role_reset(old, new, *, by):
+    """Hand one 'role_change' history row to the registered writer, inside the caller's transaction: what
+    ``old`` (the row as it was, locked) held, then what ``new`` (saved) holds. Unlike `record` it is NOT
+    best-effort: a change to what somebody may do is never written without its audit row, so with no writer
+    registered it raises and the caller's transaction rolls back."""
+    if PERMISSION_RECORDER is None:
+        raise RuntimeError('staff_activity_hook: no permission-change writer is registered')
+    return PERMISSION_RECORDER(old, new, by=by)

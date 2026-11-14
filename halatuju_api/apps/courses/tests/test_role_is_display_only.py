@@ -14,9 +14,9 @@ Classes:
   GATE-UNPLANNED  a label gate with no owner (none found in P3).
 Adding a site: classify it, name its owner, and add it below; do NOT add a GATE-UNPLANNED without a TD.
 
-M3a (A10, 2026-11-14): a SECOND scan (`lead_counts`, `LEAD_READS`) reports every `is_lead_tier(` /
-`_is_lead_tier(` call and every `LEAD_ROLE` read, with an exact count per function, and the GATE-LEFT counts
-are pinned so they only fall as M3b converts the gates.
+M3a (A10, 2026-11-14): a SECOND scan (`lead_counts`, `LEAD_READS`) reports every read of `is_lead_tier`,
+`_is_lead_tier`, `lead_reviews` and `LEAD_ROLE` (a call or a reference passed on), with an exact count per
+function, and the GATE-LEFT counts are pinned so they only fall as M3b converts the gates.
 """
 import ast
 import os
@@ -458,7 +458,9 @@ def test_scanner_catches_a_role_gate(tmp_path):
 # brief's list S: 15 server places). This second scan reports every such read, with an EXACT count per
 # function, so a new lead gate cannot ship unseen. A GATE-LEFT entry is DELETED when its gate converts
 # (M3b), never reclassified to pass; the ones that stay carry list K's reason.
-LEAD_CALLS = {'is_lead_tier', '_is_lead_tier'}
+#: M3a review: every LOAD of these names counts, so a call (`sp.is_lead_tier(x)`) and a reference passed
+#: on (`filter(sp.is_lead_tier, rows)`, `key=lead_reviews`) are both seen; `lead_reviews` asks the label too.
+LEAD_NAMES = {'is_lead_tier', '_is_lead_tier', 'lead_reviews', 'LEAD_ROLE'}
 LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT'}
 
 
@@ -466,18 +468,14 @@ class _LeadScan(_Scan):
     def visit_Compare(self, node):          # the label scan's own hits are not this scan's
         self.generic_visit(node)
 
-    def visit_Call(self, node):
-        fn = node.func
-        if (fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, 'id', '')) in LEAD_CALLS:
-            self._hit(node)
-        self.generic_visit(node)
+    visit_Call = visit_Compare              # nor are its query / `has_role` calls (the names inside count)
 
     def visit_Name(self, node):
-        if node.id == 'LEAD_ROLE' and isinstance(node.ctx, ast.Load):
+        if node.id in LEAD_NAMES and isinstance(node.ctx, ast.Load):
             self._hit(node)
 
     def visit_Attribute(self, node):
-        if node.attr == 'LEAD_ROLE' and isinstance(node.ctx, ast.Load):
+        if node.attr in LEAD_NAMES and isinstance(node.ctx, ast.Load):
             self._hit(node)
         self.generic_visit(node)
 
@@ -507,12 +505,14 @@ LEAD_READS = {
         'the organisation admin\'s preset: ORG_ADMIN_KEYS plus manage_team by role'),
     'courses/staff_permissions.py::resolve': (1, 'O15', 'M3a A2',
         'the stored list read strictly; manage_team held BY ROLE, never stored'),
-    'courses/staff_permissions.py::team_holding': (2, 'DISPLAY', 'T5a tables',
-        'the Reviewers list also lists an organisation admin who joined it (lead_reviews)'),
+    'courses/staff_permissions.py::team_holding': (3, 'DISPLAY', 'T5a tables',
+        'the Reviewers list also lists an organisation admin who joined it (lead_reviews, in the same query)'),
     'courses/staff_permissions_v2.py::stored_v2': (1, 'DISPLAY', 'M3c',
         'the editor reads no stored v2 key for an organisation admin until M3c makes the row editable'),
     'courses/staff_permissions_v2.py::effective_v2': (1, 'O15', 'M3a A2 / A3, TD-620',
         'billing.edit and requests.approve by role (O15); the money keys by role until M4 (TD-620)'),
+    'courses/staff_tables.py::in_reviewers': (1, 'DISPLAY', 'T5a tables',
+        'the Reviewers table lists an organisation admin who joined it (lead_reviews)'),
     'courses/staff_tables.py::in_admins': (1, 'TARGET', 'M3a A4',
         'the organisation admin always sits in Admins, by role'),
     'courses/staff_tables.py::groups_to_leave': (1, 'TARGET', 'M3a A4',
@@ -523,7 +523,9 @@ LEAD_READS = {
     'scholarship/payments_chain.py::may_read': (1, 'M4', 'T5d / TD-620', 'who opens Payments'),
     'scholarship/payments_chain.py::may_prepare': (1, 'M4', 'T5d / TD-620', 'who creates a run'),
     'scholarship/payments_chain.py::_refusal': (1, 'M4', 'T5d / TD-620', 'why a step is refused'),
-    'scholarship/staff_person.py::on_reviewer_route': (1, 'DISPLAY', 'T3',
+    'scholarship/staff_permissions_admin.py::history_held': (1, 'DISPLAY', 'M3a review',
+        'the audit row of a Django-admin role change reads an organisation admin\'s page keys by role'),
+    'scholarship/staff_person.py::on_reviewer_route': (2, 'DISPLAY', 'T3',
         'which route lists the target (an organisation admin only when they joined Reviewers)'),
     'scholarship/staff_person.py::person': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the person page'),
     'scholarship/staff_list.py::list_rows': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the Staff list'),
@@ -531,7 +533,7 @@ LEAD_READS = {
         'the caller arm (an organisation admin acts) converts to manage_team; the target arm stays (Q4)'),
     'scholarship/staff_tables_admin.py::_refuse_basic': (1, 'TARGET', 'target rule',
         'which rows may sit in a table (an organisation admin may)'),
-    'scholarship/staff_tables_admin.py::table_keys': (1, 'DISPLAY', 'M3c',
+    'scholarship/staff_tables_admin.py::table_keys': (2, 'DISPLAY', 'M3c',
         'the chips an organisation admin\'s row shows (review only) until M3c reads the stored set'),
     'scholarship/staff_tables_admin.py::_plan_add': (1, 'DISPLAY', 'M3a A6',
         'the writer adds `review` alone to an organisation admin\'s stored list'),
@@ -574,6 +576,9 @@ def test_scanner_catches_a_lead_tier_gate(tmp_path):
            "def g(admin):\n    return _is_lead_tier(admin) or is_lead_tier(admin)\n"
            "def h(admin):\n    return admin.role == sp.LEAD_ROLE\n"
            "def k(admin):\n    return admin.role in (LEAD_ROLE,)\n"
-           "def n(admin):\n    return admin.has_perm('manage_team')\n")
+           "def n(admin):\n    return admin.has_perm('manage_team')\n"
+           "def p(rows):\n    return list(filter(sp.is_lead_tier, rows)) + sorted(rows, key=lead_reviews)\n"
+           "def q(admin):\n    return admin.role == 'reviewer' or has_role(admin, 'admin')\n")
     (tmp_path / 'm.py').write_text(src)
-    assert lead_counts(str(tmp_path)) == {'m.py::f': 1, 'm.py::g': 2, 'm.py::h': 1, 'm.py::k': 1}
+    assert lead_counts(str(tmp_path)) == {'m.py::f': 1, 'm.py::g': 2, 'm.py::h': 1, 'm.py::k': 1,
+                                          'm.py::p': 2}
