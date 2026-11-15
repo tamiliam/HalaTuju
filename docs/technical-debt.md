@@ -9043,3 +9043,13 @@ student later re-uploads an IC on the Documents page, that own-slot upload finds
 and clean-read gates refuse another person's card for the name, the lock and alignment), but a worse copy can displace a
 good one. Fix: make the `ic` sweep symmetric (an `ic` upload counts every live non-household `ic` as stale/existing,
 whatever the request code), with a real-upload test. *(A - S)*
+
+### [TD-629] Unticking a v2 payments key on an organisation admin does nothing until M4 - low
+
+**Raised 2026-11-15 by the M3c fresh review (low 2).** `staff_permissions_admin._lead_after` refuses only the old
+`payments_*` keys (`LEAD_MONEY_OLD`, refusal `money_by_role`), while `staff_permissions_v2.effective_v2` adds the v2
+`payments.*` keys back to every active organisation admin by role (`LEAD_MONEY_UNTIL_M4`, TD-620). So a super who
+unticks a v2 payments key on an organisation admin's Permissions tab saves, and the key comes straight back: the
+person keeps the power. No one gains a power; the switch just has no effect. Fix:
+with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
+the role" line is the guard. *(A - S)*

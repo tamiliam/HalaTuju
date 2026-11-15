@@ -237,3 +237,17 @@ describe('the loader does not re-read when `t` changes identity (A3.15)', () => 
     expect(mockApi.listSponsors).toHaveBeenCalledTimes(before)
   })
 })
+
+describe('M3c: the vetting buttons follow the served `may_vet`', () => {
+  it('draws Suspend when the server says may_vet, none when it says not (review F3: none before it answers)', async () => {
+    mockApi.listSponsors.mockResolvedValue({ sponsors: SPONSORS, may_vet: true })
+    const { unmount } = render(<AdminSponsorsList />)
+    await screen.findAllByText('Bharathan Nair')
+    expect(ui().getAllByText('admin.sponsors.action.suspend')).toHaveLength(2)
+    unmount()
+    mockApi.listSponsors.mockResolvedValue({ sponsors: SPONSORS, may_vet: false })
+    render(<AdminSponsorsList />)
+    await screen.findAllByText('Bharathan Nair')
+    expect(ui().queryByText('admin.sponsors.action.suspend')).toBeNull()
+  })
+})

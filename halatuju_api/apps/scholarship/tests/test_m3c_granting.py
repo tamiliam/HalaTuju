@@ -339,3 +339,18 @@ class TheMentorKind(_MentorsBase):
             body = authed_client(self.viewer).get(INVITE + '?kind=mentor').json()
         self.assertEqual(body['waiting']['mentor'], 1)
         self.assertEqual([m['manageable'] for m in body['mentors']], [False])
+
+    def test_finance_gets_only_the_tab_fields(self):
+        """M3c review F1: the Mentor kind is an ALLOWLIST of what `MentorRoster` reads — never the Mentors
+        page's full record (work, scholars, last seen, languages, area, gifts, delete flags)."""
+        self.invite()
+        finance = make_admin('finance', owning_org=self.org)
+        body = authed_client(finance).get(INVITE + '?kind=mentor&all=1').json()
+        self.assertEqual(len(body['mentors']), 1)
+        self.assertEqual(set(body['mentors'][0]), {'id', 'name', 'email', 'status', 'manageable'})
+
+    def test_a_mentors_reader_gets_the_same_fields(self):
+        self.invite()
+        body = authed_client(self.lead).get(INVITE + '?kind=mentor&all=1').json()
+        self.assertEqual(set(body['mentors'][0]), {'id', 'name', 'email', 'status', 'manageable'})
+        self.assertEqual(body['mentors'][0]['manageable'], True)

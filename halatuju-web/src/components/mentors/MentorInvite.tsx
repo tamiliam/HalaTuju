@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import {
   inviteMentor, mentorAction,
-  type InvitationRow, type InvitationsPayload, type MentorRow,
+  type InvitationRow, type InvitationsPayload, type MentorTabRow,
 } from '@/lib/admin-api'
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import { FIELD_LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
@@ -102,7 +102,7 @@ export function MentorRoster({ data, token, t, canManage, onDone }: {
 }) {
   const [busyId, setBusyId] = useState<number | null>(null)
   const waiting = data?.invitations ?? []
-  const byId = new Map<number, MentorRow>((data?.mentors ?? []).map((m) => [m.id, m]))
+  const byId = new Map<number, MentorTabRow>((data?.mentors ?? []).map((m) => [m.id, m]))
   const mentorOf = (row: InvitationRow) => (row.mentor_id != null ? byId.get(row.mentor_id) : undefined)
 
   const act = async (row: InvitationRow, action: 'resend' | 'revoke') => {

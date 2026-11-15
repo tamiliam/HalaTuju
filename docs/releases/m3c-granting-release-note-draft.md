@@ -35,9 +35,11 @@ SELECT name FROM django_migrations
  WHERE app = 'courses' AND name IN ('0098_store_org_admin_keys', '0099_grant_scholars_approve');
 COMMIT;
 ```
-2. **DATA block, before the push** (one transaction, ledger row included; safe to re-run).
+2. **DATA block, before the push** (one transaction, ledger row included; safe to re-run). Its first
+   line prints `step2_at`, the time this run's audit rows carry. **Write it down: step 4 needs it.**
 ```sql
 BEGIN;
+SELECT now() AS step2_at;   -- one value for the whole transaction; copy it for step 4
 WITH plan AS (
   SELECT id, email, owning_organisation_id, role, permissions AS base,
          permissions || '["scholars.approve"]'::jsonb AS after
@@ -59,19 +61,70 @@ SELECT 'courses', '0099_grant_scholars_approve', now()
 COMMIT;
 ```
 3. Push and move `live` (owner's yes).
-4. **After the new api image carries all the traffic:** re-run the DATA block (step 2), then the
-   **POST-DEPLOY CHECK** (read-only). It must return ZERO rows; if not, re-run the DATA block only.
+4. **After the new api image carries all the traffic:** run the **GUARDED DATA block** below, not the
+   step-2 block. It is the same append, except that it skips any organisation admin whose keys a person
+   (anything but the migration) has changed since step 2, so a key a super took away is not given back.
+   Replace `<STEP2_AT>` with the `step2_at` value step 2 printed (if step 2 ran more than once, the FIRST
+   run's value: the earlier time guards more). The ledger row is already there.
 ```sql
-SELECT id FROM partner_admins
+BEGIN;
+WITH plan AS (
+  SELECT id, email, owning_organisation_id, role, permissions AS base,
+         permissions || '["scholars.approve"]'::jsonb AS after
+    FROM partner_admins p
+   WHERE role = 'org_admin'
+     AND jsonb_typeof(permissions) = 'array'
+     AND NOT permissions ? 'scholars.approve'
+     AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
+                      WHERE c.target_id = p.id
+                        AND c.changed_by_role <> 'migration'
+                        AND c.created_at > TIMESTAMPTZ '<STEP2_AT>')
+), audit AS (
+  INSERT INTO staff_permission_changes (target_id, target_email, organisation_id, kind, role, before,
+                                        after, changed_by_email, changed_by_role, created_at)
+  SELECT id, COALESCE(email, ''), owning_organisation_id, 'edit', role, base, after, '', 'migration', now()
+    FROM plan
+)
+UPDATE partner_admins p SET permissions = g.after FROM plan g WHERE p.id = g.id;
+COMMIT;
+```
+   Then the **POST-DEPLOY CHECK** (read-only). The first query must return ZERO rows; if not, run the
+   guarded block again (same `<STEP2_AT>`). The second counts the rows the guard left as a person set
+   them; check each of those by hand on its Permissions tab before closing the release.
+```sql
+BEGIN READ ONLY;
+SELECT id FROM partner_admins p
  WHERE role = 'org_admin'
    AND jsonb_typeof(permissions) = 'array'
-   AND NOT permissions ? 'scholars.approve';
+   AND NOT permissions ? 'scholars.approve'
+   AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
+                    WHERE c.target_id = p.id
+                      AND c.changed_by_role <> 'migration'
+                      AND c.created_at > TIMESTAMPTZ '<STEP2_AT>');
+SELECT count(*) AS left_as_set FROM partner_admins p
+ WHERE role = 'org_admin'
+   AND jsonb_typeof(permissions) = 'array'
+   AND NOT permissions ? 'scholars.approve'
+   AND EXISTS (SELECT 1 FROM staff_permission_changes c
+                WHERE c.target_id = p.id
+                  AND c.changed_by_role <> 'migration'
+                  AND c.created_at > TIMESTAMPTZ '<STEP2_AT>');
+COMMIT;
 ```
+
+⚠ **Between steps 2 and 4, no super edits an organisation admin's keys.** The guard is a safety net, not
+permission: it sees only changes that wrote an audit row.
+⚠ The migration's own Python step (`plan_row`) does not run at step 4 and needs no guard: production never
+runs `migrate` (step 2 writes the ledger row by hand, so Django treats 0099 as applied), and in a test or
+fresh database it runs once, with no gap for a person's edit to fall into.
 
 ⚠ If 0098's DATA block is ever re-run, run 0099's DATA block straight after it, or the key is lost. 0099's
 POST-DEPLOY CHECK replaces 0098's equality check from now on.
 ⚠ Run 0099's DATA block again only as part of this release: from M3c a super may take the key away, and a
 later re-run would give it back.
+⚠ **Rollback.** Once lead keys have been granted to team members, redeploying the old image makes its non-v2
+save path drop them on the next save of that member. Nothing is escalated (the member only loses keys).
+After the roll-forward, re-grant what was lost on each member's Permissions tab.
 
 ## Owner's phone check (after the publish)
 

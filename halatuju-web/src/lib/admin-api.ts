@@ -43,7 +43,7 @@ export {
   cancelInvitation, getInvitations, inviteSponsor, inviteSource, resendSourceUser, revokeSourceUser,
 } from './admin-api/invitations'
 export type {
-  InvitationKind, InvitationRow, InvitationsPayload, SourceSignIn, SourceUserRow, InvitableSource,
+  InvitationKind, InvitationRow, InvitationsPayload, MentorTabRow, SourceSignIn, SourceUserRow, InvitableSource,
 } from './admin-api/invitations'
 
 // An admin's own profile, and a reviewer's own credentials.

@@ -21,11 +21,13 @@ const MENTOR = {
   languages: { en: '', ms: '', ta: '' }, other_language: '', invited_at: null, signed_in: false,
   last_seen_at: null, deactivated_at: null, manageable: true, scholars_now: 0,
 } as api.MentorRow
+// M3c review F1: the Mentor kind serves only these fields of the row (`MENTOR_TAB_FIELDS`).
+const TAB_ROW: api.MentorTabRow = { id: 7, name: 'Priya Devi', email: 'priya@example.org', status: 'invited', manageable: true }
 const DATA = {
   kind: 'mentor', invitations: [{ id: 41, name: 'Priya Devi', email: 'priya@example.org', role: 'mentor',
     status: 'invited', sent_at: '2026-10-31T00:00:00Z', send_count: 1, last_send_ok: true, last_send_error: '',
     accepted_at: null, admin_id: 99, is_active: true, paused: false, programme: '', programme_name: '', mentor_id: 7 }],
-  mentors: [MENTOR],
+  mentors: [TAB_ROW],
 } as unknown as api.InvitationsPayload
 
 beforeEach(() => {
@@ -105,7 +107,7 @@ it('I1: the form wears the one layout — labels, the note under the fields, Sen
 })
 
 it('offers no action on a row the caller may not manage, or to a reader', () => {
-  const { unmount } = render(<MentorRoster data={{ ...DATA, mentors: [{ ...MENTOR, manageable: false }] }}
+  const { unmount } = render(<MentorRoster data={{ ...DATA, mentors: [{ ...TAB_ROW, manageable: false }] }}
     token="tok" t={t} canManage onDone={jest.fn()} />)
   expect(within(screen.getByTestId('mentor-waiting-41')).queryByRole('button')).toBeNull()
   unmount()

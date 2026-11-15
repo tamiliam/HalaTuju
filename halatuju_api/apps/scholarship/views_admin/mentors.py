@@ -220,6 +220,10 @@ def _delete_fields(caller, mentor, login, staff, footprints):
     return {'work': work, 'deletable': not never and not work, 'delete_never': never}
 
 
+# M3c review F1: what the Invitations page's Mentor tab (`MentorRoster`) reads of a mentor row.
+MENTOR_TAB_FIELDS = ('id', 'name', 'email', 'status', 'manageable')
+
+
 def mentor_kind_extras(caller, mentor_ids):
     """The Invitations page's Mentor tab (S7b follow-up): `{mentors: [...]}` — the Mentors page's own
     rows (`mentor_rows`, with `manageable`) for the mentors behind the waiting invitations. The ids
@@ -227,7 +231,9 @@ def mentor_kind_extras(caller, mentor_ids):
     here (a super: any organisation).
 
     M3c E5 (owner ruling 2026-11-15): served to whoever opens the Invitations page (`may_read_team`),
-    no longer only the Mentors page's readers; each row's `manageable` still says who may act."""
+    no longer only the Mentors page's readers; each row's `manageable` still says who may act. M3c review
+    F1: an ALLOWLIST (`MENTOR_TAB_FIELDS`), for every caller — the tab needs no more, so even a Mentors
+    reader gets the full record only from the Mentors page."""
     from .. import surface_gates
     from ..models import Mentor
     if not surface_gates.may_read_team(caller):
@@ -235,7 +241,8 @@ def mentor_kind_extras(caller, mentor_ids):
     qs = Mentor.objects.filter(pk__in=list(mentor_ids))
     if not getattr(caller, 'is_super', False):
         qs = qs.filter(organisation_id=caller.owning_organisation_id)
-    return {'mentors': mentor_rows(caller, list(qs.order_by('id')))}
+    rows = mentor_rows(caller, list(qs.order_by('id')))
+    return {'mentors': [{k: r[k] for k in MENTOR_TAB_FIELDS} for r in rows]}
 
 
 class _MentorsBase(_AdminBase):

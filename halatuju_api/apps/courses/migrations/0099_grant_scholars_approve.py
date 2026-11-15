@@ -30,8 +30,9 @@ migration never imports app code); `test_m3c_migration_0099` proves they equal t
 SQL's WHERE text to `plan_row` (the test database cannot run jsonb).
 
 SQL, MIGRATE-FIRST, by hand. Run the PRE-CHECK, then the DATA block (it writes the ledger row in the same
-transaction); after the new image carries all the traffic, re-run the DATA block and run the POST-DEPLOY
-CHECK (the release note carries them).
+transaction); after the new image carries all the traffic, run the release note's GUARDED copy of the DATA
+block (review F2: it skips a row a person changed since the first run) and its POST-DEPLOY CHECK (the
+release note, `docs/releases/m3c-granting-release-note-draft.md`, carries them).
 
 PRE-CHECK (read-only): the organisation admin rows by shape and whether they hold the key, and the ledger.
     BEGIN READ ONLY;

@@ -110,10 +110,13 @@ export interface InvitationsPayload {
   /** `?kind=source` only (source sign-in S2): every source user, and the sources to pick from. */
   source_users?: SourceUserRow[]
   sources?: InvitableSource[]
-  /** `?kind=mentor` only (S7b follow-up): the Mentors page's own rows for the waiting invitations'
-   *  mentors — `manageable` decides which Resend / Revoke the roster offers. */
-  mentors?: MentorRow[]
+  /** `?kind=mentor` only (S7b follow-up): the waiting invitations' mentors — `manageable` decides which
+   *  Resend / Revoke the roster offers. M3c review F1: an allowlist of the Mentors page's row
+   *  (`MENTOR_TAB_FIELDS`, views_admin/mentors.py), never the full record. */
+  mentors?: MentorTabRow[]
 }
+
+export type MentorTabRow = Pick<MentorRow, 'id' | 'name' | 'email' | 'status' | 'manageable'>
 
 export async function getInvitations(kind: InvitationKind, options?: ApiOptions) {
   return adminFetch<InvitationsPayload>(`/api/v1/admin/invitations/?kind=${kind}`, options)

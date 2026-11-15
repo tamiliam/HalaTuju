@@ -88,9 +88,9 @@ export default function AdminSponsorsList() {
     wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
   const mayEditEmails = opensDoorOr(role, 'sponsor_emails', CAN_EDIT_EMAILS)   // T5c P4: the server's door
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
-  // M3c: the server says whether this viewer may vet an account (`may_vet`); an older server that
-  // does not say keeps the buttons, and its POST stays the authority.
-  const [mayVet, setMayVet] = useState(true)
+  // M3c: the server says whether this viewer may vet an account (`may_vet`); nothing is offered until it
+  // answers (review F3). An older server that does not say keeps the buttons; its POST stays the authority.
+  const [mayVet, setMayVet] = useState(false)
   const offered = (status: string) => (mayVet ? actionsFor(status) : [])
   // TD-502: the Overview's "sponsors to vet" card opens `?status=pending`, so the list matches its count.
   const wantedStatus = search?.get('status') ?? ''
