@@ -1157,3 +1157,91 @@ class TheLiveReadPathsFollowScope3b(TestCase):
         self.assertTrue(profile.nric_verified)
         row = StudentActivity.objects.get(application=app, event=EVENT_NAME_ALIGNED_TO_IC)
         self.assertEqual(row.meta['new'], CARD)
+
+
+# ── Scope 3b E6: an accepted locked student write of the card's words stores them tidied ────────
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class ALockedWriteOfTheCardsWordsIsStoredTidied(TestCase):
+    """``identity.student_name_to_store``: "Use the name on my IC" sends the served ``ic_card_name``
+    (``IdentityEdit.takeCardName``), i.e. the card's text as read. While locked, a student write
+    that has the card's words stores ``card_display_name(card)``; every other accepted write is
+    stored as sent."""
+
+    def _locked(self, name, card, nric, *, locked=True):
+        profile = _student(name, nric, nric_verified=locked)
+        app = make_application(student=profile, declaration_name=name)
+        _ic(app, name=card, nric=nric)
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(profile)}')
+        return profile, app, client
+
+    def test_the_take_path_with_a_glued_card_stores_the_tidied_name(self):
+        profile, _, client = self._locked(SHORT_EDIT, GLUED_CARD, NRIC)
+        d = client.get('/api/v1/profile/').json()
+        self.assertEqual(d['ic_card_name'], GLUED_CARD)              # what the button sends
+        self.assertTrue(d['name_card_takeable'])
+        r = client.put('/api/v1/profile/', {'name': d['ic_card_name']}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), CARD)                    # A/P its own word
+        self.assertFalse(client.get('/api/v1/profile/').json()['name_card_takeable'])
+
+    def test_typing_the_cards_words_with_odd_at_spacing_stores_the_tidied_form(self):
+        profile, _, client = self._locked('LIM AISYAH', 'LIM MEI LING@AISYAH', NRIC_B)
+        r = client.put('/api/v1/profile/', {'name': 'lim mei  ling @aisyah'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), 'LIM MEI LING @ AISYAH')
+
+    def test_the_form_sync_and_the_signature_promotion_store_it_tidied(self):
+        from apps.scholarship.services.intake import create_application
+        profile, _, _ = self._locked(SHORT_EDIT, GLUED_CARD, NRIC)
+        self.assertIn('name', sync_profile_fields(profile, {'name': GLUED_CARD}))
+        self.assertEqual(_name_of(profile), CARD)
+        self.assertEqual(sync_profile_fields(profile, {'name': GLUED_CARD}), [])   # already stored
+        profile.name = SHORT_EDIT
+        profile.save(update_fields=['name'])
+        app = create_application(profile=profile, cohort=make_cohort(code='c-req67b-promo'),
+                                 validated_data={'declaration_name': GLUED_CARD, 'consent_to_contact': True},
+                                 to_email='', acknowledge=False)
+        self.assertEqual(_name_of(profile), CARD)
+        app.refresh_from_db()
+        self.assertEqual(app.declaration_name, GLUED_CARD)         # the signature stays as typed
+
+    def test_the_sign_in_sync_seeding_a_blank_locked_name_stores_it_tidied(self):
+        profile, _, client = self._locked('', GLUED_CARD, NRIC)
+        r = client.post('/api/v1/profile/sync/', {'name': GLUED_CARD}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), CARD)
+
+    def test_an_unlocked_students_write_is_unchanged(self):
+        profile, _, client = self._locked(SHORT_EDIT, GLUED_CARD, NRIC, locked=False)
+        self.assertEqual(client.put('/api/v1/profile/', {'name': GLUED_CARD}, format='json').status_code, 200)
+        self.assertEqual(_name_of(profile), GLUED_CARD)
+        self.assertIn('name', sync_profile_fields(profile, {'name': 'lim mei ling@aisyah'}))
+        self.assertEqual(_name_of(profile), 'LIM MEI LING@AISYAH')
+
+    def test_a_write_the_lock_allows_that_is_not_the_cards_words_is_unchanged(self):
+        profile, _, client = self._locked(SHORT_EDIT, GLUED_CARD, NRIC)
+        glued_word = 'NIRMALADEVIA/P GANESAN MOORTHY'                # same letters, a word glued
+        self.assertTrue(identity.name_change_allowed(profile, glued_word))
+        self.assertEqual(client.put('/api/v1/profile/', {'name': glued_word}, format='json').status_code, 200)
+        self.assertEqual(_name_of(profile), glued_word)
+
+    def test_an_unchanged_name_keeps_its_own_spacing(self):
+        """E1 keeps a typed "X@Y" against a card read "X @Y"; re-saving it is not a change."""
+        typed, card = AT_SHAPES[2]
+        profile, _, client = self._locked(typed, card, NRIC_B)
+        r = client.put('/api/v1/profile/', {'name': typed, 'school': 'SMK REKAAN'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), typed)
+
+    def test_the_name_locked_refusals_are_unchanged(self):
+        profile, _, client = self._locked(CARD, GLUED_CARD, NRIC)
+        for probe in (SHORT_EDIT, 'MOORTHY NIRMALA DEVI A/P GANESAN', 'SOMEONE ELSE ENTIRELY'):
+            with self.subTest(probe=probe):
+                r = client.put('/api/v1/profile/', {'name': probe, 'school': 'SMK BARU'}, format='json')
+                self.assertEqual(r.status_code, 403)
+                self.assertEqual(r.json()['code'], 'name_locked')
+                profile.refresh_from_db()
+                self.assertEqual((profile.name, profile.school), (CARD, ''))

@@ -168,11 +168,12 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en', 
     # submit onward, so every identity check, email and sponsor profile reads it
     # correctly. Stored verbatim (the admin views upper-case it via _full_name).
     # #67 scope 3 (D3): once the IC lock is on, only a signature the card agrees with is promoted;
-    # any other keeps the stored (card-held) name. The signature itself is stored as typed (D1).
+    # any other keeps the stored (card-held) name. The signature itself is stored as typed (D1);
+    # a promoted locked name that is the card's words goes to the profile tidied (scope 3b, E6).
     from .. import identity
     if (signed and profile is not None and (getattr(profile, 'name', '') or '').strip() != signed
             and identity.name_change_allowed(profile, signed)):
-        profile.name = signed
+        profile.name = identity.student_name_to_store(profile, signed)
         profile.save(update_fields=['name', 'updated_at'])
 
     # Sources Sprint C: THIS application's "Who referred you?" is the answer THIS REQUEST gave

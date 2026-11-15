@@ -260,6 +260,29 @@ def name_change_allowed(profile, new_name):
     return bool(card) and same_letters(card, new_name)
 
 
+def student_name_to_store(profile, new_name):
+    """The value to STORE for a student name write that ``name_change_allowed`` has accepted (scope
+    3b, E6, 2026-11-15). While the name is locked and ``new_name`` has the same words as the latest
+    live card that speaks for the student (``same_word_sequence``), it is ``card_display_name(card)``
+    — so "Use the name on my IC", which sends the card's text as read, or the card's words typed with
+    odd marker spacing, never store a glued "KUMARA/L" or an "X@Y". Every other accepted write is
+    ``new_name`` exactly as sent, including an unchanged name (``_same_text``: not a change, so the
+    spacing the student's name already has stands, as E1 keeps it).
+
+    One rule for every student path that may write a locked name: ``ProfileView.put``,
+    ``ProfileSyncView.post``, ``services.profile_sync.sync_profile_fields`` and the signature
+    promotion in ``services.intake.create_application``. Admin and staff edit paths never ask."""
+    if profile is None or not name_locked(profile) or _same_text(new_name, getattr(profile, 'name', '')):
+        return new_name
+    ic = latest_live_ic(profile)
+    if ic is None or not card_speaks_for(ic, profile):
+        return new_name
+    card = (ic.vision_name or '').strip()
+    if card and same_word_sequence(str(new_name or ''), card):
+        return card_display_name(card)
+    return new_name
+
+
 def name_card_takeable(profile):
     """May the student take their card's name in one tap ("Use the name on my IC" on /profile)?
     Exactly when ``name_change_allowed`` would let them: the name is locked, their latest live card

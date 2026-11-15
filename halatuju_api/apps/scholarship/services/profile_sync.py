@@ -102,13 +102,17 @@ def sync_profile_fields(profile, data):
     updated = []
     # #67 scope 3 (D3): once the IC lock is on, the form may change the name only to the card's
     # own — anything else keeps the stored name, silently (the rest of the form still syncs).
+    # Scope 3b (E6): an accepted locked name that is the card's words is stored tidied.
     from .. import identity
     for field in _PROFILE_WRITEBACK_FIELDS + _PROFILE_ABOUTME_FIELDS:
         if field in data and data[field] is not None:
-            if field == 'name' and not identity.name_change_allowed(profile, data[field]):
-                continue
-            if getattr(profile, field, None) != data[field]:
-                setattr(profile, field, data[field])
+            value = data[field]
+            if field == 'name':
+                if not identity.name_change_allowed(profile, value):
+                    continue
+                value = identity.student_name_to_store(profile, value)
+            if getattr(profile, field, None) != value:
+                setattr(profile, field, value)
                 updated.append(field)
 
     # Parent/guardian name + phone live in the guardians JSON list — MERGED, never replaced (TD-055).

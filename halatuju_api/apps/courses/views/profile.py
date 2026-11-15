@@ -13,7 +13,8 @@ from ..stpm_pngk import stpm_cgpa_payload
 
 def _scholarship_public():
     """`apps.scholarship.public`, F2's door, for this file's IC state and the #67 scope 3 name
-    lock (`identity.latest_live_ic`, `name_locked`, `name_card_takeable`, `name_change_allowed`).
+    lock (`identity.latest_live_ic`, `name_locked`, `name_card_takeable`, `name_change_allowed`,
+    `student_name_to_store`).
     One lazy import statement for every use: the app-boundary standard counts each `courses -> scholarship` statement, and a lazy
     one never runs at app-load."""
     from apps.scholarship import public as scholarship_public
@@ -255,18 +256,23 @@ class ProfileView(APIView):
 
         # #67 scope 3 (D3): once the IC lock is on, the name may change only to the card's own.
         # Refused whole (nothing saved), like a locked NRIC — the screen shows the padlock note.
+        # Scope 3b (E6): an accepted locked name that is the card's words stores them tidied.
+        overrides = {}
         if 'name' in serializer.validated_data:
             from .. import profile_claim
-            if not _scholarship_public().identity.name_change_allowed(
-                    profile, serializer.validated_data['name']):
+            identity = _scholarship_public().identity
+            if not identity.name_change_allowed(profile, serializer.validated_data['name']):
                 return Response(dict(profile_claim.NAME_LOCKED), status=status.HTTP_403_FORBIDDEN)
+            overrides['name'] = identity.student_name_to_store(
+                profile, serializer.validated_data['name'])
 
         # Capture old contact values before save
         old_contact_email = profile.contact_email
         old_contact_phone = profile.contact_phone
 
         # Sprint B: a foreign student is never Bumiputera (`bumiputera.foreign_never_bumi`).
-        profile = serializer.save(**foreign_never_bumi(profile, serializer.validated_data))
+        overrides.update(foreign_never_bumi(profile, serializer.validated_data))
+        profile = serializer.save(**overrides)
 
         # Reset verification when contact details actually change
         if 'contact_email' in serializer.validated_data and profile.contact_email != old_contact_email:
@@ -351,7 +357,11 @@ class ProfileSyncView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        profile = serializer.save(**foreign_never_bumi(profile, serializer.validated_data))  # Sprint B
+        overrides = foreign_never_bumi(profile, serializer.validated_data)    # Sprint B
+        if 'name' in serializer.validated_data:      # scope 3b (E6): the card's words, tidied
+            overrides['name'] = _scholarship_public().identity.student_name_to_store(
+                profile, serializer.validated_data['name'])
+        profile = serializer.save(**overrides)
 
         # A `?ref=` code the browser resends on EVERY sign-in: the REFERRAL PARTNER column only,
         # first touch, partner rows only — never the bursary's source (two columns, 2026-10-09).
