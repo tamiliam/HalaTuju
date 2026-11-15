@@ -222,7 +222,7 @@ class TheLifts(SimpleTestCase):
 
     def test_the_confirmations(self):
         for head, seen, want in (
-                ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI', 'confirmation_polytechnic',
+                ('POLITEKNIK MELAKA\nKEMENTERIAN PENDIDIKAN TINGGI', 'confirmation_polytechnic',   # H2 r2
                  ('genuine', 'confirmation')),
                 # owner 2026-11-15: UMS confirmations read suspect - a person checks (was genuine)
                 ('UNIVERSITI MALAYSIA SABAH', 'confirmation_ums', ('suspect', 'confirmation_ua')),

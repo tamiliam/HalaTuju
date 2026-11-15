@@ -1240,6 +1240,18 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    the bare-word twins were dropped, and an English results slip stays `not_offer_letter`.
    Open: only UMS was proven to have no private wing, and it now reads suspect on the owner's word; another IPTA
    proven wingless moves into `_NO_PRIVATE_WING` on the owner's word.
+   **Tightened again (H2 round 2, Opus re-review, VERDICT_ENGINE_VERSION 2026-11-15.6):** a listed name must stand
+   alone on its letterhead line: any other word BEFORE it (e.g. "Mercu Kolej Komuniti Klang", "Mercu Bahagian
+   Matrikulasi") reads suspect, as an unknown word after it already did; the ministry and digits are allowed. A unit
+   line under the listed name that names something else ("Pusat Asasi Mercu", "Unit Mercu") reads suspect; the
+   institution's own unit lines ("Unit Hal Ehwal Pelajar", "Bahagian Pengambilan dan Peperiksaan") stay genuine
+   (`offer_confirmations._UNIT_WORDS` / `_UNIT_FUNCTIONS`). Polytechnics now have a list: the 36 public polytechnics
+   from the `institutions` table, with their own acronyms; an unlisted polytechnic name reads suspect. More approval
+   wording is no public mark: "Didaftar dengan", "Dilesenkan oleh", "Di bawah seliaan", "Reg. No." / "No.
+   Pendaftaran", "Under the purview of". State short forms (P. Pinang, N. Sembilan) and the KM / KMK forms of "Kolej
+   Matrikulasi (Kejuruteraan)" are added as extra listed spellings, not a rewrite of the page text. Open (TD-630):
+   a fully English confirmation scores below `CONFIRM_MIN` and stays `not_offer_letter` - a wrong rejection, never
+   a wrong acceptance; a reviewer can still look.
 
 4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
    Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is

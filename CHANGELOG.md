@@ -196,6 +196,16 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
+### fix: help sprint H2 round 2 - no word before a known name, unit lines checked, the polytechnic list, more approval wording, state short forms (2026-11-15)
+
+Branch help-h2, not pushed. Opus re-review of H2 round 1 (`docs/decisions.md`, ruling 3). VERDICT_ENGINE_VERSION 2026-11-15.6 (help-h3 holds .5); MODEL_VERSION stays 1.28.0. No migration, no web change.
+- `offer_rulings._known_name`: any other word before a listed name on its letterhead line reads suspect ("Mercu Kolej Komuniti Klang", "Mercu Bahagian Matrikulasi"; on main both were `not_offer_letter`); the ministry and digits are allowed. A unit line naming something else under the listed name ("Pusat Asasi Mercu") reads suspect; the institution's own unit lines stay genuine (`offer_confirmations._UNIT_WORDS`, `_UNIT_FUNCTIONS`).
+- Polytechnics: the 36 public polytechnics from the `institutions` table are now a listed set with their acronyms; an unlisted polytechnic name reads suspect (the old pattern-only shortcut is gone).
+- `_APPROVAL` adds "Didaftar dengan", "Dilesenkan oleh", "Di bawah seliaan", "Reg. No." and "Under the purview of" (no public mark).
+- Extra listed spellings: P.PINANG / P. PINANG, N.SEMBILAN / N. SEMBILAN, and KM / KMK for "Kolej Matrikulasi (Kejuruteraan)"; "KM P.PINANG" with KPM on the letterhead reads genuine. "KM Mercu" does not.
+- TD-630 logged: fully English confirmations stay `not_offer_letter` (a wrong rejection, never a wrong acceptance).
+- Tests: new `Round2NamesUnitsAndLists` in `test_offer_h2_confirmations.py`. Changed (the made-up "Politeknik Contoh" swapped for a listed polytechnic): `test_offer_h2_confirmations.py`, `test_offer_s6_narrowing.py`, `test_offer_rulings.py`, `test_offer_s6_review4.py`, `test_offer_s6_review2.py`.
+
 ### fix: help sprint H2 review - a confirmation reads genuine only on clear proof; UMS confirmations read suspect; the English matric offer tightened (2026-11-15)
 
 Branch help-h2, not pushed. Adversarial review of H2, plus the owner's UMS ruling (`docs/decisions.md`, ruling 4). VERDICT_ENGINE_VERSION 2026-11-15.4; MODEL_VERSION stays 1.28.0. No migration, no web change.

@@ -2,7 +2,7 @@
 no-private-wing issuers (owner ruling 4). Moved verbatim out of `offer_reading.py` (help sprint H2, 2026-11-15, a
 moves-only split: that file stood at 592 lines, under the 600-line standard, and ruling 4's widening needs room).
 `offer_reading` imports every name back (its `__all__`), so `offer_rulings` and the tests read them as before.
-Pure data, no imports.
+Pure data (and one spelling helper), no imports.
 """
 
 #: The confirmation-of-studies title, and the no-private-wing issuers (owner default 2026-11-03).
@@ -86,21 +86,77 @@ _KNOWN_PUBLIC_NAMES = {
         'SEBERANG JAYA', 'SEGAMAT', 'SEGAMAT 2', 'SELANDAR', 'SELAYANG', 'SEMPORNA', 'SHAH ALAM', 'SIK',
         'SUNGAI PETANI', 'SUNGAI SIPUT', 'TAIPING', 'TAMBUNAN', 'TAMPIN', 'TANGGA BATU', 'TANJUNG KARANG',
         'TANJUNG PIAI', 'TAPAH', 'TASEK GELUGOR', 'TAWAU', 'TELUK INTAN', 'TEMERLOH')),
+    # H2 round 2 (2026-11-15): the 36 public polytechnics, the course guide's `institutions` table read that day.
+    'confirmation_polytechnic': tuple(f'POLITEKNIK {c}' for c in (
+        'BAGAN DATUK', 'BALIK PULAU', 'BANTING', 'BESUT', 'HULU TERENGGANU', 'IBRAHIM SULTAN', 'JELI',
+        'KOTA BHARU', 'KOTA KINABALU', 'KUALA TERENGGANU', 'KUCHING SARAWAK', 'MELAKA', 'MERLIMAU', 'MERSING',
+        'METRO BETONG', 'METRO JOHOR BAHRU', 'METRO KUALA LUMPUR', 'METRO KUANTAN', 'METRO TASEK GELUGOR',
+        'MUADZAM SHAH', 'MUKAH SARAWAK', 'NILAI', 'PORT DICKSON', 'SANDAKAN', 'SEBERANG PERAI',
+        'SULTAN ABDUL HALIM MUADZAM SHAH', 'SULTAN AZLAN SHAH', 'SULTAN HAJI AHMAD SHAH', 'SULTAN IDRIS SHAH',
+        'SULTAN MIZAN ZAINAL ABIDIN', 'SULTAN SALAHUDDIN ABDUL AZIZ SHAH', 'TAWAU', 'TUANKU SULTANAH BAHIYAH',
+        'TUANKU SYED SIRAJUDDIN', 'TUN SYED NASIR SYED ISMAIL', 'UNGKU OMAR')),
+}
+#: H2 round 2: the SAME institutions' other exact spellings - the state short forms and "KM" / "KMK" (the
+#: course guide's own form, `matric-colleges.ts`: "KM Perak", "KMK Kedah"). Extra listed spellings only; the
+#: page text is never rewritten. `offer_rulings._known_names` folds them like the page ("P.PINANG" = "P PINANG").
+_STATE_SHORT = {'PULAU PINANG': ('P.PINANG', 'P. PINANG'), 'NEGERI SEMBILAN': ('N.SEMBILAN', 'N. SEMBILAN')}
+
+
+def _spellings(name: str) -> list:
+    out = [name]
+    for full, shorts in _STATE_SHORT.items():
+        if name.endswith(f' {full}'):
+            out += [name[:-len(full)] + s for s in shorts]
+    for long, short in (('KOLEJ MATRIKULASI KEJURUTERAAN ', 'KMK '), ('KOLEJ MATRIKULASI ', 'KM ')):
+        if name.startswith(long):
+            out += [short + x[len(long):] for x in list(out)]
+            break
+    return out
+
+
+_KNOWN_PUBLIC_NAMES = {k: tuple(s for n in v for s in _spellings(n)) for k, v in _KNOWN_PUBLIC_NAMES.items()}
+#: ... and a page naming a college only by "KM <state>" is a matriculation candidate too: its exact listed
+#: spellings, folded (never a bare " KM ", which is also a kilometre).
+_PUBLIC_CONFIRMERS = tuple(
+    (k, names + tuple(dict.fromkeys(f" {' '.join(n.replace('.', ' ').split())} "
+                                    for n in _KNOWN_PUBLIC_NAMES[k] if n.startswith(('KM ', 'KMK ')))), marks)
+    if k == 'confirmation_matriculation' else (k, names, marks) for k, names, marks in _PUBLIC_CONFIRMERS)
+#: The institutions' own acronyms (the course guide's ids / the `institutions` table), which may follow the name
+#: ("KOLEJ MATRIKULASI PULAU PINANG (KMPP)", "POLITEKNIK UNGKU OMAR (PUO)").
+_OWN_ACRONYMS = {
+    'confirmation_matriculation': frozenset({'KMP', 'KMK', 'KMPP', 'KMPK', 'KMS', 'KMNS', 'KMM', 'KMJ', 'KMPH',
+                                             'KMKT', 'KML', 'KMSW', 'KMKK', 'KMKPH', 'KMKJ'}),
+    'confirmation_polytechnic': frozenset({
+        'PBD', 'PBU', 'PBS', 'PBT', 'PHT', 'PIS', 'PJK', 'PKB', 'PKK', 'PKT', 'PKS', 'PMK', 'PMM', 'PMJ', 'PMBS',
+        'PMJB', 'PMKL', 'PMKU', 'PMTG', 'PMS', 'PMU', 'PNS', 'PPD', 'PSS', 'PSP', 'POLIMAS', 'PSAS', 'POLISAS',
+        'PSIS', 'PSMZA', 'PSA', 'PTS', 'PTSB', 'PTSS', 'PTSN', 'PUO'}),
 }
 #: The words of a type's own pattern: every one on the letterhead must sit inside a KNOWN name.
 _PUBLIC_PATTERN = {
     'confirmation_matriculation': (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ', ' MATRICULATION DIVISION ',
-                                   ' BAHAGIAN MATRIKULASI '),
+                                   ' BAHAGIAN MATRIKULASI '),     # + "KM <name>" (`offer_rulings._KM_NAME`)
     'confirmation_ipg': (' INSTITUT PENDIDIKAN GURU ', ' IPG ', ' INSTITUTE OF TEACHER EDUCATION '),
     'confirmation_kolej_komuniti': (' KOLEJ KOMUNITI ', ' COMMUNITY COLLEGE '),
+    'confirmation_polytechnic': (' POLITEKNIK ', ' POLYTECHNIC '),
 }
+#: H2 round 2: a UNIT line on a known name's letterhead ("BAHAGIAN HAL EHWAL PELAJAR") may hold only its unit
+#: words and these function words; any other word is an unknown name ("PUSAT ASASI MERCU") - suspect.
+_UNIT_WORDS = frozenset({'PUSAT', 'UNIT', 'BAHAGIAN', 'JABATAN', 'SEKSYEN', 'FAKULTI', 'PEJABAT', 'CAWANGAN',
+                         'CENTRE', 'CENTER', 'DIVISION', 'DEPARTMENT', 'OFFICE', 'FACULTY', 'SECTION', 'BRANCH'})
+_UNIT_FUNCTIONS = frozenset({
+    'HAL', 'EHWAL', 'PELAJAR', 'AKADEMIK', 'PENTADBIRAN', 'PENGAMBILAN', 'KEMASUKAN', 'PEPERIKSAAN',
+    'PENGURUSAN', 'REKOD', 'SEKRETARIAT', 'PENDAFTARAN', 'DAN', 'STUDENT', 'STUDENTS', 'AFFAIRS', 'ACADEMIC',
+    'ADMISSION', 'ADMISSIONS', 'ADMINISTRATION', 'EXAMINATION', 'EXAMINATIONS', 'REGISTRY', 'RECORDS',
+    'SERVICES', 'AND', 'OF', 'FOR', 'THE'})
 #: Approval / registration wording: a ministry named after it ("Approved by KPT", "Berdaftar dengan KPM") is the
 #: regulator of a PRIVATE college, never the issuer — it is not a public mark (`offer_rulings._approval_blanked`).
 _APPROVAL = (' APPROVED BY ', ' APPROVED UNDER ', ' REGISTERED WITH ', ' REGISTERED UNDER ', ' REGISTERED BY ',
              ' RECOGNISED BY ', ' RECOGNIZED BY ', ' LICENSED BY ', ' LICENSED UNDER ', ' ACCREDITED BY ',
              ' DILULUSKAN OLEH ', ' DILULUSKAN DI BAWAH ', ' DIDAFTARKAN DENGAN ', ' DIDAFTARKAN DI BAWAH ',
              ' BERDAFTAR DENGAN ', ' BERDAFTAR DI BAWAH ', ' DIIKTIRAF OLEH ', ' DIPERAKUI OLEH ',
-             ' KELULUSAN ', ' NO PENDAFTARAN ', ' REGISTRATION NO ')
+             ' KELULUSAN ', ' NO PENDAFTARAN ', ' REGISTRATION NO ',
+             # H2 round 2 (folded: "No. Pendaftaran" = NO PENDAFTARAN, "Reg. No." = REG NO)
+             ' DIDAFTAR DENGAN ', ' DILESENKAN OLEH ', ' DI BAWAH SELIAAN ', ' REG NO ', ' UNDER THE PURVIEW OF ')
 #: Every confirmation code: a confirmation never writes a course pick (`pathway_engine.is_confirmation_letter`).
 #: Help H2: `confirmation_ua` is back (owner 2026-11-15: a university WITH a private wing reads suspect).
 CONFIRMATION_SEEN = frozenset([k for k, _n, _m in _NO_PRIVATE_WING + _PUBLIC_CONFIRMERS]
