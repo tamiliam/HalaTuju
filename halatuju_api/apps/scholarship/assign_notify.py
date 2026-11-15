@@ -39,6 +39,10 @@ STALE_CLAIM = timedelta(minutes=10)
 BATCH = 50
 
 
+#: TD-613: the statuses at which "who will interview you" still means something to the student.
+_BEFORE_INTERVIEW = frozenset({'submitted', 'shortlisted', 'profile_complete', 'interviewing'})
+
+
 def send_assignment_emails(event):
     """The two emails for one assignment. MOVED VERBATIM from ``assign_reviewer`` (A2.3); only the
     reviewer, the case and the assignment time now come from ``event``."""
@@ -82,7 +86,10 @@ def send_assignment_emails(event):
     # non-objection to sharing their contact). The reviewer's phone is included unless they
     # opted out (ReviewerProfile.share_phone_with_students). Best-effort; never blocks assignment.
     from . import student_email_catalogue as _catalogue   # S6a: the organisation's own switch
+    # TD-613: a case handed on AFTER its interview (a holder who can no longer review it,
+    # `assignment.needs_new_holder`) has no interview left to announce, so the student hears nothing.
     if (getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False)
+            and application.status in _BEFORE_INTERVIEW
             and _catalogue.may_send(application, 'interviewer_assigned')):
         from .emails import english_only_email, send_student_assigned_reviewer_email
         profile = application.profile

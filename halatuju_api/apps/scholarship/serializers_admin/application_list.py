@@ -76,6 +76,9 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
     # so the list UI disables the dropdown rather than re-deriving the rule — an action the server
     # will refuse should not look available. See services.ASSIGNABLE_STATUSES.
     assignable = serializers.SerializerMethodField()
+    # TD-613: True when the holder can no longer work this OPEN case (`services.needs_new_holder`):
+    # it may then go to someone new at any open status, but never back to Unassigned.
+    needs_new_holder = serializers.SerializerMethodField()
     # First-assignment readiness (mirrors the detail cockpit): all student tasks done OR the org's
     # `query_answer_days` submit-clock lapsed. The list dropdown disables a FIRST assignment while false, so it never
     # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
@@ -90,7 +93,7 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
             'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
-            'assigned_to_id', 'assigned_to_name', 'assignable', 'ready_for_assignment',
+            'assigned_to_id', 'assigned_to_name', 'assignable', 'needs_new_holder', 'ready_for_assignment',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
         ]
@@ -98,6 +101,10 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
     def get_assignable(self, obj):
         from ..services import is_assignable
         return is_assignable(obj)
+
+    def get_needs_new_holder(self, obj):
+        from ..services import needs_new_holder
+        return needs_new_holder(obj)
 
     def get_ready_for_assignment(self, obj):
         from ..services import is_ready_for_assignment

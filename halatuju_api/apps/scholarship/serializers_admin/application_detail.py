@@ -109,6 +109,11 @@ class AdminApplicationDetailSerializer(ServesTheDetailBlocks, ServesTheDetailPeo
     # Internal-only correction tally for the assigned reviewer (reopened decisions that
     # led to a real change). Shown in the assign panel; never on a sponsor/student surface.
     assigned_to_corrections = serializers.SerializerMethodField()
+    # TD-613: the SERVED answers the cockpit's Reviewer card reads (never a role, owner 2026-11-15):
+    # may the case change hands now (`services.is_assignable`), and does it need a NEW holder because
+    # the one it has can no longer work it (`services.needs_new_holder`; then an unassign is refused).
+    assignable = serializers.SerializerMethodField()
+    needs_new_holder = serializers.SerializerMethodField()
     # Decision-reopen state: when set, the decision panel is editable + the reviewer
     # dropdown unlocks + a "held from sponsors" banner shows. The open reason drives the banner.
     decision_reopen_reason = serializers.SerializerMethodField()
@@ -221,7 +226,7 @@ class AdminApplicationDetailSerializer(ServesTheDetailBlocks, ServesTheDetailPeo
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'consent_blockers', 'nudge', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
-            'assigned_to_id', 'assigned_to_name', 'assigned_at',
+            'assigned_to_id', 'assigned_to_name', 'assigned_at', 'assignable', 'needs_new_holder',
             'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verified_by_name', 'verify_checklist',

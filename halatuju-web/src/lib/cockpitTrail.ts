@@ -123,6 +123,27 @@ export function showsReviewerAssignedCard(status: string | null | undefined): bo
 }
 
 /**
+ * TD-613: the Reviewer card, read from what the server SERVES (owner 2026-11-15: never the role).
+ *   shows       the stage window above, OR the server says the holder can no longer work this open
+ *               case (`needs_new_holder`) — a reopened funded or declined case included, which the
+ *               stage window alone hides.
+ *   locked      the server's `assignable` when served; a payload without it keeps `decisionLocked`.
+ *   mayUnassign false while the case needs a new holder: the server refuses to leave it with nobody.
+ */
+export function reviewerCardState(
+  app: { status: string | null | undefined; assignable?: boolean; needs_new_holder?: boolean },
+  decisionLocked: boolean,
+): { shows: boolean; locked: boolean; mayUnassign: boolean; needsNewHolder: boolean } {
+  const needsNewHolder = app.needs_new_holder === true
+  return {
+    shows: needsNewHolder || showsReviewerAssignedCard(app.status),
+    locked: app.assignable === undefined ? decisionLocked : !app.assignable,
+    mayUnassign: !needsNewHolder,
+    needsNewHolder,
+  }
+}
+
+/**
  * Statuses at which the WITNESS ORGANISATION card is offered.
  *
  * Only a student who will SIGN an agreement needs a witness org, i.e. an AWARDED one — but the

@@ -44,27 +44,12 @@ REOPEN_MESSAGES = {
                         'pending decline instead — it returns the case to where it was.'),
     'birth_state_rule_failed': BIRTH_STATE_RULE_FAILED,
     birth_state.IC_UNLOCKED: birth_state.IC_UNLOCKED_MESSAGE,
-    'reviewer_cannot_review': (
-        'The reviewer named on this case can no longer review (they lack the review permission, '
-        'or their access has been revoked), so a reopened decision would wait for somebody who '
-        'cannot open it. In Team, Reviewers, give them review again, or Restore them if they '
-        'were revoked, then reopen.'),
 }
 
-#: The statuses a reopen steps back (see `reopen_decision`): to AWAITING QC, which is the QC's, or
-#: to 'interviewing', where the case may be handed to another reviewer. Every other decided status
-#: STAYS PUT and waits for the assigned officer to decide again.
-_STEPS_BACK = ('recommended', 'interviewed')
-
-
-def _strands_assignee(app):
-    """TD-476 (A1.10a): would this reopen leave the case waiting on an assignee who no longer holds
-    `review`? Only where the status stays put (a decline that has gone, a funded case): there the
-    case cannot change hands (`assignment.ASSIGNABLE_STATUSES`), so nobody could pick it up. A revoked
-    (inactive) assignee cannot review either, whatever keys their row still holds (review fix)."""
-    assignee = app.assigned_to
-    return (assignee is not None and app.status not in _STEPS_BACK
-            and not (assignee.is_active and assignee.has_perm('review')))
+# TD-613 (2026-11-15): `_strands_assignee` and its `reviewer_cannot_review` refusal are RETIRED. Under R5 a
+# holder may leave Reviewers, be suspended or be archived while a funded case they hold is closed, so the
+# refusal left that case stuck for ever. A reopen now SUCCEEDS whoever holds the case; when the holder can
+# no longer work it the case derives `assignment.needs_new_holder` and may change hands at its status.
 
 
 class ReopenError(Exception):
@@ -125,8 +110,6 @@ def reopen_decision(app, *, by_admin, reason, activity=True):
         raise ReopenError('decline_pending')
     if not reason:
         raise ReopenError('reason_required')
-    if _strands_assignee(app):
-        raise ReopenError('reviewer_cannot_review')
 
     sp = SponsorProfile.objects.filter(application=app).first()
     was_published = bool(sp and sp.anon_published)

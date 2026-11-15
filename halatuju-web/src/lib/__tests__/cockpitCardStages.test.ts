@@ -8,6 +8,7 @@
 import {
   isCaseClosed,
   queryingLockReason,
+  reviewerCardState,
   showsCheck2Box,
   showsDecisionCards,
   showsGeneratedProfileCard,
@@ -300,6 +301,34 @@ describe('queryingLockReason', () => {
     for (const status of ['interviewed', 'recommended', 'awarded', 'active', 'maintenance',
       'closed', 'rejected', 'withdrawn', 'expired']) {
       expect(queryingLockReason(status)).not.toBe('interview')
+    }
+  })
+})
+
+describe('reviewerCardState (TD-613: read from what the server serves, never the role)', () => {
+  it('shows the card at a reopened funded or declined case whose holder has gone', () => {
+    for (const status of ['recommended', 'rejected', 'interviewed']) {
+      const card = reviewerCardState({ status, assignable: true, needs_new_holder: true }, true)
+      expect(card).toEqual({ shows: true, locked: false, mayUnassign: false, needsNewHolder: true })
+    }
+  })
+
+  it('follows the served assignable, not the decision lock, when it is served', () => {
+    expect(reviewerCardState({ status: 'interviewed', assignable: false }, false).locked).toBe(true)
+    expect(reviewerCardState({ status: 'interviewing', assignable: true }, true).locked).toBe(false)
+  })
+
+  it('keeps the decision lock for a payload that does not serve assignable', () => {
+    expect(reviewerCardState({ status: 'interviewing' }, true).locked).toBe(true)
+    expect(reviewerCardState({ status: 'interviewing' }, false).locked).toBe(false)
+  })
+
+  it('leaves the stage window alone when the holder can still work the case', () => {
+    for (const status of ALL) {
+      const card = reviewerCardState({ status, assignable: false, needs_new_holder: false }, false)
+      expect(card.shows).toBe(showsReviewerAssignedCard(status))
+      expect(card.mayUnassign).toBe(true)
+      expect(card.needsNewHolder).toBe(false)
     }
   })
 })

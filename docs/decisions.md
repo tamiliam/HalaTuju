@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-15 — TD-613 builder call (pending architect): a case whose reviewer has left can change hands
+
+Branch td613, not pushed. No migration. Release-note draft: `docs/releases/td613-release-note-draft.md`.
+
+**Chosen (safest reversible):** a DERIVED fact, nothing stored. `services/assignment.needs_new_holder(application)` is true when the case is OPEN (`staff_lifecycle.is_open_case`) and its holder can no longer review it (`holder_can_review`: inactive, archived, or, for a non-super, not both in Reviewers and a review target). `is_assignable` adds that case to `ASSIGNABLE_STATUSES`. Reverting is a code revert; no row carries the fact.
+
+The calls:
+1. **What "can no longer review" means.** Suspended (`is_active` off), archived, or outside Reviewers / not a review target. A PAUSED holder can still work the case (pause stops new work only), so it is not stranded. A super holder is never stranded. A pre-T1 organisation admin holding a case without `review` counts as stranded: the change is OFFERED, never forced.
+2. **Never back to nobody.** An unassign of a stranded case is refused outside `ASSIGNABLE_STATUSES` (`findings_submitted` at Awaiting QC, `not_assignable` at a reopened decline), so the case always has a holder.
+3. **No student "who will interview you" email past the interview.** A handover at Awaiting QC or later has no interview to announce (`assign_notify._BEFORE_INTERVIEW`). The new reviewer still gets their email.
+4. **The cockpit lock reads the served `assignable`.** This also corrects a mismatch at a non-stranded Awaiting QC reopen, where the select was enabled and the server refused.
+5. **`reviewer_cannot_review` is retired** with `reopen._strands_assignee`: a reopen now succeeds and the case shows "needs a new holder".
+6. **`R1_SUPER_TARGET_ROLES` (TD-622) stays.** The `qc` preset has no `review`, so R1 is how QC people are review targets. Note on TD-622.
+
+**Alternatives not taken:**
+- A stored nullable flag (`needs_reassignment_at`) set by reopen and revert: an extra write, and a copy that drifts when the holder is restored or re-added.
+- An automatic unassign on reopen or revert: leaves a funded case with nobody and detaches finished work from who did it.
+- Keeping the refusal and adding a separate "hand over" endpoint: a second door with its own copy of the assign rules.
+
+**Not changed:** the `assign` door, `may_hand_to` / `may_assign_to`, `self_assign` (a super included), the organisation fence, QC separation, every money path (only `assigned_to` moves).
+
 ## 2026-11-15 — Sprint M3c: granting the organisation admin's keys; the builder's open calls (builder; for the architect to confirm)
 
 Branch m3c, not pushed. Part 1 (api) 075cee190; part 2 (web list W and docs) on top. Release-note draft: `docs/releases/m3c-granting-release-note-draft.md`.

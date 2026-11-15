@@ -6,7 +6,7 @@
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
-import { showsReviewerAssignedCard, assignOptions } from '@/lib/officerCockpit'
+import { reviewerCardState, assignOptions } from '@/lib/officerCockpit'
 import type { AdminScholarshipDetail, SourceItem } from '@/lib/admin-api'
 
 import type { T } from './shared'
@@ -45,14 +45,28 @@ export function AssignAndWitness({
             Stage window (`showsReviewerAssignedCard`): hidden at 'shortlisted', where the Reject
             card above takes this slot and assignment is impossible anyway (services.is_assignable),
             and hidden again from 'recommended' onward, where the Recommendation box already names
-            the reviewer and this would only add a locked, greyed duplicate. ─── */}
-      {canAssign && showsReviewerAssignedCard(app.status) && (() => {
+            the reviewer and this would only add a locked, greyed duplicate.
+            TD-613 (`reviewerCardState`): the card also shows, unlocked, whenever the server says the
+            holder can no longer work this open case (`needs_new_holder`), and the lock is the
+            server's `assignable`, so the card offers a change exactly when the server takes one. ─── */}
+      {canAssign && (() => {
+        const card = reviewerCardState(app, decisionLocked)
+        if (!card.shows) return null
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
         // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
-        // dropdown locks. It unlocks again only if a superadmin REOPENS the decision.
-        const assignLocked = decisionLocked
+        // dropdown locks. It unlocks again only if a superadmin REOPENS the decision, or (TD-613)
+        // the holder can no longer work the case.
+        const assignLocked = card.locked
         const assigned = !!app.assigned_to_id
+        const options = assignOptions(admins, {
+          isSuper,
+          currentAssigneeId: app.assigned_to_id,
+          applicationProgrammeId: app.programme_id ?? null,
+        })
+        // TD-613: a holder who has left (suspended / archived) is not in `admins`; still name them,
+        // so the select shows its own value instead of reading "Unassigned".
+        const holderMissing = assigned && !options.some((a) => a.id === app.assigned_to_id)
         return (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
@@ -61,12 +75,16 @@ export function AssignAndWitness({
           <select
             value={app.assigned_to_id ?? ''}
             disabled={!!busy || firstAssignBlocked || assignLocked}
-            title={assignLocked ? t('admin.scholarship.assign.lockedHint')
+            title={assignLocked ? t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
+              : 'admin.scholarship.assign.error.not_assignable')
               : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
             className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center"
           >
-            <option value="">{t('admin.scholarship.unassigned')}</option>
+            <option value="" disabled={!card.mayUnassign}>{t('admin.scholarship.unassigned')}</option>
+            {holderMissing && (
+              <option value={app.assigned_to_id ?? ''} disabled>{app.assigned_to_name || app.assigned_to_id}</option>
+            )}
             {/* Assignable options. The backend already returns the org-fenced, review-capable set
                 (AdminAssignableAdminsView) and SERVES `assignable` per row (#39 S3: may_assign_to —
                 a super any review target, an org_admin their own org's `review` holders; the assign
@@ -81,11 +99,7 @@ export function AssignAndWitness({
                 cover <gift>" (S-ASSIGN; multi-gift 2026-11-06). Same two reasons, and an empty gift
                 list (every gift) or a case of unknown gift greys nobody.
                 All the rules live in the pure `assignOptions`, where they are tested. */}
-            {assignOptions(admins, {
-              isSuper,
-              currentAssigneeId: app.assigned_to_id,
-              applicationProgrammeId: app.programme_id ?? null,
-            })
+            {options
               .map((a) => (
                 <option key={a.id} value={a.id} disabled={a.disabled}>
                   {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
@@ -96,8 +110,13 @@ export function AssignAndWitness({
                 </option>
               ))}
           </select>
-          {assignLocked ? (
-            <p className="text-xs text-ground-400">{t('admin.scholarship.assign.lockedHint')}</p>
+          {card.needsNewHolder && !assignLocked ? (
+            <p className="text-xs text-caution-700" data-needs-new-holder>
+              {t('admin.scholarship.assign.needsNewHolderHint')}
+            </p>
+          ) : assignLocked ? (
+            <p className="text-xs text-ground-400">{t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
+              : 'admin.scholarship.assign.error.not_assignable')}</p>
           ) : firstAssignBlocked && (
             <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}

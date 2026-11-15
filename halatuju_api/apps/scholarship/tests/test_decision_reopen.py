@@ -429,11 +429,11 @@ class TestDecisionTrailSerializer(TestCase):
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
-    """TD-476 (A1.10a): a reopen that leaves the case WHERE IT IS (a decline that has gone, a
-    funded case) waits for the assigned officer, and such a case cannot change hands. If that
-    officer no longer holds `review`, the reopen is refused (400 `reviewer_cannot_review`) before
-    any write. A reopen that steps the case back (to AWAITING QC, or to 'interviewing', where it
-    may be reassigned) is unchanged."""
+    """TD-476 (A1.10a), REWRITTEN at TD-613 (2026-11-15): a reopen that leaves the case WHERE IT IS
+    (a decline that has gone, a funded case) used to be REFUSED (`reviewer_cannot_review`) when the
+    assigned officer no longer held `review`. Under R5 that left the case stuck for ever, so the
+    reopen now SUCCEEDS and the case derives `needs_new_holder`: it may change hands at its status
+    (`services.is_assignable`). A reopen that steps the case back is unchanged."""
     setUp = TestDecisionReopen.setUp
     _auth = TestDecisionReopen._auth
     _reopen_url = TestDecisionReopen._reopen_url
@@ -446,22 +446,30 @@ class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
         self.app.status = value
         self.app.save(update_fields=['status'])
 
-    def test_a_decided_decline_is_refused_and_nothing_moves(self):
+    def test_a_decided_decline_reopens_and_needs_a_new_holder(self):
+        from apps.scholarship.services import is_assignable, needs_new_holder
         self._set_status('rejected')
         self._take_review_away()
         self._auth(SUPER)
         r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
-        self.assertEqual((r.status_code, r.json()['code']), (400, 'reviewer_cannot_review'))
+        self.assertEqual(r.status_code, 200)
         self.app.refresh_from_db(); self.sp.refresh_from_db()
-        self.assertIsNone(self.app.decision_reopened_at)
-        self.assertTrue(self.sp.anon_published)
-        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+        self.assertIsNotNone(self.app.decision_reopened_at)
+        self.assertFalse(self.sp.anon_published)
+        self.assertTrue(DecisionReopen.objects.filter(application=self.app).exists())
+        self.assertTrue(needs_new_holder(self.app))
+        self.assertTrue(is_assignable(self.app))
 
     def test_the_same_case_reopens_while_the_assignee_holds_review(self):
+        from apps.scholarship.services import is_assignable, needs_new_holder
         self._set_status('rejected')
         self._auth(SUPER)
         r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
         self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        # A holder who can still work it keeps it, and the case does not change hands at 'rejected'.
+        self.assertFalse(needs_new_holder(self.app))
+        self.assertFalse(is_assignable(self.app))
 
     def _revoke(self):
         self.reviewer.is_active = False
@@ -469,14 +477,15 @@ class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
 
     def test_a_REVOKED_assignee_counts_as_unable_to_review(self):
         # Review fix: a revoked reviewer still holds `review` on their row, but cannot open anything.
+        from apps.scholarship.services import needs_new_holder
         self._set_status('rejected')
         self._revoke()
         self._auth(SUPER)
         r = self.client.post(self._reopen_url(), {'reason': 'Income mis-read.'}, format='json')
-        self.assertEqual((r.status_code, r.json()['code']), (400, 'reviewer_cannot_review'))
+        self.assertEqual(r.status_code, 200)
         self.app.refresh_from_db()
-        self.assertIsNone(self.app.decision_reopened_at)
-        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+        self.assertIsNotNone(self.app.decision_reopened_at)
+        self.assertTrue(needs_new_holder(self.app))
 
     def test_a_reopen_back_to_qc_is_unrefused_with_a_revoked_assignee(self):
         self._revoke()

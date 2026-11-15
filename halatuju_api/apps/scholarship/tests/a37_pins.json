@@ -627,6 +627,8 @@
     "assigned_to_id",
     "assigned_to_name",
     "assigned_at",
+    "assignable",
+    "needs_new_holder",
     "info_request_note",
     "info_requested_at",
     "mentoring_candidate",
@@ -711,6 +713,7 @@
     "assigned_to_id",
     "assigned_to_name",
     "assignable",
+    "needs_new_holder",
     "ready_for_assignment",
     "decision_reopened_at"
    ],

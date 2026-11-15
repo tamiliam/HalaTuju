@@ -35,16 +35,17 @@ export function AssignLangNote({ lang, className, legendId }: { lang: string; cl
 }
 
 /** The `<option>`s for one case: Unassigned, the current holder even when the list does not name
- *  them, then the offered people, those who speak the student's language first. */
+ *  them, then the offered people, those who speak the student's language first. TD-613: Unassigned is
+ *  disabled while the server says the case needs a NEW holder (`needs_new_holder`): it refuses that. */
 export function AssigneeOptions({ reviewers, row, isSuper }: {
   reviewers: Reviewer[]
-  row: AssignRow & { assigned_to_name: string | null; call_language: string }
+  row: AssignRow & { assigned_to_name: string | null; call_language: string; needs_new_holder?: boolean }
   isSuper: boolean
 }) {
   const { t } = useT()
   return (
     <>
-      <option value="">{t('admin.scholarship.unassigned')}</option>
+      <option value="" disabled={row.needs_new_holder === true}>{t('admin.scholarship.unassigned')}</option>
       {row.assigned_to_id != null && !reviewers.some((rv) => rv.id === row.assigned_to_id) && (
         <option value={row.assigned_to_id}>{row.assigned_to_name || row.assigned_to_id}</option>
       )}

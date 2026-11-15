@@ -8922,7 +8922,7 @@ same weekly cadence). Known limit: `release-decisions` has `maxRetries: 1`, so a
 safe for the idempotent backup, and the command's docstring warns against pointing a job that sends anything at it.
 *(B · S)*
 
-### [TD-613] A reopened or diverted case whose reviewer has left cannot change hands - medium
+### ~~[TD-613] A reopened or diverted case whose reviewer has left cannot change hands - medium~~ — RESOLVED 2026-11-15 (branch td613, local, awaiting push: `services/assignment.needs_new_holder` is derived, nothing stored; an OPEN case whose holder is suspended, archived or out of Reviewers is assignable at any open status, to a new holder only (an unassign stays refused); `reopen._strands_assignee` and `reviewer_cannot_review` are retired; detail and list serve `assignable` and `needs_new_holder`, which the cockpit card and the list picker read; tests `test_td613_departed_holder.py`, `test_decision_reopen.py`, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`)
 
 **Raised 2026-11-13 by the M2c review; the owner chose to ship and fix after.** Under R5, an awarded case no longer stops someone leaving Reviewers or being deleted, and `assigned_to` is kept. If the case later comes back, it is stuck:
 - A QC reopen is refused by `reopen._strands_assignee` with `reviewer_cannot_review` until the person is re-added or restored. An archived person may not be restorable.
@@ -8930,6 +8930,8 @@ safe for the idempotent backup, and the command's docstring warns against pointi
 - Side effects: a holder in No group becomes undeletable, and an archived holder is invisible to the suspended-cases banner.
 
 **Fix:** allow reassignment of an open case whose holder can no longer review (inactive, archived, or without `review`), from any open status. Let reopen and revert succeed and flag the case for reassignment instead of refusing. Add tests for both paths. *(A · M)*
+
+**As built (2026-11-15).** Both stuck paths now finish: a reopen succeeds, and a diverted revert lands at `interviewed` able to change hands; the case goes to a signed-in member of Reviewers of its own organisation, never to the caller, and the new holder works it (a verdict, verify-and-accept), proved end to end. Every assign rule is unchanged (the `assign` door, `may_hand_to`, `self_assign`, the organisation fence, QC separation: a former holder stays barred from QC by the assignment history). A closed case (awarded, active, closed, withdrawn, not reopened) never moves. Side effects: the No-group holder is no longer undeletable, because the case can be handed on and their open-case count drops to 0 (tested). The archived holder missing from the suspended-cases banner is NOT fixed: it needs one more query on the Staff list, whose query count is pinned; logged as a new item (TD-XXX, banner). Builder calls: `docs/decisions.md`, 2026-11-15, TD-613.
 
 ### [TD-614] The Remove confirm for a suspended person can show finance warnings that do nothing - low
 
@@ -8991,6 +8993,8 @@ whom a platform super may hand a case to, by role. It cannot retire until the re
 role (TD-613). Fix: after TD-613, ask the target's keys (`review`) instead of its role, drop the constant and its
 entry in the A10 allowlist. *(A - S)*
 
+**Status 2026-11-15 (TD-613 builder): not safe to retire yet, left open.** The `qc` preset is `('see_all', 'qc')` with no `review`, so a QC person is a review target ONLY through R1 (and `assignable-admins` reads R1 too). Dropping the constant would stop a super handing a case to QC staff and an organisation admin outside Reviewers. It retires when the presets give QC (and the lead) `review`, or when the target rule names `qc` as a key; that is a permissions change for the architect, not part of TD-613.
+
 ### [TD-623] The web still falls back to the role for older payloads, and `canFilterByAssignee` has an `admin` arm - low
 
 **Raised 2026-11-14 by sprint M3a.** The admin pages read the served keys, but where an older API payload has no keys
@@ -8998,6 +9002,10 @@ they fall back to the role, and `canFilterByAssignee` in `halatuju-web/src/app/a
 opens the assignee filter for the `admin` role by name. Once every served payload carries the keys (M3c), the
 fallbacks are dead code that can drift from the server. Fix: in M3c, read only the served keys, delete the role
 fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name in a gate. *(A - S)*
+
+### [TD-XXX] An archived holder's open cases are missing from the Staff list's suspended-cases banner - low
+
+**Raised 2026-11-15 by sprint TD-613 (the architect assigns the number).** The banner counts open cases held by people the Staff list returns, and an archived person is not on the default list, so a case held by someone archived is not counted there. The case itself is not stuck: the applications list and the cockpit serve `needs_new_holder` and offer the change. Fix: count open cases whose holder is archived in the banner's existing `open_case_counts` query (one query over the listed ids today), without raising the Staff list's pinned query count (`test_m1a_staff_list.TestQueryBudget`, `test_m2c_members_lifecycle.test_the_query_count_does_not_change`). *(C - S)*
 
 ### [TD-624] The apply-form draft test fails now and then on Cloud Build - low
 

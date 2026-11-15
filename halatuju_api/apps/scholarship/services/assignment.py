@@ -81,6 +81,13 @@ def may_assign_to(caller, target):
     return has_signed_in(target) and may_hand_to(caller, target)
 
 
+def _in_reviewers(admin):
+    """`staff_tables.in_reviewers`, behind this module's ONE courses import (TD-613 added a second
+    reader, `holder_can_review`, without adding an import across the app boundary)."""
+    from apps.courses import staff_tables
+    return staff_tables.in_reviewers(admin)
+
+
 def may_hand_to(caller, target):
     """`may_assign_to` less the sign-in test (M2d A1): `assign_reviewer` asks the sign-in test on its
     own, AFTER revoked and paused, so the refusal it gives names the bigger fact first.
@@ -88,11 +95,10 @@ def may_hand_to(caller, target):
     M3b E3 (owner 2026-11-14): NOBODY hands a case to themselves, a super included; another person
     still may (a super or the other org admin can give one to an org admin in Reviewers).
     M3b G5: the org admin's arm reads `students.edit` (the `assign` door), no longer the role."""
-    from apps.courses import staff_tables
     from .. import surface_gates
     if caller.pk == target.pk:
         return False
-    if not (staff_tables.in_reviewers(target) and is_review_target(target)):
+    if not (_in_reviewers(target) and is_review_target(target)):
         return False
     if caller.is_super:
         return True
@@ -212,9 +218,37 @@ _UNASSIGN_BLOCKED_STATUSES = frozenset({
 ASSIGNABLE_STATUSES = frozenset({'profile_complete', 'interviewing'})
 
 
+def holder_can_review(admin):
+    """TD-613: can the person HOLDING a case still work it? Active (an archived row is never active,
+    and `archived_at` is asked too), and a super, or in Reviewers and a review target. A PAUSED holder
+    still can: pause stops NEW work, never the work already held (`_can_review`'s docstring)."""
+    if admin is None or not getattr(admin, 'is_active', False) or getattr(admin, 'archived_at', None):
+        return False
+    if admin.is_super:
+        return True
+    return _in_reviewers(admin) and is_review_target(admin)
+
+
+def needs_new_holder(application):
+    """TD-613 (derived, never stored): an OPEN case (R5: `staff_lifecycle.is_open_case`, a reopened
+    decision included) whose holder can no longer work it (`holder_can_review`). R5 lets a holder leave
+    Reviewers, be suspended or be archived while a FUNDED case they hold is closed; when that case is
+    reopened or reverted it comes back open with nobody able to work it. Such a case may then change
+    hands at ANY open status (`is_assignable`), but only to a NEW holder: an unassign stays refused
+    outside ASSIGNABLE_STATUSES (`_refuse_stage`), so it can never be left with nobody. A closed case
+    (awarded / active not reopened, closed, withdrawn) never answers True."""
+    from ..staff_lifecycle import is_open_case
+    if application.assigned_to_id is None:
+        return False
+    if not is_open_case(application.status, application.decision_reopened_at):
+        return False
+    return not holder_can_review(application.assigned_to)
+
+
 def is_assignable(application):
-    """May this application's reviewer be changed at all right now? See ASSIGNABLE_STATUSES."""
-    return application.status in ASSIGNABLE_STATUSES
+    """May this application's reviewer be changed at all right now? See ASSIGNABLE_STATUSES — or,
+    TD-613, an open case whose holder can no longer work it (`needs_new_holder`), at any open status."""
+    return application.status in ASSIGNABLE_STATUSES or needs_new_holder(application)
 
 
 def _refuse_stage(application, current, reviewer, now):
@@ -228,6 +262,10 @@ def _refuse_stage(application, current, reviewer, now):
     # more actionable refusal wins.
     if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
         raise AssignmentError('findings_submitted')
+    # TD-613: a case whose holder can no longer work it is assignable at any open status, but only
+    # to a NEW holder. An unassign keeps the old window, so such a case is never left with nobody.
+    if unassigning and application.status not in ASSIGNABLE_STATUSES:
+        raise AssignmentError('not_assignable')
 
     # A case may only change hands while there is a review to do (Completed / interviewing).
     # Gates assign, REASSIGN and unassign alike — a rejected or awarded student has no live

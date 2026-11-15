@@ -75,6 +75,21 @@ describe('who the list offers for one case', () => {
   })
 })
 
+describe('a case whose holder can no longer work it (TD-613)', () => {
+  const unassigned = () => screen.getByRole('option', { name: 'admin.scholarship.unassigned' }) as HTMLOptionElement
+
+  it('offers a new holder but never Unassigned, which the server refuses', () => {
+    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 77, assigned_to_name: 'Former Holder', needs_new_holder: true })} isSuper /></select>)
+    expect(unassigned().disabled).toBe(true)
+    expect(screen.getByRole('option', { name: '✓ Reviewer 1' })).toBeTruthy()
+  })
+
+  it('keeps Unassigned for an ordinary case', () => {
+    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 1 })} isSuper /></select>)
+    expect(unassigned().disabled).toBe(false)
+  })
+})
+
 describe('the ✓ / ⚠ legend', () => {
   it('renders under the preferred language on a phone row, with the id its select names', () => {
     const { container } = render(<AssignLangNote lang="ta" className="x" legendId="assign-legend-7" />)

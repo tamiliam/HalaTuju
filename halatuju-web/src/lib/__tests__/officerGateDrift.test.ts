@@ -144,7 +144,9 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
     expect(body).toMatch(/bad_assignee/)
     expect(pyFunc(servicesSrc, 'may_assign_to')).toMatch(/return has_signed_in\(target\) and may_hand_to\(caller, target\)/)
     const rule = pyFunc(servicesSrc, 'may_hand_to')
-    expect(rule).toMatch(/staff_tables\.in_reviewers\(target\) and is_review_target\(target\)/)
+    // TD-613: Reviewers is read through the module's one courses import, `_in_reviewers`.
+    expect(rule).toMatch(/_in_reviewers\(target\) and is_review_target\(target\)/)
+    expect(pyFunc(servicesSrc, '_in_reviewers')).toMatch(/return staff_tables\.in_reviewers\(admin\)/)
     // M3b E3: nobody hands a case to themselves, a super included; M3b G5: the org admin's arm reads
     // the `assign` door (`students.edit`), not the role.
     expect(rule).toMatch(/if caller\.pk == target\.pk:\s*return False/)
