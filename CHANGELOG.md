@@ -177,6 +177,16 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a owner ruling - the gift reads the reporting date, else one year, else a session's first year (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money untouched (`pathway_engine.py`, `verdict_pathway.py`, `course_start.py`, `vision/`, `award.py`, `funding_estimate.py` byte-identical to main; `test_start_year_money.py` passes). Supersedes the second- and fifth-review readers below.
+- **Owner's order.** `session_year.gift_reading`: the letter's own stored reporting date, else one year on the intake line, else a session's first year (its second with Sesi 2 / Sesi II / Semester 2 / Semester II), else unknown. Unknown always: later terms (also in the programme / stream words), readmission or credit-transfer words, a confirmation letter that does not write the intake, several years with no date, a scan-damaged year. `start_year.decide`: in the gift = inside, out = outside (red), none = the reviewer line.
+- **Dropped.** The closed vocabulary, the first-year signal, the straddle rule, the generated property table and mutation fuzz (`test_start_year_gift_property.py` removed).
+- **Corpus (286 letters).** Degree gift (2025, 2026): 246 inside / 26 outside / 14 unknown.
+- **Tests.** `test_start_year_gift_reading.py` rewritten (one test per corpus shape, later terms, readmission, exam years); new `test_start_year_gift_probes.py` (366 review probes h3r4-h3r6 re-classed with the owner's answers); `test_start_year_rule.py` end-to-end expectations moved to the owner's rule.
+- **Docs.** decisions.md H3a owner-ruling entry (corpus counts, the sanitize limit); reviewer FAQ start-year answer; TD-631 / TD-632 notes name `gift_reading`.
+- **Version.** `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (unpushed; help-h2 is .10).
+
 ### fix: H3a fifth review - the gift's OUTSIDE is a closed vocabulary; damage never reads inside (2026-11-15)
 
 Branch help-h3, not pushed. No migration. Money untouched (`pathway_engine.py`, `verdict_pathway.py` byte-identical to main; `test_start_year_money.py` passes).

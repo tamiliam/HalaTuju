@@ -7,11 +7,13 @@ every gift that has not set it keeps today's behaviour. The Sabah gift allows ea
 it leaves the list empty.
 
 ⚠ WHY THIS IS NOT A SHORTLISTING GATE. The start year is read from the OFFER LETTER
-(`possible_start_years`, its own careful reading, `session_year`; the money keeps
-`pathway_engine.course_start_year`), and the letter arrives after the shortlist. So the rule lives
-where the TD-617 programme rule lives (`verdict_pathway.funded_or_abroad`): the Pathway fact.
+(`possible_start_years`, its own reading in the owner's order, `session_year`: the letter's
+reporting date, else one year on the intake line, else the session's first year (its second with
+Sesi 2 / Semester 2); the money keeps `pathway_engine.course_start_year`), and the letter arrives
+after the shortlist. So the rule lives where the TD-617 programme rule lives
+(`verdict_pathway.funded_or_abroad`): the Pathway fact.
 
-  * a year OUTSIDE the list, read SURELY off a read letter (`decide`) → the Pathway fact turns
+  * a year OUTSIDE the list, read off a read letter (`decide`) → the Pathway fact turns
     RED ('gap') with `pathway_start_year_outside`. It is an `award.CONFIDENT_DISQUALIFIER` (the
     cockpit flag) and, being red, it joins QC's red-fact floor (an accept needs a recorded reason). Nothing is declined automatically and the
     amount does not move: the reviewer decides.
@@ -97,52 +99,38 @@ def _read_offer(application):
 
 
 def possible_start_years(application):
-    """The letter's start years for THIS rule only, a `session_year.GiftReading` (its own careful
-    reading: empty years = unknown). Never the money's reading: award sizing and the funding
-    estimate read `pathway_engine.course_start_year`, main's reading, unchanged (H3a rebuild)."""
-    from .award import _sized_as_stpm               # a Form 6 student (not a degree-bound one)
+    """The letter's start year for THIS rule only, a `session_year.GiftReading` (year None =
+    unknown). Never the money's reading: award sizing and the funding estimate read
+    `pathway_engine.course_start_year`, main's reading, unchanged (H3a rebuild)."""
     from .pathway_engine import is_confirmation_letter, student_offer_check
-    from .session_year import UNKNOWN as UNREAD, gift_reading, looks_stpm
+    from .session_year import GiftReading, gift_reading
     offer = _read_offer(application)
     if offer is None:
-        return UNREAD
+        return GiftReading(None, 'no_letter')
     chk = student_offer_check(offer)
-    context = ' '.join(chk.get(k) or '' for k in ('programme', 'institution', 'stream'))
+    # ' ; ' keeps the fields apart: "PROGRAM SATU TAHUN" + "13-KOLEJ ..." must not read "Tahun 13".
+    context = ' ; '.join(chk.get(k) or '' for k in ('programme', 'institution', 'stream'))
     return gift_reading(chk.get('intake') or '', chk.get('reporting_date') or '', context=context,
-                        confirmation=is_confirmation_letter(offer),
-                        stpm=_sized_as_stpm(application) or looks_stpm(context + ' ' + (chk.get('intake') or '')))
+                        confirmation=is_confirmation_letter(offer))
 
 
-def decide(r, years):
-    """A `GiftReading` against the gift's years -> 'inside', 'outside' or 'unknown'.
-
-    INSIDE needs every year read in the list AND a clear first-year signal. OUTSIDE needs every year
-    read out of the list, a line with no clashing years (`may_fail`), and either a first-year signal
-    or every year read BEFORE the gift's first year (a continuing student started earlier still, so
-    she is out too). Anything else, or no year read, is unknown: a person checks."""
-    span = sorted(r.years)
-    if not span or not years:
+def decide(year, years):
+    """A start year (None = unknown) against the gift's years -> 'inside', 'outside' or 'unknown'."""
+    if year is None or not years:
         return 'unknown'
-    inside = [y in years for y in span]
-    if all(inside) and r.first_year:
-        return 'inside'
-    if not any(inside) and r.may_fail and (r.first_year or span[-1] < min(years)):
-        return 'outside'
-    return 'unknown'
+    return 'inside' if year in years else 'outside'
 
 
 def reading(application):
     """None when the intake sets no years; else ``{state, start_year, years}`` where state is
-    'inside', 'outside' or 'unknown' (`decide`; start_year None when unknown). An outside
-    start_year names every year read ('2022, 2023' for a bare session)."""
+    'inside', 'outside' or 'unknown' (`decide`; start_year None when unknown)."""
     value = getattr(getattr(application, 'cohort', None), FIELD, None)
     if not rule_on(value):
         return None
     years = stored_years(value)
-    r = possible_start_years(application)
-    state = decide(r, years)
-    return {'state': state, 'start_year': readable_years(sorted(r.years)) if state != 'unknown' else None,
-            'years': years}
+    year = possible_start_years(application).year
+    state = decide(year, years)
+    return {'state': state, 'start_year': str(year) if state != 'unknown' else None, 'years': years}
 
 
 def apply_to_pathway_fact(application, fact):

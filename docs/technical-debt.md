@@ -9108,7 +9108,9 @@ with no reporting date read 2025. **Now handled** on the gift's start-year rule:
 the year. The money reading never took the session's term at all (it is main's, the first year on the line), so it is
 unaffected. *(A - S)* **Status:** Closed. *(Second review, same day: a bare "Sesi II" line has no first-year signal,
 so it now passes nobody and fails only a session wholly before the gift's years; a Sesi II with a September to November
-month reads unknown.)*
+month reads unknown.)* *(Owner ruling 16 Nov 2026, `session_year.gift_reading`: the letter's reporting date decides
+first; with no date, "Sesi II S/S+1" reads S+1 by the owner's order, so an undated December-start polytechnic letter
+reads 2025. In the 286-letter corpus all 9 second-year reporting dates were on SESI 2 / SESI II / Semester 2 letters.)*
 
 ### [TD-632] The money's start year takes the FIRST year of an academic session - low
 
@@ -9118,5 +9120,5 @@ February 2025 start) and a polytechnic "Sesi II 2024/2025" with a January 2025 d
 feeds `course_start_year`: the funding estimate's years already studied (`funding_estimate._years_done`) and the
 continuing-student test (`started_before_cohort`: the STPM award size, the semester-result request). A Form 6
 letter rarely carries a semester, so STPM sizing is seldom touched; a degree estimate may count one year too many.
-The gift's start-year rule does not use this reading (`session_year.gift_start_years`). Fix only with an owner
+The gift's start-year rule does not use this reading (`session_year.gift_reading`). Fix only with an owner
 ruling and a dry run of the money on live letters (`eval/offer_s4_dry_run.py` compares `intake_year`). *(A - S)*
