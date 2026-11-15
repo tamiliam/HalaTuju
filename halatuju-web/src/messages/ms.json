@@ -7173,6 +7173,7 @@
         "programmeRequired": "Pilih hadiah pada laluan navigasi dahulu — setiap perjanjian ditulis untuk satu hadiah."
       },
       "notDraftMsg": "Versi ini bukan lagi draf dan tidak boleh disunting.",
+      "readerNote": "Anda boleh membaca perjanjian ini. Untuk mengubahnya, anda memerlukan kebenaran menyunting Kontrak.",
       "status": {
         "draft": "Draf",
         "pending_deployment": "Menunggu pelancaran",

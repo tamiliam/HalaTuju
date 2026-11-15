@@ -2,7 +2,7 @@
 
 ## 2026-11-16 — NAVKEYS review round (pending architect): paying the bill is billing.edit
 
-Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. No migration. Services: both.
+Review round, on main, not live. No migration. Services: both.
 
 1. **Server hole closed (review item 1).** A team member given `billing.view` (grantable since M3c A9) could
    declare an invoice paid and rewrite the bill-to, because both writes sat behind the invoices read. New door
@@ -27,7 +27,7 @@ Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. 
    `checkRole` has the role payload, and the shell needs the role to render at all. No change made.
 
 
-Branch navkeys, one commit on top of main 31e738a14, not pushed. No migration. Services: web. Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).
+On main, not live. No migration. Services: both. Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-633 (built).
 Owner, 2026-11-15: "there is admin, and there are permissions, which determine what the admin views and edits."
 
 The calls:

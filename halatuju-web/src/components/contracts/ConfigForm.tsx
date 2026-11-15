@@ -8,12 +8,15 @@ import { CLocale, LangTabs, inputCls, btnPrimary } from './shared'
 // The Config tab — localised title/preamble/progress (en authoritative) + party/flow config.
 // Draft-only: inputs disable once the version leaves draft (the service also refuses).
 export default function ConfigForm(
-  { template, token, onChange }: {
+  { template, token, onChange, mayWrite }: {
     template: ContractTemplateDetail; token: string
     onChange: (t: ContractTemplateDetail) => void
+    /** The served `contracts_write` door (`contracts.edit`), the one every template write asks on the server.
+     *  False: a reader — the page shows as it does for a non-draft, with no save (NAVKEYS review). */
+    mayWrite: boolean
   }) {
   const { t } = useT()
-  const draft = template.status === 'draft'
+  const draft = template.status === 'draft' && mayWrite
   const [lang, setLang] = useState<CLocale>('en')
   const [f, setF] = useState({ ...template })
   const [saving, setSaving] = useState(false)
@@ -131,7 +134,7 @@ export default function ConfigForm(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : template.status !== 'draft' && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

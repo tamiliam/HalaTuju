@@ -45,7 +45,7 @@ const saveBtn = () =>
   screen.getByText('admin.contracts.saveClauses').closest('button') as HTMLButtonElement
 
 const show = (over: Partial<ContractTemplateDetail> = {}) =>
-  render(<ClauseEditor template={template(over)} token="t" onChange={jest.fn()} />)
+  render(<ClauseEditor template={template(over)} token="t" onChange={jest.fn()} mayWrite />)
 
 describe('the Save button reflects whether anything changed', () => {
   it('starts DISABLED on an untouched template', () => {
@@ -123,7 +123,7 @@ describe('the config Save obeys the same rule', () => {
   const btn = () => screen.getByText('admin.contracts.save').closest('button') as HTMLButtonElement
 
   it('starts disabled and wakes on a real edit', () => {
-    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} />)
+    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} mayWrite />)
     expect(btn().disabled).toBe(true)
     fireEvent.change(screen.getByDisplayValue('Bursary agreement'),
       { target: { value: 'Bursary agreement v2' } })
@@ -133,7 +133,7 @@ describe('the config Save obeys the same rule', () => {
   it('counts a field that is NOT the title — the check must cover the whole patch', () => {
     // The failure this guards is silent and one-directional: a field that is editable but absent
     // from the comparison leaves Save dead on a genuine edit.
-    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} />)
+    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} mayWrite />)
     fireEvent.change(screen.getByDisplayValue('a@b.test'),
       { target: { value: 'a@b.test, c@d.test' } })
     expect(btn().disabled).toBe(false)
@@ -145,8 +145,33 @@ describe('the payment-schedule Save obeys the same rule', () => {
     render(<ScheduleEditor template={cfgTemplate({
       schedule: [{ order: 1, pathway: 'stpm', variant: 'standard', monthly_amount: '250',
                    paid_offsets: [0, 1, 2], label_en: 'Semester 1' }],
-    })} token="t" onChange={jest.fn()} />)
+    })} token="t" onChange={jest.fn()} mayWrite />)
     const btn = screen.getByText('admin.contracts.save').closest('button') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
+  })
+})
+
+describe('NAVKEYS review: a contracts.view reader saves nothing (every template write asks contracts.edit)', () => {
+  it('the clause editor on a DRAFT offers no save to a reader, and does not call it "no longer a draft"', () => {
+    render(<ClauseEditor template={template()} token="t" onChange={jest.fn()} mayWrite={false} />)
+    expect(screen.queryByText('admin.contracts.saveClauses')).toBeNull()
+    expect(screen.queryByText('admin.contracts.notDraftMsg')).toBeNull()
+  })
+
+  it('the config form on a DRAFT is read-only for a reader, and live for a writer', () => {
+    const { unmount } = render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} mayWrite={false} />)
+    expect(screen.queryByText('admin.contracts.save')).toBeNull()
+    expect((screen.getByDisplayValue('Bursary agreement') as HTMLInputElement).disabled).toBe(true)
+    unmount()
+    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} mayWrite />)
+    expect((screen.getByDisplayValue('Bursary agreement') as HTMLInputElement).disabled).toBe(false)
+  })
+
+  it('the schedule editor on a DRAFT offers no save to a reader', () => {
+    render(<ScheduleEditor template={cfgTemplate({
+      schedule: [{ order: 1, pathway: 'stpm', variant: 'standard', monthly_amount: '250',
+                   paid_offsets: [0, 1, 2], label_en: 'Semester 1' }],
+    })} token="t" onChange={jest.fn()} mayWrite={false} />)
+    expect(screen.queryByText('admin.contracts.save')).toBeNull()
   })
 })

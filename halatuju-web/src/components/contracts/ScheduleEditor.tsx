@@ -20,12 +20,15 @@ function expectedTotal(pathway: string, variant: string): number {
 }
 
 export default function ScheduleEditor(
-  { template, token, onChange }: {
+  { template, token, onChange, mayWrite }: {
     template: ContractTemplateDetail; token: string
     onChange: (t: ContractTemplateDetail) => void
+    /** The served `contracts_write` door (`contracts.edit`), the one every template write asks on the server.
+     *  False: a reader — the page shows as it does for a non-draft, with no save (NAVKEYS review). */
+    mayWrite: boolean
   }) {
   const { t } = useT()
-  const draft = template.status === 'draft'
+  const draft = template.status === 'draft' && mayWrite
   const [rows, setRows] = useState<ContractScheduleRowData[]>(template.schedule.map((r) => ({ ...r })))
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -159,7 +162,7 @@ export default function ScheduleEditor(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : template.status !== 'draft' && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

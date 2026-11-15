@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint NAVKEYS review round 2 - a contract reader reads; the billing page wiring is pinned (2026-11-16)
+
+Review round 2, on main, not live. No migration. Services: web. Release-note draft updated.
+- Contract detail (`/admin/contracts/[id]`): every template write on the server (config, clauses, quiz, schedule, vetting, submit, deploy, revert) asks `contracts_write` (`_ContractsBase._contract_admin`). The page now reads `holdsDoor(role, 'contracts_write')` and hands it to ConfigForm, ClauseEditor, QuizEditor, ScheduleEditor and DeployPanel (`mayWrite`, required). A `contracts.view` reader sees the template as a non-draft reads (fields disabled, no Save, quiz generation, vetting, submit or revert), a note saying why (`admin.contracts.readerNote`, en, ms, ta), and keeps the preview and the validation checklist (GETs). "No longer a draft" now shows only for a template that is not a draft.
+- Page-wiring tests: new `contracts/[id]/page.test.tsx` and `organisation/settings/page.test.tsx`, and a billing `page.test.tsx` describe, pin the doors each page asks (`contracts_write`; `billing_read` for the Settings tab, `billing_write` for its Save and for "We have paid"). Each was checked by swapping in the wrong door: the test fails.
+
 ### fix: sprint NAVKEYS review round - paying the bill needs billing.edit; the screens offer only what opens (2026-11-16)
 
-Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS review round). Release-note draft updated.
+Review round, on main, not live. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS review round). Release-note draft updated.
 - **Server hole closed:** a team member given only `billing.view` could declare an invoice paid and rewrite the bill-to. New door `billing_write` (`billing.edit`, O15) in `staff_tables.DOOR_KEYS` and `surface_gates.may_write_billing`, asked by `AdminInvoiceDeclarationView` 'declare' (after the super refusal) and `AdminOrgBillingDetailsView.post` (after the organisation fence). Reads stay on `billing.view`. An organisation admin holds `billing.edit` by role; a super keeps the bill-to write and is still refused on declare.
 - API tests: a `billing.view`-only member reads the invoices and the bill-to but gets 403 on declare and on the bill-to save, and another tenant's code is still 404; the organisation admin still declares. `test_access_matrix.GRANTED_DIFFERS` lists the two writes; `test_permission_catalogue_v2` holds the new door.
 - Web: `pageDoors.DOOR_KEYS` mirrors `billing_write`. The "We have paid" form shows only with `billing_write` (`InvoicesSection` / `InvoicePaymentPanel` take `mayDeclare`); the bill-to fields are read only with no Save without it. Organisation settings shows its Billing tab only with `billing_read`. Contracts shows "New version" only with `contracts_write`.
@@ -14,7 +20,7 @@ Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. 
 
 ### refactor: sprint NAVKEYS - the admin menu follows the served keys (2026-11-16)
 
-Branch navkeys, on top of main 31e738a14, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS builder calls, pending architect). Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).
+On main, not live. No migration. Services: both (the review round adds the server billing-write gate). Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS builder calls, pending architect). Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-633 (built).
 - `staffPermissions.admitsRow`: a row with a server door is answered by the served door alone (no role fallback; no `page_keys`, no row). The twelve door rows lost their role lists and `adminKeys`; `tables`, `ADMINS_TABLE` and `adminKeysHeld` are gone from the web.
 - Rows without a door ask the key the server checks: Applications `see_all`/`qc`/`review` (`b40_scope`), Scholars `scholars` (`scholars_scope`), Spending `spending`. Kept by who the login is, each classed: the super-only platform rows, the partner/source/mentor console rows, Guide and FAQ, Programme overview (`SECTIONS_BY_ROLE`, TD-621) and Payments' organisation-admin arm (M4).
 - The Programme, Contracts, Billing and Organisation settings page guards ask `mayOpen` with the served door, so a hand-granted key opens the page its menu row offers.

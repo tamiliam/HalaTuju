@@ -13,12 +13,15 @@ import { clauseNumbers } from '@/lib/clauseNumbering'
 // question in en/ms/ta (draft-only, on-demand, billable); the author reviews/edits/regenerates,
 // then Save persists the edited quiz payloads (via the clauses PUT).
 export default function QuizEditor(
-  { template, token, onChange }: {
+  { template, token, onChange, mayWrite }: {
     template: ContractTemplateDetail; token: string
     onChange: (t: ContractTemplateDetail) => void
+    /** The served `contracts_write` door (`contracts.edit`), the one every template write asks on the server.
+     *  False: a reader — the page shows as it does for a non-draft, with no save (NAVKEYS review). */
+    mayWrite: boolean
   }) {
   const { t } = useT()
-  const draft = template.status === 'draft'
+  const draft = template.status === 'draft' && mayWrite
   const [lang, setLang] = useState<CLocale>('en')
   const [clauses, setClauses] = useState<ContractClauseData[]>(template.clauses.map((c) => ({ ...c })))
   const [busy, setBusy] = useState<number | null>(null)
@@ -133,7 +136,7 @@ export default function QuizEditor(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : template.status !== 'draft' && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

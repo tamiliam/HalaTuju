@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { holdsDoor } from '@/lib/pageGuard'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { getContractTemplate, type ContractTemplateDetail, type ContractStatus } from '@/lib/admin-api'
 import ConfigForm from '@/components/contracts/ConfigForm'
@@ -32,6 +33,9 @@ export default function ContractEditorPage() {
   const router = useRouter()
 
   const isSuper = effectiveRole(role) === 'super'
+  // NAVKEYS review: every template write (config, clauses, quiz, schedule, vetting, submit, deploy, revert)
+  // asks `contracts_write` on the server (`_ContractsBase`); a `contracts.view` reader reads, and saves nothing.
+  const mayWrite = holdsDoor(role, 'contracts_write')
   const [tpl, setTpl] = useState<ContractTemplateDetail | null>(null)
   const [tab, setTab] = useState<Tab>('config')
   const [loading, setLoading] = useState(true)
@@ -55,7 +59,7 @@ export default function ContractEditorPage() {
   if (loading) return <p className="text-ground-400">{t('admin.contracts.loading')}</p>
   if (notFound || !tpl) return <p className="text-critical-600">{t('admin.contracts.actionFailed')}</p>
 
-  const shared = { template: tpl, token: token!, onChange: setTpl }
+  const shared = { template: tpl, token: token!, onChange: setTpl, mayWrite }
 
   return (
     <div className="font-plex">
@@ -72,6 +76,12 @@ export default function ContractEditorPage() {
           {tpl.programme?.name ?? <span className="text-caution-700">{t('admin.contracts.noGift')}</span>}
         </span>
       </div>
+
+      {!mayWrite && (
+        <p className="text-sm text-ground-500 mb-2" data-testid="contract-reader-note">
+          {t('admin.contracts.readerNote')}
+        </p>
+      )}
 
       <div className="border-b border-ground-200 mb-6 flex gap-1 overflow-x-auto">
         {TABS.map((tb) => (

@@ -84,12 +84,15 @@ const VARIABLES: Array<{ token: string; desc: string }> = [
 // **bold** and {{variable}} tokens (resolved in the rendered agreement). import-docx PROPOSES
 // clauses + a title/preamble for review before they replace the draft (the file is never retained).
 export default function ClauseEditor(
-  { template, token, onChange }: {
+  { template, token, onChange, mayWrite }: {
     template: ContractTemplateDetail; token: string
     onChange: (t: ContractTemplateDetail) => void
+    /** The served `contracts_write` door (`contracts.edit`), the one every template write asks on the server.
+     *  False: a reader — the page shows as it does for a non-draft, with no save (NAVKEYS review). */
+    mayWrite: boolean
   }) {
   const { t } = useT()
-  const draft = template.status === 'draft'
+  const draft = template.status === 'draft' && mayWrite
   const [lang, setLang] = useState<CLocale>('en')
   const [clauses, setClauses] = useState<Draft[]>(template.clauses.map((c) => ({ ...c })))
   const [saving, setSaving] = useState(false)
@@ -402,7 +405,7 @@ export default function ClauseEditor(
             {saving ? t('admin.contracts.saving') : t('admin.contracts.saveClauses')}</button>
         </div>
       )}
-      {!draft && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
+      {template.status !== 'draft' && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

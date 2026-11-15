@@ -14,9 +14,11 @@ import { inputCls, btnPrimary, btnGhost } from './shared'
 // pending_deployment: Deploy (SUPER only; org_admin sees only Revert) or Return to draft.
 // active/archived: read-only.
 export default function DeployPanel(
-  { template, token, onChange, isSuper, reload }: {
+  { template, token, onChange, isSuper, reload, mayWrite }: {
     template: ContractTemplateDetail; token: string; isSuper: boolean
     onChange: (t: ContractTemplateDetail) => void; reload: () => Promise<void>
+    /** The served `contracts_write` door: vetting, submit, deploy and revert are all writes (NAVKEYS review). */
+    mayWrite: boolean
   }) {
   const { t } = useT()
   const [val, setVal] = useState<ContractValidation | null>(null)
@@ -37,8 +39,8 @@ export default function DeployPanel(
     setBusy(false)
   }
 
-  const draft = template.status === 'draft'
-  const pending = template.status === 'pending_deployment'
+  const draft = template.status === 'draft' && mayWrite
+  const pending = template.status === 'pending_deployment' && mayWrite
   const active = template.status === 'active'
 
   return (

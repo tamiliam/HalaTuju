@@ -32,7 +32,7 @@ jest.mock('@/lib/i18n', () => ({
   }),
 }))
 // A variable, not a literal, so one describe below can render the page as an organisation admin.
-let mockRole: { role: string; owning_org_id: number | null } = { role: 'super', owning_org_id: null }
+let mockRole: { role: string; owning_org_id: number | null; page_keys?: string[] } = { role: 'super', owning_org_id: null }
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),   // NAVKEYS: the keys the server serves
 }))
@@ -540,5 +540,39 @@ describe('what an organisation reads on its own page (owner, 2026-09-15)', () =>
     const { container } = render(<BillingPage />)
     await waitFor(() => within(container).getByText('admin.billing.usageTitle'))
     expect(within(container).getAllByText(/admin\.billing\.storageOrgNote/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('NAVKEYS review: the page hands the pay key (billing_write) to the invoices, not the read key', () => {
+  // On the server "We have paid" asks `billing.edit` (O15): an organisation admin holds it by role, a team
+  // member never can. The page must pass `holdsDoor(role, 'billing_write')` — a wrong door here fails this.
+  const SENT = {
+    id: 7, number: 'INV-2026-0003', organisation_id: 1, organisation: 'BrightPath',
+    period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'sent', is_overdue: false,
+    currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
+    discount_reason: '', corrections_myr: null, corrections: [], total_myr: '856.75', amount_paid_myr: '0.00',
+    balance_myr: '856.75', sent_at: '2026-09-15T01:00:00Z', voided_at: null, void_reason: '',
+    bill_to_name: 'BrightPath Bursary', lines: [], receipts: [], payment_declarations: [],
+    bill_to_emails: [], sent_to: [],
+  } as unknown as api.InvoiceRow
+
+  const declareOffered = async () => {
+    mockApi.getInvoices.mockResolvedValue({ invoices: [SENT] })
+    mockApi.getBillingCosts.mockRejectedValue(new Error('403'))
+    const { container } = render(<BillingPage />)
+    await waitFor(() => within(container).getAllByText('INV-2026-0003'))
+    fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
+    await waitFor(() => within(container).getAllByTestId('detail-7'))
+    return within(container).queryAllByTestId('declare-7').length > 0
+  }
+
+  it('an organisation admin (served billing.edit) is offered "We have paid"', async () => {
+    mockRole = { role: 'org_admin', owning_org_id: 1 }
+    expect(await declareOffered()).toBe(true)
+  })
+
+  it('a team member given only billing.view reads the invoice and is not offered it', async () => {
+    mockRole = { role: 'admin', owning_org_id: 1, page_keys: ['billing.view'] }
+    expect(await declareOffered()).toBe(false)
   })
 })

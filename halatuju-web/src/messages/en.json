@@ -7173,6 +7173,7 @@
         "programmeRequired": "Choose a gift in the breadcrumb first — each agreement is written for one gift."
       },
       "notDraftMsg": "This version is no longer a draft and can’t be edited.",
+      "readerNote": "You can read this agreement. Changing it needs the Contracts edit permission.",
       "status": {
         "draft": "Draft",
         "pending_deployment": "Pending deployment",

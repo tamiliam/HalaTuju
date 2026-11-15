@@ -1,8 +1,8 @@
 # Release-note draft — sprint NAVKEYS, the admin menu follows the permissions (2026-11-16)
 
-**DRAFT. Branch navkeys, local, not pushed. The owner says yes before it goes live.**
+**DRAFT. On main, not live. The owner says yes before it goes live.**
 Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS builder calls and review round, pending architect).
-Debt: TD-XXX-NAV (built).
+Debt: TD-633 (built).
 
 ## What changes for people
 
@@ -17,6 +17,8 @@ Debt: TD-XXX-NAV (built).
   - An organisation admin whose Applications, Scholars, Spending or Billing permission is unticked now loses
     that menu item. The server already refused those pages, so the menu was offering a page that would not open.
   - Someone who may read the contracts but not edit them no longer sees "New version" (saving it was refused).
+  - Opening a contract, that same reader now sees it read-only, with a note saying so, and no Save, quiz
+    generation, vetting, submit or return-to-draft buttons. The server already refused every one of those.
   - Someone given Organisation settings but not Billing no longer sees a Billing tab there that could not load.
 
 ## Fixed: a gap on the server (billing)
