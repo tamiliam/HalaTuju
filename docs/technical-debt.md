@@ -9100,6 +9100,17 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
+### [TD-631] A polytechnic "Sesi II 2024/2025" (a December 2024 start) reads 2025 - low
+
+**Raised 2026-11-15 by the H3a Opus review.** Polytechnic Sesi II of session 2024/2025 begins in December 2024, but
+`session_year.session_start_year` reads a second term as the session's second year, so a letter that says only "Sesi
+II 2024/2025" (no reporting date) reads 2025. With the letter's reporting date ("2 Disember 2024") it reads 2024
+correctly, because the date is read before the term. Logged by the lead as not affecting the Degree gift
+(`bpb-deg-dip-2026`, 2025 and 2026 starters). Note for whoever revisits: on a letter with no reporting date, a
+December 2024 start would read 2025 and so sit inside that gift's years. No code change. Revisit if a gift ever
+accepts 2024 starters, or if such a letter turns up: read "Sesi II" on a polytechnic letter as the first year. *(A - S)*
+
+
 ### [TD-635] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
 
 **Status:** CLOSED 2026-11-16 by the owner's ruling (decisions.md ruling 4, help sprint H2): every confirmation of

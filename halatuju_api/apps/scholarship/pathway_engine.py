@@ -24,6 +24,9 @@ from .pathway_match import _field_status as _field_status
 from .pathway_match import catalogue_declared_institution as catalogue_declared_institution
 from .pathway_match import distinctive_tokens as distinctive_tokens
 from .pathway_match import offer_pathway_match as offer_pathway_match
+# The academic-session reading moved to `session_year` (H3a review fix, 2026-11-15); re-exported.
+from .session_year import bare_session as bare_session
+from .session_year import session_start_year as session_start_year
 from .vision import name_match, nric_match
 
 
@@ -468,65 +471,6 @@ def offer_reporting_date_unknown(application):
     return parse_reporting_date(student_offer_check(offer).get('reporting_date')) is None
 
 
-# ── Academic session → the calendar year the course started ──────────────────────
-
-# "2024/2025", "2024 / 25", "2024-2025": a session is two CONSECUTIVE years (checked in code), so a
-# Form 6 range "6 / 2025 – 12 / 2026" is never read as one.
-_SESSION_RE = re.compile(r'\b(20\d{2})\s*[/\-–]\s*(20\d{2}|\d{2})\b')
-_TERM = r'(?:semester|sem\.?|sesi|session|term)\s*[:.\-]?\s*'
-_FIRST_TERM_RE = re.compile(
-    rf'\b{_TERM}(?:1|i|one|pertama|satu)\b|\b(?:first|1st)\s+(?:semester|sem|term)\b', re.I)
-_SECOND_TERM_RE = re.compile(
-    rf'\b{_TERM}(?:2|ii|two|kedua|dua)\b|\b(?:second|2nd)\s+(?:semester|sem|term)\b', re.I)
-# Semester 3 and up is the student's PLACE in the course (a continuing student's letter), not the
-# intake: the start year cannot be told from it.
-_LATER_TERM_RE = re.compile(
-    r'\b(?:semester|sem\.?)\s*[:.\-]?\s*(?:[3-9]|1[0-2]|iii|iv|v|vi|tiga|ketiga|empat|keempat)\b'
-    r'|\b(?:third|3rd|fourth|4th|fifth|5th|sixth|6th)\s+(?:semester|sem)\b', re.I)
-_FIRST_MONTH_RE = re.compile(r'\b(?:sep|sept|september|okt|oktober|oct|october)\b', re.I)
-_SECOND_MONTH_RE = re.compile(r'\b(?:feb|februari|february|mac|march)\b', re.I)
-
-
-def session_start_year(intake, reporting_date=''):
-    """The course-start year off an ACADEMIC SESSION intake line, as a string; '' when the session
-    is there but the year cannot be told; None when the intake holds no session (the caller then
-    reads the first year in it, as before).
-
-    A session "S/S+1" runs from about September of S to the middle of S+1, so "Sesi 2024/2025
-    Semester II" starts in February 2025, not 2024 (the H3a review: reading the FIRST year would
-    wrongly fail a 2025 starter on a gift that takes 2025 and 2026 starters). Best evidence first:
-
-      1. the letter's reporting date, when its year is S or S+1: a calendar date beats a term name
-         (it also settles a polytechnic "Sesi II" that starts in December of S). A reporting year
-         outside the session is a clash: ''.
-      2. the term: Semester I / September or October intake → S; Semester II / February or March
-         intake → S+1. Both, or Semester 3 and up (a continuing student) → ''.
-      3. no term at all → S, today's reading: the main intake of a session is its first.
-
-    '' means a person checks (`start_year.UNKNOWN`), never a guessed year."""
-    first = second = None
-    for m in _SESSION_RE.finditer(intake or ''):
-        a, tail = int(m.group(1)), m.group(2)
-        b = int(tail) if len(tail) == 4 else (a // 100) * 100 + int(tail)
-        if b == a + 1:
-            first, second = a, b
-            break
-    if first is None:
-        return None
-    rdm = re.search(r'\b(20\d{2})\b', reporting_date or '')
-    if rdm:
-        rd_year = int(rdm.group(1))
-        return str(rd_year) if rd_year in (first, second) else ''
-    text = intake
-    if _LATER_TERM_RE.search(text):
-        return ''
-    says_first = bool(_FIRST_TERM_RE.search(text) or _FIRST_MONTH_RE.search(text))
-    says_second = bool(_SECOND_TERM_RE.search(text) or _SECOND_MONTH_RE.search(text))
-    if says_first and says_second:
-        return ''
-    return str(second) if says_second else str(first)
-
-
 # ── Course-start year: the ONE "is this a continuing student?" signal ────────────
 
 def course_start_year(application):
@@ -539,7 +483,10 @@ def course_start_year(application):
          authoritative statement of when the cohort began, and it survives the common Form 6 case
          where the letter carries an intake RANGE ("6 / 2025 – 12 / 2026") and NO reporting date;
       2. the stored ``reporting_date`` — which may itself have been typed by an officer when the
-         letter had no readable date.
+         letter had no readable date. It is also the fallback when the letter's session line
+         cannot tell the year (`session_start_year` gave ''): the money keeps today's reading.
+         The gift's start-year rule does NOT take that fallback from the letter's own date
+         (`course_start_span`), so there a person checks.
 
     Deliberately NOT a third source: the student's free-text answer to the
     ``reporting_date_unknown`` clarify. #123 answered "16 july 2026" meaning the date he collected
@@ -554,6 +501,32 @@ def course_start_year(application):
             return int(iy)
     rd = getattr(application, 'reporting_date', None)
     return rd.year if rd else None
+
+
+def course_start_span(application):
+    """The years the course may have started in, for the gift's yes/no start-year rule ONLY
+    (`start_year.reading`): ``(Y,)`` for a known year; ``(S, S+1)`` for a bare session (lead's
+    ruling, 2026-11-15: no term, no intake month, no reporting date, so either year); ``()`` when
+    unknown. The money (award size, funding estimate) reads `course_start_year`, which keeps S.
+
+    Unlike `course_start_year`, a session line that cannot tell the year ('', e.g. Semester 3 and
+    up) is NOT rescued by the stored reporting date when that date is the letter's own: the
+    session reading already weighed it (the H3a review: "Semester 3 Sesi 2024/2025" with
+    "3 Mac 2025" passed a continuing student). A different stored date (an officer's) still counts."""
+    letters_own = _NO_DATE = object()
+    offer = _latest_offer(application)
+    if offer is not None:
+        chk = student_offer_check(offer)
+        intake, rd_text = chk.get('intake') or '', chk.get('reporting_date') or ''
+        iy = (chk.get('intake_year') or '').strip()
+        if iy.isdigit():
+            return bare_session(intake, rd_text) or (int(iy),)
+        if session_start_year(intake, rd_text) == '':
+            letters_own = parse_reporting_date(rd_text)
+    rd = getattr(application, 'reporting_date', None)
+    if rd and (letters_own is _NO_DATE or rd != letters_own):
+        return (rd.year,)
+    return ()
 
 
 def started_before_cohort(application):

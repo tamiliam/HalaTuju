@@ -85,18 +85,26 @@ def readable_years(years):
 
 def reading(application):
     """None when the intake sets no years; else ``{state, start_year, years}`` where state is
-    'inside', 'outside' or 'unknown' (no start year could be established)."""
+    'inside', 'outside' or 'unknown' (no start year could be established, start_year None).
+
+    The years come from `pathway_engine.course_start_span`. A bare session "Sesi S/S+1" (no term,
+    no date) may be either year (lead's ruling, 2026-11-15): both in the list → inside, both out →
+    outside (start_year S, as the money reads it), one in and one out → unknown, so a person
+    checks, never an automatic fail."""
     value = getattr(getattr(application, 'cohort', None), FIELD, None)
     if not rule_on(value):
         return None
     years = stored_years(value)
-    from .pathway_engine import course_start_year
-    start = course_start_year(application)
-    if start is None:
-        state = 'unknown'
+    from .pathway_engine import course_start_span
+    span = course_start_span(application)
+    inside = [y in years for y in span]
+    if span and all(inside):
+        state = 'inside'
+    elif span and not any(inside):
+        state = 'outside'
     else:
-        state = 'inside' if start in years else 'outside'
-    return {'state': state, 'start_year': start, 'years': years}
+        state = 'unknown'
+    return {'state': state, 'start_year': span[0] if state != 'unknown' else None, 'years': years}
 
 
 def apply_to_pathway_fact(application, fact):

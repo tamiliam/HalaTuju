@@ -360,6 +360,10 @@ The calls:
   - Semester I or a September or October intake = the first year.
   - Both terms, Semester 3 and up, or a reporting year outside the session read no year, so a person checks.
   - A bare session keeps the first year. That is today's reading, and the main intake of a session is its first. Making it unknown would hold every bare-session STPM case at QC (`award.course_start_unknown`). For the architect to confirm.
+- **Opus review FAIL fix (`VERDICT_ENGINE_VERSION` 2026-11-15.7).** Three rulings on the session reading, now in `apps/scholarship/session_year.py`:
+  - **Semester 3 and up first (item 1).** It is read before the reporting date: a Semester 3 letter's date is when that semester starts, not the course. The gift's rule (`pathway_engine.course_start_span`) does not take the letter's own date back through the stored `reporting_date`, so a person checks; an officer's different date still counts. The money (`course_start_year`) keeps its stored-date fallback, so no STPM case newly stops at QC.
+  - **A date range is not a session (item 2).** "Julai 2025 - 26 Februari 2026" is a Form 6 range: a two-digit tail followed by a month and a year, a numeric date, or (after a dash) a month name is a day. After a slash a month alone does not count ("Session 2024/25 February intake" is a session).
+  - **Bare session (item 4, lead's ruling, replaces "keeps the first year" above for the gift only).** A bare "Sesi S/S+1" is either year for the gift's start-year rule: both in = pass, both out = outside, one in and one out = unknown (a person checks, never an automatic fail). Award sizing and the funding estimate keep S, so the QC stop above is not triggered.
 
 ## 2026-11-15 — Student help H1: the approver's stamp counts anywhere in the approver's section; an empty "Cop Rasmi" box never cancels it (builder)
 
