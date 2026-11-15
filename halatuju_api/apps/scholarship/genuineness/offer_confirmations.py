@@ -21,7 +21,30 @@ _NO_PRIVATE_WING = (
 )
 #: Round 9 (H2): a Form-6 confirmation names Form 6 on its page (an SMK also teaches Forms 1-5).
 _FORM6_MARKS = (' TINGKATAN ENAM ', ' TINGKATAN 6 ', ' FORM 6 ', ' FORM SIX ', ' PRA U ', ' PRA UNIVERSITI ')
-CONFIRMATION_SEEN = frozenset(k for k, _n, _m in _NO_PRIVATE_WING)   # round 7: no confirmation_ua (baseline)
+#: The ministries' own names, Malay and English (a public mark on the page).
+_KPM = (' KEMENTERIAN PENDIDIKAN MALAYSIA ', ' MINISTRY OF EDUCATION MALAYSIA ', ' MINISTRY OF EDUCATION ')
+_KPT = (_JPPKK, ' KEMENTERIAN PENDIDIKAN TINGGI ', ' MINISTRY OF HIGHER EDUCATION ',
+        ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')
+#: Help H2 (owner ruling 2026-11-15, ruling 4 WIDENED): every other PUBLIC institution type's confirmation of
+#: studies is acceptable too. Same proof as the three above (`offer_rulings.confirmation_kind`). NOT in the
+#: BLOCK's public names (`offer_reading._public_names` reads `_NO_PRIVATE_WING` only): a company below one of
+#: these names on a letterhead stays BLOCK proof, exactly as before. The closed-list TVET institutes
+#: (`confirmation_tvet`) and the other public universities (`confirmation_ua`, suspect) are added by
+#: `offer_reading._confirmers`, which reads their lists.
+_PUBLIC_CONFIRMERS = (
+    ('confirmation_matriculation', (' KOLEJ MATRIKULASI ', ' BAHAGIAN MATRIKULASI ', ' MATRICULATION COLLEGE ',
+                                    ' MATRICULATION DIVISION '),
+     _KPM + (' BAHAGIAN MATRIKULASI ', ' MATRICULATION DIVISION ')),
+    # "KAMPUS" is an organisation noun (`offer_reading._ORG_WORDS`): every IPG is "IPG Kampus <place>"
+    ('confirmation_ipg', (' INSTITUT PENDIDIKAN GURU KAMPUS ', ' IPG KAMPUS ', ' INSTITUT PENDIDIKAN GURU ',
+                          ' IPG ', ' INSTITUTE OF TEACHER EDUCATION '), _KPM),
+    ('confirmation_kv', (' KOLEJ VOKASIONAL ', ' VOCATIONAL COLLEGE '), _KPM),
+    ('confirmation_kolej_komuniti', (' KOLEJ KOMUNITI ', ' COMMUNITY COLLEGE '), _KPT),
+)
+#: Every confirmation code: a confirmation never writes a course pick (`pathway_engine.is_confirmation_letter`).
+#: Help H2: `confirmation_ua` is back (owner 2026-11-15: a university WITH a private wing reads suspect).
+CONFIRMATION_SEEN = frozenset([k for k, _n, _m in _NO_PRIVATE_WING + _PUBLIC_CONFIRMERS]
+                              + ['confirmation_tvet', 'confirmation_ua'])
 #: The polytechnics' department, Malay and English: it names no polytechnic or college (blanked before a scan).
 _POLY_DEPARTMENTS = (_JPPKK, ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')
 #: The least a real confirmation scores on the families (every corpus one: 0.13-0.30).

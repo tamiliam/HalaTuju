@@ -1143,6 +1143,19 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    Form-6 colleges count as "no private wing" — such a confirmation is an acceptable alternative to an offer
    (genuine). Any other university's confirmation reads `suspect` (a person checks it is the government
    programme). A confirmation letter never writes a course pick.
+   **WIDENED (owner, 2026-11-15, help sprint H2):** a confirmation-of-studies letter is an acceptable alternative
+   to the offer letter for ALL pathways (students lose their offers). A confirmation from EVERY public institution
+   type reads genuine on the same structural proof as before: matriculation colleges (Malay or English), IPG, KV,
+   community colleges, the public TVET institutes (IKBN / IKM etc., the closed `_INSTITUTES` list), polytechnics,
+   Form 6, UMS (`offer_confirmations._PUBLIC_CONFIRMERS`, `offer_reading._confirmers`). A confirmation from any
+   other public university reads `suspect` (`confirmation_ua`: it has a private wing; a person checks, never a
+   block). Still a FAIL: a private college (IPTS) and a university's private wing (UTM SPACE, UMS PPPL, "Pendidikan
+   Berterusan", UniKL / KPTM / KUPTM / UPTM / GMI, UM SATU) — no private veto or BLOCK proof was loosened (the new
+   names are NOT added to the BLOCK's public names). Still: a confirmation never writes a course pick. Same sprint:
+   KPM's ENGLISH matriculation offer ("Matriculation Division", "Ministry of Education") reads the matric family's
+   English twins, like the Malay letter (`offer_signatures.english_matric_lists`). MODEL_VERSION 1.28.0.
+   Open: only UMS is proven to have no private wing; another IPTA proven wingless moves into `_NO_PRIVATE_WING`
+   on the owner's word.
 
 4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
    Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is

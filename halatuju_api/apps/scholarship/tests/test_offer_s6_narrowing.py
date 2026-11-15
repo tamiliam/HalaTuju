@@ -206,10 +206,10 @@ class TheLifts(SimpleTestCase):
                 out = ruled_offer(_confirm(head), _r(0.2), 'not_offer_letter', 'r', MODEL_VERSION)
                 self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'confirmation'))
 
-    def test_another_universitys_confirmation_keeps_its_baseline(self):
+    def test_another_universitys_confirmation_reads_suspect(self):     # help H2 (owner 2026-11-15; was: baseline)
         text = _confirm('UNIVERSITI MALAYA')
         out = signature_genuineness(text, doc_type='offer_letter')
-        self.assertEqual((out['status'], ruling_of(out)), (baseline_status(text), ''))
+        self.assertEqual((out['status'], ruling_of(out), out['type']), ('suspect', 'confirmation_ua', 'confirmation_ua'))
 
 
 class TheBlock(SimpleTestCase):

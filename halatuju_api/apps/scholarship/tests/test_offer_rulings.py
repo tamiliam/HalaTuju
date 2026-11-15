@@ -126,7 +126,7 @@ class TestConfirmationLetters(SimpleTestCase):
         self.assertEqual(confirmation_kind(POLY_CONFIRM), 'confirmation_polytechnic')
         self.assertEqual(confirmation_kind(UMS_CONFIRM), 'confirmation_ums')
         self.assertEqual(confirmation_kind(FORM6_CONFIRM), 'confirmation_form6')
-        self.assertEqual(confirmation_kind(UM_CONFIRM), '')     # round 7: no "another university" hedge
+        self.assertEqual(confirmation_kind(UM_CONFIRM), 'confirmation_ua')   # help H2 (owner 2026-11-15)
         self.assertEqual(confirmation_kind(PRIVATE_CONFIRM), '')
         self.assertEqual(confirmation_kind(IKM), '')               # no confirmation title
 
@@ -139,7 +139,7 @@ class TestConfirmationLetters(SimpleTestCase):
 
     def test_no_private_wing_reads_genuine_another_university_suspect_a_private_college_unchanged(self):
         for text, want in ((POLY_CONFIRM, 'genuine'), (UMS_CONFIRM, 'genuine'), (FORM6_CONFIRM, 'genuine'),
-                           (UM_CONFIRM, baseline_status(UM_CONFIRM)),      # round 7: the baseline
+                           (UM_CONFIRM, 'suspect'),      # help H2 (owner 2026-11-15): a private wing
                            (PRIVATE_CONFIRM, 'not_offer_letter')):
             with self.subTest(want=want, head=text.splitlines()[0]):
                 self.assertEqual(signature_genuineness(text, doc_type='offer_letter')['status'], want)

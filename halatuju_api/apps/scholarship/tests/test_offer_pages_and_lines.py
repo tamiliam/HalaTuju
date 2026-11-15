@@ -148,4 +148,4 @@ class ConfirmReadsTheLettersCourseTest(_Base):
 class ModelVersionTest(SimpleTestCase):
     def test_the_doc_recognition_version_is_bumped(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION
-        self.assertEqual(MODEL_VERSION, '1.27.0')
+        self.assertEqual(MODEL_VERSION, '1.28.0')       # help H2 (2026-11-15)

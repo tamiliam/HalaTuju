@@ -16,10 +16,12 @@ guessing, and no new cap to suspect either (owner rule: predict, don't hedge).
      salutation or the addressee, so a Yayasan / Persatuan addressee, a supplier, a bank or a SIRIM footer is
      never letterhead. No other route newly blocks.
   2. LIFT (→ `genuine`) only when ALL hold: a closed-list public institution's exact name on the letterhead
-     block (a public TVET INSTITUTE — `_INSTITUTES`; a polytechnic / UMS / a Form-6 college for a confirmation
-     of studies); a letterhead naming no other organisation; the full shape of the letter (`_letter_structure`);
-     and NO private marker anywhere on the page (`_private_marker`). Tags `tvet_offer` / `confirmation`, with
-     the issuer as `doc_seen` (`tvet_*`, `confirmation_*`). A fingerprinted ministry family's own letter the
+     block (a public TVET INSTITUTE — `_INSTITUTES`; for a confirmation of studies, any PUBLIC institution —
+     polytechnic, UMS, Form 6, matriculation, IPG, KV, community college, TVET institute: owner ruling 4,
+     widened 2026-11-15); a letterhead naming no other organisation; the full shape of the letter
+     (`_letter_structure`); and NO private marker anywhere on the page (`_private_marker`). Tags `tvet_offer` /
+     `confirmation`, with the issuer as `doc_seen` (`tvet_*`, `confirmation_*`). A confirmation from any other
+     public university (it has a private wing) reads `suspect` instead (`confirmation_ua`), never genuine. A fingerprinted ministry family's own letter the
      pre-S6 veto blocked ONLY for an incidental company line (a supplier, a bank, the addressee) and that
      scores genuine is lifted too (tag `incidental_company`).
   3. Two owner rulings that SOFTEN a fail on its own proof, never block and never lift to genuine: an admission
@@ -255,15 +257,16 @@ def _agency_lift(ocr_text, r, lines, model_version):
 
 
 def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> str:
-    """The `confirmation_*` code of a confirmation-of-studies letter from a no-private-wing public institution
-    named on its letterhead block, or '' (no title at the top, below the score floor, a private marker, or a
-    letterhead naming another organisation)."""
+    """The `confirmation_*` code of a confirmation-of-studies letter from a public institution named on its
+    letterhead block (`offer_reading._confirmers`, help H2: every public type; `confirmation_ua` = a university
+    with a private wing), or '' (no title at the top, below the score floor, a private marker, or a letterhead
+    naming another organisation)."""
     lines = _folded_lines(ocr_text) if lines is None else lines
     if not _confirm_titled(lines, probability) or _private_marker(lines):
         return ''
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
     head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _page(lines)
-    for seen, names, marks in _NO_PRIVATE_WING:
+    for seen, names, marks in _confirmers():
         if seen == 'confirmation_form6' and not (any(m in page for m in _FORM6_MARKS)
                                                  or ' KOLEJ TINGKATAN ENAM ' in head):
             continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
@@ -347,8 +350,12 @@ def _confirmation_lift(r, raw, model_version):
     if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
             and _own_identity_lines(lines, _CONFIRM_TITLES)):
         return None
+    if seen == 'confirmation_ua':                           # help H2 (owner 2026-11-15): never genuine
+        return _ruled_status('suspect', r, seen, 'confirmation_ua', 'a confirmation of studies from a public '
+                             'university that has a private wing - a person checks (owner ruling 4, widened '
+                             '2026-11-15)', model_version)
     return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
-                         'institution with no private wing - an acceptable alternative (owner ruling 4)',
+                         'institution - an acceptable alternative (owner ruling 4, widened 2026-11-15)',
                          model_version)
 
 
