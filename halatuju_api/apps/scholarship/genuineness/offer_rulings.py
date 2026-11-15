@@ -32,12 +32,11 @@ JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03): on the LIFT'
 Every call that differs from the baseline carries `[S6 ruling: <tag>]` (`ruling_of`), so a reviewer's
 override or a later corpus answer shows which rule was wrong (`eval/offer_genuineness_check.py`). Pure.
 """
-import functools
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_confirmations import (_APPROVAL, _KNOWN_PUBLIC_NAMES, _KPM, _KPT, _OWN_ACRONYMS, _PUBLIC_PATTERN,
-                                  _UNIT_FUNCTIONS, _UNIT_WORDS)
+from .offer_closed_head import _known_name, _known_names, _title_clean, campus_dropped
+from .offer_confirmations import _APPROVAL, _KNOWN_PUBLIC_NAMES
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -269,12 +268,14 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
         return ''
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
     head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _approval_blanked(_page(lines))
+    # H2 round 3: "KAMPUS GOPENG" under a known name is the college's campus, not another organisation
+    campus_free = campus_dropped(scan, tuple(n for v in _known_names().values() for n in v))
     for seen, names, marks in _confirmers():
         if seen == 'confirmation_form6' and not (any(m in page for m in _FORM6_MARKS)
                                                  or ' KOLEJ TINGKATAN ENAM ' in head):
             continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
         if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
-                and any(m in page for m in marks) and _clean_letterhead(scan, names)
+                and any(m in page for m in marks) and _clean_letterhead(campus_free, names)
                 and _named_first(scan, names, divisions=True, then=[_title_segment(scan)])):     # round 10 (M4)
             return seen
     return ''
@@ -370,12 +371,6 @@ def _confirmation_lift(r, raw, model_version):
 #: university's). False would restore the round-7 call (UMS has no private wing: genuine). Confirmations only:
 #: UMS offer letters and the UMS PPPL letterhead BLOCK (`_NO_PRIVATE_WING` in `_public_names`) are untouched.
 _UMS_SUSPECT = True
-#: The words a KNOWN public name may be followed by on its own line (the ministry, a department, the address).
-_NAME_END = frozenset({'KEMENTERIAN', 'MINISTRY', 'JABATAN', 'DEPARTMENT', 'KERAJAAN', 'GOVERNMENT', 'BAHAGIAN',
-                       'JALAN', 'JLN', 'LORONG', 'PERSIARAN', 'LOT', 'NO', 'PETI', 'P', 'TEL', 'TELEFON', 'FAKS',
-                       'FAX', 'WWW', 'EMEL', 'E', 'EMAIL'})
-
-
 def _approval_blanked(page: str) -> str:
     """The folded page with the 12 words after each approval / registration phrase blanked (`_APPROVAL`): "Approved
     by KPT" names a private college's regulator, never its issuer, so it is no public mark."""
@@ -384,65 +379,6 @@ def _approval_blanked(page: str) -> str:
             at = page.find(a)
             page = f"{page[:at]} # {' '.join(page[at + len(a):].split()[12:])} "
     return page
-
-
-@functools.lru_cache(maxsize=1)
-def _known_names():
-    """`_KNOWN_PUBLIC_NAMES` folded like a page, longest first ("... CAWANGAN SEPANG" before "KUALA LANGAT"); an
-    IPG campus by its own short form too ("IPG KAMPUS IPOH")."""
-    from .results_doc import _norm_fold_upper_alnum
-    out = {}
-    for seen, names in _KNOWN_PUBLIC_NAMES.items():
-        short = [n.replace('INSTITUT PENDIDIKAN GURU ', 'IPG ') for n in names] if seen == 'confirmation_ipg' else []
-        folded = {f" {' '.join(_norm_fold_upper_alnum(n).split())} " for n in list(names) + short}
-        out[seen] = tuple(sorted(folded, key=len, reverse=True))
-    return out
-
-
-def _known_name(head_lines, seen) -> bool:
-    """A KNOWN public name of the type is on the letterhead (or the title segment), each ending its name (end of
-    line, a digit, the ministry, the address or its own acronym next) with nothing but the ministry before it on
-    its line (H2 round 2: "MERCU KOLEJ KOMUNITI KLANG"), NO other name in the type's pattern is there
-    ("KOLEJ MATRIKULASI MERCU", "MERCU COMMUNITY COLLEGE", "KOLEJ MATRIKULASI PERAK MERCU"), and no unit names
-    an unknown body ("PUSAT ASASI MERCU", `_stray_unit`)."""
-    found, acronyms = False, _OWN_ACRONYMS.get(seen, frozenset())
-    for ln in head_lines:
-        for m in _KPM + _KPT + _POLY_DEPARTMENTS:
-            ln = ln.replace(m, ' # ')
-        for n in _known_names()[seen]:
-            while n in ln:
-                at = ln.find(n)
-                if any(w != '#' and not w.isdigit() for w in ln[:at].split()):
-                    return False        # a word before the name on its line (the ministry is blanked)
-                after = ln[at + len(n):].split()
-                if after and after[0] in acronyms:
-                    after = after[1:]
-                if after and not (after[0][0].isdigit() or after[0] in _NAME_END):
-                    return False
-                ln, found = f"{ln[:at]} # {' '.join(after)} ", True
-        if any(p in ln for p in _PUBLIC_PATTERN[seen]) or _stray_unit(ln) or (
-                seen == 'confirmation_matriculation' and _KM_NAME.search(ln)):
-            return False
-    return found
-
-
-#: "KM <name>" / "KMK <name>" left after the known names: an unlisted college ("KM 12" is a kilometre).
-_KM_NAME = re.compile(r' KMK? (?![\d#])')
-
-
-def _stray_unit(ln) -> bool:
-    """A unit on the line ("BAHAGIAN ...", "... CENTRE") holding a word that is neither a unit word nor a function
-    word (`_UNIT_FUNCTIONS`): an unknown body's name. Read up to the next blank, digit or address word."""
-    for seg in ln.split('#'):
-        words = []
-        for w in seg.split():
-            if w[0].isdigit() or w in _NAME_END - _UNIT_WORDS:
-                break
-            words.append(w)
-        if any(w in _UNIT_WORDS for w in words) and any(
-                w not in _UNIT_WORDS and w not in _UNIT_FUNCTIONS for w in words):
-            return True
-    return False
 
 
 def confirmation_proof(lines, seen) -> str:
@@ -457,8 +393,9 @@ def confirmation_proof(lines, seen) -> str:
         return 'suspect'
     if seen not in _KNOWN_PUBLIC_NAMES:
         return 'suspect'
-    scan = _without_poly_department(lines)
-    return 'genuine' if _known_name(_letterhead_lines(scan) + [_title_segment(scan)], seen) else 'suspect'
+    scan = _without_poly_department(lines)       # H2 round 3: the CLOSED letterhead (`offer_closed_head`)
+    clear = _known_name(_letterhead_lines(scan), seen) and _title_clean(_title_segment(scan), seen)
+    return 'genuine' if clear else 'suspect'
 
 
 def _company_lift(ocr_text, r, lines, model_version):

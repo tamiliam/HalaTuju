@@ -422,3 +422,74 @@ class Round2NamesUnitsAndLists(SimpleTestCase):
         for head in (f'KM MERCU\nBAHAGIAN MATRIKULASI\n{KPM}', f'KMK MERCU\nBAHAGIAN MATRIKULASI\n{KPM}'):
             with self.subTest(head=head.split(chr(10))[0]):
                 self.assertNotEqual(_read(head)['status'], 'genuine')
+
+
+# ── H2 round 3 (Opus re-review, 2026-11-15): the CLOSED letterhead (`offer_closed_head`) ─────────────
+class Round3ClosedLetterhead(SimpleTestCase):
+    """Genuine only when EVERY letterhead word is allowed (the known name, the ministry, unit words, the address,
+    the crest, a state at the end, a campus line under the name): any other word reads suspect, never genuine."""
+
+    def test_a_word_the_blocklist_missed_reads_suspect(self):
+        for head in (f'KOLEJ KOMUNITI KLANG\n{KPT} MERCU EDUCATION GROUP',
+                     f'{KPT} MERCU INTERNATIONAL\nKOLEJ KOMUNITI KLANG',
+                     f'KOLEJ KOMUNITI KLANG\nMAJLIS MERCU EDUCATION\n{KPT}',
+                     f'POLITEKNIK UNGKU OMAR\nLEMBAGA MERCU SKILLS\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nKOLEJ KEJURURAWATAN MERCU\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nKOLEJ VOKASIONAL MERCU\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nKOLEJ MATRIKULASI MERCU\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nSEKOLAH ANTARABANGSA MERCU\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nSCHOOL OF MERCU BUSINESS\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nSTUDENT SERVICES MERCU\n{KPT}',
+                     f'MERCU JAYA\nKOLEJ KOMUNITI KLANG\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG\nMERCU JAYA\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG JALAN MERCU COLLEGE\n{KPT}',
+                     f'KOLEJ KOMUNITI KLANG 2 MERCU\n{KPT}',
+                     f'BAHAGIAN MATRIKULASI\n{KPM} MERCU EDU HUB'):
+            with self.subTest(head=head):
+                self.assertNotEqual(_read(head)['status'], 'genuine')
+                self.assertNotEqual(_read(head)['status'], 'not_offer_letter')   # a person checks: never a block
+
+    def test_a_town_stays_suspect_but_a_state_ending_reads_genuine(self):
+        self.assertEqual(_verdict(f'POLITEKNIK UNGKU OMAR IPOH PERAK\n{KPT}')[::2], ('suspect', 'confirmation_unclear'))
+        self.assertEqual(_verdict(f'KOLEJ KOMUNITI KLANG\nKLANG\n{KPT}')[::2], ('suspect', 'confirmation_unclear'))
+        for head in (f'POLITEKNIK UNGKU OMAR PERAK\n{KPT}', f'POLITEKNIK BALIK PULAU, PULAU PINANG 11900\n{KPT}',
+                     f'POLITEKNIK UNGKU OMAR, PERAK DARUL RIDZUAN\n{KPT}'):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertEqual(_verdict(head)[::2], ('genuine', 'confirmation'))
+
+    def test_a_campus_line_under_a_known_name_reads_genuine(self):
+        # was not_offer_letter: the KAMPUS noun made the letterhead name "another organisation"
+        self.assertEqual(_verdict(f'KOLEJ MATRIKULASI PERAK\nKAMPUS GOPENG\n{KPM}'),
+                         ('genuine', 'confirmation_matriculation', 'confirmation'))
+        self.assertNotEqual(_read(f'KOLEJ MATRIKULASI PERAK\nKAMPUS MERCU COLLEGE\n{KPM}')['status'], 'genuine')
+
+    def test_the_crest_the_address_and_the_contact_lines_read_genuine(self):
+        for head in (f'KERAJAAN MALAYSIA\n{KPT}\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nPOLITEKNIK UNGKU OMAR'
+                     '\nJalan Raja Musa Mahadi, 31400 Ipoh, Perak',
+                     f'KOLEJ KOMUNITI KLANG, JALAN MERU, 41050 KLANG\n{KPT}',
+                     f'KOLEJ MATRIKULASI PERAK\n{KPM}\nTel: 05-123 4567 Emel: kmpk@moe.gov.my'):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertEqual(_verdict(head)[::2], ('genuine', 'confirmation'))
+        self.assertEqual(_verdict(f'KOLEJ KOMUNITI KLANG\nMERCU JAYA Tel : 03-1234 5678\n{KPT}')[0], 'suspect')
+
+    def test_the_english_matric_offer_needs_a_closed_letterhead(self):
+        for text in (MATRIC_EN.replace('MINISTRY OF EDUCATION MALAYSIA\nMATRICULATION', 'MINISTRY OF EDUCATION '
+                                       'MALAYSIA MERCU EDUCATION GROUP\nMATRICULATION', 1),
+                     MATRIC_EN.replace('KEMENTERIAN PENDIDIKAN MALAYSIA\n',
+                                       'KEMENTERIAN PENDIDIKAN MALAYSIA MERCU INTERNATIONAL\n'),
+                     MATRIC_EN.replace('MATRICULATION DIVISION\nRef', 'MATRICULATION DIVISION\nSTUDENT SERVICES MERCU '
+                                       'GLOBAL\nRef'),
+                     MATRIC_EN.replace('MATRICULATION DIVISION\nRef', 'MATRICULATION DIVISION\nMAJLIS MERCU LEARNING\nRef'),
+                     MATRIC_EN.replace('MATRICULATION DIVISION\nRef', 'MATRICULATION DIVISION\nMERCU ASIA PACIFIC\nRef')):
+            with self.subTest(text=text.split(chr(10))[:3]):
+                self.assertNotEqual(_offer_read(text)['status'], 'genuine')
+        self.assertEqual(_offer_read(MATRIC_EN)['status'], 'genuine')
+
+    def test_a_title_naming_another_college_reads_suspect(self):
+        base = _confirm(f'KOLEJ KOMUNITI KLANG\n{KPT}')
+        for title, want in (('PENGESAHAN PELAJAR KOLEJ KOMUNITI KLANG SESI 2026', 'genuine'),
+                            ('PENGESAHAN PELAJAR KOLEJ MERCU', 'suspect'),
+                            ('PENGESAHAN PELAJAR MERCU KOLEJ KOMUNITI KLANG', 'suspect')):
+            with self.subTest(title=title):
+                out = signature_genuineness(base.replace('PENGESAHAN PELAJAR', title), doc_type='offer_letter')
+                self.assertEqual(out['status'], want)

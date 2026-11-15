@@ -1276,10 +1276,13 @@ class Round14(SimpleTestCase):
                     _assert_lifted(self, self._ruling(build(extra=line + '\n')), ums=kind == 'UMS')
 
     def test_a_skillsmalaysia_line_on_the_letterhead_still_lifts(self):
-        for kind in ('UMS', 'POLY'):
-            with self.subTest(kind):
-                _assert_lifted(self, self._ruling(_LETTERS14[kind](
-                    addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')), ums=kind == 'UMS')
+        _assert_lifted(self, self._ruling(_LETTERS14['UMS'](
+            addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')), ums=True)
+        # CHANGED by H2 round 3 (the closed letterhead, 2026-11-15): "SkillsMalaysia" is not the polytechnic's own
+        # word, so its confirmation reads SUSPECT (a person checks; was genuine). Still never read as a glued
+        # organisation name: no block, which is what this test guards.
+        self.assertEqual(self._ruling(_LETTERS14['POLY'](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')),
+                         'confirmation_unclear')
         self.assertIn(self._ruling(_a11(_IKBN11, venue='IKBN Pekan',
                                         addr='SkillsMalaysia\nJalan Raja Laut, 50609 Kuala Lumpur')), LIFTS)
 

@@ -327,14 +327,16 @@ def english_matric_lists(lists: dict, text_norm: str, ocr_text: str = ''):
     (help H2 review, 2026-11-15): the Division and the ministry on the page; the English offer title on the first
     "OFFER" line; the Division or the ministry the FIRST body the letterhead names (`_named_first`,
     `_first_institution`, as the IIUM rules do); every letterhead line clean; the Division or a KNOWN matric
-    college on the letterhead (`offer_rulings._known_name`: "Kolej Matrikulasi Mercu" is no proof); no results
-    words; and no partner, tie-up or private marker anywhere."""
+    college on a CLOSED letterhead (`offer_closed_head._known_name`, H2 round 3: every other word on any letterhead
+    line - "MERCU EDUCATION GROUP" beside the ministry, "STUDENT SERVICES MERCU GLOBAL" - keeps the Malay lists);
+    no results words; and no partner, tie-up or private marker anywhere."""
     page = f' {text_norm} '
     if _MATRIC_DIVISION_EN not in page or _KPM_EN not in page or any(w in page for w in _RESULTS_EN):
         return lists, text_norm
     from .offer_reading import (_PARTNER, _TIE_UP, _clean_letterhead, _first_institution, _folded_lines,
                                 _letterhead_lines, _private_marker)
-    from .offer_rulings import _known_name, _known_names, _named_first
+    from .offer_closed_head import _known_name, _known_names
+    from .offer_rulings import _named_first
     lines = _folded_lines(ocr_text)
     title = next((ln for ln in lines if ' OFFER ' in ln), '')
     if not any(t in title for t in _MATRIC_TITLE_EN):

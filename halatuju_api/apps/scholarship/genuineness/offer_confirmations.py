@@ -98,7 +98,7 @@ _KNOWN_PUBLIC_NAMES = {
 }
 #: H2 round 2: the SAME institutions' other exact spellings - the state short forms and "KM" / "KMK" (the
 #: course guide's own form, `matric-colleges.ts`: "KM Perak", "KMK Kedah"). Extra listed spellings only; the
-#: page text is never rewritten. `offer_rulings._known_names` folds them like the page ("P.PINANG" = "P PINANG").
+#: page text is never rewritten. `offer_closed_head._known_names` folds them like the page ("P.PINANG" = "P PINANG").
 _STATE_SHORT = {'PULAU PINANG': ('P.PINANG', 'P. PINANG'), 'NEGERI SEMBILAN': ('N.SEMBILAN', 'N. SEMBILAN')}
 
 
@@ -134,7 +134,7 @@ _OWN_ACRONYMS = {
 #: The words of a type's own pattern: every one on the letterhead must sit inside a KNOWN name.
 _PUBLIC_PATTERN = {
     'confirmation_matriculation': (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ', ' MATRICULATION DIVISION ',
-                                   ' BAHAGIAN MATRIKULASI '),     # + "KM <name>" (`offer_rulings._KM_NAME`)
+                                   ' BAHAGIAN MATRIKULASI '),     # + "KM <name>" (`offer_closed_head._KM_NAME`)
     'confirmation_ipg': (' INSTITUT PENDIDIKAN GURU ', ' IPG ', ' INSTITUTE OF TEACHER EDUCATION '),
     'confirmation_kolej_komuniti': (' KOLEJ KOMUNITI ', ' COMMUNITY COLLEGE '),
     'confirmation_polytechnic': (' POLITEKNIK ', ' POLYTECHNIC '),

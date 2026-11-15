@@ -101,7 +101,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-14.4 — #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
 #   2026-11-15.4 — help H2: a confirmation of studies from every public institution type reads genuine only on clear proof (ministry on the letterhead + a known public name), else suspect; UMS confirmations read suspect (owner 2026-11-15); KPM's English matric offer recognised only with the Division/ministry first on the letterhead and its English title. (.3 is help-h3's.)
 #   2026-11-15.6 — help H2 round 2: no other word before a known name on its line; an unknown unit line under it reads suspect; polytechnics checked against the 36 public names; more approval wording is no public mark; state short forms and the KM / KMK aliases are listed spellings. (.5 is help-h3's.)
-VERDICT_ENGINE_VERSION = '2026-11-15.6'
+#   2026-11-15.8 — help H2 round 3: a CLOSED letterhead (allowlist) for a genuine confirmation and the English matric offer: only the known name, the ministry, unit lines, address/contact lines, the crest words, a campus line under the name and states at a line end; any other word reads suspect.
+VERDICT_ENGINE_VERSION = '2026-11-15.8'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
