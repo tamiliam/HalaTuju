@@ -4,9 +4,7 @@
 ``from .results_doc import _UA_NAMES`` / ``UA_OFFER_SIGNATURES`` keep working; ``results_doc``'s
 ``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them. 1.26.0 (request
 #66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``): it imports
-only ``re``, and reads the page through ``offer_reading`` lazily. 1.28.0 (help H2) adds KPM's ENGLISH reading
-of the matric family the same way (``MATRIC_OFFER_SIGNATURES_EN``, ``english_matric_lists``); ``results_doc``
-calls both through ``english_offer_lists``.
+only ``re``, and reads the page through ``offer_reading`` lazily.
 """
 import re
 
@@ -278,80 +276,3 @@ def _starts(lines):
     for ln in lines:
         yield pos, ln
         pos += len(ln.strip()) + 1
-
-
-# ── Matriculation in ENGLISH (1.28.0, help H2) ─────────────────────────────────────────────
-# KPM's Matriculation Division also issues its offer in English (#597's doc 6062 read not_offer_letter, p=0.056:
-# the matric family is Malay-only). Owner 2026-11-15: an English "Matriculation Division" / "Ministry of
-# Education" offer is recognised like the Malay one. Same shape as IIUM's above: the SAME matric family, the same
-# eight rows and weights, each Malay row with an English twin added, and it opens ONLY when the page names BOTH
-# the Matriculation Division and the Ministry of Education, with no private marker and no partner / tie-up word
-# anywhere (`english_matric_lists`). Every other page is scored by `MATRIC_OFFER_SIGNATURES` as before.
-# ⚠ The twins are written from KPM's usual English wording, NOT from 6062's own text (offer page text is not
-# stored): an operator checks them against the real letter (`eval/offer_s6_dry_run.py`) before relying on them.
-# A twin is a DISTINCTIVE phrase, never a bare word any letter prints (help H2 review, 2026-11-15: "STREAM",
-# "COLLEGE", "DATE OF REGISTRATION" let a private university's English offer that merely MENTIONED the Division
-# read genuine matriculation at 0.71). There is no "Jurusan" or "Kolej" twin: the Malay "KOLEJ" row still reads
-# the college's own Malay name ("Kolej Matrikulasi Perak"), so an English letter scores lower than a Malay one
-# without the crest (9/14, suspect) and the same band with it (11/14, genuine) - fail safe (decisions.md S6 item 7).
-_MATRIC_DIVISION_EN, _KPM_EN = ' MATRICULATION DIVISION ', ' MINISTRY OF EDUCATION '
-_MATRIC_TWINS = {
-    'Jata Negara crest': [],
-    'Bahagian Matrikulasi': ['MATRICULATION DIVISION'],
-    'Tawaran Program Matrikulasi KPM': ['ADMISSION TO THE MATRICULATION PROGRAMME',
-                                        'OFFER OF THE MATRICULATION PROGRAMME'],
-    'Jurusan': [],
-    'Tarikh Kemasukan ke kolej': ['DATE OF ENTRY TO THE COLLEGE', 'DATE OF REGISTRATION AT THE COLLEGE'],
-    'Mendaftar pada tarikh kolej': ['MUST REGISTER ON THE DATE SET BY THE COLLEGE',
-                                    'MUST REGISTER ON THE DATE FIXED BY THE COLLEGE'],
-    'Tawaran terbatal (saudara)': ['OFFER WILL BE CANCELLED IMMEDIATELY', 'OFFER SHALL BE CANCELLED IMMEDIATELY',
-                                   'OFFER WILL BE WITHDRAWN IMMEDIATELY'],
-    'Kolej': [],
-}
-MATRIC_OFFER_SIGNATURES_EN = [(label, patterns + _MATRIC_TWINS[label], weight, kind)
-                              for label, patterns, weight, kind in MATRIC_OFFER_SIGNATURES]
-#: The English offer's own title (on the first line that says "OFFER"); a results slip has none.
-_MATRIC_TITLE_EN = (' OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME ', ' ADMISSION TO THE MATRICULATION PROGRAMME ',
-                    ' OFFER OF THE MATRICULATION PROGRAMME ')
-#: The issuers the letterhead may name FIRST (the Division or the ministry; the college by `_KNOWN_PUBLIC_NAMES`).
-_MATRIC_ISSUERS_EN = (' MATRICULATION DIVISION ', ' BAHAGIAN MATRIKULASI ', ' MINISTRY OF EDUCATION MALAYSIA ',
-                      ' MINISTRY OF EDUCATION ', ' KEMENTERIAN PENDIDIKAN MALAYSIA ')
-#: A results slip's words: a slip uploaded as an offer is never read as one.
-_RESULTS_EN = (' CGPA ', ' PNGK ', ' RESULT SLIP ', ' RESULTS SLIP ', ' SLIP KEPUTUSAN ', ' EXAMINATION RESULT ',
-               ' EXAMINATION RESULTS ', ' TRANSCRIPT ', ' GRADE POINT AVERAGE ')
-
-
-def english_matric_lists(lists: dict, text_norm: str, ocr_text: str = ''):
-    """``(lists, text_norm)`` for an offer: unchanged, unless the page is KPM's English matriculation offer —
-    then the matric family reads its English twins (`MATRIC_OFFER_SIGNATURES_EN`). It opens ONLY on clear proof
-    (help H2 review, 2026-11-15): the Division and the ministry on the page; the English offer title on the first
-    "OFFER" line; the Division or the ministry the FIRST body the letterhead names (`_named_first`,
-    `_first_institution`, as the IIUM rules do); every letterhead line clean; the Division or a KNOWN matric
-    college on a CLOSED letterhead (`offer_closed_head._known_name`, H2 round 3: every other word on any letterhead
-    line - "MERCU EDUCATION GROUP" beside the ministry, "STUDENT SERVICES MERCU GLOBAL" - keeps the Malay lists);
-    no results words; and no partner, tie-up or private marker anywhere."""
-    page = f' {text_norm} '
-    if _MATRIC_DIVISION_EN not in page or _KPM_EN not in page or any(w in page for w in _RESULTS_EN):
-        return lists, text_norm
-    from .offer_reading import (_PARTNER, _TIE_UP, _clean_letterhead, _first_institution, _folded_lines,
-                                _letterhead_lines, _private_marker)
-    from .offer_closed_head import _known_name, _known_names
-    from .offer_rulings import _named_first
-    lines = _folded_lines(ocr_text)
-    title = next((ln for ln in lines if ' OFFER ' in ln), '')
-    if not any(t in title for t in _MATRIC_TITLE_EN):
-        return lists, text_norm
-    allowed = _MATRIC_ISSUERS_EN + _known_names()['confirmation_matriculation']
-    if not (_named_first(lines, _MATRIC_ISSUERS_EN) and _first_institution(lines, allowed) == 'allowed'
-            and _clean_letterhead(lines, allowed)
-            and _known_name(_letterhead_lines(lines), 'confirmation_matriculation')):
-        return lists, text_norm
-    if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA) or _private_marker(lines):
-        return lists, text_norm
-    return {**lists, 'matriculation': MATRIC_OFFER_SIGNATURES_EN}, text_norm
-
-
-def english_offer_lists(lists: dict, text_norm: str, ocr_text: str = ''):
-    """Both English readings of the offer families (IIUM's UA letter, KPM's matric letter)."""
-    lists, text_norm = english_ua_lists(lists, text_norm, ocr_text)
-    return english_matric_lists(lists, text_norm, ocr_text)

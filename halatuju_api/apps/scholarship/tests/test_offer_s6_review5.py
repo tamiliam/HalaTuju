@@ -58,16 +58,13 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
 
     def test_the_lift_is_learnable(self):
         _t, out = _conf('UNIVERSITI MALAYSIA SABAH\nACADEMIC SERVICES DIVISION', p=0.3)
-        # round 7: the *_unverified tags are gone; owner 2026-11-15: a UMS confirmation reads suspect, tagged
-        self.assertEqual(ruling_of(out), 'confirmation_ua')
+        self.assertEqual(ruling_of(out), 'confirmation')       # round 7: the *_unverified tags are gone
 
 
 class H1OwnUnitsAreNotOtherOrganisations(SimpleTestCase):
-    def test_a_ums_division_line_keeps_a_full_confirmation_a_confirmation(self):
-        # owner 2026-11-15: UMS confirmations read suspect (a person checks) - was genuine. The division line is
-        # still UMS's own unit: the page is still read as a UMS confirmation, not dropped to its baseline.
+    def test_a_ums_division_line_keeps_a_full_confirmation_genuine(self):
         _t, out = _conf('UNIVERSITI MALAYSIA SABAH\nACADEMIC SERVICES DIVISION', p=0.3)
-        self.assertEqual((out['status'], out['type']), ('suspect', 'confirmation_ums'))
+        self.assertEqual(out['status'], 'genuine')
 
     def test_an_ikbn_student_services_unit_line_keeps_the_letter(self):
         self.assertEqual(_g(_letter('INSTITUT KEMAHIRAN BELIA NEGARA (IKBN) PEKAN\nSTUDENT SERVICES UNIT'))['status'],

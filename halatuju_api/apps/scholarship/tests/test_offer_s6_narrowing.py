@@ -23,17 +23,9 @@ ROUND_FILES = ('test_offer_rulings.py', 'test_offer_s6_doors.py', 'test_offer_s6
 #: What each tag may do to the baseline.
 LIFTS = {'tvet_offer', 'confirmation', 'incidental_company'}
 SOFTENINGS = {'printout', 'tvet_slip'}
-#: Help H2 (owner 2026-11-15): a confirmation recognised but read SUSPECT (a person checks) - a university's
-#: (UMS included since 2026-11-15) or one without clear proof. Never genuine, never a fail.
-CONFIRMATION_SUSPECT = {'confirmation_ua', 'confirmation_unclear'}
-
-
-def _assert_lifted(tc, ruling, ums=False):
-    """A public page still lifts; a UMS confirmation now lifts to SUSPECT (owner 2026-11-15, was genuine)."""
-    if ums:
-        tc.assertEqual(ruling, 'confirmation_ua')
-    else:
-        tc.assertIn(ruling, LIFTS)
+#: Help H2 option B (2026-11-15): a newly covered public confirmation or KPM's English matric offer reads suspect
+#: at most (a person checks) - never genuine, never a block.
+SUSPECT_ONLY = {'confirmation_check', 'confirmation_ua', 'matric_offer_en'}
 
 
 def _r(p, family='ua_offer'):
@@ -129,10 +121,9 @@ class TheProperty(SimpleTestCase):
             self.assertTrue(private_proof(_folded_lines(text)), 'a block without letterhead proof')
         elif tag in LIFTS:
             self.assertEqual(out['status'], 'genuine')
-        elif tag in CONFIRMATION_SUSPECT:            # help H2 (owner 2026-11-15)
-            from apps.scholarship.genuineness.offer_confirmations import CONFIRMATION_SEEN
+        elif tag in SUSPECT_ONLY:
             self.assertEqual(out['status'], 'suspect')
-            self.assertIn(out['type'], CONFIRMATION_SEEN)
+            self.assertNotEqual(b, 'genuine')
         else:
             self.assertIn(tag, SOFTENINGS)
             self.assertEqual((b, out['status']), ('not_offer_letter', 'suspect'))
@@ -181,13 +172,12 @@ class Round7Probes(SimpleTestCase):
                 out = signature_genuineness(text, doc_type='offer_letter')
                 self.assertEqual((out['status'], ruling_of(out)), (baseline_status(text), ''))
 
-    def test_an_english_confirmation_title_is_read_now(self):
-        # help H2 review (2026-11-15): the English titles are confirmation titles (was: unclear, the baseline);
-        # this one is UMS's, which reads suspect (owner 2026-11-15).
-        out = signature_genuineness(ROUND7_NEVER_NEWLY_BLOCKED['CONFIRMATION OF STUDENT STATUS'],
-                                    doc_type='offer_letter')
+    def test_an_english_title_reads_suspect_never_genuine(self):
+        # CHANGED by help H2 option B (2026-11-15): an English confirmation title was the baseline exactly; it is
+        # now recognised on the suspect path only (a person checks), never genuine.
+        out = signature_genuineness(ROUND7_NEVER_NEWLY_BLOCKED['CONFIRMATION OF STUDENT STATUS'], doc_type='offer_letter')
         self.assertEqual((out['status'], out['type'], ruling_of(out)),
-                         ('suspect', 'confirmation_ums', 'confirmation_ua'))
+                         ('suspect', 'confirmation_ums', 'confirmation_check'))
 
     def test_an_addressee_or_a_certification_is_never_letterhead_proof(self):
         for name in ('Yayasan addressee', 'Persatuan addressee', 'SIRIM QAS footer', 'SIRIM QAS beside the crest'):
@@ -221,22 +211,21 @@ class TheLifts(SimpleTestCase):
         self.assertEqual(signature_genuineness(thin, doc_type='offer_letter')['status'], baseline_status(thin))
 
     def test_the_confirmations(self):
-        for head, seen, want in (
-                ('POLITEKNIK MELAKA\nKEMENTERIAN PENDIDIKAN TINGGI', 'confirmation_polytechnic',   # H2 r2
-                 ('genuine', 'confirmation')),
-                # owner 2026-11-15: UMS confirmations read suspect - a person checks (was genuine)
-                ('UNIVERSITI MALAYSIA SABAH', 'confirmation_ums', ('suspect', 'confirmation_ua')),
-                ('KOLEJ TINGKATAN ENAM CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA', 'confirmation_form6',
-                 ('genuine', 'confirmation'))):
+        for head, seen in (('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI', 'confirmation_polytechnic'),
+                           ('UNIVERSITI MALAYSIA SABAH', 'confirmation_ums'),
+                           ('KOLEJ TINGKATAN ENAM CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA', 'confirmation_form6')):
             with self.subTest(head=head):
                 self.assertEqual(confirmation_kind(_confirm(head), 0.2), seen)
                 out = ruled_offer(_confirm(head), _r(0.2), 'not_offer_letter', 'r', MODEL_VERSION)
-                self.assertEqual((out['status'], ruling_of(out)), want)
+                self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'confirmation'))
 
-    def test_another_universitys_confirmation_reads_suspect(self):     # help H2 (owner 2026-11-15; was: baseline)
+    def test_another_universitys_confirmation_reads_suspect(self):
+        # CHANGED by help H2 option B (2026-11-15): was the baseline (not_offer_letter); a public university's
+        # confirmation now reads suspect (it has a private wing: a person checks), never genuine.
         text = _confirm('UNIVERSITI MALAYA')
+        self.assertEqual(baseline_status(text), 'not_offer_letter')
         out = signature_genuineness(text, doc_type='offer_letter')
-        self.assertEqual((out['status'], ruling_of(out), out['type']), ('suspect', 'confirmation_ua', 'confirmation_ua'))
+        self.assertEqual((out['status'], ruling_of(out)), ('suspect', 'confirmation_ua'))
 
 
 class TheBlock(SimpleTestCase):
@@ -1190,7 +1179,7 @@ class Round13(SimpleTestCase):
     def test_real_words_on_public_pages_still_lift(self):
         for name, text in ROUND13_PUBLIC_STILL_LIFT.items():
             with self.subTest(name):
-                _assert_lifted(self, self._ruling(text), ums=name.startswith('UMS'))
+                self.assertIn(self._ruling(text), LIFTS)
 
     def test_the_normaliser_reads_digits(self):
         from apps.scholarship.genuineness.offer_text import normalise_s6
@@ -1273,16 +1262,13 @@ class Round14(SimpleTestCase):
                 if kind in ('IKM', 'KKTM') and 'KBS1' in line:
                     continue                                    # another agency (KBS) on a MARA letter
                 with self.subTest(kind=kind, line=line):
-                    _assert_lifted(self, self._ruling(build(extra=line + '\n')), ums=kind == 'UMS')
+                    self.assertIn(self._ruling(build(extra=line + '\n')), LIFTS)
 
     def test_a_skillsmalaysia_line_on_the_letterhead_still_lifts(self):
-        _assert_lifted(self, self._ruling(_LETTERS14['UMS'](
-            addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')), ums=True)
-        # CHANGED by H2 round 3 (the closed letterhead, 2026-11-15): "SkillsMalaysia" is not the polytechnic's own
-        # word, so its confirmation reads SUSPECT (a person checks; was genuine). Still never read as a glued
-        # organisation name: no block, which is what this test guards.
-        self.assertEqual(self._ruling(_LETTERS14['POLY'](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')),
-                         'confirmation_unclear')
+        for kind in ('UMS', 'POLY'):
+            with self.subTest(kind):
+                self.assertIn(self._ruling(_LETTERS14[kind](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')),
+                              LIFTS)
         self.assertIn(self._ruling(_a11(_IKBN11, venue='IKBN Pekan',
                                         addr='SkillsMalaysia\nJalan Raja Laut, 50609 Kuala Lumpur')), LIFTS)
 
@@ -1292,8 +1278,8 @@ class Round14(SimpleTestCase):
             for kind, addr in (('IKM', 'Jalan Raja Laut, 50609 Kuala Lumpur'),
                                ('UMS', 'Jalan Contoh, 88400 Kota Kinabalu'), ('POLY', 'Jalan Contoh, 88400 Kota Kinabalu')):
                 with self.subTest(kind=kind, tel=tel):
-                    _assert_lifted(self, self._ruling(_LETTERS14[kind](
-                        addr=f'{addr}\nTel : 09-4221234 E-mel : {tel}')), ums=kind == 'UMS')
+                    self.assertIn(self._ruling(_LETTERS14[kind](addr=f'{addr}\nTel : 09-4221234 E-mel : {tel}')),
+                                  LIFTS)
 
     def test_a_numbered_noun_with_a_name_still_blocks(self):
         for line in ('Latihan amali di Akademi21 Mercu.', 'Latihan amali di Edu360 Kuantan.',
