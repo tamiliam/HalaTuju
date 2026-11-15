@@ -37,7 +37,7 @@ CONFIRM_MIN = 0.10
 _CONFIRM_TITLES_EN = (' CONFIRMATION OF STUDENT STATUS ', ' CONFIRMATION OF STUDIES ', ' CONFIRMATION OF STUDY ',
                       ' CONFIRMATION OF ENROLMENT ', ' CONFIRMATION OF ENROLLMENT ',
                       ' LETTER OF ENROLMENT VERIFICATION ', ' LETTER OF ENROLLMENT VERIFICATION ',
-                      ' PENGESAHAN PENGAJIAN ')
+                      ' PENGESAHAN PENGAJIAN ', ' PENGESAHAN STATUS PENGAJIAN ')    # review 9: the replay's cases
 #: The generic titles: a confirmation ONLY when the title itself (its line, or a short line under it, or the
 #: subject line) holds a study word (`offer_confirm_checks.generic_titled`; lead, 16 Nov 2026).
 _CONFIRM_TITLES_EN_GENERIC = (' CONFIRMATION LETTER ', ' LETTER OF CONFIRMATION ')
@@ -95,6 +95,10 @@ _APPROVAL = (' APPROVED BY ', ' APPROVED UNDER ', ' REGISTERED WITH ', ' REGISTE
 #: KPM's English matriculation offer, recognised by its text (`offer_rulings.english_matric_offer`): suspect,
 #: never a course pick (option B).
 MATRIC_OFFER_EN = 'matric_offer_en'
+#: Its English titles (moved here from `offer_rulings`, H2 review 9: the CAP reads them too). The TITLE line is the
+#: first line holding one of these - never an "OFFER LETTER" header above it (review 9, M1).
+_MATRIC_EN_TITLES = (' OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME ',
+                     ' ADMISSION TO THE MATRICULATION PROGRAMME ', ' OFFER OF THE MATRICULATION PROGRAMME ')
 #: The English matric offer's TITLE line (the first line naming the offer) names no application, result, status,
 #: appeal or refusal, and is no form for refusing, cancelling or withdrawing it. Lead, 16 Nov 2026: the TITLE line
 #: only - a bare REGRET / APPEAL / declined / waiting list in the body never blocks (a person checks).

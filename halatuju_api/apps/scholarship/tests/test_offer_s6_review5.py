@@ -2,6 +2,7 @@
 probes for the wrong blocks of real public letters. Every letter is invented (`test_no_gitignored_corpus.py`)."""
 from django.test import SimpleTestCase
 
+from apps.scholarship.genuineness.offer_confirmations import CONFIRMATION_SEEN
 from apps.scholarship.genuineness.offer_rulings import (_first_institution, _folded_lines, _unglued,
                                                          confirmation_kind, ruled_offer, ruling_of)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
@@ -47,7 +48,13 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
                 with self.subTest(label, p=p):
                     out = ruled_offer(text, _r(p), status, 'r', MODEL_VERSION)
                     self.assertEqual(out['status'], baseline_status(text, p, status))
-                    self.assertEqual(ruling_of(out), '')
+                    if out['status'] == 'suspect' and 'PENGESAHAN' in text:
+                        # CHANGED by help H2 review 9: the status stands; a suspect confirmation-titled page takes
+                        # the CAP's confirmation code (never a course pick)
+                        self.assertIn(ruling_of(out), ('confirmation_check', 'confirmation_ua'))
+                        self.assertIn(out['type'], CONFIRMATION_SEEN)
+                    else:
+                        self.assertEqual(ruling_of(out), '')
 
     def test_positive_private_evidence_still_fails(self):
         for text in ('ABC TRAINING SDN BHD\nIKBN PEKAN\nSURAT TAWARAN\n',
