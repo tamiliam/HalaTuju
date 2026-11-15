@@ -9127,3 +9127,16 @@ suspect (option B: a person checks). An English TITLE over the usual Malay body 
 only runs one way: it wrongly rejects, never wrongly accepts, and a reviewer can still open the document. Fix, if real
 English letters turn up: add the English confirmation wording to the scored marks, with a test that such a letter
 reads suspect, never genuine. *(A - S)*
+
+### [TD-636] Main's live polytechnic / UMS / Form-6 confirmation reads a "not studying now" letter genuine - medium
+
+**Raised 2026-11-15 by the help H2 review 6 (live on main, unchanged by H2).** The genuine confirmation lift
+(`offer_rulings.confirmation_kind` over `offer_confirmations._NO_PRIVATE_WING`) checks the title, the issuer, its
+ministry mark and the letterhead, but not what the letter says about the person. A polytechnic "Pengesahan Pelajar"
+saying the person "telah tamat pengajian", was "diberhentikan", is a "bekas pelajar", or that the application was
+"tidak berjaya" (and a staff letter under that title) reads genuine, so a former or failed student's letter could
+stand in for an offer. H2 added this check for the NEWLY covered types only (`offer_rulings._not_studying`, word list
+`offer_confirmations._NOT_STUDYING`: they stay `not_offer_letter`); the live path is pinned as main parity in
+`test_offer_h2_review6.py` (`test_mains_live_polytechnic_path_is_unchanged_td_636`). Fix, if wanted: apply
+`_not_studying` in `_confirmation_lift` before the genuine read too (the letter then falls to its family baseline),
+with a replay of the recorded corpus first; the owner decides, since it changes a live genuine read. *(A - S)*

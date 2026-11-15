@@ -38,7 +38,9 @@ NEW_SUSPECT = (
     ('matric, the Division itself', f'BAHAGIAN MATRIKULASI\n{KPM}', 'confirmation_matriculation'),
     ('matric, English names', 'MATRICULATION COLLEGE CONTOH\nMATRICULATION DIVISION\nMINISTRY OF EDUCATION MALAYSIA',
      'confirmation_matriculation'),
-    ('matric, a campus line', f'KOLEJ MATRIKULASI PERAK\nKAMPUS GOPENG\n{KPM}', 'confirmation_matriculation'),
+    ('matric, a campus line naming a state', f'KOLEJ MATRIKULASI PERAK\nKAMPUS PERAK\n{KPM}',
+     'confirmation_matriculation'),
+    ('community college, its own campus', f'{KK}\nKAMPUS KLANG\n{KPT}', 'confirmation_kolej_komuniti'),
     ('matric, an unlisted college', f'KOLEJ MATRIKULASI CONTOH\nBAHAGIAN MATRIKULASI\n{KPM}',
      'confirmation_matriculation'),
     ('IPG', f'INSTITUT PENDIDIKAN GURU KAMPUS IPOH\n{KPM}', 'confirmation_ipg'),
@@ -100,7 +102,7 @@ class NewPublicConfirmationsReadSuspect(SimpleTestCase):
         for name, head, seen in NEW_SUSPECT:
             for crest in (False, True):                   # the crest lifts nothing
                 with self.subTest(name, crest=crest):
-                    self.assertEqual(confirmation_kind(_confirm(head)), seen)
+                    self.assertEqual(confirmation_kind(_confirm(head)), '')       # never main's genuine rule
                     self.assertEqual(_verdict(_confirm(head), crest), ('suspect', seen, 'confirmation_check'))
 
     def test_another_public_university_reads_suspect(self):
@@ -152,14 +154,16 @@ class PrivateIssuersStillFail(SimpleTestCase):
                             'No. Pendaftaran :', 'Under the purview of the')]
         for head in heads:
             with self.subTest(head=head):
-                self.assertEqual(confirmation_kind(_confirm(head)), '')
                 self.assertEqual(_read(_confirm(head))['status'], 'not_offer_letter')
 
     def test_no_public_name_with_its_ministry_is_no_confirmation(self):
         for head in (f'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\n{KPT}', 'KOLEJ MATRIKULASI CONTOH\nJalan Contoh',
                      'KOLEJ MATRIKULASI MERCU\nBAHAGIAN MATRIKULASI'):
             with self.subTest(head=head):
-                self.assertEqual(confirmation_kind(_confirm(head)), '')
+                status, seen, ruling = _verdict(_confirm(head))
+                self.assertNotIn(seen, CONFIRMATION_SEEN)      # no confirmation: the family baseline stands
+                self.assertEqual(ruling, '')
+                self.assertNotEqual(status, 'genuine')
 
     def test_a_public_name_only_in_the_body_or_below_the_title_is_no_confirmation(self):
         for text in (_confirm(f'MERCU PRESTIGE\n{KPT}').replace('Institusi : Contoh', f'Institusi : {KK}'),

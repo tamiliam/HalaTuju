@@ -1149,25 +1149,41 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    not blocked. Covered: matriculation colleges and the Division (Malay or English names), IPG, KV, community
    colleges (`offer_confirmations._PUBLIC_CONFIRMERS`), the public TVET institutes (`confirmation_tvet`, the closed
    `_INSTITUTES` list), any other public university and IIUM by its English name (`confirmation_ua`: it has a
-   private wing), and an English confirmation title ("Confirmation of Student Status / Studies", "Letter of
-   Confirmation", "Confirmation Letter"). Stored tag `confirmation_check` (`confirmation_ua` for a university). The
+   private wing), and an English confirmation title ("Confirmation of Student Status / Studies"; the generic
+   "Letter of Confirmation" / "Confirmation Letter" ONLY when the page says the person studies there now - "is
+   currently studying", "sedang mengikuti" - and names no hostel or industrial-training matter, H2 review 6). A
+   newly covered confirmation that says the person is NOT studying now (completion - "telah tamat / menamatkan
+   pengajian", "graduated", "completed"; dismissal or withdrawal - "diberhentikan", "terminated", "withdrawn",
+   "menarik diri"; a failed application - "tidak berjaya", "unsuccessful"; a former student; a member of staff or a
+   salary) stays `not_offer_letter` ("Tarikh / Jangkaan Tamat Pengajian", the expected end date, is no completion).
+   A KAMPUS / CAMPUS line straight under the name is dropped only when its words are a known place (a state or
+   federal territory, or a word of the institution's own line: "KOLEJ KOMUNITI KLANG / KAMPUS KLANG"); any other
+   campus line stays and the letterhead rule below reads it. Stored tag `confirmation_check` (`confirmation_ua` for a university). The
    crest lifts nothing. Unchanged from main: the polytechnic, UMS and Form-6 confirmations above keep their live
    genuine rule exactly (`_NO_PRIVATE_WING`; UMS stays genuine - the H2 review's "UMS reads suspect" change was
    withdrawn with option B). Still a FAIL: a private college (IPTS), a university's private wing (UTM SPACE, UMS
    PPPL, "Pendidikan Berterusan", UniKL / KPTM / KUPTM / UPTM / GMI, UM SATU, IIUM Academy, CENPACE), approval
    wording ("Approved by", "Diluluskan oleh", "Dilesenkan oleh", "Reg. No.", "Under the purview of" and the rest name
-   a regulator, never the issuer), and a company or another organisation on the letterhead. No private veto or BLOCK
+   a regulator, never the issuer), and, on the letterhead, a company (Sdn Bhd and the private veto) or an
+   organisation noun that names no public body ("MERCU FOUNDATION CENTRE", "KAMPUS MERCU PRESTIGE", "SALURAN
+   TERBUKA (SATU)"; a letterhead line carrying UM's "SATU" fails a university's confirmation). Main's letterhead rule
+   (`offer_reading._clean_letterhead`) is unchanged, so two kinds of extra letterhead line read SUSPECT, never
+   genuine: a line naming another PUBLIC body or a public unit ("KOLEJ VOKASIONAL ...", "KOLEJ KEJURURAWATAN ...",
+   "SCHOOL OF GRADUATE STUDIES", "PUSAT PENGAJIAN JARAK JAUH" - excused by its public word), and a plain line with
+   no organisation noun ("MERCU JAYA", "CAMPUS SEGI SUBANG"). A person checks both. No private veto or BLOCK
    proof was loosened (the new names are NOT added to the BLOCK's public names). A confirmation never writes a
    course pick (`CONFIRMATION_SEEN`). Same sprint: KPM's ENGLISH matriculation offer (the Matriculation Division /
    ministry named FIRST on a clean letterhead, the English title on the offer line, no results words, no partner,
-   company or agent word) is recognised and reads `suspect` too (doc_seen and tag `matric_offer_en`,
+   company or agent word, no refusal / appeal / status-check / application words - "unsuccessful", "not offered",
+   "regret", "appeal", "rayuan", "semakan status", an "application" or "result" offer line, H2 review 6) is recognised and reads `suspect` too (doc_seen and tag `matric_offer_en`,
    `offer_rulings.english_matric_offer`), never a pick; a private university's or a foundation's offer that only
    mentions the Division, and the English results slip, stay `not_offer_letter`. The Malay offer is unchanged.
    Why option B: the H2 rounds 1-3 tried to prove a new type genuine (known-name lists, then a closed letterhead,
    VERDICT_ENGINE_VERSION .4 / .6 / .8); each adversarial round found another way in. A person's check is the proof
    instead. VERDICT_ENGINE_VERSION 2026-11-15.10, MODEL_VERSION 1.28.0. Open: TD-633 (main's Form-6 path reads
    genuine before the letterhead check), TD-634 (main's Malay matric offer does not check its "Kolej :" line),
-   TD-635 (a fully English confirmation without the crest stays `not_offer_letter`). Another IPTA proven wingless
+   TD-635 (a fully English confirmation without the crest stays `not_offer_letter`), TD-636 (main's live
+   polytechnic / UMS / Form-6 path reads a "not studying now" confirmation genuine). Another IPTA proven wingless
    moves into `_NO_PRIVATE_WING` only on the owner's word.
 
 4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
