@@ -35,7 +35,7 @@ class AdminStaffRoleView(_AdminBase):
 
     def patch(self, request, admin_id):
         from apps.courses.models import PartnerAdmin
-        from apps.courses.views_admin import _staff_target_manageable
+        from apps.courses import public as courses_public
         from .. import staff_lifecycle
         admin = self.get_admin(request)
         if not admin:
@@ -43,7 +43,7 @@ class AdminStaffRoleView(_AdminBase):
         if not admin.has_perm('manage_team'):   # M3b G1 (a super holds every key)
             return self._deny_role()
         target = PartnerAdmin.objects.filter(pk=admin_id).first()
-        if target is None or not _staff_target_manageable(admin, target):
+        if target is None or not courses_public.staff_target_manageable(admin, target):
             return Response({'error': 'Admin not found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         # A body that is not an object, or a role that is not text, is a 400 — never a 500 (L1).
@@ -99,8 +99,7 @@ class AdminStaffPermissionsView(_AdminBase):
         """``read=True`` (the GET): the O10 read fence (`staff_target_readable`, M1a §6): an org admin also
         OPENS a fellow org admin's page and their own, view-only. Every write keeps the manage fence."""
         from apps.courses.models import PartnerAdmin
-        from apps.courses.staff_fence import staff_target_readable
-        from apps.courses.views_admin import _staff_target_manageable
+        from apps.courses import public as courses_public
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
@@ -109,7 +108,7 @@ class AdminStaffPermissionsView(_AdminBase):
         # T3: the profile and the mentor link ride on this query (the person page's `person` block).
         target = (PartnerAdmin.objects.select_related('reviewer_profile', 'mentor')
                   .filter(pk=admin_id).first())
-        fence = staff_target_readable if read else _staff_target_manageable
+        fence = courses_public.staff_target_readable if read else courses_public.staff_target_manageable
         if target is None or not fence(admin, target):
             return None, None, Response({'error': 'Admin not found', 'code': 'not_found'},
                                         status=status.HTTP_404_NOT_FOUND)
@@ -120,19 +119,18 @@ class AdminStaffPermissionsView(_AdminBase):
         from apps.courses import staff_tables
         from .. import staff_permissions_admin as spa
         from .. import staff_person, staff_tables_admin
-        from apps.courses.views_admin import _staff_target_manageable
+        from apps.courses import public as courses_public
         admin, target, err = self._target(request, admin_id, read=True)
         if err:
             return err
         # S4 review fix 8: a revoked person is not editable either (the PATCH refuses `not_active`),
         # so the card draws no dead switches; `is_active` lets it say "restore them first".
         # M1a (O10): a page opened through the read fence only (a fellow org admin) is view-only.
-        manageable = _staff_target_manageable(admin, target)
+        manageable = courses_public.staff_target_manageable(admin, target)
         # M3c (D1): one rule with the PATCH (`may_edit`): a super may edit an organisation admin's card.
         editable = manageable and spa.may_edit(target, admin)
         # Sprint T2: the person page offers Revoke and Delete as the Admins table does — by one rule
         # (`staff_delete_rules.delete_fields`: work, deletable, delete_never, revocable).
-        from apps.courses.staff_delete_rules import delete_fields
         return Response({'id': target.pk, 'name': target.name, 'role': target.role,
                          'is_active': target.is_active, 'editable': editable,
                          # The person page's header (Team → a person → Permissions, 2026-10-22).
@@ -153,7 +151,7 @@ class AdminStaffPermissionsView(_AdminBase):
                          # Sprint T3: the ONE person page's header and Profile tab (`staff_person`) —
                          # Last seen, the lead flag and the profile, under the reviewer detail's PII rules.
                          'person': staff_person.person(target),
-                         **delete_fields(admin, target)})
+                         **courses_public.delete_fields(admin, target)})
 
 
     def patch(self, request, admin_id):

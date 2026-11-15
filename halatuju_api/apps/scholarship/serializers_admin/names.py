@@ -48,9 +48,8 @@ def _verified_email(application):
     # look it up by the profile's supabase_user_id. One query, detail view only.
     if getattr(p, 'supabase_user_id', None):
         try:
-            from apps.courses.views_admin import _fetch_auth_data
-            auth = _fetch_auth_data([p.supabase_user_id], purpose='the applicant login email'
-                                    ).get(p.supabase_user_id, {})
+            auth = courses_public.fetch_auth_data(
+                [p.supabase_user_id], purpose='the applicant login email').get(p.supabase_user_id, {})
             login_email = (auth.get('email') or '').strip()
             if login_email:
                 return login_email

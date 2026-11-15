@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: F2b stage 1 - scholarship reaches 19 loose courses helpers through the courses public door (2026-11-15)
+
+Branch f2b1, not pushed. Import-only: no behaviour change, no migration, no web change.
+- `apps/courses/public.py` now also offers `PartnerAdminMixin`, `is_google_email`, `fetch_auth_data`, `invitation_dict`, `MARA_DIVISION`, `SPM_PATHWAYS`, the staff fence trio (`deletable_now`, `staff_target_manageable`, `staff_target_readable`), `delete_fields`, `sole_org_admin_ids`, `archive_asked`, `in_a_group_refusal`, the gift helpers (`gift_as_id`, `gift_refusal`, `gift_not_found`, `resolve_gifts`) and the `contrast` module. Each is the same object as at home.
+- About 17 scholarship files now read them as `courses_public.<name>` instead of importing from the courses files behind the door. Lazy imports stay lazy.
+- The cross-app edge count (code_health `xapp`) falls from 49 to 30.
+- Tests: an identity test for every moved name; the private-import allowlist loses its 9 non-test entries (cap 20 down to 11); the one mock patch on `_fetch_auth_data` for the applicant detail now patches `apps.courses.public.fetch_auth_data`.
+
 ### feat: sprint M3c - the organisation admin grants its keys; the web reads the served keys (2026-11-15)
 
 Branch m3c, not pushed. Migration `0099_grant_scholars_approve` (additive, by hand, migrate-first; steps in `docs/releases/m3c-granting-release-note-draft.md`). Decisions: `docs/decisions.md` (2026-11-15, M3c).

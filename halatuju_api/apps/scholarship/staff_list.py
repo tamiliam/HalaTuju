@@ -26,8 +26,7 @@ Row fields:
 """
 from apps.courses import staff_tables
 from apps.courses import staff_permissions as sp
-from apps.courses.staff_delete_rules import delete_fields, sole_org_admin_ids
-from apps.courses.staff_fence import _deletable_now, _staff_target_manageable
+from apps.courses import public as courses_public
 
 from . import mentor_invite, staff_footprint, staff_photo, staff_work
 from .models import MentorAssignment, MentoringSession
@@ -65,9 +64,9 @@ def _never(caller, a, rules, work):
 
 def _staff_rules(caller, a, footprint, sole):
     """`delete_fields` (the Admins table's own answer) plus the fence: one rule for both screens."""
-    fields = delete_fields(caller, a, work=footprint, sole=sole)
-    manageable = _staff_target_manageable(caller, a)
-    return manageable, {'may_delete': _deletable_now(caller, a, work={}), 'alone': manageable and a.pk in sole,
+    fields = courses_public.delete_fields(caller, a, work=footprint, sole=sole)
+    manageable = courses_public.staff_target_manageable(caller, a)
+    return manageable, {'may_delete': courses_public.deletable_now(caller, a, work={}), 'alone': manageable and a.pk in sole,
                         'revocable': fields['revocable'], 'records': bool(footprint)}
 
 
@@ -84,7 +83,7 @@ def list_rows(caller, admins):
     admins = list(admins)
     works, cards = staff_footprint.footprints(admins), staff_photo.team_cards(admins)
     waiting = staff_work.unfinished_counts(admins)
-    sole, records = sole_org_admin_ids(caller, admins), _mentor_records(admins)
+    sole, records = courses_public.sole_org_admin_ids(caller, admins), _mentor_records(admins)
     out = []
     for a in admins:
         footprint = works.get(a.pk, {})

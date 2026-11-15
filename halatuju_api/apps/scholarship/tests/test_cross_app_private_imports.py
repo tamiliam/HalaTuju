@@ -23,20 +23,10 @@ APP_NAMES = tuple(sorted(p.name for p in APPS_DIR.iterdir() if (p / '__init__.py
 
 # (file relative to apps/, imported module, private name). Today's debt: shrink it, never grow it.
 ALLOWED = frozenset({
-    ('scholarship/mentor_gift.py', 'apps.courses.staff_gift', '_gift_refusal'),
-    ('scholarship/mentor_gift.py', 'apps.courses.staff_gift', '_not_found'),
-    ('scholarship/sponsor_invite_gifts.py', 'apps.courses.staff_gift', '_as_id'),
-    ('scholarship/staff_tables_admin.py', 'apps.courses.views_admin', '_staff_target_manageable'),
-    ('scholarship/views_admin/staff.py', 'apps.courses.views_admin', '_staff_target_manageable'),
     ('scholarship/tests/test_mentor_is_not_staff.py', 'apps.courses.views_admin',
      '_staff_target_manageable'),
     ('scholarship/tests/test_source_user_is_not_staff.py', 'apps.courses.views_admin',
      '_staff_target_manageable'),
-    ('scholarship/serializers_admin/names.py', 'apps.courses.views_admin', '_fetch_auth_data'),
-    ('scholarship/views_admin/source_users.py', 'apps.courses.views_admin', '_invitation_dict'),
-    # baseline from M1a (live b2fc146a5); route through apps.courses.public later, TD-414
-    ('scholarship/staff_list.py', 'apps.courses.staff_fence', '_deletable_now'),
-    ('scholarship/staff_list.py', 'apps.courses.staff_fence', '_staff_target_manageable'),
     ('scholarship/tests/test_m1a_review_fixes.py', 'apps.courses.tests.test_m1a_archive_restore',
      '_reviewed'),
     ('scholarship/tests/test_m1a_review_fixes.py', 'apps.courses.tests.test_m1a_archive_restore',
@@ -129,9 +119,9 @@ class TestNoNewPrivateCrossAppImports(SimpleTestCase):
                          f'line; or the scanner broke): {missing}')
 
     def test_the_allowlist_only_shrinks(self):
-        # 13 scholarship -> courses pairs (9 old + 4 M1a baseline) + 7 courses -> scholarship test pairs. Lower this when a
+        # 4 scholarship test pairs (2 not-staff pins + 2 M1a review-fix pins) + 7 courses -> scholarship test pairs. Lower this when a
         # line is deleted; raising it means a new private import got waved through.
-        self.assertLessEqual(len(ALLOWED), 20)
+        self.assertLessEqual(len(ALLOWED), 11)
 
 
 class TestTheScannerItself(SimpleTestCase):

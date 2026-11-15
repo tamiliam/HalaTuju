@@ -495,7 +495,7 @@ class TestAdminScholarship(TestCase):
         #    verified login email looked up from Supabase auth.users.
         StudentProfile.objects.filter(pk=self.profile.pk).update(
             contact_email='typed@unverified.com', contact_email_verified=False)
-        with patch('apps.courses.views_admin._fetch_auth_data',
+        with patch('apps.courses.public.fetch_auth_data',
                    return_value={'stud-prof': {'email': 'login@gmail.com', 'last_sign_in': ''}}):
             body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
         self.assertEqual(body['verified_email'], 'login@gmail.com')

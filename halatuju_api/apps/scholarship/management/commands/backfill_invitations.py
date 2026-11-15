@@ -31,7 +31,7 @@ Idempotent: an admin who already has an invitation is left alone.
 from django.core.management.base import BaseCommand
 
 from apps.courses.models import PartnerAdmin
-from apps.courses.views_admin import is_google_email
+from apps.courses import public as courses_public
 from apps.scholarship import invitations
 from apps.scholarship.models import Invitation
 
@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
         made = accepted = still_open = 0
         for a in rows:
-            issued = not is_google_email(a.email)
+            issued = not courses_public.is_google_email(a.email)
             state = 'accepted' if a.first_seen_at else 'still open'
             if a.first_seen_at:
                 accepted += 1

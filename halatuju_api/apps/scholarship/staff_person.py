@@ -81,8 +81,8 @@ def opens_elsewhere(viewer, target):
     two loaded rows. A mentor's own login is opened by neither, so it is always False for them."""
     if viewer is None or target is None or target.is_mentor:
         return False
-    from apps.courses.staff_fence import staff_target_readable
-    if viewer.has_perm('manage_team') and staff_target_readable(viewer, target):
+    from apps.courses import public as courses_public
+    if viewer.has_perm('manage_team') and courses_public.staff_target_readable(viewer, target):
         return True
     from . import surface_gates
     if not surface_gates.may_read_team(viewer):

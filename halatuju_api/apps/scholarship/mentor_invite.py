@@ -173,7 +173,7 @@ def _reinvite(caller, login, *, organisation, email, name, gifts=()):
     """Bring ``login``'s switched-off, never-signed-in mentor back: a fresh credential where we issued
     one (never onto a login the person brought — `reissue_credential`), the mentor and login switched
     on, a fresh invitation, the letter. Nothing is written when the credential cannot be issued."""
-    from apps.courses.views_admin import is_google_email
+    from apps.courses import public as courses_public
     mentor = login.mentor
     temp_password, err = staff_reinvite.reissue_credential(login)
     if err:
@@ -192,7 +192,7 @@ def _reinvite(caller, login, *, organisation, email, name, gifts=()):
             audience=AUDIENCE, email=login.email, name=name, role=MENTOR_ROLE,
             organisation=organisation, invited_by=caller, partner_admin=login,
             credential_issued=bool(temp_password), mentor=mentor)
-    google = temp_password is None and is_google_email(login.email)
+    google = temp_password is None and courses_public.is_google_email(login.email)
     emailed = send(inv, login, organisation, temp_password, google, actor=caller)
     return Invited(None, mentor, login, inv, google, temp_password is None and not google, emailed)
 
@@ -255,7 +255,7 @@ def send(inv, account, organisation, temp_password, google, *, actor=None):
 def _send_again(caller, mentor, login):
     """A fresh credential (where we issued one) on a fresh invitation, and the letter: ``(emailed,
     error)``. The Resend's (Invitations → Mentor)."""
-    from apps.courses.views_admin import is_google_email
+    from apps.courses import public as courses_public
     # A password is reissued ONLY onto a login we issued one for — never onto one somebody brought
     # with them: `reissue_credential` holds that rule for every Resend since TD-440.
     temp_password, err = staff_reinvite.reissue_credential(login)
@@ -265,7 +265,7 @@ def _send_again(caller, mentor, login):
         audience=AUDIENCE, email=login.email, name=login.name, role=MENTOR_ROLE,
         organisation=mentor.organisation, invited_by=caller, partner_admin=login,
         credential_issued=bool(temp_password), mentor=mentor)
-    google = temp_password is None and is_google_email(login.email)
+    google = temp_password is None and courses_public.is_google_email(login.email)
     return send(inv, login, mentor.organisation, temp_password, google, actor=caller), None
 
 

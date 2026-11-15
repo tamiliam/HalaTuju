@@ -10,6 +10,11 @@ Part 2 (A3.13) adds the two models `reports` reads, `StudentProfile` and `FieldT
 
 Package F2-1 adds the catalogue and merit helpers scholarship used to import from their home files.
 
+F2b stage 1 adds the loose staff, gift, offerings and contrast helpers scholarship used to import
+from their home files: `PartnerAdminMixin`, `is_google_email`, `fetch_auth_data`, `invitation_dict`,
+`MARA_DIVISION`, `SPM_PATHWAYS`, the staff fence trio, the delete rules, the archive questions, the
+gift resolvers and the `contrast` module. The underscore names are re-exported under public names.
+
 Part 1 re-exports the `exam_questions` names scholarship uses (the held-qualification, SPM-grade,
 CGPA and merit readers). Later parts add the models, the staff helpers and the rest.
 
@@ -21,6 +26,7 @@ Rules:
   `public.merit_100` for a caller that reads it through the module), never on `exam_questions`.
 - Courses itself keeps importing its own files directly; this module is for other apps.
 """
+from . import contrast
 from . import exam_questions as _exam_questions
 from .exam_questions import (
     QUALIFICATION_LABELS,
@@ -50,9 +56,22 @@ from .search import _digits_expr as digits_expr
 from .search import apply_people_search, people_search_term
 from .stpm_engine import STPM_CGPA_POINTS, calculate_stpm_cgpa
 from .stpm_pngk import pngk_from_grades, stpm_cgpa_of
+from .staff_archive import archive_asked, in_a_group_refusal
+from .staff_delete_rules import delete_fields, sole_org_admin_ids
+from .staff_fence import _deletable_now as deletable_now
+from .staff_fence import _staff_target_manageable as staff_target_manageable
+from .staff_fence import staff_target_readable
+from .staff_gift import _as_id as gift_as_id
+from .staff_gift import _gift_refusal as gift_refusal
+from .staff_gift import _not_found as gift_not_found
+from .staff_gift import resolve_gifts
 from .tvet_families import family_of
 from .tvet_institutions import HELD
 from .utils import tidy_parentage_marker
+from .views_admin import PartnerAdminMixin, is_google_email
+from .views_admin import _fetch_auth_data as fetch_auth_data
+from .views_admin import _invitation_dict as invitation_dict
+from .views_offerings import MARA_DIVISION, SPM_PATHWAYS
 
 __all__ = [
     'QUALIFICATION_LABELS', 'THIRD_ROUTE', 'ResultsHeldField', 'completed_qualifications',
@@ -65,6 +84,12 @@ __all__ = [
     'STPM_CGPA_POINTS', 'calculate_stpm_cgpa', 'pngk_from_grades', 'stpm_cgpa_of',
     'family_of', 'HELD', 'tidy_parentage_marker',
     'register_stpm_document_witness',
+    'PartnerAdminMixin', 'is_google_email', 'fetch_auth_data', 'invitation_dict',
+    'MARA_DIVISION', 'SPM_PATHWAYS',
+    'deletable_now', 'staff_target_manageable', 'staff_target_readable',
+    'delete_fields', 'sole_org_admin_ids', 'archive_asked', 'in_a_group_refusal',
+    'gift_as_id', 'gift_refusal', 'gift_not_found', 'resolve_gifts',
+    'contrast',
 ]
 
 

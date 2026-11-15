@@ -24,7 +24,7 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 
-from apps.courses.staff_gift import _as_id
+from apps.courses import public as courses_public
 
 
 def _gift_refusal(code, http, programmes=None):
@@ -79,7 +79,7 @@ def choose(admin, data, email):
             if admin.owning_organisation is None:
                 return None, _gift_refusal('programme_required', status.HTTP_400_BAD_REQUEST, programmes)
             return ([], True), None
-        ids = {_as_id(v) for v in raw}
+        ids = {courses_public.gift_as_id(v) for v in raw}
         if None in ids:
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
         gifts = list(programmes.filter(pk__in=ids).order_by('code'))
@@ -90,7 +90,7 @@ def choose(admin, data, email):
         return _fits_the_waiting_row(admin, email, gifts)
     asked = data.get('programme_id')
     if asked not in (None, ''):
-        gift = programmes.filter(pk=_as_id(asked)).first() if _as_id(asked) else None
+        gift = programmes.filter(pk=courses_public.gift_as_id(asked)).first() if courses_public.gift_as_id(asked) else None
         if gift is None:
             return None, _gift_refusal('not_found', status.HTTP_404_NOT_FOUND)
         return _fits_the_waiting_row(admin, email, [gift])

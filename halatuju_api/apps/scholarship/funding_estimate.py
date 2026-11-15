@@ -211,8 +211,8 @@ def _mara_diploma(application) -> bool:
         return cid.startswith(_MARA_DIPLOMA_ID_PREFIX)
     if not _DIPLOMA_WORD.search(_norm_strip_lower(prog.get('course_name'))):
         return False
-    from apps.courses.views_offerings import MARA_DIVISION
-    return (str(prog.get('institution_id') or '').strip() == MARA_DIVISION
+    from apps.courses import public as courses_public
+    return (str(prog.get('institution_id') or '').strip() == courses_public.MARA_DIVISION
             or _norm_strip_lower(getattr(application, 'chosen_pathway', '')) == 'mara')
 
 

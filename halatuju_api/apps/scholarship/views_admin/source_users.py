@@ -180,7 +180,7 @@ def source_kind_extras(admin, org_id):
 
     Fenced like the invitations: `org_id` is the caller's organisation, None for a super.
     """
-    from apps.courses.views_admin import _invitation_dict
+    from apps.courses import public as courses_public
     from .. import source_invite
     from ..models import Invitation, ReferralSource
     users = (PartnerAdmin.objects.filter(role=PartnerAdmin.SOURCE_ROLE)
@@ -215,7 +215,7 @@ def source_kind_extras(admin, org_id):
             # Common profile S2: the source person's OWN phone (their Profile's Contact card), which
             # the organisation that invited them sees — the card tells them so.
             'phone': phones[u.id],
-            'invitation': _invitation_dict(newest.get(u.id)),
+            'invitation': courses_public.invitation_dict(newest.get(u.id)),
         } for u in users],
         'sources': [{
             'id': s.id, 'code': s.code, 'name': s.name, 'organisation': s.organisation.code,

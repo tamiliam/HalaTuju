@@ -21,7 +21,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.courses.views_admin import PartnerAdminMixin
+from apps.courses import public as courses_public
 
 from .. import qc_separation
 from ..models import ScholarshipApplication
@@ -76,7 +76,7 @@ def scholars_scope(admin):
     return 'none'
 
 
-class _AdminBase(PartnerAdminMixin, APIView):
+class _AdminBase(courses_public.PartnerAdminMixin, APIView):
     """Shared 403-if-not-admin guard + own-application lookup."""
 
     def _deny(self):

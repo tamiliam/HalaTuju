@@ -97,7 +97,7 @@ def _pure_mentor_ready(target):
 def may_act(caller, target, table):
     """May ``caller`` add ``target`` to, or remove them from, ``table``? False → the view's 404."""
     from apps.courses import staff_permissions as sp
-    from apps.courses.views_admin import _staff_target_manageable
+    from apps.courses import public as courses_public
     if caller is None or target is None or table not in TABLES:
         return False
     if target.is_super or target.is_archived:   # M1a: an archived row is out of reach by id
@@ -114,7 +114,7 @@ def may_act(caller, target, table):
             return True
         return (caller.has_perm('manage_team') and caller.owning_organisation_id is not None   # M3b G1
                 and target.owning_organisation_id == caller.owning_organisation_id)
-    return _staff_target_manageable(caller, target)
+    return courses_public.staff_target_manageable(caller, target)
 
 
 # ── what ────────────────────────────────────────────────────────────────────────────────────────────

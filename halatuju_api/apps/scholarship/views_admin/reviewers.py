@@ -228,8 +228,8 @@ def _with_footprint(caller, row, payload, work=None, sole=None):
     `revocable` — the Admins list's keys, so all three tables offer Revoke and Delete by one rule
     (`staff_delete_rules.delete_fields`). ``work`` is the row's `staff_footprint.footprints` entry
     (a table: ONE query for the page) or `from_row` (one person); left out, it is read (`footprint`)."""
-    from apps.courses.staff_delete_rules import delete_fields
-    payload.update(delete_fields(caller, row, work=work, sole=sole))
+    from apps.courses import public as courses_public
+    payload.update(courses_public.delete_fields(caller, row, work=work, sole=sole))
     return payload
 
 
@@ -310,7 +310,7 @@ class AdminReviewerListView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        from apps.courses.staff_delete_rules import sole_org_admin_ids
+        from apps.courses import public as courses_public
         from .. import staff_footprint
         # ⚠ T2 review S1: the footprint rides on THIS query (`annotations`), not on a batched
         # `footprints` like the Admins and Mentors lists. That would be one more query, and this list's
@@ -318,7 +318,7 @@ class AdminReviewerListView(_ReviewersBase):
         rows = list(self._reviewers(org_id, include_revoked=True)
                     .annotate(**staff_footprint.annotations()))
         work = _reviewer_workloads(rows, organisation_id=org_id)
-        sole = sole_org_admin_ids(admin, rows)   # no query unless a super lists an active org admin
+        sole = courses_public.sole_org_admin_ids(admin, rows)   # no query unless a super lists an active org admin
         # Common profile S2: the photo — one query and one batch signing call for the page
         # (`staff_photo.team_cards`). M1a (O16, owner): never the phone; the person page has it.
         from .. import staff_photo

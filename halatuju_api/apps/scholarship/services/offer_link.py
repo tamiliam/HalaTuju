@@ -49,8 +49,8 @@ def labels_describe(stored_name, course_name):
 def picker_pathways():
     """Every value the apply form's pathway picker stores. Anything else (blank, ``degree`` written
     by an older offer confirm) is not a picker value, and the payment calendar falls to its default."""
-    from apps.courses.views_offerings import SPM_PATHWAYS
-    return set(SPM_PATHWAYS) | {'matric', 'stpm'}
+    from apps.courses import public as courses_public
+    return set(courses_public.SPM_PATHWAYS) | {'matric', 'stpm'}
 
 
 def plan_offer_link(application, offer, chk):

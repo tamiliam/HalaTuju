@@ -26,10 +26,11 @@ def _checks_both_modes(tokens):
     these numbers, and two independently-written list comprehensions is how they start disagreeing
     about which modes were measured.
     """
-    from apps.courses import contrast, theme_tokens
+    from apps.courses import public as courses_public
+    from apps.courses import theme_tokens
     return [dict(r._asdict(), mode=mode)
             for mode in theme_tokens.MODES
-            for r in contrast.check_tokens(tokens, mode)]
+            for r in courses_public.contrast.check_tokens(tokens, mode)]
 
 
 class AdminOrganisationThemeView(_AdminBase):
@@ -110,7 +111,8 @@ class AdminOrganisationThemeView(_AdminBase):
         The entire point of A3 is that those are different things, and a payload that folds them
         together would invite a screen that cannot say which one a visitor is seeing.
         """
-        from apps.courses import contrast, theme_tokens
+        from apps.courses import public as courses_public
+        from apps.courses import theme_tokens
         from apps.courses import theme_versions
 
         live = theme_versions.active_for(org)
@@ -157,7 +159,8 @@ class AdminOrganisationThemeView(_AdminBase):
 
     def put(self, request):
         """Save the DRAFT. **What visitors see is untouched** — that is the whole sprint."""
-        from apps.courses import contrast, theme_tokens
+        from apps.courses import public as courses_public
+        from apps.courses import theme_tokens
         from apps.courses import theme_versions
 
         admin, err = self._gate(request)
@@ -180,7 +183,7 @@ class AdminOrganisationThemeView(_AdminBase):
         # ⚠ AND IT RUNS IN BOTH MODES since F7a. A2 could honestly gate light alone because dark was
         # unreachable; it is reachable now, and a tenant refused only after somebody flips the
         # switch has been let down by the gate rather than protected by it.
-        fails = contrast.failures_all_modes(tokens)
+        fails = courses_public.contrast.failures_all_modes(tokens)
         if fails:
             return Response(
                 {'error': 'unreadable', 'code': 'unreadable',

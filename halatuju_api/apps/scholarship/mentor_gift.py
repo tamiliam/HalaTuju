@@ -22,7 +22,7 @@ offers); an EDIT may name any of the organisation's gifts, ended ones too, as th
 """
 from django.db import transaction
 
-from apps.courses.staff_gift import _gift_refusal, _not_found, resolve_gifts
+from apps.courses import public as courses_public
 
 from .models import Mentor, MentorAssignment, MentorGift
 from .services.assignment import case_gifts
@@ -39,11 +39,11 @@ def choose(raw, organisation, *, active_only, required=False):
     another tenant leaks."""
     if raw is None and not required:
         return [], None
-    gifts, refusal = resolve_gifts(raw, organisation.pk if organisation is not None else None)
+    gifts, refusal = courses_public.resolve_gifts(raw, organisation.pk if organisation is not None else None)
     if refusal is not None:
         return None, refusal
     if active_only and any(not g.is_active for g in gifts):
-        return None, _not_found()
+        return None, courses_public.gift_not_found()
     return gifts, None
 
 
@@ -126,7 +126,7 @@ def set_gifts(mentor, gifts, *, check_open=True):
 
 def outside_refusal(n):
     """The 409 for open point D, naming how many scholars stand outside the new gifts."""
-    response = _gift_refusal(OUTSIDE, 409, f'This mentor has {n} current scholar(s) outside those gifts. '
+    response = courses_public.gift_refusal(OUTSIDE, 409, f'This mentor has {n} current scholar(s) outside those gifts. '
                                            'End or change those mentoring first.')
     response.data['count'] = n
     return response

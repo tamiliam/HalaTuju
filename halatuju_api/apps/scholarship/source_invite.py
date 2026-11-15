@@ -219,7 +219,7 @@ def resend(caller, target):
     Resend would replace it) or while switched off (`not_active` — the letter would open nothing).
     A fresh temporary password and a fresh TTL clock where we issued one; the "sign in as you always
     do" note where we did not (no UID: Google, or an address that already had a login)."""
-    from apps.courses.views_admin import is_google_email
+    from apps.courses import public as courses_public
     if not target.is_active:
         return False, 'not_active'
     if target.first_seen_at is not None:
@@ -232,7 +232,7 @@ def resend(caller, target):
         audience=AUDIENCE, email=target.email, name=target.name, role=SOURCE_ROLE,
         organisation=source.organisation, invited_by=caller, partner_admin=target,
         credential_issued=bool(temp_password), referral_source=source)
-    google = temp_password is None and is_google_email(target.email)
+    google = temp_password is None and courses_public.is_google_email(target.email)
     return send(inv, target, source, temp_password, google, actor=caller), None
 
 

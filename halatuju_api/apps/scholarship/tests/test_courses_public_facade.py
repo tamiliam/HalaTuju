@@ -21,6 +21,24 @@ _CATALOGUE_HOMES = {
     'family_of': ('tvet_families', 'family_of'),
     'HELD': ('tvet_institutions', 'HELD'),
     'tidy_parentage_marker': ('utils', 'tidy_parentage_marker'),
+    # F2b stage 1: the loose staff / gift / offerings helpers (underscore names get public aliases).
+    'PartnerAdminMixin': ('views_admin', 'PartnerAdminMixin'),
+    'is_google_email': ('views_admin', 'is_google_email'),
+    'fetch_auth_data': ('views_admin', '_fetch_auth_data'),
+    'invitation_dict': ('views_admin', '_invitation_dict'),
+    'MARA_DIVISION': ('views_offerings', 'MARA_DIVISION'),
+    'SPM_PATHWAYS': ('views_offerings', 'SPM_PATHWAYS'),
+    'deletable_now': ('staff_fence', '_deletable_now'),
+    'staff_target_manageable': ('staff_fence', '_staff_target_manageable'),
+    'staff_target_readable': ('staff_fence', 'staff_target_readable'),
+    'delete_fields': ('staff_delete_rules', 'delete_fields'),
+    'sole_org_admin_ids': ('staff_delete_rules', 'sole_org_admin_ids'),
+    'archive_asked': ('staff_archive', 'archive_asked'),
+    'in_a_group_refusal': ('staff_archive', 'in_a_group_refusal'),
+    'gift_as_id': ('staff_gift', '_as_id'),
+    'gift_refusal': ('staff_gift', '_gift_refusal'),
+    'gift_not_found': ('staff_gift', '_not_found'),
+    'resolve_gifts': ('staff_gift', 'resolve_gifts'),
 }
 
 
@@ -35,7 +53,7 @@ class TestTheFacadeIsTheSameObjects(SimpleTestCase):
 
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
-            if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy'):
+            if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy', 'contrast'):
                 continue            # not exam_questions names; pinned in test_scholarship_public_facade
             if name in _CATALOGUE_HOMES:
                 continue            # catalogue / merit names; pinned in the next test
@@ -49,6 +67,30 @@ class TestTheFacadeIsTheSameObjects(SimpleTestCase):
                   'spm_grades_for', 'spm_grades_none_label', 'spm_slip_comparable',
                   'third_route_overall'}
         self.assertTrue(wanted <= set(public.__all__), wanted - set(public.__all__))
+
+
+class TestStageOneNames(SimpleTestCase):
+    def test_every_stage_one_name_is_listed_and_is_the_home_object(self):
+        from importlib import import_module
+        stage_one = list(_CATALOGUE_HOMES)[list(_CATALOGUE_HOMES).index('PartnerAdminMixin'):]
+        self.assertEqual(len(stage_one), 17)
+        for name in stage_one:
+            module, home_name = _CATALOGUE_HOMES[name]
+            with self.subTest(name=name):
+                self.assertIn(name, public.__all__)
+                self.assertIs(getattr(public, name),
+                              getattr(import_module('apps.courses.' + module), home_name))
+
+    def test_the_contrast_door_is_the_module(self):
+        from apps.courses import contrast
+        self.assertIn('contrast', public.__all__)
+        self.assertIs(public.contrast, contrast)
+
+    def test_the_gift_aliases_do_not_shadow_scholarships_own_names(self):
+        from apps.scholarship import sponsor_invite_gifts
+        from apps.scholarship.views_admin import announcements
+        self.assertIsNot(public.gift_refusal, sponsor_invite_gifts._gift_refusal)
+        self.assertIsNot(public.gift_not_found, announcements._not_found)
 
 
 class TestTheWitnessIsRegisteredThroughTheFacade(SimpleTestCase):
