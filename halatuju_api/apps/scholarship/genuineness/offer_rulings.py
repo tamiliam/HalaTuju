@@ -16,17 +16,20 @@ guessing, and no new cap to suspect either (owner rule: predict, don't hedge).
      salutation or the addressee, so a Yayasan / Persatuan addressee, a supplier, a bank or a SIRIM footer is
      never letterhead. No other route newly blocks.
   2. LIFT (→ `genuine`) only when ALL hold: a closed-list public institution's exact name on the letterhead
-     block (a public TVET INSTITUTE — `_INSTITUTES`; for a confirmation of studies, any PUBLIC institution —
-     polytechnic, UMS, Form 6, matriculation, IPG, KV, community college, TVET institute: owner ruling 4,
-     widened 2026-11-15); a letterhead naming no other organisation; the full shape of the letter
-     (`_letter_structure`); and NO private marker anywhere on the page (`_private_marker`). Tags `tvet_offer` /
-     `confirmation`, with the issuer as `doc_seen` (`tvet_*`, `confirmation_*`). A confirmation from any other
-     public university (it has a private wing) reads `suspect` instead (`confirmation_ua`), never genuine. A fingerprinted ministry family's own letter the
+     block (a public TVET INSTITUTE — `_INSTITUTES`; a polytechnic / UMS / a Form-6 college for a confirmation
+     of studies); a letterhead naming no other organisation; the full shape of the letter (`_letter_structure`);
+     and NO private marker anywhere on the page (`_private_marker`). Tags `tvet_offer` / `confirmation`, with
+     the issuer as `doc_seen` (`tvet_*`, `confirmation_*`). A fingerprinted ministry family's own letter the
      pre-S6 veto blocked ONLY for an incidental company line (a supplier, a bank, the addressee) and that
      scores genuine is lifted too (tag `incidental_company`).
   3. Two owner rulings that SOFTEN a fail on its own proof, never block and never lift to genuine: an admission
      printout / portal page / e-Daftar slip → `suspect` (`printout`, ruling 3); a closed-list TVET page calling
      itself a SLIP on its letterhead → `suspect` (`tvet_slip`, ruling 6).
+  4. Help H2, owner option B (2026-11-15): every OTHER public confirmation of studies (matriculation, IPG, KV,
+     community college, a TVET institute, another public university, an English title) and KPM's English
+     matriculation OFFER read `suspect` at most — never genuine by themselves, never a block (it clears
+     `not_offer_letter`), never a course pick (`CONFIRMATION_SEEN`). Tags `confirmation_check` /
+     `confirmation_ua` / `matric_offer_en`. The live genuine lift of note 2 is unchanged.
 JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03): on the LIFT's institute list, same rules.
 
 Every call that differs from the baseline carries `[S6 ruling: <tag>]` (`ruling_of`), so a reviewer's
@@ -35,8 +38,7 @@ override or a later corpus answer shows which rule was wrong (`eval/offer_genuin
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_closed_head import _known_name, _known_names, _title_clean, campus_dropped
-from .offer_confirmations import _APPROVAL, _KNOWN_PUBLIC_NAMES
+from .offer_confirmations import _APPROVAL, _CONFIRM_TITLES_EN, MATRIC_OFFER_EN
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -260,25 +262,71 @@ def _agency_lift(ocr_text, r, lines, model_version):
 
 def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> str:
     """The `confirmation_*` code of a confirmation-of-studies letter from a public institution named on its
-    letterhead block (`offer_reading._confirmers`, help H2: every public type; `confirmation_ua` = a university
-    with a private wing), or '' (no title at the top, below the score floor, a private marker, or a letterhead
-    naming another organisation)."""
+    letterhead block, or '' (no title at the top, below the score floor, a private marker, or a letterhead
+    naming another organisation). The live rule first (`_kind` on the no-private-wing three, unchanged); then,
+    help H2 option B, every other public type and the English titles (`_widened_kind`: suspect at most)."""
     lines = _folded_lines(ocr_text) if lines is None else lines
+    return _kind(lines, probability, _NO_PRIVATE_WING) or _widened_kind(lines, probability)
+
+
+def _widened_kind(lines, probability) -> str:
+    """Help H2 option B: the kind over every public issuer (`offer_reading._confirmers`), an English title read
+    as the Malay one, approval wording blanked and a campus line under the name dropped. Suspect at most."""
+    return _kind(_english_titled(lines), probability, _confirmers(), widened=True)
+
+
+def _kind(lines, probability, issuers, widened=False) -> str:
     if not _confirm_titled(lines, probability) or _private_marker(lines):
         return ''
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
-    head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _approval_blanked(_page(lines))
-    # H2 round 3: "KAMPUS GOPENG" under a known name is the college's campus, not another organisation
-    campus_free = campus_dropped(scan, tuple(n for v in _known_names().values() for n in v))
-    for seen, names, marks in _confirmers():
+    head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _page(lines)
+    if widened:
+        page = _approval_blanked(page)  # "Approved by KPT" names a private college's regulator, never its issuer
+    for seen, names, marks in issuers:
         if seen == 'confirmation_form6' and not (any(m in page for m in _FORM6_MARKS)
                                                  or ' KOLEJ TINGKATAN ENAM ' in head):
             continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
+        clean = _campus_dropped(scan, names) if widened else scan
         if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
-                and any(m in page for m in marks) and _clean_letterhead(campus_free, names)
+                and any(m in page for m in marks) and _clean_letterhead(clean, names)
                 and _named_first(scan, names, divisions=True, then=[_title_segment(scan)])):     # round 10 (M4)
             return seen
     return ''
+
+
+def _english_titled(lines):
+    """The lines with an English confirmation title read as the Malay one (`_CONFIRM_TITLES_EN`): the suspect
+    path only, so the live titles (letterhead stops, the genuine lift) are untouched."""
+    out = []
+    for ln in lines:
+        for t in _CONFIRM_TITLES_EN:
+            ln = ln.replace(t, ' PENGESAHAN PELAJAR ')
+        out.append(ln)
+    return out
+
+
+def _approval_blanked(page: str) -> str:
+    """The folded page with the 12 words after each approval / registration phrase blanked (`_APPROVAL`)."""
+    for a in _APPROVAL:
+        while a in page:
+            at = page.find(a)
+            page = f"{page[:at]} # {' '.join(page[at + len(a):].split()[12:])} "
+    return page
+
+
+def _campus_line(ln) -> bool:
+    """"KAMPUS GOPENG": KAMPUS / CAMPUS and 1-3 place words, no digit, no organisation noun."""
+    words = ln.split()
+    return (len(words) in (2, 3, 4) and words[0] in ('KAMPUS', 'CAMPUS') and all(w.isalpha() for w in words)
+            and not _ORG_RE.search(f" {' '.join(words[1:])} "))
+
+
+def _campus_dropped(lines, names):
+    """`lines` without a campus line (`_campus_line`) straight under a letterhead line naming one of `names`: the
+    college's own campus, not another organisation (the KAMPUS noun had made it no confirmation at all)."""
+    head_n = len(_letterhead_region(lines))
+    return [ln for i, ln in enumerate(lines)
+            if not (0 < i < head_n and _campus_line(ln) and any(n in lines[i - 1] for n in names))]
 
 
 def _title_segment(lines) -> str:
@@ -347,55 +395,60 @@ def _without_poly_department(lines):
 def _confirmation_lift(r, raw, model_version):
     if _AGENT_WORDS.search(_page(raw)):
         return None                     # round 11 (M5): WAKIL / EJEN / AGEN
-    seen = confirmation_kind('', r['probability'], lines=raw)
-    if not seen:
-        return None
     lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
-    if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
-            and _own_identity_lines(lines, _CONFIRM_TITLES)):
+    seen = _kind(raw, r['probability'], _NO_PRIVATE_WING)
+    if seen and _confirmation_shaped(lines, glued):         # the live rule, exactly as before H2
+        return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
+                             'institution with no private wing - an acceptable alternative (owner ruling 4)',
+                             model_version)
+    seen = _widened_kind(raw, r['probability'])
+    if not seen or not _confirmation_shaped(_english_titled(lines), glued):
         return None
-    if seen == 'confirmation_ua' or (seen == 'confirmation_ums' and _UMS_SUSPECT):   # owner 2026-11-15
-        return _ruled_status('suspect', r, seen, 'confirmation_ua', 'a confirmation of studies from a public '
-                             'university - a person checks (owner ruling 4, widened 2026-11-15)', model_version)
-    if confirmation_proof(raw, seen) != 'genuine':
-        return _ruled_status('suspect', r, seen, 'confirmation_unclear', 'a confirmation of studies from a '
-                             'public-looking institution without clear proof (the ministry on the letterhead and a '
-                             'known public name) - a person checks (help H2 review, 2026-11-15)', model_version)
-    return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
-                         'institution - an acceptable alternative (owner ruling 4, widened 2026-11-15)',
+    tag = 'confirmation_ua' if seen == 'confirmation_ua' else 'confirmation_check'
+    return _ruled_status('suspect', r, seen, tag, 'a confirmation of studies from a public institution - a person '
+                         'checks; never genuine by itself (owner ruling 4, help H2 option B)', model_version)
+
+
+def _confirmation_shaped(lines, glued) -> bool:
+    return (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
+            and _own_identity_lines(lines, _CONFIRM_TITLES))
+
+
+# -- KPM's English matriculation offer (help H2 option B: suspect, never a pick) --
+_MATRIC_EN_TITLES = (' OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME ',
+                     ' ADMISSION TO THE MATRICULATION PROGRAMME ', ' OFFER OF THE MATRICULATION PROGRAMME ')
+#: The Division and the ministry: the issuer the letterhead must name first.
+_MATRIC_ISSUERS_EN = (' MATRICULATION DIVISION ', ' BAHAGIAN MATRIKULASI ', ' MINISTRY OF EDUCATION MALAYSIA ',
+                      ' MINISTRY OF EDUCATION ', ' KEMENTERIAN PENDIDIKAN MALAYSIA ')
+#: A results slip or a transcript is no offer (it stays `not_offer_letter`).
+_RESULTS_WORDS = (' CGPA ', ' PNGK ', ' RESULT SLIP ', ' RESULTS SLIP ', ' SLIP KEPUTUSAN ', ' EXAMINATION RESULT ',
+                  ' EXAMINATION RESULTS ', ' TRANSCRIPT ', ' GRADE POINT AVERAGE ')
+
+
+def english_matric_offer(lines) -> bool:
+    """KPM's English matriculation offer: the Division and the ministry on the page, the English title on the
+    first offer line, the Division / ministry named FIRST on a clean letterhead, no results words and no tie-up
+    word. A private university's offer that only MENTIONS the Division is not one."""
+    from .offer_signatures import _TIE_UP_EXTRA
+    page = _page(lines)
+    if ' MATRICULATION DIVISION ' not in page or ' MINISTRY OF EDUCATION ' not in page:
+        return False
+    if any(w in page for w in _RESULTS_WORDS + _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+        return False
+    offer = next((ln for ln in lines if ' OFFER ' in ln), '')
+    if not any(t in offer for t in _MATRIC_EN_TITLES):
+        return False
+    allowed = _MATRIC_ISSUERS_EN + (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ')
+    return (_named_first(lines, _MATRIC_ISSUERS_EN) and _first_institution(lines, allowed) == 'allowed'
+            and _clean_letterhead(lines, allowed))
+
+
+def _matric_offer_en(r, lines, model_version):
+    if _AGENT_WORDS.search(_page(lines)) or not english_matric_offer(lines):
+        return None
+    return _ruled_status('suspect', r, MATRIC_OFFER_EN, 'matric_offer_en', "KPM's English matriculation offer - "
+                         'a person checks; never genuine by itself and never a course pick (help H2 option B)',
                          model_version)
-
-
-# ── Clear proof for a confirmation (help H2 review, 2026-11-15) ───────────────────────────
-#: THE UMS CHANGE POINT (owner 2026-11-15: UMS confirmations read SUSPECT - a person checks - like any other
-#: university's). False would restore the round-7 call (UMS has no private wing: genuine). Confirmations only:
-#: UMS offer letters and the UMS PPPL letterhead BLOCK (`_NO_PRIVATE_WING` in `_public_names`) are untouched.
-_UMS_SUSPECT = True
-def _approval_blanked(page: str) -> str:
-    """The folded page with the 12 words after each approval / registration phrase blanked (`_APPROVAL`): "Approved
-    by KPT" names a private college's regulator, never its issuer, so it is no public mark."""
-    for a in _APPROVAL:
-        while a in page:
-            at = page.find(a)
-            page = f"{page[:at]} # {' '.join(page[at + len(a):].split()[12:])} "
-    return page
-
-
-def confirmation_proof(lines, seen) -> str:
-    """'genuine' only on CLEAR proof (decisions.md S6 item 7: when in doubt, fail safe), else 'suspect': the
-    type's ministry mark on the LETTERHEAD (not the body; never after approval wording), and, for a type with a
-    known-name list, a known public name there. A type with no list (KV, the TVET institutes) is never clear.
-    H2 round 2: the polytechnics have their list too (the 36 of the `institutions` table)."""
-    if seen == 'confirmation_form6' or (seen == 'confirmation_ums' and not _UMS_SUSPECT):
-        return 'genuine'                # round-7 proof, unchanged
-    marks = {k: m for k, _n, m in _confirmers()}.get(seen, ())
-    if not any(m in _approval_blanked(_page(_letterhead_region(lines))) for m in marks):
-        return 'suspect'
-    if seen not in _KNOWN_PUBLIC_NAMES:
-        return 'suspect'
-    scan = _without_poly_department(lines)       # H2 round 3: the CLOSED letterhead (`offer_closed_head`)
-    clear = _known_name(_letterhead_lines(scan), seen) and _title_clean(_title_segment(scan), seen)
-    return 'genuine' if clear else 'suspect'
 
 
 def _company_lift(ocr_text, r, lines, model_version):
@@ -421,7 +474,7 @@ def _lift(ocr_text, r, lines, page, vetoed, model_version, baseline_status=''):
         if lifted:
             return lifted
     return (_tvet_lift(r, lines, model_version) or _agency_lift(ocr_text, r, lines, model_version)
-            or _confirmation_lift(r, lines, model_version))
+            or _confirmation_lift(r, lines, model_version) or _matric_offer_en(r, lines, model_version))
 
 
 # ── BLOCK ─────────────────────────────────────────────────────────────────────────────────

@@ -128,7 +128,7 @@ class N8StreetsAndCertifications(SimpleTestCase):
 
 class ConfirmationsStillQualify(SimpleTestCase):
     def test_a_full_polytechnic_confirmation_is_genuine(self):
-        text = ('POLITEKNIK KUCHING SARAWAK\nKEMENTERIAN PENDIDIKAN TINGGI\nJalan Contoh, 93050 Kuching\nTel : 082-000000\n'
+        text = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nJalan Contoh, 93050 Kuching\nTel : 082-000000\n'
                 'Rujukan : PO/600-1/2\nTarikh : 1 Jun 2026\nKEPADA SESIAPA YANG BERKENAAN\nPENGESAHAN PELAJAR\n'
                 'Dengan ini disahkan bahawa penama berikut adalah pelajar kami:\nNama : Ali bin Abu\n'
                 'No. Kad Pengenalan : 080808-10-5566\nProgram : Diploma Kejuruteraan Contoh\nSemester : 3\n'

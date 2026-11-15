@@ -9098,13 +9098,32 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-630] Fully English confirmation-of-studies letters stay not_offer_letter - low
+### [TD-633] A Form-6 confirmation reads genuine before any letterhead check - low
 
-**Raised 2026-11-15 by the H2 round-2 Opus re-review.** A confirmation-of-studies letter written wholly in English
-(matriculation, IIUM, IPG, KV, IKBN) scores below `CONFIRM_MIN` (`offer_confirmations.py`), because the confirmation
-wording it scores is mostly Malay. Such a letter stays `not_offer_letter`. The error only ever runs one way: it wrongly
-rejects, never wrongly accepts, and a reviewer can still open the document and judge it. Note only, no code for now.
-Related: in the English matriculation offer body the college name is not checked against the matriculation list; the
-letterhead check (`offer_rulings._known_name`, the ministry mark plus a listed name) carries that rule. Fix, if real
-English letters turn up in the corpus: add the English confirmation wording to the scored marks, with tests that a
-fully English letter from a listed institution reads genuine and one from an unlisted name reads suspect. *(A - S)*
+**Raised 2026-11-15 by the help H2 review (live on main, unchanged by H2 option B).** The Form-6 path of the
+confirmation lift (`offer_rulings._kind` over `offer_confirmations._NO_PRIVATE_WING`, `confirmation_form6`) returns
+genuine once the page names an SMK or a Form-6 college, the ministry and a Form-6 mark, before the clean-letterhead
+check. A short line (two words or fewer) on the letterhead also counts as a crest or motto line. So "SMK MERCU JAYA"
+above "KPM MERCU PRESTIGE", or "MERCU PRESTIGE" above an SMK name, reads genuine. No real letter like this is known,
+and a confirmation never writes a course pick. H2 option B leaves it exactly as on main (main parity), with the cases
+pinned in `test_offer_h2_confirmations.py` (`MAIN_LIVE_ADVERSARIAL`). Fix, if wanted: run the letterhead check on the
+Form-6 path too, and stop a two-word line counting as a crest unless it is a known motto; the owner decides, since it
+changes a live genuine read. *(A - S)*
+
+### [TD-634] The Malay matric offer does not check that "Kolej :" names a known matriculation college - low
+
+**Raised 2026-11-15 by the help H2 review (live on main, unchanged).** KPM's Malay matriculation offer (the
+`matriculation` family read, `MATRIC_MS` in `test_offer_h2_confirmations.py`) reads genuine on its letterhead and
+wording; the "Kolej :" line in the body is not checked against the list of matriculation colleges. A letter with
+"Kolej : MERCU COLLEGE" still reads genuine. The letterhead (KPM and the Matriculation Division first) carries the
+proof. Fix, if wanted: read the "Kolej :" value and read suspect when it names no known matriculation college. *(A - S)*
+
+### [TD-635] Fully English confirmation-of-studies letters read not_offer_letter without the crest - low
+
+**Raised 2026-11-15 by the H2 round-2 Opus re-review; rewritten for option B.** A confirmation of studies written
+wholly in English (body as well as title) scores below `CONFIRM_MIN` (`offer_confirmations.py`), because the
+confirmation wording it scores is mostly Malay. Without the crest it stays `not_offer_letter`; with the crest it reads
+suspect (option B: a person checks). An English TITLE over the usual Malay body is read and reads suspect. The error
+only runs one way: it wrongly rejects, never wrongly accepts, and a reviewer can still open the document. Fix, if real
+English letters turn up: add the English confirmation wording to the scored marks, with a test that such a letter
+reads suspect, never genuine. *(A - S)*
