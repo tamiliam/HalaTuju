@@ -60,6 +60,11 @@ _APPROVAL_SCHEMA = {'type': 'object', 'properties': APPROVAL_FIELDS, 'required':
 #: Owner ruling 2026-11-03 (#53): a non-payslip document needs a signature, so `has_signature` is asked on
 #: its own — a stamped name block or a printed name is not one.
 #: #53 follow-up (2026-11-03): the stamp is asked on its own too (`has_stamp`); the one-word mark is secondary.
+#: Student help H1 (2026-11-15, application #552): a Ketua Kampung's name stamp sat on the approver's Nama /
+#: Alamat lines while the printed "Cop Rasmi" box stayed EMPTY; the read said has_stamp "no" ("the box is
+#: empty"), so a signed, stamped form was refused "no issuing body". A stamp ANYWHERE in the approver's
+#: section counts and an empty box never cancels it; one outside that section (the applicant's own part)
+#: does not. Rules (`approval_missing`) unchanged; stored reads move only when re-read.
 APPROVAL_PROMPT = (
     'This image is a Malaysian income document (an employer\'s or village head\'s letter, an informal '
     'payslip, or an income declaration form). Look at the PICTURE, not just the words. Return: '
@@ -70,7 +75,12 @@ APPROVAL_PROMPT = (
     'Pengurus), empty if none. Answer the two deciding questions SEPARATELY — a page can have both: '
     '"has_stamp" = "yes" ONLY if the stamp / chop of the APPROVER or the ISSUING BODY is visible — an ink '
     'or rubber-stamp impression such as the official\'s name-block stamp, or an office / company seal or '
-    'chop by the signature or in the approval box — whether or not there is also a signature, else "no". '
+    'chop by the signature or in the approval box, or ANYWHERE ELSE IN THE APPROVER\'S SECTION (beside or '
+    'over the signature, on or over the approver\'s Nama / Jawatan / Alamat lines) — whether or not there '
+    'is also a signature, else "no". Look at the WHOLE approver\'s section, not only inside the box: a '
+    'printed stamp box (e.g. "Cop Rasmi") left EMPTY does NOT cancel a stamp impressed elsewhere in that '
+    'section. A stamp OUTSIDE the approver\'s section (e.g. in the applicant\'s or declarant\'s own part of '
+    'the form) is NOT the approver\'s stamp. '
     'A copy-certification stamp ("SALINAN DIAKUI SAH", a true-copy stamp), a received / date stamp '
     '("DITERIMA"), a postal stamp and similar stamps are NOT a stamp for this question. '
     'A rubber-stamped NAME BLOCK IS a stamp: '
@@ -90,7 +100,8 @@ APPROVAL_PROMPT = (
     '"has_signature" is "yes", else "no". '
     'Printed labels such as "Cop dan '
     'tandatangan", printed logos, QR codes and EMPTY signature or stamp boxes are NOT a stamp and NOT a '
-    'signature. Leave "approver_name" and "approver_title" EMPTY if the approver line is blank or only '
+    'signature — an empty box only says that the box itself holds nothing, so answer "has_stamp" from the '
+    'whole approver\'s section. Leave "approver_name" and "approver_title" EMPTY if the approver line is blank or only '
     'printed: a title must come from the approver\'s own stamp or handwriting, never from a printed label '
     '(e.g. a printed "Ketua Kampung" under an empty line is NOT an approver).')
 _INFORMAL_TEXT_FAMILIES = frozenset({'informal', 'declaration'})

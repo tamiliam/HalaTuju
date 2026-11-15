@@ -294,6 +294,29 @@ The calls:
 - **F3, the decline flag reads the holder at the decline.** `services.decline.rejected_by_unassigned` compares `rejected_by` with the holder at `rejected_at` (the last `AssignmentEvent` at or before it, else the first one after it gives its `from_admin`, else the current holder), never the current `assigned_to`: a rejected case can change hands since TD-613. Its query runs only for a reasoned door decline; the applicant-detail GET's pinned count is unchanged.
 - **Known limit, left as is:** the student's "who will interview you" email gate (`assign_notify._BEFORE_INTERVIEW`) reads the case's status when the cron sends, not when the handover happened.
 
+## 2026-11-15 — Student help H1: the approver's stamp counts anywhere in the approver's section; an empty "Cop Rasmi" box never cancels it (builder)
+
+**Context:** application #552 was blocked `income_doc_unapproved:father`. The village head's income form was signed
+and carried his rubber name stamp, but on the approver's Nama / Alamat lines, while the printed "Cop Rasmi" box was
+empty. The picture read answered `has_stamp` "no" and no letterhead, so the header rule (letterhead, or stamp + a
+named / titled approver) failed. The prompt said the stamp was "by the signature or in the approval box" and that
+"EMPTY ... stamp boxes are NOT a stamp", and the model took "the box is empty" as "there is no stamp". Same shape on
+4 documents in 2 applications.
+
+**Decision:** a prompt-only fix. `APPROVAL_PROMPT` now asks for the approver's / issuing body's stamp ANYWHERE in the
+approver's section (beside or over the signature, on or over the Nama / Jawatan / Alamat lines, or in the box), says
+an empty printed stamp box does not cancel a stamp found elsewhere in that section, and that a stamp outside the
+section (the applicant's own part) is not the approver's. Every #53 guard stays word for word: printed text is not a
+stamp, an empty box alone is not a stamp, handwriting is not a stamp, a title never comes from a printed label,
+copy-certification and received stamps never count. `approval_missing` is not changed (it already approves stamped +
+named + signed with no letterhead).
+
+**Consequences:** genuineness `MODEL_VERSION` 1.27.0 -> 1.28.0. `VERDICT_ENGINE_VERSION` is not bumped: the engine
+judges the same stored fields the same way; only a new read can move a band (the #67 scope 2 precedent). No new sweep
+clause: the hourly sweep never re-picks these documents (they already hold `has_signature` and the mark). Stored
+reads, #552's included, move only after a re-read (cockpit Re-run or `reextract_documents`), a paid call the owner
+must approve. Pinned by `TheApproverStampAnywhereInItsSection` in `test_income_declarations.py`.
+
 ## 2026-11-15 — Sprint M3c: granting the organisation admin's keys; the builder's open calls (builder; for the architect to confirm)
 
 Branch m3c, not pushed. Part 1 (api) 075cee190; part 2 (web list W and docs) on top. Release-note draft: `docs/releases/m3c-granting-release-note-draft.md`.

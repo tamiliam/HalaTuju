@@ -943,3 +943,109 @@ class TheCoachAndCheckTwo(_Case):
         self.assertFalse(app.resolution_items.filter(code='mother_income_proof_missing').exists())
 
 
+class TheApproverStampAnywhereInItsSection(SimpleTestCase):
+
+    """Student help H1 (2026-11-15, application #552; the same shape on 4 documents in 2 applications): a Ketua
+    Kampung's form, SIGNED, his name stamp sitting on the approver's Nama / Alamat lines, the printed "Cop Rasmi"
+    box EMPTY, no letterhead. The read said `has_stamp` "no" (the box is empty) and no header, so the form was
+    refused "no issuing body". The prompt now looks for the approver's stamp in the WHOLE approver's section; an
+    empty box never cancels a stamp found there. The rules (`approval_missing`) are unchanged. Synthetic only."""
+
+    #: The answer the fixed prompt should give for #552's form (synthetic name).
+    FIXED = {'issuer_header': '', 'approver_name': 'CONTOH BIN CONTOH', 'approver_title': 'KETUA KAMPUNG',
+             'has_stamp_or_signature': 'stamp', 'has_signature': 'yes', 'has_stamp': 'yes'}
+    SLOTS = (('income_support_doc', None), ('salary_slip', 'declaration'))
+
+    def _doc(self, doc_type, seen, fields):
+        vf = {'fields': dict(fields)}
+        if seen:
+            vf['authenticity'] = {'status': 'suspect', 'doc_seen': seen}
+        return ApplicantDocument(doc_type=doc_type, vision_fields=vf)
+
+    def _check(self, fields, missing):
+        from apps.scholarship.income_declaration import approval_counts, approval_missing, approval_unchecked
+        for slot, seen in self.SLOTS:
+            with self.subTest(slot=slot, fields=fields):
+                doc = self._doc(slot, seen, fields)
+                self.assertIs(approval_unchecked(doc), False)
+                self.assertEqual(approval_missing(doc), missing)
+                self.assertIs(approval_counts(doc), not missing)
+
+    def test_the_prompt_takes_a_stamp_anywhere_in_the_approvers_section(self):
+        from apps.scholarship.income_declaration import APPROVAL_PROMPT
+        for words in ('or ANYWHERE ELSE IN THE APPROVER\'S SECTION (beside or over the signature, on or over the '
+                      'approver\'s Nama / Jawatan / Alamat lines)',
+                      'Look at the WHOLE approver\'s section, not only inside the box',
+                      'a printed stamp box (e.g. "Cop Rasmi") left EMPTY does NOT cancel a stamp impressed '
+                      'elsewhere in that section',
+                      'A stamp OUTSIDE the approver\'s section (e.g. in the applicant\'s or declarant\'s own part of '
+                      'the form) is NOT the approver\'s stamp',
+                      'an empty box only says that the box itself holds nothing, so answer "has_stamp" from the '
+                      'whole approver\'s section'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+        # The new clause sits under the has_stamp question, before the has_signature one.
+        self.assertLess(APPROVAL_PROMPT.index('"has_stamp" = "yes" ONLY'),
+                        APPROVAL_PROMPT.index('left EMPTY does NOT cancel'))
+        self.assertLess(APPROVAL_PROMPT.index('left EMPTY does NOT cancel'),
+                        APPROVAL_PROMPT.index('"has_signature" = "yes" ONLY'))
+
+    def test_the_prompt_keeps_its_guards(self):
+        """Not undone (#53 and its follow-up): printed text is not a stamp, an empty box alone is not a stamp,
+        handwriting is not a stamp, a title never comes from a printed label, copy / received stamps never count."""
+        from apps.scholarship.income_declaration import APPROVAL_PROMPT
+        for words in ('rubber-stamped NAME BLOCK IS a stamp',
+                      'the official\'s name-block stamp, or an office / company seal or chop by the signature or in '
+                      'the approval box',
+                      'Printed, typed or computer-filled text anywhere on the document',
+                      'only ink visibly impressed by a rubber stamp is',
+                      'Handwriting, even in block capitals or blue ink, is NOT a stamp',
+                      'EMPTY signature or stamp boxes are NOT a stamp and NOT a signature',
+                      'never from a printed label',
+                      'A copy-certification stamp ("SALINAN DIAKUI SAH", a true-copy stamp)'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+
+    def test_the_doc_recognition_version_is_bumped(self):
+        from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+        self.assertEqual(MODEL_VERSION, '1.28.0')
+
+    def test_stamped_and_named_with_an_empty_box_is_approved(self):
+        """The fixed answer: signed, stamped (on the Nama / Alamat lines), named, no letterhead — counts, whatever
+        the secondary one-word mark says."""
+        self._check(self.FIXED, ())
+        self._check({**self.FIXED, 'has_stamp_or_signature': 'signature'}, ())
+
+    def test_the_stored_defect_stays_refused_until_re_read(self):
+        """The stored #552 answer (`has_stamp` "no", no header) is judged as before: only a re-read moves it."""
+        self._check({**self.FIXED, 'has_stamp': 'no', 'has_stamp_or_signature': 'signature'}, ('header',))
+
+    def test_an_empty_box_no_stamp_and_a_handwritten_title_still_fails(self):
+        """No stamp anywhere (the box empty) and the title only in handwriting: no issuing body — signed or not."""
+        bare = {'issuer_header': '', 'approver_name': '', 'approver_title': 'Ketua Kampung',
+                'has_stamp_or_signature': 'signature', 'has_signature': 'yes', 'has_stamp': 'no'}
+        self._check(bare, ('header',))
+        self._check({**bare, 'has_signature': 'no', 'has_stamp_or_signature': 'no'}, ('header', 'approver'))
+
+    def test_the_issuer_header_path_is_unchanged(self):
+        hdr = {'issuer_header': 'JAWATANKUASA KEMAJUAN DAN KESELAMATAN KAMPUNG CONTOH', 'approver_name': 'ENCIK CONTOH',
+               'approver_title': '', 'has_stamp_or_signature': 'signature', 'has_signature': 'yes', 'has_stamp': 'no'}
+        self._check(hdr, ())                                                   # header + named signature
+        self._check({**hdr, 'has_signature': 'no', 'has_stamp': 'yes',
+                     'has_stamp_or_signature': 'stamp'}, ('approver',))        # a stamp alone: no signature
+        self._check({**hdr, 'approver_name': ''}, ('approver',))               # a signature nobody is named for
+
+    def test_the_fixed_answer_counts_through_the_read(self):
+        from unittest import mock
+        from apps.scholarship.income_declaration import approval_counts, read_approval
+        for slot, seen in self.SLOTS:
+            with self.subTest(slot):
+                doc = self._doc(slot, seen, {})
+                ex = {'fields': {'amount': 'RM800'}, 'warnings': [], 'error': ''}
+                with mock.patch('apps.scholarship.vision._call_gemini_json', return_value=dict(self.FIXED)):
+                    out = read_approval(doc, ex, FORM, lambda: b'img')
+                self.assertEqual(out['fields']['has_stamp'], 'yes')
+                doc.vision_fields['fields'] = out['fields']
+                self.assertIs(approval_counts(doc), True)
+
+
