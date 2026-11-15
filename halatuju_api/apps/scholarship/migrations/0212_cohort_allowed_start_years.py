@@ -1,5 +1,5 @@
 """H3 (#597, owner 2026-11-15): an intake year can say which course-start YEARS it accepts —
-`ScholarshipCohort.allowed_start_years`, read against `pathway_engine.course_start_year`.
+`ScholarshipCohort.allowed_start_years`, read against the offer letter (`start_year.possible_start_years`).
 
 ADDITIVE: one JSON column. Every existing intake year gets an EMPTY list, and empty means the rule
 is not applied (the value IS the switch, the 0171 list form), so nobody's verdict changes until an
