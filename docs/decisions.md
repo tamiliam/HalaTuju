@@ -1182,6 +1182,15 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    Matrikulasi (Kejuruteraan)" are added as extra listed spellings, not a rewrite of the page text. Open (TD-630):
    a fully English confirmation scores below `CONFIRM_MIN` and stays `not_offer_letter` - a wrong rejection, never
    a wrong acceptance; a reviewer can still look.
+   **Tightened again (H2 round 3, VERDICT_ENGINE_VERSION 2026-11-15.8): a CLOSED letterhead.** The blocklist is
+   replaced by an allowlist (`genuineness/offer_closed_head.py`), used for a genuine confirmation and for KPM's
+   English matric offer (the path that can write a course pick). A letterhead line may hold only: the known name
+   (and its acronym) and the ministry name or acronym; unit lines of unit/function words; address, postcode,
+   phone, fax, email and web lines; KERAJAAN MALAYSIA, JATA NEGARA and the crest / motto words; a KAMPUS / CAMPUS
+   + place line directly under a known name; a state only at the line end or before a postcode / address. Any
+   other word reads suspect - no town list, and a second institution word is suspect. The title line is checked
+   the same way. The private rules are unchanged. Accepted tightening: a town on the letterhead, an IPG with the
+   IPGM acronym, a bare acronym line and the polytechnic motto now read suspect (a reviewer looks).
 
 4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
    Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is

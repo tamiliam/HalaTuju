@@ -181,6 +181,14 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
+### fix: help sprint H2 round 3 - a closed letterhead for a genuine confirmation and the English matric offer (2026-11-15)
+
+Branch help-h2, not pushed. The blocklist letterhead check is replaced by an allowlist (`docs/decisions.md`, ruling 3). VERDICT_ENGINE_VERSION 2026-11-15.8; MODEL_VERSION stays 1.28.0. No migration, no web change.
+- New `genuineness/offer_closed_head.py`: a letterhead line may hold only the known name (and its acronym), the ministry name or acronym, unit lines of unit/function words, address / postcode / phone / fax / email / web lines, KERAJAAN MALAYSIA / JATA NEGARA / crest and motto words, a KAMPUS / CAMPUS + place line under a known name, and a state only at the line end or before a postcode or address. Any other word, a town, or a second institution word reads suspect. The private rules are unchanged.
+- Used by `offer_rulings.confirmation_proof` (the title line is checked too) and by `offer_signatures.english_matric_lists`; a campus line under a known name no longer stops `confirmation_kind`.
+- Now suspect (accepted tightening): a letterhead carrying a town, an IPG with the IPGM acronym, a bare institution acronym, or the polytechnic motto.
+- Tests: new `Round3ClosedLetterhead` in `test_offer_h2_confirmations.py`. Changed: `test_offer_s6_narrowing.py` Round14 - a polytechnic letterhead with a "SkillsMalaysia" line now reads `confirmation_unclear` (the word is not the polytechnic's own; it was genuine), still no block.
+
 ### fix: help sprint H2 round 2 - no word before a known name, unit lines checked, the polytechnic list, more approval wording, state short forms (2026-11-15)
 
 Branch help-h2, not pushed. Opus re-review of H2 round 1 (`docs/decisions.md`, ruling 3). VERDICT_ENGINE_VERSION 2026-11-15.6 (help-h3 holds .5); MODEL_VERSION stays 1.28.0. No migration, no web change.
