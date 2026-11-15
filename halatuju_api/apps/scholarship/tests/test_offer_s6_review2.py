@@ -164,7 +164,8 @@ class Learnable(SimpleTestCase):
                 'Tarikh : 1 Jun 2026\nKEPADA SESIAPA YANG BERKENAAN\nPENGESAHAN PELAJAR\nDengan ini disahkan:\n'
                 'Nama : Ali\nNo. Kad Pengenalan : 080808-10-5566\nProgram : Diploma\nInstitusi : Contoh\n'
                 'Semester : 3\nSekian.\nYang benar,\nPENGARAH\n')   # round 4: a confirmation is 12+ lines
-        self.assertEqual(ruling_of(_g(conf)), 'confirmation')
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (was `confirmation`, genuine)
+        self.assertEqual(ruling_of(_g(conf)), 'confirmation_check')
         self.assertEqual(ruling_of(_g('Semakan Keputusan\nKeputusan Permohonan\nAnda ditawarkan\n')), 'printout')
         self.assertEqual(ruling_of(ruled_offer('KOLEJ ABC SDN BHD\nTawaran Kemasukan\n', _r(0.4), 'suspect', 'r',
                                                MODEL_VERSION)), 'private_offer')

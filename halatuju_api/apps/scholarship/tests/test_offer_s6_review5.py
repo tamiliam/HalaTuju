@@ -58,13 +58,15 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
 
     def test_the_lift_is_learnable(self):
         _t, out = _conf('UNIVERSITI MALAYSIA SABAH\nACADEMIC SERVICES DIVISION', p=0.3)
-        self.assertEqual(ruling_of(out), 'confirmation')       # round 7: the *_unverified tags are gone
+        # round 7: the *_unverified tags are gone; CHANGED by help H2 owner 16 Nov: all confirmations suspect
+        self.assertEqual(ruling_of(out), 'confirmation_check')
 
 
 class H1OwnUnitsAreNotOtherOrganisations(SimpleTestCase):
-    def test_a_ums_division_line_keeps_a_full_confirmation_genuine(self):
+    def test_a_ums_division_line_keeps_a_full_confirmation_recognised(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (was genuine)
         _t, out = _conf('UNIVERSITI MALAYSIA SABAH\nACADEMIC SERVICES DIVISION', p=0.3)
-        self.assertEqual(out['status'], 'genuine')
+        self.assertEqual(out['status'], 'suspect')
 
     def test_an_ikbn_student_services_unit_line_keeps_the_letter(self):
         self.assertEqual(_g(_letter('INSTITUT KEMAHIRAN BELIA NEGARA (IKBN) PEKAN\nSTUDENT SERVICES UNIT'))['status'],
