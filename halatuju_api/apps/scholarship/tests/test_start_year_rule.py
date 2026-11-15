@@ -122,9 +122,13 @@ class SessionOnTheGift(_Base):
     `test_start_year_money.py`)."""
 
     def test_a_second_semester_2025_starter_is_not_caught_on_the_degree_gift(self):
+        # Second fix round: a second term is her place (a new or a continuing student), so a person
+        # checks: never red.
         app = self._app(self.degree, 'sem2')
         self._offer(app, intake='Sesi 2024/2025 Semester II')
-        self.assertFalse(self._codes(app) & {start_year.OUTSIDE, start_year.UNKNOWN})
+        codes = self._codes(app)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+        self.assertIn(start_year.UNKNOWN, codes)
         self.assertEqual(pe.course_start_year(app), 2024)     # the money: main's reading
 
     def test_a_first_semester_2024_starter_is_caught(self):
@@ -335,19 +339,52 @@ class ReviewFixes(_Base):
         self._stored(app, 2025, 3, 3)
         self.assertEqual(start_year.reading(app)['state'], 'unknown')
 
-    def test_a_stored_date_counts_when_the_letter_says_nothing(self):
-        app = self._app(self.degree, 'no-year-off')
-        self._offer(app, intake='')
-        self._stored(app, 2025, 7, 1)
-        self.assertEqual(start_year.reading(app)['state'], 'inside')
+    def test_a_stored_date_never_counts(self):
+        # Second fix round: the stored date may be an old letter's or typed; only the letter counts.
+        for y in (2025, 2022):
+            with self.subTest(y=y):
+                app = self._app(self.degree, f'no-year-off-{y}')
+                self._offer(app, intake='')
+                self._stored(app, y, 7, 1)
+                self.assertEqual(start_year.reading(app)['state'], 'unknown')
+                self.assertNotIn(start_year.OUTSIDE, self._codes(app))
+
+    def test_no_outside_from_an_unread_or_missing_letter(self):
+        unread = self._app(self.degree, 'unread-old')
+        self._offer(unread, intake='2022', reporting_date='1 Julai 2022', read=False)
+        self._stored(unread, 2022, 7, 1)
+        missing = self._app(self.degree, 'missing-old')
+        self._stored(missing, 2022, 7, 1)
+        for app in (unread, missing):
+            with self.subTest(app=app.pk):
+                self.assertFalse(self._codes(app) & {start_year.OUTSIDE, start_year.UNKNOWN})
+                self.assertEqual(start_year.reading(app)['state'], 'unknown')
+                self.assertEqual(award.verdict_disqualifier(build_verdict(app)), '')
 
     def test_semester_2_on_an_stpm_case_goes_to_a_person(self):
         app = self._stpm(self.degree, 'stpm-sem2')
         self._offer(app, intake='Semester 2 Sesi 2024/2025')
         self.assertEqual(start_year.reading(app)['state'], 'unknown')
-        ordinary = self._app(self.degree, 'ord-sem2')
+        ordinary = self._app(self.degree, 'ord-sem2')         # second round: unknown for all
         self._offer(ordinary, intake='Semester 2 Sesi 2024/2025')
-        self.assertEqual(start_year.reading(ordinary)['state'], 'inside')
+        self.assertEqual(start_year.reading(ordinary)['state'], 'unknown')
+
+    def test_the_review_probes_never_read_outside_end_to_end(self):
+        cases = (('Tahun ke-2 Sesi 2025/2026', ''), ('Ambilan 2023 Sesi 2025/2026', ''),
+                 ('SESI 2024/25 MAC 2025', '3 Mac 2025'), ('SPM 2024, Ambilan 2025', '14 Julai 2025'),
+                 ('Session 2024/25 Feb 2025', ''), ('Sesi 2024/25 Februari 2025', ''))
+        for n, (intake, rd) in enumerate(cases):
+            with self.subTest(intake=intake):
+                app = self._app(self.degree, f'probe-{n}')
+                self._offer(app, intake=intake, reporting_date=rd)
+                self.assertNotIn(start_year.OUTSIDE, self._codes(app))
+
+    def test_the_programme_name_is_scanned_for_a_later_year(self):
+        app = self._app(self.degree, 'prog-y2')
+        offer = self._offer(app, intake='Semester 1 Sesi 2023/2024')
+        offer.vision_fields['fields']['programme'] = 'Ijazah Sarjana Muda (Tahun 2)'
+        offer.save(update_fields=['vision_fields'])
+        self.assertEqual(start_year.reading(app)['state'], 'unknown')
 
     def test_semester_2_on_a_confirmation_letter_goes_to_a_person(self):
         app = self._app(self.degree, 'conf-sem2')
@@ -369,11 +406,18 @@ class ReviewFixes(_Base):
         self.assertNotIn(start_year.OUTSIDE, codes)
         self.assertEqual(award.verdict_disqualifier(build_verdict(app)), '')
 
-    def test_a_bare_session_inside_the_gifts_years_passes(self):
+    def test_a_bare_session_inside_the_gifts_years_goes_to_a_person(self):
+        # Second fix round: a bare session is no first-year signal (she may be continuing), so it
+        # never passes on its own; with an intake word it does.
         app = self._app(self.degree, 'bare-in')
         self._offer(app, intake='Sesi 2025/2026')
-        self.assertFalse(self._codes(app) & {start_year.OUTSIDE, start_year.UNKNOWN})
-        self.assertEqual(start_year.reading(app)['state'], 'inside')
+        codes = self._codes(app)
+        self.assertIn(start_year.UNKNOWN, codes)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+        self.assertEqual(start_year.reading(app)['state'], 'unknown')
+        intake = self._app(self.degree, 'bare-in-amb')
+        self._offer(intake, intake='Ambilan 2025 (Sesi 2025/2026)')
+        self.assertEqual(start_year.reading(intake)['state'], 'inside')
 
     def test_a_bare_session_outside_the_gifts_years_fails_naming_both_years(self):
         app = self._app(self.degree, 'bare-out')

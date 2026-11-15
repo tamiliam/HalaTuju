@@ -217,13 +217,14 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>The Pathway card is red with <strong>&ldquo;Course started in &hellip;&rdquo;</strong>. Why?</>,
       a: <>Some gifts accept only students whose course started in certain years (for example 2025 and
-        2026). The start year is read from the intake year on her offer letter, or from the reporting date. A
-        session such as 2024/2025 counts as 2025 when she started in Semester II (February or March). A
-        session with no semester and no date, or a polytechnic Sesi II with no date, could be either year: if
-        one of its years is in the gift and the other is not, the start year is left for you to check. It
-        is also left to you when the letter names a later semester or year (Semester 3, Year 2, final
-        year), Semester II on a confirmation letter or a Form 6 letter, or a semester and a date that do
-        not agree. Hers
+        2026). The start year is read from her offer letter only (its intake line and its date), never from a
+        date typed on the application. The card turns red only when the letter is clear: a first semester, an
+        intake, a written intake month, or a session that ended before the gift&rsquo;s years. It is left
+        for you to check when the letter names Semester 2 or a later semester or year (Year 2, final year,
+        &ldquo;Part 4&rdquo;), even in the programme name; a session with no intake word (she may be a
+        continuing student); other years on the line besides the session&rsquo;s; a semester and a date that
+        do not agree; or a confirmation letter without a first semester or an intake month. Nothing is shown
+        until the letter has been read. Hers
         is outside the gift&rsquo;s years, so the case is flagged like income above the B40 line: the usual
         recommendation is to decline, but it is not declined for you and the amount is unchanged. Confirm at
         interview. She sees a short line on her offer letter card naming the gift&rsquo;s years; it tells her a

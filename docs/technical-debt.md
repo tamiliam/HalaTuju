@@ -9108,7 +9108,9 @@ with no reporting date read 2025. **Now handled** on the gift's start-year rule:
 (`session_year.gift_start_years`) reads "Sesi II S/S+1" with no date as either year, S or S+1, so on the Degree gift
 (2025 and 2026) a "Sesi II 2024/2025" letter goes to a person, and with the letter's reporting date the date picks
 the year. The money reading never took the session's term at all (it is main's, the first year on the line), so it is
-unaffected. *(A - S)* **Status:** Closed.
+unaffected. *(A - S)* **Status:** Closed. *(Second review, same day: a bare "Sesi II" line has no first-year signal,
+so it now passes nobody and fails only a session wholly before the gift's years; a Sesi II with a September to November
+month reads unknown.)*
 
 ### [TD-632] The money's start year takes the FIRST year of an academic session - low
 
