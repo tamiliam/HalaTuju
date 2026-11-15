@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-15 — TD-631 builder calls (pending architect): Surveys, Development and Announcements open on `.view`
+
+Branch td631, not pushed. No migration. Services: web. Release-note draft: `docs/releases/td631-release-note-draft.md`.
+Owner, 2026-11-15: "there is admin, and there are permissions, which determine what the admin views and edits."
+
+The calls:
+1. **No api change.** Checked first: the Surveys, Development and Announcements views gate a GET on `may_read_*` (the `.view` key) and every other method on the `.edit` key. That covers the lists, results, progress, CSV and file reads, and the scholar Surveys and Growth tabs. `test_td631_view_only_engagement.py` pins it for a reviewer (a role that opens nothing), so only the keys answer.
+2. **Each page opens on its read door; each write sits behind the `.edit` door.** Hidden, not disabled: New, Edit, Close, Delete (surveys); New, Edit, Archive, Restore, Delete (development); New, Edit, Withdraw, Delete (announcements); Remind on the results and progress pages; and the comment box and "Mark reviewed" on a task. The "email is off" note beside Remind is hidden too, as it explains a button the reader is not offered.
+3. **A reader sees a reviewed task's comment as text,** so the read view keeps what the review said.
+4. **The CSV download stays for a reader.** It is a GET on the `.view` key.
+5. **The three menu rows ride the read doors** (`navigation.ts`). Each row's role list is unchanged and still answers only an older payload without `page_keys`. With served keys, a `.view`-only person is offered the row and the page opens; there is no layout guard to stop it. Today no preset splits `.view` from `.edit` for these areas, so the menu matrices do not move.
+6. **The Growth tab's Progress link asks `mayOpen` with the served keys.** It called `canAccess` without them and fell back to the role rule, which was the one role-gated path left on these screens.
+7. **Nothing is left on `.edit`.** The scholar tabs also need the file's own `scholars` key (the server's `_file_for`); that was not changed.
+
+**Alternative not taken:** disable the buttons instead of hiding them. The pages already hide what the server will not allow (`can_close`, `can_delete`, `can_remind`), so hiding matches.
+
 ## 2026-11-15 — TD-623 builder calls (pending architect): the web reads the served keys only
 
 Branch td623, not pushed. No migration. Services: web. Release-note draft: `docs/releases/td623-release-note-draft.md`.

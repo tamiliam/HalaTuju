@@ -15,6 +15,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarFilePage from './page'
 import * as api from '@/lib/admin-api'
 import * as dev from '@/lib/admin-api/development'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
@@ -271,4 +272,38 @@ it('sprint S1: the Growth task opens through the FILE\'s door; the Progress link
     mockDev.scholarTaskFileLink.mockClear()
     unmount()
   }
+})
+
+describe('TD-631: the Surveys and Growth tabs open on their `.view` key', () => {
+  const growth = () => mockDev.getScholarGrowth.mockResolvedValue({ modules: [{ id: 3, title: 'Managing your money',
+    status: 'published', due_on: null, task_kind: 'reflection', lessons: 3, read: 1, done: false, late: false,
+    task_sent_at: null, task_text: '', task_file: null, reviewed_at: null, review_comment: '' }] })
+
+  it('a `.view`-only reader opens both tabs and the Progress link', async () => {
+    const drop = ['surveys.edit', 'development.edit']
+    mockRole = { role: 'org_admin', owning_org_id: 11,
+      page_keys: (servedPageKeys('org_admin') ?? []).filter((k) => !drop.includes(k)) }
+    mockApi.getScholarSurveys.mockResolvedValue({ waiting: [], answered: [] })
+    growth()
+    render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.surveys' }))
+    await waitFor(() => expect(mockApi.getScholarSurveys).toHaveBeenCalledWith(104, { token: 'tok' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.growth' }))
+    await screen.findByTestId('growth-row-3')
+    expect(screen.queryAllByRole('link', { name: 'admin.scholars.growth.progress' }).length).toBeGreaterThan(0)
+  })
+
+  it('without the `.view` keys neither tab shows, and nothing is called', async () => {
+    const drop = ['surveys.view', 'surveys.edit', 'development.view', 'development.edit']
+    mockRole = { role: 'org_admin', owning_org_id: 11,
+      page_keys: (servedPageKeys('org_admin') ?? []).filter((k) => !drop.includes(k)) }
+    render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.surveys' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.growth' })).toBeNull()
+    expect(screen.queryByTestId('card-surveys')).toBeNull()
+    expect(mockApi.getScholarSurveys).not.toHaveBeenCalled()
+    expect(mockDev.getScholarGrowth).not.toHaveBeenCalled()
+  })
 })

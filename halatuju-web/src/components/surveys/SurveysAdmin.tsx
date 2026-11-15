@@ -36,7 +36,10 @@ type Banner = { ok: boolean; text: string } | null
 export default function SurveysAdmin({ programme }: { programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = holdsDoor(role, 'surveys')   // T5c P4: the server's door; TD-623: keys only
+  // TD-631: the page opens on its READ door (`surveys.view`, as every GET it calls); New / Edit / Close / Delete
+  // only on the `.edit` door the writes ask. Visibility only: the endpoint is the fence.
+  const allowed = holdsDoor(role, 'surveys_read')
+  const canEdit = holdsDoor(role, 'surveys')
   const [data, setData] = useState<SurveysPayload | null>(null)
   const [failed, setFailed] = useState<'' | 'load' | 'programme_required'>('')
   const [tab, setTab] = useState<SurveyStatus>('open')
@@ -80,7 +83,7 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
           <h1 className="text-2xl font-bold text-ground-900">{t(`${K}.title`)}</h1>
           <p className="mt-1 text-sm text-ground-500">{t(`${K}.intro`)}</p>
         </div>
-        {data && !editing && (
+        {data && !editing && canEdit && (
           <button type="button" onClick={() => { setEditing({ row: null }); setBanner(null) }}
             data-testid="survey-new"
             className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 font-medium max-md:min-h-11 text-brand-fill-ink hover:bg-brand-fill-hover">
@@ -98,7 +101,7 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
       {failed === 'programme_required' && <p className="text-sm text-ground-700">{t(`${K}.chooseGift`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {data && editing && (
+      {data && editing && canEdit && (
         <SurveyForm row={editing.row} audiences={data.audiences} emailOn={data.email_switch_on}
           limits={data.limits} programme={programme} token={token} t={t}
           onCancel={() => setEditing(null)}
@@ -152,14 +155,16 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
                             <Link href={giftHref(`/admin/programme/surveys/${s.id}`, programme)} className={LINK}
                               data-testid={`survey-results-${s.id}`}>{t(`${K}.action.results`)}</Link>
                           )}
-                          <button type="button" className={LINK} disabled={busyId === s.id || !!editing}
-                            data-testid={`survey-edit-${s.id}`}
-                            onClick={() => { setEditing({ row: s }); setBanner(null) }}>{t(`${K}.action.edit`)}</button>
-                          {s.can_close && (
+                          {canEdit && (
+                            <button type="button" className={LINK} disabled={busyId === s.id || !!editing}
+                              data-testid={`survey-edit-${s.id}`}
+                              onClick={() => { setEditing({ row: s }); setBanner(null) }}>{t(`${K}.action.edit`)}</button>
+                          )}
+                          {canEdit && s.can_close && (
                             <button type="button" className={LINK} disabled={busyId === s.id}
                               data-testid={`survey-close-${s.id}`} onClick={() => act(s, 'close')}>{t(`${K}.action.close`)}</button>
                           )}
-                          {s.can_delete && (
+                          {canEdit && s.can_delete && (
                             <button type="button" className={LINK} disabled={busyId === s.id}
                               data-testid={`survey-delete-${s.id}`} onClick={() => act(s, 'delete')}>{t(`${K}.action.delete`)}</button>
                           )}

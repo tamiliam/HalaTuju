@@ -254,10 +254,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         perms: ['scholars'], staffMentors: true, gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ ANNOUNCEMENTS (S8), SURVEYS (S9), DEVELOPMENT (S10): super / org_admin / admin, each endpoint's own rule (`may_post` / `may_make`); no `needsProgramme` — each belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'announcements', gate: { mode: 'always' } },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'announcements_read', gate: { mode: 'always' } },
       { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
-        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'surveys', gate: { mode: 'always' } },
-      { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'development', gate: { mode: 'always' } },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'surveys_read', gate: { mode: 'always' } },
+      { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'development_read', gate: { mode: 'always' } },
       // ⚠ **PAYMENTS AND SPENDING MOVED HERE FROM ORGANISATION — TD-241, owner, 2026-09-11.**
       // Money is raised, released and spent PER GIFT: `PaymentRun.programme` has said so since
       // P2b, and a run that spanned two gifts would pay one benefactor's students from

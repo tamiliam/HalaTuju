@@ -36,7 +36,7 @@ import { statusLabelKey, statusTone } from '@/lib/applicationStatus'
 import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
-import { holdsDoor } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 
 const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
 // S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
@@ -128,10 +128,11 @@ function StaffScholarFile() {
   // server says which reader this is (`mentor_view`); its controls are all off already, and the header's
   // controls, the activity form, a letter's Resend and the Applications link are not drawn for it.
   const asMentor = file.mentor_view === true
-  // T5c P4: each tab on its server door. TD-623: the served keys only, no role lists.
+  // T5c P4: each tab on its server door. TD-623: the served keys only, no role lists. TD-631: each tab on its
+  // READ door (the tab's GET asks `.view`); the tabs hold no write.
   const seesMentors = asMentor || holdsDoor(role, 'mentoring_read')
-  const seesSurveys = asMentor || holdsDoor(role, 'surveys')
-  const seesGrowth = asMentor || holdsDoor(role, 'development')
+  const seesSurveys = asMentor || holdsDoor(role, 'surveys_read')
+  const seesGrowth = asMentor || holdsDoor(role, 'development_read')
   const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)
     && (x.key !== 'surveys' || seesSurveys) && (x.key !== 'growth' || seesGrowth))
   const help = file.asked_for_help
@@ -350,7 +351,7 @@ function StaffScholarFile() {
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
       {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token}
-        progressLinks={canAccess('/admin/programme/development', viewer, role?.permissions)} /></div>}
+        progressLinks={mayOpen('/admin/programme/development', role)} /></div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={asMentor || !file.in_maintenance} /></div>}
     </div>
   )

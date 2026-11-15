@@ -11,11 +11,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import AnnouncementsAdmin, { emailedLabel } from './AnnouncementsAdmin'
 import { mytInstant, mytParts } from './AnnouncementForm'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string } = { role: 'org_admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
@@ -127,4 +128,41 @@ it('round-trips a stored instant through the Malaysian boxes', () => {
   expect(mytParts('2026-11-20T13:30:00Z')).toEqual({ date: '2026-11-20', time: '21:30' })
   expect(mytInstant('2026-11-20', '21:30')).toBe('2026-11-20T21:30:00+08:00')
   expect(mytInstant('2026-11-20', '24:00')).toBeNull()
+})
+
+describe('TD-631: the page opens on `announcements.view`; the actions need `announcements.edit`', () => {
+  const rows = () => payload([row({}), row({ id: 2, status: 'draft', can_delete: true, can_withdraw: false })])
+
+  it('a `.view`-only reader sees the list, and no New / Edit / Withdraw / Delete', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'announcements.edit') }
+    mockApi.getAnnouncements.mockResolvedValue(rows())
+    render(<AnnouncementsAdmin programme="flag" />)
+    await screen.findByTestId('announcement-row-1')
+    expect(screen.getByTestId('announcement-read-1')).toBeTruthy()
+    for (const id of ['announcement-new', 'announcement-edit-1', 'announcement-withdraw-1']) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('announcement-row-2')).toBeTruthy()
+    expect(screen.queryByTestId('announcement-delete-2')).toBeNull()
+  })
+
+  it('an `.edit` holder sees every action', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getAnnouncements.mockResolvedValue(rows())
+    render(<AnnouncementsAdmin programme="flag" />)
+    await screen.findByTestId('announcement-row-1')
+    for (const id of ['announcement-new', 'announcement-edit-1', 'announcement-withdraw-1']) {
+      expect(screen.getByTestId(id)).toBeTruthy()
+    }
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('announcement-delete-2')).toBeTruthy()
+  })
+
+  it('no keys: no access, and nothing is called', () => {
+    mockRole = { role: 'admin', page_keys: [] }
+    render(<AnnouncementsAdmin />)
+    expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+    expect(mockApi.getAnnouncements).not.toHaveBeenCalled()
+  })
 })

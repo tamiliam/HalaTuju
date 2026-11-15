@@ -11,11 +11,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import SurveysAdmin from './SurveysAdmin'
 import { cleanQuestion } from './SurveyForm'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string } = { role: 'org_admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'org_admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
@@ -155,4 +156,39 @@ it('review 4: "now" on a draft saved for later says opens_now outright', async (
   fireEvent.click(screen.getByTestId('survey-primary'))
   await waitFor(() => expect(mockApi.updateSurvey).toHaveBeenCalled())
   expect(mockApi.updateSurvey.mock.calls[0][1]).toMatchObject({ action: 'publish', opens_now: true })
+})
+
+describe('TD-631: the page opens on `surveys.view`; the actions need `surveys.edit`', () => {
+  const rows = () => payload([row({}), row({ id: 2, status: 'draft', can_close: false, can_delete: true, locked: false })])
+  const viewOnly = () => ({ role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'surveys.edit') })
+
+  it('a `.view`-only reader sees the list and the results, and no New / Edit / Close / Delete', async () => {
+    mockRole = viewOnly()
+    mockApi.getSurveys.mockResolvedValue(rows())
+    render(<SurveysAdmin programme="flag" />)
+    await screen.findByTestId('survey-row-1')
+    expect(screen.getByTestId('survey-results-1')).toBeTruthy()
+    for (const id of ['survey-new', 'survey-edit-1', 'survey-close-1']) expect(screen.queryByTestId(id)).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('survey-row-2')).toBeTruthy()
+    expect(screen.queryByTestId('survey-delete-2')).toBeNull()
+    expect(screen.queryByTestId('survey-edit-2')).toBeNull()
+  })
+
+  it('an `.edit` holder sees every action', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getSurveys.mockResolvedValue(rows())
+    render(<SurveysAdmin programme="flag" />)
+    await screen.findByTestId('survey-row-1')
+    for (const id of ['survey-new', 'survey-edit-1', 'survey-close-1']) expect(screen.getByTestId(id)).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('survey-delete-2')).toBeTruthy()
+  })
+
+  it('no keys: no access, and nothing is called', () => {
+    mockRole = { role: 'admin', page_keys: [] }
+    render(<SurveysAdmin />)
+    expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+    expect(mockApi.getSurveys).not.toHaveBeenCalled()
+  })
 })

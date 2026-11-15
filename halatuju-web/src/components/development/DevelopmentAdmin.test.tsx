@@ -10,11 +10,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api/development'
 import DevelopmentAdmin from './DevelopmentAdmin'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string } = { role: 'org_admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'org_admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api/development')
 const mockApi = api as jest.Mocked<typeof api>
@@ -134,4 +135,37 @@ it('says the server refusal with the lesson it names', async () => {
   fireEvent.click(await screen.findByTestId('module-new'))
   fireEvent.click(screen.getByTestId('module-draft'))
   expect((await screen.findByTestId('module-error')).textContent).toBe(`${K}.error.bad_video ${K}.error.atLesson {"n":"1"}`)
+})
+
+describe('TD-631: the page opens on `development.view`; the actions need `development.edit`', () => {
+  const rows = () => payload([row({}), row({ id: 2, status: 'draft', can_archive: false, can_delete: true, locked: false })])
+
+  it('a `.view`-only reader sees the list and the progress, and no New / Edit / Archive / Delete', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'development.edit') }
+    mockApi.getModules.mockResolvedValue(rows())
+    render(<DevelopmentAdmin programme="flag" />)
+    await screen.findByTestId('module-row-1')
+    expect(screen.getByTestId('module-progress-1')).toBeTruthy()
+    for (const id of ['module-new', 'module-edit-1', 'module-archive-1']) expect(screen.queryByTestId(id)).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('module-row-2')).toBeTruthy()
+    expect(screen.queryByTestId('module-delete-2')).toBeNull()
+  })
+
+  it('an `.edit` holder sees every action', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getModules.mockResolvedValue(rows())
+    render(<DevelopmentAdmin programme="flag" />)
+    await screen.findByTestId('module-row-1')
+    for (const id of ['module-new', 'module-edit-1', 'module-archive-1']) expect(screen.getByTestId(id)).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    expect(screen.getByTestId('module-delete-2')).toBeTruthy()
+  })
+
+  it('no keys: no access, and nothing is called', () => {
+    mockRole = { role: 'admin', page_keys: [] }
+    render(<DevelopmentAdmin />)
+    expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+    expect(mockApi.getModules).not.toHaveBeenCalled()
+  })
 })

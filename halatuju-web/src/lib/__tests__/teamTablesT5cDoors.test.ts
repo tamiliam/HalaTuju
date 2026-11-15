@@ -168,7 +168,8 @@ describe('Team tables T5c P4: the doors are really read', () => {
       ['sources', 'sources'], ['sponsors', 'sponsors_read'],
       // M3c (list W): the organisation admin's pages read their M3b doors.
       ['billing', 'billing_read'], ['requests', 'requests_read'], ['orgSettings', 'settings'],
-      ['announcements', 'announcements'], ['surveys', 'surveys'], ['development', 'development'],
+      // TD-631: the engagement rows read their READ doors (`.view`); the writes stay on the `.edit` door.
+      ['announcements', 'announcements_read'], ['surveys', 'surveys_read'], ['development', 'development_read'],
       ['contracts', 'contracts_read'], ['programmeConfig', 'programme_settings'],
     ])
   })

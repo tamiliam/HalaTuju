@@ -36,7 +36,10 @@ type Act = 'archive' | 'delete' | 'restore'
 export default function DevelopmentAdmin({ programme }: { programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = holdsDoor(role, 'development')   // T5c P4: the server's door; TD-623: keys only
+  // TD-631: the page opens on its READ door (`development.view`, as every GET it calls); New / Edit / Archive /
+  // Restore / Delete only on the `.edit` door the writes ask. Visibility only: the endpoint is the fence.
+  const allowed = holdsDoor(role, 'development_read')
+  const canEdit = holdsDoor(role, 'development')
   const [data, setData] = useState<ModulesPayload | null>(null)
   const [failed, setFailed] = useState<'' | 'load' | 'programme_required'>('')
   const [tab, setTab] = useState<ModuleStatus>('published')
@@ -83,7 +86,7 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
           <h1 className="text-2xl font-bold text-ground-900">{t(`${K}.title`)}</h1>
           <p className="mt-1 text-sm text-ground-500">{t(`${K}.intro`)}</p>
         </div>
-        {data && !editing && (
+        {data && !editing && canEdit && (
           <button type="button" onClick={() => { setEditing({ row: null }); setBanner(null) }} data-testid="module-new"
             className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 font-medium max-md:min-h-11 text-brand-fill-ink hover:bg-brand-fill-hover">
             {t(`${K}.new`)}
@@ -100,7 +103,7 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
       {failed === 'programme_required' && <p className="text-sm text-ground-700">{t(`${K}.chooseGift`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {data && editing && (
+      {data && editing && canEdit && (
         <ModuleForm key={editing.row?.id ?? 'new'} row={editing.row} audiences={data.audiences} emailOn={data.email_switch_on} limits={data.limits}
           programme={programme} token={token} t={t}
           onCancel={() => { setEditing(null); void load() }}
@@ -155,10 +158,12 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
                             <Link href={giftHref(`/admin/programme/development/${m.id}`, programme)} className={LINK}
                               data-testid={`module-progress-${m.id}`}>{t(`${K}.action.progress`)}</Link>
                           )}
-                          <button type="button" className={LINK} disabled={busyId === m.id || !!editing}
-                            data-testid={`module-edit-${m.id}`}
-                            onClick={() => { setEditing({ row: m }); setBanner(null) }}>{t(`${K}.action.edit`)}</button>
-                          {(['archive', 'restore', 'delete'] as const)
+                          {canEdit && (
+                            <button type="button" className={LINK} disabled={busyId === m.id || !!editing}
+                              data-testid={`module-edit-${m.id}`}
+                              onClick={() => { setEditing({ row: m }); setBanner(null) }}>{t(`${K}.action.edit`)}</button>
+                          )}
+                          {(canEdit ? (['archive', 'restore', 'delete'] as const) : [])
                             .filter((a) => (a === 'archive' ? m.can_archive : a === 'restore' ? m.can_restore : m.can_delete))
                             .map((a) => (
                               <button key={a} type="button" className={LINK} disabled={busyId === m.id}

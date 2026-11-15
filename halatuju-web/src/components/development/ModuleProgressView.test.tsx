@@ -9,11 +9,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api/development'
 import ModuleProgressView from './ModuleProgressView'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string; permissions?: string[]; mentoring?: boolean } = { role: 'org_admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'org_admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api/development')
 const mockApi = api as jest.Mocked<typeof api>
@@ -98,4 +99,36 @@ it('refuses the roles outside super, org_admin and admin and calls nothing', () 
   render(<ModuleProgressView id={3} />)
   expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
   expect(mockApi.getModuleProgress).not.toHaveBeenCalled()
+})
+
+describe('TD-631: the progress opens on `development.view`; Remind and Mark reviewed need `development.edit`', () => {
+  it('a `.view`-only reader reads the task and the comment, and is offered no Remind and no review', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'development.edit') }
+    mockApi.getModuleProgress.mockResolvedValue(payload({ rows: [base({ review_comment: 'Good plan.' })] }))
+    render(<ModuleProgressView id={3} />)
+    fireEvent.click(await screen.findByTestId('read-1'))
+    expect(screen.getByTestId('review-1').textContent).toContain('Cook three days a week.')
+    expect(screen.getByTestId('review-comment-read').textContent).toBe('Good plan.')
+    expect(screen.getByTestId('module-csv')).toBeTruthy()
+    for (const id of ['review-comment', 'review-save', 'module-remind', 'module-remind-off']) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+  })
+
+  it('an `.edit` holder is offered Remind and the review', async () => {
+    mockApi.getModuleProgress.mockResolvedValue(payload())
+    render(<ModuleProgressView id={3} />)
+    expect(await screen.findByTestId('module-remind')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('read-1'))
+    expect(screen.getByTestId('review-comment')).toBeTruthy()
+    expect(screen.getByTestId('review-save')).toBeTruthy()
+    expect(screen.queryByTestId('review-comment-read')).toBeNull()
+  })
+
+  it('no keys: no access, and nothing is called', () => {
+    mockRole = { role: 'admin', page_keys: [] }
+    render(<ModuleProgressView id={3} />)
+    expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+    expect(mockApi.getModuleProgress).not.toHaveBeenCalled()
+  })
 })

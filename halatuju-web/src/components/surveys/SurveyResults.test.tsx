@@ -9,11 +9,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
 import SurveyResults from './SurveyResults'
+import { servedPageKeys } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
-let mockRole: { role: string; permissions?: string[]; mentoring?: boolean } = { role: 'admin' }
+let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'admin' }
 jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
@@ -110,4 +111,32 @@ it('review 2: with the survey email switched off, Remind is not offered and the 
   await screen.findByTestId('summary-1')
   expect(screen.queryByTestId('survey-remind')).toBeNull()
   expect(screen.getByTestId('survey-remind-off').textContent).toBe(`${K}.remindOff`)
+})
+
+describe('TD-631: the results open on `surveys.view`; Remind needs `surveys.edit`', () => {
+  it('a `.view`-only reader sees the results and the CSV, and no Remind', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'surveys.edit') }
+    mockApi.getSurveyResults.mockResolvedValue(results())
+    render(<SurveyResults id={5} />)
+    await screen.findByTestId('summary-1')
+    expect(screen.getByTestId('survey-csv')).toBeTruthy()
+    expect(screen.queryByTestId('survey-remind')).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.pending`) }))
+    expect(screen.getByTestId('pending-9').textContent).toContain('Arun')
+    expect(screen.queryByTestId('survey-remind')).toBeNull()
+  })
+
+  it('an `.edit` holder is offered Remind', async () => {
+    mockApi.getSurveyResults.mockResolvedValue(results())
+    render(<SurveyResults id={5} />)
+    await screen.findByTestId('summary-1')
+    expect(screen.getAllByTestId('survey-remind').length).toBeGreaterThan(0)
+  })
+
+  it('no keys: no access, and nothing is called', () => {
+    mockRole = { role: 'admin', page_keys: [] }
+    render(<SurveyResults id={5} />)
+    expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
+    expect(mockApi.getSurveyResults).not.toHaveBeenCalled()
+  })
 })

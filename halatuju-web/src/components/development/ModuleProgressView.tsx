@@ -22,8 +22,9 @@ const TABS: readonly ProgressBucket[] = ['to_review', 'done', 'in_progress', 'no
 
 type T = (k: string, vars?: Record<string, string>) => string
 
-function Review({ moduleId, row, token, t, onSaved }: {
+function Review({ moduleId, row, token, t, onSaved, canEdit }: {
   moduleId: number; row: ProgressRow; token: string | null; t: T; onSaved: (p: Omit<ModuleProgress, 'module'>) => void
+  canEdit: boolean
 }) {
   const [comment, setComment] = useState(row.review_comment)
   const [busy, setBusy] = useState(false)
@@ -49,15 +50,20 @@ function Review({ moduleId, row, token, t, onSaved }: {
       {row.reviewed_at && (
         <p className="text-xs text-ground-600">{t(`${K}.reviewedOn`, { date: formatDate(row.reviewed_at), who: row.reviewed_by })}</p>
       )}
-      <label className="flex flex-col gap-1 text-sm font-medium text-ground-700">{t(`${K}.comment`)}
-        <textarea value={comment} maxLength={1000} rows={3} onChange={(e) => setComment(e.target.value)} data-testid="review-comment"
-          className="w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-ground-900" />
-      </label>
+      {/* TD-631: the comment and "Mark reviewed" are a write (`development.edit`); a reader sees the comment. */}
+      {canEdit ? (<>
+        <label className="flex flex-col gap-1 text-sm font-medium text-ground-700">{t(`${K}.comment`)}
+          <textarea value={comment} maxLength={1000} rows={3} onChange={(e) => setComment(e.target.value)} data-testid="review-comment"
+            className="w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-ground-900" />
+        </label>
+        <button type="button" disabled={busy} onClick={save} data-testid="review-save"
+          className="min-h-11 rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink disabled:opacity-60">
+          {t(row.reviewed_at ? `${K}.updateReview` : `${K}.markReviewed`)}
+        </button>
+      </>) : row.review_comment && (
+        <p className="whitespace-pre-line break-words text-sm text-ground-800" data-testid="review-comment-read">{row.review_comment}</p>
+      )}
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
-      <button type="button" disabled={busy} onClick={save} data-testid="review-save"
-        className="min-h-11 rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink disabled:opacity-60">
-        {t(row.reviewed_at ? `${K}.updateReview` : `${K}.markReviewed`)}
-      </button>
     </section>
   )
 }
@@ -73,7 +79,10 @@ function Review({ moduleId, row, token, t, onSaved }: {
 export default function ModuleProgressView({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = holdsDoor(role, 'development')   // T5c P4: the server's door; TD-623: keys only
+  // TD-631: the progress, a task, a file and the CSV are reads (`development.view`); Remind and "Mark reviewed"
+  // are writes, on the `.edit` door.
+  const allowed = holdsDoor(role, 'development_read')
+  const canEdit = holdsDoor(role, 'development')
   const opensFile = readsAllScholars(role)   // sprint S1: the name links only for a reader of every file
   const [data, setData] = useState<ModuleProgress | null>(null)
   const [failed, setFailed] = useState(false)
@@ -124,7 +133,7 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
 
   // With the organisation's module email switched off, the button is not offered (the server refuses it, 409
   // switched_off, and writes nothing) — a short reason stands in its place.
-  const remindButton = data.email_switch_on === false ? (
+  const remindButton = !canEdit ? null : data.email_switch_on === false ? (
     data.can_remind && <p className="text-xs text-ground-600" data-testid="module-remind-off">{t(`${K}.remindOff`)}</p>
   ) : data.can_remind && (
     <button type="button" disabled={busy} onClick={remind} className={BTN} data-testid="module-remind">{t(`${K}.remind`)}</button>
@@ -195,7 +204,7 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
         </TableFrame>
       )}
       {open && (
-        <Review key={open.application_id} moduleId={m.id} row={open} token={token} t={t}
+        <Review key={open.application_id} moduleId={m.id} row={open} token={token} t={t} canEdit={canEdit}
           onSaved={(next) => { setData({ ...data, ...next }); setBanner({ ok: true, text: t(`${K}.saved`) }) }} />
       )}
       <p className="max-w-3xl text-xs text-ground-600">{t(`${K}.footnote`)}</p>

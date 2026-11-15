@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint TD-631 - Surveys, Development and Announcements open on their view key (2026-11-15)
+
+Branch td631, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-631 builder calls, pending architect). Release-note draft: `docs/releases/td631-release-note-draft.md`.
+- `SurveysAdmin`, `SurveyResults`, `DevelopmentAdmin`, `ModuleProgressView` and `AnnouncementsAdmin` open on their read door (`surveys_read`, `development_read`, `announcements_read`, the `.view` keys). New, Edit, Close, Delete, Archive, Restore, Withdraw, Remind and Mark reviewed show only on the `.edit` door. A reader of a reviewed task sees its comment as text.
+- The scholar file's Surveys and Growth tabs open on the read doors. The Growth tab's Progress link now asks `mayOpen` with the served keys (it used the role rule).
+- The menu rows for Announcements, Surveys and Development ride the read doors, so a `.view`-only person is offered the page they can open.
+- No api change: the server already answered every GET with `.view` and refused every write without `.edit`. New `halatuju_api/apps/scholarship/tests/test_td631_view_only_engagement.py` pins both halves (12 reads, 18 writes).
+- Tests: view-only, edit and no-keys cases in the five component tests and `scholars/[id]/page.test.tsx`; `teamTablesT5cDoors` row-door list updated. TD-631 resolved.
+
 ### fix: request #67 (scope 3b) - an IC read never copies its spacing over a correct name; an aligned name is stored tidied (2026-11-15)
 
 Branch req67-align-tidy, not pushed. Owner 15 Nov ("Fix first"), bug under #67, no charge. Brief `docs/plans/req67-scope3b-align-tidy-brief.md`. No migration, no web change. Services: api.

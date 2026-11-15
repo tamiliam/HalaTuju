@@ -113,7 +113,9 @@ function Written({ item, t, opens }: { item: SurveySummaryItem; t: T; opens: boo
 export default function SurveyResults({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = holdsDoor(role, 'surveys')   // T5c P4: the server's door; TD-623: keys only
+  // TD-631: the results and the CSV are reads (`surveys.view`); Remind is a write, on the `.edit` door.
+  const allowed = holdsDoor(role, 'surveys_read')
+  const canEdit = holdsDoor(role, 'surveys')
   const opens = readsAllScholars(role)
   const [data, setData] = useState<Payload | null>(null)
   const [failed, setFailed] = useState(false)
@@ -165,7 +167,7 @@ export default function SurveyResults({ id, programme }: { id: number; programme
   // Review 2: with the organisation's survey email switched off, the button is not offered (the server
   // refuses it, 409 switched_off) — a short reason stands in its place.
   const switchedOff = data.email_switch_on === false
-  const remindButton = switchedOff ? (
+  const remindButton = !canEdit ? null : switchedOff ? (
     data.can_remind && <p className="text-xs text-ground-600" data-testid="survey-remind-off">{t(`${K}.remindOff`)}</p>
   ) : data.can_remind && (
     <button type="button" disabled={busy} onClick={remind} className={BTN} data-testid="survey-remind">{t(`${K}.remind`)}</button>
