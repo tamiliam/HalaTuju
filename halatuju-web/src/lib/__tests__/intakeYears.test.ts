@@ -27,7 +27,7 @@ import {
 describe('the SPM B+ requirement is displayed as an EXTRA and stored as a TOTAL', () => {
   const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
     ({ aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
-       birthStates: [], ...over })
+       birthStates: [], startYears: '', ...over })
 
   it("BrightPath's rule round-trips: 4 A- plus 1 more is stored as 4 and 5", () => {
     const r = draftToRequirements(draft({ aCount: '4', spmExtra: '1' }))
@@ -83,7 +83,7 @@ describe('reading the stored rules back into the boxes', () => {
     const stored = {
       min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: 6, min_stpm_pngk: 2.9,
       min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
-      allowed_birth_states: ['sabah', 'sarawak'],
+      allowed_birth_states: ['sabah', 'sarawak'], allowed_start_years: [2025, 2026],
     }
     expect(draftToRequirements(requirementsToDraft(stored))).toEqual(stored)
   })
@@ -200,6 +200,41 @@ describe('the birth-state requirement', () => {
     expect(sameDraft(a, draft())).toBe(false)
     expect(sameDraft(a, draft({ birthStates: ['sabah'], aCount: '4' }))).toBe(false)
     expect(sameDraft(draft(), EMPTY_REQUIREMENTS)).toBe(true)
+  })
+})
+
+// H3 (#597): the course-start years, typed as text. Empty box = the rule off, sent as [].
+describe('the "Course started in" requirement', () => {
+  const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
+    ({ ...EMPTY_REQUIREMENTS, ...over })
+
+  it('sends the typed years as numbers, and an empty list for an empty box', () => {
+    expect(draftToRequirements(draft({ startYears: '2025, 2026' })).allowed_start_years)
+      .toEqual([2025, 2026])
+    expect(draftToRequirements(draft({ startYears: ' 2025 2026,' })).allowed_start_years)
+      .toEqual([2025, 2026])
+    expect(draftToRequirements(draft()).allowed_start_years).toEqual([])
+  })
+
+  it('sends a typo AS TYPED, so the server refuses it rather than a year being dropped', () => {
+    expect(draftToRequirements(draft({ startYears: '2025, twenty26' })).allowed_start_years)
+      .toEqual([2025, 'twenty26'])
+    expect(draftToRequirements(draft({ startYears: '2025.5' })).allowed_start_years)
+      .toEqual(['2025.5'])
+  })
+
+  it('reads the stored list back, and a missing one as an empty box', () => {
+    expect(requirementsToDraft({ allowed_start_years: [2025, 2026] }).startYears).toBe('2025, 2026')
+    expect(requirementsToDraft({ allowed_start_years: [] }).startYears).toBe('')
+    expect(requirementsToDraft({ min_spm_a_count: 4 }).startYears).toBe('')
+    expect(requirementsToDraft({ allowed_start_years: null }).startYears).toBe('')
+  })
+
+  it('round-trips, and an unchanged box is no change', () => {
+    const d = requirementsToDraft({ allowed_start_years: [2025, 2026] })
+    expect(draftToRequirements(d).allowed_start_years).toEqual([2025, 2026])
+    expect(sameDraft(d, requirementsToDraft({ allowed_start_years: [2025, 2026] }))).toBe(true)
+    expect(sameDraft(d, draft())).toBe(false)
   })
 })
 

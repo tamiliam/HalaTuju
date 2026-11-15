@@ -98,7 +98,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-14.1 — TD-617 owner ruling: an SPM-only PISMP student (code, PISMP/Perguruan name or IPG) is never owed higher results (no Academic cap); an American Degree Program or overseas "Persediaan ... Luar Negara" name turns Pathway red (pathway_funded_or_abroad).
 #   2026-11-14.2 — TD-617 review: a 'pismp' code at a university is not PISMP; IPGM/IPGK and "Bachelor of Teaching" are; the before-submit ask uses declared_kind; a submitted undeclared PISMP never anchors Academic on a frozen 'required'.
 #   2026-11-14.3 — TD-617 re-check: a 'pismp' code with declared STPM/matric results is asked before submit (as owed after); SPM-only still not asked.
-VERDICT_ENGINE_VERSION = '2026-11-14.4'   # 11-14.4 #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
+#   2026-11-14.4 — #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
+VERDICT_ENGINE_VERSION = '2026-11-15.3'   # 11-15.3 H3 (#597): an intake's course-start years (`start_year`); a year outside them turns Pathway red (pathway_start_year_outside), an unreadable one is a reviewer line with no band move.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -490,7 +491,8 @@ def _verdict_pathway(application):
         from .verdict_pathway import offer_pathway_fact   # lazy: it imports our helpers
         fact = offer_pathway_fact(application, offer)
     from .verdict_pathway import funded_or_abroad     # TD-617: ADP / overseas preparation → red
-    return funded_or_abroad(application, fact)
+    from .start_year import apply_to_pathway_fact     # H3: the intake's course-start years
+    return apply_to_pathway_fact(application, funded_or_abroad(application, fact))
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────

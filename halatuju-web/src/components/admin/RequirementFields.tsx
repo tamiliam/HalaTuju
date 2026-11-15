@@ -42,6 +42,25 @@ function Req({ id, label, hint, value, onChange }: {
   )
 }
 
+/** H3 (#597): the course-start years, typed as "2025, 2026". No tick box: a ticked-but-empty value
+ *  has no honest year to write, so the text IS the switch (empty = not applied). Module scope for
+ *  the same focus reason as `Req`. */
+function Years({ id, label, hint, value, onChange }: {
+  id: string; label: string; hint: string; value: string; onChange: (v: string) => void
+}) {
+  return (
+    <label htmlFor={id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
+      value.trim() ? 'border-primary-200 bg-primary-50/50' : 'border-ground-200 bg-ground-0'}`}>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-ground-900">{label}</span>
+        <span className="mt-0.5 block text-xs text-ground-500">{hint}</span>
+      </span>
+      <input id={id} value={value} onChange={(e) => onChange(e.target.value)}
+        placeholder="—" className={MINI.replace('w-24', 'w-32')} />
+    </label>
+  )
+}
+
 /** `idPrefix` keeps the two mounts apart: the Rules tab and the create dialog can both be in the
  *  DOM, and a duplicated `id` would point every label at the first one. */
 export default function RequirementFields(
@@ -108,6 +127,9 @@ export default function RequirementFields(
           ))}
         </div>
       </fieldset>
+      <Years id={`${idPrefix}-sy`} label={t('admin.years.req.startYears')}
+        hint={t('admin.years.req.startYearsHint')}
+        value={draft.startYears} onChange={(v) => onChange({ ...draft, startYears: v })} />
     </div>
   )
 }

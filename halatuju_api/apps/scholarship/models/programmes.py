@@ -375,6 +375,15 @@ class ScholarshipCohort(models.Model):
         help_text="State keys (birth_state.STATE_KEYS) a student must have been BORN in, read "
                   "from the IC's place-of-birth code. Empty list = not applied.",
     )
+    # H3 (#597, owner 2026-11-15): the calendar years a student's course may have STARTED in
+    # (`pathway_engine.course_start_year`). The same list switch: EMPTY = not applied. Read after
+    # the offer letter is on file, so it is a red Pathway line for a person (`start_year`), never
+    # a decline by itself, and an unreadable year is a reviewer line, never a fail.
+    allowed_start_years = models.JSONField(
+        default=list, blank=True,
+        help_text="Course-start years (e.g. [2025, 2026]) this intake accepts, read from the offer "
+                  "letter's intake year. Empty list = not applied.",
+    )
     # (TD-226, 2026-11: `bucket_b_margin` left the model, read by nothing. Its column stays in the
     # database until scholarship 0212 drops it. `funding_envelope` is kept: the Programme roadmap
     # plans it.)

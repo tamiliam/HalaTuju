@@ -12,6 +12,7 @@ from ..birth_state import stored_keys
 from ..closure import ever_awarded_q
 from ..intake_round import round_state
 from ..models import Donation, ScholarshipApplication
+from ..start_year import FIELD as START_YEARS_FIELD, stored_years
 
 
 # ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ───────────────────────────────
@@ -341,5 +342,6 @@ def _cohort_row(c):
         # a hand-edited bare string or wrong-case key is served as a list, so the Rules tab shows
         # it ticked rather than nothing, and the next Save cannot silently clear a live rule.
         'requirements': {**{f: getattr(c, f) for f in REQUIREMENT_FIELDS},
-                         BIRTH_STATES_FIELD: stored_keys(getattr(c, BIRTH_STATES_FIELD))},
+                         BIRTH_STATES_FIELD: stored_keys(getattr(c, BIRTH_STATES_FIELD)),
+                         START_YEARS_FIELD: stored_years(getattr(c, START_YEARS_FIELD))},
     }

@@ -89,7 +89,10 @@ def course_start_unknown(application):
 # (Genuinely-uncertain "settle at interview" codes are deliberately excluded.)
 # TD-617 (owner 2026-11-14): `pathway_funded_or_abroad` (the American Degree Program under MARA is
 # fully funded; overseas study is not supported) is one too. The flag only; the amount is unchanged.
-CONFIDENT_DISQUALIFIERS = ('offer_not_official', 'income_above_b40_line', 'pathway_funded_or_abroad')
+# H3 (#597, owner 2026-11-15): `pathway_start_year_outside` (the course started in a year the intake
+# does not accept, `start_year`) is one too, on the same terms: the flag only, the amount unchanged.
+CONFIDENT_DISQUALIFIERS = ('offer_not_official', 'income_above_b40_line', 'pathway_funded_or_abroad',
+                           'pathway_start_year_outside')
 
 
 def verdict_disqualifier(verdict):

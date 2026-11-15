@@ -294,6 +294,20 @@ The calls:
 - **F3, the decline flag reads the holder at the decline.** `services.decline.rejected_by_unassigned` compares `rejected_by` with the holder at `rejected_at` (the last `AssignmentEvent` at or before it, else the first one after it gives its `from_admin`, else the current holder), never the current `assigned_to`: a rejected case can change hands since TD-613. Its query runs only for a reasoned door decline; the applicant-detail GET's pinned count is unchanged.
 - **Known limit, left as is:** the student's "who will interview you" email gate (`assign_notify._BEFORE_INTERVIEW`) reads the case's status when the cron sends, not when the handover happened.
 
+## 2026-11-15 — H3a: a gift's course-start years are a red Pathway fact, not a shortlisting gate; an unreadable year goes to a person (builder; for the architect to confirm)
+
+- **Where the rule sits.** `ScholarshipCohort.allowed_start_years` is a list. Empty means the rule is not applied, the same switch as `allowed_birth_states`. The year is `pathway_engine.course_start_year`: the offer letter's intake year first, then the stored reporting date. The letter arrives after the shortlist, so this cannot be a shortlisting gate. It follows the TD-617 precedent instead:
+  - a year outside the list turns the Pathway fact red with `pathway_start_year_outside`;
+  - the code is in `award.CONFIDENT_DISQUALIFIERS`, the cockpit flag;
+  - the red fact joins the QC accept floor, so an accept needs a recorded reason;
+  - nothing is declined automatically and the amount does not move.
+- **Unreadable year (the brief's choice, recorded).** If a letter has been read but no year can be found, the reviewer sees the line `pathway_start_year_unknown`. It changes no band, it is not a disqualifier and it is not a student ticket. A person checks the letter. There is no line while the letter is unread (`read_deferred`) or missing (`offer_letter_missing` already says so). An unreadable year is never an automatic fail.
+- **Values are set in the Gift editor, not seeded.** Gift rules have never been data-migrated: birth states were set by an admin. So migration 0212 leaves every intake empty.
+  - After release, an admin or the owner types 2025, 2026 into the Degree gift's (`bpb-deg-dip-2026`) Rules tab, in the "Course started in" box.
+  - Sabah (`2026-bpb-s`) stays empty, meaning no limit.
+- **The `{years}` parameter is a comma list ("2025, 2026"),** so it carries no English word into the Malay and Tamil copy.
+- **Student-facing reason: none added.** No student surface shows a per-reason decision after the shortlist, and decline emails are generic by category. A student-facing line needs the owner's word on where it would appear.
+
 ## 2026-11-15 — Sprint M3c: granting the organisation admin's keys; the builder's open calls (builder; for the architect to confirm)
 
 Branch m3c, not pushed. Part 1 (api) 075cee190; part 2 (web list W and docs) on top. Release-note draft: `docs/releases/m3c-granting-release-note-draft.md`.

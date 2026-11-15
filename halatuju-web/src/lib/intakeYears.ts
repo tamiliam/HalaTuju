@@ -81,11 +81,14 @@ export interface RequirementDraft {
   /** Request #31: the state keys a student must have been BORN in (`lib/birthStates`). Empty = the
    *  rule is not applied. Kept in the server's order, so two equal choices compare equal. */
   birthStates: readonly string[]
+  /** H3 (#597): the course-start years the intake accepts, as typed ("2025, 2026"). Empty = the
+   *  rule is not applied. */
+  startYears: string
 }
 
 export const EMPTY_REQUIREMENTS: RequirementDraft = {
   aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
-  birthStates: [],
+  birthStates: [], startYears: '',
 }
 
 /** Has anything on the screen changed? Box by box, and the ticked states by VALUE — two lists
@@ -138,7 +141,21 @@ export function draftToRequirements(d: RequirementDraft) {
     per_capita_ceiling: num(d.perPerson),
     // Always sent, so unticking the last state CLEARS the rule rather than leaving it as it was.
     allowed_birth_states: [...d.birthStates],
+    // H3: always sent too, so emptying the box CLEARS the rule.
+    allowed_start_years: yearsList(d.startYears),
   }
+}
+
+/** H3: "2025, 2026" → [2025, 2026]. A piece that is not a whole number is sent AS TYPED, so the
+ *  server refuses the save (`bad_requirement`) rather than the rule quietly losing a year (the
+ *  request #30 lesson, as `num`). Commas and spaces both separate. */
+export function yearsList(s: string): (number | string)[] {
+  return s.split(/[\s,]+/).filter(Boolean).map((t) => (/^\d+$/.test(t) ? Number(t) : t))
+}
+
+/** H3: the stored start years → the box's text. Anything but a list (an api older than H3) is empty. */
+export function storedStartYears(v: readonly (number | string)[] | null | undefined): string {
+  return Array.isArray(v) ? v.map(String).join(', ') : ''
 }
 
 /** What is stored → what the boxes show. */
@@ -167,6 +184,7 @@ export function requirementsToDraft(r: {
   income_ceiling?: number | null
   per_capita_ceiling?: number | null
   allowed_birth_states?: readonly string[] | string | null
+  allowed_start_years?: readonly (number | string)[] | null
 } | null | undefined): RequirementDraft {
   if (!r) return { ...EMPTY_REQUIREMENTS }
   const a = r.min_spm_a_count
@@ -182,6 +200,7 @@ export function requirementsToDraft(r: {
     income: str(r.income_ceiling),
     perPerson: str(r.per_capita_ceiling),
     birthStates: storedBirthStates(r.allowed_birth_states),
+    startYears: storedStartYears(r.allowed_start_years),
   }
 }
 
