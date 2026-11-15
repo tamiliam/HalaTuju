@@ -376,7 +376,7 @@ class ScholarshipCohort(models.Model):
                   "from the IC's place-of-birth code. Empty list = not applied.",
     )
     # H3 (#597, owner 2026-11-15): the calendar years a student's course may have STARTED in
-    # (`pathway_engine.course_start_year`). The same list switch: EMPTY = not applied. Read after
+    # (`start_year.possible_start_years`, the rule's own reading). The same list switch: EMPTY = not applied. Read after
     # the offer letter is on file, so it is a red Pathway line for a person (`start_year`), never
     # a decline by itself, and an unreadable year is a reviewer line, never a fail.
     allowed_start_years = models.JSONField(

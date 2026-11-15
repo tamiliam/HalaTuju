@@ -9100,15 +9100,26 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-631] A polytechnic "Sesi II 2024/2025" (a December 2024 start) reads 2025 - low
+### [TD-631] ~~A polytechnic "Sesi II 2024/2025" (a December 2024 start) reads 2025~~ - HANDLED 2026-11-15 (H3a rebuild)
 
-**Raised 2026-11-15 by the H3a Opus review.** Polytechnic Sesi II of session 2024/2025 begins in December 2024, but
-`session_year.session_start_year` reads a second term as the session's second year, so a letter that says only "Sesi
-II 2024/2025" (no reporting date) reads 2025. With the letter's reporting date ("2 Disember 2024") it reads 2024
-correctly, because the date is read before the term. Logged by the lead as not affecting the Degree gift
-(`bpb-deg-dip-2026`, 2025 and 2026 starters). Note for whoever revisits: on a letter with no reporting date, a
-December 2024 start would read 2025 and so sit inside that gift's years. No code change. Revisit if a gift ever
-accepts 2024 starters, or if such a letter turns up: read "Sesi II" on a polytechnic letter as the first year. *(A - S)*
+**Raised 2026-11-15 by the H3a Opus review.** Polytechnic Sesi II of session 2024/2025 begins in December 2024 or
+January 2025, but the branch's session reading took a second term as the session's second year, so "Sesi II 2024/2025"
+with no reporting date read 2025. **Now handled** on the gift's start-year rule: its own reader
+(`session_year.gift_start_years`) reads "Sesi II S/S+1" with no date as either year, S or S+1, so on the Degree gift
+(2025 and 2026) a "Sesi II 2024/2025" letter goes to a person, and with the letter's reporting date the date picks
+the year. The money reading never took the session's term at all (it is main's, the first year on the line), so it is
+unaffected. *(A - S)* **Status:** Closed.
+
+### [TD-632] The money's start year takes the FIRST year of an academic session - low
+
+**Raised 2026-11-15 by the H3a rebuild (logged, not fixed: the lead's rule is that the money stays exactly main's).**
+`pathway_engine.student_offer_check` takes the first year on the intake line, so "Sesi 2024/2025 Semester II" (a
+February 2025 start) and a polytechnic "Sesi II 2024/2025" with a January 2025 date read 2024 for the money. That
+feeds `course_start_year`: the funding estimate's years already studied (`funding_estimate._years_done`) and the
+continuing-student test (`started_before_cohort`: the STPM award size, the semester-result request). A Form 6
+letter rarely carries a semester, so STPM sizing is seldom touched; a degree estimate may count one year too many.
+The gift's start-year rule does not use this reading (`session_year.gift_start_years`). Fix only with an owner
+ruling and a dry run of the money on live letters (`eval/offer_s4_dry_run.py` compares `intake_year`). *(A - S)*
 
 
 ### [TD-635] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)

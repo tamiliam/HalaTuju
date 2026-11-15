@@ -24,9 +24,6 @@ from .pathway_match import _field_status as _field_status
 from .pathway_match import catalogue_declared_institution as catalogue_declared_institution
 from .pathway_match import distinctive_tokens as distinctive_tokens
 from .pathway_match import offer_pathway_match as offer_pathway_match
-# The academic-session reading moved to `session_year` (H3a review fix, 2026-11-15); re-exported.
-from .session_year import bare_session as bare_session
-from .session_year import session_start_year as session_start_year
 from .vision import name_match, nric_match
 
 
@@ -344,12 +341,8 @@ def student_offer_check(doc) -> dict:
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
     # Course-start year: prefer the intake/session year, fall back to the reporting date's year.
-    # An academic SESSION ("Sesi 2024/2025") spans two calendar years: `session_start_year` picks
-    # the right one, or '' when it cannot tell (H3a follow-up, 2026-11-15).
-    intake_year = session_start_year(intake, reporting_date)
-    if intake_year is None:
-        iym = re.search(r'\b(20\d{2})\b', intake) or re.search(r'\b(20\d{2})\b', reporting_date)
-        intake_year = iym.group(1) if iym else ''
+    iym = re.search(r'\b(20\d{2})\b', intake) or re.search(r'\b(20\d{2})\b', reporting_date)
+    intake_year = iym.group(1) if iym else ''
     # Currency vs the cohort: a current intake matches the cohort's OWN year. 'current'→green / 'off'→amber
     # / '' → no signal (no year / no cohort).
     _cy = getattr(getattr(application, 'cohort', None), 'year', None) if application is not None else None
@@ -483,10 +476,7 @@ def course_start_year(application):
          authoritative statement of when the cohort began, and it survives the common Form 6 case
          where the letter carries an intake RANGE ("6 / 2025 – 12 / 2026") and NO reporting date;
       2. the stored ``reporting_date`` — which may itself have been typed by an officer when the
-         letter had no readable date. It is also the fallback when the letter's session line
-         cannot tell the year (`session_start_year` gave ''): the money keeps today's reading.
-         The gift's start-year rule does NOT take that fallback from the letter's own date
-         (`course_start_span`), so there a person checks.
+         letter had no readable date.
 
     Deliberately NOT a third source: the student's free-text answer to the
     ``reporting_date_unknown`` clarify. #123 answered "16 july 2026" meaning the date he collected
@@ -501,32 +491,6 @@ def course_start_year(application):
             return int(iy)
     rd = getattr(application, 'reporting_date', None)
     return rd.year if rd else None
-
-
-def course_start_span(application):
-    """The years the course may have started in, for the gift's yes/no start-year rule ONLY
-    (`start_year.reading`): ``(Y,)`` for a known year; ``(S, S+1)`` for a bare session (lead's
-    ruling, 2026-11-15: no term, no intake month, no reporting date, so either year); ``()`` when
-    unknown. The money (award size, funding estimate) reads `course_start_year`, which keeps S.
-
-    Unlike `course_start_year`, a session line that cannot tell the year ('', e.g. Semester 3 and
-    up) is NOT rescued by the stored reporting date when that date is the letter's own: the
-    session reading already weighed it (the H3a review: "Semester 3 Sesi 2024/2025" with
-    "3 Mac 2025" passed a continuing student). A different stored date (an officer's) still counts."""
-    letters_own = _NO_DATE = object()
-    offer = _latest_offer(application)
-    if offer is not None:
-        chk = student_offer_check(offer)
-        intake, rd_text = chk.get('intake') or '', chk.get('reporting_date') or ''
-        iy = (chk.get('intake_year') or '').strip()
-        if iy.isdigit():
-            return bare_session(intake, rd_text) or (int(iy),)
-        if session_start_year(intake, rd_text) == '':
-            letters_own = parse_reporting_date(rd_text)
-    rd = getattr(application, 'reporting_date', None)
-    if rd and (letters_own is _NO_DATE or rd != letters_own):
-        return (rd.year,)
-    return ()
 
 
 def started_before_cohort(application):
