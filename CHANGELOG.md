@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### release: 15 Nov 11:00 MYT window - M3b, SUP1 and the E8 width fix published (2026-11-15)
+- live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
+- No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
+
 ### refactor: F2b stage 1 - scholarship reaches 19 loose courses helpers through the courses public door (2026-11-15)
 
 Branch f2b1, not pushed. Import-only: no behaviour change, no migration, no web change.
