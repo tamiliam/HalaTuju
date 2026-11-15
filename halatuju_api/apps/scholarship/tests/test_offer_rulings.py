@@ -138,7 +138,8 @@ class TestConfirmationLetters(SimpleTestCase):
         self.assertEqual(confirmation_kind(JPPKK_ONLY_CONFIRM), '')
 
     def test_no_private_wing_reads_genuine_another_university_suspect_a_private_college_unchanged(self):
-        for text, want in ((POLY_CONFIRM, 'genuine'), (UMS_CONFIRM, 'genuine'), (FORM6_CONFIRM, 'genuine'),
+        for text, want in ((POLY_CONFIRM, 'genuine'), (FORM6_CONFIRM, 'genuine'),
+                           (UMS_CONFIRM, 'suspect'),     # owner 2026-11-15: UMS confirmations read suspect (was genuine)
                            (UM_CONFIRM, 'suspect'),      # help H2 (owner 2026-11-15): a private wing
                            (PRIVATE_CONFIRM, 'not_offer_letter')):
             with self.subTest(want=want, head=text.splitlines()[0]):

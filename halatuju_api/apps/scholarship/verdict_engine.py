@@ -98,7 +98,9 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-14.1 — TD-617 owner ruling: an SPM-only PISMP student (code, PISMP/Perguruan name or IPG) is never owed higher results (no Academic cap); an American Degree Program or overseas "Persediaan ... Luar Negara" name turns Pathway red (pathway_funded_or_abroad).
 #   2026-11-14.2 — TD-617 review: a 'pismp' code at a university is not PISMP; IPGM/IPGK and "Bachelor of Teaching" are; the before-submit ask uses declared_kind; a submitted undeclared PISMP never anchors Academic on a frozen 'required'.
 #   2026-11-14.3 — TD-617 re-check: a 'pismp' code with declared STPM/matric results is asked before submit (as owed after); SPM-only still not asked.
-VERDICT_ENGINE_VERSION = '2026-11-14.4'   # 11-14.4 #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
+#   2026-11-14.4 — #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
+#   2026-11-15.4 — help H2: a confirmation of studies from every public institution type reads genuine only on clear proof (ministry on the letterhead + a known public name), else suspect; UMS confirmations read suspect (owner 2026-11-15); KPM's English matric offer recognised only with the Division/ministry first on the letterhead and its English title. (.3 is help-h3's.)
+VERDICT_ENGINE_VERSION = '2026-11-15.4'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

@@ -1154,8 +1154,22 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    names are NOT added to the BLOCK's public names). Still: a confirmation never writes a course pick. Same sprint:
    KPM's ENGLISH matriculation offer ("Matriculation Division", "Ministry of Education") reads the matric family's
    English twins, like the Malay letter (`offer_signatures.english_matric_lists`). MODEL_VERSION 1.28.0.
-   Open: only UMS is proven to have no private wing; another IPTA proven wingless moves into `_NO_PRIVATE_WING`
-   on the owner's word.
+   **owner 2026-11-15: UMS confirmations read suspect; a person checks** (was genuine; change point
+   `offer_rulings._UMS_SUSPECT`). The UMS PPPL block is unchanged, and UMS OFFER letters do not change.
+   **Tightened the same day (H2 adversarial review, VERDICT_ENGINE_VERSION 2026-11-15.4):** a confirmation reads
+   genuine only on CLEAR proof, otherwise `suspect` (`confirmation_unclear`), never a fail and never a pick.
+   Clear proof = the ministry on the LETTERHEAD (not only in the body) and, where a real list exists, the
+   institution's name on that list (`offer_confirmations._KNOWN_PUBLIC_NAMES`: the 15 matriculation colleges from
+   `halatuju-web/src/data/matric-colleges.ts`, the 27 IPG campuses and the 101 community colleges from the
+   `institutions` table). A public-looking name not on its list (e.g. "Kolej Matrikulasi Mercu") reads suspect.
+   "Approved by" / KPT-approval wording is no public mark (blanked before the kind is read); "Bahagian Matrikulasi"
+   alone is no mark. No list wired: polytechnics (pattern + KPT on the letterhead), KV and the TVET institutes
+   (read suspect at best). The English confirmation titles ("Confirmation of Student Status / Studies /
+   Enrolment") and IIUM's English name (suspect: IIUM has a private wing) are read. The English matric OFFER now
+   needs the Matriculation Division / KPM named FIRST, the English title on the offer line and a listed college;
+   the bare-word twins were dropped, and an English results slip stays `not_offer_letter`.
+   Open: only UMS was proven to have no private wing, and it now reads suspect on the owner's word; another IPTA
+   proven wingless moves into `_NO_PRIVATE_WING` on the owner's word.
 
 4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
    Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is
