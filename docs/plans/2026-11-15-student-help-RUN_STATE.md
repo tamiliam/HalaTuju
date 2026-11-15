@@ -29,8 +29,8 @@ Scope: roadmap docs/plans/2026-11-15-student-help-fixes-roadmap.md, sprints H1-H
 ## Cursor
 | Sprint | Branch | State | Notes |
 |---|---|---|---|
-| H1 #552 stamp | help-h1 | IN PROGRESS (Opus builder, 15 Nov) | worktree C:/Users/tamil/wt/help-h1 |
-| H2 confirmation letters | help-h2 | next | Opus |
+| H1 #552 stamp | help-h1 | REVIEW PASS (Opus, 15 Nov); branch pushed; waits rebase + 18 Nov merge | 6874cdb16; suite 22372 pass; MODEL_VERSION 1.28.0. Follow-up before merge (after H2 builder): scope "stamp outside approver section" line so informal payslips (no approver section) keep a shop chop |
+| H2 confirmation letters | help-h2 | IN PROGRESS (Opus builder, 15 Nov) | worktree C:/Users/tamil/wt/help-h2; also uses 1.28.0, fix at rebase |
 | H3 start-year rule + recent letter | help-h3 | queued | Opus; land before 10 Dec |
 | H4 split + stage lock | student-help | queued | Sonnet |
 | H5 redesign | student-help | queued | Stitch round (H5-H8) needs owner approval |
@@ -40,7 +40,13 @@ Scope: roadmap docs/plans/2026-11-15-student-help-fixes-roadmap.md, sprints H1-H
 | H9 coach + sample check | student-help | queued | Opus review |
 
 ## Waiting on the owner
-- (none yet)
+- Design approval (sent 15 Nov): Action Centre, "I don't have this", load error, sample viewer, 8 sample
+  drawings. Only the load-error screen came from Stitch (node 1d8a45619f4748d69691cdcdbecc5f4b); the other
+  three are hand-built HTML mock-ups (Stitch timed out). Files: session scratchpad designs/. Open questions:
+  hand-built OK as approval? keep "We never take your progress backwards." line? "What we check" lists OK?
+  Blocks H5-H8 UI code only.
+- H1 phone check + paid Re-run of the 4 #552-pattern docs plus 1 known-bad form (sent 15 Nov). Re-run only
+  after H1 is live.
 
 ## Open risks
 - MODEL_VERSION conflict with Gemini Option A (H1, H2, H9).
