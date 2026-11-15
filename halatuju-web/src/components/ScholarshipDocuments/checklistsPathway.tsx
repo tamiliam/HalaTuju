@@ -96,7 +96,25 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
           </span>
         </p>
       ) : null}
+      {startYearLine(chk.start_year_note?.years, t)}
     </div>
+  )
+}
+
+/** H3a, owner ruling "1A" (2026-11-15): the short reason a student sees when their course started
+ *  outside the gift's years. Not a block (a reviewer still decides). Nothing without years. */
+export function startYearLine(years: number[] | undefined, t: (key: string) => string): ReactNode {
+  if (!years || years.length === 0) return null
+  const text =
+    years.length === 1
+      ? t('scholarship.docs.pathwayCheck.startYearOne').replace('{year}', String(years[0]))
+      : t('scholarship.docs.pathwayCheck.startYearMany')
+          .replace('{years}', years.slice(0, -1).join(', '))
+          .replace('{last}', String(years[years.length - 1]))
+  return (
+    <p className="py-1.5 text-xs text-caution-700" data-testid="offer-start-year-note">
+      {text}
+    </p>
   )
 }
 

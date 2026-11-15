@@ -192,6 +192,24 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a review follow-ups - session years, the student's reason, the QC floor test (2026-11-15)
+
+Branch help-h3, not pushed, on top of H3a. No migration.
+- **Session years (`pathway_engine.session_start_year`).** An academic session "S/S+1" spans two calendar years, so the first year was wrong for a February start. Now:
+  - the letter's reporting date wins when its year is S or S+1; a reporting year outside the session reads no year;
+  - Semester II / Sem 2 / Semester Kedua / Second Semester / a February or March intake reads S+1;
+  - Semester I / Pertama / First Semester / a September or October intake reads S;
+  - both terms, or Semester 3 and up (a continuing student), read no year: `pathway_start_year_unknown`, a person checks;
+  - a bare session reads S, as before (the main intake). Two-digit tails ("2024/25") and dashes count; a Form 6 range does not.
+  - The year feeds every reader of `intake_year` / `course_start_year`, the STPM sizing and funding estimate included.
+- **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.5 (.4 is the H2 branch's). `MODEL_VERSION` unchanged.
+- **Student reason (owner ruling "1A").** The student's offer card shows "This gift is for students whose course started in 2025 or 2026. A reviewer will still look at your application and decide." when the course started outside the gift's years. It is served as `pathway_check.start_year_note` on the live offer only; nothing for an unknown year, a gift with no setting, or an old letter. Not a block. New keys `scholarship.docs.pathwayCheck.startYearOne` / `startYearMany` in en/ms/ta; ms and ta are first drafts for Sol.
+- **Case summary.** `verdict_narrative` glosses both start-year codes in plain words.
+- **Reviewer FAQ.** The start-year entry says how a session year is read and what the student sees.
+- **Stale 0212 notes.** 0212 is the start-year column, so the A3.17 column drop (TD-226, TD-084) gets a later number: model comments, the 0211 docstring, `test_a317_retired_columns.py` and technical-debt.md say so.
+- **Tests.** `test_start_year_rule.py` gains session forms (Malay and English), the gift end to end, the student's note, and the real QC accept refusing with 400 `verdict_gap_floor` on the start-year red fact. `test_verdict_narrative.py` gains the gloss. New `checklistsPathway.startYear.test.tsx` (4 tests).
+- **Owed.** Re-run the Degree dry run (read-only) before release: a session letter may now read differently. Tag the new strings in Sol.
+
 ### feat: H3a - a gift can limit the course-start years it accepts (2026-11-15)
 
 Branch help-h3, not pushed. Migration 0212 (additive, MIGRATE-FIRST, hand-written DDL in its docstring; scholarship ledger 211 -> 212).

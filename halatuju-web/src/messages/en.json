@@ -1729,6 +1729,8 @@
         "address": "Address",
         "fromLetter": "from your letter",
         "declaredNote": "Earlier you'd chosen:",
+        "startYearOne": "This gift is for students whose course started in {year}. A reviewer will still look at your application and decide.",
+        "startYearMany": "This gift is for students whose course started in {years} or {last}. A reviewer will still look at your application and decide.",
         "status": {
           "match": "Match",
           "partial": "Partial match",

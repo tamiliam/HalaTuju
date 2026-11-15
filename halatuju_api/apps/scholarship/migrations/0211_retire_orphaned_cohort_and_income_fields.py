@@ -8,13 +8,15 @@ and the new image's INSERTs omit them, so the two NOT NULL columns would refuse 
 - this migration (STEP 1, by hand, BEFORE the push): the two NOT NULL columns get a DATABASE default
   (earner_work_status '' and bucket_b_margin 1), so the new code's INSERTs pass; the three fields leave
   Django's STATE only. No column is dropped, so the old image keeps working and stays a rollback target.
-- DROP COLUMN (STEP 2, a later sprint, 0212, AFTER the new image serves all traffic): `DROP COLUMN IF
+- DROP COLUMN (STEP 2, a later sprint and a later migration, AFTER the new image serves all traffic): `DROP COLUMN IF
   EXISTS`, no CASCADE, state_operations empty. Not written yet.
 
 `funding_envelope` is NOT touched: KEPT by owner ruling on 2026-11-11 for the planned Programme budget.
 
-NOTE for 0212: test_a317_retired_columns.py asserts the three columns still EXIST in the database;
-0212 must delete or rewrite those column-exists asserts when it drops them.
+(0212 went to `allowed_start_years`, H3a, 2026-11-15: the drop gets a later number.)
+
+NOTE for the drop migration: test_a317_retired_columns.py asserts the three columns still EXIST in the database;
+it must delete or rewrite those column-exists asserts when it drops them.
 """
 from django.db import migrations, models
 

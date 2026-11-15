@@ -353,7 +353,13 @@ The calls:
   - After release, an admin or the owner types 2025, 2026 into the Degree gift's (`bpb-deg-dip-2026`) Rules tab, in the "Course started in" box.
   - Sabah (`2026-bpb-s`) stays empty, meaning no limit.
 - **The `{years}` parameter is a comma list ("2025, 2026"),** so it carries no English word into the Malay and Tamil copy.
-- **Student-facing reason: none added.** No student surface shows a per-reason decision after the shortlist, and decline emails are generic by category. A student-facing line needs the owner's word on where it would appear.
+- **Student-facing reason (owner ruling "1A", 2026-11-15, replaces "none added").** The student's offer card shows a short reason when the course started outside the gift's years: "This gift is for students whose course started in 2025 or 2026. A reviewer will still look at your application and decide." It is not a block. It is served as `pathway_check.start_year_note` on the live offer only. Nothing is shown for an unknown year, a gift with no setting, or an old letter.
+- **Session years (review follow-up, `VERDICT_ENGINE_VERSION` 2026-11-15.5).** "Sesi 2024/2025 Semester II" starts in February 2025, so the first year of a session was wrong for a second-semester starter. `pathway_engine.session_start_year` reads, best evidence first:
+  - the letter's reporting date, when its year is inside the session;
+  - Semester II or a February or March intake = the second year;
+  - Semester I or a September or October intake = the first year.
+  - Both terms, Semester 3 and up, or a reporting year outside the session read no year, so a person checks.
+  - A bare session keeps the first year. That is today's reading, and the main intake of a session is its first. Making it unknown would hold every bare-session STPM case at QC (`award.course_start_unknown`). For the architect to confirm.
 
 ## 2026-11-15 — Student help H1: the approver's stamp counts anywhere in the approver's section; an empty "Cop Rasmi" box never cancels it (builder)
 

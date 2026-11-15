@@ -1,13 +1,15 @@
 """A3.17 (TD-084 / TD-226): the new code INSERTs without three retired columns.
 
 `earner_work_status` and `bucket_b_margin` are NOT NULL, and scholarship 0211 removes them from the
-Django state only (the columns stay until a later 0212). The new code therefore omits them on INSERT.
+Django state only (the columns stay until a later drop migration; 0212 went to `allowed_start_years`).
+The new code therefore omits them on INSERT.
 These tests create a cohort and an application through the ORM against the migrated test database,
 where the columns still exist: they pass only because 0211 gave the two NOT NULL columns a DATABASE
 default. Without `db_default`, the cohort INSERT fails on `bucket_b_margin` and the application INSERT
 fails on `earner_work_status`.
 
-NOTE: the column-exists asserts below must be deleted or rewritten by the 0212 that drops the columns.
+NOTE: the column-exists asserts below must be deleted or rewritten by the later migration that drops the
+columns.
 """
 from django.db import connection
 from django.test import TestCase
