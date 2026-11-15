@@ -131,10 +131,19 @@ class SessionOnTheGift(_Base):
         self.assertIn(start_year.UNKNOWN, codes)
         self.assertEqual(pe.course_start_year(app), 2024)     # the money: main's reading
 
-    def test_a_first_semester_2024_starter_is_caught(self):
+    def test_a_2024_intake_is_caught(self):
         app = self._app(self.degree, 'sem1')
-        self._offer(app, intake='Sesi 2024/2025 Semester I')
+        self._offer(app, intake='Ambilan September 2024 Sesi 2024/2025')
         self.assertIn(start_year.OUTSIDE, self._codes(app))
+
+    def test_a_first_semester_with_no_month_goes_to_a_person(self):
+        # Fifth review: "Semester I" of 2024/2025 may be a February 2025 intake's own first semester
+        # (or an OCR'd "II"), so it is no longer read as 2024.
+        app = self._app(self.degree, 'sem1-bare')
+        self._offer(app, intake='Sesi 2024/2025 Semester I')
+        codes = self._codes(app)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+        self.assertIn(start_year.UNKNOWN, codes)
 
     def test_an_unsure_session_goes_to_a_person(self):
         app = self._app(self.degree, 'sem3')
@@ -372,7 +381,12 @@ class ReviewFixes(_Base):
     def test_the_review_probes_never_read_outside_end_to_end(self):
         cases = (('Tahun ke-2 Sesi 2025/2026', ''), ('Ambilan 2023 Sesi 2025/2026', ''),
                  ('SESI 2024/25 MAC 2025', '3 Mac 2025'), ('SPM 2024, Ambilan 2025', '14 Julai 2025'),
-                 ('Session 2024/25 Feb 2025', ''), ('Sesi 2024/25 Februari 2025', ''))
+                 ('Session 2024/25 Feb 2025', ''), ('Sesi 2024/25 Februari 2025', ''),
+                 # the fifth review's messy text (h3r5): glued words, a range, a December date
+                 ('Sesi 2024/2025Semester II', ''), ('Ambilan Februari', '20 Disember 2024'),
+                 ('', '30 Disember 2024 hingga 3 Januari 2025'), ('', '28/12/2024 - 05/01/2025'),
+                 ('Ambilan Mac', 'Sesi 2024/2025'), ('Ambilan Sesi 2024/2O25', ''),
+                 ('Session 2024-25 Feb intake', ''), ('Ambilan Disember 2024', ''))
         for n, (intake, rd) in enumerate(cases):
             with self.subTest(intake=intake):
                 app = self._app(self.degree, f'probe-{n}')

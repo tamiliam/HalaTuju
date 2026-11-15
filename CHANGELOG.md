@@ -177,6 +177,16 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a fifth review - the gift's OUTSIDE is a closed vocabulary; damage never reads inside (2026-11-15)
+
+Branch help-h3, not pushed. No migration. Money untouched (`pathway_engine.py`, `verdict_pathway.py` byte-identical to main; `test_start_year_money.py` passes).
+- **Closed vocabulary.** OUTSIDE fires only when every token of the intake line is a known one (intake / session / academic words, months, one clean year, one clean session, a first-term word, filler) and the reporting date is one clean date with one 20xx year. Otherwise the same years read inside or unknown. Never OUTSIDE for a December intake or an intake month that disagrees with the date's month.
+- **Damage reads unknown, never inside.** A letter or symbol glued to a number ("2O25", "20g21", "2024/2025Semester"), a messy reporting date (a range, two dates, an OCR'd year), two months on one line, a full date beside a session, "2024 - 25" style dash sessions, a written month-year in the wrong half of its session, and an exam year whose start year does not follow an intake word.
+- **Also unknown now:** a first term with no month on a session line ("Sesi 2024/2025 Semester I": it may be a February intake), a first term with a date in S+1, Semester 1 on a confirmation letter (Year 1 is needed), "Yr 2", "Thn 2", "Second Yr", "Upper Form 6", "Form Six Upper", "U6", "Tingkatan 6 Atas".
+- **Tests.** Every fifth-review probe is a test (`TheReviewProbes`: red, continuing and OCR lists); new mutation fuzz `MutatedOutsideLines` (glued letters, OCR swaps, extra words, second dates, damaged dates on every OUTSIDE line: unknown or the same OUTSIDE only; checked clean over 300 seeds); new `DamageNeverReadsInside` cases. On the generated table, 1,997 of 3,072 earlier OUTSIDE and 688 of 1,240 earlier INSIDE now read unknown; none moved between inside and outside.
+- **Docs.** decisions.md H3a fifth-review entry; reviewer FAQ start-year answer lists the new cases.
+- **Version.** `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (unpushed; help-h2 is .10; whichever merges second goes to .11 or later).
+
 ### fix: H3a second review - the gift's start-year rule fails a case only when it is sure (2026-11-15)
 
 Branch help-h3, not pushed. No migration. The money is untouched (still byte-identical to main). Lead's rule: only "outside" changes a result, so it must be SURE; "inside" needs a clear first-year signal; any doubt is the reviewer line.

@@ -111,9 +111,11 @@ class BareSessionsAndSesiII(SimpleTestCase):
                        'SESI I : 2025/2026', 'SESI 1-2025/2026', 'SESI 2-2025/2026'):
             with self.subTest(intake=intake):
                 self.assertEqual(_state(intake), 'unknown')
-        for intake in ('Sesi 2022/2023', 'Sesi II 2022/2023', 'Sesi Akademik 2023/2024'):
+        for intake in ('Sesi 2022/2023', 'Sesi Akademik 2023/2024', 'Semester 1 Sesi 2023/2024'):
             with self.subTest(intake=intake):
                 self.assertEqual(_state(intake), 'outside')
+        # Fifth review: "II" after "Sesi" is not in OUTSIDE's closed vocabulary.
+        self.assertEqual(_state('Sesi II 2022/2023'), 'unknown')
 
     def test_the_letters_date_picks_the_year_but_is_no_first_year_signal(self):
         self.assertEqual(gift_start_years('Sesi II 2024/2025', '2 Disember 2024'), {2024})
@@ -174,12 +176,13 @@ class SlashTailsAndWrittenMonths(SimpleTestCase):
                 self.assertEqual(_state(intake, rd), 'inside')
 
     def test_after_a_dash_a_date_is_not_a_session(self):
-        for intake, year in (('Julai 2025 – 26 Februari', 2025), ('Jul 2025 - 26/02/2026', 2025),
+        for intake, year in (('Jul 2025 - 26/02/2026', 2025),
                              ('6 / 2025 – 12 / 2026', 2025), ('2024/2026', 2024)):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_start_years(intake, '8 Jun ' + str(year)), {year})
-        # Two written month-years on one line (a course span): doubt, so unknown, never a session.
-        for intake in ('Julai 2025 - 26 Februari 2026', '1 Julai 2025 - 26 Feb 2026'):
+        # Two written month-years, or two months, on one line (a course span): doubt, so unknown,
+        # never a session (fifth review: two months are two dates).
+        for intake in ('Julai 2025 - 26 Februari 2026', '1 Julai 2025 - 26 Feb 2026', 'Julai 2025 – 26 Februari'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_start_years(intake, '8 Jun 2025'), EMPTY)
 
@@ -225,6 +228,46 @@ class ConfirmationLetters(SimpleTestCase):
                 self.assertEqual(gift_start_years(intake, rd, confirmation=True), EMPTY)
 
     def test_a_first_term_or_a_written_month_year_reads(self):
-        self.assertEqual(decide(gift_reading('Semester 1 Sesi 2025/2026', confirmation=True), GIFT), 'inside')
+        # Fifth review: a confirmation letter's Semester 1 or intake line may be the session's, shared
+        # by every year, so only Year 1 passes; the rest goes to a person.
+        self.assertEqual(decide(gift_reading('Semester 1 Sesi 2025/2026', confirmation=True), GIFT), 'unknown')
+        self.assertEqual(decide(gift_reading('Ambilan September 2025', confirmation=True), GIFT), 'unknown')
+        self.assertEqual(decide(gift_reading('Tahun 1 Semester 1 Sesi 2025/2026', confirmation=True), GIFT),
+                         'inside')
         self.assertEqual(decide(gift_reading('Ambilan September 2022, Sesi 2022/2023', confirmation=True), GIFT),
                          'outside')
+
+
+class DamageNeverReadsInside(SimpleTestCase):
+    """Fifth review, found by the mutation fuzz: a damaged line or date must not read INSIDE (a hidden
+    true year may be outside). Each case was inside before these guards."""
+
+    def test_a_number_run_with_a_letter_or_symbol_glued_is_unknown(self):
+        for intake in ('Intake 2O21 1 Julai 2025', 'Semester Pertama Session 2025/2026 20g21/22',
+                       'Ambilan 2025a', 'Ambilan Julai 2025—2026', 'Sesi 2025/2026Semester'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_start_years(intake), EMPTY)
+
+    def test_a_messy_date_is_unknown(self):
+        for rd in ('8 September 202q4', '8 Jun 2023 hingga 3 Januari 2026', '3 Mac 2027 / Jan 2026', '/ 2019'):
+            with self.subTest(rd=rd):
+                self.assertEqual(gift_start_years('Ambilan Julai 2025', rd), EMPTY)
+
+    def test_a_second_date_on_the_line_is_unknown(self):
+        for intake in ('Semester Pertama Sesi 2024/2025 1 Julai 2025', 'Ambilan 3 Mac 2025 Session 2024/25',
+                       '1 Julai 2025 Ambilan Jun', 'Sem I September 2021 1 Julai 2025',
+                       'Intake Mac 2024 - 25 2024', 'Ambilan Mac 2024 - 25'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_start_years(intake), EMPTY)
+
+    def test_a_written_month_year_in_the_wrong_half_of_the_session_is_unknown(self):
+        for intake in ('Intake Session Jan 2026 2026/27', 'Tahun 1 Semester 1 Julai 2025 Session 2024/25'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_start_years(intake), EMPTY)
+
+    def test_an_exam_year_needs_the_start_year_named_after_an_intake_word(self):
+        for intake in ('September SPM 2022 12/1/2025', 'Tahun 1 Semester 1 SPM 2021 2025/2026',
+                       '2025/2026 Ambilan Kohort SPM 2024', 'SPM 2023 3 Mac 2025'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_start_years(intake), EMPTY)
+        self.assertEqual(_state('SPM 2024, Ambilan 2025'), 'inside')
