@@ -16,8 +16,8 @@
  *     list is empty before it arrives, which reads as "one gift" — so acting before `settled`
  *     would either bounce every page load or flash every gift's runs.
  *   · `'ask'`  — several gifts, none chosen, and this role has NO door: the Programmes page shows
- *     its gift cards only to super and org_admin (`organisation/page.tsx` `maySeeGifts`), so a
- *     plain `admin` or `finance` sent there would find no gift to click. They get the house
+ *     its gift cards only to holders of the `programmes.edit` key (`hasGiftDoor`, TD-623), so a
+ *     person without it sent there would find no gift to click. They get the house
  *     `ChooseProgramme` box on the page instead. Never a redirect somewhere they cannot go.
  *     Also, for EVERY role, a chosen DRAFT while a live gift exists (TD-296): not payable.
  *   · `'open'` — the gift is known (one gift, one chosen, or a detail page's pin). Exactly as before.
@@ -42,7 +42,7 @@
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { effectiveRole, hasGiftDoor } from '@/lib/navigation'
+import { hasGiftDoor } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 
@@ -52,7 +52,7 @@ export type GiftGate = 'wait' | 'ask' | 'open'
 export const GIFT_DOOR = '/admin/organisation/programmes'
 
 export function useGiftGate(
-  role: { role?: string; is_super_admin?: boolean } | null | undefined,
+  role: { role?: string; is_super_admin?: boolean; page_keys?: readonly string[] | null } | null | undefined,
 ): GiftGate {
   // ⚠ THE ADDRESS BAR FIRST (TD-296). A shared `/admin/payments?programme=<code>` must open into
   // that gift — so nothing below may decide until the query has been read into the scope and the
@@ -72,7 +72,7 @@ export function useGiftGate(
   const draft = known && programme?.isActive === false && live.length > 0
   // ⚠ THE SAME PREDICATE THE RAIL READS (`hasGiftDoor`), so the row and the page can never
   // disagree: a role whose row is hidden outside a gift is exactly a role that gets redirected.
-  const hasDoor = !!role && hasGiftDoor(effectiveRole(role))
+  const hasDoor = !!role && hasGiftDoor(role.page_keys)   // TD-623 review: the served keys, not the label
   const redirect = noGift && hasDoor
 
   const sent = useRef(false)

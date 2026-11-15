@@ -64,4 +64,24 @@ describe('TD-623: the assignee filter reads the served keys, not the role', () =
   it('a reviewer label given students.view sees it (the key decides)', async () => {
     expect(await filterShown({ role: 'reviewer', page_keys: ['students.view', 'review'] })).toBe(true)
   })
+
+  it('QC (no assign door) gets the reviewer list in the filter, not only All / Unassigned', async () => {
+    mockApi.getAssignableAdmins.mockResolvedValue({
+      admins: [{ id: 7, name: 'Balan Reviewer', role: 'reviewer', languages: [], assignable: true }],
+      past_assignees: [],
+    } as never)
+    mockRole = { role: 'qc', page_keys: servedPageKeys('qc') }
+    expect(servedPageKeys('qc')).not.toContain('students.edit')   // no assign door: the old load was skipped
+    openAt('/admin/scholarship')
+    render(<GiftScope choices={TWO_GIFTS} settled><AdminScholarshipList /></GiftScope>)
+    await waitFor(() => expect(mockApi.getAssignableAdmins).toHaveBeenCalled())
+    const filter = await screen.findByLabelText('admin.scholarship.allAssignees')
+    await waitFor(() => expect(filter.querySelector('optgroup[label="admin.scholarship.byReviewer"]')).not.toBeNull())
+    expect(Array.from(filter.querySelectorAll('option')).map((o) => o.textContent)).toContain('Balan Reviewer')
+  })
+
+  it('a reviewer (no filter, no assign) does not load the reviewer list', async () => {
+    expect(await filterShown({ role: 'reviewer', page_keys: servedPageKeys('reviewer') })).toBe(false)
+    expect(mockApi.getAssignableAdmins).not.toHaveBeenCalled()
+  })
 })

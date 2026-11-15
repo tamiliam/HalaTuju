@@ -168,8 +168,10 @@ describe('Team tables T1: the console access matrix', () => {
     // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
     // Sprint S1's declared move (the Scholars row asks `scholars`) — see `test/s1Moves.ts`.
     // Sprint M2a's declared move (Team's address is `/team`) — see `test/m2aMoves.ts`.
-    expect(measured[shape]).toEqual(m2aMoves(s1Moves(
-      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)), shape)))
+    // TD-623 review's declared move: this matrix measures an OLDER payload (no `page_keys`), and the gift door is
+    // now the served `programmes.edit` key, so here nobody has one: choosing no gift hides nothing.
+    expect(measured[shape]).toEqual(td623GiftDoorMove(m2aMoves(s1Moves(
+      r55GuideMoves(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform)), shape))))
   })
 })
 
@@ -179,6 +181,15 @@ describe('Team tables T1: the console access matrix', () => {
  * answers what opening Team answers (it only sends the visitor to Team). Who sees the Mentors TAB is
  * `pageGuard.mayReadMentors` — exactly the old row's roles — pinned below. Nothing else moves.
  */
+/**
+ * TD-623 review (2026-11-15): `navigation.hasGiftDoor` reads the served `programmes.edit` key, not the
+ * `programmeConfig` row's roles. On an older payload (no `page_keys`, which the server no longer sends) there is
+ * no gift door, so the rows that wait for a gift do not wait: the no-gift menu IS the menu. Nothing else moves.
+ */
+function td623GiftDoorMove(cells: Record<string, unknown>): Record<string, unknown> {
+  return { ...cells, menuNoGift: cells.menu }
+}
+
 function t3Moves(cells: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...cells }
   for (const m of MENUS) out[m] = (cells[m] as string[]).filter((id) => !id.startsWith('mentors:'))

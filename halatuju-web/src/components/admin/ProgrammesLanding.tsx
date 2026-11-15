@@ -3,8 +3,8 @@
 // Organisation → Programmes — everyone's front door on the partner login (T5c P5, owner 2026-11-04).
 //
 // TWO DRAWINGS, ONE PAGE:
-//  * the roles that may step INTO a gift (`hasGiftDoor`: super, org_admin) get the full card grid they already
-//    know (`GiftProgrammes.tsx` — reused, not copied), with its New / Change code / Delete;
+//  * whoever may step INTO a gift (`hasGiftDoor`: the served `programmes.edit` key, TD-623 — not a role label)
+//    gets the full card grid they already know (`GiftProgrammes.tsx` — reused, not copied), with its New / Change code / Delete;
 //  * everyone else gets the narrowed `my-programmes` cards: the programmes where THEY have work, each with
 //    only the counts the server chose to send for this caller.
 //
@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { effectiveRole, hasGiftDoor } from '@/lib/navigation'
+import { hasGiftDoor } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { withGift } from '@/lib/giftHref'
 import { PHONE_CARD_XL } from '@/lib/phoneConsole'
@@ -53,7 +53,7 @@ export default function ProgrammesLanding() {
     <div data-testid="overview">
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.orgPage.nav')}</h1>
       <PendingCards token={token} />
-      {hasGiftDoor(effectiveRole(role)) ? <GiftProgrammes token={token} /> : <MyProgrammesCards token={token} />}
+      {hasGiftDoor(role?.page_keys) ? <GiftProgrammes token={token} /> : <MyProgrammesCards token={token} />}
     </div>
   )
 }

@@ -2,7 +2,8 @@
  * @jest-environment jsdom
  *
  * Organisation → Programmes, the landing (T5c P5). Pinned here:
- *  * the gift-door roles get the full card grid (`GiftProgrammes`), and nobody else does;
+ *  * whoever holds the gift door (the served `programmes.edit` key, TD-623) gets the full card grid
+ *    (`GiftProgrammes`), and nobody else does — whatever the role label;
  *  * a reviewer's card carries ONE count, "Cases assigned to you"; a mentor's "Scholars you mentor"; a person
  *    who is both sees both;
  *  * ⚠ A COUNT THE SERVER DID NOT SEND IS NOT DRAWN — never as a zero;
@@ -18,7 +19,7 @@ import * as api from '@/lib/admin-api/myProgrammes'
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: mockLocale }) }))
 let mockLocale = 'en'
 let mockRole: Record<string, unknown> = { role: 'reviewer' }
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: mockRole }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))   // TD-623: the keys the server serves
 const mockSelect = jest.fn()
 jest.mock('@/lib/programmeScope', () => ({ useProgrammeScope: () => ({ select: mockSelect, chosen: '' }) }))
 jest.mock('@/lib/admin-api/myProgrammes')
@@ -64,6 +65,25 @@ describe('who gets which drawing', () => {
     expect(within(card).queryByTestId('count-cases')).toBeNull()
     // Every gift is served, so the subtitle is the organisation's own, not "only where you have work".
     expect(screen.getByText('admin.programmes.subtitle')).toBeTruthy()
+  })
+})
+
+// ⚠ TD-623 review: the grid follows the served `programmes.edit` key (the `programme_settings`
+// door the server's `may_edit_programmes` reads), not the role label.
+describe('the grid follows the key, not the label', () => {
+  it('an admin GRANTED programmes.edit gets the full gift grid', () => {
+    mockRole = { role: 'admin', page_keys: ['programmes.view', 'programmes.edit'] }
+    render(<ProgrammesLanding />)
+    expect(screen.getByTestId('gift-grid')).toBeTruthy()
+    expect(mockApi.getMyProgrammes).not.toHaveBeenCalled()
+  })
+
+  it('an org_admin label WITHOUT programmes.edit gets the narrowed cards', async () => {
+    mockRole = { role: 'org_admin', page_keys: ['programmes.view'] }
+    serve([prog()], true)
+    render(<ProgrammesLanding />)
+    await screen.findByTestId('my-programme-b40')
+    expect(screen.queryByTestId('gift-grid')).toBeNull()
   })
 })
 

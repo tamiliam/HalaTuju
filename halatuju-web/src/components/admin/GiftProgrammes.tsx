@@ -1,7 +1,7 @@
 'use client'
 
 // The gifts this organisation runs — the card grid of Organisation → Programmes for the roles that may step
-// INTO a gift (super, org_admin: `hasGiftDoor`).
+// INTO a gift (`hasGiftDoor`: the served `programmes.edit` key, TD-623 — not a role label).
 //
 // ⚠ T5c P5 (owner, 2026-11-04): PROGRAMMES IS A PAGE AND A MENU ROW AGAIN, and everyone's front door. From
 // 2026-09-03 this grid was a section of Organisation → Overview and `/admin/organisation/programmes` redirected

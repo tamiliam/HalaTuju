@@ -118,9 +118,12 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
   })
 
   /** TD-623's declared move: on an older payload every in-page gate and the Mentors tab answer false (no role
-   *  fallback). The menu, every route guard and the landing do not move. */
+   *  fallback), and (review round) nothing waits for a gift. The menu, every route guard and the landing do not
+   *  move. */
   const td623OlderMoves = (cells: Record<string, unknown>): Record<string, unknown> => {
-    const out: Record<string, unknown> = { ...cells, mentorsTab: false }
+    // TD-623 review: the gift door is the served `programmes.edit` key, so an older payload has none and the
+    // rows that wait for a gift do not wait — the no-gift menu IS the menu.
+    const out: Record<string, unknown> = { ...cells, mentorsTab: false, menuNoGift: cells.menu }
     for (const door of Object.keys(PAGE_GATES)) out[`gate ${door}`] = false
     return out
   }

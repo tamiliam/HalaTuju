@@ -36,7 +36,7 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en
 // A mutable cell so the gift-gate tests can sign in as each role; every older test keeps `admin`.
 let mockRole: Record<string, unknown> = { role: 'admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),   // TD-623: the keys the server serves
 }))
 // The page redirects through the router since 2026-09-28 (`useGiftGate`).
 const mockReplace = jest.fn()

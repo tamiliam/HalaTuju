@@ -15,6 +15,7 @@ import * as api from '@/lib/admin-api'
 import GiftProgrammes from '@/components/admin/GiftProgrammes'
 import { GiftScope, TWO_GIFTS, crumbText } from '@/test/giftScope'
 import { hasGiftDoor } from '@/lib/navigation'
+import { servedPageKeys } from '@/test/staffPresets'
 
 // `t` echoes its key — except "Pays from", whose NAME is the point of asserting it, and the
 // TD-244 wallet line, whose count and NAMES are.
@@ -30,7 +31,7 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({
 const DEFAULT_ROLE = { role: 'admin', is_super_admin: true, owning_org_id: 11 }
 let mockRole: Record<string, unknown> = DEFAULT_ROLE
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),   // TD-623: the keys the server serves
 }))
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
@@ -326,7 +327,7 @@ describe('who is redirected and who is asked', () => {
       mockReplace.mockClear()
       asRole(role)
       const view = render(<GiftScope><PaymentsLandingPage /></GiftScope>)
-      if (hasGiftDoor(role)) {
+      if (hasGiftDoor(servedPageKeys(role))) {   // TD-623 review: the served keys, as the page reads them
         await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
       } else {
         expect(await screen.findByTestId('choose-programme')).toBeTruthy()
@@ -334,6 +335,15 @@ describe('who is redirected and who is asked', () => {
       }
       view.unmount()
     }
+  })
+
+  // ⚠ TD-623 review: the door is the KEY. An `admin` granted `programmes.edit` (the server's
+  // `may_edit_programmes`) has cards to click, so the page sends them there rather than asking.
+  it('an admin GRANTED programmes.edit is redirected, not asked', async () => {
+    mockRole = { role: 'admin', owning_org_id: 11, page_keys: [...(servedPageKeys('admin') ?? []), 'programmes.edit'] }
+    render(<GiftScope><PaymentsLandingPage /></GiftScope>)
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
   })
 
   it('finance can USE the box: choosing a gift loads its runs', async () => {

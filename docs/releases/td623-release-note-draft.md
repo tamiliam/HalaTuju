@@ -10,6 +10,11 @@ Decisions: `docs/decisions.md` (2026-11-15, TD-623 builder calls, pending archit
   had not been sent; every sign-in sends them now, so nobody should notice a difference on those pages.
 - **QC people now see the "All assignees" filter on Applications.** It shows for whoever can read every application
   or assign cases. Admins keep it; reviewers still do not see it (their list is already their own cases).
+- **QC people see the reviewers' names in that filter** (it was empty for them before this round).
+- **The gift cards on Programmes follow the "edit programmes" permission.** Whoever holds it gets the full gift
+  grid (and Payments/Spending send them there to pick a gift); whoever does not gets the narrowed cards. Today that
+  is the same people as before (super and organisation admins); it differs only for someone given or denied that
+  permission by hand.
 - **The pages concerned:** Announcements, Surveys and Development (making and reading them), the scholar's Mentor,
   Surveys and Growth tabs, the Mentors tab and Emails tab on Team, the Sponsors emails panel, the Sources invite
   button, the cockpit's witness card and its "Reject" card for organisation admins, and the request actions on an
@@ -19,7 +24,8 @@ Decisions: `docs/decisions.md` (2026-11-15, TD-623 builder calls, pending archit
 
 - No migration, no environment variable, no api change, no money path. Payments and sponsor credits are untouched
   (frozen until M4).
-- The menu and where a person lands after sign-in are unchanged.
+- The menu and where a person lands after sign-in are unchanged (the Programme group's fold now follows the edit
+  programmes permission, which today matches the old roles).
 
 ## Deploy
 
@@ -31,3 +37,5 @@ Services: web. No migrate step. Publish in a release window with the owner's yes
    Mentors and Emails tabs.
 2. As a QC person: Applications shows the "All assignees" filter.
 3. As a reviewer: Applications shows no assignee filter, and Announcements is not offered.
+4. As a QC person: the "All assignees" filter lists the reviewers by name.
+5. As an organisation admin: Organisation -> Programmes shows the full gift grid, as before.

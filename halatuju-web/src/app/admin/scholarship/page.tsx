@@ -177,17 +177,18 @@ function StaffScholarshipList() {
 
   const apps = data?.applications ?? []
 
-  // Reviewers for the assignment dropdown — fetched once, for callers who can assign
-  // (super or org_admin). The endpoint org-scopes the pool for a non-super caller.
+  // Reviewers for the assignment dropdown AND the assignee filter's "By reviewer" group — fetched once,
+  // for whoever sees either (TD-623 review: QC reads every application and so gets the filter without
+  // the assign door; the server's `assignable-admins` answers any staff caller, org-scoped for a non-super).
   useEffect(() => {
-    if (!token || !canAssign) return
+    if (!token || !canFilterByAssignee) return
     getAssignableAdmins({ token })
       .then((r) => {
         setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable, gifts: a.gifts })))
         setPastAssignees(r.past_assignees ?? [])
       })
       .catch(() => {})
-  }, [token, canAssign])
+  }, [token, canFilterByAssignee])
 
   // The Source filter and tooltips: the source names, read separately — NOT added to the list
   // endpoint (pinned at 4 queries). Since sources Sprint C every list role may read them (reviewer

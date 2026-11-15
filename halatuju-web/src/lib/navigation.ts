@@ -27,6 +27,7 @@
  */
 
 import { ORG_READ_KEYS, admitsRow } from './staffPermissions'
+import { opensDoor } from './pageDoors'
 import { isSuperRole } from './superRole'
 import {
   SIDEBAR_SCOPES, type NavScope, type ProbeKey, type BadgeKey, type ProbeState, type NavGate, type NavItemOf,
@@ -403,7 +404,7 @@ export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide'
   if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring, ctx.tables, ctx.pageKeys)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
-  if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
+  if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.pageKeys)) return 'hide'
   if (item.gate.mode === 'probe') {
     return ctx.probes[item.gate.probe] === 'live' ? 'show' : item.gate.dark
   }
@@ -436,11 +437,12 @@ export function visibleNav(ctx: NavContext): VisibleNavGroup[] {
  * ⚠ **TWO ROLES ARE EXEMPT, AND IT IS NOT A COURTESY.** A reviewer's and a QC's only menu row is
  * Applications, which lives in this group — fold it and they log in to an empty sidebar with no
  * way to their own queue. And a plain `admin` or `finance` cannot fold it either, for a subtler
- * reason: the Programmes page shows its gift cards only to super and org_admin (it applies the
- * programmes endpoint's own gate — that page's rule, not this module's), so those two roles have
+ * reason: the Programmes page shows its gift cards only to whoever holds `programmes.edit` (it applies the
+ * programmes endpoint's own gate — that page's rule, not this module's), so without that key they have
  * **no door** into a gift; folding the group would strand them on the outside for good.
  *
- * That is why the exemption is keyed on `programmeConfig`'s roles rather than on a role list:
+ * That is why the exemption is keyed on `programmeConfig`'s door (TD-623 review: its served key, no longer
+ * its role list):
  * whoever may open a gift's configuration is exactly whoever the Programmes page offers a gift
  * to click on. The two facts are one fact, stated once. The day the cards open to another role,
  * the fold follows without anyone remembering to update it here.
@@ -448,14 +450,21 @@ export function visibleNav(ctx: NavContext): VisibleNavGroup[] {
 export function programmeGroupFolded(ctx: NavContext): boolean {
   if (ctx.pathname === undefined) return false
   if (activeItem(ctx.pathname)?.scope === 'programme') return false
-  return hasGiftDoor(ctx.role)
+  return hasGiftDoor(ctx.pageKeys)
 }
 
-/** May this role step INTO a gift from the Programmes page? ONE answer for the fold above,
- *  `needsProgramme` in `canSee` and `useGiftGate` (2026-09-28): with a door a money row waits for
- *  a gift and its page redirects there; without one the row stays and the page asks. */
-export function hasGiftDoor(role: AdminRoleName): boolean {
-  return NAV_ITEMS.find((i) => i.id === 'programmeConfig')?.roles.includes(role) ?? false
+/** May this person step INTO a gift from the Programmes page? ONE answer for the fold above,
+ *  `needsProgramme` in `canSee`, `useGiftGate` and the Programmes landing (2026-09-28): with a door a
+ *  money row waits for a gift and its page redirects there; without one the row stays and the page asks.
+ *
+ *  TD-623 review (owner 2026-11-15, "permissions determine what the admin views and edits"): the door is
+ *  `programmeConfig`'s own server door, `programme_settings` (`programmes.edit`), read from the SERVED keys —
+ *  the gate every gift endpoint applies (`surface_gates.may_edit_programmes`: the gift grid, a gift's
+ *  settings, its years, its configuration). It used to read that row's ROLE list, so an admin granted
+ *  `programmes.edit` had the menu row but was treated by label on the landing and the gift gate. No keys
+ *  (an older payload) = no door: the row stays and the page asks, never a redirect into a grid it cannot open. */
+export function hasGiftDoor(pageKeys: readonly string[] | null | undefined): boolean {
+  return opensDoor({ page_keys: pageKeys }, 'programme_settings') === true
 }
 
 /** True when `pathname` is `href` or sits underneath it. The boundary matters: without the

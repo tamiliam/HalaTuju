@@ -23,6 +23,7 @@ import {
   type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
 import { floorCount, walkFloor } from '@/test/sourceGuard'
+import { servedPageKeys } from '@/test/staffPresets'
 
 const ctx = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}): NavContext =>
   ({ role, probes: { ...NO_PROBES, ...probes } })
@@ -651,10 +652,12 @@ describe('visibleNav groups', () => {
    * If a later change marks `applications` with `needsProgramme`, these tests fail — deliberately.
    */
   describe('a row that acts on one gift waits until the gift is known', () => {
+    // TD-623: the gift door is the served `programme_settings` key, so each context carries the
+    // keys the server serves that role — not the label.
     const noGift = (role: AdminRoleName): NavContext =>
-      ({ role, probes: NO_PROBES, programmeChosen: false })
+      ({ role, probes: NO_PROBES, programmeChosen: false, pageKeys: servedPageKeys(role) })
     const gift = (role: AdminRoleName): NavContext =>
-      ({ role, probes: NO_PROBES, programmeChosen: true })
+      ({ role, probes: NO_PROBES, programmeChosen: true, pageKeys: servedPageKeys(role) })
 
     it('hides Configuration, Payments and Spending while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
@@ -704,7 +707,7 @@ describe('visibleNav groups', () => {
       'every role that may open Payments or Spending must be checked against hasGiftDoor')
       for (const { role, item } of seen) {
         const hidden = canSee(item, noGift(role)) === 'hide'
-        expect([role, item.id, hidden]).toEqual([role, item.id, hasGiftDoor(role)])
+        expect([role, item.id, hidden]).toEqual([role, item.id, hasGiftDoor(servedPageKeys(role))])
       }
     })
 
@@ -984,8 +987,11 @@ describe('chordTarget', () => {
 // ── 9. The Programme group folds away until you are inside a gift (2026-09-14) ──────────────
 describe('programmeGroupFolded', () => {
   // Owner: "Hide Programme section. It can only be accessed by clicking on Programmes above."
+  // TD-623: the fold reads the served `programme_settings` key, so the context carries the keys
+  // the server serves that role.
+  const kctx = (role: AdminRoleName): NavContext => ({ ...ctx(role), pageKeys: servedPageKeys(role) })
   const groupsAt = (role: AdminRoleName, pathname: string) =>
-    visibleNav({ ...ctx(role), pathname }).map((g) => g.scope)
+    visibleNav({ ...kctx(role), pathname }).map((g) => g.scope)
 
   it('a super on a platform page does not see the Programme group', () => {
     expect(groupsAt('super', '/admin')).not.toContain('programme')
@@ -1016,8 +1022,9 @@ describe('programmeGroupFolded', () => {
   })
 
   it('a plain admin and finance ALWAYS keep it — the Programmes page shows them no gift to click', () => {
-    // The gift cards on /admin/organisation/programmes mirror the programmes endpoint's gate (super +
-    // org_admin), so these two roles have no door INTO a gift. Folding would strand them.
+    // The gift cards on /admin/organisation/programmes mirror the programmes endpoint's gate (the
+    // `programme_settings` key, which the server serves neither role), so these two have no door
+    // INTO a gift. Folding would strand them.
     for (const role of ['admin', 'finance'] as const) {
       expect(groupsAt(role, '/admin/organisation')).toContain('programme')
       expect(groupsAt(role, '/admin')).toContain('programme')
@@ -1027,15 +1034,32 @@ describe('programmeGroupFolded', () => {
   it('the exemption is keyed on who may open a gift, not on a role list', () => {
     // Whoever may open programmeConfig is exactly whoever the Programmes page offers a gift to.
     // One fact, stated once — the day the cards open to another role, the fold follows.
-    const door = NAV_ITEMS.find((i) => i.id === 'programmeConfig')!
+    // TD-623: "who may open a gift" is the served `programme_settings` key, not the row's role list.
     for (const role of ROLE_NAMES) {
       // Only roles that HAVE a Programme group can have it folded; a partner has no programme
       // rows at all, and "absent" is not "folded".
-      const hasGroup = visibleNav(ctx(role)).some((g) => g.scope === 'programme')
+      const hasGroup = visibleNav(kctx(role)).some((g) => g.scope === 'programme')
       if (!hasGroup) continue
       const folded = !groupsAt(role, '/admin/organisation').includes('programme')
-      expect(folded).toBe(door.roles.includes(role))
+      expect([role, folded]).toEqual([role, hasGiftDoor(servedPageKeys(role))])
     }
+  })
+
+  // ⚠ TD-623 review: the KEY decides, not the label. An `admin` granted `programmes.edit` has the
+  // gift door (the server's `may_edit_programmes` reads the same key), so the group folds for them
+  // and the money rows wait for a gift; an `org_admin` label whose keys lack it keeps the group.
+  it('⚠ the gift door follows the programmes.edit key, whatever the label', () => {
+    const granted = [...(servedPageKeys('admin') ?? []), 'programmes.edit']
+    expect(hasGiftDoor(granted)).toBe(true)
+    expect(visibleNav({ ...ctx('admin'), pageKeys: granted, pathname: '/admin/organisation' })
+      .map((g) => g.scope)).not.toContain('programme')
+    const stripped = (servedPageKeys('org_admin') ?? []).filter((k) => k !== 'programmes.edit')
+    expect(hasGiftDoor(stripped)).toBe(false)
+    expect(visibleNav({ ...ctx('org_admin'), pageKeys: stripped, pathname: '/admin/organisation' })
+      .map((g) => g.scope)).toContain('programme')
+    // No keys at all is no door — never a fallback to the label.
+    expect(hasGiftDoor(undefined)).toBe(false)
+    expect(hasGiftDoor([])).toBe(false)
   })
 
   it('⚠ a caller that gives no pathname is never folded — absence must not invent a block', () => {
@@ -1044,7 +1068,7 @@ describe('programmeGroupFolded', () => {
 
   it('⚠ does NOT key on programmeChosen, which is always true on a single-gift tenant', () => {
     // If it did, the group would never fold on production. Chosen and outside a gift → folded.
-    expect(visibleNav({ ...ctx('super'), pathname: '/admin', programmeChosen: true })
+    expect(visibleNav({ ...kctx('super'), pathname: '/admin', programmeChosen: true })
       .map((g) => g.scope)).not.toContain('programme')
   })
 })
