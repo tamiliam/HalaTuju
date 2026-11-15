@@ -177,6 +177,19 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a Opus review FAIL - Semester 3 before the date, date ranges, bare sessions on the gift (2026-11-15)
+
+Branch help-h3, not pushed. No migration. Money and eligibility work.
+- **Semester 3 and up is read first (review item 1, high).** `session_start_year` now checks for Semester 3+ BEFORE the letter's reporting date, so "Semester 3 Sesi 2024/2025" with "3 Mac 2025" reads no year instead of 2025 (it passed a continuing student on the Degree gift). The gift's rule also no longer takes the letter's own reporting date back through the stored `reporting_date` (`pathway_engine.course_start_span`); an officer's different date still counts. The money (`course_start_year`) keeps its stored-date fallback.
+- **A date range is not a session (item 2, money).** "Julai 2025 - 26 Februari 2026" was read as session 2025/26, a 2026 start, so a continuing STPM student's RM1,000 became RM3,000. A two-digit tail followed by a month and a year, by a numeric date, or (after a dash) by a month name is a day, not a session. "Sesi 2025/2026", "2025/26", "Sesi 2025-2026" and "Session 2024/25 February intake" still read as sessions.
+- **Bare session on the gift (item 4, lead's ruling).** A bare "Sesi S/S+1" (no term, no intake month, no reporting date) is read as either year for the gift's start-year rule only: both in the gift's years = pass, both out = `pathway_start_year_outside`, one in and one out = `pathway_start_year_unknown` (a person checks, never an automatic fail). Award sizing and the funding estimate keep S.
+- **Docstring (item 3).** `session_start_year` and `course_start_year` now say what '' becomes: the money falls back to the stored reporting date; the gift's rule does not.
+- **Moved.** The session reading moved verbatim plus these fixes to the new `apps/scholarship/session_year.py` (`pathway_engine` re-exports `session_start_year` and `bare_session`), so `pathway_engine.py` stays under 600 lines.
+- **Reviewer FAQ.** The start-year entry says a bare session straddling the gift's years is left for the reviewer to check.
+- **Logged.** TD-631: a polytechnic "Sesi II 2024/2025" (a December 2024 start) with no reporting date reads 2025.
+- **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.7 (.6 is the H2 branch's). `MODEL_VERSION` unchanged.
+- **Tests.** `test_start_year_rule.py` class `ReviewFixes` (11 tests): Semester 3 with a date, end to end with the stored date; an officer's date; date ranges and real sessions; the STPM range sized RM1,000; the three bare-session cases; bare-session money unchanged (award and funding estimate).
+
 ### fix: H3a review follow-ups - session years, the student's reason, the QC floor test (2026-11-15)
 
 Branch help-h3, not pushed, on top of H3a. No migration.

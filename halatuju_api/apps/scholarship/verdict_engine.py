@@ -100,7 +100,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-14.3 — TD-617 re-check: a 'pismp' code with declared STPM/matric results is asked before submit (as owed after); SPM-only still not asked.
 #   2026-11-14.4 — #67 scope 3: the IC name merge (a read that is a strict subset of a signature escalates and merges) and the profile-name alignment move the Identity fact from partly to matches; scope 2's layout reading (live 14 Nov) moved IC reads without a bump.
 #   2026-11-15.3 — H3 (#597): an intake's course-start years (`start_year`); a year outside them turns Pathway red (pathway_start_year_outside), an unreadable one is a reviewer line with no band move.
-VERDICT_ENGINE_VERSION = '2026-11-15.5'   # 11-15.5 H3a review: an academic session S/S+1 starts in S+1 on Semester II / a February or March intake (S on Semester I / September or October, and on a bare session as before); the letter's reporting date inside the session wins; Semester 3+ or both terms read no year (a person checks). .4 is the H2 branch's.
+#   2026-11-15.5 — H3a review: an academic session S/S+1 starts in S+1 on Semester II / a February or March intake (S on Semester I / September or October, and on a bare session); the letter's reporting date inside the session wins; Semester 3+ or both terms read no year (a person checks). .4 is the H2 branch's.
+VERDICT_ENGINE_VERSION = '2026-11-15.7'   # 11-15.7 H3a review FAIL fix: Semester 3+ reads no year even with a reporting date; a Form 6 date range ('Julai 2025 - 26 Februari 2026') is not a session; on the gift's start-year rule a bare session straddling the gift's years is unknown (a person checks), the money keeps S. .6 is the H2 branch's.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

@@ -346,3 +346,99 @@ class TheGiftEditorDoor(TestCase):
         line = [m for m in logs.output if 'intake_year_requirements_set' in m]
         self.assertEqual(len(line), 1)
         self.assertIn('allowed_start_years:[]->[2025, 2026]', line[0])
+
+
+class ReviewFixes(_Base):
+    """The H3a Opus review FAIL (2026-11-15), items 1, 2 and 4."""
+
+    def _stpm(self, cohort, suffix):
+        student = make_student(supabase_user_id=f'sy-st-{suffix}', name='Anbu A/L Raj',
+                               household_income=1500, household_size=5)
+        return make_application('profile_complete', cohort=cohort, student=student,
+                                chosen_pathway='stpm', father_occupation='gov',
+                                mother_occupation='homemaker')
+
+    # 1. Semester 3 and up is read BEFORE the reporting date.
+    def test_semester_3_with_a_reporting_date_reads_no_year(self):
+        self.assertEqual(pe.session_start_year('Semester 3 Sesi 2024/2025', '3 Mac 2025'), '')
+        self.assertEqual(pe.session_start_year('Sesi 2024/2025 Semester IV', '9 Sept 2025'), '')
+
+    def test_semester_3_with_its_date_stored_goes_to_a_person_on_the_gift(self):
+        import datetime
+        app = self._app(self.degree, 'sem3-rd')
+        self._offer(app, intake='Semester 3 Sesi 2024/2025', reporting_date='3 Mac 2025')
+        app.reporting_date = datetime.date(2025, 3, 3)    # the letter's own date, synced
+        app.save(update_fields=['reporting_date'])
+        codes = self._codes(app)
+        self.assertIn(start_year.UNKNOWN, codes)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+        self.assertEqual(start_year.reading(app)['state'], 'unknown')
+        # The money keeps its reading: the stored date, as before.
+        self.assertEqual(pe.course_start_year(app), 2025)
+
+    def test_an_officers_own_date_still_counts_on_the_gift(self):
+        import datetime
+        app = self._app(self.degree, 'sem3-off')
+        self._offer(app, intake='Semester 3 Sesi 2024/2025')   # the letter has no date
+        app.reporting_date = datetime.date(2025, 3, 3)
+        app.save(update_fields=['reporting_date'])
+        self.assertEqual(start_year.reading(app)['state'], 'inside')
+
+    # 2. A date range is not a session.
+    def test_a_date_range_is_not_a_session(self):
+        for intake in ('Julai 2025 - 26 Februari 2026', '1 Julai 2025 - 26 Feb 2026',
+                       'Julai 2025 – 26 Februari', 'Jul 2025 - 26/02/2026'):
+            with self.subTest(intake=intake):
+                self.assertIsNone(pe.session_start_year(intake))
+
+    def test_real_sessions_still_read(self):
+        for intake in ('Sesi 2025/2026', '2025/26', 'Sesi 2025-2026', 'Sesi 2025 - 26',
+                       'Session 2025/26 October intake'):
+            with self.subTest(intake=intake):
+                self.assertEqual(pe.session_start_year(intake), '2025')
+        self.assertEqual(pe.session_start_year('Session 2024/25 February intake'), '2025')
+
+    def test_a_form_6_date_range_sizes_the_stpm_award_as_continuing(self):
+        app = self._stpm(self.plain, 'range')
+        self._offer(app, intake='Julai 2025 - 26 Februari 2026')
+        self.assertEqual(pe.course_start_year(app), 2025)
+        self.assertEqual(str(award.proposed_award_amount(app)), '1000')
+
+    # 4. A bare session on the gift: one year in and one out = a person checks.
+    def test_a_bare_session_straddling_the_gifts_years_is_unknown(self):
+        app = self._app(self.degree, 'bare-straddle')
+        self._offer(app, intake='Sesi 2024/2025')
+        codes = self._codes(app)
+        self.assertIn(start_year.UNKNOWN, codes)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+        self.assertEqual(award.verdict_disqualifier(build_verdict(app)), '')
+
+    def test_a_bare_session_inside_the_gifts_years_passes(self):
+        app = self._app(self.degree, 'bare-in')
+        self._offer(app, intake='Sesi 2025/2026')
+        self.assertFalse(self._codes(app) & {start_year.OUTSIDE, start_year.UNKNOWN})
+        self.assertEqual(start_year.reading(app)['state'], 'inside')
+
+    def test_a_bare_session_outside_the_gifts_years_fails(self):
+        app = self._app(self.degree, 'bare-out')
+        self._offer(app, intake='Sesi 2022/2023')
+        fact = self._pathway(app)
+        item = next(i for i in fact['unresolved'] if i['code'] == start_year.OUTSIDE)
+        self.assertEqual(item['params'], {'start_year': '2022', 'years': '2025, 2026'})
+
+    def test_a_bare_session_keeps_the_first_year_for_the_money(self):
+        from apps.scholarship import funding_estimate
+        app = self._stpm(self.degree, 'bare-money')
+        self._offer(app, intake='Sesi 2024/2025')
+        twin = self._stpm(self.degree, 'bare-money-twin')
+        self._offer(twin, intake='2024')
+        self.assertEqual(pe.course_start_year(app), 2024)
+        self.assertEqual(award.proposed_award_amount(app), award.proposed_award_amount(twin))
+        self.assertEqual(str(award.proposed_award_amount(app)), '1000')
+        self.assertEqual(funding_estimate._years_done(app), 2)
+
+    def test_a_dated_or_termed_session_is_not_bare(self):
+        self.assertIsNone(pe.bare_session('Sesi 2024/2025', '17 Februari 2025'))
+        self.assertIsNone(pe.bare_session('Sesi 2024/2025 Semester I'))
+        self.assertIsNone(pe.bare_session('Sesi 2024/2025 Ambilan Februari'))
+        self.assertEqual(pe.bare_session('Sesi 2024/2025'), (2024, 2025))
