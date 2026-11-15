@@ -148,4 +148,5 @@ class ConfirmReadsTheLettersCourseTest(_Base):
 class ModelVersionTest(SimpleTestCase):
     def test_the_doc_recognition_version_is_bumped(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION
-        self.assertEqual(MODEL_VERSION, '1.27.0')
+        # A2.7a shipped 1.27.0; later doc-recognition changes bump it again (1.28.0: student help H1).
+        self.assertGreaterEqual(tuple(map(int, MODEL_VERSION.split('.'))), (1, 27, 0))

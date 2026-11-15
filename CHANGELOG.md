@@ -196,6 +196,14 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
+### fix: student help H1 - a village head's stamp counts wherever it sits in the approver's part of the form (2026-11-15)
+
+Branch help-h1, not pushed. Application #552 (the same shape on 4 documents in 2 applications): a signed Ketua Kampung income form, his name stamp on the approver's Nama / Alamat lines, the printed "Cop Rasmi" box left empty, no letterhead. The picture read said "no stamp" because the box was empty, so the form was refused "no issuing body" (`income_doc_unapproved`).
+- The approval picture read (`income_declaration.APPROVAL_PROMPT`) now looks for the approver's stamp in the whole approver's part of the form: beside or over the signature, on the Nama / Jawatan / Alamat lines, or in the box. An empty printed stamp box never cancels a stamp found elsewhere there. A stamp outside that part (for example in the applicant's own part) is not the approver's.
+- Unchanged: printed or typed text is not a stamp; an empty box alone is not a stamp; handwriting is not a stamp, so a handwritten title with no stamp still fails; the approval rules (`approval_missing`) are not touched.
+- Only NEW picture reads see the change. Stored reads (including #552's) keep their answer until they are re-read, which is a paid call and needs the owner's yes. Nothing re-reads them automatically.
+- Genuineness `MODEL_VERSION` 1.27.0 -> 1.28.0. No migration, no web change. Tests: `TheApproverStampAnywhereInItsSection` in `test_income_declarations.py`; the A2.7a version pin in `test_offer_pages_and_lines.py` now checks "at least 1.27.0". Decision: `docs/decisions.md` (2026-11-15, student help H1).
+
 ### refactor: F2b stage 1 - scholarship reaches 19 loose courses helpers through the courses public door (2026-11-15)
 
 Branch f2b1, not pushed. Import-only: no behaviour change, no migration, no web change.
