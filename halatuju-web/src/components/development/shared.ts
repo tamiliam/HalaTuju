@@ -4,8 +4,6 @@
  */
 import type { ModuleRow } from '@/lib/admin-api/development'
 
-/** The roles the server lets in (`development.may_make`); the screens refuse the rest and call nothing. */
-export const MAKER_ROLES = ['super', 'org_admin', 'admin']
 const K = 'admin.development'
 
 type T = (k: string, vars?: Record<string, string>) => string

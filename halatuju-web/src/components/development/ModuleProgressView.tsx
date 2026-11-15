@@ -6,14 +6,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
+import { holdsDoor, readsAllScholars } from '@/lib/pageGuard'
 import {
   fetchModuleCsv, getModuleProgress, remindModule, reviewTask, taskFileLink,
   type ModuleProgress, type ProgressBucket, type ProgressRow,
 } from '@/lib/admin-api/development'
 import PanelTabs from '@/components/admin/PanelTabs'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
-import { MAKER_ROLES, audienceLabel, giftHref, openSigned } from './shared'
+import { audienceLabel, giftHref, openSigned } from './shared'
 
 const K = 'admin.development.progress'
 const BTN = 'min-h-11 rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-800 disabled:opacity-60'
@@ -73,7 +73,7 @@ function Review({ moduleId, row, token, t, onSaved }: {
 export default function ModuleProgressView({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = opensDoorOr(role, 'development', MAKER_ROLES)   // T5c P4: the server's door
+  const allowed = holdsDoor(role, 'development')   // T5c P4: the server's door; TD-623: keys only
   const opensFile = readsAllScholars(role)   // sprint S1: the name links only for a reader of every file
   const [data, setData] = useState<ModuleProgress | null>(null)
   const [failed, setFailed] = useState(false)

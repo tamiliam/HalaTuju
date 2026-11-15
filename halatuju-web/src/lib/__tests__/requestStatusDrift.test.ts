@@ -59,13 +59,17 @@ const API_ACTION: Record<Exclude<RequestAction, 'comment'>, string> = {
   decline: 'decline', ai_rerun: 'ai_rerun', ask: 'ask',
 }
 
+/** TD-623: `doors` is required; the matrix is for a person holding both request keys (the server's
+ *  transition table is about statuses, the keys are pinned in `requestStatus.test.ts`). */
+const BOTH_DOORS = { write: true, decide: true }
+
 const ROLES: RequestRole[] = ['super', 'org_admin']
 const KINDS = ['', 'bug', 'feature']
 
 /** Every offer the two screens can make, as `{role, status, kind, questions, actions}` rows. */
 const offers = ROLES.flatMap((role) => REQUEST_STATUSES.flatMap((status) => KINDS.flatMap(
   (kind) => [true, false].map((questions) => ({
-    role, status, kind, questions, actions: requestActionsFor(role, status, kind, questions),
+    role, status, kind, questions, actions: requestActionsFor(role, status, kind, questions, BOTH_DOORS),
   })))))
 
 describe('the parse found the real api rules (parse sanity)', () => {
@@ -149,13 +153,13 @@ describe('the kind gates: a bug is free, so it is never quoted', () => {
   })
 
   test('quote is offered only for a feature; schedule-from-triaged only for a bug', () => {
-    expect(requestActionsFor('super', 'triaged', 'feature', false)).toContain('quote')
-    expect(requestActionsFor('super', 'triaged', 'bug', false)).not.toContain('quote')
-    expect(requestActionsFor('super', 'triaged', 'bug', false)).toContain('schedule')
-    expect(requestActionsFor('super', 'triaged', 'feature', false)).not.toContain('schedule')
+    expect(requestActionsFor('super', 'triaged', 'feature', false, BOTH_DOORS)).toContain('quote')
+    expect(requestActionsFor('super', 'triaged', 'bug', false, BOTH_DOORS)).not.toContain('quote')
+    expect(requestActionsFor('super', 'triaged', 'bug', false, BOTH_DOORS)).toContain('schedule')
+    expect(requestActionsFor('super', 'triaged', 'feature', false, BOTH_DOORS)).not.toContain('schedule')
     // The api's own rule at `schedule`: only `triaged` carries the kind gate, `approved` does not.
-    expect(requestActionsFor('super', 'approved', 'bug', false)).toContain('schedule')
-    expect(requestActionsFor('super', 'approved', 'feature', false)).toContain('schedule')
+    expect(requestActionsFor('super', 'approved', 'bug', false, BOTH_DOORS)).toContain('schedule')
+    expect(requestActionsFor('super', 'approved', 'feature', false, BOTH_DOORS)).toContain('schedule')
   })
 
   /**
@@ -166,9 +170,9 @@ describe('the kind gates: a bug is free, so it is never quoted', () => {
    * is ever added. The assertion that pinned the kind-blind offer is RE-POINTED to the agreed rule.
    */
   test('requote is offered at `deferred` only for a feature, as the service allows', () => {
-    expect(requestActionsFor('super', 'deferred', 'feature', false)).toContain('requote')
-    expect(requestActionsFor('super', 'deferred', 'bug', false)).not.toContain('requote')
-    expect(requestActionsFor('super', 'deferred', '', false)).not.toContain('requote')
+    expect(requestActionsFor('super', 'deferred', 'feature', false, BOTH_DOORS)).toContain('requote')
+    expect(requestActionsFor('super', 'deferred', 'bug', false, BOTH_DOORS)).not.toContain('requote')
+    expect(requestActionsFor('super', 'deferred', '', false, BOTH_DOORS)).not.toContain('requote')
   })
 
   test('a bug still cannot reach `deferred` today (the chain that made the old gap harmless)', () => {

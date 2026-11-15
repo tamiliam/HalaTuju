@@ -18,6 +18,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { PathParamsContext } from 'next/dist/shared/lib/hooks-client-context.shared-runtime'
 import { AppShell } from '@/components/admin/AppShell'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
+import { ORG_ADMIN_PAGE_KEYS } from './servedKeys'
 import ScholarsPage from '@/app/admin/scholars/page'
 import ScholarFilePage from '@/app/admin/scholars/[id]/page'
 import SponsorsPage from '@/app/admin/sponsors/page'
@@ -39,6 +40,7 @@ const ORG_ADMIN = {
   org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Contoh',
   admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
   permissions: ['review', 'qc', 'see_all', 'payments', 'spending', 'sponsors'],
+  page_keys: ORG_ADMIN_PAGE_KEYS,   // TD-623: what the server serves; the keys decide
 }
 const SUPER = { ...ORG_ADMIN, is_super_admin: true, role: 'super' }
 

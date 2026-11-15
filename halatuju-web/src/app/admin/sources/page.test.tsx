@@ -19,7 +19,7 @@ jest.mock('@/lib/i18n', () => ({
 }))
 let mockRole: { role: string; is_super_admin: boolean } = { role: 'org_admin', is_super_admin: false }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),
 }))
 jest.mock('@/lib/admin-api')
 

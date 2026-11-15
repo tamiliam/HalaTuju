@@ -16,6 +16,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { AppShell } from '@/components/admin/AppShell'
 import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
+import { ORG_ADMIN_PAGE_KEYS } from './servedKeys'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
@@ -28,6 +29,7 @@ const ROLE = {
   admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
   // The cockpit writes on the 'qc' key (`canWrite`), so the decision and ledger controls draw as they would for her.
   permissions: ['review', 'qc', 'see_all'],
+  page_keys: ORG_ADMIN_PAGE_KEYS,   // TD-623: what the server serves; the keys decide
 }
 
 const BASE = sandboxCockpitApplication as AdminScholarshipDetail

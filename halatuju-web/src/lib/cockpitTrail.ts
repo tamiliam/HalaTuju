@@ -77,17 +77,15 @@ export const ORG_REJECT_FROM = new Set<string>(['shortlisted'])
  * `_require_app_write` also admits a `qc` and the ASSIGNED reviewer, but
  * `AdminOrgRejectView` then narrows to the door `decide` (`students.approve`, M3b G5; a super or an
  * org admin until then). Mirror that narrowing here so the card never offers what the endpoint refuses.
- * M3c (list W): with the served `pageKeys` the door decides; an older payload (none) keeps the role rule.
+ * M3c (list W): the served `pageKeys` decide. TD-623: no role fallback — a payload without keys offers
+ * nothing (every `GET admin/role/` serves them; a super holds every key).
  *
  * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export function canOrgReject(
-  opts: { isSuper: boolean; role: string | null | undefined; status: string;
-          pageKeys?: readonly string[] | null }
+  opts: { status: string; pageKeys?: readonly string[] | null }
 ): boolean {
-  const roleAllowed = opensDoor({ page_keys: opts.pageKeys }, 'decide')
-    ?? (opts.isSuper || opts.role === 'org_admin')
-  return roleAllowed && ORG_REJECT_FROM.has(opts.status)
+  return opensDoor({ page_keys: opts.pageKeys }, 'decide') === true && ORG_REJECT_FROM.has(opts.status)
 }
 
 // ── Right-column card stages (owner 2026-07-22) ──────────────────────────────

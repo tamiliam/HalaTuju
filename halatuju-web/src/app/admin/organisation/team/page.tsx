@@ -13,10 +13,7 @@ import {
   listReviewers, type AdminItem, type AdminReviewer,
 } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
-import { MENTORS_READ_ROLES, holdsDoor, mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
-
-/** The roles the Emails tab was offered to before M2b: the fallback for a payload with no `page_keys`. */
-const EMAIL_EDIT_ROLES = ['super', 'org_admin', 'admin'] as const
+import { holdsDoor, mayOpen, mayReadMentors } from '@/lib/pageGuard'
 import { lazySource } from '@/components/source/LazySource'
 import { turnaroundBand } from '@/lib/reviewerDetail'
 import {
@@ -106,11 +103,11 @@ export default function AdminReviewersList() {
   // and is the tab you land on (`?tab=staff`); `?tab=` opens any other.
   // ⚠ M1b review: `GET admin/staff/` is on the server's `team_roster` door (team.view + mentoring.view), which
   // is NARROWER than this page's `team_read` — `finance` reads the page and would meet a 403 on Staff. So
-  // Staff is offered, and is the default, only to whoever opens that door (the served `page_keys`; an older
-  // payload answers by the Mentors tab's roles, `MENTORS_READ_ROLES`); anybody else lands on Reviewers, the
+  // Staff is offered, and is the default, only to whoever opens that door (the served `page_keys`; TD-623: no
+  // role fallback); anybody else lands on Reviewers, the
   // default before M1b. The choice is derived at render, so a role that arrives after the first paint still
   // gets Staff. Visibility only: the endpoint is the fence.
-  const mayStaff = opensDoorOr(role, 'team_roster', MENTORS_READ_ROLES)
+  const mayStaff = holdsDoor(role, 'team_roster')
   type Panel = 'staff' | 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
   // M2c (owner R4): the tab reads "Members"; its key stays `staff`, and `?tab=members` opens it too.
   const [chosen, setPanel] = useState<Panel | null>(asked === 'members' ? 'staff'
@@ -120,8 +117,8 @@ export default function AdminReviewersList() {
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
   // Sprint M2b (D11): on the server's door — the tab's cards save through the partner-email endpoints
-  // (`_SourcesBase`, door `sources` = `sources.edit`); an older payload keeps the role list.
-  const mayEditEmails = opensDoorOr(role, 'sources', EMAIL_EDIT_ROLES)
+  // (`_SourcesBase`, door `sources` = `sources.edit`). TD-623: the served keys only, no role list.
+  const mayEditEmails = holdsDoor(role, 'sources')
   // T3: the Mentors tab — exactly who read the old Mentors page (the server's `mentor_invite.may_read`).
   const mayMentors = mayReadMentors(role)
   // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened. M3c list W: the

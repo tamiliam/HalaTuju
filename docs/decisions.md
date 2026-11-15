@@ -1,5 +1,23 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-15 — TD-623 builder calls (pending architect): the web reads the served keys only
+
+Branch td623, not pushed. No migration. Services: web. Release-note draft: `docs/releases/td623-release-note-draft.md`.
+Owner, 2026-11-15: "there is no such thing as view only admin ... permissions determine what the admin views and edits".
+
+The calls:
+1. **No api change.** `GET admin/role/` always serves `page_keys` (`staff_tables.page_keys`: every key for a super, `()` for a mentor, partner or source login), and every page reads its role payload from there. So no page lost a key it needed.
+2. **A payload without keys opens no in-page gate.** `pageGuard.holdsDoor` (the door is open only when the served keys say so) replaces `opensDoorOr` everywhere. On an older payload the menu, the route guards and the landing still answer by role (see 6); the in-page gates and the Mentors tab answer no.
+3. **The assignee filter reads `students.view` or the `assign` door.** `students.view` is what `see_all` and `qc` carry, the server's `b40_scope` 'all'. A plain admin keeps the filter; a QC person gains it (they read every application). The `isSuper` arm stays as the platform override (a super holds every key anyway).
+4. **`canOrgReject` takes keys only** (the `decide` door, `students.approve`), with no role and no super flag.
+5. **`requestActionsFor` requires its doors.** The `role === 'super'` write arm and the no-doors fallback are gone. Its `role` argument stays: it is the SIDE of the request (the owner or the requesting organisation), not a permission. The page passes `write: isSuper || requests_write` as before.
+6. **Kept, and pinned in the web A10 scan** (`halatuju-web/src/lib/__tests__/roleIsDisplayOnly.test.ts`, each entry with a class, a reason and an exact count): the platform super (`isSuper` reads, the QC-separation exemption, the sponsor terms platform fence of M3c call 1); kind-of-login splits (source, mentor, partner, member screens); landings; target rules (`canCancel`'s `r === 'super'`, the person pages, who may be handed a case when no `assignable` is served); the request side; display text (the Guide, the profile lines, the activity chips); the money lane (payments prepare and finance viewer, sponsor credit maker and approver: frozen until M4); the navigation registry's role rows.
+7. **The navigation rows are left as a follow-up.** `staffPermissions.admitsRow` still answers an older payload by role, and rows without a door are gated by role. They were not in TD-623's list and moving them changes the menu matrices; it is its own sprint.
+8. **Test fixtures carry the served keys.** `test/staffPresets.servedPageKeys` now answers every preset role from the server's own answers (`fixtures/t5cServedPayloads.json`); `withServedPageKeys` adds only the keys to a role-only fixture.
+9. **The sandbox viewers carry the served keys too** (`halatuju-web/src/sandbox/servedKeys.ts`, copied from the T5c org_admin answer; a reviewer holds `review`, a mentor none). Without them mobile-check drew the Sponsors page with every door shut (`sandbox:m7-sponsor-terms` lost its Terms tab and failed the tap-target ratchet). Sandbox only; no shipped page reads it.
+
+**Alternative not taken:** keep the role lists as an older-payload fallback. Every payload has carried the keys since M3c, so the lists were dead code that could drift from the server.
+
 ## 2026-11-15 — TD-613 builder call (pending architect): a case whose reviewer has left can change hands
 
 Branch td613, not pushed. No migration. Release-note draft: `docs/releases/td613-release-note-draft.md`.

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   deleteAnnouncement, getAnnouncements, withdrawAnnouncement,
   type AnnouncementRow, type AnnouncementStatus, type AnnouncementsPayload,
@@ -16,14 +16,13 @@ import AnnouncementForm from './AnnouncementForm'
 /**
  * Programme → **Announcements** (student maintenance S8, 2026-11-01; the AnnouncementsAdmin board).
  *
- * ⚠ EVERY RULE IS THE SERVER'S (`apps/scholarship/announcements.py`): who may post (super, organisation admin,
- * admin — `may_post`), who sees one (decided when read), what an edit may change once it is out, and the
+ * ⚠ EVERY RULE IS THE SERVER'S (`apps/scholarship/announcements.py`): who may post (the door `announcements`,
+ * `announcements.edit` — `may_post`; TD-623: the screen reads the served keys only), who sees one (decided when read), what an edit may change once it is out, and the
  * email (the hourly job, once per scholar, only while the organisation's "Announcement" email is on).
  * This screen offers Delete / Withdraw only where the row's `can_delete` / `can_withdraw` say so, and draws
  * the server's own counts ("read N of M", "N sent").
  * ⚠ ITS OWN CHUNK: the route carries only a loader (`lazySource`), so the first-load median is untouched.
  */
-export const POSTER_ROLES = ['super', 'org_admin', 'admin']
 const K = 'admin.announcements'
 const TABS: readonly AnnouncementStatus[] = ['published', 'scheduled', 'draft', 'withdrawn']
 const LINK = 'inline-flex items-center max-md:min-h-11 text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
@@ -48,7 +47,7 @@ export function emailedLabel(t: T, row: AnnouncementRow): string {
 export default function AnnouncementsAdmin({ programme }: { programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = opensDoorOr(role, 'announcements', POSTER_ROLES)   // T5c P4: the server's door
+  const allowed = holdsDoor(role, 'announcements')   // T5c P4: the server's door; TD-623: keys only
   const [data, setData] = useState<AnnouncementsPayload | null>(null)
   const [failed, setFailed] = useState<'' | 'load' | 'programme_required'>('')
   const [tab, setTab] = useState<AnnouncementStatus>('published')

@@ -34,6 +34,7 @@ import AdminProgrammeConfigPage from '@/app/admin/programme/page'
 import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
 import { AuthContext } from '@/lib/auth-context'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
+import { ORG_ADMIN_PAGE_KEYS } from './servedKeys'
 import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
 import {
   sandboxApplication, sandboxApplicationLeanProgramme, sandboxNoApplications,
@@ -473,6 +474,7 @@ function WithAdminAuth({ children }: { children: ReactNode }) {
           is_admin: true, is_super_admin: false, role: 'org_admin', admin_id: 1,
           org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Contoh',
           admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
+          page_keys: [...ORG_ADMIN_PAGE_KEYS],   // TD-623: what the server serves; the keys decide
         },
         refreshRole: async () => {},
         photoUrl: null, setPhotoUrl: () => {},

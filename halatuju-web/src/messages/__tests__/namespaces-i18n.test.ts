@@ -120,9 +120,11 @@ interface Reference { key: string; where: string }
  * Files whose dotted literals are PERMISSION KEYS, not message keys. `lib/pageDoors.ts` maps each door to
  * keys such as `settings.edit`, and M3b (A11) added one whose first word is also a message namespace
  * (`settings`). It is never passed to `t()`, so demanding a string for it would add dead copy in three
- * languages. Only this one file is skipped; every other source file is still scanned.
+ * languages. TD-623 added `sandbox/servedKeys.ts`, the served `page_keys` the sandbox viewers carry (the
+ * same permission keys, never passed to `t()`). Only these files are skipped; every other source file is
+ * still scanned.
  */
-const PERMISSION_KEY_FILES = new Set(['lib/pageDoors.ts'])
+const PERMISSION_KEY_FILES = new Set(['lib/pageDoors.ts', 'sandbox/servedKeys.ts'])
 
 /**
  * Every `'<namespace>.<dotted path>'` literal in production source, with the file and line it

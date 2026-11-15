@@ -6,14 +6,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   archiveModule, deleteModule, getModules, updateModule, type ModuleRow, type ModuleStatus, type ModulesPayload,
 } from '@/lib/admin-api/development'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import ModuleForm from './ModuleForm'
-import { MAKER_ROLES, audienceLabel, contentsLabel, giftHref } from './shared'
+import { audienceLabel, contentsLabel, giftHref } from './shared'
 
 /**
  * Programme → **Development** (student maintenance S10, 2026-11-02; the ModulesAdmin board): short modules that
@@ -36,7 +36,7 @@ type Act = 'archive' | 'delete' | 'restore'
 export default function DevelopmentAdmin({ programme }: { programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = opensDoorOr(role, 'development', MAKER_ROLES)   // T5c P4: the server's door
+  const allowed = holdsDoor(role, 'development')   // T5c P4: the server's door; TD-623: keys only
   const [data, setData] = useState<ModulesPayload | null>(null)
   const [failed, setFailed] = useState<'' | 'load' | 'programme_required'>('')
   const [tab, setTab] = useState<ModuleStatus>('published')

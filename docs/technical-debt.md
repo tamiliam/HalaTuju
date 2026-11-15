@@ -8995,13 +8995,15 @@ entry in the A10 allowlist. *(A - S)*
 
 **Status 2026-11-15 (TD-613 builder): not safe to retire yet, left open.** The `qc` preset is `('see_all', 'qc')` with no `review`, so a QC person is a review target ONLY through R1 (and `assignable-admins` reads R1 too). Dropping the constant would stop a super handing a case to QC staff and an organisation admin outside Reviewers. It retires when the presets give QC (and the lead) `review`, or when the target rule names `qc` as a key; that is a permissions change for the architect, not part of TD-613.
 
-### [TD-623] The web still falls back to the role for older payloads, and `canFilterByAssignee` has an `admin` arm - low
+### ~~[TD-623] The web still falls back to the role for older payloads, and `canFilterByAssignee` has an `admin` arm - low~~ — RESOLVED 2026-11-15 (branch td623, local, awaiting push: every in-page gate reads the served door only, `pageGuard.holdsDoor`; `opensDoorOr` and the role lists `MAKER_ROLES`, `POSTER_ROLES`, `MENTORING_ROLES`, `MENTORS_READ_ROLES`, `CAN_EDIT_EMAILS`, `EMAIL_EDIT_ROLES` are deleted; `canOrgReject` and `requestActionsFor` take keys only; the assignee filter reads `students.view` or the `assign` door; web A10 scan `src/lib/__tests__/roleIsDisplayOnly.test.ts`)
 
 **Raised 2026-11-14 by sprint M3a.** The admin pages read the served keys, but where an older API payload has no keys
 they fall back to the role, and `canFilterByAssignee` in `halatuju-web/src/app/admin/scholarship/page.tsx` still
 opens the assignee filter for the `admin` role by name. Once every served payload carries the keys (M3c), the
 fallbacks are dead code that can drift from the server. Fix: in M3c, read only the served keys, delete the role
 fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name in a gate. *(A - S)*
+
+**As built (2026-11-15).** `GET admin/role/` always serves `page_keys` (`staff_tables.page_keys`), so no page was left without its keys and no api change was needed. Gone: the role fallbacks on the Announcements, Surveys, Development, scholar Mentoring/Surveys/Growth tabs, the Mentors tab, Team -> Emails, the Sponsors emails panel, the Sources invite and witness card; `canOrgReject` (the `decide` door only); `requestActionsFor` (its doors are required; its `role` argument is the request's SIDE, owner or requester, not a permission). The assignee filter shows for whoever reads every application (`students.view`, the server's `b40_scope` 'all') or assigns: a QC person gains it, a plain admin keeps it. The web A10 scan fails on any role name in code that is not in its allowlist (each entry has a class and a reason, and an exact count). Kept, and listed there: the platform super, kind-of-login splits, landings, target rules (`canCancel`), the request side, display text, the money lane (frozen until M4) and the navigation registry's role rows. **Follow-up (not in this item's list):** the navigation rows still answer an older payload by role (`staffPermissions.admitsRow`), and rows without a door are still gated by role; moving them to doors is its own sprint. Builder calls: `docs/decisions.md`, 2026-11-15, TD-623.
 
 ### [TD-630] An archived holder's open cases are missing from the Staff list's suspended-cases banner - low
 

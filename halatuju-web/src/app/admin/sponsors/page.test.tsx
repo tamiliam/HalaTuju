@@ -20,7 +20,7 @@ jest.mock('next/link', () => ({
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(viewerRole) }),
 }))
 jest.mock('@/components/sponsors/SponsorEmailsCard', () => ({
   __esModule: true,

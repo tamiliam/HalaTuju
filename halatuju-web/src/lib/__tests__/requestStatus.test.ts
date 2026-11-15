@@ -23,6 +23,9 @@ import {
 } from '@/lib/requestStatus'
 
 const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
+/** TD-623: `doors` is required. The matrix below is for a person holding both request keys (a super, or an
+ *  organisation admin with `requests.edit` and `requests.approve`); the keys' own effect is pinned last. */
+const BOTH_DOORS = { write: true, decide: true }
 const block = (m: unknown, key: string): Record<string, string> =>
   key.split('.').reduce<Record<string, unknown>>(
     (o, k) => (o[k] as Record<string, unknown>), m as Record<string, unknown>) as Record<string, string>
@@ -79,53 +82,82 @@ describe('requestStatus vocabulary', () => {
 
 describe('requestActionsFor mirrors the transition matrix', () => {
   test('org_admin answers only when a question waits (until the quote is accepted)', () => {
-    expect(requestActionsFor('org_admin', 'submitted', '', true)).toContain('answer')
-    expect(requestActionsFor('org_admin', 'submitted', '', false)).not.toContain('answer')
+    expect(requestActionsFor('org_admin', 'submitted', '', true, BOTH_DOORS)).toContain('answer')
+    expect(requestActionsFor('org_admin', 'submitted', '', false, BOTH_DOORS)).not.toContain('answer')
     // SUPERSEDED 2026-07-30 (request #3): this line asserted `.not.toContain('answer')` at
     // 'quoted', which was the cap that stranded a live request — the quote went out with a
     // question open, the box unmounted, and the thread demanded an answer for ever. The owner's
     // rule is now "answerable until the quote is ACCEPTED", so 'quoted' offers it and 'approved'
     // does not. Full window covered in "the requester's 'answer' window" below.
-    expect(requestActionsFor('org_admin', 'quoted', '', true)).toContain('answer')
-    expect(requestActionsFor('org_admin', 'approved', '', true)).not.toContain('answer')
+    expect(requestActionsFor('org_admin', 'quoted', '', true, BOTH_DOORS)).toContain('answer')
+    expect(requestActionsFor('org_admin', 'approved', '', true, BOTH_DOORS)).not.toContain('answer')
   })
 
   test('org_admin quote responses (accept/defer/modify/withdraw)', () => {
-    expect(requestActionsFor('org_admin', 'quoted', 'feature', false).sort())
+    expect(requestActionsFor('org_admin', 'quoted', 'feature', false, BOTH_DOORS).sort())
       .toEqual(['accept', 'comment', 'defer', 'modify', 'withdraw'].sort())
     // deferred: accept + modify (+withdraw), no defer
-    const d = requestActionsFor('org_admin', 'deferred', 'feature', false)
+    const d = requestActionsFor('org_admin', 'deferred', 'feature', false, BOTH_DOORS)
     expect(d).toEqual(expect.arrayContaining(['accept', 'modify', 'withdraw']))
     expect(d).not.toContain('defer')
   })
 
   test('org_admin has no owner actions', () => {
-    const a = requestActionsFor('org_admin', 'triaged', 'feature', false)
+    const a = requestActionsFor('org_admin', 'triaged', 'feature', false, BOTH_DOORS)
     expect(a).not.toContain('quote')
     expect(a).not.toContain('triage')
   })
 
   test('super: triage from submitted; quote a triaged feature; schedule a triaged bug', () => {
-    expect(requestActionsFor('super', 'submitted', '', false)).toEqual(
+    expect(requestActionsFor('super', 'submitted', '', false, BOTH_DOORS)).toEqual(
       expect.arrayContaining(['triage', 'decline', 'ai_rerun']))
-    expect(requestActionsFor('super', 'triaged', 'feature', false)).toContain('quote')
-    expect(requestActionsFor('super', 'triaged', 'feature', false)).not.toContain('schedule')
-    expect(requestActionsFor('super', 'triaged', 'bug', false)).toContain('schedule')
-    expect(requestActionsFor('super', 'triaged', 'bug', false)).not.toContain('quote')
+    expect(requestActionsFor('super', 'triaged', 'feature', false, BOTH_DOORS)).toContain('quote')
+    expect(requestActionsFor('super', 'triaged', 'feature', false, BOTH_DOORS)).not.toContain('schedule')
+    expect(requestActionsFor('super', 'triaged', 'bug', false, BOTH_DOORS)).toContain('schedule')
+    expect(requestActionsFor('super', 'triaged', 'bug', false, BOTH_DOORS)).not.toContain('quote')
   })
 
   test('super: requote a deferred, schedule an approved, done a scheduled', () => {
-    expect(requestActionsFor('super', 'deferred', 'feature', false)).toContain('requote')
-    expect(requestActionsFor('super', 'approved', 'feature', false)).toContain('schedule')
+    expect(requestActionsFor('super', 'deferred', 'feature', false, BOTH_DOORS)).toContain('requote')
+    expect(requestActionsFor('super', 'approved', 'feature', false, BOTH_DOORS)).toContain('schedule')
     // 'comment' joins every non-terminal status (TD-201) — a scheduled request is still being
     // discussed even though nothing else can be done to it.
-    expect(requestActionsFor('super', 'scheduled', 'feature', false).sort()).toEqual(['comment', 'done'])
+    expect(requestActionsFor('super', 'scheduled', 'feature', false, BOTH_DOORS).sort()).toEqual(['comment', 'done'])
   })
 
   test('terminal statuses offer nothing', () => {
-    expect(requestActionsFor('super', 'done', '', false)).toEqual([])
-    expect(requestActionsFor('super', 'declined', '', false)).toEqual([])
-    expect(requestActionsFor('org_admin', 'done', '', false)).toEqual([])
+    expect(requestActionsFor('super', 'done', '', false, BOTH_DOORS)).toEqual([])
+    expect(requestActionsFor('super', 'declined', '', false, BOTH_DOORS)).toEqual([])
+    expect(requestActionsFor('org_admin', 'done', '', false, BOTH_DOORS)).toEqual([])
+  })
+})
+
+describe('TD-623: the requestee side is offered only what its keys open (no role fallback)', () => {
+  const NONE = { write: false, decide: false }
+  const WRITE_ONLY = { write: true, decide: false }
+  const DECIDE_ONLY = { write: false, decide: true }
+
+  test('no keys: the requesting organisation is offered nothing, at any status', () => {
+    for (const status of REQUEST_STATUSES) {
+      expect(requestActionsFor('org_admin', status, 'feature', true, NONE)).toEqual([])
+    }
+  })
+
+  test('`requests.edit` alone: answer, defer, modify and comment, never accept or withdraw', () => {
+    expect(requestActionsFor('org_admin', 'quoted', 'feature', true, WRITE_ONLY).sort())
+      .toEqual(['answer', 'comment', 'defer', 'modify'].sort())
+  })
+
+  test('`requests.approve` alone: accept and withdraw, never the writes', () => {
+    expect(requestActionsFor('org_admin', 'quoted', 'feature', true, DECIDE_ONLY).sort())
+      .toEqual(['accept', 'withdraw'].sort())
+  })
+
+  test('the owner side without `requests.edit` loses only the comment', () => {
+    const withKeys = requestActionsFor('super', 'triaged', 'feature', false, BOTH_DOORS)
+    const without = requestActionsFor('super', 'triaged', 'feature', false, NONE)
+    expect(withKeys.filter((a) => a !== 'comment').sort()).toEqual([...without].sort())
+    expect(without).not.toContain('comment')
   })
 })
 
@@ -157,16 +189,16 @@ describe("the 'comment' window", () => {
   it('is open to BOTH sides for every non-terminal status', () => {
     for (const status of ['submitted', 'triaged', 'quoted', 'approved', 'deferred', 'scheduled']) {
       expect(canComment(status)).toBe(true)
-      expect(requestActionsFor('super', status, 'feature', false)).toContain('comment')
-      expect(requestActionsFor('org_admin', status, 'feature', false)).toContain('comment')
+      expect(requestActionsFor('super', status, 'feature', false, BOTH_DOORS)).toContain('comment')
+      expect(requestActionsFor('org_admin', status, 'feature', false, BOTH_DOORS)).toContain('comment')
     }
   })
 
   it('closes only at a terminal outcome', () => {
     for (const status of REQUEST_TERMINAL) {
       expect(canComment(status)).toBe(false)
-      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('comment')
-      expect(requestActionsFor('org_admin', status, 'feature', false)).not.toContain('comment')
+      expect(requestActionsFor('super', status, 'feature', false, BOTH_DOORS)).not.toContain('comment')
+      expect(requestActionsFor('org_admin', status, 'feature', false, BOTH_DOORS)).not.toContain('comment')
     }
   })
 
@@ -177,7 +209,7 @@ describe("the 'comment' window", () => {
     for (const status of ['approved', 'scheduled']) {
       expect(canComment(status)).toBe(true)
       expect(canAttach(status)).toBe(false)
-      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).not.toContain('answer')
     }
   })
 
@@ -186,15 +218,15 @@ describe("the 'comment' window", () => {
     // whole reason these are two windows and not one.
     for (const status of ['quoted', 'deferred', 'approved', 'scheduled']) {
       expect(canComment(status)).toBe(true)
-      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('ask')
+      expect(requestActionsFor('super', status, 'feature', false, BOTH_DOORS)).not.toContain('ask')
     }
   })
 
   it('does not disturb the terminal contract — nothing at all is offered', () => {
     // Guards the ordering of the new push: it runs BEFORE the role split, so a mistake here would
     // have leaked an action into a done/declined request for both roles at once.
-    expect(requestActionsFor('super', 'done', '', true)).toEqual([])
-    expect(requestActionsFor('org_admin', 'declined', '', true)).toEqual([])
+    expect(requestActionsFor('super', 'done', '', true, BOTH_DOORS)).toEqual([])
+    expect(requestActionsFor('org_admin', 'declined', '', true, BOTH_DOORS)).toEqual([])
   })
 })
 
@@ -244,7 +276,7 @@ describe('component tree (Sprint 15.1)', () => {
 describe("the owner's 'ask' action", () => {
   it('is offered to the owner while the request is open for triage', () => {
     for (const status of ['submitted', 'triaged']) {
-      expect(requestActionsFor('super', status, 'feature', false)).toContain('ask')
+      expect(requestActionsFor('super', status, 'feature', false, BOTH_DOORS)).toContain('ask')
     }
   })
 
@@ -252,19 +284,19 @@ describe("the owner's 'ask' action", () => {
     // The negative half, and the substance: the quote was priced against what was known when it
     // went out, so the thread must not keep growing behind it.
     for (const status of ['quoted', 'deferred', 'approved', 'scheduled', 'done', 'declined']) {
-      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('ask')
+      expect(requestActionsFor('super', status, 'feature', false, BOTH_DOORS)).not.toContain('ask')
     }
   })
 
   it('is never offered to the requesting org', () => {
     // They have `answer`; asking is the owner's side of the same thread.
     for (const status of ['submitted', 'triaged', 'quoted']) {
-      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('ask')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).not.toContain('ask')
     }
   })
 
   it('does not disturb the actions that were already there', () => {
-    const owner = requestActionsFor('super', 'submitted', '', false)
+    const owner = requestActionsFor('super', 'submitted', '', false, BOTH_DOORS)
     expect(owner).toEqual(expect.arrayContaining(['triage', 'decline', 'ai_rerun', 'ask']))
   })
 })
@@ -282,19 +314,19 @@ describe("the owner's 'ask' action", () => {
 describe("the requester's 'answer' window", () => {
   it('stays open until the quote is accepted', () => {
     for (const status of ['submitted', 'triaged', 'quoted', 'deferred']) {
-      expect(requestActionsFor('org_admin', status, 'feature', true)).toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).toContain('answer')
     }
   })
 
   it('closes once the quote is accepted, and stays closed', () => {
     for (const status of ['approved', 'scheduled', 'done', 'declined']) {
-      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).not.toContain('answer')
     }
   })
 
   it('is not offered when nothing is actually waiting', () => {
     for (const status of ['submitted', 'triaged', 'quoted', 'deferred']) {
-      expect(requestActionsFor('org_admin', status, 'feature', false)).not.toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', false, BOTH_DOORS)).not.toContain('answer')
     }
   })
 
@@ -304,11 +336,11 @@ describe("the requester's 'answer' window", () => {
     // held as one named set so they cannot drift apart.
     for (const status of REQUEST_OPEN_FOR_SHAPING) {
       expect(canAttach(status)).toBe(true)
-      expect(requestActionsFor('org_admin', status, 'feature', true)).toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).toContain('answer')
     }
     for (const status of ['approved', 'scheduled', 'done', 'declined']) {
       expect(canAttach(status)).toBe(false)
-      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
+      expect(requestActionsFor('org_admin', status, 'feature', true, BOTH_DOORS)).not.toContain('answer')
     }
   })
 
@@ -316,9 +348,9 @@ describe("the requester's 'answer' window", () => {
     // Replying to a question asked BEFORE the quote completes the record; a NEW question after
     // quoting would mean the price was set against something nobody had raised.
     const answerable = ['submitted', 'triaged', 'quoted', 'deferred']
-      .filter((s) => requestActionsFor('org_admin', s, 'feature', true).includes('answer'))
+      .filter((s) => requestActionsFor('org_admin', s, 'feature', true, BOTH_DOORS).includes('answer'))
     const askable = ['submitted', 'triaged', 'quoted', 'deferred']
-      .filter((s) => requestActionsFor('super', s, 'feature', false).includes('ask'))
+      .filter((s) => requestActionsFor('super', s, 'feature', false, BOTH_DOORS).includes('ask'))
     expect(answerable.length).toBeGreaterThan(askable.length)
     expect(askable).not.toContain('quoted')
   })

@@ -27,7 +27,7 @@ import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
-import { holdsDoor, mayOpen, opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
@@ -100,8 +100,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // Sources / witness-org management: super + admin + org_admin (owner 2026-07-19). Distinct from
   // canAssign (reviewer assignment stays super/org_admin) — the Admin role manages sources/witness.
   // Sprint M2b (D11): on the server's door — the witness endpoint is `_SourcesBase` (door `sources`,
-  // `sources.edit`), read from the served `page_keys`; an older payload keeps the role list.
-  const canManageSources = opensDoorOr(role, 'sources', ['super', 'org_admin', 'admin'])
+  // `sources.edit`), read from the served `page_keys`. TD-623: no role fallback.
+  const canManageSources = holdsDoor(role, 'sources')
   // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — the `qc` permission
   // (#39 S3: super, a `qc`, an `org_admin`). The backend recorder guard stops anyone QC-ing
   // a verdict they themselves recorded (two-person control).
@@ -351,7 +351,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
 
       <OrgRejectPanel
-        app={app} t={t} busy={busy} isSuper={isSuper} role={role}
+        app={app} t={t} busy={busy} role={role}
         rejectStep={rejectStep} setRejectStep={setRejectStep}
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}

@@ -20,7 +20,8 @@ import {
 } from '@/lib/navigation'
 import { defaultChapterSlug, manualPerms, manualRole, visibleChapters } from '@/content/manual'
 import { ADMIN_KEYS, ORG_READ_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
-import { MENTORS_READ_ROLES, mayReadMentors } from '@/lib/pageGuard'
+import * as pageGuard from '@/lib/pageGuard'
+import { mayReadMentors } from '@/lib/pageGuard'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
 import { s1Moves, s1Served } from '@/test/s1Moves'
 import { m2aMoves } from '@/test/m2aMoves'
@@ -228,12 +229,23 @@ function programmeSettingsLast(ids: string[]): string[] {
   return after < 0 ? ids : [...rest.slice(0, after + 1), row, ...rest.slice(after + 1)]
 }
 
-describe('Team tables T3: the Mentors tab keeps the old Mentors page\'s readers', () => {
+/**
+ * TD-623 (owner 2026-11-15, "permissions determine what the admin views and edits"): THE ONE CELL TD-623 MOVES
+ * here. These shapes are OLDER payloads (no `page_keys`); the Mentors tab used to answer them by the role list
+ * super / org_admin / admin. That role fallback is gone, so an older payload sees no Mentors tab, whatever its
+ * role. Who sees it on the payload the server serves is the `mentors_read` door, pinned shape by shape in
+ * `teamTablesT5cDoors.test.ts` (mentorsTab).
+ */
+describe('Team tables T3 / TD-623: the Mentors tab on an older payload', () => {
   const first = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
   const mixed = JSON.parse(fs.readFileSync(MIXED_FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
   const before = { ...first, ...mixed }
-  it.each(Object.keys(SHAPES))('%s: sees the Mentors tab exactly when it opened the old page', (shape) => {
-    expect(mayReadMentors(SHAPES[shape])).toBe(before[shape]['open /admin/organisation/mentors'])
+  it('the old page had readers, so the cell really moves (the fixture is not blank)', () => {
+    expect(Object.keys(SHAPES).filter((shape) => before[shape]['open /admin/organisation/mentors']).length)
+      .toBeGreaterThan(0)
+  })
+  it.each(Object.keys(SHAPES))('%s: an older payload sees no Mentors tab (no role fallback)', (shape) => {
+    expect(mayReadMentors(SHAPES[shape])).toBe(false)
   })
 })
 
@@ -258,7 +270,8 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
 
   it('only the organisation READ rows widen to the Admins table, and no write row does', () => {
     // T1 (frozen): Sources, Mentors, Announcements, Surveys and Development stay on their roles.
-    expect([...MENTORS_READ_ROLES]).toEqual(['super', 'org_admin', 'admin'])
+    // TD-623: the Mentors readers' role list is gone; the tab reads the `mentors_read` door only.
+    expect('MENTORS_READ_ROLES' in pageGuard).toBe(false)
     expect(NAV_ITEMS.filter((i) => i.adminKeys).map((i) => [i.id, i.adminKeys]))
       .toEqual(['staff', 'reviewers', 'sponsors'].map((id) => [id, ORG_READ_KEYS]))
     // Sprint S1: `scholars` seats a person at Admins, but the frozen older-payload rule is T1's list exactly.

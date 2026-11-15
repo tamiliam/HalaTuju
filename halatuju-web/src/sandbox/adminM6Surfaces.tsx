@@ -21,6 +21,7 @@ import AdminScholarshipList from '@/app/admin/scholarship/page'
 import AdminGuidePage from '@/app/admin/guide/page'
 import AdminFaqPage from '@/app/admin/faq/page'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
+import { ORG_ADMIN_PAGE_KEYS } from './servedKeys'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
 interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
@@ -31,6 +32,7 @@ const ROLE = {
   is_admin: true, is_super_admin: false, role: 'org_admin', admin_id: 1,
   org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Contoh',
   admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
+  page_keys: ORG_ADMIN_PAGE_KEYS,   // TD-623: what the server serves; the keys decide
 }
 
 const row = (id: number, name: string, status: string, bucket: string, qualification: string, merit: number,

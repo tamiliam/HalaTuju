@@ -10,7 +10,10 @@
  *     the T5c extras), the menu (three probe states), every registered route's guard (`mayOpen`), the
  *     landing, the Mentors tab and the converted in-page gates answer exactly what they answered BEFORE P4
  *     — once with the payload as the server serves it today (with `page_keys`), once as an older payload
- *     (without it, which keeps today's role rules).
+ *     (without it, which keeps today's role rules for the menu, the route guards and the landing).
+ *
+ * TD-623 (owner 2026-11-15): the in-page gates and the Mentors tab read the served door ONLY (`holdsDoor`), so
+ * on an older payload they all answer false — the one declared move (`td623OlderMoves` below).
  *
  * THE PAYLOADS (`fixtures/t5cServedPayloads.json`) are the server's own answers: `GET admin/role/` for each
  * active shape, built by `test_team_tables_t5c_doors.DoorParity.setUpTestData` on branch t5c (P4a ae27058d).
@@ -24,7 +27,8 @@ import * as path from 'path'
 
 import { NAV_ITEMS, NO_PROBES, defaultRoute, effectiveRole, visibleNav, type ProbeState } from '@/lib/navigation'
 import { DOOR_KEYS, opensDoor, type DoorName } from '@/lib/pageDoors'
-import { mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
+import * as pageGuard from '@/lib/pageGuard'
+import { holdsDoor, mayOpen, mayReadMentors } from '@/lib/pageGuard'
 import { pyDictOfSeqs, readApi } from '@/test/apiSource'
 import { t5cP5Moves } from '@/test/t5cP5Moves'
 import { s1Moves, s1Served } from '@/test/s1Moves'
@@ -94,7 +98,8 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
     return
   }
   const before = JSON.parse(fs.readFileSync(BEFORE, 'utf8')) as Record<string, Record<string, unknown>>
-  const doorGate: Gate = (p, door, roles) => opensDoorOr(p, door as DoorName, roles)
+  // TD-623: the page gates read the door only; the role list is ignored (it is the BEFORE rule, kept for WRITE).
+  const doorGate: Gate = (p, door) => holdsDoor(p, door as DoorName)
 
   it('covers every served shape, and no other', () => {
     expect(Object.keys(before).sort()).toEqual(Object.keys(SHAPES).sort())
@@ -112,9 +117,23 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
     expect(measure(served(shape), doorGate)).toEqual(after(shape))
   })
 
-  it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): identical to before', (shape) => {
+  /** TD-623's declared move: on an older payload every in-page gate and the Mentors tab answer false (no role
+   *  fallback). The menu, every route guard and the landing do not move. */
+  const td623OlderMoves = (cells: Record<string, unknown>): Record<string, unknown> => {
+    const out: Record<string, unknown> = { ...cells, mentorsTab: false }
+    for (const door of Object.keys(PAGE_GATES)) out[`gate ${door}`] = false
+    return out
+  }
+
+  it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): menu, routes and landing as before; no page gate opens', (shape) => {
     const { page_keys: _dropped, ...older } = served(shape)
-    expect(measure(older, doorGate)).toEqual(after(shape))
+    expect(measure(older, doorGate)).toEqual(td623OlderMoves(after(shape)))
+  })
+
+  it('TD-623: the older-payload move is real — some shape held a page gate by its role before', () => {
+    const held = Object.keys(SHAPES).filter((shape) =>
+      Object.keys(PAGE_GATES).some((door) => after(shape)[`gate ${door}`] === true) || after(shape).mentorsTab === true)
+    expect(held.length).toBeGreaterThan(0)
   })
 })
 
@@ -127,8 +146,10 @@ describe('Team tables T5c P4: the doors are really read', () => {
     expect(mayOpen('/admin/sponsors', finance)).toBe(true)
     expect(mayOpen('/admin/sponsors', swapped)).toBe(false)
     expect(mayOpen('/admin/programme/surveys', swapped)).toBe(true)
-    expect(opensDoorOr(swapped, 'surveys', ADMIN_WORK_ROLES)).toBe(true)
-    expect(opensDoorOr({ ...finance, page_keys: [] }, 'sponsors_read', ['finance'])).toBe(false)
+    expect(holdsDoor(swapped, 'surveys')).toBe(true)
+    expect(holdsDoor({ ...finance, page_keys: [] }, 'sponsors_read')).toBe(false)
+    // TD-623: no role list can open a door any more.
+    expect('opensDoorOr' in pageGuard).toBe(false)
   })
 
   it('opensDoor needs EVERY key of the door, and answers undefined with no page_keys', () => {

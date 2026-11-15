@@ -11,8 +11,8 @@
 // result against the organisation's thresholds) is drawn as it comes; "Underperforming" asks the
 // server (`standing=below_minimum`); "Results overdue" (S4b) asks `standing=results_overdue`.
 // ⚠ S7b: the Mentor column, the "No mentor" / "Asked for help" pills and the row's "Asked for help"
-// chip are for the roles that see mentors (`MENTORING_ROLES`); the server leaves those keys out for
-// the rest, and ignores the filter. S7c adds the "Mentor concerned" chip and pill on the same terms.
+// chip are for whoever opens the door `mentoring_read` (the served keys, TD-623); the server leaves those
+// keys out for the rest, and ignores the filter. S7c adds the "Mentor concerned" chip and pill on the same terms.
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -24,7 +24,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
+import { holdsDoor, readsAllScholars } from '@/lib/pageGuard'
 import { useProgrammeParam } from '@/lib/programmeScope'
 import { useGiftGate } from '@/lib/useGiftGate'
 import { formatDate } from '@/lib/formatDate'
@@ -32,7 +32,7 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, nextSort, type SortDir } from '@/
 import { getScholars, type ScholarList, type ScholarRow } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
 
-import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
+import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 
 const SourceScholars = lazySource(() => import('@/components/source/SourceScholars').then((m) => m.default))
 
@@ -55,7 +55,7 @@ function StaffScholarsPage() {
   const { t } = useT()
   // Sprint S1 (S1-h): staff who mentor open it by their mentor record, as My students.
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions, role?.mentoring)
-  const seesMentors = opensDoorOr(role, 'mentoring_read', MENTORING_ROLES)   // T5c P4: the server's door
+  const seesMentors = holdsDoor(role, 'mentoring_read')   // T5c P4: the server's door; TD-623: keys only
   const programme = useProgrammeParam()
   // Anyone viewing AS A MENTOR has no gift to choose (S1-h: the server lists their own current students,
   // across gifts): a mentor login (the shell asks no scopes for it, `AppShell`), and staff who mentor

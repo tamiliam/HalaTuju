@@ -6,13 +6,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr, readsAllScholars } from '@/lib/pageGuard'
+import { holdsDoor, readsAllScholars } from '@/lib/pageGuard'
 import {
   fetchSurveyCsv, getSurveyResults, remindSurvey,
   type AnswerValue, type SurveyQuestionRow, type SurveyResults as Payload, type SurveySummaryItem, type SurveyWho,
 } from '@/lib/admin-api'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { MAKER_ROLES, audienceLabel, giftHref } from './shared'
+import { audienceLabel, giftHref } from './shared'
 
 const K = 'admin.surveys.results'
 const CARD = 'max-w-3xl space-y-3 rounded-xl border border-ground-200 bg-ground-0 p-5'
@@ -113,7 +113,7 @@ function Written({ item, t, opens }: { item: SurveySummaryItem; t: T; opens: boo
 export default function SurveyResults({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = opensDoorOr(role, 'surveys', MAKER_ROLES)   // T5c P4: the server's door
+  const allowed = holdsDoor(role, 'surveys')   // T5c P4: the server's door; TD-623: keys only
   const opens = readsAllScholars(role)
   const [data, setData] = useState<Payload | null>(null)
   const [failed, setFailed] = useState(false)

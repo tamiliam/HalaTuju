@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { mayOpen, opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
 import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
 import { SignInBadge, Toggle } from '@/components/sources/shared'
@@ -69,9 +69,9 @@ export default function SourcesPage() {
   // Sources management: super + admin + org_admin (owner 2026-07-19). T5c P4: the row's server door
   // (`sources.edit`), read from the served `page_keys`; an older payload keeps the row's roles.
   const canManage = mayOpen('/admin/sources', role)
-  // Inviting (and so adding) a source: super + org_admin only (source sign-in S2) — the server's
-  // `invitations` door (`source_invite.may_invite`) since T5c.
-  const canInvite = opensDoorOr(role, 'invitations', ['super', 'org_admin'])
+  // Inviting (and so adding) a source: the server's `invitations` door (`source_invite.may_invite`,
+  // `invitations.edit`) since T5c. TD-623: the served keys only, no role list.
+  const canInvite = holdsDoor(role, 'invitations')
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)

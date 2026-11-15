@@ -4,9 +4,9 @@
 //
 // ⚠ A SHELL, HONESTLY: only what exists is shown. The header and the Overview's cards read the
 // server's payload. S9: the Surveys card and tab (its own chunk, `ScholarSurveys`) are drawn only for
-// the survey makers' roles (super, org_admin, admin — the server refuses the rest). S7b: the
-// Mentoring tab (its own chunk, `ScholarMentoring`) and the Overview's mentor card are drawn only for
-// the roles that see mentors (`MENTORING_ROLES`; the server leaves the keys out for the rest). The Money
+// whoever opens the door `surveys` (the server refuses the rest). S7b: the Mentoring tab (its own chunk,
+// `ScholarMentoring`) and the Overview's mentor card are drawn only for whoever opens `mentoring_read`
+// (the server leaves the keys out for the rest). TD-623: the served keys only, no role lists. The Money
 // and Contract TABS (S5a) read their own endpoints: releases, spending (with the `spending` permission
 // only) and the executed PDF.
 // ⚠ THE SUB-STATE AND CLOSE LIVE HERE since Sprint 3 (`ScholarControls`, moved from the cockpit's
@@ -33,12 +33,10 @@ import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
 import { statusLabelKey, statusTone } from '@/lib/applicationStatus'
-import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
+import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
-import { MAKER_ROLES as SURVEY_ROLES } from '@/components/surveys/shared'
-import { MAKER_ROLES as GROWTH_ROLES } from '@/components/development/shared'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor } from '@/lib/pageGuard'
 
 const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
 // S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
@@ -130,10 +128,10 @@ function StaffScholarFile() {
   // server says which reader this is (`mentor_view`); its controls are all off already, and the header's
   // controls, the activity form, a letter's Resend and the Applications link are not drawn for it.
   const asMentor = file.mentor_view === true
-  // T5c P4: each tab on its server door (an older payload keeps the role lists).
-  const seesMentors = asMentor || opensDoorOr(role, 'mentoring_read', MENTORING_ROLES)
-  const seesSurveys = asMentor || opensDoorOr(role, 'surveys', SURVEY_ROLES)
-  const seesGrowth = asMentor || opensDoorOr(role, 'development', GROWTH_ROLES)
+  // T5c P4: each tab on its server door. TD-623: the served keys only, no role lists.
+  const seesMentors = asMentor || holdsDoor(role, 'mentoring_read')
+  const seesSurveys = asMentor || holdsDoor(role, 'surveys')
+  const seesGrowth = asMentor || holdsDoor(role, 'development')
   const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)
     && (x.key !== 'surveys' || seesSurveys) && (x.key !== 'growth' || seesGrowth))
   const help = file.asked_for_help

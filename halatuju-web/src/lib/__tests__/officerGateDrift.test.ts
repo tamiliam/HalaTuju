@@ -87,7 +87,7 @@ describe('the org-admin reject gate — the STATUS half', () => {
 
   test('the card is offered at exactly those statuses and nowhere else', () => {
     const offered = APPLICATION_STATUSES.filter(
-      (status) => canOrgReject({ isSuper: false, role: 'org_admin', status }))
+      (status) => canOrgReject({ status, pageKeys: [...DOOR_KEYS.decide] }))
     expect([...offered].sort()).toEqual([...backendRejectFrom].sort())
   })
 })
@@ -113,22 +113,18 @@ describe('the org-admin reject gate — the ROLE half', () => {
     expect(DOOR_KEYS.decide).toEqual(['students.approve'])
   })
 
-  test('M3c: with the served page keys the card follows the door, whatever the role', () => {
+  test('M3c: with the served page keys the card follows the door — the gate takes no role at all', () => {
     const status = backendRejectFrom[0]
-    for (const role of ROLE_NAMES) {
-      expect(canOrgReject({ isSuper: false, role, status, pageKeys: [...DOOR_KEYS.decide] })).toBe(true)
-      expect(canOrgReject({ isSuper: role === 'super', role, status, pageKeys: [] })).toBe(false)
-    }
+    expect(canOrgReject({ status, pageKeys: [...DOOR_KEYS.decide] })).toBe(true)
+    expect(canOrgReject({ status, pageKeys: [] })).toBe(false)
+    // TD-623: the signature carries no role and no super flag, so neither can open the card.
+    expect(canOrgReject.length).toBe(1)
   })
 
-  test('an older payload (no page keys): the cockpit offers the card to those two roles and refuses every other', () => {
+  test('TD-623: a payload without page keys never offers the card, whoever signed in', () => {
     const status = backendRejectFrom[0]
-    expect(canOrgReject({ isSuper: true, role: null, status })).toBe(true)
-    for (const role of ROLE_NAMES) {
-      // `super` is carried by the `isSuper` flag, never by the role string alone.
-      const expected = role === 'org_admin'
-      expect(canOrgReject({ isSuper: false, role, status })).toBe(expected)
-    }
+    expect(canOrgReject({ status })).toBe(false)
+    expect(canOrgReject({ status, pageKeys: null })).toBe(false)
   })
 })
 

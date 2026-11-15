@@ -9,6 +9,7 @@
  * them where they live, as `staffPermissionsDrift.test.ts` does.
  */
 import { pySeq, readApi } from './apiSource'
+import SERVED from '../lib/__tests__/fixtures/t5cServedPayloads.json'
 
 const SRC = readApi('apps/courses/staff_permissions.py')
 const CATALOGUE = pySeq(SRC, 'CATALOGUE')
@@ -48,13 +49,20 @@ const HATS = pySeq(V2_SRC, 'HATS')
 /**
  * M3c (list W): what `GET /admin/role/` serves as `page_keys` for a super or an organisation admin on the
  * full set — every v2 key, plus the hats (`review`, `qc`) their `permissions` hold (`staff_tables.page_keys`).
- * The web now reads these doors instead of the role. Any other role answers `undefined` (an older payload):
- * none of them holds an organisation admin's key on its preset.
+ *
+ * TD-623 (owner 2026-11-15): the web reads ONLY these doors (no role fallback), so a fake officer must carry the
+ * keys the server serves its role. For the other roles they are the server's own answers for a person on that
+ * preset (`fixtures/t5cServedPayloads.json`, written by `test_team_tables_t5c_doors`): an admin, finance, qc or
+ * reviewer gets its live keys; a mentor, partner or source login gets none (`[]`, as the server serves it).
+ * An unknown role answers `undefined` (an older payload).
  */
 export function servedPageKeys(role: string): string[] | undefined {
-  if (role !== 'super' && role !== 'org_admin') return undefined
-  const held = servedPermissions(role)
-  return [...CATALOGUE_V2, ...HATS.filter((h) => held.includes(h))]
+  if (role === 'super' || role === 'org_admin') {
+    const held = servedPermissions(role)
+    return [...CATALOGUE_V2, ...HATS.filter((h) => held.includes(h))]
+  }
+  const shape = (SERVED as Record<string, { role: string; page_keys: string[] } | undefined>)[role]
+  return shape && shape.role === role ? [...shape.page_keys] : undefined
 }
 
 /** M3c: the signed-in officer as `GET /admin/role/` serves them on their preset (role, permissions, page_keys). */
@@ -69,4 +77,14 @@ export function servedViewer(role: string) {
 export function withServedKeys<T extends { role: string; is_super_admin?: boolean }>(viewer: T) {
   const served = servedViewer(viewer.is_super_admin ? 'super' : viewer.role)
   return { permissions: served.permissions, page_keys: served.page_keys, ...viewer }
+}
+
+/**
+ * TD-623: a role-only fixture with ONLY the served `page_keys` added (the super's when `is_super_admin`, else the
+ * role's) — for a test that sets its own `permissions` (or none) and must not have them changed, now that every
+ * in-page gate reads the served door. A `page_keys` the fixture sets itself wins.
+ */
+export function withServedPageKeys<T extends { role?: unknown; is_super_admin?: unknown }>(viewer: T) {
+  const role = viewer.is_super_admin ? 'super' : typeof viewer.role === 'string' ? viewer.role : ''
+  return { page_keys: servedPageKeys(role), ...viewer }
 }

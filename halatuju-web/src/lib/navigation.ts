@@ -133,8 +133,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // `/admin/organisation/reviewers/...` and `/admin/organisation/mentors` addresses are PERMANENT
       // redirects in `next.config.js` — they never render, so this row matches nothing else. The `id`
       // is still `reviewers` — it is the snapshot key, never derived from the label or the route.
-      // Who sees the Mentors TAB and a mentor page is NOT this row's rule: it is `MENTORS_READ_ROLES`
-      // (the server's `mentor_invite.may_read`).
+      // Who sees the Mentors TAB and a mentor page is NOT this row's rule: it is `pageGuard.mayReadMentors`
+      // (the door `mentors_read`, as the server's `mentor_invite.may_read`).
       { id: 'reviewers', href: '/admin/organisation/team', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         adminKeys: ORG_READ_KEYS, door: 'team_read', gate: { mode: 'always' } },

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint TD-623 - the web reads the served keys only; the role is a label (2026-11-15)
+
+Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-623 builder calls, pending architect). Release-note draft: `docs/releases/td623-release-note-draft.md`.
+- Every in-page gate reads the served door through `pageGuard.holdsDoor`. Deleted: `opensDoorOr`, `MAKER_ROLES`, `POSTER_ROLES`, `MENTORING_ROLES`, `MENTORS_READ_ROLES`, `CAN_EDIT_EMAILS`, `EMAIL_EDIT_ROLES`.
+- `canOrgReject` takes the `decide` door only; `requestActionsFor` requires its doors (no `super` arm, no fallback).
+- The Applications assignee filter shows for whoever holds `students.view` or the `assign` door (the old `admin` role arm is gone; QC gains the filter).
+- New web A10 scan `src/lib/__tests__/roleIsDisplayOnly.test.ts`: a role name in code fails unless an allowlist entry (class, reason, exact count) claims it; the removed names may not come back.
+- Tests: role-only fixtures now carry the keys the server serves (`test/staffPresets.servedPageKeys` for every preset, `withServedPageKeys`); `orgReject`, `officerGateDrift`, `m2bDoorMirrors`, `teamTablesMatrix`, `teamTablesT5cDoors`, `requestStatus` and `requestStatusDrift` updated to keys (the older-payload in-page gates now answer no, a declared move); new `page.assigneeFilter.test.tsx`.
+- Sandbox: the admin viewers (`src/sandbox/*Surfaces.tsx`) now carry the keys the server serves (`src/sandbox/servedKeys.ts`); without them the keys-only gates shut the Sponsors Terms tab and mobile-check failed `sandbox:m7-sponsor-terms`.
+- No api change; the navigation registry's role rows are a follow-up (TD-623 as-built note).
+
 ### feat: sprint TD-613 - a case whose reviewer has left can change hands (2026-11-15)
 
 Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-15, TD-613 builder call, pending architect). Release-note draft: `docs/releases/td613-release-note-draft.md`.

@@ -23,6 +23,7 @@ import { useState, type ReactNode } from 'react'
 import { PathParamsContext } from 'next/dist/shared/lib/hooks-client-context.shared-runtime'
 import { AppShell } from '@/components/admin/AppShell'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
+import { MENTOR_PAGE_KEYS, ORG_ADMIN_PAGE_KEYS, REVIEWER_PAGE_KEYS } from './servedKeys'
 import { ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
 import AdminNotFound from '@/app/admin/not-found'
 import MyStudentsPage from '@/app/admin/my-students/page'
@@ -45,12 +46,15 @@ const ORG_ADMIN = {
   org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Pendidikan Contoh Malaysia Berhad',
   admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
   permissions: ['review', 'qc', 'see_all', 'payments', 'spending', 'sponsors'],
+  page_keys: ORG_ADMIN_PAGE_KEYS,   // TD-623: what the server serves; the keys decide
 }
 const REVIEWER = {
   ...ORG_ADMIN, role: 'reviewer', admin_id: 7, admin_name: LONG_TAMIL, permissions: ['review'],
+  page_keys: REVIEWER_PAGE_KEYS,
 }
 const MENTOR = {
   ...ORG_ADMIN, role: 'mentor', admin_id: 9, admin_name: 'முத்துக்குமாரசாமி பாலசுப்பிரமணியம்', permissions: [],
+  page_keys: MENTOR_PAGE_KEYS,
 }
 
 const SCOPES: Record<string, () => unknown> = {

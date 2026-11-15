@@ -60,10 +60,13 @@ function StaffScholarshipList() {
   // Assignment (the "Assigned" column + inline dropdown): the server's door `assign` (`students.edit`,
   // M3c list W) — an org admin's own reviewers (backend fences the target + application).
   const canAssign = holdsDoor(role, 'assign')
-  // Only super + admin see every application, so only they benefit from the assignee filter.
-  // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
-  // the filter is redundant for them (and "Unassigned" would always return nothing).
-  const canFilterByAssignee = isSuper || role?.role === 'admin' || canAssign
+  // The assignee filter is for whoever reads EVERY application: the server's `b40_scope` 'all', i.e. the
+  // served v2 key `students.view` (which `see_all` and `qc` carry), or whoever assigns. A reviewer's list
+  // is already hard-scoped to their own assigned applicants server-side, so the filter is redundant for
+  // them (and "Unassigned" would always return nothing). TD-623: the keys decide; the old `admin` role arm
+  // is gone. A super holds every key (`isSuper` is the platform override, as on the server).
+  const readsEveryApplication = !!role?.page_keys?.includes('students.view')
+  const canFilterByAssignee = isSuper || readsEveryApplication || canAssign
   const { t } = useT()
   /*
    * ⚠ THE HEADING USED TO NAME THE TENANT'S FLAGSHIP, WHATEVER GIFT WAS PICKED.

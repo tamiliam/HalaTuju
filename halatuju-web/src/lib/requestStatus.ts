@@ -129,7 +129,10 @@ export type RequestAction =
  *
  * M3c (list W): on the requestee side the KEYS decide (`doors`, from the served page keys; M3b G8): answer,
  * defer, modify and comment need `requests.edit` (`write`); accept and withdraw need `requests.approve`
- * (`decide`). Without `doors` (an older caller) every requestee action is offered, as before.
+ * (`decide`). TD-623: `doors` is REQUIRED — no caller is offered an action without the keys that open it
+ * (the old "no `doors`, offer everything" fallback is gone). The page passes `write` true for a super, who
+ * holds every key. `role` stays: it is which SIDE of the request this person is on (the platform owner or
+ * the requesting organisation), not a permission.
  * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 export function requestActionsFor(
@@ -137,11 +140,10 @@ export function requestActionsFor(
   status: string,
   triagedKind: string,
   hasUnansweredQuestions: boolean,
-  doors?: { write: boolean; decide: boolean },
+  doors: { write: boolean; decide: boolean },
 ): RequestAction[] {
   const out: RequestAction[] = []
-  const write = role === 'super' || !doors || doors.write
-  const decide = !doors || doors.decide
+  const { write, decide } = doors
   // Available to BOTH sides and checked before the role split, because the discussion is the one
   // thing in this module that is not a privilege of one party (TD-201). The server opens it to the
   // super and to anyone of the owning organisation holding `requests.edit`.

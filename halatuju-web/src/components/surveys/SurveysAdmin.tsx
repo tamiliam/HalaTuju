@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   closeSurvey, deleteSurvey, getSurveys,
   type SurveyRow, type SurveyStatus, type SurveysPayload,
@@ -14,7 +14,7 @@ import {
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import SurveyForm from './SurveyForm'
-import { MAKER_ROLES, audienceLabel, giftHref } from './shared'
+import { audienceLabel, giftHref } from './shared'
 
 /**
  * Programme → **Surveys** (student maintenance S9, 2026-11-02; the SurveysAdmin board).
@@ -36,7 +36,7 @@ type Banner = { ok: boolean; text: string } | null
 export default function SurveysAdmin({ programme }: { programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = opensDoorOr(role, 'surveys', MAKER_ROLES)   // T5c P4: the server's door
+  const allowed = holdsDoor(role, 'surveys')   // T5c P4: the server's door; TD-623: keys only
   const [data, setData] = useState<SurveysPayload | null>(null)
   const [failed, setFailed] = useState<'' | 'load' | 'programme_required'>('')
   const [tab, setTab] = useState<SurveyStatus>('open')

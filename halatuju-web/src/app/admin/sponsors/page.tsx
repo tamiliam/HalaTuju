@@ -11,7 +11,7 @@ import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
-import { opensDoorOr } from '@/lib/pageGuard'
+import { holdsDoor } from '@/lib/pageGuard'
 import {
   DEFAULT_SORT, SPONSOR_SORT_LABEL, firstDirFor, sortSponsors,
   type SponsorSortKey,
@@ -60,9 +60,8 @@ const panelLabel: Record<Panel, string> = {
 }
 
 // Editing what every donor is told is an editorial power, not a reading one — so the badge is
-// shown to the roles the endpoint admits (super / org_admin / admin) and not to finance, which
-// may read the sponsor list. The endpoint is the authority; this only avoids offering a 403.
-const CAN_EDIT_EMAILS = ['super', 'org_admin', 'admin']
+// shown to whoever opens the endpoint's door (`sponsor_emails`, `sponsors.edit`), not to a reader of the
+// sponsor list. TD-623: the served keys only, no role list. The endpoint is the authority.
 
 // Which review actions to offer for a sponsor in a given status.
 const actionsFor = (status: string): Array<'approve' | 'reject' | 'suspend'> =>
@@ -86,7 +85,7 @@ export default function AdminSponsorsList() {
   const wanted = search?.get('panel') as Panel | null
   const [panel, setPanel] = useState<Panel>(
     wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
-  const mayEditEmails = opensDoorOr(role, 'sponsor_emails', CAN_EDIT_EMAILS)   // T5c P4: the server's door
+  const mayEditEmails = holdsDoor(role, 'sponsor_emails')   // T5c P4: the server's door; TD-623: keys only
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
   // M3c: the server says whether this viewer may vet an account (`may_vet`); nothing is offered until it
   // answers (review F3). An older server that does not say keeps the buttons; its POST stays the authority.

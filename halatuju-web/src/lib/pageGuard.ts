@@ -7,7 +7,6 @@
  */
 import { canAccess, effectiveRole } from './navigation'
 import { opensDoor, type DoorName } from './pageDoors'
-import { admitsRow } from './staffPermissions'
 
 type Served = { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null;
                 mentoring?: boolean; tables?: readonly string[] | null; page_keys?: readonly string[] | null }
@@ -31,39 +30,22 @@ export function readsAllScholars(role: Served | null | undefined): boolean {
 }
 
 /**
- * Team tables T5c P4: an IN-PAGE gate on a server door (Announcements, Surveys, Development, the scholar
- * Mentoring / Surveys / Growth tabs, sponsor emails, Sources' invite) — `opensDoor` with the served
- * `page_keys`; an older payload (none) answers by the role list the page held before (`roles`).
- */
-export function opensDoorOr(role: Served | null | undefined, door: DoorName, roles: readonly string[]): boolean {
-  return opensDoor(role, door) ?? roles.includes(effectiveRole(role))
-}
-
-/**
  * Sprint M3c (list W): an IN-PAGE gate on a server door with NO role fallback — `opensDoor` with the
  * served `page_keys`, and `false` when they are missing. Every `GET admin/role/` serves `page_keys` (T5c
  * P4a), so the role is never read. Visibility only: the endpoint is the fence.
+ * TD-623 (2026-11-15): THE one in-page door gate. `opensDoorOr` (a door, or the page's old role list for a
+ * payload without `page_keys`) is gone with its role lists; the role is a label, the keys decide.
  */
 export function holdsDoor(role: Served | null | undefined, door: DoorName): boolean {
   return opensDoor(role, door) === true
 }
 
 /**
- * Team tables T3 (2026-11-03): who sees Team → **Mentors** and a mentor's detail page — exactly who read the
- * old Mentors page (its registry row's roles): the server's `mentor_invite.may_read`, which is
- * `staff_tables.may_do_admin_work` (the union door `admin_work`, still answered by role label here via
- * `MENTORS_READ_ROLES`; no key yet). The Team
- * page itself is wider (finance and a key-seated admin read it), so the tab carries this rule of its own.
- * Visibility only: `GET admin/mentors/` and `GET admin/mentors/<id>/` are the fence.
- * Sprint M2b (D11): ON THE SERVER'S DOOR. `mentor_invite.may_read` asks the door `mentors_read`
- * (`mentoring.view`, A1.10a), so this reads the served `page_keys`; an older payload (none) answers by
- * the role list below, as before.
+ * Team tables T3 (2026-11-03): who sees Team → **Mentors** and a mentor's detail page. Sprint M2b (D11): the
+ * server's `mentor_invite.may_read` asks the door `mentors_read` (`mentoring.view`, A1.10a), so this reads
+ * the served `page_keys`. TD-623: no role fallback (`MENTORS_READ_ROLES` is gone); a payload without
+ * `page_keys` opens nothing. Visibility only: `GET admin/mentors/` and `GET admin/mentors/<id>/` are the fence.
  */
-export const MENTORS_READ_ROLES = ['super', 'org_admin', 'admin'] as const
-
-export function mayReadMentors(
-  role: Served | null | undefined,
-): boolean {
-  return opensDoor(role, 'mentors_read') ?? admitsRow({ roles: MENTORS_READ_ROLES }, effectiveRole(role),
-    role?.permissions, role?.mentoring, role?.tables)
+export function mayReadMentors(role: Served | null | undefined): boolean {
+  return holdsDoor(role, 'mentors_read')
 }
