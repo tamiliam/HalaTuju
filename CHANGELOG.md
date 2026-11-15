@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: request #67 (scope 3b) - an IC read never copies its spacing over a correct name; an aligned name is stored tidied (2026-11-15)
+
+Branch req67-align-tidy, not pushed. Owner 15 Nov ("Fix first"), bug under #67, no charge. Brief `docs/plans/req67-scope3b-align-tidy-brief.md`. No migration, no web change. Services: api.
+- Why: the 15 Nov dry run of `align_profile_names_to_ic` listed 6 to align; 4 of them (118, 190, 306, 602) already had the card's letters and differed only in marker spacing (a reader that glued A/L onto the word before; `@` spaced another way). The ALREADY test only tidied case, spaces and slash spacing, so those fell through to ALIGNED and the raw card text, glue included, would have replaced a correct name that feeds the payments CSV.
+- E1: `identity.name_alignment` answers ALREADY when the profile name's words already are the card's (`same_word_sequence`), before the signatures are tried. Nothing is written and no activity row is made; the student's own spacing stands.
+- E2: when the name does align, `align_name_to_ic` stores `identity.card_display_name(card)`: `tidy_name` upper-cased (the marker its own word, `@` standing alone, single spaces), never the card's raw spacing. The same value goes in the activity row's `meta.new`. It is a fixed point of `StudentProfile.save`, which is unchanged.
+- E3: `name_card_takeable` is False when the card's words equal the stored name's. Its other gates and `name_change_allowed` are unchanged.
+- Unchanged: the D2 gates (newest live student card, clean read, exact NRIC, `_same_words` against the profile name or a signature), the lock, admin paths, parent cards.
+- `VERDICT_ENGINE_VERSION` stays 2026-11-14.4: a spacing-only difference gives the same tokens to `name_match`, `relationship_name_match` and the patronymic check (all detach glued markers and drop `@`), so no fact moves.
+- Tests: `test_req67_ic_name_alignment.py` (the 118 and three `@` shapes are ALREADY with no write, no row and no offer; the 177 shape and a glued 177 card are stored tidied with the signature untouched; the save fixed point; the dry run counts the spacing shapes `already`; `run_vision_for_document` and the upload promotion both follow E1/E2).
+
 ### refactor: sprint TD-623 - the web reads the served keys only; the role is a label (2026-11-15)
 
 Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-623 builder calls, pending architect). Release-note draft: `docs/releases/td623-release-note-draft.md`.

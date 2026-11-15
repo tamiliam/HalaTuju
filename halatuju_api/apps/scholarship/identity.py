@@ -35,6 +35,9 @@ A lock you can undo by removing the proof is not a lock.
 **The name follows the card** (request #67 scope 3, 2026-11-14) — the second half of this module:
 ``align_name_to_ic`` makes the IC's name the profile name when that is safe, and
 ``name_change_allowed`` holds it there once the IC is locked. See the note above those functions.
+A name whose WORDS already are the card's (only marker spacing apart) is left as the student typed
+it, and a name that is rewritten takes the card's words TIDIED (``card_display_name``), never the
+card's own spacing (scope 3b, 2026-11-15).
 """
 import logging
 import re
@@ -42,7 +45,7 @@ import re
 from .genuineness.bands import canonical_status, stored_status
 from .read_errors import IC_SECOND_OPINION_ERROR, ic_second_opinion_deferred
 from .vision import name_match, nric_close, nric_match
-from .vision.names import same_letters, same_word_sequence
+from .vision.names import same_letters, same_word_sequence, tidy_name
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
 # subset of the other — a name typed shorter or longer than the card carries.
@@ -180,8 +183,8 @@ def flags(comparison):
 _logger = logging.getLogger(__name__)
 
 #: The outcomes of ``align_name_to_ic`` (the backfill command counts them; nothing else reads them).
-ALIGNED = 'aligned'                  # profile.name rewritten to the card's name
-ALREADY = 'already'                  # it already was the card's name: nothing to write
+ALIGNED = 'aligned'                  # profile.name rewritten to the card's words, tidied
+ALREADY = 'already'                  # it already had the card's words (any marker spacing): nothing to write
 NOT_STUDENT_IC = 'not_student_ic'    # a parent's card, or not an IC at all: never the student's name
 NO_PROFILE = 'no_profile'
 NOT_LATEST = 'not_latest'            # an older or replaced card does not speak for the student
@@ -260,16 +263,19 @@ def name_change_allowed(profile, new_name):
 def name_card_takeable(profile):
     """May the student take their card's name in one tap ("Use the name on my IC" on /profile)?
     Exactly when ``name_change_allowed`` would let them: the name is locked, their latest live card
-    speaks for them (``card_speaks_for``) and its name differs from the stored one. So the button
-    is never offered for a write the PUT refuses (an admin's lock with a newer unscored or
-    non-genuine card, a misread number, a second opinion pending or failed)."""
+    speaks for them (``card_speaks_for``) and its WORDS differ from the stored name's (scope 3b, E3:
+    ``same_word_sequence``, the test ``name_alignment`` calls ALREADY — a name that differs from the
+    card only in marker spacing, "KUMAR A/L" against a glued "KUMARA/L" or "X @ Y" against "X@Y",
+    already is the card's name, so the card's spacing is never offered over it). So the button is
+    never offered for a write the PUT refuses (an admin's lock with a newer unscored or non-genuine
+    card, a misread number, a second opinion pending or failed)."""
     if profile is None or not name_locked(profile):
         return False
     ic = latest_live_ic(profile)
     if ic is None or not card_speaks_for(ic, profile):
         return False
     card = (ic.vision_name or '').strip()
-    return bool(card) and not _same_text(card, getattr(profile, 'name', ''))
+    return bool(card) and not same_word_sequence(card, getattr(profile, 'name', '') or '')
 
 
 def card_speaks_for(doc, profile):
@@ -311,7 +317,12 @@ def name_alignment(doc):
     Aligns only when it is safe — the student's own, newest live card; a clean read; the card's
     number exactly the typed one; and the card's name has exactly the SAME WORDS, in the same
     order, as the typed profile name or the signature on any of this profile's applications (``_same_words``).
-    Anything less: no change."""
+    Anything less: no change.
+
+    ALREADY (scope 3b, E1) when the profile name's words already ARE the card's
+    (``same_word_sequence``: case, spaces and marker spacing tidied — a glued "KUMARA/L" read
+    against a typed "KUMAR A/L", "X@Y" against "X @ Y"). Tested before the signatures, so it wins:
+    the student's own spacing stands and the card's is never written over a correct name."""
     if getattr(doc, 'doc_type', '') != 'ic':
         return NOT_STUDENT_IC, ''
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
@@ -326,21 +337,33 @@ def name_alignment(doc):
         return READ_NOT_CLEAN, card_name
     if not nric_match(card_nric, getattr(profile, 'nric', '') or ''):
         return NRIC_DIFFERS, card_name
-    typed = [(getattr(profile, 'name', '') or '').strip()]
+    profile_name = (getattr(profile, 'name', '') or '').strip()
+    if profile_name and same_word_sequence(card_name, profile_name):
+        return ALREADY, card_name                       # E1: the words already are the card's
+    typed = [profile_name]
     typed += list(profile.scholarship_applications.exclude(declaration_name='')
                   .values_list('declaration_name', flat=True))
     if not any(t and _same_words(card_name, t) for t in typed):
         return NO_NAME_MATCH, card_name
-    if _same_text(card_name, getattr(profile, 'name', '')):
-        return ALREADY, card_name
     return ALIGNED, card_name
+
+
+def card_display_name(card_name):
+    """The card's name as ``align_name_to_ic`` stores it (scope 3b, E2): its words TIDIED
+    (``tidy_name``: a glued slash marker split off as its own word, ``@`` standing alone, single
+    spaces), upper-cased — never the card's raw spacing. A fixed point of ``StudentProfile.save``
+    (which upper-cases and collapses the space inside "A/ P", both already done here)."""
+    return tidy_name(card_name).upper()
 
 
 def align_name_to_ic(doc, *, write=True, source='ic_read'):
     """D2: make the card's name the profile name when ``name_alignment`` says it is safe.
 
-    The old value is kept on an INTERNAL ``name_aligned_to_ic`` activity row (``meta`` old/new, the
-    same place a mentor change keeps names) and a log line with ids only. The signature is never
+    What is stored is ``card_display_name(card)`` (scope 3b, E2): the card's words tidied, never
+    its raw spacing — ``profile.name`` feeds the payments CSV, and a reader that glued A/L onto the
+    word before must not put that glue into a name. The old value is kept on an INTERNAL
+    ``name_aligned_to_ic`` activity row (``meta`` old/new, the same place a mentor change keeps
+    names) and a log line with ids only. The signature is never
     touched. ``write=False`` answers the outcome and changes nothing (the backfill's dry run).
     Called by ``vision.ic.run_vision_for_document`` before the IC lock (D6: a card read in place,
     e.g. the cockpit's Re-run), by ``upload_read.judge`` once a STAGED upload is promoted into the
@@ -356,11 +379,12 @@ def align_name_to_ic(doc, *, write=True, source='ic_read'):
     application = doc.application
     profile = application.profile
     old = profile.name or ''
+    new = card_display_name(card_name)
     with transaction.atomic():
-        profile.name = card_name
-        profile.save(update_fields=['name', 'updated_at'])     # save() upper-cases and tidies it
+        profile.name = new
+        profile.save(update_fields=['name', 'updated_at'])     # a fixed point: save() leaves it as is
         activity.log_event(application, EVENT_NAME_ALIGNED_TO_IC, internal=True, meta={
-            'old': old, 'new': profile.name, 'document_id': doc.pk, 'source': source})
+            'old': old, 'new': new, 'document_id': doc.pk, 'source': source})
     _logger.info('AUDIT name_aligned_to_ic profile_id=%s app_id=%s doc_id=%s source=%s',
                  profile.pk, application.pk, doc.pk, source)
     return outcome

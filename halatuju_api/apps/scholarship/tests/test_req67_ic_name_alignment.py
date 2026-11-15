@@ -22,6 +22,9 @@ The owner's decisions D1-D6 (docs/plans/req67-scope3-ic-name-alignment-brief.md)
   answers for a newer one that reads no name; a fallback model's answer is never reused.
 * D6 — align before the lock, so the lock compares the card with the name it will hold; two
   separate never-raise steps, so a failed alignment never costs the lock.
+* Scope 3b (2026-11-15, docs/plans/req67-scope3b-align-tidy-brief.md) — a name whose words already
+  are the card's (only marker spacing apart) is ALREADY: nothing written, nothing offered; a name
+  that aligns is stored as the card's words tidied, never the card's raw spacing.
 
 Every name and NRIC here is invented. No model is ever called (Storage, Vision and Gemini are mocked).
 """
@@ -970,3 +973,187 @@ class TheBackfillCommand(TestCase):
         self.assertIn('2 checked, 0 aligned', again)
         self.assertIn('already 1', again)
         self.assertEqual(StudentProfile.objects.get(pk=self.other.pk).name, 'SITI AMINAH BINTI YUSOF')
+
+
+# ── Scope 3b (2026-11-15): the card's spacing is never copied over a correct name ──────────────
+#
+# E1: a profile name whose WORDS already are the card's (only marker spacing apart) is ALREADY
+# aligned: nothing is written and "Use the name on my IC" is not offered. E2: a name that IS
+# rewritten takes the card's words TIDIED (``identity.card_display_name``), never its raw spacing.
+
+# 118's shape: typed correctly, the reader GLUED the A/L onto the word before.
+TYPED_AL = 'KAVINRAJ A/L SELVADURAI'
+GLUED_AL = 'KAVINRAJA/L SELVADURAI'
+# 190 / 602 / 306's shapes: the same name with the "@" spaced differently on the two sides.
+AT_SHAPES = (('LIM MEI LING @ AISYAH', 'LIM MEI LING @AISYAH'),       # 190
+             ('LIM MEI LING @ AISYAH', 'LIM MEI LING@AISYAH'),        # 602
+             ('NUR AINA@SOFEA BINTI HAMID', 'NUR AINA @SOFEA BINTI HAMID'))   # 306
+# A 177 shape whose card is ALSO glued: short profile, the signature correct, the card "…DEVIA/P …".
+GLUED_CARD = 'NIRMALA DEVIA/P GANESAN MOORTHY'
+NRIC_B = '090909-09-0901'
+
+
+class TheCardsSpacingIsNotANewName(TestCase):
+    """E1 + E3: the same words as the card is already the card's name."""
+
+    def _case(self, typed, card, nric, *, locked=False, signed=True):
+        profile = _student(typed, nric, nric_verified=locked)
+        app = make_application(student=profile, declaration_name=typed if signed else '')
+        return profile, app, _ic(app, name=card, nric=nric)
+
+    def _assert_already(self, profile, app, doc, typed):
+        self.assertEqual(identity.name_alignment(doc)[0], identity.ALREADY)
+        self.assertEqual(identity.align_name_to_ic(doc), identity.ALREADY)
+        self.assertEqual(_name_of(profile), typed)                    # her own spacing stands
+        self.assertFalse(StudentActivity.objects.filter(
+            application=app, event=EVENT_NAME_ALIGNED_TO_IC).exists())
+
+    def test_a_glued_a_l_read_leaves_the_correct_name_alone(self):
+        profile, app, doc = self._case(TYPED_AL, GLUED_AL, NRIC_B)
+        self._assert_already(profile, app, doc, TYPED_AL)
+
+    def test_the_at_shapes_leave_the_typed_name_alone(self):
+        for n, (typed, card) in enumerate(AT_SHAPES):
+            with self.subTest(typed=typed, card=card):
+                profile, app, doc = self._case(typed, card, f'090909-09-091{n}')
+                self._assert_already(profile, app, doc, typed)
+
+    def test_already_wins_with_nothing_signed(self):
+        """E1 is the profile name's own test, before the signature loop: no signature needed."""
+        profile, app, doc = self._case(TYPED_AL, GLUED_AL, NRIC_B, signed=False)
+        self._assert_already(profile, app, doc, TYPED_AL)
+
+    def test_the_button_is_not_offered_for_the_cards_spacing(self):
+        shapes = ((TYPED_AL, GLUED_AL),) + AT_SHAPES
+        for n, (typed, card) in enumerate(shapes):
+            with self.subTest(typed=typed, card=card):
+                profile, _, _ = self._case(typed, card, f'090909-09-092{n}', locked=True)
+                self.assertFalse(identity.name_card_takeable(profile))
+                # name_change_allowed is unchanged: she may still type the card's own letters.
+                self.assertTrue(identity.name_change_allowed(profile, card))
+
+    def test_the_button_is_still_offered_when_the_words_differ(self):
+        profile, _, _ = self._case(SHORT_EDIT, GLUED_CARD, NRIC_B, locked=True)
+        self.assertTrue(identity.name_card_takeable(profile))
+
+    def test_the_identity_check_reads_the_same_either_way(self):
+        """E5: a spacing-only difference is already a 'match' to name_match (the IC verdict's test),
+        so leaving the typed spacing moves no fact."""
+        for typed, card in ((TYPED_AL, GLUED_AL),) + AT_SHAPES:
+            with self.subTest(typed=typed, card=card):
+                self.assertEqual(vision.name_match(card, typed), 'match')
+                self.assertEqual(vision.name_match(card, card), 'match')
+                self.assertEqual(vision.name_match(card, identity.card_display_name(card)), 'match')
+
+
+class AnAlignedNameIsTheCardsWordsTidied(TestCase):
+    """E2: when the words differ and the card's words are a signature's, the tidied card is stored."""
+
+    def setUp(self):
+        self.profile = _student(SHORT_EDIT, NRIC)
+        self.app = make_application(student=self.profile, declaration_name=CARD)
+
+    def test_the_177_shape_stores_the_tidy_card_and_leaves_the_signature(self):
+        doc = _ic(self.app, name='nirmala  devi a / p ganesan moorthy')
+        self.assertEqual(identity.align_name_to_ic(doc), identity.ALIGNED)
+        self.assertEqual(_name_of(self.profile), CARD)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.declaration_name, CARD)
+
+    def test_a_glued_card_is_stored_with_a_p_as_its_own_word(self):
+        doc = _ic(self.app, name=GLUED_CARD)
+        self.assertEqual(identity.align_name_to_ic(doc), identity.ALIGNED)
+        self.assertEqual(_name_of(self.profile), CARD)
+        row = StudentActivity.objects.get(application=self.app, event=EVENT_NAME_ALIGNED_TO_IC)
+        self.assertEqual((row.meta['old'], row.meta['new']), (SHORT_EDIT, CARD))
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.declaration_name, CARD)
+
+    def test_an_at_card_is_stored_with_the_at_standing_alone(self):
+        profile = _student('LIM AISYAH', NRIC_B)
+        app = make_application(student=profile, declaration_name='LIM MEI LING @ AISYAH')
+        self.assertEqual(identity.align_name_to_ic(_ic(app, name='LIM MEI LING@AISYAH', nric=NRIC_B)),
+                         identity.ALIGNED)
+        self.assertEqual(_name_of(profile), 'LIM MEI LING @ AISYAH')
+
+    def test_the_stored_name_is_a_fixed_point_of_save(self):
+        identity.align_name_to_ic(_ic(self.app, name=GLUED_CARD))
+        stored = _name_of(self.profile)
+        self.profile.save()
+        self.assertEqual(_name_of(self.profile), stored)
+        from apps.courses.utils import tidy_parentage_marker
+        for card in (GLUED_CARD, GLUED_AL, 'KAVINRAJ A/ L SELVADURAI', 'kavinraj a / l selvadurai',
+                     'NIRMALA DEVI A/PGANESAN', 'S/OKUMAR RAJ') + tuple(c for _, c in AT_SHAPES):
+            with self.subTest(card=card):
+                shown = identity.card_display_name(card)
+                self.assertEqual(tidy_parentage_marker(shown.upper()), shown)
+                self.assertEqual(shown, ' '.join(shown.split()))
+
+
+class TheBackfillCountsTheSpacingShapesAsAlready(TestCase):
+    def test_the_dry_run_counts_them_already(self):
+        drift = _student(SHORT_EDIT, NRIC)                       # 177's shape: would align
+        drift_app = make_application(student=drift, declaration_name=CARD)
+        _ic(drift_app)
+        for n, (typed, card) in enumerate(((TYPED_AL, GLUED_AL),) + AT_SHAPES):
+            nric = f'090909-09-093{n}'
+            _ic(make_application(student=_student(typed, nric), declaration_name=typed,
+                                 cohort=make_cohort(code=f'c-req67b-{n}')), name=card, nric=nric)
+        out = StringIO()
+        call_command('align_profile_names_to_ic', stdout=out)
+        out = out.getvalue()
+        self.assertIn('[dry-run] ic name alignment: 5 checked, 1 to align', out)
+        self.assertIn('already 4', out)
+        self.assertIn(f'app {drift_app.id}: name would align', out)
+
+
+class TheLiveReadPathsFollowScope3b(TestCase):
+    """E1/E2 through ``run_vision_for_document`` (a card read in place) and through a real upload
+    (aligned on promotion)."""
+
+    def test_the_ic_read_keeps_a_correct_name_and_still_locks(self):
+        profile = _student(TYPED_AL, NRIC_B)
+        app = make_application(student=profile, declaration_name=TYPED_AL)
+        doc = _ic(app, name='', nric='')
+        _read(doc, name=GLUED_AL, nric=NRIC_B)
+        profile.refresh_from_db()
+        self.assertEqual(profile.name, TYPED_AL)
+        self.assertTrue(profile.nric_verified)
+        self.assertFalse(StudentActivity.objects.filter(event=EVENT_NAME_ALIGNED_TO_IC).exists())
+        self.assertFalse(identity.name_card_takeable(profile))
+
+    def test_the_ic_read_stores_a_glued_card_tidied(self):
+        profile = _student(SHORT_EDIT, NRIC)
+        app = make_application(student=profile, declaration_name=CARD)
+        doc = _ic(app, name='', nric='')
+        _read(doc, name=GLUED_CARD, nric=NRIC)
+        profile.refresh_from_db()
+        self.assertEqual(profile.name, CARD)
+        self.assertTrue(profile.nric_verified)
+
+    @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+    def test_an_upload_keeps_a_correct_name_and_offers_nothing(self):
+        profile = _student(TYPED_AL, NRIC_B)
+        app = make_application('shortlisted', student=profile, declaration_name=TYPED_AL)
+        doc = upload_and_read_ic(self, app, 'first', name=GLUED_AL, nric=NRIC_B)
+        self.assertIsNone(doc.superseded_at)
+        profile.refresh_from_db()
+        self.assertEqual(profile.name, TYPED_AL)
+        self.assertTrue(profile.nric_verified)
+        self.assertFalse(StudentActivity.objects.filter(event=EVENT_NAME_ALIGNED_TO_IC).exists())
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(profile)}')
+        d = client.get('/api/v1/profile/').json()
+        self.assertTrue(d['name_locked'])
+        self.assertFalse(d['name_card_takeable'])
+
+    def test_an_upload_stores_a_glued_card_tidied(self):
+        profile = _student(SHORT_EDIT, NRIC)
+        app = make_application('shortlisted', student=profile, declaration_name=CARD)
+        doc = upload_and_read_ic(self, app, 'first', name=GLUED_CARD)
+        self.assertIsNone(doc.superseded_at)
+        profile.refresh_from_db()
+        self.assertEqual(profile.name, CARD)
+        self.assertTrue(profile.nric_verified)
+        row = StudentActivity.objects.get(application=app, event=EVENT_NAME_ALIGNED_TO_IC)
+        self.assertEqual(row.meta['new'], CARD)
