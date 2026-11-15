@@ -189,7 +189,19 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         sw = offer_pathway_switch(obj.application) if getattr(obj, 'superseded_at', None) is None else None
         chk['switched_from'] = ({'programme': sw['from_programme'], 'institution': sw['from_institution']}
                                 if sw else None)
+        chk['start_year_note'] = self._start_year_note(obj)
         return chk
+
+    @staticmethod
+    def _start_year_note(obj):
+        """H3a, owner ruling "1A" (2026-11-15): {years} when the course started in a year the gift
+        does not take, so the student sees a short reason. Shown on the LIVE offer only. Not a
+        block: a reviewer still decides. Null for an unknown year or a gift with no setting."""
+        if getattr(obj, 'superseded_at', None) is not None:
+            return None
+        from ..start_year import reading
+        r = reading(obj.application)
+        return {'years': r['years']} if r and r['state'] == 'outside' and r['years'] else None
 
     def get_income_ic_check(self, obj):
         """{nric, name, address, member, name_status, readable} for an income earner's

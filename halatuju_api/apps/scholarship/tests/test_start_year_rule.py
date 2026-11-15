@@ -4,9 +4,12 @@ Per gift setting: a 2024 starter in a 2025/2026 intake is caught (red Pathway, a
 disqualifier, QC's floor); a 2025 starter in an intake with no limit (Sabah) is not; an intake with
 no setting is unchanged; an unreadable year is a reviewer line for a person, never a fail.
 """
-from django.test import TestCase, override_settings
+from unittest import mock
+
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.scholarship import award, start_year
+from apps.scholarship import pathway_engine as pe
 from apps.scholarship.models import ApplicantDocument, ScholarshipCohort
 from apps.scholarship.resolution import CODE_TO_TICKET
 from apps.scholarship.tests.factories import (
@@ -111,6 +114,150 @@ class QcFloor(_Base):
         app = self._app(self.degree, 'qc')
         self._offer(app, intake='2024')
         self.assertIn('pathway', [f['fact'] for f in build_verdict(app) if f['status'] == 'gap'])
+
+
+class SessionReading(SimpleTestCase):
+    """H3a review (LM): a session "S/S+1" spans two calendar years. Semester II starts in S+1, so
+    reading the FIRST year would wrongly fail a 2025 starter on a 2025/2026 gift. Unsure → ''
+    (a person checks), never a guessed year. None = no session in the line (the old reading)."""
+
+    def test_second_semester_forms_read_the_second_year(self):
+        for intake in ('Sesi 2024/2025 Semester II', 'Semester 2 Sesi 2024/2025', 'SEM 2 2024/2025',
+                       'Sem. 2, Sesi 2024/2025', 'Semester Kedua Sesi 2024/2025',
+                       'Sesi 2024/2025 Ambilan Februari', 'Sesi Akademik 2024/2025 (Mac)',
+                       'Academic Session 2024/2025, Semester 2', 'Second Semester, Session 2024/2025',
+                       'Session 2024/25 February intake', 'Sesi II 2024-2025'):
+            with self.subTest(intake=intake):
+                self.assertEqual(pe.session_start_year(intake), '2025')
+
+    def test_first_semester_forms_read_the_first_year(self):
+        for intake in ('Sesi 2024/2025 Semester I', 'Semester 1 Sesi 2024/2025', 'SESI 1-2024/2025',
+                       'Semester Pertama Sesi 2024/2025', 'Sesi 2024/2025 Ambilan September',
+                       'Academic Session 2024/2025, Semester 1', 'First Semester, Session 2024/2025',
+                       'Session 2024/2025 October intake', 'Sem I 2024/25'):
+            with self.subTest(intake=intake):
+                self.assertEqual(pe.session_start_year(intake), '2024')
+
+    def test_a_bare_session_keeps_todays_first_year_reading(self):
+        for intake in ('Sesi 2024/2025', 'SESI AKADEMIK 2024/2025', 'Academic Session 2024/2025'):
+            with self.subTest(intake=intake):
+                self.assertEqual(pe.session_start_year(intake), '2024')
+
+    def test_the_letters_reporting_date_settles_the_year_inside_the_session(self):
+        self.assertEqual(pe.session_start_year('Sesi 2024/2025', '17 Februari 2025'), '2025')
+        self.assertEqual(pe.session_start_year('Sesi II 2024/2025', '2 Disember 2024'), '2024')
+        self.assertEqual(pe.session_start_year('Semester 1 Sesi 2024/2025', '8 Sept 2024'), '2024')
+
+    def test_unsure_is_unknown_never_a_guess(self):
+        for intake, rd in (('Sesi 2024/2025 Semester 1 dan Semester 2', ''),   # both terms
+                           ('Sesi 2024/2025 Ambilan September / Februari', ''),
+                           ('Semester 3 Sesi 2024/2025', ''),                 # a continuing student
+                           ('Sesi : 2026/2027 Semester : 3', ''),
+                           ('Third Semester, Session 2024/2025', ''),
+                           ('Sesi 2024/2025', '5 Jan 2023')):                  # date outside session
+            with self.subTest(intake=intake, rd=rd):
+                self.assertEqual(pe.session_start_year(intake, rd), '')
+
+    def test_no_session_is_left_to_the_old_reading(self):
+        for intake in ('', '2024', 'Ambilan Jun 2025', 'SEMESTER 1 TAHUN 2026',
+                       '6 / 2025 – 12 / 2026', '2024/2026'):
+            with self.subTest(intake=intake):
+                self.assertIsNone(pe.session_start_year(intake))
+
+
+class SessionOnTheGift(_Base):
+    def test_a_second_semester_2025_starter_is_not_caught_on_the_degree_gift(self):
+        app = self._app(self.degree, 'sem2')
+        self._offer(app, intake='Sesi 2024/2025 Semester II')
+        self.assertEqual(pe.course_start_year(app), 2025)
+        self.assertFalse(self._codes(app) & {start_year.OUTSIDE, start_year.UNKNOWN})
+
+    def test_a_first_semester_2024_starter_is_caught(self):
+        app = self._app(self.degree, 'sem1')
+        self._offer(app, intake='Sesi 2024/2025 Semester I')
+        self.assertIn(start_year.OUTSIDE, self._codes(app))
+
+    def test_an_unsure_session_goes_to_a_person(self):
+        app = self._app(self.degree, 'sem3')
+        self._offer(app, intake='Semester 3 Sesi 2024/2025')
+        self.assertIsNone(pe.course_start_year(app))
+        codes = self._codes(app)
+        self.assertIn(start_year.UNKNOWN, codes)
+        self.assertNotIn(start_year.OUTSIDE, codes)
+
+
+class TheStudentsNote(_Base):
+    """Owner ruling "1A" (2026-11-15): the student's offer card carries the gift's years when the
+    course started outside them. Nothing for an unknown year, a gift with no setting, or an old
+    (superseded) letter. Not a block: the verdict is unchanged by it."""
+
+    def _note(self, doc):
+        from apps.scholarship.serializers.documents import ApplicantDocumentSerializer
+        return ApplicantDocumentSerializer(doc).data['pathway_check']['start_year_note']
+
+    def test_outside_carries_the_gifts_years(self):
+        app = self._app(self.degree, 'note-out')
+        self.assertEqual(self._note(self._offer(app, intake='2024')), {'years': [2025, 2026]})
+
+    def test_nothing_inside_unknown_or_with_no_setting(self):
+        for cohort, intake, suffix in ((self.degree, '2025', 'in'), (self.degree, '', 'unk'),
+                                       (self.sabah, '2019', 'sabah'), (self.plain, '2019', 'plain')):
+            with self.subTest(suffix):
+                app = self._app(cohort, f'note-{suffix}')
+                self.assertIsNone(self._note(self._offer(app, intake=intake)))
+
+    def test_nothing_on_a_superseded_letter(self):
+        from django.utils import timezone
+        app = self._app(self.degree, 'note-old')
+        doc = self._offer(app, intake='2024')
+        doc.superseded_at = timezone.now()
+        doc.save(update_fields=['superseded_at'])
+        self.assertIsNone(self._note(doc))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class QcAcceptEndpoint(TestCase):
+    """The real QC accept refuses (400 verdict_gap_floor) on the red start-year Pathway fact. Only
+    the Pathway fact is kept from the real verdict, so the floor can turn on nothing else (the
+    factory case has no other documents)."""
+
+    def setUp(self):
+        self.cohort = make_cohort(allowed_start_years=[2025, 2026])
+        self.qc = make_admin('qc', owning_org=self.cohort.owning_organisation, email='qc-sy@example.test')
+        real = build_verdict
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict',
+                             side_effect=lambda a, *x, **k: [f for f in real(a, *x, **k)
+                                                             if f['fact'] == 'pathway'])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _case(self, intake):
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                               student=make_student(name='Anbu A/L Raj'))
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path='x/offer',
+            vision_fields={'fields': {'intake': intake, 'candidate_name': 'Anbu A/L Raj'},
+                           'student_verdict': 'ok'})
+        return app
+
+    def _accept(self, app, **body):
+        return authed_client(self.qc).post(
+            f'/api/v1/admin/scholarship/applications/{app.pk}/qc-decision/',
+            {'decision': 'accept', **body}, format='json')
+
+    def test_an_outside_year_is_refused_on_the_floor(self):
+        app = self._case('2024')
+        self.assertIn(start_year.OUTSIDE, {i['code'] for f in build_verdict(app)
+                                           if f['fact'] == 'pathway' for i in f['unresolved']})
+        r = self._accept(app)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual((r.json()['code'], r.json()['facts']), ('verdict_gap_floor', ['pathway']))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+
+    def test_an_inside_year_is_not_held_by_the_start_year_rule(self):
+        app = self._case('2025')
+        self.assertNotIn('pathway', [f['fact'] for f in build_verdict(app) if f['status'] == 'gap'])
 
 
 class StoredValue(TestCase):

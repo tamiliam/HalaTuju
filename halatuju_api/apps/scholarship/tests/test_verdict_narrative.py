@@ -56,6 +56,17 @@ class TestRenderItem(SimpleTestCase):
     def test_unknown_code_falls_back_to_humanised(self):
         self.assertEqual(vn._render_item(_item('some_new_code')), 'some new code')
 
+    def test_start_year_lines_are_glossed(self):
+        # H3a: plain sentences with the years filled in, never the humanised code.
+        self.assertEqual(
+            vn._render_item(_item('pathway_start_year_outside', start_year='2024', years='2025, 2026')),
+            'the course started in 2024, but this gift is for students who started in 2025, 2026 — '
+            'recommend reject unless the interview shows a later start')
+        self.assertEqual(
+            vn._render_item(_item('pathway_start_year_unknown', years='2025, 2026')),
+            'the start year could not be read from the offer letter; this gift is for students who '
+            'started in 2025, 2026, so check the year on the letter')
+
 
 @override_settings(VERDICT_CASE_SUMMARY_ENABLED=True)
 class TestVerdictCaseSummary(SimpleTestCase):

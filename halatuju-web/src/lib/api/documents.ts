@@ -319,6 +319,10 @@ export interface PathwayCheck {
   // The course-switch note: set on the LIVE offer when it replaced a genuinely different prior
   // offer (any→any). Null when there was no switch. Surfaced even after the student confirms.
   switched_from?: { programme: string; institution: string } | null
+  // H3a, owner ruling "1A" (2026-11-15): the gift's course-start years, set ONLY when this course
+  // started outside them (live offer). A short reason for the student, never a block: a reviewer
+  // still decides. Null for an unknown year or a gift with no setting.
+  start_year_note?: { years: number[] } | null
 }
 
 export interface ConsentStatus {

@@ -341,8 +341,12 @@ def student_offer_check(doc) -> dict:
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
     # Course-start year: prefer the intake/session year, fall back to the reporting date's year.
-    iym = re.search(r'\b(20\d{2})\b', intake) or re.search(r'\b(20\d{2})\b', reporting_date)
-    intake_year = iym.group(1) if iym else ''
+    # An academic SESSION ("Sesi 2024/2025") spans two calendar years: `session_start_year` picks
+    # the right one, or '' when it cannot tell (H3a follow-up, 2026-11-15).
+    intake_year = session_start_year(intake, reporting_date)
+    if intake_year is None:
+        iym = re.search(r'\b(20\d{2})\b', intake) or re.search(r'\b(20\d{2})\b', reporting_date)
+        intake_year = iym.group(1) if iym else ''
     # Currency vs the cohort: a current intake matches the cohort's OWN year. 'current'→green / 'off'→amber
     # / '' → no signal (no year / no cohort).
     _cy = getattr(getattr(application, 'cohort', None), 'year', None) if application is not None else None
@@ -462,6 +466,65 @@ def offer_reporting_date_unknown(application):
     if not sv or sv == 'review_manually':          # not extracted yet → not this gap
         return False
     return parse_reporting_date(student_offer_check(offer).get('reporting_date')) is None
+
+
+# ── Academic session → the calendar year the course started ──────────────────────
+
+# "2024/2025", "2024 / 25", "2024-2025": a session is two CONSECUTIVE years (checked in code), so a
+# Form 6 range "6 / 2025 – 12 / 2026" is never read as one.
+_SESSION_RE = re.compile(r'\b(20\d{2})\s*[/\-–]\s*(20\d{2}|\d{2})\b')
+_TERM = r'(?:semester|sem\.?|sesi|session|term)\s*[:.\-]?\s*'
+_FIRST_TERM_RE = re.compile(
+    rf'\b{_TERM}(?:1|i|one|pertama|satu)\b|\b(?:first|1st)\s+(?:semester|sem|term)\b', re.I)
+_SECOND_TERM_RE = re.compile(
+    rf'\b{_TERM}(?:2|ii|two|kedua|dua)\b|\b(?:second|2nd)\s+(?:semester|sem|term)\b', re.I)
+# Semester 3 and up is the student's PLACE in the course (a continuing student's letter), not the
+# intake: the start year cannot be told from it.
+_LATER_TERM_RE = re.compile(
+    r'\b(?:semester|sem\.?)\s*[:.\-]?\s*(?:[3-9]|1[0-2]|iii|iv|v|vi|tiga|ketiga|empat|keempat)\b'
+    r'|\b(?:third|3rd|fourth|4th|fifth|5th|sixth|6th)\s+(?:semester|sem)\b', re.I)
+_FIRST_MONTH_RE = re.compile(r'\b(?:sep|sept|september|okt|oktober|oct|october)\b', re.I)
+_SECOND_MONTH_RE = re.compile(r'\b(?:feb|februari|february|mac|march)\b', re.I)
+
+
+def session_start_year(intake, reporting_date=''):
+    """The course-start year off an ACADEMIC SESSION intake line, as a string; '' when the session
+    is there but the year cannot be told; None when the intake holds no session (the caller then
+    reads the first year in it, as before).
+
+    A session "S/S+1" runs from about September of S to the middle of S+1, so "Sesi 2024/2025
+    Semester II" starts in February 2025, not 2024 (the H3a review: reading the FIRST year would
+    wrongly fail a 2025 starter on a gift that takes 2025 and 2026 starters). Best evidence first:
+
+      1. the letter's reporting date, when its year is S or S+1: a calendar date beats a term name
+         (it also settles a polytechnic "Sesi II" that starts in December of S). A reporting year
+         outside the session is a clash: ''.
+      2. the term: Semester I / September or October intake → S; Semester II / February or March
+         intake → S+1. Both, or Semester 3 and up (a continuing student) → ''.
+      3. no term at all → S, today's reading: the main intake of a session is its first.
+
+    '' means a person checks (`start_year.UNKNOWN`), never a guessed year."""
+    first = second = None
+    for m in _SESSION_RE.finditer(intake or ''):
+        a, tail = int(m.group(1)), m.group(2)
+        b = int(tail) if len(tail) == 4 else (a // 100) * 100 + int(tail)
+        if b == a + 1:
+            first, second = a, b
+            break
+    if first is None:
+        return None
+    rdm = re.search(r'\b(20\d{2})\b', reporting_date or '')
+    if rdm:
+        rd_year = int(rdm.group(1))
+        return str(rd_year) if rd_year in (first, second) else ''
+    text = intake
+    if _LATER_TERM_RE.search(text):
+        return ''
+    says_first = bool(_FIRST_TERM_RE.search(text) or _FIRST_MONTH_RE.search(text))
+    says_second = bool(_SECOND_TERM_RE.search(text) or _SECOND_MONTH_RE.search(text))
+    if says_first and says_second:
+        return ''
+    return str(second) if says_second else str(first)
 
 
 # ── Course-start year: the ONE "is this a continuing student?" signal ────────────

@@ -83,6 +83,11 @@ _CODE_GLOSS = {
     'income_unverified_needs_interview': 'income cannot be document-verified (informal / no payslip) — confirm at interview',
     'income_not_means_tested': ('this gift applies NO household income limit, so income is not an eligibility test here — '
                                 'do not reason about a threshold, and do not treat the absence of one as a pass'),
+    # pathway: the gift's course-start years (H3a, `start_year`)
+    'pathway_start_year_outside': ('the course started in {start_year}, but this gift is for students who started '
+                                   'in {years} — recommend reject unless the interview shows a later start'),
+    'pathway_start_year_unknown': ('the start year could not be read from the offer letter; this gift is for '
+                                   'students who started in {years}, so check the year on the letter'),
     # utility (soft signals)
     'utility_hardship': 'the utility bills carry meaningful arrears (unpaid balance) — supports financial need',
     'utility_percapita_b40': 'utility proxy ~RM{amount}/capita/month — consistent with a low-income household (soft signal)',

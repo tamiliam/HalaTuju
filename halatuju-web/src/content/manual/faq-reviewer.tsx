@@ -217,10 +217,12 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>The Pathway card is red with <strong>&ldquo;Course started in &hellip;&rdquo;</strong>. Why?</>,
       a: <>Some gifts accept only students whose course started in certain years (for example 2025 and
-        2026). The start year is read from the intake year on her offer letter, or from the reporting date. Hers
+        2026). The start year is read from the intake year on her offer letter, or from the reporting date. A
+        session such as 2024/2025 counts as 2025 when she started in Semester II (February or March). Hers
         is outside the gift&rsquo;s years, so the case is flagged like income above the B40 line: the usual
         recommendation is to decline, but it is not declined for you and the amount is unchanged. Confirm at
-        interview. If the line says instead that the start year <strong>could not be read</strong>, nothing is
+        interview. She sees a short line on her offer letter card naming the gift&rsquo;s years; it tells her a
+        reviewer still decides. If the line says instead that the start year <strong>could not be read</strong>, nothing is
         flagged: check the year on the letter yourself.</>,
     },
     {

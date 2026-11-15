@@ -275,9 +275,9 @@ Do one only when a sprint is already in that file.
 - ~~**TD-074**~~ **FIXED 2026-11-11 (A4.6: the pool detail, fund and my-students routes are keyed by the opaque `S-XXXXXX` ref; a raw id is 404)** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
 - **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
 - **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)* **Fixed in code 2026-11-07 (Sprint A1.10b): every reader uses the role; migration courses 0093; open until the owner applies STEP 1 before the push and drops the column after the deploy. See the detail entry.**
-- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)* **Partly fixed in code 2026-11-11 (Sprint A3.17): `bucket_b_margin` retired from the model (migration scholarship 0211). `funding_envelope` is KEPT by owner ruling on 2026-11-11 for the planned Programme budget (docs/plans/2026-07-26-programme-layer-roadmap.md); it is not orphaned debt, and 0212 drops only the 3 retired columns. Open: STEP 1 SQL by the owner BEFORE the push (CHANGELOG, with its read-only pre-check), then a later 0212 drops the `bucket_b_margin` column. See the CHANGELOG.**
+- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)* **Partly fixed in code 2026-11-11 (Sprint A3.17): `bucket_b_margin` retired from the model (migration scholarship 0211). `funding_envelope` is KEPT by owner ruling on 2026-11-11 for the planned Programme budget (docs/plans/2026-07-26-programme-layer-roadmap.md); it is not orphaned debt, and the drop migration drops only the 3 retired columns. Open: STEP 1 SQL by the owner BEFORE the push (CHANGELOG, with its read-only pre-check), then a later migration drops the `bucket_b_margin` column (not 0212: that number went to `allowed_start_years`, H3a, 2026-11-15). See the CHANGELOG.**
 - **TD-115** — The document slot has no database-level guard. *(D · L)* **Fixed in code 2026-11-06 (Sprint A1.8): 4-column partial unique index, migration 0203; open until the owner applies it by hand after the deploy. See the detail entry.**
-- **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L · partly done)* **Fields retired from the model 2026-11-11 (Sprint A3.17), migration scholarship 0211 (same one as TD-226, expand-contract). Open: STEP 1 SQL by the owner BEFORE the push, then a later 0212 drops the columns. Dead i18n keys `wizard.{q2,q3,q4,work}` still to delete in en/ms/ta.**
+- **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L · partly done)* **Fields retired from the model 2026-11-11 (Sprint A3.17), migration scholarship 0211 (same one as TD-226, expand-contract). Open: STEP 1 SQL by the owner BEFORE the push, then a later migration drops the columns (not 0212: that number went to `allowed_start_years`, H3a, 2026-11-15). Dead i18n keys `wizard.{q2,q3,q4,work}` still to delete in en/ms/ta.**
 - ~~**TD-058**~~ — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)* **CLOSED 2026-11-11 (A4.7): decided, "managed by Supabase" is final (TD-058 entry, A4.7 decision).**
 - **TD-024** — The course-name field is called course. *(D · L)*
 
@@ -4240,7 +4240,7 @@ docs/plans/2026-07-26-programme-layer-roadmap.md; not orphaned debt). **The chea
 nothing new can come to depend on them.
 
 **Fix (when convenient):** drop `bucket_b_margin` outright — it is explicitly deprecated.
-`funding_envelope` stays (owner ruling 2026-11-11); the A3.17 0212 drops only the 3 retired columns.
+`funding_envelope` stays (owner ruling 2026-11-11); the A3.17 drop migration (a later number; 0212 is `allowed_start_years`) drops only the 3 retired columns.
 
 **Status:** Open.
 

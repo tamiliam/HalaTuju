@@ -385,7 +385,8 @@ class ScholarshipCohort(models.Model):
                   "letter's intake year. Empty list = not applied.",
     )
     # (TD-226, 2026-11: `bucket_b_margin` left the model, read by nothing. Its column stays in the
-    # database until scholarship 0212 drops it. `funding_envelope` is kept: the Programme roadmap
+    # database until a later scholarship migration drops it (not 0212: that number went to
+    # `allowed_start_years`, H3a). `funding_envelope` is kept: the Programme roadmap
     # plans it.)
 
     # Funding + workflow parameters (consumed by later sprints)
