@@ -1,6 +1,31 @@
 # Architectural Decisions — HalaTuju
 
-## 2026-11-16 — NAVKEYS builder calls (pending architect): the admin menu follows the served keys
+## 2026-11-16 — NAVKEYS review round (pending architect): paying the bill is billing.edit
+
+Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. No migration. Services: both.
+
+1. **Server hole closed (review item 1).** A team member given `billing.view` (grantable since M3c A9) could
+   declare an invoice paid and rewrite the bill-to, because both writes sat behind the invoices read. New door
+   `billing_write` -> (`billing.edit`,) in `staff_tables.DOOR_KEYS` and `surface_gates.may_write_billing`.
+   `AdminInvoiceDeclarationView` 'declare' asks it after the super refusal (a super is still refused).
+   `AdminOrgBillingDetailsView.post` asks it after `_org`, so another tenant's code is still the fence's 404;
+   a super holds every key and keeps the write. The reads stay on `billing.view`. `billing.edit` is
+   NEVER_GRANTABLE and an organisation admin holds it by role (`LEAD_BY_ROLE_V2`), so no organisation admin
+   loses either write. The access matrix lists both writes in `GRANTED_DIFFERS` (a member granted the whole
+   set no longer passes them).
+2. **The web follows (items 2 to 4).** `pageDoors.DOOR_KEYS` mirrors `billing_write`. The "We have paid" form
+   and the bill-to Save show only with `billing_write` (the bill-to fields are read only without it). The
+   Settings page shows its Billing tab only with `billing_read`. Contracts shows "New version" only with
+   `contracts_write`. Hidden, not disabled, as the pages already do for refused writes.
+3. **Programmes also admits on `programme_settings` (item 5),** the door the Programme pages ask; the role list
+   stays as the landing (class LANDING, not KIND). No preset moves: the server lets only super, organisation
+   admin and the four team roles hold a key (`effective_v2` reads `TEAM_ROLES`), and all six are on the list,
+   so today the dead end cannot happen; the door is for a login that can hold keys later.
+4. **Guide and FAQ are DISPLAY:** the rows list the roles the manual writes a chapter for (`manualRole`).
+   Admitting any staff login was not taken: a `member` would gain both rows, a preset move.
+5. **No flicker (item 6).** The admin layout renders a loading line while `isLoading`, which stays true until
+   `checkRole` has the role payload, and the shell needs the role to render at all. No change made.
+
 
 Branch navkeys, one commit on top of main 31e738a14, not pushed. No migration. Services: web. Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).
 Owner, 2026-11-15: "there is admin, and there are permissions, which determine what the admin views and edits."
@@ -18,13 +43,15 @@ The calls:
    | Programme overview | SERVER, left by role | role list | `SECTIONS_BY_ROLE` (TD-621) |
    | Overview, Students | PLATFORM | super, partner | — |
    | Course data, Organisations, Referral partners, Billing rates | PLATFORM | super | — |
-   | Programmes, Guide, FAQ, My students, Profile | KIND | role list | — |
+   | Programmes | LANDING (review round) | role list, or the `programme_settings` door | — |
+   | Guide, FAQ | DISPLAY (review round) | role list (`manualRole`) | — |
+   | My students, Profile | KIND | role list | — |
 
 3. **Payments keeps its `org_admin` arm.** The brief says change no payments gate, and the server pays the organisation admin in by role until M4. A team member is answered by the keys alone, as before.
 4. **Programme overview stays by role.** Its server sections are role-based (`SECTIONS_BY_ROLE`); it moves with TD-621 / TD-632.
 5. **The four page guards (Programme, Contracts, Billing, Organisation settings) ask `mayOpen` with the served door.** Before, they refused by role while the menu row offered the page to a key holder. Billing and Contracts are client visibility guards only; their servers are key-gated (`surface_gates`), no money path changed, and no standard preset moved.
 6. **Applications also asks `qc`**, as `b40_scope` does (a `qc` holder resolves `see_all` too, so no preset moves).
-7. **Guide and FAQ are KIND**: every staff kind reads them; they gate no data.
+7. **Guide and FAQ** gate no data. The review round reclassed them DISPLAY (see below).
 8. **The pin**: `navkeysPresetPin.test.ts` measured every standard preset (super, org_admin, admin, finance, reviewer, qc, mentor, partner, source, member, and the three mentoring shapes) on main before any change and wrote `fixtures/navkeysMenusBefore.json`: three menus, the landing and every route guard. After the change all match: **no declared move.** An older payload with no `page_keys` (the server no longer sends one) loses every door row; this is declared in `teamTablesT5cDoors` (`navkeysOlderMoves`).
 9. **Matrix tests feed the served keys** (`teamTablesMatrix` reads `page_keys` from the T5c payloads by shape). Hand-grant tests: an admin granted `billing.view`, `contracts.view`, `programmes.edit`, `requests.view` or `settings.edit` gains that row and its page; unticking `team.view`, `scholars`, `spending`, `billing.view` or the Applications keys shuts exactly that row.
 

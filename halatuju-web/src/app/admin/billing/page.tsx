@@ -8,7 +8,7 @@ import InvoicesSection from '@/components/admin/InvoicesSection'
 import { UnbilledSection } from '@/components/admin/UnbilledSection'
 import { ChargeCard } from '@/components/admin/ChargeCard'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import {
   getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
   recordBillingCorrection, deleteBillingCorrection,
@@ -461,7 +461,8 @@ export default function AdminBillingPage() {
       {/* ── Invoices (2026-09-14). BOTH audiences: a super issues, sends and records payment; an
              org_admin sees its own invoices once they have been sent. Loads and fails on its own,
              so it can never darken the usage half above. ── */}
-      {token && <InvoicesSection token={token} isSuper={isSuper} t={t} />}
+      {token && <InvoicesSection token={token} isSuper={isSuper}
+        mayDeclare={holdsDoor(role, 'billing_write')} t={t} />}
 
       {/* ── What it COST, and what each tenant is charged. SUPER-ONLY (the endpoint 403s an
              org_admin). The ledger, the BigQuery sync and this reconciliation were all built in

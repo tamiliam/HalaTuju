@@ -17,8 +17,11 @@ import * as api from '@/lib/admin-api'
 import { GiftScope, TWO_GIFTS } from '@/test/giftScope'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+// NAVKEYS: the keys the server serves an organisation admin; the review-round test swaps in a reader.
+let mockViewer: Record<string, unknown> | null = null
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'org_admin', is_super_admin: false }) }),   // NAVKEYS: the keys the server serves
+  useAdminAuth: () => ({ token: 'tok', role: mockViewer
+    ?? jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'org_admin', is_super_admin: false }) }),
 }))
 const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush, replace: jest.fn() }) }))
@@ -33,6 +36,7 @@ const row = (id: number, version: string, programme: { code: string; name: strin
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockViewer = null
   mockApi.getContractTemplates.mockResolvedValue({ templates: [
     row(1, '2026-v1', { code: 'brightpath-flagship', name: 'Flagship Bursary' }),
     row(2, '2026-legacy', null),
@@ -74,6 +78,15 @@ describe('contract templates are read and written for the breadcrumb gift (TD-22
     expect((await screen.findAllByText('admin.contracts.error.programmeRequired')).length)
       .toBeGreaterThan(0)
     expect(mockApi.createContractTemplate).not.toHaveBeenCalled()
+  })
+})
+
+describe('a reader of the contracts is not offered a write (NAVKEYS review)', () => {
+  it('a contracts.view holder sees the list but no New version: the POST asks contracts.edit', async () => {
+    mockViewer = { role: 'admin', is_super_admin: false, page_keys: ['contracts.view'] }
+    render(<GiftScope choices={[TWO_GIFTS[1]]}><ContractsListPage /></GiftScope>)
+    await screen.findByText('2026-v1')
+    expect(screen.queryByText('admin.contracts.newVersion')).toBeNull()
   })
 })
 

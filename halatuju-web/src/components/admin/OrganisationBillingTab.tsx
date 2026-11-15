@@ -20,6 +20,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { holdsDoor } from '@/lib/pageGuard'
 import { useT } from '@/lib/i18n'
 import SaveBar, { SAVE_BAR_PRIMARY } from '@/components/admin/SaveBar'
 import { splitEmails } from '@/lib/invoices'
@@ -34,8 +35,11 @@ function draftFrom(d: TenantBillingDetails): Draft {
 }
 
 export default function OrganisationBillingTab() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const { t } = useT()
+  // NAVKEYS review: WRITING the bill-to is `billing.edit` (`billing_write`, O15), as the server's POST
+  // asks; the read is `billing.view`. Without it the fields are read only and there is no Save.
+  const mayEdit = holdsDoor(role, 'billing_write')
   const [details, setDetails] = useState<TenantBillingDetails | null>(null)
   const [draft, setDraft] = useState<Draft>({ bill_to_name: '', address: '', emails: '' })
   const [orgChoices, setOrgChoices] = useState<string[] | null>(null)
@@ -138,28 +142,30 @@ export default function OrganisationBillingTab() {
       <div className="mt-4 grid max-w-xl gap-3">
         <label className="block">
           <span className="block text-[11px] text-ground-500">{t('admin.orgBilling.field.bill_to_name')}</span>
-          <input type="text" className={box('bill_to_name')} value={draft.bill_to_name}
+          <input type="text" className={box('bill_to_name')} value={draft.bill_to_name} readOnly={!mayEdit}
             onChange={(e) => setDraft((d) => ({ ...d, bill_to_name: e.target.value }))} />
         </label>
         <label className="block">
           <span className="block text-[11px] text-ground-500">{t('admin.orgBilling.field.address')}</span>
-          <textarea className={`${box('address')} min-h-[4.5rem]`} value={draft.address}
+          <textarea className={`${box('address')} min-h-[4.5rem]`} value={draft.address} readOnly={!mayEdit}
             onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))} />
         </label>
         <label className="block">
           <span className="block text-[11px] text-ground-500">{t('admin.orgBilling.field.emails')}</span>
-          <input type="text" className={box('emails')} value={draft.emails}
+          <input type="text" className={box('emails')} value={draft.emails} readOnly={!mayEdit}
             onChange={(e) => setDraft((d) => ({ ...d, emails: e.target.value }))} />
           <span className="mt-1 block text-[11px] text-ground-400">{t('admin.orgBilling.emailsHint')}</span>
         </label>
       </div>
 
-      <SaveBar status={status} testId="org-billing-outcome">
-        <button type="button" className={SAVE_BAR_PRIMARY} disabled={busy || !dirty}
-          title={dirty ? undefined : t('common.nothingToSave')} onClick={() => { void save() }}>
-          {t('admin.orgBilling.save')}
-        </button>
-      </SaveBar>
+      {mayEdit && (
+        <SaveBar status={status} testId="org-billing-outcome">
+          <button type="button" className={SAVE_BAR_PRIMARY} disabled={busy || !dirty}
+            title={dirty ? undefined : t('common.nothingToSave')} onClick={() => { void save() }}>
+            {t('admin.orgBilling.save')}
+          </button>
+        </SaveBar>
+      )}
     </div>
   )
 }

@@ -15,7 +15,10 @@ import * as api from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api')
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok' }) }))
+// NAVKEYS review: the viewer as the server serves an organisation admin (`billing.edit` by role, O15);
+// one test swaps in a team member who holds `billing.view` only.
+let mockViewer: { role: string; page_keys?: string[] } = { role: 'org_admin' }
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: mockViewer }) }))
 let linkParam: string | null = null
 jest.mock('next/navigation', () => ({ useSearchParams: () => ({ get: () => linkParam }) }))
 
@@ -32,6 +35,7 @@ function details(over: Partial<api.TenantBillingDetails> = {}): api.TenantBillin
 beforeEach(() => {
   jest.clearAllMocks()
   linkParam = null
+  mockViewer = jest.requireActual('@/test/staffPresets').servedViewer('org_admin')
   mockApi.getOrgBillingDetails.mockResolvedValue(details())
   mockApi.saveOrgBillingDetails.mockResolvedValue(details())
 })
@@ -95,6 +99,27 @@ describe('the organisation editing its own', () => {
     fireEvent.click(within(container).getByText('admin.orgBilling.save'))
     await waitFor(() => expect(within(container).getByTestId('org-billing-outcome').textContent)
       .toBe('admin.orgBilling.bad_email'))
+  })
+})
+
+describe('a team member who may read the bill but not act on it (NAVKEYS review, O15)', () => {
+  it('shows the bill-to read only, with no Save', async () => {
+    // `billing.view` reads the bill-to; WRITING it is `billing.edit`, which the server's POST asks and a
+    // team member can never be given. The screen offers no Save the server would refuse.
+    mockViewer = { role: 'admin', page_keys: ['billing.view'] }
+    const { container } = render(<OrganisationBillingTab />)
+    await waitFor(() => within(container).getByTestId('org-billing-tab'))
+    expect(container.querySelector('input')?.value).toBe('BrightPath Bursary')
+    container.querySelectorAll('input, textarea').forEach((box) =>
+      expect((box as HTMLInputElement).readOnly).toBe(true))
+    expect(within(container).queryByText('admin.orgBilling.save')).toBeNull()
+  })
+
+  it('the organisation admin keeps the write', async () => {
+    const { container } = render(<OrganisationBillingTab />)
+    await waitFor(() => within(container).getByTestId('org-billing-tab'))
+    expect((container.querySelector('input') as HTMLInputElement).readOnly).toBe(false)
+    expect(within(container).getByText('admin.orgBilling.save')).not.toBeNull()
   })
 })
 

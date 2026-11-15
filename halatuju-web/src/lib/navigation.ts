@@ -113,8 +113,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // 2026-11-04, decisions.md); the old Organisation Overview and Administration rows are gone, and their
       // routes (`/admin/organisation`, `/admin/administration`) are redirects here, so `match` lights this row
       // for an old bookmark. `exact` so `/admin/organisation/staff` stays its SIBLING, not its child.
+      // NAVKEYS review: ALSO admitted on `programme_settings`, the door the Programme pages ask, so a login
+      // given `programmes.edit` outside this list still reaches its gift (this row is the only way in).
+      // The role list is the landing (`defaultRoute`); no preset moves (every key holder is listed today).
       { id: 'programmes', href: '/admin/organisation/programmes', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor'],
+        door: 'programme_settings',
         gate: { mode: 'always' }, exact: true,
         match: ['/admin/organisation', '/admin/administration'] },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
@@ -316,6 +320,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // and help menus render it instead.
       { id: 'profile', href: '/admin/profile', labelKey: 'admin.profile',
         scope: 'utility', roles: ROLE_NAMES, gate: { mode: 'always' } },
+      // The Guide and FAQ rows show for the roles the manual is written for (`manualRole`, content/manual):
+      // help pages by role, never a fence (A10 DISPLAY).
       { id: 'guide', href: '/admin/guide', labelKey: 'admin.guideNav',
         scope: 'utility', roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance'],
         gate: { mode: 'always' } },

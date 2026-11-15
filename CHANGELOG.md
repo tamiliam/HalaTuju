@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint NAVKEYS review round - paying the bill needs billing.edit; the screens offer only what opens (2026-11-16)
+
+Branch navkeys, a second commit on top of the first NAVKEYS commit, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS review round). Release-note draft updated.
+- **Server hole closed:** a team member given only `billing.view` could declare an invoice paid and rewrite the bill-to. New door `billing_write` (`billing.edit`, O15) in `staff_tables.DOOR_KEYS` and `surface_gates.may_write_billing`, asked by `AdminInvoiceDeclarationView` 'declare' (after the super refusal) and `AdminOrgBillingDetailsView.post` (after the organisation fence). Reads stay on `billing.view`. An organisation admin holds `billing.edit` by role; a super keeps the bill-to write and is still refused on declare.
+- API tests: a `billing.view`-only member reads the invoices and the bill-to but gets 403 on declare and on the bill-to save, and another tenant's code is still 404; the organisation admin still declares. `test_access_matrix.GRANTED_DIFFERS` lists the two writes; `test_permission_catalogue_v2` holds the new door.
+- Web: `pageDoors.DOOR_KEYS` mirrors `billing_write`. The "We have paid" form shows only with `billing_write` (`InvoicesSection` / `InvoicePaymentPanel` take `mayDeclare`); the bill-to fields are read only with no Save without it. Organisation settings shows its Billing tab only with `billing_read`. Contracts shows "New version" only with `contracts_write`.
+- Menu: Programmes also admits on `programme_settings` (A10 class LANDING); Guide and FAQ are DISPLAY. No preset moved (`navkeysPresetPin`), plus a hand-grant test for Programmes.
+
 ### refactor: sprint NAVKEYS - the admin menu follows the served keys (2026-11-16)
 
 Branch navkeys, on top of main 31e738a14, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS builder calls, pending architect). Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).

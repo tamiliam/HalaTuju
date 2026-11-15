@@ -34,13 +34,13 @@ const open: InvoicePaymentDeclarationRow = {
   declared_by_email: 'oa@x.com', state: 'open', reject_reason: '', receipt_number: '',
 }
 
-function mount(over: Partial<InvoiceRow>, isSuper: boolean) {
+function mount(over: Partial<InvoiceRow>, isSuper: boolean, mayDeclare = true) {
   const onDeclare = jest.fn()
   const onConfirm = jest.fn()
   const onReject = jest.fn()
   const row = inv(over)
   const { container } = render(
-    <InvoicePaymentPanel inv={row} isSuper={isSuper} busy={false} t={t}
+    <InvoicePaymentPanel inv={row} isSuper={isSuper} mayDeclare={mayDeclare} busy={false} t={t}
       onDeclare={onDeclare} onConfirm={onConfirm} onReject={onReject} />)
   return { container, row, onDeclare, onConfirm, onReject }
 }
@@ -100,6 +100,13 @@ describe('the tenant side', () => {
     const { container } = mount({ payment_declarations: [open], status: 'payment_declared' }, false)
     expect(within(container).queryByTestId('check-7')).toBeNull()
     expect(within(container).queryByText('admin.billing.invoice.declare.confirm')).toBeNull()
+  })
+
+  it('is not offered the form without the key that pays the bill (NAVKEYS review, O15)', () => {
+    // A team member given `billing.view` reads the invoice; declaring it paid is `billing.edit`, the
+    // key the server's `declare` asks (403 without it). An organisation admin holds it by role.
+    const { container } = mount({}, false, false)
+    expect(within(container).queryByTestId('declare-7')).toBeNull()
   })
 
   it('is not offered the form on an invoice it cannot declare against', () => {

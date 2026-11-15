@@ -17,7 +17,7 @@ import { useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneConsole'
 import { useT } from '@/lib/i18n'
-import { mayOpen } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import OrganisationColoursTab from '@/components/admin/OrganisationColoursTab'
 import OrganisationConfigurationTab from '@/components/admin/OrganisationConfigurationTab'
 import OrganisationBillingTab from '@/components/admin/OrganisationBillingTab'
@@ -36,6 +36,10 @@ export default function AdminOrganisationSettingsPage() {
   const { t } = useT()
   const [tab, setTab] = useState<Tab>('colours')
   const mayView = mayOpen('/admin/organisation/settings', role)   // NAVKEYS: the served door, as the menu row and the server
+  // NAVKEYS review: the Billing tab reads the bill-to on `billing.view` (`billing_read`), so a holder of
+  // `settings.edit` without it is not offered a tab whose read would 403. Its edit controls ask
+  // `billing_write` inside the tab.
+  const tabs = TABS.filter((key) => key !== 'billing' || holdsDoor(role, 'billing_read'))
 
   if (!mayView) return null
 
@@ -46,7 +50,7 @@ export default function AdminOrganisationSettingsPage() {
 
       <div role="tablist" aria-label={t('admin.orgSettings.title')}
         className={`mt-5 flex gap-6 border-b border-ground-200 ${PHONE_TAB_BAR}`}>
-        {TABS.map((key) => (
+        {tabs.map((key) => (
           <button key={key} type="button" role="tab" id={`tab-${key}`}
             aria-selected={tab === key} aria-controls={`panel-${key}`}
             data-testid={`tab-${key}`} onClick={() => setTab(key)}
@@ -76,7 +80,7 @@ export default function AdminOrganisationSettingsPage() {
           <StudentCommsTab />
         </div>
       )}
-      {tab === 'billing' && (
+      {tab === 'billing' && tabs.includes('billing') && (
         <div role="tabpanel" id="panel-billing" aria-labelledby="tab-billing">
           <OrganisationBillingTab />
         </div>

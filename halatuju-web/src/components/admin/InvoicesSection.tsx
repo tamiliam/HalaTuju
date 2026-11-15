@@ -38,7 +38,7 @@ type Tab = 'toissue' | 'issued'
  * They travel four components deep (section → table → row group → detail → panel), and three
  * separate props at each stop is forty lines of plumbing that says nothing. Grouped, the chain
  * reads as "pass the declaration actions down", which is what it is. */
-type DeclActions = Pick<InvoicePaymentPanelProps, 'onDeclare' | 'onConfirm' | 'onReject'>
+type DeclActions = Pick<InvoicePaymentPanelProps, 'onDeclare' | 'onConfirm' | 'onReject' | 'mayDeclare'>
 
 const INPUT = 'mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm text-ground-900'
 const PRIMARY = 'rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50'
@@ -476,7 +476,12 @@ function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token,
 
 // ── The section ──────────────────────────────────────────────────────────────────────────────
 
-export default function InvoicesSection({ token, isSuper, t }: { token: string; isSuper: boolean; t: T }) {
+export default function InvoicesSection({ token, isSuper, mayDeclare, t }: {
+  token: string; isSuper: boolean
+  /** NAVKEYS review: the viewer opens `billing_write` (`billing.edit`), the key `declare` asks. */
+  mayDeclare: boolean
+  t: T
+}) {
   const [data, setData] = useState<InvoicesPayload | null>(null)
   const [tab, setTab] = useState<Tab>('toissue')
   const [busy, setBusy] = useState(false)
@@ -510,6 +515,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
   // Built once per render and handed down as one prop. The server decides who may do which of
   // them: a super calling `declare` is a 403, and an org_admin calling the other two likewise.
   const decl: DeclActions = {
+    mayDeclare,
     onDeclare: (inv, d) => act(declarePayment(inv.id, d, { token })),
     onConfirm: (inv, d) => act(confirmPaymentDeclaration(inv.id, d, { token })),
     onReject: (inv, d) => act(rejectPaymentDeclaration(inv.id, d, { token })),

@@ -482,6 +482,29 @@ class TestTheDoors(_World):
         self.assertEqual(r.status_code, 403)
         self.assertEqual(self.reread(inv).payment_declarations.count(), 0)
 
+    def test_a_team_member_who_may_only_read_the_bill_may_not_declare_it_paid(self):
+        """⚠ NAVKEYS review (O15): `billing.view` opens the invoice; declaring it paid is
+        `billing.edit`, which an organisation admin holds by role and a team member never can
+        (never grantable). Before the fix a member given `billing.view` could record the claim."""
+        from apps.courses.models import PartnerAdmin
+        PartnerAdmin.objects.create(
+            supabase_user_id='m-billview', role='admin', is_active=True,
+            owning_organisation=self.org, name='Member', email='member@x.com',
+            permissions=['billing.view'])
+        inv = self.sent()
+        member = self.client_for('m-billview')
+        # The read stays theirs...
+        self.assertEqual(member.get(f'{BASE}/invoices/').status_code, 200)
+        # ...the act on the money does not.
+        r = member.post(self.url(inv, 'declare'), {'paid_on': PAID_ON, 'reference': REF},
+                        format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(self.reread(inv).payment_declarations.count(), 0)
+        # The organisation admin still declares (its `billing.edit` is by role).
+        r = self.client_for('oa-a').post(
+            self.url(inv, 'declare'), {'paid_on': PAID_ON, 'reference': REF}, format='json')
+        self.assertEqual(r.status_code, 200)
+
     def test_an_org_admin_may_not_confirm_or_reject_its_own_claim(self):
         inv, d = self.declared()
         oa = self.client_for('oa-a')

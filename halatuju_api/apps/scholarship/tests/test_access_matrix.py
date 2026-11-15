@@ -290,6 +290,10 @@ GRANTED_DIFFERS = {
     ('api/v1/admin/team/<str:table>/candidates/', 'get'): 'manage_team: team changes stay with the organisation admin (D4)',
     ('api/v1/admin/scholarship/requests/<int:pk>/approve/', 'post'): 'requests.approve: never grantable (O15)',
     ('api/v1/admin/scholarship/requests/<int:pk>/decline/', 'post'): 'requests.approve: never grantable (O15)',
+    # NAVKEYS review: acting on the bill is `billing.edit`, never grantable (O15); the reads stay on billing.view.
+    ('api/v1/admin/scholarship/billing/invoices/<int:pk>/declaration/<str:action>/', 'post'):
+        'billing.edit: never grantable (O15)',
+    ('api/v1/admin/scholarship/billing/bill-to/', 'post'): 'billing.edit: never grantable (O15)',
     ('api/v1/admin/sponsors/<int:pk>/review/', 'post'): 'sponsor ACCOUNT vetting reaches every organisation (M3c fence)',
     ('api/v1/admin/scholarship/sponsor-terms/<int:pk>/publish/', 'post'): 'the sponsor terms bind every organisation (M3c fence)',
 }

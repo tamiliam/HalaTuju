@@ -43,8 +43,17 @@ def may_read_invoices(admin):
 
 def may_read_billing(admin):
     """The usage and build-hours reads (`AdminBillingUsageView`, `AdminOrgBuildHoursView.get`):
-    `billing.view` (M3b G7). Paying the bill is `billing.edit` (O15), and no endpoint pays yet."""
+    `billing.view` (M3b G7). Paying the bill is `billing.edit` (O15): `may_write_billing`."""
     return staff_tables.opens_door(admin, 'billing_read')
+
+
+def may_write_billing(admin):
+    """Act on the bill (O15): declare a payment against an invoice (`AdminInvoiceDeclarationView`
+    'declare') and write the bill-to (`AdminOrgBillingDetailsView.post`): `billing.edit`. The key is
+    NEVER_GRANTABLE: an organisation admin holds it by role (`LEAD_BY_ROLE_V2`) and a super holds every
+    key, so a team member given `billing.view` reads the bill but cannot act on it (NAVKEYS review).
+    The reads stay on `billing.view` (`may_read_invoices`, `may_read_billing`)."""
+    return staff_tables.opens_door(admin, 'billing_write')
 
 
 def may_open_contracts(admin):

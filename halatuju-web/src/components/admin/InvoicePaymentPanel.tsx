@@ -36,6 +36,10 @@ const SECONDARY = 'rounded-lg border bg-ground-0 px-2.5 py-1 text-xs text-ground
 export interface InvoicePaymentPanelProps {
   inv: InvoiceRow
   isSuper: boolean
+  /** NAVKEYS review: the viewer opens `billing_write` (`billing.edit`, O15), the key the server's
+   *  `declare` asks. An organisation admin holds it by role; a team member given only `billing.view`
+   *  reads the invoice and is not offered the form (the server would refuse it, 403). */
+  mayDeclare: boolean
   busy: boolean
   t: T
   onDeclare: (inv: InvoiceRow, data: { paid_on: string; reference: string }) => void
@@ -162,7 +166,7 @@ function CheckForm({ inv, declaration, busy, t, onConfirm, onReject }: {
 }
 
 export default function InvoicePaymentPanel(props: InvoicePaymentPanelProps) {
-  const { inv, isSuper, busy, t, onDeclare, onConfirm, onReject } = props
+  const { inv, isSuper, mayDeclare, busy, t, onDeclare, onConfirm, onReject } = props
   const open = openDeclaration(inv)
   const rejected = lastRejectedDeclaration(inv)
 
@@ -190,7 +194,7 @@ export default function InvoicePaymentPanel(props: InvoicePaymentPanelProps) {
         <CheckForm inv={inv} declaration={open} busy={busy} t={t}
           onConfirm={onConfirm} onReject={onReject} />
       )}
-      {!isSuper && canDeclarePayment(inv) && (
+      {!isSuper && mayDeclare && canDeclarePayment(inv) && (
         <DeclareForm inv={inv} busy={busy} t={t} onDeclare={onDeclare} />
       )}
     </div>

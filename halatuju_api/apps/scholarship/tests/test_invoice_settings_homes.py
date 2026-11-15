@@ -192,6 +192,26 @@ class TestWhoIsBilled(_TwoTenants):
         self.assertEqual(OrgBillingDetails.objects.get(organisation=self.a).bill_to_name,
                          'Alpha Berhad')
 
+    def test_a_team_member_who_may_only_read_the_bill_may_not_rewrite_where_it_goes(self):
+        """⚠ NAVKEYS review (O15): the bill-to READ is `billing.view`; the WRITE is `billing.edit`,
+        an organisation admin's by role and never grantable to a team member. Before the fix a
+        member given `billing.view` could rewrite the bill-to name and inboxes."""
+        PartnerAdmin.objects.create(
+            supabase_user_id='m-billview', role='admin', is_active=True,
+            owning_organisation=self.a, name='Member', email='member@alpha.example',
+            permissions=['billing.view'])
+        c = self.client_for('m-billview')
+        self.assertEqual(c.get(f'{BASE}/bill-to/?organisation={self.a.code}').status_code, 200)
+        r = c.post(f'{BASE}/bill-to/?organisation={self.a.code}',
+                   {'bill_to_name': 'Not Alpha', 'address': 'x', 'emails': ['m@alpha.example']},
+                   format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(OrgBillingDetails.objects.get(organisation=self.a).bill_to_name,
+                         'Alpha Berhad')
+        # Another tenant's code is still the fence's 404, asked before the write key.
+        self.assertEqual(c.post(f'{BASE}/bill-to/?organisation={self.b.code}', {'emails': []},
+                                format='json').status_code, 404)
+
     def test_a_bad_email_is_refused_and_the_stored_row_is_untouched(self):
         r = self.client_for('oa-alpha').post(
             f'{BASE}/bill-to/?organisation={self.a.code}',

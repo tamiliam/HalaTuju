@@ -63,7 +63,7 @@ describe('grouped development lines (owner, 2026-10-29)', () => {
 
   async function openDetail() {
     mockApi.getInvoices.mockResolvedValue({ invoices: [inv({ lines: grouped })] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0003'))
     fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
     await waitFor(() => within(container).getAllByTestId('detail-7'))
@@ -118,7 +118,7 @@ describe('grouped development lines (owner, 2026-10-29)', () => {
 
   it('leaves an older invoice with no sub-items looking exactly as it did', async () => {
     mockApi.getInvoices.mockResolvedValue({ invoices: [inv()] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0003'))
     fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
     await waitFor(() => within(container).getAllByTestId('detail-7'))
@@ -134,7 +134,7 @@ describe('a correction of an earlier month (owner, 2026-10-29)', () => {
    *  as its own line, carrying the reason — so the tenant reads what we got wrong. */
   const open = async (over: Partial<api.InvoiceRow>) => {
     mockApi.getInvoices.mockResolvedValue({ invoices: [inv(over)] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0003'))
     fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
     await waitFor(() => within(container).getAllByTestId('detail-7'))
@@ -189,7 +189,7 @@ describe('a correction of an earlier month (owner, 2026-10-29)', () => {
 describe('what a tenant is offered', () => {
   it('shows its invoices and nothing to issue, send, pay, void or configure', async () => {
     mockApi.getInvoices.mockResolvedValue({ invoices: [inv({ status: 'sent', sent_at: '2026-09-15T01:00:00Z' })] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0003'))
     expect(within(container).queryByRole('tablist')).toBeNull()
 
@@ -201,6 +201,20 @@ describe('what a tenant is offered', () => {
     }
   })
 
+  it('carries the pay key down: no declare form without billing.edit, the form with it (NAVKEYS review)', async () => {
+    // The page passes `holdsDoor(role, 'billing_write')`. A member given only `billing.view` reads the
+    // invoice; only a holder of `billing.edit` (an organisation admin, by role) is offered "We have paid".
+    mockApi.getInvoices.mockResolvedValue({ invoices: [inv({ status: 'sent', sent_at: '2026-09-15T01:00:00Z' })] })
+    for (const mayDeclare of [false, true]) {
+      const { container, unmount } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare={mayDeclare} t={t} />)
+      await waitFor(() => within(container).getAllByText('INV-2026-0003'))
+      fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
+      await waitFor(() => within(container).getAllByTestId('detail-7'))
+      expect(within(container).queryAllByTestId('declare-7').length > 0).toBe(mayDeclare)
+      unmount()
+    }
+  })
+
   it('the chip says Overdue exactly when the server flag does — the red banner\'s rule, not a date compare', async () => {
     // Staff nudges sprint 3 (drift-test: invoice_overdue.is_overdue). A due date long past with the flag
     // off reads Unpaid; a part-paid invoice with the flag on reads Overdue, as the banner says.
@@ -209,7 +223,7 @@ describe('what a tenant is offered', () => {
       inv({ ...sent, id: 7, is_overdue: false }),
       inv({ ...sent, id: 8, number: 'INV-2026-0004', status: 'part_paid', is_overdue: true }),
     ] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0004'))
     expect(within(container).getAllByText('admin.billing.invoice.status.unpaid').length).toBeGreaterThan(0)
     expect(within(container).getAllByText('admin.billing.invoice.status.overdue').length).toBeGreaterThan(0)
@@ -218,14 +232,14 @@ describe('what a tenant is offered', () => {
 
   it('says plainly when nothing has been sent yet', async () => {
     mockApi.getInvoices.mockResolvedValue({ invoices: [] })
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => within(container).getByTestId('no-invoices'))
     expect(within(container).getByText('admin.billing.invoice.noneTenant')).not.toBeNull()
   })
 
   it('renders nothing at all while billing is dark for this reader', async () => {
     mockApi.getInvoices.mockRejectedValue(new Error('not_found'))
-    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} mayDeclare t={t} />)
     await waitFor(() => expect(mockApi.getInvoices).toHaveBeenCalled())
     expect(within(container).queryByTestId('invoices')).toBeNull()
     expect(within(container).queryByRole('alert')).toBeNull()
@@ -237,7 +251,7 @@ describe('issuing', () => {
     mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'issuer_incomplete', message: 'Your own billing details are incomplete.', overridable: false },
         { code: 'supplier_missing', message: 'twilio missing', overridable: true }] }] }))
-    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper mayDeclare t={t} />)
     const card = await waitFor(() => within(container).getByTestId('readiness-1'))
     const issue = within(card).getByText('admin.billing.invoice.issue') as HTMLButtonElement
     expect(issue.disabled).toBe(true)
@@ -252,7 +266,7 @@ describe('issuing', () => {
   it('points at the organisation when it is THEIR details that are blank', async () => {
     mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'bill_to_incomplete', message: 'Billing details for BrightPath are incomplete.', overridable: false }] }] }))
-    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper mayDeclare t={t} />)
     const card = await waitFor(() => within(container).getByTestId('readiness-1'))
     const link = within(card).getByText('admin.billing.invoice.fix.bill_to_incomplete')
     // ⚠ The link NAMES the organisation the card is about, so the super lands on BrightPath
@@ -264,7 +278,7 @@ describe('issuing', () => {
   it('a warning is issued past only with a written reason, and the reason is sent', async () => {
     mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'supplier_missing', message: 'twilio missing', overridable: true }] }] }))
-    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper mayDeclare t={t} />)
     const card = await waitFor(() => within(container).getByTestId('readiness-1'))
     const anyway = within(card).getByText('admin.billing.invoice.issueAnyway') as HTMLButtonElement
     expect(anyway.disabled).toBe(true)
@@ -286,7 +300,7 @@ describe('issuing', () => {
     mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'already_issued', message: 'already', overridable: false },
         { code: 'unbilled_hours', message: '27 hours', overridable: true }] }] }))
-    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
+    const { container } = render(<InvoicesSection token="tok" isSuper mayDeclare t={t} />)
     const card = await waitFor(() => within(container).getByTestId('readiness-1'))
     expect(within(card).getByText('admin.billing.invoice.alreadyIssued')).not.toBeNull()
     expect(within(card).queryByText('27 hours')).toBeNull()
@@ -296,7 +310,7 @@ describe('issuing', () => {
 
 async function openIssued(row: api.InvoiceRow) {
   mockApi.getInvoices.mockResolvedValue(superPayload({ invoices: [row] }))
-  const view = render(<InvoicesSection token="tok" isSuper t={t} />)
+  const view = render(<InvoicesSection token="tok" isSuper mayDeclare t={t} />)
   await waitFor(() => within(view.container).getByRole('tablist'))
   fireEvent.click(within(view.container).getByText('admin.billing.invoice.tab.issued'))
   // Cards (phone) and table (desktop) both render in jsdom, which has no CSS; drive the first.

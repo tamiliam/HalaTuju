@@ -6,7 +6,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
-import { mayOpen } from '@/lib/pageGuard'
+import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import { useProgrammeScope } from '@/lib/programmeScopeCore'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
@@ -41,6 +41,9 @@ export default function ContractsListPage() {
   const router = useRouter()
 
   const allowed = mayOpen('/admin/contracts', role)   // NAVKEYS: the served door, as the menu row and the server
+  // NAVKEYS review: the list reads on `contracts.view`; a new version is a WRITE, which the server asks
+  // `contracts_write` (`contracts.edit`) for. A reader is not offered a button whose POST would 403.
+  const mayWrite = holdsDoor(role, 'contracts_write')
 
   const [templates, setTemplates] = useState<ContractTemplateSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -124,15 +127,17 @@ export default function ContractsListPage() {
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.contracts.title')}</h1>
           <p className="text-sm text-ground-500 mt-1">{t('admin.contracts.subtitle')}</p>
         </div>
-        <button type="button" onClick={() => setShowNew((s) => !s)}
-          className="shrink-0 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg font-medium hover:bg-brand-fill-hover">
-          {t('admin.contracts.newVersion')}
-        </button>
+        {mayWrite && (
+          <button type="button" onClick={() => setShowNew((s) => !s)}
+            className="shrink-0 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg font-medium hover:bg-brand-fill-hover">
+            {t('admin.contracts.newVersion')}
+          </button>
+        )}
       </div>
 
       {error && <div className="rounded-lg p-3 my-4 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{error}</div>}
 
-      {showNew && (
+      {mayWrite && showNew && (
         <form onSubmit={submitNew} className="mt-4 mb-6 bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <input className={inputCls} placeholder={t('admin.contracts.versionPlaceholder')}

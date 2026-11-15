@@ -48,6 +48,7 @@ export const DOOR_KEYS = {
   decide: ['students.approve'],
   sponsor_vet: ['sponsors.approve'],
   billing_read: ['billing.view'],
+  billing_write: ['billing.edit'],
   requests_read: ['requests.view'],
   requests_write: ['requests.edit'],
   requests_decide: ['requests.approve'],

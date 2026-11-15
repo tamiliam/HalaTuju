@@ -131,27 +131,31 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
   }
 
   /** NAVKEYS's declared move: on an older payload a row with a door opens for nobody (no role fallback). The
-   *  rows on a key (`perms`), a KIND or the platform, and the landing, do not move. */
-  const doorRow = (id: string) => !!NAV_ITEMS.find((i) => i.id === id)?.door
-  const navkeysOlderMoves = (cells: Record<string, unknown>): Record<string, unknown> => {
+   *  rows on a key (`perms`), a KIND or the platform, and the landing, do not move. A door row that ALSO lists
+   *  the viewer's role (Programmes, the landing — NAVKEYS review) still admits that role, so it does not move. */
+  const doorOnly = (item: (typeof NAV_ITEMS)[number] | undefined, role: string) =>
+    !!item?.door && !item.roles?.includes(role as never)
+  const doorRow = (id: string, role: string) => doorOnly(NAV_ITEMS.find((i) => i.id === id), role)
+  const navkeysOlderMoves = (cells: Record<string, unknown>, role: string): Record<string, unknown> => {
     const out: Record<string, unknown> = { ...cells }
     for (const m of ['menu', 'menuNoGift', 'menuNothingProbed']) {
-      out[m] = (cells[m] as string[]).filter((cell) => !doorRow(cell.slice(0, cell.indexOf(':'))))
+      out[m] = (cells[m] as string[]).filter((cell) => !doorRow(cell.slice(0, cell.indexOf(':')), role))
     }
     for (const cell of Object.keys(cells).filter((c) => c.startsWith('open '))) {
-      if (activeItem(cell.slice(5))?.door) out[cell] = false
+      if (doorOnly(activeItem(cell.slice(5)), role)) out[cell] = false
     }
     return out
   }
 
   it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): no door row or page gate opens; the rest as before', (shape) => {
     const { page_keys: _dropped, ...older } = served(shape)
-    expect(measure(older, doorGate)).toEqual(navkeysOlderMoves(td623OlderMoves(after(shape))))
+    expect(measure(older, doorGate)).toEqual(navkeysOlderMoves(td623OlderMoves(after(shape)), effectiveRole(older)))
   })
 
   it('NAVKEYS: the older-payload move is real — some shape held a door row by its role before', () => {
     const held = Object.keys(SHAPES).filter((shape) =>
-      (after(shape).menu as string[]).some((cell) => doorRow(cell.slice(0, cell.indexOf(':')))))
+      (after(shape).menu as string[]).some((cell) =>
+        doorRow(cell.slice(0, cell.indexOf(':')), effectiveRole(SHAPES[shape]))))
     expect(held.length).toBeGreaterThan(0)
   })
 
@@ -186,6 +190,8 @@ describe('Team tables T5c P4: the doors are really read', () => {
 
   it('exactly the P1/P2 rows ride a door; everything else keeps its own rule', () => {
     expect(NAV_ITEMS.filter((i) => i.door).map((i) => [i.id, i.door])).toEqual([
+      // NAVKEYS review: Programmes (the landing) keeps its role list AND admits a holder of its page's door.
+      ['programmes', 'programme_settings'],
       ['staff', 'team_read'], ['reviewers', 'team_read'],
       ['sources', 'sources'], ['sponsors', 'sponsors_read'],
       // M3c (list W): the organisation admin's pages read their M3b doors.

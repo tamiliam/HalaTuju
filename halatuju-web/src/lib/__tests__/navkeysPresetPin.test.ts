@@ -143,12 +143,29 @@ describe('NAVKEYS: a key granted by hand opens its row; a key unticked shuts it'
     for (const name of ['super', 'org_admin', 'admin', 'finance']) {
       const p = preset(name)
       const noDoors = menu({ ...p, page_keys: undefined })
-      expect(NAV_ITEMS.filter((i) => i.door && noDoors.includes(i.id)).map((i) => i.id)).toEqual([])
+      // A row that ALSO lists the role (Programmes, the landing) stays by its role.
+      expect(NAV_ITEMS.filter((i) => i.door && !i.roles?.includes(p.role as never) && noDoors.includes(i.id))
+        .map((i) => i.id)).toEqual([])
       const noKeys = menu({ ...p, permissions: undefined })
       expect(['applications', 'scholars', 'spending'].filter((id) => noKeys.includes(id))).toEqual([])
       expect(noKeys).toContain('programmes')
     }
     // A source login reads its own Applications and Scholars by its KIND, with no key at all.
     expect(menu(preset('source_partner'))).toEqual(['programmeOverview', 'applications', 'scholars', 'profile'])
+  })
+})
+
+describe('NAVKEYS review: the Programmes row is no dead end for a key holder', () => {
+  const menu = (p: Payload) => visibleNav({ role: effectiveRole(p), probes: LIVE, permissions: p.permissions,
+    mentoring: p.mentoring, pageKeys: p.page_keys }).flatMap((g) => g.items.map((i) => i.id))
+
+  it('a login outside the role list given programmes.edit gets the Programmes row, the only way into a gift', () => {
+    // The server lets no `member` hold a key today (`effective_v2` reads TEAM_ROLES), so this is the web half:
+    // the row asks the same door the Programme pages ask, and never strands a holder on the Programme door.
+    const member = preset('member')
+    expect(menu(member)).not.toContain('programmes')
+    const given = { ...member, page_keys: ['programmes.view', 'programmes.edit'] }
+    expect(menu(given)).toContain('programmes')
+    expect(mayOpen('/admin/organisation/programmes', given)).toBe(true)
   })
 })

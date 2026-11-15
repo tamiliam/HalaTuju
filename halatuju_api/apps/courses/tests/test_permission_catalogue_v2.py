@@ -571,7 +571,8 @@ class DoorKeysTable(TestCase):
             'settings': ('settings.edit',), 'programme_settings': ('programmes.edit',),
             'assign': ('students.edit',), 'students_write': ('students.edit',),
             'decide': ('students.approve',), 'sponsor_vet': ('sponsors.approve',),
-            'billing_read': ('billing.view',), 'requests_read': ('requests.view',),
+            'billing_read': ('billing.view',), 'billing_write': ('billing.edit',),
+            'requests_read': ('requests.view',),
             'requests_write': ('requests.edit',), 'requests_decide': ('requests.approve',),
             'contracts_read': ('contracts.view',), 'contracts_write': ('contracts.edit',),
             # M3c (D5): the senior letters on a scholar's file.

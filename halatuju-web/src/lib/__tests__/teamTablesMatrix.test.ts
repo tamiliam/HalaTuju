@@ -295,7 +295,8 @@ describe('NAVKEYS: no row is opened by a table seat, or by a role, any more', ()
 
   it('a team shape with no page_keys opens no row that has a door (the role fallback is gone)', () => {
     for (const [shape, p] of Object.entries(SHAPES)) {
-      for (const item of NAV_ITEMS.filter((i) => i.door)) {
+      // A door row that also lists the role (Programmes, the landing — NAVKEYS review) still admits that role.
+      for (const item of NAV_ITEMS.filter((i) => i.door && !i.roles?.includes(effectiveRole(p) as never))) {
         expect([shape, item.id, mayOpen(item.href, s1Served(shape, p))]).toEqual([shape, item.id, false])
       }
     }

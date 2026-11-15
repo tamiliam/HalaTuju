@@ -44,6 +44,12 @@ class AdminInvoiceDeclarationView(_InvoiceBase):
                 # the super already has the honest route — look at the bank, record the receipt.
                 if is_super:
                     return self._deny_role()
+                # ⚠ PAYING THE BILL IS `billing.edit` (O15), not the `billing.view` that opened the
+                # invoice. An organisation admin holds it by role; a team member never can (it is
+                # never grantable), so a member given `billing.view` reads the invoice and stops here.
+                from .. import surface_gates
+                if not surface_gates.may_write_billing(admin):
+                    return self._deny_role()
                 payment_declarations.declare_payment(
                     inv,
                     paid_on=(body.get('paid_on') or '').strip(),

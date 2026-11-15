@@ -529,6 +529,12 @@ class AdminOrgBillingDetailsView(_InvoiceBase):
         admin, org, err = self._org(request)
         if err:
             return err
+        # The READ above is `billing.view`; WRITING where the bill goes is `billing.edit` (O15), held
+        # by an organisation admin by role and by a super. Asked after `_org`, so another tenant's
+        # code still answers the fence's 404, never a 403 that confirms it exists.
+        from .. import surface_gates
+        if not surface_gates.may_write_billing(admin):
+            return self._deny_role()
         from django.core.exceptions import ValidationError
         from django.core.validators import validate_email
 
