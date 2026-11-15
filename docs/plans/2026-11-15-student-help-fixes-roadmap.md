@@ -112,8 +112,11 @@ then the UI items, then samples.
 - **Goal:** the approved 3-section Action Centre.
 - **Stitch first:** ONE Stitch round covering H5, H6 and H7 (sections, Replace, "I don't have this" flow);
   owner approves before any UI code.
-- **Scope:** sections, "why we ask" line, sent state for typed answers, progress that never goes backwards,
-  bad-file message, load-error retry; en copy (ms/ta through Sol).
+- **Scope:** sections, "why we ask" line, sent state for typed answers, an honest progress bar (a returned
+  document goes back to "Needs you"; owner 15 Nov dropped "never goes backwards"),
+  bad-file message, load-error retry; a "Take a photo" button (capture="environment", opens the back
+  camera on a phone) beside the normal Upload, which keeps gallery + PDF (owner idea 15 Nov); en copy
+  (ms/ta through Sol).
 - **Acceptance:** mobile check at phone width; jest; owner sees it on a preview before publish.
 - **Build:** Sonnet. **Complexity:** medium.
 
