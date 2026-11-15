@@ -220,10 +220,12 @@ export const REVIEWER_FAQ: QA[] = [
         2026). The start year is read from her offer letter only, never from a date typed on the application:
         first the letter&rsquo;s reporting date; if it has none, a single year on the intake line; if it shows
         only a session, the session&rsquo;s first year (&ldquo;2024/25&rdquo; means 2024), or its second year
-        when it says Sesi 2, Sesi II, Semester 2 or Semester II. It is left for you to check when the letter
-        names a later semester or year (Year 2, Semester 3, final year, Upper Six, &ldquo;Part 4&rdquo;), even
-        in the programme name; says readmission or credit transfer; is a confirmation letter that shows only
-        the current session; has several years and no reporting date; or has a misprinted year
+        when it says Sesi 2, Sesi II, Semester 2 or Semester II. An exam year (SPM, STPM, MUET and the like) is
+        never taken as the start year. It is left for you to check when the letter names a later semester or
+        year (Year 2, Semester 3, final year, Upper Six, &ldquo;Part 4&rdquo;), even in the programme name;
+        says readmission or credit transfer; is a confirmation letter that does not name her intake (Year 1,
+        Lower Six, or an intake month and year: &ldquo;Semester 1&rdquo; is only her current semester); has
+        several years, or only an exam year, and no reporting date; or has a misprinted year
         (&ldquo;2O25&rdquo;). Nothing is shown until the letter has been read. Hers
         is outside the gift&rsquo;s years, so the case is flagged like income above the B40 line: the usual
         recommendation is to decline, but it is not declined for you and the amount is unchanged. Confirm at

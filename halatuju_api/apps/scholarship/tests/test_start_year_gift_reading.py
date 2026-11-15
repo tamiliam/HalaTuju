@@ -67,10 +67,29 @@ class TheCorpusShapes(SimpleTestCase):
     def test_an_early_intake_month_gives_the_second_year(self):
         # A January-to-April intake month written without its year is the session's second half.
         for intake in ('Sesi 2024/2025 Ambilan Februari', 'Ambilan Mac Sesi 2024/2025', 'Session 2024-25 Feb intake',
-                       'Ambilan Sesi 2024/25Feb'):
+                       'Intake: January, Sesi 2024/2025', 'Sesi 2024/2025 Semester Februari'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (2025, 'session_second'))
         self.assertEqual(gift_reading('Sesi Ogos 2024/2025'), (2024, 'session_first'))
+
+    def test_a_month_away_from_an_intake_word_is_no_intake_month(self):
+        # Review fix: only a month next to an intake / semester word is the intake month.
+        for intake, year in (('Sesi 2026/2027, tutup 30 April', 2026), ('Ambilan Sesi 2024/25Feb', 2024),
+                             ('Sesi 2024/2025 (mendaftar sebelum Mac)', 2024)):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (year, 'session_first'))
+
+    def test_a_sesi_ii_beside_a_first_semester_or_year_is_the_second_year(self):
+        # Review fix: Sesi II names the intake; Semester 1 / Year 1 is that intake's first term.
+        for intake, year in (('Semester 1 Sesi II 2025/2026', 2026), ('Tahun 1 Sesi 2 2025/2026', 2026),
+                             ('Sesi II 2026/2027 Semester I', 2027), ('Ambilan 2 Sesi 2024/2025 Semester 1', 2025)):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (year, 'session_second'))
+
+    def test_a_year_inside_a_code_is_not_a_year(self):
+        self.assertEqual(gift_reading('Ambilan 2025 kod UH2024'), (2025, 'intake_year'))
+        self.assertEqual(gift_reading('Sesi 2025/2026 kod UH2024'), (2025, 'session_first'))
+        self.assertEqual(gift_reading('Kod Program UH2024'), (None, 'no_year'))
 
     def test_penggal_2_is_not_a_second_intake(self):
         # Form Six's second term follows a mid-year start: it reads as the session's first year.
@@ -80,17 +99,25 @@ class TheCorpusShapes(SimpleTestCase):
     def test_a_confirmation_naming_only_its_session_is_unknown(self):
         # All 5 confirmation letters in the corpus show only the current session.
         for intake, rd in (('2024/2025', ''), ('2026/2027', ''), ('1-2024/2025', ''), ('Sesi 2025/2026', '8 Sep 2025'),
-                           ('', '8 Sep 2025'), ('2025', ''), ('Kemasukan 2025', ''), ('6 / 2025 - 12 / 2026', '')):
+                           ('', '8 Sep 2025'), ('2025', ''), ('Kemasukan 2025', ''), ('6 / 2025 - 12 / 2026', ''),
+                           # Review fix: Semester 1 is the CURRENT semester, and a bare month-year the
+                           # current term's: neither writes the intake.
+                           ('Semester 1 Sesi 2025/2026', ''), ('Sem 1 2025/2026', '8 Sep 2025'),
+                           ('September 2025', ''), ('Semester 1, September 2025', '')):
             with self.subTest(intake=intake, rd=rd):
                 self.assertEqual(gift_reading(intake, rd, confirmation=True), (None, 'confirmation'))
 
     def test_a_confirmation_that_writes_the_intake_reads_it(self):
-        self.assertEqual(gift_start_year('Ambilan September 2025', confirmation=True), 2025)
-        self.assertEqual(gift_start_year('Semester 1 Sesi 2025/2026', confirmation=True), 2025)
-        self.assertEqual(gift_start_year('Tahun 1 Semester 1 Sesi 2025/2026', confirmation=True), 2025)
-        self.assertEqual(gift_start_year('Ambilan September 2022, Sesi 2022/2023', confirmation=True), 2022)
+        # Year 1 / Tahun 1 / Lower Six, or an intake / admission word with a month and its year.
+        for intake, year in (('Ambilan September 2025', 2025), ('Tahun 1 Semester 1 Sesi 2025/2026', 2025),
+                             ('Year 1, Session 2025/2026', 2025), ('Tingkatan 6 Bawah 2025/2026', 2025),
+                             ('Lower Six 2025/2026', 2025), ('Intake: January 2026', 2026),
+                             ('Tarikh Mendaftar: 3 Mac 2025', 2025), ('Kemasukan Julai 2025', 2025),
+                             ('Ambilan September 2022, Sesi 2022/2023', 2022)):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_start_year(intake, confirmation=True), year)
         # Its date is never read: it is the current session's date, not the intake's.
-        self.assertEqual(gift_start_year('Semester 1 Sesi 2023/2024', '8 Sep 2025', confirmation=True), 2023)
+        self.assertEqual(gift_start_year('Tahun 1 Sesi 2023/2024', '8 Sep 2025', confirmation=True), 2023)
 
 
 class LaterTermsAreUnknown(SimpleTestCase):
@@ -164,7 +191,8 @@ class OtherUnknowns(SimpleTestCase):
     def test_two_sessions_or_both_intakes(self):
         self.assertEqual(gift_reading('Sesi 2024/2025, Sesi 2025/2026'), (None, 'several_sessions'))
         for intake in ('Semester 1 / 2 Sesi 2025/2026', 'Sesi 2024/2025 Semester 1 dan Semester 2',
-                       'Sesi 2024/2025 Ambilan September / Februari', 'Sesi I 2024/2025 Februari'):
+                       'Sesi 2024/2025 Ambilan September / Februari', 'Sesi I 2024/2025 Ambilan Februari',
+                       'Sesi 1 Semester 2 2024/2025'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (None, 'both_intakes'))
 
@@ -179,13 +207,28 @@ class OtherUnknowns(SimpleTestCase):
 
 
 class ExamYearsAreNotStartYears(SimpleTestCase):
-    def test_an_exam_year_is_set_aside(self):
-        for intake in ('SPM 2024, Ambilan 2025', 'Ambilan Julai 2025 (SPM 2024)', 'Keputusan SPM 2024; Ambilan 2025',
-                       'Kemasukan 2025 (2024 lulus SPM)', 'Ambilan September 2025 Sesi 2025/2026 (STPM 2024)'):
+    """Owner 16 Nov 2026 ("why complicate?"): exam years are NEVER a start year. A line with an exam
+    word in any form gives no single year; only the reporting date or the session reads it."""
+
+    EXAM_LINES = ('SPM 2024, Ambilan 2025', 'Ambilan Julai 2025 (SPM 2024)', 'Keputusan SPM 2024; Ambilan 2025',
+                  'Kemasukan 2025 (2024 lulus SPM)', 'Kemasukan 2024 lulus SPM 2023', 'Intake 2026 SPM 2022',
+                  'Ambilan SPM 2024', 'SPM2024', 'Ambilan 2025 SPM (2024)', 'STPM/2024 Ambilan 2025',
+                  'Sijil Pelajaran Malaysia 2024, Ambilan 2025', 'Sijil Tinggi Persekolahan Malaysia 2024',
+                  'MUET 2024 Intake 2025', 'UEC 2024 Intake 2025', 'O-Level 2023 Intake 2025', 'A Level 2024')
+
+    def test_an_exam_line_with_no_session_and_no_date_is_unknown(self):
+        for intake in self.EXAM_LINES:
             with self.subTest(intake=intake):
-                self.assertEqual(gift_start_year(intake), 2025)
-        self.assertEqual(gift_start_year('Kemasukan 2024 lulus SPM 2023'), 2024)
-        self.assertEqual(gift_start_year('Intake 2026 SPM 2022'), 2026)
+                self.assertEqual(gift_reading(intake), (None, 'exam_line'))
+
+    def test_an_exam_line_reads_its_session(self):
+        for intake in ('Sesi 2025/2026 (SPM2024)', 'SPM (2024) Sesi 2025/2026', 'STPM/2024 Sesi 2025/2026',
+                       'Ambilan September 2025 Sesi 2025/2026 (STPM 2024)'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (2025, 'session_first'))
+        self.assertEqual(_state('Sesi 2025/2026 (SPM2024)'), 'inside')
+        self.assertEqual(_state('Ambilan SPM 2024'), 'unknown')
 
     def test_the_date_still_wins(self):
-        self.assertEqual(gift_start_year('Intake 2024 SPM 2022', '3 Mar 2025'), 2025)
+        self.assertEqual(gift_reading('Intake 2024 SPM 2022', '3 Mar 2025'), (2025, 'reporting_date'))
+        self.assertEqual(gift_reading('SPM 2024, Ambilan 2025', '14 Jul 2025'), (2025, 'reporting_date'))
