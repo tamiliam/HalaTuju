@@ -25,6 +25,7 @@ import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 import { RequestAnalysisCard } from '@/components/admin/RequestAnalysisCard'
 import { RequestHoursForm } from '@/components/admin/RequestHoursForm'
 import RequestListNav from '@/components/admin/RequestListNav'
+import Toggle from '@/components/Toggle'
 
 // The Requests detail: the clarification thread + the org's requestee actions (accept / defer /
 // modify / withdraw) and the owner's controls (triage / quote / requote / schedule / done /
@@ -330,13 +331,12 @@ export default function AdminRequestDetailPage() {
               placeholder={t('admin.requests.detail.commentPlaceholder')}
               className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             {/* Internal is the owner's alone. The server refuses it for anyone else (403) and an
-                org author can never be internal at all — this checkbox is the convenience, not
+                org author can never be internal at all — this toggle is the convenience, not
                 the control. */}
             {isSuper && (
               <label className="flex items-center gap-2 mt-2 text-sm text-ground-700">
-                <input type="checkbox" checked={commentInternal}
-                  onChange={(e) => setCommentInternal(e.target.checked)}
-                  className="rounded border-ground-300" />
+                <Toggle on={commentInternal} label={t('admin.requests.detail.commentInternal')}
+                  onChange={setCommentInternal} />
                 {t('admin.requests.detail.commentInternal')}
               </label>
             )}

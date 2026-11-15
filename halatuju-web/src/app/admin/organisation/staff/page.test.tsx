@@ -261,7 +261,7 @@ describe('which gift a sponsor is invited into', () => {
       { target: { value: 'donor@example.org' } })
   }
 
-  const giftTick = (id: string) => screen.getByTestId(`invite-sponsor-gift-${id}`) as HTMLInputElement
+  const giftTick = (id: string) => screen.getByTestId(`invite-sponsor-gift-${id}`) as HTMLButtonElement
   const TWO_GIFTS = [
     { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
     { id: 9, code: 'sabah', name: 'Sabah Bursary' },
@@ -271,8 +271,8 @@ describe('which gift a sponsor is invited into', () => {
     await loaded()
     await pick('sponsors')
     await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift')).toBeTruthy())
-    expect(giftTick('every').checked).toBe(false)
-    expect(giftTick('gift-7').checked).toBe(true)
+    expect(giftTick('every').getAttribute('aria-checked')).toBe('false')
+    expect(giftTick('gift-7').getAttribute('aria-checked')).toBe('true')
     expect(screen.getByText('admin.invitations.sponsorGiftHelp')).toBeTruthy()
   })
 
@@ -281,7 +281,7 @@ describe('which gift a sponsor is invited into', () => {
     await loaded()
     await pick('sponsors')
     inviteSponsorNamed()
-    await waitFor(() => expect(giftTick('gift-7').checked).toBe(true))
+    await waitFor(() => expect(giftTick('gift-7').getAttribute('aria-checked')).toBe('true'))
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
       { email: 'donor@example.org', name: 'Donor', note: '', programme_ids: [7] }, { token: 'tok' }))
@@ -292,10 +292,10 @@ describe('which gift a sponsor is invited into', () => {
     await loaded()
     await pick('sponsors')
     inviteSponsorNamed()
-    await waitFor(() => expect(giftTick('gift-7').checked).toBe(true))
+    await waitFor(() => expect(giftTick('gift-7').getAttribute('aria-checked')).toBe('true'))
     fireEvent.click(giftTick('gift-7'))
     // allowNone: the last tick cleared is NOTHING, not a silent Every gift.
-    expect(giftTick('every').checked).toBe(false)
+    expect(giftTick('every').getAttribute('aria-checked')).toBe('false')
     fireEvent.click(screen.getByText('admin.sendInvite'))
     await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
       { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
@@ -313,9 +313,9 @@ describe('which gift a sponsor is invited into', () => {
     await pick('sponsors')
     inviteSponsorNamed()
     await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-gift-9')).toBeTruthy())
-    expect(giftTick('every').checked).toBe(false)
-    expect(giftTick('gift-7').checked).toBe(false)
-    expect(giftTick('gift-9').checked).toBe(false)
+    expect(giftTick('every').getAttribute('aria-checked')).toBe('false')
+    expect(giftTick('gift-7').getAttribute('aria-checked')).toBe('false')
+    expect(giftTick('gift-9').getAttribute('aria-checked')).toBe('false')
     fireEvent.click(screen.getByText('admin.sendInvite'))
     expect((await screen.findByRole('alert')).textContent).toBe('admin.invitations.sponsorGiftRequired')
     expect(mockApi.inviteSponsor).not.toHaveBeenCalled()
@@ -675,13 +675,13 @@ describe('a reviewer invite names its gifts', () => {
     fireEvent.change(screen.getByLabelText('admin.name'), { target: { value: 'Asha' } })
     fireEvent.change(screen.getByLabelText('admin.emailLabel'), { target: { value: 'asha@example.org' } })
   }
-  const tick = (id: string) => screen.getByTestId(`invite-reviewer-gift-${id}`) as HTMLInputElement
+  const tick = (id: string) => screen.getByTestId(`invite-reviewer-gift-${id}`) as HTMLButtonElement
 
   it('offers Every gift, ticked by default, the gifts greyed, and the helper line', async () => {
     await loaded()
     await pick('reviewers')
     await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
-    expect(tick('every').checked).toBe(true)
+    expect(tick('every').getAttribute('aria-checked')).toBe('true')
     expect(tick('gift-7').disabled).toBe(true)
     expect(tick('gift-9').disabled).toBe(true)
     expect(screen.getByText('admin.invitations.reviewerGiftHelp')).toBeTruthy()

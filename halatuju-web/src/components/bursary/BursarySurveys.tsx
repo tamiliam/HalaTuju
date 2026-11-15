@@ -8,6 +8,8 @@ import {
 } from '@/lib/api/bursarySurveys'
 import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
+import Toggle from '@/components/Toggle'
+
 const P = 'bursaryTabs.surveys'
 /** ⚠ ONE BOX LEVEL ON A PHONE (mobile standard, rule 15): below `md` a survey is a plain full-width section
  *  divided from the next by a hairline, like every other My Bursary section (`PHONE_SECTION_FLAT`, Mobile M4c);
@@ -53,8 +55,8 @@ function Question({ q, n, value, onChange, t, error }: {
         const list = Array.isArray(value) ? value : []
         return (
           <label key={o} className={CHOICE}>
-            <input type="checkbox" checked={list.includes(o)} className="h-5 w-5"
-              onChange={(e) => onChange(e.target.checked ? [...list, o] : list.filter((x) => x !== o))} />
+            <Toggle on={list.includes(o)} label={o}
+              onChange={(v) => onChange(v ? [...list, o] : list.filter((x) => x !== o))} />
             <span className="break-words">{o}</span>
           </label>
         )

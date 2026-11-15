@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import Toggle from '@/components/Toggle'
 
 /**
  * One saved course (Mobile M3): its name, a 44 px remove button, the two status pills — which WRAP,
@@ -68,8 +69,7 @@ export default function SavedCourseCard({
           <span className="min-w-0">{t('outcomes.iGotOffer')}</span>
         </button>
         <label className="ml-auto inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-ground-600 hover:bg-ground-50">
-          <input type="checkbox" checked={selected} onChange={onToggleSelect}
-            className="h-5 w-5 rounded border-ground-300 text-primary-600 focus:ring-brand-shape" />
+          <Toggle on={selected} label={t('discovery.compareSelect')} onChange={() => onToggleSelect()} />
           {t('discovery.compareSelect')}
         </label>
       </div>

@@ -12,6 +12,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { hasPerm } from '@/lib/staffPermissions'
 
 import type { T, AdminRole } from './shared'
+import Toggle from '@/components/Toggle'
 
 /** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
  * code it does not know (the caller then shows the server's English sentence). */
@@ -147,9 +148,8 @@ export function QcPanel({
                   so offering it again here is redundant; the secondary path is reopen-only. */}
               {!isDeclineVerdict && (
               <label className="flex items-center gap-2 text-xs text-ground-700 select-none cursor-pointer">
-                <input type="checkbox" checked={qcRejectMode} disabled={!!busy}
-                  onChange={(e) => setQcRejectMode(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-ground-300 text-critical-600 focus:ring-critical-500" />
+                <Toggle on={qcRejectMode} disabled={!!busy} label={t('admin.scholarship.qcDecision.rejectToggle')}
+                  onChange={setQcRejectMode} />
                 {t('admin.scholarship.qcDecision.rejectToggle')}
               </label>
               )}

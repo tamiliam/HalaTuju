@@ -57,6 +57,7 @@ import {
 import {
   getSpendingOverview, setSpendingCategory, type SpendingOverview,
 } from '@/lib/admin-api'
+import Toggle from '@/components/Toggle'
 
 /** Money for display, SIGNED. ⚠ `rm` groups thousands and knows nothing about a minus sign, so
  *  a negative balance would render `RM-40.00`, which reads as a typo rather than as a number. */
@@ -274,8 +275,8 @@ export default function SpendingPage() {
               className="min-w-0 flex-1 rounded-md border border-ground-200 bg-ground-0 px-3 py-1.5 text-sm text-ground-800 placeholder:text-ground-placeholder sm:max-w-xs"
             />
             <label className="flex items-center gap-1.5 text-sm text-ground-700">
-              <input type="checkbox" checked={onlyUnplaced}
-                onChange={(e) => setOnlyUnplaced(e.target.checked)} />
+              <Toggle on={onlyUnplaced} label={t('admin.spending.filter.onlyUnplaced')}
+                onChange={setOnlyUnplaced} />
               {t('admin.spending.filter.onlyUnplaced')}
             </label>
             {studentsFiltered && (

@@ -17,6 +17,7 @@
 import { useT } from '@/lib/i18n'
 import { BIRTH_STATES, toggleBirthState } from '@/lib/birthStates'
 import type { RequirementDraft } from '@/lib/intakeYears'
+import Toggle from '@/components/Toggle'
 
 const BIRTH_STATE_KEYS: readonly string[] = BIRTH_STATES.map((s) => s.key)
 
@@ -29,9 +30,8 @@ function Req({ id, label, hint, value, onChange }: {
   return (
     <label htmlFor={id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
       value.trim() ? 'border-primary-200 bg-primary-50/50' : 'border-ground-200 bg-ground-0'}`}>
-      <input type="checkbox" checked={value.trim() !== ''} aria-label={label}
-        onChange={(e) => onChange(e.target.checked ? '0' : '')}
-        className="h-4 w-4 shrink-0 accent-primary-600" />
+      <Toggle on={value.trim() !== ''} label={label}
+        onChange={(v) => onChange(v ? '0' : '')} />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-ground-900">{label}</span>
         {hint && <span className="mt-0.5 block text-xs text-ground-500">{hint}</span>}
@@ -85,12 +85,10 @@ export default function RequirementFields(
           {BIRTH_STATES.map((s) => (
             <label key={s.key} htmlFor={`${idPrefix}-born-${s.key}`}
               className="flex items-center gap-2 text-sm text-ground-800">
-              <input id={`${idPrefix}-born-${s.key}`} type="checkbox"
-                checked={draft.birthStates.includes(s.key)}
-                onChange={(e) => onChange({
-                  ...draft, birthStates: toggleBirthState(draft.birthStates, s.key, e.target.checked),
-                })}
-                className="h-4 w-4 shrink-0 accent-primary-600" />
+              <Toggle id={`${idPrefix}-born-${s.key}`} on={draft.birthStates.includes(s.key)} label={s.name}
+                onChange={(v) => onChange({
+                  ...draft, birthStates: toggleBirthState(draft.birthStates, s.key, v),
+                })} />
               {s.name}
             </label>
           ))}
@@ -101,11 +99,10 @@ export default function RequirementFields(
           {draft.birthStates.filter((k) => !BIRTH_STATE_KEYS.includes(k)).map((k, i) => (
             <label key={`x${i}`} htmlFor={`${idPrefix}-born-x${i}`}
               className="flex items-center gap-2 text-sm text-critical-700">
-              <input id={`${idPrefix}-born-x${i}`} type="checkbox" checked
+              <Toggle id={`${idPrefix}-born-x${i}`} on label={`"${k}"`}
                 onChange={() => onChange({
                   ...draft, birthStates: toggleBirthState(draft.birthStates, k, false),
-                })}
-                className="h-4 w-4 shrink-0 accent-primary-600" />
+                })} />
               <span className="font-mono">{`"${k}"`}</span>
             </label>
           ))}

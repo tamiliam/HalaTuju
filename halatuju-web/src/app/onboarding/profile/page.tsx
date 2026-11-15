@@ -17,6 +17,7 @@ import { hasApplyReturn, clearApplyReturn, popOnboardingReturn, peekOnboardingRe
 import { peekApplyDraft } from '@/lib/applyDraftPeek'   // the apply form's draft, during the edit-results detour
 import { applyPagePath } from '@/lib/applyPagePath'
 import { isMalaysian } from '@/lib/bumiputera'
+import Toggle from '@/components/Toggle'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -403,12 +404,7 @@ export default function ProfileInputPage() {
                   ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 bg-ground-0 hover:border-ground-300'
               }`}>
-                <input
-                  type="checkbox"
-                  checked={colorblind}
-                  onChange={(e) => setColorblind(e.target.checked)}
-                  className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
-                />
+                <Toggle on={colorblind} label={t('onboarding.colorBlindness')} onChange={setColorblind} />
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorblind ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill={colorblind ? 'rgb(var(--brand-200))' : 'rgb(var(--ground-200))'} />
                   <circle cx="12" cy="12" r="3" />
@@ -421,12 +417,7 @@ export default function ProfileInputPage() {
                   ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 bg-ground-0 hover:border-ground-300'
               }`}>
-                <input
-                  type="checkbox"
-                  checked={disability}
-                  onChange={(e) => setDisability(e.target.checked)}
-                  className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
-                />
+                <Toggle on={disability} label={t('onboarding.physicalDisability')} onChange={setDisability} />
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={disability ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" fill={disability ? 'rgb(var(--brand-200))' : 'rgb(var(--ground-200))'} />
                   <path d="M12 8a1 1 0 100-2 1 1 0 000 2z" fill={disability ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} />

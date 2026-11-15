@@ -134,9 +134,9 @@ it('I4: the tick list starts at Every gift, offers the served gifts, and sends t
   const form = screen.getByTestId('mentor-invite-form')
   expect(within(form).getByRole('group').getAttribute('aria-labelledby')).toBe('invite-mentor-gift-label')
   expect(screen.getByText('admin.mentors.invite.giftLabel')).toBeTruthy()
-  const every = screen.getByTestId('invite-mentor-gift-every') as HTMLInputElement
-  const sabah = screen.getByTestId('invite-mentor-gift-gift-5') as HTMLInputElement
-  expect(every.checked).toBe(true)
+  const every = screen.getByTestId('invite-mentor-gift-every') as HTMLButtonElement
+  const sabah = screen.getByTestId('invite-mentor-gift-gift-5') as HTMLButtonElement
+  expect(every.getAttribute('aria-checked')).toBe('true')
   expect(sabah.disabled).toBe(true)                     // greyed while Every gift is on
   expect(screen.getByText('Flagship Bursary')).toBeTruthy()
   fireEvent.click(every)                                // un-tick Every gift, then pick Sabah
@@ -146,7 +146,7 @@ it('I4: the tick list starts at Every gift, offers the served gifts, and sends t
   await waitFor(() => expect(mockApi.inviteMentor).toHaveBeenCalledWith(
     { name: 'Asha', email: 'a@example.org', programme_ids: [5] }, { token: 'tok' }))
   // After a send the form is back at Every gift.
-  await waitFor(() => expect((screen.getByTestId('invite-mentor-gift-every') as HTMLInputElement).checked).toBe(true))
+  await waitFor(() => expect((screen.getByTestId('invite-mentor-gift-every') as HTMLButtonElement).getAttribute('aria-checked')).toBe('true'))
 })
 
 it('I4: with no gifts served it still offers (and sends) Every gift', async () => {

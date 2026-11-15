@@ -262,8 +262,8 @@ describe('the internal note is the owner’s alone', () => {
     // accident, which is the only direction this mistake goes.
     viewerRole = { role: 'super', is_super_admin: true }
     await show()
-    const box = screen.getByLabelText('admin.requests.detail.commentInternal') as HTMLInputElement
-    expect(box.checked).toBe(false)
+    const box = screen.getByLabelText('admin.requests.detail.commentInternal') as HTMLButtonElement
+    expect(box.getAttribute('aria-checked')).toBe('false')
   })
 })
 

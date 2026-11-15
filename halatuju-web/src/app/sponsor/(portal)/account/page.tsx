@@ -12,6 +12,7 @@ import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 import SponsorLogOut from '@/components/sponsor/SponsorLogOut'
 import { DisplayControls } from '@/components/DisplaySegments'
 import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
+import Toggle from '@/components/Toggle'
 
 /** Rule 15 (Mobile M5): a full-width section on a phone, the card it always was from md. */
 const CARD = PHONE_SECTION_NO_GAP
@@ -118,8 +119,8 @@ export default function AccountPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-ground-900">🔁 {t('sponsorPortal.autoSponsor.title')}</h2>
           <label className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-ground-700">
-            <input type="checkbox" checked={sgActive}
-              onChange={(e) => { setSgActive(e.target.checked); setSgSaved(false) }} className="h-5 w-5" />
+            <Toggle on={sgActive} label={t('sponsorPortal.autoSponsor.enable')}
+              onChange={(v) => { setSgActive(v); setSgSaved(false) }} />
             {t('sponsorPortal.autoSponsor.enable')}
           </label>
         </div>

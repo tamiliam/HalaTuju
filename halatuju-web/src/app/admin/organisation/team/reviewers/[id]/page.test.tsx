@@ -313,7 +313,7 @@ describe('which gifts a reviewer covers', () => {
     { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: false },
   ]
   const SABAH = { id: 9, code: 'sabah', name: 'Sabah Bursary' }
-  const tick = (id: string) => screen.getByTestId(id) as HTMLInputElement
+  const tick = (id: string) => screen.getByTestId(id) as HTMLButtonElement
 
   it('⚠ says nothing when the organisation runs ONE gift', async () => {
     // Owner, 2026-08-02: with one programme the row could only ever say one thing. That ruling
@@ -337,7 +337,7 @@ describe('which gifts a reviewer covers', () => {
     await loaded({ programmes: TWO_GIFTS, gifts: [] })
     fireEvent.click(screen.getByTestId('gifts-edit-5'))
     expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(tick('gifts-ticks-5-every').checked).toBe(true)
+    expect(tick('gifts-ticks-5-every').getAttribute('aria-checked')).toBe('true')
     expect(tick('gifts-ticks-5-gift-7').disabled).toBe(true)
     expect(tick('gifts-ticks-5-gift-9').disabled).toBe(true)
     // A gift that is not switched on yet is still offered — a gift is STAFFED before it opens.
@@ -363,9 +363,9 @@ describe('which gifts a reviewer covers', () => {
     mockApi.setReviewerGifts.mockResolvedValue({ id: 5, gifts: [] })
     await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
     fireEvent.click(screen.getByTestId('gifts-edit-5'))
-    expect(tick('gifts-ticks-5-gift-9').checked).toBe(true)
+    expect(tick('gifts-ticks-5-gift-9').getAttribute('aria-checked')).toBe('true')
     fireEvent.click(tick('gifts-ticks-5-every'))
-    expect(tick('gifts-ticks-5-gift-9').checked).toBe(false)
+    expect(tick('gifts-ticks-5-gift-9').getAttribute('aria-checked')).toBe('false')
     expect(tick('gifts-ticks-5-gift-9').disabled).toBe(true)
     fireEvent.click(screen.getByTestId('gifts-save-5'))
     await waitFor(() => expect(mockApi.setReviewerGifts).toHaveBeenCalledWith(5, [], { token: 'tok' }))
@@ -375,7 +375,7 @@ describe('which gifts a reviewer covers', () => {
     await loaded({ programmes: TWO_GIFTS, gifts: [SABAH] })
     fireEvent.click(screen.getByTestId('gifts-edit-5'))
     fireEvent.click(tick('gifts-ticks-5-gift-9'))
-    expect(tick('gifts-ticks-5-every').checked).toBe(true)
+    expect(tick('gifts-ticks-5-every').getAttribute('aria-checked')).toBe('true')
   })
 
   it('Cancel closes without saving', async () => {

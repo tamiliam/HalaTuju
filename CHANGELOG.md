@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint TOGGLES - HalaTuju uses toggles, not tick boxes (2026-11-16)
+
+Branch toggles, not pushed. No migration. Services: web. Decision: `docs/decisions.md` (2026-11-16, toggles not tick boxes). Release-note draft: `docs/releases/toggles-release-note-draft.md`. Cosmetic only; no copy, i18n key or behaviour changed.
+- Every on/off choice and pick-several list is now `Toggle` (role="switch", 44 px to a thumb): the Invitations gift picker (`ReviewerGifts` "Every gift" and one row per gift, under Reviewer, Mentor and Sponsor, and the Team pencil pop-over; "Every gift" on still greys the rows, `tickGift`/`allowNone` unchanged, test ids kept), the internal note on a request, the QC reject switch, "Only unplaced" and "Flagged only" on Spending, the sponsor auto-sponsor switch, colour blindness and disability on onboarding, the requirement on/off and the sixteen birth states, the bursary survey multi-choice answers and the saved-course compare select.
+- `Toggle` takes optional `testId` and `id` (so existing test ids and `htmlFor` links hold). The Sources page keeps its own switch (different look and props).
+- Kept as tick boxes, because the person agrees to or confirms a statement: scholarship award (two agreements), sponsor consent (register and details form), source witness confirmation, post-award "installed", the scholarship next-steps checklist.
+- Guard: `src/lib/__tests__/noTickBoxes.test.ts` fails on any `type="checkbox"` in a non-test .tsx outside those six files, with exact counts.
+- Tests that read `.checked` or the checkbox role now read `aria-checked` or the switch role; no assertion loosened.
+
 ### fix: sprint NAVKEYS review round 2 - a contract reader reads; the billing page wiring is pinned (2026-11-16)
 
 Review round 2, on main, not live. No migration. Services: web. Release-note draft updated.

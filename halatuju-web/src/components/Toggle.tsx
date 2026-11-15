@@ -12,15 +12,19 @@ export default function Toggle({
   onChange,
   label,
   disabled = false,
+  testId,
+  id,
 }: {
   on: boolean
   onChange: (v: boolean) => void
   label: string
   disabled?: boolean
+  testId?: string
+  id?: string
 }) {
   return (
     <button
-      type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
+      type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} data-testid={testId} id={id}
       onClick={() => { if (!disabled) onChange(!on) }}
       className={`-my-[10px] inline-flex h-11 w-11 shrink-0 items-center ${
         disabled ? 'opacity-50 cursor-not-allowed' : ''}`}

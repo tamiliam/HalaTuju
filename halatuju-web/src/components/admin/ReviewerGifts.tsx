@@ -16,6 +16,7 @@
  */
 import { useState } from 'react'
 import { useT } from '@/lib/i18n'
+import Toggle from '@/components/Toggle'
 import { setReviewerGifts, type AdminReviewerGift, type ReviewerGiftTag } from '@/lib/admin-api'
 import {
   giftsForReviewer, idsToSave, tickEvery, tickGift, ticksFrom, type GiftTicks,
@@ -55,16 +56,15 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId, all
   return (
     <div data-testid={testId}>
       <label className={`${row} font-semibold text-ground-900`}>
-        <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={ticks.every}
-          data-testid={`${testId}-every`} onChange={(e) => onChange(tickEvery(ticks, e.target.checked))} />
+        <Toggle on={ticks.every} label={everyLabel} testId={`${testId}-every`}
+          onChange={(v) => onChange(tickEvery(ticks, v))} />
         {everyLabel}
       </label>
       <div className="my-1 h-px bg-ground-200" />
       {options.map((g) => (
         <label key={g.id} className={`${row} ${ticks.every ? 'cursor-not-allowed text-ground-400' : 'text-ground-700'}`}>
-          <input type="checkbox" className="h-4 w-4 accent-primary-600" disabled={ticks.every}
-            checked={ticks.picked.includes(g.id)} data-testid={`${testId}-gift-${g.id}`}
-            onChange={() => onChange(tickGift(ticks, g.id, allowNone))} />
+          <Toggle on={ticks.picked.includes(g.id)} label={g.name} disabled={ticks.every}
+            testId={`${testId}-gift-${g.id}`} onChange={() => onChange(tickGift(ticks, g.id, allowNone))} />
           {g.name}
           {g.is_active === false && (
             <span className="text-xs text-ground-400">{t('admin.reviewers.detail.giftNotOpen')}</span>

@@ -80,7 +80,7 @@ const loaded = async () => {
   await waitFor(() => expect(screen.getByTestId('rules-year')).toBeTruthy())
 }
 
-const box = (id: string) => document.getElementById(id) as HTMLInputElement
+const box = (id: string) => document.getElementById(id) as HTMLButtonElement
 const save = () => screen.getByText('common.save') as HTMLButtonElement
 
 beforeEach(() => {
@@ -222,14 +222,14 @@ describe('the "Born in" requirement', () => {
   const withStates = (s: string[]) => withYears([year({
     requirements: { ...year().requirements, allowed_birth_states: s },
   })])
-  const tick = (key: string) => document.getElementById(`rules-born-${key}`) as HTMLInputElement
+  const tick = (key: string) => document.getElementById(`rules-born-${key}`) as HTMLButtonElement
 
   it('offers all sixteen states and shows the stored ones ticked', async () => {
     withStates(['sabah'])
     await loaded()
     expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(16)
-    expect(tick('sabah').checked).toBe(true)
-    expect(tick('sarawak').checked).toBe(false)
+    expect(tick('sabah').getAttribute('aria-checked')).toBe('true')
+    expect(tick('sarawak').getAttribute('aria-checked')).toBe('false')
     expect(screen.getByText('admin.years.req.bornInHint')).toBeTruthy()
   })
 
@@ -279,13 +279,13 @@ describe('the "Born in" requirement', () => {
   // IC), so it must be on screen: an extra box, ticked, labelled with the key as stored.
   describe('a stored key that is not one of the sixteen', () => {
     // Quoted, so a stored 'Sabah' is never mistaken for the Sabah box beside it.
-    const extra = () => screen.getByLabelText('"Sabah"') as HTMLInputElement
+    const extra = () => screen.getByLabelText('"Sabah"') as HTMLButtonElement
 
     it('is shown ticked beside the sixteen, under its raw key', async () => {
       withStates(['Sabah'])
       await loaded()
-      expect(extra().checked).toBe(true)
-      expect(tick('sabah').checked).toBe(false)
+      expect(extra().getAttribute('aria-checked')).toBe('true')
+      expect(tick('sabah').getAttribute('aria-checked')).toBe('false')
       expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(17)
     })
 

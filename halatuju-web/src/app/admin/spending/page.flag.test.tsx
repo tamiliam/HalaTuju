@@ -193,7 +193,7 @@ describe('"Flagged only"', () => {
   it('narrows the list to the flagged shops, in both renderings, and clears back', async () => {
     render(<SpendingPage />)
     await flagsOf('PLAIN STALL')
-    fireEvent.click(screen.getByRole('checkbox', { name: 'admin.spending.flag.only' }))
+    fireEvent.click(screen.getByRole('switch', { name: 'admin.spending.flag.only' }))
     expect(screen.queryAllByText('PLAIN STALL')).toHaveLength(0)
     expect(screen.getAllByText('WATCHED STALL')).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: 'admin.spending.filter.clear' }))

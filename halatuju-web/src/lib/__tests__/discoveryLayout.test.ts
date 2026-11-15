@@ -112,10 +112,10 @@ describe('saved courses on a phone (Mobile M3)', () => {
   const card = readWeb('src/components/saved/SavedCourseCard.tsx', 'one saved course')
   const page = readWeb('src/app/saved/page.tsx', 'the saved courses page')
 
-  it('the compare tick box is on every width, with its word beside it — no hover title', () => {
+  it('the compare toggle is on every width, with its word beside it — no hover title', () => {
     expect(card + page).not.toMatch(/\stitle=["{]/)
     expect(card + page).not.toMatch(/hidden md:flex/)
-    expect(card).toMatch(/<label className="[^"]*\bmin-h-11\b[^"]*">\s*<input type="checkbox"[\s\S]*?\{t\('discovery\.compareSelect'\)\}\s*<\/label>/)
+    expect(card).toMatch(/<label className="[^"]*\bmin-h-11\b[^"]*">\s*<Toggle[\s\S]*?\{t\('discovery\.compareSelect'\)\}\s*<\/label>/)
   })
 
   it('the status pills wrap and are 44 px', () => {

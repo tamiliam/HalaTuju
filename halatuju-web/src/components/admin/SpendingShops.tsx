@@ -47,6 +47,7 @@ import {
   sortMerchants, type MerchantSortKey,
 } from '@/lib/spendingTable'
 import type { SpendingMerchantRow } from '@/lib/admin-api'
+import Toggle from '@/components/Toggle'
 
 /** The checked-but-unsorted option's value. ⚠ Never reaches the server — see the file header. */
 const CHECKED = 'unsorted:checked'
@@ -202,8 +203,7 @@ export default function SpendingShops({
         ))}
       </select>
       <label className="flex items-center gap-1.5 text-sm text-ground-700">
-        <input type="checkbox" checked={flaggedOnly}
-          onChange={(e) => setFlaggedOnly(e.target.checked)} />
+        <Toggle on={flaggedOnly} label={t('admin.spending.flag.only')} onChange={setFlaggedOnly} />
         {t('admin.spending.flag.only')}
       </label>
       {filtered && (
