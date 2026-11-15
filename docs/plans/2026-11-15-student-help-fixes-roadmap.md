@@ -1,16 +1,17 @@
 # Student help fixes: roadmap (drafted 2026-11-15)
 
 Status: APPROVED by the owner 2026-11-15 (order as written; H7 reason lists as written; per-gift start-year
-setting deferred). No sprint starts before the freeze lifts (Wed 18 Nov) and before the post-audit work has its
+setting built NOW in H3 - owner "a", after it was found the Degree gift's 2025/2026-starters rule is not
+enforced). No sprint starts before the freeze lifts (Wed 18 Nov) and before the post-audit work has its
 slots (owner ruling 2026-11-14: post-audit work first). Builder slots are agreed with the HalaTuju release-lead
 session. Publishing follows the release train (max 3 windows a day, the owner's direct yes).
 
 ## Branch strategy (owner, 2026-11-15, option A)
 
-- **H1 and H2 go to main alone**, each as soon as it is ready (they unblock real students), with the usual
-  adversarial review and the owner's phone check.
-- **H3-H9 build on one long-lived branch `student-help`** in its own worktree (see
-  Settings/_workflows/parallel-work-isolation.md), cut from main when H3 starts.
+- **H1, H2 and H3 go to main alone**, each as soon as it is ready (they change who is blocked, and the Degree
+  round closes 10 Dec), with the usual adversarial review and the owner's phone check.
+- **H4-H9 build on one long-lived branch `student-help`** in its own worktree (see
+  Settings/_workflows/parallel-work-isolation.md), cut from main when H4 starts.
 - Rebase `student-help` onto main **every working day** to keep conflicts small. Run the targeted tests after
   each rebase.
 - At the end: one full suite, one fresh review of the whole branch diff, a final rebase, then fast-forward
@@ -82,17 +83,22 @@ then the UI items, then samples.
   word.
 - **Build:** Opus (eligibility). **Complexity:** high.
 
-### H3 - Old letters ask for a recent one (item 5, part 2)
-- **Goal:** an offer or confirmation letter older than the window raises a soft Check 2 ask for a recent
-  confirmation letter.
-- **Scope:** new Check 2 code beside `stale_income_proof` (pathway_engine `is_confirmation_letter` +
-  `offer_date`), window as an org tunable (org_config_registry.py, default 3 months), student + reviewer copy
-  (en; ms/ta through Sol), tests.
-- **Per-gift "earlier starters" rule:** today the start year is display-only, so nothing blocks earlier
-  starters and the Sabah gift already works. Owner 2026-11-15: do NOT build the gift setting now; build it
-  when a gift needs "2026 starters only".
-- **Acceptance:** no student is blocked by the new ask; the ask closes on a recent letter; tests pass.
-- **Build:** Opus (eligibility-adjacent), Sonnet review. **Complexity:** medium.
+### H3 - Start-year rule per gift + old letters ask for a recent one (item 5, part 2)
+- **Goal A, start-year rule:** each gift can say which course-start years it accepts. Degree gift
+  (`bpb-deg-dip-2026`, open to 10 Dec) = 2025 and 2026 only; Sabah (`2026-bpb-s`) = earlier starters allowed;
+  other gifts keep today's behaviour (no check).
+- **Goal B, recent letter:** an offer or confirmation letter older than the window raises a soft Check 2 ask for
+  a recent confirmation letter (no block).
+- **Scope:** a start-year setting on `ScholarshipCohort` (gift rules sit there, beside `allowed_birth_states`;
+  migration + admin Gift editor field), the check reads `pathway_engine.course_start_year`; decide at sprint
+  start (adversarial review) what happens when the year is unreadable (recommend: a person checks, never an
+  automatic fail); student + reviewer copy. New Check 2 code beside `stale_income_proof`
+  (`is_confirmation_letter` + `offer_date`), window as an org tunable (org_config_registry.py, default 3
+  months). en copy; ms/ta through Sol. Tests per gift setting. decisions.md entry.
+- **Acceptance:** a 2024 starter in the Degree round is caught; a 2025 Sabah starter is not; a gift with no
+  setting is unchanged; dry run over the 161 live Degree apps lists who would move (codes only); no student is
+  blocked by the recent-letter ask; adversarial review clean; owner phone check.
+- **Build:** Opus (eligibility). **Complexity:** high.
 
 ### H4 - Action Centre split + documents stage lock (item 2, base)
 - **Goal:** ActionCentre.tsx split into small parts with NO visible change; documents POST/DELETE refuse after
@@ -142,6 +148,7 @@ then the UI items, then samples.
 - **Build:** Sonnet, Opus review (document recognition). **Complexity:** medium.
 
 Total: 9 sprints. H1-H3 change who is blocked, so each has an adversarial review and the owner's phone check.
+H3 should land before the Degree round closes (10 Dec).
 H4-H9 are student-facing UI and run on Sonnet with a fresh reviewer.
 
 ## Reason lists for H7 (approved by the owner 2026-11-15)
