@@ -127,11 +127,12 @@ class N8StreetsAndCertifications(SimpleTestCase):
 
 
 class ConfirmationsStillQualify(SimpleTestCase):
-    def test_a_full_polytechnic_confirmation_is_genuine(self):
+    def test_a_full_polytechnic_confirmation_reads_suspect(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (was genuine); still recognised
         text = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nJalan Contoh, 93050 Kuching\nTel : 082-000000\n'
                 'Rujukan : PO/600-1/2\nTarikh : 1 Jun 2026\nKEPADA SESIAPA YANG BERKENAAN\nPENGESAHAN PELAJAR\n'
                 'Dengan ini disahkan bahawa penama berikut adalah pelajar kami:\nNama : Ali bin Abu\n'
                 'No. Kad Pengenalan : 080808-10-5566\nProgram : Diploma Kejuruteraan Contoh\nSemester : 3\n'
                 'Sesi : 2026/2027\nSekian, terima kasih.\nYang benar,\nPENGARAH\nPoliteknik Contoh\n')
         self.assertEqual(confirmation_kind(text, 0.17), 'confirmation_polytechnic')
-        self.assertEqual(_conf(text, 0.17), 'genuine')
+        self.assertEqual(_conf(text, 0.17), 'suspect')

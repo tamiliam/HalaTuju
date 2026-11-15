@@ -26,6 +26,9 @@ SOFTENINGS = {'printout', 'tvet_slip'}
 #: Help H2 option B (2026-11-15): a newly covered public confirmation or KPM's English matric offer reads suspect
 #: at most (a person checks) - never genuine, never a block.
 SUSPECT_ONLY = {'confirmation_check', 'confirmation_ua', 'matric_offer_en'}
+#: A real public letter the glued-name test must not block: it lifts, or - CHANGED by help H2 owner 16 Nov: all
+#: confirmations suspect - a polytechnic / UMS confirmation is still recognised and reads suspect.
+KEPT = LIFTS | {'confirmation_check'}
 
 
 def _r(p, family='ua_offer'):
@@ -217,7 +220,8 @@ class TheLifts(SimpleTestCase):
             with self.subTest(head=head):
                 self.assertEqual(confirmation_kind(_confirm(head), 0.2), seen)
                 out = ruled_offer(_confirm(head), _r(0.2), 'not_offer_letter', 'r', MODEL_VERSION)
-                self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'confirmation'))
+                # CHANGED by help H2 owner 16 Nov: all confirmations suspect (was genuine, `confirmation`)
+                self.assertEqual((out['status'], ruling_of(out)), ('suspect', 'confirmation_check'))
 
     def test_another_universitys_confirmation_reads_suspect(self):
         # CHANGED by help H2 option B (2026-11-15): was the baseline (not_offer_letter); a public university's
@@ -1179,7 +1183,7 @@ class Round13(SimpleTestCase):
     def test_real_words_on_public_pages_still_lift(self):
         for name, text in ROUND13_PUBLIC_STILL_LIFT.items():
             with self.subTest(name):
-                self.assertIn(self._ruling(text), LIFTS)
+                self.assertIn(self._ruling(text), KEPT)     # CHANGED by help H2 owner 16 Nov (UMS: suspect)
 
     def test_the_normaliser_reads_digits(self):
         from apps.scholarship.genuineness.offer_text import normalise_s6
@@ -1262,13 +1266,15 @@ class Round14(SimpleTestCase):
                 if kind in ('IKM', 'KKTM') and 'KBS1' in line:
                     continue                                    # another agency (KBS) on a MARA letter
                 with self.subTest(kind=kind, line=line):
-                    self.assertIn(self._ruling(build(extra=line + '\n')), LIFTS)
+                    # CHANGED by help H2 owner 16 Nov: all confirmations suspect (UMS / POLY: confirmation_check)
+                    self.assertIn(self._ruling(build(extra=line + '\n')), KEPT)
 
     def test_a_skillsmalaysia_line_on_the_letterhead_still_lifts(self):
         for kind in ('UMS', 'POLY'):
             with self.subTest(kind):
-                self.assertIn(self._ruling(_LETTERS14[kind](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')),
-                              LIFTS)
+                # CHANGED by help H2 owner 16 Nov: all confirmations suspect
+                self.assertEqual(self._ruling(_LETTERS14[kind](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota '
+                                                                    'Kinabalu')), 'confirmation_check')
         self.assertIn(self._ruling(_a11(_IKBN11, venue='IKBN Pekan',
                                         addr='SkillsMalaysia\nJalan Raja Laut, 50609 Kuala Lumpur')), LIFTS)
 
@@ -1278,8 +1284,9 @@ class Round14(SimpleTestCase):
             for kind, addr in (('IKM', 'Jalan Raja Laut, 50609 Kuala Lumpur'),
                                ('UMS', 'Jalan Contoh, 88400 Kota Kinabalu'), ('POLY', 'Jalan Contoh, 88400 Kota Kinabalu')):
                 with self.subTest(kind=kind, tel=tel):
+                    # CHANGED by help H2 owner 16 Nov: all confirmations suspect (UMS / POLY: confirmation_check)
                     self.assertIn(self._ruling(_LETTERS14[kind](addr=f'{addr}\nTel : 09-4221234 E-mel : {tel}')),
-                                  LIFTS)
+                                  KEPT)
 
     def test_a_numbered_noun_with_a_name_still_blocks(self):
         for line in ('Latihan amali di Akademi21 Mercu.', 'Latihan amali di Edu360 Kuantan.',

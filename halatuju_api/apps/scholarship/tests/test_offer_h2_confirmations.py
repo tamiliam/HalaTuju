@@ -1,11 +1,12 @@
 """Help H2, owner option B (2026-11-15, decisions.md ruling 4): a NEW confirmation of studies from a public
 institution never reads genuine by itself. It reads SUSPECT (a person checks) and the student is not blocked; it
-never writes a course pick. A private college or a university's private wing still fails. The rules live on main
-(the polytechnic, UMS and Form-6 confirmations and their genuine lift) are unchanged. KPM's English matriculation
-offer is recognised the same way: suspect at most, never a pick.
+never writes a course pick. A private college or a university's private wing still fails. KPM's English
+matriculation offer is recognised the same way: suspect at most, never a pick. CHANGED by help H2 owner 16 Nov:
+all confirmations suspect - the polytechnic, UMS and Form-6 confirmations keep main's recognition rule but read
+SUSPECT too (they were genuine on main).
 
-The adversarial letters of the H2 review rounds (rounds 1-5) are kept below: none reads genuine unless main
-already read it genuine (main parity; the Form-6 path is TD-633). Synthetic twins only: every letter is invented
+The adversarial letters of the H2 review rounds (rounds 1-5) are kept below: none reads genuine (TD-633, the
+Form-6 path, closed 16 Nov). Synthetic twins only: every letter is invented
 (`test_no_gitignored_corpus.py`), no real name or IC.
 """
 from types import SimpleNamespace
@@ -25,7 +26,8 @@ from apps.scholarship.tests.test_offer_s6_doors import _offer
 KPM, KPT = 'KEMENTERIAN PENDIDIKAN MALAYSIA', 'KEMENTERIAN PENDIDIKAN TINGGI'
 KK = 'KOLEJ KOMUNITI KLANG'
 
-#: Live on main and unchanged: genuine, tag `confirmation`.
+#: Main's live recognition rule, unchanged; CHANGED by help H2 owner 16 Nov: all confirmations suspect (they were
+#: genuine, tag `confirmation`, on main; now suspect, tag `confirmation_check`).
 MAIN_LIVE_GENUINE = (
     ('polytechnic', f'POLITEKNIK UNGKU OMAR\n{KPT}', 'confirmation_polytechnic'),
     ('polytechnic, another', f'POLITEKNIK SULTAN AZLAN SHAH\n{KPT}', 'confirmation_polytechnic'),
@@ -38,6 +40,7 @@ NEW_SUSPECT = (
     ('matric, the Division itself', f'BAHAGIAN MATRIKULASI\n{KPM}', 'confirmation_matriculation'),
     ('matric, English names', 'MATRICULATION COLLEGE CONTOH\nMATRICULATION DIVISION\nMINISTRY OF EDUCATION MALAYSIA',
      'confirmation_matriculation'),
+    ('matric, a campus line', f'KOLEJ MATRIKULASI PERAK\nKAMPUS GOPENG\n{KPM}', 'confirmation_matriculation'),
     ('matric, a campus line naming a state', f'KOLEJ MATRIKULASI PERAK\nKAMPUS PERAK\n{KPM}',
      'confirmation_matriculation'),
     ('community college, its own campus', f'{KK}\nKAMPUS KLANG\n{KPT}', 'confirmation_kolej_komuniti'),
@@ -90,11 +93,14 @@ def _form6(head):
 
 
 class MainLiveConfirmationsAreUnchanged(SimpleTestCase):
-    def test_read_genuine_exactly_as_on_main(self):
+    def test_read_suspect_on_mains_recognition_rule(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (main read these genuine). Main's
+        # recognition rule is unchanged (`confirmation_kind`); the crest lifts nothing
         for name, head, seen in MAIN_LIVE_GENUINE:
-            with self.subTest(name):
-                self.assertEqual(confirmation_kind(_confirm(head)), seen)
-                self.assertEqual(_verdict(_confirm(head)), ('genuine', seen, 'confirmation'))
+            for crest in (False, True):
+                with self.subTest(name, crest=crest):
+                    self.assertEqual(confirmation_kind(_confirm(head)), seen)
+                    self.assertEqual(_verdict(_confirm(head), crest), ('suspect', seen, 'confirmation_check'))
 
 
 class NewPublicConfirmationsReadSuspect(SimpleTestCase):
@@ -395,8 +401,8 @@ ADVERSARIAL = (
     f'KOLEJ KOMUNITI MERCU\n{KPT}', 'KOLEJ VOKASIONAL ANTARABANGSA MERCU',
     f'{KPT}\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nKOLEJ KOMUNITI SELAYANG',
 )
-#: Main parity: these read genuine on main through the live polytechnic / Form-6 path and are NOT changed here
-#: (the Form-6 ones are TD-633: genuine before any letterhead check, a <=2-word line counts as a crest).
+#: These read genuine on main through the live polytechnic / Form-6 path (the Form-6 ones were TD-633: genuine
+#: before any letterhead check). CHANGED by help H2 owner 16 Nov: all confirmations suspect - TD-633 closed.
 MAIN_LIVE_ADVERSARIAL = (
     (f'POLITEKNIK MERCU\n{KPT}', 'confirmation_polytechnic'),
     (f'POLITEKNIK UNGKU OMAR\nLEMBAGA MERCU SKILLS\n{KPT}', 'confirmation_polytechnic'),
@@ -438,11 +444,13 @@ class TheAdversarialLetters(SimpleTestCase):
             with self.subTest(head=head.splitlines()[0]):
                 self.assertEqual(_read(text)['status'], 'suspect')
 
-    def test_main_live_cases_are_main_parity(self):
+    def test_main_live_cases_read_suspect(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (genuine on main; this closes TD-633)
         for head, seen in MAIN_LIVE_ADVERSARIAL:
             text = _form6(head) if seen == 'confirmation_form6' else _confirm(head)
-            with self.subTest(head=head):
-                self.assertEqual(_verdict(text), ('genuine', seen, 'confirmation'))
+            for crest in (False, True):
+                with self.subTest(head=head, crest=crest):
+                    self.assertEqual(_verdict(text, crest), ('suspect', seen, 'confirmation_check'))
 
     def test_form6_without_the_proof_is_no_confirmation(self):
         for head in (f'SMK MERCU JAYA\nMERCU EDUCATION GROUP\n{KPM}', f'SEKOLAH MENENGAH PERSENDIRIAN CHONG HWA\n{KPM}',

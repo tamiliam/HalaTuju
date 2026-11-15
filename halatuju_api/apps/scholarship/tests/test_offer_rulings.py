@@ -137,8 +137,9 @@ class TestConfirmationLetters(SimpleTestCase):
     def test_the_jppkk_department_alone_is_not_a_polytechnic(self):
         self.assertEqual(confirmation_kind(JPPKK_ONLY_CONFIRM), '')
 
-    def test_no_private_wing_reads_genuine_another_university_suspect_a_private_college_unchanged(self):
-        for text, want in ((POLY_CONFIRM, 'genuine'), (UMS_CONFIRM, 'genuine'), (FORM6_CONFIRM, 'genuine'),
+    def test_a_public_confirmation_reads_suspect_a_private_college_unchanged(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (polytechnic / UMS / Form 6 were genuine)
+        for text, want in ((POLY_CONFIRM, 'suspect'), (UMS_CONFIRM, 'suspect'), (FORM6_CONFIRM, 'suspect'),
                            (UM_CONFIRM, 'suspect'),      # CHANGED, help H2 option B: was the baseline (round 7)
                            (PRIVATE_CONFIRM, 'not_offer_letter')):
             with self.subTest(want=want, head=text.splitlines()[0]):

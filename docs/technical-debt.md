@@ -9098,7 +9098,11 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-633] A Form-6 confirmation reads genuine before any letterhead check - low
+### [TD-633] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
+
+**Status:** CLOSED 2026-11-16 by the owner's ruling (decisions.md ruling 4, help sprint H2): every confirmation of
+studies reads suspect at best, so these letters now read `suspect` (tag `confirmation_check`) and a person checks
+them; `MAIN_LIVE_ADVERSARIAL` in `test_offer_h2_confirmations.py` pins that. The text below is history.
 
 **Raised 2026-11-15 by the help H2 review (live on main, unchanged by H2 option B).** The Form-6 path of the
 confirmation lift (`offer_rulings._kind` over `offer_confirmations._NO_PRIVATE_WING`, `confirmation_form6`) returns
@@ -9128,15 +9132,22 @@ only runs one way: it wrongly rejects, never wrongly accepts, and a reviewer can
 English letters turn up: add the English confirmation wording to the scored marks, with a test that such a letter
 reads suspect, never genuine. *(A - S)*
 
-### [TD-636] Main's live polytechnic / UMS / Form-6 confirmation reads a "not studying now" letter genuine - medium
+### [TD-636] Main's live polytechnic / UMS / Form-6 confirmation reads a "not studying now" letter genuine - medium ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
+
+**Status:** CLOSED 2026-11-16 by the owner's ruling (decisions.md ruling 4, help sprint H2): the polytechnic / UMS /
+Form-6 confirmations keep main's recognition rule but read `suspect` (tag `confirmation_check`), never genuine, so a
+former or failed student's letter reaches a person instead of reading genuine. Nothing moves to `not_offer_letter`
+(the fix suggested below was not taken). Pinned by
+`test_offer_h2_review6.py::test_mains_live_polytechnic_path_reads_suspect_td_636_closed`. The text below is history.
 
 **Raised 2026-11-15 by the help H2 review 6 (live on main, unchanged by H2).** The genuine confirmation lift
 (`offer_rulings.confirmation_kind` over `offer_confirmations._NO_PRIVATE_WING`) checks the title, the issuer, its
 ministry mark and the letterhead, but not what the letter says about the person. A polytechnic "Pengesahan Pelajar"
 saying the person "telah tamat pengajian", was "diberhentikan", is a "bekas pelajar", or that the application was
 "tidak berjaya" (and a staff letter under that title) reads genuine, so a former or failed student's letter could
-stand in for an offer. H2 added this check for the NEWLY covered types only (`offer_rulings._not_studying`, word list
-`offer_confirmations._NOT_STUDYING`: they stay `not_offer_letter`); the live path is pinned as main parity in
+stand in for an offer. H2 added this check for the NEWLY covered types only (`offer_confirm_checks._not_studying`, the
+clear-phrase list `offer_confirmations._NOT_STUDYING` / `_OFFER_UNDONE` since review 7: they stay
+`not_offer_letter`); the live path is pinned as main parity in
 `test_offer_h2_review6.py` (`test_mains_live_polytechnic_path_is_unchanged_td_636`). Fix, if wanted: apply
 `_not_studying` in `_confirmation_lift` before the genuine read too (the letter then falls to its family baseline),
 with a replay of the recorded corpus first; the owner decides, since it changes a live genuine read. *(A - S)*
