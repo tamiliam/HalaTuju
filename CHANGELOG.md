@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: third-route SPM grades labelled SPM prerequisites on the review card (2026-11-16)
+
+Small-change lane. No migration. Services: web. A Matriculation, Asasi or Diploma student's SPM chips on the Academic card now read "SPM prerequisites" (`admin.scholarship.spmPrereq`, already in en, ms, ta), as on an STPM card; SPM students keep "SPM grades". Reviewer FAQ line updated. Owner request, 2026-11-16.
+
 ### fix: a declined request shows its reason to both sides, quoted or not (2026-11-16)
 
 Services: web. No migration, no api change.

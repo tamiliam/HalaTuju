@@ -294,7 +294,10 @@ export function ApplicantCards({
                 </dl>
                 <div className="mt-3">
                   <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
-                    {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
+                    {/* A third-route student's SPM chips are her SPM prerequisites, so they carry the
+                        STPM card's name for them (owner, 2026-11-16). */}
+                    {isStpm ? t('admin.scholarship.stpmGrades')
+                      : third ? t('admin.scholarship.spmPrereq') : t('admin.scholarship.spmGrades')}
                   </dt>
                   {/* The tick renders AFTER the subject chips (item 1). The SPM slip's tick belongs to
                       SPM chips only — never to an STPM student's STPM grades (#132), which carry the

@@ -4,7 +4,7 @@
  * Third results route S2b — the reviewer's Academic card for a Matriculation / Asasi / Diploma
  * holder: "Matriculation · CGPA 3.47" (the SERVER's overall CGPA — the same line the sponsor card
  * carries), the CGPA as printed and the co-curriculum score beside it (a Diploma: where it is
- * from, instead), the MUET band, the served 0-100 merit, and her SPM grades under an SPM label.
+ * from, instead), the MUET band, the served 0-100 merit, and her SPM grades under "SPM prerequisites".
  * Never "MATRIC", never an STPM grade list, never the SPM exam year on a merit SPM did not produce.
  */
 import { render, screen } from '@testing-library/react'
@@ -53,10 +53,17 @@ it('names the qualification with the overall CGPA, and shows the merit as served
   expect(screen.queryByText('admin.scholarship.stpmGrades')).toBeNull()
 })
 
-it('shows her SPM grades (the block) under the SPM label', () => {
+it('shows her SPM grades (the block) under "SPM prerequisites", as an STPM card names them (owner, 2026-11-16)', () => {
   renderWith(MATRIC)
-  expect(screen.getByText('admin.scholarship.spmGrades')).toBeTruthy()
+  expect(screen.getByText('admin.scholarship.spmPrereq')).toBeTruthy()
+  expect(screen.queryByText('admin.scholarship.spmGrades')).toBeNull()
   expect(screen.getByText(/B\+/)).toBeTruthy()
+})
+
+it('an SPM student keeps the plain "SPM grades" label', () => {
+  renderWith({ qualification: 'spm', grades: { bm: 'A' } })
+  expect(screen.getByText('admin.scholarship.spmGrades')).toBeTruthy()
+  expect(screen.queryByText('admin.scholarship.spmPrereq')).toBeNull()
 })
 
 it('her SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-30)', () => {

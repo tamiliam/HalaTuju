@@ -27,7 +27,7 @@ export const REVIEWER_FAQ: QA[] = [
         shows the qualification with her overall CGPA (for example <strong>Matriculation · CGPA 3.47</strong>),
         the CGPA as printed on her results, her co-curriculum score (Matriculation and Asasi: the overall CGPA
         is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall CGPA is its CGPA as it is), her MUET band
-        and the SPM grades she entered. Only a diploma from a <strong>public</strong> institution counts; a
+        and the SPM grades she entered, under <strong>SPM prerequisites</strong> (as on an STPM card). Only a diploma from a <strong>public</strong> institution counts; a
         private-college diploma does not qualify. Her results document is the separate
         <strong> STPM / Matriculation / Asasi / Diploma results</strong> upload (see the next question).</>,
     },
