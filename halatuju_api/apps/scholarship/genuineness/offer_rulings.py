@@ -32,9 +32,11 @@ JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03): on the LIFT'
 Every call that differs from the baseline carries `[S6 ruling: <tag>]` (`ruling_of`), so a reviewer's
 override or a later corpus answer shows which rule was wrong (`eval/offer_genuineness_check.py`). Pure.
 """
+import functools
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
+from .offer_confirmations import _APPROVAL, _KNOWN_PUBLIC_NAMES, _PUBLIC_PATTERN
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -265,7 +267,7 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
     if not _confirm_titled(lines, probability) or _private_marker(lines):
         return ''
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
-    head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _page(lines)
+    head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _approval_blanked(_page(lines))
     for seen, names, marks in _confirmers():
         if seen == 'confirmation_form6' and not (any(m in page for m in _FORM6_MARKS)
                                                  or ' KOLEJ TINGKATAN ENAM ' in head):
@@ -350,13 +352,87 @@ def _confirmation_lift(r, raw, model_version):
     if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
             and _own_identity_lines(lines, _CONFIRM_TITLES)):
         return None
-    if seen == 'confirmation_ua':                           # help H2 (owner 2026-11-15): never genuine
+    if seen == 'confirmation_ua' or (seen == 'confirmation_ums' and _UMS_SUSPECT):   # owner 2026-11-15
         return _ruled_status('suspect', r, seen, 'confirmation_ua', 'a confirmation of studies from a public '
-                             'university that has a private wing - a person checks (owner ruling 4, widened '
-                             '2026-11-15)', model_version)
+                             'university - a person checks (owner ruling 4, widened 2026-11-15)', model_version)
+    if confirmation_proof(raw, seen) != 'genuine':
+        return _ruled_status('suspect', r, seen, 'confirmation_unclear', 'a confirmation of studies from a '
+                             'public-looking institution without clear proof (the ministry on the letterhead and a '
+                             'known public name) - a person checks (help H2 review, 2026-11-15)', model_version)
     return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
                          'institution - an acceptable alternative (owner ruling 4, widened 2026-11-15)',
                          model_version)
+
+
+# ── Clear proof for a confirmation (help H2 review, 2026-11-15) ───────────────────────────
+#: THE UMS CHANGE POINT (owner 2026-11-15: UMS confirmations read SUSPECT - a person checks - like any other
+#: university's). False would restore the round-7 call (UMS has no private wing: genuine). Confirmations only:
+#: UMS offer letters and the UMS PPPL letterhead BLOCK (`_NO_PRIVATE_WING` in `_public_names`) are untouched.
+_UMS_SUSPECT = True
+#: The words a KNOWN public name may be followed by on its own line (the ministry, a department, the address).
+_NAME_END = frozenset({'KEMENTERIAN', 'MINISTRY', 'JABATAN', 'DEPARTMENT', 'KERAJAAN', 'GOVERNMENT', 'BAHAGIAN',
+                       'JALAN', 'JLN', 'LORONG', 'PERSIARAN', 'LOT', 'NO', 'PETI', 'P', 'TEL', 'TELEFON', 'FAKS',
+                       'FAX', 'WWW', 'EMEL', 'E', 'EMAIL'})
+
+
+def _approval_blanked(page: str) -> str:
+    """The folded page with the 12 words after each approval / registration phrase blanked (`_APPROVAL`): "Approved
+    by KPT" names a private college's regulator, never its issuer, so it is no public mark."""
+    for a in _APPROVAL:
+        while a in page:
+            at = page.find(a)
+            page = f"{page[:at]} # {' '.join(page[at + len(a):].split()[12:])} "
+    return page
+
+
+@functools.lru_cache(maxsize=1)
+def _known_names():
+    """`_KNOWN_PUBLIC_NAMES` folded like a page, longest first ("... CAWANGAN SEPANG" before "KUALA LANGAT"); an
+    IPG campus by its own short form too ("IPG KAMPUS IPOH")."""
+    from .results_doc import _norm_fold_upper_alnum
+    out = {}
+    for seen, names in _KNOWN_PUBLIC_NAMES.items():
+        short = [n.replace('INSTITUT PENDIDIKAN GURU ', 'IPG ') for n in names] if seen == 'confirmation_ipg' else []
+        folded = {f" {' '.join(_norm_fold_upper_alnum(n).split())} " for n in list(names) + short}
+        out[seen] = tuple(sorted(folded, key=len, reverse=True))
+    return out
+
+
+def _known_name(head_lines, seen) -> bool:
+    """A KNOWN public name of the type is on the letterhead (or the title segment), each ending its name (end of
+    line, a digit, the ministry or the address next), and NO other name in the type's pattern is there
+    ("KOLEJ MATRIKULASI MERCU", "MERCU COMMUNITY COLLEGE", "KOLEJ MATRIKULASI PERAK MERCU")."""
+    found = False
+    for ln in head_lines:
+        for n in _known_names()[seen]:
+            while n in ln:
+                at = ln.find(n)
+                after = ln[at + len(n):]
+                nxt = after.split()[:1]
+                if nxt and not (nxt[0][0].isdigit() or nxt[0] in _NAME_END):
+                    return False
+                ln, found = f'{ln[:at]} # {after}', True
+        if any(p in ln for p in _PUBLIC_PATTERN[seen]):
+            return False
+    return found
+
+
+def confirmation_proof(lines, seen) -> str:
+    """'genuine' only on CLEAR proof (decisions.md S6 item 7: when in doubt, fail safe), else 'suspect': the
+    type's ministry mark on the LETTERHEAD (not the body; never after approval wording), and, for a type with a
+    known-name list, a known public name there. A type with no list (KV, the TVET institutes) is never clear.
+    The polytechnic rule keeps its name pattern (no list wired yet) but needs the mark on the letterhead too."""
+    if seen == 'confirmation_form6' or (seen == 'confirmation_ums' and not _UMS_SUSPECT):
+        return 'genuine'                # round-7 proof, unchanged
+    marks = {k: m for k, _n, m in _confirmers()}.get(seen, ())
+    if not any(m in _approval_blanked(_page(_letterhead_region(lines))) for m in marks):
+        return 'suspect'
+    if seen == 'confirmation_polytechnic':
+        return 'genuine'
+    if seen not in _KNOWN_PUBLIC_NAMES:
+        return 'suspect'
+    scan = _without_poly_department(lines)
+    return 'genuine' if _known_name(_letterhead_lines(scan) + [_title_segment(scan)], seen) else 'suspect'
 
 
 def _company_lift(ocr_text, r, lines, model_version):

@@ -306,9 +306,11 @@ def _confirmers():
     """Help H2 (owner ruling 2026-11-15): every public issuer a confirmation of studies is read against, in this
     order: the no-private-wing three, the other public types (`offer_confirmations._PUBLIC_CONFIRMERS`), the
     closed-list TVET institutes, then any OTHER public university (`confirmation_ua`: it has a private wing)."""
-    from .offer_signatures import _UA_NAMES
+    from .offer_signatures import _IIUM_EN, _UA_NAMES
     wingless = {n for _k, ns, _m in _NO_PRIVATE_WING for n in ns}
-    ua = tuple(f' {n} ' for n in _UA_NAMES if f' {n} ' not in wingless)
+    # IIUM's English name (help H2 review): a confirmation only, never `_UA_NAMES` or the BLOCK's names. IIUM has
+    # a private wing (IIUM Academy, CENPACE - decisions.md), so its confirmation reads suspect like any other.
+    ua = tuple(f' {n} ' for n in _UA_NAMES if f' {n} ' not in wingless) + (f' {_IIUM_EN} ',)
     return _NO_PRIVATE_WING + _PUBLIC_CONFIRMERS + (('confirmation_tvet', _INSTITUTES, _INSTITUTES),
                                                     ('confirmation_ua', ua, ua))
 

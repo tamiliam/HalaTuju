@@ -196,6 +196,15 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
+### fix: help sprint H2 review - a confirmation reads genuine only on clear proof; UMS confirmations read suspect; the English matric offer tightened (2026-11-15)
+
+Branch help-h2, not pushed. Adversarial review of H2, plus the owner's UMS ruling (`docs/decisions.md`, ruling 4). VERDICT_ENGINE_VERSION 2026-11-15.4; MODEL_VERSION stays 1.28.0. No migration, no web change.
+- English matric offer (`offer_signatures.english_matric_lists`): the Matriculation Division / KPM must be named first, the English title must be on the offer line, the college must be on the real list of 15, and the bare-word twins ("STREAM", "COLLEGE") were dropped. A forged private or foundation letter with the same words, and an English results slip, stay `not_offer_letter` and write no pick.
+- Confirmations (`offer_rulings.confirmation_proof`): genuine needs the ministry on the letterhead and, where a list exists, a listed name (`offer_confirmations._KNOWN_PUBLIC_NAMES`: matriculation colleges, IPG campuses, community colleges). Otherwise `suspect` (tag `confirmation_unclear`): a person checks. "Approved by" / KPT-approval wording is no public mark; "Bahagian Matrikulasi" alone is no mark. No list wired for polytechnics, KV or the TVET institutes.
+- The English confirmation titles and IIUM's English name are read (IIUM reads suspect: it has a private wing). IIUM Academy / CENPACE stay a fail.
+- Owner 2026-11-15: UMS confirmations read suspect, a person checks (was genuine; change point `offer_rulings._UMS_SUSPECT`). The UMS PPPL block and UMS offers are unchanged.
+- Tests: `test_offer_h2_confirmations.py` widened (forged letters, results slip, no pick, the made-up public names, English titles, IIUM). Changed to the owner's UMS ruling: `test_offer_rulings.py`, `test_offer_s6_review5.py`, `test_offer_s6_narrowing.py` (UMS confirmations now suspect / `confirmation_ua`; the English title probe now read).
+
 ### feat: help sprint H2 - a confirmation letter from every public institution clears offer_not_official; English matric offers recognised (2026-11-15)
 
 Branch help-h2, not pushed. Owner ruling 2026-11-15 (`docs/decisions.md`, ruling 4 widened). MODEL_VERSION 1.27.0 to 1.28.0 (help H1 also uses 1.28.0: one bump when both merge). No migration, no web change.
