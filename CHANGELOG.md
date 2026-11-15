@@ -28,6 +28,10 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: 15 Nov 21:00 MYT window - TD-613 published (2026-11-15)
+- live 36c6982dc..4619e1af1 (pushed 20:59 MYT). api halatuju-api-01303-hc4, web halatuju-web-01124-5x6, both 100% traffic. Both builds green (web gates; api tests, push, deploy, release job sync; release-decisions job image 4619e1af1); api health 200; site 200.
+- No migration, no data step. TD-613: 1st deploy. TD-623 (on main) not included: own window. Owner phone check sent with the release report. Window closed.
+
 ### release: 15 Nov 16:00 MYT window - #67 scope 3, M3c, F2b stage 1 and the bundle fix published (2026-11-15)
 - live d07880294..36c6982dc (pushed 15:58 MYT). api halatuju-api-01302-2z8, web halatuju-web-01123-z9c, both 100% traffic. Both builds green (web gates + bundle-budget gate; api tests, push, deploy, release job sync; release-decisions job image 36c6982dc); api health 200; site 200.
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
