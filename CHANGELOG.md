@@ -192,6 +192,23 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### feat: H3a - a gift can limit the course-start years it accepts (2026-11-15)
+
+Branch help-h3, not pushed. Migration 0212 (additive, MIGRATE-FIRST, hand-written DDL in its docstring; scholarship ledger 211 -> 212).
+- **The setting.** New `ScholarshipCohort.allowed_start_years`, a list of years. Empty means not applied. It is served and accepted by the intake-year admin API.
+  - Bad values are refused whole (`bad_requirement`, field `allowed_start_years`).
+  - Every change is audited on the existing requirements line.
+- **The rule.** New `apps/scholarship/start_year.py`.
+  - A start year outside the list (`pathway_engine.course_start_year`) turns the Pathway fact red with `pathway_start_year_outside`. The code is added to `award.CONFIDENT_DISQUALIFIERS`, and the QC red-fact floor applies.
+  - A read letter with no year adds the reviewer line `pathway_start_year_unknown`. It moves no band.
+  - Neither code is a student ticket. Nothing is declined automatically and the amount does not change.
+- **Version.** `VERDICT_ENGINE_VERSION` is now 2026-11-15.3. `MODEL_VERSION` is unchanged.
+- **Web.** The Gift editor Rules tab and the new-intake form have a "Course started in" box (`RequirementFields`, `intakeYears.yearsList` / `storedStartYears`). A typo is sent as typed, so the server refuses it.
+- **Copy.** Reviewer lines and the Rules tab label and hint are in en, ms and ta; ms and ta are first drafts for Sol. The reviewer FAQ has a new entry and the reviewer Guide line was amended.
+- **Tests.** New `tests/test_start_year_rule.py` (17 tests). New web cases in `intakeYears.test.ts` and `ProgrammeRulesTab.test.tsx`. Existing fixtures gained the new field: `intakeYears.test.ts` draft helper and round-trip row, `ProgrammeConfigTab.academic.test.tsx` draft.
+- **Dry run (production, read-only, Degree intake).** 1 caught (782, started 2024). 48 fine. 0 unreadable. 90 live with no letter yet; 23 rejected with no letter.
+- **To set after release.** Type 2025, 2026 into the Degree gift's Rules tab. Leave Sabah empty.
+
 ### release: 15 Nov 11:00 MYT window - M3b, SUP1 and the E8 width fix published (2026-11-15)
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.

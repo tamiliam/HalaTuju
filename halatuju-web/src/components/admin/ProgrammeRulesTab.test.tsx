@@ -216,6 +216,43 @@ describe('the C-or-better requirement', () => {
   })
 })
 
+// H3 (#597). The course-start years: the text is the switch, and the list is sent whole on every
+// save, so emptying the box reaches the server as [] (the rule off).
+describe('the "Course started in" requirement', () => {
+  const withStart = (y: number[] | undefined) => withYears([year({
+    requirements: { ...year().requirements, allowed_start_years: y },
+  })])
+  const box = () => document.getElementById('rules-sy') as HTMLInputElement
+
+  it('shows the stored years and the hint', async () => {
+    withStart([2025, 2026])
+    await loaded()
+    expect(box().value).toBe('2025, 2026')
+    expect(screen.getByText('admin.years.req.startYearsHint')).toBeTruthy()
+  })
+
+  it('sends the typed years, and leaves every other rule as it was', async () => {
+    withStart(undefined)
+    await loaded()
+    expect(box().value).toBe('')
+    fireEvent.change(box(), { target: { value: '2025, 2026' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
+    expect(body.allowed_start_years).toEqual([2025, 2026])
+    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  })
+
+  it('emptying the box sends an EMPTY list — the rule off', async () => {
+    withStart([2025])
+    await loaded()
+    fireEvent.change(box(), { target: { value: '' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_start_years).toEqual([])
+  })
+})
+
 // Request #31. ⚠ NOTHING TICKED IS THE RULE OFF, and the list is sent whole on every save, so
 // unticking the last state must reach the server as [] — clearing the rule — never as "no change".
 describe('the "Born in" requirement', () => {

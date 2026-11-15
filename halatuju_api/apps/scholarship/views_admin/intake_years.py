@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from ..birth_state import normalise_states
 from ..models import ScholarshipApplication
+from ..start_year import FIELD as START_YEARS_FIELD, normalise_years
 from .gift_programmes import CODE_RE, _ProgrammeScopedBase
 from .gifts import BIRTH_STATES_FIELD, REQUIREMENT_FIELDS, _cohort_row, _window_from
 
@@ -45,6 +46,13 @@ def _requirements_from(data):
             out[BIRTH_STATES_FIELD] = states
         else:
             bad = BIRTH_STATES_FIELD
+    # H3: the course-start years, the same list rule (`start_year.normalise_years` refuses whole).
+    if not bad and START_YEARS_FIELD in data:
+        years, ok = normalise_years(data.get(START_YEARS_FIELD))
+        if ok:
+            out[START_YEARS_FIELD] = years
+        else:
+            bad = START_YEARS_FIELD
     return out, bad
 
 
