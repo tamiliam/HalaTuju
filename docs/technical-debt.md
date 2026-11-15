@@ -9097,3 +9097,14 @@ unticks a v2 payments key on an organisation admin's Permissions tab saves, and 
 person keeps the power. No one gains a power; the switch just has no effect. Fix:
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
+
+### [TD-630] Fully English confirmation-of-studies letters stay not_offer_letter - low
+
+**Raised 2026-11-15 by the H2 round-2 Opus re-review.** A confirmation-of-studies letter written wholly in English
+(matriculation, IIUM, IPG, KV, IKBN) scores below `CONFIRM_MIN` (`offer_confirmations.py`), because the confirmation
+wording it scores is mostly Malay. Such a letter stays `not_offer_letter`. The error only ever runs one way: it wrongly
+rejects, never wrongly accepts, and a reviewer can still open the document and judge it. Note only, no code for now.
+Related: in the English matriculation offer body the college name is not checked against the matriculation list; the
+letterhead check (`offer_rulings._known_name`, the ministry mark plus a listed name) carries that rule. Fix, if real
+English letters turn up in the corpus: add the English confirmation wording to the scored marks, with tests that a
+fully English letter from a listed institution reads genuine and one from an unlisted name reads suspect. *(A - S)*

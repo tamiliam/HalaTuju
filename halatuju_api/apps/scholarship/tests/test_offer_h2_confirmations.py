@@ -27,7 +27,7 @@ GENUINE = (
     ('IPG', f'INSTITUT PENDIDIKAN GURU KAMPUS IPOH\n{KPM}', 'confirmation_ipg'),
     ('IPG (short form)', f'IPG KAMPUS IPOH\n{KPM}', 'confirmation_ipg'),
     ('community college', f'KOLEJ KOMUNITI SELAYANG\n{KPT}', 'confirmation_kolej_komuniti'),
-    ('polytechnic', f'POLITEKNIK CONTOH\n{KPT}', 'confirmation_polytechnic'),
+    ('polytechnic', f'POLITEKNIK UNGKU OMAR\n{KPT}', 'confirmation_polytechnic'),   # round 2: listed
     ('Form 6', f'KOLEJ TINGKATAN ENAM CONTOH\n{KPM}', 'confirmation_form6'),
 )
 #: Recognised as a public confirmation but WITHOUT clear proof: suspect (a person checks), never a fail. CHANGED
@@ -41,6 +41,8 @@ SUSPECT = (
     ('IPG, an unlisted campus', f'INSTITUT PENDIDIKAN GURU KAMPUS CONTOH\n{KPM}', 'confirmation_ipg',
      'confirmation_unclear'),
     ('community college, unlisted', f'KOLEJ KOMUNITI CONTOH\n{KPT}', 'confirmation_kolej_komuniti',
+     'confirmation_unclear'),
+    ('polytechnic, unlisted (round 2)', f'POLITEKNIK MERCU\n{KPT}', 'confirmation_polytechnic',
      'confirmation_unclear'),
     ('KV (no list)', f'KOLEJ VOKASIONAL CONTOH\n{KPM}', 'confirmation_kv', 'confirmation_unclear'),
     ('IKBN (no list)', 'INSTITUT KEMAHIRAN BELIA NEGARA CONTOH\nKEMENTERIAN BELIA DAN SUKAN', 'confirmation_tvet',
@@ -359,3 +361,64 @@ class EnglishConfirmations(SimpleTestCase):
             with self.subTest(head=head.splitlines()[0]):
                 self.assertEqual(signature_genuineness(_confirm_en_title(head), doc_type='offer_letter')['status'],
                                  'not_offer_letter')
+
+
+# ── H2 round 2 (Opus re-review, 2026-11-15): the words before a name, unit lines, the polytechnic list ──
+def _verdict(head):
+    out = _read(head)
+    return out['status'], out['type'], ruling_of(out)
+
+
+class Round2NamesUnitsAndLists(SimpleTestCase):
+    def test_a_word_before_a_known_name_reads_suspect(self):
+        # on main both were not_offer_letter; H2 round 1 read them genuine
+        for head, seen in ((f'MERCU KOLEJ KOMUNITI KLANG\n{KPT}', 'confirmation_kolej_komuniti'),
+                           (f'MERCU BAHAGIAN MATRIKULASI\n{KPM}', 'confirmation_matriculation')):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertEqual(_verdict(head), ('suspect', seen, 'confirmation_unclear'))
+
+    def test_the_ministry_before_the_name_on_its_line_still_reads_genuine(self):
+        self.assertEqual(_verdict(f'{KPM} KOLEJ MATRIKULASI LABUAN'),
+                         ('genuine', 'confirmation_matriculation', 'confirmation'))
+
+    def test_an_unknown_unit_under_a_known_name_reads_suspect(self):
+        for head in (f'BAHAGIAN MATRIKULASI\nPUSAT ASASI MERCU\n{KPM}',
+                     f'KOLEJ KOMUNITI KLANG\nUNIT MERCU\n{KPT}'):
+            with self.subTest(head=head.split(chr(10))[1]):
+                self.assertEqual(_verdict(head)[::2], ('suspect', 'confirmation_unclear'))
+        # an organisation noun ("CENTRE") on the letterhead is no confirmation at all: the baseline stands
+        self.assertEqual(_read(f'KOLEJ MATRIKULASI PERAK\nMERCU FOUNDATION CENTRE\n{KPM}')['status'],
+                         'not_offer_letter')
+
+    def test_the_institutions_own_unit_line_still_reads_genuine(self):
+        for head in (f'KOLEJ MATRIKULASI PERAK\nUNIT HAL EHWAL PELAJAR\n{KPM}',
+                     f'KOLEJ KOMUNITI KLANG\nBAHAGIAN PENGAMBILAN DAN PEPERIKSAAN\n{KPT}'):
+            with self.subTest(head=head.split(chr(10))[1]):
+                self.assertEqual(_verdict(head)[::2], ('genuine', 'confirmation'))
+
+    def test_only_a_listed_polytechnic_reads_genuine(self):
+        self.assertEqual(_verdict(f'POLITEKNIK SULTAN AZLAN SHAH\n{KPT}'),
+                         ('genuine', 'confirmation_polytechnic', 'confirmation'))
+        self.assertEqual(_verdict(f'POLITEKNIK UNGKU OMAR (PUO)\n{KPT}')[0], 'genuine')
+        for head in (f'POLITEKNIK MERCU\n{KPT}', 'MERCU POLYTECHNIC\nMINISTRY OF HIGHER EDUCATION',
+                     f'POLITEKNIK UNGKU OMAR MERCU\n{KPT}'):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertEqual(_verdict(head), ('suspect', 'confirmation_polytechnic', 'confirmation_unclear'))
+
+    def test_more_approval_wording_is_no_public_mark(self):
+        for phrase in ('Didaftar dengan', 'Dilesenkan oleh', 'Di bawah seliaan', 'Reg. No. 123 /', 'No. Pendaftaran :',
+                       'Under the purview of the'):
+            head = f'KOLEJ KOMUNITI MERCU\n{phrase} Kementerian Pendidikan Tinggi'
+            with self.subTest(phrase=phrase):
+                self.assertEqual(confirmation_kind(_confirm(head)), '')
+                self.assertEqual(_read(head)['status'], 'not_offer_letter')
+
+    def test_state_short_forms_and_the_km_alias_are_listed_spellings(self):
+        for head in (f'KM P.PINANG\n{KPM}', f'KM P. PINANG\n{KPM}', f'KOLEJ MATRIKULASI N.SEMBILAN\n{KPM}',
+                     f'KOLEJ MATRIKULASI PULAU PINANG (KMPP)\n{KPM}', f'KM PERAK\n{KPM}', f'KMK KEDAH\n{KPM}',
+                     f'INSTITUT PENDIDIKAN GURU KAMPUS P.PINANG\n{KPM}'):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertEqual(_verdict(head)[::2], ('genuine', 'confirmation'))
+        for head in (f'KM MERCU\nBAHAGIAN MATRIKULASI\n{KPM}', f'KMK MERCU\nBAHAGIAN MATRIKULASI\n{KPM}'):
+            with self.subTest(head=head.split(chr(10))[0]):
+                self.assertNotEqual(_read(head)['status'], 'genuine')

@@ -36,7 +36,8 @@ import functools
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_confirmations import _APPROVAL, _KNOWN_PUBLIC_NAMES, _PUBLIC_PATTERN
+from .offer_confirmations import (_APPROVAL, _KNOWN_PUBLIC_NAMES, _KPM, _KPT, _OWN_ACRONYMS, _PUBLIC_PATTERN,
+                                  _UNIT_FUNCTIONS, _UNIT_WORDS)
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -400,35 +401,60 @@ def _known_names():
 
 def _known_name(head_lines, seen) -> bool:
     """A KNOWN public name of the type is on the letterhead (or the title segment), each ending its name (end of
-    line, a digit, the ministry or the address next), and NO other name in the type's pattern is there
-    ("KOLEJ MATRIKULASI MERCU", "MERCU COMMUNITY COLLEGE", "KOLEJ MATRIKULASI PERAK MERCU")."""
-    found = False
+    line, a digit, the ministry, the address or its own acronym next) with nothing but the ministry before it on
+    its line (H2 round 2: "MERCU KOLEJ KOMUNITI KLANG"), NO other name in the type's pattern is there
+    ("KOLEJ MATRIKULASI MERCU", "MERCU COMMUNITY COLLEGE", "KOLEJ MATRIKULASI PERAK MERCU"), and no unit names
+    an unknown body ("PUSAT ASASI MERCU", `_stray_unit`)."""
+    found, acronyms = False, _OWN_ACRONYMS.get(seen, frozenset())
     for ln in head_lines:
+        for m in _KPM + _KPT + _POLY_DEPARTMENTS:
+            ln = ln.replace(m, ' # ')
         for n in _known_names()[seen]:
             while n in ln:
                 at = ln.find(n)
-                after = ln[at + len(n):]
-                nxt = after.split()[:1]
-                if nxt and not (nxt[0][0].isdigit() or nxt[0] in _NAME_END):
+                if any(w != '#' and not w.isdigit() for w in ln[:at].split()):
+                    return False        # a word before the name on its line (the ministry is blanked)
+                after = ln[at + len(n):].split()
+                if after and after[0] in acronyms:
+                    after = after[1:]
+                if after and not (after[0][0].isdigit() or after[0] in _NAME_END):
                     return False
-                ln, found = f'{ln[:at]} # {after}', True
-        if any(p in ln for p in _PUBLIC_PATTERN[seen]):
+                ln, found = f"{ln[:at]} # {' '.join(after)} ", True
+        if any(p in ln for p in _PUBLIC_PATTERN[seen]) or _stray_unit(ln) or (
+                seen == 'confirmation_matriculation' and _KM_NAME.search(ln)):
             return False
     return found
+
+
+#: "KM <name>" / "KMK <name>" left after the known names: an unlisted college ("KM 12" is a kilometre).
+_KM_NAME = re.compile(r' KMK? (?![\d#])')
+
+
+def _stray_unit(ln) -> bool:
+    """A unit on the line ("BAHAGIAN ...", "... CENTRE") holding a word that is neither a unit word nor a function
+    word (`_UNIT_FUNCTIONS`): an unknown body's name. Read up to the next blank, digit or address word."""
+    for seg in ln.split('#'):
+        words = []
+        for w in seg.split():
+            if w[0].isdigit() or w in _NAME_END - _UNIT_WORDS:
+                break
+            words.append(w)
+        if any(w in _UNIT_WORDS for w in words) and any(
+                w not in _UNIT_WORDS and w not in _UNIT_FUNCTIONS for w in words):
+            return True
+    return False
 
 
 def confirmation_proof(lines, seen) -> str:
     """'genuine' only on CLEAR proof (decisions.md S6 item 7: when in doubt, fail safe), else 'suspect': the
     type's ministry mark on the LETTERHEAD (not the body; never after approval wording), and, for a type with a
     known-name list, a known public name there. A type with no list (KV, the TVET institutes) is never clear.
-    The polytechnic rule keeps its name pattern (no list wired yet) but needs the mark on the letterhead too."""
+    H2 round 2: the polytechnics have their list too (the 36 of the `institutions` table)."""
     if seen == 'confirmation_form6' or (seen == 'confirmation_ums' and not _UMS_SUSPECT):
         return 'genuine'                # round-7 proof, unchanged
     marks = {k: m for k, _n, m in _confirmers()}.get(seen, ())
     if not any(m in _approval_blanked(_page(_letterhead_region(lines))) for m in marks):
         return 'suspect'
-    if seen == 'confirmation_polytechnic':
-        return 'genuine'
     if seen not in _KNOWN_PUBLIC_NAMES:
         return 'suspect'
     scan = _without_poly_department(lines)
