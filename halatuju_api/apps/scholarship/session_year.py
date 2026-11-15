@@ -11,17 +11,21 @@ offer letters have a reporting date. Otherwise the title says the year like 2026
   1. the letter's REPORTING DATE (its stored field, already cleaned by `vision.sanitize`) -> its year;
   2. else ONE year on the intake line ("2026", "Ambilan Julai 2026") -> that year;
   3. else a SESSION (2024/2025, 2024/25, 2024-2025) -> its FIRST year; but its SECOND year with a
-     second-intake word ("Sesi 2", "Sesi II", "Semester 2", "Semester II", "Ambilan 2") or an
-     intake month from January to April written without its year (the session's second half);
+     second-intake word ("Sesi 2", "Sesi II", "Semester 2", "Semester II", "Ambilan 2"; a Sesi II
+     beside a Semester 1 / Year 1 too) or a January-to-April month next to an intake / semester
+     word ("Ambilan Februari", "Feb intake": the session's second half);
   4. else unknown.
 
 UNKNOWN always, whatever the date: a later term (Year 2+, Semester 3+, final year, Upper Six, Y2S1,
 Part 3+, also in the programme / stream words), a readmission or credit-transfer word, and a
-confirmation letter (it names the CURRENT session) unless its line writes the intake (a month with its
-year, or Semester 1 / Year 1 with the session; a confirmation reads its line only, never its date).
-Several different years on the line with no reporting date, two different sessions, or a first and a
-second intake together are unknown too, and so is a year the scan damaged ("2O25"). An exam year
-("SPM 2024") is not a start year.
+confirmation letter (it names the CURRENT session) unless its line writes the intake (Year 1 / Tahun
+1 / Lower Six, or an intake / admission word with a month and its year; Semester 1 is only the current
+semester; a confirmation reads its line only, never its date). Several different years on the line
+with no reporting date, two different sessions, or a first and a second intake together are unknown
+too, and so is a year the scan damaged ("2O25"). Exam years are NEVER a start year (owner, 16 Nov): a
+line with an exam word in any form (SPM, STPM, Sijil Pelajaran Malaysia, MUET, UEC, O / A-Level;
+"SPM2024", "STPM/2024") gives no single year - only the date or the session; else unknown. A year with
+a letter glued before it is a code ("kod UH2024"), not a year.
 
 Pure text work: no model, no database.
 """
@@ -45,23 +49,43 @@ _MONTH_NUM = {
 _MONTH = '(?:' + '|'.join(sorted(_MONTH_NUM, key=len, reverse=True)) + ')'
 # Letter look-arounds, not \b, so a month glued to a number still reads ("2024/25Feb").
 _MONTH_RE = re.compile(rf'(?<![a-z])({_MONTH})(?![a-z])', re.I)
-_MONTH_YEAR_RE = re.compile(rf'(?<![a-z]){_MONTH}(?![a-z])\.?,?\s*20\d{{2}}(?!\d)', re.I)   # "Ambilan Julai 2025"
 
 # A 20xx year that is not part of a longer number. Digit look-arounds, not \b, so a year with a
-# letter glued to it ("2024/2025Semester") still reads.
+# letter glued AFTER it ("2024/2025Semester") still reads. (The reporting date's year.)
 _YEAR_RE = re.compile(r'(?<!\d)(20\d{2})(?!\d)')
+# On the intake line a year with a letter glued BEFORE it is a code, not a year ("kod UH2024").
+_LINE_YEAR_RE = re.compile(r'(?<![\dA-Za-z])(20\d{2})(?!\d)')
 # A session: "2024/2025", "2024 / 25", "2024-2025", "2024-25" (a dash two-digit tail only with no
 # spaces and no date after it: "2025 - 26/02/2026" is a date), and "20242025" glued. Two CONSECUTIVE
 # years (checked in code), so a course span "2026/2031" or "6 / 2025 - 12 / 2026" is not one.
 _SESSION_RE = re.compile(
     r'(?<!\d)(20\d{2})(?:\s*/\s*(20\d{2}|\d{2})|\s*[-–]\s*(20\d{2})|[-–](\d{2})(?!\s*[/.\-]\s*\d)|(20\d{2}))(?!\d)')
 
-# An exam year is not a start year: "SPM 2024, Ambilan 2025", "Kemasukan 2025 (2024 lulus SPM)".
-_EXAM = r'(?:SPM|STPM|SVM|STAM|UEC|MUET|IGCSE|O[\s\-]?Levels?|A[\s\-]?Levels?)'
-_EXAM_YEAR_RE = re.compile(
-    rf'\b{_EXAM}\b\s*(?:tahun|year)?\s*[:\-]?\s*(20\d{{2}})(?!\d)'
-    rf'|(?<!\d)(20\d{{2}})(?=\s*\(?\s*(?:lulus|keputusan|results?\s+of)\s+{_EXAM}\b'
-    r'(?!\s*(?:tahun|year)?\s*[:\-]?\s*20\d{2}))', re.I)   # "2024 lulus SPM", not "2024 lulus SPM 2023"
+# An exam word in any form (owner 16 Nov 2026: exam years are NEVER a start year). A line holding
+# one gives no single year at all - only the reporting date or the session read it. Letter
+# look-arounds, not \b, so "SPM2024", "SPM (2024)" and "STPM/2024" count.
+_EXAM_RE = re.compile(
+    r'(?<![a-z])(?:SPM|STPM|SVM|STAM|UEC|MUET|IGCSE|[OA][\s\-]?Levels?'
+    r'|sijil\s+pelajaran\s+malaysia|sijil\s+tinggi\s+persekolahan\s+malaysia)(?![a-z])', re.I)
+# An intake / admission word with a month and its year: what a confirmation letter must write to
+# name her intake ("Ambilan September 2025", "Tarikh Mendaftar: 3 Mac 2025").
+_ADMIT = r'(?:ambilan|pengambilan|kemasukan|intake|admission|tarikh\s+(?:mendaftar|pendaftaran))'
+_ADMIT_MONTH_YEAR_RE = re.compile(
+    rf'(?<![a-z]){_ADMIT}(?![a-z])[^\d\n]{{0,12}}?(?:\d{{1,2}}\s*)?(?<![a-z]){_MONTH}(?![a-z])\.?,?\s*20\d{{2}}(?!\d)',
+    re.I)
+# Year 1 / Tahun 1 / Lower Six on a confirmation letter (Semester 1 is only the CURRENT semester).
+_YEAR_ONE_RE = re.compile(
+    r'(?<![a-z])(?:tahun|thn|year|yr)(?:\s+(?:pengajian|of\s+study))?\.?\s*[:.\-(]?\s*(?:ke\s*-?\s*)?'
+    r'(?:1|satu|pertama|one|i)(?![a-z\d])|\b(?:first|1st)[\s\-]+(?:year|yr)\b|\bY\s*1\s*S\s*\d\b'
+    r'|\b(?:tingkatan|form)\s*(?:6|enam|six)\s*(?:bawah|lower)\b|\blower\s*(?:(?:form|tingkatan)\s*)?(?:6|six)\b'
+    r'|\bL\s*6\b', re.I)
+# A month counts as the INTAKE month only next to an intake / semester word ("Ambilan Februari",
+# "Intake: January", "Feb intake"); "Sesi 2026/2027, tutup 30 April" names no intake month.
+_INTAKE_KW = r'(?:ambilan|pengambilan|intake|kemasukan|admission|semester|sem|sesi|session)'
+_MONTH_RUN = rf'{_MONTH}(?:\s*(?:/|,|&|-|\bdan\b|\band\b|\bor\b|\batau\b)\s*{_MONTH})*'
+_INTAKE_MONTH_RE = re.compile(
+    rf'(?<![a-z]){_INTAKE_KW}(?![a-z])\s*[:.\-]?\s*(?:bulan\s+)?(?<![a-z])({_MONTH_RUN})(?![a-z])'
+    rf'|(?<![a-z])({_MONTH_RUN})\.?\s*-?\s*{_INTAKE_KW}(?![a-z])', re.I)
 # A year the scan damaged ("2O25", "202S"): the line cannot be read safely.
 _DAMAGED_YEAR_RE = re.compile(r'(?<![\dA-Za-z])2[0Oo][0-9OoSsIl]{2}(?![\dA-Za-z])')
 
@@ -152,7 +176,9 @@ def _add(out, key, n):
         if n >= 3:
             out.add('later')
     elif key in _INTAKE_WORDS and n <= 2:
-        out.add('first_intake' if n == 1 else 'second_intake')
+        # A Sesi II / Ambilan 2 names the intake itself: it outranks a Semester 1 / Year 1 beside it
+        # ("Semester 1 Sesi II 2025/2026" is the second intake's first semester).
+        out.update(('first_intake',) if n == 1 else ('second_intake', 'second_session'))
 
 
 def _date_year(reporting_date):
@@ -170,8 +196,7 @@ def _date_year(reporting_date):
 
 def _sessions_and_years(text):
     """``(sessions, years)``: the distinct sessions ``(S, S+1)`` and the distinct other years on the
-    line, exam years set aside."""
-    exam = {m.start(1) if m.group(1) else m.start(2) for m in _EXAM_YEAR_RE.finditer(text)}
+    line; no other years at all on a line with an exam word (`_EXAM_RE`)."""
     sessions, taken = set(), set()
     for m in _SESSION_RE.finditer(text):
         a = int(m.group(1))
@@ -180,8 +205,9 @@ def _sessions_and_years(text):
         if b == a + 1:
             sessions.add((a, b))
             taken.update(range(m.start(), m.end()))
-    years = {int(m.group(1)) for m in _YEAR_RE.finditer(text)
-             if m.start(1) not in taken and m.start(1) not in exam}
+    if _EXAM_RE.search(text):
+        return sessions, set()
+    years = {int(m.group(1)) for m in _LINE_YEAR_RE.finditer(text) if m.start(1) not in taken}
     return sessions, years
 
 
@@ -200,8 +226,9 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
         return GiftReading(None, 'damaged_year')
     sessions, years = _sessions_and_years(text)
     if confirmation:
-        # It writes the intake: a month with its year, or Semester 1 / Year 1 with the session.
-        if not (_MONTH_YEAR_RE.search(text) or ('first' in terms and sessions)):
+        # It writes the intake: Year 1 / Tahun 1 / Lower Six, or an intake / admission word with a
+        # month and its year. Semester 1 or a bare month-year is only the CURRENT semester.
+        if not (_YEAR_ONE_RE.search(text) or _ADMIT_MONTH_YEAR_RE.search(text)):
             return GiftReading(None, 'confirmation')
     else:
         rd_year = _date_year(reporting_date)
@@ -214,14 +241,18 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
     if len(sessions) > 1:
         return GiftReading(None, 'several_sessions')
     if not sessions:
-        return GiftReading(None, 'no_year')
+        return GiftReading(None, 'exam_line' if _EXAM_RE.search(text) else 'no_year')
     (s, s1), = sessions
-    months = {_MONTH_NUM[m.group(1).lower()] for m in _MONTH_RE.finditer(text)}
+    # Only a month next to an intake / semester word is the intake month.
+    months = {_MONTH_NUM[w.lower()] for m in _INTAKE_MONTH_RE.finditer(text)
+              for w in _MONTH_RE.findall(m.group(1) or m.group(2))}
     early = any(mo <= 4 for mo in months)              # January to April: the session's second half
     second = 'second_intake' in terms
-    # A first and a second intake together: "Semester 1 / 2", "Sesi I ... Februari", "September / Februari".
-    # (Semester 1 with a February month is a February starter's first semester: no clash.)
-    if (terms & {'first', 'first_intake'} and second) or ('first_intake' in terms and early) \
+    # A first and a second intake together: "Semester 1 / 2", "Sesi I Ambilan Februari",
+    # "Ambilan September / Februari". (Semester 1 with a February month is a February starter's first
+    # semester, and Semester 1 / Year 1 with a Sesi II is the second intake's: no clash.)
+    if ('first' in terms and second and 'second_session' not in terms) \
+            or ('first_intake' in terms and (second or early)) \
             or (early and any(mo >= 5 for mo in months)):
         return GiftReading(None, 'both_intakes')
     if second or early:

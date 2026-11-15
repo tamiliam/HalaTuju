@@ -177,9 +177,19 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a owner-ruling review - exam lines give no year; confirmation needs Year 1 or an intake month-year (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money untouched (as below).
+- **Exam years are never a start year (owner, "why complicate?").** A line with an exam word in any form (SPM, STPM, Sijil Pelajaran / Tinggi Persekolahan Malaysia, MUET, UEC, O / A-Level; "SPM2024", "SPM (2024)", "STPM/2024") gives no single year: only the reporting date or the session reads it, else unknown. The exam-year set-aside patterns are deleted.
+- **Confirmation letters.** Only Year 1 / Tahun 1 / Lower Six / Tingkatan 6 Bawah, or an intake / admission word with a month and its year, writes the intake; Semester 1 with a session, or a bare month-year, is the current term (unknown).
+- **Sesi II beside Semester 1 / Year 1** ("Semester 1 Sesi II 2025/2026") reads the session's second year, not unknown.
+- **Intake month.** A January-April month counts only next to an intake / semester word ("Ambilan Februari", "Feb intake"); "Sesi 2026/2027, tutup 30 April" reads 2026.
+- **A year inside a code** ("kod UH2024") is not a year.
+- **Tests.** New cases in `test_start_year_gift_reading.py`; 25 probe rows re-classed in `test_start_year_gift_probes.py`. Corpus split unchanged: 246 inside / 26 outside / 14 unknown.
+
 ### fix: H3a owner ruling - the gift reads the reporting date, else one year, else a session's first year (2026-11-16)
 
-Branch help-h3, not pushed. No migration. Money untouched (`pathway_engine.py`, `verdict_pathway.py`, `course_start.py`, `vision/`, `award.py`, `funding_estimate.py` byte-identical to main; `test_start_year_money.py` passes). Supersedes the second- and fifth-review readers below.
+Branch help-h3, not pushed. No migration. Money untouched: `pathway_engine.py`, `verdict_pathway.py`, `course_start.py`, `vision/` and `funding_estimate.py` are byte-identical to main; `award.py` differs only by H3a's `pathway_start_year_outside` flag in `CONFIDENT_DISQUALIFIERS` (the amount code is main's); `test_start_year_money.py` passes. Supersedes the second- and fifth-review readers below.
 - **Owner's order.** `session_year.gift_reading`: the letter's own stored reporting date, else one year on the intake line, else a session's first year (its second with Sesi 2 / Sesi II / Semester 2 / Semester II), else unknown. Unknown always: later terms (also in the programme / stream words), readmission or credit-transfer words, a confirmation letter that does not write the intake, several years with no date, a scan-damaged year. `start_year.decide`: in the gift = inside, out = outside (red), none = the reviewer line.
 - **Dropped.** The closed vocabulary, the first-year signal, the straddle rule, the generated property table and mutation fuzz (`test_start_year_gift_property.py` removed).
 - **Corpus (286 letters).** Degree gift (2025, 2026): 246 inside / 26 outside / 14 unknown.
