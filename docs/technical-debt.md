@@ -9138,7 +9138,9 @@ reads suspect, never genuine. *(A - S)*
 Form-6 confirmations keep main's recognition rule but read `suspect` (tag `confirmation_check`), never genuine, so a
 former or failed student's letter reaches a person instead of reading genuine. Nothing moves to `not_offer_letter`
 (the fix suggested below was not taken). Pinned by
-`test_offer_h2_review6.py::test_mains_live_polytechnic_path_reads_suspect_td_636_closed`. The text below is history.
+`test_offer_h2_review6.py::test_mains_live_polytechnic_path_reads_suspect_td_636_closed`. The text below is history;
+the H2 not-studying lists it names were deleted by the lead's 16 Nov simplification (no body word blocks any
+confirmation; every confirmation reads suspect at best and a person checks it - decisions.md ruling 4).
 
 **Raised 2026-11-15 by the help H2 review 6 (live on main, unchanged by H2).** The genuine confirmation lift
 (`offer_rulings.confirmation_kind` over `offer_confirmations._NO_PRIVATE_WING`) checks the title, the issuer, its

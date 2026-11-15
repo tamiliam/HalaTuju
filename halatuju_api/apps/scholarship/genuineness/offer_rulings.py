@@ -40,11 +40,10 @@ override or a later corpus answer shows which rule was wrong (`eval/offer_genuin
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _NOT_AN_OFFER_EN,
-                                  _NOT_STUDYING, _NOT_THE_OFFER_LINE, _OFFER_REFUSED_EN, _OFFER_UNDONE, _WING_HEAD,
-                                  MATRIC_OFFER_EN)
-# H2 review 7's checks (split out for the 600-line limit).
-from .offer_confirm_checks import _campus_dropped, _non_study_subject, _not_studying, _says
+from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _NOT_THE_OFFER_LINE,
+                                  _WING_HEAD, MATRIC_OFFER_EN)
+# The title-block reading and the CAP (split out for the 600-line limit; lead, 16 Nov 2026).
+from .offer_confirm_checks import _campus_dropped, cap_confirmation, generic_titled, non_study_subject
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -276,13 +275,12 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
     return _kind(lines, probability, _NO_PRIVATE_WING)
 
 
-def _widened_kind(lines, probability, ocr_text='') -> str:
+def _widened_kind(lines, probability) -> str:
     """Help H2 option B: the kind over every public issuer (`offer_reading._confirmers`), an English title read
     as the Malay one, approval wording blanked and a campus line under the name dropped. Suspect at most; ''
-    when a sentence CLEARLY says the person is not studying there now (`_not_studying`) or the letter's subject
-    is a hostel / internship / staff / convocation / interview matter (`_non_study_subject`) - H2 review 7."""
-    if (_not_studying(lines, ocr_text) or _non_study_subject(lines)
-            or any(w in ln for ln in _letterhead_region(lines) for w in _WING_HEAD)):
+    when the title block's subject is a non-study matter (`non_study_subject`). No body word blocks (lead, 16 Nov
+    2026: the body-word lists of reviews 6-8 are gone)."""
+    if non_study_subject(lines) or any(w in ln for ln in _letterhead_region(lines) for w in _WING_HEAD):
         return ''
     return _kind(_english_titled(lines), probability, _confirmers(), widened=True)
 
@@ -310,10 +308,9 @@ def _kind(lines, probability, issuers, widened=False) -> str:
 
 def _english_titled(lines):
     """The lines with an English confirmation title read as the Malay one (`_CONFIRM_TITLES_EN`): the suspect
-    path only, so the live titles (letterhead stops, the genuine lift) are untouched. A generic title
-    ("Confirmation Letter") too (H2 review 7: a person checks every suspect; the subject rule and the clear
-    not-studying phrases keep a non-study letter out)."""
-    titles = _CONFIRM_TITLES_EN + _CONFIRM_TITLES_EN_GENERIC
+    path only, so the live titles (letterhead stops, main's path) are untouched. A generic title ("Confirmation
+    Letter") only with a study word in its title block (`generic_titled`; lead, 16 Nov 2026)."""
+    titles = _CONFIRM_TITLES_EN + (_CONFIRM_TITLES_EN_GENERIC if generic_titled(lines) else ())
     out = []
     for ln in lines:
         for t in titles:
@@ -394,7 +391,7 @@ def _without_poly_department(lines):
     return out
 
 
-def _confirmation_lift(r, raw, model_version, ocr_text=''):
+def _confirmation_lift(r, raw, model_version):
     if _AGENT_WORDS.search(_page(raw)):
         return None                     # round 11 (M5): WAKIL / EJEN / AGEN
     lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
@@ -405,7 +402,7 @@ def _confirmation_lift(r, raw, model_version, ocr_text=''):
         return _ruled_status('suspect', r, seen, 'confirmation_check', 'a confirmation of studies from a public '
                              'institution with no private wing - a person checks; never genuine by itself (owner '
                              'ruling 4, 16 Nov 2026)', model_version)
-    seen = _widened_kind(raw, r['probability'], ocr_text)
+    seen = _widened_kind(raw, r['probability'])
     if not seen or not _confirmation_shaped(_english_titled(lines), glued):
         return None
     tag = 'confirmation_ua' if seen == 'confirmation_ua' else 'confirmation_check'
@@ -424,28 +421,19 @@ _MATRIC_EN_TITLES = (' OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME ',
 #: The Division and the ministry: the issuer the letterhead must name first.
 _MATRIC_ISSUERS_EN = (' MATRICULATION DIVISION ', ' BAHAGIAN MATRIKULASI ', ' MINISTRY OF EDUCATION MALAYSIA ',
                       ' MINISTRY OF EDUCATION ', ' KEMENTERIAN PENDIDIKAN MALAYSIA ')
-#: A results slip or a transcript is no offer (it stays `not_offer_letter`).
-_RESULTS_WORDS = (' CGPA ', ' PNGK ', ' RESULT SLIP ', ' RESULTS SLIP ', ' SLIP KEPUTUSAN ', ' EXAMINATION RESULT ',
-                  ' EXAMINATION RESULTS ', ' TRANSCRIPT ', ' GRADE POINT AVERAGE ', ' KEPUTUSAN PEPERIKSAAN ',
-                  ' SEMESTER EXAMINATION ', ' PEPERIKSAAN SEMESTER ', ' SEMAKAN KEPUTUSAN ')
-
-
-def english_matric_offer(lines, ocr_text='') -> bool:
-    """KPM's English matriculation offer: the Division and the ministry on the page, the English title on the
-    first offer line (no rejection / cancellation form), the Division / ministry named FIRST on a clean
-    letterhead, no results words, no refusal / appeal / status words (H2 review 6), no sentence saying the
-    offer was withdrawn, cancelled, declined or refused or the student not selected / waitlisted / not eligible
-    (H2 review 7; a condition such as "cancelled if you fail to register" never counts) and no tie-up word. A
-    private university's offer that only MENTIONS the Division is not one."""
+def english_matric_offer(lines) -> bool:
+    """KPM's English matriculation offer: the Division and the ministry on the page, the English title on its
+    TITLE line (the first line naming the offer: no application, result, appeal, refusal or rejection form,
+    `_NOT_THE_OFFER_LINE`), the Division / ministry named FIRST on a clean letterhead, and no tie-up word. Lead, 16
+    Nov 2026: no body word blocks (a bare REGRET / APPEAL / declined / waiting list reads suspect, a person checks).
+    A private university's offer that only MENTIONS the Division is not one."""
     from .offer_signatures import _TIE_UP_EXTRA
     page = _page(lines)
     if ' MATRICULATION DIVISION ' not in page or ' MINISTRY OF EDUCATION ' not in page:
         return False
-    if any(w in page for w in _RESULTS_WORDS + _NOT_AN_OFFER_EN + _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+    if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
         return False
-    if _says(lines, ocr_text, _NOT_STUDYING + _OFFER_REFUSED_EN, _OFFER_UNDONE):
-        return False
-    offer = next((ln for ln in lines if ' OFFER ' in ln), '')
+    offer = next((ln for ln in lines if ' OFFER ' in ln or any(t in ln for t in _MATRIC_EN_TITLES)), '')
     if not any(t in offer for t in _MATRIC_EN_TITLES) or any(w in offer for w in _NOT_THE_OFFER_LINE):
         return False
     allowed = _MATRIC_ISSUERS_EN + (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ')
@@ -453,8 +441,8 @@ def english_matric_offer(lines, ocr_text='') -> bool:
             and _clean_letterhead(lines, allowed))
 
 
-def _matric_offer_en(r, lines, model_version, ocr_text=''):
-    if _AGENT_WORDS.search(_page(lines)) or not english_matric_offer(lines, ocr_text):
+def _matric_offer_en(r, lines, model_version):
+    if _AGENT_WORDS.search(_page(lines)) or not english_matric_offer(lines):
         return None
     return _ruled_status('suspect', r, MATRIC_OFFER_EN, 'matric_offer_en', "KPM's English matriculation offer - "
                          'a person checks; never genuine by itself and never a course pick (help H2 option B)',
@@ -484,8 +472,7 @@ def _lift(ocr_text, r, lines, page, vetoed, model_version, baseline_status=''):
         if lifted:
             return lifted
     return (_tvet_lift(r, lines, model_version) or _agency_lift(ocr_text, r, lines, model_version)
-            or _confirmation_lift(r, lines, model_version, ocr_text)
-            or _matric_offer_en(r, lines, model_version, ocr_text))
+            or _confirmation_lift(r, lines, model_version) or _matric_offer_en(r, lines, model_version))
 
 
 # ── BLOCK ─────────────────────────────────────────────────────────────────────────────────
@@ -560,9 +547,14 @@ def ruled_offer(ocr_text: str, r: dict, status: str, reason: str, model_version:
 
 def apply_rulings(ocr_text: str, r: dict, baseline: dict, model_version: str) -> dict:
     """The genuineness of an offer: the BASELINE (`results_doc.baseline_genuineness`), changed only by the
-    BLOCK, a LIFT or a softening ruling (module note). A changed call always carries its ruling tag."""
+    BLOCK, a LIFT or a softening ruling (module note), then CAPPED: a confirmation-titled page is never genuine
+    (`cap_confirmation`, lead 16 Nov 2026). A changed call always carries its ruling tag."""
     ocr_text = normalise_s6(ocr_text)                       # round 11: the one S6 normaliser
     lines = _folded_lines(ocr_text)                         # round 8 (perf): the page is folded ONCE
+    return cap_confirmation(lines, _ruled(ocr_text, r, baseline, lines, model_version), r, model_version)
+
+
+def _ruled(ocr_text, r, baseline, lines, model_version):
     if baseline.get('status') != 'not_offer_letter':
         blocked = _block(r, lines, model_version)
         if blocked:
