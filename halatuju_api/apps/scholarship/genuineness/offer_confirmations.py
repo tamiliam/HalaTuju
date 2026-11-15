@@ -2,7 +2,7 @@
 no-private-wing issuers (owner ruling 4). Moved verbatim out of `offer_reading.py` (help sprint H2, 2026-11-15, a
 moves-only split: that file stood at 592 lines, under the 600-line standard, and ruling 4's widening needs room).
 `offer_reading` imports every name back (its `__all__`), so `offer_rulings` and the tests read them as before.
-Pure data (one compiled pattern).
+Pure data.
 
 Help H2, owner option B (2026-11-15): the no-private-wing three below keep their live recognition rule exactly,
 but since the owner's ruling of 16 Nov 2026 they read SUSPECT, never genuine (no confirmation reads genuine by
@@ -10,8 +10,6 @@ itself anywhere). Every OTHER public confirmation (`_PUBLIC_CONFIRMERS`, the TVE
 universities, an English title) is RECOGNISED but reads SUSPECT - a person checks; it never reads genuine by
 itself and never blocks (`offer_rulings._confirmation_lift`).
 """
-import re
-
 #: The confirmation-of-studies title, and the no-private-wing issuers (owner default 2026-11-03).
 _CONFIRM_TITLES = (' PENGESAHAN PELAJAR ', ' PENGESAHAN SEBAGAI PELAJAR ', ' PENGESAHAN BELAJAR ',
                    ' PENGESAHAN STATUS PELAJAR ')
@@ -34,49 +32,36 @@ _POLY_DEPARTMENTS = (_JPPKK, ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE E
 CONFIRM_MIN = 0.10
 
 # ── Help H2, option B: the newly covered confirmations (SUSPECT only) ──────────────────────
-#: The English titles, read as the Malay one ONLY on the suspect path (`offer_rulings._english_titled`): the
-#: live `_CONFIRM_TITLES` (letterhead stops, the genuine path) stay exactly as before.
-_CONFIRM_TITLES_EN = (' CONFIRMATION OF STUDENT STATUS ', ' CONFIRMATION OF STUDIES ')
-#: The generic titles, read as a confirmation like the two above (H2 review 7: a wrong block of a real student's
-#: letter hurts more than a non-study letter reaching a person, who checks every suspect).
+#: The other specific titles, read as the Malay one ONLY on the suspect path (`offer_rulings._english_titled`):
+#: the live `_CONFIRM_TITLES` (letterhead stops, main's path) stay exactly as before.
+_CONFIRM_TITLES_EN = (' CONFIRMATION OF STUDENT STATUS ', ' CONFIRMATION OF STUDIES ', ' CONFIRMATION OF STUDY ',
+                      ' CONFIRMATION OF ENROLMENT ', ' CONFIRMATION OF ENROLLMENT ',
+                      ' LETTER OF ENROLMENT VERIFICATION ', ' LETTER OF ENROLLMENT VERIFICATION ',
+                      ' PENGESAHAN PENGAJIAN ')
+#: The generic titles: a confirmation ONLY when the title itself (its line, or a short line under it, or the
+#: subject line) holds a study word (`offer_confirm_checks.generic_titled`; lead, 16 Nov 2026).
 _CONFIRM_TITLES_EN_GENERIC = (' CONFIRMATION LETTER ', ' LETTER OF CONFIRMATION ')
-#: H2 review 7 (lead's rule): a NEWLY covered confirmation stays `not_offer_letter` ONLY on a CLEAR phrase that
-#: the person is not studying there now (`offer_confirm_checks._not_studying`; main's live polytechnic / UMS / Form-6
-#: path does not read them: TD-636). Matched per sentence, on the folded text; a conditional or footnote
-#: sentence (`_CONDITIONAL`) never blocks. Bare words (TAMAT, COMPLETED, BERHENTI, ALUMNI, STAFF, KAKITANGAN)
-#: never block; every other wording reads suspect and a person checks it (decisions.md ruling 4).
-_NOT_STUDYING = (
-    # past tense: finished, graduated, a former student
-    ' TELAH TAMAT PENGAJIAN ', ' SUDAH TAMAT PENGAJIAN ', ' TELAH MENAMATKAN PENGAJIAN ',
-    ' SUDAH MENAMATKAN PENGAJIAN ', ' HAS GRADUATED ', ' HAVE GRADUATED ', ' HAD GRADUATED ',
-    ' HAS COMPLETED THE PROGRAMME ', ' HAS COMPLETED THE PROGRAM ', ' HAS COMPLETED HIS STUDIES ',
-    ' HAS COMPLETED HER STUDIES ', ' HAS COMPLETED THE COURSE ', ' PERNAH BELAJAR ', ' PERNAH MENUNTUT ',
-    ' WAS A STUDENT ',                  # "was formerly" (not "formerly known as"): offer_confirm_checks._WAS_FORMERLY
-    # a refusal
-    ' TIDAK BERJAYA ', ' TIDAK DITAWARKAN ', ' TIDAK LAYAK ', ' NOT OFFERED ', ' NOT BEEN OFFERED ',
-    ' NOT SELECTED ', ' NOT BEEN SELECTED ', ' NOT SUCCESSFUL ', ' UNSUCCESSFUL ', ' DID NOT SUCCEED ',
-    ' NOT ELIGIBLE ', ' WAITING LIST ', ' SENARAI MENUNGGU ', ' CANCELLATION OF OFFER ', ' WITHDRAWAL OF OFFER ',
-    ' PEMBATALAN TAWARAN ', ' TELAH MENOLAK TAWARAN ',
-    # a dismissal
-    ' TELAH DIBERHENTIKAN ', ' SUDAH DIBERHENTIKAN ', ' HAS BEEN TERMINATED ', ' HAVE BEEN TERMINATED ',
-    ' WAS TERMINATED ', ' WERE TERMINATED ', ' HAS BEEN DISMISSED ', ' WAS DISMISSED ', ' HAS BEEN EXPELLED ',
-    ' WAS EXPELLED ')
-#: ... an offer withdrawn, cancelled or declined ("Your OFFER OF ADMISSION has been WITHDRAWN").
-_OFFER_UNDONE = re.compile(r' (?:OFFER|TAWARAN)(?: [A-Z0-9]+){0,8}? (?:HAS BEEN|HAVE BEEN|IS|WAS|BEEN|TELAH) '
-                           r'(?:WITHDRAWN|CANCELL?ED|DECLINED|REVOKED|DIBATALKAN|DITARIK BALIK)(?= )'
-                           r'| OFFER (?:WITHDRAWN|CANCELL?ED|DECLINED)(?= )| DECLINED (?:THE|THIS|YOUR) OFFER(?= )')
-#: A sentence with any of these is a condition or a footnote ("Surat ini terbatal sekiranya pelajar menarik
-#: diri", "void if the student withdraws"): it never blocks.
-_CONDITIONAL = (' SEKIRANYA ', ' JIKA ', ' JIKALAU ', ' IF ', ' SHOULD ', ' UNLESS ', ' AKAN TERBATAL ')
-#: A hostel / internship / staff / convocation / interview letter blocks only when that is its SUBJECT: the
-#: title line or a PERKARA / RE / SUBJECT / "Per:" line (`offer_confirm_checks._non_study_subject`). In the body these
-#: words never block.
+_STUDY_WORDS = (' STUDENT ', ' STUDENTS ', ' STUDIES ', ' STUDY ', ' ENROLMENT ', ' ENROLLMENT ', ' PELAJAR ',
+                ' PENGAJIAN ', ' BELAJAR ')
+#: Lead's decision, 16 Nov 2026 (H2 review 8): NO body word blocks a confirmation. Only its TITLE BLOCK is read
+#: (`offer_confirm_checks.title_block`): the title line and a PERKARA / RE / SUBJECT line, up to the first body
+#: sentence (`_BODY_STARTS`). A hostel / staff / convocation / interview subject, or an internship subject with
+#: no study word, gets no confirmation reading (`offer_confirm_checks.non_study_subject`).
 _SUBJECT_STARTS = (' PERKARA ', ' RE ', ' SUBJECT ', ' SUBJEK ', ' PER ', ' TAJUK ')
 _NOT_STUDIES_SUBJECT = (' HOSTEL ', ' ASRAMA ', ' KOLEJ KEDIAMAN ', ' RESIDENTIAL COLLEGE ', ' ACCOMMODATION ',
-                        ' PENGINAPAN ', ' INTERNSHIP ', ' INDUSTRIAL TRAINING ', ' PRACTICAL TRAINING ',
-                        ' LATIHAN INDUSTRI ', ' LATIHAN AMALI ', ' LATIHAN PRAKTIKAL ', ' STAFF ', ' KAKITANGAN ',
-                        ' EMPLOYEE ', ' EMPLOYMENT ', ' PERKHIDMATAN ', ' SALARY ', ' GAJI ', ' CONVOCATION ',
-                        ' KONVOKESYEN ', ' GRADUATION ', ' INTERVIEW ', ' TEMUDUGA ', ' TEMU DUGA ')
+                        ' PENGINAPAN ', ' STAFF ', ' KAKITANGAN ', ' EMPLOYEE ', ' EMPLOYMENT ', ' PEKERJAAN ',
+                        ' SALARY ', ' GAJI ', ' STUDY LEAVE ', ' CUTI BELAJAR ', ' CONVOCATION ', ' KONVOKESYEN ',
+                        ' GRADUATION ', ' INTERVIEW ', ' TEMUDUGA ', ' TEMU DUGA ')
+_INTERNSHIP = (' INTERNSHIP ', ' INDUSTRIAL TRAINING ', ' PRACTICAL TRAINING ', ' LATIHAN INDUSTRI ',
+               ' LATIHAN AMALI ', ' LATIHAN PRAKTIKAL ')
+#: A line starting with one of these (after a paragraph number) is the first body sentence: the title block ends.
+_BODY_STARTS = (' DENGAN ', ' SUKACITA ', ' MERUJUK ', ' BERHUBUNG ', ' SEHUBUNGAN ', ' DIMAKLUMKAN ', ' ADALAH ',
+                ' DISAHKAN ', ' SAYA ', ' KAMI ', ' PIHAK ', ' BERSAMA ', ' MAKA ', ' PERKARA DI ATAS ', ' THIS ',
+                ' WE ', ' IT IS ', ' PLEASE ', ' KINDLY ', ' WITH REFERENCE ', ' REFERRING ', ' I ', ' THE ABOVE ')
+#: ... and inside a title line, these words start the body (a glued line): the title segment stops there.
+_BODY_CUTS = (' DENGAN HORMATNYA ', ' DENGAN SEGALA HORMATNYA ', ' DENGAN INI ', ' ADALAH ', ' SUKACITA ',
+              ' MERUJUK ', ' DIMAKLUMKAN ', ' DISAHKAN ', ' SAYA ', ' KAMI ', ' PIHAK ', ' THIS IS ', ' WE ',
+              ' IT IS ', ' PLEASE ', ' WITH REFERENCE ', ' HEREBY ')
 #: UM's open channel on a letterhead line ("UNIVERSITI MALAYA / UM SATU"): a private wing, never a university's
 #: own confirmation. Letterhead lines only - "Semester Satu" in a body is "one" (`results_doc` note).
 _WING_HEAD = (' SATU ',)
@@ -110,17 +95,14 @@ _APPROVAL = (' APPROVED BY ', ' APPROVED UNDER ', ' REGISTERED WITH ', ' REGISTE
 #: KPM's English matriculation offer, recognised by its text (`offer_rulings.english_matric_offer`): suspect,
 #: never a course pick (option B).
 MATRIC_OFFER_EN = 'matric_offer_en'
-#: H2 review 6 (L): a refusal, an appeal's answer or a status check is no offer (anywhere on the page) ...
-_NOT_AN_OFFER_EN = (' UNSUCCESSFUL ', ' NOT SUCCESSFUL ', ' NOT OFFERED ', ' NOT BEEN OFFERED ', ' REGRET ', ' APPEAL ',
-                    ' RAYUAN ', ' TIDAK BERJAYA ', ' DUKACITA ', ' APPLICATION STATUS ', ' STATUS PERMOHONAN ',
-                    ' SEMAKAN STATUS ', ' REJECTED ')
-#: ... and the offer line itself names no application, result or status ("APPLICATION FOR ADMISSION ... OFFER"),
-#: and is no form for refusing, cancelling or withdrawing it (H2 review 7: "OFFER REJECTION FORM").
+#: The English matric offer's TITLE line (the first line naming the offer) names no application, result, status,
+#: appeal or refusal, and is no form for refusing, cancelling or withdrawing it. Lead, 16 Nov 2026: the TITLE line
+#: only - a bare REGRET / APPEAL / declined / waiting list in the body never blocks (a person checks).
 _NOT_THE_OFFER_LINE = (' APPLICATION ', ' PERMOHONAN ', ' RESULT ', ' RESULTS ', ' STATUS ', ' KEPUTUSAN ',
-                       ' REJECTION ', ' REJECT ', ' PENOLAKAN ', ' MENOLAK ', ' FORM ', ' BORANG ', ' CANCELLATION ',
-                       ' PEMBATALAN ', ' WITHDRAWAL ', ' DECLINE ')
-#: ... and no sentence says the offer was turned down (beside `_NOT_STUDYING`'s refusals, conditionals skipped).
-_OFFER_REFUSED_EN = (' DECLINED ', ' HAS BEEN WITHDRAWN ', ' BEEN CANCELLED ', ' BEEN CANCELED ')
+                       ' REJECTION ', ' REJECT ', ' REJECTED ', ' PENOLAKAN ', ' MENOLAK ', ' FORM ', ' BORANG ',
+                       ' CANCELLATION ', ' PEMBATALAN ', ' WITHDRAWAL ', ' DECLINE ', ' APPEAL ', ' RAYUAN ',
+                       ' REGRET ', ' UNSUCCESSFUL ', ' NOT SUCCESSFUL ', ' NOT OFFERED ', ' DUKACITA ',
+                       ' TIDAK BERJAYA ')
 #: Every code that may stand in for an offer but NEVER writes a course pick (`pathway_engine.is_confirmation_letter`):
 #: the confirmation codes (`confirmation_ua` is back, H2: a public university's reads suspect) and the English
 #: matric offer (help H2 option B: a person checks it before anything is written from it).

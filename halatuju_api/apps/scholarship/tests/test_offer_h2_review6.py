@@ -1,13 +1,12 @@
-"""Help H2, review 6 (2026-11-15), as amended by review 7 (the lead's rule: a wrong block of a real student's
-letter hurts more than a non-study letter reaching a person, who checks every suspect).
+"""Help H2, review 6 (2026-11-15), as amended by review 7 and by the lead's decision of 16 Nov 2026 (body-word
+blocks removed: only the title block is read; every confirmation reads suspect at best and a person checks it).
 
-(H) a generic English title ("Confirmation Letter") reads as a confirmation (review 7); (M) a new type stays
-`not_offer_letter` only on a CLEAR not-studying phrase (graduated, a former student, a refusal, a dismissal),
-never on a bare word or a body mention of a hostel / internship / staff matter - those read suspect (main's
-live polytechnic / UMS / Form-6 path reads suspect since the owner's 16 Nov ruling: TD-636 closed); (M) a KAMPUS / CAMPUS line under the name is
-dropped unless it names an organisation or a private body (review 7 restored the old drop); (L) KPM's English
-matric offer refuses a refusal, an appeal, a status check, an application and a results slip; UM's open
-channel (SATU) on a letterhead line is a private wing.
+(H) a generic English title ("Confirmation Letter") is a confirmation only with a study word in its title block;
+(M) no body word blocks: a clear not-studying sentence, a hostel / internship / staff matter in the BODY all read
+suspect (main's live polytechnic / UMS / Form-6 path reads suspect since the owner's 16 Nov ruling: TD-636
+closed); (M) a KAMPUS / CAMPUS line under the name is dropped unless it names an organisation or a private body;
+(L) KPM's English matric offer refuses an appeal / application on its TITLE line, a status-check page and a
+private letterhead, never a body word; UM's open channel (SATU) on a letterhead line is a private wing.
 
 Every case of the reviewer's round-6 script is below. Synthetic twins only (`test_no_gitignored_corpus.py`).
 """
@@ -32,7 +31,9 @@ def _letter(head, title='PENGESAHAN PELAJAR', body=_STUDYING):
     return _confirm(head).replace('PENGESAHAN PELAJAR', title).replace(_STUDYING, body)
 
 
-#: (title, body): a CLEAR phrase that the person is not studying there now - stays `not_offer_letter`.
+#: (title, body): a CLEAR phrase that the person is not studying there now. CHANGED by lead 16 Nov: body-word
+#: blocks removed - under a specific title it reads suspect (a person checks); a generic title has no study word,
+#: so it is no confirmation (`_expected`).
 NOT_STUDYING = (
     ('CONFIRMATION LETTER', 'This is to confirm that the person below has GRADUATED and completed the programme in 2024.'),
     ('LETTER OF CONFIRMATION', 'This is to confirm that the applicant below was NOT successful in the application.'),
@@ -46,7 +47,7 @@ NOT_STUDYING = (
     ('CONFIRMATION OF STUDIES', 'This is to confirm that the application of the person below was unsuccessful.'),
 )
 #: Review 7: the round-6 bodies that hold no CLEAR phrase (a hostel / training / staff matter in the BODY, a bare
-#: completion word, a withdrawal) read suspect - a person checks (decisions.md ruling 4 lists them).
+#: completion word, a withdrawal) read suspect under a specific title - a person checks (decisions.md ruling 4).
 NOW_SUSPECT = (
     ('CONFIRMATION LETTER', 'This is to confirm that the student below has paid the hostel fee of RM 500.00.'),
     ('LETTER OF CONFIRMATION', 'This is to confirm that the student below has completed industrial training at our office.'),
@@ -75,25 +76,39 @@ REGISTRAR
 """
 
 
-class GenericTitlesReadAsAConfirmation(SimpleTestCase):
-    """(H, review 7) "Confirmation Letter" / "Letter of Confirmation" read as a confirmation: suspect, a person
-    checks."""
+_GENERIC = ('CONFIRMATION LETTER', 'LETTER OF CONFIRMATION')
 
-    def test_with_studying_now_words_it_reads_suspect(self):
-        for head in (KK_HEAD, KM_HEAD):
-            for title in ('CONFIRMATION LETTER', 'LETTER OF CONFIRMATION'):
+
+def _expected(title):
+    """CHANGED by lead 16 Nov: body-word blocks removed - a specific title reads suspect whatever the body says; a
+    generic title with no study word in its title block is no confirmation (`not_offer_letter`)."""
+    return 'not_offer_letter' if title in _GENERIC else 'suspect'
+
+
+class GenericTitlesNeedAStudyWord(SimpleTestCase):
+    """(H) CHANGED by lead 16 Nov: "Confirmation Letter" / "Letter of Confirmation" is a confirmation only when its
+    title block holds a study word (STUDENT, STUDIES, STUDY, ENROLMENT, PELAJAR): then suspect, a person checks."""
+
+    def test_with_a_study_word_in_the_title_block_it_reads_suspect(self):
+        for head in (KK_HEAD, KM_HEAD, UPM_HEAD):
+            for title in ('CONFIRMATION LETTER (STUDENT STATUS)', 'LETTER OF CONFIRMATION - STUDENT',
+                          'CONFIRMATION LETTER\nSTUDENT ENROLMENT', 'LETTER OF CONFIRMATION\nRE : STUDIES'):
                 with self.subTest(head=head.splitlines()[0], title=title):
                     self.assertEqual(_read(_letter(head, title))['status'], 'suspect')
                     english = _letter(head, title, 'This is to confirm that the person below is currently studying '
                                                    'at this college.')
                     self.assertEqual(_read(english)['status'], 'suspect')
 
-    def test_without_them_it_still_reads_suspect(self):
+    def test_without_one_it_is_no_confirmation(self):
         for head in NEW_HEADS:
-            for title in ('CONFIRMATION LETTER', 'LETTER OF CONFIRMATION'):
-                with self.subTest(head=head.splitlines()[0], title=title):
-                    text = _letter(head, title, 'This is to confirm the details of the person below.')
-                    self.assertEqual(_read(text)['status'], 'suspect')
+            for title in _GENERIC:
+                for body in (_STUDYING, 'This is to confirm the details of the person below.'):
+                    with self.subTest(head=head.splitlines()[0], title=title, body=body[:30]):
+                        self.assertEqual(_read(_letter(head, title, body))['status'], 'not_offer_letter')
+
+    def test_a_study_word_in_the_body_or_the_letterhead_is_not_enough(self):
+        text = _letter('UNIVERSITI PUTRA MALAYSIA\nBahagian Hal Ehwal Pelajar', 'CONFIRMATION LETTER')
+        self.assertEqual(_read(text)['status'], 'not_offer_letter')
 
     def test_the_staff_letter_is_no_confirmation(self):
         # no identity-card line: not confirmation-shaped, so it stays `not_offer_letter` (staff in the body
@@ -105,22 +120,23 @@ class GenericTitlesReadAsAConfirmation(SimpleTestCase):
                 self.assertEqual(_read(STAFF_LETTER.format(head=head))['status'], 'not_offer_letter')
 
 
-class NotStudyingPhrasesKeepANewTypeOut(SimpleTestCase):
-    """(M) a former student, a graduate, a dismissal or a failed application, said in a clear phrase."""
+class NoBodyWordBlocks(SimpleTestCase):
+    """(M) CHANGED by lead 16 Nov: body-word blocks removed. A former student, a graduate, a dismissal or a failed
+    application said in the BODY reads suspect under a specific title - a person checks."""
 
-    def test_every_new_head_stays_not_an_offer_letter(self):
+    def test_a_clear_not_studying_sentence_reads_suspect(self):
         for head in NEW_HEADS:
             for title, body in NOT_STUDYING:
                 for crest in (False, True):
                     with self.subTest(head=head.splitlines()[0], body=body[:50], crest=crest):
-                        self.assertEqual(_read(_letter(head, title, body), crest)['status'], 'not_offer_letter')
+                        self.assertEqual(_read(_letter(head, title, body), crest)['status'], _expected(title))
 
     def test_no_clear_phrase_reads_suspect_review_7(self):
         for head in NEW_HEADS:
             for title, body in NOW_SUSPECT:
                 for crest in (False, True):
                     with self.subTest(head=head.splitlines()[0], body=body[:50], crest=crest):
-                        self.assertEqual(_read(_letter(head, title, body), crest)['status'], 'suspect')
+                        self.assertEqual(_read(_letter(head, title, body), crest)['status'], _expected(title))
 
     def test_the_expected_end_date_label_is_no_completion(self):
         for label in ('Tarikh Tamat Pengajian : 30 Jun 2028', 'Jangkaan Tamat Pengajian : Jun 2028',
@@ -171,24 +187,36 @@ class ACampusLineUnderTheNameIsDropped(SimpleTestCase):
                                  'suspect')
 
 
-#: The reviewer's English matric letters that are no offer (L).
+#: The reviewer's English matric letters that are no offer (L): an appeal / application on the TITLE line, a
+#: status-check page above the Division, a private letterhead.
 _REGISTER = 'You must register on the date set by the college.'
 NOT_A_MATRIC_OFFER = (
-    ('unsuccessful', MATRIC_EN.replace(_REGISTER, 'We regret that your application for the OFFER OF ADMISSION TO THE '
-                                                  'MATRICULATION PROGRAMME was UNSUCCESSFUL.')),
-    ('not offered', MATRIC_EN.replace(_REGISTER, 'You have NOT been offered a place this session.')),
     ('appeal result', MATRIC_EN.replace('OFFER OF ADMISSION', 'APPEAL RESULT: OFFER OF ADMISSION')),
     ('status check', 'SEMAKAN STATUS PERMOHONAN\n' + MATRIC_EN),
     ('application', MATRIC_EN.replace('OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME',
                                       'APPLICATION FOR ADMISSION TO THE MATRICULATION PROGRAMME OFFER')),
-    ('a results slip', MATRIC_EN.replace('Stream : Science', 'Stream : Science\nKeputusan Peperiksaan Semester : 3.80')),
     ('a private foundation under the Division', MATRIC_EN.replace('MATRICULATION DIVISION\nRef',
                                                                   'MATRICULATION DIVISION\nMERCU FOUNDATION CENTRE\nRef')),
     ('a university first', 'UNIVERSITI MALAYA\n' + MATRIC_EN),
 )
 
 
+#: CHANGED by lead 16 Nov: body-word blocks removed - a refusal or a results word in the BODY reads suspect.
+BODY_ONLY_SUSPECT = (
+    ('unsuccessful', MATRIC_EN.replace(_REGISTER, 'We regret that your application for the OFFER OF ADMISSION TO THE '
+                                                  'MATRICULATION PROGRAMME was UNSUCCESSFUL.')),
+    ('not offered', MATRIC_EN.replace(_REGISTER, 'You have NOT been offered a place this session.')),
+    ('a results slip', MATRIC_EN.replace('Stream : Science', 'Stream : Science\nKeputusan Peperiksaan Semester : 3.80')),
+)
+
+
 class TheEnglishMatricOfferRefusesNonOffers(SimpleTestCase):
+    def test_a_body_word_reads_suspect(self):
+        for name, text in BODY_ONLY_SUSPECT:
+            for crest in (False, True):
+                with self.subTest(name, crest=crest):
+                    self.assertEqual(_read(text, crest)['status'], 'suspect')
+
     def test_none_is_recognised_or_reads_better_than_not_an_offer(self):
         for name, text in NOT_A_MATRIC_OFFER:
             with self.subTest(name):
@@ -231,6 +259,8 @@ PRIVATE_HEADS = (
 PUBLIC_SUSPECT = ('UNIVERSITI PUTRA MALAYSIA\nSCHOOL OF GRADUATE STUDIES', 'UNIVERSITI SAINS MALAYSIA\nPUSAT PENGAJIAN JARAK JAUH',
                   f'KOLEJ KOMUNITI KLANG\nKOLEJ KEJURURAWATAN MERCU\n{KPT}')
 _TITLES = ('PENGESAHAN PELAJAR', 'CONFIRMATION OF STUDIES', 'CONFIRMATION LETTER')
+#: The titles that make a confirmation (a generic one needs a study word: lead, 16 Nov 2026).
+_CONFIRMING = ('PENGESAHAN PELAJAR', 'CONFIRMATION OF STUDIES', 'CONFIRMATION LETTER (STUDENT STATUS)')
 
 
 class TheReviewersPrivateIssuers(SimpleTestCase):
@@ -243,7 +273,7 @@ class TheReviewersPrivateIssuers(SimpleTestCase):
 
     def test_a_public_bodys_own_unit_reads_suspect_never_genuine(self):
         for head in PUBLIC_SUSPECT:
-            for title in _TITLES:
+            for title in _CONFIRMING:
                 with self.subTest(head=head, title=title):
                     self.assertEqual(_read(_letter(head, title))['status'], 'suspect')
 

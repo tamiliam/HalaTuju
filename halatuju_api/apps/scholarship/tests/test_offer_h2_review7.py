@@ -1,12 +1,13 @@
 """Help H2, review 7 (2026-11-15): the lead's rule for the newly covered confirmations (option B, suspect at most).
 
 Every suspect is checked by a person, so a wrong block of a real student's letter hurts more than a non-study
-letter reaching a person. A new type stays `not_offer_letter` ONLY on a CLEAR phrase (finished / graduated / a
-former student; a refusal; a dismissal; an offer withdrawn), said in a sentence that is no condition or
-footnote; a hostel / internship / staff / convocation / interview letter blocks only when that is its SUBJECT
-(the title line or a PERKARA / RE / SUBJECT / "Per:" line). A KAMPUS / CAMPUS line under the name is dropped
-(it fails only when it names an organisation or a private body). KPM's English matric offer refuses a
-withdrawal, a cancellation, a refusal, a waiting list and a rejection form. Main's live polytechnic / UMS /
+letter reaching a person. CHANGED by lead 16 Nov: body-word blocks removed - no body sentence blocks (a former
+student, a refusal, a dismissal, an offer withdrawn all read suspect under a confirmation title); a hostel /
+staff / convocation / interview letter, or an internship with no study word, blocks only when that is its
+SUBJECT (the title line or a PERKARA / RE / SUBJECT / "Per:" / "Tajuk:" line). A generic English title needs a
+study word in its title block. A KAMPUS / CAMPUS line under the name is dropped (it fails only when it names an
+organisation or a private body). KPM's English matric offer refuses only a cancellation, a rejection form or
+the like on its TITLE line; a body refusal reads suspect. Main's live polytechnic / UMS /
 Form-6 recognition is unchanged, but - CHANGED by help H2 owner 16 Nov: all confirmations suspect - a POLITEKNIK
 head under the Malay title reads SUSPECT (genuine on main; TD-636 closed), never `not_offer_letter`.
 
@@ -129,9 +130,12 @@ ENB = (
     ('LETTER OF CONFIRMATION', 'This is to confirm that the person below is currently pursuing the programme, to be '
                                'completed in June 2027.'),
 )
-#: (name, title, body, status): a CLEAR phrase blocks; every other non-study wording reads suspect on purpose.
+#: A generic English title with a study word in it (a bare "CONFIRMATION LETTER" is no confirmation: review 6).
+GL, GO = 'CONFIRMATION LETTER (STUDENT STATUS)', 'LETTER OF CONFIRMATION - STUDENT'
+#: (name, title, body, status): CHANGED by lead 16 Nov: body-word blocks removed - every body wording reads suspect
+#: under a confirmation title (a person checks); only a bare generic title is no confirmation.
 BAD = (
-    ('hostel-currently', 'CONFIRMATION LETTER', 'This is to confirm that the person below is currently staying at '
+    ('hostel-currently', GL, 'This is to confirm that the person below is currently staying at '
      'the residential college (Kolej Kediaman) and has paid the fees.', 'suspect'),
     ('kediaman', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah sedang menginap di kolej '
      'kediaman dan telah menjelaskan yuran penginapan.', 'suspect'),
@@ -139,34 +143,34 @@ BAD = (
      'amali di syarikat kami.', 'suspect'),
     ('praktikal', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah sedang menjalani latihan '
      'praktikal di jabatan ini.', 'suspect'),
-    ('attachment', 'CONFIRMATION LETTER', 'This is to confirm that the student below is currently undergoing an '
+    ('attachment', GL, 'This is to confirm that the student below is currently undergoing an '
      'attachment programme at our office.', 'suspect'),
-    ('placement', 'LETTER OF CONFIRMATION', 'This is to confirm that the student below is currently on placement '
+    ('placement', GO, 'This is to confirm that the student below is currently on placement '
      'with our company.', 'suspect'),
-    ('convocation', 'CONFIRMATION LETTER', 'This is to confirm that the person below is eligible to attend the '
+    ('convocation', GL, 'This is to confirm that the person below is eligible to attend the '
      'convocation ceremony and has finished the programme.', 'suspect'),
     ('lulus', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah telah lulus dan layak '
      'dianugerahkan Diploma pada Konvokesyen 2025.', 'suspect'),
     ('sudah tamat', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah sudah tamat pengajian pada '
-     'tahun 2024.', 'not_offer_letter'),
+     'tahun 2024.', 'suspect'),
     ('tamat (no telah)', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah tamat pengajian pada '
      'tahun 2024.', 'suspect'),
     ('finished', 'CONFIRMATION OF STUDIES', 'This is to confirm that the person below finished the programme in '
      '2024.', 'suspect'),
     ('was a student', 'CONFIRMATION OF STUDIES', 'This is to confirm that the person below was a student of this '
-     'college from 2021 to 2023.', 'not_offer_letter'),
+     'college from 2021 to 2023.', 'suspect'),
     ('was formerly', 'CONFIRMATION OF STUDIES', 'This is to confirm that the person below was formerly enrolled '
-     'at this college.', 'not_offer_letter'),
+     'at this college.', 'suspect'),
     ('pernah belajar', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah pernah belajar di kolej '
-     'ini dari 2021 hingga 2023.', 'not_offer_letter'),
+     'ini dari 2021 hingga 2023.', 'suspect'),
     ('gagal', 'PENGESAHAN PELAJAR', 'Dengan ini dimaklumkan bahawa permohonan penama di bawah gagal dan tidak '
-     'ditawarkan tempat.', 'not_offer_letter'),
+     'ditawarkan tempat.', 'suspect'),
     ('not offered', 'CONFIRMATION OF STUDIES', 'We regret to inform that the applicant below was not offered a '
-     'place.', 'not_offer_letter'),
+     'place.', 'suspect'),
     ('offer withdrawn', 'CONFIRMATION OF STUDIES', 'This is to confirm that the offer of admission of the person '
-     'below has been withdrawn.', 'not_offer_letter'),
+     'below has been withdrawn.', 'suspect'),
     ('tawaran dibatalkan', 'PENGESAHAN PELAJAR', 'Dengan ini dimaklumkan bahawa tawaran kemasukan penama di bawah '
-     'telah dibatalkan.', 'not_offer_letter'),
+     'telah dibatalkan.', 'suspect'),
     ('quit', 'CONFIRMATION OF STUDIES', 'This is to confirm that the person below has quit the programme.', 'suspect'),
     ('deferred', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah telah menangguhkan pengajian.',
      'suspect'),
@@ -181,19 +185,24 @@ BAD = (
     ('applicant interview', 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah dipanggil untuk '
      'temuduga kemasukan.', 'suspect'),
     ('generic en no studying', 'CONFIRMATION LETTER', 'This is to confirm that the person below attended the '
-     'course.', 'suspect'),
+     'course.', 'not_offer_letter'),
+    ('generic en with a study word', GL, 'This is to confirm that the person below attended the course.', 'suspect'),
     ('studying elsewhere', 'CONFIRMATION LETTER', 'This is to confirm that the person below is currently studying '
      'at Mercu College Sdn Bhd and is our sponsored student.', 'not_offer_letter'),
-    ('hostel en studying', 'LETTER OF CONFIRMATION', 'This is to confirm that the person below is currently '
+    ('hostel en studying', GO, 'This is to confirm that the person below is currently '
      'studying here and has been given a room at the Residential College.', 'suspect'),
-    ('intern ms generic', 'LETTER OF CONFIRMATION', 'This is to confirm that the person below is currently '
+    ('intern ms generic', GO, 'This is to confirm that the person below is currently '
      'studying here and will do latihan industri.', 'suspect'),
 )
-#: The SUBJECT of the letter is a hostel / internship / staff / convocation / interview matter: it blocks.
+#: The SUBJECT of the letter is a hostel / staff / convocation / interview matter, or an internship with no study
+#: word: it blocks.
 SUBJECTS = ('Perkara : Pengesahan Penginapan Asrama', 'RE: CONFIRMATION OF INTERNSHIP', 'Per: Konvokesyen 2026',
             'SUBJECT: STAFF CONFIRMATION', 'PERKARA : TEMUDUGA KEMASUKAN', 'Tajuk : Latihan Industri')
-SUBJECT_TITLES = ('CONFIRMATION LETTER - HOSTEL', 'PENGESAHAN PELAJAR (LATIHAN INDUSTRI)',
+SUBJECT_TITLES = ('CONFIRMATION LETTER - HOSTEL', 'CONFIRMATION LETTER - STUDENT HOSTEL',
                   'LETTER OF CONFIRMATION OF INTERNSHIP', 'PENGESAHAN PELAJAR BAGI TUJUAN KONVOKESYEN')
+#: CHANGED by lead 16 Nov: an internship title WITH a study word is the student's own confirmation: suspect.
+STUDENT_INTERNSHIP_TITLES = ('PENGESAHAN PELAJAR (LATIHAN INDUSTRI)', 'PENGESAHAN PELAJAR SEDANG MENJALANI LATIHAN '
+                             'INDUSTRI', 'CONFIRMATION OF STUDENT STATUS - INTERNSHIP')
 
 
 class TheReviewersCampusLines(SimpleTestCase):
@@ -226,7 +235,7 @@ class CurrentStudentsAreNeverBlocked(SimpleTestCase):
                         self.assertNotEqual(_read(en(head, title, body), crest)['status'], 'genuine')
 
 
-class OnlyAClearPhraseBlocks(SimpleTestCase):
+class OnlyTheTitleBlockBlocks(SimpleTestCase):
     def test_the_reviewers_non_study_letters(self):
         for name, title, body, want in BAD:
             for head in HEADS:
@@ -244,6 +253,18 @@ class OnlyAClearPhraseBlocks(SimpleTestCase):
                 want = 'suspect' if head == POLY and title.startswith('PENGESAHAN PELAJAR') else 'not_offer_letter'
                 with self.subTest(title, head=head.splitlines()[0]):
                     self.assertEqual(_read(conf(head, title))['status'], want)
+
+    def test_a_students_internship_title_reads_suspect(self):
+        for head in HEADS:
+            for title in STUDENT_INTERNSHIP_TITLES:
+                with self.subTest(title, head=head.splitlines()[0]):
+                    self.assertEqual(_read(conf(head, title))['status'], 'suspect')
+
+    def test_a_non_study_word_in_the_body_never_blocks(self):
+        body = STD + ' Beliau menginap di asrama dan akan menjalani latihan industri. Hubungi kakitangan kami.'
+        for head in HEADS:
+            with self.subTest(head=head.splitlines()[0]):
+                self.assertEqual(_read(conf(head, 'PENGESAHAN PELAJAR', body))['status'], 'suspect')
 
 
 #: KPM's English matric offer (the reviewer's script).
@@ -263,13 +284,21 @@ Director
 Matriculation Division
 """
 _R = 'You must register on the date set by the college.'
+#: A refusal, cancellation or rejection form on the TITLE line: no offer.
 MATRIC_NOT_AN_OFFER = {
-    'withdrawn': M.replace(_R, 'Your OFFER OF ADMISSION has been WITHDRAWN because you did not register.'),
     'cancellation': M.replace('OFFER OF ADMISSION TO', 'CANCELLATION OF OFFER OF ADMISSION TO'),
+    'rejection of offer form': M.replace('OFFER OF ADMISSION TO', 'FORM OF REJECTION OF OFFER OF ADMISSION TO'),
+    'withdrawal': M.replace('OFFER OF ADMISSION TO', 'WITHDRAWAL OF OFFER OF ADMISSION TO'),
+    'appeal': M.replace('OFFER OF ADMISSION TO', 'APPEAL FOR OFFER OF ADMISSION TO'),
+    'unsuccessful': M.replace('OFFER OF ADMISSION TO', 'UNSUCCESSFUL APPLICATION FOR OFFER OF ADMISSION TO'),
+}
+#: CHANGED by lead 16 Nov: body-word blocks removed - a refusal or a waiting list said in the BODY reads suspect
+#: (still recognised, never a course pick); a person checks.
+MATRIC_BODY_SUSPECT = {
+    'withdrawn': M.replace(_R, 'Your OFFER OF ADMISSION has been WITHDRAWN because you did not register.'),
     'not selected': M.replace(_R, 'We are sorry to inform you that you have not been selected.'),
     'waiting list': M.replace(_R, 'You have been placed on the waiting list (senarai menunggu).'),
     'declined': M.replace(_R, 'You have declined this offer. Your place is released.'),
-    'rejection of offer form': M.replace('OFFER OF ADMISSION TO', 'FORM OF REJECTION OF OFFER OF ADMISSION TO'),
     'sorry': M.replace(_R, 'We are sorry, your application did not succeed.'),
     'unfortunately': M.replace(_R, 'Unfortunately you are not eligible for the programme.'),
     'tidak layak': M.replace(_R, 'Anda tidak layak untuk program ini.'),
@@ -282,12 +311,19 @@ MATRIC_OFFER = {
 
 
 class TheEnglishMatricOffer(SimpleTestCase):
-    def test_a_withdrawal_cancellation_refusal_or_rejection_form_is_no_offer(self):
+    def test_a_cancellation_or_rejection_title_is_no_offer(self):
         for name, text in MATRIC_NOT_AN_OFFER.items():
             with self.subTest(name):
-                self.assertFalse(english_matric_offer(_folded_lines(text), text))
+                self.assertFalse(english_matric_offer(_folded_lines(text)))
                 for crest in (False, True):
                     self.assertEqual(_read(text, crest)['status'], 'not_offer_letter')
+
+    def test_a_refusal_in_the_body_reads_suspect_never_genuine(self):
+        for name, text in MATRIC_BODY_SUSPECT.items():
+            for crest in (False, True):
+                with self.subTest(name, crest=crest):
+                    out = _read(text, crest)
+                    self.assertEqual((out['status'], out['type']), ('suspect', 'matric_offer_en'))
 
     def test_an_offer_and_its_footnote_read_suspect(self):
         # "cancelled immediately IF you fail to register" is a condition: it never blocks

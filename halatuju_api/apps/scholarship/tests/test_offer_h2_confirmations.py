@@ -128,9 +128,17 @@ class EnglishConfirmationTitles(SimpleTestCase):
         # main never read an English title; option B reads it on the suspect path only
         for head, seen in ((f'POLITEKNIK UNGKU OMAR\n{KPT}', 'confirmation_polytechnic'),
                            (f'KOLEJ MATRIKULASI PERAK\nBAHAGIAN MATRIKULASI\n{KPM}', 'confirmation_matriculation')):
-            for title in ('CONFIRMATION OF STUDENT STATUS', 'CONFIRMATION OF STUDIES', 'LETTER OF CONFIRMATION'):
+            # CHANGED by lead 16 Nov: a generic title needs a study word in its title block
+            for title in ('CONFIRMATION OF STUDENT STATUS', 'CONFIRMATION OF STUDIES', 'LETTER OF CONFIRMATION - STUDENT',
+                          'CONFIRMATION OF STUDY', 'CONFIRMATION OF ENROLMENT', 'LETTER OF ENROLMENT VERIFICATION'):
                 with self.subTest(head=head.splitlines()[0], title=title):
                     self.assertEqual(_verdict(_confirm_en_title(head, title)), ('suspect', seen, 'confirmation_check'))
+
+    def test_a_bare_generic_title_is_no_confirmation(self):
+        for title in ('LETTER OF CONFIRMATION', 'CONFIRMATION LETTER'):
+            with self.subTest(title):
+                self.assertEqual(_read(_confirm_en_title(f'POLITEKNIK UNGKU OMAR\n{KPT}', title))['status'],
+                                 'not_offer_letter')
 
     def test_iium_by_its_english_name_reads_suspect(self):
         self.assertEqual(_verdict(_confirm_en_title('INTERNATIONAL ISLAMIC UNIVERSITY MALAYSIA')),
