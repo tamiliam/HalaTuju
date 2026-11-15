@@ -978,7 +978,7 @@ class TheApproverStampAnywhereInItsSection(SimpleTestCase):
                       'Look at the WHOLE approver\'s section, not only inside the box',
                       'a printed stamp box (e.g. "Cop Rasmi") left EMPTY does NOT cancel a stamp impressed '
                       'elsewhere in that section',
-                      'A stamp OUTSIDE the approver\'s section (e.g. in the applicant\'s or declarant\'s own part of '
+                      'a stamp OUTSIDE the approver\'s section (e.g. in the applicant\'s or declarant\'s own part of '
                       'the form) is NOT the approver\'s stamp',
                       'an empty box only says that the box itself holds nothing, so answer "has_stamp" from the '
                       'whole approver\'s section'):
@@ -989,6 +989,23 @@ class TheApproverStampAnywhereInItsSection(SimpleTestCase):
                         APPROVAL_PROMPT.index('left EMPTY does NOT cancel'))
         self.assertLess(APPROVAL_PROMPT.index('left EMPTY does NOT cancel'),
                         APPROVAL_PROMPT.index('"has_signature" = "yes" ONLY'))
+
+    def test_the_outside_the_section_rule_is_scoped_to_forms_with_an_approvers_section(self):
+        """H1 review (Low): the "outside the approver's section" rule must not reach an informal payslip, which has
+        no approver's section — there the issuer's chop still counts anywhere on the page, as before H1."""
+        from apps.scholarship.income_declaration import APPROVAL_PROMPT
+        rule = 'a stamp OUTSIDE the approver\'s section'
+        scope = 'ONLY on a form that HAS an approver\'s section (an income declaration or a village head\'s form), '
+        self.assertIn(scope + rule, APPROVAL_PROMPT)
+        self.assertEqual(APPROVAL_PROMPT.lower().count('outside the approver\'s section'), 1)  # never unscoped
+        for words in ('A document with NO approver\'s section (e.g. an informal payslip) has no such limit: the '
+                      'issuing body\'s stamp / chop counts wherever it is visible on the page',
+                      'so answer "has_stamp" from the whole approver\'s section (on a document with no approver\'s '
+                      'section, from the whole page)'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+        # The payslip carve-out sits before the copy-stamp exclusion, so that exclusion still applies to it.
+        self.assertLess(APPROVAL_PROMPT.index('has no such limit'), APPROVAL_PROMPT.index('A copy-certification'))
 
     def test_the_prompt_keeps_its_guards(self):
         """Not undone (#53 and its follow-up): printed text is not a stamp, an empty box alone is not a stamp,
