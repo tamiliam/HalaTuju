@@ -40,8 +40,8 @@ override or a later corpus answer shows which rule was wrong (`eval/offer_genuin
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _NOT_THE_OFFER_LINE,
-                                  _WING_HEAD, MATRIC_OFFER_EN)
+from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _MATRIC_EN_TITLES,
+                                  _NOT_THE_OFFER_LINE, _WING_HEAD, MATRIC_OFFER_EN)
 # The title-block reading and the CAP (split out for the 600-line limit; lead, 16 Nov 2026).
 from .offer_confirm_checks import _campus_dropped, cap_confirmation, generic_titled, non_study_subject
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
@@ -415,9 +415,7 @@ def _confirmation_shaped(lines, glued) -> bool:
             and _own_identity_lines(lines, _CONFIRM_TITLES))
 
 
-# -- KPM's English matriculation offer (help H2 option B: suspect, never a pick) --
-_MATRIC_EN_TITLES = (' OFFER OF ADMISSION TO THE MATRICULATION PROGRAMME ',
-                     ' ADMISSION TO THE MATRICULATION PROGRAMME ', ' OFFER OF THE MATRICULATION PROGRAMME ')
+# -- KPM's English matriculation offer (help H2 option B: suspect, never a pick; titles in `offer_confirmations`) --
 #: The Division and the ministry: the issuer the letterhead must name first.
 _MATRIC_ISSUERS_EN = (' MATRICULATION DIVISION ', ' BAHAGIAN MATRIKULASI ', ' MINISTRY OF EDUCATION MALAYSIA ',
                       ' MINISTRY OF EDUCATION ', ' KEMENTERIAN PENDIDIKAN MALAYSIA ')
@@ -433,8 +431,8 @@ def english_matric_offer(lines) -> bool:
         return False
     if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
         return False
-    offer = next((ln for ln in lines if ' OFFER ' in ln or any(t in ln for t in _MATRIC_EN_TITLES)), '')
-    if not any(t in offer for t in _MATRIC_EN_TITLES) or any(w in offer for w in _NOT_THE_OFFER_LINE):
+    offer = next((ln for ln in lines if any(t in ln for t in _MATRIC_EN_TITLES)), '')   # review 9 (M1)
+    if not offer or any(w in offer for w in _NOT_THE_OFFER_LINE):
         return False
     allowed = _MATRIC_ISSUERS_EN + (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ')
     return (_named_first(lines, _MATRIC_ISSUERS_EN) and _first_institution(lines, allowed) == 'allowed'

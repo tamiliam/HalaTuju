@@ -1247,7 +1247,15 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
      (`offer_confirm_checks.cap_confirmation`, run last in `apply_rulings`): a TVET / agency lift (real snapshot
      d3494, a TVETMARA "PENGESAHAN PELAJAR" under the salutation, read genuine before) and a genuine `ua_offer`
      baseline both read suspect, with a confirmation code that never writes a course pick. A confirmation word in
-     an offer's BODY is no cap.
+     an offer's BODY is no cap. **Review 9 (16 Nov 2026):** the CAP reads the WHOLE page as main's
+     `_confirm_titled` does (`page_titled`: top half, before any offer title, across joined lines, English titles
+     read as the Malay one), so an addressee / "Tuan/Puan," / "Kami ..." line above the title, or a title split
+     over two lines, no longer skips it; the title block stays only for gates (a) generic titles and (c) subject
+     lines. A confirmation-titled page that reads suspect on its own score keeps its status but takes the
+     confirmation code (it had kept `ua_offer` / the family code and could write a pick); a `not_offer_letter` is
+     left alone. KPM's English matric offer takes `matric_offer_en` (suspect, never a pick) even when an "OFFER
+     LETTER" header sits above its title; its title line is the line holding an English matric title.
+     "PENGESAHAN STATUS PENGAJIAN" is a specific confirmation title.
    **Non-study letters that reach suspect are ACCEPTED on purpose (a person rejects them):** a graduate, a former
    student ("telah tamat pengajian", "was a student", "pernah belajar"), a dismissal ("diberhentikan",
    "terminated") or a refusal ("tidak ditawarkan", "not offered", an offer withdrawn / "dibatalkan") said in the

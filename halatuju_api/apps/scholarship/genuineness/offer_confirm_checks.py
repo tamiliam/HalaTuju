@@ -4,13 +4,15 @@ Pure.
 
 Lead's decision, 16 Nov 2026 (H2 review 8 failed again on body-word blocks): no body word ever blocks a
 confirmation. Every confirmation reads suspect at best and a person checks it, so a non-study letter that reaches
-suspect is accepted (decisions.md ruling 4). Only the title block is read: the confirmation title (`titled`, and the
-CAP, `cap_confirmation`) and the letter's subject (`non_study_subject`).
+suspect is accepted (decisions.md ruling 4). Only the title block is read for the confirmation reading: the generic
+title's study word (`generic_titled`) and the letter's subject (`non_study_subject`). The CAP (`cap_confirmation`)
+reads the WHOLE page as well, as main's `_confirm_titled` does (`page_titled`; H2 review 9).
 """
 from .offer_confirmations import (_BODY_CUTS, _BODY_STARTS, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC,
-                                  _INTERNSHIP, _NOT_STUDIES_SUBJECT, _STUDY_WORDS, _SUBJECT_STARTS, CONFIRMATION_SEEN)
+                                  _INTERNSHIP, _MATRIC_EN_TITLES, _NOT_STUDIES_SUBJECT, _STUDY_WORDS, _SUBJECT_STARTS,
+                                  CONFIRMATION_SEEN, MATRIC_OFFER_EN)
 from .offer_reading import (_COMPANY_HEAD, _CONFIRM_TITLES, _CONFIRM_TOP_CHARS, _IC, _ORG_RE, _PERSON_LABELS,
-                            _PRIVATE_BODIES, _SB, _letterhead_region, _ruled_status)
+                            _PRIVATE_BODIES, _SB, _TAG, _TITLE, _letterhead_region, _page, _ruled_status)
 
 _SPECIFIC = _CONFIRM_TITLES + _CONFIRM_TITLES_EN
 _ALL_TITLES = _SPECIFIC + _CONFIRM_TITLES_EN_GENERIC
@@ -86,17 +88,48 @@ _CAP_SEEN = {'matriculation': 'confirmation_matriculation', 'polytechnic': 'conf
              'pismp': 'confirmation_ipg', 'stpm': 'confirmation_form6'}
 
 
+def page_titled(lines) -> bool:
+    """H2 review 9 (H1): a confirmation title on the WHOLE page, read as main's `_confirm_titled` reads it - in its
+    top half (or first `_CONFIRM_TOP_CHARS` characters), before any offer title, across joined lines (a title
+    split over two lines), an English title read as the Malay one. A generic title counts only with a study word
+    in its title block (`generic_titled`). No addressee, salutation or "Kami ..." line above the title hides it."""
+    page = _page(lines)
+    for t in _CONFIRM_TITLES_EN + (_CONFIRM_TITLES_EN_GENERIC if generic_titled(lines) else ()):
+        page = page.replace(t, ' PENGESAHAN PELAJAR ')
+    at = min((page.find(t) for t in _CONFIRM_TITLES if t in page), default=-1)
+    offer = min((page.find(t) for t in _TITLE if t in page), default=len(page))
+    return 0 <= at < offer and at <= max(_CONFIRM_TOP_CHARS, len(page) // 2)
+
+
+def _matric_en_page(lines) -> bool:
+    """KPM's English matriculation offer on the page: the Division, the ministry and an English matric title."""
+    page = _page(lines)
+    return (' MATRICULATION DIVISION ' in page and ' MINISTRY OF EDUCATION ' in page
+            and any(t in page for t in _MATRIC_EN_TITLES))
+
+
 def cap_confirmation(lines, result, r, model_version):
-    """Gate (d), the CAP (lead, 16 Nov 2026): a page whose title block holds a confirmation title reads SUSPECT
-    at best, whatever ruled it genuine (a TVET / agency lift, a genuine baseline such as `ua_offer`)."""
-    if result.get('status') != 'genuine' or not titled(lines):
+    """Gate (d), the CAP (lead, 16 Nov 2026), run last: a confirmation-titled page (`page_titled`, or the title
+    block's `titled`) reads SUSPECT at best, whatever ruled it genuine (a TVET / agency lift, a genuine baseline
+    such as `ua_offer`). Review 9: a suspect one keeps its status but takes the confirmation code (H2), so it never
+    writes a course pick (`pathway_engine.is_confirmation_letter`); a `not_offer_letter` is left as it is. An
+    English matriculation offer the family read as `matriculation` takes `MATRIC_OFFER_EN`, suspect at best (M1)."""
+    status, seen = result.get('status'), result.get('type') or ''
+    if status not in ('genuine', 'suspect') or seen in CONFIRMATION_SEEN:
         return result
-    seen = result.get('type') or ''
-    if seen not in CONFIRMATION_SEEN:
-        seen = _CAP_SEEN.get(seen) or ('confirmation_tvet' if seen.startswith('tvet') else 'confirmation_ua')
+    if seen == 'matriculation' and _matric_en_page(lines):
+        return _ruled_status('suspect', r, MATRIC_OFFER_EN, 'matric_offer_en', "KPM's English matriculation offer - "
+                             'a person checks; never genuine by itself and never a course pick (help H2 option B)',
+                             model_version)
+    if not (page_titled(lines) or titled(lines)):
+        return result
+    seen = _CAP_SEEN.get(seen) or ('confirmation_tvet' if seen.startswith('tvet') else 'confirmation_ua')
     tag = 'confirmation_ua' if seen == 'confirmation_ua' else 'confirmation_check'
-    return _ruled_status('suspect', r, seen, tag, 'a confirmation of studies (its title) - a person checks; never '
-                         'genuine by itself (owner ruling 4, 16 Nov 2026)', model_version)
+    why = ('a confirmation of studies (its title) - a person checks; never genuine by itself (owner ruling 4, '
+           '16 Nov 2026)')
+    if status == 'suspect':                 # review 9 (H2): the status stays; only the code changes
+        return {**result, 'type': seen, 'reason': (_TAG.format(tag) + why + '; ' + (result.get('reason') or ''))[:300]}
+    return _ruled_status('suspect', r, seen, tag, why, model_version)
 
 
 def _campus_line(ln) -> str:

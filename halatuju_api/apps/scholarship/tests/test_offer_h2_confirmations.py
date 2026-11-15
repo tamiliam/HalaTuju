@@ -175,9 +175,14 @@ class PrivateIssuersStillFail(SimpleTestCase):
                      'KOLEJ MATRIKULASI MERCU\nBAHAGIAN MATRIKULASI'):
             with self.subTest(head=head):
                 status, seen, ruling = _verdict(_confirm(head))
-                self.assertNotIn(seen, CONFIRMATION_SEEN)      # no confirmation: the family baseline stands
-                self.assertEqual(ruling, '')
+                # CHANGED by review 9 (H2): no confirmation rule names it, so the baseline status stands, but a
+                # suspect one takes the CAP's confirmation code - a confirmation-titled page never writes a pick
                 self.assertNotEqual(status, 'genuine')
+                if status == 'suspect':
+                    self.assertIn(seen, CONFIRMATION_SEEN)
+                    self.assertIn(ruling, ('confirmation_check', 'confirmation_ua'))
+                else:
+                    self.assertEqual(ruling, '')
 
     def test_a_public_name_only_in_the_body_or_below_the_title_is_no_confirmation(self):
         for text in (_confirm(f'MERCU PRESTIGE\n{KPT}').replace('Institusi : Contoh', f'Institusi : {KK}'),
