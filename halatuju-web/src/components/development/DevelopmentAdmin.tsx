@@ -103,9 +103,10 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
       {failed === 'programme_required' && <p className="text-sm text-ground-700">{t(`${K}.chooseGift`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {data && editing && canEdit && (
+      {/* TD-631: a reader opens a listed module (its lessons, task and lesson files too) in the same form, read-only. */}
+      {data && editing && (canEdit || editing.row) && (
         <ModuleForm key={editing.row?.id ?? 'new'} row={editing.row} audiences={data.audiences} emailOn={data.email_switch_on} limits={data.limits}
-          programme={programme} token={token} t={t}
+          programme={programme} token={token} t={t} readOnly={!canEdit}
           onCancel={() => { setEditing(null); void load() }}
           onSaved={(saved, done, keepOpen) => {
             setBanner({ ok: true, text: t(`${K}.done.${done}`) })
@@ -157,6 +158,11 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
                           {m.status !== 'draft' && (
                             <Link href={giftHref(`/admin/programme/development/${m.id}`, programme)} className={LINK}
                               data-testid={`module-progress-${m.id}`}>{t(`${K}.action.progress`)}</Link>
+                          )}
+{!canEdit && (
+                            <button type="button" className={LINK} disabled={!!editing}
+                              data-testid={`module-view-${m.id}`}
+                              onClick={() => { setEditing({ row: m }); setBanner(null) }}>{t(`${K}.action.view`)}</button>
                           )}
                           {canEdit && (
                             <button type="button" className={LINK} disabled={busyId === m.id || !!editing}

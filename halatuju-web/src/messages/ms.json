@@ -34,7 +34,8 @@
     "menu": "Menu",
     "unsavedChanges": "Perubahan belum disimpan",
     "languageLoadFailed": "Kami tidak dapat memuatkan bahasa itu. Sila muat semula halaman dan cuba lagi.",
-    "note": "Nota"
+    "note": "Nota",
+    "close": "Tutup"
   },
   "header": {
     "myProfile": "Profil Saya",
@@ -9202,7 +9203,8 @@
       "action": {
         "edit": "Sunting",
         "withdraw": "Tarik balik",
-        "delete": "Padam"
+        "delete": "Padam",
+        "view": "Lihat"
       },
       "confirm": {
         "withdraw": "Tarik balik “{title}”? Penerima biasiswa tidak lagi dapat melihatnya; ia kekal di sini di bawah Ditarik balik. E-mel yang belum dihantar tidak akan dihantar.",
@@ -9243,7 +9245,8 @@
         "emailNote": "Dihantar dalam masa sejam, sekali kepada setiap penerima biasiswa yang berkenaan, selagi “Pengumuman” dihidupkan dalam Komunikasi pelajar.",
         "emailOff": "E-mel “Pengumuman” dimatikan dalam Komunikasi pelajar, jadi tiada sesiapa akan menerima e-mel.",
         "editNote": "Suntingan kemudian mengemas kini apa yang dilihat penerima biasiswa dan menandakannya “disunting”; tiada e-mel dihantar semula. Tarik balik menyembunyikannya daripada penerima biasiswa; ia kekal di sini di bawah Ditarik balik.",
-        "lockedNote": "Ia sudah keluar: hanya tajuk, mesej dan sematan boleh diubah. Penerima biasiswa melihatnya bertanda “disunting”, dan tiada e-mel dihantar semula."
+        "lockedNote": "Ia sudah keluar: hanya tajuk, mesej dan sematan boleh diubah. Penerima biasiswa melihatnya bertanda “disunting”, dan tiada e-mel dihantar semula.",
+        "viewTitle": "Pengumuman"
       },
       "btn": {
         "publish": "Terbitkan",
@@ -9299,7 +9302,8 @@
         "results": "Keputusan",
         "edit": "Sunting",
         "close": "Tutup sekarang",
-        "delete": "Padam"
+        "delete": "Padam",
+        "view": "Lihat"
       },
       "confirm": {
         "close": "Tutup “{title}” sekarang? Penerima biasiswa tidak lagi boleh menjawab atau mengubah jawapan; apa yang telah dihantar kekal.",
@@ -9365,7 +9369,8 @@
         "emailOff": "E-mel “Tinjauan untuk anda” dimatikan dalam Komunikasi pelajar, jadi tiada sesiapa akan menerima e-mel.",
         "remind": "Ingatkan mereka yang belum menjawab, 3 hari sebelum ia ditutup",
         "lockNote": "Sebaik sahaja tinjauan ada jawapan, soalannya dikunci (supaya jawapan boleh dibandingkan). Anda masih boleh mengubah tajuk, pengenalan dan tarikh tutup.",
-        "lockedNote": "Sudah ada yang menjawab: soalan, untuk siapa dan masa dibuka dikunci. Tajuk, pengenalan, tarikh tutup dan e-mel masih boleh diubah."
+        "lockedNote": "Sudah ada yang menjawab: soalan, untuk siapa dan masa dibuka dikunci. Tajuk, pengenalan, tarikh tutup dan e-mel masih boleh diubah.",
+        "viewTitle": "Tinjauan"
       },
       "btn": {
         "publish": "Terbitkan",
@@ -9469,7 +9474,8 @@
         "edit": "Sunting",
         "archive": "Arkibkan",
         "restore": "Kembalikan",
-        "delete": "Padam"
+        "delete": "Padam",
+        "view": "Lihat"
       },
       "confirm": {
         "archive": "Arkibkan “{title}”? Penerima biasiswa yang belum bermula tidak lagi akan melihatnya; yang sudah bermula masih boleh membacanya.",
@@ -9543,7 +9549,9 @@
         "remind": "Ingatkan yang belum selesai, 3 hari sebelum tarikh akhir",
         "remindNeedsDue": "Tetapkan tarikh akhir untuk mengingatkan.",
         "lockNote": "Sebaik sahaja seorang penerima biasiswa bermula, jenis tugasan, untuk siapa dan bila ia diterbitkan akan dikunci. Anda masih boleh membetulkan teks pelajaran dan menambah atau membuang pelajaran.",
-        "lockedNote": "Penerima biasiswa sudah bermula: jenis tugasan, untuk siapa dan bila ia diterbitkan telah dikunci. Pelajaran, teks, tarikh akhir dan e-mel masih boleh diubah."
+        "lockedNote": "Penerima biasiswa sudah bermula: jenis tugasan, untuk siapa dan bila ia diterbitkan telah dikunci. Pelajaran, teks, tarikh akhir dan e-mel masih boleh diubah.",
+        "viewTitle": "Modul",
+        "open": "Buka"
       },
       "btn": {
         "publish": "Terbitkan",
@@ -9629,7 +9637,8 @@
         "reviewFailed": "Tidak dapat disimpan. Sila cuba lagi.",
         "empty": "Tiada sesiapa di sini.",
         "loadError": "Kemajuan tidak dapat dimuatkan.",
-        "footnote": "Kerja yang sama dipaparkan dalam fail setiap penerima biasiswa (tab Perkembangan) dan, untuk pelajar mereka sendiri, di halaman Pelajar saya mentor. Kakitangan dan mentor sahaja; tidak sekali-kali penaja atau rakan kongsi. “Lewat” muncul selepas tarikh akhir bagi yang belum selesai."
+        "footnote": "Kerja yang sama dipaparkan dalam fail setiap penerima biasiswa (tab Perkembangan) dan, untuk pelajar mereka sendiri, di halaman Pelajar saya mentor. Kakitangan dan mentor sahaja; tidak sekali-kali penaja atau rakan kongsi. “Lewat” muncul selepas tarikh akhir bagi yang belum selesai.",
+        "commentRead": "Komen untuk penerima biasiswa"
       }
     },
     "team": {

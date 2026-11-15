@@ -113,9 +113,10 @@ export default function AnnouncementsAdmin({ programme }: { programme?: string }
       {failed === 'programme_required' && <p className="text-sm text-ground-700">{t(`${K}.chooseGift`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {data && editing && canEdit && (
+      {/* TD-631: a reader opens a listed announcement in the same form, read-only. */}
+      {data && editing && (canEdit || editing.row) && (
         <AnnouncementForm row={editing.row} audiences={data.audiences} emailOn={data.email_switch_on}
-          limits={data.limits} programme={programme} token={token} t={t}
+          limits={data.limits} programme={programme} token={token} t={t} readOnly={!canEdit}
           onCancel={() => setEditing(null)}
           onSaved={(saved, done) => {
             setEditing(null); setTab(saved.status)
@@ -168,6 +169,11 @@ export default function AnnouncementsAdmin({ programme }: { programme?: string }
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <span className="flex gap-3">
+{!canEdit && (
+                            <button type="button" className={LINK} disabled={!!editing}
+                              data-testid={`announcement-view-${a.id}`}
+                              onClick={() => { setEditing({ row: a }); setBanner(null) }}>{t(`${K}.action.view`)}</button>
+                          )}
                           {canEdit && a.status !== 'withdrawn' && (
                             <button type="button" className={LINK} disabled={busyId === a.id || !!editing}
                               data-testid={`announcement-edit-${a.id}`}

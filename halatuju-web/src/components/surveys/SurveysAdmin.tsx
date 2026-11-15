@@ -101,9 +101,10 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
       {failed === 'programme_required' && <p className="text-sm text-ground-700">{t(`${K}.chooseGift`)}</p>}
       {!data && !failed && <p className="text-sm text-ground-500">{t('common.loading')}</p>}
 
-      {data && editing && canEdit && (
+      {/* TD-631: a reader opens a listed survey (a draft's questions too) in the same form, read-only. */}
+      {data && editing && (canEdit || editing.row) && (
         <SurveyForm row={editing.row} audiences={data.audiences} emailOn={data.email_switch_on}
-          limits={data.limits} programme={programme} token={token} t={t}
+          limits={data.limits} programme={programme} token={token} t={t} readOnly={!canEdit}
           onCancel={() => setEditing(null)}
           onSaved={(saved, done) => {
             setEditing(null); setTab(saved.status)
@@ -154,6 +155,11 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
                           {s.status !== 'draft' && (
                             <Link href={giftHref(`/admin/programme/surveys/${s.id}`, programme)} className={LINK}
                               data-testid={`survey-results-${s.id}`}>{t(`${K}.action.results`)}</Link>
+                          )}
+{!canEdit && (
+                            <button type="button" className={LINK} disabled={!!editing}
+                              data-testid={`survey-view-${s.id}`}
+                              onClick={() => { setEditing({ row: s }); setBanner(null) }}>{t(`${K}.action.view`)}</button>
                           )}
                           {canEdit && (
                             <button type="button" className={LINK} disabled={busyId === s.id || !!editing}

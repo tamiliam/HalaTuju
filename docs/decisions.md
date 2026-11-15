@@ -1,6 +1,16 @@
 # Architectural Decisions — HalaTuju
 
-## 2026-11-15 — TD-631 builder calls (pending architect): Surveys, Development and Announcements open on `.view`
+## 2026-11-16 — TD-631 review round (pending architect): a reader opens what the list shows
+
+Branch td631, one commit on top of d89c41f13, not pushed. No migration. Services: web.
+
+1. **View reuses the Edit form, read-only** (review F1, done in full). Each of the three forms takes `readOnly`: its fields sit in a `<fieldset disabled>`, the write buttons are not drawn, the footnote about locks is hidden and Cancel reads Close. The pages draw the form when the person may edit OR a row was opened (`canEdit || editing.row`), so a reader can never open a blank "New" form. No new screen.
+2. **A module's lessons open one at a time,** as in Edit: the reader taps Open on a lesson. The lesson's file Open button sits outside the disabled fieldset so it stays usable; Remove and the upload box are not drawn.
+3. **The Surveys tab's title link asks `mayOpen('/admin/programme/surveys')`** with the served keys, as the Growth tab's Progress link does. A mentor (who reads the tab by their mentor record) sees the title as text.
+4. **The read-only review comment gets a visible label** with `aria-labelledby`, not a hidden one, so a sighted reader also knows whose words they are.
+
+**Caveat:** a long message in a disabled textarea may not scroll on some phones; the boxes are the same height as in Edit. If the owner's phone check finds it, the fix is to show text instead of a disabled box.
+
 
 Branch td631, not pushed. No migration. Services: web. Release-note draft: `docs/releases/td631-release-note-draft.md`.
 Owner, 2026-11-15: "there is admin, and there are permissions, which determine what the admin views and edits."

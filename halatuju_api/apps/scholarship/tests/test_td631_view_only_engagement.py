@@ -10,14 +10,19 @@ through the real endpoints, for a person whose ROLE opens nothing (a reviewer) s
 - every GET those screens call answers a `.view`-only holder (never 403);
 - every write refuses that holder (403) and calls nothing;
 - the same role WITH the `.edit` key may write (so the refusal is the key, not the label).
+
+Review round (2026-11-16): the refused writes leave every title, count and status as they were and send no
+mail; the `.edit` holder passes the gate on remind, review and the lesson-file sign too (each answers with its
+own rule, never 403), and still reads every list.
 """
 import datetime
 
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import development, surveys
-from apps.scholarship.models import Announcement, DevelopmentModule, Survey
+from apps.scholarship.models import Announcement, DevelopmentModule, ModuleProgress, Survey
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
 )
@@ -103,10 +108,40 @@ class WritesNeedTheEditKey(_Base):
         for method, path in self.writes():
             with self.subTest(method=method, path=path):
                 self.assertEqual(self.call(self.viewer, method, path, {'title': 'Changed'}).status_code, 403)
-        self.assertEqual(Survey.objects.get(pk=self.survey.pk).status, 'published')
+        survey = Survey.objects.get(pk=self.survey.pk)
+        module = DevelopmentModule.objects.get(pk=self.module.pk)
+        news = Announcement.objects.get(pk=self.news.pk)
+        # The PATCHes changed no title; close / archive / withdraw changed no status.
+        self.assertEqual((survey.title, survey.status), ('Check-in', 'published'))
+        self.assertEqual((module.title, module.status), ('Money', 'published'))
+        self.assertEqual((news.title, news.status), ('Results', 'draft'))
+        self.assertEqual(module.lessons.get(pk=self.lesson.pk).file_path, '')
+        # The creating POSTs made nothing.
         self.assertEqual(Survey.objects.filter(organisation=self.org).count(), 1)
-        self.assertEqual(DevelopmentModule.objects.get(pk=self.module.pk).status, 'published')
-        self.assertEqual(Announcement.objects.get(pk=self.news.pk).title, 'Results')
+        self.assertEqual(DevelopmentModule.objects.filter(organisation=self.org).count(), 1)
+        self.assertEqual(Announcement.objects.filter(organisation=self.org).count(), 1)
+        # The reminds sent nothing.
+        self.assertEqual(mail.outbox, [])
+
+    def test_the_edit_key_passes_the_gate_on_remind_review_and_the_lesson_file_sign(self):
+        # Positive controls for the refusals above: each answer is the row's own rule, past the key gate.
+        s, m, a, lid = self.survey.id, self.module.id, self.app.id, self.lesson.id
+        ModuleProgress.objects.create(module=self.module, application=self.app, task_text='My budget.',
+                                      task_sent_at=timezone.now())
+        for method, path, body, code in (
+            ('post', f'surveys/{s}/remind/', {}, 200),
+            ('post', f'development/{m}/remind/', {}, 409),                     # no_due_date: its own rule
+            ('post', f'development/{m}/progress/{a}/review/', {'comment': 'Good.'}, 200),
+            ('post', f'development/{m}/lessons/{lid}/file/sign/', {'size': 10 ** 9}, 400),  # file_too_large
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self.call(self.editor, method, path, body).status_code, code)
+        self.assertEqual(ModuleProgress.objects.get(module=self.module, application=self.app).review_comment, 'Good.')
+
+    def test_the_edit_key_still_reads_every_list(self):
+        for path in ('surveys/', 'development/', 'announcements/'):
+            with self.subTest(path=path):
+                self.assertEqual(self.call(self.editor, 'get', path).status_code, 200)
 
     def test_the_same_role_with_the_edit_key_may_write(self):
         # Nobody has answered, started or been sent anything, so each delete is allowed by its own rule.

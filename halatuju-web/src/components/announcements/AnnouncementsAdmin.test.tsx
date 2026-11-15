@@ -166,3 +166,37 @@ describe('TD-631: the page opens on `announcements.view`; the actions need `anno
     expect(mockApi.getAnnouncements).not.toHaveBeenCalled()
   })
 })
+
+describe('TD-631 review: a `.view`-only reader opens an announcement read-only', () => {
+  const live = (form: HTMLElement) => Array.from(form.querySelectorAll('button'))
+    .filter((b) => !b.matches(':disabled')).map((b) => b.textContent)
+
+  it('View opens the same form with the message, every field disabled and no write button', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'announcements.edit') }
+    mockApi.getAnnouncements.mockResolvedValue(payload([row({})]))
+    render(<AnnouncementsAdmin programme="flag" />)
+    fireEvent.click(await screen.findByTestId('announcement-view-1'))
+    const form = screen.getByTestId('announcement-form')
+    expect(form.textContent).toContain(`${K}.form.viewTitle`)
+    expect((screen.getByTestId('announcement-body') as HTMLTextAreaElement).value).toBe('Upload your slip.')
+    expect((screen.getByTestId('announcement-fieldset') as HTMLFieldSetElement).disabled).toBe(true)
+    for (const id of ['announcement-title', 'announcement-body', 'announcement-audience']) {
+      expect(screen.getByTestId(id).matches(':disabled')).toBe(true)
+    }
+    for (const id of ['announcement-save', 'announcement-primary', 'announcement-draft']) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    expect(live(form)).toEqual(['common.close'])
+    fireEvent.click(screen.getByText('common.close'))
+    expect(screen.queryByTestId('announcement-form')).toBeNull()
+    expect(mockApi.updateAnnouncement).not.toHaveBeenCalled()
+  })
+
+  it('an `.edit` holder gets Edit, not View', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getAnnouncements.mockResolvedValue(payload([row({})]))
+    render(<AnnouncementsAdmin programme="flag" />)
+    await screen.findByTestId('announcement-edit-1')
+    expect(screen.queryByTestId('announcement-view-1')).toBeNull()
+  })
+})

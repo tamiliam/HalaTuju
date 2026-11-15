@@ -169,3 +169,49 @@ describe('TD-631: the page opens on `development.view`; the actions need `develo
     expect(mockApi.getModules).not.toHaveBeenCalled()
   })
 })
+
+describe('TD-631 review: a `.view`-only reader opens a module read-only', () => {
+  const live = (form: HTMLElement) => Array.from(form.querySelectorAll('button'))
+    .filter((b) => !b.matches(':disabled')).map((b) => b.getAttribute('data-testid') ?? b.textContent)
+
+  it('View opens the lessons, the task prompt and the lesson file, and offers no write control', async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'development.edit') }
+    const withFile = { ...L, file: { name: 'budget.pdf', type: 'application/pdf', size: 1000 } }
+    mockApi.getModules.mockResolvedValue(payload([row({ lessons: [withFile] })]))
+    mockApi.lessonFileLink.mockResolvedValue({ url: 'https://files.example/budget.pdf', expires_in: 300 })
+    const open = jest.spyOn(window, 'open').mockReturnValue(null)
+    render(<DevelopmentAdmin programme="flag" />)
+    fireEvent.click(await screen.findByTestId('module-view-1'))
+    const form = screen.getByTestId('module-form')
+    expect(form.textContent).toContain(`${K}.form.viewTitle`)
+    expect((screen.getByTestId('module-prompt') as HTMLTextAreaElement).value).toBe('Budget?')
+    for (const id of ['module-fieldset-main', 'module-fieldset-task']) {
+      expect((screen.getByTestId(id) as HTMLFieldSetElement).disabled).toBe(true)
+    }
+    for (const id of ['lesson-edit-btn-0', 'lesson-remove-0', 'module-add-lesson', 'module-save', 'module-primary',
+      'module-draft']) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    expect(live(form)).toEqual(['lesson-open-0', 'common.close'])
+
+    fireEvent.click(screen.getByTestId('lesson-open-0'))
+    expect((screen.getByTestId('lesson-body-0') as HTMLTextAreaElement).value).toBe('Write it down.')
+    expect(screen.getByTestId('lesson-body-0').matches(':disabled')).toBe(true)
+    expect(screen.queryByTestId('lesson-file-remove-0')).toBeNull()
+    expect(screen.queryByTestId('lesson-file-0')).toBeNull()
+    expect(live(form)).toEqual(['lesson-file-open-0', 'lesson-done-0', 'common.close'])
+    fireEvent.click(screen.getByTestId('lesson-file-open-0'))
+    await waitFor(() => expect(mockApi.lessonFileLink).toHaveBeenCalledWith(1, 21, { token: 'tok' }))
+    expect(mockApi.updateModule).not.toHaveBeenCalled()
+    expect(mockApi.removeLessonFile).not.toHaveBeenCalled()
+    open.mockRestore()
+  })
+
+  it('an `.edit` holder gets Edit, not View', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getModules.mockResolvedValue(payload([row({})]))
+    render(<DevelopmentAdmin programme="flag" />)
+    await screen.findByTestId('module-edit-1')
+    expect(screen.queryByTestId('module-view-1')).toBeNull()
+  })
+})

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint TD-631 review round - a reader can open what the list shows (2026-11-16)
+
+Branch td631, on top of d89c41f13, not pushed. No migration. Services: web (the api change is a test only). Decisions: `docs/decisions.md` (2026-11-16, TD-631 review round).
+- A `.view`-only reader gets a **View** action on Announcements, Surveys and Development. It opens the same form read-only: a disabled fieldset, no Save, Publish, Draft, Delete, question or lesson editing, and Close instead of Cancel. On a module the reader opens each lesson and its file (the GET `lessons/<lid>/file/` the server already serves to `.view`).
+- The scholar file's Surveys tab links a survey title to its Results only for who may open them (`mayOpen` with the served keys); a mentor sees plain text, not a dead link.
+- The read-only review comment on Module progress has a visible label (`admin.development.progress.commentRead`, en, ms, ta).
+- `test_td631_view_only_engagement.py`: the refused writes leave titles, counts and statuses as they were and send no mail; the `.edit` holder passes on remind, review and the lesson-file sign, and reads every list.
+
 ### refactor: sprint TD-631 - Surveys, Development and Announcements open on their view key (2026-11-15)
 
 Branch td631, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-631 builder calls, pending architect). Release-note draft: `docs/releases/td631-release-note-draft.md`.

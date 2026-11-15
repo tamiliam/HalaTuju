@@ -24,8 +24,12 @@ function valueText(t: T, kind: QuestionKind, v: AnswerValue): string {
  *
  * ⚠ THE SERVER'S FENCE: the file's own (`_file_for`) AND the survey makers' roles (super, org_admin, admin);
  * the page draws the tab only for them. Its own chunk, fetched the first time the tab is opened.
+ * TD-631: a survey's title links to its Results page only for a viewer who may open that page
+ * (`resultsLinks`, from the served keys); a mentor sees plain text — never a dead end.
  */
-export default function ScholarSurveys({ id, token }: { id: number; token: string | null }) {
+export default function ScholarSurveys({ id, token, resultsLinks = false }: {
+  id: number; token: string | null; resultsLinks?: boolean
+}) {
   const { t } = useT()
   const [data, setData] = useState<Payload | null>(null)
   const [failed, setFailed] = useState(false)
@@ -54,9 +58,14 @@ export default function ScholarSurveys({ id, token }: { id: number; token: strin
       ) : data.answered.map((s) => (
         <article key={s.id} className={`${CARD} space-y-3`} data-testid={`scholar-survey-${s.id}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <Link href={`/admin/programme/surveys/${s.id}`} className="break-words font-semibold text-primary-600 hover:underline">
-              {s.title}
-            </Link>
+            {resultsLinks ? (
+              <Link href={`/admin/programme/surveys/${s.id}`} className="break-words font-semibold text-primary-600 hover:underline"
+                data-testid={`scholar-survey-link-${s.id}`}>
+                {s.title}
+              </Link>
+            ) : (
+              <strong className="break-words font-semibold text-ground-900" data-testid={`scholar-survey-title-${s.id}`}>{s.title}</strong>
+            )}
             <span className="text-xs text-ground-600">
               {t(`${K}.sent`, { date: formatDate(s.updated_at) })} · {t(`admin.surveys.tab.${s.status}`)}
             </span>

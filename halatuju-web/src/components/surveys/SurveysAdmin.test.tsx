@@ -192,3 +192,37 @@ describe('TD-631: the page opens on `surveys.view`; the actions need `surveys.ed
     expect(mockApi.getSurveys).not.toHaveBeenCalled()
   })
 })
+
+describe('TD-631 review: a `.view`-only reader opens a survey read-only', () => {
+  const live = (form: HTMLElement) => Array.from(form.querySelectorAll('button'))
+    .filter((b) => !b.matches(':disabled')).map((b) => b.textContent)
+
+  it("View opens a draft's questions in the same form, every field disabled and no write button", async () => {
+    mockRole = { role: 'admin', page_keys: (servedPageKeys('admin') ?? []).filter((k) => k !== 'surveys.edit') }
+    mockApi.getSurveys.mockResolvedValue(payload([row({ id: 2, status: 'draft', can_close: false, can_delete: true,
+      locked: false, answered_count: 0 })]))
+    render(<SurveysAdmin programme="flag" />)
+    await screen.findByRole('tab', { name: new RegExp(`${K}.tab.draft`) })
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+    fireEvent.click(await screen.findByTestId('survey-view-2'))
+    const form = screen.getByTestId('survey-form')
+    expect(form.textContent).toContain(`${K}.form.viewTitle`)
+    expect(screen.getByTestId('survey-qsummary-0').textContent).toContain('How are your studies going?')
+    expect((screen.getByTestId('survey-fieldset') as HTMLFieldSetElement).disabled).toBe(true)
+    expect(screen.getByTestId('survey-title').matches(':disabled')).toBe(true)
+    for (const id of ['survey-qedit-btn-0', 'survey-qremove-0', 'survey-add-question', 'survey-save',
+      'survey-primary', 'survey-draft']) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    expect(live(form)).toEqual(['common.close'])
+    expect(mockApi.updateSurvey).not.toHaveBeenCalled()
+  })
+
+  it('an `.edit` holder gets Edit, not View', async () => {
+    mockRole = { role: 'admin' }
+    mockApi.getSurveys.mockResolvedValue(payload([row({})]))
+    render(<SurveysAdmin programme="flag" />)
+    await screen.findByTestId('survey-edit-1')
+    expect(screen.queryByTestId('survey-view-1')).toBeNull()
+  })
+})

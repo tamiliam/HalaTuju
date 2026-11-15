@@ -307,3 +307,27 @@ describe('TD-631: the Surveys and Growth tabs open on their `.view` key', () => 
     expect(mockDev.getScholarGrowth).not.toHaveBeenCalled()
   })
 })
+
+it('TD-631 review: a survey title links to its Results only for who may open them; a mentor sees plain text', async () => {
+  mockApi.getScholarSurveys.mockResolvedValue({ waiting: [], answered: [{ id: 7, title: 'Check-in', status: 'open',
+    submitted_at: '2026-11-02T00:00:00Z', updated_at: '2026-11-02T00:00:00Z',
+    answers: [{ question_id: 1, text: 'In a hostel?', kind: 'yes_no', value: true }] }] })
+  for (const [who, mentorView, link] of [[{ role: 'org_admin' }, false, true],
+    [{ role: 'mentor', permissions: [] }, true, false]] as const) {
+    mockRole = { ...who, owning_org_id: 11 }
+    mockApi.getScholarFile.mockResolvedValue({ ...FILE, mentor_view: mentorView })
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.surveys' }))
+    await screen.findByTestId('scholar-survey-7')
+    if (link) {
+      expect(screen.getByTestId('scholar-survey-link-7').getAttribute('href')).toBe('/admin/programme/surveys/7')
+      expect(screen.queryByTestId('scholar-survey-title-7')).toBeNull()
+    } else {
+      expect(screen.getByTestId('scholar-survey-title-7').textContent).toBe('Check-in')
+      expect(screen.queryByTestId('scholar-survey-link-7')).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Check-in' })).toBeNull()
+    }
+    unmount()
+  }
+})

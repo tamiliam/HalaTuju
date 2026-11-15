@@ -61,7 +61,12 @@ function Review({ moduleId, row, token, t, onSaved, canEdit }: {
           {t(row.reviewed_at ? `${K}.updateReview` : `${K}.markReviewed`)}
         </button>
       </>) : row.review_comment && (
-        <p className="whitespace-pre-line break-words text-sm text-ground-800" data-testid="review-comment-read">{row.review_comment}</p>
+        // TD-631 review (a11y): the read-only comment carries a short visible label.
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-ground-600" id={`review-comment-label-${row.application_id}`}>{t(`${K}.commentRead`)}</p>
+          <p className="whitespace-pre-line break-words text-sm text-ground-800" data-testid="review-comment-read"
+            aria-labelledby={`review-comment-label-${row.application_id}`}>{row.review_comment}</p>
+        </div>
       )}
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
     </section>

@@ -13,6 +13,7 @@ const KNOWN = ['title_required', 'title_too_long', 'title_newline', 'body_requir
   'bad_publish_at', 'publish_at_past', 'published_locked', 'withdrawn']
 const FIELD = 'w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-ground-900 disabled:bg-ground-50 disabled:text-ground-500'
 const LABEL = 'flex flex-col gap-1 text-sm font-medium text-ground-700'
+const SET = 'm-0 min-w-0 space-y-4 border-0 p-0'
 const MYT = 'Asia/Kuala_Lumpur'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -46,7 +47,7 @@ export function mytInstant(date: string, time: string): string | null {
  * and the pin can change — the audience, the timing and the email are shown but locked (the server refuses
  * them too, `published_locked`). An edit never emails again.
  */
-export default function AnnouncementForm({ row, audiences, emailOn, limits, programme, token, t, onCancel, onSaved }: {
+export default function AnnouncementForm({ row, audiences, emailOn, limits, programme, token, t, onCancel, onSaved, readOnly = false }: {
   row: AnnouncementRow | null
   audiences: AnnouncementAudience[]
   emailOn: boolean
@@ -56,6 +57,8 @@ export default function AnnouncementForm({ row, audiences, emailOn, limits, prog
   t: T
   onCancel: () => void
   onSaved: (row: AnnouncementRow, done: Done) => void
+  /** TD-631: a reader opens the same form to read it; every field is disabled and no write button is drawn. */
+  readOnly?: boolean
 }) {
   const out = row?.status === 'published'
   const start = mytParts(row?.publish_at ?? null)
@@ -100,7 +103,8 @@ export default function AnnouncementForm({ row, audiences, emailOn, limits, prog
   const primary: AnnouncementAction = later ? 'schedule' : 'publish'
   return (
     <section className="max-w-3xl space-y-4 rounded-xl border-2 border-info-500 bg-ground-0 p-5" data-testid="announcement-form">
-      <h2 className="text-base font-semibold text-ground-900">{t(row ? `${K}.form.editTitle` : `${K}.form.newTitle`)}</h2>
+      <h2 className="text-base font-semibold text-ground-900">{t(readOnly ? `${K}.form.viewTitle` : row ? `${K}.form.editTitle` : `${K}.form.newTitle`)}</h2>
+      <fieldset disabled={readOnly} className={SET} data-testid="announcement-fieldset">
       <label className={LABEL}>{t(`${K}.form.title`)}
         <input value={title} maxLength={limits.title} onChange={(e) => setTitle(e.target.value)}
           data-testid="announcement-title" className={FIELD} />
@@ -159,10 +163,11 @@ export default function AnnouncementForm({ row, audiences, emailOn, limits, prog
           <span className="block text-xs text-ground-600">{t(emailOn ? `${K}.form.emailNote` : `${K}.form.emailOff`)}</span>
         </span>
       </div>
+      </fieldset>
 
       {error && <p className="text-sm text-critical-600" role="alert" data-testid="announcement-error">{error}</p>}
       <div className="flex flex-wrap gap-2">
-        {out ? (
+        {readOnly ? null : out ? (
           <button type="button" disabled={busy} onClick={() => save('edit')} data-testid="announcement-save"
             className="min-h-11 rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink disabled:opacity-60">
             {t(`${K}.btn.save`)}
@@ -179,10 +184,10 @@ export default function AnnouncementForm({ row, audiences, emailOn, limits, prog
         </>)}
         <button type="button" disabled={busy} onClick={onCancel}
           className="min-h-11 rounded-lg border border-ground-300 bg-ground-0 px-4 text-ground-800">
-          {t('common.cancel')}
+          {t(readOnly ? 'common.close' : 'common.cancel')}
         </button>
       </div>
-      <p className="text-xs text-ground-600">{t(out ? `${K}.form.lockedNote` : `${K}.form.editNote`)}</p>
+      {!readOnly && <p className="text-xs text-ground-600">{t(out ? `${K}.form.lockedNote` : `${K}.form.editNote`)}</p>}
     </section>
   )
 }

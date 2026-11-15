@@ -109,6 +109,9 @@ describe('TD-631: the progress opens on `development.view`; Remind and Mark revi
     fireEvent.click(await screen.findByTestId('read-1'))
     expect(screen.getByTestId('review-1').textContent).toContain('Cook three days a week.')
     expect(screen.getByTestId('review-comment-read').textContent).toBe('Good plan.')
+    // TD-631 review (a11y): the read-only comment has a visible label that names it.
+    const label = document.getElementById(screen.getByTestId('review-comment-read').getAttribute('aria-labelledby') ?? '')
+    expect(label?.textContent).toBe(`${K}.commentRead`)
     expect(screen.getByTestId('module-csv')).toBeTruthy()
     for (const id of ['review-comment', 'review-save', 'module-remind', 'module-remind-off']) {
       expect(screen.queryByTestId(id)).toBeNull()

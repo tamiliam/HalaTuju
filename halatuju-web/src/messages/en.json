@@ -34,7 +34,8 @@
     "menu": "Menu",
     "unsavedChanges": "Unsaved changes",
     "languageLoadFailed": "We could not load that language. Please reload the page and try again.",
-    "note": "Note"
+    "note": "Note",
+    "close": "Close"
   },
   "header": {
     "myProfile": "My Profile",
@@ -9202,7 +9203,8 @@
       "action": {
         "edit": "Edit",
         "withdraw": "Withdraw",
-        "delete": "Delete"
+        "delete": "Delete",
+        "view": "View"
       },
       "confirm": {
         "withdraw": "Withdraw “{title}”? Scholars will no longer see it; it stays here under Withdrawn. Emails not yet sent will not go.",
@@ -9243,7 +9245,8 @@
         "emailNote": "Sent within the hour, once to each scholar it is for, while “Announcement” is switched on in Student communications.",
         "emailOff": "The “Announcement” email is switched off in Student communications, so nobody will be emailed.",
         "editNote": "Editing later updates what scholars see and marks it “edited”; it does not email again. Withdraw hides it from scholars; it stays here under Withdrawn.",
-        "lockedNote": "It is out: only the title, the message and the pin can change. Scholars see it marked “edited”, and nobody is emailed again."
+        "lockedNote": "It is out: only the title, the message and the pin can change. Scholars see it marked “edited”, and nobody is emailed again.",
+        "viewTitle": "Announcement"
       },
       "btn": {
         "publish": "Publish",
@@ -9299,7 +9302,8 @@
         "results": "Results",
         "edit": "Edit",
         "close": "Close now",
-        "delete": "Delete"
+        "delete": "Delete",
+        "view": "View"
       },
       "confirm": {
         "close": "Close “{title}” now? Scholars can no longer answer or change their answers; what they sent stays.",
@@ -9365,7 +9369,8 @@
         "emailOff": "The “A survey for you” email is switched off in Student communications, so nobody will be emailed.",
         "remind": "Remind those who have not answered, 3 days before it closes",
         "lockNote": "Once a survey has an answer, its questions are locked (so answers stay comparable). You can still change the title, the introduction and the closing date.",
-        "lockedNote": "Somebody has answered: the questions, who it is for and the opening time are locked. The title, the introduction, the closing date and the emails can still change."
+        "lockedNote": "Somebody has answered: the questions, who it is for and the opening time are locked. The title, the introduction, the closing date and the emails can still change.",
+        "viewTitle": "Survey"
       },
       "btn": {
         "publish": "Publish",
@@ -9469,7 +9474,8 @@
         "edit": "Edit",
         "archive": "Archive",
         "restore": "Put back",
-        "delete": "Delete"
+        "delete": "Delete",
+        "view": "View"
       },
       "confirm": {
         "archive": "Archive “{title}”? Scholars who have not started will no longer see it; those who started keep a read-only view.",
@@ -9543,7 +9549,9 @@
         "remind": "Remind those not done, 3 days before the due date",
         "remindNeedsDue": "Set a due date to remind.",
         "lockNote": "Once a scholar has started, the task type, who it is for and when it goes live are locked. You can still fix lesson text and add or remove lessons.",
-        "lockedNote": "Scholars have started: the task type, who it is for and when it goes live are locked. Lessons, texts, the due date and the emails can still change."
+        "lockedNote": "Scholars have started: the task type, who it is for and when it goes live are locked. Lessons, texts, the due date and the emails can still change.",
+        "viewTitle": "Module",
+        "open": "Open"
       },
       "btn": {
         "publish": "Publish",
@@ -9629,7 +9637,8 @@
         "reviewFailed": "That could not be saved. Please try again.",
         "empty": "Nobody here.",
         "loadError": "The progress could not be loaded.",
-        "footnote": "The same work shows on each scholar’s file (Growth tab) and, for their own students, on the mentor’s My students page. Staff and the mentor only; never sponsors or partners. “Late” appears after the due date for those not done."
+        "footnote": "The same work shows on each scholar’s file (Growth tab) and, for their own students, on the mentor’s My students page. Staff and the mentor only; never sponsors or partners. “Late” appears after the due date for those not done.",
+        "commentRead": "Comment for the scholar"
       }
     },
     "team": {

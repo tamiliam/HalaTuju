@@ -20,6 +20,7 @@ const KNOWN = ['title_required', 'title_too_long', 'title_newline', 'summary_too
   'started_locked', 'unsupported_format', 'file_too_large', 'upload_incomplete', 'storage_unavailable']
 const FIELD = 'w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-ground-900 disabled:bg-ground-50 disabled:text-ground-500'
 const LABEL = 'flex flex-col gap-1 text-sm font-medium text-ground-700'
+const SET = 'm-0 min-w-0 space-y-4 border-0 p-0'
 const LINK = 'inline-flex min-h-11 items-center text-sm font-medium text-primary-600 hover:underline disabled:opacity-50'
 const PILL = 'min-h-11 rounded-full border px-4 text-sm'
 
@@ -38,9 +39,9 @@ function refusal(t: T, err: unknown): string {
   return `${t(`${K}.error.${KNOWN.includes(code) ? code : 'generic'}`)}${place}`
 }
 
-function LessonEditor({ l, n, moduleId, limits, token, t, onChange, onDone, onError }: {
+function LessonEditor({ l, n, moduleId, limits, token, t, onChange, onDone, onError, readOnly = false }: {
   l: Lesson; n: number; moduleId?: number; limits: ModuleLimits; token: string | null; t: T
-  onChange: (l: Lesson) => void; onDone: () => void; onError: (text: string) => void
+  onChange: (l: Lesson) => void; onDone: () => void; onError: (text: string) => void; readOnly?: boolean
 }) {
   const [uploading, setUploading] = useState(false)
   const attach = async (file: File | undefined) => {
@@ -59,6 +60,7 @@ function LessonEditor({ l, n, moduleId, limits, token, t, onChange, onDone, onEr
   }
   return (
     <div className="space-y-3 rounded-lg border border-info-300 bg-ground-0 p-4" data-testid={`lesson-edit-${n}`}>
+      <fieldset disabled={readOnly} className={SET}>
       <label className={LABEL}>{t(`${K}.form.lessonTitle`)}
         <input value={l.title} maxLength={limits.lesson_title} data-testid={`lesson-title-${n}`} className={FIELD}
           onChange={(e) => onChange({ ...l, title: e.target.value })} />
@@ -71,18 +73,19 @@ function LessonEditor({ l, n, moduleId, limits, token, t, onChange, onDone, onEr
         <input value={l.video_url} disabled={!!l.file} inputMode="url" placeholder="https://youtu.be/…"
           data-testid={`lesson-video-${n}`} className={FIELD} onChange={(e) => onChange({ ...l, video_url: e.target.value })} />
       </label>
+      </fieldset>
       <div className="space-y-1 text-sm text-ground-700">
         <span className="font-medium">{t(`${K}.form.file`)}</span>
         {l.file ? (
           <span className="flex flex-wrap items-center gap-x-4">
             <span className="break-all">{l.file.name}</span>
-            <button type="button" className={LINK} onClick={() => openSigned(
+            <button type="button" className={LINK} data-testid={`lesson-file-open-${n}`} onClick={() => openSigned(
               () => lessonFileLink(moduleId as number, l.id as number, { token: token ?? undefined }), () => onError(t(`${K}.error.generic`)))}>
               {t(`${K}.form.fileOpen`)}</button>
-            <button type="button" className={LINK} data-testid={`lesson-file-remove-${n}`} onClick={detach}>
-              {t(`${K}.form.fileRemove`)}</button>
+            {!readOnly && <button type="button" className={LINK} data-testid={`lesson-file-remove-${n}`} onClick={detach}>
+              {t(`${K}.form.fileRemove`)}</button>}
           </span>
-        ) : !moduleId || !l.id ? (
+        ) : readOnly ? null : !moduleId || !l.id ? (
           <p className="text-xs text-ground-600">{t(`${K}.form.fileSaveFirst`)}</p>
         ) : l.video_url.trim() ? (
           <p className="text-xs text-ground-600">{t(`${K}.form.fileOr`)}</p>
@@ -107,7 +110,7 @@ function LessonEditor({ l, n, moduleId, limits, token, t, onChange, onDone, onEr
  * ⚠ ONCE A SCHOLAR HAS STARTED (`row.locked`) the task type, the audience and the publishing time are shown but
  * locked — the server refuses them too (`task_locked` / `started_locked`). Lessons and texts still change.
  */
-export default function ModuleForm({ row, audiences, emailOn, limits, programme, token, t, onCancel, onSaved }: {
+export default function ModuleForm({ row, audiences, emailOn, limits, programme, token, t, onCancel, onSaved, readOnly = false }: {
   row: ModuleRow | null
   audiences: ModuleAudience[]
   emailOn: boolean
@@ -117,6 +120,8 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
   t: T
   onCancel: () => void
   onSaved: (row: ModuleRow, done: Done, keepOpen: boolean) => void
+  /** TD-631: a reader opens the same form to read it (and each lesson, and its file); nothing can be changed. */
+  readOnly?: boolean
 }) {
   const locked = !!row?.locked
   const live = !!row && (row.status === 'published' || row.status === 'archived')
@@ -174,7 +179,8 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
 
   return (
     <section className="max-w-3xl space-y-4 rounded-xl border-2 border-info-500 bg-ground-0 p-5" data-testid="module-form">
-      <h2 className="text-base font-semibold text-ground-900">{t(row ? `${K}.form.editTitle` : `${K}.form.newTitle`)}</h2>
+      <h2 className="text-base font-semibold text-ground-900">{t(readOnly ? `${K}.form.viewTitle` : row ? `${K}.form.editTitle` : `${K}.form.newTitle`)}</h2>
+      <fieldset disabled={readOnly} className={SET} data-testid="module-fieldset-main">
       <label className={LABEL}>{t(`${K}.form.title`)}
         <input value={title} maxLength={limits.title} onChange={(e) => setTitle(e.target.value)} data-testid="module-title" className={FIELD} />
       </label>
@@ -214,13 +220,14 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
           </label>
         </div>
       )}
+      </fieldset>
 
       <h3 className="pt-2 text-[15px] font-semibold text-ground-900">{t(`${K}.form.lessons`)}</h3>
       <ol className="space-y-3" data-testid="module-lessons">
         {lessons.map((l, i) => (
           <li key={l.id ?? `new-${i}`}>
             {editingL === i ? (
-              <LessonEditor l={l} n={i} moduleId={row?.id} limits={limits} token={token} t={t} onError={setError}
+              <LessonEditor l={l} n={i} moduleId={row?.id} limits={limits} token={token} t={t} onError={setError} readOnly={readOnly}
                 onChange={(next) => setLessons((ls) => ls.map((x, j) => (j === i ? next : x)))}
                 onDone={() => setEditingL(null)} />
             ) : (
@@ -235,7 +242,10 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
                   {[t(`${K}.form.words`, { count: String(words(l.body)) }), l.video_url.trim(), l.file?.name ?? '']
                     .filter(Boolean).join(' · ')}
                 </p>
-                <div className="flex flex-wrap gap-x-4">
+                {readOnly ? (
+                  <button type="button" className={LINK} data-testid={`lesson-open-${i}`} onClick={() => setEditingL(i)}>
+                    {t(`${K}.form.open`)}</button>
+                ) : <div className="flex flex-wrap gap-x-4">
                   <button type="button" className={LINK} data-testid={`lesson-edit-btn-${i}`} onClick={() => setEditingL(i)}>
                     {t(`${K}.form.edit`)}</button>
                   {i > 0 && <button type="button" className={LINK} data-testid={`lesson-up-${i}`}
@@ -244,13 +254,13 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
                     disabled={live && lessons.length === 1}
                     onClick={() => { setLessons((ls) => ls.filter((_x, j) => j !== i)); setEditingL(null) }}>
                     {t(`${K}.form.remove`)}</button>
-                </div>
+                </div>}
               </div>
             )}
           </li>
         ))}
       </ol>
-      {lessons.length < limits.lessons && (
+      {!readOnly && lessons.length < limits.lessons && (
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" data-testid="module-add-lesson"
             onClick={() => { setLessons((ls) => [...ls, { title: '', body: '', video_url: '', file: null }]); setEditingL(lessons.length) }}
@@ -259,6 +269,7 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
         </div>
       )}
 
+      <fieldset disabled={readOnly} className={SET} data-testid="module-fieldset-task">
       <h3 className="pt-2 text-[15px] font-semibold text-ground-900">{t(`${K}.form.task`)}</h3>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t(`${K}.form.task`)}>
         {TASKS.map((k) => (
@@ -291,10 +302,11 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
           {!due && <span className="block text-xs text-ground-600">{t(`${K}.form.remindNeedsDue`)}</span>}
         </span>
       </div>
+      </fieldset>
 
       {error && <p className="text-sm text-critical-600" role="alert" data-testid="module-error">{error}</p>}
       <div className="flex flex-wrap gap-2">
-        {live ? (
+        {readOnly ? null : live ? (
           <button type="button" disabled={busy} onClick={() => save('edit')} data-testid="module-save"
             className="min-h-11 rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink disabled:opacity-60">{t(`${K}.btn.save`)}</button>
         ) : (<>
@@ -306,9 +318,9 @@ export default function ModuleForm({ row, audiences, emailOn, limits, programme,
             {t(`${K}.btn.draft`)}</button>
         </>)}
         <button type="button" disabled={busy} onClick={onCancel}
-          className="min-h-11 rounded-lg border border-ground-300 bg-ground-0 px-4 text-ground-800">{t('common.cancel')}</button>
+          className="min-h-11 rounded-lg border border-ground-300 bg-ground-0 px-4 text-ground-800">{t(readOnly ? 'common.close' : 'common.cancel')}</button>
       </div>
-      <p className="text-xs text-ground-600">{t(locked ? `${K}.form.lockedNote` : `${K}.form.lockNote`)}</p>
+      {!readOnly && <p className="text-xs text-ground-600">{t(locked ? `${K}.form.lockedNote` : `${K}.form.lockNote`)}</p>}
     </section>
   )
 }
