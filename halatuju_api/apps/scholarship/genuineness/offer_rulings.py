@@ -38,7 +38,9 @@ override or a later corpus answer shows which rule was wrong (`eval/offer_genuin
 import re
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_confirmations import _APPROVAL, _CONFIRM_TITLES_EN, MATRIC_OFFER_EN
+from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _NOT_AN_OFFER_EN,
+                                  _NOT_STUDIES_EN, _NOT_STUDYING, _NOT_THE_OFFER_LINE, _STUDYING_NOW, _WING_HEAD,
+                                  MATRIC_OFFER_EN)
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -261,18 +263,32 @@ def _agency_lift(ocr_text, r, lines, model_version):
 
 
 def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> str:
-    """The `confirmation_*` code of a confirmation-of-studies letter from a public institution named on its
-    letterhead block, or '' (no title at the top, below the score floor, a private marker, or a letterhead
-    naming another organisation). The live rule first (`_kind` on the no-private-wing three, unchanged); then,
-    help H2 option B, every other public type and the English titles (`_widened_kind`: suspect at most)."""
+    """The `confirmation_*` code of a confirmation-of-studies letter from a no-private-wing public institution
+    named on its letterhead block, or '' (no title at the top, below the score floor, a private marker, or a
+    letterhead naming another organisation). Main's LIVE rule exactly (the genuine lift, `_confirmation_lift`);
+    the help H2 option B suspect path is `_widened_kind` and is read through `ruled_offer` only."""
     lines = _folded_lines(ocr_text) if lines is None else lines
-    return _kind(lines, probability, _NO_PRIVATE_WING) or _widened_kind(lines, probability)
+    return _kind(lines, probability, _NO_PRIVATE_WING)
 
 
 def _widened_kind(lines, probability) -> str:
     """Help H2 option B: the kind over every public issuer (`offer_reading._confirmers`), an English title read
-    as the Malay one, approval wording blanked and a campus line under the name dropped. Suspect at most."""
+    as the Malay one, approval wording blanked and a campus line under the name dropped. Suspect at most; ''
+    when the page says the person is not studying there now (`_not_studying`, H2 review 6)."""
+    if _not_studying(lines) or any(w in ln for ln in _letterhead_region(lines) for w in _WING_HEAD):
+        return ''
     return _kind(_english_titled(lines), probability, _confirmers(), widened=True)
+
+
+#: "tamat pengajian" (finished her studies) - never the expected end date's label ("Tarikh Tamat Pengajian").
+_TAMAT = re.compile(r'(?<!TARIKH)(?<!JANGKA)(?<!DIJANGKA)(?<!JANGKAAN)(?<!TEMPOH) TAMAT (?:PENGAJIAN|BELAJAR)(?= )')
+
+
+def _not_studying(lines) -> bool:
+    """H2 review 6 (M): a former student, a graduate, a dismissal, a withdrawal or a failed application
+    (`_NOT_STUDYING`, `_TAMAT`) - no confirmation that the person studies now."""
+    page = _page(lines)
+    return any(w in page for w in _NOT_STUDYING) or bool(_TAMAT.search(page))
 
 
 def _kind(lines, probability, issuers, widened=False) -> str:
@@ -296,10 +312,15 @@ def _kind(lines, probability, issuers, widened=False) -> str:
 
 def _english_titled(lines):
     """The lines with an English confirmation title read as the Malay one (`_CONFIRM_TITLES_EN`): the suspect
-    path only, so the live titles (letterhead stops, the genuine lift) are untouched."""
+    path only, so the live titles (letterhead stops, the genuine lift) are untouched. A generic title
+    ("Confirmation Letter") only when the page says the person studies there now (H2 review 6, H)."""
+    page = _page(lines)
+    titles = _CONFIRM_TITLES_EN
+    if any(s in page for s in _STUDYING_NOW) and not any(w in page for w in _NOT_STUDIES_EN):
+        titles += _CONFIRM_TITLES_EN_GENERIC
     out = []
     for ln in lines:
-        for t in _CONFIRM_TITLES_EN:
+        for t in titles:
             ln = ln.replace(t, ' PENGESAHAN PELAJAR ')
         out.append(ln)
     return out
@@ -314,11 +335,19 @@ def _approval_blanked(page: str) -> str:
     return page
 
 
-def _campus_line(ln) -> bool:
-    """"KAMPUS GOPENG": KAMPUS / CAMPUS and 1-3 place words, no digit, no organisation noun."""
+def _campus_line(ln, above, names) -> bool:
+    """"KAMPUS KLANG" under "KOLEJ KOMUNITI KLANG": KAMPUS / CAMPUS and 1-3 words that are ALL a known place - a
+    state / federal territory (`STATE_AND_CAMPUS`) or a word of the institution's own line beyond its name
+    (H2 review 6: "KAMPUS MERCU PRESTIGE" names no known place, so it stays and the letterhead rule reads it)."""
+    from .offer_agency import STATE_AND_CAMPUS
     words = ln.split()
-    return (len(words) in (2, 3, 4) and words[0] in ('KAMPUS', 'CAMPUS') and all(w.isalpha() for w in words)
-            and not _ORG_RE.search(f" {' '.join(words[1:])} "))
+    if not (len(words) in (2, 3, 4) and words[0] in ('KAMPUS', 'CAMPUS') and all(w.isalpha() for w in words)
+            and not _ORG_RE.search(f" {' '.join(words[1:])} ")):
+        return False
+    own = above
+    for n in names:
+        own = own.replace(n, ' ')
+    return all(w in STATE_AND_CAMPUS or w in own.split() for w in words[1:])
 
 
 def _campus_dropped(lines, names):
@@ -326,7 +355,7 @@ def _campus_dropped(lines, names):
     college's own campus, not another organisation (the KAMPUS noun had made it no confirmation at all)."""
     head_n = len(_letterhead_region(lines))
     return [ln for i, ln in enumerate(lines)
-            if not (0 < i < head_n and _campus_line(ln) and any(n in lines[i - 1] for n in names))]
+            if not (0 < i < head_n and any(n in lines[i - 1] for n in names) and _campus_line(ln, lines[i - 1], names))]
 
 
 def _title_segment(lines) -> str:
@@ -396,7 +425,7 @@ def _confirmation_lift(r, raw, model_version):
     if _AGENT_WORDS.search(_page(raw)):
         return None                     # round 11 (M5): WAKIL / EJEN / AGEN
     lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
-    seen = _kind(raw, r['probability'], _NO_PRIVATE_WING)
+    seen = confirmation_kind('', r['probability'], lines=raw)
     if seen and _confirmation_shaped(lines, glued):         # the live rule, exactly as before H2
         return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
                              'institution with no private wing - an acceptable alternative (owner ruling 4)',
@@ -422,21 +451,23 @@ _MATRIC_ISSUERS_EN = (' MATRICULATION DIVISION ', ' BAHAGIAN MATRIKULASI ', ' MI
                       ' MINISTRY OF EDUCATION ', ' KEMENTERIAN PENDIDIKAN MALAYSIA ')
 #: A results slip or a transcript is no offer (it stays `not_offer_letter`).
 _RESULTS_WORDS = (' CGPA ', ' PNGK ', ' RESULT SLIP ', ' RESULTS SLIP ', ' SLIP KEPUTUSAN ', ' EXAMINATION RESULT ',
-                  ' EXAMINATION RESULTS ', ' TRANSCRIPT ', ' GRADE POINT AVERAGE ')
+                  ' EXAMINATION RESULTS ', ' TRANSCRIPT ', ' GRADE POINT AVERAGE ', ' KEPUTUSAN PEPERIKSAAN ',
+                  ' SEMESTER EXAMINATION ', ' PEPERIKSAAN SEMESTER ', ' SEMAKAN KEPUTUSAN ')
 
 
 def english_matric_offer(lines) -> bool:
     """KPM's English matriculation offer: the Division and the ministry on the page, the English title on the
-    first offer line, the Division / ministry named FIRST on a clean letterhead, no results words and no tie-up
-    word. A private university's offer that only MENTIONS the Division is not one."""
+    first offer line, the Division / ministry named FIRST on a clean letterhead, no results words, no refusal /
+    appeal / status words (H2 review 6) and no tie-up word. A private university's offer that only MENTIONS the
+    Division is not one."""
     from .offer_signatures import _TIE_UP_EXTRA
     page = _page(lines)
     if ' MATRICULATION DIVISION ' not in page or ' MINISTRY OF EDUCATION ' not in page:
         return False
-    if any(w in page for w in _RESULTS_WORDS + _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
+    if any(w in page for w in _RESULTS_WORDS + _NOT_AN_OFFER_EN + _PARTNER + _TIE_UP + _TIE_UP_EXTRA):
         return False
     offer = next((ln for ln in lines if ' OFFER ' in ln), '')
-    if not any(t in offer for t in _MATRIC_EN_TITLES):
+    if not any(t in offer for t in _MATRIC_EN_TITLES) or any(w in offer for w in _NOT_THE_OFFER_LINE):
         return False
     allowed = _MATRIC_ISSUERS_EN + (' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ')
     return (_named_first(lines, _MATRIC_ISSUERS_EN) and _first_institution(lines, allowed) == 'allowed'

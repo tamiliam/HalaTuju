@@ -126,9 +126,7 @@ class TestConfirmationLetters(SimpleTestCase):
         self.assertEqual(confirmation_kind(POLY_CONFIRM), 'confirmation_polytechnic')
         self.assertEqual(confirmation_kind(UMS_CONFIRM), 'confirmation_ums')
         self.assertEqual(confirmation_kind(FORM6_CONFIRM), 'confirmation_form6')
-        # CHANGED by help H2 option B (2026-11-15): was '' (round 7); another public university's confirmation is
-        # recognised again, on the suspect path only (it has a private wing: a person checks)
-        self.assertEqual(confirmation_kind(UM_CONFIRM), 'confirmation_ua')
+        self.assertEqual(confirmation_kind(UM_CONFIRM), '')     # round 7: main's live rule (H2's suspect path: below)
         self.assertEqual(confirmation_kind(PRIVATE_CONFIRM), '')
         self.assertEqual(confirmation_kind(IKM), '')               # no confirmation title
 
