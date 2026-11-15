@@ -638,3 +638,32 @@ describe('the loader does not re-read when `t` changes identity (A3.15)', () => 
     expect(mockApi.getOrgRequest).toHaveBeenCalledTimes(before)
   })
 })
+
+describe('the decline reason', () => {
+  // The bug (2026-11-16): the reason rendered only inside the Quote panel, so a request declined
+  // before any quote showed it to nobody, on either side.
+  it.each([
+    ['the requesting organisation', ORG_ADMIN_VIEWER],
+    ['the owner', { role: 'super', is_super_admin: true }],
+  ])('shows on a request declined before any quote, to %s', async (_who, viewer) => {
+    viewerRole = viewer as Viewer
+    await show({ status: 'declined', quote_hours: null, decline_reason: 'Closed: no reply since 5 Nov.' })
+    expect(screen.getByTestId('decline-reason').textContent).toContain('Closed: no reply since 5 Nov.')
+  })
+
+  it('shows once on a request declined after a quote', async () => {
+    viewerRole = ORG_ADMIN_VIEWER
+    await show({ status: 'declined', quote_hours: '3.0', quoted_at: '2026-07-31T00:00:00Z',
+      decline_reason: 'Not needed any more.' })
+    expect(screen.getAllByTestId('decline-reason')).toHaveLength(1)
+    expect(screen.getByTestId('decline-reason').textContent).toContain('Not needed any more.')
+  })
+
+  it('is absent when the request is not declined, or was withdrawn without a reason', async () => {
+    await show({ status: 'submitted', decline_reason: '' })
+    expect(screen.queryByTestId('decline-reason')).toBeNull()
+    cleanup()
+    await show({ status: 'declined', decline_reason: '' })
+    expect(screen.queryByTestId('decline-reason')).toBeNull()
+  })
+})

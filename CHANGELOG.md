@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: a declined request shows its reason to both sides, quoted or not (2026-11-16)
+
+Services: web. No migration, no api change.
+- Why: on `/admin/requests/[id]` the "Reason" line sat inside the Quote panel, which renders only when `quote_hours` is set. A request declined before it was quoted (the usual case: #60 and #63 on 15 Nov) stored its reason but showed it to nobody, neither the organisation nor the owner.
+- The reason now renders as its own panel (`data-testid="decline-reason"`) above the Quote panel whenever the status is `declined` and a reason exists; a quoted-then-declined request shows it once. Line breaks are kept. The page stays at its oversize-ledger allowance (644 lines).
+- Tests: `page.test.tsx` "the decline reason" (unquoted, for the org and the owner; quoted, shown once; absent when not declined or withdrawn without a reason). Three of the four fail on the old page.
+
 ### refactor: sprint TD-631 review round - a reader can open what the list shows (2026-11-16)
 
 Branch td631, on top of d89c41f13, not pushed. No migration. Services: web (the api change is a test only). Decisions: `docs/decisions.md` (2026-11-16, TD-631 review round).

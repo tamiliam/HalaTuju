@@ -374,6 +374,9 @@ export default function AdminRequestDetailPage() {
         )}
       </div>
 
+      {req.status === 'declined' && req.decline_reason && (
+        <p className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4 text-sm text-critical-600 whitespace-pre-wrap" data-testid="decline-reason">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
+      )}
       {/* Quote (org-facing) — deliberately BELOW the thread (owner, 2026-07-30): the quote is the
           CONCLUSION, so the deliberation that produced it should be read first. */}
       {req.quote_hours != null && (
@@ -401,9 +404,6 @@ export default function AdminRequestDetailPage() {
           )}
           {req.scheduled_for && (
             <p className="text-sm text-ground-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
-          )}
-          {req.status === 'declined' && req.decline_reason && (
-            <p className="text-sm text-critical-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
           )}
           {/* ⚠ ONE panel, beside the plan, SUPER-ONLY — and it writes to the analysis the
               invoice reads. Every clause there is load-bearing; see `RequestHoursForm`. */}
