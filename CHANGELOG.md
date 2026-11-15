@@ -177,6 +177,16 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a second review - the gift's start-year rule fails a case only when it is sure (2026-11-15)
+
+Branch help-h3, not pushed. No migration. The money is untouched (still byte-identical to main). Lead's rule: only "outside" changes a result, so it must be SURE; "inside" needs a clear first-year signal; any doubt is the reviewer line.
+- **New reading.** `session_year.gift_reading` returns the years, whether the letter names a FIRST-YEAR intake (a first term, Year 1, Lower Six, an intake word, a written intake month and year, or a lone year), and whether the line holds clashing years. `start_year.decide`: inside = every year in the gift and a first-year signal; outside = no year in the gift, no clashing years, and a first-year signal or every year before the gift's; else unknown.
+- **Unknown now** for: Semester 2 / II and every later term in more wordings ("Tahun ke-2", "Semester Ke-5", "Tahun Pengajian 2", "Year of Study 2", "2nd-year", "Final-year", "Y2S1", UiTM "Part 4" / "Bahagian 3"), also when written in the programme or stream name; a bare session with no intake word; any year on a session line outside its two (an SPM / STPM exam year is set aside, not a start year); several years and no date; a Sesi II with a September-November month; a confirmation letter without a first term or a written intake month and year.
+- **Fixed wrong reds.** "Session 2024/25 Feb 2025", "SESI 2024/25 MAC 2025", "SPM 2024, Ambilan 2025" read 2025 (after a "/" the tail is never a day).
+- **The letter only.** The stored reporting date is never read by the gift's rule; no line at all (not even unknown) when the letter is missing or unread, also inside `apply_to_pathway_fact`.
+- **Tests.** `test_start_year_gift_reading.py` rewritten (every probe case of the second review). New `test_start_year_gift_property.py`: a generated table of about 48,000 letter lines in which OUTSIDE fires only for a short whitelist of sure patterns and is right against the true start years, and INSIDE needs a first-year signal; plus the review's two probe tables. `test_start_year_rule.py`: Semester II 2024/2025, a bare 2025/2026 session and Semester 2 on an ordinary case now give the reviewer line (no first-year signal); a stored date never counts; new end-to-end tests for an unread or missing letter, the probes and a "Tahun 2" programme name.
+- **Version.** `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (unpushed; help-h2 is .10).
+
 ### fix: H3a rebuild - the money keeps main's start year; the gift gets its own careful reader (2026-11-15)
 
 Branch help-h3, not pushed. No migration. Money and eligibility work. Supersedes the two H3a session entries below for the money.
