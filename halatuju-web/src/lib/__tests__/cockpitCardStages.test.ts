@@ -308,9 +308,19 @@ describe('queryingLockReason', () => {
 describe('reviewerCardState (TD-613: read from what the server serves, never the role)', () => {
   it('shows the card at a reopened funded or declined case whose holder has gone', () => {
     for (const status of ['recommended', 'rejected', 'interviewed']) {
-      const card = reviewerCardState({ status, assignable: true, needs_new_holder: true }, true)
+      const card = reviewerCardState({ status, assignable: true, needs_new_holder: true, may_unassign: false }, true)
       expect(card).toEqual({ shows: true, locked: false, mayUnassign: false, needsNewHolder: true })
     }
+  })
+
+  it('offers Unassigned exactly when the server serves may_unassign (review F2), never from needs_new_holder', () => {
+    // A stranded case at Completed / interviewing may still be left with nobody on the server.
+    expect(reviewerCardState({ status: 'interviewing', assignable: true, needs_new_holder: true, may_unassign: true }, false)
+      .mayUnassign).toBe(true)
+    expect(reviewerCardState({ status: 'interviewed', assignable: true, needs_new_holder: true, may_unassign: false }, false)
+      .mayUnassign).toBe(false)
+    expect(reviewerCardState({ status: 'interviewing', assignable: true, needs_new_holder: false, may_unassign: false }, false)
+      .mayUnassign).toBe(false)
   })
 
   it('follows the served assignable, not the decision lock, when it is served', () => {

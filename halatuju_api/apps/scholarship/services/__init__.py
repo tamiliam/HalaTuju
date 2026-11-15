@@ -79,7 +79,8 @@ from .ready_profiles import (
 from .assignment import (
     ASSIGNABLE_STATUSES, R1_SUPER_TARGET_ROLES, _UNASSIGN_BLOCKED_STATUSES, _can_review,
     assign_reviewer, holder_can_review, is_assignable, is_review_target, may_assign_to, may_hand_to,
-    needs_new_holder, reconcile_income_route, set_paused, switch_income_route,
+    may_unassign, needs_new_holder, reconcile_income_route, set_paused, switch_income_route,
+    unassign_refusal,
 )
 from .query_emails import (
     QUERY_EMAIL_DELAY_HOURS, _query_email_due_window, bump_query_notify_on_new_item,

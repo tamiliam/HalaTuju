@@ -7,8 +7,8 @@ Branch td613, not pushed. No migration. Release-note draft: `docs/releases/td613
 **Chosen (safest reversible):** a DERIVED fact, nothing stored. `services/assignment.needs_new_holder(application)` is true when the case is OPEN (`staff_lifecycle.is_open_case`) and its holder can no longer review it (`holder_can_review`: inactive, archived, or, for a non-super, not both in Reviewers and a review target). `is_assignable` adds that case to `ASSIGNABLE_STATUSES`. Reverting is a code revert; no row carries the fact.
 
 The calls:
-1. **What "can no longer review" means.** Suspended (`is_active` off), archived, or outside Reviewers / not a review target. A PAUSED holder can still work the case (pause stops new work only), so it is not stranded. A super holder is never stranded. A pre-T1 organisation admin holding a case without `review` counts as stranded: the change is OFFERED, never forced.
-2. **Never back to nobody.** An unassign of a stranded case is refused outside `ASSIGNABLE_STATUSES` (`findings_submitted` at Awaiting QC, `not_assignable` at a reopened decline), so the case always has a holder.
+1. **What "can no longer review" means.** Suspended (`is_active` off), archived, or outside Reviewers / not a review target (but see the F1 ruling below, owner approved 2026-11-15: outside `ASSIGNABLE_STATUSES` a suspension alone strands nothing). A PAUSED holder can still work the case (pause stops new work only), so it is not stranded. A super holder is never stranded. A pre-T1 organisation admin holding a case without `review` counts as stranded: the change is OFFERED, never forced.
+2. **Never back to nobody, from Awaiting QC on.** An unassign of a stranded case is refused outside `ASSIGNABLE_STATUSES` (`findings_submitted` at Awaiting QC, `not_assignable` at a reopened decline), so from interviewed onwards the case always has a holder. At Completed or interviewing it can still be unassigned, as any case there can (corrected in the review round, F2).
 3. **No student "who will interview you" email past the interview.** A handover at Awaiting QC or later has no interview to announce (`assign_notify._BEFORE_INTERVIEW`). The new reviewer still gets their email.
 4. **The cockpit lock reads the served `assignable`.** This also corrects a mismatch at a non-stranded Awaiting QC reopen, where the select was enabled and the server refused.
 5. **`reviewer_cannot_review` is retired** with `reopen._strands_assignee`: a reopen now succeeds and the case shows "needs a new holder".
@@ -20,6 +20,13 @@ The calls:
 - Keeping the refusal and adding a separate "hand over" endpoint: a second door with its own copy of the assign rules.
 
 **Not changed:** the `assign` door, `may_hand_to` / `may_assign_to`, `self_assign` (a super included), the organisation fence, QC separation, every money path (only `assigned_to` moves).
+
+**Review round (2026-11-15; F1 owner approved 2026-11-15; F2 and F3 as asked).**
+- **F1, a suspension alone strands nothing (owner approved 2026-11-15).** Outside `ASSIGNABLE_STATUSES`, `needs_new_holder` is true only when (a) the holder is GONE FOR GOOD (archived, not in Reviewers, or not a review target; `_holder_gone_for_good`, which judges a suspended person's groups as if seated), or (b) the holder is suspended AND the case came back by a reopen (`decision_reopened_at` set) or an award revert. Inside `ASSIGNABLE_STATUSES` nothing changes: any holder who cannot review makes it true.
+- **The award-revert arm took the fallback.** `award_revert.revert_to_pool` stores no marker (it writes only `status` and `award_due_at`), and no migration was added, so a suspended holder of a reverted case is NOT stranded. It waits for a Restore, or for a super's reopen (allowed, since `verdict_decided_at` is set), which then strands it by arm (b).
+- **F2, `may_unassign` is served.** The detail and the list serve `may_unassign` from `services.unassign_refusal`, the same rule `_refuse_stage` uses, through the shared serializer mixin `serializers_admin/handover.ServesTheHandover`. The cockpit card (`reviewerCardState`) and the list picker read only that field to grey out Unassigned.
+- **F3, the decline flag reads the holder at the decline.** `services.decline.rejected_by_unassigned` compares `rejected_by` with the holder at `rejected_at` (the last `AssignmentEvent` at or before it, else the first one after it gives its `from_admin`, else the current holder), never the current `assigned_to`: a rejected case can change hands since TD-613. Its query runs only for a reasoned door decline; the applicant-detail GET's pinned count is unchanged.
+- **Known limit, left as is:** the student's "who will interview you" email gate (`assign_notify._BEFORE_INTERVIEW`) reads the case's status when the cron sends, not when the handover happened.
 
 ## 2026-11-15 — Sprint M3c: granting the organisation admin's keys; the builder's open calls (builder; for the architect to confirm)
 

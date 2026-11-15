@@ -128,17 +128,20 @@ export function showsReviewerAssignedCard(status: string | null | undefined): bo
  *               case (`needs_new_holder`) — a reopened funded or declined case included, which the
  *               stage window alone hides.
  *   locked      the server's `assignable` when served; a payload without it keeps `decisionLocked`.
- *   mayUnassign false while the case needs a new holder: the server refuses to leave it with nobody.
+ *   mayUnassign the server's `may_unassign` (review F2: `services.may_unassign`, the rule the assign
+ *               endpoint refuses an unassign by). A stranded case may still be left with nobody at
+ *               Completed / interviewing; from Awaiting QC on it may not. A payload without the field
+ *               keeps the old answer (Unassigned offered); the server still refuses what it refuses.
  */
 export function reviewerCardState(
-  app: { status: string | null | undefined; assignable?: boolean; needs_new_holder?: boolean },
+  app: { status: string | null | undefined; assignable?: boolean; needs_new_holder?: boolean; may_unassign?: boolean },
   decisionLocked: boolean,
 ): { shows: boolean; locked: boolean; mayUnassign: boolean; needsNewHolder: boolean } {
   const needsNewHolder = app.needs_new_holder === true
   return {
     shows: needsNewHolder || showsReviewerAssignedCard(app.status),
     locked: app.assignable === undefined ? decisionLocked : !app.assignable,
-    mayUnassign: !needsNewHolder,
+    mayUnassign: app.may_unassign !== false,
     needsNewHolder,
   }
 }

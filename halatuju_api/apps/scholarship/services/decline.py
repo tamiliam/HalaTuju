@@ -171,17 +171,39 @@ def rejected_by_unassigned(application):
 
     Only the `/reject/` door writes `rejection_comments` on an 'interview' or 'contractual' decline
     (it requires one since A1.11a; the QC's two declines pass none), so a row with a reason in
-    those buckets IS a door decline. A rejected case cannot be reassigned
-    (`services.ASSIGNABLE_STATUSES`), so `assigned_to` is still the assignee of the moment. A
-    legacy door decline with no reason answers None: we cannot tell it from a QC decline."""
+    those buckets IS a door decline. A legacy door decline with no reason answers None: we cannot
+    tell it from a QC decline.
+
+    ⚠ TD-613 review F3: a rejected case CAN change hands since TD-613 (a reopen, a handover from a
+    departed holder, then the reopen cancelled), so the comparison is with the holder AT THE DECLINE
+    (`_holder_email_at`), never the current `assigned_to`. Its one query runs only on this branch (a
+    reasoned door decline), so the applicant-detail GET's pinned count does not move."""
     if (application.status != 'rejected'
             or application.rejection_category not in ('interview', 'contractual')):
         return None
     by = (application.rejected_by or '').strip().lower()
     if not by or not (application.rejection_comments or '').strip():
         return None
+    return _holder_email_at(application, application.rejected_at) != by
+
+
+def _holder_email_at(application, when):
+    """The holder's email (lower-cased) at ``when``, from the `AssignmentEvent` trail: the last row at
+    or before it (its `to_admin`; an unassign row gives ''), else the first row AFTER it (its
+    `from_admin`: who held the case until then — a case assigned before F7's audit rows has none
+    before). No row at all, or no ``when`` (a legacy decline), is the current holder."""
+    if when is not None:
+        from ..models import AssignmentEvent
+        rows = AssignmentEvent.objects.filter(application_id=application.pk)
+        held = (rows.filter(created_at__lte=when).order_by('-created_at', '-id')
+                .values_list('to_admin__email', flat=True)[:1])
+        if not held:
+            held = (rows.filter(created_at__gt=when).order_by('created_at', 'id')
+                    .values_list('from_admin__email', flat=True)[:1])
+        if held:
+            return (held[0] or '').strip().lower()
     assignee = application.assigned_to if application.assigned_to_id else None
-    return (getattr(assignee, 'email', '') or '').strip().lower() != by
+    return (getattr(assignee, 'email', '') or '').strip().lower()
 
 
 def admin_reject(application, admin, category, cooloff=None, *, activity=True, defer_email=False,

@@ -5,8 +5,9 @@
  *
  * A case whose holder can no longer review it (suspended, archived, out of Reviewers) comes back
  * open at a stage the stage window hides (a reopened funded case at AWAITING QC is shown, a reopened
- * decline is not). The card now reads the served `assignable` / `needs_new_holder`: it shows, it
- * unlocks, it names the departed holder, and it never offers Unassigned. Synthetic names only.
+ * decline is not). The card now reads the served `assignable` / `needs_new_holder` / `may_unassign`:
+ * it shows, it unlocks, it names the departed holder, and it offers Unassigned only when the server
+ * takes it (review F2). Synthetic names only.
  */
 import { render, screen } from '@testing-library/react'
 
@@ -30,7 +31,8 @@ function renderCard(app: Partial<AdminScholarshipDetail>, decisionLocked = true)
   )
 }
 
-const departed = { assigned_to_id: 77, assigned_to_name: 'Former Holder', assignable: true, needs_new_holder: true }
+const departed = { assigned_to_id: 77, assigned_to_name: 'Former Holder', assignable: true, needs_new_holder: true,
+  may_unassign: false }
 
 describe('a case whose holder has gone', () => {
   it('shows, unlocked, at a reopened decline the stage window hides', () => {
@@ -47,6 +49,14 @@ describe('a case whose holder has gone', () => {
     expect((screen.getByRole('option', { name: 'admin.scholarship.unassigned' }) as HTMLOptionElement).disabled)
       .toBe(true)
     expect((screen.getByRole('option', { name: 'Reviewer Five' }) as HTMLOptionElement).disabled).toBe(false)
+  })
+})
+
+describe('a stranded case the server may still leave with nobody (review F2)', () => {
+  it('offers Unassigned at interviewing', () => {
+    renderCard({ status: 'interviewing', ...departed, may_unassign: true }, false)
+    expect((screen.getByRole('option', { name: 'admin.scholarship.unassigned' }) as HTMLOptionElement).disabled)
+      .toBe(false)
   })
 })
 

@@ -52,14 +52,6 @@ class ServesTheDetailBlocks:
         from ..award import verdict_disqualifier
         return verdict_disqualifier(self._verdict(obj)) or None
 
-    def get_assignable(self, obj):
-        from ..services import is_assignable
-        return is_assignable(obj)
-
-    def get_needs_new_holder(self, obj):
-        from ..services import needs_new_holder
-        return needs_new_holder(obj)
-
     def get_assigned_to_corrections(self, obj):
         from ..reopen import reviewer_correction_count
         return reviewer_correction_count(obj.assigned_to)

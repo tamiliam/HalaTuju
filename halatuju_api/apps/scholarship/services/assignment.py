@@ -81,10 +81,14 @@ def may_assign_to(caller, target):
     return has_signed_in(target) and may_hand_to(caller, target)
 
 
-def _in_reviewers(admin):
+def _in_reviewers(admin, *, seated=False):
     """`staff_tables.in_reviewers`, behind this module's ONE courses import (TD-613 added a second
-    reader, `holder_can_review`, without adding an import across the app boundary)."""
+    reader, `holder_can_review`, without adding an import across the app boundary). ``seated``
+    reads a SUSPENDED row as a Restore would give it back (`staff_tables.seated`), so a suspension
+    alone never reads as "left Reviewers" (TD-613 review F1, `_holder_gone_for_good`)."""
     from apps.courses import staff_tables
+    if seated:
+        admin = staff_tables.seated(admin)
     return staff_tables.in_reviewers(admin)
 
 
@@ -229,20 +233,48 @@ def holder_can_review(admin):
     return _in_reviewers(admin) and is_review_target(admin)
 
 
+def _holder_gone_for_good(admin):
+    """TD-613 review F1 (owner approved 2026-11-15): has the holder left for good, not merely been
+    suspended? Archived, or (read as a Restore would seat them) out of Reviewers or no longer a review
+    target. A super is never gone short of an archive."""
+    if getattr(admin, 'archived_at', None):
+        return True
+    if admin.is_super:
+        return False
+    return not (_in_reviewers(admin, seated=True) and is_review_target(admin))
+
+
 def needs_new_holder(application):
     """TD-613 (derived, never stored): an OPEN case (R5: `staff_lifecycle.is_open_case`, a reopened
     decision included) whose holder can no longer work it (`holder_can_review`). R5 lets a holder leave
     Reviewers, be suspended or be archived while a FUNDED case they hold is closed; when that case is
-    reopened or reverted it comes back open with nobody able to work it. Such a case may then change
-    hands at ANY open status (`is_assignable`), but only to a NEW holder: an unassign stays refused
-    outside ASSIGNABLE_STATUSES (`_refuse_stage`), so it can never be left with nobody. A closed case
-    (awarded / active not reopened, closed, withdrawn) never answers True."""
+    reopened or reverted it comes back open with nobody able to work it.
+
+    ⚠ REVIEW F1 (owner approved 2026-11-15): a SUSPENDED holder (inactive, not archived) does not
+    strand a case on their own. Outside ASSIGNABLE_STATUSES (Awaiting QC, a recorded verdict, a
+    reopened decline) the answer is True only when the holder is GONE FOR GOOD
+    (`_holder_gone_for_good`), or is suspended AND the case came back by a super's REOPEN
+    (`decision_reopened_at`). Otherwise suspend → reassign → restore would let a lead move a finished
+    case and the new holder overwrite its verdict. An award revert leaves no stored marker (it writes
+    only `status` and `award_due_at`), so a suspended holder's reverted case is NOT stranded: it waits
+    for a Restore or a super's reopen. Inside ASSIGNABLE_STATUSES nothing changes (R1's
+    suspended-holders card already redistributes there).
+
+    Such a case may then change hands at any open status (`is_assignable`). An unassign keeps the old
+    window (`unassign_refusal`), so FROM AWAITING QC ON it can never be left with nobody; at Completed
+    or interviewing it can still be unassigned, as before. A closed case (awarded / active not
+    reopened, closed, withdrawn) never answers True."""
     from ..staff_lifecycle import is_open_case
     if application.assigned_to_id is None:
         return False
     if not is_open_case(application.status, application.decision_reopened_at):
         return False
-    return not holder_can_review(application.assigned_to)
+    holder = application.assigned_to
+    if holder_can_review(holder):
+        return False
+    if application.status in ASSIGNABLE_STATUSES:
+        return True
+    return _holder_gone_for_good(holder) or application.decision_reopened_at is not None
 
 
 def is_assignable(application):
@@ -251,21 +283,38 @@ def is_assignable(application):
     return application.status in ASSIGNABLE_STATUSES or needs_new_holder(application)
 
 
+def unassign_refusal(application):
+    """The code an UNASSIGN of this case is refused with, or None when it may be left with nobody —
+    `_refuse_stage`'s unassign rule, and the `may_unassign` flag the detail and the list serve
+    (TD-613 review F2), so neither picker greys out an unassign the server allows.
+
+    Checked FIRST, ahead of the general stage gate: an unassign at 'interviewed' or beyond is also
+    not-assignable, but 'findings_submitted' tells the super what to DO about it (reopen the
+    decision), where 'not_assignable' would only tell them they can't. The more specific, more
+    actionable refusal wins. TD-613: a case whose holder can no longer work it is assignable at any
+    open status, but only to a NEW holder — an unassign keeps the old window (Completed /
+    interviewing), so from Awaiting QC on such a case is never left with nobody."""
+    if application.status in _UNASSIGN_BLOCKED_STATUSES:
+        return 'findings_submitted'
+    if application.status not in ASSIGNABLE_STATUSES:
+        return 'not_assignable'
+    return None
+
+
+def may_unassign(application):
+    """TD-613 review F2: does the server take "Unassigned" as the pick? Served as `may_unassign`, the
+    ONE thing both pickers grey that option by. True when nobody holds the case (re-picking
+    Unassigned is a no-op, never refused) or `unassign_refusal` has no code for it."""
+    return application.assigned_to_id is None or unassign_refusal(application) is None
+
+
 def _refuse_stage(application, current, reviewer, now):
     """The stage rules of `assign_reviewer`, in their order (moved out verbatim, #39 Sprint 4, when
     the row lock pushed the function past the 150-line standard). Raises `AssignmentError`."""
     unassigning = reviewer is None and current is not None
-
-    # Checked FIRST, ahead of the general stage gate: an unassign at 'interviewed' or beyond is
-    # also not-assignable, but 'findings_submitted' tells the super what to DO about it (reopen the
-    # decision), where 'not_assignable' would only tell them they can't. The more specific,
-    # more actionable refusal wins.
-    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
-        raise AssignmentError('findings_submitted')
-    # TD-613: a case whose holder can no longer work it is assignable at any open status, but only
-    # to a NEW holder. An unassign keeps the old window, so such a case is never left with nobody.
-    if unassigning and application.status not in ASSIGNABLE_STATUSES:
-        raise AssignmentError('not_assignable')
+    refusal = unassign_refusal(application) if unassigning else None
+    if refusal:
+        raise AssignmentError(refusal)
 
     # A case may only change hands while there is a review to do (Completed / interviewing).
     # Gates assign, REASSIGN and unassign alike — a rejected or awarded student has no live

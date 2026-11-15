@@ -13,9 +13,10 @@ from ..sgd_conversion import AdminApplicantDocumentSerializer
 from ..serializers import ConsentSerializer, RefereeSerializer
 from .detail_blocks import ServesTheDetailBlocks
 from .detail_people import ServesTheDetailPeople
+from .handover import ServesTheHandover
 
 
-class AdminApplicationDetailSerializer(ServesTheDetailBlocks, ServesTheDetailPeople, _gift.ServesTheGift, _dmail.ServesTheDecisionMail, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
+class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks, ServesTheDetailPeople, _gift.ServesTheGift, _dmail.ServesTheDecisionMail, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
@@ -111,9 +112,11 @@ class AdminApplicationDetailSerializer(ServesTheDetailBlocks, ServesTheDetailPeo
     assigned_to_corrections = serializers.SerializerMethodField()
     # TD-613: the SERVED answers the cockpit's Reviewer card reads (never a role, owner 2026-11-15):
     # may the case change hands now (`services.is_assignable`), and does it need a NEW holder because
-    # the one it has can no longer work it (`services.needs_new_holder`; then an unassign is refused).
+    # the one it has can no longer work it (`services.needs_new_holder`), and may it be left with
+    # nobody (`services.may_unassign`, review F2). All three from `handover.ServesTheHandover`.
     assignable = serializers.SerializerMethodField()
     needs_new_holder = serializers.SerializerMethodField()
+    may_unassign = serializers.SerializerMethodField()
     # Decision-reopen state: when set, the decision panel is editable + the reviewer
     # dropdown unlocks + a "held from sponsors" banner shows. The open reason drives the banner.
     decision_reopen_reason = serializers.SerializerMethodField()
@@ -227,6 +230,7 @@ class AdminApplicationDetailSerializer(ServesTheDetailBlocks, ServesTheDetailPeo
             'profile_completed_at', 'completeness', 'consent_blockers', 'nudge', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at', 'assignable', 'needs_new_holder',
+            'may_unassign',
             'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verified_by_name', 'verify_checklist',

@@ -7,8 +7,9 @@ through and is diverted to AWAITING QC) nobody could work it: the reopen was ref
 
 Now the case derives `services.needs_new_holder` and may go to a NEW holder at any open status. Every
 assign rule still holds (the door, Reviewers, signed in, never yourself, never across organisations,
-QC separation), an unassign stays refused, and a closed case never moves. Fixtures: the factory, and
-synthetic names only.
+QC separation), an unassign stays refused from Awaiting QC on, and a closed case never moves. Review
+round: outside ASSIGNABLE_STATUSES a suspension alone strands only a reopened case (F1, owner
+approved 2026-11-15). Fixtures: the factory, and synthetic names only.
 """
 from decimal import Decimal
 from unittest import mock
@@ -21,7 +22,7 @@ from apps.scholarship import sponsorship as sponsorship_svc
 from apps.scholarship import staff_work
 from apps.scholarship.models import AssignmentEvent, InterviewSession, Sponsor, Sponsorship
 from apps.scholarship.services import (
-    assign_reviewer, holder_can_review, is_assignable, needs_new_holder,
+    assign_reviewer, holder_can_review, is_assignable, may_unassign, needs_new_holder, unassign_refusal,
 )
 from apps.scholarship.services.errors import AssignmentError
 from apps.scholarship.tests.factories import (
@@ -293,3 +294,144 @@ class TestTheHandoverEmails(_Base):
                 mock.patch('apps.scholarship.emails.send_reviewer_assigned_email'):
             assign_notify.send_assignment_emails(event)
         to_student.assert_called_once()
+
+
+def _road(stage):
+    """The factory's Awaiting QC needs its road named; the recommend road (verify-accept)."""
+    return {'outcome': 'recommend'} if stage == 'awaiting_qc' else {}
+
+
+class TestASuspensionAloneStrandsNothing(_Base):
+    """Review F1 (owner approved 2026-11-15): suspend → reassign → restore must not let a lead move a
+    finished case and have its verdict overwritten. A SUSPENDED holder strands a case outside the
+    ordinary window only when it came back by a super's reopen; a holder gone for good always does."""
+
+    def test_suspended_holder_at_awaiting_qc_or_a_recorded_verdict_is_refused(self):
+        for stage in ('awaiting_qc', 'recommended'):
+            with self.subTest(stage=stage):
+                holder = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+                app = make_application(stage, cohort=self.cohort, reviewer=holder, **_road(stage))
+                suspend(holder)
+                self.assertFalse(needs_new_holder(app))
+                r = self.assign(self.lead, app, self.new.pk)
+                self.assertEqual((r.status_code, r.json()['code']), (400, 'not_assignable'))
+                app.refresh_from_db()
+                self.assertEqual(app.assigned_to_id, holder.pk)
+
+    def test_a_reopened_case_with_a_suspended_holder_hands_on(self):
+        app = self.recommended()
+        suspend(self.old)
+        r = authed_client(self.super).post(f'{BASE}/{app.pk}/reopen-decision/',
+                                           {'reason': 'Income mis-read.'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+        self.assertTrue(needs_new_holder(app))
+        self.assertEqual(self.assign(self.lead, app, self.new.pk).status_code, 200)
+
+    def test_a_suspended_holder_who_also_left_reviewers_is_gone_for_good(self):
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort, reviewer=self.old)
+        no_group(self.old)
+        suspend(self.old)
+        self.assertTrue(needs_new_holder(app))
+
+    def test_a_suspended_holder_of_a_reverted_award_waits(self):
+        # An award revert leaves no stored marker, so a suspension alone does not strand the case:
+        # it waits for a Restore or a super's reopen (the ruling's fallback, no migration).
+        app, offer = TestTheRevertPath._awarded(self)
+        app.profile.nric, app.profile.nric_verified = SELANGOR_IC, False
+        app.profile.save(update_fields=['nric', 'nric_verified'])
+        suspend(self.old)
+        sponsorship_svc.cancel_offer(offer.sponsor, offer.id)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+        self.assertFalse(needs_new_holder(app))
+        self.assertEqual(self.assign(self.lead, app, self.new.pk).json()['code'], 'not_assignable')
+
+    def test_inside_the_ordinary_window_nothing_changes(self):
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.old)
+        suspend(self.old)
+        self.assertTrue(needs_new_holder(app))
+        self.assertTrue(is_assignable(app))
+
+
+class TestMayUnassignIsServed(_Base):
+    """Review F2: the server serves `may_unassign` from `unassign_refusal`, the rule the assign
+    endpoint refuses by, so neither picker greys out an unassign the server allows."""
+
+    def test_a_stranded_case_at_interviewing_may_still_be_unassigned(self):
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.old)
+        archive(self.old)
+        body = self.detail(self.lead, app)
+        self.assertEqual((body['needs_new_holder'], body['may_unassign']), (True, True))
+        self.assertTrue(may_unassign(app))
+        self.assertEqual(self.assign(self.lead, app, None).status_code, 200)
+        app.refresh_from_db()
+        self.assertIsNone(app.assigned_to_id)
+
+    def test_from_awaiting_qc_on_a_stranded_case_may_not(self):
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort, reviewer=self.old)
+        archive(self.old)
+        body = self.detail(self.lead, app)
+        self.assertEqual((body['needs_new_holder'], body['may_unassign']), (True, False))
+        rows = authed_client(self.lead).get(f'{BASE}/').json()
+        rows = rows.get('results', rows.get('applications', rows)) if isinstance(rows, dict) else rows
+        row = next(x for x in rows if x['id'] == app.pk)
+        self.assertEqual((row['needs_new_holder'], row['may_unassign']), (True, False))
+        self.assertEqual(self.assign(self.lead, app, None).json()['code'], 'findings_submitted')
+
+    def test_the_flag_and_the_refusal_agree_at_every_stage(self):
+        for stage in ('submitted', 'interviewing', 'awaiting_qc', 'recommended', 'rejected', 'awarded'):
+            with self.subTest(stage=stage):
+                app = make_application(stage, cohort=self.cohort, reviewer=self.old, **_road(stage))
+                self.assertEqual(may_unassign(app), unassign_refusal(app) is None)
+        nobody = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort)
+        nobody.assigned_to = None                      # in memory: re-picking Unassigned is a no-op
+        self.assertTrue(may_unassign(nobody))
+
+
+class TestWhoDeclinedReadsTheHolderAtTheDecline(_Base):
+    """Review F3: a rejected case can change hands since TD-613 (reopen, handover, cancel the reopen),
+    so "declined by someone other than the assigned reviewer" asks who held it AT the decline."""
+
+    def _declined(self, holder, by, with_event):
+        """A sent door decline (a reason, `contractual`) by ``by`` while ``holder`` held the case;
+        ``with_event``: an audit row hands it to ``holder`` before the decline (else a pre-F7 case)."""
+        if with_event:
+            app = make_application('interviewing', cohort=self.cohort, reviewer=self.new)
+            assign_reviewer(app, reviewer=holder, by_admin=self.super)
+        else:
+            app = make_application('interviewing', cohort=self.cohort, reviewer=holder)
+        now = timezone.now()
+        app.status, app.rejected_at, app.rejected_by = 'rejected', now, by.email
+        app.rejection_category, app.rejection_comments = 'contractual', 'Not selected.'
+        app.verdict_decided_at, app.decline_email_sent_at = now, now
+        app.save()
+        return app
+
+    def _hand_on(self, app, holder):
+        """Reopen, hand the case from the departed ``holder`` to `self.new`, cancel the reopen."""
+        archive(holder)
+        client = authed_client(self.super)
+        r = client.post(f'{BASE}/{app.pk}/reopen-decision/', {'reason': 'Recheck.'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(self.assign(self.lead, app, self.new.pk).status_code, 200)
+        self.assertEqual(client.post(f'{BASE}/{app.pk}/cancel-reopen/', {}, format='json').status_code, 200)
+        app.refresh_from_db()
+        self.assertEqual((app.status, app.assigned_to_id), ('rejected', self.new.pk))
+
+    def test_the_decliner_who_held_it_then_is_not_flagged_after_a_handover(self):
+        for with_event in (True, False):
+            with self.subTest(audit_row_before_the_decline=with_event):
+                holder = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+                app = self._declined(holder, holder, with_event)
+                self.assertIs(self.detail(self.super, app)['rejected_by_unassigned'], False)
+                self._hand_on(app, holder)
+                self.assertIs(self.detail(self.super, app)['rejected_by_unassigned'], False)
+
+    def test_a_decline_by_someone_else_is_still_flagged_after_a_handover(self):
+        holder = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        app = self._declined(holder, self.lead, True)
+        self.assertIs(self.detail(self.super, app)['rejected_by_unassigned'], True)
+        self._hand_on(app, holder)
+        self.assertIs(self.detail(self.super, app)['rejected_by_unassigned'], True)

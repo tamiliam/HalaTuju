@@ -629,6 +629,7 @@
     "assigned_at",
     "assignable",
     "needs_new_holder",
+    "may_unassign",
     "info_request_note",
     "info_requested_at",
     "mentoring_candidate",
@@ -714,6 +715,7 @@
     "assigned_to_name",
     "assignable",
     "needs_new_holder",
+    "may_unassign",
     "ready_for_assignment",
     "decision_reopened_at"
    ],

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.courses import public as courses_public
 from ..models import ScholarshipApplication, SponsorProfile
 from .. import serializers_admin_gift as _gift
+from .handover import ServesTheHandover
 from .names import _full_name
 
 
@@ -55,7 +56,7 @@ def _application_merit_score(obj):
     return public.merit_100(getattr(obj, 'profile', None))
 
 
-class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.ModelSerializer):
+class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
     # Academic data is read live from the canonical profile, not the application.
@@ -77,8 +78,10 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
     # will refuse should not look available. See services.ASSIGNABLE_STATUSES.
     assignable = serializers.SerializerMethodField()
     # TD-613: True when the holder can no longer work this OPEN case (`services.needs_new_holder`):
-    # it may then go to someone new at any open status, but never back to Unassigned.
+    # it may then go to someone new at any open status. `may_unassign` (review F2) is whether it
+    # may be left with nobody (`services.may_unassign`); the picker greys Unassigned by it alone.
     needs_new_holder = serializers.SerializerMethodField()
+    may_unassign = serializers.SerializerMethodField()
     # First-assignment readiness (mirrors the detail cockpit): all student tasks done OR the org's
     # `query_answer_days` submit-clock lapsed. The list dropdown disables a FIRST assignment while false, so it never
     # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
@@ -93,18 +96,11 @@ class AdminApplicationListSerializer(_gift.ServesTheCaseGifts, serializers.Model
             'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
-            'assigned_to_id', 'assigned_to_name', 'assignable', 'needs_new_holder', 'ready_for_assignment',
+            'assigned_to_id', 'assigned_to_name', 'assignable', 'needs_new_holder', 'may_unassign',
+            'ready_for_assignment',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
         ]
-
-    def get_assignable(self, obj):
-        from ..services import is_assignable
-        return is_assignable(obj)
-
-    def get_needs_new_holder(self, obj):
-        from ..services import needs_new_holder
-        return needs_new_holder(obj)
 
     def get_ready_for_assignment(self, obj):
         from ..services import is_ready_for_assignment

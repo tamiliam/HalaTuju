@@ -7,13 +7,14 @@ All notable changes to this project will be documented in this file.
 ### feat: sprint TD-613 - a case whose reviewer has left can change hands (2026-11-15)
 
 Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-15, TD-613 builder call, pending architect). Release-note draft: `docs/releases/td613-release-note-draft.md`.
-- `services/assignment.needs_new_holder` (derived, nothing stored): an OPEN case whose holder is suspended, archived or out of Reviewers may go to a new holder at any open status; `is_assignable` says so. An unassign of such a case stays refused, so it is never left with nobody.
+- `services/assignment.needs_new_holder` (derived, nothing stored): an OPEN case whose holder is suspended, archived or out of Reviewers may go to a new holder at any open status; `is_assignable` says so. An unassign of such a case stays refused from Awaiting QC on, so from there it is never left with nobody.
 - A reopen no longer refuses `reviewer_cannot_review` (`reopen._strands_assignee` retired); a diverted award revert lands at Awaiting QC able to change hands.
 - The applicant detail and the applications list serve `assignable` and `needs_new_holder`; the cockpit's Reviewer card (`reviewerCardState`) and the list picker read them, show the card for such a case, grey out Unassigned and say why (new key `admin.scholarship.assign.needsNewHolderHint`, en/ms/ta).
 - No student "who will interview you" email for a handover after the interview.
 - Every assign rule unchanged: the door, `may_hand_to`, `self_assign`, the organisation fence, QC separation; closed cases never move; no money path touched.
 - TD-613 closed; TD-622 note (R1 cannot retire yet); one new debt item for the suspended-cases banner.
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
+- Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
 ### release: 15 Nov 11:00 MYT window - M3b, SUP1 and the E8 width fix published (2026-11-15)
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.

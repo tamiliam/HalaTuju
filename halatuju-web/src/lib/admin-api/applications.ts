@@ -50,8 +50,9 @@ export interface AdminScholarshipListItem {
   // The dropdown is disabled when false — the server refuses anyway, and an action that will be
   // refused should not look available.
   assignable: boolean
-  // TD-613 (`services.needs_new_holder`): the holder can't work this open case; reassign, never unassign.
+  // TD-613, served: `services.needs_new_holder` / `may_unassign` (the picker greys Unassigned by it).
   needs_new_holder?: boolean
+  may_unassign?: boolean
   // Server-computed first-assign readiness (services.is_ready_for_assignment): all student tasks
   // done OR the 5-day window lapsed. The dropdown disables a FIRST assignment while false, so the
   // list cannot offer an assign the server refuses.
@@ -379,9 +380,10 @@ export interface AdminScholarshipDetail {
   assigned_to_id: number | null
   assigned_to_name: string | null
   assigned_at: string | null
-  // TD-613, served (never from a role): `services.is_assignable` / `services.needs_new_holder`.
+  // TD-613, served (never from a role): `services.is_assignable` / `needs_new_holder` / `may_unassign`.
   assignable?: boolean
   needs_new_holder?: boolean
+  may_unassign?: boolean
   info_request_note: string
   info_requested_at: string | null
   // Sprint 5 — Verification verdict cockpit fields
