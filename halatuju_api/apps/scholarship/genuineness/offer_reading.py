@@ -9,7 +9,7 @@ import re
 from collections import Counter
 
 from .offer_confirmations import (CONFIRMATION_SEEN, CONFIRM_MIN, _CONFIRM_TITLES, _FORM6_MARKS, _JPPKK,
-                                  _NO_PRIVATE_WING, _POLY_DEPARTMENTS)
+                                  _NO_PRIVATE_WING, _POLY_DEPARTMENTS, _PUBLIC_CONFIRMERS)
 from .offer_issuers import TVET_ISSUERS
 from .offer_text import glued_org, logo_strip, normalise_s6, own_issuer_line
 
@@ -26,7 +26,7 @@ __all__ = [
     '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', 'is_org_token', 'glued_org', 'normalise_s6', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
     '_letter_structure', '_letterhead_block', '_letterhead_lines', '_letterhead_region',
     '_outside_orgs', '_own_identity_lines', '_page', '_private_marker', '_private_signs', 'private_proof',
-    '_ruled_status', '_untitled', '_unglued', '_unstreeted', 'ruling_of',
+    '_ruled_status', '_untitled', '_unglued', '_unstreeted', 'ruling_of', '_PUBLIC_CONFIRMERS', '_confirmers',
 ]
 
 
@@ -299,6 +299,18 @@ def _public_names():
     return tuple(_TVET_NAMES) + tuple(n for _k, ns, _m in _NO_PRIVATE_WING for n in ns) + tuple(
         f' {n} ' for n in _UA_NAMES) + _POLY_DEPARTMENTS + (' SEKTOR OPERASI SEKOLAH ', ' BAHAGIAN MATRIKULASI ',
                                                           ' INSTITUT PENDIDIKAN GURU ')
+
+
+@functools.lru_cache(maxsize=1)
+def _confirmers():
+    """Help H2 (owner ruling 2026-11-15): every public issuer a confirmation of studies is read against, in this
+    order: the no-private-wing three, the other public types (`offer_confirmations._PUBLIC_CONFIRMERS`), the
+    closed-list TVET institutes, then any OTHER public university (`confirmation_ua`: it has a private wing)."""
+    from .offer_signatures import _UA_NAMES
+    wingless = {n for _k, ns, _m in _NO_PRIVATE_WING for n in ns}
+    ua = tuple(f' {n} ' for n in _UA_NAMES if f' {n} ' not in wingless)
+    return _NO_PRIVATE_WING + _PUBLIC_CONFIRMERS + (('confirmation_tvet', _INSTITUTES, _INSTITUTES),
+                                                    ('confirmation_ua', ua, ua))
 
 
 def _private_marker(lines) -> bool:

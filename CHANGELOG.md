@@ -196,6 +196,17 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
+### feat: help sprint H2 - a confirmation letter from every public institution clears offer_not_official; English matric offers recognised (2026-11-15)
+
+Branch help-h2, not pushed. Owner ruling 2026-11-15 (`docs/decisions.md`, ruling 4 widened). MODEL_VERSION 1.27.0 to 1.28.0 (help H1 also uses 1.28.0: one bump when both merge). No migration, no web change.
+- Moves only first: the confirmation word lists moved verbatim from `offer_reading.py` (592 lines) into `genuineness/offer_confirmations.py`.
+- A confirmation of studies from a matriculation college (Malay or English names), an IPG, a KV, a community college or a public TVET institute now lifts to genuine on the same proof as the polytechnic / UMS / Form-6 ones (letterhead name first, a ministry or own mark on the page, a clean letterhead, the letter's shape, no private marker). `offer_confirmations._PUBLIC_CONFIRMERS`, `offer_reading._confirmers`.
+- A confirmation from any other public university reads `suspect` (doc_seen and tag `confirmation_ua`): a person checks; it never blocks.
+- Unchanged: a private college and a university's private wing (SPACE, PPPL, Pendidikan Berterusan, UniKL / KPTM / GMI, SATU) still fail; the new names are not added to the BLOCK's public names, so no private veto is loosened. A confirmation never writes a course pick (`CONFIRMATION_SEEN` holds every new code; the officer still closes her own request).
+- KPM's English matric offer ("Matriculation Division" + "Ministry of Education" on the page, no partner word, no private marker) reads the matric family with English twins, same rows and weights (`offer_signatures.english_matric_lists`, called through `english_offer_lists`). The twins are KPM's usual English wording, not doc 6062's own text (not stored): to be checked against the real letter.
+- Tests: `test_offer_h2_confirmations.py` (new). Updated to the new ruling: `test_offer_rulings.py` (UM confirmation now `confirmation_ua` / suspect), `test_offer_s6_doors.py` (`confirmation_ua` is a confirmation again), `test_offer_s6_narrowing.py` (another university's confirmation reads suspect, was baseline), `test_offer_pages_and_lines.py` (MODEL_VERSION).
+- Backfill: none automatic. No sweep reads MODEL_VERSION; the 13 blocked offers need the owner's Re-run (or the dry run by the operator first).
+
 ### fix: student help H1 - a village head's stamp counts wherever it sits in the approver's part of the form (2026-11-15)
 
 Branch help-h1, not pushed. Application #552 (the same shape on 4 documents in 2 applications): a signed Ketua Kampung income form, his name stamp on the approver's Nama / Alamat lines, the printed "Cop Rasmi" box left empty, no letterhead. The picture read said "no stamp" because the box was empty, so the form was refused "no issuing body" (`income_doc_unapproved`).

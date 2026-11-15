@@ -4,7 +4,9 @@
 ``from .results_doc import _UA_NAMES`` / ``UA_OFFER_SIGNATURES`` keep working; ``results_doc``'s
 ``_OFFER_LISTS`` still assembles them, and ``results_doc.MODEL_VERSION`` still versions them. 1.26.0 (request
 #66) adds IIUM's ENGLISH reading of the UA family (``UA_OFFER_SIGNATURES_EN``, ``english_ua_lists``): it imports
-only ``re``, and reads the page through ``offer_reading`` lazily.
+only ``re``, and reads the page through ``offer_reading`` lazily. 1.28.0 (help H2) adds KPM's ENGLISH reading
+of the matric family the same way (``MATRIC_OFFER_SIGNATURES_EN``, ``english_matric_lists``); ``results_doc``
+calls both through ``english_offer_lists``.
 """
 import re
 
@@ -276,3 +278,49 @@ def _starts(lines):
     for ln in lines:
         yield pos, ln
         pos += len(ln.strip()) + 1
+
+
+# ── Matriculation in ENGLISH (1.28.0, help H2) ─────────────────────────────────────────────
+# KPM's Matriculation Division also issues its offer in English (#597's doc 6062 read not_offer_letter, p=0.056:
+# the matric family is Malay-only). Owner 2026-11-15: an English "Matriculation Division" / "Ministry of
+# Education" offer is recognised like the Malay one. Same shape as IIUM's above: the SAME matric family, the same
+# eight rows and weights, each Malay row with an English twin added, and it opens ONLY when the page names BOTH
+# the Matriculation Division and the Ministry of Education, with no private marker and no partner / tie-up word
+# anywhere (`english_matric_lists`). Every other page is scored by `MATRIC_OFFER_SIGNATURES` as before.
+# ⚠ The twins are written from KPM's usual English wording, NOT from 6062's own text (offer page text is not
+# stored): an operator checks them against the real letter (`eval/offer_s6_dry_run.py`) before relying on them.
+# A twin is a phrase, never a bare word a results slip also prints ("MATRICULATION PROGRAMME" alone is on the
+# completion slip, `matric_poly_doc`), so a slip uploaded as an offer scores as it does in Malay.
+_MATRIC_DIVISION_EN, _KPM_EN = ' MATRICULATION DIVISION ', ' MINISTRY OF EDUCATION '
+_MATRIC_TWINS = {
+    'Jata Negara crest': [],
+    'Bahagian Matrikulasi': ['MATRICULATION DIVISION'],
+    'Tawaran Program Matrikulasi KPM': ['ADMISSION TO THE MATRICULATION PROGRAMME',
+                                        'OFFER OF THE MATRICULATION PROGRAMME'],
+    'Jurusan': ['STREAM'],
+    'Tarikh Kemasukan ke kolej': ['DATE OF REGISTRATION', 'REGISTRATION DATE', 'DATE OF ENTRY'],
+    'Mendaftar pada tarikh kolej': ['MUST REGISTER ON THE DATE'],
+    'Tawaran terbatal (saudara)': ['OFFER WILL BE CANCELLED', 'OFFER SHALL BE CANCELLED',
+                                   'OFFER WILL BE WITHDRAWN'],
+    'Kolej': ['COLLEGE'],
+}
+MATRIC_OFFER_SIGNATURES_EN = [(label, patterns + _MATRIC_TWINS[label], weight, kind)
+                              for label, patterns, weight, kind in MATRIC_OFFER_SIGNATURES]
+
+
+def english_matric_lists(lists: dict, text_norm: str, ocr_text: str = ''):
+    """``(lists, text_norm)`` for an offer: unchanged, unless the page is KPM's English matriculation offer
+    (above) — then the matric family reads its English twins (`MATRIC_OFFER_SIGNATURES_EN`)."""
+    page = f' {text_norm} '
+    if _MATRIC_DIVISION_EN not in page or _KPM_EN not in page:
+        return lists, text_norm
+    from .offer_reading import _PARTNER, _TIE_UP, _folded_lines, _private_marker
+    if any(w in page for w in _PARTNER + _TIE_UP + _TIE_UP_EXTRA) or _private_marker(_folded_lines(ocr_text)):
+        return lists, text_norm
+    return {**lists, 'matriculation': MATRIC_OFFER_SIGNATURES_EN}, text_norm
+
+
+def english_offer_lists(lists: dict, text_norm: str, ocr_text: str = ''):
+    """Both English readings of the offer families (IIUM's UA letter, KPM's matric letter)."""
+    lists, text_norm = english_ua_lists(lists, text_norm, ocr_text)
+    return english_matric_lists(lists, text_norm, ocr_text)
