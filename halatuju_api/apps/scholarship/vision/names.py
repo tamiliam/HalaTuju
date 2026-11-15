@@ -50,6 +50,14 @@ def tidy_name(s: str) -> str:
     return ' '.join(t.split())
 
 
+def has_glued_marker(s: str) -> bool:
+    """Does this name have a slash parentage marker GLUED to a word ("KUMARA/L RAJ", "A/LRAJ")?
+    The space around the slash itself ("A / L") is not glue. #67 scope 3b review S1: a profile name
+    with the card's words but a glued marker is aligned to the tidied form, not left as ALREADY."""
+    t = re.sub(r'\s*/\s*', '/', str(s or '').lower())
+    return _split_glued_markers(t) != t
+
+
 def same_raw_words(a: str, b: str) -> bool:
     """The same words, any order, once tidied (``tidy_name``): equal word MULTISETS. KUMAR RAJ is
     not KUMAR A/L RAJ, BIN is not BINTI, A/L is not S/O, NUR AIN is not NUR'AIN, and a glued or

@@ -1166,8 +1166,8 @@ class TheLiveReadPathsFollowScope3b(TestCase):
 class ALockedWriteOfTheCardsWordsIsStoredTidied(TestCase):
     """``identity.student_name_to_store``: "Use the name on my IC" sends the served ``ic_card_name``
     (``IdentityEdit.takeCardName``), i.e. the card's text as read. While locked, a student write
-    that has the card's words stores ``card_display_name(card)``; every other accepted write is
-    stored as sent."""
+    that has the card's words stores ``card_display_name(card)``; since the review round (N3) every
+    other accepted locked write is stored tidied, and unlocked writes as sent."""
 
     def _locked(self, name, card, nric, *, locked=True):
         profile = _student(name, nric, nric_verified=locked)
@@ -1221,12 +1221,14 @@ class ALockedWriteOfTheCardsWordsIsStoredTidied(TestCase):
         self.assertIn('name', sync_profile_fields(profile, {'name': 'lim mei ling@aisyah'}))
         self.assertEqual(_name_of(profile), 'LIM MEI LING@AISYAH')
 
-    def test_a_write_the_lock_allows_that_is_not_the_cards_words_is_unchanged(self):
+    def test_a_write_the_lock_allows_that_is_not_the_cards_words_is_stored_tidied(self):
+        """Review N3 (was "stored as sent" at E6): every accepted LOCKED write is tidied. A word
+        glued by the student stays glued (it is her word), but the glued A/P is split off."""
         profile, _, client = self._locked(SHORT_EDIT, GLUED_CARD, NRIC)
         glued_word = 'NIRMALADEVIA/P GANESAN MOORTHY'                # same letters, a word glued
         self.assertTrue(identity.name_change_allowed(profile, glued_word))
         self.assertEqual(client.put('/api/v1/profile/', {'name': glued_word}, format='json').status_code, 200)
-        self.assertEqual(_name_of(profile), glued_word)
+        self.assertEqual(_name_of(profile), 'NIRMALADEVI A/P GANESAN MOORTHY')
 
     def test_an_unchanged_name_keeps_its_own_spacing(self):
         """E1 keeps a typed "X@Y" against a card read "X @Y"; re-saving it is not a change."""
@@ -1245,3 +1247,125 @@ class ALockedWriteOfTheCardsWordsIsStoredTidied(TestCase):
                 self.assertEqual(r.json()['code'], 'name_locked')
                 profile.refresh_from_db()
                 self.assertEqual((profile.name, profile.school), (CARD, ''))
+
+
+# ── Scope 3b review round: S1, S2, N1, N3, E1's gates, and a card that does not speak ────────────
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TheReviewRound(TestCase):
+    """S1: a marker the STUDENT glued is tidied, not frozen by E1. S2: an unchanged locked re-save
+    keeps the stored name. N1: takeable is the web's ``canTakeCardName`` test (``same_letters``).
+    N3: every accepted locked write is stored tidied. E1 never bypasses the D2 gates."""
+
+    def _case(self, typed, card, nric, *, locked=False, signed=True, **ic_kw):
+        profile = _student(typed, nric, nric_verified=locked)
+        app = make_application(student=profile, declaration_name=typed if signed else '')
+        return profile, app, _ic(app, name=card, nric=nric, **ic_kw)
+
+    def _client(self, profile):
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(profile)}')
+        return client
+
+    # S1
+    def test_a_glued_marker_she_typed_against_a_correct_card_is_aligned_and_stored_tidied(self):
+        for n, (typed, card) in enumerate(((GLUED_AL, TYPED_AL),
+                                           ('KAVINRAJ A/LSELVADURAI', TYPED_AL),
+                                           (GLUED_AL, GLUED_AL))):       # both glued: tidied too
+            with self.subTest(typed=typed, card=card):
+                profile, app, doc = self._case(typed, card, f'090909-09-094{n}', signed=False)
+                self.assertEqual(identity.name_alignment(doc)[0], identity.ALIGNED)
+                self.assertEqual(identity.align_name_to_ic(doc), identity.ALIGNED)
+                self.assertEqual(_name_of(profile), TYPED_AL)
+                row = StudentActivity.objects.get(application=app, event=EVENT_NAME_ALIGNED_TO_IC)
+                self.assertEqual(row.meta['new'], TYPED_AL)
+                self.assertEqual(identity.align_name_to_ic(doc), identity.ALREADY)   # once only
+
+    def test_the_four_prod_shapes_stay_already(self):
+        for n, (typed, card) in enumerate(((TYPED_AL, GLUED_AL),) + AT_SHAPES):
+            with self.subTest(typed=typed, card=card):
+                profile, app, doc = self._case(typed, card, f'090909-09-095{n}')
+                self.assertEqual(identity.align_name_to_ic(doc), identity.ALREADY)
+                self.assertEqual(_name_of(profile), typed)
+                self.assertFalse(StudentActivity.objects.filter(
+                    application=app, event=EVENT_NAME_ALIGNED_TO_IC).exists())
+
+    def test_what_counts_as_a_glued_marker(self):
+        from apps.scholarship.vision.names import has_glued_marker
+        for name in (GLUED_AL, 'KAVINRAJ A/LSELVADURAI', 'kavinraja / l selvadurai', 'RAJS/O KUMAR'):
+            with self.subTest(name=name):
+                self.assertTrue(has_glued_marker(name))
+        for name in (TYPED_AL, 'KAVINRAJ A / L SELVADURAI', 'KAVINRAJ A/ L SELVADURAI', 'KALAI ARASU',
+                     '') + tuple(n for pair in AT_SHAPES for n in pair):
+            with self.subTest(name=name):
+                self.assertFalse(has_glued_marker(name))
+
+    # S2
+    def test_a_locked_re_save_with_a_run_of_spaces_keeps_the_stored_name(self):
+        profile, _, _ = self._case(CARD, CARD, NRIC, locked=True)
+        doubled = 'NIRMALA  DEVI A/P  GANESAN MOORTHY'
+        r = self._client(profile).put('/api/v1/profile/', {'name': doubled}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), CARD)
+        self.assertEqual(sync_profile_fields(profile, {'name': doubled}), [])
+        self.assertEqual(identity.student_name_to_store(profile, 'nirmala devi a/ p ganesan moorthy'), CARD)
+
+    # N1
+    def test_a_glued_word_misread_is_not_takeable(self):
+        profile, _, _ = self._case(CARD, 'NIRMALADEVI A/P GANESAN MOORTHY', NRIC, locked=True)
+        self.assertFalse(identity.name_card_takeable(profile))
+        self.assertFalse(self._client(profile).get('/api/v1/profile/').json()['name_card_takeable'])
+        other, _, _ = self._case(SHORT_EDIT, CARD, NRIC_B, locked=True)
+        self.assertTrue(identity.name_card_takeable(other))           # different letters: offered
+
+    # N3
+    def test_every_accepted_locked_write_is_stored_tidied_and_unlocked_writes_are_not(self):
+        profile, _, _ = self._case('LIM AISYAH', 'LIM MEI LING @ AISYAH', NRIC_B, locked=True)
+        split = 'LIMMEI LING@AISYAH'                                   # same letters, a word glued
+        self.assertTrue(identity.name_change_allowed(profile, split))
+        self.assertEqual(identity.student_name_to_store(profile, split), 'LIMMEI LING @ AISYAH')
+        self.assertIn('name', sync_profile_fields(profile, {'name': split}))
+        self.assertEqual(_name_of(profile), 'LIMMEI LING @ AISYAH')
+        open_, _, _ = self._case('LIM AISYAH', 'LIM MEI LING @ AISYAH', NRIC, locked=False)
+        self.assertEqual(identity.student_name_to_store(open_, split), split)
+        self.assertEqual(identity.student_name_to_store(open_, 'LIM  AISYAH'), 'LIM  AISYAH')
+
+    # E1 never bypasses the gates
+    def test_the_same_words_still_need_the_number_and_a_clean_read(self):
+        from apps.scholarship.read_errors import IC_SECOND_OPINION_UNTIL
+        pending = {IC_SECOND_OPINION_ERROR: 'All AI models failed: 503',
+                   IC_SECOND_OPINION_UNTIL: timezone.now().timestamp() + 3600}
+        for n, typed in enumerate((TYPED_AL, GLUED_AL)):               # E1's ALREADY and S1's ALIGNED
+            for m, (kw, outcome) in enumerate((
+                    ({'nric': OTHER_NRIC}, identity.NRIC_DIFFERS),
+                    ({'error': 'could not fetch image'}, identity.READ_NOT_CLEAN),
+                    ({'vf': pending}, identity.READ_NOT_CLEAN))):
+                with self.subTest(typed=typed, outcome=outcome, m=m):
+                    nric = f'080515-10-44{n}{m}'
+                    kw = dict(kw)
+                    card_nric = kw.pop('nric', nric)
+                    profile = _student(typed, nric)
+                    app = make_application(student=profile, declaration_name=typed)
+                    doc = _ic(app, name=GLUED_AL, nric=card_nric, **kw)
+                    self.assertEqual(identity.align_name_to_ic(doc), outcome)
+                    self.assertEqual(_name_of(profile), typed)
+
+    # Pinned: a locked write while her card does not speak for her (second opinion pending)
+    def test_a_card_that_does_not_speak_for_her_refuses_the_cards_words_as_today(self):
+        from apps.scholarship.read_errors import IC_SECOND_OPINION_UNTIL
+        pending = {IC_SECOND_OPINION_ERROR: 'All AI models failed: 503',
+                   IC_SECOND_OPINION_UNTIL: timezone.now().timestamp() + 3600}
+        profile, _, _ = self._case(SHORT_EDIT, GLUED_CARD, NRIC, locked=True, vf=pending)
+        client = self._client(profile)
+        self.assertFalse(client.get('/api/v1/profile/').json()['name_card_takeable'])
+        for sent in (GLUED_CARD, CARD):
+            with self.subTest(sent=sent):
+                r = client.put('/api/v1/profile/', {'name': sent}, format='json')
+                self.assertEqual(r.status_code, 403)
+                self.assertEqual(r.json()['code'], 'name_locked')
+                self.assertEqual(sync_profile_fields(profile, {'name': sent}), [])
+                self.assertEqual(_name_of(profile), SHORT_EDIT)
+        r = client.put('/api/v1/profile/', {'name': SHORT_EDIT.lower()}, format='json')   # unchanged
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(_name_of(profile), SHORT_EDIT)
