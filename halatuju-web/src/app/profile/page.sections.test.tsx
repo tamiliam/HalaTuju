@@ -211,7 +211,7 @@ describe('identity section', () => {
     await mount({ name_locked: true, name: 'TEST', ic_card_name: 'SOMEONE ELSE', name_card_takeable: true })
     editSection(0)
     await act(async () => { fireEvent.click(screen.getByText('profile.useCardName')) })
-    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
+    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedContact', 'error'))
     expect((screen.getByLabelText('profile.name') as HTMLInputElement).value).toBe('TEST')
   })
 
@@ -264,7 +264,7 @@ describe('identity section', () => {
     await mount({ name_locked: true, ic_card_name: 'TEST STUDENT' })
     editSection(0)
     await save()
-    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedError', 'error'))
+    await waitFor(() => expect(mockToast.showToast).toHaveBeenCalledWith('profile.nameLockedContact', 'error'))
     expect(updateMock).toHaveBeenCalledTimes(1)
   })
 

@@ -2,7 +2,7 @@
 import type { ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 import { maskIc } from '@/lib/ic-utils'
-import { hasIcFlags } from '@/lib/icEditor'
+import { hasIcFlags } from '@/lib/icLock'
 import BumiputeraField from '@/components/profile/BumiputeraField'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
 import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'

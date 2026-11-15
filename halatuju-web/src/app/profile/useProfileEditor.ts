@@ -23,7 +23,7 @@ export function useProfileEditor(f: ProfileForm) {
   const { t } = useT()
   const { token, refreshProfile } = useAuth()
   const { showToast } = useToast()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, nameEditable, icCardName, loadData, postcode } = f
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, nameEditable, loadData, postcode } = f
 
   // Optional "return to" target (e.g. ?next=/scholarship/apply) so an edit started
   // from the application flow can come straight back. Restricted to internal
@@ -160,7 +160,7 @@ export function useProfileEditor(f: ProfileForm) {
     } catch (err) {
       // #67 scope 3: the server holds a locked name to the IC (403 `name_locked`).
       if ((err as { bodyCode?: string } | null)?.bodyCode === 'name_locked') {
-        showToast(t('profile.nameLockedError'), 'error')
+        showToast(t('profile.nameLockedContact'), 'error')
         return false
       }
       showToast('Failed to save profile. Please try again.', 'error')
@@ -224,32 +224,9 @@ export function useProfileEditor(f: ProfileForm) {
     if (nextUrl) router.push(nextUrl)
   }
 
-  /**
-   * #67 scope 3 review: "Use the name on my IC". The one name change a LOCKED record allows is to
-   * the card's own name, so this sends just that (no other field rides along, and nothing else in
-   * an open section is saved). The server decides whether the card speaks for her and answers
-   * 403 `name_locked` if not. On success the page reloads, so the flags and the note follow.
-   */
-  const takeCardName = async () => {
-    if (!token || !icCardName) return
-    setSaving(true)
-    try {
-      await updateProfile({ name: icCardName }, { token })
-      setName(icCardName)
-      setSnapshot(s => ({ ...s, name: icCardName }))
-      window.dispatchEvent(new Event('profile-updated'))
-      showToast(t('profile.nameFromCardSaved'), 'success')
-      await loadData()
-      await refreshProfile()
-    } catch (err) {
-      showToast(t((err as { bodyCode?: string } | null)?.bodyCode === 'name_locked'
-        ? 'profile.nameLockedError' : 'profile.nameFromCardFailed'), 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return { nextUrl, editingSection, startEditing, cancelEditing, saveSection, takeCardName }
+  // `setSnapshot` is handed out for "Use the name on my IC" (#67 scope 3), which lives with the
+  // identity edit panel in the lazy chunk and must keep Cancel from restoring the old name.
+  return { nextUrl, editingSection, startEditing, cancelEditing, saveSection, setSnapshot }
 }
 
 export type ProfileEditor = ReturnType<typeof useProfileEditor>

@@ -1,15 +1,52 @@
 /** A3.9: moved verbatim from `src/app/profile/page.tsx` (the 1,274-line page); no behaviour change. */
 import { useT } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth-context'
+import { updateProfile } from '@/lib/api'
+import { useToast } from '@/components/ToastContext'
 import { formatIc, maskIc } from '@/lib/ic-utils'
-import { hasIcFlags, icFieldValue, icFlags } from '@/lib/icEditor'
+import {
+  canTakeCardName, hasIcFlags, icFieldValue, icFixableSide, icFlags, sameLettersAsCard,
+} from '@/lib/icEditor'
 import BumiputeraField from '@/components/profile/BumiputeraField'
 import type { SectionProps } from '../../useProfileEditor'
 
 /** The identity section's edit panel. Fetched as one chunk with the other four (see `useProfileEditors`). */
 export default function IdentityEdit({ f, ed }: SectionProps) {
   const { t } = useT()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nricDraft, setNricDraft, nricError, setNricError, saving, malaysian, icEditable, nameEditable, takeCardNameOffered, nameIsTheCards, icFixable } = f
-  const { cancelEditing, saveSection, takeCardName } = ed
+  const { token, refreshProfile } = useAuth()
+  const { showToast } = useToast()
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, colorblind, setColorblind, disability, setDisability, icFlagCodes, icCardNric, icCardName, nameLocked, nameCardTakeable, nricDraft, setNricDraft, nricError, setNricError, saving, setSaving, malaysian, icEditable, nameEditable, loadData } = f
+  const { cancelEditing, saveSection, setSnapshot } = ed
+  // #67 scope 3 review: a locked name that is not the card's can still be put right — to the card's.
+  // Derived here (the lazy chunk), not in `useProfileForm`: only this panel reads them.
+  const takeCardNameOffered = canTakeCardName(nameLocked, name, icCardName, nameCardTakeable)
+  const nameIsTheCards = sameLettersAsCard(name, icCardName)
+  const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable, takeCardNameOffered)
+
+  /**
+   * #67 scope 3 review: "Use the name on my IC". The one name change a LOCKED record allows is to
+   * the card's own name, so this sends just that (no other field rides along, and nothing else in
+   * an open section is saved). The server decides whether the card speaks for her and answers
+   * 403 `name_locked` if not. On success the page reloads, so the flags and the note follow.
+   */
+  const takeCardName = async () => {
+    if (!token || !icCardName) return
+    setSaving(true)
+    try {
+      await updateProfile({ name: icCardName }, { token })
+      setName(icCardName)
+      setSnapshot(s => ({ ...s, name: icCardName }))
+      window.dispatchEvent(new Event('profile-updated'))
+      showToast(t('profile.nameFromCardSaved'), 'success')
+      await loadData()
+      await refreshProfile()
+    } catch (err) {
+      showToast(t((err as { bodyCode?: string } | null)?.bodyCode === 'name_locked'
+        ? 'profile.nameLockedContact' : 'errors.saveFailed'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <div className="space-y-4">
       <div>

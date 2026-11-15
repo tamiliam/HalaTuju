@@ -34,7 +34,7 @@ import {
   APPLY_FIELD_LABEL_KEYS,
 } from '@/lib/scholarship'
 import { applyPlanPatch } from '@/lib/planPicker'
-import { sameLettersAsCard } from '@/lib/icEditor'
+import { sameLettersAsCard } from '@/lib/cardName'
 import { applyCard } from '@/lib/applyCopy'
 import { useApplyGate, applyPageExit } from '@/lib/useApplyGate'   // the SERVER's verdict; no web rule
 import { useApplyGift, isProgrammeRequired, isOtherConflict, clearApplyProgramme } from '@/lib/useApplyGift'
@@ -63,6 +63,19 @@ const ERROR_TAB: Record<string, TabKey> = {
   // A name mismatch is fixed on the About Me name (the usual culprit — a pre-filled
   // Google handle), so land the student there; an inline hint shows in both places.
   declarationMismatch: 'personal',
+}
+
+/** A field held to the verified IC: read-only, with the tick — the IC number and (#67 scope 3) the name. */
+function VerifiedField({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
+      <span>{value || '—'}</span>
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-700">
+        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
+        {label}
+      </span>
+    </div>
+  )
 }
 
 export default function ScholarshipApplyPage() {
@@ -396,13 +409,7 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
           {nameLocked ? (
-            <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
-              <span>{lockedName || '—'}</span>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-700">
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
-                {t('scholarship.apply.verified')}
-              </span>
-            </div>
+            <VerifiedField value={lockedName} label={t('scholarship.apply.verified')} />
           ) : (
             <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
           )}
@@ -425,13 +432,7 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.ic')}>{t('scholarship.apply.field.ic')}</FieldLabel>
           {nricLocked ? (
-            <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
-              <span>{form.nric || '—'}</span>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-700">
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
-                {t('scholarship.apply.verified')}
-              </span>
-            </div>
+            <VerifiedField value={form.nric} label={t('scholarship.apply.verified')} />
           ) : (
             <input className="input" value={form.nric} placeholder="XXXXXX-XX-XXXX"
               inputMode="numeric" autoComplete="off"

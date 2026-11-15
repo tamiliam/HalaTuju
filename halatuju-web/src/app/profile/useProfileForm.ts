@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { formatIc } from '@/lib/ic-utils'
-import { canEditIc, canEditName, canTakeCardName, icFixableSide, sameLettersAsCard } from '@/lib/icEditor'
+import { canEditIc, canEditName } from '@/lib/icLock'
 import { getProfile, getSavedCourses } from '@/lib/api'
 import { chosenProgrammeFromApi } from '@/lib/scholarship'
 import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
@@ -108,10 +108,8 @@ export function useProfileForm() {
   // this student may edit. `icEditable` is the ONLY thing that grants the edit.
   const icEditable = canEditIc({ nric_locked: nricLocked })
   const nameEditable = canEditName({ name_locked: nameLocked })
-  // #67 scope 3 review: a locked name that is not the card's can still be put right — to the card's.
-  const takeCardNameOffered = canTakeCardName(nameLocked, name, icCardName, nameCardTakeable)
-  const nameIsTheCards = sameLettersAsCard(name, icCardName)
-  const icFixable = icFixableSide(icFlagCodes, icEditable, nameEditable, takeCardNameOffered)
+  // #67 scope 3: what the edit panel alone reads (the "Use the name on my IC" offer, the "matches"
+  // note, the fixable side) is derived in `sections/edit/IdentityEdit.tsx`, in the lazy chunk.
 
   const loadData = useCallback(async () => {
     if (!token) return
@@ -280,6 +278,7 @@ export function useProfileForm() {
     setIcCardNric,
     icCardName,
     setIcCardName,
+    nameCardTakeable,
     nricDraft,
     setNricDraft,
     nricError,
@@ -331,9 +330,6 @@ export function useProfileForm() {
     savedBumiputera,
     icEditable,
     nameEditable,
-    takeCardNameOffered,
-    nameIsTheCards,
-    icFixable,
     thirdHeld,
     resultsPath,
     meritShown,
