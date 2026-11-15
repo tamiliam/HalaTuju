@@ -31,7 +31,7 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({
 const DEFAULT_ROLE = { role: 'admin', is_super_admin: true, owning_org_id: 11 }
 let mockRole: Record<string, unknown> = DEFAULT_ROLE
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),   // TD-623: the keys the server serves
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),   // NAVKEYS: the keys the server serves (permissions and page_keys)
 }))
 const mockPush = jest.fn()
 const mockReplace = jest.fn()

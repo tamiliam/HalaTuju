@@ -4,6 +4,7 @@
  */
 import { giftIn, withGift, withGiftHrefs } from '@/lib/giftHref'
 import { visibleNav } from '@/lib/navigation'
+import { servedViewer } from '@/test/staffPresets'
 
 describe('withGift', () => {
   it('adds the gift to a bare path', () => {
@@ -42,7 +43,9 @@ describe('giftIn', () => {
 
 describe('withGiftHrefs — only the Programme rows carry it', () => {
   const groups = visibleNav({ role: 'super', probes: { requests: 'live', billing: 'live' },
-    pathname: '/admin/scholarship', programmeChosen: true })
+    pathname: '/admin/scholarship', programmeChosen: true,
+    // NAVKEYS: the keys the server serves a super decide its rows.
+    permissions: servedViewer('super').permissions, pageKeys: servedViewer('super').page_keys })
   const hrefs = (gs: ReturnType<typeof visibleNav>, scope: string) =>
     gs.flatMap((g) => g.items).filter((i) => i.scope === scope).map((i) => i.href)
 

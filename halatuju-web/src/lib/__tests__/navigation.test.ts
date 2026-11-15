@@ -23,10 +23,12 @@ import {
   type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
 import { floorCount, walkFloor } from '@/test/sourceGuard'
-import { servedPageKeys } from '@/test/staffPresets'
+import { servedPageKeys, servedPermissions } from '@/test/staffPresets'
 
+/** NAVKEYS: a role as the server serves it on its preset — the rows on a door or a key read these ALONE. */
+const keys = (role: AdminRoleName) => ({ permissions: servedPermissions(role), pageKeys: servedPageKeys(role) })
 const ctx = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}): NavContext =>
-  ({ role, probes: { ...NO_PROBES, ...probes } })
+  ({ role, probes: { ...NO_PROBES, ...probes }, ...keys(role) })
 
 const resolve = (msgs: Record<string, unknown>, key: string): unknown =>
   key.split('.').reduce<unknown>(
@@ -277,8 +279,9 @@ describe('visibleNav per role', () => {
 
   it('S7d: a staff member who mentors now gains My students and keeps their own menu and landing', () => {
     for (const role of ['org_admin', 'admin', 'reviewer', 'qc'] as const) {
-      const plain = visibleNav({ ...ctx(role), permissions: null })
-      const mentoring = visibleNav({ ...ctx(role), permissions: null, mentoring: true })
+      // NAVKEYS: on the keys the server serves the preset (no `permissions` would open no key row at all).
+      const plain = visibleNav(ctx(role))
+      const mentoring = visibleNav({ ...ctx(role), mentoring: true })
       const ids = (gs: typeof plain) => gs.flatMap((g) => g.items.map((i) => i.id))
       // Sprint S1 (S1-h): and Scholars, after Applications, when their own keys do not open it already.
       const before = ids(plain).filter((id) => !['profile', 'guide', 'faq'].includes(id))
@@ -655,9 +658,9 @@ describe('visibleNav groups', () => {
     // TD-623: the gift door is the served `programme_settings` key, so each context carries the
     // keys the server serves that role — not the label.
     const noGift = (role: AdminRoleName): NavContext =>
-      ({ role, probes: NO_PROBES, programmeChosen: false, pageKeys: servedPageKeys(role) })
+      ({ role, probes: NO_PROBES, programmeChosen: false, ...keys(role) })
     const gift = (role: AdminRoleName): NavContext =>
-      ({ role, probes: NO_PROBES, programmeChosen: true, pageKeys: servedPageKeys(role) })
+      ({ role, probes: NO_PROBES, programmeChosen: true, ...keys(role) })
 
     it('hides Configuration, Payments and Spending while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
@@ -703,7 +706,8 @@ describe('visibleNav groups', () => {
     it('hides a money row outside a gift IFF the role has a door (`hasGiftDoor`)', () => {
       const seen = floorCount(ROLE_NAMES.flatMap((role) => (['payments', 'spending'] as const)
         .map((id) => ({ role, item: NAV_ITEMS.find((i) => i.id === id)! }))
-        .filter(({ item }) => item.roles.includes(role))), 6, 'role x money-row pairs',
+        .filter(({ item }) => canAccess(item.href, role, servedPermissions(role), false, servedPageKeys(role)))),
+      6, 'role x money-row pairs',
       'every role that may open Payments or Spending must be checked against hasGiftDoor')
       for (const { role, item } of seen) {
         const hidden = canSee(item, noGift(role)) === 'hide'
@@ -715,7 +719,7 @@ describe('visibleNav groups', () => {
     // on it would make them vanish on the first paint of every page load and pop back a moment
     // later — and, on a tenant with ONE gift, blink for nothing.
     it('⚠ an UNKNOWN answer (list not loaded) does NOT hide Payments or Spending', () => {
-      const prog = visibleNav({ role: 'org_admin', probes: NO_PROBES, programmeChosen: undefined })
+      const prog = visibleNav({ role: 'org_admin', probes: NO_PROBES, programmeChosen: undefined, ...keys('org_admin') })
         .find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id)).toEqual(expect.arrayContaining(['payments', 'spending']))
     })
@@ -749,7 +753,7 @@ describe('visibleNav groups', () => {
     // caller that predates this dimension (the Organisation Overview looks hrefs up this way)
     // must not silently lose a row.
     it('an omitted programmeChosen shows everything, exactly as before', () => {
-      const omitted = visibleNav({ role: 'org_admin', probes: NO_PROBES })
+      const omitted = visibleNav({ role: 'org_admin', probes: NO_PROBES, ...keys('org_admin') })
       expect(omitted).toEqual(visibleNav(gift('org_admin')))
     })
 
@@ -887,6 +891,8 @@ describe('defaultRoute', () => {
 })
 
 // ── 8. canAccess mirrors the guards the pages used to derive themselves ──────
+// NAVKEYS: asked with what the server serves each preset (`keys`): Payments, Contracts, Sources and Billing are
+// a door or a key now, and the answer per preset is the one their role lists gave.
 describe('canAccess', () => {
   it.each([
     ['/admin/payments', ['super', 'admin', 'org_admin', 'finance']],
@@ -897,7 +903,9 @@ describe('canAccess', () => {
     ['/admin/course-data', ['super']],
   ] as const)('%s', (href, allowed) => {
     for (const role of ROLE_NAMES) {
-      expect(canAccess(href, role)).toBe((allowed as readonly string[]).includes(role))
+      const { permissions, pageKeys } = keys(role)
+      expect([role, canAccess(href, role, permissions, false, pageKeys)])
+        .toEqual([role, (allowed as readonly string[]).includes(role)])
     }
   })
 

@@ -28,7 +28,7 @@ jest.mock('next/navigation', () => ({
   usePathname: () => window.location.pathname,
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: mockRole, token: 'tok' }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole), token: 'tok' }) }))   // NAVKEYS: the keys the server serves
 jest.mock('@/lib/admin-supabase', () => ({ adminSignOut: jest.fn() }))
 jest.mock('@/lib/admin-api', () => ({
   getPendingSponsorCount: jest.fn(() => Promise.resolve({ count: 0 })),

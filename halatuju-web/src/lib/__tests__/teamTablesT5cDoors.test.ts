@@ -14,6 +14,8 @@
  *
  * TD-623 (owner 2026-11-15): the in-page gates and the Mentors tab read the served door ONLY (`holdsDoor`), so
  * on an older payload they all answer false — the one declared move (`td623OlderMoves` below).
+ * NAVKEYS (2026-11-16): the menu rows and route guards on a door read it ONLY too, so on an older payload every
+ * row with a door leaves the menus and its routes shut (`navkeysOlderMoves`). The served payload moves nothing.
  *
  * THE PAYLOADS (`fixtures/t5cServedPayloads.json`) are the server's own answers: `GET admin/role/` for each
  * active shape, built by `test_team_tables_t5c_doors.DoorParity.setUpTestData` on branch t5c (P4a ae27058d).
@@ -25,7 +27,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { NAV_ITEMS, NO_PROBES, defaultRoute, effectiveRole, visibleNav, type ProbeState } from '@/lib/navigation'
+import { NAV_ITEMS, NO_PROBES, activeItem, defaultRoute, effectiveRole, visibleNav, type ProbeState } from '@/lib/navigation'
 import { DOOR_KEYS, opensDoor, type DoorName } from '@/lib/pageDoors'
 import * as pageGuard from '@/lib/pageGuard'
 import { holdsDoor, mayOpen, mayReadMentors } from '@/lib/pageGuard'
@@ -128,9 +130,29 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
     return out
   }
 
-  it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): menu, routes and landing as before; no page gate opens', (shape) => {
+  /** NAVKEYS's declared move: on an older payload a row with a door opens for nobody (no role fallback). The
+   *  rows on a key (`perms`), a KIND or the platform, and the landing, do not move. */
+  const doorRow = (id: string) => !!NAV_ITEMS.find((i) => i.id === id)?.door
+  const navkeysOlderMoves = (cells: Record<string, unknown>): Record<string, unknown> => {
+    const out: Record<string, unknown> = { ...cells }
+    for (const m of ['menu', 'menuNoGift', 'menuNothingProbed']) {
+      out[m] = (cells[m] as string[]).filter((cell) => !doorRow(cell.slice(0, cell.indexOf(':'))))
+    }
+    for (const cell of Object.keys(cells).filter((c) => c.startsWith('open '))) {
+      if (activeItem(cell.slice(5))?.door) out[cell] = false
+    }
+    return out
+  }
+
+  it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): no door row or page gate opens; the rest as before', (shape) => {
     const { page_keys: _dropped, ...older } = served(shape)
-    expect(measure(older, doorGate)).toEqual(td623OlderMoves(after(shape)))
+    expect(measure(older, doorGate)).toEqual(navkeysOlderMoves(td623OlderMoves(after(shape))))
+  })
+
+  it('NAVKEYS: the older-payload move is real — some shape held a door row by its role before', () => {
+    const held = Object.keys(SHAPES).filter((shape) =>
+      (after(shape).menu as string[]).some((cell) => doorRow(cell.slice(0, cell.indexOf(':')))))
+    expect(held.length).toBeGreaterThan(0)
   })
 
   it('TD-623: the older-payload move is real — some shape held a page gate by its role before', () => {

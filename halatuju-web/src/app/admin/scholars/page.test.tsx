@@ -21,7 +21,7 @@ jest.mock('@/lib/i18n', () => ({
 }))
 let mockRole: Record<string, unknown> = { role: 'org_admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),
 }))
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
 jest.mock('@/lib/admin-api')
@@ -186,13 +186,13 @@ it('sprint S1 (S1-h): a mentor login and staff who mentor open the list (the ser
 })
 
 it('sprint S1 (S1-h): anyone viewing as a mentor never waits on the gift gate; a `scholars` reader does', async () => {
-  const asMentor = [
+  const asMentor: { role: string; permissions: string[]; mentoring?: boolean }[] = [
     { role: 'mentor', permissions: [] },                                    // a mentor login
     { role: 'reviewer', permissions: ['review'], mentoring: true },          // staff who mentor
     { role: 'admin', permissions: ['see_all'], mentoring: true },            // an admin without Scholars
   ]
   const readers = [
-    { role: 'org_admin', permissions: [] },
+    { role: 'org_admin', permissions: ['scholars'] },                       // NAVKEYS: the key, not the label
     { role: 'admin', permissions: ['see_all', 'scholars'], mentoring: true },  // the key wins over mentoring
   ]
   for (const who of [...asMentor, ...readers]) {

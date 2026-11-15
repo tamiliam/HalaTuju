@@ -28,7 +28,7 @@ const ORG_ADMIN_VIEWER: Viewer = { role: 'org_admin', permissions: ['manage_team
 const SUPER_VIEWER: Viewer = { role: 'reviewer', is_super_admin: true, permissions: ['manage_team'] }
 let viewerRole: Viewer = ORG_ADMIN_VIEWER
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(viewerRole) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('@/lib/admin-api')
 // The permission editor has its own request (#39 Sprint 4) and its own test (`PermissionEditor.test.tsx`);

@@ -6,7 +6,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { useProgrammeScope } from '@/lib/programmeScopeCore'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
@@ -40,7 +40,7 @@ export default function ContractsListPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const allowed = canAccess('/admin/contracts', effectiveRole(role))
+  const allowed = mayOpen('/admin/contracts', role)   // NAVKEYS: the served door, as the menu row and the server
 
   const [templates, setTemplates] = useState<ContractTemplateSummary[]>([])
   const [loading, setLoading] = useState(true)

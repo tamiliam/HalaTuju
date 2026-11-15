@@ -50,7 +50,7 @@ import { useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneConsole'
 import { useT } from '@/lib/i18n'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import ProgrammeRulesTab from '@/components/admin/ProgrammeRulesTab'
@@ -68,7 +68,7 @@ const isTab = (v: string): v is Tab => (TABS as readonly string[]).includes(v)
 export default function AdminProgrammePage() {
   const { role } = useAdminAuth()
   const { t } = useT()
-  const mayView = canAccess('/admin/programme', effectiveRole(role))
+  const mayView = mayOpen('/admin/programme', role)   // NAVKEYS: the served door, as the menu row and the server
   const [tab, setTab] = useState<Tab>('year')
   const { programme } = useProgrammeScope()
   // `?programme=` opens Configuration in that gift, e.g. from a gift card (TD-296). The tabs keep

@@ -34,7 +34,7 @@ jest.mock('@/lib/i18n', () => ({
 // A variable, not a literal, so one describe below can render the page as an organisation admin.
 let mockRole: { role: string; owning_org_id: number | null } = { role: 'super', owning_org_id: null }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('@/lib/admin-api')
 

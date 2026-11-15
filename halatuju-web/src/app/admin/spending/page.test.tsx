@@ -28,7 +28,8 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import SpendingPage from './page'
 import * as api from '@/lib/admin-api'
-import { canAccess } from '@/lib/navigation'
+import { canAccess as canAccessWith, type AdminRoleName } from '@/lib/navigation'
+import { servedPermissions, servedPageKeys } from '@/test/staffPresets'
 import { GiftScope, TWO_GIFTS } from '@/test/giftScope'
 import { act as actA15 } from '@testing-library/react'
 
@@ -36,7 +37,7 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en
 // A mutable cell so the gift-gate tests can sign in as each role; every older test keeps `admin`.
 let mockRole: Record<string, unknown> = { role: 'admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),   // TD-623: the keys the server serves
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),   // TD-623: the keys the server serves
 }))
 // The page redirects through the router since 2026-09-28 (`useGiftGate`).
 const mockReplace = jest.fn()
@@ -854,6 +855,9 @@ describe('the wallet faults', () => {
 })
 
 describe('who may open it', () => {
+  // NAVKEYS: each role on the keys the server serves it (the row asks `spending`; Payments its keys).
+  const canAccess = (href: string, role: AdminRoleName) =>
+    canAccessWith(href, role, servedPermissions(role), false, servedPageKeys(role))
   it('admits the officer roles', () => {
     for (const role of ['super', 'org_admin', 'admin'] as const) {
       expect(canAccess('/admin/spending', role)).toBe(true)

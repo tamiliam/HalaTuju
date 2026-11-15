@@ -17,7 +17,8 @@ import { servedPageKeys } from '@/test/staffPresets'
 let mockRole: Record<string, unknown> = { role: 'admin' }
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+  // NAVKEYS: the served permissions open the page (Applications asks see_all/qc/review); each case sets its own page_keys.
+  useAdminAuth: () => ({ token: 'tok', role: { permissions: jest.requireActual('@/test/staffPresets').servedPermissions(mockRole.role), ...mockRole } }),
 }))
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/admin-api')

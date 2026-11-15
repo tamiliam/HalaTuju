@@ -23,7 +23,7 @@ jest.mock('@/lib/i18n', () => ({
 }))
 let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(viewerRole) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('@/lib/admin-api')
 // The page reads `?programme=` on mount and keeps it in step with `router.replace` (TD-296); the

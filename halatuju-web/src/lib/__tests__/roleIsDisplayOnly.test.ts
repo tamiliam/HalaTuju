@@ -28,7 +28,6 @@
  *   TARGET    a rule about the person ACTED ON or listed, not the viewer
  *   SIDE      which side of an organisation request the viewer is on (owner or requester)
  *   DISPLAY   a label, chip, Guide chapter or line of text; never a fence
- *   MENU      the navigation registry's role rows (the older-payload menu rule) — a follow-up, not TD-623's list
  *   M4        the money lane, frozen until M4
  *   FALSE     not a role at all (a key name, an invitation kind, a busy state, a session scope, a family role)
  */
@@ -97,7 +96,7 @@ function scan(file: string, src: string): Hit[] {
   return out
 }
 
-type Klass = 'PLATFORM' | 'SERVER' | 'KIND' | 'LANDING' | 'TARGET' | 'SIDE' | 'DISPLAY' | 'MENU' | 'M4' | 'FALSE'
+type Klass = 'PLATFORM' | 'SERVER' | 'KIND' | 'LANDING' | 'TARGET' | 'SIDE' | 'DISPLAY' | 'M4' | 'FALSE'
 /** [file under src/, the whole expression read, how many hits in that file it claims, class, reason]. */
 type Entry = [file: string, snippet: string, count: number, klass: Klass, reason: string]
 
@@ -198,21 +197,20 @@ const ALLOWED: Entry[] = [
   ['lib/profileCards.ts', "ctx.role === 'source_partner') lines.push", 1, 'DISPLAY', 'the "what you can do" lines on the profile'],
   ['lib/profileCards.ts', "ctx.role === 'mentor') lines.push", 1, 'DISPLAY', 'the "what you can do" lines on the profile'],
   ['lib/profileCards.ts', "ctx.role !== 'mentor' && mentorsNow(ctx)", 1, 'DISPLAY', 'the "what you can do" lines on the profile'],
-  // ── MENU: the navigation registry (a follow-up; not in TD-623's list) ───────────────────────────────────
-  ['lib/navigation.ts', "['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner', 'mentor', 'member']", 1, 'MENU', 'ROLE_NAMES, the list of labels'],
-  ...([
-    ["roles: ['super']", 4], ["roles: ['super', 'org_admin']", 5], ["roles: ['super', 'org_admin', 'admin']", 5],
-    ["roles: ['super', 'org_admin', 'admin', 'finance']", 4], ["roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance']", 2],
-    ["roles: ['super', 'partner']", 2], ["roles: ['mentor']", 1],
-    ["roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor']", 1],
-    ["roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'source_partner']", 1],
-    ["roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner']", 1],
-    ["roles: ['super', 'org_admin', 'admin', 'source_partner', 'mentor']", 1],
-  ] as const).map(([snippet, count]): Entry =>
-    ['lib/navigation.ts', snippet, count, 'MENU', 'the menu rows\' roles: the older-payload rule and the rows with no door yet']),
-  ['lib/staffPermissions.ts', "TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer']", 1, 'MENU', 'the server\'s TEAM_ROLES, held by a drift test'],
-  ['lib/staffPermissions.ts', '(TEAM_ROLES as readonly string[]).includes(role)', 1, 'MENU', 'a menu row reads keys for a team member'],
-  ['lib/staffPermissions.ts', 'if (row.roles.includes(role)) return true', 1, 'MENU', 'admitsRow\'s role rule, read only when the row has no door or no page_keys came (older payload)'],
+  // ── NAVKEYS (2026-11-16): the navigation registry. The MENU class is gone: a row with a door reads it alone, a
+  // row the server gates by a key names it (`perms`), and `roles` holds only WHO THE LOGIN IS (`admitsRow`).
+  ['lib/navigation.ts', "['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner', 'mentor', 'member']", 1, 'DISPLAY', 'ROLE_NAMES, the list of labels (held to the server\'s ROLE_CHOICES)'],
+  ['lib/navigation.ts', "roles: ['super']", 4, 'PLATFORM', 'Course data, Organisations, Referral partners, Billing rates: the platform super only'],
+  ['lib/navigation.ts', "roles: ['super', 'partner']", 2, 'PLATFORM', 'Dashboard and Students: the platform super, and the referral-partner KIND whose two pages they are'],
+  ['lib/navigation.ts', "roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor']", 1, 'KIND', 'Programmes, the front door every organisation login lands on (no door, no key: lead ruling 2026-11-04)'],
+  ['lib/navigation.ts', "roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'source_partner']", 1, 'SERVER', 'the gift Overview: the server shapes it by role (SECTIONS_BY_ROLE, TD-621); moves with TD-632'],
+  ['lib/navigation.ts', "roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance']", 2, 'KIND', 'the staff Guide and FAQ: written for staff logins, none for a partner, source, mentor or member login'],
+  ['lib/navigation.ts', "roles: ['mentor']", 1, 'KIND', 'My students, the mentor login\'s own page (staff who mentor by the mentor record)'],
+  ['lib/navigation.ts', "roles: ['source_partner']", 1, 'KIND', 'Applications for a source login renders its own page and endpoint; staff by the key'],
+  ['lib/navigation.ts', "roles: ['source_partner', 'mentor']", 1, 'KIND', 'Scholars for a source or mentor login: its own page, or its own students; staff by the key'],
+  ['lib/navigation.ts', "roles: ['org_admin']", 1, 'M4', 'Payments: the lead tier holds no payment key and is paid in by role on the server (LEAD_MONEY_UNTIL_M4, TD-620)'],
+  ['lib/staffPermissions.ts', "TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer']", 1, 'SERVER', 'the server\'s TEAM_ROLES (who carries a permission set), held by a drift test'],
+  ['lib/staffPermissions.ts', 'if (row.roles?.includes(role)) return true', 1, 'KIND', 'admitsRow: a row\'s KIND or PLATFORM logins (who the login is), never a staff role on a key row'],
   // ── M4: money, frozen ────────────────────────────────────────────────────────────────────────────────────
   ['app/admin/payments/page.tsx', "canPrepare ?? r !== 'finance'", 1, 'M4', 'payments prepare fallback; the money lane is frozen until M4'],
   ['app/admin/payments/[id]/page.tsx', "isFinanceViewer = effectiveRole(role) === 'finance'", 1, 'M4', 'the finance viewer of a payment; frozen until M4'],

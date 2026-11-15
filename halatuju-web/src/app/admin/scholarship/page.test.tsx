@@ -26,7 +26,7 @@ jest.mock('@/lib/i18n', () => ({
 // Re-pointed per test, so the page's own role guard can be exercised from the outside.
 let authRole: { role: string } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: authRole }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(authRole) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('@/lib/admin-api')
 // The page reads `?programme=` on mount and keeps it in step with `router.replace` (TD-296); the

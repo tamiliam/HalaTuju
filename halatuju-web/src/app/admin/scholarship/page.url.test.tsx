@@ -22,7 +22,7 @@ jest.mock('@/lib/i18n', () => ({
     (vars ? `${k}|${Object.values(vars).join(',')}` : k) }),
 }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'reviewer' } }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'reviewer' }) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/admin-api')

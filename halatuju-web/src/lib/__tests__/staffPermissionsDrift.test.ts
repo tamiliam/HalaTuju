@@ -88,15 +88,22 @@ describe('admitsRow — the registry rows that read permissions (#39 S3)', () =>
     expect(permRows.map((i) => i.id).sort()).toEqual(['applications', 'payments', 'scholars', 'spending'])
   })
 
-  /** THE PRESET GUARANTEE ON THE WEB: for every team role, a row's `perms` asked of the role's
-   *  preset (read from the api) gives the row's `roles` answer. The org admin, super and partner
-   *  are answered by `roles` whatever they hold. */
+  /** THE PRESET GUARANTEE ON THE WEB: for every role, a row's `perms` asked of the role's preset (read from the
+   *  api; the lead tier for an org admin, every key for a super) gives the answer the row's ROLE LIST gave
+   *  before NAVKEYS. NAVKEYS (2026-11-16) took those lists off the rows (a key row keeps only its KIND logins,
+   *  and Payments its organisation admin until M4), so the old answer is typed out here, on purpose. */
+  const BEFORE_NAVKEYS: Record<string, readonly string[]> = {
+    applications: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
+    payments: ['super', 'org_admin', 'admin', 'finance'],
+    scholars: ['super', 'org_admin', 'admin', 'source_partner', 'mentor'],
+    spending: ['super', 'org_admin', 'admin'],
+  }
   test('every preset is admitted exactly as its role was', () => {
     for (const row of permRows) {
       for (const role of ROLE_NAMES) {
         const held = presets[role] ?? (role === 'org_admin' ? leadTier : role === 'super' ? apiKeys : [])
         expect({ row: row.id, role, admitted: admitsRow(row, role, held) })
-          .toEqual({ row: row.id, role, admitted: row.roles.includes(role) })
+          .toEqual({ row: row.id, role, admitted: BEFORE_NAVKEYS[row.id].includes(role) })
       }
     }
   })
@@ -134,12 +141,14 @@ describe('admitsRow — the registry rows that read permissions (#39 S3)', () =>
     expect(canAccess('/admin/scholarship', 'mentor', [])).toBe(false)
   })
 
-  test('the lead tier and the platform are answered by role, and no payload means role', () => {
-    expect(canAccess('/admin/payments', 'org_admin', leadTier)).toBe(true)   // no payments key: lead tier
-    expect(canAccess('/admin/spending', 'partner', apiKeys)).toBe(false)
+  test('payments keeps the lead tier by role until M4; otherwise the keys decide, and no payload opens nothing', () => {
+    expect(canAccess('/admin/payments', 'org_admin', leadTier)).toBe(true)   // no payments key: lead tier (TD-620)
+    // NAVKEYS: a partner is served no keys (`resolve` → ()), so it opens no key row; the KEYS decide, not its role.
+    expect(canAccess('/admin/spending', 'partner', [])).toBe(false)
     expect(canAccess('/admin/spending', 'reviewer')).toBe(false)
     expect(canAccess('/admin/spending', 'reviewer', null)).toBe(false)
-    expect(canAccess('/admin/spending', 'admin', undefined)).toBe(true)
+    expect(canAccess('/admin/spending', 'admin', undefined)).toBe(false)   // NAVKEYS: no role fallback
+    expect(canAccess('/admin/spending', 'org_admin', leadTier.filter((k) => k !== 'spending'))).toBe(false)
   })
 })
 

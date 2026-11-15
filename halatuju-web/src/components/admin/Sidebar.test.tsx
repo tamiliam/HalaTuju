@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 
 import { Sidebar } from './Sidebar'
 import { NO_PROBES, visibleNav, type AdminRoleName } from '@/lib/navigation'
+import { servedViewer } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({
@@ -26,7 +27,9 @@ jest.mock('next/link', () => ({
     <a href={href} {...rest}>{children}</a>,
 }))
 
-const groupsFor = (role: AdminRoleName) => visibleNav({ role, probes: NO_PROBES })
+// NAVKEYS: the keys the server serves that role decide its rows.
+const groupsFor = (role: AdminRoleName) => visibleNav({ role, probes: NO_PROBES,
+  permissions: servedViewer(role).permissions, pageKeys: servedViewer(role).page_keys })
 
 const renderRail = (role: AdminRoleName = 'org_admin', props = {}) => {
   render(

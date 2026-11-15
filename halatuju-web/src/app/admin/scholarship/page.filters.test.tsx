@@ -14,7 +14,7 @@ import { openAt } from '@/test/giftUrl'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'super' } }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'super' }) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/admin-api')

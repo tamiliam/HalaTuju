@@ -9,12 +9,15 @@ import { fireEvent, render, screen } from '@testing-library/react'
 
 import { CommandPalette } from './CommandPalette'
 import { visibleNav, NO_PROBES } from '@/lib/navigation'
+import { servedViewer } from '@/test/staffPresets'
 
 const push = jest.fn()
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: (h: string) => push(h) }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 
-const groups = visibleNav({ role: 'super', probes: NO_PROBES })
+// NAVKEYS: the keys the server serves a super decide its rows.
+const groups = visibleNav({ role: 'super', probes: NO_PROBES, permissions: servedViewer('super').permissions,
+  pageKeys: servedViewer('super').page_keys })
 
 beforeEach(() => push.mockClear())
 

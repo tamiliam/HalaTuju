@@ -199,11 +199,10 @@ function Chrome(
     // reviewer's all-gifts Applications list to the applicant they just opened.
     () => withGiftHrefs(visibleNav({
       role: r, probes, pathname, permissions: role?.permissions, mentoring: role?.mentoring,
-      tables: role?.tables,   // Team tables T1
       pageKeys: role?.page_keys,   // Team tables T5c P4: rows on a server door read its keys
       programmeChosen: scopesLoaded ? chosen !== '' : undefined,
     }), onRecord ? '' : chosen),
-    [r, role?.permissions, role?.mentoring, role?.tables, role?.page_keys, probes, chosen, scopesLoaded, pathname,
+    [r, role?.permissions, role?.mentoring, role?.page_keys, probes, chosen, scopesLoaded, pathname,
       onRecord],
   )
   const active = activeItem(pathname)

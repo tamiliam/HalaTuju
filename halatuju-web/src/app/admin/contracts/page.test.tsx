@@ -18,7 +18,7 @@ import { GiftScope, TWO_GIFTS } from '@/test/giftScope'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin', is_super_admin: false } }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'org_admin', is_super_admin: false }) }),   // NAVKEYS: the keys the server serves
 }))
 const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush, replace: jest.fn() }) }))

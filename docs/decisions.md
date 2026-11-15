@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — NAVKEYS builder calls (pending architect): the admin menu follows the served keys
+
+Branch navkeys, one commit on top of main 31e738a14, not pushed. No migration. Services: web. Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).
+Owner, 2026-11-15: "there is admin, and there are permissions, which determine what the admin views and edits."
+
+The calls:
+1. **A row with a door is answered by the served door alone.** `staffPermissions.admitsRow` now reads: the mentoring rule, then the row's own `roles` (who the login IS), then the door, then the row's keys; otherwise no. The twelve door rows (Invitations, Team, Sources, Sponsors, Billing, Requests, Organisation settings, Announcements, Surveys, Development, Contracts, Programme configuration) lost their role lists and `adminKeys`. No `page_keys`, no door row. `tables`, `ADMINS_TABLE` and `adminKeysHeld` are gone from the web.
+2. **Each row without a door has a class** (pinned in `roleIsDisplayOnly.test.ts`, which no longer has a MENU class):
+
+   | Row | Class | Answered by | Server |
+   |---|---|---|---|
+   | Applications | PERMISSION (+ KIND for a source) | `see_all`, `qc`, `review` | `b40_scope` |
+   | Scholars | PERMISSION (+ KIND for source, mentor; mentoring rule) | `scholars` | `scholars_scope` |
+   | Spending | PERMISSION | `spending` | `_SpendingBase` `has_perm('spending')` |
+   | Payments | PERMISSION + M4 | the payment keys; `org_admin` by role | `LEAD_MONEY_UNTIL_M4` (TD-620) |
+   | Programme overview | SERVER, left by role | role list | `SECTIONS_BY_ROLE` (TD-621) |
+   | Overview, Students | PLATFORM | super, partner | — |
+   | Course data, Organisations, Referral partners, Billing rates | PLATFORM | super | — |
+   | Programmes, Guide, FAQ, My students, Profile | KIND | role list | — |
+
+3. **Payments keeps its `org_admin` arm.** The brief says change no payments gate, and the server pays the organisation admin in by role until M4. A team member is answered by the keys alone, as before.
+4. **Programme overview stays by role.** Its server sections are role-based (`SECTIONS_BY_ROLE`); it moves with TD-621 / TD-632.
+5. **The four page guards (Programme, Contracts, Billing, Organisation settings) ask `mayOpen` with the served door.** Before, they refused by role while the menu row offered the page to a key holder. Billing and Contracts are client visibility guards only; their servers are key-gated (`surface_gates`), no money path changed, and no standard preset moved.
+6. **Applications also asks `qc`**, as `b40_scope` does (a `qc` holder resolves `see_all` too, so no preset moves).
+7. **Guide and FAQ are KIND**: every staff kind reads them; they gate no data.
+8. **The pin**: `navkeysPresetPin.test.ts` measured every standard preset (super, org_admin, admin, finance, reviewer, qc, mentor, partner, source, member, and the three mentoring shapes) on main before any change and wrote `fixtures/navkeysMenusBefore.json`: three menus, the landing and every route guard. After the change all match: **no declared move.** An older payload with no `page_keys` (the server no longer sends one) loses every door row; this is declared in `teamTablesT5cDoors` (`navkeysOlderMoves`).
+9. **Matrix tests feed the served keys** (`teamTablesMatrix` reads `page_keys` from the T5c payloads by shape). Hand-grant tests: an admin granted `billing.view`, `contracts.view`, `programmes.edit`, `requests.view` or `settings.edit` gains that row and its page; unticking `team.view`, `scholars`, `spending`, `billing.view` or the Applications keys shuts exactly that row.
+
+**Caveat:** a partner, source or mentor login granted keys would now see key rows, but the server serves those logins no keys (`page_keys` is `()`), so nothing moves today.
+
+**Alternative not taken:** keep the role lists as a fallback for a payload without keys. Every payload has carried `page_keys` since M3c, so the lists only hid drift.
+
 ## 2026-11-16 — TD-631 review round (pending architect): a reader opens what the list shows
 
 Branch td631, one commit on top of d89c41f13, not pushed. No migration. Services: web.

@@ -14,7 +14,7 @@ import { servedViewer } from '@/test/staffPresets'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 let authRole: { role: string; is_super_admin?: boolean } = servedViewer('org_admin')
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: authRole }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(authRole) }) }))   // NAVKEYS: the keys the server serves
 jest.mock('@/lib/admin-api')
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
 jest.mock('@/lib/programmeScope', () => ({ useProgrammeScope: () => ({ chosen: '', programme: null }) }))

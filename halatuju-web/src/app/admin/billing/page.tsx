@@ -7,7 +7,8 @@ import TableFrame from '@/components/admin/TableFrame'
 import InvoicesSection from '@/components/admin/InvoicesSection'
 import { UnbilledSection } from '@/components/admin/UnbilledSection'
 import { ChargeCard } from '@/components/admin/ChargeCard'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import {
   getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
   recordBillingCorrection, deleteBillingCorrection,
@@ -301,7 +302,7 @@ export default function AdminBillingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = effectiveRole(role) === 'super'
-  const mayView = canAccess('/admin/billing', effectiveRole(role))
+  const mayView = mayOpen('/admin/billing', role)   // NAVKEYS: the served door, as the menu row and the server
 
   const [data, setData] = useState<BillingUsagePayload | null>(null)
   const [month, setMonth] = useState('')

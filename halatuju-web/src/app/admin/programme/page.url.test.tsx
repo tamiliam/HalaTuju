@@ -16,7 +16,7 @@ import { address, crumbOffersAll, openAt, switchCrumbTo, urlRouter } from '@/tes
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin' } }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'org_admin' }) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/components/admin/IntakeYearTab', () => function YearTab() { return <div>year-tab</div> })

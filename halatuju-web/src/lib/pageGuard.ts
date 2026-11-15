@@ -11,9 +11,10 @@ import { opensDoor, type DoorName } from './pageDoors'
 type Served = { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null;
                 mentoring?: boolean; tables?: readonly string[] | null; page_keys?: readonly string[] | null }
 
-/** T5c P4: with the served `page_keys` too, so a row on a server door (`NavItem.door`) reads that door. */
+/** T5c P4: with the served `page_keys` too, so a row on a server door (`NavItem.door`) reads that door.
+ *  NAVKEYS: `tables` is no longer read — a key seats nobody at a row; the door and the keys decide. */
 export function mayOpen(href: string, role: Served | null | undefined): boolean {
-  return canAccess(href, effectiveRole(role), role?.permissions, role?.mentoring, role?.tables, role?.page_keys)
+  return canAccess(href, effectiveRole(role), role?.permissions, role?.mentoring, role?.page_keys)
 }
 
 /**
@@ -26,7 +27,7 @@ export function mayOpen(href: string, role: Served | null | undefined): boolean 
 export function readsAllScholars(role: Served | null | undefined): boolean {
   const r = effectiveRole(role)
   if (r === 'mentor' || r === 'source_partner') return false
-  return canAccess('/admin/scholars', r, role?.permissions, false, role?.tables, role?.page_keys)
+  return canAccess('/admin/scholars', r, role?.permissions, false, role?.page_keys)
 }
 
 /**

@@ -34,7 +34,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole), token: mockToken }) }))   // TD-623: the keys the server serves
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole), token: mockToken }) }))   // NAVKEYS: the keys the server serves (permissions and page_keys)
 jest.mock('@/lib/admin-supabase', () => ({ adminSignOut: jest.fn() }))
 // No token, so the probe hook resolves to nothing and the badge never fetches — the dark
 // features stay dark, which is the correct default (see canSee).

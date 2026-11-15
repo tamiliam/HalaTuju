@@ -15,7 +15,7 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
 }))
 let mockRole: { role: string; permissions?: string[]; mentoring?: boolean; page_keys?: string[] } = { role: 'admin' }
-jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))
+jest.mock('@/lib/adminAuthCore', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 const K = 'admin.surveys.results'

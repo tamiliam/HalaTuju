@@ -46,12 +46,16 @@ export interface NavItemOf<R extends string = string> {
   /** Full i18n key. Must resolve in en/ms/ta or `scripts/check-i18n.js` fails the build. */
   labelKey: string
   scope: NavScope
-  /** UX visibility only — see the module docstring. */
-  roles: readonly R[]
-  /** #39 S3: a TEAM MEMBER opens this row by holding any of these keys (`admitsRow`), not by role. */
+  /**
+   * NAVKEYS (2026-11-16): WHO THE LOGIN IS, never what they may do — a KIND split (a partner, source or mentor
+   * login sees its own console; every staff login sees the shared rows) or a PLATFORM row (`'super'`, which
+   * `effectiveRole` reads from `is_super_admin`). A row the server gates by a key names `door` or `perms`
+   * instead, and lists here only the KIND logins that reach it another way. UX visibility only.
+   */
+  roles?: readonly R[]
+  /** #39 S3: opens this row by holding any of these keys (`admitsRow`); NAVKEYS: for every staff login. */
   perms?: readonly StaffPermission[]
-  adminKeys?: readonly StaffPermission[]   // Team tables T1: the Admins table ALSO opens it by a key (`admitsRow`)
-  door?: DoorName   // T5c P4: the server door (`pageDoors`): served `page_keys` decide; none = `roles` / `adminKeys`
+  door?: DoorName   // T5c P4: the server door (`pageDoors`); NAVKEYS: the served `page_keys` decide ALONE
   gate: NavGate
   /** Extra path prefixes that make this item the active one (sub-pages with no entry). */
   match?: readonly string[]

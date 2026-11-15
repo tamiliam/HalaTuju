@@ -17,7 +17,7 @@ jest.mock('next/link', () => ({
 jest.mock('next/navigation', () => ({ useParams: () => ({ id: '999999' }), useRouter: () => ({ push: jest.fn() }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin' } }),
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys({ role: 'org_admin' }) }),   // NAVKEYS: the keys the server serves
 }))
 jest.mock('@/lib/admin-api')
 

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint NAVKEYS - the admin menu follows the served keys (2026-11-16)
+
+Branch navkeys, on top of main 31e738a14, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-16, NAVKEYS builder calls, pending architect). Release-note draft: `docs/releases/navkeys-release-note-draft.md`. Debt: TD-XXX-NAV (built).
+- `staffPermissions.admitsRow`: a row with a server door is answered by the served door alone (no role fallback; no `page_keys`, no row). The twelve door rows lost their role lists and `adminKeys`; `tables`, `ADMINS_TABLE` and `adminKeysHeld` are gone from the web.
+- Rows without a door ask the key the server checks: Applications `see_all`/`qc`/`review` (`b40_scope`), Scholars `scholars` (`scholars_scope`), Spending `spending`. Kept by who the login is, each classed: the super-only platform rows, the partner/source/mentor console rows, Guide and FAQ, Programme overview (`SECTIONS_BY_ROLE`, TD-621) and Payments' organisation-admin arm (M4).
+- The Programme, Contracts, Billing and Organisation settings page guards ask `mayOpen` with the served door, so a hand-granted key opens the page its menu row offers.
+- New `navkeysPresetPin.test.ts` and `fixtures/navkeysMenusBefore.json`: every standard preset's menus, landing and route guards are as on main (no declared move), plus hand-grant tests. `teamTablesMatrix`, `teamTablesT5cDoors`, `navigation.test`, `staffPermissionsDrift` feed the served keys; the web A10 scan drops its MENU class (156 to 142 allowlist hits, floor 140).
+- Test fixtures only: about 30 page and component tests that mocked a bare role (`{ role }`) now carry what the server serves (`staffPresets.withServedKeys`, or `servedViewer` for a `visibleNav` call), since a bare role opens no keyed row or page. No assertion was loosened.
+
 ### fix: third-route SPM grades labelled SPM prerequisites on the review card (2026-11-16)
 
 Small-change lane. No migration. Services: web. A Matriculation, Asasi or Diploma student's SPM chips on the Academic card now read "SPM prerequisites" (`admin.scholarship.spmPrereq`, already in en, ms, ta), as on an STPM card; SPM students keep "SPM grades". Reviewer FAQ line updated. Owner request, 2026-11-16.

@@ -23,7 +23,7 @@ import { address, crumbOffersAll, deferred, openAt, switchCrumbTo, urlRouter } f
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 let mockRole: Record<string, unknown> = { role: 'org_admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),   // TD-623: the keys the server serves
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedKeys(mockRole) }),   // TD-623: the keys the server serves
 }))
 jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/admin-api')
