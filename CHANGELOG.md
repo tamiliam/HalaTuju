@@ -177,6 +177,15 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a eighth review - a month reads on its intake word's line; more exam forms; odd letters never crash; a stray year beside a session is passed over (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money untouched (as below); `VERDICT_ENGINE_VERSION` unchanged.
+- **Intake month (lead's decision).** A January-April month counts when its line holds an intake / semester word (not Sesi / Session): "Ambilan Sesi 2024/2025: Februari" and "Sem 1 2024/2025 Feb" read 2025.
+- **Exam forms.** "S.P.M.", "S.T.P.M.", SPMV, SVM, STAM, the long names (Sijil Vokasional / Tinggi Agama Malaysia, Unified Examination Certificate, Malaysian University English Test) and peperiksaan / exam / examination give no single year.
+- **Odd letters.** "FİRST YEAR", "ſecond semester", "Ambilan DİS" no longer raise: ASCII-only month / ordinal / intake-word patterns and skip-on-miss lookups.
+- **Stray year beside a session.** A reference or update year ("Rujukan UPU/2024/77", "dikemaskini 1/12/2024") is passed over; a year after an intake word, or a month-year inside the session, still reads.
+- **Tests.** New cases (and an odd-letter fuzz) in `test_start_year_gift_reading.py`; 10 probe rows re-classed. Corpus split unchanged: 246 / 26 / 14.
+
 ### fix: H3a owner-ruling review - exam lines give no year; confirmation needs Year 1 or an intake month-year (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money untouched (as below).

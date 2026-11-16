@@ -72,12 +72,26 @@ class TheCorpusShapes(SimpleTestCase):
                 self.assertEqual(gift_reading(intake), (2025, 'session_second'))
         self.assertEqual(gift_reading('Sesi Ogos 2024/2025'), (2024, 'session_first'))
 
-    def test_a_month_away_from_an_intake_word_is_no_intake_month(self):
-        # Review fix: only a month next to an intake / semester word is the intake month.
-        for intake, year in (('Sesi 2026/2027, tutup 30 April', 2026), ('Ambilan Sesi 2024/25Feb', 2024),
-                             ('Sesi 2024/2025 (mendaftar sebelum Mac)', 2024)):
+    def test_a_month_on_a_line_with_no_intake_word_is_no_intake_month(self):
+        # Lead's decision (review 8): a month counts only on a line holding an intake / semester
+        # word. Sesi / Session is not one.
+        for intake in ('Sesi 2026/2027, tutup 30 April', 'Sesi 2026/2027 (mendaftar sebelum Mac)',
+                       'Session 2026-27 February', 'Sesi 2026/27 Februari'):
             with self.subTest(intake=intake):
-                self.assertEqual(gift_reading(intake), (year, 'session_first'))
+                self.assertEqual(gift_reading(intake), (2026, 'session_first'))
+
+    def test_a_month_on_a_line_with_an_intake_word_is_the_intake_month(self):
+        # Review 8: the month need not sit next to the word, only on its line.
+        for intake in ('Ambilan Sesi 2024/25Feb', 'Ambilan Sesi 2024-25 Mac', 'Ambilan Sesi 2024-25 (Mac)',
+                       'Ambilan 2024-25 Jan', 'Sem 1 2024/2025 Feb', 'Ambilan Sesi 2024/2025: Februari',
+                       'Ambilan Sesi 2024/2025_Feb', 'Ambilan Sesi 2024/2025 Sem I (Feb)'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (2025, 'session_second'))
+        self.assertEqual(_state('Ambilan Sesi 2024/2025: Februari'), 'inside')
+        self.assertEqual(gift_reading('Kemasukan Sesi 2024/2025 Ogos'), (2024, 'session_first'))
+        # Only the intake word's own line: a month on another line is not read.
+        self.assertEqual(gift_reading('Sesi 2024/2025\nAmbilan\nTarikh tutup: 30 April'), (2024, 'session_first'))
+        self.assertEqual(gift_reading('Sesi 2024/2025\nAmbilan Februari'), (2025, 'session_second'))
 
     def test_a_sesi_ii_beside_a_first_semester_or_year_is_the_second_year(self):
         # Review fix: Sesi II names the intake; Semester 1 / Year 1 is that intake's first term.
@@ -187,6 +201,20 @@ class OtherUnknowns(SimpleTestCase):
     def test_a_year_beside_a_session_is_the_single_year(self):
         self.assertEqual(gift_reading('Ambilan 2023 Sesi 2025/2026'), (2023, 'intake_year'))
         self.assertEqual(gift_reading('Ambilan Februari 2025 Sesi 2024/2025'), (2025, 'intake_year'))
+        self.assertEqual(gift_reading('Intake Sept 2023 - Session 2025/2026'), (2023, 'intake_year'))
+        # A month-year inside the session names its half.
+        self.assertEqual(gift_reading('Sesi 2024/25 Februari 2025'), (2025, 'intake_year'))
+        self.assertEqual(gift_reading('Session 2024/25 Feb 2025'), (2025, 'intake_year'))
+
+    def test_a_stray_year_beside_a_session_is_passed_over(self):
+        # Review 8: a reference or update year is not the intake; the session decides.
+        for intake in ('Sesi 2025/2026 Rujukan UPU/2024/77', 'Sesi 2025/2026 (dikemaskini 1/12/2024)',
+                       'Sesi 2025/2026 No. Rujukan 2024', 'Sesi 2025/2026 (dikemaskini 1 Disember 2024)'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (2025, 'session_first'))
+        self.assertEqual(_state('Sesi 2025/2026 Rujukan UPU/2024/77'), 'inside')
+        # With no session the year still reads (several years stay unknown).
+        self.assertEqual(gift_reading('Rujukan UPU/2024/77'), (2024, 'intake_year'))
 
     def test_two_sessions_or_both_intakes(self):
         self.assertEqual(gift_reading('Sesi 2024/2025, Sesi 2025/2026'), (None, 'several_sessions'))
@@ -229,6 +257,41 @@ class ExamYearsAreNotStartYears(SimpleTestCase):
         self.assertEqual(_state('Sesi 2025/2026 (SPM2024)'), 'inside')
         self.assertEqual(_state('Ambilan SPM 2024'), 'unknown')
 
+    def test_every_exam_form_counts(self):
+        # Review 8: dotted forms, SPMV / SVM / STAM, the long names and the bare exam words.
+        for exam in ('S.P.M. 2024', 'S.P.M 2024', 'S. P. M. 2024', 'S.T.P.M. 2024', 'SPMV 2024', 'S.P.M.V. 2024',
+                     'SVM 2024', 'STAM 2024', 'Sijil Vokasional Malaysia 2024', 'Sijil Tinggi Agama Malaysia 2024',
+                     'Unified Examination Certificate 2024', 'Malaysian University English Test 2024',
+                     'Keputusan peperiksaan 2024', 'Examination 2024', 'Exam 2024'):
+            with self.subTest(exam=exam):
+                self.assertEqual(gift_reading(exam), (None, 'exam_line'))
+                self.assertEqual(gift_reading(f'Ambilan 2025 ({exam})'), (None, 'exam_line'))
+                self.assertEqual(gift_reading(f'Sesi 2025/2026 ({exam})'), (2025, 'session_first'))
+        # Not an exam: a word that only holds the letters.
+        self.assertEqual(gift_reading('Ambilan 2025 Sp Mekanikal'), (2025, 'intake_year'))
+
     def test_the_date_still_wins(self):
         self.assertEqual(gift_reading('Intake 2024 SPM 2022', '3 Mar 2025'), (2025, 'reporting_date'))
         self.assertEqual(gift_reading('SPM 2024, Ambilan 2025', '14 Jul 2025'), (2025, 'reporting_date'))
+
+
+class OddUnicodeNeverRaises(SimpleTestCase):
+    """Review 8: a dotted capital I or a long s folded into a table word and raised a KeyError."""
+
+    def test_odd_letters_read_or_stay_unknown(self):
+        self.assertEqual(gift_reading('FİRST YEAR 2025/2026'), (2025, 'session_first'))
+        self.assertEqual(gift_reading('ſecond semester 2025'), (2025, 'intake_year'))
+        self.assertEqual(gift_reading('Sesi 2024/2025 Ambilan DİS'), (2024, 'session_first'))
+
+    def test_the_reader_never_raises(self):
+        odd = ('İ', 'ı', 'ſ', 'K', 'ﬁ', 'ß', 'Ⅱ', '２０２５', '\u00a0', '\u200b', 'é', 'ம', '\ufffd')
+        words = ('first year', 'second semester', 'final year', 'Semester 2', 'Ambilan Dis', 'Intake Sep',
+                 'Sem Mac', 'Sesi II', 'SPM', 'Tahun kedua', 'Ambilan 2025', '2024/2025 Ambilan Feb')
+        for o in odd:
+            for w in words:
+                for i in range(len(w)):        # the odd letter in every place, and glued between two
+                    for base in (w[:i] + o + w[i + 1:], w[:i] + o + w[i:]):
+                        for line in (base, f'{base} 2024/2025', f'Ambilan {base} 2025'):
+                            for kw in ({}, {'confirmation': True}, {'context': line}):
+                                with self.subTest(line=line, kw=kw):
+                                    gift_reading(line, line, **kw)
