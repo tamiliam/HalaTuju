@@ -92,11 +92,11 @@ export default function ActionCentre({
   const [limits, setLimits] = useState<DocumentLimits | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
+  const [docLock, setDocLock] = useState<{ locked: boolean; openTypes: string[] }>({ locked: false, openTypes: [] })
 
   const fetchItems = useCallback(async () => {
     if (!token) return
     try {
-      setLoadFailed(false)
       const [r, d] = await Promise.all([
         getResolutionItems({ token }),
         listDocuments({ token }).catch(() => ({ documents: [] as ApplicantDocument[] })),
@@ -106,6 +106,8 @@ export default function ActionCentre({
       setSetAside(r.set_aside ?? [])
       setDocs(d.documents)
       setLimits('limits' in d ? d.limits ?? null : null)
+      setDocLock({ locked: !!('lock' in d && d.lock?.locked), openTypes: ('lock' in d && d.lock?.open_doc_types) || [] })
+      setLoadFailed(false)
     } catch {
       // A failed load is NOT "nothing to ask": say so with a retry (the approved load-error design,
       // H5). It is a card on this section only, so it never blocks the rest of the page.
@@ -114,6 +116,7 @@ export default function ActionCentre({
       setResolved([])
       setSetAside([])
       setDocs([])
+      setDocLock({ locked: false, openTypes: [] })
     } finally {
       setLoaded(true)
     }
@@ -122,8 +125,17 @@ export default function ActionCentre({
   useEffect(() => { fetchItems() }, [fetchItems])
 
   // Don't flash anything until we've checked.
-  if (!loaded) return null
-  if (loadFailed) return <section className="mb-8"><LoadErrorCard onRetry={fetchItems} /></section>
+  if (!loaded) {
+    // First load: nothing. A retry after a failure: a quiet busy placeholder, never the empty state.
+    return loadFailed
+      ? <section className="mb-8" aria-busy="true" data-testid="action-centre-loading"><div className="h-24 animate-pulse rounded-2xl bg-ground-100" /></section>
+      : null
+  }
+  if (loadFailed) {
+    // Retry shows the card in a busy state, never the empty / all-done state in between.
+    const retry = async () => { setLoaded(false); await fetchItems() }
+    return <section className="mb-8"><LoadErrorCard onRetry={retry} /></section>
+  }
 
   const firstName = (studentName || '').trim().split(/\s+/)[0] || ''
 
@@ -258,6 +270,8 @@ export default function ActionCentre({
                 formLocked={formLocked}
                 docs={docs}
                 limits={limits}
+                docsLocked={docLock.locked}
+                openDocTypes={docLock.openTypes}
                 incomeRoute={incomeRoute}
                 incomeEarner={incomeEarner}
                 showClusterCoach={

@@ -5,7 +5,7 @@
  * Replace and Remove and says why; a type the server still takes (the exempt asks) stays open; and if
  * the server refuses anyway (409 documents_locked) its message is shown plainly.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
 import type { ApplicantDocument, ApplicationRequirements, ScholarshipApplication } from '@/lib/api'
 import { sandboxApplication } from '@/sandbox/fixtures/scholarship'
@@ -71,5 +71,26 @@ describe('locked documents tab', () => {
     const go = Array.from(sheet.querySelectorAll('button')).find((b) => b.textContent === 'scholarship.docs.remove') as HTMLButtonElement
     fireEvent.click(go)
     await waitFor(() => expect(screen.getByText('Documents are closed now.')).toBeTruthy())
+  })
+})
+
+const incomeCard = () => screen.getByText('scholarship.docs.income.title').closest('div.py-3') as HTMLElement
+
+describe('locked documents tab, no application loaded (fallback income card)', () => {
+  const mountBare = async (lock: { locked: boolean; open_doc_types: string[] }) => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [], lock } as never)
+    render(<ScholarshipDocuments token="tkn" app={null} />)
+    await screen.findByText('scholarship.docs.income.title')
+  }
+  it('locked: no upload on the income card, and it says why', async () => {
+    await mountBare({ locked: true, open_doc_types: [] })
+    await waitFor(() => expect(within(incomeCard()).queryByText('scholarship.docs.lockedNote')).toBeTruthy())
+    const card = within(incomeCard())
+    expect(card.queryByText('documentsTab.card.choose')).toBeNull()
+    expect(card.getByText('scholarship.docs.lockedNote')).toBeTruthy()
+  })
+  it('unlocked: the income card keeps its upload', async () => {
+    await mountBare({ locked: false, open_doc_types: [] })
+    expect(within(incomeCard()).getByText('documentsTab.card.choose')).toBeTruthy()
   })
 })

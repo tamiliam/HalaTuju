@@ -53,7 +53,13 @@ export function ActionCard({
   incomeEarner = '',
   showClusterCoach = true,
   limits = null,
+  docsLocked = false,
+  openDocTypes = [],
 }: {
+  /** H5: the documents stage lock (served with the list). Locked hides Upload and Take a photo,
+   *  unless this item's type is one of `openDocTypes` (the post-lock asks stay uploadable). */
+  docsLocked?: boolean
+  openDocTypes?: string[]
   item: ResolutionItem
   token: string | null
   onResolved: () => void
@@ -269,7 +275,7 @@ export function ActionCard({
           <div className="mt-4">
             {item.kind === 'doc' && (
               <>
-                <UploadButtons busy={busy} onFile={onFile} />
+                {!(docsLocked && !openDocTypes.includes(item.doc_type)) && <UploadButtons busy={busy} onFile={onFile} />}
                 {/* Contextual Cikgu Gopal. Income cluster docs (wrong-person slip/EPF, a
                     mismatching BC) speak through the single per-earner cluster coach — the
                     per-document coach returns null for them (audit #15b). Everything else uses

@@ -125,3 +125,39 @@ describe('load error', () => {
     expect(screen.queryByText('scholarship.actionCentre.loadError.title')).toBeNull()
   })
 })
+
+describe('load error, second failure', () => {
+  it('shows the error card again, with no all-done state between', async () => {
+    mockApi.getResolutionItems.mockRejectedValue(new Error('offline'))
+    mockApi.listDocuments.mockResolvedValue({ documents: [] } as never)
+    render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} formLocked />)
+    const retry = await screen.findByRole('button', { name: 'scholarship.actionCentre.loadError.retry' })
+    fireEvent.click(retry)
+    expect(screen.queryByText('scholarship.actionCentre.awaitTitle')).toBeNull()
+    expect(await screen.findByText('scholarship.actionCentre.loadError.title')).toBeTruthy()
+    expect(screen.queryByText('scholarship.actionCentre.awaitTitle')).toBeNull()
+  })
+})
+
+describe('documents lock', () => {
+  const withLock = async (lock: { locked: boolean; open_doc_types: string[] }, docType: string) => {
+    mockApi.getResolutionItems.mockResolvedValue({ open: [make({ id: 9, doc_type: docType })], resolved: [] })
+    mockApi.listDocuments.mockResolvedValue({ documents: [], lock } as never)
+    render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
+    await screen.findByText('scholarship.actionCentre.section.needs')
+  }
+  it('locked: Upload and Take a photo are hidden', async () => {
+    await withLock({ locked: true, open_doc_types: [] }, 'ic')
+    expect(screen.queryByText('scholarship.actionCentre.upload')).toBeNull()
+    expect(screen.queryByText('scholarship.actionCentre.takePhoto')).toBeNull()
+  })
+  it('locked but the type is exempt: buttons shown', async () => {
+    await withLock({ locked: true, open_doc_types: ['bank_statement'] }, 'bank_statement')
+    expect(screen.getByText('scholarship.actionCentre.upload')).toBeTruthy()
+    expect(screen.getByText('scholarship.actionCentre.takePhoto')).toBeTruthy()
+  })
+  it('not locked: buttons shown', async () => {
+    await withLock({ locked: false, open_doc_types: [] }, 'ic')
+    expect(screen.getByText('scholarship.actionCentre.upload')).toBeTruthy()
+  })
+})
