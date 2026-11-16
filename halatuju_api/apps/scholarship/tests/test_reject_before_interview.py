@@ -13,6 +13,8 @@ Pinned here, one test per rule the organisation approved:
   * It never counts against a reviewer, and the Programme overview counts it, by reason.
   * #75 review: the reject and the assign each re-read the case under its row lock, so whichever
     commits second sees the first.
+  * #75 re-check: an unassign's interview teardown cancels the Meet event and sends its two emails
+    only after commit; a case that has gone is refused; an unassign locks the holder first.
 """
 from datetime import timedelta
 
@@ -212,6 +214,99 @@ class TheRowLockTest(_Base):
                 self.assertRaises(AssignmentError):
             assign_reviewer(stale, reviewer=None, by_admin=self.org_admin)
         teardown.assert_not_called()
+
+    def test_a_case_that_has_gone_is_refused_not_judged_from_the_stale_copy(self):
+        # #75 re-check (L3): the relock finds no row, so both sides refuse as `not_assignable`.
+        for reviewer, holder in ((None, self.reviewer), (self.reviewer, None)):
+            app = make_application('assigned' if holder else 'profile_complete',
+                                   cohort=self.cohort, reviewer=holder)
+            stale = ScholarshipApplication.objects.get(pk=app.pk)
+            ScholarshipApplication.objects.filter(pk=app.pk).delete()
+            with self.assertRaises(AssignmentError) as cm:
+                assign_reviewer(stale, reviewer=reviewer, by_admin=self.org_admin)
+            self.assertEqual(str(cm.exception), 'not_assignable')
+
+    def test_an_unassign_locks_the_outgoing_holder_before_the_case(self):
+        # #75 re-check (L1): the assign's order, reviewer then case, so the two never deadlock.
+        from apps.scholarship import status_lock
+        from apps.scholarship.services import assignment
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        order = mock.Mock()
+        with mock.patch.object(assignment, '_locked', wraps=assignment._locked) as holder, \
+                mock.patch.object(status_lock, 'relock_application',
+                                  wraps=status_lock.relock_application) as case:
+            order.attach_mock(holder, 'holder')
+            order.attach_mock(case, 'case')
+            assign_reviewer(app, reviewer=None, by_admin=self.org_admin)
+        self.assertEqual([c[0] for c in order.mock_calls], ['holder', 'case'])
+        self.assertEqual(holder.call_args.args[0].pk, self.reviewer.pk)
+
+
+@mock.patch('apps.scholarship.scheduling.emails.send_reviewer_interview_cancelled_email')
+@mock.patch('apps.scholarship.scheduling.emails.send_interview_released_email')
+@mock.patch('apps.scholarship.meeting.cancel_event')
+class TheTeardownRunsAfterCommitTest(_Base):
+    """#75 re-check (M1): an unassign's interview teardown writes the database under the case's row
+    lock, but cancels the Meet event and sends its two emails only once the unassign has committed."""
+    def setUp(self):
+        super().setUp()
+        self.reviewer = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        self.app = make_application(
+            'interviewing', cohort=self.cohort, reviewer=self.reviewer, interview_status='booked',
+            interview_start=timezone.now() + timedelta(days=2),
+            interview_calendar_event_id='evt-75', notify_email='student-75@example.test')
+
+    def _unassign(self):
+        return assign_reviewer(self.app, reviewer=None, by_admin=self.org_admin)
+
+    def test_a_successful_unassign_cancels_once_and_sends_both_after_commit(self, cancel, released,
+                                                                           told):
+        with self.captureOnCommitCallbacks(execute=False) as pending:
+            self._unassign()
+        for sent in (cancel, released, told):
+            sent.assert_not_called()           # nothing outside the database under the lock
+        for callback in pending:
+            callback()
+        cancel.assert_called_once_with('evt-75')
+        released.assert_called_once()
+        self.assertEqual(released.call_args.args[0], 'student-75@example.test')
+        told.assert_called_once()
+        self.assertEqual(told.call_args.args[0], self.reviewer.email)
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.assigned_to_id, self.app.interview_status), (None, 'cancelled'))
+
+    def test_a_rollback_after_the_teardown_cancels_nothing_and_sends_nothing(self, cancel, released,
+                                                                            told):
+        from django.db import transaction
+        with self.captureOnCommitCallbacks(execute=True):
+            with self.assertRaises(RuntimeError), transaction.atomic():
+                self._unassign()
+                raise RuntimeError('the request died before COMMIT')
+        for sent in (cancel, released, told):
+            sent.assert_not_called()
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.assigned_to_id, self.app.interview_status),
+                         (self.reviewer.pk, 'booked'))
+
+    def test_a_database_error_in_the_teardown_still_lets_the_unassign_commit(self, cancel, released,
+                                                                           told):
+        from django.db import connection
+        from apps.scholarship.models import AssignmentEvent
+
+        def broken(**_kw):
+            with connection.cursor() as cur:   # a real database error, inside the savepoint
+                cur.execute('SELECT * FROM no_such_table_75')
+
+        with mock.patch('apps.scholarship.scheduling.InterviewSlot') as slots, \
+                self.captureOnCommitCallbacks(execute=True):
+            slots.objects.filter.return_value.update.side_effect = broken
+            with self.assertLogs('apps.scholarship.services', 'ERROR'):
+                self._unassign()
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.assigned_to_id, self.app.status), (None, 'profile_complete'))
+        self.assertTrue(AssignmentEvent.objects.filter(application=self.app, to_admin=None).exists())
+        for sent in (cancel, released, told):
+            sent.assert_not_called()           # its writes failed, so it never reached the calls
 
 
 class WhatIsRequiredTest(_Base):

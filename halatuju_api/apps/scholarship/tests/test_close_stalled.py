@@ -545,8 +545,9 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
         cancel_event.assert_not_called()
         reviewer_notice.assert_not_called()
         self.assertEqual(len(pending), 1)
-        for callback in pending:   # … only after commit
-            callback()
+        with self.captureOnCommitCallbacks(execute=True):   # the teardown's own calls (#75)
+            for callback in pending:   # … only after commit
+                callback()
         app.refresh_from_db()
         slot.refresh_from_db()
         self.assertEqual((app.status, app.interview_status), ('closed', 'cancelled'))

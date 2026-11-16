@@ -16,7 +16,7 @@
  *    from the click through to the arguments AND to the state the officer is left looking at; a
  *    call that lands while the screen says nothing is the shape of BrightPath #20.
  */
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit, OTHER_ADMIN_ID } from '@/test/renderCockpit'
 import { buildApplicationDetail, buildDocument } from '@/test/adminApplicationDetail'
@@ -150,6 +150,18 @@ describe('assigning a reviewer', () => {
     expect(assignPicker('assign.assignedTitle').value).toBe(String(OTHER_ADMIN_ID))
   })
 
+  it('a refusal says why (not_assignable too) and reloads the case (#75 re-check)', async () => {
+    const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete' })
+    await loaded()
+    const loads = api.getScholarshipApplication.mock.calls.length
+    const before = screen.queryAllByText('admin.scholarship.assign.error.not_assignable').length
+    api.assignApplication.mockRejectedValue(Object.assign(new Error('not_assignable'), { code: 'not_assignable' }))
+    fireEvent.change(assignPicker('assignTitle'), { target: { value: String(OTHER_ADMIN_ID) } })
+    await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1))
+    expect(screen.queryAllByText('admin.scholarship.assign.error.not_assignable').length).toBeGreaterThan(before)
+    expect(screen.queryByText('admin.scholarship.assignError')).toBeNull()
+  })
+
   it('is not offered to a reviewer, who cannot hand their own case on', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'profile_complete' })
     await loaded()
@@ -205,5 +217,28 @@ describe('raising a query with the student', () => {
     expect(screen.queryByRole('button',
       { name: 'admin.scholarship.raiseQuerySend' })).toBeNull()
     expect(screen.getByText('admin.scholarship.outstanding.locked')).toBeTruthy()
+  })
+})
+
+describe('reject before interview, refused because a colleague got there first (#75 re-check)', () => {
+  it('a bad_status refusal stays in view after the reload takes the door away', async () => {
+    const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
+    const { api } = renderCockpit({
+      role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    await loaded()
+    api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_status' }))
+    api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('rejected', {
+      rejection_category: 'pre_interview', rejection_reason: 'not_b40', pre_interview: undefined,
+    } as never))
+    const P = 'admin.scholarship.preInterview'
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    // The reload shows the colleague's decline, and the officer still reads why theirs was refused.
+    expect(await screen.findByTestId('pre-interview-record')).toBeTruthy()
+    expect(screen.queryByTestId('pre-interview')).toBeNull()
+    expect(screen.getByTestId('pre-interview-refused').textContent).toBe(`${P}.error.bad_status`)
   })
 })

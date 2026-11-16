@@ -21,7 +21,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from . import emails, meeting, pool, services, usage, whatsapp
+from . import after_commit, emails, meeting, pool, services, usage, whatsapp
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -608,8 +608,8 @@ def release_for_unassign(application, *, now=None, student_notice=True,
     reviewer-initiated: a BOOKED interview is voided (Meet cancelled, booking cleared) and
     both the student and the OUTGOING reviewer are notified; if times were only PROPOSED
     (active slots, nothing booked) they are withdrawn quietly (the student never committed,
-    so no notice). Any pending 'ask for other times' request is cleared. Best-effort on the
-    Google/email side — never blocks the unassignment. MUST run BEFORE application.assigned_to
+    so no notice). Any pending 'ask for other times' request is cleared. The Google/email side
+    is best-effort, after commit, and never blocks the unassignment. MUST run BEFORE assigned_to
     is cleared so the outgoing reviewer still receives the notice. Returns the application.
 
     TD-352: an officer's CLOSE of a pre-award case reuses this teardown with ``student_notice=False``
@@ -620,8 +620,7 @@ def release_for_unassign(application, *, now=None, student_notice=True,
     was_booked = application.interview_status == 'booked'
     student_email, student_name = _student_identity(application)
 
-    if was_booked and application.interview_calendar_event_id:
-        meeting.cancel_event(application.interview_calendar_event_id)
+    event_id = application.interview_calendar_event_id if was_booked else ''
 
     # The proposed menu is void either way — withdraw every active slot.
     InterviewSlot.objects.filter(application=application, is_active=True).update(
@@ -650,17 +649,18 @@ def release_for_unassign(application, *, now=None, student_notice=True,
     if fields:
         application.save(update_fields=fields)
 
-    # Only notify when there was a BOOKED interview the student was expecting to attend.
-    if was_booked:
-        if student_email and student_notice:
-            emails.send_interview_released_email(
-                student_email, student_name=student_name,
-                english_only=emails.english_only_email(application))
-        if reviewer is not None and getattr(reviewer, 'email', ''):
-            emails.send_reviewer_interview_cancelled_email(
-                reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
-                applicant_name=student_name, ref=pool.pool_ref(application.id),
-                reason=reviewer_reason)
+    # A BOOKED interview only is notified; Google + email run AFTER COMMIT (#75, `after_commit`).
+    calls = [functools.partial(meeting.cancel_event, event_id)] if event_id else []
+    if was_booked and student_email and student_notice:
+        calls.append(functools.partial(
+            emails.send_interview_released_email, student_email, student_name=student_name,
+            english_only=emails.english_only_email(application)))
+    if was_booked and reviewer is not None and getattr(reviewer, 'email', ''):
+        calls.append(functools.partial(
+            emails.send_reviewer_interview_cancelled_email, reviewer.email,
+            reviewer_name=getattr(reviewer, 'name', ''), applicant_name=student_name,
+            ref=pool.pool_ref(application.id), reason=reviewer_reason))
+    after_commit.run_after_commit(application, calls)
     return application
 
 

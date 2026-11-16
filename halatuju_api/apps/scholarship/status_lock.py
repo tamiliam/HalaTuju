@@ -84,11 +84,13 @@ def lock_application_for(application, allowed_statuses):
 def relock_application(application):
     """Lock and re-read the INSTANCE ``application`` whatever its status, refreshing it in place, so the
     caller's own rules judge the fresh row (#75 review: `assign_reviewer`, against a reject before
-    interview that committed a moment ago). A row that has gone leaves the instance as it was."""
+    interview that committed a moment ago). A row that has gone returns None and leaves the instance
+    as it was; the caller refuses (#75 re-check), never judges the stale copy."""
     _require_atomic()
     row = ScholarshipApplication.objects.select_for_update().filter(pk=application.pk).first()
-    if row is not None:
-        _copy_onto(application, row)
+    if row is None:
+        return None
+    _copy_onto(application, row)
     return application
 
 

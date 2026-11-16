@@ -9,6 +9,7 @@
  * shows the held date (the header's cool-off banner carries "Cancel decline"), or the sent date.
  * Dummy data only.
  */
+import { useState } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { PreInterviewOption, PreInterviewRecord } from './PreInterviewReject'
 import * as api from '@/lib/admin-api'
@@ -28,10 +29,16 @@ const caseOf = (over: Record<string, unknown> = {}) =>
   ({ id: 7, name: 'Dummy Student', status: 'profile_complete', assigned_to_id: null, pre_interview: OFFER, ...over }) as unknown as api.AdminScholarshipDetail
 
 let onStale: jest.Mock
+/** The page holds the refusal (#75 re-check); this stands in for it. */
+function Page({ app, canAssign, onDone }: { app: api.AdminScholarshipDetail; canAssign: boolean; onDone: jest.Mock }) {
+  const [err, setErr] = useState('')
+  return <PreInterviewOption app={app} t={t} token="tok" busy="" canAssign={canAssign}
+    err={err} setErr={setErr} onDone={onDone} onStale={onStale} />
+}
 const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
   const onDone = jest.fn()
   onStale = jest.fn()
-  render(<PreInterviewOption app={app} t={t} token="tok" busy="" canAssign={canAssign} onDone={onDone} onStale={onStale} />)
+  render(<Page app={app} canAssign={canAssign} onDone={onDone} />)
   return onDone
 }
 const fill = (reason: string, note: string) => {
@@ -126,6 +133,24 @@ describe('focus and labels (#75 review)', () => {
     expect(document.activeElement).toBe(screen.getByRole('heading', { name: `${P}.confirmTitle` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.back` }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.submit` }))
+  })
+
+  it('a stale refusal stays in view, and is cleared when the form is opened again (#75 re-check)', async () => {
+    mockApi.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'has_reviewer' }))
+    onStale = jest.fn()
+    const page = (app: api.AdminScholarshipDetail) => <Page app={app} canAssign onDone={jest.fn()} />
+    const { rerender } = render(page(caseOf()))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    await waitFor(() => expect(onStale).toHaveBeenCalled())
+    rerender(page(caseOf({ assigned_to_id: 5 })))                 // the reload: a colleague assigned
+    expect(screen.getByRole('alert').textContent).toBe(`${P}.error.has_reviewer`)
+    rerender(page(caseOf()))                                       // later set back to Unassigned
+    expect(screen.getByRole('alert').textContent).toBe(`${P}.error.has_reviewer`)
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('a refusal returns focus to Reject, never to the page body', async () => {

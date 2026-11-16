@@ -298,7 +298,8 @@ class TestReviewerAssignment(TestCase):
             'notify_email', 'interview_status', 'interview_slot', 'interview_start',
             'interview_calendar_event_id'])
         self._auth('super-uid')
-        self.assertEqual(self._assign(None).status_code, 200)
+        with self.captureOnCommitCallbacks(execute=True):   # #75: Google + email run after commit
+            self.assertEqual(self._assign(None).status_code, 200)
         self.app.refresh_from_db()
         slot.refresh_from_db()
         self.assertEqual(self.app.status, 'profile_complete')

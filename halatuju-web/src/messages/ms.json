@@ -5461,7 +5461,7 @@
         "start": "Tolak sebelum temu duga",
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
-        "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
+        "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak untuk menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
         "reasonLabel": "Sebab utama",
         "reasonPlaceholder": "Pilih sebab utama",
         "reasons": {

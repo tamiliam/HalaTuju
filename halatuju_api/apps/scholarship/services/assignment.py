@@ -374,7 +374,9 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     An UNASSIGN re-reads the case under its row lock before any rule. An ASSIGN costs no extra query
     (the assign query budget): its one UPDATE is written only if the row still holds the status and
     the holder the rules judged (`_write_if_unmoved`); if not, the attempt rolls back and runs once
-    more on the locked row, so the refusal names what is true now. Lock order: reviewer, then case.
+    more on the locked row, so the refusal names what is true now. Lock order: reviewer, then case;
+    an unassign locks the outgoing holder first. Its teardown's Google and email calls run after
+    commit (`after_commit`). A case that has gone is refused as `not_assignable`.
     """
     now = now or timezone.now()
     try:
@@ -412,8 +414,12 @@ def _assign_once(application, reviewer, by_admin, now, *, relock):
     with transaction.atomic():
         if reviewer is not None:
             reviewer = _locked(reviewer)
-        if relock:
-            relock_application(application)
+        elif application.assigned_to_id is not None:
+            # #75 re-check: an UNASSIGN locks the outgoing holder first, the assign's order (reviewer,
+            # then case), so it never holds the case while a stale assign of that holder waits on it.
+            _locked(application.assigned_to)
+        if relock and relock_application(application) is None:
+            raise AssignmentError('not_assignable')    # the case is gone: never judge a stale copy
         if reviewer is not None:
             # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — only someone
             # in Reviewers (an org admin: of their own organisation), and that row may have changed

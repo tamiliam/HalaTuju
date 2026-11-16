@@ -12,7 +12,9 @@
  *     reviewer back to Unassigned first (or to ask someone who assigns reviewers). The server refuses
  *     both again (`has_reviewer`, `bad_status`), and on either the case is reloaded.
  *     Focus (#75 review): the select when the form opens, the confirm heading on "Are you sure?",
- *     the Reject button on Go back (or a refusal), and the start button on Cancel.
+ *     the Reject button on Go back (or a refusal), and the start button on Cancel. The refusal is
+ *     held by the page (#75 re-check), so it outlives a reload that takes this door away, and is
+ *     cleared when the form opens again.
  *   • `PreInterviewRecord` — once made: the decline kind, the main reason, and the email: held
  *     ("This decline is scheduled to be sent on"; the header's cool-off banner carries "Cancel
  *     decline", the same cancel as every held decline) or sent ("Decline email sent on"). The note
@@ -33,13 +35,17 @@ const STALE = ['bad_status', 'has_reviewer']
 const BTN = 'max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center'
 type Focus = 'start' | 'select' | 'submit' | 'title'
 
-export function PreInterviewOption({ app, t, token, busy, canAssign, onDone, onStale }: {
+export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr, onDone, onStale }: {
   app: AdminScholarshipDetail
   t: T
   token: string | null | undefined
   busy: string
   /** May this viewer set the reviewer? Words the "unassign first" hint. */
   canAssign: boolean
+  /** The refusal, held by the page (#75 re-check): a stale refusal reloads the case, and when that
+   *  takes the door away this component goes with it, so the page shows the words instead. */
+  err: string
+  setErr: (err: string) => void
   onDone: (app: AdminScholarshipDetail) => void
   /** Reload the case (a `bad_status` or `has_reviewer` refusal: the page was stale). */
   onStale: () => Promise<void> | void
@@ -47,7 +53,6 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, onDone, onS
   const [step, setStep] = useState<'idle' | 'form' | 'confirm'>('idle')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
-  const [err, setErr] = useState('')
   const [working, setWorking] = useState(false)
   const startRef = useRef<HTMLButtonElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
@@ -63,8 +68,8 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, onDone, onS
     el?.focus()
   }, [step])
   const offer = app.pre_interview
-  // A refusal that reloaded the case away from this door still says what happened.
-  if (!offer) return err ? <p className="text-sm text-critical-600" role="alert">{err}</p> : null
+  // A refusal that reloaded the case away from this door is shown by the page (`view.tsx`).
+  if (!offer) return null
   if (app.assigned_to_id) {
     return (<>
       <p className="text-xs text-ground-500" data-testid="pre-interview-unassign-first">
@@ -86,9 +91,12 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, onDone, onS
     } catch (e) {
       const code = (e as { code?: string }).code || ''
       setErr(t(`${P}.error.${REFUSALS.includes(code) ? code : 'generic'}`))
-      go('form', 'submit')
       if (STALE.includes(code)) {
+        // The page was stale: the panel rests (opening it again clears these words) and the case reloads.
+        go('idle', 'start')
         try { await onStale() } catch { /* the refusal already says what happened */ }
+      } else {
+        go('form', 'submit')
       }
     } finally { setWorking(false) }
   }
@@ -97,7 +105,7 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, onDone, onS
     <div className="space-y-2 border-t border-ground-100 pt-3" data-testid="pre-interview">
       {step === 'idle' && (<>
         <p className="text-center text-xs text-ground-400">{t(`${P}.or`)}</p>
-        <button type="button" ref={startRef} onClick={() => go('form', 'select')} disabled={!!busy}
+        <button type="button" ref={startRef} onClick={() => { setErr(''); go('form', 'select') }} disabled={!!busy}
           className={`w-full rounded-lg border border-critical-300 px-3 py-2 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50 ${BTN}`}>
           {t(`${P}.start`)}
         </button>

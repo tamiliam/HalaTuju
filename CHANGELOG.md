@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 re-check - interview teardown after commit, assign refusal shown (2026-11-17)
+
+Branch req75, on top of fc5d474ea, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check).
+- Unassigning a reviewer still withdraws the interview slots and clears a booking under the case's row lock, but the Meet cancel and the two emails (student, outgoing reviewer) now run only after the unassign commits (`apps/scholarship/after_commit.py`), best-effort, billed to the organisation. A rolled-back unassign cancels and sends nothing.
+- An unassign locks the outgoing reviewer before the case (the assign's order). A case that has gone is refused `not_assignable`. No query budget moved.
+- Cockpit: an assign refused as `not_assignable` says so in words, and any assign refusal reloads the case.
+- Reject before interview: a refusal stays visible when the reload it triggers takes the door away (the page holds the words); opening the form again clears them.
+- Malay "unassign first, ask" hint: "...penyemak **untuk** menetapkan...".
+- Tests: `test_reject_before_interview.py` 35 -> 40 (after commit: sends and cancels once; a rollback sends nothing; a database error in the teardown still commits the unassign; a gone case refused both ways; holder locked before the case); `test_assignment.py` and `test_close_stalled.py` run the after-commit calls; `PreInterviewReject.test.tsx` +1; `view.actions.test.tsx` +2 (`not_assignable` shown and the case reloaded; a `bad_status` refusal kept after the reload).
+
 ### refactor: request #75 review round - lock the case on assign, keep focus, tighter tests (2026-11-16)
 
 Branch req75, on top of 8317ae56f, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #75 review round).

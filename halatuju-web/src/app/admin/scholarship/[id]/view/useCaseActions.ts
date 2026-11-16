@@ -94,12 +94,15 @@ export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: numb
     catch (e) {
       // M3c: a refusal with a `code` (`self_assign`) is read by it; the older ones put the code in `error`.
       const code = (e as { code?: string }).code || (e instanceof Error ? e.message : '')
-      const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
+      const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee', 'not_assignable',
                      'findings_submitted', 'gift_mismatch', 'not_signed_in', 'self_assign']
       setError(known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
           ? { name: admins.find((a) => a.id === adminId)?.name ?? '' } : undefined)
         : t('admin.scholarship.assignError'))
+      // #75 re-check: a refusal usually means the page is stale (a colleague moved the case), so the
+      // case is reloaded and the picker shows what is true now. The message above stays.
+      try { setApp(await getScholarshipApplication(id, { token })) } catch { /* the message stands */ }
     } finally { setBusy('') }
   }
 

@@ -129,6 +129,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(true)
+  // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
+  // stale refusal triggers even when that reload takes the door (and its component) away.
+  const [preInterviewErr, setPreInterviewErr] = useState('')
 
   const refreshApp = async () => {
     if (!token) return
@@ -360,6 +363,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
       <PreInterviewRecord app={app} t={t} />
+      {preInterviewErr && !app.pre_interview && (
+        <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused">{preInterviewErr}</p>
+      )}
 
 
       <AssignAndWitness
@@ -373,7 +379,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} canAssign={canAssign}
-          onDone={setApp} onStale={refreshApp} />}
+          err={preInterviewErr} setErr={setPreInterviewErr} onDone={setApp} onStale={refreshApp} />}
       />
 
 
