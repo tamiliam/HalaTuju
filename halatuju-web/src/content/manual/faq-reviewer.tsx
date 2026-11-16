@@ -249,6 +249,16 @@ export const REVIEWER_FAQ: QA[] = [
         flagged: check the year on the letter yourself.</>,
     },
     {
+      q: <>Why was the student asked for a <strong>recent confirmation letter</strong>?</>,
+      a: <>Her offer or confirmation letter is older than your organisation&rsquo;s window (3 months unless
+        your organisation admin changed it under Organisation settings), so the system asked her for a recent
+        confirmation-of-studies letter to show she is still on her course. It is only a request: it never
+        blocks the case, never fails a check and never changes the verdict or the amount (like any request, the
+        case waits for her answer only until her answer window ends). It is not asked when
+        the letter&rsquo;s date cannot be read, or when a recent confirmation letter is already on file. Her
+        upload of a recent confirmation letter closes it; an old letter sent again leaves it open.</>,
+    },
+    {
       q: <>The student has completed a semester or two — should I ask for more?</>,
       a: <>If they have their results (CGPA), you may ask them to upload the latest result. If it&rsquo;s
         satisfactory (above 3.0), you may consider recommending them for support.</>,

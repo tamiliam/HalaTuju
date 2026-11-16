@@ -9137,3 +9137,13 @@ past. The 286-letter corpus holds none. *(A - S)*
 *Review 14 (2026-11-16, final, PASS) add:* "nomber", "disembah", "dismember", "Augusta" and "ferrari" read as months
 (none in the corpus). Capital "STAM" inside "STAMFORD" (a college name) makes a line with no session an exam line, so
 it reads unknown (safe direction).
+
+### [TD-634] Recent-letter ask: a recent OFFER letter kept out of the live slot does not answer it - low
+
+**Raised 2026-11-16 by sprint H3b (logged, not fixed).** `recent_letter.wanted` drops the ask when the LIVE letter is
+recent, or when any version of the offer slot holds a recent, non-failing CONFIRMATION letter (the brief's rule). A
+recent official OFFER letter that the keep-better promotion kept out of the live slot (superseded) does not count, so
+the soft ask stays open until her answer window lapses. It never blocks, fails or moves a verdict or money; a reviewer
+sees the item and can close it. Count it on live data before deciding whether any recent letter should answer.
+Also: the date read is strict (`letter_date`), so a letter whose `offer_date` is in another form is never asked about
+(the no-guess rule, by design). *(A - S)*

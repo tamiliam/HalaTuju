@@ -127,6 +127,8 @@ const TIMINGS: api.OrganisationConfigSetting[] = [
     min: 3, max: 7, value: null, default: 5 },
   { key: 'query_reminder_lead_days', group: 'check2', unit: 'days',
     min: 1, max: 2, value: null, default: 2 },
+  { key: 'recent_letter_window_months', group: 'check2', unit: 'months',   // H3b
+    min: 1, max: 12, value: null, default: 3 },
   { key: 'award_email_delay_hours', group: 'awards', unit: 'hours',
     min: 12, max: 48, value: null, default: 24 },
   { key: 'award_confirm_hold_days', group: 'awards', unit: 'days',

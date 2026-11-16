@@ -23,7 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
-from . import high_utility_variant as hu, higher_owed, income_str_ownership as own, stpm_asks
+from . import high_utility_variant as hu, higher_owed, income_str_ownership as own, recent_letter, stpm_asks
 # H3b (2026-11-16): the pathway + household-size confirms moved verbatim to `check2_confirms.py`
 # (size standard); re-exported so every import and patch on this module still works.
 from .check2_confirms import (
@@ -111,6 +111,7 @@ DOC_SPECS = {
     'mother_pension_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
     'income_doc_stale': {'doc_type': 'salary_slip'},
+    recent_letter.CODE: {'doc_type': 'offer_letter', 'fact': 'pathway'},   # H3b: an old letter → a recent one
     # Phase 2A (P5b/D1) — a working member declared an informal wage, but the household has no
     # valid STR and no supporting doc yet → ask for ONE flexible proof (an income_support_doc:
     # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
@@ -257,6 +258,7 @@ GOVERNED_BY = {
     'father_pension_proof_missing': _INCOME,
     'mother_pension_proof_missing': _INCOME,
     'income_doc_stale': _INCOME,
+    recent_letter.CODE: None,                    # offer / confirmation letter — core, per-student
     'declared_income_evidence_missing': _INCOME,
     'father_epf_missing': _INCOME,
     'mother_epf_missing': _INCOME,
@@ -312,8 +314,9 @@ def _gap_sets(application):
     # TD-262 F2 — the declared-wage ask has its own module; it asks ``income_shown`` whether the
     # member's income is already carried another way before chasing a letter nobody needs.
     from .income_declared_gaps import declared_income_gaps
-    from .pathway_engine import offer_reporting_date_unknown
+    from .document_snapshot import latest_doc
     from .academic_engine import spm_exam_year_unknown
+    offer = latest_doc(application, 'offer_letter')  # H3b: ONE read for both offer asks (TD-308 budget)
     gaps = {g['code'] for g in completeness_gaps(application)}
     if spm_exam_year_unknown(application):          # read slip, no anchorable exam year (#12)
         gaps.add('spm_year_unknown')
@@ -330,7 +333,7 @@ def _gap_sets(application):
         gaps.add('informal_income_detail')
     if pension_context(application) is not None:        # #117 — retired/unable parent → ask-first pension
         gaps.add('pension_amount_unknown')
-    if offer_reporting_date_unknown(application):       # readable offer, no parseable report date
+    if recent_letter.reporting_date_unknown(offer):     # readable offer, no parseable report date
         gaps.add('reporting_date_unknown')
     if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
         gaps.add('unemployment_detail_unknown')
@@ -376,6 +379,8 @@ def _gap_sets(application):
         proof_wanted.add(_MEMBER_PROOF_CODE[str_salary_earner])
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')
+    if recent_letter.wanted(application, live=offer):    # H3b: the letter is older than the org's window
+        proof_wanted.add(recent_letter.CODE)
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')
     ic_asks, near_miss = own.str_check2_ic_asks(application)   # TD-285 F1: whose STR? ask their IC

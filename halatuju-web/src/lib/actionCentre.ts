@@ -190,6 +190,9 @@ export const KNOWN_CODES = [
   'mother_status_unknown',
   // S2 — stale salary slip (doc) + sibling-in-tertiary funding (clarify).
   'income_doc_stale',
+  // H3b — the offer / confirmation letter on file is older than the organisation's window → a
+  // soft request for a recent confirmation letter (doc; never blocks).
+  'recent_letter_needed',
   'sibling_tertiary_funding',
   // Owner 2026-07-08 — a sibling still in school (clarify) + an informal earner's ask-first
   // "payslip/EPF? rough monthly?" (clarify), so neither shows as a raw code / blank title.
