@@ -22,36 +22,29 @@ logger = logging.getLogger('apps.scholarship.services')
 
 
 # WHO MAY HOLD A CASE (and therefore act on it — record a verdict, propose interview times, etc.).
-# Request #39 Sprint 3: whoever holds the `review` permission (a super holds every key), PLUS the
-# R1 roles below. ONE predicate, `is_review_target`: scheduling._can_review reads it too, so the
-# interview surface can never drift out of step with the rest of the review surface again (a stale
-# copy silently blocked a 'qc' reviewer from proposing interview times — 2026-07-10).
+# ONE predicate, `is_review_target`: scheduling._can_review reads it too, so the interview surface can
+# never drift out of step with the rest of the review surface again (a stale copy silently blocked a
+# 'qc' reviewer from proposing interview times — 2026-07-10).
 #
-# ⚠ R1 (roadmap #39, lead ruling 2026-10-19) let a SUPER hand a case to an admin / qc / org_admin.
-# T1 (owner D7, 2026-11-09) RETIRED IT FOR ASSIGNING: `may_assign_to` below now admits only the
-# Reviewers table, for every caller. R1_SUPER_TARGET_ROLES STAYS for HOLDING: `is_review_target`
-# (so `_can_review`, `scheduling._can_review`, pause) and the assignable LIST's query read it, so a
-# case an admin already holds is never stranded and its holder never vanishes from the picker.
-# Production 2026-11-09: one awarded case sits with an org_admin, one rejected with a super; no open
-# case is affected. A 'partner' is never a target; neither is the `finance` PRESET (it has no B40
-# scope, 2026-07-23) — but a Finance person GIVEN `review` is one (owner, 2026-10-19).
-R1_SUPER_TARGET_ROLES = ('admin', 'qc', 'org_admin')
+# ⚠ R1 (roadmap #39, 2026-10-19) let a SUPER hand a case to an admin / qc / org_admin; T1 (owner D7,
+# 2026-11-09) retired it for ASSIGNING (`may_assign_to` admits only the Reviewers table). TD-622 (sprint
+# LABELS) retired its role list for HOLDING too: who may hold a case is read from the TARGET'S KEYS, as
+# TD-613 reads the rest of the target. A case an admin already holds is never stranded, because every
+# preset that held one by role holds `see_all` (`qc` brings it). Neither `partner` nor the `finance`
+# PRESET holds either key, so neither is a target — but a Finance person GIVEN `review` is one (owner,
+# 2026-10-19), and so is one given `see_all` (they can open the case).
 
 
 def is_review_target(admin):
-    """May ``admin`` hold a case at all: `review`, or a role the R1 super override keeps WHO CAN
-    STILL OPEN THE CASE (`see_all`). No active / pause check here — `_can_review` and
-    `scheduling._can_review` add what each needs.
+    """May ``admin`` hold a case at all: `review`, or `see_all` — WHO CAN STILL OPEN THE CASE (a super
+    holds every key). No active / pause check here — `_can_review` and `scheduling._can_review` add
+    what each needs.
 
-    ⚠ `see_all` ON THE OVERRIDE (Sprint 3 review fix 1): a custom-set admin / qc WITHOUT `see_all`
-    and without `review` has `_b40_scope` 'none', so a case handed to them would be STRANDED — they
-    could not open it while the nudges and emails still named the student to them. Every preset in
-    the R1 roles holds `see_all`, so the presets answer exactly as before (the golden table).
-    Team tables T5b: `qc` brings `see_all` (`staff_permissions.IMPLIES`), so an admin / qc holding `qc`
-    without a stored `see_all` is a target exactly as the QC preset is — they can open the case."""
-    if admin.has_perm('review'):
-        return True
-    return getattr(admin, 'role', '') in R1_SUPER_TARGET_ROLES and admin.has_perm('see_all')
+    ⚠ `see_all`, NOT A ROLE (Sprint 3 review fix 1; TD-622): a custom set WITHOUT `see_all` and without
+    `review` has `_b40_scope` 'none', so a case handed to them would be STRANDED — they could not open it
+    while the nudges and emails still named the student to them. Team tables T5b: `qc` brings `see_all`
+    (`staff_permissions.IMPLIES`), so anyone holding `qc` is a target exactly as the QC preset is."""
+    return admin.has_perm('review') or admin.has_perm('see_all')
 
 
 def may_assign_to(caller, target):

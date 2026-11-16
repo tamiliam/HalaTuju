@@ -4,8 +4,9 @@ Before T1 the R1 override let a SUPER hand a case to any admin, qc or org admin 
 and a super could hand one to another super. Now every caller, a super included, may give a case
 only to someone `staff_tables.in_reviewers` admits; an org admin only to their own organisation's.
 The refusal codes are unchanged: `not_reviewer` from the service, `bad_assignee` from the org admin's
-own gate. R1 still decides who may HOLD a case (`is_review_target`), so a case an admin held before
-T1 stays theirs and re-picking them is a no-op (T1-d).
+own gate. Who may HOLD a case is `is_review_target` (since TD-622, sprint LABELS, the target's keys
+`review` or `see_all`, no longer the R1 roles), so a case an admin held before T1 stays theirs and
+re-picking them is a no-op (T1-d).
 
 A reviewer of another gift is still refused `gift_mismatch` — `test_assign_gift_mismatch.py`.
 
@@ -100,7 +101,9 @@ class TestAQcPersonWithoutReviewOrQc(_Base):
         bare = make_admin('qc', owning_org=self.bp, permissions=[], uid='t1-qc0')
         self.assertTrue(staff_tables.in_reviewers(bare))
         self.assertFalse(is_review_target(bare))
-        self.assertFalse(self._rows(self.boss)[bare.id]['assignable'])
+        # TD-622 (sprint LABELS): the picker lists by the keys a holder needs, so a keyless row is not
+        # listed at all (it was listed and never offered); the web still names a holder it lacks.
+        self.assertNotIn(bare.id, self._rows(self.boss))
         r = self._post(self.boss, self._case(), bare)
         self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
 

@@ -60,6 +60,10 @@ def _team_member(admin):
             and admin.role in sp.TEAM_ROLES)
 
 
+#: Public name for the kind-of-account read (the Overview's personal pages are a team member's, TD-621).
+team_member = _team_member
+
+
 def admin_keys(admin):
     """The ADMIN keys a team member holds, `see_all` dropped when `qc` is held (it is what `qc`
     brings, T5b `staff_permissions.IMPLIES` — so a `qc` holder can never hold it as an admin hat)."""

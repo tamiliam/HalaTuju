@@ -298,28 +298,28 @@ class AdminScopeListView(_AdminBase):
 
 
 class AdminAssignableAdminsView(_AdminBase):
-    """GET .../assignable-admins/ — active REVIEWERS, ADMINS (+ supers) for the assignment
-    dropdown. Only roles that can be assigned an applicant appear (mirrors services._can_review):
-    a view-all 'admin' and the senior 'qc' role can be assigned selective review work (assignment
-    grants WRITE on the assigned application while their read stays all), so admins + qc are listed;
-    'partner' and 'finance' have no review role and are excluded. (A qc's own reviewed case is QC'd
-    by someone else — the self-QC guard in _require_qc.)"""
+    """GET .../assignable-admins/ — the active staff who could HOLD a case, for the assignment
+    dropdown: supers and organisation admins (kinds of account), and team members holding `review`
+    or `see_all` (`qc` brings it) — the keys `services.is_review_target` reads (TD-622, sprint LABELS).
+    Who may be PICKED is the served `assignable` flag (`may_assign_to`). A partner, source or mentor
+    login holds neither key. (A qc's own reviewed case is QC'd by someone else — the self-QC guard
+    in _require_qc.)"""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
         from django.db.models import Q
         from apps.courses import public as courses_public, staff_permissions
-        from ..services import R1_SUPER_TARGET_ROLES, may_assign_to
+        from ..services import may_assign_to
         # tenancy: list-fenced (2026-07-15). Super sees every assignable staff member; a
         # non-super (org_admin) sees only their OWN org's assignable staff — so a delegated
         # assignment can't reach across tenants. (A PartnerAdmin list, not applicant data.)
-        # ⚠ #39 Sprint 3: LISTED = everyone who could hold a case before #39 (the five roles, so
-        # nobody already holding one vanishes — bug #66) PLUS anyone given `review`; WHO MAY BE
+        # ⚠ LISTED = whoever could hold a case (TD-622: by keys, no longer the five R1 roles), so
+        # a holder never vanishes (bug #66; the web also names a holder the list lacks); WHO MAY BE
         # PICKED is the served `assignable` flag (`may_assign_to`; T1: the Reviewers table only).
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
-                          | staff_permissions.team_holding(('review',)))
+                  .filter(Q(role__in=['super', 'org_admin'])
+                          | staff_permissions.team_holding(('review', 'see_all')))
                   .select_related('reviewer_profile').annotate(**courses_public.staff_gift.gift_annotation())
                   .order_by('name'))
         if not self.has_role(admin, 'super'):

@@ -118,7 +118,7 @@ def scheduling_enabled() -> bool:
 
 
 def _can_review(admin):
-    """Mirror services._can_review: an active review target (`review`, or the R1 super override)
+    """Mirror services._can_review: an active review target (`review` or `see_all`, TD-622)
     may propose slots. Uses the SHARED services.is_review_target (request #39 Sprint 3) so this
     can't drift from the assignment/write gate again — the per-application assignment check below
     is what actually scopes WHO can propose.

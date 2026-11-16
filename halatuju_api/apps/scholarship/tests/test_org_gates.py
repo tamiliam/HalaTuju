@@ -229,11 +229,11 @@ class TestFinanceHasNoB40Scope(OrgFenceMixin, TestCase):
         from apps.scholarship.services import _can_review
         self.assertFalse(_can_review(self.finance_a))
 
-    def test_the_finance_preset_is_neither_a_review_holder_nor_an_r1_role(self):
-        # #39 S3: REVIEW_ROLES became `review` + the R1 super override; the preset still has neither.
-        from apps.scholarship.services import R1_SUPER_TARGET_ROLES, is_review_target
-        self.assertNotIn('finance', R1_SUPER_TARGET_ROLES)
+    def test_the_finance_preset_holds_neither_target_key(self):
+        # #39 S3, then TD-622 (sprint LABELS): a target holds `review` or `see_all`; the preset has neither.
+        from apps.scholarship.services import is_review_target
         self.assertFalse(self.finance_a.has_perm('review'))
+        self.assertFalse(self.finance_a.has_perm('see_all'))
         self.assertFalse(is_review_target(self.finance_a))
 
     def test_applications_list_denied(self):

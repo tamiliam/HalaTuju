@@ -109,7 +109,7 @@ def may_open_overview(admin, b40_scope, programme, cohort=None):
     S1b (review item 1): a named ROUND with no gift named is judged by the round's own gift — the
     `?intake=` door must not open a gift the `?programme=` door refuses. A round that belongs to no gift
     opens only where a case of THAT round is assigned to the caller. Nothing named: the pooled Overview,
-    shaped by role (`SECTIONS_BY_ROLE`), as before."""
+    shaped by the reader's keys (`programme_overview.sections_for`, TD-621), as before."""
     if sees_every_gift(admin, b40_scope):
         return True
     if programme is not None:

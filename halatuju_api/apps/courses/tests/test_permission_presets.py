@@ -13,7 +13,8 @@ WHAT THIS FILE PROVES, in two halves, for every row of `GOLDEN`:
    the same people through `has_perm` only, gives the same answers. Where it does not, the difference
    is written down in `diverges` with its reason — never silently absorbed. Today there is exactly
    one kind: R1 (the super's wider choice of assignee, kept as a super override, roadmap R1 —
-   `services.R1_SUPER_TARGET_ROLES` since Sprint 3). Sprint 1's other finding (the lead tier holds
+   `services.R1_SUPER_TARGET_ROLES` from Sprint 3 until TD-622, sprint LABELS, read the target's keys).
+   Sprint 1's other finding (the lead tier holds
    `qc` but an org_admin is not on the Reviewers tab) was ruled by the owner on 2026-10-19 ("yes":
    org admins stay off it) and Sprint 3 built exactly that, so its rule now says so.
 
@@ -63,7 +64,8 @@ S2_RULING = ('owner 2026-10-19 (#39 payments, option A): Admin prepares, Finance
 
 R1 = ('R1 (roadmap): today a SUPER may assign any of reviewer/admin/qc/org_admin, while an org_admin '
       'may assign only a reviewer. The permission rule reproduces the org_admin side; the super\'s '
-      'wider choice is kept as a super override (services.R1_SUPER_TARGET_ROLES, Sprint 3), and '
+      'wider choice is kept as a super override (services.R1_SUPER_TARGET_ROLES, Sprint 3; '
+      'the target\'s keys since TD-622), and '
       '"assignment grants write" is unchanged. '
       'Production 2026-10-19: one in-play case sits with an org_admin (awarded), none with admin/qc.')
 

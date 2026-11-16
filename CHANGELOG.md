@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint LABELS - the Overview sections and who may hold a case follow the keys (2026-11-16)
+
+Branch labels, not pushed. No migration. Services: api. Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending architect). Release-note draft: `docs/releases/labels-release-note-draft.md`. Debt: TD-621 and TD-622 (built), TD-632 (note).
+- **Overview (TD-621):** `programme_overview.SECTIONS_BY_ROLE` and `KEYED_ROWS` are gone. Each section names the keys that open it (`SECTION_KEYS`): the applicant widgets (funnel, attention, applications by week) need `see_all` held at Admins (QC's own `see_all` is not an Admins hat); the money widgets need `spending` or a `payments.*` key; the `qc` and `mine` pages need `qc` and `review` and are a team member's (`staff_tables.team_member`), so a super and an organisation admin get the five widgets only. Partners, sources, mentors and members hold no key and are still refused (403).
+- **Who may hold a case (TD-622):** `services.R1_SUPER_TARGET_ROLES` is gone. `is_review_target` reads the target's keys, `review` or `see_all` (`qc` brings it); `may_assign_to` (the Reviewers table, T1) and TD-613's rules are unchanged. The super's picker (`assignable-admins`) lists supers, organisation admins and team members holding either key. The A10 scan lost the role-list entries for `is_review_target`.
+- **Graduation-message review (item 1): not retired.** Its POST is the only way a student's thank-you becomes approved, and the sponsor page shows approved messages only. Recorded under TD-632.
+- New `test_labels_preset_pins.py` (written on the base commit and green there: every standard preset's Overview and assignment answers are unchanged) and `test_labels_key_moves.py` (every section has a key; each hand-granted move declared). Existing tests updated to the declared moves (`test_org_gates`, `test_permission_combinations`, `test_assign_reviewers_only`, `test_permission_editor`, `test_decision_reopen`): a Reviewer whose `review` was swapped for `qc` now keeps a reopened case and is pausable, because `qc` brings `see_all`.
+
 ### refactor: F2b stage 2 - scholarship reaches nine more courses modules through the courses public door (2026-11-16)
 
 Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only, no behaviour change. Cross-app import links (code_health xapp) 30 to 21 (staff_permissions_v2 stays direct by rule R6).

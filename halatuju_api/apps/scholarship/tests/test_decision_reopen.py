@@ -439,7 +439,8 @@ class TestTD476ReopenNeverStrandsAnAssigneeWithoutReview(TestCase):
     _reopen_url = TestDecisionReopen._reopen_url
 
     def _take_review_away(self):
-        self.reviewer.permissions = ['see_all']
+        # Neither `review` nor `see_all`: since TD-622 (sprint LABELS) `see_all` alone still lets them hold the case.
+        self.reviewer.permissions = ['spending']
         self.reviewer.save(update_fields=['permissions'])
 
     def _set_status(self, value):

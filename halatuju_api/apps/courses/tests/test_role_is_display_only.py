@@ -206,9 +206,6 @@ ALLOWLIST = {
         'first-login landing: the label says which kind of account this is, not what it may do'),
     'scholarship/scheduling.py::propose_slots': ('OVERRIDE', 'owner override',
         'super bypass of the assigned-reviewer rule (getattr role == super): a super holds every key'),
-    'scholarship/services/assignment.py::is_review_target': ('GATE-LEFT', 'TD-613',
-        'who may HOLD a case: R1_SUPER_TARGET_ROLES by label (T1: no longer who may be GIVEN one); retires '
-        'with TD-613 (TD-622), list K'),
     'scholarship/source_invite.py::_reactivate': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'scholarship/source_invite.py::has_joined': ('DISPLAY', 'account kind',
@@ -528,7 +525,6 @@ GATE_LEFT_PINNED = {
     'courses/views_staff.py::AdminRevokeView._revoke_locked': 'target rule',
     'scholarship/staff_tables_admin.py::may_act': 'target rule',
     'scholarship/views_admin/invitations.py::AdminInvitationCancelView.post': 'target rule',
-    'scholarship/services/assignment.py::is_review_target': 'TD-613',
     'scholarship/views_admin/applications.py::AdminApplicationDetailView.patch': 'M4',
     'scholarship/credit_steps.py::step_refusal': 'T5d',
     'scholarship/payments_chain.py::fallback_approvers': 'T5d',

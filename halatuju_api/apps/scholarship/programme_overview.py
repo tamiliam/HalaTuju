@@ -1,4 +1,4 @@
-"""Programme Overview — "how is this gift doing?", answered once and shaped by role.
+"""Programme Overview — "how is this gift doing?", answered once and shaped by the reader's keys.
 
 The page a person lands on after clicking a gift card: the funnel, the money, what needs
 attention, and the charts over time. Every figure is READ from data the
@@ -13,11 +13,11 @@ derived from that one queryset — disbursements and spend rows are reached only
 reasoning `spend_report` states: an allowlist serializer protects a COLUMN and does nothing about
 a ROW, so the fence has to be on the query, once.
 
-⚠⚠ **ROLE SHAPING IS A SECOND GATE, NOT A COSMETIC ONE.** `SECTIONS_BY_ROLE` decides which keys
-are BUILT, server-side, before anything is serialised. A reviewer's payload has no `money` key to
-hide; a finance admin's has no `funnel`. A page that fetched everything and rendered a subset
-would be a side door into Applications/Payments/Spending for roles the menu already withholds
-those pages from.
+⚠⚠ **SECTION SHAPING IS A SECOND GATE, NOT A COSMETIC ONE.** `sections_for` (each section's keys,
+`SECTION_KEYS`) decides which keys are BUILT, server-side, before anything is serialised. A
+reviewer's payload has no `money` key to hide; a finance admin's has no `funnel`. A page that
+fetched everything and rendered a subset would be a side door into Applications/Payments/Spending
+for readers the menu already withholds those pages from.
 
 ⚠ **FINANCE SEES AGGREGATE MONEY HERE THOUGH NOT ON THE SPENDING PAGE** (the finance
 preset does not hold `spending`). That is a deliberate widening, recorded in `docs/decisions.md` and the role matrix:
@@ -54,38 +54,31 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.courses import staff_tables
+
 from . import payments, spend_report, surface_gates
 from .spending_import import TX_SPEND
 
 _ZERO = Decimal('0.00')
 _CENTS = Decimal('0.01')
 
-#: Everything a full-scope console role sees. Kept as one tuple so the three roles that get it
-#: cannot drift apart by a copy-paste.
+#: Every widget, in the page's default order (the layout may narrow and reorder them).
 FULL = ('funnel', 'money', 'attention', 'applications_series', 'money_series')
+#: The two PAGES: a person's own queue (`mine`) and the QC queue (`qc`), never a widget.
+PAGES = ('qc', 'mine')
 
-#: ⚠⚠ **THE SERVER DECIDES WHAT A ROLE RECEIVES.** A key absent here is a key never built, so it
-#: is not in the payload at all — absent, never zeroed. Zeroing would be its own leak: "your
-#: organisation has committed RM0" is still an answer about money to somebody who may not ask.
-#:
-#: ⚠ `reviewer` and `qc` get NO money and NO programme-wide funnel, by decision: the menu already
-#: withholds Payments and Spending from them, and an Overview that handed over the same figures
-#: through a different route would make that withholding decorative.
-#:
-#: (The `intake` block that was on every row until 2026-09-18 is gone — owner: "doesn't add much
-#: value". A round's state lives on Configuration; this page is the work and the money.)
-SECTIONS_BY_ROLE = {
-    'super': FULL,
-    'org_admin': FULL,
-    'admin': FULL,
-    # See the module docstring: aggregate money, never a person.
-    'finance': ('money', 'money_series'),
-    'qc': ('qc',),
-    'reviewer': ('mine',),
-}
-#: A7 (M3b): the organisation admin's row is read from its keys, section by section (0098 gives it both).
-KEYED_ROWS = {'org_admin': {'funnel': 'see_all', 'attention': 'see_all', 'applications_series': 'see_all',
-                            'money': 'spending', 'money_series': 'spending'}}
+#: ⚠⚠ **THE SERVER DECIDES WHAT A PERSON RECEIVES, FROM THEIR KEYS** (TD-621, sprint LABELS: the role is
+#: only a label). A section absent from the answer is never built, so it is not in the payload at all —
+#: absent, never zeroed ("committed RM0" is still an answer about money). Each section opens on ANY of
+#: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments):
+#: aggregate money, never a person (module docstring). The applicant widgets open on `see_all` worn as an
+#: Admins hat: QC's implied `see_all` (`staff_permissions.IMPLIES`) opens the QC page, not the funnel
+#: (`staff_tables.admin_keys` reads it the same way). Without those keys, reviewer and QC get no money and
+#: no programme-wide funnel: an Overview that handed over what the menu withholds would make it decorative.
+MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
+SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
+                'applications_series': ('see_all',), 'money_series': MONEY_KEYS,
+                'qc': ('qc',), 'mine': ('review',)}
 
 
 def may_customise(admin):
@@ -93,20 +86,21 @@ def may_customise(admin):
     return surface_gates.may_edit_settings(admin)
 
 
-def sections_for(admin):
-    """Which sections this admin's role may receive. `()` for anyone unlisted.
+def _opens(admin, section):
+    if SECTION_KEYS[section] == ('see_all',) and not staff_tables.in_admins(admin):
+        return False                       # QC's own `see_all` is not an Admins hat (above)
+    return any(admin.has_perm(k) for k in SECTION_KEYS[section])
 
-    ⚠ The EFFECTIVE role (`is_super` maps to 'super'), and a super's `has_role` would answer True
-    to every check, so the role string is read, never `has_role`. An unknown
-    or unlisted role gets nothing rather than a default, which is the safe direction: a new role
-    added to `ROLE_CHOICES` without a decision here is REFUSED by the view (which turns an empty
-    tuple into a 403), never handed somebody else's sections.
-    """
+
+def sections_for(admin):
+    """The sections `admin` may receive, from their keys (`SECTION_KEYS`); `()` for none, which the view
+    answers with a 403. A super holds every key: every widget. ⚠ THE PAGES ARE A TEAM MEMBER'S (a kind
+    of account, `staff_tables.team_member`): the super and the organisation admin hold `review` and `qc`
+    too, and their Overview is the programme's alone. A partner, source or mentor login holds no key."""
     if admin is None:
         return ()
-    role = 'super' if getattr(admin, 'is_super', False) else getattr(admin, 'role', '')
-    keys = KEYED_ROWS.get(role)
-    return tuple(x for x in SECTIONS_BY_ROLE.get(role, ()) if keys is None or admin.has_perm(keys[x]))
+    pages = PAGES if staff_tables.team_member(admin) else ()
+    return tuple(s for s in (*FULL, *pages) if _opens(admin, s))
 
 
 # ── the fence ─────────────────────────────────────────────────────────────────────────────────
@@ -721,7 +715,7 @@ POOLED_MONEY = ('money', 'money_series')
 
 
 def build(admin, org, programme, *, cohort=None, now=None, withhold=()):
-    """The whole payload, shaped by role, narrowed and ordered by the organisation's layout,
+    """The whole payload, shaped by the reader's keys, narrowed and ordered by the organisation's layout,
     with every money value a STRING.
 
     ⚠ The sections are chosen FIRST and each is built only if chosen, so a role never pays for a

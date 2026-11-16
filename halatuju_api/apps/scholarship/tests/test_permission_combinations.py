@@ -43,8 +43,9 @@ def _unassigned_app(case):
 
 
 class TestReviewerPlusSpending(pe._Base):
-    """Rohini's combination: Spending page 200, Applications assigned-only, no Payments, no money on
-    the Overview (the Overview is preset-bound, R2: she sees the reviewer's sections)."""
+    """Rohini's combination: Spending page 200, Applications assigned-only, no Payments. The Overview
+    follows her keys since TD-621 (sprint LABELS; it was preset-bound, R2): `spending` opens the
+    aggregate money, `review` her own page, and without `see_all` no programme-wide funnel."""
 
     def setUp(self):
         super().setUp()
@@ -73,8 +74,8 @@ class TestReviewerPlusSpending(pe._Base):
         self.assertEqual(self.client.get(RUNS).status_code, 403)
         self.assertEqual(self.client.get(FUNDING).status_code, 403)
 
-    def test_no_money_on_the_overview(self):
-        self.assertEqual(sections_for(self.reviewer), ('mine',))
+    def test_the_overview_follows_her_keys(self):
+        self.assertEqual(sections_for(self.reviewer), ('money', 'money_series', 'mine'))
 
 
 class TestFinancePlusReview(pe._FinanceBase):
@@ -120,9 +121,10 @@ class TestFinancePlusReview(pe._FinanceBase):
         self.assertEqual(self.client.get(RUNS).status_code, 200)
         self.assertTrue(self.finance.has_perm('payments_approve'))
 
-    def test_the_overview_stays_the_finance_preset_s(self):
-        # R2: preset-bound. No "my cases" tile; the Applications row is their door.
-        self.assertEqual(sections_for(self.finance), ('money', 'money_series'))
+    def test_the_overview_follows_their_keys(self):
+        # Was R2 (preset-bound: no "my cases" page). TD-621 (sprint LABELS): `review` opens a team
+        # member's own page, beside the money `payments_approve` opens; still no funnel.
+        self.assertEqual(sections_for(self.finance), ('money', 'money_series', 'mine'))
 
     def test_an_org_admin_may_assign_them_and_they_sit_on_the_reviewers_tab(self):
         self.assertTrue(may_assign_to(self.approver, self.finance))
@@ -291,8 +293,10 @@ class TestTheR1OverrideNeedsSeeAll(pe._FinanceBase):
             assign_reviewer(app, reviewer=self.maker, by_admin=self.super)
         self.assertEqual(caught.exception.code, 'not_reviewer')
         self._auth('pe-su')
-        row = next(r for r in self.client.get(ASSIGNABLE).json()['admins'] if r['id'] == self.maker.id)
-        self.assertFalse(row['assignable'])          # listed (bug #66), never offered
+        # TD-622 (sprint LABELS): listed by the keys a holder needs, so this row is no longer listed (it
+        # was listed and never offered, bug #66); the web still names a holder the list lacks.
+        listed = {r['id'] for r in self.client.get(ASSIGNABLE).json()['admins']}
+        self.assertNotIn(self.maker.id, listed)
 
     def test_an_admin_keeping_see_all_may_hold_but_is_no_longer_a_super_s_target(self):
         # T1: was "stays a super's target" (R1). They can still HOLD a case (is_review_target), so a

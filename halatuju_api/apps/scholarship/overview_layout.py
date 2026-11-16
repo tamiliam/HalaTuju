@@ -12,9 +12,9 @@ catalogue, not a form builder" — and an ordered list of switches is exactly th
 case it refuses.
 
 ⚠⚠ **THE LAYOUT NARROWS AND ORDERS. IT NEVER WIDENS.** `apply()` takes the sections a ROLE is
-entitled to (`programme_overview.SECTIONS_BY_ROLE`) and returns the subset the organisation has
-switched on, in the organisation's order. A key in the layout that the role may not see is
-dropped; nothing is ever added. Role shaping stays the second gate it always was.
+entitled to (`programme_overview.sections_for`, each section's keys since TD-621) and returns the
+subset the organisation has switched on, in the organisation's order. A key in the layout that the
+reader may not see is dropped; nothing is ever added. Key shaping stays the second gate it always was.
 
 ⚠ **`mine` AND `qc` ARE PAGES, NOT WIDGETS.** A reviewer's Overview is their queue; a QC's is
 theirs. They are outside `CUSTOMISABLE`, so an org admin cannot switch a colleague's whole page

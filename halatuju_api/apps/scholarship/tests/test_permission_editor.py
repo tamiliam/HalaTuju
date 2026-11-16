@@ -298,7 +298,10 @@ class TestCasesAreNeverStranded(TestCase):
         a page that loaded before `review` was taken away cannot hand the case over."""
         target = make_admin('reviewer', owning_org=self.org)
         stale = PartnerAdmin.objects.get(pk=target.pk)          # holds `review` in memory
-        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'qc']).status_code, 200)
+        # TD-622 (sprint LABELS): the editor keeps a Reviewer on `review` or `qc`, and `qc` brings `see_all`,
+        # so the editor can no longer leave a Reviewer unable to hold a case; the row is changed directly
+        # to a set with neither key, which is what the re-read must see.
+        PartnerAdmin.objects.filter(pk=target.pk).update(permissions=['spending'])
         app = make_application('profile_complete', cohort=self.cohort)
         with self.assertRaises(AssignmentError) as caught:
             assign_reviewer(app, reviewer=stale, by_admin=self.org_admin)
@@ -463,7 +466,11 @@ class TestPeopleChipsAndPause(TestCase):
 
     def test_pausable_follows_the_pause_endpoint(self):
         client = authed_client(self.org_admin)
-        for target, expect in ((self.rohini, True), (self.fin, True), (self.checker, False)):
+        # TD-622 (sprint LABELS, declared): `checker` holds `see_all`, so they can hold a case and are
+        # pausable (was refused by the label). Everyone the Reviewers table lists holds `review` or `qc`
+        # (`would_leave_people`), so every row here is pausable; `set_paused` still refuses a set with
+        # neither key ('not_reviewable').
+        for target, expect in ((self.rohini, True), (self.fin, True), (self.checker, True)):
             detail = client.get(f'/api/v1/admin/reviewers/{target.pk}/').json()
             self.assertEqual(detail['pausable'], expect, target.permissions)
             r = client.post(f'/api/v1/admin/reviewers/{target.pk}/pause/', {'paused': True},

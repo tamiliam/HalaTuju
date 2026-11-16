@@ -350,9 +350,9 @@ class TestFenceCoverageCompleteness(TestCase):
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only
         # through `application_id__in=scope`, never from their own managers.
-        # ⚠ ROLE SHAPING IS A SECOND GATE, and it is why this entry is not plain 'org-fenced'.
-        # The KEY SET IS CHOSEN SERVER-SIDE from `SECTIONS_BY_ROLE`, so reviewer/qc/finance never
-        # receive a key they may not read on Applications/Payments/Spending — a reviewer's payload
+        # ⚠ KEY SHAPING IS A SECOND GATE, and it is why this entry is not plain 'org-fenced'.
+        # The KEY SET IS CHOSEN SERVER-SIDE from each section's keys (`SECTION_KEYS`, TD-621), so nobody
+        # receives a key they may not read on Applications/Payments/Spending — a reviewer's payload
         # has no money key to hide, and a finance admin's has no funnel. A page that fetched
         # everything and rendered a subset would be a side door into pages the menu withholds.
         # `test_the_key_set_per_role_is_exact` pins it; `partner` (no sections at all) is 403.

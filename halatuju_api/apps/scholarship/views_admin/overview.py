@@ -22,14 +22,14 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 class AdminProgrammeOverviewView(_AdminBase):
     """GET /api/v1/admin/scholarship/programme-overview/ — "how is this gift doing?"
 
-    The page a person lands on after clicking a gift card. **Open to every console role and
-    SHAPED by role**: a reviewer lands on their own cases, a QC on their queue, a finance admin
-    on the money, an org admin on all of it. Everything is computed by `programme_overview`,
-    which holds the organisation fence.
+    The page a person lands on after clicking a gift card. **Open to every console key and
+    SHAPED by keys** (TD-621): `review` lands on their own cases, `qc` on their queue, a money key
+    on the money, `see_all` at Admins on the applicant widgets; the presets read as before.
+    Everything is computed by `programme_overview`, which holds the organisation fence.
 
     ⚠⚠ **THERE ARE TWO GATES HERE, AND THE SECOND IS NOT COSMETIC.** The first is the ORG FENCE
     (`programme_overview.application_scope`, re-asserted per query inside that module). The second
-    is ROLE SHAPING: `SECTIONS_BY_ROLE` decides SERVER-SIDE which keys are built at all, so a
+    is KEY SHAPING: `programme_overview.SECTION_KEYS` decides SERVER-SIDE which keys are built at all, so a
     reviewer's response has no money key to hide and a finance admin's has no funnel. The menu
     already withholds Payments and Spending from reviewer/qc; an Overview that served their
     figures anyway would have made that withholding decorative.
@@ -39,9 +39,9 @@ class AdminProgrammeOverviewView(_AdminBase):
     finance gets TOTALS — committed, paid, remaining, spent, by month, by category — and never a
     name, a file or a verdict, because none of those is in a section it is given.
 
-    ⚠ **A ROLE WITH NO SECTIONS IS REFUSED, NOT SERVED AN EMPTY PAGE.** `partner` is the one such
-    role today (a referral organisation is attribution, never a scope). A future role added to
-    `ROLE_CHOICES` without a decision in `SECTIONS_BY_ROLE` lands here too — a 403 is a question
+    ⚠ **A READER WITH NO SECTIONS IS REFUSED, NOT SERVED AN EMPTY PAGE.** Partners, sources, mentors
+    and members hold no key (a referral organisation is attribution, never a scope). A future section
+    or key set with no decision in `SECTION_KEYS` lands here too — a 403 is a question
     somebody answers, an empty page is a bug nobody notices.
 
     ⚠ A SUPER GETS `spend_report.ALL_ORGS`, the same platform scope the Spending and
@@ -50,8 +50,8 @@ class AdminProgrammeOverviewView(_AdminBase):
     you". An `org_admin` with no organisation is still `no_org`: that is a broken account, not a
     scope.
 
-    tenancy: org-fenced in `programme_overview.application_scope`; role-shaped by
-    `SECTIONS_BY_ROLE`. Classified in test_org_fence.py.
+    tenancy: org-fenced in `programme_overview.application_scope`; key-shaped by
+    `SECTION_KEYS` (TD-621). Classified in test_org_fence.py.
     """
 
     def get(self, request):

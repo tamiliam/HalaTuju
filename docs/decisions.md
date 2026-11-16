@@ -1,5 +1,48 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — LABELS builder calls (pending architect): the Overview and the case holder follow the keys
+
+Branch labels, not pushed. No migration. Services: api. Debt: TD-621, TD-622 (built), TD-632 (note).
+Every standard preset answers as before (`test_labels_preset_pins.py`, written and green on the base commit);
+each hand-granted move is declared in `test_labels_key_moves.py`.
+
+1. **Graduation-message review: stopped, not retired (item 1).** The brief said to stop if anything still needs the
+   moderation step. It does: the review POST is the only caller of `in_programme.approve_graduation_message`, the
+   only way a thank-you goes from pending to approved, and the sponsor page shows approved messages only.
+   Retiring it would leave every new thank-you pending for ever. No code changed; note under TD-632. The
+   architect decides who approves a thank-you (a key on the step, or no moderation) before it can go.
+2. **The Overview: one rule over each section's keys (item 2, TD-621).**
+   - **Money widgets open on `spending` or any `payments.*` key.** Finance's preset holds only
+     `payments_approve`, so this keeps its existing widening (2026-09-15) and reads it from the key. Not taken:
+     reading `LEAD_MONEY_UNTIL_M4`, because nothing gates on it before M4.
+   - **The applicant widgets open on `see_all` held at Admins** (`staff_tables.in_admins`). QC's preset holds
+     `see_all` but sits at Reviewers, and its Overview stays its queue page; the same Admins rule already drops
+     QC's `see_all` from its admin keys. Once a QC person is seated at Admins (given `spending` or `scholars`), the
+     `see_all` they hold counts and the widgets open (declared).
+   - **The `qc` and `mine` pages are a team member's** (`staff_tables.team_member`, the kind of account). A super
+     holds every key and the organisation admin may hold `review` or `qc`; both keep the five widgets only, as
+     before. Read as "a super gets every section": every widget, no personal page. Not taken: "pages only when
+     no widget opens", which would take the queue page from a reviewer also given `see_all` and `spending` (a
+     live shape), and `has_perm('manage_team')`, which the A10 scan counts as a lead read.
+   - **Partner, source, mentor and member hold no keys**, so the empty-sections 403 refuses them; no kind rule.
+   - **Declared moves (hand-granted only):** an admin invited since T2 (`see_all`, `scholars` and its pages, no
+     money key) LOSES the money widgets until a money key is ticked (the top call to confirm: the Overview must
+     not hand over what the menu withholds); an admin without `see_all` loses the applicant widgets; a reviewer
+     given `see_all` and `spending` gains the five widgets and keeps `mine`; reviewer + `spending` gains the
+     money; finance + `review` gains `mine`; finance + `see_all` gains the applicant widgets; an admin given
+     `review` gains `mine`; QC + `review` gets both pages; an organisation admin whose list has a payments key
+     but no `spending` keeps the money.
+3. **Who may hold a case: `review` or `see_all` (item 3, TD-622).** `see_all` is the key that lets the target
+   open the case (`_b40_scope`), so the rule no longer needs the R1 roles and every preset answers as before.
+   `may_assign_to` and TD-613's rules are unchanged. The super's picker lists supers and organisation admins by
+   kind and team members by either key. **Declared moves:** Finance given `see_all` or `qc`, and a Reviewer-label
+   row with `see_all` but no `review`, can hold a case (a super can give one to whoever also sits in Reviewers);
+   team rows with neither key leave the picker (they could never be picked; the web already names a holder the
+   list lacks). Pause and interview slots read the same rule and follow. So does TD-613's `needs_new_holder`: a
+   Reviewer whose `review` was swapped for `qc` (the editor keeps a Reviewer on `review` or `qc`, and `qc` brings
+   `see_all`) keeps a reopened case and is pausable, where before the case needed a new holder. The editor
+   can therefore no longer leave a Reviewer unable to hold a case.
+
 ## 2026-11-16 — Owner ruling: the debt register keeps a band (ceiling 150, floor 100)
 
 - **Rule:** open entries in docs/technical-debt.md (code_health "td_open") stay inside a band: ceiling 150, floor 100. Bring the count down to 100, then hold it there; never let it climb back to 150.
