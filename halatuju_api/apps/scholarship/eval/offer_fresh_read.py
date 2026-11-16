@@ -103,9 +103,8 @@ from apps.scholarship.eval.offer_fresh_gemini import (
     package_sha, sha256_text, usage_of, usd_to_myr)
 
 __all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
-           'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code',
-           'guarded_production_read', 'image_tokens_estimate', 'price_for', 'usage_of',
-           'usd_to_myr', 'read_letters', 'estimate', 'compare', 'main']
+           'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code', 'guarded_production_read',
+           'image_tokens_estimate', 'price_for', 'usage_of', 'usd_to_myr', 'read_letters', 'estimate', 'compare', 'main']
 
 FRESH_SUFFIX = '.fresh.json'
 #: The readers this tool knows: `current` = S3's page-1 reader (caches only), `new` = S4's reader.
@@ -579,22 +578,23 @@ def main(argv=None, *, client_factory=None, out=print):
     if args.reader not in PAID_READERS:
         out(f"--reader {args.reader} is S3's cache only: this checkout cannot run that reader.")
         return 2
+    from apps.scholarship.profile_engine import MODEL_CASCADE
+    if unpriced := [m for m in MODEL_CASCADE if price_for(m) is None]:   # refuse BEFORE any paid call
+        return out(f'STOP: no price row for {", ".join(unpriced)} - cost cannot be measured; add it to PRICES. Nothing read.') or 2
+    from django.conf import settings
+    if not getattr(settings, 'GEMINI_API_KEY', ''):
+        return out('GEMINI_API_KEY is not set - nothing read.') or 2
     if client_factory is None:
         from google import genai
         client_factory = genai.Client
-    from django.conf import settings
-    if not getattr(settings, 'GEMINI_API_KEY', ''):
-        out('GEMINI_API_KEY is not set - nothing read.')
-        return 2
-    code, _ = read_letters(args.eval_dir, keys, client_factory=client_factory, force=args.force, out=out,
-                           suffix=args.suffix or READERS[args.reader], max_usd=args.max_usd)
-    return code
+    return read_letters(args.eval_dir, keys, client_factory=client_factory, force=args.force, out=out,
+                        suffix=args.suffix or READERS[args.reader], max_usd=args.max_usd)[0]
 
 
 if __name__ == '__main__':
     _argv = sys.argv[1:]
+    _env = next((_argv[i + 1] for i, a in enumerate(_argv[:-1]) if a == '--env-file'), DEFAULT_ENV_FILE)
     if not any(a in _argv for a in ('--compare', '--costs', '--dry-run')):
-        load_gemini_key(next((_argv[i + 1] for i, a in enumerate(_argv[:-1]) if a == '--env-file'),
-                             DEFAULT_ENV_FILE))
+        load_gemini_key(_env)
     bootstrap_django()
     sys.exit(main(_argv))

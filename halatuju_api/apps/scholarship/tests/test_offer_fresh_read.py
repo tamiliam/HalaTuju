@@ -365,8 +365,9 @@ class TestNewReader(SimpleTestCase):
         self.assertIn("S3's cache only", lines[-1])
 
     def test_compare_and_costs_put_current_beside_new(self):
-        rc = fr.main(['--eval-dir', self.c.dir, '--split-file', self.split, '--keys', 'offer_letter__a1__d11'],
-                     client_factory=FakeGemini([_resp(prompt=9000, out=300, think=1200)]), out=lambda *_: None)
+        with mock.patch.dict(fr.PRICES, {FIRST: fr.PRICES['gemini-2.5-flash']}):   # stand-in: the run needs a priced cascade
+            rc = fr.main(['--eval-dir', self.c.dir, '--split-file', self.split, '--keys', 'offer_letter__a1__d11'],
+                         client_factory=FakeGemini([_resp(prompt=9000, out=300, think=1200)]), out=lambda *_: None)
         self.assertEqual(rc, 0)
         import shutil
         k = 'offer_letter__a1__d11'
@@ -411,6 +412,19 @@ class TestCostCap(SimpleTestCase):
                                          out=lines.append, versions=VERSIONS, max_usd=0.0001)
             self.assertEqual((code, len(done)), (fr.EXIT_STOPPED, 1))
             self.assertTrue(any(line.startswith('STOP: the run has cost') for line in lines))
+
+    def test_main_refuses_before_any_call_when_a_cascade_model_has_no_price(self):
+        """No --max-usd, 3.8 Flash unpriced: the tool stops with a non-zero exit before ANY call."""
+        with tempfile.TemporaryDirectory() as root:
+            _Corpus(root).letter('offer_letter__a1__d11', ext='png')
+            fake, lines = FakeGemini([_resp(), _resp()]), []
+            with mock.patch.dict(fr.PRICES, {}, clear=False):
+                fr.PRICES.pop(FIRST, None)
+                code = fr.main(['--eval-dir', root, '--keys', 'offer_letter__a1__d11'],
+                               client_factory=fake, out=lines.append)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(fake.log, [])
+            self.assertTrue(any('no price row' in line and FIRST in line for line in lines))
 
     def test_a_cap_it_cannot_price_stops_the_run(self):
         """An unpriced model counts as US$0, so the cap would never trip: stop after the first
