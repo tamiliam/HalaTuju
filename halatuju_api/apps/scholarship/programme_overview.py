@@ -54,7 +54,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.courses import staff_tables
+from apps.courses.public import staff_tables
 
 from . import payments, spend_report, surface_gates
 from .spending_import import TX_SPEND
