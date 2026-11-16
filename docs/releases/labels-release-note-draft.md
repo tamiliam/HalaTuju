@@ -27,8 +27,9 @@ Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending archit
 - **Review round:**
   - A QC person given another permission (Spending, Payments, Scholars or a page) no longer sees the applicant
     boxes; they see only what that permission opens (Spending or Payments: the money boxes).
-  - A Reviewer holding a case can now be switched from Review to QC (they can still open the case). Taking both
-    Review and "see every application" from someone holding a case is still refused.
+  - A Reviewer holding a case can now be switched from Review to QC (they can still work the case). Any change
+    that would leave someone holding a case unable to work it is still refused, including taking Review from
+    an Admin or organisation admin who keeps "see every application".
   - Pause is offered only to people a case could be given to. Nobody sees a different screen: the Reviewers page
     and the pause card already showed only them.
   - **Fix:** a super could give a case to a reviewer in another organisation, who could then not open it. That
@@ -36,7 +37,7 @@ Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending archit
 
 ## Not changed
 
-- No migration, no environment variable, no money path, no web change.
+- No migration, no environment variable, no money path. The web changes one test only (no screen moves).
 - Graduation thank-you messages still need approving before a sponsor sees them. That screen stays.
 
 ## Known limits
@@ -45,7 +46,7 @@ Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending archit
 
 ## Deploy
 
-Services: api. Migration: none. Publish in a release window with the owner's yes.
+Services: both (the web part is a test only). Migration: none. Publish in a release window with the owner's yes.
 
 ## Phone check (owner, after live)
 

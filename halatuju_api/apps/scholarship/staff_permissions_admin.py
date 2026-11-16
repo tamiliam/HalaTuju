@@ -14,8 +14,8 @@ admin's set (`ORG_ADMIN_SET`) only when it opens for them too (`not_held`). `rev
 and `award_withdraw_request` are outside that set and stay exempt, as before (decisions.md "M3c").
 
 ⚠ A CHANGE MAY NOT STRAND A CASE (the S3 as-built notes). Somebody holding in-play cases keeps a key
-that lets them hold one (`services.is_review_target`: `review` or `see_all`, which `qc` brings; sprint
-LABELS review round). Read under the target's ROW LOCK, and `assign_reviewer`
+that lets them work it (`services.works_cases`, TD-613's rule: in Reviewers and holding `review` or
+`see_all`, which `qc` brings; sprint LABELS review rounds). Read under the target's ROW LOCK, and `assign_reviewer`
 re-reads its target under the same lock, so an assignment racing a removal is serialised (TD-382
 class): whichever commits second sees the first.
 
@@ -244,31 +244,35 @@ def _refuse_target(target, by):
             f"{target.name}'s access is revoked. Restore them before changing what they can do.")
 
 
-def _holds_cases_with(target, keys):
-    """Could ``target`` HOLD a case if their row held ``keys`` (`services.is_review_target`: `review` or
-    `see_all`, which `qc` brings)? Asked of a copy; nothing is saved."""
-    from .services import is_review_target
+def _case_powers(target, keys):
+    """What ``target`` could do with a held case if their row held ``keys``, asked of a copy (nothing
+    saved): (WORK it, TD-613's own rule `services.works_cases`; OPEN it, `services.is_review_target`)."""
+    from .services import is_review_target, works_cases
     shadow = copy.copy(target)
     shadow.permissions = [k for k in keys if isinstance(k, str)]
-    return is_review_target(shadow)
+    return works_cases(shadow, seated=True), is_review_target(shadow)
 
 
 def _refuse_stranding(target, before, after):
     """Keep somebody holding in-play cases able to open and work them (see the module docstring).
 
-    Sprint LABELS review round: the ONE question is the holder's (`is_review_target` on the set the edit
-    would leave), so a change is refused only when it takes someone who could hold a case to a set with
-    neither `review` nor `see_all`. Swapping `review` for `qc` keeps the case: `qc` brings `see_all`."""
+    Sprint LABELS review rounds: refused when the edit takes away a power the holder has over the case:
+    WORKING it (TD-613's rule, `holder_can_review`'s `works_cases`: in Reviewers and a review target) or
+    OPENING it (`is_review_target`: `review` or `see_all`). Swapping `review` for `qc` keeps both (`qc`
+    seats a Reviewer and brings `see_all`); dropping `review` from an Admin or an organisation admin who
+    keeps `see_all` takes the first (they leave Reviewers). An edit to someone who already could not work
+    the case (TD-613 offers it to a new holder) is refused only if it would stop them opening it."""
     from . import staff_lifecycle
-    if _holds_cases_with(target, after) or not _holds_cases_with(target, before):
+    was, now = _case_powers(target, before), _case_powers(target, after)
+    if not any(b and not a for b, a in zip(was, now)):
         return
     n = staff_lifecycle.open_cases(target)
     if n:
-        what = '"Review assigned students"' if 'review' in before else '"See all students"'
+        what = '"Review assigned students"' if 'review' not in after and 'review' in before else '"See all students"'
         raise PermissionChangeRefused(
             'has_open_cases', 409,
             f'{target.name} has {n} open case(s) assigned. Taking away {what} would leave them '
-            'unable to open those cases, so hand the cases to someone else first.', open_cases=n)
+            'unable to work those cases, so hand the cases to someone else first.', open_cases=n)
 
 
 def _others_hold(target, key):

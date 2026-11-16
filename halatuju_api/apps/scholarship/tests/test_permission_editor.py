@@ -20,7 +20,7 @@ from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import payments
 from apps.scholarship.models import PaymentRun, StaffPermissionChange
-from apps.scholarship.services import AssignmentError, assign_reviewer
+from apps.scholarship.services import AssignmentError, assign_reviewer, holder_can_review, needs_new_holder
 from apps.scholarship.tests import test_payment_endpoints as pe
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
@@ -294,11 +294,35 @@ class TestCasesAreNeverStranded(TestCase):
                              (409, 'has_open_cases', 1))
             self.assertIn('Review assigned students', r.json()['error'])
         self.assertEqual(_fresh(target).permissions, before)
-        # Swapping `review` for `see_all` still lets them open the case: allowed (was 409).
-        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'spending']).status_code, 200)
         # Adding to the set strands nothing.
         self.assertEqual(_patch(self.org_admin, target, ['see_all', 'spending', 'review']).status_code,
                          200)
+
+    def test_an_admin_dropping_review_but_keeping_see_all_is_refused(self):
+        # LABELS review round 2: `see_all` still OPENS the case, but out of Reviewers they could no longer
+        # WORK it (TD-613's `holder_can_review`), so the case would need a new holder.
+        target = make_admin('admin', owning_org=self.org, permissions=['see_all', 'review'])
+        before = _fresh(target).permissions
+        app = make_application('assigned', reviewer=target, cohort=self.cohort)
+        r = _patch(self.org_admin, target, ['see_all'])
+        self.assertEqual((r.status_code, r.json()['code'], r.json()['open_cases']),
+                         (409, 'has_open_cases', 1))
+        self.assertIn('Review assigned students', r.json()['error'])
+        self.assertEqual(_fresh(target).permissions, before)
+        self.assertTrue(holder_can_review(_fresh(target)))
+        self.assertFalse(needs_new_holder(app))
+
+    def test_an_org_admin_dropping_review_but_keeping_see_all_is_refused(self):
+        lead = make_admin('org_admin', owning_org=self.org, uid='strand-lead',
+                          permissions=['see_all', 'review'])
+        app = make_application('assigned', reviewer=lead, cohort=self.cohort)
+        self.assertTrue(holder_can_review(_fresh(lead)))
+        boss = make_admin('super', uid='strand-boss')
+        r = _patch(boss, lead, ['see_all'])
+        self.assertEqual((r.status_code, r.json()['code'], r.json()['open_cases']),
+                         (409, 'has_open_cases', 1), r.content[:300])
+        self.assertIn('review', _fresh(lead).permissions)
+        self.assertFalse(needs_new_holder(app))
 
     def test_removing_see_all_from_an_admin_holding_a_case_is_refused_unless_review_stays(self):
         target = make_admin('admin', owning_org=self.org)

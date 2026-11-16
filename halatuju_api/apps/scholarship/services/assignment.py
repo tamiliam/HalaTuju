@@ -225,6 +225,13 @@ _UNASSIGN_BLOCKED_STATUSES = frozenset({
 ASSIGNABLE_STATUSES = frozenset({'profile_complete', 'interviewing'})
 
 
+def works_cases(admin, *, seated=False):
+    """TD-613's ONE rule for working a case: in Reviewers and a review target. `holder_can_review` asks it
+    past its activity test; the permission editor asks it of the set an edit would leave, ``seated`` (a
+    suspension alone never reads as "cannot work it"), sprint LABELS review round 2."""
+    return _in_reviewers(admin, seated=seated) and is_review_target(admin)
+
+
 def holder_can_review(admin):
     """TD-613: can the person HOLDING a case still work it? Active (an archived row is never active,
     and `archived_at` is asked too), and a super, or in Reviewers and a review target. A PAUSED holder
@@ -233,7 +240,7 @@ def holder_can_review(admin):
         return False
     if admin.is_super:
         return True
-    return _in_reviewers(admin) and is_review_target(admin)
+    return works_cases(admin)
 
 
 def _holder_gone_for_good(admin):

@@ -20,11 +20,17 @@
  * picker no longer re-derives the rule — it reads the flag, and falls back to the old role rule only
  * for a payload without it. `REVIEW_ROLES` became `review` + `R1_SUPER_TARGET_ROLES` (the super's
  * override, roadmap R1); this file reads both from the api, as before.
+ *
+ * ⚠ SPRINT LABELS (TD-622): `R1_SUPER_TARGET_ROLES` is gone. Who could HOLD a case — and so who the
+ * super's list carries — is the KEY rule `services.is_review_target` (`review` or `see_all`), listed by
+ * `AdminAssignableAdminsView` as the super and organisation admin kinds plus team members holding those
+ * keys. This file reads that rule, the list's query and the api's `PRESETS`, and derives the roles from
+ * them, so a preset or a key moved on either side still fails here.
  */
 import { ORG_REJECT_FROM, canOrgReject, assignOptions } from '@/lib/officerCockpit'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { ROLE_NAMES } from '@/lib/navigation'
-import { pySeq, readApi } from '@/test/apiSource'
+import { pyDictOfSeqs, pySeq, readApi } from '@/test/apiSource'
 import { DOOR_KEYS } from '@/lib/pageDoors'
 
 /**
@@ -34,7 +40,7 @@ import { DOOR_KEYS } from '@/lib/pageDoors'
  */
 const SERVICES = [
   'apps/scholarship/services/decline.py',      // ORG_REJECT_FROM
-  'apps/scholarship/services/assignment.py',   // R1_SUPER_TARGET_ROLES, may_assign_to
+  'apps/scholarship/services/assignment.py',   // is_review_target, may_assign_to
 ]
 /**
  * ⚠ `views_admin.py` became the PACKAGE `views_admin/` at code health H11/H12, and the two gates
@@ -50,9 +56,28 @@ const servicesSrc = SERVICES.map(readApi).join('\n')
 const viewsSrc = VIEWS.map(readApi).join('\n')
 
 const backendRejectFrom = pySeq(servicesSrc, 'ORG_REJECT_FROM')
-/** Who could be given a case before #39: the `reviewer` preset (which holds `review`), a super, and
- *  the R1 override's roles — the list a super was offered, read from the api. */
-const reviewRoles = ['reviewer', 'super', ...pySeq(servicesSrc, 'R1_SUPER_TARGET_ROLES')]
+/** The api's rule for who may HOLD a case (TD-622: by keys, no longer the R1 roles). */
+const holdRule = pyFunc(servicesSrc, 'is_review_target')
+const holdKeys = [...holdRule.matchAll(/admin\.has_perm\('([a-z_]+)'\)/g)].map((m) => m[1])
+/** The list endpoint's query: the two kinds of account it lists by role, and the keys it lists team
+ *  members by — the same keys as the rule, asserted below. */
+const listSrc = readApi('apps/scholarship/views_admin/lifecycle.py')
+const listedKinds = pySeqInline(listSrc, /role__in=\[([^\]]*)\]/)
+const listedKeys = pySeqInline(listSrc, /team_holding\(\(([^)]*)\)\)/)
+/** Who could be given a case on the super's list, by preset: the kinds above, and every team preset
+ *  holding one of the rule's keys (`staff_permissions.PRESETS`, read from the api). */
+const presets = pyDictOfSeqs(readApi('apps/courses/staff_permissions.py'), 'PRESETS')
+const reviewRoles = [
+  ...listedKinds,
+  ...Object.keys(presets).filter((role) => presets[role].some((k) => holdKeys.includes(k))),
+]
+
+/** The string literals inside the first match of ``pattern``'s group in ``src`` (exactly one match). */
+function pySeqInline(src: string, pattern: RegExp): string[] {
+  const all = [...src.matchAll(new RegExp(pattern.source, 'g'))]
+  if (all.length !== 1) throw new Error(`drift test: expected one ${pattern} in the list view, found ${all.length}`)
+  return [...all[0][1].matchAll(/'([^']*)'/g)].map((m) => m[1])
+}
 
 /** The body of a top-level api function, for reading a rule that lives in code. */
 function pyFunc(src: string, name: string): string {
@@ -77,6 +102,16 @@ describe('parse sanity — the api rules were really found', () => {
   test('the review targets read as real admin roles', () => {
     expect(reviewRoles.length).toBeGreaterThanOrEqual(4)
     expect(reviewRoles.filter((r) => !ROLE_NAMES.includes(r as never))).toEqual([])
+  })
+
+  test('TD-622: who may hold a case is a key rule, and the super\'s list reads the same keys', () => {
+    expect(holdRule).toMatch(/return admin\.has_perm\('review'\) or admin\.has_perm\('see_all'\)\s*$/)
+    expect(holdKeys).toEqual(['review', 'see_all'])
+    expect([...listedKeys].sort()).toEqual([...holdKeys].sort())
+    expect([...listedKinds].sort()).toEqual(['org_admin', 'super'])
+    // The standard presets this yields: the five the super was offered before, Finance never.
+    expect([...reviewRoles].sort()).toEqual(['admin', 'org_admin', 'qc', 'reviewer', 'super'])
+    expect(servicesSrc).not.toMatch(/R1_SUPER_TARGET_ROLES\s*=/)
   })
 })
 

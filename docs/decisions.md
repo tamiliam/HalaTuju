@@ -2,7 +2,7 @@
 
 ## 2026-11-16 — LABELS builder calls (pending architect): the Overview and the case holder follow the keys
 
-Branch labels, not pushed. No migration. Services: api. Debt: TD-621, TD-622 (built), TD-632 (note).
+Branch labels, not pushed. No migration. Services: both (api; web test only, review round 2). Debt: TD-621, TD-622 (built), TD-632 (note).
 Every standard preset answers as before (`test_labels_preset_pins.py`, written and green on the base commit);
 each hand-granted move is declared in `test_labels_key_moves.py`.
 
@@ -51,8 +51,15 @@ each hand-granted move is declared in `test_labels_key_moves.py`.
      key) until a money key is ticked. The owner was told and accepted it under "permissions decide". Pinned.
    - **A Reviewer label holding only `qc` (stored `see_all` + `qc`) is a valid holder:** it can be given a case,
      hold one, and pause. Declared.
-   - **Open cases block an edit only when the holder could no longer hold them:** `_refuse_stranding` asks
-     `is_review_target` on the set before and after. A Reviewer may swap `review` for `qc` with a case open.
+   - **Open cases block an edit that takes away the holder's power over them (corrected in review round 2):**
+     `_refuse_stranding` asks, on the set before and after, TD-613's own rule for WORKING a case
+     (`services.works_cases`, shared with `holder_can_review`: in Reviewers and `is_review_target`, a suspended
+     row read as a Restore would seat it) and the older rule for OPENING it (`is_review_target`). It refuses
+     when the edit loses either. A Reviewer may swap `review` for `qc` with a case open (`qc` seats them in
+     Reviewers and brings `see_all`). An Admin or an organisation admin with `see_all` + `review` may not drop
+     `review` (round 1 asked only `is_review_target` and let it through, stranding the case). Someone who
+     already could not work a case (an old R1 Admin holder, offered to a new holder by TD-613) is refused only
+     an edit that would stop them opening it, so unrelated edits to them still save.
    - **Pause follows hand-a-case eligibility** (`services.may_pause`: in Reviewers and `is_review_target`), the
      same rule as `may_hand_to` for the target. The Admin preset, an organisation admin outside Reviewers and a
      super are no longer pausable through `set_paused`; none was ever listed on the Reviewers page or offered

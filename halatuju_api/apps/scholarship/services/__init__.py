@@ -79,7 +79,7 @@ from .ready_profiles import (
 from .assignment import (
     ASSIGNABLE_STATUSES, _UNASSIGN_BLOCKED_STATUSES, _can_review,
     assign_reviewer, holder_can_review, is_assignable, is_review_target, may_assign_to, may_hand_to, may_pause,
-    may_unassign, needs_new_holder, reconcile_income_route, set_paused, switch_income_route,
+    may_unassign, needs_new_holder, works_cases, reconcile_income_route, set_paused, switch_income_route,
     unassign_refusal,
 )
 from .query_emails import (
