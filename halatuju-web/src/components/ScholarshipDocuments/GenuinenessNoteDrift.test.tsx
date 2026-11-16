@@ -14,4 +14,8 @@ describe('GenuinenessNote — the backend codes it keys on', () => {
     }
     expect(readApi('apps/scholarship/genuineness/bands.py')).toContain("FINAL_OWED = 'final_owed'")
   })
+
+  test('the sample code is the backends own', () => {
+    expect(readApi('apps/scholarship/genuineness/sample_stamp.py')).toContain("SAMPLE_DOC_SEEN = 'sample_document'")
+  })
 })

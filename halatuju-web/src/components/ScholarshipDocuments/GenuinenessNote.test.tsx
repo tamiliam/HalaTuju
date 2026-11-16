@@ -10,7 +10,7 @@
  * The DRIFT half (the `doc_seen` codes and `final_owed` are the backend's own) is `GenuinenessNoteDrift.test.tsx`.
  */
 import { render, screen } from '@testing-library/react'
-import { GenuinenessNote, genuinenessNoteKey } from './checklists'
+import { GenuinenessNote, ICChecklist, genuinenessNoteKey } from './checklists'
 import type { ApplicantDocument } from '@/lib/api'
 import enMessages from '@/messages/en.json'
 import msMessages from '@/messages/ms.json'
@@ -65,5 +65,28 @@ describe('GenuinenessNote — an offer letter (offer exact-read S6, owner ruling
       expect(g.offerNotOffer).toBeTruthy()
       expect(g.offerNotOffer).not.toContain(blocked)
     }
+  })
+})
+
+describe('GenuinenessNote — an uploaded sample (H9)', () => {
+  test('a sample says so for every type, an offer letter included, in plain words', () => {
+    for (const docType of ['str', 'offer_letter', 'salary_slip']) {
+      expect(genuinenessNoteKey('sample_document', docType, `not_${docType}`)).toBe('scholarship.docs.genuineness.sampleDoc')
+    }
+    expect(enMessages.scholarship.docs.genuineness.sampleDoc).toBe(
+      'This looks like a sample, not your real document. Please upload your own.')
+  })
+
+  test('the IC checklist says sample, not "not a real MyKad", for a flagged sample', () => {
+    const ic = (seen: string) => ({
+      id: 1, doc_type: 'ic', vision_run_at: '2026-11-01T09:00:00Z', vision_nric: '', vision_name: '',
+      vision_nric_verdict: '', vision_name_verdict: '',
+      authenticity: { status: 'not_ic', reason: '', doc_seen: seen },
+    }) as unknown as ApplicantDocument
+    const { unmount } = render(<ICChecklist doc={ic('sample_document')} t={t} />)
+    expect(screen.getByText('scholarship.docs.genuineness.sampleDoc')).toBeTruthy()
+    unmount()
+    render(<ICChecklist doc={ic('')} t={t} />)
+    expect(screen.getByText('scholarship.docs.icCheck.notGenuine')).toBeTruthy()
   })
 })

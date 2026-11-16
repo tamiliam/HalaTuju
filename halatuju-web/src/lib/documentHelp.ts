@@ -50,6 +50,8 @@ export const HELP_VERDICTS = [
   'income_rel_doc_unreadable',
   // STR document is out of date (older year / not approved) — STR is awarded annually.
   'str_not_current',
+  // H9: the upload is one of our sample drawings (or stamped SAMPLE / CONTOH), not a real document.
+  'sample_document',
   // #374's `income_doc_needs_approver` has NO fallback copy (bundle budget): with the AI off it falls
   // to the generic note, and the consent checklist carries the sign-and-stamp ask word for word.
 ] as const
@@ -63,7 +65,21 @@ export const HELP_VERDICTS = [
  * `str_check`, …), so there is one set of facts and two renderings of it. Used to gate the network
  * call as well, so good/unchecked docs never hit the endpoint.
  */
+/** H9: the verdicts where "See a sample" helps the student fix the upload: the wrong kind of document,
+ *  one we could not read, a photo too skewed to read, an STR that is not the current one. Never on a
+ *  good document, and not on the sample-upload verdict itself. */
+const SAMPLE_VERDICTS = new Set(['wrong_doc', 'unreadable', 'slip_skewed_unclear', 'str_not_current'])
+export function wantsSample(verdict: string | undefined): boolean {
+  return !!verdict && SAMPLE_VERDICTS.has(verdict)
+}
+
+/** H9: the server flagged this upload as a stamped sample (stored on the read's authenticity). */
+export function isSampleUpload(doc: ApplicantDocument): boolean {
+  return !!doc.vision_fields?.authenticity?.sample
+}
+
 export function shouldShowCoach(doc: ApplicantDocument): boolean {
+  if (isSampleUpload(doc)) return true
   // Third results route S3b (D13): the higher-results card speaks in fixed notes with one link
   // each (`HigherResultsNote`), never the AI coach — the server's help verdict is '' for it too.
   if (doc.doc_type === 'higher_results') return false
@@ -238,6 +254,7 @@ export function helpSignal(doc: ApplicantDocument): string {
   return [
     doc.vision_run_at || '',
     doc.vision_fields?.student_verdict || '',
+    isSampleUpload(doc) ? 'sample' : '',
     doc.vision_name_match || '',
     doc.vision_address_match || '',
     // Results slip / offer letter: the check can change when the student edits their

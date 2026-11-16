@@ -94,6 +94,7 @@ def _read_copy(app, doc):
     convert_heic_to_jpeg(doc)
     # S13 + S17: auto-run Vision OCR on IC uploads (student's IC OR the
     # parent/guardian IC for minor consent). Soft signal — never blocks.
+    ocr = None
     if doc.doc_type in ('ic', 'parent_ic'):
         from .vision import run_vision_for_document
         run_vision_for_document(doc)
@@ -140,6 +141,19 @@ def _read_copy(app, doc):
     elif doc.doc_type in TEXT_READ_DOC_TYPES:
         from . import vision as _vision
         _vision.read_text_document(doc)
+    _check_sample(doc, ocr)
+
+
+def _check_sample(doc, ocr=None):
+    """H9: an uploaded SAMPLE (stamped SAMPLE / CONTOH / SPECIMEN) is flagged not genuine, so it
+    follows the existing wrong-document path. Types with no read (photo, letters) are not checked."""
+    from .genuineness import sample_stamp
+    if doc.doc_type in ('ic', 'parent_ic'):
+        from . import vision as _vision
+        image = _vision._fetch_image_bytes(doc.storage_path)
+        sample_stamp.check_uploaded_sample(doc, image)
+    elif ocr and ocr.get('image'):
+        sample_stamp.check_uploaded_sample(doc, ocr['image'], text=ocr.get('text') or '')
 
 
 def _align_name_after_promotion(doc):

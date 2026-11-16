@@ -334,6 +334,9 @@ def doc_match_verdict(doc):
     """
     dt = doc.doc_type
 
+    from .genuineness.sample_stamp import is_sample_flagged
+    if is_sample_flagged(doc):                       # H9: a stamped sample is never accepted
+        return 'mismatch'
     if dt == 'higher_results':                       # third route S3a (D13: a note never blocks)
         return _higher_match_verdict(doc)
     check = DOC_MATCH_CHECKS.get(dt)

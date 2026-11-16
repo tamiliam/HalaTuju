@@ -98,6 +98,10 @@ JOBS = [
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
      'module': 'apps/scholarship/genuineness/supporting_doc.py'},
+    {'key': 'sample_stamp', 'label': 'Is this upload a stamped sample document',   # H9
+     'seam': SEAM_JSON, 'provider': GEMINI,
+     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',
+     'module': 'apps/scholarship/genuineness/sample_stamp.py'},
     {'key': 'income_approval', 'label': 'Who approved this informal income document',   # #374 / ruling 2A
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',

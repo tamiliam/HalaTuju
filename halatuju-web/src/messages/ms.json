@@ -1465,6 +1465,7 @@
           "ic_nric_misread": "Nama pada IC anda sepadan, tetapi nombor IC tidak sepadan dengan yang ada pada akaun anda — biasanya disebabkan digit tersilap baca. Muat naik gambar yang jelas dan lurus tanpa silau pada nombor. Jika masih tidak sepadan, semak nombor IC dalam profil anda.",
           "address_mismatch": "Kami tidak menemui alamat rumah anda pada bil ini. Bil ini mengesahkan tempat anda tinggal, jadi pastikan alamat kelihatan jelas pada halaman yang anda muat naik, kemudian cuba lagi.",
           "wrong_doc": "Ini tidak kelihatan seperti dokumen yang diperlukan di sini. Semak fail yang anda pilih, kemudian muat naik semula.",
+          "sample_document": "This looks like a sample, not your real document. Please upload your own.",
           "unreadable": "Kami tidak dapat membaca dokumen ini dengan jelas — mungkin kabur atau gelap. Muat naik gambar yang lebih jelas dan terang, atau imbasan baharu.",
           "review_manually": "Kami tidak dapat menyemaknya secara automatik, jadi seorang penyemak akan melihatnya secara manual. Tiada apa lagi yang perlu anda lakukan di sini.",
           "slip_name_mismatch": "Nama pada slip keputusan ini bukan nama anda — ia kelihatan seperti slip orang lain. Muat naik slip keputusan anda sendiri; nama padanya mesti sepadan dengan nama anda.",
@@ -1655,6 +1656,7 @@
         "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
         "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip yang menunjukkan pengajian anda masih berjalan). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
         "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
+        "sampleDoc": "This looks like a sample, not your real document. Please upload your own.",
         "offerSuspect": "Ini tidak kelihatan seperti surat tawaran. Jika anda mempunyai surat tawaran anda, sila muat naik juga. Tiada apa-apa disekat — pasukan kami mungkin bertanya kepada anda tentangnya.",
         "offerNotOffer": "Ini tidak boleh diterima sebagai surat tawaran daripada institusi awam (contohnya, tawaran kolej swasta, atau dokumen yang bukan surat tawaran). Sila muat naik surat tawaran anda daripada universiti awam, politeknik, kolej atau institut kemahiran."
       },

@@ -340,6 +340,39 @@ export const STUDENT_REST_SURFACES: Surface[] = [
     },
   },
   {
+    slug: 'documents-coach-sample',
+    title: 'Documents - the coach points to a sample',
+    note: 'H9: a results slip the reader took for the wrong kind of document. The coach explains, then offers "See a sample" (the H8 viewer).',
+    render: () => <SignedIn><ScholarshipDocuments token="sandbox-not-a-real-token" app={sandboxApplication} /></SignedIn>,
+    routes: {
+      '/api/v1/scholarship/documents/': () => ({
+        documents: sandboxDocuments.map((d) => (d.doc_type === 'results_slip' ? {
+          ...d, vision_run_at: '2026-02-03T14:41:00Z', vision_fields: { student_verdict: 'wrong_doc' },
+        } : d)),
+        lock: { locked: false, open_doc_types: [] },
+      }),
+      '/help/': () => ({ source: 'fallback', message: '', verdict: 'wrong_doc' }),
+    },
+  },
+  {
+    slug: 'documents-sample-upload',
+    title: 'Documents - a sample was uploaded',
+    note: 'H9: the upload is one of our sample drawings (stamped SAMPLE). It is flagged not genuine; the student is told to upload their own.',
+    render: () => <SignedIn><ScholarshipDocuments token="sandbox-not-a-real-token" app={sandboxApplication} /></SignedIn>,
+    routes: {
+      '/api/v1/scholarship/documents/': () => ({
+        documents: sandboxDocuments.map((d) => (d.doc_type === 'ic' ? {
+          ...d, verification_status: 'pending',
+          authenticity: { status: 'not_ic', reason: 'Looks like a sample document (stamped SAMPLE / CONTOH), not a real one.', doc_seen: 'sample_document' },
+          vision_fields: { authenticity: { status: 'not_ic', doc_seen: 'sample_document', sample: true } },
+        } : d)),
+        lock: { locked: false, open_doc_types: [] },
+      }),
+      '/help/': () => ({ source: 'fallback', message: '', verdict: 'sample_document' }),
+    },
+  },
+
+  {
     slug: 'action-centre-optional',
     title: 'Action Centre - an optional ask',
     note: 'H7: an optional document ask carries the I-do-not-have-this button under Upload; a required ask beside '
