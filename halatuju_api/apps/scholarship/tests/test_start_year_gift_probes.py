@@ -84,7 +84,7 @@ PROBES = [
     ('Semester 12 2025', '', '', False, None),
     ('Semester Kesebelas 2025', '', '', False, None),
     ('semester sepuluh 2025', '', '', False, None),
-    ('Ambilan 2023, Semester 1 Sesi 2025/2026', '', '', False, 2023),
+    ('Ambilan 2023, Semester 1 Sesi 2025/2026', '', '', False, None),  # thirteenth review: outside the session
     ('Intake Sept 2023 - Session 2025/2026', '', '', False, None),     # ninth review: a month-year outside the session
     # h3r4: clear 2025 / 2026 starters
     ('Ambilan Julai 2025 (SPM 2024)', '14 Julai 2025', '', False, 2025),
@@ -125,7 +125,7 @@ PROBES = [
     ('SESI 2024/25 MAC 2025', '3 Mac 2025', '', False, 2025),
     ('SPM 2024, Ambilan 2025', '14 Julai 2025', '', False, 2025),
     ('Ambilan 2025 (Sesi 2025/2026)', '', '', False, 2025),
-    ('Ambilan 2023 Sesi 2025/2026', '', '', False, 2023),
+    ('Ambilan 2023 Sesi 2025/2026', '', '', False, None),  # thirteenth review: outside the session
     ('Tahun ke-3', '8 September 2025', '', False, None),
     ('Semester ke-4', '', '', True, None),
     ('Sesi 2025/2026', '8 September 2025', '', True, None),

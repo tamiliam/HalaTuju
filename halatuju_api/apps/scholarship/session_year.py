@@ -21,13 +21,15 @@ offer letters have a reporting date. Otherwise the title says the year like 2026
         / Admission (not mulai, bermula, commencing, starting, Semester / Sem). ONE date or month-year
         with a 20xx year right after one ("Tarikh Kemasukan: 10/03/2025", "Ambilan Feb 2025"; the
         session may stand between) and in one of the session's two years -> that year. A plain year
-        right after an intake word reads whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023),
-        but not on a line with an exam word ("Intake: 2024 SPM leavers, Session 2025/2026" is
-        unknown). An admission NUMBER (No. / No / Nombor Kemasukan, Admission No / Number) is no
+        right after an intake word is read the same way: in the session -> that year ("Ambilan 2025
+        Sesi 2025/2026" = 2025), any other -> unknown ("Ambilan 2023 Sesi 2025/2026", "Intake: 2024
+        school leavers, Session 2025/2026" may name a cohort; thirteenth review removed the old
+        "plain intake year beats the session" exception). An admission NUMBER (No. / No / Nombor Kemasukan, Admission No / Number) is no
         admission phrase, and a year straight after it is no year ("No. Kemasukan 2024 Sesi
         2025/2026" = 2025);
-     C. A month NAME with no year ("Februari"; also the misspellings Febuari, Pebruari, Febrauri,
-        Mach) on a line holding an admission word (B) and NO event word (cuti, break, holiday,
+     C. A month NAME with no year ("Februari"; a misspelt one too: within two edits of a full name
+        of 8+ letters or one edit of one of 6-7, same first letter, "Febuary", "Agust", "Septmber";
+        and Pebruari, Mach) on a line holding an admission word (B) and NO event word (cuti, break, holiday,
         vacation, recess, peperiksaan, exam, examination, ujian, test, yuran, bayaran, fee, tutup,
         closing, bertarikh, dated, dikemaskini, updated; the deadline words hingga, sehingga, until,
         tamat, berakhir, sah, and "by" / "reply by" before a date or a month): January-April -> the
@@ -53,12 +55,14 @@ with no reporting date, two different sessions, or a first and a second intake t
 too, and so is a year the scan damaged ("2O25"). Exam years are NEVER a start year (owner, 16 Nov): a
 line with an exam word in any form (SPM, S.P.M., S P M, SPMV, STPM, SVM, STAM, SKM, DKM, MUET, UEC,
 O / A-Level, the long names incl. Sijil / Diploma Kemahiran Malaysia, "peperiksaan" / "examination";
-"SPM2024", "STPM/2024") gives no single year ("Lepasan S P M 2024" is unknown); on a session line the
+"SPM2024", "STPM/2024", plural "SPMs", a capital SPM / SPMV / STPM / STAM glued to letters
+"SPMleavers", "lepasanSPM") gives no single year ("Lepasan S P M 2024" is unknown); on a session line the
 exam's own year is ignored, not an extra year ("Sesi 2025/2026 (S.P.M. 2024)" = 2025). A year with a
 letter glued before it is a code ("kod UH2024"), not a year.
 
 Pure text work: no model, no database.
 """
+import functools
 import re
 from typing import NamedTuple, Optional
 
@@ -75,13 +79,55 @@ _MONTH_NUM = {
     'julai': 7, 'july': 7, 'jul': 7, 'ogos': 8, 'august': 8, 'aug': 8, 'september': 9, 'sept': 9,
     'sep': 9, 'oktober': 10, 'october': 10, 'okt': 10, 'oct': 10, 'november': 11, 'nov': 11,
     'disember': 12, 'december': 12, 'dis': 12, 'dec': 12,
-    # Twelfth review: common misspellings of the Malay months are months too (rules A / C apply).
-    'febuari': 2, 'pebruari': 2, 'febrauri': 2, 'mach': 3,
+    # Twelfth review: two misspellings the edit-distance rule below cannot reach (too short; another
+    # first letter) are kept by name.
+    'mach': 3, 'pebruari': 2,
 }
 _MONTH = '(?:' + '|'.join(sorted(_MONTH_NUM, key=len, reverse=True)) + ')'
 # Letter look-arounds, not \b, so a month glued to a number still reads ("2024/25Feb"). ASCII only
 # (re.A): "DİS" or "ſep" must not fold into a month name the table does not hold.
 _MONTH_RE = re.compile(rf'(?<![a-z])({_MONTH})(?![a-z])', re.I | re.A)
+# Thirteenth review: a misspelt month is a month. A word of 5+ letters with a FULL month name's first
+# letter, within two edits of a name of 8+ letters or one edit of a name of 6 or 7 ("Febuary",
+# "Feburary", "Febraury", "Febuari", "Januay", "Agust", "Septmber"), is rewritten as that name before
+# the line is read, so rules A / C / D apply to it as to any month. The 5-letter names (March, April,
+# Julai) and looser matches are left out: ordinary words sit that near them ("match", "mulai",
+# "nilai", "adjust", "remember").
+_FULL_MONTHS = tuple(m for m in _MONTH_NUM if len(m) >= 6 and m != 'pebruari')
+_WORD_RE = re.compile(r'(?<![A-Za-z])[A-Za-z]{5,11}(?![A-Za-z])')
+
+
+def _edits(a, b):
+    """The edit distance (insert, delete or change one letter) between two short words."""
+    row = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        prev, row[0] = row[0], i
+        for j, cb in enumerate(b, 1):
+            prev, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, prev + (ca != cb))
+    return row[-1]
+
+
+@functools.lru_cache(maxsize=4096)
+def _misspelt_month(word):
+    """The full month name a misspelt word stands for, else None (also for a word as near to two
+    different months)."""
+    w = word.lower()
+    if w in _MONTH_NUM:
+        return None
+    near = {}
+    for name in _FULL_MONTHS:
+        most = 2 if len(name) >= 8 else 1
+        if name[0] == w[0] and abs(len(name) - len(w)) <= most:
+            d = _edits(w, name)
+            if d <= most:
+                near.setdefault(d, {}).setdefault(_MONTH_NUM[name], name)
+    best = near[min(near)] if near else {}
+    return next(iter(best.values())) if len(best) == 1 else None
+
+
+def _with_months_spelt(text):
+    """The line with each misspelt month rewritten as its full name."""
+    return _WORD_RE.sub(lambda m: _misspelt_month(m.group(0)) or m.group(0), text)
 
 # A 20xx year that is not part of a longer number. Digit look-arounds, not \b, so a year with a
 # letter glued AFTER it ("2024/2025Semester") still reads. (The reporting date's year.)
@@ -98,14 +144,17 @@ _SESSION_RE = re.compile(
 # session holding one gives no single year at all - only the reporting date reads it. Letter
 # look-arounds, not \b, so "SPM2024", "SPM (2024)" and "STPM/2024" count; the letters of an
 # initialism may stand apart ("S.P.M.", "S P M"). SKM / DKM (Sijil / Diploma Kemahiran Malaysia) too.
+# Thirteenth review: a plural s ("SPMs"), and a capital SPM / SPMV / STPM / STAM glued to letters on
+# either side ("SPMleavers", "lepasanSPM"; capitals only, so an ordinary word is not caught).
 _SEP = r'(?:\.\s*|\s)?'
 _EXAM_RE = re.compile(
-    rf'(?<![a-z])(?:S{_SEP}(?:T{_SEP})?P{_SEP}M\.?(?:\s*V\.?)?|S{_SEP}V{_SEP}M\.?|S{_SEP}T{_SEP}A{_SEP}M\.?'
+    rf'(?:(?<![a-z])(?:S{_SEP}(?:T{_SEP})?P{_SEP}M\.?(?:\s*V\.?)?|S{_SEP}V{_SEP}M\.?|S{_SEP}T{_SEP}A{_SEP}M\.?'
     rf'|[SD]{_SEP}K{_SEP}M\.?'
     r'|UEC|MUET|IGCSE|[OA][\s\-]?Levels?|peperiksaan|exam(?:ination)?s?'
     r'|sijil\s+(?:pelajaran|tinggi\s+persekolahan|vokasional|tinggi\s+agama|kemahiran)\s+malaysia'
     r'|diploma\s+kemahiran\s+malaysia'
-    r'|unified\s+examination\s+certificate|malaysian\s+university\s+english\s+test)(?![a-z])', re.I)
+    r'|unified\s+examination\s+certificate|malaysian\s+university\s+english\s+test)s?(?![a-z])'
+    r'|(?-i:STPM|SPMV?|STAM))', re.I)
 # The exam's own year, straight after its word ("SPM 2024", "SPM (2024)", "SPM tahun 2024"): on a
 # session line it is ignored, not an extra year ("Sesi 2025/2026 (S.P.M. 2024)" = 2025).
 _EXAM_YEAR_RE = re.compile(_EXAM_RE.pattern + r"[\s.:;,'(/\-]{0,4}(?:tahun\s*)?(20\d{2})(?!\d)", re.I)
@@ -147,7 +196,7 @@ _NUMBER_AFTER_RE = re.compile(r"\.?\s*['‘’]?\s*\d{1,2}(?!\d)")
 _ADMISSION_NO_RE = re.compile(
     r'(?<![a-z])(?:(?:no(?:\.\s*|\s+)|nombor\s+)kemasukan|admission\s+(?:no(?![a-z])\.?|number))(?![a-z])'
     r'(?:[\s:.\-#]*20\d{2}(?!\d)(?!\s*[/\-–]\s*\d))?', re.I | re.A)
-# The intake words whose plain year counts beside any session ("Ambilan 2023 Sesi 2025/2026" = 2023).
+# The intake words whose plain year straight after them reads on a session line (if in the session).
 _INTAKE_WORD_RE = re.compile(r'(?:pengambilan|ambilan|kemasukan|intake|admission)', re.I)
 # What may stand between an admission phrase and its date: spaces and stops, a term number ("Ambilan
 # 2 (Feb 2025)"), Sesi / Session / Akademik and the session itself (masked '#': "Ambilan Sesi
@@ -259,7 +308,7 @@ def _add(out, key, n):
 def _date_year(reporting_date):
     """The stored reporting date -> its year: ONE 20xx year in a value that reads as a date (a month
     name, or a numeric day / month / year). Else None: the next step reads the intake line."""
-    text = reporting_date or ''
+    text = _with_months_spelt(reporting_date or '')
     years = {int(y) for y in _YEAR_RE.findall(text)}
     if len(years) != 1:
         return None
@@ -379,18 +428,16 @@ def _session_reading(text, session, taken, terms):
     if kind == 'short':
         return GiftReading(None, 'unclear_date')
     word = _start_word(text, start, taken)
-    if kind == 'year':
-        # The owner's step 2: a plain year straight after an intake word, whatever the session; but
-        # not on a line with an exam word (twelfth review, as step 2 below): "Intake: 2024 SPM leavers,
-        # Session 2025/2026" may name the exam's year.
-        if word and _INTAKE_WORD_RE.fullmatch(word.group(0)) \
-                and re.fullmatch(r'[\s:.\-(]*', text[word.end():start]):
-            return GiftReading(None, 'exam_line') if _EXAM_RE.search(text) else GiftReading(year, 'intake_year')
+    # A plain year counts only straight after an intake word ("Ambilan 2025 Sesi 2025/2026"). Thirteenth
+    # review: it is then checked like a date, so one outside the session is unknown ("Ambilan 2023 Sesi
+    # 2025/2026"; "Intake: 2024 school leavers, Session 2025/2026" may name a cohort, not the intake).
+    if kind == 'year' and not (word and _INTAKE_WORD_RE.fullmatch(word.group(0))
+                               and re.fullmatch(r'[\s:.\-(]*', text[word.end():start])):
         return GiftReading(None, 'unclear_date')
     # Rule B: a date or month-year after an admission phrase, in the session, agreeing with the terms.
     if word is None or year not in session or (second and year != s1) or ('first_intake' in terms and year != s):
         return GiftReading(None, 'unclear_date')
-    return GiftReading(year, 'intake_date')
+    return GiftReading(year, 'intake_year' if kind == 'year' else 'intake_date')
 
 
 def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
@@ -398,7 +445,7 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
     docstring). ``intake`` is the letter's intake line, ``reporting_date`` its stored reporting date,
     ``context`` its programme / institution / stream words, ``confirmation`` True for a
     confirmation-of-studies letter."""
-    text = _ADMISSION_NO_RE.sub(lambda m: ' ' * len(m.group(0)), intake or '')
+    text = _with_months_spelt(_ADMISSION_NO_RE.sub(lambda m: ' ' * len(m.group(0)), intake or ''))
     terms = _terms(text) | _terms(context or '', context=True)
     if 'later' in terms:
         return GiftReading(None, 'later_term')
