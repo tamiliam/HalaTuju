@@ -33,6 +33,7 @@ import { KindIcon } from './KindIcon'
 import { UploadButtons } from './UploadButtons'
 import { ReplaceDocument } from './ReplaceDocument'
 import { DeclineOptional } from './DeclineOptional'
+import { DocSample } from '@/components/DocSample'
 import { docForItem, replaceLocked } from '@/lib/documentReplace'
 import { SetAsideCard, DoneCard, OfficerHoldCard } from './StatusCards'
 
@@ -290,6 +291,7 @@ export function ActionCard({
           )}
           {desc && <p className="mt-1 text-sm text-ground-500">{desc}</p>}
           <p className="mt-1 text-sm text-ground-600">{t(whyKeyFor(item))}</p>
+          {item.kind === 'doc' && <DocSample docType={item.doc_type} kind={typeof item.params?.results_kind === 'string' ? item.params.results_kind : null} />}
 
           {/* ── Action ─────────────────────────────────────────────── */}
           <div className="mt-4">

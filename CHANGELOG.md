@@ -143,6 +143,14 @@ Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decision
 - Sandbox: the admin viewers (`src/sandbox/*Surfaces.tsx`) now carry the keys the server serves (`src/sandbox/servedKeys.ts`); without them the keys-only gates shut the Sponsors Terms tab and mobile-check failed `sandbox:m7-sponsor-terms`.
 - No api change; the navigation registry's role rows are a follow-up (TD-623 as-built note).
 - Review round (2026-11-15): QC's assignee filter now lists the reviewers (`getAssignableAdmins` loads whenever the filter shows, not only for assigners). `navigation.hasGiftDoor` reads the served `programmes.edit` key (the `programme_settings` door, which the server's `may_edit_programmes` reads) instead of the `programmeConfig` row's role list (declared matrix move: an older payload has no gift door); it decides the Programmes gift grid, the Payments/Spending redirect (`useGiftGate`) and the Programme-group fold. The A10 scan now reads whole files with a comment-blanking tokenizer and catches both quotes, `==`/`!=`, `case`, multi-line role arrays and `…roles.includes(`/`.has(`; snippets must contain the hit; floor 140 of 156; a SERVER class for the sponsor-terms lead-tier mirror. New debt TD-631 (Surveys/Development/Announcements read-only for `.view` holders) and TD-632 (server lead-tier gates; fixture lag).
+### feat: student-help H8 - Sample documents (2026-11-17)
+
+Branch student-help, not pushed. No migration, no api change. Services: web only. Designs: `docs/designs/student-help/` (mock_4, `sample-generators/`).
+- 19 drawn samples in `halatuju-web/public/samples/` (largest about 211 KB): every document type except "other". Each carries SAMPLE and CONTOH; names are made up, IC numbers are zeros, no external links or scripts.
+- `src/lib/docSamples.ts`: one shared map from document type to sample (`sampleFor`; STPM or matriculation results by kind). `DocSample.tsx`: a "See a sample" link and a bottom-sheet viewer on the shared `Sheet` (close button, tap to enlarge, caption: a drawing, never send it). Shown on Action Centre document cards and on Documents tab cards (single, done and income-proof cards); never on an explanation card or "other".
+- Words under `scholarship.docs.sample.*` and `scholarship.docs.type.semester_result` (was missing). ms and ta carry English placeholders until Sol translates.
+- Tests: `docSamples.test.ts` (map covers every server document type, no orphan file), `DocSample.test.tsx` (open, close, Escape, zoom, no link for "other", both card families). The mock_4 "What we check" list was not built.
+
 ### feat: student-help H7 - "I don't have this" on optional document asks (2026-11-17)
 
 Branch student-help, not pushed. No migration. Services: both (api + web). Designs: `docs/designs/student-help/` (mock_2).

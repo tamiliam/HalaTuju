@@ -26,6 +26,7 @@ import {
 } from './checklists'
 import { OfferLetterChecklist, SupportingDocChip } from './checklistsPathway'
 import { LazyHigherDetails, LazyKindLine, LazySlipHigherNote } from './LazyHigherResults'
+import { DocSample } from '@/components/DocSample'
 
 // Busy/filter key for a doc card. Salary-route income docs are scoped to a household
 // member, so two members' salary slips don't share one busy spinner or file list.
@@ -419,6 +420,7 @@ export function SingleDocCard({
         {open && (
           <div className="border-t border-positive-100 p-3">
             <p className="text-xs text-ground-500">{helpOverride ?? t(`scholarship.docs.help.${docType}`)}</p>
+            <DocSample docType={docType} kind={higherKind} />
             {fileBlock}
             {checks}
           </div>
@@ -436,6 +438,7 @@ export function SingleDocCard({
             {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
           {higherKind !== undefined && <LazyKindLine kind={higherKind} spmOnly={higherSpmOnly} />}
+          <DocSample docType={docType} kind={higherKind} />
         </div>
       </div>
       {fileBlock}
@@ -518,6 +521,7 @@ export function IncomeProofCard({
               </button>
             ))}
           </div>
+          <DocSample docType={activeType} />
         </div>
       </div>
       {!locked && (

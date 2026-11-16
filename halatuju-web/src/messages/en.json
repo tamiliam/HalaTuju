@@ -1384,7 +1384,18 @@
       "incompleteToContinue": "Saved. Please complete the required fields marked * before continuing."
     },
     "docs": {
+      "sample": {
+        "link": "See a sample",
+        "title": "Sample: {type}",
+        "alt": "A drawing of a sample {type}",
+        "caption": "This is a drawing, not a real document. Never send it.",
+        "zoomHint": "Tap the picture to make it bigger.",
+        "enlarge": "Make the sample bigger",
+        "shrink": "Make the sample smaller",
+        "close": "Close"
+      },
       "type": {
+        "semester_result": "Semester result slip",
         "ic": "Identity card (IC)",
         "results_slip": "SPM results slip",
         "photo": "Photo",
