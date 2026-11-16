@@ -31,6 +31,7 @@ import {
 import { asksForDocument, documentRequirement } from '@/lib/nextSteps'
 import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 import { isTertiary } from '@/lib/qualification'
+import { INCOME_PROOF_TYPES } from '@/lib/scholarship'
 // The tab's own words (`documentsTab.*`) ride in THIS chunk, not in every route's core catalogue.
 import '@/lib/messagesDocuments'
 
@@ -305,6 +306,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
               t={t}
               token={token}
               lang={locale}
+              locked={lock.locked && !INCOME_PROOF_TYPES.some((dt) => lock.openTypes.includes(dt))}
             />
             {card('parent_ic', { showVisionChip: false })}
             {card('water_bill')}

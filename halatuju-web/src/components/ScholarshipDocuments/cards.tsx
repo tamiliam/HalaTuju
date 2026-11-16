@@ -462,6 +462,7 @@ export function IncomeProofCard({
   t,
   token,
   lang,
+  locked = false,
 }: {
   docs: ApplicantDocument[]
   busyKeys: ReadonlySet<string>
@@ -470,6 +471,8 @@ export function IncomeProofCard({
   t: (key: string) => string
   token: string | null
   lang: string
+  /** H5: documents are locked: files show, nothing uploads or is removed; the card says why. */
+  locked?: boolean
 }) {
   const incomeTypes = [...INCOME_PROOF_TYPES] as string[]
   const existing = docs.filter((d) => incomeTypes.includes(d.doc_type))
@@ -505,17 +508,20 @@ export function IncomeProofCard({
           </div>
         </div>
       </div>
-      <div className="mt-3 flex">
-        <UploadTrigger
-          docType={activeType}
-          busy={busy}
-          onUpload={onUpload}
-          variant="primary"
-          label={
-            busy ? t('scholarship.docs.uploading') : t('documentsTab.card.choose')
-          }
-        />
-      </div>
+      {!locked && (
+        <div className="mt-3 flex">
+          <UploadTrigger
+            docType={activeType}
+            busy={busy}
+            onUpload={onUpload}
+            variant="primary"
+            label={
+              busy ? t('scholarship.docs.uploading') : t('documentsTab.card.choose')
+            }
+          />
+        </div>
+      )}
+      {locked && <p className="mt-3 text-sm text-ground-600">{t('scholarship.docs.lockedNote')}</p>}
       {existing.length > 0 && (
         <ul className="mt-2 space-y-1">
           {existing.map((d) => (
@@ -541,13 +547,15 @@ export function IncomeProofCard({
                     <span className="text-ground-400"> · {formatFileSize(d.size)}</span>
                   ) : null}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => onDelete(d.id)}
-                  className="ml-2 inline-flex min-h-11 shrink-0 items-center rounded-xl border border-critical-200 px-3 text-sm font-medium text-critical-600 hover:bg-critical-50"
-                >
-                  {t('scholarship.docs.remove')}
-                </button>
+                {!locked && (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(d.id)}
+                    className="ml-2 inline-flex min-h-11 shrink-0 items-center rounded-xl border border-critical-200 px-3 text-sm font-medium text-critical-600 hover:bg-critical-50"
+                  >
+                    {t('scholarship.docs.remove')}
+                  </button>
+                )}
               </div>
               <SupportingDocChip doc={d} t={t} />
               <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />

@@ -158,6 +158,7 @@ Branch student-help, not pushed. No migration. Services: both (api + web). Desig
 - Api: the documents list GET serves `lock: {locked, open_doc_types}` (`document_lock.lock_state`) so the client never guesses; `document_lock` reuses `views/common._FUNDED_STATES` (the copy is gone).
 - Guard: `mobileStandard` rule 9 allows `capture` in `UploadButtons.tsx` only, and pins that a normal Upload sits beside it.
 - Tests: `test_documents_stage_lock.py` (+5: exempt type on record and delete, slip_locked before the lock, the served lock, no copied funded list); `ActionCentre.sections.test.tsx`, `ScholarshipDocuments.locked.test.tsx`, `actionCentre.test.ts`; sandbox surfaces `action-centre-error`, `documents-locked`. ms/ta strings are first drafts for Sol.
+- Fix round 1: the Action Centre now reads the documents lock (served with the list) and hides Upload and Take a photo on a locked ask unless its type is an exempt post-lock one; the Documents tab fallback income card obeys the lock too; Try again shows a busy placeholder, so the all-done state no longer flashes while a retry is in flight. Tests added in `ActionCentre.sections.test.tsx` and `ScholarshipDocuments.locked.test.tsx`.
 
 ### feat: student-help H4 - Action Centre split + documents stage lock (2026-11-16)
 
