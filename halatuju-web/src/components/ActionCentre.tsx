@@ -14,7 +14,7 @@
  * presentation + the three resolve flows.
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
 import {
   getResolutionItems,
@@ -25,8 +25,13 @@ import {
 } from '@/lib/api'
 import {
   computeProgress,
-  sortByWeight,
+  splitSections,
+  whyKeyFor,
   clusterMemberOf,
+  attributionFor,
+  itemCopy,
+  titleSourceFor,
+  localiseParams,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
 // The two POST-AWARD cards (bank details, Vircle) only an awarded student ever holds: fetched on
@@ -34,6 +39,7 @@ import {
 import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { ActionCard } from '@/components/action-centre/ActionCard'
+import { SentCard, LoadErrorCard, OfficerHoldCard } from '@/components/action-centre/StatusCards'
 
 // ── Main component ────────────────────────────────────────────────────────
 
@@ -85,10 +91,12 @@ export default function ActionCentre({
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [limits, setLimits] = useState<DocumentLimits | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const fetchItems = useCallback(async () => {
     if (!token) return
     try {
+      setLoadFailed(false)
       const [r, d] = await Promise.all([
         getResolutionItems({ token }),
         listDocuments({ token }).catch(() => ({ documents: [] as ApplicantDocument[] })),
@@ -99,8 +107,9 @@ export default function ActionCentre({
       setDocs(d.documents)
       setLimits('limits' in d ? d.limits ?? null : null)
     } catch {
-      // Treat a fetch failure as "nothing to show" — the Action Centre is
-      // additive; it must never block the rest of the page.
+      // A failed load is NOT "nothing to ask": say so with a retry (the approved load-error design,
+      // H5). It is a card on this section only, so it never blocks the rest of the page.
+      setLoadFailed(true)
       setOpen([])
       setResolved([])
       setSetAside([])
@@ -114,6 +123,7 @@ export default function ActionCentre({
 
   // Don't flash anything until we've checked.
   if (!loaded) return null
+  if (loadFailed) return <section className="mb-8"><LoadErrorCard onRetry={fetchItems} /></section>
 
   const firstName = (studentName || '').trim().split(/\s+/)[0] || ''
 
@@ -130,20 +140,42 @@ export default function ActionCentre({
     </div>
   )
 
-  // Resolved items stay on the page as green "Done" cards (the satisfaction of seeing
-  // what you've cleared), shown beneath the open ones.
-  const doneCards = resolved.length > 0 && (
-    <div className="mt-4 space-y-4">
-      {resolved.map((item) => (
-        <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
-          onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done />
-      ))}
+  const { needs, sent, done: doneItems } = splitSections(open, resolved)
+  const fromLabelOf = (item: ResolutionItem) => t(attributionFor(item) === 'reviewer'
+    ? 'scholarship.actionCentre.fromReviewer' : 'scholarship.actionCentre.fromAssistant')
+
+  const itemTitle = (item: ResolutionItem) => {
+    const src = titleSourceFor(item)
+    return src.kind === 'raw' ? src.text : itemCopy(t, src, localiseParams(item.params, t)).title
+  }
+
+  // A section: its name, how many it holds, and its cards (nothing at all when empty).
+  const sectionOf = (title: string, count: number, body: ReactNode) => count > 0 && (
+    <div className="mt-6">
+      <h3 className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-ground-600">
+        <span>{title}</span><span>{count}</span>
+      </h3>
+      <div className="space-y-4">{body}</div>
     </div>
   )
 
+  // "Sent, we are checking": the student's part is done. Typed answers, and requests handed to a person.
+  const sentCards = sectionOf(t('scholarship.actionCentre.section.sent'), sent.length, sent.map(({ item, kind }) =>
+    kind === 'officer' ? <OfficerHoldCard key={item.id} fromLabel={fromLabelOf(item)} /> : (
+      <SentCard key={item.id} fromLabel={fromLabelOf(item)}
+        title={itemTitle(item)}
+        why={t(whyKeyFor(item))} detail={item.resolution_text} />
+    )))
+
+  // "Done": checked and cleared, as green cards.
+  const doneCards = sectionOf(t('scholarship.actionCentre.section.done'), doneItems.length, doneItems.map((item) => (
+    <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
+      onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done />
+  )))
+
   // Funded students' set-aside review queries (struck-through amber), beneath the rest.
   const setAsideCards = setAside.length > 0 && (
-    <div className="mt-4 space-y-4">
+    <div className="mt-6 space-y-4">
       {setAside.map((item) => (
         <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
           onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} setAside />
@@ -160,7 +192,7 @@ export default function ActionCentre({
 
   // Post-submit, everything actionable cleared: the await card + set-aside + Done cards.
   if (formLocked && open.length === 0) {
-    return <section className="mb-8">{awaitCard}{setAsideCards}{doneCards}</section>
+    return <section className="mb-8">{awaitCard}{setAsideCards}{sentCards}{doneCards}</section>
   }
 
   // Pending tasks (or a shortlisted student with history).
@@ -195,17 +227,17 @@ export default function ActionCentre({
       </div>
 
       {/* Open tasks first, then the completed ones as green Done cards. */}
-      {open.length > 0 && (() => {
+      {sectionOf(t('scholarship.actionCentre.section.needs'), needs.length, (() => {
         // One cluster coach per earner: the FIRST open income task of each member is its
         // anchor; later tasks for the same earner suppress the (duplicate) coach.
-        const sorted = sortByWeight(open)
+        const sorted = needs
         const clusterAnchor = new Map<string, number>()
         sorted.forEach((it) => {
           const m = clusterMemberOf(it, incomeRoute, incomeEarner)
           if (m && !clusterAnchor.has(m)) clusterAnchor.set(m, it.id)
         })
         return (
-        <div className="mt-4 space-y-4">
+        <>
           {sorted.map((item) => (
             // The post-award bank-details task is a bespoke upload-then-confirm card.
             item.code === 'bank_details_missing' ? (
@@ -234,9 +266,9 @@ export default function ActionCentre({
               />
             )
           ))}
-        </div>
+        </>
         )
-      })()}
+      })())}
       {/* Post-submit, when an income task is open, the student can change how they prove
           income (the form/wizard is locked, so this is their only route to switch). One
           entry for the whole income section, not per-ticket. */}
@@ -246,6 +278,7 @@ export default function ActionCentre({
         </div>
       )}
       {setAsideCards}
+      {sentCards}
       {doneCards}
       {/* Shortlisted (pre-submit) all-done banner. */}
       {!formLocked && open.length === 0 && (

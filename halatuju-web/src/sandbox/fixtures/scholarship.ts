@@ -360,7 +360,10 @@ const ticket = (
 
 export const sandboxResolutionItems = {
   open: [
-    ticket(1, 'doc', 'payslip', 'We could not read the payslip you sent. Please send a clearer photo.'),
+    // A returned document (it was sent once and could not be used): 'We need this again'.
+    ticket(1, 'doc', 'payslip', 'We could not read the payslip you sent. Please send a clearer photo.', {
+      params: { attempts: 1 },
+    }),
     ticket(2, 'explanation', 'income_gap', 'Tell us in your own words how the household manages month to month.'),
     // The circuit-breaker card: no upload button, no coach, no retry note.
     ticket(3, 'doc', 'utility_bill', 'A person is looking at this now.', {
@@ -368,6 +371,10 @@ export const sandboxResolutionItems = {
     }),
   ],
   resolved: [
+    // A typed answer: with the reviewer, so it sits under 'Sent, we are checking', not 'Done'.
+    ticket(6, 'explanation', 'transport_cost_unknown', 'How do you get to college each day?', {
+      status: 'resolved', resolved_at: '2026-08-24T02:00:00Z', resolution_text: 'By bus, about RM 6 a day.',
+    }),
     ticket(4, 'doc', 'ic', 'Identity card received.', {
       status: 'resolved', resolved_at: '2026-08-22T02:00:00Z',
     }),

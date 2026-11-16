@@ -17,6 +17,9 @@ import {
   profilePickerHref,
   KNOWN_CODES,
   countDigits,
+  isTypedAnswer,
+  splitSections,
+  whyKeyFor,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
 import en from '@/messages/en.json'
@@ -430,5 +433,42 @@ describe('titleSourceFor: unknown code with no prompt', () => {
   it('still shows an officer prompt verbatim when there is one', () => {
     expect(titleSourceFor({ source: 'system', code: 'brand_new_code', prompt: 'Call us' }))
       .toEqual({ kind: 'raw', text: 'Call us' })
+  })
+})
+
+describe('H5 sections, honest progress, why line', () => {
+  const typed = (over: Partial<ResolutionItem> = {}) =>
+    item({ id: 20, kind: 'explanation', doc_type: '', code: 'transport_cost_unknown', status: 'resolved', resolution_text: 'Bus fare', ...over })
+
+  it('a typed answer is not a one-tap confirm', () => {
+    expect(isTypedAnswer({ kind: 'explanation', resolution_text: 'x' })).toBe(true)
+    expect(isTypedAnswer({ kind: 'clarify', resolution_text: 'x' })).toBe(true)
+    expect(isTypedAnswer({ kind: 'confirm', resolution_text: 'confirmed' })).toBe(false)
+    expect(isTypedAnswer({ kind: 'confirm', resolution_text: 'My new address' })).toBe(true)
+    expect(isTypedAnswer({ kind: 'doc', resolution_text: '' })).toBe(false)
+  })
+
+  it('splits open into Needs you and a hold into Sent; resolved into Done or Sent', () => {
+    const hold = item({ id: 2, params: { needs_officer_eye: true } })
+    const secs = splitSections([item(), hold], [item({ id: 3, status: 'resolved' }), typed()])
+    expect(secs.needs.map((i) => i.id)).toEqual([1])
+    expect(secs.sent.map((e) => [e.item.id, e.kind])).toEqual([[2, 'officer'], [20, 'answer']])
+    expect(secs.done.map((i) => i.id)).toEqual([3])
+  })
+
+  it('progress counts only checked items: a sent typed answer is not done yet', () => {
+    expect(computeProgress([item()], [item({ id: 3, status: 'resolved' }), typed()]))
+      .toEqual({ done: 1, total: 3, pct: 33 })
+  })
+
+  it('whyKeyFor names the document, else a generic line, and every key exists in en', () => {
+    expect(whyKeyFor({ kind: 'doc', doc_type: 'ic' })).toBe('scholarship.actionCentre.why.ic')
+    expect(whyKeyFor({ kind: 'doc', doc_type: 'something_new' })).toBe('scholarship.actionCentre.why.doc')
+    expect(whyKeyFor({ kind: 'confirm', doc_type: '' })).toBe('scholarship.actionCentre.why.confirm')
+    expect(whyKeyFor({ kind: 'explanation', doc_type: '' })).toBe('scholarship.actionCentre.why.answer')
+    const why = (en as any).scholarship.actionCentre.why as Record<string, string>
+    for (const k of ['ic', 'results_slip', 'bank_statement', 'semester_result', 'doc', 'confirm', 'answer']) {
+      expect(why[k]).toBeTruthy()
+    }
   })
 })

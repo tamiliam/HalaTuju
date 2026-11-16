@@ -79,6 +79,8 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   const [limits, setLimits] = useState<ResolvedDocumentLimits>(() => limitsFrom(null))
   // A2.3: how many uploads the server is still reading (served with the list).
   const [reading, setReading] = useState(0)
+  // H5: the documents stage lock, served with the list. `openTypes` are the few types still asked for.
+  const [lock, setLock] = useState<{ locked: boolean; openTypes: string[] }>({ locked: false, openTypes: [] })
 
   const refresh = useCallback(async () => {
     if (!token) return
@@ -87,6 +89,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       setDocs(r.documents)
       setLimits(limitsFrom(r.limits))
       setReading(r.reading || 0)
+      setLock({ locked: !!r.lock?.locked, openTypes: r.lock?.open_doc_types ?? [] })
     } catch { /* ignore */ }
   }, [token])
 
@@ -121,8 +124,10 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       onChange?.()
     } catch (e) {
       const code = (e as { code?: string })?.code
+      if (code === 'documents_locked') void refresh()   // the stage moved on: draw the locked tab
       setError(
-        code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
+        code === 'documents_locked' ? ((e as Error).message || t('scholarship.docs.lockedNote'))
+        : code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
           // The server's OWN number on the refusal (a 400 body lands on `fieldErrors`),
           // so a stale served limit cannot make the message contradict the rejection.
@@ -147,8 +152,10 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       await deleteDocument(id, { token })
       await refresh()
       onChange?.()
-    } catch {
-      setError(t('scholarship.docs.deleteError'))
+    } catch (e) {
+      const locked = (e as { code?: string })?.code === 'documents_locked'
+      if (locked) void refresh()
+      setError(locked ? ((e as Error).message || t('scholarship.docs.lockedNote')) : t('scholarship.docs.deleteError'))
     } finally {
       removingRef.current = false
       setDeleting(false)
@@ -183,6 +190,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       token={token}
       lang={locale}
       onChanged={() => { refresh(); onChange?.() }}
+      locked={lock.locked && !lock.openTypes.includes(docType)}
       {...extra}
     />
   )

@@ -207,14 +207,23 @@ describe('rule 10 — a phone field never autofills the international number', (
 /**
  * `capture` on a file input makes a phone open the CAMERA only — no photo library, no Files — so a
  * student could not upload the PDF payslip or EPF statement she downloaded. The phone's own chooser
- * already offers "Take Photo". Positive guard: none, anywhere.
+ * already offers "Take Photo". Positive guard: none, anywhere, EXCEPT the one H5 "Take a photo" button
+ * (`UploadButtons`), which always sits beside a normal Upload that keeps the gallery and PDFs.
  */
+const CAPTURE_OK = 'src/components/action-centre/UploadButtons.tsx'
 describe('rule 9 — a file input never forces the camera', () => {
   test('no `capture` on any file input', () => {
-    const offenders = TSX.flatMap((f) => openTags(f.code, 'input')
+    const offenders = TSX.filter((f) => f.rel !== CAPTURE_OK).flatMap((f) => openTags(f.code, 'input')
       .filter((tag) => /\bcapture\b/.test(tag.attrs))
       .map((tag) => where(f, tag.start, '<input … capture')))
     ratchet('file inputs that force the camera', offenders, 0)
+  })
+
+  test('the one allowed camera button keeps a normal Upload beside it', () => {
+    const f = TSX.find((x) => x.rel === CAPTURE_OK)!
+    const inputs = openTags(f.code, 'input')
+    expect(inputs.filter((tag) => /\bcapture\b/.test(tag.attrs))).toHaveLength(1)
+    expect(inputs.some((tag) => !/\bcapture\b/.test(tag.attrs) && /\.pdf/.test(tag.attrs))).toBe(true)
   })
 })
 

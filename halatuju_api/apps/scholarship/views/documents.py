@@ -16,7 +16,7 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
-from .document_lock import documents_locked_refusal
+from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
 
@@ -78,6 +78,9 @@ class DocumentListCreateView(APIView):
                 'max_docs_per_application': org_config.value(org, 'max_docs_per_application'),
                 'max_other_docs': org_config.value(org, 'max_other_docs'),
             },
+            # H5: the stage lock (H4), so the student pages hide Upload / Remove instead of
+            # letting the student try and be refused.
+            'lock': lock_state(app),
         })
 
     # EVERY document is single-instance: a re-upload REPLACES the existing copy in the

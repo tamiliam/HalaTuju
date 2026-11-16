@@ -22,6 +22,7 @@ import {
   needsOfficerEye,
   profilePickerHref,
   onboardingAskFor,
+  whyKeyFor,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
 import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
@@ -29,6 +30,7 @@ import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import { setOnboardingReturn } from '@/lib/scholarship'
 import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'; import { PHONE_PILL_SM } from '@/lib/phonePill'
 import { KindIcon } from './KindIcon'
+import { UploadButtons } from './UploadButtons'
 import { SetAsideCard, DoneCard, OfficerHoldCard } from './StatusCards'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
@@ -112,6 +114,11 @@ export function ActionCard({
   // one-line steer; the task stays open. Cleared as soon as the student edits the text.
   const [nudge, setNudge] = useState<string | null>(null)
 
+  // Returned: an upload arrived and did not clear the ask (the backend stamped `attempts`), or the
+  // latest file we hold reads as a problem. Not a fresh ask: say so, with the reason.
+  const returned = item.kind === 'doc'
+    && (attempts > 0 || (!!coachDoc && !!coachDoc.vision_fields?.student_verdict && coachDoc.vision_fields.student_verdict !== 'ok'))
+
   // Income tasks speak with the single per-earner cluster coach, not the per-document one
   // (audit #15b). Membership is derived once (module helper); a member-less income task or a
   // non-income doc uses the doc-anchored coach instead.
@@ -176,8 +183,17 @@ export function ActionCard({
         setCoachDoc(doc.match_verdict && doc.match_verdict !== 'ok' ? doc : null)
       }
       onResolved()
-    } catch {
-      setError(t('scholarship.actionCentre.uploadError'))
+    } catch (e) {
+      const code = (e as { code?: string })?.code
+      if (code === 'documents_locked') onResolved()   // the stage moved on: the list drops this card
+      setError(
+        code === 'documents_locked' ? ((e as Error).message || t('scholarship.actionCentre.uploadError'))
+        : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
+          ? t('scholarship.actionCentre.badFile')
+        : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
+            { mb: String((e as { fieldErrors?: { max_mb?: number } })?.fieldErrors?.max_mb ?? limits?.max_doc_size_mb ?? 8) })
+        : t('scholarship.actionCentre.uploadError'),
+      )
     } finally {
       setBusy(false)
     }
@@ -237,31 +253,23 @@ export function ActionCard({
               {t('scholarship.actionCentre.toDo')}
             </span>
           </div>
-          {retryNote && (
-            <p className="mt-1 rounded-lg bg-caution-50 px-3 py-2 text-sm font-medium text-caution-800">
-              {retryNote}
-            </p>
+          {/* A returned document: it is back in "Needs you" with the reason (owner 15 Nov: the bar and
+              the list show the true state). The reason is the retry note; with a coach verdict but no
+              note, the coach beneath explains. */}
+          {returned && (
+            <div role="status" className="mt-2 rounded-lg border border-caution-200 bg-caution-50 px-3 py-2">
+              <p className="text-sm font-semibold text-caution-800">{t('scholarship.actionCentre.needAgain')}</p>
+              <p className="text-sm text-caution-800">{retryNote || t('scholarship.actionCentre.needAgainBody')}</p>
+            </div>
           )}
           {desc && <p className="mt-1 text-sm text-ground-500">{desc}</p>}
+          <p className="mt-1 text-sm text-ground-600">{t(whyKeyFor(item))}</p>
 
           {/* ── Action ─────────────────────────────────────────────── */}
           <div className="mt-4">
             {item.kind === 'doc' && (
               <>
-                <label className={`flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
-                  {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    className="sr-only"
-                    disabled={busy}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (f) onFile(f)
-                      e.target.value = ''
-                    }}
-                  />
-                </label>
+                <UploadButtons busy={busy} onFile={onFile} />
                 {/* Contextual Cikgu Gopal. Income cluster docs (wrong-person slip/EPF, a
                     mismatching BC) speak through the single per-earner cluster coach — the
                     per-document coach returns null for them (audit #15b). Everything else uses

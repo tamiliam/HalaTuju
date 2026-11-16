@@ -1737,7 +1737,8 @@
           "pending": "Belum disemak"
         }
       },
-      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
+      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas.",
+      "lockedNote": "Peringkat temu duga anda telah bermula, jadi dokumen ini tidak lagi boleh diubah di sini. Jika ada yang kurang, penyemak anda akan memintanya daripada anda."
     },
     "referee": {
       "name": "Nama perujuk",
@@ -2058,6 +2059,45 @@
       "error": "Maaf, kami tidak dapat mengemas kini. Sila cuba lagi."
     },
     "actionCentre": {
+      "takePhoto": "Ambil gambar",
+      "section": {
+        "needs": "Perlu tindakan anda",
+        "sent": "Dihantar, kami sedang menyemak",
+        "done": "Selesai"
+      },
+      "needAgain": "Kami perlukan ini sekali lagi",
+      "needAgainBody": "Kami tidak dapat menggunakan fail terakhir. Sila hantar semula.",
+      "badFile": "Fail ini tidak dapat dibuka. Sila muat naik foto atau PDF yang jelas.",
+      "sentAnswer": "Dihantar. Penyemak anda akan membacanya.",
+      "loadError": {
+        "title": "Tugasan tidak dapat dimuatkan",
+        "body": "Kami tidak dapat memuatkan tugasan anda. Semak sambungan anda dan cuba lagi.",
+        "retry": "Cuba lagi"
+      },
+      "why": {
+        "ic": "Sebab kami minta: untuk mengesahkan siapa anda.",
+        "results_slip": "Sebab kami minta: untuk menyemak keputusan peperiksaan anda.",
+        "higher_results": "Sebab kami minta: untuk menyemak keputusan STPM, matrikulasi atau keputusan tinggi anda yang lain.",
+        "photo": "Sebab kami minta: supaya kami mengenali anda secara peribadi.",
+        "epf": "Sebab kami minta: untuk melihat rekod simpanan ibu bapa anda.",
+        "str": "Sebab kami minta: untuk mengesahkan status STR keluarga anda.",
+        "statement_of_intent": "Sebab kami minta: untuk mendengar sendiri daripada anda mengapa anda mahukannya.",
+        "reference_letter": "Sebab kami minta: supaya seseorang yang mengenali anda dapat menyokong anda.",
+        "salary_slip": "Sebab kami minta: untuk mengesahkan pendapatan keluarga anda.",
+        "income_support_doc": "Sebab kami minta: untuk menunjukkan pendapatan keluarga anda apabila tiada slip gaji atau STR.",
+        "water_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
+        "electricity_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
+        "offer_letter": "Sebab kami minta: untuk mengesahkan tempat anda di kolej.",
+        "parent_ic": "Sebab kami minta: untuk mengesahkan siapa ibu bapa atau penjaga anda.",
+        "guardianship_letter": "Sebab kami minta: untuk menunjukkan bahawa penjaga anda boleh bertindak bagi pihak anda.",
+        "birth_certificate": "Sebab kami minta: untuk mengaitkan anda dengan ibu bapa anda.",
+        "bank_statement": "Sebab kami minta: untuk mengesahkan akaun bank yang akan menerima bursari anda.",
+        "school_leaving_cert": "Sebab kami minta: untuk mengesahkan bila anda meninggalkan sekolah.",
+        "semester_result": "Sebab kami minta: untuk melihat prestasi anda dalam kursus anda.",
+        "doc": "Sebab kami minta: supaya penyemak anda dapat menyiapkan semakan permohonan anda.",
+        "confirm": "Sebab kami minta: untuk memastikan rekod kami tentang anda betul.",
+        "answer": "Sebab kami minta: supaya penyemak anda memahami keadaan anda."
+      },
       "title": "Hampir siap, {name}",
       "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",
       "lockedTitle": "Beberapa perkara yang kami perlukan daripada anda, {name}",

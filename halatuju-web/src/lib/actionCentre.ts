@@ -93,21 +93,68 @@ export interface Progress {
   pct: number
 }
 
+/** A typed answer the student has sent: it is with the reviewer, nobody has checked it, so it is
+ *  "sent", not "done". A one-tap confirm ("confirmed") is a settled fact and stays done. */
+export function isTypedAnswer(item: Pick<ResolutionItem, 'kind' | 'resolution_text'>): boolean {
+  if (item.kind === 'explanation' || item.kind === 'clarify') return true
+  return item.kind === 'confirm' && !!item.resolution_text && item.resolution_text !== 'confirmed'
+}
+
 /**
- * Overall completion across all tickets ever raised for this student.
- * `done` = resolved tickets, `total` = open + resolved. `pct` is an integer
- * 0–100. When nothing has ever been raised we treat the student as 100% done
- * (there is genuinely nothing to finish), which keeps the bar full and avoids a
- * divide-by-zero.
+ * Overall completion across all tickets ever raised for this student, as it truly stands (H5, owner
+ * 15 Nov: a returned document goes back to "Needs you", the bar goes down with it). `done` = resolved
+ * tickets that were checked (a sent typed answer is not yet), `total` = open + resolved. `pct` is an
+ * integer 0-100. When nothing has ever been raised we treat the student as 100% done (there is
+ * genuinely nothing to finish), which keeps the bar full and avoids a divide-by-zero.
  */
 export function computeProgress(
   open: ResolutionItem[],
   resolved: ResolutionItem[],
 ): Progress {
-  const done = resolved.length
+  const done = resolved.filter((i) => !isTypedAnswer(i)).length
   const total = open.length + resolved.length
   const pct = total === 0 ? 100 : Math.round((done / total) * 100)
   return { done, total, pct }
+}
+
+/** What a "Sent, we are checking" card shows: a typed answer with the reviewer, or a
+ *  request handed to a person (the circuit-breaker). */
+export type SentKind = 'answer' | 'officer'
+export interface SentEntry { item: ResolutionItem; kind: SentKind }
+export interface Sections { needs: ResolutionItem[]; sent: SentEntry[]; done: ResolutionItem[] }
+
+/** The three Action Centre sections (H5). Open items are "Needs you" unless the student has already
+ *  done their part (a document still being read, or a request now with a person); resolved typed
+ *  answers are "Sent"; every other resolved item is "Done". */
+export function splitSections(
+  open: ResolutionItem[], resolved: ResolutionItem[],
+): Sections {
+  const needs: ResolutionItem[] = []
+  const sent: SentEntry[] = []
+  for (const item of sortByWeight(open)) {
+    if (needsOfficerEye(item)) sent.push({ item, kind: 'officer' })
+    else needs.push(item)
+  }
+  const done: ResolutionItem[] = []
+  for (const item of resolved) {
+    if (isTypedAnswer(item)) sent.push({ item, kind: 'answer' })
+    else done.push(item)
+  }
+  return { needs, sent, done }
+}
+
+/** Why we ask, per document type (the i18n key suffix). Types without a line fall back to the
+ *  generic "so your reviewer can finish checking your application". */
+const WHY_DOC_TYPES = new Set([
+  'ic', 'results_slip', 'higher_results', 'photo', 'epf', 'str', 'statement_of_intent', 'reference_letter',
+  'salary_slip', 'income_support_doc', 'water_bill', 'electricity_bill', 'offer_letter', 'parent_ic',
+  'guardianship_letter', 'birth_certificate', 'bank_statement', 'school_leaving_cert', 'semester_result',
+])
+export function whyKeyFor(item: Pick<ResolutionItem, 'kind' | 'doc_type'>): string {
+  if (item.kind === 'doc') {
+    return WHY_DOC_TYPES.has(item.doc_type) ? `scholarship.actionCentre.why.${item.doc_type}` : 'scholarship.actionCentre.why.doc'
+  }
+  return item.kind === 'confirm' ? 'scholarship.actionCentre.why.confirm' : 'scholarship.actionCentre.why.answer'
 }
 
 // System codes the Action Centre knows how to title/describe from i18n. Officer
