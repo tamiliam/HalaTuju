@@ -14,10 +14,11 @@ line (0 wrong years in 17 messy date lines), and `vision/` is not changed by thi
 
 Eleventh review (lead's rule, 16 Nov 2026: only admission phrases start a course; a month on a
 session line is never ignored): 10 rows moved, all to unknown, none to OUTSIDE.
+Twelfth review: no row moved.
 """
 from django.test import SimpleTestCase
 
-from apps.scholarship.session_year import gift_start_year
+from apps.scholarship.session_year import gift_reading
 from apps.scholarship.start_year import decide
 from apps.scholarship.vision.sanitize import _normalise_reporting_date
 
@@ -409,7 +410,7 @@ class ReviewProbesUnderTheOwnersRule(SimpleTestCase):
         for intake, raw, context, confirmation, year in PROBES:
             stored = _normalise_reporting_date(raw) if raw else ''
             with self.subTest(intake=intake, raw=raw, context=context, confirmation=confirmation):
-                self.assertEqual(gift_start_year(intake, stored, context=context, confirmation=confirmation),
+                self.assertEqual(gift_reading(intake, stored, context=context, confirmation=confirmation).year,
                                  year)
 
     def test_the_table_spans_all_three_answers(self):

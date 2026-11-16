@@ -21,13 +21,20 @@ offer letters have a reporting date. Otherwise the title says the year like 2026
         / Admission (not mulai, bermula, commencing, starting, Semester / Sem). ONE date or month-year
         with a 20xx year right after one ("Tarikh Kemasukan: 10/03/2025", "Ambilan Feb 2025"; the
         session may stand between) and in one of the session's two years -> that year. A plain year
-        right after an intake word reads whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023);
-     C. A month NAME with no year ("Februari") on a line holding an admission word (B) and NO event
-        word (cuti, break, holiday, vacation, recess, peperiksaan, exam, examination, ujian, test,
-        yuran, bayaran, fee, tutup, closing, bertarikh, dated, dikemaskini, updated): January-April
-        -> the session's second year, May-December -> its first ("Ambilan Sesi 2024-25 Mac" = 2025,
+        right after an intake word reads whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023),
+        but not on a line with an exam word ("Intake: 2024 SPM leavers, Session 2025/2026" is
+        unknown). An admission NUMBER (No. / No / Nombor Kemasukan, Admission No / Number) is no
+        admission phrase, and a year straight after it is no year ("No. Kemasukan 2024 Sesi
+        2025/2026" = 2025);
+     C. A month NAME with no year ("Februari"; also the misspellings Febuari, Pebruari, Febrauri,
+        Mach) on a line holding an admission word (B) and NO event word (cuti, break, holiday,
+        vacation, recess, peperiksaan, exam, examination, ujian, test, yuran, bayaran, fee, tutup,
+        closing, bertarikh, dated, dikemaskini, updated; the deadline words hingga, sehingga, until,
+        tamat, berakhir, sah, and "by" / "reply by" before a date or a month): January-April -> the
+        session's second year, May-December -> its first ("Ambilan Sesi 2024-25 Mac" = 2025,
         "Ambilan September Sesi 2024/2025" = 2024). On any other line -> unknown ("Sesi 2024/2025
-        bermula Februari", "Sem 1 2024/2025 Feb", "Sesi 2026/2027, tutup 30 April");
+        bermula Februari", "Sem 1 2024/2025 Feb", "Sesi 2026/2027, tutup 30 April", "Kemasukan Sesi
+        2024/2025 (tamat Mac)");
      D. any other extra year, date or month-year -> unknown: a date with no 20xx year ("3 Februari",
         "16/02/25", "16 Feb 25", "Februari 25", "Jan '25"; "25" is never read as 2025), a date not
         right after an admission phrase ("Session 2024/2025 commencing 3 March 2025"), two dates, a
@@ -68,6 +75,8 @@ _MONTH_NUM = {
     'julai': 7, 'july': 7, 'jul': 7, 'ogos': 8, 'august': 8, 'aug': 8, 'september': 9, 'sept': 9,
     'sep': 9, 'oktober': 10, 'october': 10, 'okt': 10, 'oct': 10, 'november': 11, 'nov': 11,
     'disember': 12, 'december': 12, 'dis': 12, 'dec': 12,
+    # Twelfth review: common misspellings of the Malay months are months too (rules A / C apply).
+    'febuari': 2, 'pebruari': 2, 'febrauri': 2, 'mach': 3,
 }
 _MONTH = '(?:' + '|'.join(sorted(_MONTH_NUM, key=len, reverse=True)) + ')'
 # Letter look-arounds, not \b, so a month glued to a number still reads ("2024/25Feb"). ASCII only
@@ -118,16 +127,26 @@ _YEAR_ONE_RE = re.compile(
 _ADMIT_PHRASE_RE = re.compile(
     r'(?<![a-z])(?:tarikh\s+(?:kemasukan|mendaftar|pendaftaran)|(?:tarikh\s+)?lapor\s+diri|pengambilan|ambilan'
     r'|kemasukan|intake|admission|date\s+of\s+(?:registration|admission))(?![a-z])', re.I | re.A)
-# Rule C: an event word on the line makes its month an event's month, not the intake's.
+# Rule C: an event word on the line makes its month an event's month, not the intake's. Twelfth
+# review: a deadline word too (hingga, sehingga, until, tamat, berakhir, "sah hingga"; "by" / "reply
+# by" only before a date or a month).
 _EVENT_RE = re.compile(
     r'(?<![a-z])(?:cuti|breaks?|holidays?|vacations?|recess|peperiksaan|exams?|examinations?|ujian|tests?'
-    r'|yuran|bayaran|fees?|tutup|closing|bertarikh|dated|dikemaskini|updated)(?![a-z])', re.I | re.A)
+    r'|yuran|bayaran|fees?|tutup|closing|bertarikh|dated|dikemaskini|updated'
+    r'|hingga|sehingga|until|tamat|berakhir|sah'
+    rf'|by(?=\s+(?:\d|{_MONTH}(?![a-z]))))(?![a-z])', re.I | re.A)
 # Rule D: a numeric date with a two-digit year ("16/02/25", "16.2.25"), never expanded to 20xx; and,
 # beside a month name, a day before it ("3 Februari") or a one- or two-digit number after it
 # ("Feb 25", "Jan '25").
 _SHORT_DATE_RE = re.compile(r'(?<!\d)\d{1,2}\s*[/.\-]\s*\d{1,2}\s*[/.\-]\s*\d{2}(?!\d)')
 _DAY_BEFORE_RE = re.compile(r'(?<!\d)\d{1,2}\s*$')
 _NUMBER_AFTER_RE = re.compile(r"\.?\s*['‘’]?\s*\d{1,2}(?!\d)")
+# Twelfth review: an admission NUMBER ("No. Kemasukan 2024", "Nombor Kemasukan", "Admission No") is
+# no intake: the phrase and a year straight after it are blanked before the line is read, so the year
+# is no intake year and its Kemasukan / Admission no admission phrase.
+_ADMISSION_NO_RE = re.compile(
+    r'(?<![a-z])(?:(?:no(?:\.\s*|\s+)|nombor\s+)kemasukan|admission\s+(?:no(?![a-z])\.?|number))(?![a-z])'
+    r'(?:[\s:.\-#]*20\d{2}(?!\d)(?!\s*[/\-–]\s*\d))?', re.I | re.A)
 # The intake words whose plain year counts beside any session ("Ambilan 2023 Sesi 2025/2026" = 2023).
 _INTAKE_WORD_RE = re.compile(r'(?:pengambilan|ambilan|kemasukan|intake|admission)', re.I)
 # What may stand between an admission phrase and its date: spaces and stops, a term number ("Ambilan
@@ -361,10 +380,12 @@ def _session_reading(text, session, taken, terms):
         return GiftReading(None, 'unclear_date')
     word = _start_word(text, start, taken)
     if kind == 'year':
-        # The owner's step 2: a plain year straight after an intake word, whatever the session.
+        # The owner's step 2: a plain year straight after an intake word, whatever the session; but
+        # not on a line with an exam word (twelfth review, as step 2 below): "Intake: 2024 SPM leavers,
+        # Session 2025/2026" may name the exam's year.
         if word and _INTAKE_WORD_RE.fullmatch(word.group(0)) \
                 and re.fullmatch(r'[\s:.\-(]*', text[word.end():start]):
-            return GiftReading(year, 'intake_year')
+            return GiftReading(None, 'exam_line') if _EXAM_RE.search(text) else GiftReading(year, 'intake_year')
         return GiftReading(None, 'unclear_date')
     # Rule B: a date or month-year after an admission phrase, in the session, agreeing with the terms.
     if word is None or year not in session or (second and year != s1) or ('first_intake' in terms and year != s):
@@ -377,7 +398,7 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
     docstring). ``intake`` is the letter's intake line, ``reporting_date`` its stored reporting date,
     ``context`` its programme / institution / stream words, ``confirmation`` True for a
     confirmation-of-studies letter."""
-    text = intake or ''
+    text = _ADMISSION_NO_RE.sub(lambda m: ' ' * len(m.group(0)), intake or '')
     terms = _terms(text) | _terms(context or '', context=True)
     if 'later' in terms:
         return GiftReading(None, 'later_term')
@@ -408,8 +429,3 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
     if years:
         return GiftReading(None, 'several_years')
     return GiftReading(None, 'exam_line' if _EXAM_RE.search(text) else 'no_year')
-
-
-def gift_start_year(intake, reporting_date='', **kw):
-    """`gift_reading`'s year alone (None = unknown)."""
-    return gift_reading(intake, reporting_date, **kw).year
