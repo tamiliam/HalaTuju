@@ -5,22 +5,28 @@ Pinned here:
     everyone else read only (or nothing); another organisation 404. The side is recorded on the note.
   * The WINDOW stays #55's: from Awaiting review until the reviewer records a decision, for both sides.
   * Reassignment: the new reviewer reads every note and replies; the old one loses the case, its notes and
-    its unseen rows.
-  * WHO HEARS: everyone on the case but the writer gets an unseen row; the email goes to the OTHER side only
-    and never carries the text; with no reviewer, only the org admin side gets rows.
+    its unseen rows — after an unassign and a fresh assign too (`sweep`, #73 review).
+  * WHO HEARS (#73 review): the OTHER side only, rows and email alike; never a fellow org admin for their own
+    side's note; with no reviewer, an org admin's note reaches nobody. The email never carries the text, is
+    billed to the case's organisation and cools down (one per person per case per ten minutes).
   * Per-person unread: the "New note" mark on the list and the bell count, cleared when THAT person opens
-    the notes.
+    the notes or replies; the bell count fenced to the caller's own organisation; the list reads no extra
+    query for the mark.
   * ONE WRITER of `StaffNotification`: `apps/scholarship/staff_notifications.py`.
 """
 import os
 import re
 from unittest import mock
 
+from datetime import timedelta
+
 from django.core import mail
+from django.db import connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
-from apps.scholarship import assign_notify, reviewer_notes, staff_notifications
+from apps.scholarship import assign_notify, reviewer_notes, staff_notifications, usage
 from apps.scholarship.emails.staff_note_mail import build_staff_note_email
 from apps.scholarship.models import ReviewerNote, StaffNotification
 from apps.scholarship.pool import pool_ref
@@ -168,12 +174,43 @@ class ReassignmentTest(_Base):
             assign_notify.send_pending()
         self.assertEqual(self._rows(self.reviewer), 0)
 
+    def _cron(self):
+        with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email'), \
+                mock.patch('apps.scholarship.emails.send_student_assigned_reviewer_email'):
+            assign_notify.send_pending()
+
+    def test_an_unassign_then_a_fresh_assign_sweeps_the_old_reviewers_rows(self):
+        """#73 review: the fresh assign's event has no `from_admin`, so a sweep by "who lost it" missed A."""
+        self._cron()                                   # the first assignment's emails are out of the way
+        self._post(self.org_admin)
+        self.assertEqual(self._rows(self.reviewer), 1)
+        assignment.assign_reviewer(self.app, reviewer=None, by_admin=self.super)
+        self.app.refresh_from_db()
+        self._reassign()
+        self._cron()
+        self.assertEqual(self._rows(self.reviewer), 0)
+        self._post(self.org_admin, 'to the new reviewer')
+        self.assertEqual(self._rows(self.new_reviewer), 1)   # the holder's own rows are never swept
+
+    def test_a_new_note_sweeps_its_case(self):
+        self._post(self.org_admin)
+        assignment.assign_reviewer(self.app, reviewer=None, by_admin=self.super)
+        self.app.refresh_from_db()
+        self.assertEqual(self._rows(self.reviewer), 1)   # an unassign writes no queued event: no cron sweep
+        self._post(self.org_admin, 'while nobody holds it')
+        self.assertEqual(self._rows(self.reviewer), 0)
+
+    def test_the_sweep_keeps_the_org_admin_sides_rows(self):
+        self._post(self.reviewer)
+        staff_notifications.sweep(self.app.id, None)
+        self.assertEqual((self._rows(self.org_admin), self._rows(self.org_admin2)), (1, 1))
+
 
 class WhoHearsTest(_Base):
     def test_an_org_admin_note_reaches_the_reviewer_by_email_without_the_text(self):
         self._post(self.org_admin)
         self.assertEqual(self._rows(self.reviewer), 1)
-        self.assertEqual(self._rows(self.org_admin2), 1)   # on the case, but never marked: their own side
+        self.assertEqual(self._rows(self.org_admin2), 0)   # #73 review: their own side wrote it, as the email
         self.assertEqual(self._rows(self.org_admin), 0)    # never the writer
         self.assertEqual([m.to for m in mail.outbox], [[self.reviewer.email]])
         sent = mail.outbox[0]
@@ -189,11 +226,32 @@ class WhoHearsTest(_Base):
         for sent in mail.outbox:
             self.assertNotIn(MARK, sent.subject + sent.body)
 
-    def test_no_reviewer_yet_only_the_org_admin_side_hears(self):
+    def test_no_reviewer_yet_an_org_admin_note_reaches_nobody(self):
         app = make_application('profile_complete', cohort=self.cohort)
         self.assertEqual(self._post(self.org_admin, app=app).status_code, 201)
-        self.assertEqual(set(StaffNotification.objects.values_list('recipient_id', flat=True)), {self.org_admin2.id})
+        self.assertFalse(StaffNotification.objects.exists())
         self.assertEqual(mail.outbox, [])
+
+    def test_the_email_is_billed_to_the_cases_organisation(self):
+        seen = []
+        with mock.patch('apps.scholarship.emails.send_staff_note_email',
+                        side_effect=lambda *a, **k: seen.append(dict(usage.current_context()))):
+            self._post(self.org_admin)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual((seen[0]['org_id'], seen[0]['app_id']), (self.org.id, self.app.id))
+
+    def test_one_email_per_person_per_case_per_ten_minutes(self):
+        self._post(self.org_admin, 'one')
+        self._post(self.org_admin2, 'two')               # a minute later in effect: rows, no second email
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(self._rows(self.reviewer), 2)    # the mark still counts both
+        StaffNotification.objects.update(
+            created_at=timezone.now() - staff_notifications.EMAIL_COOL_DOWN - timedelta(minutes=1))
+        self._post(self.org_admin, 'three')
+        self.assertEqual(len(mail.outbox), 2)
+        other = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        self._post(self.org_admin, 'another case', app=other)   # per case: another student emails at once
+        self.assertEqual(len(mail.outbox), 3)
 
     def test_qc_never_gets_a_row(self):
         qc = make_admin('qc', owning_org=self.org)
@@ -223,10 +281,33 @@ class UnreadPerPersonTest(_Base):
         self.assertEqual(self._marked(self.org_admin), set())
         self.assertEqual(self._marked(self.org_admin2), {self.app.id})
 
-    def test_a_reader_opening_the_notes_clears_nothing(self):
+    def test_opening_one_case_clears_only_that_case_and_only_the_opener(self):
+        second = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
         self._post(self.reviewer)
-        self._get(make_admin('qc', owning_org=self.org))
-        self.assertEqual(self._rows(self.org_admin), 1)
+        self._post(self.reviewer, app=second)
+        self.assertEqual(self._marked(self.org_admin), {self.app.id, second.id})
+        self._get(self.org_admin)
+        self.assertEqual(self._marked(self.org_admin), {second.id})
+        self.assertEqual(self._marked(self.org_admin2), {self.app.id, second.id})
+
+    def test_replying_clears_the_repliers_own_mark(self):
+        """#73 review: the reviewer replies without a fresh GET; the org admin's note is no longer new to her."""
+        self._post(self.org_admin)
+        self.assertEqual(self._marked(self.reviewer), {self.app.id})
+        self.assertEqual(self._post(self.reviewer, 'reply').status_code, 201)
+        self.assertEqual(self._marked(self.reviewer), set())
+        self.assertEqual(self._marked(self.org_admin), {self.app.id})   # the reply is new to the other side
+
+    def test_the_list_reads_no_extra_query_with_notes_present(self):
+        def queries():
+            with CaptureQueriesContext(connection) as ctx:
+                self.assertEqual(authed_client(self.reviewer).get(LIST).status_code, 200)
+            return len(ctx.captured_queries)
+        before = queries()
+        self._post(self.org_admin)
+        self._post(self.org_admin2, 'two')
+        self.assertEqual(self._marked(self.reviewer), {self.app.id})
+        self.assertEqual(queries(), before)
 
 
 class BellCountTest(_Base):
@@ -246,6 +327,17 @@ class BellCountTest(_Base):
         self._post(self.reviewer)
         self._get(self.org_admin)
         self.assertEqual(authed_client(self.org_admin).get(COUNT).data['from_reviewer'], 0)
+
+    def test_fenced_to_the_callers_own_organisation(self):
+        """#73 review: a row filed under another organisation never reaches this caller's bell."""
+        other_app = make_application('interviewing', cohort=make_cohort(owning_organisation=make_org()))
+        note = ReviewerNote.objects.create(application=other_app, body='x', author=self.reviewer,
+                                           author_role='reviewer', author_email='')
+        staff_notifications.notify(other_app, kind='reviewer_note', source_id=note.id, recipients=[self.org_admin])
+        self.assertEqual(self._rows(self.org_admin), 1)
+        self.assertEqual(staff_notifications.unseen_counts(self.org_admin)['from_reviewer'], 0)
+        self._post(self.reviewer)
+        self.assertEqual(staff_notifications.unseen_counts(self.org_admin)['from_reviewer'], 1)
 
     def test_one_query(self):
         self._post(self.reviewer)

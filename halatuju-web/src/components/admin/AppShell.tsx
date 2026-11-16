@@ -3,11 +3,12 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, getNewNoteCount, type AdminScopes, type NewNoteCount } from '@/lib/admin-api'
+import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, type AdminScopes } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
+import { useNewNoteCount } from '@/lib/useNewNoteCount'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
 import { withGiftHrefs } from '@/lib/giftHref'
 import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
@@ -305,18 +306,9 @@ function Chrome(
   }, [token, wantsPaymentsCount, orgless, pathname])
 
   // Request #73: how many STUDENTS have a note from the other side this person has not opened (served, one
-  // read). A source partner, a mentor and a member are never on a case's notes, so they skip it. Same manners
-  // as the badges: a refusal is swallowed, and `Promise.resolve().then` keeps a missing function (a test's
-  // factory mock of admin-api) from throwing inside the shell.
-  const [newNotes, setNewNotes] = useState<NewNoteCount>({ from_reviewer: 0, from_org_admin: 0 })
-  useEffect(() => {
-    if (!staffToken) { setNewNotes({ from_reviewer: 0, from_org_admin: 0 }); return }
-    let live = true
-    Promise.resolve().then(() => getNewNoteCount({ token: staffToken }))
-      .then((d) => { if (live && d) setNewNotes(d) })
-      .catch(() => { /* a hint; never block the shell on it */ })
-    return () => { live = false }
-  }, [staffToken, pathname])
+  // read; at most once a minute on a route change, and again on window focus: `useNewNoteCount`). A source
+  // partner, a mentor and a member are never on a case's notes, so they skip it.
+  const newNotes = useNewNoteCount(staffToken, pathname)
 
   // What the bell shows: counts the console already fetches, gathered in one place. The one read added
   // for it is #73's new-note count (its read state is the notes' own "opened"); the note in the menu stays.

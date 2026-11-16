@@ -15,7 +15,7 @@ const P = 'admin.scholarship.reviewerNotes'
 const NOTES = {
   notes: [{ id: 1, body: 'Please ask about the older brother.', author_name: 'Org Admin One',
     author_role: 'org_admin' as const, is_you: false, created_at: '2026-11-05T10:42:00+08:00' }],
-  window_open: true, max_length: 2000,
+  window_open: true, reason: null, max_length: 2000,
 }
 
 it('sits directly under Reviewer assigned, with the box, for the org admin', async () => {

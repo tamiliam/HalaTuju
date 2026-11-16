@@ -14,6 +14,19 @@ Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: b
 - An email goes to the OTHER side only (the assigned reviewer, or the org admin side), after the commit, in English, Malay and Tamil stacked; it never carries the note's text and links to the student's page.
 - Guides (Reviewer, Org admin, QC) and both FAQs updated. The bell line was added by the owner at no charge.
 
+### refactor: request #73 review round - right closed wording, cleaner marks, billed alert (2026-11-16)
+
+Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, review round).
+- Before Awaiting review (Submitted, Shortlisted) the card says notes can be added "once the case reaches Awaiting review", not that they are finished. The notes payload serves `reason` (`not_yet` | `finished` | null when open) and a refused POST says `notes_not_yet` or `notes_closed` the same way (en, ms, ta).
+- The org admin's own notes read "Org admin (you)" (en, ms, ta), as the reviewer's read "Reviewer (you)".
+- Adding a note clears the writer's own New note mark on that case.
+- Rows go to the other side only, as the email does: a fellow org admin's note lights nothing and emails nobody on the org admin side.
+- An unassign and then a fresh assign no longer leaves the first reviewer's unseen rows: `staff_notifications.sweep` (replaces `forget`) drops unseen rows on org admin notes for anyone but the current reviewer, in the assign-emails cron and on every new note. `services/assignment.py` and its query budgets are untouched.
+- The email is billed to the case's organisation (`usage_context(application=...)`) and cools down: no email to someone who already had a note on the same case in the last 10 minutes (they still get the mark).
+- The bell count is fenced to the caller's own organisation, asked at most once a minute on route changes and again when the window regains focus (`useNewNoteCount`, out of `AppShell`).
+- Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
+- Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
+
 ### refactor: request #75 - the profile-complete email no longer promises an interview (2026-11-19)
 
 Owner-approved wording (19 Nov). Students who finish their profile now read "If your application goes forward, we'll invite you to a short interview", and the closing line adds "or news about your application". Malay changes the same way. The email golden was updated by hand for these four strings only; `test_email_branding.py` passes.

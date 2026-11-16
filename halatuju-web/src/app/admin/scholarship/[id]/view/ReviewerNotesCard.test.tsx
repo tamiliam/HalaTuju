@@ -4,7 +4,8 @@
  * Request #55 (2026-11-07), two-way since #73 (2026-11-16): "Org admin and reviewer notes", rendered.
  * Pinned: the org admin's face (list, box, live counter, append-only line, Add note), the reviewer's face
  * (Reply / Send reply), the reader's face (read-only list, or the empty line), each note's side ("Org
- * admin", "Reviewer", "Reviewer (you)") and the reviewer's tint, the closed hint for both writers, the box
+ * admin", "Reviewer", "(you)" on the caller's own only) and the reviewer's tint, the served reason the window
+ * is shut ("not yet" before Awaiting review, "finished" after) for both writers, the box
  * following the SERVED `can_add` and `viewer`, the 2,000 limit, and a refusal worded by its code.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -24,7 +25,7 @@ const NOTE = { id: 1, body: 'Ask about the transport cost.', author_name: 'Org A
 const REPLY = { id: 2, body: 'The bus is RM90 a month.', author_name: 'Reviewer Two',
   author_role: 'reviewer' as const, is_you: false, created_at: '2026-11-06T09:00:00+08:00' }
 const payload = (over: Partial<ReviewerNotes> = {}): ReviewerNotes => ({
-  notes: [NOTE], viewer: 'org_admin', window_open: true, can_add: true, max_length: 2000, ...over,
+  notes: [NOTE], viewer: 'org_admin', window_open: true, reason: null, can_add: true, max_length: 2000, ...over,
 })
 
 function mount() {
@@ -84,11 +85,40 @@ describe('the org admin', () => {
   })
 
   it('outside the window: the notes stay, the box goes, and the hint says why', async () => {
-    get.mockResolvedValue(payload({ window_open: false, can_add: false }))
+    get.mockResolvedValue(payload({ window_open: false, reason: 'finished', can_add: false }))
     mount()
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
     expect(screen.queryByLabelText(`${P}.addLabel`)).toBeNull()
     expect(screen.getByText(`${P}.closedHint`)).toBeTruthy()
+    expect(screen.queryByText(`${P}.notYetHint`)).toBeNull()
+  })
+
+  it('before Awaiting review (#73 review): the hint says "not yet", never "finished"', async () => {
+    get.mockResolvedValue(payload({ notes: [], window_open: false, reason: 'not_yet', can_add: false }))
+    mount()
+    expect(await screen.findByText(`${P}.notYetHint`)).toBeTruthy()
+    expect(screen.queryByText(`${P}.closedHint`)).toBeNull()
+  })
+
+  it('words a not-yet refusal by its code, and re-reads', async () => {
+    get.mockResolvedValue(payload({ notes: [] }))
+    add.mockRejectedValue(Object.assign(new Error('x'), { code: 'notes_not_yet' }))
+    mount()
+    fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'Early note' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
+    expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.notes_not_yet:2,000`)
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
+  })
+
+  it('"Org admin (you)" on her own notes only', async () => {
+    const mine = { ...NOTE, id: 3, is_you: true, body: 'Mine.' }
+    get.mockResolvedValue(payload({ notes: [NOTE, mine] }))
+    const { container } = mount()
+    expect(await screen.findByText(mine.body)).toBeTruthy()
+    const items = container.querySelectorAll('li[data-note-side]')
+    expect(items[0].textContent).toContain(`${P}.role.org_admin`)
+    expect(items[0].textContent).not.toContain('orgAdminYou')
+    expect(items[1].textContent).toContain(`${P}.role.orgAdminYou`)
   })
 })
 
@@ -142,7 +172,7 @@ describe('the assigned reviewer (#73)', () => {
   })
 
   it('once the review is finished: no box, and the closed hint', async () => {
-    get.mockResolvedValue(payload({ viewer: 'reviewer', window_open: false, can_add: false }))
+    get.mockResolvedValue(payload({ viewer: 'reviewer', window_open: false, reason: 'finished', can_add: false }))
     mount()
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
@@ -162,6 +192,20 @@ describe('the conversation (#73)', () => {
     expect(items[1].textContent).not.toContain('reviewerYou')
     expect(items[1].className).toContain('bg-primary-50')
     expect(items[0].className).not.toContain('bg-primary-50')
+  })
+
+  it('"Reviewer (you)" shows on the reviewer\'s own notes only, never on an earlier reviewer\'s', async () => {
+    const earlier = { ...REPLY, id: 4, author_name: 'Earlier Reviewer', body: 'Earlier reviewer note.' }
+    const mine = { ...REPLY, id: 5, is_you: true, body: 'My reply.' }
+    get.mockResolvedValue(payload({ viewer: 'reviewer', notes: [NOTE, earlier, mine] }))
+    const { container } = mount()
+    expect(await screen.findByText(mine.body)).toBeTruthy()
+    const items = Array.from(container.querySelectorAll('li[data-note-side]'))
+    const you = items.filter((li) => li.textContent?.includes(`${P}.role.reviewerYou`))
+    expect(you).toHaveLength(1)
+    expect(you[0].textContent).toContain(mine.body)
+    expect(items[1].textContent).toContain(`${P}.role.reviewer`)
+    expect(items[0].textContent).not.toContain('You')
   })
 })
 

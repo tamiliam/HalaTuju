@@ -5,7 +5,8 @@
  * edit and no delete. Reading the notes clears the caller's "New note" mark for the case (server-side).
  *
  * `can_add` and `viewer` are SERVED (the window, the side and the assignment are the server's) — the card never
- * derives them. Refusal codes: `writer_only`, `notes_closed`, `bad_body`, `empty_body`, `too_long`.
+ * derives them. So is `reason`, why the window is shut. Refusal codes: `writer_only`, `notes_not_yet`,
+ * `notes_closed`, `bad_body`, `empty_body`, `too_long`.
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
@@ -27,6 +28,8 @@ export interface ReviewerNotes {
   notes: ReviewerNote[]
   viewer: NoteViewer
   window_open: boolean
+  /** Why the window is shut: before Awaiting review, or the review is over. Null while it is open. */
+  reason: 'not_yet' | 'finished' | null
   can_add: boolean
   max_length: number
 }
@@ -40,13 +43,13 @@ export async function addReviewerNote(id: number, body: string, options?: ApiOpt
     `/api/v1/admin/scholarship/applications/${id}/reviewer-notes/`, 'POST', { body }, options)
 }
 
-/** The bell line's numbers (#73): how many STUDENTS have a note from the other side the caller has not seen. */
 /** The list row's #73 field (`AdminScholarshipListItem` extends this): the other side wrote a note THIS person
  * has not seen (the "New note" mark). */
 export interface NewNoteListFields {
   new_note?: boolean
 }
 
+/** The bell line's numbers (#73): how many STUDENTS have a note from the other side the caller has not seen. */
 export interface NewNoteCount {
   from_reviewer: number
   from_org_admin: number

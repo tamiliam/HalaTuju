@@ -19,12 +19,12 @@ _INTRO = {
     'reviewer': {
         'en': 'The reviewer added a new note about a student in your programme.',
         'ms': 'Penyemak telah menambah nota baharu tentang seorang pelajar dalam program anda.',
-        'ta': 'மதிப்பாய்வாளர் உங்கள் திட்டத்தில் உள்ள ஒரு மாணவர் பற்றி புதிய குறிப்பைச் சேர்த்துள்ளார்.',
+        'ta': 'மதிப்பாய்வாளர் உங்கள் திட்டத்தில் உள்ள ஒரு மாணவரைப் பற்றிப் புதிய குறிப்பைச் சேர்த்துள்ளார்.',
     },
     'org_admin': {
         'en': 'Your org admin added a new note about a student you are reviewing.',
         'ms': 'Pentadbir organisasi anda telah menambah nota baharu tentang pelajar yang anda semak.',
-        'ta': 'உங்கள் நிறுவன நிர்வாகி நீங்கள் மதிப்பாய்வு செய்யும் ஒரு மாணவர் பற்றி புதிய குறிப்பைச் சேர்த்துள்ளார்.',
+        'ta': 'உங்கள் நிறுவன நிர்வாகி, நீங்கள் மதிப்பாய்வு செய்யும் ஒரு மாணவரைப் பற்றிப் புதிய குறிப்பைச் சேர்த்துள்ளார்.',
     },
 }
 _OPEN = {

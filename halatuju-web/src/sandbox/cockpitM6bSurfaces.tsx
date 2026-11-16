@@ -63,7 +63,7 @@ const routesFor = (app: AdminScholarshipDetail): Record<string, () => unknown> =
   // Request #55 / #73: a note, a tinted reply and the open box, so mobile-check measures the two-way card as an
   // org admin sees it.
   '/api/v1/admin/scholarship/applications/1/reviewer-notes/': () => ({
-    viewer: 'org_admin', window_open: true, can_add: true, max_length: 2000,
+    viewer: 'org_admin', window_open: true, reason: null, can_add: true, max_length: 2000,
     notes: [
       { id: 1, author_name: 'Pentadbir Contoh', author_role: 'org_admin', is_you: true,
         created_at: '2026-11-05T10:42:00+08:00',

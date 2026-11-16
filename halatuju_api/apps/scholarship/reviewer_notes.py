@@ -9,9 +9,9 @@ recorded as the reviewer's), else anyone who may work students — org admins an
 as the org admin side's). Anyone else is refused `writer_only`. The new reviewer after a reassignment reads
 every note, the earlier reviewer's included, and is the one who may reply.
 
-⚠ WHO HEARS (#73): `staff_notifications.notify` runs INSIDE the note's transaction — everyone on the case
-but the writer gets an unseen row — and the email goes after the commit to the OTHER side only, never with
-the text.
+⚠ WHO HEARS (#73): the OTHER side only — the assigned reviewer when the org admin side writes, the org
+admin side when the reviewer writes (`staff_notifications.the_other_side`). `notify` gives them an unseen
+row INSIDE the note's transaction; the email goes after the commit, never with the text.
 
 ⚠ THE WINDOW: "from Awaiting Review until the reviewer records a decision" (owner, 2026-11-07).
   * FROM Awaiting Review — status `profile_complete` (its label IS "Awaiting review"), then
@@ -42,6 +42,9 @@ from .status_lock import StatusRefused, lock_application_for
 
 #: The statuses a note may be added at: Awaiting review, Interviewing.
 NOTE_STATUSES = ('profile_complete', 'interviewing')
+#: Before the window: the case has not reached Awaiting review yet (#73 review). Every other closed status
+#: is after it, or off the road (rejected, withdrawn, expired): the review is over.
+_BEFORE_THE_WINDOW = ('submitted', 'shortlisted')
 
 #: What does not count as writing, spelled out character by character so the card's counter trims
 #: exactly what this trims (Python's `\s` and JS's `\s` / `trim()` disagree, U+FEFF for one): the
@@ -54,7 +57,8 @@ _EDGES = re.compile(f'^{_INVISIBLE.pattern}+|{_INVISIBLE.pattern}+$')
 
 
 class ReviewerNoteError(Exception):
-    """Raised with a machine code: 'writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'."""
+    """Raised with a machine code: 'writer_only', 'notes_not_yet', 'notes_closed', 'bad_body', 'empty_body',
+    'too_long'."""
     def __init__(self, code):
         self.code = code
         super().__init__(code)
@@ -63,6 +67,19 @@ class ReviewerNoteError(Exception):
 def window_open(application):
     """May a note be added to ``application`` now? (Who may add one is `side_of`.)"""
     return application.status in NOTE_STATUSES and decision_gate_applies(application)
+
+
+def closed_reason(application, status=None):
+    """Why the window is shut: 'not_yet' (the case has not reached Awaiting review), 'finished' (the review
+    is over), or None while it is open. ``status``: a locked row's own (`StatusRefused.status`)."""
+    if status is None and window_open(application):
+        return None
+    return 'not_yet' if (status or application.status) in _BEFORE_THE_WINDOW else 'finished'
+
+
+def _closed_error(application, status=None):
+    return ReviewerNoteError('notes_not_yet' if closed_reason(application, status) == 'not_yet'
+                             else 'notes_closed')
 
 
 def side_of(application, admin):
@@ -100,19 +117,21 @@ def add_note(application, body, *, author):
     with transaction.atomic():
         try:
             lock_application_for(application, NOTE_STATUSES)
-        except StatusRefused:
-            raise ReviewerNoteError('notes_closed') from None
+        except StatusRefused as refused:
+            raise _closed_error(application, refused.status or 'gone') from None
         side = side_of(application, author)   # asked of the locked row: a reassignment cannot race it
         if side == 'reader':
             raise ReviewerNoteError('writer_only')
         if not window_open(application):
-            raise ReviewerNoteError('notes_closed')
+            raise _closed_error(application)
         note = ReviewerNote.objects.create(
             application=application, body=text, author=author, author_role=side,
             author_email=(getattr(author, 'email', '') or '')[:254])
-        people = staff_notifications.people_on_the_case(application, author)
+        people = staff_notifications.the_other_side(application, side=side, writer=author)
+        staff_notifications.sweep(application.id, application.assigned_to_id)
         staff_notifications.notify(application, kind=REVIEWER_NOTE, source_id=note.id, recipients=people)
-        staff_notifications.alert_by_email(application, author_role=side, recipients=people)
+        staff_notifications.alert_by_email(application, author_role=side, recipients=people,
+                                           source_id=note.id)
         return note
 
 

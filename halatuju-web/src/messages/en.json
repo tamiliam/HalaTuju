@@ -4286,9 +4286,11 @@
         "sendReply": "Send reply",
         "sending": "Sending…",
         "closedHint": "The review is finished, so no more notes can be added. These stay on the file, read-only.",
+        "notYetHint": "Notes can be added once the case reaches Awaiting review, until the reviewer records a decision.",
         "loadError": "Could not load the notes.",
         "error": {
           "writer_only": "Only an org admin or the assigned reviewer can add a note.",
+          "notes_not_yet": "Notes can be added once the case reaches Awaiting review.",
           "notes_closed": "The review is finished, so no more notes can be added.",
           "bad_body": "This note contains characters that cannot be saved. Remove them and try again.",
           "empty_body": "Write the note first.",
@@ -4297,6 +4299,7 @@
         },
         "role": {
           "org_admin": "Org admin",
+          "orgAdminYou": "Org admin (you)",
           "reviewer": "Reviewer",
           "reviewerYou": "Reviewer (you)"
         }

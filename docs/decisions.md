@@ -14,6 +14,16 @@ Branch req73, one commit, not pushed. Migration `0216_two_way_notes` (additive: 
 8. **The email is not in the email golden.** `test_email_branding` requires its spec set to equal the golden, and adding a spec would need `UPDATE_EMAIL_GOLDEN`, which is never set. Its wording is pinned by its own test (`test_staff_notifications.py`); the owner may fold it into the golden later.
 9. **The bell line keeps the `Attention` shape** with one optional field, `href`; a line with `href` is a real link (`min-h-11`). The bell's own note is unchanged. The shell's read is skipped for a source partner, a mentor and a member, and a failed read is swallowed.
 
+**Review round (second commit, no schema change).** Items 3 and 4 are amended:
+
+10. **Rows for the other side only** (amends 3). A reviewer's note: a row for each of the organisation's staff who may work students. An org admin's note: a row for the assigned reviewer, if any. Never the writer, never a fellow org admin. Rows and email go to the same people.
+11. **`sweep` replaces `forget`** (amends 4). It is keyed on the current holder only: unseen rows on org admin notes for anyone but `assigned_to` are deleted (all of them when nobody holds the case). It runs in the assign-emails cron (`send_one`) and on every new note. That closes the unassign-then-assign gap: a fresh assign has `from_admin=None`, so the old `forget` missed the first reviewer. `services/assignment.py` and the 15 / 14 assign budgets are untouched, so req75's change to that file rebases cleanly. An unassign on its own still queues no event; its leftover rows stay hidden (reads ask the case as it is now) until the next note or assignment sweeps them.
+12. **`reason` beside `window_open`.** `not_yet` for Submitted and Shortlisted, `finished` for everything else that is closed, null while open. The POST refusal follows the locked row: `notes_not_yet` or `notes_closed`.
+13. **Adding a note clears the writer's own mark** on that case (`mark_seen` after the POST).
+14. **The bell count is fenced** to `org_id=admin.owning_organisation_id`.
+15. **The email is billed and cools down.** Sent inside `usage.usage_context(application=...)`. Cool-down: no email to anyone with another row on the same case created in the last 10 minutes, seen or not (`StaffNotification.created_at`, no new column); they still get the row and the mark.
+16. **The bell asks at most once a minute** on route changes, and again at once when the window regains focus (`useNewNoteCount`).
+
 ## 2026-11-19 — Request #75: the profile-complete email no longer promises an interview (owner)
 
 1. **Owner ruling, 19 Nov 2026.** Because an officer may now reject before interview, the students' "profile complete" email no longer says "We invite you to a short interview". English: "If your application goes forward, we'll invite you to a short interview." The closing line adds "or news about your application". The Malay version changes the same way ("Jika permohonan anda diteruskan, …"; "… atau berita tentang permohonan anda"). The email has no Tamil version. The text is in `apps/scholarship/emails/student_notices.py`. The email golden (`tests/fixtures/email_branding_golden.json`) was updated by hand for exactly these four strings (4 English and 2 Malay places), never through `UPDATE_EMAIL_GOLDEN`, and `test_email_branding.py` passes against the renderer.

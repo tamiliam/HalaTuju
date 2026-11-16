@@ -153,9 +153,22 @@ class WindowTest(_Base):
                         verdict_decided_at=timezone.now())
         self.assertEqual(self._post(self.org_admin, app=app).status_code, 201)
 
-    def test_closed_before_awaiting_review_and_once_decided(self):
+    def test_closed_before_awaiting_review_says_not_yet(self):
+        """#73 review: before the window the refusal and the served reason say "not yet", never "finished"."""
+        for app in (make_application('submitted', cohort=self.cohort),
+                    make_application('shortlisted', cohort=self.cohort)):
+            with self.subTest(app.status):
+                r = self._post(self.org_admin, app=app)
+                self.assertEqual(r.status_code, 400)
+                self.assertEqual(r.data['code'], 'notes_not_yet')
+                self.assertIn('Awaiting review', r.data['error'])
+                r = self._get(self.org_admin, app=app)
+                self.assertEqual((r.data['can_add'], r.data['window_open'], r.data['reason']),
+                                 (False, False, 'not_yet'))
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_closed_once_decided_says_finished(self):
         closed = [
-            make_application('shortlisted', cohort=self.cohort),
             self._app('verdict_recorded', outcome='recommend'),
             self._app('verdict_recorded', outcome='decline'),
             self._app('awaiting_qc', outcome='recommend'),
@@ -168,8 +181,25 @@ class WindowTest(_Base):
                 r = self._post(self.org_admin, app=app)
                 self.assertEqual(r.status_code, 400)
                 self.assertEqual(r.data['code'], 'notes_closed')
-                self.assertFalse(self._get(self.org_admin, app=app).data['can_add'])
+                self.assertIn('finished', r.data['error'])
+                r = self._get(self.org_admin, app=app)
+                self.assertEqual((r.data['can_add'], r.data['reason']), (False, 'finished'))
         self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_open_serves_no_reason(self):
+        r = self._get(self.org_admin, app=self._app('interviewing'))
+        self.assertEqual((r.data['window_open'], r.data['reason']), (True, None))
+
+    def test_the_locked_row_decides_not_yet_or_finished(self):
+        """The status the lock refuses (`StatusRefused.status`) picks the code, not the stale object's."""
+        for row_status, code in (('shortlisted', 'notes_not_yet'), ('recommended', 'notes_closed')):
+            with self.subTest(row_status):
+                app = self._app('interviewing')
+                stale = type(app).objects.get(pk=app.pk)
+                type(app).objects.filter(pk=app.pk).update(status=row_status)
+                with self.assertRaises(reviewer_notes.ReviewerNoteError) as caught:
+                    reviewer_notes.add_note(stale, MARK, author=self.org_admin)
+                self.assertEqual(caught.exception.code, code)
 
     def test_notes_stay_readable_after_the_window_closes(self):
         reviewer_notes.add_note(self.app, MARK, author=self.org_admin)
@@ -202,7 +232,8 @@ class BodyRulesTest(_Base):
 
     def test_every_refusal_has_words(self):
         from apps.scholarship.views_admin.reviewer_notes import _MESSAGES
-        self.assertEqual(set(_MESSAGES), {'writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'})
+        self.assertEqual(set(_MESSAGES), {'writer_only', 'notes_not_yet', 'notes_closed', 'bad_body', 'empty_body',
+                                         'too_long'})
 
 
 class AppendOnlyTest(_Base):

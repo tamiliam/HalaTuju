@@ -4,14 +4,14 @@
  * ORG ADMIN AND REVIEWER NOTES (request #55, 2026-11-07; two-way since request #73, 2026-11-16), directly
  * under "Reviewer assigned".
  *
- * One conversation, oldest first. Each note names its author, their side ("Org admin", "Reviewer", or
- * "Reviewer (you)") and the date; the reviewer's notes carry the brand tint so the two sides read apart.
+ * One conversation, oldest first. Each note names its author, their side ("Org admin", "Reviewer", with
+ * "(you)" on the caller's own notes) and the date; the reviewer's notes carry the brand tint so the two sides read apart.
  * Three faces, chosen by the SERVED `viewer`:
  *   • `org_admin` (an org admin or a super with students.edit): "Add a note" / "Add note";
  *   • `reviewer` (the reviewer assigned to the case): "Reply" / "Send reply";
  *   • `reader` (QC, a view-only admin): the list, read-only.
- * Writers get a live counter ("97 / 2,000") and the append-only line. Once the reviewer records a decision
- * the window shuts and both writers see the closed hint.
+ * Writers get a live counter ("97 / 2,000") and the append-only line. While the window is shut both writers
+ * see why, from the SERVED `reason`: 'not_yet' (the case has not reached Awaiting review) or 'finished'.
  *
  * ⚠ SERVE, NEVER DERIVE: the side is the server's `viewer`, whether the box shows is its `can_add` (the
  * window AND the side) and the limit is its `max_length`. The notes are their OWN fetch (the detail GET
@@ -24,7 +24,7 @@ import { formatDateTime } from '@/lib/formatDate'
 
 import type { T } from './shared'
 
-const CODES = ['writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'] as const
+const CODES = ['writer_only', 'notes_not_yet', 'notes_closed', 'bad_body', 'empty_body', 'too_long'] as const
 
 /** What does not count as writing. ⚠ THE SERVER'S `_INVISIBLE` (`apps/scholarship/reviewer_notes.py`), source for
  *  source: `trim()` alone disagrees with it (U+FEFF, the Hangul fillers), and then the 2,000 boundary and the
@@ -85,7 +85,7 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
       setError((CODES as readonly string[]).includes(code)
         ? t(`${P}.error.${code}`, { max: fmt(max) })
         : t(`${P}.error.generic`))
-      if (code === 'notes_closed' || code === 'writer_only') {
+      if (code === 'notes_not_yet' || code === 'notes_closed' || code === 'writer_only') {
         getReviewerNotes(appId, { token }).then(setData).catch(() => {})
       }
     } finally {
@@ -98,7 +98,7 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
   const replying = viewer === 'reviewer'
   const intro = viewer === 'org_admin' ? 'introOrgAdmin' : replying ? 'introReviewer' : 'introReader'
   const roleOf = (n: ReviewerNote) =>
-    t(`${P}.role.${n.author_role === 'reviewer' ? (n.is_you ? 'reviewerYou' : 'reviewer') : 'org_admin'}`)
+    t(`${P}.role.${n.author_role === 'reviewer' ? (n.is_you ? 'reviewerYou' : 'reviewer') : (n.is_you ? 'orgAdminYou' : 'org_admin')}`)
   return (
     <section data-reviewer-notes
       className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
@@ -159,7 +159,7 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
       {error && <p role="alert" className="text-sm text-critical-600">{error}</p>}
 
       {data && viewer !== 'reader' && !data.window_open && (
-        <p className="text-xs text-ground-500">{t(`${P}.closedHint`)}</p>
+        <p className="text-xs text-ground-500">{t(`${P}.${data.reason === 'not_yet' ? 'notYetHint' : 'closedHint'}`)}</p>
       )}
     </section>
   )

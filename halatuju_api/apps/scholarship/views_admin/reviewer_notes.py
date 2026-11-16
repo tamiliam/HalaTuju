@@ -11,8 +11,10 @@ learns nothing about the case; the side is then decided again on the locked row 
 `reviewer_notes.add_note`, with the window and the body rules. Append-only: there is no PATCH and no DELETE.
 
 SEEN (#73): the GET is what draws the notes on the student page, so it clears the caller's "New note" mark
-for this case (`staff_notifications.mark_seen`). The payload says which side the caller is on (`viewer`), so
-the card picks its intro, its composer and "Reviewer (you)" from the server's answer.
+for this case (`staff_notifications.mark_seen`), and so does a successful POST (the replier has just read
+them). The payload says which side the caller is on (`viewer`), so
+the card picks its intro, its composer and "(you)" from the server's answer; `reason` says why the window
+is shut ('not_yet' before Awaiting review, 'finished' after the review), so the card and the refusal agree.
 
 A SEPARATE fetch, not a key on the detail payload, so the applicant-detail GET stays at its pinned
 38 queries (`test_query_budgets.py`). Every refusal carries a `code`; the card words it in en/ms/ta.
@@ -33,6 +35,7 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 
 _MESSAGES = {
     'writer_only': 'Only an org admin or the assigned reviewer can add a note.',
+    'notes_not_yet': 'Notes can be added once the case reaches Awaiting review.',
     'notes_closed': 'The review is finished, so no more notes can be added.',
     'bad_body': 'This note contains characters that cannot be saved. Remove them and try again.',
     'empty_body': 'Write the note first.',
@@ -49,7 +52,7 @@ def _may_write(admin, pk):
 
 
 class AdminReviewerNotesView(_AdminBase):
-    """`GET` → `{notes, viewer, can_add, window_open, max_length}`; `POST {body}` → the same, 201."""
+    """`GET` → `{notes, viewer, can_add, window_open, reason, max_length}`; `POST {body}` → the same, 201."""
 
     def _payload(self, app, admin):
         is_open = reviewer_notes.window_open(app)
@@ -58,6 +61,7 @@ class AdminReviewerNotesView(_AdminBase):
             'notes': reviewer_notes.notes_for(app, viewer=admin),
             'viewer': viewer,
             'window_open': is_open,
+            'reason': None if is_open else reviewer_notes.closed_reason(app, app.status),
             'can_add': is_open and viewer != 'reader',
             'max_length': NOTE_MAX,
         }
@@ -94,6 +98,7 @@ class AdminReviewerNotesView(_AdminBase):
         # No text in the log line: a note may name the family's circumstances.
         logger.info('AUDIT reviewer_note_added admin_id=%s app_id=%s note_id=%s',
                     admin.id, app.id, note.id)
+        staff_notifications.mark_seen(admin, app)   # the replier has the notes on screen
         return Response(self._payload(app, admin), status=status.HTTP_201_CREATED)
 
 

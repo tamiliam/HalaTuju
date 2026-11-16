@@ -4286,9 +4286,11 @@
         "sendReply": "Hantar balasan",
         "sending": "Menghantar…",
         "closedHint": "Semakan telah selesai, jadi tiada nota lagi boleh ditambah. Nota ini kekal dalam fail, baca sahaja.",
+        "notYetHint": "Nota boleh ditambah sebaik sahaja kes sampai ke peringkat Menunggu semakan, sehingga penyemak merekodkan keputusan.",
         "loadError": "Nota tidak dapat dimuatkan.",
         "error": {
           "writer_only": "Hanya pentadbir organisasi atau penyemak yang ditugaskan boleh menambah nota.",
+          "notes_not_yet": "Nota boleh ditambah sebaik sahaja kes sampai ke peringkat Menunggu semakan.",
           "notes_closed": "Semakan telah selesai, jadi tiada nota lagi boleh ditambah.",
           "bad_body": "Nota ini mengandungi aksara yang tidak boleh disimpan. Buang aksara itu dan cuba lagi.",
           "empty_body": "Tulis nota terlebih dahulu.",
@@ -4297,6 +4299,7 @@
         },
         "role": {
           "org_admin": "Pentadbir organisasi",
+          "orgAdminYou": "Pentadbir organisasi (anda)",
           "reviewer": "Penyemak",
           "reviewerYou": "Penyemak (anda)"
         }
