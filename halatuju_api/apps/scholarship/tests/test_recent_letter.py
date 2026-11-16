@@ -158,7 +158,7 @@ class TestWanted(_Base):
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
 
     def test_a_recent_offer_kept_out_of_the_slot_answers(self):
-        """The old TD-634: a recent official OFFER kept out of the live slot now answers too."""
+        """The old TD-643: a recent official OFFER kept out of the live slot now answers too."""
         app = self._app('kept-offer')
         self._letter(app, '20 Jun 2026', status='unknown', superseded_at=timezone.now())
         self._letter(app, '1 Januari 2025')
