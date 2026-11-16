@@ -9136,6 +9136,11 @@ STPM, STAM). A misspelling further out ("Mrch", "Ogoss"), a lowercase glued exam
 5-letter month (March, April, Julai: left out because "match", "mulai" and "nilai" sit that near) can still be read
 past. The 286-letter corpus holds none. *(A - S)*
 
+*Review 14 (2026-11-16, final, PASS) add:* "nomber", "disembah", "dismember", "Augusta" and "ferrari" read as months
+(none in the corpus). Capital "STAM" inside "STAMFORD" (a college name) makes a line with no session an exam line, so
+it reads unknown (safe direction).
+
+
 
 
 ### [TD-635] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
