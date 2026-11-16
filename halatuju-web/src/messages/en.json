@@ -4928,7 +4928,7 @@
           "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
-          "recent_letter_needed": "Offer / confirmation letter on file is older than the organisation's window — the student has been asked for a recent confirmation letter (never blocks).",
+          "recent_letter_needed": "Offer / confirmation letter on file is older than the organisation's window and the course should already have started — the student has been asked for a recent confirmation letter (never blocks).",
           "sibling_tertiary_funding": "Sibling in further study — the student has been asked which institution + course (or where they work) and how it's funded / what they earn.",
           "sibling_school_detail": "Sibling still in school — the student has been asked which school and what standard/form.",
           "informal_income_detail": "An informal / self-employed earner has no payslip or EPF on file — the student has been asked whether they get one and, if not, roughly what they earn a month (no dead-end doc request raised).",
@@ -7957,7 +7957,7 @@
           },
           "recent_letter_window_months": {
             "label": "Recent letter — months before an offer letter is old",
-            "desc": "An offer or confirmation letter issued longer ago than this asks the student for a recent confirmation letter. It never blocks."
+            "desc": "An offer or confirmation letter issued longer ago than this asks the student for a recent confirmation letter, once the course should already have started. It never blocks."
           },
           "decline_hold_days": {
             "label": "Decline held — days before the student is told",
