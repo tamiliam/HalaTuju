@@ -38,6 +38,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     school_leaving_check = serializers.SerializerMethodField()
     # Officer box: whose income doc this is — its tag, else resolved by the name on it. Display-only.
     resolved_member = serializers.SerializerMethodField()
+    # H6: the replaces used on this slot (read off the live copy) and the cap, so the student pages say "N more times" without mirroring the number.
+    replace_count = serializers.SerializerMethodField()
+    replace_limit = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -78,6 +81,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             # doc replaced it. The admin path returns superseded rows to show history;
             # the student GET filters them out.
             'superseded_at', 'superseded_by',
+            # H6: how many replaces this document's slot has used, and the cap.
+            'replace_count', 'replace_limit',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -289,6 +294,14 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         from ..income_engine import student_income_support_check
         return student_income_support_check(obj)
 
+    def get_replace_count(self, obj):
+        # The live copy carries the slot's count (each replace saves used + 1), so no extra query per document.
+        return obj.replace_count
+
+    def get_replace_limit(self, obj):
+        from ..document_replace import REPLACE_LIMIT
+        return REPLACE_LIMIT
+
     def get_resolved_member(self, obj):
         """The household member this income doc belongs to — stored tag, or name-resolved for a
         blank-tagged doc. '' for non-income docs / when unresolvable. The cockpit box uses it to
@@ -316,6 +329,9 @@ class DocumentCreateSerializer(serializers.Serializer):
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     content_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     size = serializers.IntegerField(required=False, default=0)
+    # H6: set by the student's "Replace" on a sent / done document. It is what the 3-replace cap counts;
+    # a re-upload of a returned document ("Needs you") leaves it off and is never capped.
+    replace = serializers.BooleanField(required=False)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

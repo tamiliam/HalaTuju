@@ -36,7 +36,7 @@ export function SetAsideCard({ fromLabel, title }: CardProps) {
 
 /** A completed item — stays on the page as a calm green "Done" card (no action),
  *  so the student gets the satisfaction of seeing what they've cleared. */
-export function DoneCard({ fromLabel, title }: CardProps) {
+export function DoneCard({ fromLabel, title, children }: CardProps & { children?: React.ReactNode }) {
   const { t } = useT()
   return (
       <div className="rounded-2xl border border-positive-100 bg-positive-50/40 p-5 shadow-sm">
@@ -54,6 +54,7 @@ export function DoneCard({ fromLabel, title }: CardProps) {
                 {t('scholarship.actionCentre.done')}
               </span>
             </div>
+            {children}
           </div>
         </div>
       </div>

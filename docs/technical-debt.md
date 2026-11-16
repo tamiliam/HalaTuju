@@ -9269,3 +9269,18 @@ with a sentence-insert replay first so no ordinary offer moves. *(A - S)*
 a glued opening ("Pengesahan Status Pelajar adalah dimaklumkan seperti berikut"), placed ABOVE an offer title, caps an
 ordinary offer to suspect (h2r13 ins4 probe). The TUAN/PUAN and "this is to confirm" forms already did this before
 the glued openings. This follows the settled title-line rule, can only lower a result, and touches **0 real letters**.
+
+### [TD-631] Three small limits in the student documents pages (H5 / H6) - low
+
+**Raised 2026-11-16 by H6. No money effect.** (a) `ActionCentre.tsx` `fetchItems` reads the document list with
+`listDocuments(...).catch(() => ({ documents: [] }))`, so a failed fetch of the documents lock is swallowed: a locked
+student then sees Upload and only learns the stage is locked from the plain 409 message after trying. (b)
+`ScholarshipDocuments.tsx` hides the income-proof card's upload when `lock.locked` and none of `INCOME_PROOF_TYPES` is in
+`open_doc_types`; that assumes the server never opens an income type after the lock (true today: only the bank statement,
+semester results and the two late higher-results asks are exempt). If an income type is ever exempted, the card needs a
+per-type check. (c) The 3-replace cap (`document_replace.py`) counts only an upload the client sends with `replace: true`;
+the client decides a document is "settled" (reads fine) from the served verdict. A direct API call that omits the flag
+re-uploads without the cap; it is the same as a plain re-upload today and harms no one, but the cap is a student-page
+guard, not a hard server rule. Fix: (a) keep the failure and show the load-error card or a locked-by-default state; (b)
+serve a per-type `replaceable` / `open` flag; (c) if the cap ever needs to be hard, derive "settled" on the server.
+*(A - S)*

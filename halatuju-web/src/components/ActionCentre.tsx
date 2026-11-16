@@ -182,7 +182,8 @@ export default function ActionCentre({
   // "Done": checked and cleared, as green cards.
   const doneCards = sectionOf(t('scholarship.actionCentre.section.done'), doneItems.length, doneItems.map((item) => (
     <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
-      onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done />
+      onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done
+      docs={docs} limits={limits} docsLocked={docLock.locked} openDocTypes={docLock.openTypes} />
   )))
 
   // Funded students' set-aside review queries (struck-through amber), beneath the rest.

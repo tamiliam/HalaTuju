@@ -36,6 +36,7 @@ import { INCOME_PROOF_TYPES } from '@/lib/scholarship'
 import '@/lib/messagesDocuments'
 
 import { uploadRefusal } from '@/lib/uploadCheck'
+import { isSettledDoc } from '@/lib/documentReplace'
 import {
   docKey,
   CollapsibleSection,
@@ -116,8 +117,11 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     try {
       const { upload_url, storage_path } = await signUploadDocument(docType, { token })
       await uploadFileToSignedUrl(upload_url, file)
+      // H6: a file that reads fine and is being swapped is a counted Replace (3 at most, the server's
+      // number); a returned one is the normal re-upload and is never counted.
+      const replacing = docs.some((d) => d.doc_type === docType && (d.household_member || '') === member && isSettledDoc(d))
       await recordDocument(
-        { doc_type: docType, storage_path, household_member: member,
+        { doc_type: docType, storage_path, household_member: member, ...(replacing ? { replace: true } : {}),
           original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
@@ -125,9 +129,10 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       onChange?.()
     } catch (e) {
       const code = (e as { code?: string })?.code
-      if (code === 'documents_locked') void refresh()   // the stage moved on: draw the locked tab
+      if (code === 'documents_locked' || code === 'replace_limit_reached') void refresh()   // the stage moved on / the count is used up: redraw
       setError(
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.docs.lockedNote'))
+        : code === 'replace_limit_reached' ? ((e as Error).message || t('scholarship.actionCentre.replaceLimit'))
         : code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
           // The server's OWN number on the refusal (a 400 body lands on `fieldErrors`),

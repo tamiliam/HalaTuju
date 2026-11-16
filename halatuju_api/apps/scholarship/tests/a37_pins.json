@@ -89,7 +89,9 @@
     "school_leaving_check",
     "resolved_member",
     "superseded_at",
-    "superseded_by"
+    "superseded_by",
+    "replace_count",
+    "replace_limit"
    ],
    "ApplicationCreateSerializer": [
     "cohort_code",
@@ -303,7 +305,8 @@
     "storage_path",
     "original_filename",
     "content_type",
-    "size"
+    "size",
+    "replace"
    ],
    "FundingNeedSerializer": [
     "categories",

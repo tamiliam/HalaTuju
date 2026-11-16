@@ -162,6 +162,10 @@ class ApplicantDocument(models.Model):
     read_plan = models.JSONField(null=True, blank=True)
     read_claimed_at = models.DateTimeField(null=True, blank=True)
     read_attempts = models.PositiveSmallIntegerField(default=0, db_default=0)
+    # H6: how many times the student has replaced this document (a "Replace" on a sent / done one). The
+    # upload that replaces carries the slot's highest count + 1; the cap (3) is `document_replace`.
+    # `db_default` keeps the still-serving old image able to insert.
+    replace_count = models.PositiveSmallIntegerField(default=0, db_default=0)
 
     class Meta:
         db_table = 'applicant_documents'
