@@ -1,0 +1,1 @@
+Python scripts that drew the sample documents in halatuju-web/public/samples (gen_v2 first, gen_v3 for the HR/higher-results ones); all details are made up, and paths inside point to the author's scratch folder so edit them before re-running.

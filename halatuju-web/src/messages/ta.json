@@ -1384,7 +1384,18 @@
       "incompleteToContinue": "சேமிக்கப்பட்டது. தொடர்வதற்கு முன், * எனக் குறியிடப்பட்ட கட்டாயப் புலங்களை நிரப்பவும்."
     },
     "docs": {
+      "sample": {
+        "link": "See a sample",
+        "title": "Sample: {type}",
+        "alt": "A drawing of a sample {type}",
+        "caption": "This is a drawing, not a real document. Never send it.",
+        "zoomHint": "Tap the picture to make it bigger.",
+        "enlarge": "Make the sample bigger",
+        "shrink": "Make the sample smaller",
+        "close": "Close"
+      },
       "type": {
+        "semester_result": "Semester result slip",
         "ic": "அடையாள அட்டை (IC)",
         "results_slip": "SPM முடிவுச் சீட்டு",
         "photo": "புகைப்படம்",
