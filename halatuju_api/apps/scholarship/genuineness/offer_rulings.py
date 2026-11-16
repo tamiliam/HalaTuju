@@ -43,7 +43,7 @@ from .bands import GENUINE_MIN, SUSPECT_MAX
 from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES_EN_GENERIC, _MATRIC_EN_TITLES,
                                   _NOT_THE_OFFER_LINE, _WING_HEAD, MATRIC_OFFER_EN)
 # The title-block reading and the CAP (split out for the 600-line limit; lead, 16 Nov 2026).
-from .offer_confirm_checks import _campus_dropped, cap_confirmation, generic_titled, non_study_subject
+from .offer_confirm_checks import _campus_dropped, cap_confirmation, generic_titled, non_study_subject, page_titled
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
@@ -279,8 +279,10 @@ def _widened_kind(lines, probability) -> str:
     """Help H2 option B: the kind over every public issuer (`offer_reading._confirmers`), an English title read
     as the Malay one, approval wording blanked and a campus line under the name dropped. Suspect at most; ''
     when the title block's subject is a non-study matter (`non_study_subject`). No body word blocks (lead, 16 Nov
-    2026: the body-word lists of reviews 6-8 are gone)."""
-    if non_study_subject(lines) or any(w in ln for ln in _letterhead_region(lines) for w in _WING_HEAD):
+    2026: the body-word lists of reviews 6-8 are gone). Review 10: only a page with a confirmation TITLE LINE
+    (`page_titled`) - a confirmation phrase in an offer's body sentence never makes it one."""
+    if (not page_titled(lines, probability) or non_study_subject(lines)
+            or any(w in ln for ln in _letterhead_region(lines) for w in _WING_HEAD)):
         return ''
     return _kind(_english_titled(lines), probability, _confirmers(), widened=True)
 

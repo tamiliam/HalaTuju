@@ -8,13 +8,15 @@ from django.test import SimpleTestCase
 
 from apps.scholarship.genuineness.offer_confirmations import CONFIRMATION_SEEN
 from apps.scholarship.genuineness.offer_reading import _folded_lines
-from apps.scholarship.genuineness.offer_confirm_checks import non_study_subject, titled
+from apps.scholarship.genuineness.offer_confirm_checks import non_study_subject, page_titled
 from apps.scholarship.tests.test_corpus_gaps_c2 import UITM_OFFER
 from apps.scholarship.tests.test_offer_h2_confirmations import KPT, _read, _verdict
 from apps.scholarship.tests.test_offer_rulings import IKM, _confirm
 
 #: d3494's shape: a TVET letterhead, a salutation, then the confirmation title (genuine by the TVET lift alone).
-TVET_CONFIRM = 'TVETMARA\n' + IKM.replace('SURAT TAWARAN\n', 'SURAT TAWARAN\nTuan / Puan,\nPENGESAHAN PELAJAR\n')
+#: Review 10: no offer title line above it (d3494 has none; a title below an offer title line is no cap).
+TVET_CONFIRM = 'TVETMARA\n' + IKM.replace('SURAT TAWARAN\n', 'Tuan / Puan,\nPENGESAHAN PELAJAR\n').replace(
+    'PENGARAH\n', 'Rujuk SURAT TAWARAN asal.\nPENGARAH\n')
 #: A university's offer shape under a confirmation title (the genuine `ua_offer` baseline: genuine without the CAP).
 UA_CONFIRM = UITM_OFFER.replace('SURAT TAWARAN\n', 'SURAT PENGESAHAN PELAJAR\n')
 
@@ -40,7 +42,7 @@ class TheCapHoldsEveryConfirmationAtSuspect(SimpleTestCase):
     def test_a_confirmation_word_in_an_offers_body_is_no_cap(self):
         text = UITM_OFFER.replace('PENGARAH\n', 'Sila bawa surat PENGESAHAN PELAJAR sekolah semasa mendaftar.\n'
                                               'PENGARAH\n')
-        self.assertFalse(titled(_folded_lines(text)))
+        self.assertFalse(page_titled(_folded_lines(text)))
         self.assertEqual(_read(text)['status'], 'genuine')
 
 

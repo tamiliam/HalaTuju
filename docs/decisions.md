@@ -1185,7 +1185,22 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
      confirmation code (it had kept `ua_offer` / the family code and could write a pick); a `not_offer_letter` is
      left alone. KPM's English matric offer takes `matric_offer_en` (suspect, never a pick) even when an "OFFER
      LETTER" header sits above its title; its title line is the line holding an English matric title.
-     "PENGESAHAN STATUS PENGAJIAN" is a specific confirmation title.
+     "PENGESAHAN STATUS PENGAJIAN" is a specific confirmation title. **Review 10 (16 Nov 2026): a confirmation
+     TITLE is a LINE, not a phrase in a sentence.** `page_titled` counts a confirmation title only when it STARTS
+     its own line (after an optional SURAT or subject label: PERKARA: / RE: / SUBJECT: ...), the rest of that line
+     is short (at most 8 words before a name / IC label or a glued salutation) and holds no sentence word (akan,
+     telah, hendaklah, selepas, di...kan, will, is, after ...), and it comes before the first offer title line (a
+     word holding TAWARAN, incl. OCR-glued SURATTAWARAN; OFFER; KEPUTUSAN PERMOHONAN; KEMASUKAN KE PROGRAM;
+     "ditawarkan" in a sentence is not a title). Two short lines may still join into one split title. So "Sila
+     kembalikan Borang Pengesahan Pelajar ..." or "Surat Pengesahan Status Pengajian akan dikeluarkan ..." in a
+     matric or university offer is NO cap and moves nothing vs main: a confirmation phrase in an offer's BODY is
+     no cap, as said above. The title block (gates a and c) ends at the first offer title line and is the top
+     half of the page by length, with no 400-character floor, so a short letter's whole page is no longer its
+     title block. The widened recognition (option-B types) needs the same title line and keeps main's
+     CONFIRM_MIN family-score floor; the CAP has no score floor (a TVET lift reads genuine at a 0.0 family score).
+     A GENUINE result that already carries a confirmation code is capped to suspect whatever the page says. A
+     combined title such as "TAWARAN KEMASUKAN DAN PENGESAHAN PELAJAR" starts with an offer title, so it reads as
+     main does.
    **Non-study letters that reach suspect are ACCEPTED on purpose (a person rejects them):** a graduate, a former
    student ("telah tamat pengajian", "was a student", "pernah belajar"), a dismissal ("diberhentikan",
    "terminated") or a refusal ("tidak ditawarkan", "not offered", an offer withdrawn / "dibatalkan") said in the
