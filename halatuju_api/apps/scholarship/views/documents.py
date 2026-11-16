@@ -16,7 +16,7 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
-from ..document_replace import replace_refusal, replaces_used
+from ..document_replace import must_fix, replace_refusal, replaces_used, slot_max_annotation
 from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
@@ -60,7 +60,7 @@ class DocumentListCreateView(APIView):
         # version history for the officer view, never shown back to the student.
         # S4a review H1: an in-programme results slip is EVIDENCE, shown with its result, never here.
         docs = (ApplicantDocument.objects.filter(application=app, superseded_at__isnull=True)
-                .exclude(request_code=SLIP_REQUEST_CODE) if app else ApplicantDocument.objects.none())
+                .exclude(request_code=SLIP_REQUEST_CODE).annotate(slot_max=slot_max_annotation()) if app else ApplicantDocument.objects.none())
         # ⚠ THE LIMITS ARE SERVED, NEVER MIRRORED (Org Config Sprint E). The uploader used to
         # hold its own `8 * 1024 * 1024` so it could warn before a doomed upload; that number is
         # the ORGANISATION's now, so it rides here — the same read the POST below refuses on.
@@ -188,7 +188,7 @@ class DocumentListCreateView(APIView):
         refusal = documents_locked_refusal(app, new_doc_type) or self._refuse_bad_file(app, serializer.validated_data)
         if refusal:
             return refusal
-        want_replace = serializer.validated_data.pop('replace', False)   # H6: not a model field
+        serializer.validated_data.pop('replace', False)   # H6: a UI hint only; the server decides what counts
         new_member = serializer.validated_data.get('household_member', '') or ''
         # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
         # document its OWN single-instance slot, so it can't overwrite the student's route doc
@@ -209,18 +209,23 @@ class DocumentListCreateView(APIView):
                            superseded_at__isnull=True)
         # A single-instance re-upload replaces an existing doc, so it doesn't count toward growth.
         # All caps count LIVE docs only — superseded history rows are retained but must not fill the quota.
-        replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
+        live_copy = ApplicantDocument.objects.filter(**slot_filter).first() if single else None
+        replaces = live_copy is not None
         refusal = self._refuse_over_cap(app, new_doc_type, replaces)
         if refusal:
             return refusal
-        # H6: a Replace on a sent / done document is counted per slot and capped at three (the lock was
-        # checked above, so a locked student is refused first). The count rides on the new row.
-        if want_replace and replaces:
+        # H6: every upload into a slot with a live copy is a replace, counted per slot and capped at three
+        # unless the live copy is one the student must fix (document_replace.py). The lock was checked
+        # above, so a locked student is refused first. The count rides on the new row.
+        if replaces:
             used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
-            refusal = replace_refusal(used)
-            if refusal:
-                return refusal
-            serializer.validated_data['replace_count'] = used + 1
+            if must_fix(live_copy):
+                serializer.validated_data['replace_count'] = used
+            else:
+                refusal = replace_refusal(used)
+                if refusal:
+                    return refusal
+                serializer.validated_data['replace_count'] = used + 1
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable

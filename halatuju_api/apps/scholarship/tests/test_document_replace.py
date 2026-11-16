@@ -64,13 +64,57 @@ class TestDocumentReplace(TestCase):
         self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 409)
         self.assertEqual(self._post(client, app, 'salary_slip', member='mother').status_code, 201)
 
-    def test_a_plain_re_upload_is_never_counted_or_capped(self, _o, _n):
+    def test_the_flag_changes_nothing_a_plain_upload_counts_and_is_capped(self, _o, _n):
         app, client = self._case()
         self._first(app)
-        for _ in range(5):
+        for _ in range(3):
             self.assertEqual(self._post(client, app, replace=False).status_code, 201)
-        self.assertEqual(self._post(client, app).status_code, 201)   # the first counted replace
-        self.assertEqual(ApplicantDocument.objects.filter(application=app, replace_count=1).count(), 1)
+        resp = self._post(client, app, replace=False)
+        self.assertEqual((resp.status_code, resp.json()['code']), (409, 'replace_limit_reached'))
+        self.assertEqual(ApplicantDocument.objects.filter(application=app).count(), 4)   # nothing stored
+
+    def _live(self, app):
+        return ApplicantDocument.objects.get(application=app, superseded_at__isnull=True)
+
+    def _newest(self, app):   # an upload is recorded staged until its read promotes it, so the live copy stays put
+        return ApplicantDocument.objects.filter(application=app).order_by('-id').first()
+
+    def test_a_returned_or_problem_live_copy_is_retried_without_counting(self, _o, _n):
+        app, client = self._case()
+        self._first(app)
+        for _ in range(3):
+            self.assertEqual(self._post(client, app).status_code, 201)
+        for fix in ({'verification_status': 'rejected'},
+                    {'vision_fields': {'student_verdict': 'wrong_doc'}},
+                    {'vision_fields': {'authenticity': {'status': 'not_ic'}}}):
+            ApplicantDocument.objects.filter(pk=self._live(app).pk).update(**fix)
+            self.assertEqual(self._post(client, app, replace=False).status_code, 201)
+            self.assertEqual(self._newest(app).replace_count, 3)        # carried, not counted
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(
+            verification_status='pending', vision_fields={})
+        resp = self._post(client, app)                                   # a clean copy now: counted, capped
+        self.assertEqual(resp.status_code, 409)
+
+    def test_a_live_copy_still_being_read_counts(self, _o, _n):
+        app, client = self._case()
+        self._first(app)
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(read_state='pending')
+        self.assertEqual(self._post(client, app).status_code, 201)
+        self.assertEqual(self._post(client, app, replace=False).status_code, 201)
+        self.assertEqual(self._newest(app).replace_count, 2)
+
+    def test_a_replace_the_reader_turns_down_still_shows_in_the_page_count(self, _o, _n):
+        app, client = self._case()
+        self._first(app, 'bank_statement')
+        for _ in range(3):
+            self._post(client, app, 'bank_statement')
+        # the reader turned the newest copy down: the older live copy keeps the slot with a lower count
+        live = self._live(app)
+        ApplicantDocument.objects.create(application=app, doc_type='bank_statement', storage_path='x',
+                                         replace_count=3, superseded_at=live.uploaded_at)
+        ApplicantDocument.objects.filter(pk=live.pk).update(replace_count=0)
+        docs = client.get(DOCS).json()['documents']
+        self.assertEqual([d['replace_count'] for d in docs], [3])
 
     def test_a_first_upload_is_not_a_replace(self, _o, _n):
         app, client = self._case()

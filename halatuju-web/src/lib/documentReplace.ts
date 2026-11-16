@@ -21,7 +21,8 @@ export function replaceLocked(docType: string, locked: boolean, openTypes: strin
 
 /** A document the student has sent and that reads fine: it is with the reviewer, or already cleared.
  *  Replace on these counts toward the cap. A document that was returned (a problem verdict, not
- *  genuine, still being read) is the normal "send it again": never capped, never counted. */
+ *  genuine) is the normal "send it again": never capped, never counted. The server decides; this only
+ *  chooses which cards offer Replace. */
 export function isSettledDoc(doc: ApplicantDocument): boolean {
   const v = doc.vision_fields?.student_verdict
   const s = doc.authenticity?.status
