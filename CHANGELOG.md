@@ -4,10 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### refactor: F2b stage 2 - scholarship reaches ten more courses modules through the courses public door (2026-11-16)
+### refactor: F2b stage 2 - scholarship reaches nine more courses modules through the courses public door (2026-11-16)
 
-Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only, no behaviour change. Cross-app import links (code_health xapp) 30 to 20.
-- `apps/courses/public.py` now also exposes the modules `supabase_admin`, `staff_gift`, `staff_reinvite`, `password_change_flag`, `staff_archive`, `staff_activity_hook`, `staff_permissions_v2`, `theme_tokens`, `theme_versions` and `staff_tables` (for `ADMIN_KEYS`). The door object IS the home module, so existing patches on `apps.courses.<module>.*` still bite.
+Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only, no behaviour change. Cross-app import links (code_health xapp) 30 to 21 (staff_permissions_v2 stays direct by rule R6).
+- `apps/courses/public.py` now also exposes the modules `supabase_admin`, `staff_gift`, `staff_reinvite`, `password_change_flag`, `staff_archive`, `staff_activity_hook`, `theme_tokens`, `theme_versions` and `staff_tables` (for `ADMIN_KEYS`). The door object IS the home module, so existing patches on `apps.courses.<module>.*` still bite.
 - 15 scholarship files read them as `courses_public.<module>.<name>` instead of `from apps.courses import <module>`; lazy imports stay lazy. `scholarship/apps.py` ready() still writes the audit recorders onto the real `staff_activity_hook` module.
 - Tests (`test_courses_public_facade.py`): each door is the home module; a source scan keeps the direct imports from returning; the ready() recorders sit on the real module; three fresh-process import-order checks (courses public first, scholarship apps first, reports views first).
 - Guard (owner-approved addition): `test_cross_app_private_imports.py` now fails any NEW direct scholarship to courses import (non-test files) outside an allowlist of 154 (file, module, name) entries, with a stale-entry floor, a only-shrinks ceiling and a synthetic-violation self-test. The 154 entries are the 20 distinct edges code_health counts, spelt per file.

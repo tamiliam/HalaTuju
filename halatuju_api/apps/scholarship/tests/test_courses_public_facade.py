@@ -5,7 +5,7 @@ from apps.courses import exam_questions, public
 
 # F2b stage 2: modules scholarship reaches through the door (the facade object IS the home module).
 _MODULE_DOORS = ('password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
-                 'staff_permissions_v2', 'staff_reinvite', 'staff_tables', 'supabase_admin',
+                 'staff_reinvite', 'staff_tables', 'supabase_admin',
                  'theme_tokens', 'theme_versions')
 
 

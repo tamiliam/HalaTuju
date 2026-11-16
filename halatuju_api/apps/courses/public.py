@@ -66,7 +66,7 @@ from .staff_gift import _gift_refusal as gift_refusal
 from .staff_gift import _not_found as gift_not_found
 from .staff_gift import resolve_gifts
 from . import (
-    password_change_flag, staff_activity_hook, staff_archive, staff_gift, staff_permissions_v2,
+    password_change_flag, staff_activity_hook, staff_archive, staff_gift,
     staff_reinvite, staff_tables, supabase_admin, theme_tokens, theme_versions,
 )
 from .tvet_families import family_of
@@ -96,7 +96,7 @@ __all__ = [
     'contrast',
     # Module doors (F2b stage 2): the object IS the home module, so patches on it keep working.
     'password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
-    'staff_permissions_v2', 'staff_reinvite', 'staff_tables', 'supabase_admin',
+    'staff_reinvite', 'staff_tables', 'supabase_admin',
     'theme_tokens', 'theme_versions',
 ]
 
