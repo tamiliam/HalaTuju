@@ -30,14 +30,21 @@ export function DocSample({ docType, kind, className = '' }: {
         className={`inline-flex min-h-11 items-center text-sm font-medium text-primary-600 underline hover:text-primary-700 ${className}`}>
         {t('scholarship.docs.sample.link')}
       </button>
-      <SampleViewer open={open} name={name} title={t('scholarship.docs.sample.title', { type: typeName })}
+      <SampleViewer open={open} name={name} typeName={typeName} title={t('scholarship.docs.sample.title', { type: typeName })}
         alt={t('scholarship.docs.sample.alt', { type: typeName })} onClose={() => setOpen(false)} />
     </>
   )
 }
 
-function SampleViewer({ open, name, title, alt, onClose }: {
-  open: boolean; name: string; title: string; alt: string; onClose: () => void
+/** "Identity card (IC)" -> "identity card (IC)" and "Photo" -> "photo", but "EPF statement" and "SPM results slip" stay. */
+function inSentence(typeName: string): string {
+  return /^[A-Z][a-z]/.test(typeName) ? typeName.charAt(0).toLowerCase() + typeName.slice(1) : typeName
+}
+
+const CHECK_POINTS = [1, 2, 3, 4]
+
+function SampleViewer({ open, name, typeName, title, alt, onClose }: {
+  open: boolean; name: string; typeName: string; title: string; alt: string; onClose: () => void
 }) {
   const { t } = useT()
   const [zoomed, setZoomed] = useState(false)
@@ -57,7 +64,15 @@ function SampleViewer({ open, name, title, alt, onClose }: {
           style={{ width: zoomed ? '220%' : '100%' }} />
       </button>
       <p className="mt-2 text-xs text-ground-500">{t('scholarship.docs.sample.zoomHint')}</p>
-      <p className="mt-2 text-sm text-ground-600" data-testid="sample-caption">{t('scholarship.docs.sample.caption')}</p>
+      <h3 className="mt-4 text-sm font-semibold text-ground-800" data-testid="sample-check-heading">
+        {t('scholarship.docs.sample.checkHeading')}
+      </h3>
+      <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-ground-700" data-testid="sample-check-list">
+        {CHECK_POINTS.map((n) => <li key={n}>{t(`scholarship.docs.sample.check.${name}.p${n}`)}</li>)}
+      </ol>
+      <p className="mt-3 text-sm text-ground-600" data-testid="sample-caption">
+        {t('scholarship.docs.sample.caption', { type: inSentence(typeName) })}
+      </p>
     </Sheet>
   )
 }
