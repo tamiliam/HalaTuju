@@ -391,7 +391,7 @@ describe('backend system query codes ⊆ KNOWN_CODES', () => {
     ...keys(block(read('higher_results.py'), 'TICKETS')),
     ...keys(block(check2, 'CLARIFY_SPECS')),
     ...keys(block(check2, 'DOC_SPECS')),
-    ...[...(check2.match(/^_PATHWAY_QUERY_KINDS = \{[^}]*\}/m)?.[0] ?? '').matchAll(/'([a-z_]+)':/g)].map((m) => m[1]),
+    ...[...(read('check2_confirms.py').match(/^_PATHWAY_QUERY_KINDS = \{[^}]*\}/m)?.[0] ?? '').matchAll(/'([a-z_]+)':/g)].map((m) => m[1]),
     ...vals(block(check2, '_MEMBER_EPF_CODE')),
     ...vals(block(check2, '_MEMBER_PROOF_CODE')),
     ...vals(block(check2, '_MEMBER_PENSION_CODE')),
@@ -410,6 +410,7 @@ describe('backend system query codes ⊆ KNOWN_CODES', () => {
     expect(emitted.has('ic_missing')).toBe(true)
     expect(emitted.has('father_ic_for_str_missing')).toBe(true)
     expect(emitted.has('vircle_setup_pending')).toBe(true)
+    expect(emitted.has('pathway_type_switch')).toBe(true)   // H3b: read from check2_confirms.py
   })
 
   it('every emitted code is a KNOWN_CODE', () => {

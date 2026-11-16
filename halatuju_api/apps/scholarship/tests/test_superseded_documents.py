@@ -172,6 +172,7 @@ class TestStaticReadGuard(TestCase):
         # audit sprint A3.4: the identity, pathway, STR-route income and flat-cap code moved out
         'verdict_identity.py', 'verdict_pathway.py', 'verdict_income_str.py', 'verdict_caps.py',
         'profile_engine.py', 'submission_review.py', 'check2_queries.py',
+        'check2_confirms.py',   # H3b: the pathway + household-size confirms moved out of check2_queries.py
     ]
     #: `income_engine/` is 20 files at H16 (19 modules + the shell). A minimum, not an equality.
     MIN_PACKAGE_MODULES = 16
