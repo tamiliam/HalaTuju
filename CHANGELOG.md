@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #70 review round - amount reason, one computation, per-language fact list (2026-11-16)
+
+Branch req70, not pushed. No migration. Services: web.
+- A ready decision with no bursary amount: Recommend now shows the existing amount reason as a focused `role="alert"` instead of doing nothing.
+- `decisionMissing` is computed once in `deriveCockpit`; `decisionReady` is `missing.length === 0` and the card receives `missing` (no recompute).
+- The fact list is joined per language (`Intl.ListFormat`): "Academic and Income". The alert is focused first, then centred, so it clears the phone bar.
+- Wording: the answer item reads "Reopen your findings and answer N interview questions" (it shows only on a locked interview); Tamil and Malay lines reworded.
+- Tests: dead `findingsIncomplete`-absent checks now assert `#decision-missing` is absent; second press refocuses the alert; real-message fact-list test in en, ms, ta.
+
 ### feat: say what is still missing before Recommend or Decline (request #70, 2026-11-16)
 
 Branch req70, not pushed. No migration, no API change. Services: web.

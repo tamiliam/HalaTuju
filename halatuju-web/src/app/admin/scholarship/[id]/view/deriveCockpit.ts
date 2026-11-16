@@ -7,7 +7,7 @@
  */
 import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
-  isStuckAfterVerdict, isDecisionReady, isApproveReady, isQueryingLocked, queryingLockReason,
+  isStuckAfterVerdict, decisionMissing, isApproveReady, isQueryingLocked, queryingLockReason,
 } from '@/lib/officerCockpit'
 import { interviewGateApplies, missingAgendaItems } from '@/lib/interviewCompleteness'
 import { formatDate } from '@/lib/formatDate'
@@ -118,8 +118,10 @@ export function deriveCockpit(
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
   const interviewMissing = interviewGateApplies({ status: app.status, recordedOutcome, decisionReopened })
     ? missingAgendaItems(agendaItems.map((it) => it.code), app.interview_session?.findings) : []
-  const decisionReady = isDecisionReady(
-    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length === 0)
+  // ONE computation (request #70): the list the card shows and the gate that greys its buttons are the same value.
+  const decisionMissingItems = decisionMissing(
+    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length)
+  const decisionReady = decisionMissingItems.length === 0
   // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
   // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
   // figure); it is effectively always true now.
@@ -134,6 +136,6 @@ export function deriveCockpit(
     vtip, decisionReopened, reviewerName, reviewerDate, hasQc, qcName, qcDate,
     queryingLocked, lockReason, interviewSubmitted, interviewLocked, decisionRecorded,
     recordedOutcome, stuckAfterVerdict, decisionLocked, agendaItems, editableAgenda,
-    interviewUnansweredCount, interviewMissing, decisionReady, hasAssistance, approveReady, canSave,
+    interviewUnansweredCount, decisionMissingItems, decisionReady, hasAssistance, approveReady, canSave,
   }
 }

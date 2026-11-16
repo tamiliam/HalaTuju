@@ -5167,9 +5167,9 @@
         "missing": {
           "heading": "Masih perlu dibuat:",
           "submit": "Hantar penemuan temu duga anda",
-          "answerOne": "Jawab 1 soalan temu duga",
-          "answerMany": "Jawab {count} soalan temu duga",
-          "rate": "Nilai AI pada {facts}",
+          "answerOne": "Buka semula penemuan anda dan jawab 1 soalan temu duga",
+          "answerMany": "Buka semula penemuan anda dan jawab {count} soalan temu duga",
+          "rate": "Nilaikan Ramalan AI: {facts}",
           "conclusion": "Tulis kesimpulan anda"
         },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",

@@ -5167,8 +5167,8 @@
         "missing": {
           "heading": "Still to do:",
           "submit": "Submit your interview findings",
-          "answerOne": "Answer 1 interview question",
-          "answerMany": "Answer {count} interview questions",
+          "answerOne": "Reopen your findings and answer 1 interview question",
+          "answerMany": "Reopen your findings and answer {count} interview questions",
           "rate": "Rate the AI on {facts}",
           "conclusion": "Write your conclusion"
         },

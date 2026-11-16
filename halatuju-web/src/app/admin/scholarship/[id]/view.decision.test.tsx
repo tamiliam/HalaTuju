@@ -179,7 +179,7 @@ describe('every interview question needs an answer before the reviewer decides',
       await loaded()
       expect(off(button('recordVerdict.approve'))).toBe(false)
       expect(off(button('recordVerdict.decline'))).toBe(false)
-      expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
+      expect(document.getElementById('decision-missing')).toBeNull()   // request #70: no "Still to do" list
       unmount()
     }
   })
@@ -223,7 +223,7 @@ describe('every interview question needs an answer before the reviewer decides',
     // Mirrors the api's `_REVIEWER_STAGE`: an `interviewed` case is QC's, not the reviewer's.
     renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: ready({}, { status: 'interviewed' }) })
     await loaded()
-    expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
+    expect(document.getElementById('decision-missing')).toBeNull()   // request #70: no "Still to do" list
   })
 
   it('review F5: the decision door\'s refusal is shown in words, and a Decline stops there',

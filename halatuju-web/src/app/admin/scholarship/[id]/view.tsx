@@ -263,7 +263,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const {
     reviewerName, reviewerDate, hasQc, qcName, qcDate, queryingLocked, lockReason, interviewSubmitted,
     interviewLocked, recordedOutcome, stuckAfterVerdict, agendaItems, editableAgenda,
-    interviewUnansweredCount, interviewMissing, decisionReady, hasAssistance, approveReady, canSave,
+    interviewUnansweredCount, decisionMissingItems, decisionReady, hasAssistance, approveReady, canSave,
   } = d
   const {
     bursary, bursaryMsg, doCountersignBursary, doWitnessBursary, witnessCardVisible, activeSources,
@@ -391,8 +391,8 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         reviewerName={reviewerName} reviewerDate={reviewerDate} hasQc={hasQc} qcName={qcName} qcDate={qcDate}
         recordedOutcome={recordedOutcome} doReject={doReject} stuckAfterVerdict={stuckAfterVerdict}
         officerVerdict={officerVerdict} selectApprove={selectApprove} selectDecline={selectDecline}
-        approveReady={approveReady} decisionReady={decisionReady} interviewSubmitted={interviewSubmitted}
-        interviewMissing={interviewMissing} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave}
+        approveReady={approveReady} decisionReady={decisionReady}
+        missing={decisionMissingItems} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave}
         verdictMsg={verdictMsg} verdictMsgTone={verdictMsgTone}
       />
 

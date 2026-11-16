@@ -9,6 +9,10 @@ import { act, fireEvent, screen } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 import { buildInterviewSession } from '@/test/adminApplicationDetail'
+import { joinFacts } from './view/DecisionMissing'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 
 installCockpitConsoleGuard()
 beforeAll(() => { Element.prototype.scrollIntoView = jest.fn() })   // jsdom has none
@@ -70,6 +74,35 @@ describe('a press on a greyed Recommend or Decline', () => {
     expect(api.recordVerdict).not.toHaveBeenCalled()
   })
 
+  it('a second press focuses the alert again', async () => {
+    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    await loaded()
+    fireEvent.click(btn('recordVerdict.approve'))
+    const first = screen.getByRole('alert')
+    expect(document.activeElement).toBe(first)
+    ;(document.getElementById('verdict-reason') as HTMLElement).focus()
+    expect(document.activeElement).not.toBe(first)
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(document.activeElement).toBe(screen.getByRole('alert'))
+  })
+
+  it('a ready decision with no bursary amount: Recommend shows the reason as a focused alert and does not act', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing',
+      build: { ...readyCase(), award_amount: null, proposed_award_amount: null } })
+    await loaded()
+    expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
+    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.click(btn('recordVerdict.approve'))
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toBe(K + 'approveNeedsAmount')
+    expect(document.activeElement).toBe(alert)
+    expect(outcome()).toBe('—')
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+    // Decline needs no amount and still works.
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
+  })
+
   it('a ready case still chooses the outcome on a press', async () => {
     renderCockpit({ role: 'reviewer', stage: 'interviewing', build: readyCase() })
     await loaded()
@@ -98,5 +131,22 @@ describe('the phone decision bar', () => {
       fireEvent.click(screen.getByRole('button', { name: /admin\.scholarship\.decisionBar\.go/ }))
     })
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('the fact list reads as the language does, with the real messages', () => {
+  const cat = { en, ms, ta } as Record<string, any>
+  const real = (loc: string) => (key: string, params: Record<string, string> = {}) => {
+    const v = key.split('.').reduce((o, k) => o?.[k], cat[loc]) as string
+    return Object.entries(params).reduce((acc, [k, x]) => acc.replace(`{${k}}`, x), v)
+  }
+  it.each([
+    ['en', 'Rate the AI on Academic and Income'],
+    ['ms', 'Nilaikan Ramalan AI: Akademik dan Pendapatan'],
+    ['ta', 'AI முன்னறிவிப்பை மதிப்பிடுங்கள்: கல்வி மற்றும் வருமானம்'],
+  ])('%s', (loc, expected) => {
+    const t = real(loc)
+    const facts = joinFacts(['academic', 'income'].map((f) => t(`admin.scholarship.verdict.fact.${f}`)), loc)
+    expect(t(K + 'missing.rate', { facts })).toBe(expected)
   })
 })

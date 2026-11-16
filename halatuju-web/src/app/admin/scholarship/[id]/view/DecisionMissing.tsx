@@ -10,8 +10,9 @@
  * The same list serves the card (under the buttons) and, through `DECISION_ALERT_EVENT`, the phone's decision bar.
  * Shown as an alert (`role="alert"`, focused) after a press on a greyed Recommend / Decline; plain otherwise.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import type { DecisionMissingItem } from '@/lib/cockpitStages'
+import { useT } from '@/lib/i18n'
 
 import type { T } from './shared'
 
@@ -31,25 +32,51 @@ export function missingTarget(item: DecisionMissingItem): string {
 export function jumpTo(id: string): void {
   const el = document.getElementById(id)
   if (!el) return
-  el.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+  // Focus first WITHOUT scrolling, then centre it: a focus scroll would leave it under the phone's sticky bar.
   el.focus?.({ preventScroll: true })
+  el.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
 }
 
-function itemText(t: T, item: DecisionMissingItem): string {
+/** The fact names joined the way the language does it ("Academic and Income"). */
+export function joinFacts(names: string[], locale: string): string {
+  try {
+    return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(names)
+  } catch {
+    return names.join(', ')
+  }
+}
+
+/** One line shown as a focused alert on mount (a refusal the reviewer must hear, e.g. no bursary amount yet). */
+export function AlertLine({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLParagraphElement>(null)
+  useEffect(() => { focusAndCentre(ref.current) }, [])
+  return (
+    <p ref={ref} id="decision-missing" tabIndex={-1} role="alert"
+      className="text-xs md:text-[11px] text-caution-700 focus:outline-none">{children}</p>
+  )
+}
+
+function focusAndCentre(el: HTMLElement | null) {
+  el?.focus({ preventScroll: true })
+  el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+}
+
+function itemText(t: T, item: DecisionMissingItem, locale: string): string {
   const k = 'admin.scholarship.recordVerdict.missing.'
   switch (item.kind) {
     case 'findings_not_submitted': return t(`${k}submit`)
     case 'findings_unanswered':
       return item.count === 1 ? t(`${k}answerOne`) : t(`${k}answerMany`, { count: String(item.count) })
     case 'facts_unrated':
-      return t(`${k}rate`, { facts: item.facts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)).join(', ') })
+      return t(`${k}rate`, { facts: joinFacts(item.facts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)), locale) })
     case 'conclusion_empty': return t(`${k}conclusion`)
   }
 }
 
 export function DecisionMissingList({ t, items, alert }: { t: T; items: DecisionMissingItem[]; alert: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (alert) ref.current?.focus() }, [alert])
+  const { contentLocale: locale } = useT()   // the language of the words on screen
+  useEffect(() => { if (alert) focusAndCentre(ref.current) }, [alert])
   return (
     <div ref={ref} id="decision-missing" tabIndex={-1} {...(alert ? { role: 'alert' } : {})}
       className="text-xs md:text-[11px] text-caution-700 focus:outline-none">
@@ -59,7 +86,7 @@ export function DecisionMissingList({ t, items, alert }: { t: T; items: Decision
           <li key={it.kind}>
             <button type="button" onClick={() => jumpTo(missingTarget(it))}
               className="text-left underline underline-offset-2 max-md:min-h-11 max-md:py-1">
-              {itemText(t, it)}
+              {itemText(t, it, locale)}
             </button>
           </li>
         ))}
