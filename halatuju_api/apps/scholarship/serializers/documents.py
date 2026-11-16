@@ -129,7 +129,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         from ..document_replace import AUTH_TYPES, AUTH_WRONG_TYPE_ONLY   # H6 shares these lists
-        if obj.doc_type not in AUTH_TYPES:   # incl. STPM exact-read S3 (higher_results)
+        from ..genuineness.sample_stamp import is_sample_flagged
+        # H9: a flagged sample shows its reason on EVERY type the sample check can flag, not only AUTH_TYPES.
+        if obj.doc_type not in AUTH_TYPES and not is_sample_flagged(obj):   # incl. STPM exact-read S3
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
