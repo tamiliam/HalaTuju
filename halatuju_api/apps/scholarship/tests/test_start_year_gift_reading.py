@@ -276,6 +276,56 @@ class ASessionLineWithAnotherDate(SimpleTestCase):
         self.assertEqual(gift_reading('Rujukan UPU/2024/77'), (2024, 'intake_year'))
 
 
+class TenthReviewWhenInDoubtUnknown(SimpleTestCase):
+    """Tenth review (Opus), WHEN IN DOUBT, UNKNOWN: only 20xx years are read, so a date the reader
+    cannot date stops the reading; an exam's session is no session; a break word starts no course."""
+
+    def test_a_reporting_date_with_no_20xx_year_makes_the_reading_unknown(self):
+        # Present but undatable: the session (or intake line) is NOT read in its place.
+        for rd in ('16 Februari', '16/02/25', '16 Feb (Ahad)', '16.2.25'):
+            for intake in ('Sesi 2024/2025', 'Ambilan 2025', '', 'Sesi II 2024/2025'):
+                with self.subTest(intake=intake, rd=rd):
+                    self.assertEqual(gift_reading(intake, rd), (None, 'undated_reporting_date'))
+        self.assertEqual(_state('Sesi 2024/2025', '16 Februari'), 'unknown')
+        # Blank is no date: the line reads as before. A date with its year still decides.
+        self.assertEqual(gift_reading('Sesi 2024/2025', '   '), (2024, 'session_first'))
+        self.assertEqual(gift_reading('Sesi 2024/2025', 'Februari 2025'), (2025, 'reporting_date'))
+        # A confirmation never reads its date, so an undatable one changes nothing there.
+        self.assertEqual(gift_reading('Tahun 1 Sesi 2025/2026', '16/02/25', confirmation=True), (2025, 'session_first'))
+
+    def test_a_two_digit_year_date_on_a_session_line_is_an_extra_date(self):
+        # Never expanded to 20xx: "16/02/25" is an extra date, so the line is unknown.
+        for intake in ('Sesi 2024/2025 Lapor Diri 16/02/25', 'Sesi 2024/2025 mulai 16.02.25',
+                       'Sesi 2024/25 Tarikh Kemasukan: 3-3-25', 'Sesi 2025/2026 (dikemaskini 1/12/24)',
+                       'Sesi 2024/2025 Ambilan Februari 2025, lapor diri 16/02/25'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
+        # A session's own two-digit tail and a full 20xx date are not one.
+        self.assertEqual(gift_reading('Sesi 2/2024/2025'), (2025, 'session_second'))
+        self.assertEqual(gift_reading('Sesi 2024/2025 mulai 17.02.2025'), (2025, 'intake_date'))
+
+    def test_a_session_straight_after_an_exam_word_is_an_exam_line(self):
+        for intake in ('Lepasan STPM 2024/2025', 'STPM 2024/2025 Ijazah Sarjana Muda', 'SPM 2024/25',
+                       'Keputusan S.P.M. 2024-2025'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (None, 'exam_line'))
+        self.assertEqual(_state('Lepasan STPM 2024/2025'), 'unknown')
+        # Beside a real session, the exam's session leaves a stray year: unknown.
+        self.assertEqual(gift_reading('Kemasukan Sesi 2025/2026 (Lepasan STPM 2024/2025)'), (None, 'unclear_date'))
+        # An exam word that does not stand straight before the session leaves it a session.
+        self.assertEqual(gift_reading('Calon STPM Sesi 2024/2025'), (2024, 'session_first'))
+
+    def test_a_start_word_after_a_break_word_starts_no_course(self):
+        # The holiday's date is not the intake's: with no other start word straight before it, unknown.
+        for intake in ('Sesi 2024/2025 Semester 1, cuti semester bermula 1 Jan 2025',
+                       'Sesi 2024/2025, cuti bermula 1 Jan 2025', 'Sesi 2024/2025 Sem 1, cuti sem mulai 1 Jan 2025',
+                       'Session 2024/2025 Semester 1, semester break starting 3 Feb 2025',
+                       'Session 2024/2025, holiday commencing 3 Feb 2025'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
+        self.assertEqual(gift_reading('Sesi 2024/2025 bermula 1 Jan 2025'), (2025, 'intake_date'))
+
+
 class ExamYearsAreNotStartYears(SimpleTestCase):
     """Owner 16 Nov 2026 ("why complicate?"): exam years are NEVER a start year. A line with an exam
     word in any form gives no single year; only the reporting date or the session reads it."""

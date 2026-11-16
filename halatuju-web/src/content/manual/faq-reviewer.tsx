@@ -225,7 +225,8 @@ export const REVIEWER_FAQ: QA[] = [
         &ldquo;Ambilan Sesi 2024/2025: Februari&rdquo; means 2025). A date beside the session counts only
         straight after a start word (Ambilan, Kemasukan, Tarikh Mendaftar, Lapor Diri, mulai, bermula and the
         like) and inside the session; any other date on that line (a closing, letter, update or reference
-        date) makes it unclear, and an unclear date is left for you to check. An exam year (SPM, STPM, SKM,
+        date, or a date with a two-digit year such as &ldquo;16/02/25&rdquo;) makes it unclear, and an unclear
+        date is left for you to check. So is a reporting date with no full year (&ldquo;16 Februari&rdquo;). An exam year (SPM, STPM, SKM,
         MUET and the like) is never taken as the start year. It is left for you to check when the letter names a later semester or
         year (Year 2, Semester 3, final year, Upper Six, &ldquo;Part 4&rdquo;), even in the programme name;
         says readmission or credit transfer; is a confirmation letter that does not name her intake (Year 1,
