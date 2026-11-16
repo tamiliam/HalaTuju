@@ -28,6 +28,18 @@ moderation list (TD-496, ruling B): the owner chose the case page.
 with `review`, now reaches the door (403 to 404 on the probe's missing message). Every reviewer shape holds `review`
 and moves nowhere; nobody loses. The new GET: a key holder gets the detail GET's own answer, everyone else 403.
 
+**Review round (2026-11-16, adversarial review of the first commit).**
+- **The POST keeps the case fence too.** Point 1 above kept only the organisation fence, so a same-organisation
+  reviewer not assigned to the case (and a finance row given `review`, whose reach is assigned-only) could
+  decide any thank-you by walking ids, and read its raw text in the reply. Now the message's case goes through
+  `_scoped_application` (the GET's fence) before the body is read, and everything outside it is one 404. Who
+  decides: the assigned reviewer, a `see_all` (or `qc`) holder with `review` in the organisation, or a super.
+  This supersedes point 2's "deliberate tightening over the POST": the two now share one fence.
+- **A decision locks the row** (`select_for_update` in `transaction.atomic`) and re-reads the status, so two
+  people deciding at once cannot both pass the pending check.
+- **A body field that is not a string** (`scrubbed_text`, `review_note`, `action`) is 400, never 500.
+- The new read's query count is pinned at 5 (one message or three).
+
 ## 2026-11-16 — LABELS builder calls (pending architect): the Overview and the case holder follow the keys
 
 Branch labels, not pushed. No migration. Services: both (api; web test only, review round 2). Debt: TD-621, TD-622 (built), TD-632 (note).

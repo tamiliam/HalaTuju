@@ -275,13 +275,14 @@
    "method": "post",
    "allow": [
     "super",
-    "reviewer_a",
+    "reviewer_a"
+   ],
+   "hide": [
     "reviewer_a2"
    ],
-   "hide": [],
-   "object": null,
+   "object": "grad_message_a",
    "flags": [],
-   "note": ""
+   "note": "THANKS: the review key, then the message's case through the case read fence; reached by super, reviewer_a (assigned); 404 to reviewer_a2 (same org, unassigned) before the body is read; 403 to org_admin_a (no review key), org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/invitations/",

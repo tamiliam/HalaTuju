@@ -191,34 +191,54 @@ def approve_graduation_message(message, *, by_email, scrubbed_text=None):
     redaction) defaults to ``raw_text``; it is RE-SCANNED so a staff edit can never
     reintroduce an identifier (raises InProgrammeError('scrubbed_leak') on a leak).
     Only a ``pending`` message can be approved (a ``blocked`` one must be edited and
-    resubmitted by the student first)."""
-    if message.status != 'pending':
-        raise InProgrammeError('not_reviewable')
-    text = (scrubbed_text if scrubbed_text is not None else message.raw_text).strip()
-    if not text:
-        raise InProgrammeError('empty_message')
-    leaked = pool.scan_anon_for_identifiers(
-        text, getattr(message.application, 'profile', None))
-    if leaked:
-        raise InProgrammeError('scrubbed_leak')
-    message.scrubbed_text = text
-    message.status = 'approved'
-    message.approved_by = (by_email or '')[:254]
-    message.reviewed_at = timezone.now()
-    message.save(update_fields=['scrubbed_text', 'status', 'approved_by', 'reviewed_at'])
+    resubmitted by the student first).
+
+    THANKS review round: the row is LOCKED before its status is read, so two staff deciding at
+    once cannot both pass the check (the second waits, then meets the first one's decision). A
+    text that is not a string is refused (`bad_text`), never a crash."""
+    if scrubbed_text is not None and not isinstance(scrubbed_text, str):
+        raise InProgrammeError('bad_text')
+    with transaction.atomic():
+        _lock_status(message)
+        if message.status != 'pending':
+            raise InProgrammeError('not_reviewable')
+        text = (scrubbed_text if scrubbed_text is not None else message.raw_text).strip()
+        if not text:
+            raise InProgrammeError('empty_message')
+        leaked = pool.scan_anon_for_identifiers(
+            text, getattr(message.application, 'profile', None))
+        if leaked:
+            raise InProgrammeError('scrubbed_leak')
+        message.scrubbed_text = text
+        message.status = 'approved'
+        message.approved_by = (by_email or '')[:254]
+        message.reviewed_at = timezone.now()
+        message.save(update_fields=['scrubbed_text', 'status', 'approved_by', 'reviewed_at'])
     return message
 
 
 def reject_graduation_message(message, *, by_email, review_note=''):
-    """myNADI staff decline a pending message."""
-    if message.status not in ('pending', 'blocked'):
-        raise InProgrammeError('not_reviewable')
-    message.status = 'rejected'
-    message.approved_by = (by_email or '')[:254]
-    message.review_note = (review_note or '')[:500]
-    message.reviewed_at = timezone.now()
-    message.save(update_fields=['status', 'approved_by', 'review_note', 'reviewed_at'])
+    """myNADI staff decline a pending message (the row locked first, as on approve; a note that
+    is not a string is refused `bad_text`)."""
+    if review_note is not None and not isinstance(review_note, str):
+        raise InProgrammeError('bad_text')
+    with transaction.atomic():
+        _lock_status(message)
+        if message.status not in ('pending', 'blocked'):
+            raise InProgrammeError('not_reviewable')
+        message.status = 'rejected'
+        message.approved_by = (by_email or '')[:254]
+        message.review_note = (review_note or '')[:500]
+        message.reviewed_at = timezone.now()
+        message.save(update_fields=['status', 'approved_by', 'review_note', 'reviewed_at'])
     return message
+
+
+def _lock_status(message):
+    """Lock the message row and take its CURRENT status: another decision may have landed since
+    the caller read the row. Call inside ``transaction.atomic``."""
+    message.status = (GraduationMessage.objects.select_for_update()
+                      .values_list('status', flat=True).get(pk=message.pk))
 
 
 def approved_messages_for_sponsor(sponsor):

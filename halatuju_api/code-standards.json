@@ -346,6 +346,22 @@
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/applications/<int:pk>/assign/::POST::reassign",
       "value": 14
+    },
+    {
+      "on": "2026-11-16",
+      "by": "sprint THANKS review round",
+      "why": "The case page's thank-you read, by the assigned reviewer, one message: the review key, the case fence, one list query. Measured 5 on 2026-11-16.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/::GET::1-message",
+      "value": 5
+    },
+    {
+      "on": "2026-11-16",
+      "by": "sprint THANKS review round",
+      "why": "The same with three messages. Measured 5 on 2026-11-16, equal to one message: a message costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/::GET::3-messages",
+      "value": 5
     }
   ],
   "_history": [

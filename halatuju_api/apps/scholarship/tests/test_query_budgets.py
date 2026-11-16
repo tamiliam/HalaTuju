@@ -939,6 +939,52 @@ class TestTheOverviewPendingCardsQueryBudget(TestCase):
         self.assertEqual(resolve('/' + PENDING_ROUTE).route, PENDING_ROUTE)
 
 
+#: Sprint THANKS review round (2026-11-16): the case page's thank-you read (`views_admin/graduation.py`,
+#: `AdminCaseGraduationMessagesView`). The key, the case fence, then ONE list query: a message costs
+#: nothing extra, so the two readings are EQUAL.
+THANKS_ROUTE = 'api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/'
+THANKS_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{THANKS_ROUTE}::GET::1-message', f'{THANKS_ROUTE}::GET::3-messages')}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheCaseThanksReadQueryBudget(TestCase):
+    """The case's thank-yous, counted, read by the assigned reviewer (the `review` key holder)."""
+
+    def _reading(self, key):
+        from apps.scholarship.models import GraduationMessage
+        n = int(key.split('::')[2].split('-')[0])
+        org = make_org()
+        reviewer = make_admin('reviewer', owning_org=org)
+        app = make_application('submitted', cohort=make_cohort(owning_organisation=org), reviewer=reviewer)
+        for i in range(n):
+            GraduationMessage.objects.create(application=app, raw_text=f'Thank you {i}.', status='pending')
+        client, url = authed_client(reviewer), f'/{THANKS_ROUTE}'.replace('<int:pk>', str(app.pk))
+        self.assertEqual(client.get(url).status_code, 200)               # warm-up
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        self.assertEqual(len(response.json()['messages']), n)
+        return len(captured.captured_queries)
+
+    def test_each_reading_stays_inside_its_budget(self):
+        for key, limit in THANKS_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(now, limit, f'{key} now costs {now} queries; budget {limit}. '
+                                     '⚠ DO NOT RAISE IT — a per-message read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'THANKS_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in THANKS_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], LOWER_IT + '\n' + '\n'.join(loose))
+
+    def test_the_budgeted_route_still_resolves(self):
+        self.assertEqual(resolve('/api/v1/admin/scholarship/applications/1/graduation-messages/').route,
+                         THANKS_ROUTE)
+
+
 class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
     """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
     file measures that the record lacks reads None above; this names it. And the reverse: an
@@ -958,6 +1004,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **SCHOLARS_BUDGETS,
         **LANDING_BUDGETS,
         **PENDING_BUDGETS,
+        **THANKS_BUDGETS,
         **ASSIGN_BUDGETS,      # A2.3: measured in test_assign_query_budget.py
     }
 

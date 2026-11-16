@@ -40,7 +40,12 @@ class AdminGraduationMessageReviewView(_AdminBase):
     ``{action: 'approve'|'reject', scrubbed_text?, review_note?}``. On approve the
     ``scrubbed_text`` (defaults to the raw text) is RE-SCANNED so a staff edit can
     never reintroduce an identifier (400 `scrubbed_leak`). Only a `pending` message
-    can be approved; `pending`/`blocked` can be rejected."""
+    can be approved; `pending`/`blocked` can be rejected.
+
+    THANKS review round: the message's CASE goes through the case page's own read fence
+    (`_scoped_application`, the one the GET uses) BEFORE the body is read. Outside it the answer
+    is 404 whatever the reason (no such message, another organisation, a case not assigned to a
+    holder whose reach is assigned-only), so walking ids tells nobody which exist."""
 
     def post(self, request, pk):
         admin = self.get_admin(request)
@@ -48,15 +53,15 @@ class AdminGraduationMessageReviewView(_AdminBase):
             return self._deny()
         if not may_moderate_thanks(admin):
             return self._deny_role()
-        # org-fence: _org_allows(message.application) checked immediately below.
-        message = GraduationMessage.objects.select_related(
-            'application', 'application__profile').filter(pk=pk).first()
-        if message is None:
+        # org-fence: the message's case goes through _scoped_application (org + assignment) just below.
+        message = GraduationMessage.objects.filter(pk=pk).first()
+        app, err = (self._scoped_application(request, message.application_id) if message is not None
+                    else (None, True))
+        if err:   # no such message, or outside the case fence: one 404, never "it exists but not for you"
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._org_allows(admin, message.application):
-            # Cross-org write: 404, don't leak existence (Sprint 3a).
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        action = (request.data.get('action') or '').strip()
+        message.application = app
+        action = request.data.get('action')
+        action = action.strip() if isinstance(action, str) else ''
         by_email = getattr(admin, 'email', '') or ''
         try:
             if action == 'approve':

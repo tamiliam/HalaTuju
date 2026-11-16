@@ -4,6 +4,8 @@ page by whoever holds the `review` KEY. The role is only a label; keys decide.
 - POST `admin/graduation-messages/<pk>/review/` asks the key (it asked the reviewer label before), keeps
   the org fence (404 across organisations), the re-scan of the scrubbed text (400 `scrubbed_leak`) and the
   pending / blocked rules.
+- Review round: the POST keeps the CASE fence too (the GET's `_scoped_application`), and outside it the answer
+  is 404 before the body is read; a decision locks the row; a text that is not a string is 400 `bad_text`.
 - GET `admin/scholarship/applications/<pk>/graduation-messages/` serves the case's messages to a key holder,
   behind the case page's own read fence (`_scoped_application`).
 """
@@ -108,6 +110,88 @@ class ThanksReviewTest(TestCase):
         self.assertEqual((r.status_code, r.json()['code']), (400, 'scrubbed_leak'))
         self.msg.refresh_from_db()
         self.assertEqual(self.msg.status, 'pending')
+
+    # ── review round: the case fence on the POST ──────────────────────────────────────────────
+    def _assert_hidden(self, admin, body):
+        r = self._post(admin, self.msg, body)
+        self.assertEqual(r.status_code, 404, r.content)
+        self.assertNotIn(THANKS_TEXT, r.content.decode())
+        self.msg.refresh_from_db()
+        self.assertEqual((self.msg.status, self.msg.approved_by), ('pending', ''))
+
+    def test_an_unassigned_reviewer_in_the_same_org_gets_404(self):
+        unassigned = make_admin('reviewer', owning_org=self.org)
+        self.assertTrue(unassigned.has_perm('review'))
+        for body in ({'action': 'approve'}, {'action': 'reject'}, {}):
+            self._assert_hidden(unassigned, body)   # an empty action too: never 400 on a real message
+
+    def test_finance_given_review_reaches_only_its_assigned_cases(self):
+        finance = make_admin('finance', owning_org=self.org, permissions=['payments_approve', 'review'])
+        self.assertTrue(finance.has_perm('review'))
+        self.assertFalse(finance.has_perm('see_all'))
+        self._assert_hidden(finance, {'action': 'approve'})
+
+    def test_a_missing_message_and_a_fenced_one_answer_alike(self):
+        unassigned = make_admin('reviewer', owning_org=self.org)
+        r = authed_client(unassigned).post('/api/v1/admin/graduation-messages/999999/review/', {}, format='json')
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.json(), self._post(unassigned, self.msg, {}).json())
+
+    def test_a_see_all_holder_with_review_decides_on_an_unassigned_case(self):
+        wide = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all'])
+        r = self._post(wide, self.msg, {'action': 'approve'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.msg.refresh_from_db()
+        self.assertEqual(self.msg.status, 'approved')
+
+    def test_inside_the_fence_an_empty_action_is_still_bad_action(self):
+        r = self._post(self.keyholder, self.msg, {})
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_action'))
+
+    # ── review round: a text that is not a string ─────────────────────────────────────────────
+    def test_a_scrubbed_text_that_is_not_a_string_is_bad_text(self):
+        for bad in (42, ['a', 'b'], {'x': 1}):
+            r = self._post(self.keyholder, self.msg, {'action': 'approve', 'scrubbed_text': bad})
+            self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_text'), bad)
+        self.msg.refresh_from_db()
+        self.assertEqual(self.msg.status, 'pending')
+
+    def test_a_review_note_that_is_not_a_string_is_bad_text(self):
+        r = self._post(self.keyholder, self.msg, {'action': 'reject', 'review_note': ['no']})
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_text'))
+        self.msg.refresh_from_db()
+        self.assertEqual(self.msg.status, 'pending')
+
+    def test_an_action_that_is_not_a_string_is_bad_action(self):
+        r = self._post(self.keyholder, self.msg, {'action': 7})
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_action'))
+
+    # ── review round: the decision reads the row's CURRENT status under a lock ────────────────
+    def test_a_decision_on_a_stale_copy_meets_the_landed_one(self):
+        from apps.scholarship import in_programme
+        stale = GraduationMessage.objects.get(pk=self.msg.pk)       # read while still pending
+        in_programme.reject_graduation_message(self.msg, by_email='first@example.test')
+        with self.assertRaises(in_programme.InProgrammeError) as caught:
+            in_programme.approve_graduation_message(stale, by_email='second@example.test')
+        self.assertEqual(caught.exception.code, 'not_reviewable')
+        with self.assertRaises(in_programme.InProgrammeError):
+            in_programme.reject_graduation_message(
+                GraduationMessage.objects.get(pk=self.msg.pk), by_email='third@example.test')
+        self.msg.refresh_from_db()
+        self.assertEqual((self.msg.status, self.msg.approved_by), ('rejected', 'first@example.test'))
+
+    def test_the_decision_takes_a_row_lock(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from apps.scholarship import in_programme
+        with mock.patch.object(connection.features, 'has_select_for_update', True), \
+                CaptureQueriesContext(connection) as ctx:
+            try:
+                in_programme.approve_graduation_message(self.msg, by_email='a@example.test')
+            except Exception:   # SQLite cannot run FOR UPDATE; Postgres can. Only the SQL is asked here.
+                pass
+        self.assertTrue(any('FOR UPDATE' in q['sql'] for q in ctx.captured_queries),
+                        [q['sql'] for q in ctx.captured_queries])
 
     # ── the GET ───────────────────────────────────────────────────────────────────────────────
     def test_key_holder_reads_the_case_messages(self):

@@ -27,6 +27,8 @@ Decisions: `docs/decisions.md` (2026-11-16, THANKS). Debt: TD-632 (note updated)
 - No migration, no environment variable, no money path. The sponsor page still shows approved thank-yous only,
   with the student's reference and never their name.
 - A thank-you from another organisation's student cannot be read or decided (the server answers "not found").
+  The same holds for a case in your own organisation that you cannot open: a reviewer decides only for the
+  cases given to them, unless they may see every case.
 
 ## Deploy
 

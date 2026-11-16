@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint THANKS review round - the review POST keeps the case fence; a decision locks the row; a non-text body is 400 (2026-11-16)
+
+Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS, review round).
+- **Server:** `POST admin/graduation-messages/<pk>/review/` now puts the message's case through the case read fence (`_scoped_application`, the GET's) before the body is read. Outside it (no such message, another organisation, a case not assigned to an assigned-only key holder) the answer is one 404; an empty action no longer tells a real message from a missing one. Approve and reject lock the message row (`select_for_update` inside `transaction.atomic`) and read its current status, so two staff cannot both decide. A `scrubbed_text`, `review_note` or `action` that is not a string is 400 (`bad_text` / `bad_action`), never 500.
+- **Tests:** `test_thanks_graduation_review.py` 14 -> 24 (the unassigned reviewer and the finance row given `review` get 404 with the message unchanged; a see_all holder and the assigned reviewer decide; non-string bodies; a stale copy meets the landed decision; the decision's SQL carries FOR UPDATE). Access manifest: the POST now names `grad_message_a`, refuses `reviewer_a2` (404). `team_matrix_thanks.py` docstring says what the 404 means. New query budget: the case's thank-you read is 5 queries for one message and for three (`test_query_budgets.py`, two `_admitted` records).
+
 ### feat: sprint THANKS - a graduation thank-you is approved from the case page, on the review key (2026-11-16)
 
 Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS). Release-note draft: `docs/releases/thanks-release-note-draft.md`. Debt: TD-632 (note updated).
