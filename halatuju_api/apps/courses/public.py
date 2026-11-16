@@ -66,7 +66,7 @@ from .staff_gift import _gift_refusal as gift_refusal
 from .staff_gift import _not_found as gift_not_found
 from .staff_gift import resolve_gifts
 from . import (
-    password_change_flag, staff_activity_hook, staff_archive, staff_gift,
+    org_config, password_change_flag, staff_activity_hook, staff_archive, staff_gift,
     staff_reinvite, staff_tables, supabase_admin, theme_tokens, theme_versions,
 )
 from .tvet_families import family_of
@@ -98,6 +98,9 @@ __all__ = [
     'password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
     'staff_reinvite', 'staff_tables', 'supabase_admin',
     'theme_tokens', 'theme_versions',
+    # H3b: the organisation tunables door, for new scholarship callers (older ones still import it
+    # directly, listed in test_cross_app_private_imports).
+    'org_config',
 ]
 
 
