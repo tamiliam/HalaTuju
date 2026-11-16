@@ -175,7 +175,9 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Use <strong>Raise a query</strong> or <strong>Request a document</strong>. They get an email; their
         reply shows in the <strong>Outstanding</strong> box. While the student is still completing their
         documents, a note takes the place of both: what they still owe is listed under <strong>Blockers</strong>,
-        and they are already being asked for it.</>,
+        and they are already being asked for it. On an optional document (an EPF statement, a utility bill, a
+        school-leaving certificate) the student may tap <strong>I don&rsquo;t have this</strong>: the ask closes
+        and the reason shows in <strong>Outstanding</strong>.</>,
     },
     {
       q: <>What does &ldquo;Save verdict &amp; generate final profile&rdquo; do?</>,

@@ -39,12 +39,26 @@ export interface ResolutionItem {
   // have registered ('principal' born ≤2008, 'child' after). null on every other item; a
   // payload predating the field degrades to 'principal' in the card (lib/vircleAccount.ts).
   vircle_expected?: 'principal' | 'child' | null
+  // H7: the reasons an OPTIONAL document ask accepts for "I don't have this"; [] when the ask is required.
+  decline_reasons?: string[]
 }
 
 export async function getResolutionItems(
   options?: ApiOptions
 ): Promise<{ open: ResolutionItem[]; resolved: ResolutionItem[]; set_aside?: ResolutionItem[] }> {
   return apiRequest('/api/v1/scholarship/resolution-items/', options)   // trailing slash: no 301 on the hottest post-submit fetch
+}
+
+/** H7: "I don't have this" on an OPTIONAL document ask. `reason` is one of the item's `decline_reasons`;
+ *  "other" needs a `note`. The ask closes and is never asked again. A required ask answers 400. */
+export async function declineResolutionItem(
+  id: number, reason: string, note: string, options?: ApiOptions,
+): Promise<ResolutionItem> {
+  return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
+    method: 'POST',
+    body: JSON.stringify({ reason, note }),
+    ...options,
+  })
 }
 
 export async function resolveResolutionItem(

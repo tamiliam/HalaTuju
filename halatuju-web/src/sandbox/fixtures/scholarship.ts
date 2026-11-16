@@ -385,6 +385,19 @@ export const sandboxResolutionItems = {
   set_aside: [],
 }
 
+/** H7: one OPTIONAL ask (a water bill re-ask: the server serves `decline_reasons`) beside one required ask. */
+export const sandboxResolutionItemsOptional = {
+  open: [
+    ticket(11, 'doc', 'water_bill', 'We could not match the water bill to your address. Send a recent one if you have it.', {
+      source: 'check2', params: {},
+      decline_reasons: ['no_water_bill', 'landlord_pays', 'shared_meter', 'lost_bill', 'other'],
+    }),
+    ticket(12, 'doc', 'payslip', "Please send your father's latest payslip.", { source: 'check2' }),
+  ],
+  resolved: [],
+  set_aside: [],
+}
+
 /** Nothing left to do — the calm "we'll be in touch" state, which is a different card entirely. */
 export const sandboxResolutionItemsClear = { open: [], resolved: sandboxResolutionItems.resolved, set_aside: [] }
 

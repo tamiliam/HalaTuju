@@ -36,6 +36,8 @@ export interface AdminResolutionItem {
   resolved_at: string | null
   // Vircle setup task only (served by the serializer for every item; null elsewhere).
   vircle_expected?: 'principal' | 'child' | null
+  // H7: the reasons an OPTIONAL document ask accepts for "I don't have this"; [] when the ask is required.
+  decline_reasons?: string[]
 }
 
 /** Coordinator raises a new resolution item (free-text or doc request) for the

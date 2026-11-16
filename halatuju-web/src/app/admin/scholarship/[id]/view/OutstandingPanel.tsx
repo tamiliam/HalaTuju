@@ -177,6 +177,17 @@ export function OutstandingPanel({
                             {detail && (
                               <p className="mt-1 text-xs text-ground-500 break-words">{detail}</p>
                             )}
+                            {answered && typeof item.params?.declined_reason === 'string' && (
+                              <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
+                                <p className="text-xs md:text-[11px] font-semibold uppercase tracking-wide text-primary-700">
+                                  {t('admin.scholarship.caveats.declined')}
+                                </p>
+                                <p className="mt-0.5 text-sm text-ground-800 break-words">
+                                  {t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${item.params.declined_reason}`)}
+                                  {typeof item.params.declined_note === 'string' && item.params.declined_note ? `: ${item.params.declined_note}` : ''}
+                                </p>
+                              </div>
+                            )}
                             {answered && item.resolution_text && (
                               <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
                                 <p className="text-xs md:text-[11px] font-semibold uppercase tracking-wide text-primary-700">

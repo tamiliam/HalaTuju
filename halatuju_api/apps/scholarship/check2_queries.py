@@ -23,7 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
-from . import high_utility_variant as hu, higher_owed, income_str_ownership as own, stpm_asks
+from . import high_utility_variant as hu, higher_owed, income_str_ownership as own, optional_asks, stpm_asks
 from .genuineness.offer_issuers import released_from_officer
 from .models import ResolutionItem
 from .str_check_memo import one_str_reading
@@ -116,22 +116,22 @@ DOC_SPECS = {
     # Per-member EPF request (soft, OPTIONAL) — a member (employed with a payslip but no EPF, OR 'unemployed'
     # where an all-zeros/lapsed EPF corroborates it) has no EPF on file. TAGGED to that person: a memberless
     # request landed the upload BLANK-tagged (the #63 leak). Clears when that member's EPF arrives.
-    'father_epf_missing':   {'member': 'father', 'doc_type': 'epf'},
-    'mother_epf_missing':   {'member': 'mother', 'doc_type': 'epf'},
-    'guardian_epf_missing': {'member': 'guardian', 'doc_type': 'epf'},
-    'brother_epf_missing':  {'member': 'brother', 'doc_type': 'epf'},
-    'sister_epf_missing':   {'member': 'sister', 'doc_type': 'epf'},
+    'father_epf_missing':   {'member': 'father', 'doc_type': 'epf', 'optional': True},
+    'mother_epf_missing':   {'member': 'mother', 'doc_type': 'epf', 'optional': True},
+    'guardian_epf_missing': {'member': 'guardian', 'doc_type': 'epf', 'optional': True},
+    'brother_epf_missing':  {'member': 'brother', 'doc_type': 'epf', 'optional': True},
+    'sister_epf_missing':   {'member': 'sister', 'doc_type': 'epf', 'optional': True},
     # DEPRECATED (2026-07-04) memberless EPF asks (per-member above): kept ONLY so an open one auto-resolves.
     'unemployment_epf_missing': {'doc_type': 'epf'},
     'epf_statement_missing':    {'doc_type': 'epf'},
     # V4 — promoted ask-themes (audit §E): soft doc-requests (uncapped), gap in income_engine, auto-resolved.
-    'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
+    'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic', 'optional': True},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
     **higher_owed.ASK_SPECS,  # #388 owed over a pre-S3 snapshot; 2026-11-07 declare + upload (higher_owed)
     # Per-bill utility re-upload (owner 2026-07-08): each bill that is missing / stale / undated /
     # unreadable → its own request. Clears when a clean, current bill of that type supersedes it.
-    'water_bill_recheck':       {'doc_type': 'water_bill'},
-    'electricity_bill_recheck': {'doc_type': 'electricity_bill'},
+    'water_bill_recheck':       {'doc_type': 'water_bill', 'optional': True},
+    'electricity_bill_recheck': {'doc_type': 'electricity_bill', 'optional': True},
     # DEPRECATED (2026-07-08) either-or 'neither bill' ask (per-bill above): kept ONLY so an open one auto-resolves.
     'utility_bill_missing':         {'doc_type': 'water_bill'},
 }
@@ -518,7 +518,8 @@ def sync_check2_queries(application):
                     raised_student_visible = True
                 except IntegrityError:
                     pass
-            elif item is not None and item.status == 'resolved' and higher_owed.may_raise(application, code, may_ask):
+            elif (item is not None and item.status == 'resolved' and higher_owed.may_raise(application, code, may_ask)
+                  and not optional_asks.is_declined(item)):   # H7: "I don't have this" is never re-asked
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
                 # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
                 # post-lock — a concluded case doesn't re-ask.

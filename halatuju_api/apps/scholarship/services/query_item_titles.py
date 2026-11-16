@@ -319,11 +319,11 @@ TITLES = {
         'Muat naik bil utiliti',
         'பயன்பாட்டு பில் ஒன்றைப் பதிவேற்றவும்'),
     'water_bill_recheck': (
-        'Upload a clear, recent water bill',
+        'Upload a clear, recent water bill (optional)',
         'Muat naik bil air yang jelas dan terkini',
         'தெளிவான, சமீபத்திய தண்ணீர் பில்லைப் பதிவேற்றவும்'),
     'electricity_bill_recheck': (
-        'Upload a clear, recent electricity bill',
+        'Upload a clear, recent electricity bill (optional)',
         'Muat naik bil elektrik yang jelas dan terkini',
         'தெளிவான, சமீபத்திய மின்சார பில்லைப் பதிவேற்றவும்'),
     'deceased_parent_detail': (

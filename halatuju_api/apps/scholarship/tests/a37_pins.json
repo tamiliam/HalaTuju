@@ -353,7 +353,8 @@
     "resolution_text",
     "created_at",
     "resolved_at",
-    "vircle_expected"
+    "vircle_expected",
+    "decline_reasons"
    ],
    "SemesterResultSerializer": [
     "id",

@@ -127,7 +127,7 @@ export type {
 } from './api/documents'
 
 // The Student Action Centre — what we asked for and what came back.
-export { getResolutionItems, resolveResolutionItem } from './api/resolution'
+export { getResolutionItems, resolveResolutionItem, declineResolutionItem } from './api/resolution'
 export type { ResolutionItem } from './api/resolution'
 
 // Payout account, the comprehension quiz, and the guarantor's phone PIN.

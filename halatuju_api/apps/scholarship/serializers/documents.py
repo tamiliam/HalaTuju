@@ -305,15 +305,21 @@ class ResolutionItemSerializer(serializers.ModelSerializer):
     `admin.scholarship.verdict.item.<code>` copy on the frontend (officer items
     carry their own `prompt`)."""
     vircle_expected = serializers.SerializerMethodField()
+    decline_reasons = serializers.SerializerMethodField()
 
     class Meta:
         model = ResolutionItem
         fields = [
             'id', 'fact', 'code', 'params', 'prompt', 'kind', 'doc_type',
             'status', 'source', 'resolution_text', 'created_at', 'resolved_at',
-            'vircle_expected',
+            'vircle_expected', 'decline_reasons',
         ]
         read_only_fields = fields
+
+    def get_decline_reasons(self, obj):
+        """H7: the reason keys an OPTIONAL document ask accepts for "I don't have this"; [] when the ask is required."""
+        from ..optional_asks import reasons_for
+        return reasons_for(obj)
 
     def get_vircle_expected(self, obj):
         """Vircle setup task only: the account type Vircle's own birth-year rule expects —
