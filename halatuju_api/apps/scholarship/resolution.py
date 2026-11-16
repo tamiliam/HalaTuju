@@ -90,7 +90,7 @@ CODE_TO_TICKET = {
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     # NOTE: 'pathway_confirm' AND 'pathway_undeclared' are intentionally NOT here. Both are STUDENT
     # queries routed through Check 2 (source='check2', CHECK2_STUDENT_QUERIES_ENABLED) that ride the
-    # query email — see check2_queries._sync_pathway_confirm. 'pathway_confirm' = the one-tap "is this
+    # query email — see check2_confirms._sync_pathway_confirm. 'pathway_confirm' = the one-tap "is this
     # offer your final chosen pathway?"; 'pathway_undeclared' = an offer we can't pin (a PISMP offer
     # with no aliran) → the student picks the exact course on the profile page (owner 2026-07-15).
     # As a 'system' item either would be hidden from the student queue; only the officer would see it.
