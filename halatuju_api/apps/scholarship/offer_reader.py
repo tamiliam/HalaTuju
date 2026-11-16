@@ -58,6 +58,16 @@ source is corroborate-only, never "label" (M1); a corroborate-only IC must equal
 the text-layer backstop never refills an IC the guard refused (M2); marker runs inside the text layer are
 neutralised (L1).
 
+2.5.0 — THE MODEL (Gemini Phase 2 Option A, owner 2026-11-14; the prompt, schema and clean-up are
+unchanged). The read now runs on 3.8 Flash first (`profile_engine.MODEL_CASCADE`), 2.5 Flash after it.
+In the paid eval 3.8 lost the reporting date on 4 of 84 letters, so when a read answered by a model
+outside the 2.5 cascade comes back with no reporting date (after the later pages), the same read is
+asked again on `REPORTING_DATE_FALLBACK_MODEL` (page 1, then pages 2-3 if page 1 still has none; the
+OCR text on the text-only path) and ONLY its `reporting_date` / `reporting_date_label` are taken —
+every other 3.8 field stays. A failed or empty re-ask leaves the 3.8 read as it was. The re-asks are
+recorded in `calls` (parts `fallback_*`, never counted as pages shown) and a filled date names its
+model in `offer_reader_inputs['reporting_date_from']`.
+
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
 `vision_fields['offer_reader_inputs']`. Bump it on ANY change to the prompt, the schema, the inputs or
@@ -70,7 +80,7 @@ from __future__ import annotations
 import re
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.4.0'
+OFFER_READER_VERSION = '2.5.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3
@@ -102,6 +112,11 @@ LATER_FIELDS = ('reporting_date', 'reporting_date_label', 'reporting_venue', 'in
 LATER_TRIGGER = ('reporting_date', 'intake')
 LATER_SCHEMA = {'type': 'object', 'properties': {
     **{f: _STR for f in LATER_FIELDS}, 'warnings': {'type': 'array', 'items': _STR}}}
+#: Gemini Phase 2 Option A (owner, 2026-11-14): 3.8 Flash lost the reporting date on 4 of 84 letters in
+#: the paid eval, so a 3.x read with no reporting date asks this model again — for that date only.
+REPORTING_DATE_FALLBACK_MODEL = 'gemini-2.5-flash'
+#: What the re-ask may fill; everything else stays as the first read had it.
+REPORTING_DATE_FIELDS = ('reporting_date', 'reporting_date_label')
 
 OFFER_HINT = (
     ' This is a Malaysian post-SPM offer letter — Form Six ("Tingkatan Enam"), matriculation '
@@ -257,16 +272,50 @@ def _ask_gemini(prompt, schema, calls, **kw):
     return data
 
 
+def _ask_later(inputs, calls, part, **kw):
+    """One call on pages 2-3 (default resolution), recorded as ``part``."""
+    text = '\n\n'.join(t for t in inputs['page_texts'][1:len(inputs['images'])] if t)[:MAX_TEXT_CHARS]
+    data = _ask_gemini(later_prompt(2, len(inputs['images']), text), LATER_SCHEMA, calls,
+                       images=inputs['images'][1:], **kw)
+    calls[-1]['part'] = part
+    return data
+
+
 def _later_pages(inputs, fields, calls):
     """The later-pages call (pages 2-3, default resolution) → the LATER_FIELDS it read, or {}. Made only
     when page 1 left a `LATER_TRIGGER` field blank; its failure leaves page 1's read as it is."""
-    rest = inputs['images'][1:]
-    if not rest or all((fields.get(f) or '').strip() for f in LATER_TRIGGER):
+    if not inputs['images'][1:] or all((fields.get(f) or '').strip() for f in LATER_TRIGGER):
         return {}
-    text = '\n\n'.join(t for t in inputs['page_texts'][1:len(inputs['images'])] if t)[:MAX_TEXT_CHARS]
-    data = _ask_gemini(later_prompt(2, len(inputs['images']), text), LATER_SCHEMA, calls, images=rest)
-    calls[-1]['part'] = 'later_pages'
+    data = _ask_later(inputs, calls, 'later_pages')
     return {} if '_error' in data else {f: data.get(f) for f in LATER_FIELDS if (data.get(f) or '').strip()}
+
+
+def _needs_reporting_date_fallback(data, calls) -> bool:
+    """True when the first read was answered by a model outside the 2.5 cascade (3.8 Flash) and,
+    with its later pages, still has no reporting date. An unknown model (no ``_model``) never
+    triggers it: the re-ask is spent only where 3.8 is known to have read the letter."""
+    from .profile_engine import FLASH_25_CASCADE
+    first = calls[0]['model'] if calls else None
+    return bool(first) and first not in FLASH_25_CASCADE and not (data.get('reporting_date') or '').strip()
+
+
+def _reporting_date_fallback(inputs, ocr_text, p1_text, calls) -> dict:
+    """Ask `REPORTING_DATE_FALLBACK_MODEL` the same read again → its `REPORTING_DATE_FIELDS`, or {} when
+    it errs or finds no date either. Image path: page 1 (high detail), then pages 2-3 only if page 1
+    still has none; text path: the OCR text. Never raises."""
+    only = [REPORTING_DATE_FALLBACK_MODEL]
+    if inputs is None:
+        data = _ask_gemini(text_prompt(ocr_text), OFFER_SCHEMA, calls, models=only)
+        calls[-1]['part'] = 'fallback_text'
+    else:
+        data = _ask_gemini(image_prompt(inputs.get('pages_in_file', 1), p1_text), OFFER_SCHEMA, calls,
+                           images=inputs['images'][:1], media_resolution=MEDIA_RESOLUTION, models=only)
+        calls[-1]['part'] = 'fallback_page_1'
+        if '_error' not in data and not (data.get('reporting_date') or '').strip() and inputs['images'][1:]:
+            data = _ask_later(inputs, calls, 'fallback_later_pages', models=only)
+    if '_error' in data or not (data.get('reporting_date') or '').strip():
+        return {}
+    return {f: data.get(f) or '' for f in REPORTING_DATE_FIELDS}
 
 
 def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nric: str = '',
@@ -301,6 +350,11 @@ def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nri
     warnings = vision._drop_expected_warnings('offer_letter', data.pop('warnings', []) or [])
     merged = [f for f in LATER_FIELDS if not (data.get(f) or '').strip() and later.get(f)]
     data.update({f: later[f] for f in merged})                      # page 1 always wins
+    if _needs_reporting_date_fallback(data, calls):                 # Gemini Phase 2 Option A
+        found = _reporting_date_fallback(inputs, ocr_text, p1_text, calls)
+        data.update(found)                                          # the date only; 3.8 keeps the rest
+        stamp['offer_reader_inputs'].update(calls=list(calls),
+                                            reporting_date_from=REPORTING_DATE_FALLBACK_MODEL if found else '')
     data = vision._sanitize_extracted_fields('offer_letter', data)
     raw_ic = {f: data.get(f) or '' for f in ('candidate_nric', 'candidate_nric_source')}
     check = clean_offer_fields(data, profile_nric=profile_nric,

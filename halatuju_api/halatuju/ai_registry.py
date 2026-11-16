@@ -46,11 +46,23 @@ def _cascade(dotted):
     if dotted == 'profile_engine.MODEL_CASCADE':
         from apps.scholarship.profile_engine import MODEL_CASCADE
         return list(MODEL_CASCADE)
+    if dotted == 'profile_engine.FLASH_25_CASCADE':
+        from apps.scholarship.profile_engine import FLASH_25_CASCADE
+        return list(FLASH_25_CASCADE)
+    if dotted == 'vision.doc_read_cascade(results_slip)':
+        from apps.scholarship.vision import doc_read_cascade
+        return doc_read_cascade('results_slip')
     if dotted == 'profile_engine.PRO_CASCADE':
         from apps.scholarship.profile_engine import PRO_CASCADE
         return list(PRO_CASCADE)
     if dotted == 'report_engine.MODEL_CASCADE':
         from apps.reports.report_engine import MODEL_CASCADE
+        return list(MODEL_CASCADE)
+    if dotted == 'map_course_careers.MODEL_CASCADE':
+        from apps.courses.management.commands.map_course_careers import MODEL_CASCADE
+        return list(MODEL_CASCADE)
+    if dotted == 'generate_stpm_headlines.MODEL_CASCADE':
+        from apps.courses.management.commands.generate_stpm_headlines import MODEL_CASCADE
         return list(MODEL_CASCADE)
     raise KeyError(dotted)
 
@@ -63,21 +75,28 @@ JOBS = [
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
      'module': 'apps/scholarship/vision/gemini_read.py'},   # audit A3.1: vision.py became a package
+    # Gemini Phase 2 Option A (owner, 2026-11-14): the SPM results slip stays on 2.5 Flash first —
+    # 3.8 returned malformed grades on 26 of 98 slips in the paid eval. Same file as doc_read; its
+    # own row so the screen shows the exception rather than hiding it inside "Reading a document".
+    {'key': 'results_slip_read', 'label': 'Reading an SPM results slip',
+     'seam': SEAM_JSON, 'provider': GEMINI,
+     'source': BY_CASCADE, 'from': 'vision.doc_read_cascade(results_slip)',
+     'module': 'apps/scholarship/vision/gemini_read.py'},
     {'key': 'offer_read', 'label': 'Reading an offer letter',      # offer exact-read S4: its own reader
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
      'module': 'apps/scholarship/offer_reader.py'},
     {'key': 'ic_genuine', 'label': 'Is this MyKad genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
+     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
      'module': 'apps/scholarship/genuineness/ic.py'},
     {'key': 'results_genuine', 'label': 'Is this results slip genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
+     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
      'module': 'apps/scholarship/genuineness/results_doc.py'},
     {'key': 'doc_genuine', 'label': 'Is this supporting document genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
+     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
      'module': 'apps/scholarship/genuineness/supporting_doc.py'},
     {'key': 'income_approval', 'label': 'Who approved this informal income document',   # #374 / ruling 2A
      'seam': SEAM_JSON, 'provider': GEMINI,
@@ -129,7 +148,7 @@ JOBS = [
      'module': 'apps/scholarship/sponsor_terms.py'},
     {'key': 'apply_copy', 'label': 'Drafting apply-page copy in Malay or Tamil',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_SETTING, 'from': 'APPLY_COPY_DRAFT_MODEL',
+     'source': BY_SETTING, 'from': 'APPLY_COPY_DRAFT_MODEL', THEN_CASCADE: True,   # Phase 2 A
      'module': 'apps/scholarship/apply_copy_draft.py'},
     {'key': 'request_triage', 'label': 'First read of a bug report or request',
      'seam': SEAM_OWN, 'provider': GEMINI,
@@ -147,14 +166,15 @@ JOBS = [
     # ── batch commands, run by hand ─────────────────────────────────────────────────────
     # ⚠ FIXED means the model is written into the source: changing it needs a code change and a
     # deploy, not a setting. Shown as such rather than hidden, because "this one is different"
-    # is exactly what an upgrade checklist owes its reader.
+    # is exactly what an upgrade checklist owes its reader. Since Gemini Phase 2 Option A each is
+    # a cascade in its own module (3.8 Flash, then 2.5 Flash) — still in the source, still fixed.
     {'key': 'course_careers', 'label': 'Mapping a course to careers (batch)',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_LITERAL, 'from': 'gemini-2.5-flash',
+     'source': BY_CASCADE, 'from': 'map_course_careers.MODEL_CASCADE',
      'module': 'apps/courses/management/commands/map_course_careers.py', 'fixed': True},
     {'key': 'stpm_headlines', 'label': 'Writing STPM course headlines (batch)',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_LITERAL, 'from': 'gemini-2.5-flash',
+     'source': BY_CASCADE, 'from': 'generate_stpm_headlines.MODEL_CASCADE',
      'module': 'apps/courses/management/commands/generate_stpm_headlines.py', 'fixed': True},
 ]
 

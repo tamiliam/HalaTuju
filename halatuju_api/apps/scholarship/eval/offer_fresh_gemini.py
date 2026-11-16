@@ -77,6 +77,23 @@ def usd_to_myr(usd):
     return usd * USD_TO_MYR
 
 
+def cap_stop_line(records, max_usd):
+    """The STOP line when a run must end at its cap ``max_usd``, else None. A call on a model with
+    no PRICES row counts as US$0, so the cap could never trip (Gemini Phase 2 Option A put 3.8 Flash
+    first): such a call stops the run rather than spending blind."""
+    if max_usd is None:
+        return None
+    usage = [r.get('usage') or {} for r in records]
+    unpriced = sum(u.get('unpriced_calls') or 0 for u in usage)
+    if unpriced:
+        return (f'STOP: {unpriced} call(s) on a model with no price row - the cap US${max_usd:.4f} '
+                'cannot be kept; add the model to PRICES - nothing more read')
+    spent = sum(u.get('cost_usd') or 0.0 for u in usage)
+    if spent >= max_usd:
+        return f'STOP: the run has cost US${spent:.4f}, at its cap US${max_usd:.4f} - nothing more read'
+    return None
+
+
 def print_costs(rows, out=print, names=('current', 'new')):
     t = ('input_tokens', 'output_tokens', 'thinking_tokens')
     out(f"{'key':<30}{'pages':>6}{'text':>6} | {names[0]} in/out/think US$  | {names[1]} in/out/think US$")

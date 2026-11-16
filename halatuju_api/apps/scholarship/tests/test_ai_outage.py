@@ -226,9 +226,13 @@ class WhatOurOutageMayNotDo(TestCase):
         return client
 
     def _json_read(self, client):
+        """The seam on a TWO-model cascade (Flash, then Lite), so each scenario below is 'the first
+        model, then the last'. Which models make up the default cascade is pinned elsewhere
+        (test_gemini_phase2a); the error logic does not depend on it."""
+        from apps.scholarship.profile_engine import FLASH_25_CASCADE
         with patch('google.genai.Client', return_value=client), \
                 patch('apps.scholarship.usage.record_usage') as meter:
-            return vision._call_gemini_json('prompt', {'type': 'object'}), meter
+            return vision._call_gemini_json('prompt', {'type': 'object'}, models=FLASH_25_CASCADE), meter
 
     def test_one_models_empty_answer_falls_through_to_the_next_model(self):
         r, meter = self._json_read(self._answers(None, '{"name": "ok"}'))
@@ -289,7 +293,7 @@ class WhatOurOutageMayNotDo(TestCase):
         from apps.scholarship.services import detect_service_outages
         from apps.scholarship.services.read_retry import service_error_documents
         offer = _doc(self.app, 'offer_letter')
-        with patch('google.genai.Client', return_value=self._answers(_BAD_KEY, _BAD_KEY)):
+        with patch('google.genai.Client', return_value=self._answers(_BAD_KEY, _BAD_KEY, _BAD_KEY)):
             vision.run_field_extraction_for_document(
                 offer, names=[self.name],
                 ocr={'text': 'Tawaran', 'words': None, 'image': _IMAGE, 'error': None})
@@ -323,12 +327,12 @@ class WhatOurOutageMayNotDo(TestCase):
 
     def test_the_prose_seam_treats_an_empty_answer_the_same_way(self):
         from apps.scholarship.profile_engine import _call_gemini_text
-        with patch('google.genai.Client', return_value=self._answers('', '')):
+        with patch('google.genai.Client', return_value=self._answers('', '', '')):
             err = _call_gemini_text('prompt', 'English')['error']
         self.assertTrue(err.startswith(read_errors.DOCUMENT_FAILED))
         with patch('google.genai.Client', return_value=self._answers('', 'A profile.')):
             self.assertEqual(_call_gemini_text('prompt', 'English')['markdown'], 'A profile.')
-        with patch('google.genai.Client', return_value=self._answers(RuntimeError(_402), '')):
+        with patch('google.genai.Client', return_value=self._answers(RuntimeError(_402), '', '')):
             self.assertTrue(read_errors.is_ai_service_error(_call_gemini_text('p', 'English')['error']))
 
     def test_a_vision_ocr_outage_on_a_text_read_document_is_deferred_not_unreadable(self):
@@ -821,19 +825,23 @@ class TheOutageAlertCoversGeminiReads(TestCase):
 @override_settings(GEMINI_API_KEY='test-key')
 class TheCascadeErrorCarriesEveryModel(TestCase):
     def test_the_json_seam_reports_each_models_own_error(self):
-        client = _gemini_client({'gemini-2.5-flash': _402, 'gemini-2.5-flash-lite': 'lite: 503 UNAVAILABLE'})
+        client = _gemini_client({'gemini-3.8-flash': '3.8: 429 RESOURCE_EXHAUSTED', 'gemini-2.5-flash': _402,
+                                 'gemini-2.5-flash-lite': 'lite: 503 UNAVAILABLE'})
         with patch('google.genai.Client', return_value=client):
             err = vision._call_gemini_json('prompt', {'type': 'object'})['_error']
-        self.assertEqual(client.asked, ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
-        self.assertTrue(err.startswith('All AI models failed: gemini-2.5-flash: 402'))
+        self.assertEqual(client.asked, ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+        self.assertTrue(err.startswith('All AI models failed: gemini-3.8-flash: 3.8: 429'))
+        self.assertIn('gemini-2.5-flash: 402', err)
         self.assertIn('gemini-2.5-flash-lite: lite: 503 UNAVAILABLE', err)
         self.assertLessEqual(len(err), 600)
 
     def test_the_prose_seam_reports_each_models_own_error(self):
         from apps.scholarship.profile_engine import _call_gemini_text
-        client = _gemini_client({'gemini-2.5-flash': _402, 'gemini-2.5-flash-lite': 'lite down'})
+        client = _gemini_client({'gemini-3.8-flash': '3.8 down', 'gemini-2.5-flash': _402,
+                                 'gemini-2.5-flash-lite': 'lite down'})
         with patch('google.genai.Client', return_value=client):
             err = _call_gemini_text('prompt', 'English')['error']
+        self.assertIn('gemini-3.8-flash: 3.8 down', err)
         self.assertIn('gemini-2.5-flash: 402', err)
         self.assertIn('gemini-2.5-flash-lite: lite down', err)
 

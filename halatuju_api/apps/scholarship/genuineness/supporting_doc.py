@@ -63,7 +63,11 @@ def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
               "document actually appears to be (short). verdict — 'genuine' (a real official document of "
               "the expected type), 'suspect' (the right type but typed/printed/fabricated, not an official "
               "copy), or 'wrong_type' (a different document than expected). reason — one sentence.")
-    r = vision._call_gemini_json(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
+    # Stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14): genuineness was not in
+    # the 3.8 eval, so its verdicts keep the model they were validated on.
+    from apps.scholarship.profile_engine import FLASH_25_CASCADE
+    r = vision._call_gemini_json(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime,
+                                 models=FLASH_25_CASCADE)
     if not isinstance(r, dict) or r.get('_error'):
         return {}
     status = _DOC_GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), '')

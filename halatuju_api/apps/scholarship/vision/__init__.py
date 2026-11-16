@@ -66,7 +66,8 @@ from .sanitize import (
 )
 from .gemini_read import (
     _IC_GEMINI_PROMPT, _IC_GEMINI_SCHEMA, _WARNING_VOICE, _as_image_for_gemini, _call_gemini_json,
-    IC_SECOND_OPINION_PROMPT_VERSION, _gemini_ic_second_opinion, extract_document_fields
+    IC_SECOND_OPINION_PROMPT_VERSION, PINNED_25_DOC_TYPES, _gemini_ic_second_opinion, doc_read_cascade,
+    extract_document_fields
 )
 from .ocr import (
     _PDF_MAGIC, _doc_usage_ctx, _fetch_image_bytes, _is_pdf, _vision_document_text, _vision_words,

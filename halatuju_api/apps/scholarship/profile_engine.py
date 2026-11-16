@@ -50,7 +50,17 @@ from .profile_prompts import (  # re-exports (A3.6)
 
 logger = logging.getLogger(__name__)
 
-MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']   # 2.0-flash retired (404), 2026-10-24
+#: The 2.5 Flash cascade (2.0-flash retired (404), 2026-10-24). Since Gemini Phase 2 Option A
+#: (owner, 2026-11-14) it is the FALLBACK of every Flash job, and the FIRST choice only of the jobs
+#: the owner kept on 2.5: the SPM results-slip read (`vision.doc_read_cascade`) and the three
+#: genuineness jobs (`genuineness/ic.py`, `results_doc.py`, `supporting_doc.py`). Why: in the paid
+#: eval 3.8 returned malformed grades on 26 of 98 results slips; genuineness was not tested.
+FLASH_25_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
+
+#: Every other Flash job: 3.8 Flash first, then the 2.5 cascade (Gemini Phase 2 Option A,
+#: `docs/decisions.md` 2026-11-16). Read live by the AI registry, `vision._call_gemini_json`,
+#: `_call_gemini_text` and `cascade_from`.
+MODEL_CASCADE = ['gemini-3.8-flash', *FLASH_25_CASCADE]
 
 
 def cascade_from(model):
@@ -65,6 +75,7 @@ def cascade_from(model):
 # per accepted student) — so it runs on the strongest model we have, falling back to the
 # Flash cascade if that one is unavailable. The high-volume DRAFT stays on the Flash cascade.
 # Gemini Phase 1 (2026-11-10): gemini-2.5-pro answers 404 for our key; 3.8 Flash replaces it.
+# Since Phase 2 Option A the draft's cascade starts on 3.8 too, so the two cascades are equal.
 PRO_MODEL = 'gemini-3.8-flash'
 PRO_CASCADE = cascade_from(PRO_MODEL)
 

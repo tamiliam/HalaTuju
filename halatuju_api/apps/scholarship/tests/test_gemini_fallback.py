@@ -24,6 +24,9 @@ from apps.scholarship.tests.test_org_requests import _GOOD, _Base as _RequestBas
 from apps.scholarship.tests.test_sponsor_terms import _draft as _terms_draft
 
 CONFIGURED = 'gemini-3.8-flash'
+#: The model tried after the configured one. Since Gemini Phase 2 Option A (2026-11-14) 3.8 Flash
+#: heads the Flash cascade too, so the next model is the cascade's SECOND entry, not its first.
+NEXT = cascade_from(CONFIGURED)[1]
 QUIZ = {'tag': 'T', 'plain': 'p', 'question': 'q?', 'options': ['a', 'b', 'c'],
         'correct': 1, 'why': 'w'}
 QUIZ_JSON = json.dumps({'en': QUIZ, 'ms': QUIZ, 'ta': QUIZ})
@@ -49,8 +52,8 @@ def _seam(answers):
 
 def _first_fails(text):
     """The configured model 404s; the first Flash model answers."""
-    return _seam({CONFIGURED: _NotFound('404 gemini'), MODEL_CASCADE[0]: text,
-                  MODEL_CASCADE[1]: text})
+    return _seam({CONFIGURED: _NotFound('404 gemini'), NEXT: text,
+                  cascade_from(CONFIGURED)[2]: text})
 
 
 def _all_fail():
@@ -59,7 +62,10 @@ def _all_fail():
 
 class TestTheOrder(SimpleTestCase):
     def test_the_pro_cascade_starts_on_3_8_flash_without_a_repeat(self):
-        self.assertEqual(PRO_CASCADE, [CONFIGURED, *MODEL_CASCADE])
+        # Gemini Phase 2 Option A: the Flash cascade itself starts on 3.8, so the two are equal.
+        self.assertEqual(PRO_CASCADE, list(MODEL_CASCADE))
+        self.assertEqual(PRO_CASCADE[0], CONFIGURED)
+        self.assertEqual(len(PRO_CASCADE), len(set(PRO_CASCADE)))
         self.assertNotIn('gemini-2.5-pro', PRO_CASCADE)
 
     def test_both_settings_default_to_3_8_flash(self):
@@ -70,7 +76,9 @@ class TestTheOrder(SimpleTestCase):
                 self.assertEqual(getattr(base, name), os.environ.get(name, CONFIGURED))
 
     def test_a_configured_model_already_in_the_cascade_is_not_tried_twice(self):
-        self.assertEqual(cascade_from(MODEL_CASCADE[1]), [MODEL_CASCADE[1], MODEL_CASCADE[0]])
+        self.assertEqual(cascade_from(MODEL_CASCADE[1]),
+                         [MODEL_CASCADE[1], MODEL_CASCADE[0], *MODEL_CASCADE[2:]])
+        self.assertEqual(cascade_from(CONFIGURED), list(MODEL_CASCADE))
         self.assertEqual(cascade_from(''), list(MODEL_CASCADE))
 
 
@@ -84,13 +92,13 @@ class TestTheRunner(SimpleTestCase):
     def test_a_failure_moves_to_the_next_model_and_names_the_one_that_answered(self):
         seam = _first_fails('ok')
         self.assertEqual(gemini.generate_with_fallback(seam, 'p', CONFIGURED, fatal=ValueError),
-                         ('ok', MODEL_CASCADE[0]))
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
+                         ('ok', NEXT))
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
 
     def test_an_empty_answer_moves_on_too(self):
-        seam = _seam({CONFIGURED: '  ', MODEL_CASCADE[0]: 'ok'})
+        seam = _seam({CONFIGURED: '  ', NEXT: 'ok'})
         self.assertEqual(gemini.generate_with_fallback(seam, 'p', CONFIGURED, fatal=ValueError),
-                         ('ok', MODEL_CASCADE[0]))
+                         ('ok', NEXT))
 
     def test_when_every_model_fails_the_last_error_goes_up(self):
         seam = _all_fail()
@@ -122,9 +130,9 @@ class TestTheRunner(SimpleTestCase):
         self.assertEqual(seen, [['i'], ['i']])
 
     def test_a_missing_answer_moves_on_like_an_empty_one(self):
-        seam = _seam({CONFIGURED: None, MODEL_CASCADE[0]: 'ok'})
+        seam = _seam({CONFIGURED: None, NEXT: 'ok'})
         self.assertEqual(gemini.generate_with_fallback(seam, 'p', CONFIGURED, fatal=ValueError),
-                         ('ok', MODEL_CASCADE[0]))
+                         ('ok', NEXT))
 
     def test_when_every_model_fails_the_whole_story_is_logged(self):
         with self.assertLogs('apps.scholarship.gemini', 'WARNING') as logs:
@@ -160,29 +168,29 @@ class TestTheDeadline(SimpleTestCase):
         return seam
 
     def test_the_first_try_gets_100_s_and_each_later_one_what_is_left_of_115(self):
-        seam = self._run({CONFIGURED: 40, MODEL_CASCADE[0]: 50},
-                         {CONFIGURED: _NotFound('a'), MODEL_CASCADE[0]: _NotFound('b'),
-                          MODEL_CASCADE[1]: 'ok'})
-        self.assertEqual(seam.result, ('ok', MODEL_CASCADE[1]))
+        seam = self._run({CONFIGURED: 40, NEXT: 50},
+                         {CONFIGURED: _NotFound('a'), NEXT: _NotFound('b'),
+                          cascade_from(CONFIGURED)[2]: 'ok'})
+        self.assertEqual(seam.result, ('ok', cascade_from(CONFIGURED)[2]))
         self.assertEqual(seam.timeouts, [100_000, 75_000, 25_000])
 
     def test_a_later_try_still_starts_with_exactly_15_s_left(self):
-        seam = self._run({CONFIGURED: 100}, {CONFIGURED: _NotFound('a'), MODEL_CASCADE[0]: 'ok'})
-        self.assertEqual(seam.result, ('ok', MODEL_CASCADE[0]))
+        seam = self._run({CONFIGURED: 100}, {CONFIGURED: _NotFound('a'), NEXT: 'ok'})
+        self.assertEqual(seam.result, ('ok', NEXT))
         self.assertEqual(seam.timeouts, [100_000, 15_000])
 
     def test_with_under_15_s_left_no_later_try_starts_and_the_last_error_goes_up(self):
         first = _NotFound('404 first')
-        seam = self._run({CONFIGURED: 101}, {CONFIGURED: first, MODEL_CASCADE[0]: 'ok'})
+        seam = self._run({CONFIGURED: 101}, {CONFIGURED: first, NEXT: 'ok'})
         self.assertIs(seam.result, first)
         self.assertEqual(seam.asked, [CONFIGURED])
 
     def test_the_deadline_counts_from_the_start_not_per_try(self):
-        seam = self._run({CONFIGURED: 60, MODEL_CASCADE[0]: 45},
+        seam = self._run({CONFIGURED: 60, NEXT: 45},
                          {m: _NotFound(m) for m in cascade_from(CONFIGURED)})
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
         self.assertEqual(seam.timeouts, [100_000, 55_000])
-        self.assertEqual(str(seam.result), MODEL_CASCADE[0])
+        self.assertEqual(str(seam.result), NEXT)
 
 
 @override_settings(GEMINI_API_KEY='test-key')
@@ -225,8 +233,8 @@ class TestTheContractModule(TestCase):
         with patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             contracts.generate_quiz(self.clause)
         self.clause.refresh_from_db()
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
-        self.assertEqual(self.clause.quiz_generated_model, MODEL_CASCADE[0])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
+        self.assertEqual(self.clause.quiz_generated_model, NEXT)
 
     def test_the_quiz_still_raises_when_every_model_fails(self):
         seam = _all_fail()
@@ -251,7 +259,7 @@ class TestTheContractModule(TestCase):
         seam = _first_fails(SEGMENTS_JSON)
         with patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             got = contracts.segment_docx(b'x')
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
         self.assertEqual([c['heading'] for c in got['clauses']], ['A'])
 
     @patch('apps.scholarship.contracts._extract_docx_text', return_value='flat text')
@@ -276,7 +284,7 @@ class TestTheContractModule(TestCase):
         client_cls.return_value.models.generate_content.side_effect = generate_content
         contracts.generate_quiz(self.clause)
         self.assertEqual(list(UsageEvent.objects.values_list('model', 'source')),
-                         [(MODEL_CASCADE[0], 'contract_quiz')])
+                         [(NEXT, 'contract_quiz')])
 
 
 @override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL=CONFIGURED)
@@ -289,8 +297,8 @@ class TestSponsorTerms(TestCase):
         with patch('apps.scholarship.sponsor_terms._gemini_generate', side_effect=seam):
             sponsor_terms.generate_quiz(self.section)
         self.section.refresh_from_db()
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
-        self.assertEqual(self.section.quiz_generated_model, MODEL_CASCADE[0])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
+        self.assertEqual(self.section.quiz_generated_model, NEXT)
 
     def test_the_quiz_still_raises_when_every_model_fails(self):
         seam = _all_fail()
@@ -305,7 +313,7 @@ class TestSponsorTerms(TestCase):
         seam = _first_fails(SEGMENTS_JSON)
         with patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             out = sponsor_terms.import_docx(b'x')
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
         self.assertEqual([s['heading_en'] for s in out['sections']], ['A'])
 
     @patch('apps.scholarship.contracts._extract_docx_text', return_value='flat text')
@@ -336,8 +344,8 @@ class TestRequestTriage(_RequestBase):
         with mock.patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             org_requests.run_ai_review(r)
         r.refresh_from_db()
-        self.assertEqual(seam.asked, [CONFIGURED, MODEL_CASCADE[0]])
-        self.assertEqual(r.ai_draft_model, MODEL_CASCADE[0])
+        self.assertEqual(seam.asked, [CONFIGURED, NEXT])
+        self.assertEqual(r.ai_draft_model, NEXT)
         self.assertEqual(r.ai_run_count, 1)
 
     def test_when_every_model_fails_it_is_still_triage_ai_unavailable(self):
@@ -374,4 +382,4 @@ class TestRequestTriage(_RequestBase):
         client_cls.return_value.models.generate_content.side_effect = generate_content
         org_requests.run_ai_review(self._req())
         self.assertEqual(list(UsageEvent.objects.values_list('model', 'source')),
-                         [(MODEL_CASCADE[0], 'requests_triage')])
+                         [(NEXT, 'requests_triage')])

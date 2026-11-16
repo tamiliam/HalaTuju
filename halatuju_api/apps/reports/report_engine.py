@@ -14,7 +14,7 @@ Usage:
         student_signals={...},
         lang='bm',
     )
-    # result = {'markdown': '...', 'model_used': 'gemini-2.5-flash'}
+    # result = {'markdown': '...', 'model_used': 'gemini-3.8-flash'}
     # OR
     # result = {'error': 'AI service unavailable'}
 """
@@ -29,8 +29,10 @@ from .prompts import get_prompt
 
 logger = logging.getLogger(__name__)
 
-# Gemini model cascade — try in order until one succeeds
+# Gemini model cascade — try in order until one succeeds. 3.8 Flash first since Gemini Phase 2
+# Option A (owner, 2026-11-14); the 2.5 models are its fallbacks.
 MODEL_CASCADE = [
+    'gemini-3.8-flash',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',     # 2.0-flash retired (404) and removed, 2026-10-24
 ]

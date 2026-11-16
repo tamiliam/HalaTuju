@@ -38,10 +38,14 @@ def ic_genuineness(data: bytes, content_type: str = '') -> dict:
     penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
     flag; the reviewer is the authority (verification-assurance roadmap)."""
     from apps.scholarship import vision   # lazy: avoids a circular import; keeps the patch seam
+    from apps.scholarship.profile_engine import FLASH_25_CASCADE
     img, mime = vision._as_image_for_gemini(data, content_type)
     if img is None:
         return {}
-    r = vision._call_gemini_json(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
+    # Stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14): genuineness was not
+    # in the 3.8 eval, so its verdicts keep the model they were validated on.
+    r = vision._call_gemini_json(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime,
+                                 models=FLASH_25_CASCADE)
     if not isinstance(r, dict) or r.get('_error'):
         return {}
     return {

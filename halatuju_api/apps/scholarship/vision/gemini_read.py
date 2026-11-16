@@ -80,16 +80,31 @@ def _gemini_ic_second_opinion(data: bytes, content_type: str) -> dict:
                                 with_model=True)
 
 
+#: Document types whose READ stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14):
+#: in the paid eval 3.8 Flash returned malformed grades on 26 of 98 SPM results slips ("Aplus",
+#: stray JSON / tab / CJK characters). Every other type reads on `profile_engine.MODEL_CASCADE`.
+PINNED_25_DOC_TYPES = frozenset({'results_slip'})
+
+
+def doc_read_cascade(doc_type: str) -> list:
+    """The model cascade a document read of ``doc_type`` walks, newest-preferred first. The AI
+    registry reads it too, so the screen cannot show a different order from the read."""
+    from ..profile_engine import FLASH_25_CASCADE, MODEL_CASCADE
+    return list(FLASH_25_CASCADE if doc_type in PINNED_25_DOC_TYPES else MODEL_CASCADE)
+
+
 def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = None,
                       mime_type: str = 'image/jpeg', images=None, media_resolution=None,
-                      with_model: bool = False) -> dict:
+                      with_model: bool = False, models=None) -> dict:
     """Structured-output Gemini call → parsed JSON dict, or {'_error': msg}. This is
     the single seam tests @patch. Reuses profile_engine's model cascade + key guard.
     Pass ``image`` (raw bytes) for a multimodal read — Gemini sees the picture, not
     just OCR text (used by the IC second-opinion to recover blurry digits). ``images`` =
     [(bytes, mime), …] for several (images first, then the prompt); ``media_resolution`` sets
     the image detail (the offer reader, S4 — the default sends every image as 258 tokens);
-    ``with_model`` adds ``_model`` (the cascade model that answered) to the answer."""
+    ``with_model`` adds ``_model`` (the cascade model that answered) to the answer. ``models``
+    replaces the cascade (Gemini Phase 2 Option A: the jobs kept on 2.5 Flash pass
+    ``profile_engine.FLASH_25_CASCADE``); left out, it is ``profile_engine.MODEL_CASCADE``."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '') or ''
     if not api_key:
         return {'_error': 'AI service not configured (missing API key)'}
@@ -104,7 +119,7 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
     contents = [types.Part.from_bytes(data=d, mime_type=m) for d, m in parts] + [prompt] if parts else prompt
     extra = {'media_resolution': media_resolution} if media_resolution else {}
     ours, document = [], []          # why each model failed: OUR side, or the document (2026-10-24)
-    for model_name in MODEL_CASCADE:
+    for model_name in (models or MODEL_CASCADE):
         try:
             resp = client.models.generate_content(
                 model=model_name, contents=contents,
@@ -164,7 +179,8 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
             'the listed fields exactly as printed. If a field is missing or unclear, leave '
             f'it empty and add a short note to "warnings". Do NOT invent values.{_WARNING_VOICE}{hint}'
         )
-        data = _v._call_gemini_json(prompt, schema, image=img, mime_type=mime)
+        data = _v._call_gemini_json(prompt, schema, image=img, mime_type=mime,
+                                    models=doc_read_cascade(doc_type))
     else:
         if not (ocr_text or '').strip():
             return {'fields': {}, 'warnings': [], 'error': 'no text'}
@@ -173,7 +189,7 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
             'exactly as printed. If a field is missing or unclear, leave it empty and add a '
             f'short note to "warnings". Do NOT invent values.{_WARNING_VOICE}{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
         )
-        data = _v._call_gemini_json(prompt, schema)
+        data = _v._call_gemini_json(prompt, schema, models=doc_read_cascade(doc_type))
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error']}
     warnings = _drop_expected_warnings(doc_type, data.pop('warnings', []) or [])

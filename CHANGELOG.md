@@ -13,6 +13,17 @@ Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only,
 - Guard (owner-approved addition): `test_cross_app_private_imports.py` now fails any NEW direct scholarship to courses import (non-test files) outside an allowlist of 154 (file, module, name) entries, with a stale-entry floor, a only-shrinks ceiling and a synthetic-violation self-test. The 154 entries are the 20 distinct edges code_health counts, spelt per file.
 - Left alone on purpose: `org_config`, `staff_permissions`, the `staff_tables` module (one edge each).
 
+### Gemini Phase 2 Option A - 3.8 Flash first for every Flash job, with the owner's exceptions (2026-11-16)
+
+Branch gem2-a, not pushed. No migration. Services: api. Decision: `docs/decisions.md` (2026-11-16, Gemini Phase 2 Option A).
+- `profile_engine.MODEL_CASCADE` is now 3.8 Flash, 2.5 Flash, 2.5 Flash-Lite; `PRO_CASCADE` equals it. `report_engine`, `map_course_careers` and `generate_stpm_headlines` (3.8 then 2.5, each with its own config) follow.
+- Apply-page copy defaults to `gemini-3.8-flash` and now falls back down the cascade (`gemini.generate_with_fallback`).
+- Kept on 2.5 Flash first (`FLASH_25_CASCADE`): the SPM results-slip read (`vision.doc_read_cascade`, a per-type pin; the JSON seam takes `models=`) and the genuineness checks for the IC, the results slip and the supporting documents.
+- Offer reader 2.5.0: when 3.8 returns no reporting date, 2.5 Flash is asked once more and only the reporting date and its label are taken; recorded as `fallback_*` calls and `reporting_date_from`.
+- AI registry: a new `results_slip_read` row; the genuineness rows read `FLASH_25_CASCADE`; the batch commands read their own cascades; apply copy shows its fallbacks.
+- Offer fresh-read eval tool (hand-run, paid): it reads as production does, so it now starts on 3.8, which has no price row; its `--max-usd` cap would have counted 3.8 calls as US$0 and never tripped. It now stops when a call cannot be priced (`cap_stop_line`). No 3.8 price was invented.
+- Tests: `test_gemini_phase2a.py` (the per-type pin and the genuineness pins through the real JSON seam, the offer fallback firing and not firing, apply copy and STPM headlines falling back); registry and fallback tests updated.
+
 ### refactor: sprint TOGGLES - HalaTuju uses toggles, not tick boxes (2026-11-16)
 
 Branch toggles, not pushed. No migration. Services: web. Decision: `docs/decisions.md` (2026-11-16, toggles not tick boxes). Release-note draft: `docs/releases/toggles-release-note-draft.md`. Cosmetic only; no copy, i18n key or behaviour changed.

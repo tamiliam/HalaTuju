@@ -51,22 +51,24 @@ class DraftError(Exception):
 
 def _model():
     """Flash by owner decision (2026-09-10): a few hundred words per press, reviewed by a human
-    before it reaches anybody, so the pro model's extra cost buys nothing here."""
-    return getattr(settings, 'APPLY_COPY_DRAFT_MODEL', '') or 'gemini-2.5-flash'
+    before it reaches anybody, so the pro model's extra cost buys nothing here. 3.8 Flash since
+    Gemini Phase 2 Option A (owner, 2026-11-14), falling back to the 2.5 cascade."""
+    return getattr(settings, 'APPLY_COPY_DRAFT_MODEL', '') or 'gemini-3.8-flash'
 
 
-def _gemini_generate(prompt, model):
+def _gemini_generate(prompt, model, timeout_ms=None):
     """The single mockable seam — patched in every test, so no CI run can make a live call.
 
-    NO fallback: an unconfigured or unavailable model raises. This is already a Flash job, so the
-    owner's 2026-11-10 ruling (Gemini Phase 1: the former Pro jobs fall back down the Flash
-    cascade) does not reach it; it makes one call, as before.
+    ONE model per call; it raises on any failure. `draft` falls back through
+    `gemini.generate_with_fallback` (the configured model, then the Flash cascade) since Gemini
+    Phase 2 Option A (owner, 2026-11-14), the same runner the Phase 1 jobs use. ``timeout_ms``
+    (default None) is set only by that runner's deadline.
 
     ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
     instead of three) and kept this name, because this is the boundary tenancy rule 6 names and
     the string every `patch()` in the suite points at. Do not "simplify" it into a direct call.
     """
-    return gemini.generate_text(prompt, model, exc=DraftError,
+    return gemini.generate_text(prompt, model, exc=DraftError, timeout_ms=timeout_ms,
                                 unconfigured='ai_unconfigured', unavailable='ai_unavailable')
 
 
@@ -188,7 +190,9 @@ def draft(programme, locale):
 
     prompt = build_prompt(english, locale)
     try:
-        reply = _gemini_generate(prompt, _model())
+        # The seam is passed by name at call time, so every patch of `_gemini_generate` lands.
+        reply, _answered = gemini.generate_with_fallback(_gemini_generate, prompt, _model(),
+                                                         fatal=DraftError)
     except DraftError:
         raise
     except Exception:                                   # noqa: BLE001 — one refusal for the reader

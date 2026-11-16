@@ -125,7 +125,7 @@ class TestItResolvesRatherThanRemembers(TestCase):
         """Gemini Phase 1 (owner, 2026-11-10): the contract quiz, sponsor terms and request triage
         fall back down the Flash cascade, so the screen shows the cascade after the setting — in
         the order `gemini.generate_with_fallback` actually tries them, without a repeat."""
-        from apps.scholarship.profile_engine import MODEL_CASCADE
+        from apps.scholarship.profile_engine import MODEL_CASCADE, cascade_from
         with override_settings(CONTRACT_QUIZ_MODEL='gemini-9.9-imaginary',
                                REQUESTS_TRIAGE_MODEL=MODEL_CASCADE[0]):
             jobs = {j['key']: j for j in ai_registry.snapshot()}
@@ -135,12 +135,41 @@ class TestItResolvesRatherThanRemembers(TestCase):
                 self.assertEqual(jobs[key]['fallbacks'], list(MODEL_CASCADE))
         self.assertEqual(jobs['request_triage']['model'], MODEL_CASCADE[0])
         self.assertEqual(jobs['request_triage']['fallbacks'], list(MODEL_CASCADE[1:]))
-        self.assertEqual(jobs['apply_copy']['fallbacks'], [])   # still a single call
+        # Gemini Phase 2 Option A (2026-11-14): the apply-copy draft falls back too now.
+        self.assertEqual([jobs['apply_copy']['model']] + jobs['apply_copy']['fallbacks'],
+                         cascade_from(jobs['apply_copy']['model']))
+        self.assertNotEqual(jobs['apply_copy']['fallbacks'], [])
 
     def test_a_cascade_backed_job_reads_the_live_list(self):
         job = next(j for j in ai_registry.snapshot() if j['key'] == 'doc_read')
         from apps.scholarship.profile_engine import MODEL_CASCADE
         self.assertEqual([job['model']] + job['fallbacks'], list(MODEL_CASCADE))
+
+    def test_the_ordinary_flash_jobs_start_on_3_8_with_2_5_after_it(self):
+        """Gemini Phase 2 Option A (owner, 2026-11-14): every Flash job moves to 3.8 Flash first,
+        keeping 2.5 Flash and then 2.5 Flash-Lite as its fallbacks."""
+        jobs = {j['key']: j for j in ai_registry.snapshot()}
+        for key in ('doc_read', 'offer_read', 'income_approval', 'interview_gaps', 'answer_relevance',
+                    'spend_category', 'student_profile', 'profile_refine', 'doc_help',
+                    'verdict_narrative', 'spend_summary', 'counsellor_report', 'apply_copy'):
+            with self.subTest(job=key):
+                self.assertEqual(jobs[key]['model'], 'gemini-3.8-flash')
+                self.assertEqual(jobs[key]['fallbacks'], ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+        for key in ('course_careers', 'stpm_headlines'):
+            with self.subTest(job=key):
+                self.assertEqual(jobs[key]['model'], 'gemini-3.8-flash')
+                self.assertEqual(jobs[key]['fallbacks'][0], 'gemini-2.5-flash')
+
+    def test_the_jobs_the_owner_kept_on_2_5_still_start_there(self):
+        """THE EXCEPTIONS. 3.8 returned malformed grades on 26 of 98 SPM results slips in the paid
+        eval, and genuineness was not tested on it: the results-slip read and the three genuineness
+        jobs stay on 2.5 Flash first, exactly as before."""
+        jobs = {j['key']: j for j in ai_registry.snapshot()}
+        for key in ('results_slip_read', 'ic_genuine', 'results_genuine', 'doc_genuine'):
+            with self.subTest(job=key):
+                self.assertEqual(jobs[key]['model'], 'gemini-2.5-flash')
+                self.assertEqual(jobs[key]['fallbacks'], ['gemini-2.5-flash-lite'])
+                self.assertNotIn('gemini-3.8-flash', [jobs[key]['model']] + jobs[key]['fallbacks'])
 
     def test_a_fallback_list_never_repeats_the_first_model(self):
         # Otherwise the screen reads "gemini-2.5-flash, then gemini-2.5-flash" — which looks like

@@ -13,6 +13,7 @@ from django.test import SimpleTestCase, override_settings
 from apps.scholarship import usage, vision
 from apps.scholarship.eval import offer_fresh_read as fr
 from apps.scholarship.eval import offer_read_check as orc
+from apps.scholarship.profile_engine import MODEL_CASCADE
 
 #: Invented values. None may appear in any printed output.
 SECRET_NAME = 'ZORBEX A/L QUENTARO'
@@ -26,6 +27,9 @@ FIELDS = {'candidate_name': SECRET_NAME, 'candidate_nric': SECRET_NRIC, 'candida
           'warnings': []}
 VERSIONS = {'git_head': 'test', 'vision_py_sha256': 'x', 'schema_sha256': 'y', 'genai_sdk': 't'}
 NEW = fr.READERS['new']          # S4: this checkout's reader caches <key>.fresh_s4.json
+#: The tool reads exactly as production does, so it walks the production cascade (3.8 Flash first
+#: since Gemini Phase 2 Option A, then 2.5 Flash).
+FIRST, SECOND = MODEL_CASCADE[0], MODEL_CASCADE[1]
 
 
 def _png(size=(900, 1200)):
@@ -138,9 +142,9 @@ class TestFreshRead(SimpleTestCase):
         fake = FakeGemini([_resp(), _resp()])
         code, done = self._run(fake)
         self.assertEqual((code, len(done)), (0, 2))
-        self.assertEqual(fake.log, ['gemini-2.5-flash', 'gemini-2.5-flash'])
+        self.assertEqual(fake.log, [FIRST, FIRST])
         rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a2__d12', NEW))
-        self.assertEqual(rec['model'], 'gemini-2.5-flash')
+        self.assertEqual(rec['model'], FIRST)
         self.assertEqual(rec['image']['mime'], 'image/png')          # a PDF is shown as page PNGs
         self.assertEqual(len(rec['image']['pages']), 1)
         from apps.scholarship.offer_reader import OFFER_READER_VERSION
@@ -163,7 +167,7 @@ class TestFreshRead(SimpleTestCase):
         self.assertIn('cached already (skipped): 2 | to read now: 0', self.lines[-1])
         forced = FakeGemini([_resp()])
         self._run(forced, keys=['offer_letter__a1__d11'], force=True)
-        self.assertEqual(forced.log, ['gemini-2.5-flash'])
+        self.assertEqual(forced.log, [FIRST])
 
     def test_writes_nothing_but_the_cache_and_the_log(self):
         before = self.c.listing()
@@ -183,7 +187,7 @@ class TestFreshRead(SimpleTestCase):
         # TD-459 (A1.12): the live meter's output is candidates + thinking (250 + 900).
         self._run(FakeGemini([_resp(prompt=1500, out=250, think=900)]), keys=['offer_letter__a1__d11'])
         rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11', NEW))
-        self.assertEqual(rec['meter'], [{'service': 'gemini', 'model': 'gemini-2.5-flash',
+        self.assertEqual(rec['meter'], [{'service': 'gemini', 'model': FIRST,
                                          'input_tokens': 1500, 'output_tokens': 1150}])
         self.assertEqual(rec['usage']['thinking_tokens'], 900)        # billed, and now metered
 
@@ -201,7 +205,7 @@ class TestFreshRead(SimpleTestCase):
         fake = FakeGemini([FakeError(402), _resp(), _resp()])
         code, done = self._run(fake)
         self.assertEqual((code, done), (fr.EXIT_STOPPED, []))
-        self.assertEqual(fake.log, ['gemini-2.5-flash'])             # no flash-lite, no 2nd letter
+        self.assertEqual(fake.log, [FIRST])                          # no next model, no 2nd letter
         self.assertFalse([n for n in os.listdir(self.c.snap) if '.fresh' in n])
         with open(os.path.join(self.c.dir, fr.LOG_NAME), encoding='utf-8') as fh:
             entry = json.loads(fh.readline())
@@ -210,14 +214,14 @@ class TestFreshRead(SimpleTestCase):
     def test_a_429_in_the_message_also_stops(self):
         fake = FakeGemini([RuntimeError('429 RESOURCE_EXHAUSTED quota'), _resp()])
         code, _ = self._run(fake)
-        self.assertEqual((code, fake.log), (fr.EXIT_STOPPED, ['gemini-2.5-flash']))
+        self.assertEqual((code, fake.log), (fr.EXIT_STOPPED, [FIRST]))
 
     def test_another_error_walks_the_production_cascade(self):
         fake = FakeGemini([FakeError(503), _resp(version='lite-001')])
         code, done = self._run(fake, keys=['offer_letter__a1__d11'])
-        self.assertEqual(fake.log, ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
-        self.assertEqual((code, done[0]['model']), (0, 'gemini-2.5-flash-lite'))
-        lite = fr.PRICES['gemini-2.5-flash-lite']
+        self.assertEqual(fake.log, [FIRST, SECOND])
+        self.assertEqual((code, done[0]['model']), (0, SECOND))
+        lite = fr.PRICES[SECOND]
         self.assertAlmostEqual(done[0]['usage']['cost_usd'],
                                (1500 * lite['input'] + 250 * lite['output'] + 900 * lite['thinking']) / 1e6)
 
@@ -241,7 +245,7 @@ class TestFreshRead(SimpleTestCase):
                 self.models = _Models(self)
 
         code, done = self._run(_ClosingClient, keys=['offer_letter__a1__d11'])
-        self.assertEqual((code, done[0]['model']), (0, 'gemini-2.5-flash'))
+        self.assertEqual((code, done[0]['model']), (0, FIRST))
 
     def test_every_call_raising_is_not_cached(self):
         code, done = self._run(FakeGemini([FakeError(503), FakeError(500)]),
@@ -395,7 +399,9 @@ class TestNewReader(SimpleTestCase):
 @override_settings(GEMINI_API_KEY='fake-key-for-tests')
 class TestCostCap(SimpleTestCase):
     def test_the_run_stops_at_its_cap(self):
-        with tempfile.TemporaryDirectory() as root:
+        # A priced first model (a stand-in price; the cap logic, not the figure, is under test).
+        with tempfile.TemporaryDirectory() as root, \
+                mock.patch.dict(fr.PRICES, {FIRST: fr.PRICES['gemini-2.5-flash']}):
             c = _Corpus(root)
             for i in (1, 2, 3):
                 c.letter(f'offer_letter__a{i}__d1{i}', ext='png')
@@ -405,3 +411,19 @@ class TestCostCap(SimpleTestCase):
                                          out=lines.append, versions=VERSIONS, max_usd=0.0001)
             self.assertEqual((code, len(done)), (fr.EXIT_STOPPED, 1))
             self.assertTrue(any(line.startswith('STOP: the run has cost') for line in lines))
+
+    def test_a_cap_it_cannot_price_stops_the_run(self):
+        """An unpriced model counts as US$0, so the cap would never trip: stop after the first
+        letter instead (Gemini Phase 2 Option A put 3.8 Flash, unpriced here, first)."""
+        with tempfile.TemporaryDirectory() as root, \
+                mock.patch.dict(fr.PRICES, {}, clear=False):
+            fr.PRICES.pop(FIRST, None)
+            c = _Corpus(root)
+            for i in (1, 2):
+                c.letter(f'offer_letter__a{i}__d1{i}', ext='png')
+            lines = []
+            code, done = fr.read_letters(root, [f'offer_letter__a{i}__d1{i}' for i in (1, 2)],
+                                         client_factory=FakeGemini([_resp(), _resp()]),
+                                         out=lines.append, versions=VERSIONS, max_usd=100.0)
+            self.assertEqual((code, len(done)), (fr.EXIT_STOPPED, 1))
+            self.assertTrue(any('no price row' in line for line in lines))

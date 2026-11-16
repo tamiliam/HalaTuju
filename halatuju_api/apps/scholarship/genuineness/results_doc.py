@@ -370,10 +370,14 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
     ``{}`` on no image / AI outage (both then treated as absent — never penalising). The Gemini
     seam is reached via ``vision._call_gemini_json`` (lazy import keeps this module's top pure)."""
     from apps.scholarship import vision
+    from apps.scholarship.profile_engine import FLASH_25_CASCADE
     img, mime = vision._as_image_for_gemini(data, content_type)
     if img is None:
         return {}
-    r = vision._call_gemini_json(_VISUAL_PROMPT, _VISUAL_SCHEMA, image=img, mime_type=mime)
+    # Stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14): genuineness was not in
+    # the 3.8 eval. The model is unchanged, so MODEL_VERSION is too.
+    r = vision._call_gemini_json(_VISUAL_PROMPT, _VISUAL_SCHEMA, image=img, mime_type=mime,
+                                 models=FLASH_25_CASCADE)
     if not isinstance(r, dict) or r.get('_error'):
         return {}
     return {'has_qr': bool(r.get('has_qr_code')), 'has_crest': bool(r.get('has_jata_negara_crest'))}

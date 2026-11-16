@@ -10,6 +10,41 @@ from apps.courses.models import StpmCourse
 
 BATCH_SIZE = 50
 
+#: 3.8 Flash first, then 2.5 Flash (Gemini Phase 2 Option A, owner 2026-11-14). A batch that fails
+#: on one model (an error, or no parseable JSON) is asked again on the next. The AI registry reads
+#: this list, so the screen shows the order the command actually tries.
+MODEL_CASCADE = ['gemini-3.8-flash', 'gemini-2.5-flash']
+
+
+def _config(model):
+    """The request config for ``model``. 2.5 Flash THINKS by default and its thinking tokens count
+    against max_output_tokens, which could leave the JSON truncated; a headline needs none, so its
+    budget is 0. 3.x is given no thinking setting (its knobs differ); it gets more output room
+    instead, so its thinking cannot crowd out the answer."""
+    if model.startswith('gemini-2.'):
+        return {'temperature': 0.9, 'max_output_tokens': 4096,
+                'thinking_config': {'thinking_budget': 0}}
+    return {'temperature': 0.9, 'max_output_tokens': 16384}
+
+
+def _ask(client, prompt_parts):
+    """Ask down MODEL_CASCADE and return the parsed ``headlines`` dict. Raises the last error
+    when every model fails."""
+    last = None
+    for model in MODEL_CASCADE:
+        try:
+            response = client.models.generate_content(
+                model=model, contents=prompt_parts, config=_config(model))
+            text = response.text.strip()
+            # Strip markdown fences if present
+            if text.startswith('```'):
+                text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
+            data = json.loads(text)
+            return data.get('headlines', data)
+        except Exception as e:   # try the next model; the caller reports the last error
+            last = e
+    raise last
+
 SYSTEM_PROMPT = """Kamu adalah penulis kreatif untuk laman web pendidikan Malaysia.
 Tugas: Cipta headline pendek dan menarik dalam Bahasa Melayu untuk kursus universiti.
 Sasaran: Pelajar berumur 17-20 tahun.
@@ -86,20 +121,7 @@ class Command(BaseCommand):
             )
 
             try:
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',     # 2.0-flash retired (404), 2026-10-24
-                    contents=[SYSTEM_PROMPT, user_prompt],
-                    # 2.5-flash THINKS by default and its thinking tokens count against
-                    # max_output_tokens, which could leave the JSON truncated; a headline needs none.
-                    config={'temperature': 0.9, 'max_output_tokens': 4096,
-                            'thinking_config': {'thinking_budget': 0}},
-                )
-                text = response.text.strip()
-                # Strip markdown fences if present
-                if text.startswith('```'):
-                    text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
-                data = json.loads(text)
-                headlines = data.get('headlines', data)
+                headlines = _ask(client, [SYSTEM_PROMPT, user_prompt])
             except Exception as e:
                 self.stderr.write(f'Batch {i // BATCH_SIZE + 1} failed: {e}')
                 failed += len(batch)

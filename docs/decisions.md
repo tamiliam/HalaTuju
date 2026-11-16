@@ -8,6 +8,43 @@
 - **Proof rule:** an entry closes only with proof that the problem is fixed. Reviewers also check that no new debt goes unrecorded to stay under the ceiling.
 - **Why:** td_open was "info" only, so nothing held it down: 162 after the 12 Nov sweep, 184 four days later. The audit target was 110.
 
+## 2026-11-16 — Gemini Phase 2 Option A: 3.8 Flash first for every Flash job, except the results slip and genuineness (owner, 2026-11-14)
+
+**Ruled by the owner on 2026-11-14 (Option A).** Extends the 2026-11-10 Phase 1 entry from the former Pro jobs to
+every job that ran on `gemini-2.5-flash`. Branch gem2-a, not live. No migration. Services: api.
+
+**Why.** Google is retiring 2.5 Flash after 3.8 Flash. The paid eval (2026-11-14) found 3.8 as good or better on most
+readers, with two faults: it returned malformed grades on 26 of 98 SPM results slips, and it lost the reporting date
+on 4 of 84 offer letters. The genuineness checks were not in the eval.
+
+**Rulings**
+
+- Default order is now `gemini-3.8-flash`, then `gemini-2.5-flash`, then `gemini-2.5-flash-lite`
+  (`profile_engine.MODEL_CASCADE`; `report_engine`, `map_course_careers` the same; `generate_stpm_headlines` 3.8 then
+  2.5). The apply-page copy (`APPLY_COPY_DRAFT_MODEL`) defaults to 3.8 and now falls back down the cascade
+  (`gemini.generate_with_fallback`), like the Phase 1 jobs.
+- **Kept on 2.5 Flash first** (`profile_engine.FLASH_25_CASCADE` = 2.5 Flash, then Lite): the SPM results-slip READ
+  (a per-type choice: `vision.doc_read_cascade`, `PINNED_25_DOC_TYPES = {'results_slip'}`; every other document type
+  reads on 3.8) and the three genuineness checks (`ic_genuine`, `results_genuine`, `doc_genuine`), because they keep the
+  model they were validated on. The JSON seam `vision._call_gemini_json` takes `models=` for this.
+- **Offer letters:** when the 3.8 read returns no `reporting_date`, the reader asks `gemini-2.5-flash` once more for the
+  page-1 read (and the later pages if that is still empty) and takes only `reporting_date` and `reporting_date_label`
+  from it; every other field stays as 3.8 read it. A failed or empty re-ask keeps the 3.8 read. It does not fire when
+  2.5 already answered. The re-ask is recorded in `offer_reader_inputs.calls` (parts `fallback_*`) and
+  `reporting_date_from`; it does not change the `pages` count. `OFFER_READER_VERSION` 2.4.0 -> 2.5.0.
+- No other version stamp moves: the results slip and genuineness stay on their model, and the generic document read
+  has no version stamp.
+
+**Structured output (checked, not changed).** Every JSON reader already sends `response_mime_type` JSON with a
+`response_schema` at temperature 0.1. The loose spot is the grade: a free string in the results slip (stays on 2.5)
+and in the higher-results reader (STPM / Matrikulasi / Asasi / Diploma, which moves to 3.8). An enum was not added,
+because a legitimate grade spelled differently would be refused; the higher-results grades on 3.8 are the thing to
+watch.
+
+**Side effects.** IC second-opinion answers cached under the 2.5 model name are asked again once (the key holds the
+model); the help-text cache key changes; letters with no reporting date cost one or two extra 2.5 calls. An
+`APPLY_COPY_DRAFT_MODEL` env var on the service still overrides the new default.
+
 ## 2026-11-16 — NAVKEYS review round (pending architect): paying the bill is billing.edit
 
 Review round, on main, not live. No migration. Services: both.

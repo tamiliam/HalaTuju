@@ -98,7 +98,7 @@ from apps.scholarship.eval import offer_read_check as orc
 # The guarded client and the cost live in offer_fresh_gemini (split for size); re-exported here.
 from apps.scholarship.eval.offer_fresh_gemini import (
     IMAGE_TOKENS_HIGH_A4, IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
-    StopRun, _refuse_db, call_cost_usd, error_code, guarded_production_read,
+    StopRun, _refuse_db, call_cost_usd, cap_stop_line, error_code, guarded_production_read,
     bootstrap_django, image_tokens_estimate, load_gemini_key, price_for, print_costs, prompt_of,
     package_sha, sha256_text, usage_of, usd_to_myr)
 
@@ -329,9 +329,9 @@ def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, vers
                 outcome, failed = 'not_cached_all_calls_raised', failed + 1
             _append_log(log_path, _log_entry(rec, outcome))
             out(_call_line(rec, outcome))
-            spent = sum((r.get('usage') or {}).get('cost_usd') or 0.0 for r in done)
-            if max_usd is not None and spent >= max_usd:
-                out(f'STOP: the run has cost US${spent:.4f}, at its cap US${max_usd:.4f} - nothing more read')
+            stop_line = cap_stop_line(done, max_usd)
+            if stop_line:
+                out(stop_line)
                 _print_calls(done, out)
                 return EXIT_STOPPED, done
     _print_calls(done, out)
