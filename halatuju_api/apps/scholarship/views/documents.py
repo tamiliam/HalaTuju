@@ -16,7 +16,7 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
-from ..document_replace import must_fix, replace_refusal, replaces_used, slot_max_annotation
+from ..document_replace import must_fix, open_request_asks, replace_refusal, replaces_used, slot_max_annotation
 from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
@@ -209,7 +209,8 @@ class DocumentListCreateView(APIView):
                            superseded_at__isnull=True)
         # A single-instance re-upload replaces an existing doc, so it doesn't count toward growth.
         # All caps count LIVE docs only — superseded history rows are retained but must not fill the quota.
-        live_copy = ApplicantDocument.objects.filter(**slot_filter).first() if single else None
+        live_copy = (ApplicantDocument.objects.filter(**slot_filter).order_by('-id').first()   # newest live copy
+                     if single else None)
         replaces = live_copy is not None
         refusal = self._refuse_over_cap(app, new_doc_type, replaces)
         if refusal:
@@ -219,7 +220,7 @@ class DocumentListCreateView(APIView):
         # above, so a locked student is refused first. The count rides on the new row.
         if replaces:
             used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
-            if must_fix(live_copy):
+            if must_fix(live_copy) or open_request_asks(app.id, new_doc_type, sweep_members):
                 serializer.validated_data['replace_count'] = used
             else:
                 refusal = replace_refusal(used)

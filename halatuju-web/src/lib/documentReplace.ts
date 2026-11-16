@@ -20,9 +20,13 @@ export function replaceLocked(docType: string, locked: boolean, openTypes: strin
 }
 
 /** A document the student has sent and that reads fine: it is with the reviewer, or already cleared.
- *  Replace on these counts toward the cap. A document that was returned (a problem verdict, not
- *  genuine) is the normal "send it again": never capped, never counted. The server decides; this only
- *  chooses which cards offer Replace. */
+ *  Replace on these counts toward the cap. A copy the student is SHOWN as needing a fix (a problem
+ *  verdict, or an authenticity note that is not "genuine", suspect included) is the normal "send it
+ *  again": never capped, never counted. This follows the server's `must_fix` (see documentReplace.test.ts): the serializer returns
+ *  `authenticity` for suspect only on the types where it is shown and null where it is hidden, so a
+ *  hidden suspect reads as settled here exactly as the server counts it. The server decides; this only
+ *  chooses which cards show the counter and Replace. (An open request for the type is the server's
+ *  other exemption; the Action Centre card for it carries no counter.) */
 export function isSettledDoc(doc: ApplicantDocument): boolean {
   const v = doc.vision_fields?.student_verdict
   const s = doc.authenticity?.status
