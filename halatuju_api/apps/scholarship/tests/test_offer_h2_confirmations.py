@@ -5,7 +5,7 @@ matriculation offer is recognised the same way: suspect at most, never a pick. C
 all confirmations suspect - the polytechnic, UMS and Form-6 confirmations keep main's recognition rule but read
 SUSPECT too (they were genuine on main).
 
-The adversarial letters of the H2 review rounds (rounds 1-5) are kept below: none reads genuine (TD-633, the
+The adversarial letters of the H2 review rounds (rounds 1-5) are kept below: none reads genuine (TD-635, the
 Form-6 path, closed 16 Nov). Synthetic twins only: every letter is invented
 (`test_no_gitignored_corpus.py`), no real name or IC.
 """
@@ -414,8 +414,8 @@ ADVERSARIAL = (
     f'KOLEJ KOMUNITI MERCU\n{KPT}', 'KOLEJ VOKASIONAL ANTARABANGSA MERCU',
     f'{KPT}\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nKOLEJ KOMUNITI SELAYANG',
 )
-#: These read genuine on main through the live polytechnic / Form-6 path (the Form-6 ones were TD-633: genuine
-#: before any letterhead check). CHANGED by help H2 owner 16 Nov: all confirmations suspect - TD-633 closed.
+#: These read genuine on main through the live polytechnic / Form-6 path (the Form-6 ones were TD-635: genuine
+#: before any letterhead check). CHANGED by help H2 owner 16 Nov: all confirmations suspect - TD-635 closed.
 MAIN_LIVE_ADVERSARIAL = (
     (f'POLITEKNIK MERCU\n{KPT}', 'confirmation_polytechnic'),
     (f'POLITEKNIK UNGKU OMAR\nLEMBAGA MERCU SKILLS\n{KPT}', 'confirmation_polytechnic'),
@@ -458,7 +458,7 @@ class TheAdversarialLetters(SimpleTestCase):
                 self.assertEqual(_read(text)['status'], 'suspect')
 
     def test_main_live_cases_read_suspect(self):
-        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (genuine on main; this closes TD-633)
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect (genuine on main; this closes TD-635)
         for head, seen in MAIN_LIVE_ADVERSARIAL:
             text = _form6(head) if seen == 'confirmation_form6' else _confirm(head)
             for crest in (False, True):

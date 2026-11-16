@@ -9100,7 +9100,7 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-633] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
+### [TD-635] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
 
 **Status:** CLOSED 2026-11-16 by the owner's ruling (decisions.md ruling 4, help sprint H2): every confirmation of
 studies reads suspect at best, so these letters now read `suspect` (tag `confirmation_check`) and a person checks
@@ -9116,7 +9116,7 @@ pinned in `test_offer_h2_confirmations.py` (`MAIN_LIVE_ADVERSARIAL`). Fix, if wa
 Form-6 path too, and stop a two-word line counting as a crest unless it is a known motto; the owner decides, since it
 changes a live genuine read. *(A - S)*
 
-### [TD-634] The Malay matric offer does not check that "Kolej :" names a known matriculation college - low
+### [TD-636] The Malay matric offer does not check that "Kolej :" names a known matriculation college - low
 
 **Raised 2026-11-15 by the help H2 review (live on main, unchanged).** KPM's Malay matriculation offer (the
 `matriculation` family read, `MATRIC_MS` in `test_offer_h2_confirmations.py`) reads genuine on its letterhead and
@@ -9124,7 +9124,7 @@ wording; the "Kolej :" line in the body is not checked against the list of matri
 "Kolej : MERCU COLLEGE" still reads genuine. The letterhead (KPM and the Matriculation Division first) carries the
 proof. Fix, if wanted: read the "Kolej :" value and read suspect when it names no known matriculation college. *(A - S)*
 
-### [TD-635] Fully English confirmation-of-studies letters read not_offer_letter without the crest - low
+### [TD-637] Fully English confirmation-of-studies letters read not_offer_letter without the crest - low
 
 **Raised 2026-11-15 by the H2 round-2 Opus re-review; rewritten for option B.** A confirmation of studies written
 wholly in English (body as well as title) scores below `CONFIRM_MIN` (`offer_confirmations.py`), because the
@@ -9134,13 +9134,13 @@ only runs one way: it wrongly rejects, never wrongly accepts, and a reviewer can
 English letters turn up: add the English confirmation wording to the scored marks, with a test that such a letter
 reads suspect, never genuine. *(A - S)*
 
-### [TD-636] Main's live polytechnic / UMS / Form-6 confirmation reads a "not studying now" letter genuine - medium ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
+### [TD-638] Main's live polytechnic / UMS / Form-6 confirmation reads a "not studying now" letter genuine - medium ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
 
 **Status:** CLOSED 2026-11-16 by the owner's ruling (decisions.md ruling 4, help sprint H2): the polytechnic / UMS /
 Form-6 confirmations keep main's recognition rule but read `suspect` (tag `confirmation_check`), never genuine, so a
 former or failed student's letter reaches a person instead of reading genuine. Nothing moves to `not_offer_letter`
 (the fix suggested below was not taken). Pinned by
-`test_offer_h2_review6.py::test_mains_live_polytechnic_path_reads_suspect_td_636_closed`. The text below is history;
+`test_offer_h2_review6.py::test_mains_live_polytechnic_path_reads_suspect_td_638_closed`. The text below is history;
 the H2 not-studying lists it names were deleted by the lead's 16 Nov simplification (no body word blocks any
 confirmation; every confirmation reads suspect at best and a person checks it - decisions.md ruling 4).
 
@@ -9152,11 +9152,11 @@ saying the person "telah tamat pengajian", was "diberhentikan", is a "bekas pela
 stand in for an offer. H2 added this check for the NEWLY covered types only (`offer_confirm_checks._not_studying`, the
 clear-phrase list `offer_confirmations._NOT_STUDYING` / `_OFFER_UNDONE` since review 7: they stay
 `not_offer_letter`); the live path is pinned as main parity in
-`test_offer_h2_review6.py` (`test_mains_live_polytechnic_path_is_unchanged_td_636`). Fix, if wanted: apply
+`test_offer_h2_review6.py` (`test_mains_live_polytechnic_path_is_unchanged_td_638`). Fix, if wanted: apply
 `_not_studying` in `_confirmation_lift` before the genuine read too (the letter then falls to its family baseline),
 with a replay of the recorded corpus first; the owner decides, since it changes a live genuine read. *(A - S)*
 
-### [TD-637] Some synthetic confirmation layouts read genuine with a pick type, on main too - low
+### [TD-639] Some synthetic confirmation layouts read genuine with a pick type, on main too - low
 
 **Raised 2026-11-16 by the help H2 review 11 (live on main, unchanged by H2).** The confirmation CAP
 (`offer_confirm_checks.page_titled`) counts a confirmation title only when it STARTS its own short, non-sentence line

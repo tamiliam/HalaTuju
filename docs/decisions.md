@@ -1282,7 +1282,7 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
      sentence and never caps an ordinary offer; and up to THREE short lines join ("PENGESAHAN /
      STATUS / PELAJAR"). A reference line (RUJ / RUJ. TUAN / RUJ. KAMI / RUJUKAN / REF / OUR REF / YOUR REF) is
      never an offer title line, so "Ruj. Tuan : Surat Tawaran bertarikh ..." above "PENGESAHAN PELAJAR" no longer
-     ends the search. Left as on main (TD-637, 0 real letters): an institution name, a date or a reference glued
+     ends the search. Left as on main (TD-639, 0 real letters): an institution name, a date or a reference glued
      before the title on the same line, "UNTUK PERHATIAN:" before it, or a sentence word inside it.
    **Non-study letters that reach suspect are ACCEPTED on purpose (a person rejects them):** a graduate, a former
    student ("telah tamat pengajian", "was a student", "pernah belajar"), a dismissal ("diberhentikan",
@@ -1324,9 +1324,9 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    Why option B: the H2 rounds 1-3 tried to prove a new type genuine (known-name lists, then a closed letterhead,
    VERDICT_ENGINE_VERSION .4 / .6 / .8); each adversarial round found another way in. A person's check is the proof
    instead. VERDICT_ENGINE_VERSION 2026-11-15.10, MODEL_VERSION 1.28.0. Closed by the owner's 16 Nov ruling:
-   TD-633 (main's Form-6 path read genuine before the letterhead check) and TD-636 (main's live polytechnic / UMS /
+   TD-635 (main's Form-6 path read genuine before the letterhead check) and TD-638 (main's live polytechnic / UMS /
    Form-6 path read a "not studying now" confirmation genuine) - both now read suspect and a person checks. Open:
-   TD-634 (main's Malay matric offer does not check its "Kolej :" line), TD-635 (a fully English confirmation
+   TD-636 (main's Malay matric offer does not check its "Kolej :" line), TD-637 (a fully English confirmation
    without the crest stays `not_offer_letter`). Another IPTA proven wingless moves into `_NO_PRIVATE_WING` only
    on the owner's word (it would still read suspect).
 
