@@ -29,6 +29,7 @@ from django.utils import timezone
 from .genuineness.offer_issuers import hold_for_officer, officer_must_close, release_not_checked_holds
 from .income_str_ownership import hold_if_str_unmatched, str_upload_unmatched
 from .higher_results import TICKETS as _HIGHER_TICKETS, match_verdict as _higher_match_verdict  # S3a
+from . import recent_letter
 from .models import ResolutionItem
 from .resolution_doc_match import DOC_MATCH_CHECKS   # one check per document type (A3.4)
 from .results_requests import answers as results_answers      # S4 (#37)
@@ -364,6 +365,9 @@ def resolve_doc_items_for_upload(application, doc):
             # V2 (#4): CRITERION-AWARE for income_doc_stale — re-check recency before clearing, so a fresh
             # but STILL-stale salary slip can't silence the "send a current one" ask (the gap persists).
             if item.code == 'income_doc_stale' and income_engine.stale_income_proof(application):
+                continue
+            # H3b: the same for the recent-letter ask - an old letter re-sent leaves it open.
+            if item.code == recent_letter.CODE and recent_letter.wanted(application):
                 continue
             # TD-316: ONE FACT DECIDES THE ASK, THE OFFER AND THE RESOLUTION. An IC whose NAME read is 'ok'
             # here even when the field the STR needs did not; it clears once `str_ic_slots` drops the member.

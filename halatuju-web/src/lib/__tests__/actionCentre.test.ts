@@ -399,6 +399,7 @@ describe('backend system query codes ⊆ KNOWN_CODES', () => {
     ...consts(read('higher_owed.py'), ['ASK_CODE', 'DECLARE_ASK_CODE']),
     ...consts(read('resolution_postaward.py'), ['BANK_DETAILS_CODE', 'VIRCLE_CODE']),
     ...consts(read('high_utility_variant.py'), ['PLAIN', 'NOINCOME', 'STR']),
+    ...consts(read('recent_letter.py'), ['CODE']),   // H3b: DOC_SPECS keys it by the constant
   ])
   // Per-member "STR needs this person's IC" codes are built by an f-string in check2_queries.
   for (const m of [...block(check2, '_MEMBER_PROOF_CODE').matchAll(/'([a-z]+)':\s*'/g)].map((x) => x[1])) {

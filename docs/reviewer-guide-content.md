@@ -140,6 +140,11 @@ It's your suggestion of how much assistance would help, set on the slider. It gu
 Note it and ask them in the interview (or raise a query). They may have updated their plan; the
 conversation settles it. Or, ask them to upload the latest offer letter, and it would replace the old.
 
+**Why was the student asked for a recent confirmation letter?**
+Her offer or confirmation letter is older than the organisation's window (3 months unless changed in
+Organisation settings). It is only a request: it never fails a check or changes the verdict or amount.
+It is not asked when the letter's date cannot be read, or a recent confirmation letter is already on file.
+
 **If the student is already in college, and has completed a semester or two, should I ask for additional documentation?**
 If they have completed one or more semesters and have their results (CGPA), you may ask them to upload their
 latest result. If it is satisfactory > 3.0, you may consider recommending them for support.

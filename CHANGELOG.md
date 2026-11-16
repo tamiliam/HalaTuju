@@ -192,6 +192,14 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### feat: sprint H3b - an old offer or confirmation letter asks for a recent confirmation letter (soft) (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (no verdict can change). decisions.md H3b.
+- **Step 1 (moves only).** The pathway and household-size confirms moved from `check2_queries.py` to `check2_confirms.py`, re-exported; no logic change.
+- **The ask.** New `recent_letter.py`: a live offer / confirmation letter dated before today minus `recent_letter_window_months` (new org tunable, Check 2 group, default 3) raises the Check 2 doc request `recent_letter_needed`. Exactly N months is recent; one day more is old. Unreadable date, a recent confirmation letter on file (live or kept out), or a failing letter: no ask. Never blocks, never fails, never touches a verdict or money. An old letter re-sent leaves it open.
+- **Copy.** Student item, reviewer line, setting label and the `months` unit in en; ms / ta first drafts for Sol; `query_item_titles` entry. Reviewer Guide (role-reviewer.tsx, reviewer-guide-content.md) and FAQ (faq-reviewer.tsx) updated.
+- **Tests.** New `test_recent_letter.py` (window edges, unreadable dates, letter on file, tunable, resolution, never blocks); the org-config tab fixture row. **TD-634** logged (branch number).
+
 ### fix: H3a thirteenth review - simplify: no plain-intake-year exception; plural and glued exam words; misspelt months by edit distance (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Lead's decision (decisions.md, thirteenth review), WHEN IN DOUBT, UNKNOWN:

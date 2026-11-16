@@ -2282,6 +2282,10 @@
           "title": "Muat naik slip gaji terkini",
           "desc": "Slip gaji dalam fail berusia lebih tiga bulan. Sila muat naik slip terkini (dalam tempoh tiga bulan lepas) supaya kami ada gambaran pendapatan isi rumah yang terkini."
         },
+        "recent_letter_needed": {
+          "title": "Muat naik surat pengesahan terkini",
+          "desc": "Surat tawaran atau pengesahan dalam fail kami sudah berusia beberapa bulan. Sila muat naik surat pengesahan belajar terkini daripada institusi anda, supaya kami tahu anda masih meneruskan kursus."
+        },
         "sibling_tertiary_funding": {
           "title": "Ceritakan tentang adik-beradik anda dalam pengajian lanjutan",
           "desc": "Anda mempunyai adik-beradik di kolej atau universiti (atau yang telah tamat). Di institusi mana mereka belajar dan apa yang mereka pelajari — atau, jika mereka bekerja, di mana dan sebagai apa? Dan bagaimana ia dibiayai — biasiswa, pinjaman PTPTN, sokongan keluarga — atau, jika bekerja, lebih kurang berapa pendapatan mereka sebulan?"
@@ -4924,6 +4928,7 @@
           "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
+          "recent_letter_needed": "Surat tawaran / pengesahan dalam fail lebih lama daripada tempoh organisasi — pelajar diminta surat pengesahan terkini (tidak pernah menyekat).",
           "sibling_tertiary_funding": "Adik-beradik dalam pengajian lanjutan — pelajar ditanya institusi + kursus (atau di mana mereka bekerja) dan cara pembiayaan / pendapatan mereka.",
           "sibling_school_detail": "Adik-beradik masih bersekolah — pelajar ditanya sekolah mana dan darjah/tingkatan berapa.",
           "informal_income_detail": "Seorang pekerja tidak formal / bekerja sendiri tiada slip gaji atau KWSP dalam fail — pelajar ditanya sama ada mereka menerimanya dan, jika tidak, lebih kurang pendapatan sebulan (tiada permintaan dokumen buntu dibangkitkan).",
@@ -7950,6 +7955,10 @@
             "label": "Peringatan soalan — hari sebelum tarikh akhir",
             "desc": "Berapa hari sebelum tarikh akhir menjawab satu-satunya peringatan tentang soalan terbuka dihantar."
           },
+          "recent_letter_window_months": {
+            "label": "Surat terkini — bulan sebelum surat tawaran dianggap lama",
+            "desc": "Surat tawaran atau pengesahan yang dikeluarkan lebih lama daripada ini meminta pelajar menghantar surat pengesahan terkini. Ia tidak pernah menyekat."
+          },
           "decline_hold_days": {
             "label": "Penolakan ditahan — hari sebelum pelajar dimaklumkan",
             "desc": "E-mel yang memaklumkan pelajar tentang penolakan menunggu sebanyak hari ini, supaya keputusan masih boleh dibatalkan."
@@ -8102,7 +8111,8 @@
           "documents": "dokumen",
           "attempts": "percubaan",
           "cgpa": "PNGK",
-          "terms": "penggal"
+          "terms": "penggal",
+          "months": "bulan"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",
