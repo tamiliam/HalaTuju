@@ -46,6 +46,8 @@ export interface ApplicantDocument {
   vision_fields?: {
     fields?: Record<string, string | string[]>
     warnings?: string[]
+    // H9: set (with doc_seen 'sample_document') when the upload is a stamped SAMPLE, not a real document.
+    authenticity?: { status?: string; doc_seen?: string; sample?: boolean }
     student_verdict?: '' | 'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc' | 'unreadable' | 'review_manually'
     error?: string
   }

@@ -229,6 +229,9 @@ HELP_VERDICT_CHECKS = {
 
 def verdict_for_document(doc):
     """The help-verdict code for ``doc`` (see ``help_engine.verdict_for_document``)."""
+    from .genuineness.sample_stamp import is_sample_flagged
+    if is_sample_flagged(doc):                       # H9: our own sample (or a stamped one) was uploaded
+        return 'sample_document'
     check = HELP_VERDICT_CHECKS.get(doc.doc_type)
     code = check(doc) if check else _FALLS_THROUGH
     return _help_other_document(doc) if code is _FALLS_THROUGH else code

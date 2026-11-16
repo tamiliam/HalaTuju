@@ -3,7 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { getDocumentHelp, type ApplicantDocument } from '@/lib/api'
-import { shouldShowCoach, fallbackKeyFor, helpSignal, readHelpCache, writeHelpCache } from '@/lib/documentHelp'
+import { shouldShowCoach, fallbackKeyFor, helpSignal, readHelpCache, writeHelpCache, wantsSample } from '@/lib/documentHelp'
+import { DocSample } from '@/components/DocSample'
 
 // Shared presentational shell for the document coach — the per-document coach and the
 // per-earner income-cluster coach both render through this, so they look identical.
@@ -180,6 +181,12 @@ export default function DocumentHelpCoach({
             <span aria-hidden>→</span>
           </Link>
         )}
+      {/* H9: when the student is struggling with the file itself, show what a good one looks like. */}
+      {!loading && wantsSample(verdict) && (
+        <div className="mt-1">
+          <DocSample docType={doc.doc_type} kind={doc.results_kind} />
+        </div>
+      )}
     </CoachCard>
   )
 }

@@ -43,6 +43,7 @@ VERDICT_GUIDANCE = {
     'ic_nric_misread': "the NAME on this IC matched the applicant's name, but the IC NUMBER we read did not match the IC number registered on the applicant's account — and because the name matched, this is most likely the camera misreading the number (glare or blur across the card) rather than the wrong card",
     'address_mismatch': "the home address on this bill did not match the address on file",
     'wrong_doc':       "this file did not look like the kind of document expected in this slot",
+    'sample_document': "the file uploaded here looks like a SAMPLE document (stamped SAMPLE / CONTOH), not the applicant's own real document",
     'unreadable':      "we could not read this document clearly — it may be blurry, dark, or low-resolution",
     'review_manually': "we could not auto-check this one right now; a reviewer will look at it by hand",
     # Results-slip specific (the three academic checks: name / subjects / results).
@@ -99,6 +100,10 @@ VERDICT_GUIDANCE = {
 DEFAULT_FIX_HINT = ('Gently suggest the likely fix (for example, check you uploaded the '
                     'right page/details clearly, then upload again).')
 VERDICT_FIX_HINT = {
+    'sample_document': (
+        'Kindly say this looks like a sample, not their real document, and ask them to upload '
+        'their own. Do not suggest the sample is wrong or accuse them of anything.'
+    ),
     'name_mismatch': (
         'A name mismatch can happen TWO ways, so kindly offer BOTH fixes and let the '
         'student decide which is right: (1) if the photo is blurry, dark, or cut off, '

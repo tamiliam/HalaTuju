@@ -150,6 +150,15 @@ Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decision
 - Sandbox: the admin viewers (`src/sandbox/*Surfaces.tsx`) now carry the keys the server serves (`src/sandbox/servedKeys.ts`); without them the keys-only gates shut the Sponsors Terms tab and mobile-check failed `sandbox:m7-sponsor-terms`.
 - No api change; the navigation registry's role rows are a follow-up (TD-623 as-built note).
 - Review round (2026-11-15): QC's assignee filter now lists the reviewers (`getAssignableAdmins` loads whenever the filter shows, not only for assigners). `navigation.hasGiftDoor` reads the served `programmes.edit` key (the `programme_settings` door, which the server's `may_edit_programmes` reads) instead of the `programmeConfig` row's role list (declared matrix move: an older payload has no gift door); it decides the Programmes gift grid, the Payments/Spending redirect (`useGiftGate`) and the Programme-group fold. The A10 scan now reads whole files with a comment-blanking tokenizer and catches both quotes, `==`/`!=`, `case`, multi-line role arrays and `…roles.includes(`/`.has(`; snippets must contain the hit; floor 140 of 156; a SERVER class for the sponsor-terms lead-tier mirror. New debt TD-631 (Surveys/Development/Announcements read-only for `.view` holders) and TD-632 (server lead-tier gates; fixture lag).
+### feat: student-help H9 - Coach points to samples, and an uploaded sample is spotted (2026-11-17)
+
+Branch student-help, not pushed. No migration. Services: both (api + web).
+- Coach: `DocumentHelpCoach` shows the H8 "See a sample" button on wrong_doc, unreadable, slip_skewed_unclear and str_not_current (`documentHelp.wantsSample`); never on a good document, a name mismatch or the sample verdict.
+- Spot a sample: new `genuineness/sample_stamp.py`, called once from `upload_read._read_copy` after the type's read. The model answers "is a SAMPLE / CONTOH / SPECIMEN stamp printed across it?"; a word match is only the gate for asking (so "contoh" in normal text is not flagged). A flag stores `not_<type>`, `doc_seen=sample_document` and the reviewer reason "Looks like a sample document (stamped SAMPLE / CONTOH), not a real one." Outage or error = no flag. `resolution.doc_match_verdict` returns mismatch for it (never accepted); `help_verdict` returns `sample_document`.
+- Student words: "This looks like a sample, not your real document. Please upload your own." (`scholarship.docs.genuineness.sampleDoc`, `help.fallback.sample_document`; ms and ta English placeholders for Sol).
+- MODEL_VERSION: none moved (no scorer prompt or logic changed); new `SAMPLE_CHECK_VERSION` 1.0.0. Limits in TD-648 (h).
+- Tests: `test_sample_stamp.py`, `DocumentHelpCoach.sample.test.tsx`, `GenuinenessNote.test.tsx` and its drift test.
+
 ### feat: student-help H8 - Sample documents (2026-11-17)
 
 Branch student-help, not pushed. No migration, no api change. Services: web only. Designs: `docs/designs/student-help/` (mock_4, `sample-generators/`).

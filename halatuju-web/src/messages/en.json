@@ -1465,6 +1465,7 @@
           "ic_nric_misread": "The name on your IC matched, but the IC number didn't match the one on your account — usually a misread of the digits. Upload a clear, straight-on photo with no glare on the number. If it still differs, check the IC number in your profile.",
           "address_mismatch": "We couldn't find your home address on this bill. The bill confirms where you live, so make sure the address is clearly visible on the page you upload, then try again.",
           "wrong_doc": "This doesn't look like the document expected here. Check you picked the right file, then upload again.",
+          "sample_document": "This looks like a sample, not your real document. Please upload your own.",
           "unreadable": "We couldn't read this clearly — it may be blurry or dark. Upload a clearer, well-lit photo or a fresh scan.",
           "review_manually": "We couldn't auto-check this one, so a reviewer will look at it by hand. There's nothing more you need to do here.",
           "slip_name_mismatch": "The name on this results slip isn't yours — it looks like someone else's slip. Upload your own results slip; the name on it must match yours.",
@@ -1655,6 +1656,7 @@
         "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked.",
         "askFinal": "This is not your final result (it looks like a semester result slip, a student-portal page or a transcript showing your programme still in progress). Only the final version counts: please upload your final academic transcript. Nothing is blocked.",
         "notResults": "This looks like an offer letter, not a results document. Please upload your final academic transcript. Nothing is blocked.",
+        "sampleDoc": "This looks like a sample, not your real document. Please upload your own.",
         "offerSuspect": "This doesn't look like an offer letter. If you have your offer letter, please upload it as well. Nothing is blocked — our team may ask you about it.",
         "offerNotOffer": "This can't be accepted as an offer letter from a public institution (for example, a private college's offer, or a document that is not an offer letter). Please upload your offer letter from a public university, polytechnic, college or skills institute."
       },
