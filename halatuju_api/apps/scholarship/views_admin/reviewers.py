@@ -16,7 +16,7 @@ from apps.courses.models import PartnerAdmin
 from .. import staff_activity
 from ..models import ReviewerProfile, ScholarshipApplication
 from ..serializers_admin import ReviewerProfileSerializer
-from ..services import PauseError, is_review_target, set_paused
+from ..services import PauseError, may_pause, set_paused
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
@@ -390,10 +390,11 @@ class AdminReviewerDetailView(_ReviewersBase):
             ],
             'programmes': self._gift_choices(admin),
             # #39 Sprint 4 (S3 review fix 4): whether `AdminReviewerPauseView` would ACCEPT this
-            # person — `set_paused`'s own target rule, so the page offers Pause exactly where the
-            # endpoint takes it (a Finance + Review person is pausable; a set with no review power
-            # is not). The CALLER side (super / org_admin) stays the page's.
-            'pausable': is_review_target(target),
+            # person — `set_paused`'s own target rule (`may_pause`: could be handed a case, so in
+            # Reviewers and a review target; sprint LABELS review round), so the page offers Pause
+            # exactly where the endpoint takes it (a Finance + Review person is pausable; Finance +
+            # `see_all` outside Reviewers is not). The CALLER side (super / org_admin) stays the page's.
+            'pausable': may_pause(target),
             # Sprint T3: the ONE person page's header and Profile tab (`staff_person`, all three details).
             'person': staff_person.person(target, rp),
         })

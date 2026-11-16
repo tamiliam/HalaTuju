@@ -35,7 +35,12 @@ longer holds `payments_approve` and still opens Payments.
 ⚠ T1 (owner D7, 2026-11-09) CHANGED ONLY THE ROWS MARKED `t1`: who may be GIVEN a case is now the
 Reviewers table for every caller (`services.may_assign_to`). Same shape as `s2`: `today` is the new
 truth, `was` the old. The R1 rows that ask who may HOLD a case (`assignment_target`,
-`propose_interview_times`, `pause_target`, the listed sets) did not move.
+`propose_interview_times`, the listed sets) did not move; `pause_target` moved later, under LABELS.
+
+⚠ LABELS (sprint LABELS review round, 2026-11-16) CHANGED ONLY THE ROW MARKED `labels`: pausing is
+offered only to someone who could be HANDED a case (`services.may_pause`: in Reviewers and a review
+target), so the Admin preset, an organisation admin outside Reviewers and a super are no longer
+"pausable". Same shape as `s2`: `today` is the new truth, `was` the old.
 
 The reverse sweep (`ReverseSweep`) holds the vocabulary: every catalogue key reaches at least one row,
 every stored role resolves, and no row names a key the catalogue does not have.
@@ -76,6 +81,12 @@ T1_RULING = ('T1 (owner D7, 2026-11-09): a case is ASSIGNED only to someone in t
              'assigning (it stays for HOLDING: is_review_target). So a super no longer gives a NEW case '
              'to an admin, an org admin outside Reviewers or a super, and an org admin may now give one '
              'to an own-organisation QC person (a Reviewer by owner ruling 8).')
+
+
+#: Sprint LABELS review round. Quoted by every `labels` row (the `s2` pattern).
+LABELS_RULING = ('LABELS review round (owner: the role is only a label, permission keys decide): '
+                 'pausing follows hand-a-case eligibility (services.may_pause = in Reviewers and '
+                 'is_review_target), so a person nobody could hand a case to is never "pausable".')
 
 
 def _in_reviewers(a):
@@ -155,11 +166,12 @@ GOLDEN = {
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'pause_target': {
-        'where': 'services/assignment.py set_paused (is_review_target)',
-        'keys': ('review',),
-        'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
-        'rule': lambda a, c: a.has_perm('review'),
-        'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
+        'where': 'services/assignment.py set_paused (may_pause: in Reviewers and is_review_target)',
+        'keys': ('review', 'qc'),
+        'today': _t('qc', 'reviewer'),
+        'was': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
+        'rule': lambda a, c: _in_reviewers(a) and (a.has_perm('review') or a.has_perm('see_all')),
+        'labels': LABELS_RULING,
     },
     'assignable_list_for_super': {
         'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (listed), read by a super',
@@ -758,14 +770,16 @@ class ReverseSweep(TestCase):
 
     def test_every_s2_row_names_the_ruling_and_keeps_what_it_was(self):
         for gate, row in GOLDEN.items():
-            if 's2' not in row and 't1' not in row:
+            if 's2' not in row and 't1' not in row and 'labels' not in row:
                 self.assertNotIn('was', row, gate)
                 continue
             with self.subTest(gate=gate):
                 if 's2' in row:
                     self.assertTrue(row['s2'].startswith(S2_RULING))
-                else:
+                elif 't1' in row:
                     self.assertEqual(row['t1'], T1_RULING)
+                else:
+                    self.assertEqual(row['labels'], LABELS_RULING)
                 self.assertEqual(set(row['was']), set(ROLES))
 
     def test_the_t1_rows_are_exactly_who_may_be_given_a_case(self):
@@ -773,6 +787,9 @@ class ReverseSweep(TestCase):
         t1 = sorted(g for g, row in GOLDEN.items() if 't1' in row)
         self.assertEqual(t1, ['assignable_flag_for_org_admin', 'assignable_flag_for_super',
                               'org_admin_may_assign_to'])
+
+    def test_the_labels_row_is_exactly_the_pause(self):
+        self.assertEqual(sorted(g for g, row in GOLDEN.items() if 'labels' in row), ['pause_target'])
 
     def test_the_s2_rows_are_exactly_the_payment_chain(self):
         s2 = sorted(g for g, row in GOLDEN.items() if 's2' in row)

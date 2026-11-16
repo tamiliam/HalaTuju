@@ -38,10 +38,33 @@ each hand-granted move is declared in `test_labels_key_moves.py`.
    kind and team members by either key. **Declared moves:** Finance given `see_all` or `qc`, and a Reviewer-label
    row with `see_all` but no `review`, can hold a case (a super can give one to whoever also sits in Reviewers);
    team rows with neither key leave the picker (they could never be picked; the web already names a holder the
-   list lacks). Pause and interview slots read the same rule and follow. So does TD-613's `needs_new_holder`: a
+   list lacks). Pause and interview slots read the same rule and follow (pause narrowed in the review round, item 4). So does TD-613's `needs_new_holder`: a
    Reviewer whose `review` was swapped for `qc` (the editor keeps a Reviewer on `review` or `qc`, and `qc` brings
    `see_all`) keeps a reopened case and is pausable, where before the case needed a new holder. The editor
    can therefore no longer leave a Reviewer unable to hold a case.
+4. **Review round (2026-11-16, one more local commit).**
+   - **QC's `see_all` never opens the applicant widgets.** `_opens` reads a team member's stored Admins-hat
+     `see_all` as `staff_tables.admin_keys` does (dropped when `qc` is held), so QC seated at Admins by any key
+     (`spending`, `payments_approve`, `scholars`, a page key) gains only what that key opens. This replaces the
+     declared "QC given `spending` gains the funnel" move above.
+   - **The default Admin invitation loses the money widgets** (`INVITE_START`: `see_all`, `scholars`, no money
+     key) until a money key is ticked. The owner was told and accepted it under "permissions decide". Pinned.
+   - **A Reviewer label holding only `qc` (stored `see_all` + `qc`) is a valid holder:** it can be given a case,
+     hold one, and pause. Declared.
+   - **Open cases block an edit only when the holder could no longer hold them:** `_refuse_stranding` asks
+     `is_review_target` on the set before and after. A Reviewer may swap `review` for `qc` with a case open.
+   - **Pause follows hand-a-case eligibility** (`services.may_pause`: in Reviewers and `is_review_target`), the
+     same rule as `may_hand_to` for the target. The Admin preset, an organisation admin outside Reviewers and a
+     super are no longer pausable through `set_paused`; none was ever listed on the Reviewers page or offered
+     the web's pause card, so no screen moves. Not taken: keeping `is_review_target` alone, which said
+     "pausable" for people no assignment could ever reach.
+   - **A case stays in its organisation (real defect, fixed).** A super's `may_hand_to` has no organisation
+     check (T1 kept the super's reach), and a reviewer with no gift rows passes `gift_allows`, so a super could
+     give a case to another organisation's reviewer, who then got a 404 opening it. `assign_reviewer` refuses a
+     new holder outside `application.owning_organisation_id` with the existing `not_reviewer` code; re-picking
+     the current holder stays a no-op. Not taken: an organisation check inside `may_hand_to`, which is not
+     per-case. The super's picker still marks other-organisation reviewers `assignable` and the refusal reads
+     "You can only assign to a reviewer." (TD-634).
 
 ## 2026-11-16 — Owner ruling: the debt register keeps a band (ceiling 150, floor 100)
 

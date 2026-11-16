@@ -159,6 +159,15 @@ def _can_review(admin):
 
 
 
+def may_pause(admin):
+    """Could ``admin`` be HANDED a new case — in Reviewers (`staff_tables.in_reviewers`) and a review target
+    (`is_review_target`), the target half of `may_hand_to`? Pause stops new work, so only such a person
+    has any to stop. The person page's `pausable` and `set_paused` both read this, so the switch is
+    offered exactly where it does something (review round, sprint LABELS). Says nothing about `is_active`
+    (`set_paused` refuses a revoked row first, with its own code)."""
+    return _in_reviewers(admin) and is_review_target(admin)
+
+
 def set_paused(admin, paused, *, now=None):
     """Step a reviewer back from NEW work, or bring them back. Returns the admin row.
 
@@ -170,16 +179,17 @@ def set_paused(admin, paused, *, now=None):
     ⚠ It does NOT touch `is_active`, and nothing here is allowed to start doing so. Pause and
     revoke are different answers to different questions; see the field docstring on `PartnerAdmin`.
 
-    ⚠ Pause is only meaningful for somebody who can be ASSIGNED work. Pausing a `finance` admin or
-    a referral `partner` would set a flag that changes nothing and shows a "Paused" pill on a
-    person who was never in the queue — a control that lies. Refused as 'not_reviewable'.
+    ⚠ Pause is only meaningful for somebody who can be ASSIGNED work (`may_pause`: in Reviewers and a
+    review target). Pausing a `finance` admin, a referral `partner`, an Admin who can open cases but
+    sits outside Reviewers, or a super would set a flag that changes nothing and shows a "Paused" pill
+    on a person who is never handed a case — a control that lies. Refused as 'not_reviewable'.
     """
     if admin is None:
         raise PauseError('not_found')
     if not getattr(admin, 'is_active', False):
         # A revoked account has no work coming either way; pausing it would imply it might.
         raise PauseError('not_active')
-    if not is_review_target(admin):
+    if not may_pause(admin):
         raise PauseError('not_reviewable')
 
     want = bool(paused)
@@ -374,6 +384,11 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
             if by_admin is not None and not holder and reviewer.pk == by_admin.pk:
                 raise AssignmentError('self_assign')   # M3b E3: nobody gives a case to themselves
             if by_admin is not None and not holder and not may_hand_to(by_admin, reviewer):
+                raise AssignmentError('not_reviewer')
+            # Sprint LABELS review round (item 6): a NEW holder is of the CASE's organisation, the fence
+            # the picker draws for an org admin. A super's `may_hand_to` asks no organisation, and
+            # anyone else could never open a case of another (`_org_allows`): the case would be stranded.
+            if not holder and reviewer.owning_organisation_id != application.owning_organisation_id:
                 raise AssignmentError('not_reviewer')
         if reviewer is not None and not _can_review(reviewer):
             # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and

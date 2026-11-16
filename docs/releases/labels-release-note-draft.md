@@ -24,6 +24,15 @@ Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending archit
   - A Finance person given "see every application" or QC can now hold a case.
   - Staff with neither permission no longer appear in the reviewer picker. They could never be picked anyway.
   - Who may GIVE a case, and to whom (the Reviewers table only), is unchanged.
+- **Review round:**
+  - A QC person given another permission (Spending, Payments, Scholars or a page) no longer sees the applicant
+    boxes; they see only what that permission opens (Spending or Payments: the money boxes).
+  - A Reviewer holding a case can now be switched from Review to QC (they can still open the case). Taking both
+    Review and "see every application" from someone holding a case is still refused.
+  - Pause is offered only to people a case could be given to. Nobody sees a different screen: the Reviewers page
+    and the pause card already showed only them.
+  - **Fix:** a super could give a case to a reviewer in another organisation, who could then not open it. That
+    is now refused with "You can only assign to a reviewer." (better wording: TD-634).
 
 ## Not changed
 
@@ -43,3 +52,5 @@ Services: api. Migration: none. Publish in a release window with the owner's yes
 1. As an organisation admin, open a gift's Programme Overview: the five boxes show, as before.
 2. As a Reviewer, open the same gift: your own cases show, as before.
 3. As a super, open a case's reviewer picker: the same reviewers are listed and can be picked, as before.
+4. As a super, give a case to a reviewer of its own organisation: it is assigned, as before.
+5. As an organisation admin, edit a Reviewer who holds a case and switch Review to QC: it saves.

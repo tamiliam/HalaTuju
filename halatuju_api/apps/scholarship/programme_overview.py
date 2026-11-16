@@ -72,8 +72,8 @@ PAGES = ('qc', 'mine')
 #: absent, never zeroed ("committed RM0" is still an answer about money). Each section opens on ANY of
 #: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments):
 #: aggregate money, never a person (module docstring). The applicant widgets open on `see_all` worn as an
-#: Admins hat: QC's implied `see_all` (`staff_permissions.IMPLIES`) opens the QC page, not the funnel
-#: (`staff_tables.admin_keys` reads it the same way). Without those keys, reviewer and QC get no money and
+#: Admins hat (`_admins_see_all`): QC's implied `see_all` opens the QC page, never the funnel, whatever
+#: seats QC at Admins (as `staff_tables.admin_keys`). Without those keys, reviewer and QC get no money and
 #: no programme-wide funnel: an Overview that handed over what the menu withholds would make it decorative.
 MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
 SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
@@ -86,9 +86,16 @@ def may_customise(admin):
     return surface_gates.may_edit_settings(admin)
 
 
+def _admins_see_all(admin):
+    """Team members: `see_all` as `staff_tables.admin_keys` counts it, never QC's (LABELS review round)."""
+    if staff_tables.team_member(admin):
+        return staff_tables.in_admins(admin) and 'see_all' in staff_tables.admin_keys(admin)
+    return staff_tables.in_admins(admin) and admin.has_perm('see_all')
+
+
 def _opens(admin, section):
-    if SECTION_KEYS[section] == ('see_all',) and not staff_tables.in_admins(admin):
-        return False                       # QC's own `see_all` is not an Admins hat (above)
+    if SECTION_KEYS[section] == ('see_all',):
+        return _admins_see_all(admin)
     return any(admin.has_perm(k) for k in SECTION_KEYS[section])
 
 

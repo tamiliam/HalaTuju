@@ -91,11 +91,20 @@ class TestTheEndpointSays400(_Base):
         self.assertEqual(r.status_code, 200, r.content)
 
     def test_a_case_of_unknown_gift_is_allowed(self):
-        app = self._case(None)
+        app = make_application('profile_complete',
+                               cohort=make_cohort(programme=None, owning_organisation=self.bp))
         self.assertEqual(case_gifts(app), frozenset())
-        # A super: a case with no gift has no organisation either, so an org_admin's fence 404s it.
         r = self._post(self.boss, app, self.rev_a)
         self.assertEqual(r.status_code, 200, r.content)
+
+    def test_a_case_of_no_organisation_is_refused_even_for_a_super(self):
+        # Sprint LABELS review round: the holder could never open it (the organisation fence 404s a
+        # case whose organisation is not theirs), so it is not handed over.
+        app = self._case(None)
+        r = self._post(self.boss, app, self.rev_a)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
+        app.refresh_from_db()
+        self.assertIsNone(app.assigned_to_id)
 
     def test_a_case_already_held_is_not_taken_away(self):
         # Assigned before the rule (the factory writes it directly): re-sending the same person is

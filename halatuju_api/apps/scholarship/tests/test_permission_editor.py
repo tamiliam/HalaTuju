@@ -269,16 +269,36 @@ class TestCasesAreNeverStranded(TestCase):
         cls.cohort = make_cohort(owning_organisation=cls.org)
         cls.org_admin = make_admin('org_admin', owning_org=cls.org)
 
-    def test_removing_review_from_somebody_holding_a_case_is_refused(self):
+    def test_a_reviewer_holding_a_case_may_swap_review_for_qc_but_not_drop_both(self):
+        # Sprint LABELS review round: the rule is the holder's (`is_review_target` on the set the edit
+        # leaves). `['qc']` is stored as `see_all` + `qc`, so the case stays openable: allowed (was 409).
         target = make_admin('reviewer', owning_org=self.org)
         make_application('assigned', reviewer=target, cohort=self.cohort)
+        # A set with neither key is refused (People's own rule answers first for a Reviewer label).
+        r = _patch(self.org_admin, target, ['spending'])
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'would_leave_people'))
+        self.assertIsNone(_fresh(target).permissions)
         for dry in (True, False):
-            r = _patch(self.org_admin, target, ['see_all', 'qc'], dry_run=dry)
+            r = _patch(self.org_admin, target, ['qc'], dry_run=dry)
+            self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(_fresh(target).permissions, ['see_all', 'qc'])
+
+    def test_taking_both_review_and_see_all_from_somebody_holding_a_case_is_refused(self):
+        # The stranding rule itself, on a label People's rule does not catch first.
+        target = make_admin('admin', owning_org=self.org, permissions=['review', 'spending'])
+        before = _fresh(target).permissions
+        make_application('assigned', reviewer=target, cohort=self.cohort)
+        for dry in (True, False):
+            r = _patch(self.org_admin, target, ['spending'], dry_run=dry)
             self.assertEqual((r.status_code, r.json()['code'], r.json()['open_cases']),
                              (409, 'has_open_cases', 1))
-        self.assertIsNone(_fresh(target).permissions)
+            self.assertIn('Review assigned students', r.json()['error'])
+        self.assertEqual(_fresh(target).permissions, before)
+        # Swapping `review` for `see_all` still lets them open the case: allowed (was 409).
+        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'spending']).status_code, 200)
         # Adding to the set strands nothing.
-        self.assertEqual(_patch(self.org_admin, target, ['review', 'spending']).status_code, 200)
+        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'spending', 'review']).status_code,
+                         200)
 
     def test_removing_see_all_from_an_admin_holding_a_case_is_refused_unless_review_stays(self):
         target = make_admin('admin', owning_org=self.org)
@@ -296,12 +316,14 @@ class TestCasesAreNeverStranded(TestCase):
     def test_an_assignment_racing_the_removal_re_reads_the_target(self):
         """The TD-382 class: the assign service re-reads its target under the editor's row lock, so
         a page that loaded before `review` was taken away cannot hand the case over."""
-        target = make_admin('reviewer', owning_org=self.org)
+        # TD-622 (sprint LABELS): the editor keeps a Reviewer-label row on `review` or `qc`, and `qc` brings
+        # `see_all`, so it can no longer leave a REVIEWER unable to hold a case. It still can for an Admin
+        # label holding `review` (in Reviewers by the key), so the race is driven through the editor there.
+        target = make_admin('admin', owning_org=self.org, permissions=['review', 'spending'])
         stale = PartnerAdmin.objects.get(pk=target.pk)          # holds `review` in memory
-        # TD-622 (sprint LABELS): the editor keeps a Reviewer on `review` or `qc`, and `qc` brings `see_all`,
-        # so the editor can no longer leave a Reviewer unable to hold a case; the row is changed directly
-        # to a set with neither key, which is what the re-read must see.
-        PartnerAdmin.objects.filter(pk=target.pk).update(permissions=['spending'])
+        r = _patch(self.org_admin, target, ['spending'])
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse({'review', 'see_all', 'qc'} & set(_fresh(target).permissions))
         app = make_application('profile_complete', cohort=self.cohort)
         with self.assertRaises(AssignmentError) as caught:
             assign_reviewer(app, reviewer=stale, by_admin=self.org_admin)
@@ -468,8 +490,8 @@ class TestPeopleChipsAndPause(TestCase):
         client = authed_client(self.org_admin)
         # TD-622 (sprint LABELS, declared): `checker` holds `see_all`, so they can hold a case and are
         # pausable (was refused by the label). Everyone the Reviewers table lists holds `review` or `qc`
-        # (`would_leave_people`), so every row here is pausable; `set_paused` still refuses a set with
-        # neither key ('not_reviewable').
+        # (`would_leave_people`), so every row here is pausable; `set_paused` refuses anyone who could not
+        # be handed a case (`may_pause`, review round: `test_labels_key_moves`).
         for target, expect in ((self.rohini, True), (self.fin, True), (self.checker, True)):
             detail = client.get(f'/api/v1/admin/reviewers/{target.pk}/').json()
             self.assertEqual(detail['pausable'], expect, target.permissions)
@@ -566,10 +588,12 @@ class TestReviewFixes(TestCase):
 
     # 5 (LOW) — a reopened decision is a held case.
     def test_a_reopened_decision_counts_as_a_held_case(self):
-        rev = make_admin('reviewer', owning_org=self.org)
+        # Sprint LABELS review round: a Reviewer moved to `qc` keeps `see_all` and may still hold the case,
+        # so the stranding edit is an Admin label giving up `review`.
+        rev = make_admin('admin', owning_org=self.org, permissions=['review', 'spending'])
         make_application('rejected', reviewer=rev, cohort=self.cohort,
                          decision_reopened_at=timezone.now())
-        r = _patch(self.org_admin, rev, ['see_all', 'qc'])
+        r = _patch(self.org_admin, rev, ['spending'])
         self.assertEqual((r.status_code, r.json()['code']), (409, 'has_open_cases'))
 
     # 7 (LOW) — the caller-aware rule, on the locked row.

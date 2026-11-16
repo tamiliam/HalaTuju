@@ -120,7 +120,7 @@ class ReviewNudgeTests(TestCase):
         from apps.scholarship.services import assign_reviewer
         other = PartnerAdmin.objects.create(
             first_seen_at=timezone.now(), supabase_user_id='rev2-uid', role='reviewer', is_active=True,
-            name='Bala', email='bala@example.com')
+            owning_organisation=self.org, name='Bala', email='bala@example.com')
         app = self._app(assigned_days_ago=11)
         call_command('send_review_nudges')           # sends overdue, stamps it
         app.refresh_from_db()

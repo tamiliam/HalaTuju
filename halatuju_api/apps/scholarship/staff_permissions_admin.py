@@ -13,9 +13,9 @@ that fence for everyone, so `plan_change` refuses the rest here, for both caller
 admin's set (`ORG_ADMIN_SET`) only when it opens for them too (`not_held`). `review`, the payment seats
 and `award_withdraw_request` are outside that set and stay exempt, as before (decisions.md "M3c").
 
-⚠ A CHANGE MAY NOT STRAND A CASE (the S3 as-built notes). Somebody holding in-play cases keeps
-`review`; and if they reach those cases through `see_all` (an admin or qc given work by a super, R1),
-they keep that too unless `review` stays. Read under the target's ROW LOCK, and `assign_reviewer`
+⚠ A CHANGE MAY NOT STRAND A CASE (the S3 as-built notes). Somebody holding in-play cases keeps a key
+that lets them hold one (`services.is_review_target`: `review` or `see_all`, which `qc` brings; sprint
+LABELS review round). Read under the target's ROW LOCK, and `assign_reviewer`
 re-reads its target under the same lock, so an assignment racing a removal is serialised (TD-382
 class): whichever commits second sees the first.
 
@@ -244,16 +244,27 @@ def _refuse_target(target, by):
             f"{target.name}'s access is revoked. Restore them before changing what they can do.")
 
 
+def _holds_cases_with(target, keys):
+    """Could ``target`` HOLD a case if their row held ``keys`` (`services.is_review_target`: `review` or
+    `see_all`, which `qc` brings)? Asked of a copy; nothing is saved."""
+    from .services import is_review_target
+    shadow = copy.copy(target)
+    shadow.permissions = [k for k in keys if isinstance(k, str)]
+    return is_review_target(shadow)
+
+
 def _refuse_stranding(target, before, after):
-    """Keep somebody holding in-play cases able to open and work them (see the module docstring)."""
+    """Keep somebody holding in-play cases able to open and work them (see the module docstring).
+
+    Sprint LABELS review round: the ONE question is the holder's (`is_review_target` on the set the edit
+    would leave), so a change is refused only when it takes someone who could hold a case to a set with
+    neither `review` nor `see_all`. Swapping `review` for `qc` keeps the case: `qc` brings `see_all`."""
     from . import staff_lifecycle
-    losing_review = 'review' in before and 'review' not in after
-    losing_reach = 'see_all' in before and 'see_all' not in after and 'review' not in after
-    if not (losing_review or losing_reach):
+    if _holds_cases_with(target, after) or not _holds_cases_with(target, before):
         return
     n = staff_lifecycle.open_cases(target)
     if n:
-        what = '"Review assigned students"' if losing_review else '"See all students"'
+        what = '"Review assigned students"' if 'review' in before else '"See all students"'
         raise PermissionChangeRefused(
             'has_open_cases', 409,
             f'{target.name} has {n} open case(s) assigned. Taking away {what} would leave them '
