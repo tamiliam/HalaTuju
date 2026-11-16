@@ -9,7 +9,7 @@ study word in its title block. A KAMPUS / CAMPUS line under the name is dropped 
 organisation or a private body). KPM's English matric offer refuses only a cancellation, a rejection form or
 the like on its TITLE line; a body refusal reads suspect. Main's live polytechnic / UMS /
 Form-6 recognition is unchanged, but - CHANGED by help H2 owner 16 Nov: all confirmations suspect - a POLITEKNIK
-head under the Malay title reads SUSPECT (genuine on main; TD-636 closed), never `not_offer_letter`.
+head under the Malay title reads SUSPECT (genuine on main; TD-638 closed), never `not_offer_letter`.
 
 Every case of the reviewer's round-7 script is below. Synthetic twins only (`test_no_gitignored_corpus.py`).
 """
@@ -67,7 +67,7 @@ HEADS = (f'KOLEJ MATRIKULASI PERAK\n{KPM}', f'KOLEJ KOMUNITI KLANG\n{KPT}', f'IN
 
 def _expected(head, title, want, name=''):
     """Main's live polytechnic path (its recognition rule unchanged) reads the Malay title SUSPECT whatever the body
-    says - CHANGED by help H2 owner 16 Nov: all confirmations suspect (it was genuine on main, TD-636, closed);
+    says - CHANGED by help H2 owner 16 Nov: all confirmations suspect (it was genuine on main, TD-638, closed);
     nothing on it moves to `not_offer_letter`. A "tawaran kemasukan" under a university head is main's UA-offer
     scorer (suspect, unchanged)."""
     if head == POLY and title == 'PENGESAHAN PELAJAR':
@@ -117,7 +117,7 @@ BENIGN = (
     ('void sekiranya tamat', STD, 'Surat ini terbatal sekiranya pelajar telah tamat pengajian.'),
     ('formerly known', STD + ' The college was formerly known as Kolej Contoh.', ''),
 )
-#: Fully English current-student letters under a generic title (TD-635: no Malay identity labels, so they stay
+#: Fully English current-student letters under a generic title (TD-637: no Malay identity labels, so they stay
 #: `not_offer_letter` on main and here) - never genuine.
 ENB = (
     ('CONFIRMATION LETTER', 'This is to confirm that the person below is currently studying at this college.'),
@@ -227,7 +227,7 @@ class CurrentStudentsAreNeverBlocked(SimpleTestCase):
             with self.subTest(head=head):
                 self.assertEqual(_read(conf(head))['status'], 'suspect')
 
-    def test_a_fully_english_letter_never_reads_genuine_td_635(self):
+    def test_a_fully_english_letter_never_reads_genuine_td_637(self):
         for title, body in ENB:
             for head in HEADS:
                 for crest in (False, True):

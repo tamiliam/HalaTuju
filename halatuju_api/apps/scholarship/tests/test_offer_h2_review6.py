@@ -3,7 +3,7 @@ blocks removed: only the title block is read; every confirmation reads suspect a
 
 (H) a generic English title ("Confirmation Letter") is a confirmation only with a study word in its title block;
 (M) no body word blocks: a clear not-studying sentence, a hostel / internship / staff matter in the BODY all read
-suspect (main's live polytechnic / UMS / Form-6 path reads suspect since the owner's 16 Nov ruling: TD-636
+suspect (main's live polytechnic / UMS / Form-6 path reads suspect since the owner's 16 Nov ruling: TD-638
 closed); (M) a KAMPUS / CAMPUS line under the name is dropped unless it names an organisation or a private body;
 (L) KPM's English matric offer refuses an appeal / application on its TITLE line, a status-check page and a
 private letterhead, never a body word; UM's open channel (SATU) on a letterhead line is a private wing.
@@ -146,8 +146,8 @@ class NoBodyWordBlocks(SimpleTestCase):
                     text = _confirm(head).replace('Bidang : Sains', f'Bidang : Sains\n{label}')
                     self.assertEqual(_read(text)['status'], 'suspect')
 
-    def test_mains_live_polytechnic_path_reads_suspect_td_636_closed(self):
-        # CHANGED by help H2 owner 16 Nov: all confirmations suspect - main read this genuine (TD-636); now a
+    def test_mains_live_polytechnic_path_reads_suspect_td_638_closed(self):
+        # CHANGED by help H2 owner 16 Nov: all confirmations suspect - main read this genuine (TD-638); now a
         # person checks it. Main's recognition rule is unchanged, and nothing on it moves to not_offer_letter
         text = _letter(POLY_HEAD, 'PENGESAHAN PELAJAR', 'Dengan ini disahkan bahawa penama di bawah telah '
                                                         'DIBERHENTIKAN pengajian.')
