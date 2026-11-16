@@ -786,6 +786,8 @@ assertConverted(
  */
 export const F2A_FILES = [
   'src/components/ActionCentre.tsx', 'src/components/ScholarshipNextSteps.tsx',
+  'src/components/action-centre/ActionCard.tsx', 'src/components/action-centre/StatusCards.tsx',
+  'src/components/action-centre/KindIcon.tsx',
   'src/components/ScholarshipReview.tsx', 'src/components/AwardComprehensionQuiz.tsx',
   'src/components/AuthGateModal.tsx', 'src/components/FamilyRosterFields.tsx',
   'src/components/IncomeRouteSwitch.tsx', 'src/components/Pagination.tsx',

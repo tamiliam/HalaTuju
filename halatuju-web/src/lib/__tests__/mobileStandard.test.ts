@@ -280,7 +280,7 @@ describe('student scholarship screens ask in a Sheet, never window.confirm', () 
 const RULE15_SWEPT = [
   'src/app/scholarship/apply/page.tsx', 'src/app/scholarship/award/page.tsx',
   'src/app/scholarship/application/page.tsx', 'src/components/ScholarshipNextSteps.tsx',
-  'src/components/ActionCentre.tsx', 'src/components/scholarship/PostAwardTasks.tsx',
+  'src/components/action-centre/ActionCard.tsx', 'src/components/scholarship/PostAwardTasks.tsx',
   // Mobile M4b: Dashboard, Search, the course pages, Profile, Saved and Settings.
   'src/app/dashboard/page.tsx', 'src/components/HigherRouteDegrees.tsx', 'src/app/search/page.tsx',
   'src/app/course/[id]/page.tsx', 'src/app/stpm/[id]/page.tsx', 'src/components/CourseHeader.tsx',
@@ -1329,7 +1329,7 @@ describe('rule 16 — mobile-check holds spills like the other three numbers', (
  */
 const PILL_SITES: Record<string, number> = {
   'src/components/search/SearchFilterSheet.tsx': 1, 'src/app/search/page.tsx': 1,
-  'src/components/admin/PanelTabs.tsx': 3, 'src/components/ActionCentre.tsx': 4,
+  'src/components/admin/PanelTabs.tsx': 3, 'src/components/action-centre/StatusCards.tsx': 3, 'src/components/action-centre/ActionCard.tsx': 1,
   'src/components/RequirementsCard.tsx': 4, 'src/components/CourseCard.tsx': 1,
   'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
   'src/app/admin/organisation/team/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
