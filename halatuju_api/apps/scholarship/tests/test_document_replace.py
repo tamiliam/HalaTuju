@@ -17,7 +17,7 @@ from apps.scholarship.tests.factories import (
 DOCS = '/api/v1/scholarship/documents/'
 
 
-@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET, CHECK2_STUDENT_QUERIES_ENABLED=True)
 @patch('apps.scholarship.upload_read.needs_read', return_value=True)    # recorded queued: no paid read
 @patch('apps.scholarship.storage.object_exists', return_value=True)
 class TestDocumentReplace(TestCase):
@@ -152,10 +152,10 @@ class TestDocumentReplace(TestCase):
         self.assertEqual(resp.json()['code'], 'replace_limit_reached')
 
     # ---- round 2: the cap never blocks a fix the case is asking for ----
-    def _ask(self, app, code, doc_type, status='open', **kw):
+    def _ask(self, app, code, doc_type, status='open', source='system', **kw):
         from apps.scholarship.models import ResolutionItem
         return ResolutionItem.objects.create(application=app, code=code, doc_type=doc_type, kind='doc',
-                                             source='system', status=status, **kw)
+                                             source=source, status=status, **kw)
 
     def _three_then(self, client, app, doc_type='str'):
         for _ in range(3):
@@ -236,3 +236,53 @@ class TestDocumentReplace(TestCase):
         ApplicantDocument.objects.filter(pk=new.pk).update(replace_count=3)
         resp = self._post(client, app, 'str', member='father')
         self.assertEqual((resp.status_code, resp.json().get('code')), (409, 'replace_limit_reached'))
+
+    # ---- round 3: any ask the student can see exempts, whatever its source ----
+    def _slip_at_cap(self, app, client, member='father'):
+        self._first(app, 'salary_slip', member)
+        for _ in range(3):
+            self.assertEqual(self._post(client, app, 'salary_slip', member=member).status_code, 201)
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(
+            vision_fields={'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+
+    def test_a_check2_income_doc_stale_ask_exempts_a_slip_that_read_fine(self, _o, _n):
+        app, client = self._case()
+        self._slip_at_cap(app, client)
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 409)
+        ask = self._ask(app, 'income_doc_stale', 'salary_slip', source='check2')
+        for _ in range(2):                                   # 4th and 5th: allowed, not counted
+            self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)
+            self.assertEqual(self._newest(app).replace_count, 3)
+            ApplicantDocument.objects.filter(pk=self._live(app).pk).update(
+                vision_fields={'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+        ask.status = 'resolved'
+        ask.save()                                           # closed: counted again
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 409)
+
+    def test_a_check2_ask_for_the_father_does_not_exempt_the_mothers_slot(self, _o, _n):
+        app, client = self._case()
+        self._slip_at_cap(app, client, 'mother')
+        self._ask(app, 'father_income_proof_missing', 'salary_slip', source='check2',
+                  params={'household_member': 'father'})
+        self.assertEqual(self._post(client, app, 'salary_slip', member='mother').status_code, 409)
+        self._ask(app, 'mother_income_proof_missing', 'salary_slip', source='check2',
+                  params={'household_member': 'mother'})
+        self.assertEqual(self._post(client, app, 'salary_slip', member='mother').status_code, 201)
+
+    def test_an_officer_ask_exempts(self, _o, _n):
+        app, client = self._case()
+        self._slip_at_cap(app, client)
+        self._ask(app, 'officer_doc', 'salary_slip', source='officer')
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)
+
+    def test_an_ask_the_student_cannot_see_exempts_nothing(self, _o, _n):
+        app, client = self._case()
+        self._slip_at_cap(app, client)
+        with override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False):     # check2 asks are hidden
+            self._ask(app, 'income_doc_stale', 'salary_slip', source='check2')
+            self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 409)
+        # a system ticket outside STUDENT_DOC_REQUEST_CODES (a name-mismatch judgement) is hidden too
+        app2, client2 = self._case()
+        self._slip_at_cap(app2, client2)
+        self._ask(app2, 'results_slip_name_mismatch', 'salary_slip')
+        self.assertEqual(self._post(client2, app2, 'salary_slip', member='father').status_code, 409)

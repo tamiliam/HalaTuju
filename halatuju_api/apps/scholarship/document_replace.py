@@ -10,7 +10,8 @@ student must fix, or the case is asking for it again. The principle: the cap nev
 from fixing something we are asking them to fix, so what the student is shown as "needs you" is exempt.
 Exempt: the live copy was returned by a reviewer (rejected), has a problem verdict from the read, failed
 authenticity (`not_<type>`), or is `suspect` on a type where the serializer SHOWS suspect (`must_fix`);
-or an OPEN doc request asks for this slot's type (`open_request_asks`, e.g. a stale STR that read fine).
+or an OPEN doc ask the student can see (any source: system, reviewer, Check 2) targets this slot's type
+(`open_request_asks`, e.g. a stale STR or salary slip that read fine).
 Fixing is the normal retry: never counted, never capped. A live copy still being read, or one that read
 fine with nothing asked, counts - otherwise rapid re-uploads would skip the cap.
 
@@ -65,17 +66,23 @@ def must_fix(live):
     return False
 
 
-def open_request_asks(application_id, doc_type, members):
-    """True when an OPEN doc request asks the student for this slot's type (and member, where the ticket
-    names one): a system ticket in STUDENT_DOC_REQUEST_CODES (str_not_current, offer_no_identity, a
-    *_missing / *_unreadable) or an officer doc request. One query; POST path only."""
-    from django.db.models import Q
+def open_request_asks(app, doc_type, members):
+    """True when an OPEN doc ask the student can SEE in the Action Centre targets this slot's type (and
+    member, where the ask names one). Any source: a system ticket, a reviewer's request, or a Check 2 ask
+    (income_doc_stale, *_missing ...). Visibility is `resolution.item_student_visible`, the Action Centre's
+    own rule, and a set-aside item (recommended / funded) is not an ask. The ask's `doc_type` is the type
+    the Action Centre upload is stored under, so it is compared to the slot's directly. One query; POST
+    path only."""
+    from django.conf import settings as _settings
     from .models import ResolutionItem
-    from .resolution import STUDENT_DOC_REQUEST_CODES
-    rows = ResolutionItem.objects.filter(
-        Q(source='system', code__in=STUDENT_DOC_REQUEST_CODES) | Q(source='officer'),
-        application_id=application_id, status='open', kind='doc', doc_type=doc_type)
+    from .resolution import item_set_aside, item_student_visible
+    from .views.common import SET_ASIDE_STATES
+    queries_live = getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
+    aside = app.status in SET_ASIDE_STATES
+    rows = ResolutionItem.objects.filter(application_id=app.id, status='open', kind='doc', doc_type=doc_type)
     for item in rows:
+        if not item_student_visible(item, queries_live) or (aside and item_set_aside(item)):
+            continue
         who = (item.params or {}).get('household_member') if isinstance(item.params, dict) else ''
         if not who or who in members:
             return True

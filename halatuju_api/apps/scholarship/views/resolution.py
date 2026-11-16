@@ -47,7 +47,7 @@ class ResolutionItemListView(APIView):
         # The uploaded-but-bad system tickets (*_unreadable / *_name_mismatch /
         # str_not_current) stay HIDDEN — those are reviewer-raised re-uploads, coached inline
         # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
-        from ..resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE, VIRCLE_CODE
+        from ..resolution import item_set_aside, item_student_visible
 
         # From RECOMMENDED onward, the AUTO review-phase items — verification gaps
         # (source='system') + Check-2 clarify queries (source='check2') — are SET ASIDE, not
@@ -60,30 +60,12 @@ class ResolutionItemListView(APIView):
         set_aside_stage = app.status in SET_ASIDE_STATES
 
         def _student_visible(i):
-            if i.kind == 'human':
-                return False
-            # The post-award bank-details task (a payout step, not a Check-2 query) shows for an
-            # awarded/active student ONLY while the capture feature is enabled. It is being
-            # deprecated (an alternative monthly arrangement replaces it), so default OFF →
-            # never shown (sync_bank_details_item also sweeps any existing one to resolved).
-            if i.code == BANK_DETAILS_CODE:
-                return getattr(_settings, 'BANK_DETAILS_CAPTURE_ENABLED', False)
-            # The Vircle setup task, likewise: a post-award step, shown to an awarded/active
-            # student whenever the feature is on, whatever the Check-2 flag says.
-            if i.code == VIRCLE_CODE:
-                return getattr(_settings, 'VIRCLE_SETUP_ENABLED', False)
-            if i.source == 'system':
-                return queries_live and i.code in STUDENT_DOC_REQUEST_CODES
-            if i.source == 'check2':
-                return queries_live
-            return True   # officer items always show
+            return item_student_visible(i, queries_live)
 
         # A review-phase AUTO item (not the post-award operational tasks): set aside for funded
         # students. The bank + Vircle tasks are EXCLUDED — they only exist once funded, so
         # setting them aside would strike through the one thing we're actually asking for.
-        def _is_review_auto(i):
-            return (i.source in ('system', 'check2')
-                    and i.code not in (BANK_DETAILS_CODE, VIRCLE_CODE))
+        _is_review_auto = item_set_aside
 
         items = [i for i in app.resolution_items.all() if _student_visible(i)]
         openq = [i for i in items if i.status == 'open']

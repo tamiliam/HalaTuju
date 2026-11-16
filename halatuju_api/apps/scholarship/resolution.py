@@ -119,6 +119,30 @@ STUDENT_DOC_REQUEST_CODES = frozenset(
         or code in _STUDENT_DOC_FIXABLE_EXTRA))
 
 
+def item_student_visible(item, queries_live):
+    """True when the student's Action Centre lists this item (the ONE rule; the list view and the H6
+    replace cap both use it). `queries_live` = CHECK2_STUDENT_QUERIES_ENABLED."""
+    from django.conf import settings as _settings
+    if item.kind == 'human':
+        return False
+    # Post-award tasks: bank details (deprecated, default OFF) and Vircle setup, each on its own flag.
+    if item.code == BANK_DETAILS_CODE:
+        return getattr(_settings, 'BANK_DETAILS_CAPTURE_ENABLED', False)
+    if item.code == VIRCLE_CODE:
+        return getattr(_settings, 'VIRCLE_SETUP_ENABLED', False)
+    if item.source == 'system':
+        return queries_live and item.code in STUDENT_DOC_REQUEST_CODES
+    if item.source == 'check2':
+        return queries_live
+    return True   # officer items always show
+
+
+def item_set_aside(item):
+    """A review-phase AUTO item (system / check2, not the post-award tasks): set aside, not a to-do, once
+    the application is recommended or funded."""
+    return item.source in ('system', 'check2') and item.code not in (BANK_DETAILS_CODE, VIRCLE_CODE)
+
+
 def _ticketable_unresolved(application):
     """{code: {fact, params}} for every unresolved verdict item that maps to a
     student ticket (i.e. is in CODE_TO_TICKET)."""

@@ -220,7 +220,7 @@ class DocumentListCreateView(APIView):
         # above, so a locked student is refused first. The count rides on the new row.
         if replaces:
             used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
-            if must_fix(live_copy) or open_request_asks(app.id, new_doc_type, sweep_members):
+            if must_fix(live_copy) or open_request_asks(app, new_doc_type, sweep_members):
                 serializer.validated_data['replace_count'] = used
             else:
                 refusal = replace_refusal(used)
