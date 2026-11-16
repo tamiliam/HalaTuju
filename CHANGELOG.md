@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: change a gift programme's name (request #71, 2026-11-16)
+
+Services: both. No migration.
+- Why: nothing let an organisation rename a gift programme; the name had to be changed by an engineer.
+- A "Change the name" item in the gift card's menu, next to "Change the short code", opens a box with the English name (required) and the Malay and Tamil names (optional; blank means the English name is used). It uses the same PATCH and the same `programmes.edit` gate as the code change; the short code and apply link do not change. en, ms and ta.
+- The PATCH now refuses a name over 200 characters (the model's cap) with `name_too_long`.
+- The Organisation admin guide explains the new menu item.
+
 ### refactor: request #70 review round - amount reason, one computation, per-language fact list (2026-11-16)
 
 Branch req70, not pushed. No migration. Services: web.

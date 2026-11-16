@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — Request #71: change a gift programme's name (analysis 165)
+
+Branch req71, local only. No migration. Services: both.
+
+1. **The saving already existed.** `PATCH programmes/<id>/` already took `name_en`, `name_ms` and `name_ta` (trimmed, English required). The only gap was the length: the model caps each at 200 characters, so a longer name would have failed in the database. It is now refused with `name_too_long` plus words in en, ms and ta. No migration.
+2. **Same gate as the short code, by construction.** The new menu item sits beside "Change the short code" with no extra front test (the card list is already fenced), and the back end is the one `_gate` (`programmes.edit`). A test compares the name change with the code change for every role.
+3. **Blank Malay or Tamil is stored blank**, as the model already falls back to English. The dialog prefills the current values and the Save button sleeps until something changes, and on a blank English name.
+4. **No re-select after a rename.** The code does not move, so the chosen gift stays chosen; the shell list is reloaded so the new name shows in the chooser and the crumb.
+5. **Guide:** the Organisation admin guide is `src/content/manual/role-org-admin.tsx` (English only); a paragraph was added under "The link applicants follow".
+6. **Not done:** the create call (`POST`) has the same missing 200-character check for names; the create box is not in this request.
+
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 
 Branch req69, not pushed. Migration 0214 (additive). Services: both.

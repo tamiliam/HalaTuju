@@ -14,11 +14,15 @@ import InfoBox from '@/components/InfoBox'
 import Sheet from '@/components/Sheet'
 import type { AdminProgramme } from '@/lib/admin-api'
 
+/** The three names of a gift. Malay and Tamil may be blank: the English name is then used (request #71). */
+export type GiftNames = { name_en: string; name_ms: string; name_ta: string }
+
 export const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
 export type GiftProgrammeDialogProps = { busy: boolean; error: string; onClose: () => void } & (
   | { kind: 'delete'; programme: AdminProgramme; onConfirm: (phrase: string) => void }
   | { kind: 'rename'; programme: AdminProgramme; onConfirm: (code: string) => void }
+  | { kind: 'name'; programme: AdminProgramme; onConfirm: (names: GiftNames) => void }
   | { kind: 'create'; onConfirm: (code: string, nameEn: string) => void }
 )
 
@@ -28,6 +32,7 @@ const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
 export default function GiftProgrammeDialog(props: GiftProgrammeDialogProps) {
   if (props.kind === 'delete') return <DeleteDialog {...props} />
   if (props.kind === 'rename') return <RenameDialog {...props} />
+  if (props.kind === 'name') return <NameDialog {...props} />
   return <CreateDialog {...props} />
 }
 
@@ -129,6 +134,54 @@ function RenameDialog({ programme: renaming, busy, error, onClose, onConfirm }:
             a code they should. It is also true: the server writes the old code as an alias. */}
         <div className="mt-4">
           <InfoBox kind="info">{t('admin.programmes.renameKeeps')}</InfoBox>
+        </div>
+        {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
+    </Sheet>
+  )
+}
+
+/* Request #71: change what the gift is CALLED. The code, and so the apply link, is untouched: the box says so,
+   because the other dialog beside it changes the link and a reader should know which is which. */
+function NameDialog({ programme, busy, error, onClose, onConfirm }:
+  Extract<GiftProgrammeDialogProps, { kind: 'name' }>) {
+  const { t } = useT()
+  const [en, setEn] = useState(programme.name_en)
+  const [ms, setMs] = useState(programme.name_ms)
+  const [ta, setTa] = useState(programme.name_ta)
+  const names = { name_en: en.trim(), name_ms: ms.trim(), name_ta: ta.trim() }
+  const unchanged = names.name_en === programme.name_en && names.name_ms === programme.name_ms
+    && names.name_ta === programme.name_ta
+  const boxes = [
+    ['p-name-en', 'nameEn', en, setEn, 'en'], ['p-name-ms', 'nameMs', ms, setMs, 'ms'],
+    ['p-name-ta', 'nameTa', ta, setTa, 'ta'],
+  ] as const
+  return (
+    <Sheet open onClose={onClose} busy={busy}
+      title={t('admin.programmes.nameTitle', { name: programme.name_en })}
+      footer={<>
+        <button type="button" onClick={onClose} disabled={busy}
+          className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50 max-md:min-h-11">
+          {t('common.cancel')}
+        </button>
+        <button type="button" data-testid="name-confirm"
+          disabled={busy || !names.name_en || unchanged}
+          onClick={() => onConfirm(names)}
+          className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11">
+          {t('admin.programmes.nameCta')}
+        </button>
+      </>}>
+        {boxes.map(([id, key, value, set, lang], i) => (
+          <div key={id} className={i ? 'mt-4' : ''}>
+            <label htmlFor={id} className="block text-sm font-medium text-ground-700">
+              {t(`admin.programmes.field.${key}`)}
+            </label>
+            <input id={id} value={value} maxLength={200} autoComplete="off" lang={lang}
+              onChange={(e) => set(e.target.value)} className={`mt-1 ${inputCls} max-md:min-h-11`} />
+          </div>
+        ))}
+        <p className="mt-2 text-xs text-ground-500">{t('admin.programmes.field.nameHint')}</p>
+        <div className="mt-4">
+          <InfoBox kind="info">{t('admin.programmes.nameKeeps')}</InfoBox>
         </div>
         {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
     </Sheet>

@@ -33,13 +33,15 @@ jest.mock('@/lib/i18n', () => ({
 // the call being asserted.
 const mockPush = jest.fn()
 const mockSelect = jest.fn()
+// The shell's gift list: the chooser and breadcrumb read the new name only after this reload.
+const mockReload = jest.fn().mockResolvedValue(undefined)
 // Which gift the breadcrumb currently holds. A `let` rather than a constant because renaming the
 // CHOSEN gift and renaming another one must behave differently — see the rename tests.
 let mockChosen = ''
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/lib/programmeScope', () => ({
   useProgrammeScope: () => ({
-    chosen: mockChosen, select: mockSelect, reload: jest.fn().mockResolvedValue(undefined),
+    chosen: mockChosen, select: mockSelect, reload: mockReload,
   }),
 }))
 jest.mock('@/lib/admin-api')
@@ -495,6 +497,73 @@ describe('changing the short code', () => {
     // it — the same shape the create dialog has had since it shipped.
     await waitFor(() => expect(
       screen.getAllByText('admin.programmes.error.codeTaken').length).toBeGreaterThan(0))
+  })
+})
+
+describe('changing the name (request #71)', () => {
+  const nameItem = () =>
+    screen.getByText('admin.programmes.changeName').closest('[data-menuitem]') as HTMLElement
+  const openName = async (p = programme({ name_ms: 'Tiga', name_ta: '' })) => {
+    await show(p)
+    openMore()
+    fireEvent.click(nameItem())
+    await waitFor(() => expect(screen.getByTestId('name-confirm')).toBeTruthy())
+  }
+  const box = (k: 'nameEn' | 'nameMs' | 'nameTa') =>
+    screen.getByLabelText(`admin.programmes.field.${k}`) as HTMLInputElement
+  const save = () => screen.getByTestId('name-confirm') as HTMLButtonElement
+
+  it('sits in the same menu as the short code, for the same people', async () => {
+    await show(programme())
+    openMore()
+    expect(nameItem()).toBeTruthy()
+    expect(screen.getByText('admin.programmes.changeCode')).toBeTruthy()
+  })
+
+  it('opens with the current names filled in, and sleeps until something changes', async () => {
+    await openName()
+    expect(box('nameEn').value).toBe('Test Three')
+    expect(box('nameMs').value).toBe('Tiga')
+    expect(box('nameTa').value).toBe('')
+    expect(save().disabled).toBe(true)
+  })
+
+  it('sleeps on a blank English name but not on a blank Malay or Tamil one', async () => {
+    await openName()
+    fireEvent.change(box('nameEn'), { target: { value: '   ' } })
+    expect(save().disabled).toBe(true)
+    fireEvent.change(box('nameEn'), { target: { value: 'Test Three' } })
+    fireEvent.change(box('nameMs'), { target: { value: '' } })
+    expect(save().disabled).toBe(false)
+  })
+
+  it('sends the three names to the PATCH, trimmed, and reloads the shell list', async () => {
+    mockApi.updateAdminProgramme.mockResolvedValue(programme({ name_en: 'Renamed' }))
+    await openName()
+    fireEvent.change(box('nameEn'), { target: { value: '  Renamed ' } })
+    fireEvent.change(box('nameTa'), { target: { value: 'பெயர்' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminProgramme).toHaveBeenCalledWith(
+      7, { name_en: 'Renamed', name_ms: 'Tiga', name_ta: 'பெயர்' }, { token: 'tok' }))
+    // The code did not move, so the chosen gift is not re-selected.
+    await waitFor(() => expect(screen.queryByTestId('name-confirm')).toBeNull())
+    expect(mockReload).toHaveBeenCalled()
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  it('says the code and link stay as they are', async () => {
+    await openName()
+    expect(screen.getByText('admin.programmes.nameKeeps')).toBeTruthy()
+  })
+
+  it('shows the server refusal in words', async () => {
+    mockApi.updateAdminProgramme.mockRejectedValue({ code: 'name_too_long' })
+    await openName()
+    fireEvent.change(box('nameEn'), { target: { value: 'Another' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(
+      screen.getAllByText('admin.programmes.error.nameTooLong').length).toBeGreaterThan(0))
+    expect(screen.getByTestId('name-confirm')).toBeTruthy()
   })
 })
 

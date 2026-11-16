@@ -21,6 +21,7 @@ import { withGift } from '@/lib/giftHref'
 import InfoBox from '@/components/InfoBox'
 import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 import LazyGiftProgrammeDialog from './LazyGiftProgrammeDialog'
+import type { GiftNames } from './GiftProgrammeDialog'
 import {
   getAdminProgrammes, createAdminProgramme, updateAdminProgramme, deleteAdminProgramme,
   type AdminProgramme,
@@ -101,7 +102,7 @@ function LifecycleBadge({ programme: p, busy, onChange }: {
 }
 
 /** Which write dialog is open, holding the RECORD (not an id) so the dialog can name what it changes. */
-type Dialog = { kind: 'delete' | 'rename'; programme: AdminProgramme } | { kind: 'create' } | null
+type Dialog = { kind: 'delete' | 'rename' | 'name'; programme: AdminProgramme } | { kind: 'create' } | null
 
 /** `title`: the page's own heading (the Programmes landing draws it as the page's h1). */
 export default function GiftProgrammes({ token, title }: { token: string | null; title?: string }) {
@@ -138,6 +139,7 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
     c === 'bad_code' ? 'badCode'
       : c === 'code_taken' ? 'codeTaken'
         : c === 'name_required' ? 'nameRequired'
+          : c === 'name_too_long' ? 'nameTooLong'
           : c === 'has_open_year' ? 'hasOpenYear'
             : c === 'no_org' ? 'noOrg'
               // Why a gift cannot be deleted, named. Each is a relation the model PROTECTS: the
@@ -279,6 +281,16 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
     }
   }
 
+  /** Change what a gift is called (request #71). The code does not move, so the chosen gift stays
+   *  chosen; the shell's list is reloaded so the new name shows in the chooser and the crumb. */
+  const renameName = async (p: AdminProgramme, names: GiftNames) => {
+    const ok = await run(() => updateAdminProgramme(p.id, names, { token: token! }))
+    if (ok) {
+      setDialog(null)
+      await reload()
+    }
+  }
+
   /** The typed phrase, as the dialog normalised it; the server compares it again. */
   const remove = async (p: AdminProgramme, phrase: string) => {
     const ok = await run(() => deleteAdminProgramme(p.id, phrase, { token: token! }))
@@ -391,6 +403,9 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
                     <MenuItem onClick={() => { setError(''); setDialog({ kind: 'rename', programme: p }) }}>
                       {t('admin.programmes.changeCode')}
                     </MenuItem>
+                    <MenuItem onClick={() => { setError(''); setDialog({ kind: 'name', programme: p }) }}>
+                      {t('admin.programmes.changeName')}
+                    </MenuItem>
                     <MenuItem onClick={() => enterGift(p, '/admin/programme')}>
                       {t('admin.programmes.openSettings')}
                     </MenuItem>
@@ -457,6 +472,10 @@ export default function GiftProgrammes({ token, title }: { token: string | null;
       {dialog?.kind === 'rename' && (
         <LazyGiftProgrammeDialog kind="rename" programme={dialog.programme} busy={busy} error={error}
           onClose={() => setDialog(null)} onConfirm={(wanted) => void rename(dialog.programme, wanted)} />
+      )}
+      {dialog?.kind === 'name' && (
+        <LazyGiftProgrammeDialog kind="name" programme={dialog.programme} busy={busy} error={error}
+          onClose={() => setDialog(null)} onConfirm={(names) => void renameName(dialog.programme, names)} />
       )}
       {dialog?.kind === 'create' && (
         <LazyGiftProgrammeDialog kind="create" busy={busy} error={error}

@@ -439,7 +439,13 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> ⋮</strong> then <strong>Change the short code</strong>, which shows you the current link
         beside the box. <strong>The old code keeps working.</strong> Anything already printed or sent still
         reaches this gift, so a rename never strands an applicant part-way. A code another gift uses, or used
-        to use, is refused.</>
+        to use, is refused.
+        <br /><br />
+        To change what a gift is <em>called</em>, press <strong>⋮</strong> then <strong>Change the name</strong>.
+        The English name is required; the Malay and Tamil names are optional, and where one is left blank the
+        English name is shown instead. Changing the name does not change the short code or the apply link.
+        (The name students see for one intake year is separate and is changed under <strong>Settings</strong>,
+        <strong> Intake year</strong>, <strong>Edit</strong>.)</>
       ),
     },
     {

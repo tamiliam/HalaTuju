@@ -55,6 +55,9 @@ class _ProgrammeScopedBase(_AdminBase):
 # so two codes cannot differ by case alone in a place people retype by hand.
 CODE_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,49}$')
 
+# `Programme.name_en` / `name_ms` / `name_ta` are CharField(max_length=200).
+NAME_MAX = 200
+
 
 class AdminProgrammeListView(_ProgrammeScopedBase):
     """GET the organisation's gift programmes · POST create one."""
@@ -128,6 +131,21 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
 
         changed = []
 
+        # The names are checked BEFORE the code block: a code change saves at once (with its
+        # alias), so a refusal on the names must come first or a refused PATCH would still move it.
+        names = {}
+        for f in ('name_en', 'name_ms', 'name_ta'):
+            if f in request.data:
+                v = (request.data.get(f) or '').strip()
+                if f == 'name_en' and not v:
+                    return Response({'error': 'name_required', 'code': 'name_required'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                # The model's own cap, refused with words rather than left to a database error.
+                if len(v) > NAME_MAX:
+                    return Response({'error': 'name_too_long', 'code': 'name_too_long'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                names[f] = v
+
         if 'code' in request.data:
             from ..models import ProgrammeCodeAlias, code_is_free
             new_code = (request.data.get('code') or '').strip().lower()
@@ -152,13 +170,8 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
                 logger.info('AUDIT programme_code_changed old=%s new=%s org=%s by=%s',
                             old_code, new_code, p.organisation_id, admin.email or '')
 
-        for f in ('name_en', 'name_ms', 'name_ta'):
-            if f in request.data:
-                v = (request.data.get(f) or '').strip()
-                if f == 'name_en' and not v:
-                    return Response({'error': 'name_required', 'code': 'name_required'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                setattr(p, f, v); changed.append(f)
+        for f, v in names.items():
+            setattr(p, f, v); changed.append(f)
 
         if 'apply_copy' in request.data:
             # ⚠ VALIDATED SERVER-SIDE, NOT ONLY ON THE FORM. This is free text that renders on a
