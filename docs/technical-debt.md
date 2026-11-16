@@ -9098,7 +9098,7 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-631] ~~A polytechnic "Sesi II 2024/2025" (a December 2024 start) reads 2025~~ - HANDLED 2026-11-15 (H3a rebuild)
+### [TD-640] ~~A polytechnic "Sesi II 2024/2025" (a December 2024 start) reads 2025~~ - HANDLED 2026-11-15 (H3a rebuild)
 
 **Raised 2026-11-15 by the H3a Opus review.** Polytechnic Sesi II of session 2024/2025 begins in December 2024 or
 January 2025, but the branch's session reading took a second term as the session's second year, so "Sesi II 2024/2025"
@@ -9112,7 +9112,7 @@ month reads unknown.)* *(Owner ruling 16 Nov 2026, `session_year.gift_reading`: 
 first; with no date, "Sesi II S/S+1" reads S+1 by the owner's order, so an undated December-start polytechnic letter
 reads 2025. In the 286-letter corpus all 9 second-year reporting dates were on SESI 2 / SESI II / Semester 2 letters.)*
 
-### [TD-632] The money's start year takes the FIRST year of an academic session - low
+### [TD-641] The money's start year takes the FIRST year of an academic session - low
 
 **Raised 2026-11-15 by the H3a rebuild (logged, not fixed: the lead's rule is that the money stays exactly main's).**
 `pathway_engine.student_offer_check` takes the first year on the intake line, so "Sesi 2024/2025 Semester II" (a
@@ -9123,7 +9123,7 @@ letter rarely carries a semester, so STPM sizing is seldom touched; a degree est
 The gift's start-year rule does not use this reading (`session_year.gift_reading`). Fix only with an owner
 ruling and a dry run of the money on live letters (`eval/offer_s4_dry_run.py` compares `intake_year`). *(A - S)*
 
-### [TD-633] Start-year reader: synthetic misspellings / glued tokens can still read a wrong year - low
+### [TD-642] Start-year reader: synthetic misspellings / glued tokens can still read a wrong year - low
 
 **Raised 2026-11-16 by the H3a thirteenth review (logged, not fixed: the lead stopped the review loop).**
 Start-year reader: synthetic misspellings / glued tokens beyond the edit-distance and exam rules can still read a
@@ -9138,7 +9138,7 @@ past. The 286-letter corpus holds none. *(A - S)*
 (none in the corpus). Capital "STAM" inside "STAMFORD" (a college name) makes a line with no session an exam line, so
 it reads unknown (safe direction).
 
-### ~~[TD-634] Recent-letter ask: a recent OFFER letter kept out of the live slot does not answer it - low~~ — RESOLVED 2026-11-16 (H3b fix round 1: any recent non-failing letter on file, offer or confirmation, any institution, live or kept out, closes the ask; the date-form note moved to TD-635)
+### ~~[TD-643] Recent-letter ask: a recent OFFER letter kept out of the live slot does not answer it - low~~ — RESOLVED 2026-11-16 (H3b fix round 1: any recent non-failing letter on file, offer or confirmation, any institution, live or kept out, closes the ask; the date-form note moved to TD-644)
 
 **Raised 2026-11-16 by sprint H3b (logged, not fixed).** `recent_letter.wanted` drops the ask when the LIVE letter is
 recent, or when any version of the offer slot holds a recent, non-failing CONFIRMATION letter (the brief's rule). A
@@ -9148,7 +9148,7 @@ sees the item and can close it. Count it on live data before deciding whether an
 Also: the date read is strict (`letter_date`), so a letter whose `offer_date` is in another form is never asked about
 (the no-guess rule, by design). *(A - S)*
 
-### [TD-635] Recent-letter ask: date forms the strict reader does not place give no ask - low
+### [TD-644] Recent-letter ask: date forms the strict reader does not place give no ask - low
 
 **Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).**
 `recent_letter.letter_date` reads only one exact date per value, so "5 Mac 2026M", "5 MAC 2026 (KHAMIS)", "2026/03/05"
@@ -9157,7 +9157,7 @@ no-guessing rule (by design, safe direction: no ask rather than a wrong one). At
 letters whose `offer_date` reads None, by form, and widen the reader only for forms that are both common and
 unambiguous. *(A - S)*
 
-### [TD-636] Recent-letter ask: a confirmation with a differently read course name takes the live slot as a course switch - medium
+### [TD-645] Recent-letter ask: a confirmation with a differently read course name takes the live slot as a course switch - medium
 
 **Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).** When she answers
 with a confirmation letter whose programme name or codes read differently from her genuine offer,
@@ -9168,7 +9168,7 @@ confirmation upload** (it is the existing promotion rule, not new in H3b); H3b m
 confirmations. A suspect confirmation that is kept out reads 'mismatch' at upload and closes the ask at the next
 Check 2 sync. Decide whether a confirmation for the same institution should ever displace a genuine offer. Decide before go-live (owner). *(A - M)*
 
-### [TD-637] Recent-letter ask: go-live wave of asks and query emails - read-only dry-run count owed - medium
+### [TD-646] Recent-letter ask: go-live wave of asks and query emails - read-only dry-run count owed - medium
 
 **Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).** At go-live,
 every Completed-stage case whose live letter is older than the window (and whose course should have started) gets
@@ -9176,7 +9176,7 @@ the ask plus one query email at its next Check 2 sync. Before release, run a rea
 (`recent_letter.wanted` per case, no writes, no emails) by organisation, and let the owner decide whether to send
 or to stage the wave. *(A - S)*
 
-### [TD-638] Recent-letter ask: known soft limits - low
+### [TD-647] Recent-letter ask: known soft limits - low
 
 **Raised 2026-11-16 by the H3b tidy (logged, not fixed; branch number, renumbered at merge).** 0 money effect; all
 soft (the ask never blocks, fails or moves a verdict). (a) `application.reporting_date` is not used

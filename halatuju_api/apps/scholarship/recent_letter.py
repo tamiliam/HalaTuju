@@ -60,7 +60,7 @@ def letter_date(doc):
     """The letter's issue date as a ``date``, or None when it cannot be read EXACTLY. The whole value
     must be one date: D/M/YYYY (``/ . -``), YYYY-MM-DD, "D Month YYYY" or "Month D, YYYY" (Malay or
     English month names). Anything else - a two-digit year, a stray word, an impossible day - is None
-    (TD-635: forms such as "5 Mac 2026M" or a date followed by its Hijri date are not read)."""
+    (TD-644: forms such as "5 Mac 2026M" or a date followed by its Hijri date are not read)."""
     raw = _field(doc, 'offer_date')
     if raw is None:
         return None

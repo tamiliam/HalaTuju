@@ -177,18 +177,18 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
-### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-638 (2026-11-16)
+### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-647 (2026-11-16)
 
-Branch help-h3, not pushed. Copy and debt log only; no logic change. en.json setting and reviewer line now say the course should already have started; FAQ and Reviewer Guide say to use Waive, not Resolve; **TD-638** logs the known soft limits; TD-636 marked "decide before go-live (owner)".
+Branch help-h3, not pushed. Copy and debt log only; no logic change. en.json setting and reviewer line now say the course should already have started; FAQ and Reviewer Guide say to use Waive, not Resolve; **TD-647** logs the known soft limits; TD-645 marked "decide before go-live (owner)".
 
 ### fix: H3b review 1 - recent-letter ask closes on any recent letter, waits for the course to start, never holds assignment (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` unchanged.
-- **Any recent letter closes it.** An offer or a confirmation letter, any institution (university, matriculation, polytechnic, Form 6), live or kept out of the live slot, dated inside the window and not failed. TD-634 resolved.
+- **Any recent letter closes it.** An offer or a confirmation letter, any institution (university, matriculation, polytechnic, Form 6), live or kept out of the live slot, dated inside the window and not failed. TD-643 resolved.
 - **Not before the course starts.** No ask while the reporting date is still to come, or cannot be read to a day and may still be to come. No reporting date: the plain rule (letter older than the window).
 - **Non-holding.** `queries_sla` leaves `recent_letter_needed` out of `open_student_tasks` and `with_open_student_tasks`: the ask alone never holds reviewer assignment; any other open request still does. FAQ, Reviewer Guide and decisions.md say why (the plan: soft, no block).
 - **No copied money code.** The reporting-date copy and its pinning test are gone; `recent_letter.offer_asks` calls `pathway_engine.offer_reporting_date_unknown` and `wanted` under one document snapshot. Check 2 sync stays at 58 queries.
-- **Tests.** University and matriculation confirmations close it; reporting date to come / past / not read to a day / absent; an upload closes it through `resolve_doc_items_for_upload` (a suspect one at the next sync); the assignment hold. **TD-635, TD-636, TD-637** logged (branch numbers).
+- **Tests.** University and matriculation confirmations close it; reporting date to come / past / not read to a day / absent; an upload closes it through `resolve_doc_items_for_upload` (a suspect one at the next sync); the assignment hold. **TD-644, TD-645, TD-646** logged (branch numbers).
 
 ### feat: sprint H3b - an old offer or confirmation letter asks for a recent confirmation letter (soft) (2026-11-16)
 
@@ -196,7 +196,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_E
 - **Step 1 (moves only).** The pathway and household-size confirms moved from `check2_queries.py` to `check2_confirms.py`, re-exported; no logic change.
 - **The ask.** New `recent_letter.py`: a live offer / confirmation letter dated before today minus `recent_letter_window_months` (new org tunable, Check 2 group, default 3) raises the Check 2 doc request `recent_letter_needed`. Exactly N months is recent; one day more is old. Unreadable date, a recent confirmation letter on file (live or kept out), or a failing letter: no ask. Never blocks, never fails, never touches a verdict or money. An old letter re-sent leaves it open.
 - **Copy.** Student item, reviewer line, setting label and the `months` unit in en; ms / ta first drafts for Sol; `query_item_titles` entry. Reviewer Guide (role-reviewer.tsx, reviewer-guide-content.md) and FAQ (faq-reviewer.tsx) updated.
-- **Tests.** New `test_recent_letter.py` (window edges, unreadable dates, letter on file, tunable, resolution, never blocks); the org-config tab fixture row. **TD-634** logged (branch number).
+- **Tests.** New `test_recent_letter.py` (window edges, unreadable dates, letter on file, tunable, resolution, never blocks); the org-config tab fixture row. **TD-643** logged (branch number).
 
 ### fix: H3a thirteenth review - simplify: no plain-intake-year exception; plural and glued exam words; misspelt months by edit distance (2026-11-16)
 
@@ -204,7 +204,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 - **The "plain intake year beats the session" exception is removed** (and the twelfth review's exam guard on it). A plain year after an intake word on a session line reads only if it is one of the session's two years: "Ambilan 2023 Sesi 2025/2026" and "Intake: 2024 school leavers, Session 2025/2026" are now unknown. No session on the line: unchanged.
 - **Exam words**: plural ("SPMs") and capital SPM / SPMV / STPM / STAM glued to letters ("SPMleavers", "lepasanSPM").
 - **Misspelt months by one rule**: same first letter, within 2 edits of an 8+ letter month name or 1 edit of a 6-7 letter one ("Febuary", "Feburary", "Januay", "Agust", "Septmber"); Pebruari and Mach by name. March / April / Julai left out ("match", "mulai").
-- **FAQ** (faq-reviewer.tsx) states all three. **TD-633** logged (branch number).
+- **FAQ** (faq-reviewer.tsx) states all three. **TD-642** logged (branch number).
 - **Tests.** `ThirteenthReview` in the new `test_start_year_review13.py`, every reviewer input; old tests that expected 2023 updated. Probe table: 2 of 366 rows moved, outside -> unknown. Corpus split unchanged, 245 / 26 / 15.
 
 ### fix: H3a twelfth review - an exam line's plain intake year, deadline words, misspelt months, admission numbers (2026-11-16)
@@ -274,7 +274,7 @@ Branch help-h3, not pushed. No migration. Money untouched: `pathway_engine.py`, 
 - **Dropped.** The closed vocabulary, the first-year signal, the straddle rule, the generated property table and mutation fuzz (`test_start_year_gift_property.py` removed).
 - **Corpus (286 letters).** Degree gift (2025, 2026): 246 inside / 26 outside / 14 unknown.
 - **Tests.** `test_start_year_gift_reading.py` rewritten (one test per corpus shape, later terms, readmission, exam years); new `test_start_year_gift_probes.py` (366 review probes h3r4-h3r6 re-classed with the owner's answers); `test_start_year_rule.py` end-to-end expectations moved to the owner's rule.
-- **Docs.** decisions.md H3a owner-ruling entry (corpus counts, the sanitize limit); reviewer FAQ start-year answer; TD-631 / TD-632 notes name `gift_reading`.
+- **Docs.** decisions.md H3a owner-ruling entry (corpus counts, the sanitize limit); reviewer FAQ start-year answer; TD-640 / TD-641 notes name `gift_reading`.
 - **Version.** `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (unpushed; help-h2 is .10).
 
 ### fix: H3a fifth review - the gift's OUTSIDE is a closed vocabulary; damage never reads inside (2026-11-15)
@@ -301,8 +301,8 @@ Branch help-h3, not pushed. No migration. The money is untouched (still byte-ide
 
 Branch help-h3, not pushed. No migration. Money and eligibility work. Supersedes the two H3a session entries below for the money.
 - **Money = main, exactly.** An adversarial review failed the branch: one start-year reading fed both the gift's rule and the money, and patching it for the gift moved money. `pathway_engine.py` is main's file again, so `student_offer_check['intake_year']`, `course_start_year`, the STPM award size, `award.course_start_unknown` (the QC stop) and the funding estimate read exactly as on main. Every branch change to them (Semester 2 = S+1, later terms = no year, the date inside the session, January intake) is reverted from the money.
-- **Gift = a new conservative reader.** `session_year.gift_start_years` (rewritten; used only by `start_year.possible_start_years`) gives the years the course may have started in, or none (a person checks). Unknown: Semester 3+ and Year 2+ in any form, with any date, stored or on the letter; Semester 2 / II, Penggal 2 or Sesi II on a confirmation letter or a Form 6 case; a term and a date that disagree; a date outside the session; two sessions; both terms. Either year: a bare session, a polytechnic Sesi II with no date (TD-631, now handled). A month written with its year on the intake line wins. An outside reading names all its years ("2022, 2023").
-- **Docs.** decisions.md H3a: the two readings (the "no STPM case newly stops at QC" claim is now true: the money is main's). Reviewer FAQ start-year entry lists the cases left to the reviewer. Student copy unchanged. TD-631 closed; TD-632 logged (main's money takes a session's first year; not fixed, by rule).
+- **Gift = a new conservative reader.** `session_year.gift_start_years` (rewritten; used only by `start_year.possible_start_years`) gives the years the course may have started in, or none (a person checks). Unknown: Semester 3+ and Year 2+ in any form, with any date, stored or on the letter; Semester 2 / II, Penggal 2 or Sesi II on a confirmation letter or a Form 6 case; a term and a date that disagree; a date outside the session; two sessions; both terms. Either year: a bare session, a polytechnic Sesi II with no date (TD-640, now handled). A month written with its year on the intake line wins. An outside reading names all its years ("2022, 2023").
+- **Docs.** decisions.md H3a: the two readings (the "no STPM case newly stops at QC" claim is now true: the money is main's). Reviewer FAQ start-year entry lists the cases left to the reviewer. Student copy unchanged. TD-640 closed; TD-641 logged (main's money takes a session's first year; not fixed, by rule).
 - **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.9 (.8 is the H2 branch's). `MODEL_VERSION` unchanged.
 - **Tests.** New `test_start_year_money.py`: main's reader frozen as an oracle over 35 letters, checked against `course_start_year`, `intake_year`, `course_start_unknown`, the award and the funding estimate, plus a guard that no money module reads `session_year`. New `test_start_year_gift_reading.py`: the reviewer's probe cases and the lead's list. `test_start_year_rule.py`: the session tests that pinned the old shared reading now assert main's money year (2024) beside the gift's verdict; an officer's date no longer rescues a Semester 3 letter on the gift (lead's ruling); a bare session outside the gift names both years.
 
@@ -315,7 +315,7 @@ Branch help-h3, not pushed. No migration. Money and eligibility work.
 - **Docstring (item 3).** `session_start_year` and `course_start_year` now say what '' becomes: the money falls back to the stored reporting date; the gift's rule does not.
 - **Moved.** The session reading moved verbatim plus these fixes to the new `apps/scholarship/session_year.py` (`pathway_engine` re-exports `session_start_year` and `bare_session`), so `pathway_engine.py` stays under 600 lines.
 - **Reviewer FAQ.** The start-year entry says a bare session straddling the gift's years is left for the reviewer to check.
-- **Logged.** TD-631: a polytechnic "Sesi II 2024/2025" (a December 2024 start) with no reporting date reads 2025.
+- **Logged.** TD-640: a polytechnic "Sesi II 2024/2025" (a December 2024 start) with no reporting date reads 2025.
 - **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.7 (.6 is the H2 branch's). `MODEL_VERSION` unchanged.
 - **Tests.** `test_start_year_rule.py` class `ReviewFixes` (11 tests): Semester 3 with a date, end to end with the stored date; an officer's date; date ranges and real sessions; the STPM range sized RM1,000; the three bare-session cases; bare-session money unchanged (award and funding estimate).
 
