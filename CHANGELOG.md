@@ -181,8 +181,6 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
 
-### fix: help sprint H2 round 3 - a closed letterhead for a genuine confirmation and the English matric offer (2026-11-15)
-
 ### feat: help sprint H2 (owner option B) - a confirmation of studies from every public institution reads suspect, never genuine by itself; English matric offers recognised (2026-11-15)
 
 Branch help-h2, not pushed. Owner ruling 2026-11-15, option B (`docs/decisions.md`, ruling 4). Replaces the H2 rounds 1-3 (never shipped: the allowlist letterhead, the known-name lists and the genuine lift for the new types are gone). VERDICT_ENGINE_VERSION 2026-11-15.10; MODEL_VERSION 1.27.0 to 1.28.0 (help H1 also uses 1.28.0: one bump when both merge). No migration, no web change.
