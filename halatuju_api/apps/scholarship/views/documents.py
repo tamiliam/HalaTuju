@@ -16,6 +16,7 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
+from .document_lock import documents_locked_refusal
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
 
@@ -32,6 +33,9 @@ class DocumentSignUploadView(APIView):
         serializer = SignUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         doc_type = serializer.validated_data['doc_type']
+        locked = documents_locked_refusal(app, doc_type)
+        if locked:
+            return locked
         # Org-prefixed key (Sprint 4): <org_id>/<app_id>/<doc_type>/<uuid>.
         path = build_doc_key(app, app.id, doc_type, uuid.uuid4().hex)
         # Audit A1.7 (SEC-18): signed no-overwrite — a URL can never replace the file at its key.
@@ -177,7 +181,7 @@ class DocumentListCreateView(APIView):
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_doc_type = serializer.validated_data['doc_type']
-        refusal = self._refuse_bad_file(app, serializer.validated_data)
+        refusal = documents_locked_refusal(app, new_doc_type) or self._refuse_bad_file(app, serializer.validated_data)
         if refusal:
             return refusal
         new_member = serializer.validated_data.get('household_member', '') or ''
@@ -320,6 +324,9 @@ class DocumentDetailView(APIView):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if slip_locked(doc):   # S4a review H1: a results slip is evidence, whatever its review says
             return Response({'error': 'slip_locked', 'code': 'slip_locked'}, status=status.HTTP_409_CONFLICT)
+        locked = documents_locked_refusal(doc.application, doc.doc_type)   # slip_locked stays the more specific answer
+        if locked:
+            return locked
         # An explicit "Remove" fully clears the slot INCLUDING its version history — this is a
         # deliberate student action, not a replace. Hard-delete the live row AND every superseded
         # ancestor it replaced (walk the `supersedes` chain transitively — a slot can have several

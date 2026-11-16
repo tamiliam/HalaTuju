@@ -156,7 +156,6 @@
       "src/app/dashboard/page.tsx": 799,
       "src/app/scholarship/apply/page.tsx": 732,
       "src/app/scholarship/award/page.tsx": 697,
-      "src/components/ActionCentre.tsx": 696,
       "src/components/ScholarshipNextSteps.tsx": 828,
       "src/components/admin/IntakeYearTab.tsx": 718,
       "src/lib/scholarship.ts": 946,

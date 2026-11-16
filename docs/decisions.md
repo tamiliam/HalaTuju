@@ -312,6 +312,17 @@ The calls:
 12. **The A10 scan is a whole-file tokenizer scan,** and each snippet must contain its hit and claim it alone. The sponsor-terms lead-tier read is class SERVER (it mirrors `scholarship/surface_gates.py:107` `may_approve_platform_sponsors`), not PLATFORM; the server half is debt TD-632. The tighter scan found 4 new lines (all kept: an invitable-roles list the server serves, two family-role sets, `admitsRow`'s role rule) and 15 more hits on lines already listed; none was a plain gate.
 
 **Alternative not taken:** keep the role lists as an older-payload fallback. Every payload has carried the keys since M3c, so the lists were dead code that could drift from the server.
+## 2026-11-16 - student-help H4: the student's documents lock with querying
+
+Branch student-help, not pushed. No migration.
+
+**Chosen:** the student's document upload (sign-upload and record) and delete refuse with 409 `documents_locked` whenever `services.querying_locked(application)` is true (interview concluded or any later stage; a reopened decision unlocks). One definition of "locked", reused, no new stage list.
+
+**Kept open after the lock** (the case itself asks for these): the post-award bank statement (`BANK_CAPTURE_STATES`), a funded student's semester results (`semester_result`, awarded / active / maintenance) and the two higher-results asks Check 2 may raise while interviewing / interviewed (`higher_owed.LATE_ASK_STATUSES`, owner 2026-11-07).
+
+**Not changed:** reviewer / admin document paths (`views_admin`), the read endpoint, the list.
+
+**Note:** `_current_application` already gives a student at recommended or later no live application on these views (403), so in practice the new 409 is seen at Awaiting QC and in the funded states.
 
 ## 2026-11-15 — TD-613 builder call (pending architect): a case whose reviewer has left can change hands
 
