@@ -1204,7 +1204,12 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
      14 words (as the title block's own cut), so "PENGESAHAN SEBAGAI PELAJAR SEPENUH MASA DI UNIVERSITI ... BAGI
      SESI AKADEMIK 2025/2026" or a long name glued on before the IC still caps; a title line may also start with
      SURAT AKUAN / BORANG / SIJIL / NOTIS / PERIHAL: or a number ("1. PENGESAHAN PELAJAR"); the title stops at a
-     glued body word ("PENGESAHAN PELAJAR Adalah dimaklumkan ..."); and up to THREE short lines join ("PENGESAHAN /
+     MULTI-WORD glued body opening ("PENGESAHAN PELAJAR Adalah dimaklumkan ...": ADALAH DIMAKLUMKAN, ADALAH (DENGAN
+     INI) DISAHKAN, DENGAN INI DISAHKAN / DIMAKLUMKAN, SUKACITA DIMAKLUMKAN, DENGAN (SEGALA) HORMATNYA, TUAN PUAN,
+     THIS IS TO CERTIFY / CONFIRM) - **review 12:** never at a single body word (ADALAH, KAMI, PIHAK, PLEASE, WE,
+     HEREBY ...), so a body SENTENCE that starts with a confirmation phrase ("Pengesahan pelajar kami akan
+     dikeluarkan selepas pendaftaran", "Confirmation of Study please contact the registrar ...") still reads as a
+     sentence and never caps an ordinary offer; and up to THREE short lines join ("PENGESAHAN /
      STATUS / PELAJAR"). A reference line (RUJ / RUJ. TUAN / RUJ. KAMI / RUJUKAN / REF / OUR REF / YOUR REF) is
      never an offer title line, so "Ruj. Tuan : Surat Tawaran bertarikh ..." above "PENGESAHAN PELAJAR" no longer
      ends the search. Left as on main (TD-637, 0 real letters): an institution name, a date or a reference glued

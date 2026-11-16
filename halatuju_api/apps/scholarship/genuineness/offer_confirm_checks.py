@@ -27,9 +27,13 @@ _OFFER_TITLES = (' KEPUTUSAN PERMOHONAN ', ' KEMASUKAN KE PROGRAM ')
 #: review 11: "SURAT AKUAN", "BORANG", "SIJIL", "NOTIS", "PERIHAL:"). A leading number ("1. PENGESAHAN ...") is
 #: skipped too.
 _TITLE_PREFIXES = ('SURAT', 'AKUAN', 'BORANG', 'SIJIL', 'NOTIS', 'PERIHAL') + tuple(s.strip() for s in _SUBJECT_STARTS)
-#: A glued body after the title ("PENGESAHAN PELAJAR DENGAN HORMATNYA ..."): the title stops there.
+#: A glued body after the title ("PENGESAHAN PELAJAR DENGAN HORMATNYA ..."): the title stops there. MULTI-WORD
+#: openings only (review 12: a single body word such as ADALAH / KAMI / PIHAK / PLEASE also starts ordinary
+#: sentences - "Pengesahan pelajar adalah diperlukan ..." - so it never cuts; such a sentence stays no title).
 _GLUED_BODY = (' DENGAN HORMATNYA ', ' DENGAN SEGALA HORMATNYA ', ' TUAN PUAN ', ' DENGAN INI DISAHKAN ',
-               ' ADALAH DISAHKAN ', ' THIS IS TO CERTIFY ', ' THIS IS TO CONFIRM ')
+               ' ADALAH DISAHKAN ', ' THIS IS TO CERTIFY ', ' THIS IS TO CONFIRM ',
+               ' ADALAH DIMAKLUMKAN ', ' ADALAH DENGAN INI DISAHKAN ', ' ADALAH DENGAN INI DIMAKLUMKAN ',
+               ' DENGAN INI DIMAKLUMKAN ', ' SUKACITA DIMAKLUMKAN ')
 #: A title's own words after the confirmation title: the issuer, a session, "(LATIHAN INDUSTRI)" - a few words.
 _TITLE_REST_MAX = 14             # review 11: as `_cut` ("... DI UNIVERSITI ... BAGI SESI AKADEMIK 2025/2026")
 #: ... and never a sentence's verbs / joining words ("... akan dikeluarkan selepas pendaftaran", "... will be
@@ -116,8 +120,10 @@ def offer_title_line(ln) -> bool:
 def _title_line(ln, titles) -> bool:
     """`ln` IS a confirmation title (lead, 16 Nov 2026: a title is a LINE, not a phrase in a sentence): after an
     optional SURAT / PERKARA / RE (review 11: or a number) it starts with one of `titles`, and the rest up to a
-    person label / IC number (a glued name line) or a body word (review 11, `_BODY_CUTS`: "PENGESAHAN PELAJAR Adalah
-    dimaklumkan ...") is short and no sentence (`_SENTENCE`: "... akan dikeluarkan selepas pendaftaran")."""
+    person label / IC number (a glued name line) or a multi-word glued body opening (`_GLUED_BODY`; review 12:
+    "PENGESAHAN PELAJAR Adalah dimaklumkan ...") is short and no sentence (`_SENTENCE`: "... akan dikeluarkan
+    selepas pendaftaran"). Review 12: a single body word (`_BODY_CUTS`) never cuts here, so a body sentence that
+    starts with a confirmation phrase ("Pengesahan pelajar kami akan dikeluarkan ...") stays no title line."""
     words = ln.split()
     while words and (words[0] in _TITLE_PREFIXES or words[0].isdigit()):
         words = words[1:]
@@ -126,8 +132,7 @@ def _title_line(ln, titles) -> bool:
     if t is None:
         return False
     rest = ln[len(t) - 1:]
-    cuts = ([rest.find(w) for w in _PERSON_LABELS + _GLUED_BODY + _BODY_CUTS if w in rest]
-            + [m.start() for m in _IC.finditer(rest)])
+    cuts = [rest.find(w) for w in _PERSON_LABELS + _GLUED_BODY if w in rest] + [m.start() for m in _IC.finditer(rest)]
     rest = rest[:min(cuts)] if cuts else rest
     return len(rest.split()) <= _TITLE_REST_MAX and not _SENTENCE.search(rest)
 
@@ -154,7 +159,9 @@ def page_titled(lines, probability: float = 1.0) -> bool:
     a study word in its title block (`generic_titled`). Every line above the title is read past (an addressee,
     "Tuan/Puan,", "Kami ...": review 9). The recognition path passes the family score (main's floor); the CAP does
     not (a lift is genuine at 0.0). A confirmation phrase inside a body sentence is never a title line, so it never
-    caps (decisions.md ruling 4)."""
+    caps (decisions.md ruling 4) - nor is a body sentence that STARTS with one ("Pengesahan pelajar adalah
+    diperlukan ...", "Confirmation of Study please contact ..."): only a multi-word glued opening ends a title's
+    rest (`_GLUED_BODY`; review 12), so the sentence's own words still read as a sentence (`_SENTENCE`)."""
     if probability < CONFIRM_MIN:
         return False
     titles = _CONFIRM_TITLES + _CONFIRM_TITLES_EN + (_CONFIRM_TITLES_EN_GENERIC if generic_titled(lines) else ())
