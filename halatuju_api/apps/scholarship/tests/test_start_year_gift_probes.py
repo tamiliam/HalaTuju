@@ -11,6 +11,9 @@ as the stored field does. Known limit, kept on purpose: the normaliser takes the
 holding two ("20 November 2024, lapor diri 3 Mac 2025" is stored as 20 Nov 2024), and a mixed line
 like "Sesi 2024/2025 bermula 5 Mei 2025" is stored as 5 May 2024. The 286-letter corpus held no such
 line (0 wrong years in 17 messy date lines), and `vision/` is not changed by this rule.
+
+Eleventh review (lead's rule, 16 Nov 2026: only admission phrases start a course; a month on a
+session line is never ignored): 10 rows moved, all to unknown, none to OUTSIDE.
 """
 from django.test import SimpleTestCase
 
@@ -105,12 +108,12 @@ PROBES = [
     ('SEMESTER 1 TAHUN 2025', '', '', False, 2025),
     ('Kemasukan 2025 (2024 lulus SPM)', '', '', False, None),
     ('Sesi Julai 2025 hingga Jun 2029', '', '', False, None),
-    ('2024/2025 Semester 2 (Feb 2025 intake)', '', '', False, 2025),
+    ('2024/2025 Semester 2 (Feb 2025 intake)', '', '', False, None),
     ('Sesi 2025/2026 (Tarikh: 26/02/2025)', '', '', False, None),     # ninth review: a bare Tarikh is no start word
     ('Ambilan Sesi Februari 2025/2026', '', '', False, 2026),
     ('Intake 2025/26 September', '', '', False, 2025),
-    ('2025/2026 Sem 1 Okt 2025', '', '', False, 2025),
-    ('Sesi 2024/2025: Sem 2; Mac 2025', '', '', False, 2025),
+    ('2025/2026 Sem 1 Okt 2025', '', '', False, None),
+    ('Sesi 2024/2025: Sem 2; Mac 2025', '', '', False, None),
     # h3r4: confirmation letters
     ('Sesi 2025/2026', '', '', True, None),
     ('', '8 September 2025', '', True, None),
@@ -197,7 +200,7 @@ PROBES = [
     ('Ambilan Sesi 2024-25 Mac', '', '', False, 2025),
     ('Ambilan Sesi 2024-25 (Mac)', '', '', False, 2025),
     ('Session 2024-25, Feb intake', '', '', False, 2025),
-    ('Session 2024-25 February', '', '', False, 2024),
+    ('Session 2024-25 February', '', '', False, None),
     ('Sesi 2024-25 Semester 2', '', '', False, 2025),
     ('Sesi 2024 - 25 Februari', '', '', False, 2024),
     ('Ambilan 2024-25 Jan', '', '', False, 2025),
@@ -218,8 +221,8 @@ PROBES = [
     ('Ambilan 2024/2025 Semester I', '', '', False, 2024),
     ('Ambilan Sesi 2O24/2025', '', '', False, None),
     ('Ambilan Sesi 2024/2025 Sem I (Feb)', '', '', False, 2025),
-    ('Sesi 2024/2025, Semester 1 (Jan 2025)', '', '', False, 2025),
-    ("Ambilan Sesi 2024/2025, Semester 1 (Jan '25)", '', '', False, 2025),
+    ('Sesi 2024/2025, Semester 1 (Jan 2025)', '', '', False, None),
+    ("Ambilan Sesi 2024/2025, Semester 1 (Jan '25)", '', '', False, None),
     # h3r5: real starters or doubtful
     ('Sesi 2024/2025Semester II', '', '', False, 2025),
     ('Sesi Akademik 2024/2025Ambilan Februari', '', '', False, 2025),
@@ -232,7 +235,7 @@ PROBES = [
     ('Ambilan Sesi 2024/2025', '28 Dis 2024 / 2 Jan 2025', '', False, 2024),
     ('Ambilan Julai 2025', '', '', False, 2025),
     ('Intake: March 2025 (Session 2024/2025)', '', '', False, 2025),
-    ('Academic Session 2024/2025, Semester 2 (February 2025 intake)', '', '', False, 2025),
+    ('Academic Session 2024/2025, Semester 2 (February 2025 intake)', '', '', False, None),
     ('Sem II 2024/2025', '', '', False, 2025),
     ('Session 2024/2025 Sem. 2', '', '', False, 2025),
     ('Semester Two, 2024/2025', '', '', False, 2025),
@@ -269,12 +272,12 @@ PROBES = [
     ('Semester 1 2024/2025', '', '', False, 2024),
     ('Semester I Sesi 2024/2025 (Ambilan Februari)', '', '', False, 2025),
     ('Semester 1, Session 2024/2025 (March intake)', '', '', False, 2025),
-    ('Sem 1 2024/2025 Feb', '', '', False, 2025),
+    ('Sem 1 2024/2025 Feb', '', '', False, None),
     ('Intake 2024/2025 (II)', '', '', False, 2024),
     ('Sesi 2024/2025 (Ambilan II)', '', '', False, 2025),
     ('Ambilan 2024 (tangguh ke 2025)', '', '', False, None),
     ('UPU 2024 Ambilan 2025', '', '', False, None),
-    ('Ambilan Sesi 2024/2025 Semester 2 bermula 3 Mac 2025', '', '', False, 2025),
+    ('Ambilan Sesi 2024/2025 Semester 2 bermula 3 Mac 2025', '', '', False, None),
     ('Ambilan Julai 2024 / Januari 2025', '', '', False, None),
     ('Jan 2025 Intake', '', '', False, 2025),
     ("Intake Jan '25", '', '', False, None),
@@ -294,7 +297,7 @@ PROBES = [
     ('Ambilan 2024/2025 Mei', '', '', False, 2024),
     ('Pengambilan Sesi Jun 2025 / Sesi 2024/2025', '', '', False, 2025),
     ('Ambilan Sesi Julai 2024/2025', '14 Julai 2025', '', False, 2025),
-    ('Sesi Ogos 2024/2025', '', '', False, 2024),
+    ('Sesi Ogos 2024/2025', '', '', False, None),
     ('Semester 1 Sesi 2024/2025', '1 Julai 2025', '', False, 2025),
     ('Program Asasi 2024/2025 Semester 2', '', '', False, 2025),
     ('2024/2025Sem2', '', '', False, 2025),

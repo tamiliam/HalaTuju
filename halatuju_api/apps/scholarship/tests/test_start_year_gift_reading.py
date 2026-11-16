@@ -66,31 +66,32 @@ class TheCorpusShapes(SimpleTestCase):
 
     def test_an_early_intake_month_gives_the_second_year(self):
         # A January-to-April intake month written without its year is the session's second half.
+        # Eleventh review: only on a line holding an admission word (Ambilan, Kemasukan, Intake...).
         for intake in ('Sesi 2024/2025 Ambilan Februari', 'Ambilan Mac Sesi 2024/2025', 'Session 2024-25 Feb intake',
-                       'Intake: January, Sesi 2024/2025', 'Sesi 2024/2025 Semester Februari'):
+                       'Intake: January, Sesi 2024/2025'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (2025, 'session_second'))
-        self.assertEqual(gift_reading('Sesi Ogos 2024/2025'), (2024, 'session_first'))
+        self.assertEqual(gift_reading('Ambilan Ogos 2024/2025'), (2024, 'session_first'))
 
-    def test_a_month_on_a_line_with_no_intake_word_is_no_intake_month(self):
-        # Lead's decision (review 8): a month counts only on a line holding an intake / semester
-        # word. Sesi / Session is not one.
-        for intake in ('Sesi 2026/2027, tutup 30 April', 'Sesi 2026/2027 (mendaftar sebelum Mac)',
-                       'Session 2026-27 February', 'Sesi 2026/27 Februari'):
+    def test_a_month_on_a_line_with_no_admission_word_is_unknown(self):
+        # Eleventh review (lead's rules A / C): a month is never ignored. With no admission word on its
+        # line (Sesi, Session, Semester and Sem are none) it is unknown, not the session's first year.
+        for intake in ('Sesi 2026/2027 (mendaftar sebelum Mac)', 'Session 2026-27 February', 'Sesi 2026/27 Februari',
+                       'Sesi Ogos 2024/2025', 'Sesi 2024/2025 Semester Februari', 'SEPTEMBER SESI AKADEMIK 2026/2027'):
             with self.subTest(intake=intake):
-                self.assertEqual(gift_reading(intake), (2026, 'session_first'))
+                self.assertEqual(gift_reading(intake), (None, 'unclear_month'))
 
     def test_a_month_on_a_line_with_an_intake_word_is_the_intake_month(self):
         # Review 8: the month need not sit next to the word, only on its line.
         for intake in ('Ambilan Sesi 2024/25Feb', 'Ambilan Sesi 2024-25 Mac', 'Ambilan Sesi 2024-25 (Mac)',
-                       'Ambilan 2024-25 Jan', 'Sem 1 2024/2025 Feb', 'Ambilan Sesi 2024/2025: Februari',
+                       'Ambilan 2024-25 Jan', 'Ambilan Sesi 2024/2025: Februari',
                        'Ambilan Sesi 2024/2025_Feb', 'Ambilan Sesi 2024/2025 Sem I (Feb)'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (2025, 'session_second'))
         self.assertEqual(_state('Ambilan Sesi 2024/2025: Februari'), 'inside')
         self.assertEqual(gift_reading('Kemasukan Sesi 2024/2025 Ogos'), (2024, 'session_first'))
-        # Only the intake word's own line: a month on another line is not read.
-        self.assertEqual(gift_reading('Sesi 2024/2025\nAmbilan\nTarikh tutup: 30 April'), (2024, 'session_first'))
+        # Only the admission word's own line: a month on another line is unknown, never passed over.
+        self.assertEqual(gift_start_year('Sesi 2024/2025\nAmbilan\nTarikh tutup: 30 April'), None)
         self.assertEqual(gift_reading('Sesi 2024/2025\nAmbilan Februari'), (2025, 'session_second'))
 
     def test_a_sesi_ii_beside_a_first_semester_or_year_is_the_second_year(self):
@@ -218,16 +219,17 @@ class OtherUnknowns(SimpleTestCase):
 
 class ASessionLineWithAnotherDate(SimpleTestCase):
     """Lead's rule, 16 Nov 2026 (owner: "why complicate?"): WHEN IN DOUBT, UNKNOWN. A session line
-    with no reporting date reads (1) the session alone; (2) ONE date or month-year straight after a
-    start word, in the session's two years; (3) anything else beside the session is unknown."""
+    with no reporting date reads (1) the session alone; (2) ONE date or month-year straight after an
+    admission phrase, in the session's two years; (3) anything else beside the session is unknown."""
 
-    def test_a_date_after_a_start_word_reads_its_year(self):
+    def test_a_date_after_an_admission_phrase_reads_its_year(self):
         # Ninth review (Opus): numeric and month-name dates behave the same.
         for intake in ('Sesi 2024/2025, Tarikh Kemasukan: 10/03/2025', 'Sesi 2024/2025 Tarikh Mendaftar 3/3/2025',
-                       'Sesi 2024/2025 mulai 17.02.2025', 'Session 2024/2025 commencing 3 March 2025',
-                       'Sesi 2024/2025 Tarikh Lapor Diri: 3 Mac 2025', 'Sesi 2024/2025 bermula 2025-03-03',
-                       'Ambilan Februari 2025 Sesi 2024/2025', 'Sesi 2024/2025, Semester 1 (Jan 2025)',
-                       'Sesi Akademik 2024/2025 Kemasukan Februari 2025', 'Intake: March 2025 (Session 2024/2025)'):
+                       'Sesi 2024/2025 Tarikh Lapor Diri: 3 Mac 2025', 'Sesi 2024/2025 Lapor Diri 2025-03-03',
+                       'Ambilan Februari 2025 Sesi 2024/2025', 'Sesi 2024/2025 Tarikh Pendaftaran 17.02.2025',
+                       'Sesi Akademik 2024/2025 Kemasukan Februari 2025', 'Intake: March 2025 (Session 2024/2025)',
+                       'Session 2024/2025, Date of Registration: 3 March 2025',
+                       'Session 2024/2025 Date of Admission 3 March 2025'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (2025, 'intake_date'))
         # The session may stand between the intake word and its month-year.
@@ -247,13 +249,17 @@ class ASessionLineWithAnotherDate(SimpleTestCase):
                        # lead's case, decided by the rule.
                        'Session 2024/25 Feb 2025', 'Sesi 2024/25 Februari 2025', 'Sesi 2024/2025 - Jan 2025',
                        'Sesi 2025/2026 (Tarikh: 26/02/2025)', 'Sesi 2024/2025 Pendaftaran 03-03-2025',
+                       # Eleventh review: mulai, bermula, commencing, starting, Semester / Sem start nothing.
+                       'Sesi 2024/2025 mulai 17.02.2025', 'Sesi 2024/2025 bermula 2025-03-03',
+                       'Sesi 2024/2025, Semester 1 (Jan 2025)', 'Session 2024/2025 starting 3 March 2025',
                        # A year outside the session's two years.
                        'Intake Sept 2023 - Session 2025/2026', 'Sesi 2025/2026 bermula 1 Ogos 2024',
                        # A clash with an intake month or an intake already on the line.
                        'Ambilan Februari Sesi 2024/2025 bermula 2 September 2024',
                        'Sesi II 2024/2025 bermula 2 September 2024', 'Sesi 1 2024/2025 mulai 3 Mac 2025'):
             with self.subTest(intake=intake):
-                self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
+                # The reason may be the date or a loose month beside it (unclear_date / _month).
+                self.assertIsNone(gift_start_year(intake))
         self.assertEqual(_state('Sesi 2025/2026 Rujukan UPU/2024/77'), 'unknown')
 
     def test_a_plain_intake_year_beside_a_session_reads(self):
@@ -268,7 +274,6 @@ class ASessionLineWithAnotherDate(SimpleTestCase):
         self.assertEqual(gift_reading('Sesi 2024/2025 mulai 2025'), (None, 'unclear_date'))
 
     def test_a_session_line_with_no_other_date_is_unchanged(self):
-        self.assertEqual(gift_reading('Sesi 2026/2027, tutup 30 April'), (2026, 'session_first'))
         self.assertEqual(gift_reading('Ambilan Sesi 2024-25 Mac'), (2025, 'session_second'))
         self.assertEqual(gift_reading('Sesi 2025/2026 (S.P.M. 2024)'), (2025, 'session_first'))
         self.assertEqual(gift_reading('Sesi 2025/2026 kod UH2024'), (2025, 'session_first'))
@@ -278,7 +283,7 @@ class ASessionLineWithAnotherDate(SimpleTestCase):
 
 class TenthReviewWhenInDoubtUnknown(SimpleTestCase):
     """Tenth review (Opus), WHEN IN DOUBT, UNKNOWN: only 20xx years are read, so a date the reader
-    cannot date stops the reading; an exam's session is no session; a break word starts no course."""
+    cannot date stops the reading; an exam's session is no session."""
 
     def test_a_reporting_date_with_no_20xx_year_makes_the_reading_unknown(self):
         # Present but undatable: the session (or intake line) is NOT read in its place.
@@ -302,7 +307,7 @@ class TenthReviewWhenInDoubtUnknown(SimpleTestCase):
                 self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
         # A session's own two-digit tail and a full 20xx date are not one.
         self.assertEqual(gift_reading('Sesi 2/2024/2025'), (2025, 'session_second'))
-        self.assertEqual(gift_reading('Sesi 2024/2025 mulai 17.02.2025'), (2025, 'intake_date'))
+        self.assertEqual(gift_reading('Sesi 2024/2025 Tarikh Kemasukan 17.02.2025'), (2025, 'intake_date'))
 
     def test_a_session_straight_after_an_exam_word_is_an_exam_line(self):
         for intake in ('Lepasan STPM 2024/2025', 'STPM 2024/2025 Ijazah Sarjana Muda', 'SPM 2024/25',
@@ -315,15 +320,86 @@ class TenthReviewWhenInDoubtUnknown(SimpleTestCase):
         # An exam word that does not stand straight before the session leaves it a session.
         self.assertEqual(gift_reading('Calon STPM Sesi 2024/2025'), (2024, 'session_first'))
 
-    def test_a_start_word_after_a_break_word_starts_no_course(self):
-        # The holiday's date is not the intake's: with no other start word straight before it, unknown.
+    def test_a_holiday_date_is_unknown(self):
+        # Eleventh review: no break-word list; "bermula" / "mulai" start nothing at all.
         for intake in ('Sesi 2024/2025 Semester 1, cuti semester bermula 1 Jan 2025',
                        'Sesi 2024/2025, cuti bermula 1 Jan 2025', 'Sesi 2024/2025 Sem 1, cuti sem mulai 1 Jan 2025',
                        'Session 2024/2025 Semester 1, semester break starting 3 Feb 2025',
-                       'Session 2024/2025, holiday commencing 3 Feb 2025'):
+                       'Session 2024/2025, holiday commencing 3 Feb 2025', 'Sesi 2024/2025 bermula 1 Jan 2025'):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
-        self.assertEqual(gift_reading('Sesi 2024/2025 bermula 1 Jan 2025'), (2025, 'intake_date'))
+
+
+class EleventhReviewSimplified(SimpleTestCase):
+    """Lead's rule, 16 Nov 2026 - SIMPLIFY, no word lists: the start words are ONLY admission phrases;
+    a month or date on a session line is never ignored (it is read by an admission phrase, or the
+    reading is unknown). One test per case the lead named."""
+
+    def _unknown(self, intake):
+        self.assertIsNone(gift_start_year(intake))
+        self.assertEqual(_state(intake), 'unknown')
+
+    def test_bermula_and_a_month(self):
+        self._unknown('Sesi 2024/2025 bermula Februari')
+
+    def test_mulai_and_a_month(self):
+        self._unknown('Sesi 2024/2025 mulai Mac')
+
+    def test_kuliah_bermula_and_a_day_and_month(self):
+        self._unknown('Sesi 2024/2025, kuliah bermula 3 Februari')
+
+    def test_commencing_and_a_full_date(self):
+        self._unknown('Session 2024/2025 commencing 3 March 2025')
+
+    def test_lapor_diri_and_a_two_digit_year(self):
+        self._unknown('Sesi 2024/2025 Lapor Diri 16 Feb 25')
+
+    def test_an_apostrophe_two_digit_year(self):
+        self._unknown("Ambilan Sesi 2024/2025, Semester 1 (Jan '25)")
+
+    def test_a_month_followed_by_a_two_digit_year(self):
+        self._unknown('Ambilan Sesi 2024/2025 Februari 25')
+
+    def test_a_holiday_starting(self):
+        self._unknown('Sesi 2024/2025 Semester 1, Cuti Pertengahan Semester: bermula 2 Jan 2025')
+
+    def test_a_test_starting(self):
+        self._unknown('Sesi 2024/2025 Semester 1, ujian bermula 6 Jan 2025')
+
+    def test_an_exam_starting(self):
+        self._unknown('Sesi 2024/2025 Semester 1, peperiksaan akhir bermula 6 Jan 2025')
+
+    def test_fees_from(self):
+        self._unknown('Sesi 2024/2025 Semester 1, yuran mulai Feb 2025')
+
+    def test_a_holiday_month_even_beside_an_admission_word(self):
+        self._unknown('Sesi 2024/2025 Semester 1, cuti semester bermula Januari')
+        self.assertEqual(gift_reading('Ambilan Sesi 2024/2025 Semester 1, cuti semester bermula Januari'),
+                         (None, 'unclear_month'))
+
+    def test_tarikh_kemasukan_and_a_full_date(self):
+        self.assertEqual(gift_reading('Sesi 2024/2025, Tarikh Kemasukan: 10/03/2025'), (2025, 'intake_date'))
+
+    def test_ambilan_and_an_early_month(self):
+        self.assertEqual(gift_reading('Ambilan Sesi 2024-25 Mac'), (2025, 'session_second'))
+
+    def test_ambilan_and_a_late_month(self):
+        self.assertEqual(gift_reading('Ambilan September Sesi 2024/2025'), (2024, 'session_first'))
+
+    def test_sem_is_no_admission_word(self):
+        self.assertEqual(gift_reading('Sem 1 2024/2025 Feb'), (None, 'unclear_month'))
+
+    def test_a_closing_date_with_no_year(self):
+        self._unknown('Sesi 2026/2027, tutup 30 April')
+
+    def test_a_bare_session(self):
+        self.assertEqual(gift_reading('Sesi 2025/2026'), (2025, 'session_first'))
+
+    def test_a_bare_second_session(self):
+        self.assertEqual(gift_reading('Sesi II 2025/2026'), (2026, 'session_second'))
+
+    def test_a_second_intake_with_a_late_month_is_a_clash(self):
+        self.assertEqual(gift_reading('Sesi II 2024/2025 Ambilan September'), (None, 'both_intakes'))
 
 
 class ExamYearsAreNotStartYears(SimpleTestCase):
@@ -382,6 +458,19 @@ class OddUnicodeNeverRaises(SimpleTestCase):
         self.assertEqual(gift_reading('FİRST YEAR 2025/2026'), (2025, 'session_first'))
         self.assertEqual(gift_reading('ſecond semester 2025'), (2025, 'intake_year'))
         self.assertEqual(gift_reading('Sesi 2024/2025 Ambilan DİS'), (2024, 'session_first'))
+
+    def test_a_long_odd_line_reads_fast(self):
+        # No pattern backtracks badly on a long run of words, months or numbers (20,000 characters).
+        import time
+        n = 20000
+        for line in ('Sesi 2024/2025 ' + 'cuti bermula ' * (n // 13) + '1 Jan 2025',
+                     'Sesi 2024/2025 1/' + ' ' * n + '1/' + ' ' * n + 'x', 'STPM ' * (n // 5) + '2024/2025',
+                     'Ambilan Sesi 2024/2025 ' + 'Feb ' * (n // 4), 'Sesi 2024/2025\n' + 'Ambilan Feb\n' * (n // 12),
+                     'Sesi 2024/2025 ' + 'tarikh ' * (n // 7) + 'lapor diri 1 Feb 2025',
+                     'Ambilan Sesi 2024/2025 ' + '1 ' * (n // 2) + 'Feb'):
+            start = time.perf_counter()
+            gift_reading(line, '')
+            self.assertLess(time.perf_counter() - start, 1.0)
 
     def test_the_reader_never_raises(self):
         odd = ('İ', 'ı', 'ſ', 'K', 'ﬁ', 'ß', 'Ⅱ', '２０２５', '\u00a0', '\u200b', 'é', 'ம', '\ufffd')

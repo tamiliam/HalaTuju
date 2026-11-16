@@ -220,13 +220,17 @@ export const REVIEWER_FAQ: QA[] = [
         2026). The start year is read from her offer letter only, never from a date typed on the application:
         first the letter&rsquo;s reporting date; if it has none, a single year on the intake line; if it shows
         only a session, the session&rsquo;s first year (&ldquo;2024/25&rdquo; means 2024), or its second year
-        when it says Sesi 2, Sesi II, Semester 2, Semester II or Ambilan 2, or names a January-to-April month
-        (with no year) on a line with an intake or semester word (Ambilan, Kemasukan, Intake, Semester:
-        &ldquo;Ambilan Sesi 2024/2025: Februari&rdquo; means 2025). A date beside the session counts only
-        straight after a start word (Ambilan, Kemasukan, Tarikh Mendaftar, Lapor Diri, mulai, bermula and the
-        like) and inside the session; any other date on that line (a closing, letter, update or reference
-        date, or a date with a two-digit year such as &ldquo;16/02/25&rdquo;) makes it unclear, and an unclear
-        date is left for you to check. So is a reporting date with no full year (&ldquo;16 Februari&rdquo;). An exam year (SPM, STPM, SKM,
+        when it says Sesi 2, Sesi II, Semester 2, Semester II or Ambilan 2. A month or date beside the
+        session is never ignored. It counts only after an admission phrase (Tarikh Kemasukan, Tarikh
+        Mendaftar, Tarikh Pendaftaran, Lapor Diri, Ambilan, Pengambilan, Kemasukan, Intake, Admission, Date
+        of Registration): a full date inside the session gives its year (&ldquo;Tarikh Kemasukan:
+        10/03/2025&rdquo; means 2025), and a month with no year, on a line with such a phrase and no event
+        word (cuti, exam, ujian, yuran, tutup, bertarikh, dikemaskini and the like), gives the second year for
+        January to April and the first for May to December (&ldquo;Ambilan Sesi 2024-25 Mac&rdquo; means 2025).
+        Words such as mulai, bermula, commencing or Semester start nothing. Any other month or date on that
+        line (&ldquo;Sesi 2024/2025 bermula Februari&rdquo;, a closing or letter date, a date with no year or
+        a two-digit year such as &ldquo;16 Feb 25&rdquo;) makes it unclear, and an unclear date is left for
+        you to check. So is a reporting date with no full year (&ldquo;16 Februari&rdquo;). An exam year (SPM, STPM, SKM,
         MUET and the like) is never taken as the start year. It is left for you to check when the letter names a later semester or
         year (Year 2, Semester 3, final year, Upper Six, &ldquo;Part 4&rdquo;), even in the programme name;
         says readmission or credit transfer; is a confirmation letter that does not name her intake (Year 1,

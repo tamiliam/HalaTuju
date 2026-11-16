@@ -192,6 +192,17 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a eleventh review - simplify: only admission phrases start a course; a month on a session line is never ignored (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Lead's rule (decisions.md, eleventh review), for a session line with no reporting date:
+- **A. Never ignore a month or date.** Rule B or C uses it, or the reading is unknown.
+- **B. Start words are only admission phrases** (Tarikh Kemasukan / Mendaftar / Pendaftaran, (Tarikh) Lapor Diri, Ambilan, Pengambilan, Kemasukan, Intake, Admission, Date of Registration / Admission). mulai, bermula, commencing, starting, Semester / Sem removed; the break-word list removed with them. One 20xx date right after one, inside the session, gives its year.
+- **C. A month with no year** reads only on a line with an admission phrase and no event word (cuti, exam, ujian, yuran, tutup, bertarikh, dikemaskini...): Jan-Apr = second year, May-Dec = first. Otherwise unknown ("Sesi 2024/2025 bermula Februari", "Sem 1 2024/2025 Feb", "Sesi 2026/2027, tutup 30 April").
+- **D. Any other date is unknown**, incl. "16 Feb 25", "Februari 25", "Jan '25" and a day-month with no year ("3 Februari").
+- **E. Unchanged:** a bare session = first year, second for Sesi 2 / II, Semester 2 / II, Ambilan 2.
+- **FAQ.** The reviewer answer on "Course started in" states the rule.
+- **Tests.** `EleventhReviewSimplified` (one test per case) and a long-line speed test in `test_start_year_gift_reading.py`; 10 of 366 probe rows moved, all to unknown. Corpus split 245 / 26 / 15 (was 246 / 26 / 14): one letter inside -> unknown.
+
 ### fix: H3a tenth review - an undatable date is unknown; an exam's session is no session; a break word starts no course (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9.
