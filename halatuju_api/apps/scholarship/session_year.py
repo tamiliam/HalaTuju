@@ -13,22 +13,28 @@ offer letters have a reporting date. Otherwise the title says the year like 2026
      reading unknown: the letter names a date the reader cannot date, so no later step guesses;
   2. else ONE year on the intake line ("2026", "Ambilan Julai 2026") -> that year;
   3. else a SESSION (2024/2025, 2024/25, 2024-2025; not one straight after an exam word: "Lepasan STPM
-     2024/2025" is an exam line, unknown). Lead's rule, 16 Nov - WHEN IN DOUBT, UNKNOWN:
-     a. NO other year, date or month-year on the line -> its FIRST year; its SECOND year with a
+     2024/2025" is an exam line, unknown). Lead's rule, 16 Nov - SIMPLIFY; WHEN IN DOUBT, UNKNOWN.
+     A. A month or a date on the session line is NEVER ignored: B or C below uses it, or the reading
+        is unknown.
+     B. The only start words are ADMISSION phrases: Tarikh Kemasukan / Mendaftar / Pendaftaran,
+        (Tarikh) Lapor Diri, Ambilan, Pengambilan, Kemasukan, Intake, Admission, Date of Registration
+        / Admission (not mulai, bermula, commencing, starting, Semester / Sem). ONE date or month-year
+        with a 20xx year right after one ("Tarikh Kemasukan: 10/03/2025", "Ambilan Feb 2025"; the
+        session may stand between) and in one of the session's two years -> that year. A plain year
+        right after an intake word reads whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023);
+     C. A month NAME with no year ("Februari") on a line holding an admission word (B) and NO event
+        word (cuti, break, holiday, vacation, recess, peperiksaan, exam, examination, ujian, test,
+        yuran, bayaran, fee, tutup, closing, bertarikh, dated, dikemaskini, updated): January-April
+        -> the session's second year, May-December -> its first ("Ambilan Sesi 2024-25 Mac" = 2025,
+        "Ambilan September Sesi 2024/2025" = 2024). On any other line -> unknown ("Sesi 2024/2025
+        bermula Februari", "Sem 1 2024/2025 Feb", "Sesi 2026/2027, tutup 30 April");
+     D. any other extra year, date or month-year -> unknown: a date with no 20xx year ("3 Februari",
+        "16/02/25", "16 Feb 25", "Februari 25", "Jan '25"; "25" is never read as 2025), a date not
+        right after an admission phrase ("Session 2024/2025 commencing 3 March 2025"), two dates, a
+        month beside a date, a year outside the session, a clash with an intake month or term;
+     E. no month, no date and no other year -> the session's FIRST year; its SECOND year with a
         second-intake word ("Sesi 2", "Sesi II", "Semester 2", "Semester II", "Ambilan 2"; a Sesi II
-        beside a Semester 1 / Year 1 too) or a January-to-April month NAME on a line holding an intake
-        / semester word (Ambilan, Kemasukan, Intake, Admission, Sem, Semester - not Sesi / Session):
-        "Ambilan Sesi 2024/2025: Februari" = 2025; "Sesi 2026/2027, tutup 30 April" holds none = 2026;
-     b. ONE other date or month-year ("10/03/2025", "17.02.2025", "Feb 2025", "3 March 2025") RIGHT
-        AFTER a start word (Ambilan, Kemasukan, Tarikh Kemasukan / Mendaftar / Pendaftaran, Lapor Diri,
-        Intake, Admission, mulai, bermula, commencing, starting, Semester / Sem) and in one of the
-        session's two years -> that year ("Sesi 2024/2025 mulai 17.02.2025" = 2025). A start word
-        straight after a break word is none ("cuti semester bermula 1 Jan 2025"). A plain year
-        right after an intake word reads too, whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023);
-     c. ANY other extra year, date or month-year (a closing, letter, update or reference date, two
-        dates, no start word, a clash with an intake month or term, a year outside the session, a
-        numeric date with a two-digit year - "Lapor Diri 16/02/25" is never read as 2025) ->
-        unknown ("Session 2024/25 Feb 2025" has no start word, so unknown);
+        beside a Semester 1 / Year 1 too);
   4. else unknown.
 
 UNKNOWN always, whatever the date: a later term (Year 2+, Semester 3+, final year, Upper Six, Y2S1,
@@ -106,34 +112,34 @@ _YEAR_ONE_RE = re.compile(
     r'(?:1|satu|pertama|one|i)(?![a-z\d])|\b(?:first|1st)[\s\-]+(?:year|yr)\b|\bY\s*1\s*S\s*\d\b'
     r'|\b(?:tingkatan|form)\s*(?:6|enam|six)\s*(?:bawah|lower)\b|\blower\s*(?:(?:form|tingkatan)\s*)?(?:6|six)\b'
     r'|\bL\s*6\b', re.I)
-# A month counts as the INTAKE month only on a line holding an intake / semester word ("Ambilan
-# Sesi 2024/2025: Februari", "Sem 1 2024/2025 Feb", "Feb intake"). Sesi / Session is not one:
-# "Sesi 2026/2027, tutup 30 April" names no intake month (lead's decision, 16 Nov 2026).
-_INTAKE_LINE_RE = re.compile(
-    r'(?<![a-z])(?:pengambilan|ambilan|kemasukan|intake|admission|semester|sem)(?![a-z])', re.I | re.A)
-# ---- A session line's other dates (lead's rule, 16 Nov 2026: when in doubt, unknown) ----------------
-# A word that starts the course. A date or month-year straight after one is the intake's date.
-_START_RE = re.compile(
-    r'(?<![a-z])(?:tarikh\s+(?:kemasukan|mendaftar|pendaftaran)|lapor\s+diri|pengambilan|ambilan|kemasukan'
-    r'|intake|admission|mulai|bermula|commencing|starting|semester|sem)(?![a-z])', re.I | re.A)
-# A break word: a start word straight after one starts a holiday, not the course ("cuti semester
-# bermula 1 Jan 2025", "semester break starting Feb 2025"). Read on the text just before the start word.
-_BREAK_BEFORE_RE = re.compile(r'(?<![a-z])(?:cuti(?:\s+(?:semester|sem))?|break|holidays?)[\s:,\-]*$', re.I | re.A)
-# A numeric date with a two-digit year ("16/02/25", "16.2.25"): on a session line it is an extra date
-# (unknown), never expanded to 20xx.
+# ---- A session line's months and dates (lead's rule, 16 Nov 2026: simplify; when in doubt, unknown) --
+# Rule B: the admission phrases, the ONLY start words. A date straight after one is the intake's
+# date; a month name with no year counts only on a line holding one (rule C).
+_ADMIT_PHRASE_RE = re.compile(
+    r'(?<![a-z])(?:tarikh\s+(?:kemasukan|mendaftar|pendaftaran)|(?:tarikh\s+)?lapor\s+diri|pengambilan|ambilan'
+    r'|kemasukan|intake|admission|date\s+of\s+(?:registration|admission))(?![a-z])', re.I | re.A)
+# Rule C: an event word on the line makes its month an event's month, not the intake's.
+_EVENT_RE = re.compile(
+    r'(?<![a-z])(?:cuti|breaks?|holidays?|vacations?|recess|peperiksaan|exams?|examinations?|ujian|tests?'
+    r'|yuran|bayaran|fees?|tutup|closing|bertarikh|dated|dikemaskini|updated)(?![a-z])', re.I | re.A)
+# Rule D: a numeric date with a two-digit year ("16/02/25", "16.2.25"), never expanded to 20xx; and,
+# beside a month name, a day before it ("3 Februari") or a one- or two-digit number after it
+# ("Feb 25", "Jan '25").
 _SHORT_DATE_RE = re.compile(r'(?<!\d)\d{1,2}\s*[/.\-]\s*\d{1,2}\s*[/.\-]\s*\d{2}(?!\d)')
+_DAY_BEFORE_RE = re.compile(r'(?<!\d)\d{1,2}\s*$')
+_NUMBER_AFTER_RE = re.compile(r"\.?\s*['‘’]?\s*\d{1,2}(?!\d)")
 # The intake words whose plain year counts beside any session ("Ambilan 2023 Sesi 2025/2026" = 2023).
 _INTAKE_WORD_RE = re.compile(r'(?:pengambilan|ambilan|kemasukan|intake|admission)', re.I)
-# What may stand between a start word and its date: spaces and stops, a term number ("Semester 1
-# (Jan 2025)"), Sesi / Session / Akademik and the session itself (masked '#': "Ambilan Sesi 2023/2024
-# Feb 2024").
+# What may stand between an admission phrase and its date: spaces and stops, a term number ("Ambilan
+# 2 (Feb 2025)"), Sesi / Session / Akademik and the session itself (masked '#': "Ambilan Sesi
+# 2023/2024 Feb 2024").
 _GAP_RE = re.compile(r'(?:[\s:;,.\-()#]|(?<![a-z])(?:sesi|session|akademik|academic|\d{1,2}|ii|i)(?![a-z\d]))*',
                      re.I | re.A)
 # The date a 20xx year belongs to: "10/03/" or "01/" before it, "-03-10" after it, or a month name
 # (and a day) before it ("3 March 2025", "Feb. 2025").
-_NUM_BEFORE_RE = re.compile(r'(?<!\d)(\d{1,2})\s*[/.\-]\s*(?:(\d{1,2})\s*[/.\-]\s*)?$')
-_NUM_AFTER_RE = re.compile(r'[-.](\d{1,2})(?:[-.]\d{1,2})?(?!\d)')
-_MONTH_YEAR_RE = re.compile(rf'(?:(?<!\d)\d{{1,2}}\s*)?(?<![a-z])({_MONTH})\.?,?\s*$', re.I | re.A)
+_NUM_BEFORE_RE = re.compile(r'(?<!\d)\d{1,2}\s*[/.\-]\s*(?:\d{1,2}\s*[/.\-]\s*)?$')
+_NUM_AFTER_RE = re.compile(r'[-.]\d{1,2}(?:[-.]\d{1,2})?(?!\d)')
+_MONTH_YEAR_RE = re.compile(rf'(?:(?<!\d)\d{{1,2}}\s*)?(?<![a-z]){_MONTH}\.?,?\s*$', re.I | re.A)
 # Line by line, as `str.splitlines` cuts them, keeping each line's place in the text.
 _LINE_RE = re.compile(r'[^\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029]+')
 # A year the scan damaged ("2O25", "202S"): the line cannot be read safely.
@@ -261,27 +267,21 @@ def _sessions(text):
     return sessions, taken
 
 
-def _month(token):
-    n = int(token)
-    return n if 1 <= n <= 12 else None
-
-
 def _unit(text, m):
-    """The date a 20xx year (an `_LINE_YEAR_RE` match) belongs to, as ``(start, end, year, kind,
-    month)``: kind 'date' for a numeric date or a month-year (month None when it cannot be read),
-    'year' for a plain year."""
+    """The date a 20xx year (an `_LINE_YEAR_RE` match) belongs to, as ``(start, end, year, kind)``:
+    kind 'date' for a numeric date or a month-year, 'year' for a plain year."""
     ys, ye = m.span(1)
     year, lo = int(m.group(1)), max(0, ys - 24)
     after = _NUM_AFTER_RE.match(text, ye)
     if after:                                            # "2025-03-10"
-        return ys, after.end(), year, 'date', _month(after.group(1))
+        return ys, after.end(), year, 'date'
     num = _NUM_BEFORE_RE.search(text, lo, ys)
     if num:                                              # "10/03/2025", "01/2025"
-        return num.start(), ye, year, 'date', _month(num.group(2) or num.group(1))
+        return num.start(), ye, year, 'date'
     name = _MONTH_YEAR_RE.search(text, lo, ys)
     if name:                                             # "3 March 2025", "Feb 2025"
-        return name.start(), ye, year, 'date', _MONTH_NUM.get(name.group(1).lower())
-    return ys, ye, year, 'year', None
+        return name.start(), ye, year, 'date'
+    return ys, ye, year, 'year'
 
 
 def _extras(text, taken):
@@ -299,55 +299,64 @@ def _extras(text, taken):
                 return out
     for m in _SHORT_DATE_RE.finditer(text):
         if not any(i in taken for i in range(m.start(), m.end())):
-            out.append((m.start(), m.end(), None, 'short', None))
+            out.append((m.start(), m.end(), None, 'short'))
             if len(out) == 2:
                 break
     return out
 
 
 def _start_word(text, at, taken):
-    """The start word (`_START_RE`) that the date at ``at`` follows straight on (only `_GAP_RE`
-    between, the session masked as '#'), else None. A start word straight after a break word
-    (`_BREAK_BEFORE_RE`) is none."""
+    """The admission phrase (`_ADMIT_PHRASE_RE`, rule B) that the date at ``at`` follows straight on
+    (only `_GAP_RE` between, the session masked as '#'), else None."""
     last = None
-    for m in _START_RE.finditer(text, 0, at):
-        if not _BREAK_BEFORE_RE.search(text, max(0, m.start() - 24), m.start()):
-            last = m
+    for last in _ADMIT_PHRASE_RE.finditer(text, 0, at):
+        pass
     if last is None:
         return None
     gap = ''.join('#' if i in taken else c for i, c in enumerate(text[last.end():at], last.end()))
     return last if _GAP_RE.fullmatch(gap) else None
 
 
+def _loose_months(text, extras, taken):
+    """Rule C: the month names outside the dated `_extras`, as month numbers, and None or the reason
+    one of them cannot be used (rule A: never ignored): 'unclear_date' for a day or a short year
+    beside it (rule D), 'unclear_month' for a line with no admission word or with an event word."""
+    months = set()
+    for line in _LINE_RE.finditer(text):
+        usable = _ADMIT_PHRASE_RE.search(line.group(0)) and not _EVENT_RE.search(line.group(0))
+        for w in _MONTH_RE.finditer(text, line.start(), line.end()):
+            if any(e[0] <= w.start() < e[1] for e in extras):
+                continue
+            day = _DAY_BEFORE_RE.search(text, max(line.start(), w.start() - 4), w.start())
+            if (day and day.start() not in taken) or _NUMBER_AFTER_RE.match(text, w.end()):
+                return months, 'unclear_date'
+            if not usable:
+                return months, 'unclear_month'
+            months.add(_MONTH_NUM[w.group(1).lower()])
+    return months, None
+
+
 def _session_reading(text, session, taken, terms):
-    """One session's line (lead's rule, 16 Nov 2026; module docstring step 3)."""
+    """One session's line (lead's rule, 16 Nov 2026; module docstring step 3, rules A-E)."""
     s, s1 = session
     extras = _extras(text, taken)
-    # The months written without a year; those on a line holding an intake / semester word are
-    # intake months.
-    loose, months = set(), set()
-    for line in _LINE_RE.finditer(text):
-        intake_line = _INTAKE_LINE_RE.search(line.group(0))
-        for w in _MONTH_RE.finditer(text, line.start(), line.end()):
-            mo = _MONTH_NUM.get(w.group(1).lower())
-            if mo and not any(e[0] <= w.start() < e[1] for e in extras):
-                loose.add(mo)
-                if intake_line:
-                    months.add(mo)
+    months, why = _loose_months(text, extras, taken)
+    if why:
+        return GiftReading(None, why)
     early = any(mo <= 4 for mo in months)              # January to April: the session's second half
+    late = any(mo >= 5 for mo in months)
     second = 'second_intake' in terms
-    # A first and a second intake together: "Semester 1 / 2", "Sesi I Ambilan Februari",
-    # "Ambilan September / Februari". (Semester 1 with a February month is a February starter's first
-    # semester, and Semester 1 / Year 1 with a Sesi II is the second intake's: no clash.)
+    # A first and a second intake together: "Semester 1 / 2", "Sesi I Ambilan Februari", "Ambilan
+    # September / Februari", "Sesi II Ambilan September". (Semester 1 / Year 1 with a Sesi II or a
+    # February month is the second intake's first term: no clash.)
     if ('first' in terms and second and 'second_session' not in terms) \
-            or ('first_intake' in terms and (second or early)) \
-            or (early and any(mo >= 5 for mo in months)):
+            or ('first_intake' in terms and (second or early)) or (late and (early or second)):
         return GiftReading(None, 'both_intakes')
     if not extras:
         return GiftReading(s1, 'session_second') if second or early else GiftReading(s, 'session_first')
-    if len(extras) > 1:
+    if len(extras) > 1 or months:
         return GiftReading(None, 'unclear_date')
-    (start, _, year, kind, month), = extras
+    (start, _, year, kind), = extras
     if kind == 'short':
         return GiftReading(None, 'unclear_date')
     word = _start_word(text, start, taken)
@@ -357,9 +366,8 @@ def _session_reading(text, session, taken, terms):
                 and re.fullmatch(r'[\s:.\-(]*', text[word.end():start]):
             return GiftReading(year, 'intake_year')
         return GiftReading(None, 'unclear_date')
-    # A date or month-year after a start word, in the session, with no other month or intake beside it.
-    if word is None or year not in session or loose - {month} or (second and year != s1) \
-            or ('first_intake' in terms and year != s):
+    # Rule B: a date or month-year after an admission phrase, in the session, agreeing with the terms.
+    if word is None or year not in session or (second and year != s1) or ('first_intake' in terms and year != s):
         return GiftReading(None, 'unclear_date')
     return GiftReading(year, 'intake_date')
 
