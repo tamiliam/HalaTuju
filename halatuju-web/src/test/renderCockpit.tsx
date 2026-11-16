@@ -127,6 +127,8 @@ export function primeCockpitApi(app: AdminScholarshipDetail): void {
   api.getSources.mockResolvedValue({ sources: [] })
   // Request #55: the notes card's own fetch. No notes, nothing to add — the card stays quiet.
   api.getReviewerNotes.mockResolvedValue({ notes: [], window_open: false, can_add: false, max_length: 2000 })
+  // THANKS: the graduation thank-you card's own fetch (a `review` holder only). None yet: no card.
+  api.getCaseGraduationMessages.mockResolvedValue({ messages: [] })
 }
 
 export interface CockpitOptions extends CockpitAuth {

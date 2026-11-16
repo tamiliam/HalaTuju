@@ -650,6 +650,8 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminGuardianCallView': 'gate',
         # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
         'AdminReviewerNotesView': 'gate+super/org_admin write',
+        # THANKS: the `review` key, then _scoped_application (the detail GET's fence).
+        'AdminCaseGraduationMessagesView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

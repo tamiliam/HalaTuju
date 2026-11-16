@@ -1,9 +1,15 @@
-"""Graduation messages awaiting moderation, and the bursary agreement countersignature.
+"""Graduation thank-you moderation, and the bursary agreement countersignature.
 
 Moved verbatim from the package root at code health H12. Part of the `views_admin`
 package: every name below is re-exported from `views_admin/__init__.py`, so `urls.py`
 and every importer are unchanged.
+
+Sprint THANKS (owner 2026-11-16): a thank-you is read and moderated from the student's CASE
+PAGE by whoever holds the `review` KEY (a super holds every key). The role label decides
+nothing here. The list that fed the old moderation queue was retired (TD-496, ruling B).
 """
+import logging
+
 from rest_framework import status
 from rest_framework.response import Response
 from ..models import GraduationMessage
@@ -12,6 +18,14 @@ from ..agreement_guard import AgreementNotCurrent
 from ..serializers_admin import AdminGraduationMessageSerializer
 
 from .base import _AdminBase
+
+logger = logging.getLogger('apps.scholarship.views_admin')
+
+
+def may_moderate_thanks(admin):
+    """THE one rule for a graduation thank-you: the `review` key (owner 2026-11-16). The org fence
+    (`_org_allows`, 404 cross-org) stays the caller's."""
+    return admin is not None and admin.has_perm('review')
 
 
 def _not_current(exc):
@@ -22,16 +36,18 @@ def _not_current(exc):
 
 class AdminGraduationMessageReviewView(_AdminBase):
     """POST /api/v1/admin/graduation-messages/<id>/review/ — approve or reject a
-    graduation thank-you (F9a). Reviewer + super only (viewer is read-only). Body:
+    graduation thank-you (F9a). Gated on the `review` key (THANKS, owner 2026-11-16). Body:
     ``{action: 'approve'|'reject', scrubbed_text?, review_note?}``. On approve the
     ``scrubbed_text`` (defaults to the raw text) is RE-SCANNED so a staff edit can
     never reintroduce an identifier (400 `scrubbed_leak`). Only a `pending` message
     can be approved; `pending`/`blocked` can be rejected."""
 
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not may_moderate_thanks(admin):
+            return self._deny_role()
         # org-fence: _org_allows(message.application) checked immediately below.
         message = GraduationMessage.objects.select_related(
             'application', 'application__profile').filter(pk=pk).first()
@@ -60,6 +76,29 @@ class AdminGraduationMessageReviewView(_AdminBase):
             return Response({'error': exc.code, 'code': exc.code},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminGraduationMessageSerializer(message).data)
+
+
+class AdminCaseGraduationMessagesView(_AdminBase):
+    """GET /api/v1/admin/scholarship/applications/<pk>/graduation-messages/ — the case's
+    graduation thank-yous, newest first, for the case page's panel (THANKS). Two gates, both
+    needed: the `review` key (nobody without it reads a thank-you), then the case's own read
+    fence (`_scoped_application`, the detail GET's: an unassigned reviewer 403, another
+    organisation 404). A separate fetch, so the applicant-detail GET keeps its pinned query
+    count. The text may name the student, so no log line carries it."""
+
+    def get(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not may_moderate_thanks(admin):
+            return self._deny_role()
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        logger.info('AUDIT graduation_messages_read admin_id=%s app_id=%s', admin.id, app.id)
+        # org-fence: `app` came through _scoped_application (the case page's own fence) just above.
+        rows = GraduationMessage.objects.filter(application=app).order_by('-created_at', '-id')
+        return Response({'messages': AdminGraduationMessageSerializer(rows, many=True).data})
 
 
 class _BursaryAdminBase(_AdminBase):

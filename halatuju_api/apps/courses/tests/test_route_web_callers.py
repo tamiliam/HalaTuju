@@ -49,9 +49,6 @@ NOT_CALLED_FROM_WEB = {
         'TD-387: the super-only path exists, the screen needs a Stitch prototype first.',
     'api/v1/admin/referral-partners/<int:org_id>/':
         'TD-387: as the list above.',
-    'api/v1/admin/graduation-messages/<int:pk>/review/':
-        'TD-496 ruling B retired the moderation LIST and kept the review action; no screen calls '
-        'it. Revisit with the owner whether moderation returns or this goes too.',
     'api/v1/admin/sponsorships/':
         'decisions.md (staff-permissions table): the same rows reach the console through the '
         'sponsor detail; the list route is read by no screen.',

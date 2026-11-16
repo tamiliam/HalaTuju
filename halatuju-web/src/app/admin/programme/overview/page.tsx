@@ -2,8 +2,8 @@
 /**
  * Programme Overview — the page you land on inside a gift, and the answer to "how is this doing?".
  *
- * ⚠⚠ **THE PAGE RENDERS WHAT ARRIVED, NEVER WHAT A ROLE "SHOULD" SEE.** `SECTIONS_BY_ROLE` on the
- * server chooses the key set before anything is serialised, so a reviewer's payload has no `money`
+ * ⚠⚠ **THE PAGE RENDERS WHAT ARRIVED, NEVER WHAT A ROLE "SHOULD" SEE.** `sections_for` on the
+ * server chooses the key set from the reader's KEYS before anything is serialised (LABELS: the role is only a label), so a reviewer's payload has no `money`
  * key at all and a finance admin's has no `funnel`. Every block is gated on `has(data, …)` and on
  * nothing else. There is deliberately no `if (role === …)` in this file: a page that fetched
  * everything and drew a subset would be a side door into Payments and Spending for the two roles

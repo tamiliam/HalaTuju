@@ -5,10 +5,10 @@
 import { adminFetch, adminMutate, giftQuery } from './client'
 import type { ApiOptions } from './client'
 
-// ── Programme Overview — "how is this gift doing?", shaped by role ───────────
+// ── Programme Overview — "how is this gift doing?", shaped by the reader's keys
 //
 // ⚠⚠ **EVERY SECTION IS OPTIONAL BECAUSE THE SERVER DECIDES WHICH ONES EXIST.**
-// `programme_overview.SECTIONS_BY_ROLE` chooses the key set BEFORE anything is serialised, so a
+// `programme_overview.sections_for` chooses the key set from the reader's keys BEFORE anything is serialised, so a
 // reviewer's payload has no `money` key to hide and a finance admin's has no `funnel`. The page
 // renders by PRESENCE (`programmeOverview.has`) and never by role — a page that fetched
 // everything and drew a subset would be a side door into pages the menu already withholds.

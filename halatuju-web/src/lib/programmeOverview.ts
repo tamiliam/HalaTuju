@@ -349,8 +349,8 @@ export function weekLabel(iso: string): string {
 /**
  * Is this section actually here?
  *
- * ⚠⚠ **THE PAGE RENDERS BY PRESENCE, NEVER BY ROLE.** `SECTIONS_BY_ROLE` chose the key set
- * server-side before anything was serialised, so the honest question on the client is "did it
+ * ⚠⚠ **THE PAGE RENDERS BY PRESENCE, NEVER BY ROLE.** `sections_for` chose the key set
+ * server-side, from the reader's keys, before anything was serialised, so the honest question on the client is "did it
  * arrive?" — and asking it this way means a client-side role check can never accidentally widen
  * what a reviewer sees, because there is no client-side role check to get wrong.
  *

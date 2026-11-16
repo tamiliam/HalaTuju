@@ -4226,6 +4226,50 @@
           "self_assign": "You cannot give a case to yourself."
         }
       },
+      "graduationThanks": {
+        "title": "Graduation thank-you",
+        "intro": "The student's thank-you reaches their sponsor only after you approve it. The sponsor sees the approved text and the student's reference, never their name.",
+        "sent": "Sent {date}",
+        "studentWrote": "What the student wrote",
+        "sponsorSees": "Text the sponsor will see",
+        "editHint": "Remove anything that could name the student. We check the text again before it is sent.",
+        "sponsorSaw": "Text sent to the sponsor",
+        "noteHeading": "Note",
+        "decidedBy": "Decided by {name}, {date}",
+        "someone": "a staff member",
+        "approve": "Approve and send",
+        "reject": "Reject",
+        "cancel": "Cancel",
+        "working": "Saving…",
+        "rejectTitle": "Reject this thank-you?",
+        "rejectHint": "It will not be sent. A note is optional and stays with the case.",
+        "rejectPlaceholder": "Why (optional)",
+        "blockedReason": "Held back: it may name the student ({fields}).",
+        "blockedHint": "The student must edit it and send it again. You can reject it now.",
+        "earlier": "Earlier versions ({count})",
+        "loadError": "Could not load the graduation thank-you.",
+        "status": {
+          "pending": "Waiting for review",
+          "blocked": "Held back",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "field": {
+          "name": "name",
+          "school": "school",
+          "city": "town",
+          "nric": "IC number",
+          "phone": "phone number",
+          "email": "email"
+        },
+        "error": {
+          "scrubbed_leak": "The text still names the student. Remove the name, school, town, IC number, phone or email, then approve again.",
+          "not_reviewable": "This thank-you has already been decided. The page now shows its latest state.",
+          "empty_message": "The text is empty. Write what the sponsor should see.",
+          "bad_action": "That action is not recognised. Please reload the page.",
+          "generic": "Could not save. Please try again."
+        }
+      },
       "reviewerNotes": {
         "title": "Notes for the reviewer",
         "introWriter": "What you would like the reviewer to explore. Seen by the assigned reviewer and QC only, never by the student or sponsors.",

@@ -47,6 +47,7 @@ from apps.scholarship.tests.factories import (
 )
 from apps.scholarship.tests.source_walk import read_source
 from apps.scholarship.tests.team_matrix_s1 import s1_moved_cells, s1_web_shown   # sprint S1 (SHAPES: post-0095)
+from apps.scholarship.tests.team_matrix_thanks import thanks_cells   # sprint THANKS
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_before.json'
 MIXED_FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_mixed_before.json'
@@ -450,7 +451,7 @@ def _expected_row(shape):
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before)}
+           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))

@@ -1537,6 +1537,18 @@
    "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/",
+   "method": "get",
+   "allow": [
+    "super",
+    "reviewer_a"
+   ],
+   "hide": [],
+   "object": "app_a",
+   "flags": [],
+   "note": "THANKS: the review key, then the case read fence; reached by super, reviewer_a; refused to reviewer_a2 (unassigned), org_admin_a (no review key), org_admin_b, student_b, sponsor_b"
+  },
+  {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
    "method": "post",
    "allow": [

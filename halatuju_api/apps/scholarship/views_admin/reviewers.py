@@ -521,7 +521,7 @@ class ReviewerProfileView(_AdminBase):
     2026-10-31). An admin given `review` gets the reviewer cards and may save them; a reviewer
     whose `review` was taken away gets 403 here (the row is kept, never deleted). A super holds
     every key, so a super still passes, as it did under the role check. A source user is refused
-    by `get_admin` (deny by default). `_require_reviewer` is NOT used: other writes rely on it.
+    by `get_admin` (deny by default).
 
     ⚠ AND A MENTOR (student maintenance S7a, 2026-10-31): a mentor fills in the same qualification,
     language and address cards, so the role is opted in here (`mentor_methods`) and passes the gate

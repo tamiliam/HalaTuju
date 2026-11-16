@@ -3,7 +3,7 @@
   "measured": {
     "public": "http://localhost:3100",
     "sandbox": "http://localhost:3100",
-    "updated": "2026-11-09"
+    "updated": "2026-11-16"
   },
   "cells": {
     "/ @360 en": {
@@ -1729,6 +1729,42 @@
       "spills": 0
     },
     "sandbox:cockpit-payments @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0,
+      "spills": 0
+    },
+    "sandbox:cockpit-thanks @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0,

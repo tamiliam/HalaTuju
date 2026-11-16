@@ -275,8 +275,6 @@ ALLOWLIST = {
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/base.py::_AdminBase._programme_by_code': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
-    'scholarship/views_admin/base.py::_AdminBase._require_reviewer': ('GATE-LEFT', 'TD-496',
-        'the graduation moderation door (its only caller); the list beside it was retired (TD-496)'),
     'scholarship/views_admin/billing.py::AdminBillingCorrectionView.delete': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/billing.py::AdminBillingCorrectionView.post': ('OVERRIDE', 'owner override',
@@ -530,7 +528,6 @@ GATE_LEFT_PINNED = {
     'scholarship/payments_chain.py::fallback_approvers': 'T5d',
     'scholarship/sponsorship/credits.py::cancel_admin_credit': 'T5d',
     'scholarship/sponsorship/credits.py::record_admin_credit': 'T5d',
-    'scholarship/views_admin/base.py::_AdminBase._require_reviewer': 'TD-496',
 }
 
 

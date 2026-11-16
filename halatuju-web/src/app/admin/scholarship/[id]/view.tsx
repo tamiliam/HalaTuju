@@ -60,6 +60,7 @@ import { AssignAndWitness } from './view/AssignAndWitness'
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { WithdrawAwardCard } from './view/WithdrawAwardCard'
+import { GraduationThanksCard } from './view/GraduationThanksCard'   // THANKS
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { ConfirmSheet } from './view/ConfirmSheet'
@@ -387,6 +388,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         closeMsg={closeMsg} doClose={doClose}
       />
       <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
+      {/* THANKS (owner 2026-11-16): the `review` key, read from the served page_keys; never the role. */}
+      <GraduationThanksCard appId={app.id} token={token} t={t} show={!!role?.page_keys?.includes('review')} />
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

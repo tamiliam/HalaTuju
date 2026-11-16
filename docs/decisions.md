@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — THANKS: a graduation thank-you is approved from the case page, on the `review` key
+
+Branch thanks, not pushed. No migration. Services: both. Debt: TD-632 (note updated).
+
+**Owner ruling (2026-11-16, direct):** "staff holding the Review permission approve or reject a thank-you from the
+student's case page. The role is only a label; keys decide."
+
+**Decision.**
+1. **The moderation POST asks the `review` key** (`views_admin/graduation.may_moderate_thanks`, `admin.has_perm('review')`,
+   the check the other review endpoints use), no longer the reviewer label. It keeps the organisation fence
+   (`_org_allows`, 404 across organisations), the re-scan of the edited text (400 `scrubbed_leak`) and the
+   pending / blocked rules. `_AdminBase._require_reviewer` had no other caller and is gone, with its two A10 entries.
+2. **The case page reads the messages through a small GET of its own**
+   (`admin/scholarship/applications/<pk>/graduation-messages/`): the `review` key first, then the case page's own
+   read fence (`_scoped_application`). Not on the detail payload, which is pinned at 38 queries. The read fence is
+   a deliberate tightening over the POST: a reviewer reads the thank-you of a case they can open, as on the case
+   page itself.
+3. **The web card (`GraduationThanksCard`) shows on the served `page_keys` holding `review`**, never on the role.
+   No messages, no card.
+
+**Not taken.** A new door in `DOOR_KEYS` (it would move the pinned door fixtures on both sides for one key that
+`has_perm` already answers). Putting the messages on the detail payload (query budget). Reviving the retired
+moderation list (TD-496, ruling B): the owner chose the case page.
+
+**Matrix moves (declared in `tests/team_matrix_thanks.py`).** The POST: one cell, the finance row holding a custom set
+with `review`, now reaches the door (403 to 404 on the probe's missing message). Every reviewer shape holds `review`
+and moves nowhere; nobody loses. The new GET: a key holder gets the detail GET's own answer, everyone else 403.
+
 ## 2026-11-16 — LABELS builder calls (pending architect): the Overview and the case holder follow the keys
 
 Branch labels, not pushed. No migration. Services: both (api; web test only, review round 2). Debt: TD-621, TD-622 (built), TD-632 (note).

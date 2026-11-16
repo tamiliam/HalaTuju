@@ -103,7 +103,7 @@ from .guardian_contact import AdminGuardianCallView, AdminGuardianContactView
 from .reviewer_notes import AdminReviewerNotesView   # request #55
 from .graduation import (
     _BursaryAdminBase, AdminBursaryCountersignView, AdminBursaryWitnessView,
-    AdminGraduationMessageReviewView,
+    AdminCaseGraduationMessagesView, AdminGraduationMessageReviewView,
 )
 from .interview_slots import (
     _parse_slot_starts, AdminInterviewSlotsView,

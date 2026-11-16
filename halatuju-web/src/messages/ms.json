@@ -4226,6 +4226,50 @@
           "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri."
         }
       },
+      "graduationThanks": {
+        "title": "Ucapan terima kasih tamat pengajian",
+        "intro": "Ucapan terima kasih pelajar hanya sampai kepada penaja selepas anda meluluskannya. Penaja melihat teks yang diluluskan dan rujukan pelajar, bukan namanya.",
+        "sent": "Dihantar {date}",
+        "studentWrote": "Apa yang ditulis oleh pelajar",
+        "sponsorSees": "Teks yang akan dilihat oleh penaja",
+        "editHint": "Buang apa-apa yang boleh mendedahkan pelajar. Kami menyemak teks sekali lagi sebelum ia dihantar.",
+        "sponsorSaw": "Teks yang dihantar kepada penaja",
+        "noteHeading": "Nota",
+        "decidedBy": "Diputuskan oleh {name}, {date}",
+        "someone": "seorang kakitangan",
+        "approve": "Lulus dan hantar",
+        "reject": "Tolak",
+        "cancel": "Batal",
+        "working": "Menyimpan…",
+        "rejectTitle": "Tolak ucapan terima kasih ini?",
+        "rejectHint": "Ia tidak akan dihantar. Nota adalah pilihan dan kekal bersama kes.",
+        "rejectPlaceholder": "Sebab (pilihan)",
+        "blockedReason": "Ditahan: ia mungkin mendedahkan pelajar ({fields}).",
+        "blockedHint": "Pelajar perlu menyuntingnya dan menghantarnya semula. Anda boleh menolaknya sekarang.",
+        "earlier": "Versi terdahulu ({count})",
+        "loadError": "Tidak dapat memuatkan ucapan terima kasih tamat pengajian.",
+        "status": {
+          "pending": "Menunggu semakan",
+          "blocked": "Ditahan",
+          "approved": "Diluluskan",
+          "rejected": "Ditolak"
+        },
+        "field": {
+          "name": "nama",
+          "school": "sekolah",
+          "city": "bandar",
+          "nric": "nombor IC",
+          "phone": "nombor telefon",
+          "email": "e-mel"
+        },
+        "error": {
+          "scrubbed_leak": "Teks masih mendedahkan pelajar. Buang nama, sekolah, bandar, nombor IC, telefon atau e-mel, kemudian luluskan semula.",
+          "not_reviewable": "Ucapan terima kasih ini sudah diputuskan. Halaman kini menunjukkan keadaan terkininya.",
+          "empty_message": "Teks kosong. Tulis apa yang patut dilihat oleh penaja.",
+          "bad_action": "Tindakan itu tidak dikenali. Sila muat semula halaman.",
+          "generic": "Tidak dapat menyimpan. Sila cuba lagi."
+        }
+      },
       "reviewerNotes": {
         "title": "Nota untuk penyemak",
         "introWriter": "Perkara yang anda mahu penyemak teliti. Hanya dilihat oleh penyemak yang ditugaskan dan QC, tidak sekali-kali oleh pelajar atau penaja.",

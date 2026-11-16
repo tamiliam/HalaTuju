@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint THANKS - a graduation thank-you is approved from the case page, on the review key (2026-11-16)
+
+Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS). Release-note draft: `docs/releases/thanks-release-note-draft.md`. Debt: TD-632 (note updated).
+- **Server:** `POST admin/graduation-messages/<pk>/review/` asks the `review` key (`views_admin/graduation.may_moderate_thanks`), not the reviewer label; the organisation fence (404), the re-scan (400 `scrubbed_leak`) and the pending / blocked rules are unchanged. `_AdminBase._require_reviewer` (no other caller) is gone, and its two entries in `test_role_is_display_only.py` with it. New `GET admin/scholarship/applications/<pk>/graduation-messages/` (`AdminCaseGraduationMessagesView`): the `review` key, then the case read fence (`_scoped_application`); returns the case's messages, newest first (status, raw text, scrubbed text, the check's findings, note). The detail GET is untouched (38 queries).
+- **Web:** the case page (`/admin/scholarship/[id]`) draws a "Graduation thank-you" card (`view/GraduationThanksCard.tsx`) when the served `page_keys` hold `review`. Pending: the sponsor text (starts as the student's words, editable), Approve and send, Reject with an optional note. Blocked: the reason and Reject only. The server's refusals are said in words (`scrubbed_leak` plainly). Strings in en, ms and ta.
+- **Tests:** new `test_thanks_graduation_review.py` (14); the access matrix declares the new route and the one moved cell (`team_matrix_thanks.py`); `access_manifest.json`, `test_org_fence.py` and `test_route_web_callers.py` updated (the review POST now has a web caller). Web: `GraduationThanksCard.test.tsx` and `view.graduationThanks.test.tsx`. Sandbox surface `cockpit-thanks` (a Review holder's case page with a waiting and a held-back thank-you) joins the case page's mobile-check cells.
+- **Wording:** web comments and the A10 allowlist reason that still named `SECTIONS_BY_ROLE` / TD-621 now name `sections_for` (keys). No count moved.
+
 ### refactor: sprint LABELS - the Overview sections and who may hold a case follow the keys (2026-11-16)
 
 Branch labels, not pushed. No migration. Services: both (api; web test only since review round 2). Decisions: `docs/decisions.md` (2026-11-16, LABELS builder calls, pending architect). Release-note draft: `docs/releases/labels-release-note-draft.md`. Debt: TD-621 and TD-622 (built), TD-632 (note).

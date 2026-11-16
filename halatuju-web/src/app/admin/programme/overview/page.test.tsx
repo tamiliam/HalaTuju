@@ -6,7 +6,7 @@
  * ⚠⚠ **THE SIDE DOOR IS THE HARM.** The menu withholds Payments and Spending from a reviewer and
  * a QC, and withholds Applications from finance. An Overview that fetched everything and drew a
  * subset would hand all of it back through a different route — so the server chooses the key set
- * (`programme_overview.SECTIONS_BY_ROLE`, pinned by `test_the_key_set_per_role_is_exact`) and the
+ * (`programme_overview.sections_for`, from the reader's keys; each preset pinned by `test_the_key_set_per_role_is_exact`) and the
  * page renders by PRESENCE. The tests below therefore assert ABSENCE from the DOM, not a hidden
  * class: `queryByTestId('overview-money')` must be null for a reviewer, because a node that is in
  * the document is in the page source, whatever CSS says about it.

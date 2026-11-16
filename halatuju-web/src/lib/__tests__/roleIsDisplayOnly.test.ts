@@ -203,7 +203,7 @@ const ALLOWED: Entry[] = [
   ['lib/navigation.ts', "roles: ['super']", 4, 'PLATFORM', 'Course data, Organisations, Referral partners, Billing rates: the platform super only'],
   ['lib/navigation.ts', "roles: ['super', 'partner']", 2, 'PLATFORM', 'Dashboard and Students: the platform super, and the referral-partner KIND whose two pages they are'],
   ['lib/navigation.ts', "roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor']", 1, 'LANDING', 'Programmes, the front door every organisation login lands on (defaultRoute); a holder of programmes.edit is also admitted by its door (NAVKEYS review)'],
-  ['lib/navigation.ts', "roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'source_partner']", 1, 'SERVER', 'the gift Overview: the server shapes it by role (SECTIONS_BY_ROLE, TD-621); moves with TD-632'],
+  ['lib/navigation.ts', "roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'source_partner']", 1, 'SERVER', 'the gift Overview row: the server shapes the page by keys (programme_overview.sections_for, LABELS) and refuses a login holding none; the row\'s list moves with TD-632'],
   ['lib/navigation.ts', "roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance']", 2, 'DISPLAY', 'the Guide and FAQ rows: the roles the manual writes a chapter for (manualRole); help pages, never a fence'],
   ['lib/navigation.ts', "roles: ['mentor']", 1, 'KIND', 'My students, the mentor login\'s own page (staff who mentor by the mentor record)'],
   ['lib/navigation.ts', "roles: ['source_partner']", 1, 'KIND', 'Applications for a source login renders its own page and endpoint; staff by the key'],

@@ -133,7 +133,7 @@ describe('visibleNav per role', () => {
     // is 'none' for finance, so that row could only ever 403. The Overview hands finance
     // AGGREGATES — committed, paid, remaining, spent, per month, per category — and never a name,
     // a file or a verdict, because the server does not build those sections for it
-    // (`SECTIONS_BY_ROLE`, pinned by `test_the_key_set_per_role_is_exact`). Recorded in
+    // (`sections_for`, by keys; each preset pinned by `test_the_key_set_per_role_is_exact`). Recorded in
     // `docs/decisions.md` and `role-matrix.md`; typed out here so it stays a deliberate act.
     finance: [
       'programmes', 'staff', 'reviewers', 'sponsors',

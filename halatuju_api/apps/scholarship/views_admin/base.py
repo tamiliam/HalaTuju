@@ -86,19 +86,6 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         return Response({'error': 'Your admin role cannot perform this action.'},
                         status=status.HTTP_403_FORBIDDEN)
 
-    def _require_reviewer(self, request):
-        """Auth prologue for reviewer-gated admin WRITES: returns ``(admin, None)`` when the
-        caller is an active admin with the reviewer role, else ``(None, error_response)``.
-        Centralises the get_admin + reviewer-role check (TD audit 2026-06-14) so a write
-        endpoint can't silently forget the role gate and under-protect PII/consent actions
-        (a plain 'admin' has full B40 scope but is read-only — the role check is the guard)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return None, self._deny_role()
-        return admin, None
-
     def _get_application(self, pk):
         # `programme` (the GIFT) is joined here, not fetched later: every detail payload now names
         # it (`serializers_admin_gift`, 2026-09-28), and a join costs no query where a lazy FK
@@ -310,9 +297,9 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
     def _require_app_write(self, request, pk):
         """Auth prologue for a per-application WRITE. Returns (app, admin, None) when the caller
         may act on this application (super, or the assigned admin/reviewer), else
-        (None, None, error_response). Replaces the old _require_reviewer + _scoped_application
-        pair for per-application mutations (the role-only _require_reviewer stays for the few
-        non-application writes: sponsor review, graduation review, reviewer profile)."""
+        (None, None, error_response). Replaced the old role-only reviewer prologue + _scoped_application
+        pair for per-application mutations (that prologue is gone: its last caller, the graduation
+        thank-you review, asks the `review` key since sprint THANKS)."""
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()

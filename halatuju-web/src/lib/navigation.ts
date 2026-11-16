@@ -212,8 +212,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // because the rules are columns on the year. That is a different question from which page a
       // person opens most.
       // ⚠⚠ **OVERVIEW LEADS THE GROUP, AND IT IS THE ONE ROW EVERY CONSOLE ROLE HAS.** It is where
-      // the gift card now lands you, and it is shaped by role SERVER-SIDE
-      // (`programme_overview.SECTIONS_BY_ROLE`): an org_admin gets the funnel, the money and what
+      // the gift card now lands you, and it is shaped by the reader's KEYS SERVER-SIDE
+      // (`programme_overview.sections_for`, LABELS). On the presets: an org_admin gets the funnel, the money and what
       // needs attention; a reviewer gets their own cases and nothing else; a QC gets their queue.
       //
       // ⚠ **`finance` IS ON THIS ROW THOUGH IT IS NOT ON APPLICATIONS — AND THAT IS NOT AN
