@@ -9155,3 +9155,17 @@ clear-phrase list `offer_confirmations._NOT_STUDYING` / `_OFFER_UNDONE` since re
 `test_offer_h2_review6.py` (`test_mains_live_polytechnic_path_is_unchanged_td_636`). Fix, if wanted: apply
 `_not_studying` in `_confirmation_lift` before the genuine read too (the letter then falls to its family baseline),
 with a replay of the recorded corpus first; the owner decides, since it changes a live genuine read. *(A - S)*
+
+### [TD-637] Some synthetic confirmation layouts read genuine with a pick type, on main too - low
+
+**Raised 2026-11-16 by the help H2 review 11 (live on main, unchanged by H2).** The confirmation CAP
+(`offer_confirm_checks.page_titled`) counts a confirmation title only when it STARTS its own short, non-sentence line
+(decisions.md ruling 4(d)). Synthetic letters (h2r11/p5.py) whose title does not start its line still read genuine
+with a course-pick type (`ua_offer`), exactly as on main: an institution name before the title on the same line
+("UNIVERSITI PUTRA MALAYSIA PENGESAHAN PELAJAR", also split: "... SURAT PENGESAHAN / STATUS PELAJAR"); a date or a
+reference glued before it ("Tarikh : 1 Jun 2026 PENGESAHAN PELAJAR", "Ruj. Kami: ... PENGESAHAN PELAJAR"); an
+"UNTUK PERHATIAN:" label before it; a sentence word inside the title ("PENGESAHAN PELAJAR YANG DIDAFTARKAN DI UPM",
+"CONFIRMATION OF STUDENT STATUS FOR THIS SEMESTER", "... STUDENT WHO IS CURRENTLY ENROLLED"). **0 real letters** in
+the recorded corpus or the snapshots have these shapes; the lead stopped the layout loop at review 11. Fix, if real
+letters turn up: read past a known institution name, a date / reference label or "UNTUK PERHATIAN:" before the title,
+with a sentence-insert replay first so no ordinary offer moves. *(A - S)*
