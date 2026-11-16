@@ -192,6 +192,15 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a ninth review - when in doubt, unknown: a session line reads one date only straight after a start word (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9.
+- **Session line, lead's rule (supersedes the eighth review's "passed over").** No other year or date: the session's first year (second for Sesi 2 / II, Semester 2 / II, Ambilan 2, or a January-April month on an intake / semester line). ONE date or month-year straight after a start word (Ambilan, Kemasukan, Tarikh Kemasukan / Mendaftar / Pendaftaran, Lapor Diri, Intake, Admission, mulai, bermula, commencing, starting, Semester / Sem) and inside the session: that year ("Sesi 2024/2025 mulai 17.02.2025" = 2025). Anything else (a closing, letter, update or reference date, two dates, no start word, a year outside the session, a clash) is unknown. Kept: "Ambilan 2023 Sesi 2025/2026" = 2023.
+- **Exam forms.** Spaced "S P M" / "S T P M", and SKM / DKM / Sijil / Diploma Kemahiran Malaysia give no single year ("Lepasan S P M 2024" = unknown); on a session line the exam's year is ignored.
+- **Speed.** Two term patterns no longer backtrack slowly on a long run of spaces.
+- **FAQ.** The reviewer answer on "Course started in" names the second-year cases and says an unclear date is left for the reviewer.
+- **Tests.** The nine review cases and the lead's "still" cases in `test_start_year_gift_reading.py`; 4 probe rows re-classed to unknown (none to OUTSIDE). Corpus split unchanged: 246 / 26 / 14.
+
 ### fix: H3a eighth review - a month reads on its intake word's line; more exam forms; odd letters never crash; a stray year beside a session is passed over (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money untouched (as below); `VERDICT_ENGINE_VERSION` unchanged.

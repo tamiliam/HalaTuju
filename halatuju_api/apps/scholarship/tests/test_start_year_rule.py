@@ -394,7 +394,7 @@ class ReviewFixes(_Base):
         # as `vision.sanitize` stores them.
         cases = (('Tahun ke-2 Sesi 2025/2026', '', 'unknown'), ('Ambilan 2023 Sesi 2025/2026', '', 'outside'),
                  ('SESI 2024/25 MAC 2025', '3 Mar 2025', 'inside'), ('SPM 2024, Ambilan 2025', '14 Jul 2025', 'inside'),
-                 ('Session 2024/25 Feb 2025', '', 'inside'), ('Sesi 2024/25 Februari 2025', '', 'inside'),
+                 ('Session 2024/25 Feb 2025', '', 'unknown'), ('Sesi 2024/25 Februari 2025', '', 'unknown'),
                  ('Sesi 2024/2025Semester II', '', 'inside'), ('Ambilan Februari', '20 Dec 2024', 'outside'),
                  ('', '30 Dec 2024', 'outside'), ('Ambilan Mac', 'Sesi 2024/2025', 'unknown'),
                  ('Ambilan Sesi 2024/2O25', '', 'unknown'), ('Session 2024-25 Feb intake', '', 'inside'),
