@@ -1200,7 +1200,15 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
      CONFIRM_MIN family-score floor; the CAP has no score floor (a TVET lift reads genuine at a 0.0 family score).
      A GENUINE result that already carries a confirmation code is capped to suspect whatever the page says. A
      combined title such as "TAWARAN KEMASUKAN DAN PENGESAHAN PELAJAR" starts with an offer title, so it reads as
-     main does.
+     main does. **Review 11 (16 Nov 2026), the LAST layout round (lead):** the rest of a title line may hold up to
+     14 words (as the title block's own cut), so "PENGESAHAN SEBAGAI PELAJAR SEPENUH MASA DI UNIVERSITI ... BAGI
+     SESI AKADEMIK 2025/2026" or a long name glued on before the IC still caps; a title line may also start with
+     SURAT AKUAN / BORANG / SIJIL / NOTIS / PERIHAL: or a number ("1. PENGESAHAN PELAJAR"); the title stops at a
+     glued body word ("PENGESAHAN PELAJAR Adalah dimaklumkan ..."); and up to THREE short lines join ("PENGESAHAN /
+     STATUS / PELAJAR"). A reference line (RUJ / RUJ. TUAN / RUJ. KAMI / RUJUKAN / REF / OUR REF / YOUR REF) is
+     never an offer title line, so "Ruj. Tuan : Surat Tawaran bertarikh ..." above "PENGESAHAN PELAJAR" no longer
+     ends the search. Left as on main (TD-637, 0 real letters): an institution name, a date or a reference glued
+     before the title on the same line, "UNTUK PERHATIAN:" before it, or a sentence word inside it.
    **Non-study letters that reach suspect are ACCEPTED on purpose (a person rejects them):** a graduate, a former
    student ("telah tamat pengajian", "was a student", "pernah belajar"), a dismissal ("diberhentikan",
    "terminated") or a refusal ("tidak ditawarkan", "not offered", an offer withdrawn / "dibatalkan") said in the

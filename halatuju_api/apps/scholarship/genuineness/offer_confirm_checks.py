@@ -16,17 +16,22 @@ from .offer_confirmations import (_BODY_CUTS, _BODY_STARTS, _CONFIRM_TITLES_EN, 
 from .offer_reading import (_COMPANY_HEAD, _CONFIRM_TITLES, _CONFIRM_TOP_CHARS, _IC, _ORG_RE, _PERSON_LABELS,
                             _PRIVATE_BODIES, _SB, _TAG, _TITLE, _letterhead_region, _page, _ruled_status)
 
+#: H2 review 11: a reference line (RUJ / RUJ. TUAN / RUJ. KAMI / RUJUKAN / REF / OUR REF / YOUR REF) is never an
+#: offer title line, even when it cites "Surat Tawaran bertarikh ...".
+_REF_STARTS = (' RUJUKAN ', ' RUJ ', ' NO RUJ ', ' REF ', ' OUR REF ', ' YOUR REF ')
 _SPECIFIC = _CONFIRM_TITLES + _CONFIRM_TITLES_EN
 _ALL_TITLES = _SPECIFIC + _CONFIRM_TITLES_EN_GENERIC
 #: H2 review 10: an admission decision's own titles (an offer title line, `offer_title_line`).
 _OFFER_TITLES = (' KEPUTUSAN PERMOHONAN ', ' KEMASUKAN KE PROGRAM ')
-#: The words a title line may start with before the confirmation title ("SURAT PENGESAHAN PELAJAR", "PERKARA:").
-_TITLE_PREFIXES = ('SURAT',) + tuple(s.strip() for s in _SUBJECT_STARTS)
+#: The words a title line may start with before the confirmation title ("SURAT PENGESAHAN PELAJAR", "PERKARA:";
+#: review 11: "SURAT AKUAN", "BORANG", "SIJIL", "NOTIS", "PERIHAL:"). A leading number ("1. PENGESAHAN ...") is
+#: skipped too.
+_TITLE_PREFIXES = ('SURAT', 'AKUAN', 'BORANG', 'SIJIL', 'NOTIS', 'PERIHAL') + tuple(s.strip() for s in _SUBJECT_STARTS)
 #: A glued body after the title ("PENGESAHAN PELAJAR DENGAN HORMATNYA ..."): the title stops there.
 _GLUED_BODY = (' DENGAN HORMATNYA ', ' DENGAN SEGALA HORMATNYA ', ' TUAN PUAN ', ' DENGAN INI DISAHKAN ',
                ' ADALAH DISAHKAN ', ' THIS IS TO CERTIFY ', ' THIS IS TO CONFIRM ')
 #: A title's own words after the confirmation title: the issuer, a session, "(LATIHAN INDUSTRI)" - a few words.
-_TITLE_REST_MAX = 8
+_TITLE_REST_MAX = 14             # review 11: as `_cut` ("... DI UNIVERSITI ... BAGI SESI AKADEMIK 2025/2026")
 #: ... and never a sentence's verbs / joining words ("... akan dikeluarkan selepas pendaftaran", "... will be
 #: issued after registration").
 _SENTENCE = re.compile(r' (?:AKAN|TELAH|HENDAKLAH|PERLU|WAJIB|BOLEH|DAPAT|SELEPAS|SEBELUM|JIKA|SEKIRANYA|APABILA|'
@@ -103,34 +108,53 @@ _CAP_SEEN = {'matriculation': 'confirmation_matriculation', 'polytechnic': 'conf
 def offer_title_line(ln) -> bool:
     """H2 review 10: an offer's title line - TAWARAN (also OCR-glued: "SURATTAWARAN") / OFFER, or the admission
     decision's own title (KEPUTUSAN PERMOHONAN, KEMASUKAN KE PROGRAM). "DITAWARKAN" holds no TAWARAN."""
+    if ln.startswith(_REF_STARTS):     # review 11: "Ruj. Tuan : Surat Tawaran bertarikh ..." names an offer
+        return False
     return (any('TAWARAN' in w for w in ln.split()) or any(t in ln for t in _TITLE + _OFFER_TITLES))
 
 
 def _title_line(ln, titles) -> bool:
     """`ln` IS a confirmation title (lead, 16 Nov 2026: a title is a LINE, not a phrase in a sentence): after an
-    optional SURAT / PERKARA / RE it starts with one of `titles`, and the rest up to a person label / IC number (a
-    glued name line) is short and no sentence (`_SENTENCE`: "... akan dikeluarkan selepas pendaftaran")."""
+    optional SURAT / PERKARA / RE (review 11: or a number) it starts with one of `titles`, and the rest up to a
+    person label / IC number (a glued name line) or a body word (review 11, `_BODY_CUTS`: "PENGESAHAN PELAJAR Adalah
+    dimaklumkan ...") is short and no sentence (`_SENTENCE`: "... akan dikeluarkan selepas pendaftaran")."""
     words = ln.split()
-    while words and words[0] in _TITLE_PREFIXES:
+    while words and (words[0] in _TITLE_PREFIXES or words[0].isdigit()):
         words = words[1:]
     ln = f" {' '.join(words)} "
     t = next((t for t in titles if ln.startswith(t)), None)
     if t is None:
         return False
     rest = ln[len(t) - 1:]
-    cuts = [rest.find(w) for w in _PERSON_LABELS + _GLUED_BODY if w in rest] + [m.start() for m in _IC.finditer(rest)]
+    cuts = ([rest.find(w) for w in _PERSON_LABELS + _GLUED_BODY + _BODY_CUTS if w in rest]
+            + [m.start() for m in _IC.finditer(rest)])
     rest = rest[:min(cuts)] if cuts else rest
     return len(rest.split()) <= _TITLE_REST_MAX and not _SENTENCE.search(rest)
+
+
+def _joins(lines, i):
+    """Line `i` joined with the next one, then the next two, while each is short (6 words or fewer) and no offer
+    title line (`offer_title_line`): a title split over two or three lines."""
+    if len(lines[i].split()) > 6:
+        return []
+    out, joined = [], lines[i].strip()
+    for nxt in lines[i + 1:i + 3]:
+        if not nxt or len(nxt.split()) > 6 or offer_title_line(nxt):
+            break
+        joined += ' ' + nxt.strip()
+        out.append(f' {joined} ')
+    return out
 
 
 def page_titled(lines, probability: float = 1.0) -> bool:
     """H2 review 10: the page's confirmation TITLE LINE (`_title_line`), as main's `_confirm_titled` places it - in
     the top half (or first `_CONFIRM_TOP_CHARS` characters), above the first offer title line
-    (`offer_title_line`), at or above main's score floor (`CONFIRM_MIN`). Two short lines join (a title split over
-    two lines); an English title counts as the Malay one, a generic one only with a study word in its title block
-    (`generic_titled`). Every line above the title is read past (an addressee, "Tuan/Puan,", "Kami ...": review 9).
-    The recognition path passes the family score (main's floor); the CAP does not (a lift is genuine at 0.0).
-    A confirmation phrase inside a body sentence is never a title line, so it never caps (decisions.md ruling 4)."""
+    (`offer_title_line`), at or above main's score floor (`CONFIRM_MIN`). Up to three short lines join (`_joins`;
+    review 11: "PENGESAHAN / STATUS / PELAJAR"); an English title counts as the Malay one, a generic one only with
+    a study word in its title block (`generic_titled`). Every line above the title is read past (an addressee,
+    "Tuan/Puan,", "Kami ...": review 9). The recognition path passes the family score (main's floor); the CAP does
+    not (a lift is genuine at 0.0). A confirmation phrase inside a body sentence is never a title line, so it never
+    caps (decisions.md ruling 4)."""
     if probability < CONFIRM_MIN:
         return False
     titles = _CONFIRM_TITLES + _CONFIRM_TITLES_EN + (_CONFIRM_TITLES_EN_GENERIC if generic_titled(lines) else ())
@@ -138,9 +162,7 @@ def page_titled(lines, probability: float = 1.0) -> bool:
     for i, ln in enumerate(lines):
         if at > top or offer_title_line(ln):
             return False
-        nxt = lines[i + 1] if i + 1 < len(lines) else ''
-        pair = (len(ln.split()) <= 6 and nxt and len(nxt.split()) <= 6 and not offer_title_line(nxt))
-        if _title_line(ln, titles) or (pair and _title_line(f' {ln.strip()} {nxt.strip()} ', titles)):
+        if _title_line(ln, titles) or any(_title_line(j, titles) for j in _joins(lines, i)):
             return True
         at += len(ln.strip()) + 1
     return False
