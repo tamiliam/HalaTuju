@@ -65,6 +65,10 @@ from .staff_gift import _as_id as gift_as_id
 from .staff_gift import _gift_refusal as gift_refusal
 from .staff_gift import _not_found as gift_not_found
 from .staff_gift import resolve_gifts
+from . import (
+    password_change_flag, staff_activity_hook, staff_archive, staff_gift, staff_permissions_v2,
+    staff_reinvite, staff_tables, supabase_admin, theme_tokens, theme_versions,
+)
 from .tvet_families import family_of
 from .tvet_institutions import HELD
 from .utils import tidy_parentage_marker
@@ -90,6 +94,10 @@ __all__ = [
     'delete_fields', 'sole_org_admin_ids', 'archive_asked', 'in_a_group_refusal',
     'gift_as_id', 'gift_refusal', 'gift_not_found', 'resolve_gifts',
     'contrast',
+    # Module doors (F2b stage 2): the object IS the home module, so patches on it keep working.
+    'password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
+    'staff_permissions_v2', 'staff_reinvite', 'staff_tables', 'supabase_admin',
+    'theme_tokens', 'theme_versions',
 ]
 
 

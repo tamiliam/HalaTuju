@@ -27,9 +27,8 @@ def _checks_both_modes(tokens):
     about which modes were measured.
     """
     from apps.courses import public as courses_public
-    from apps.courses import theme_tokens
     return [dict(r._asdict(), mode=mode)
-            for mode in theme_tokens.MODES
+            for mode in courses_public.theme_tokens.MODES
             for r in courses_public.contrast.check_tokens(tokens, mode)]
 
 
@@ -112,14 +111,12 @@ class AdminOrganisationThemeView(_AdminBase):
         together would invite a screen that cannot say which one a visitor is seeing.
         """
         from apps.courses import public as courses_public
-        from apps.courses import theme_tokens
-        from apps.courses import theme_versions
 
-        live = theme_versions.active_for(org)
-        draft = theme_versions.draft_for(org)
-        previous = theme_versions.previous_for(org)
-        live_tokens = theme_tokens.applied_tokens(live.tokens) if live else None
-        draft_tokens = theme_tokens.applied_tokens(draft.tokens) if draft else None
+        live = courses_public.theme_versions.active_for(org)
+        draft = courses_public.theme_versions.draft_for(org)
+        previous = courses_public.theme_versions.previous_for(org)
+        live_tokens = courses_public.theme_tokens.applied_tokens(live.tokens) if live else None
+        draft_tokens = courses_public.theme_tokens.applied_tokens(draft.tokens) if draft else None
 
         def block(row, tokens):
             if row is None:
@@ -160,8 +157,6 @@ class AdminOrganisationThemeView(_AdminBase):
     def put(self, request):
         """Save the DRAFT. **What visitors see is untouched** — that is the whole sprint."""
         from apps.courses import public as courses_public
-        from apps.courses import theme_tokens
-        from apps.courses import theme_versions
 
         admin, err = self._gate(request)
         if err:
@@ -172,8 +167,8 @@ class AdminOrganisationThemeView(_AdminBase):
 
         colour = (request.data.get('colour') or '').strip()
         try:
-            tokens = theme_tokens.tokens_from_colour(colour)
-        except theme_tokens.ThemeTokenError:
+            tokens = courses_public.theme_tokens.tokens_from_colour(colour)
+        except courses_public.theme_tokens.ThemeTokenError:
             return Response({'error': 'bad_colour', 'code': 'bad_colour'},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -191,14 +186,14 @@ class AdminOrganisationThemeView(_AdminBase):
                  'failing': [f'{mode}:{r.key}' for mode, r in fails]},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        theme_versions.save_draft(org, colour, tokens)
+        courses_public.theme_versions.save_draft(org, colour, tokens)
         logger.info('AUDIT organisation_theme_draft_saved org=%s colour=%s by=%s',
                     org.code, colour, admin.email or '')
         return Response(self._payload(org))
 
     def delete(self, request):
         """Discard the DRAFT. What is live stays live — a draft you throw away costs nobody."""
-        from apps.courses import theme_versions
+        from apps.courses import public as courses_public
 
         admin, err = self._gate(request)
         if err:
@@ -206,7 +201,7 @@ class AdminOrganisationThemeView(_AdminBase):
         org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
         if err:
             return err
-        if theme_versions.discard_draft(org):
+        if courses_public.theme_versions.discard_draft(org):
             logger.info('AUDIT organisation_theme_draft_discarded org=%s by=%s',
                         org.code, admin.email or '')
         return Response(self._payload(org))
@@ -225,7 +220,7 @@ class AdminOrganisationThemePublishView(AdminOrganisationThemeView):
     """
 
     def post(self, request):
-        from apps.courses import theme_versions
+        from apps.courses import public as courses_public
 
         admin, err = self._gate(request)
         if err:
@@ -236,8 +231,8 @@ class AdminOrganisationThemePublishView(AdminOrganisationThemeView):
         try:
             # `allowed=True` asserts the ROLE GATE ABOVE HAS PASSED. The service defaults it False
             # so a shell caller fails closed — mirroring `sponsor_terms.publish`.
-            theme_versions.publish(org, by_email=admin.email or '', allowed=True)
-        except theme_versions.ThemeVersionError as exc:
+            courses_public.theme_versions.publish(org, by_email=admin.email or '', allowed=True)
+        except courses_public.theme_versions.ThemeVersionError as exc:
             return Response({'error': exc.code, 'code': exc.code},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(self._payload(org))
@@ -253,7 +248,7 @@ class AdminOrganisationThemeRevertView(AdminOrganisationThemeView):
     """
 
     def post(self, request):
-        from apps.courses import theme_versions
+        from apps.courses import public as courses_public
 
         admin, err = self._gate(request)
         if err:
@@ -262,8 +257,8 @@ class AdminOrganisationThemeRevertView(AdminOrganisationThemeView):
         if err:
             return err
         try:
-            theme_versions.revert(org, by_email=admin.email or '', allowed=True)
-        except theme_versions.ThemeVersionError as exc:
+            courses_public.theme_versions.revert(org, by_email=admin.email or '', allowed=True)
+        except courses_public.theme_versions.ThemeVersionError as exc:
             return Response({'error': exc.code, 'code': exc.code},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(self._payload(org))

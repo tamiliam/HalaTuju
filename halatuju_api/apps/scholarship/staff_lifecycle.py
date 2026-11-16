@@ -293,13 +293,13 @@ def kill_for_cancel(account, inv):
     the account is already switched off, so a failure here leaves a password that cannot open the
     console, and the daily expiry job now sweeps switched-off accounts too. Returns a word for the
     AUDIT line."""
-    from apps.courses import supabase_admin
+    from apps.courses import public as courses_public
     uid = getattr(account, 'supabase_user_id', None)
     if account is None or not uid or not inv.credential_issued:
         return 'skipped'
     if login_used_elsewhere(uid):
         return 'kept'
-    return supabase_admin.kill_temp_password(uid)
+    return courses_public.supabase_admin.kill_temp_password(uid)
 
 
 def _identity_providers(account):
@@ -316,18 +316,18 @@ def plan_login_retirement(admin):
     'kept', 'none' (no login linked), or `GONE` / `INERT` / `FAILED` from the read. Only `FAILED`
     should stop the delete. Read-only: the caller acts AFTER the row is gone (`retire_login`), so a
     failure deleting the row can never leave it pointing at a removed login (review M2)."""
-    from apps.courses import password_change_flag, supabase_admin
+    from apps.courses import public as courses_public
     uid = admin.supabase_user_id
     if not uid:
         return 'none', None
     if login_used_elsewhere(uid):
         return 'kept', None
-    account = supabase_admin.read_auth_user(uid)
+    account = courses_public.supabase_admin.read_auth_user(uid)
     if not isinstance(account, dict):
         return account, None
     if (account.get('email') or '').strip().lower() != (admin.email or '').strip().lower():
         return 'kept', None
-    owes = password_change_flag.rotation_state(account)[0] is not None
+    owes = courses_public.password_change_flag.rotation_state(account)[0] is not None
     never_signed_in = not account.get('last_sign_in_at')
     if _identity_providers(account) <= {'email'} and (never_signed_in or owes):
         return 'delete', account
@@ -341,14 +341,14 @@ def retire_login(uid, plan, account):
     the AUDIT line; never raises. A failure is logged loudly: what is left is an unused login with
     a dead or owed temporary password, which a re-invite adopts (`adoptable_login`)."""
     import logging
-    from apps.courses import supabase_admin
+    from apps.courses import public as courses_public
     if plan == 'delete':
-        done = supabase_admin.delete_auth_user(uid)
+        done = courses_public.supabase_admin.delete_auth_user(uid)
     elif plan == 'kill':
-        done = supabase_admin.kill_temp_password(uid, account)
+        done = courses_public.supabase_admin.kill_temp_password(uid, account)
     else:
         return plan
-    if done == supabase_admin.FAILED:
+    if done == courses_public.supabase_admin.FAILED:
         # ⚠ THE ONLY TRACE once the row is gone (review round 2, N3): no staff row points at this
         # login any more, so the daily expiry job cannot find it. Search the logs for this line.
         logging.getLogger('apps.scholarship.staff_lifecycle').error(
@@ -369,12 +369,12 @@ def adoptable_login(account):
     service role writes (TD-322) — never the browser-writable `user_metadata` copy. A student's or
     a sponsor's login never carries it; and nothing else may ride on the login (no student profile,
     alias or sponsor), with only an email identity. Anything else is somebody's own account."""
-    from apps.courses import password_change_flag
+    from apps.courses import public as courses_public
     from apps.courses.models import PartnerAdmin
     if not isinstance(account, dict) or not account.get('id'):
         return False
     app = account.get('app_metadata') or {}
-    if not (bool(app.get(password_change_flag.FLAG)) and _identity_providers(account) <= {'email'}
+    if not (bool(app.get(courses_public.password_change_flag.FLAG)) and _identity_providers(account) <= {'email'}
             and _untouched_since_issue(account, app)):
         return False
     # Another staff row already owns this login (review round 2, N2): resetting its password would
@@ -406,11 +406,11 @@ def _untouched_since_issue(account, app):
     temp password dead. So adopt only a login that was NEVER signed in, or whose last sign-in came
     no later than the issue of a temp password that has not been expired since. Anything we cannot
     read is treated as used."""
-    from apps.courses import password_change_flag
+    from apps.courses import public as courses_public
     last = account.get('last_sign_in_at')
     if not last:
         return True
-    if app.get(password_change_flag.EXPIRED):
+    if app.get(courses_public.password_change_flag.EXPIRED):
         return False
-    signed, issued = _parse_time(last), _parse_time(app.get(password_change_flag.ISSUED))
+    signed, issued = _parse_time(last), _parse_time(app.get(courses_public.password_change_flag.ISSUED))
     return signed is not None and issued is not None and signed <= issued

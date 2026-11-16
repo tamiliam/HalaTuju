@@ -309,7 +309,7 @@ class AdminAssignableAdminsView(_AdminBase):
         if not admin:
             return self._deny()
         from django.db.models import Q
-        from apps.courses import staff_gift, staff_permissions
+        from apps.courses import public as courses_public, staff_permissions
         from ..services import R1_SUPER_TARGET_ROLES, may_assign_to
         # tenancy: list-fenced (2026-07-15). Super sees every assignable staff member; a
         # non-super (org_admin) sees only their OWN org's assignable staff — so a delegated
@@ -320,7 +320,7 @@ class AdminAssignableAdminsView(_AdminBase):
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
                           | staff_permissions.team_holding(('review',)))
-                  .select_related('reviewer_profile').annotate(**staff_gift.gift_annotation())
+                  .select_related('reviewer_profile').annotate(**courses_public.staff_gift.gift_annotation())
                   .order_by('name'))
         if not self.has_role(admin, 'super'):
             admins = admins.filter(
@@ -375,7 +375,7 @@ class AdminAssignableAdminsView(_AdminBase):
              # M3b E3: False for the caller's own row (nobody gives a case to themselves). The row
              # stays LISTED, so a case the caller already holds still names them (bug #66).
              'assignable': may_assign_to(admin, a),
-             'gifts': staff_gift.gifts_payload(a),
+             'gifts': courses_public.staff_gift.gifts_payload(a),
              'corrections': corrections.get(a.id, 0)}
             for a in admins
         ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})

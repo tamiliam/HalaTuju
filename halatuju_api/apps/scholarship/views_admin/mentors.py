@@ -109,8 +109,8 @@ def invite_mentor(request, admin):
     gifts, refusal = mentor_gift.choose(data.get('programme_ids'), owner, active_only=True)
     if refusal is not None:
         return refusal
-    from apps.courses import supabase_admin
-    if supabase_admin.supabase_config() is None:
+    from apps.courses import public as courses_public
+    if courses_public.supabase_admin.supabase_config() is None:
         return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
                       'Supabase service role key not configured')
     done = mentor_invite.invite(admin, organisation=owner, email=email, name=name, gifts=gifts)

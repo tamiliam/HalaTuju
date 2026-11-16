@@ -38,7 +38,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
-from apps.courses import staff_gift, supabase_admin
+from apps.courses import public as courses_public
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
@@ -76,7 +76,7 @@ def programmes_of(admin, lang='en'):
     if not admin.is_super and admin.role in ('partner', 'mentor'):
         return []   # no gift work: a referral partner, or a mentor (S7a — mentoring is per scholar)
     if not admin.is_super:
-        gifts = staff_gift.gifts_of(admin)
+        gifts = courses_public.staff_gift.gifts_of(admin)
         if gifts:
             return [_named(p, lang) for p in gifts]
     return 'all'
@@ -354,33 +354,33 @@ class AdminMePasswordView(_AdminBase):
             return _me_refusal('bad_request')
         if not current:
             return _me_refusal('current_password_required')
-        if len(new) < supabase_admin.MIN_PASSWORD_LENGTH:
+        if len(new) < courses_public.supabase_admin.MIN_PASSWORD_LENGTH:
             return _me_refusal('password_too_short')
         if new == current:
             return _me_refusal('same_password')
         unavailable = _me_refusal('supabase_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
-        account = supabase_admin.read_auth_user(uid)
+        account = courses_public.supabase_admin.read_auth_user(uid)
         if not isinstance(account, dict) or not account.get('email'):
             return unavailable
         providers = (account.get('app_metadata') or {}).get('providers') or []
         if 'email' not in providers:
             return _me_refusal('no_password_sign_in')
         # Review fix M3: an ATOMIC per-person attempt count, taken before the password is tried.
-        if not supabase_admin.take_password_attempt(uid):
+        if not courses_public.supabase_admin.take_password_attempt(uid):
             return _me_refusal('too_many_attempts', status.HTTP_429_TOO_MANY_REQUESTS)
-        checked = supabase_admin.verify_password(account['email'], current)
+        checked = courses_public.supabase_admin.verify_password(account['email'], current)
         if checked is False:
             return _me_refusal('wrong_current_password')
         if checked is not True:
             return unavailable
         # Review fix H1: when a temporary password is still owed, the SAME write clears the flag, as
         # `AdminSetPasswordView` does — or the expiry job would later overwrite this password.
-        written = supabase_admin.set_password(uid, new, account=account)
-        if written == supabase_admin.WEAK_PASSWORD:
+        written = courses_public.supabase_admin.set_password(uid, new, account=account)
+        if written == courses_public.supabase_admin.WEAK_PASSWORD:
             return _me_refusal('weak_password')
         if written is not True:
             return unavailable
         staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['password']})
         # Review fix M2: every OTHER session ends; this tab keeps its own (`scope=others`).
-        others = supabase_admin.sign_out_other_sessions(request.META.get('HTTP_AUTHORIZATION', ''))
+        others = courses_public.supabase_admin.sign_out_other_sessions(request.META.get('HTTP_AUTHORIZATION', ''))
         return Response({'ok': True, 'others_signed_out': others})

@@ -28,7 +28,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Q
 from django.utils import timezone
 
-from apps.courses import staff_reinvite
+from apps.courses import public as courses_public
 from apps.courses.models import PartnerAdmin
 
 from . import invitations
@@ -164,7 +164,7 @@ def invite(caller, *, email, name, source=None, make_source=None):
                 transaction.set_rollback(True)
                 return _refused('already_staff')
         else:
-            made = staff_reinvite.provision_for_invite(
+            made = courses_public.staff_reinvite.provision_for_invite(
                 reuse, email=email, name=name, role=SOURCE_ROLE, org=None,
                 owning_org=source.organisation, source=source)
             if made.error:
@@ -224,7 +224,7 @@ def resend(caller, target):
         return False, 'not_active'
     if target.first_seen_at is not None:
         return False, 'already_joined'
-    temp_password, err = staff_reinvite.reissue_credential(target)
+    temp_password, err = courses_public.staff_reinvite.reissue_credential(target)
     if err:
         return False, err
     source = target.source

@@ -271,3 +271,225 @@ class TestBackEdgesGoThroughTheFacade(SimpleTestCase):
         self.assertEqual(scan_doors('reports/x.py', 'from apps.courses.models import Y'),
                          {('reports/x.py', 'apps.courses.models', 'Y')})
         self.assertEqual(scan_doors('scholarship/x.py', 'from apps.courses.models import Y'), set())
+
+
+# ---------------------------------------------------------------------------------------------
+# F2b stage 2 (owner 2026-11-16): scholarship -> courses goes through `apps.courses.public` too.
+# Today's direct imports are listed below by exact (file, module, name); they are the cross-app
+# edges `code_health` (xapp) still counts, and they only ever shrink. Same rule as the door above:
+# non-test, non-migration files. It reads the same things code_health reads (absolute `from`
+# imports and plain `import`), and also resolves relative imports that climb out of the app and
+# `import_module('apps.courses...')` string calls, which code_health does not see.
+
+SCHOLARSHIP_COURSES_ALLOWED = frozenset({
+    ('scholarship/_test_fixtures.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/activity_people.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/announcements.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/award_timing.py', 'apps.courses', 'org_config'),
+    ('scholarship/award_withdrawal_chain.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/award_withdrawal_chain.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/branding.py', 'apps.courses.models', 'OrganisationTheme'),
+    ('scholarship/bursary.py', 'apps.courses', 'org_config'),
+    ('scholarship/bursary.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/card_display.py', 'apps.courses.models', 'Course'),
+    ('scholarship/card_display.py', 'apps.courses.models', 'FieldTaxonomy'),
+    ('scholarship/card_display.py', 'apps.courses.models', 'Institution'),
+    ('scholarship/card_display.py', 'apps.courses.models', 'StpmCourse'),
+    ('scholarship/check2_queries.py', 'apps.courses', 'org_config'),
+    ('scholarship/credit_steps.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/development.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/emails/interview_mail.py', 'apps.courses', 'org_config'),
+    ('scholarship/emails/payment_mail.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/emails/reviewer_interviews.py', 'apps.courses', 'org_config'),
+    ('scholarship/emails/sponsor_cards.py', 'apps.courses', 'org_config'),
+    ('scholarship/emails/sponsor_cards.py', 'apps.courses.models', 'FieldTaxonomy'),
+    ('scholarship/emails/student_reminders.py', 'apps.courses', 'org_config'),
+    ('scholarship/funding_estimate.py', 'apps.courses.models', 'Course'),
+    ('scholarship/funding_estimate.py', 'apps.courses.models', 'StpmCourse'),
+    ('scholarship/guardian_contact.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/invitations.py', 'apps.courses', 'org_config'),
+    ('scholarship/invoicing.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/letters.py', 'apps.courses', 'org_config'),
+    ('scholarship/management/commands/align_profile_names_to_ic.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/audit_pool_field_images.py', 'apps.courses.models', 'Course'),
+    ('scholarship/management/commands/audit_pool_field_images.py', 'apps.courses.models', 'FieldTaxonomy'),
+    ('scholarship/management/commands/backfill_invitations.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/management/commands/backfill_results_exam_type.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/backfill_stpm_cgpa.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/bursary_e2e.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/management/commands/bursary_e2e.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/management/commands/bursary_e2e.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/flag_stpm_koko_unconfirmed.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/issue_monthly_invoices.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/management/commands/repair_confirmed_pathway.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/management/commands/seed_contract_template.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/management/commands/send_review_nudges.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/meeting.py', 'apps.courses', 'org_config'),
+    ('scholarship/mentor_archive.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/mentor_desk.py', 'apps.courses.models_claim', 'ProfileLoginAlias'),
+    ('scholarship/mentor_invite.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/mentor_invite.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/mentoring.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/mentoring.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/mentoring.py', 'apps.courses.models_claim', 'ProfileLoginAlias'),
+    ('scholarship/mentoring_read.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/metered_usage.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/my_pending.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/nudge.py', 'apps.courses', 'org_config'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'Course'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'CourseInstitution'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'CourseRequirement'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'Institution'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'StpmCourse'),
+    ('scholarship/offer_course_match.py', 'apps.courses.models', 'StpmRequirement'),
+    ('scholarship/offer_pathway.py', 'apps.courses.models', 'Course'),
+    ('scholarship/offer_pathway.py', 'apps.courses.models', 'CourseInstitution'),
+    ('scholarship/offer_pathway.py', 'apps.courses.models', 'Institution'),
+    ('scholarship/offer_pathway.py', 'apps.courses.models', 'StpmCourse'),
+    ('scholarship/parent_call.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/payments_chain.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/payments_chain.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/pool.py', 'apps.courses', 'org_config'),
+    ('scholarship/results_expectations.py', 'apps.courses', 'org_config'),
+    ('scholarship/results_review.py', 'apps.courses', 'org_config'),
+    ('scholarship/results_route.py', 'apps.courses.models', 'StpmCourse'),
+    ('scholarship/review_sla.py', 'apps.courses', 'org_config'),
+    ('scholarship/scheduling.py', 'apps.courses', 'org_config'),
+    ('scholarship/scholars.py', 'apps.courses', 'org_config'),
+    ('scholarship/scholars.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/serializers/sponsor.py', 'apps.courses.models', 'Course'),
+    ('scholarship/serializers/sponsor.py', 'apps.courses.models', 'FieldTaxonomy'),
+    ('scholarship/serializers_admin/interviews.py', 'apps.courses', 'org_config'),
+    ('scholarship/serializers_admin/names.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/services/assignment.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/services/assignment.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/services/decline.py', 'apps.courses', 'org_config'),
+    ('scholarship/services/intake.py', 'apps.courses', 'org_config'),
+    ('scholarship/services/intake.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/services/queries_sla.py', 'apps.courses', 'org_config'),
+    ('scholarship/services/query_emails.py', 'apps.courses', 'org_config'),
+    ('scholarship/services/reminders.py', 'apps.courses', 'org_config'),
+    ('scholarship/source_invite.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/source_invite.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/sponsor_comms.py', 'apps.courses', 'org_config'),
+    ('scholarship/sponsorship/offers.py', 'apps.courses', 'org_config'),
+    ('scholarship/staff_activity_backfill.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_activity_read.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_footprint.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_lifecycle.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/staff_lifecycle.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_lifecycle.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/staff_lifecycle.py', 'apps.courses.models_claim', 'ProfileLoginAlias'),
+    ('scholarship/staff_list.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/staff_list.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/staff_mentor.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_permissions_admin.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/staff_permissions_admin.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/staff_person.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/staff_person.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/staff_tables_admin.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/staff_tables_admin.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/staff_tables_admin.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/standing.py', 'apps.courses', 'org_config'),
+    ('scholarship/surface_gates.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/surface_gates.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/surveys.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/usage.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views/common.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/views/document_attempts.py', 'apps.courses', 'org_config'),
+    ('scholarship/views/documents.py', 'apps.courses', 'org_config'),
+    ('scholarship/views_admin/applications.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/views_admin/base.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/billing.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/contracts.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/credits.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/invoices.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/lifecycle.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/views_admin/lifecycle.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/lifecycle.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/mentors.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/views_admin/mentors.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/mentors.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/my_programmes.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/org_config.py', 'apps.courses', 'org_config'),
+    ('scholarship/views_admin/org_config.py', 'apps.courses.models', 'OrganisationConfiguration'),
+    ('scholarship/views_admin/org_config.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/org_emails.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/overview.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/requests.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/requests_delivery.py', 'apps.courses', 'org_config'),
+    ('scholarship/views_admin/reviewers.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/views_admin/reviewers.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/scholars.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/source_users.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/sources.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/sources.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/sponsor_terms.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/sponsors.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/views_admin/staff.py', 'apps.courses', 'staff_permissions'),
+    ('scholarship/views_admin/staff.py', 'apps.courses', 'staff_tables'),
+    ('scholarship/views_admin/staff.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_admin/theme.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_admin/verdict.py', 'apps.courses', 'org_config'),
+    ('scholarship/views_admin/verdict.py', 'apps.courses.models', 'PartnerAdmin'),
+    ('scholarship/views_apply_gate.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/views_branding.py', 'apps.courses.models', 'PartnerOrganisation'),
+    ('scholarship/views_guardian_contact.py', 'apps.courses.models', 'StudentProfile'),
+    ('scholarship/vision/ic.py', 'apps.courses.models', 'StudentProfile'),
+})
+SCHOLARSHIP_COURSES_RULES = {'scholarship': ('courses',)}
+
+
+def scan_scholarship_courses(rel_path, source):
+    global DOOR_RULES
+    saved = DOOR_RULES
+    DOOR_RULES = SCHOLARSHIP_COURSES_RULES
+    try:
+        return scan_doors(rel_path, source)
+    finally:
+        DOOR_RULES = saved
+
+
+def scan_scholarship_courses_tree():
+    found = set()
+    for path in (APPS_DIR / 'scholarship').rglob('*.py'):
+        if 'migrations' in path.parts or 'tests' in path.parts or path.name.startswith('test_'):
+            continue
+        rel = path.relative_to(APPS_DIR).as_posix()
+        found |= scan_scholarship_courses(rel, path.read_text(encoding='utf-8'))
+    return found
+
+
+class TestScholarshipReachesCoursesThroughThePublicDoor(SimpleTestCase):
+    def test_no_new_direct_import_of_courses(self):
+        new = sorted(scan_scholarship_courses_tree() - SCHOLARSHIP_COURSES_ALLOWED)
+        self.assertEqual(
+            new, [],
+            'scholarship must reach courses through `apps.courses.public` (`from apps.courses import '
+            'public as courses_public`). Add the name to that facade (re-export only; a module is '
+            'listed in its `__all__`) instead of a new direct import:' + chr(10)
+            + chr(10).join(f'  {f}: from {m} import {n}' for f, m, n in new))
+
+    def test_every_allowlisted_import_is_still_found(self):
+        missing = sorted(SCHOLARSHIP_COURSES_ALLOWED - scan_scholarship_courses_tree())
+        self.assertEqual(missing, [],
+                         'Allowlisted imports the scan did not find (routed through public now? '
+                         f'delete the line and lower the ceiling; or the scanner broke): {missing}')
+
+    def test_the_allowlist_only_shrinks(self):
+        # 154 direct (file, module, name) entries today. Lower this when a line is deleted.
+        self.assertLessEqual(len(SCHOLARSHIP_COURSES_ALLOWED), 154)
+
+    def test_a_synthetic_new_direct_import_is_caught(self):
+        cases = {
+            'from apps.courses.models import X': {('scholarship/x.py', 'apps.courses.models', 'X')},
+            'from apps.courses import staff_tables': {('scholarship/x.py', 'apps.courses', 'staff_tables')},
+            'import apps.courses.org_config': {('scholarship/x.py', 'apps.courses.org_config', '')},
+            'from apps.courses import public': set(),
+            'from apps.courses.public import X': set(),
+            'from apps.reports.models import X': set(),
+        }
+        for src, want in cases.items():
+            with self.subTest(src=src):
+                self.assertEqual(scan_scholarship_courses('scholarship/x.py', src), want)
+        self.assertEqual(scan_scholarship_courses('courses/x.py', 'from apps.courses.models import X'), set())

@@ -61,7 +61,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.courses import staff_reinvite
+from apps.courses import public as courses_public
 from apps.courses.models import PartnerAdmin
 
 from . import invitations, mentor_gift
@@ -175,7 +175,7 @@ def _reinvite(caller, login, *, organisation, email, name, gifts=()):
     on, a fresh invitation, the letter. Nothing is written when the credential cannot be issued."""
     from apps.courses import public as courses_public
     mentor = login.mentor
-    temp_password, err = staff_reinvite.reissue_credential(login)
+    temp_password, err = courses_public.staff_reinvite.reissue_credential(login)
     if err:
         return Invited('create_failed', None, None, None, False, False, False)
     with transaction.atomic():
@@ -223,7 +223,7 @@ def invite(caller, *, organisation, email, name, gifts=()):
             mentor = Mentor.objects.create(organisation=organisation,
                                            created_by_email=caller.email or '')
             mentor_gift.set_gifts(mentor, gifts, check_open=False)   # I4: a new mentor mentors nobody yet
-            made = staff_reinvite.provision_for_invite(
+            made = courses_public.staff_reinvite.provision_for_invite(
                 None, email=email, name=name, role=MENTOR_ROLE, org=None,
                 owning_org=organisation, mentor=mentor)
             if made.error:
@@ -258,7 +258,7 @@ def _send_again(caller, mentor, login):
     from apps.courses import public as courses_public
     # A password is reissued ONLY onto a login we issued one for — never onto one somebody brought
     # with them: `reissue_credential` holds that rule for every Resend since TD-440.
-    temp_password, err = staff_reinvite.reissue_credential(login)
+    temp_password, err = courses_public.staff_reinvite.reissue_credential(login)
     if err:
         return False, err
     inv = invitations.create_or_refresh(
@@ -415,18 +415,18 @@ def edit(caller, mentor, login, *, name=None, email=None):
 
 def _move_address(caller, mentor, login, name, email):
     """`edit`'s new-address branch. See `edit`."""
-    from apps.courses import supabase_admin
+    from apps.courses import public as courses_public
     from . import staff_lifecycle
     if PartnerAdmin.objects.filter(email__iexact=email).exclude(pk=login.pk).exists():
         return False, False, 'already_staff'
-    if supabase_admin.supabase_config() is None:
+    if courses_public.supabase_admin.supabase_config() is None:
         return False, False, 'not_configured'
     old_uid = login.supabase_user_id
     plan, account = staff_lifecycle.plan_login_retirement(login)   # BEFORE the address changes
-    if plan == supabase_admin.FAILED:
+    if plan == courses_public.supabase_admin.FAILED:
         return False, False, 'retire_failed'
     now = timezone.now()
-    new_login = staff_reinvite.provision_login(email, name)
+    new_login = courses_public.staff_reinvite.provision_login(email, name)
     if new_login.error:
         return False, False, 'create_failed'
     try:
@@ -470,9 +470,9 @@ def _drop_new_login(uid):
     unused login with a live temporary password is left behind. Logged loudly when it cannot."""
     if not uid:
         return None
-    from apps.courses import supabase_admin
-    done = supabase_admin.delete_auth_user(uid)
-    if done == supabase_admin.FAILED:
+    from apps.courses import public as courses_public
+    done = courses_public.supabase_admin.delete_auth_user(uid)
+    if done == courses_public.supabase_admin.FAILED:
         logger.error('MENTOR_LOGIN_ORPHANED uid=%s: an email move failed after its new login was '
                      'made, and the login could not be removed - remove it by hand in Supabase Auth',
                      uid)
@@ -508,7 +508,7 @@ def delete_mentor(caller, mentor, login):
     `MentorAssignment.mentor` / `MentoringSession.mentor` stay PROTECT as the database's backstop. The
     mentor row is LOCKED first: in Postgres a new assignment's foreign key waits on that lock, so work
     landing between the check and the delete cannot slip through."""
-    from apps.courses import staff_tables, supabase_admin
+    from apps.courses import public as courses_public, staff_tables
     from . import staff_lifecycle
     if is_staff_login(login):
         return 'staff_mentor', None
@@ -529,7 +529,7 @@ def delete_mentor(caller, mentor, login):
             return 'has_work', work
         plan, account = (staff_lifecycle.plan_login_retirement(row) if row is not None
                          else ('none', None))
-        if plan == supabase_admin.FAILED:
+        if plan == courses_public.supabase_admin.FAILED:
             return 'login_cleanup_failed', None
         uid = row.supabase_user_id if row is not None else None
         Invitation.objects.filter(mentor=locked).delete()   # PROTECT on the mentor: theirs go first

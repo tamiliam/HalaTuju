@@ -32,7 +32,7 @@ OWN ``email_from`` domain gets that address for all mail — no per-topic aliase
 """
 from django.conf import settings
 
-from apps.courses import theme_tokens
+from apps.courses import public as courses_public
 
 # The org code of the platform tenant (BrightPath is seeded as org #1). Its branding IS the
 # platform default, so it renders from PLATFORM rather than its own seeded columns (see above).
@@ -247,7 +247,7 @@ class Branding:
             row = OrganisationTheme.active_for(self._org)
         except Exception:
             return None
-        return theme_tokens.applied_tokens(getattr(row, 'tokens', None))
+        return courses_public.theme_tokens.applied_tokens(getattr(row, 'tokens', None))
 
     @property
     def org_short_name(self):

@@ -53,7 +53,7 @@ never a door (no team member holds it).
 """
 from django.db import transaction
 
-from apps.courses.staff_tables import ADMIN_KEYS
+from apps.courses import public as courses_public
 
 from .staff_permissions_admin import PermissionChangeRefused
 
@@ -65,7 +65,7 @@ TABLES = (ADMINS, REVIEWERS)
 #: item 1): DERIVED from the ONE list of keys that seat a person in Admins (`staff_tables.ADMIN_KEYS`), so a
 #: future key follows on its own and a Remove from Admins strips it. `manage_team` is never a table key:
 #: the lead tier's alone (owner O15), never granted, so no chip shows it.
-ADMIN_TABLE_KEYS = tuple(k for k in ADMIN_KEYS if k != 'manage_team')
+ADMIN_TABLE_KEYS = tuple(k for k in courses_public.staff_tables.ADMIN_KEYS if k != 'manage_team')
 REVIEWER_TABLE_KEYS = ('review', 'qc')
 
 #: The keys an Add gives. Admins: BOTH keys, the same as an invited Admin (`staff_tables.INVITE_START`;

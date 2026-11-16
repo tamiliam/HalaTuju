@@ -11,7 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from apps.courses import staff_gift
+from apps.courses import public as courses_public
 
 from .. import surface_gates
 from .reviewers import _ReviewersBase
@@ -172,7 +172,7 @@ class AdminInvitationsView(_ReviewersBase):
             # a super is no longer offered another organisation's gift that the POST then 404s.
             'reviewer_programmes': [
                 {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
-                for p in staff_gift.reviewer_gift_choices(admin)
+                for p in courses_public.staff_gift.reviewer_gift_choices(admin)
             ],
             **extras,
         })

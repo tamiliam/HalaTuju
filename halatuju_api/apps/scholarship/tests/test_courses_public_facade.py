@@ -3,6 +3,11 @@ from django.test import SimpleTestCase
 
 from apps.courses import exam_questions, public
 
+# F2b stage 2: modules scholarship reaches through the door (the facade object IS the home module).
+_MODULE_DOORS = ('password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
+                 'staff_permissions_v2', 'staff_reinvite', 'staff_tables', 'supabase_admin',
+                 'theme_tokens', 'theme_versions')
+
 
 # The F2 package 1 re-exports: public name -> (home module, name there).
 _CATALOGUE_HOMES = {
@@ -53,7 +58,8 @@ class TestTheFacadeIsTheSameObjects(SimpleTestCase):
 
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
-            if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy', 'contrast'):
+            if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy', 'contrast',
+                        *_MODULE_DOORS):
                 continue            # not exam_questions names; pinned in test_scholarship_public_facade
             if name in _CATALOGUE_HOMES:
                 continue            # catalogue / merit names; pinned in the next test
@@ -93,6 +99,51 @@ class TestStageOneNames(SimpleTestCase):
         self.assertIsNot(public.gift_not_found, announcements._not_found)
 
 
+class TestStageTwoModuleDoors(SimpleTestCase):
+    def test_every_module_door_is_listed_and_is_the_home_module(self):
+        from importlib import import_module
+        for name in _MODULE_DOORS:
+            with self.subTest(name=name):
+                self.assertIn(name, public.__all__)
+                self.assertIs(getattr(public, name), import_module('apps.courses.' + name))
+
+    def test_scholarship_no_longer_imports_the_doored_modules_directly(self):
+        # Source scan: `from apps.courses import <door module>` (or `apps.courses.staff_tables import`)
+        # must not come back in non-test scholarship code. `staff_tables` the MODULE stays allowed in
+        # the files that still import it (stage 2 only re-routed ADMIN_KEYS); the other nine are closed.
+        import re
+        from pathlib import Path
+
+        import apps.scholarship as scholarship
+        closed = [n for n in _MODULE_DOORS if n != 'staff_tables']
+        pattern = re.compile(r'^\s*from apps\.courses import ([\w, ]+)$', re.M)
+        bad = []
+        for path in Path(scholarship.__file__).parent.rglob('*.py'):
+            if 'tests' in path.parts or 'migrations' in path.parts:
+                continue
+            for m in pattern.finditer(path.read_text(encoding='utf-8')):
+                names = {n.strip() for n in m.group(1).split(',')}
+                if names & set(closed):
+                    bad.append((path.name, sorted(names & set(closed))))
+            if re.search(r'from apps\.courses\.staff_tables import ADMIN_KEYS', path.read_text(encoding='utf-8')):
+                bad.append((path.name, ['ADMIN_KEYS']))
+        self.assertEqual(bad, [])
+
+
+class TestAuditRecordersAreWiredOntoTheRealModule(SimpleTestCase):
+    """`scholarship/apps.py` ready() writes the recorders; a write onto a copy would silently kill audit rows."""
+
+    def test_ready_wired_the_recorders_onto_the_real_staff_activity_hook_module(self):
+        from importlib import import_module
+
+        from apps.scholarship.staff_activity import record
+        from apps.scholarship.staff_permissions_admin import record_role_reset
+        real = import_module('apps.courses.staff_activity_hook')
+        self.assertIs(public.staff_activity_hook, real)
+        self.assertIs(real.RECORDER, record)
+        self.assertIs(real.PERMISSION_RECORDER, record_role_reset)
+
+
 class TestTheWitnessIsRegisteredThroughTheFacade(SimpleTestCase):
     def test_register_sets_the_attribute_results_held_reads(self):
         before = exam_questions.STPM_DOCUMENT_WITNESS
@@ -130,3 +181,38 @@ class TestPatchTargets(SimpleTestCase):
         from apps.scholarship.serializers_admin.application_list import _application_merit_score
         with mock.patch.object(exam_questions, 'merit_100', return_value=12.34):
             self.assertIsNone(_application_merit_score(SimpleNamespace(profile=None)))
+
+
+class TestImportOrderIsSafeInAFreshProcess(SimpleTestCase):
+    """The door pulls ten more courses modules; each entry point must still load cold (F2b stage 2)."""
+
+    _SCRIPT = (
+        "import os, importlib\n"
+        "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'halatuju.settings.development')\n"
+        "{before}\n"
+        "import django\n"
+        "django.setup()\n"
+        "{after}\n"
+        "from apps.courses import public, staff_activity_hook\n"
+        "assert staff_activity_hook.RECORDER is not None\n"
+        "assert public.supabase_admin.__name__ == 'apps.courses.supabase_admin'\n"
+    )
+
+    def _run(self, before='', after=''):
+        import subprocess
+        import sys
+
+        from django.conf import settings
+        script = self._SCRIPT.format(before=before, after=after)
+        done = subprocess.run([sys.executable, '-c', script], cwd=str(settings.BASE_DIR),
+                              capture_output=True, text=True, timeout=120)
+        self.assertEqual(done.returncode, 0, done.stderr[-2000:])
+
+    def test_courses_public_first(self):
+        self.assertIsNone(self._run(after="importlib.import_module('apps.courses.public')"))
+
+    def test_scholarship_apps_first(self):
+        self.assertIsNone(self._run(before="importlib.import_module('apps.scholarship.apps')"))
+
+    def test_reports_views_first(self):
+        self.assertIsNone(self._run(after="importlib.import_module('apps.reports.views')"))

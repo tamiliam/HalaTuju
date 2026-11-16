@@ -16,7 +16,7 @@ and the same `restore`, behind the mentor doors (`AdminMentorDetailView.delete`,
 """
 from django.db import transaction
 
-from apps.courses import staff_archive, staff_reinvite
+from apps.courses import public as courses_public
 from apps.courses.models import PartnerAdmin
 
 from . import invitations, mentor_gift
@@ -36,7 +36,7 @@ def archive(caller, mentor, login):
                if locked is not None else None)
         if row is None or mentor_invite.is_staff_login(row) or not mentor_invite.mentor_work(row, locked):
             return None
-        done = staff_archive.archive_locked(caller, row)
+        done = courses_public.staff_archive.archive_locked(caller, row)
         if done.error:
             return done.error, done.work
     return 'archived', staff_lifecycle.retire_login(done.uid, done.plan, done.account)
@@ -54,7 +54,7 @@ def reinvite(caller, existing, *, organisation, email, name, gifts=()):
     if mentor is None or mentor.organisation_id != organisation.pk:
         return refused
     with transaction.atomic():
-        made = staff_reinvite.provision_for_invite(
+        made = courses_public.staff_reinvite.provision_for_invite(
             existing, email=email, name=name, role=MENTOR_ROLE, org=None, owning_org=organisation,
             mentor=mentor)
         if made.error:

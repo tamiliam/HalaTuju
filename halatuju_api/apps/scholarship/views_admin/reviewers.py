@@ -180,7 +180,7 @@ def _reviewer_dict(admin, work):
 
     ⚠ NO corrections figure here, by decision (2026-08-02). See `reopen.reviewer_reopens`.
     """
-    from apps.courses import staff_gift, staff_permissions
+    from apps.courses import public as courses_public, staff_permissions
     added, removed = staff_permissions.preset_diff(admin)
     return {
         'id': admin.id,
@@ -212,7 +212,7 @@ def _reviewer_dict(admin, work):
         # ⚠ THE GIFTS THIS PERSON COVERS (S-ASSIGN 2026-09-04; a LIST since multi-gift tagging,
         # 2026-11-06). `[]` MEANS EVERY GIFT — the permissive default, never a missing value; the
         # screen shows one "Every gift" chip for it. `ReviewerGift` rows, never the old column.
-        'gifts': staff_gift.gifts_payload(admin),
+        'gifts': courses_public.staff_gift.gifts_payload(admin),
         # The pop-over offers only this organisation's gifts (a super sees every organisation's).
         'organisation_id': admin.owning_organisation_id,
         # Request #39 Sprint 4: People's permission chips — the same three fields the staff list
@@ -264,7 +264,7 @@ class _ReviewersBase(_AdminBase):
         404 on a revoked account, and assignment reads its own `is_active=True` queryset
         (`AdminAssignableView`), so a revoked reviewer can still never be handed a case.
         """
-        from apps.courses import staff_gift, staff_permissions
+        from apps.courses import public as courses_public, staff_permissions
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
         # ⚠ #39 Sprint 3: the TEAM MEMBERS who hold `review` or `qc` (was the roles reviewer, qc —
         # exactly the presets holding either). The organisation admin's lead tier holds `qc` but
@@ -277,7 +277,7 @@ class _ReviewersBase(_AdminBase):
               .filter(staff_permissions.team_holding(('review', 'qc'), with_lead=True))
               .exclude(role='super').filter(archived_at__isnull=True)   # M1a: an archived row is on no list
               .select_related('reviewer_profile', 'mentor')
-              .annotate(**staff_gift.gift_annotation()).order_by('name'))
+              .annotate(**courses_public.staff_gift.gift_annotation()).order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)
         if org_id is not None:
@@ -453,7 +453,7 @@ class AdminReviewerProgrammeView(_ReviewersBase):
     """
 
     def post(self, request, pk):
-        from apps.courses import staff_gift
+        from apps.courses import public as courses_public
         admin, org_id, err = self._side(request)
         if err:
             return err
@@ -473,15 +473,15 @@ class AdminReviewerProgrammeView(_ReviewersBase):
         else:
             asked = request.data.get('programme_id')
             raw = [] if asked in (None, '') else [asked]
-        gifts, refusal = staff_gift.resolve_gifts(raw, target.owning_organisation_id)
+        gifts, refusal = courses_public.staff_gift.resolve_gifts(raw, target.owning_organisation_id)
         if refusal is not None:
             return refusal
-        old = ','.join(g['code'] for g in staff_gift.gifts_payload(target))
-        staff_gift.set_gifts(target, gifts)
+        old = ','.join(g['code'] for g in courses_public.staff_gift.gifts_payload(target))
+        courses_public.staff_gift.set_gifts(target, gifts)
         logger.info('AUDIT reviewer_programme_set admin=%s old=%s new=%s by=%s',
                     target.id, old or '(every gift)',
                     ','.join(g.code for g in gifts) or '(every gift)', admin.email or '')
-        return Response({'id': target.id, 'gifts': staff_gift.gifts_payload(target)})
+        return Response({'id': target.id, 'gifts': courses_public.staff_gift.gifts_payload(target)})
 
 
 class AdminReviewerSystemEmailsView(_ReviewersBase):

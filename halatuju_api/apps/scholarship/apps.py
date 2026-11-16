@@ -24,10 +24,9 @@ class ScholarshipConfig(AppConfig):
         # Common profile S3: the courses app records its staff actions (first sign-in, a referral
         # partner's profile save) through `staff_activity_hook` — registered here, not imported
         # there, for the same app-boundary reason as the witness above.
-        from apps.courses import staff_activity_hook
         from .staff_activity import record
-        staff_activity_hook.RECORDER = record
+        public.staff_activity_hook.RECORDER = record
         # M3a review (2026-11-14): the Django admin screen (`apps/courses/admin.py`) audits a role change
         # through the editor's own writer, registered here for the same app-boundary reason.
         from .staff_permissions_admin import record_role_reset
-        staff_activity_hook.PERMISSION_RECORDER = record_role_reset
+        public.staff_activity_hook.PERMISSION_RECORDER = record_role_reset

@@ -113,8 +113,8 @@ def invite_source(request, admin):
             return ReferralSource.objects.create(organisation=owner, **fields)
 
     # As the staff invite: nothing is written while the login side cannot be reached.
-    from apps.courses import supabase_admin
-    if supabase_admin.supabase_config() is None:
+    from apps.courses import public as courses_public
+    if courses_public.supabase_admin.supabase_config() is None:
         return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,
                       'Supabase service role key not configured')
     done = source_invite.invite(admin, email=email, name=name, source=source,

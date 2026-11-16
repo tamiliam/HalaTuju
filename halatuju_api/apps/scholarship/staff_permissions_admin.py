@@ -128,8 +128,8 @@ def asked_set(asked):
 
 def _v2():
     """`staff_permissions_v2`, through this module (the V2Importers allowlist names it, M2b)."""
-    from apps.courses import staff_permissions_v2
-    return staff_permissions_v2
+    from apps.courses import public as courses_public
+    return courses_public.staff_permissions_v2
 
 
 def stored_page_keys(target):
