@@ -59,7 +59,7 @@ class TestTheFacadeIsTheSameObjects(SimpleTestCase):
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
             if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy', 'contrast',
-                        *_MODULE_DOORS):
+                        'org_config', *_MODULE_DOORS):
                 continue            # not exam_questions names; pinned in test_scholarship_public_facade
             if name in _CATALOGUE_HOMES:
                 continue            # catalogue / merit names; pinned in the next test
@@ -86,6 +86,12 @@ class TestStageOneNames(SimpleTestCase):
                 self.assertIn(name, public.__all__)
                 self.assertIs(getattr(public, name),
                               getattr(import_module('apps.courses.' + module), home_name))
+
+    def test_the_org_config_door_is_the_module(self):
+        # H3b: recent_letter reads its tunable through the door; the object IS the home module.
+        from apps.courses import org_config
+        self.assertIn('org_config', public.__all__)
+        self.assertIs(public.org_config, org_config)
 
     def test_the_contrast_door_is_the_module(self):
         from apps.courses import contrast

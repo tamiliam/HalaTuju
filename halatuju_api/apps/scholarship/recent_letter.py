@@ -109,8 +109,8 @@ def cutoff(today, months):
 
 
 def window_months(application):
-    from apps.courses import org_config
-    return org_config.value(getattr(application, 'owning_organisation', None), WINDOW_KEY)
+    from apps.courses import public as courses_public   # the courses door (F2b), not org_config directly
+    return courses_public.org_config.value(getattr(application, 'owning_organisation', None), WINDOW_KEY)
 
 
 def _recent_letter_on_file(application, edge):
