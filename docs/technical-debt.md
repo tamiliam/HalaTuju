@@ -9138,7 +9138,7 @@ past. The 286-letter corpus holds none. *(A - S)*
 (none in the corpus). Capital "STAM" inside "STAMFORD" (a college name) makes a line with no session an exam line, so
 it reads unknown (safe direction).
 
-### [TD-634] Recent-letter ask: a recent OFFER letter kept out of the live slot does not answer it - low
+### ~~[TD-634] Recent-letter ask: a recent OFFER letter kept out of the live slot does not answer it - low~~ — RESOLVED 2026-11-16 (H3b fix round 1: any recent non-failing letter on file, offer or confirmation, any institution, live or kept out, closes the ask; the date-form note moved to TD-635)
 
 **Raised 2026-11-16 by sprint H3b (logged, not fixed).** `recent_letter.wanted` drops the ask when the LIVE letter is
 recent, or when any version of the offer slot holds a recent, non-failing CONFIRMATION letter (the brief's rule). A
@@ -9147,3 +9147,31 @@ the soft ask stays open until her answer window lapses. It never blocks, fails o
 sees the item and can close it. Count it on live data before deciding whether any recent letter should answer.
 Also: the date read is strict (`letter_date`), so a letter whose `offer_date` is in another form is never asked about
 (the no-guess rule, by design). *(A - S)*
+
+### [TD-635] Recent-letter ask: date forms the strict reader does not place give no ask - low
+
+**Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).**
+`recent_letter.letter_date` reads only one exact date per value, so "5 Mac 2026M", "5 MAC 2026 (KHAMIS)", "2026/03/05"
+and a date followed by its Hijri date read None, and those students are never asked for a recent letter. This is the
+no-guessing rule (by design, safe direction: no ask rather than a wrong one). At release, count the live offer-slot
+letters whose `offer_date` reads None, by form, and widen the reader only for forms that are both common and
+unambiguous. *(A - S)*
+
+### [TD-636] Recent-letter ask: a confirmation with a differently read course name takes the live slot as a course switch - medium
+
+**Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).** When she answers
+with a confirmation letter whose programme name or codes read differently from her genuine offer,
+`promotion.should_promote` treats it as a pathway switch (`is_pathway_switch`), which skips the quality comparison,
+so the confirmation takes the live slot from the genuine offer. The live letter then reads suspect (owner rule:
+confirmation letters are suspect at best) and a person checks. **This already happens today for any usable
+confirmation upload** (it is the existing promotion rule, not new in H3b); H3b makes it more frequent by asking for
+confirmations. A suspect confirmation that is kept out reads 'mismatch' at upload and closes the ask at the next
+Check 2 sync. Decide whether a confirmation for the same institution should ever displace a genuine offer. *(A - M)*
+
+### [TD-637] Recent-letter ask: go-live wave of asks and query emails - read-only dry-run count owed - medium
+
+**Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).** At go-live,
+every Completed-stage case whose live letter is older than the window (and whose course should have started) gets
+the ask plus one query email at its next Check 2 sync. Before release, run a read-only dry-run count on live data
+(`recent_letter.wanted` per case, no writes, no emails) by organisation, and let the owner decide whether to send
+or to stage the wave. *(A - S)*

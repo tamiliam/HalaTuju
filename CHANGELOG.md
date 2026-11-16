@@ -177,6 +177,15 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3b review 1 - recent-letter ask closes on any recent letter, waits for the course to start, never holds assignment (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` unchanged.
+- **Any recent letter closes it.** An offer or a confirmation letter, any institution (university, matriculation, polytechnic, Form 6), live or kept out of the live slot, dated inside the window and not failed. TD-634 resolved.
+- **Not before the course starts.** No ask while the reporting date is still to come, or cannot be read to a day and may still be to come. No reporting date: the plain rule (letter older than the window).
+- **Non-holding.** `queries_sla` leaves `recent_letter_needed` out of `open_student_tasks` and `with_open_student_tasks`: the ask alone never holds reviewer assignment; any other open request still does. FAQ, Reviewer Guide and decisions.md say why (the plan: soft, no block).
+- **No copied money code.** The reporting-date copy and its pinning test are gone; `recent_letter.offer_asks` calls `pathway_engine.offer_reporting_date_unknown` and `wanted` under one document snapshot. Check 2 sync stays at 58 queries.
+- **Tests.** University and matriculation confirmations close it; reporting date to come / past / not read to a day / absent; an upload closes it through `resolve_doc_items_for_upload` (a suspect one at the next sync); the assignment hold. **TD-635, TD-636, TD-637** logged (branch numbers).
+
 ### feat: sprint H3b - an old offer or confirmation letter asks for a recent confirmation letter (soft) (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (no verdict can change). decisions.md H3b.

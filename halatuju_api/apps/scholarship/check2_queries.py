@@ -314,9 +314,8 @@ def _gap_sets(application):
     # TD-262 F2 — the declared-wage ask has its own module; it asks ``income_shown`` whether the
     # member's income is already carried another way before chasing a letter nobody needs.
     from .income_declared_gaps import declared_income_gaps
-    from .document_snapshot import latest_doc
     from .academic_engine import spm_exam_year_unknown
-    offer = latest_doc(application, 'offer_letter')  # H3b: ONE read for both offer asks (TD-308 budget)
+    rd_unknown, letter_old = recent_letter.offer_asks(application)  # H3b: one read for both (TD-308)
     gaps = {g['code'] for g in completeness_gaps(application)}
     if spm_exam_year_unknown(application):          # read slip, no anchorable exam year (#12)
         gaps.add('spm_year_unknown')
@@ -333,7 +332,7 @@ def _gap_sets(application):
         gaps.add('informal_income_detail')
     if pension_context(application) is not None:        # #117 — retired/unable parent → ask-first pension
         gaps.add('pension_amount_unknown')
-    if recent_letter.reporting_date_unknown(offer):     # readable offer, no parseable report date
+    if rd_unknown:                                      # readable offer, no parseable report date
         gaps.add('reporting_date_unknown')
     if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
         gaps.add('unemployment_detail_unknown')
@@ -379,7 +378,7 @@ def _gap_sets(application):
         proof_wanted.add(_MEMBER_PROOF_CODE[str_salary_earner])
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')
-    if recent_letter.wanted(application, live=offer):    # H3b: the letter is older than the org's window
+    if letter_old:                                       # H3b: letter older than the window, course started
         proof_wanted.add(recent_letter.CODE)
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')
