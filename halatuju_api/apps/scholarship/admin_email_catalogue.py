@@ -75,6 +75,8 @@ NOT_ADMIN_SENDERS = {
     'send_reviewer_alternatives_requested_email': 'reviewer email (we maintain)',
     'send_reviewer_student_message_email': 'reviewer email (we maintain)',
     'send_reviewer_interview_cancelled_email': 'reviewer email (we maintain)',
+    # Request #73: to the OTHER side of an org admin / reviewer note; not yet on Team -> Emails.
+    'send_staff_note_email': 'note alert between an org admin and the assigned reviewer (we maintain)',
     # Invitations (Organisation -> Invitations -> Emails; the mentor one also on Team -> Emails).
     'send_partner_welcome_email': 'invitation (the staff joining letter)',
     'send_mentor_invitation_email': 'invitation (the mentor letter)',

@@ -148,6 +148,12 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   no reverse accessor, no serializer, admin or export, never copied into `vision_fields` (`test_ocr_keep.py` lists
   the only modules that may name it). Not kept for the MyKad read (`extract_mykad` returns fields only). RLS on, one
   `service_role` policy.
+- Org admin and reviewer notes (request #73, 2026-11-16; scholarship 0216): `reviewer_notes.author_role`
+  (`org_admin` | `reviewer`, decided on the locked row). `staff_notifications` — `recipient` (PartnerAdmin,
+  CASCADE), `org`, `application`, `kind` (`reviewer_note`), `source_id`, `created_at`, `seen_at`; unique
+  (recipient, kind, source_id); ids only, never text. ONE writer and reader: `apps/scholarship/staff_notifications.py`
+  (rows on write, the email to the other side after the commit, `mark_seen` on the notes GET, `forget` in the
+  assign-emails cron, the list's `new_note` EXISTS column and the bell count). RLS on, one `service_role` policy.
 
 ## Scheduled work
 

@@ -15,9 +15,9 @@ import type { ApiOptions } from './client'
 import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
 import type { InterviewSchedule } from './interviews'
 import type {
-  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview,
-  AdminVerdictFact,
+  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview, AdminVerdictFact,
 } from './verdict'
+import type { NewNoteListFields } from './reviewerNotes'
 import type { AdminApplicantDocument, AdminReferee } from './documents'
 import type { AdminResolutionItem } from './resolution'
 import type { AdminDisbursement, MaintenanceSubstate } from './lifecycle'
@@ -26,7 +26,7 @@ import type { PreInterviewDetailFields, PreInterviewListFields } from './preInte
 
 // ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
-export interface AdminScholarshipListItem extends PreInterviewListFields {
+export interface AdminScholarshipListItem extends PreInterviewListFields, NewNoteListFields {
   id: number
   name: string
   profile_id: string | null

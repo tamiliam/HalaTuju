@@ -154,8 +154,13 @@ org admin keeping `see_all` (`services.R1_SUPER_TARGET_ROLES`) may still HOLD a 
   `writer_only` for everyone else), from Awaiting review (`profile_complete`) or Interviewing until the
   reviewer records an Approve or Decline (`interview_completeness.decision_gate_applies`; a reopened
   decision reopens it at Interviewing); 400 `notes_closed` otherwise. Append-only, 2,000 characters.
-  Students and sponsors never; no AI prompt reads them. Manual: `role-org-admin` § *Notes for the
-  reviewer*, `role-reviewer` § *Notes from your org admin*, `role-qc`; FAQ: org_admin, reviewer.
+  **Two-way since request #73 (2026-11-16): "Org admin and reviewer notes".** WRITE = super + `org_admin`
+  (students.edit, side `org_admin`) AND the reviewer ASSIGNED to the case (side `reviewer`); `qc`, `admin`
+  and everyone else read only (403 `writer_only`). Same window, closing for both sides. The new-note count
+  `GET admin/scholarship/staff-notifications/count/` is self-scoped (the caller's own rows); a source
+  partner, a mentor and an inactive account 403.
+  Students and sponsors never; no AI prompt reads them. Manual: `role-org-admin` § *Org admin and
+  reviewer notes*, `role-reviewer` § *Notes with your org admin*, `role-qc`; FAQ: org_admin, reviewer.
 - **Reject before interview is for whoever holds the `qc` permission key (request #75, 2026-11-16)**
   — `POST admin/scholarship/applications/<pk>/reject-before-interview/` `{reason, comments}`. Gate:
   `_require_app_write` (another organisation 404), then `has_perm('qc')`: super, `org_admin` and `qc`

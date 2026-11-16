@@ -138,5 +138,6 @@ from .reviewer_interviews import (
     send_reviewer_student_message_email, send_reviewer_verdict_due_email,
     send_verdict_escalation_email
 )
+from .staff_note_mail import build_staff_note_email, send_staff_note_email
 
 __all__ = [n for n in dir() if not n.startswith("__")]

@@ -180,10 +180,13 @@ const ALLOWED: Entry[] = [
   ['lib/assignOptions.ts', "isSuper || rv.role === 'reviewer'", 1, 'TARGET', 'who may be handed a case when the server serves no assignable flag'],
   // ── SIDE ─────────────────────────────────────────────────────────────────────────────────────────────────
   ['lib/requestStatus.ts', "if (role === 'org_admin') {", 1, 'SIDE', 'the requesting organisation\'s actions, as against the owner\'s'],
+  ['app/admin/scholarship/[id]/view/ReviewerNotesCard.tsx', "const replying = viewer === 'reviewer'", 1, 'SIDE', 'the served notes side (#73): the reviewer\'s wording; the box is can_add'],
+  ['app/admin/scholarship/[id]/view/ReviewerNotesCard.tsx', "viewer === 'org_admin' ? 'introOrgAdmin'", 1, 'SIDE', 'the served notes side (#73) picks the intro line'],
   // ── DISPLAY ──────────────────────────────────────────────────────────────────────────────────────────────
   ['app/admin/requests/[id]/page.tsx', "req.approved_by_role === 'super'", 1, 'DISPLAY', 'names who approved'],
   ['components/ActionCentre.tsx', "attributionFor(item) === 'reviewer'", 1, 'DISPLAY', 'names who an item came from'],
   ['components/action-centre/ActionCard.tsx', "attributionFor(item) === 'reviewer'", 1, 'DISPLAY', 'names who an item came from'],
+  ['app/admin/scholarship/[id]/view/ReviewerNotesCard.tsx', "n.author_role === 'reviewer'", 2, 'DISPLAY', 'names which side a note came from (#73), and tints it'],
   ['content/manual/index.ts', `${SUPER}) return 'super'`, 1, 'DISPLAY', 'the Guide\'s chapters by role'],
   ['content/manual/index.ts', `!role || ${SUPER}) return []`, 1, 'DISPLAY', 'the Guide\'s chapters by role'],
   ['content/manual/index.ts', "role.role === 'reviewer' || role.role === 'qc' || role.role === 'org_admin'", 3, 'DISPLAY', 'the Guide\'s chapters by role'],

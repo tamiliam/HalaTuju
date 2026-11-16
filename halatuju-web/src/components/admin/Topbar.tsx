@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { useT } from '@/lib/i18n'
@@ -20,7 +21,8 @@ import StaffAvatar from '@/components/admin/StaffAvatar'
  * ScopeSwitcher docstring for why that distinction is load-bearing.
  */
 
-export interface Attention { key: string; label: string; sub?: string; tone: 'info' | 'warn' | 'crit' }
+/** One bell line. `href` (request #73) makes the line a real link to where the thing waits. */
+export interface Attention { key: string; label: string; sub?: string; tone: 'info' | 'warn' | 'crit'; href?: string }
 
 function Breadcrumb({ orgName, programmeName, scopes }: {
   orgName?: string | null; programmeName?: string; scopes?: React.ReactNode
@@ -188,15 +190,19 @@ export function Topbar({
         {attention.length === 0 ? (
           <p className="px-3 py-3 text-sm text-ground-400">{t('admin.shell.nothingWaiting')}</p>
         ) : (
-          attention.map((a) => (
-            <div key={a.key} className="flex gap-2.5 rounded-lg px-3 py-2">
+          attention.map((a) => {
+            const inner = <>
               <span aria-hidden className={`w-[3px] shrink-0 rounded ${toneBar(a.tone)}`} />
               <span className="min-w-0">
                 <span className="block text-[12.5px] font-semibold text-ground-900">{a.label}</span>
                 {a.sub && <span className="block text-[11px] text-ground-500">{a.sub}</span>}
               </span>
-            </div>
-          ))
+            </>
+            return a.href
+              ? <Link key={a.key} href={a.href} role="menuitem" data-menuitem
+                  className="flex min-h-11 gap-2.5 rounded-lg px-3 py-2 hover:bg-primary-50">{inner}</Link>
+              : <div key={a.key} className="flex gap-2.5 rounded-lg px-3 py-2">{inner}</div>
+          })
         )}
         <MenuSeparator />
         {/* Honest about what this is: counts the console already fetches, gathered in one place.

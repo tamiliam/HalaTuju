@@ -1,7 +1,17 @@
-"""Notes for the reviewer — the ONE writer and the window (request #55, 2026-11-07).
+"""Org admin and reviewer notes — the ONE writer and the window (request #55, 2026-11-07; made two-way by
+request #73, 2026-11-16).
 
 The table is `models/reviewer_notes.py` (`reviewer_notes`). The view is
-`views_admin/reviewer_notes.py`; the gate (who may read, who may write) lives there, on `_AdminBase`.
+`views_admin/reviewer_notes.py`; who may read is its fence, on `_AdminBase`.
+
+⚠ WHO MAY WRITE (#73), decided HERE, on the locked row: the reviewer ASSIGNED to the case (the note is
+recorded as the reviewer's), else anyone who may work students — org admins and a platform super (recorded
+as the org admin side's). Anyone else is refused `writer_only`. The new reviewer after a reassignment reads
+every note, the earlier reviewer's included, and is the one who may reply.
+
+⚠ WHO HEARS (#73): `staff_notifications.notify` runs INSIDE the note's transaction — everyone on the case
+but the writer gets an unseen row — and the email goes after the commit to the OTHER side only, never with
+the text.
 
 ⚠ THE WINDOW: "from Awaiting Review until the reviewer records a decision" (owner, 2026-11-07).
   * FROM Awaiting Review — status `profile_complete` (its label IS "Awaiting review"), then
@@ -23,9 +33,11 @@ import re
 
 from django.db import transaction
 
+from . import staff_notifications, surface_gates
 from .interview_completeness import decision_gate_applies
 from .models import ReviewerNote
-from .models.reviewer_notes import NOTE_MAX
+from .models.reviewer_notes import NOTE_MAX, ORG_ADMIN, REVIEWER
+from .models.staff_notifications import REVIEWER_NOTE
 from .status_lock import StatusRefused, lock_application_for
 
 #: The statuses a note may be added at: Awaiting review, Interviewing.
@@ -42,15 +54,25 @@ _EDGES = re.compile(f'^{_INVISIBLE.pattern}+|{_INVISIBLE.pattern}+$')
 
 
 class ReviewerNoteError(Exception):
-    """Raised with a machine code: 'notes_closed', 'bad_body', 'empty_body', 'too_long'."""
+    """Raised with a machine code: 'writer_only', 'notes_closed', 'bad_body', 'empty_body', 'too_long'."""
     def __init__(self, code):
         self.code = code
         super().__init__(code)
 
 
 def window_open(application):
-    """May a note be added to ``application`` now? (Who may add one is the view's question.)"""
+    """May a note be added to ``application`` now? (Who may add one is `side_of`.)"""
     return application.status in NOTE_STATUSES and decision_gate_applies(application)
+
+
+def side_of(application, admin):
+    """Which side of the notes ``admin`` is on: 'reviewer' (assigned to the case), 'org_admin' (may work
+    students: org admins and a super), else 'reader' (QC, an admin without the key: read-only)."""
+    if admin is not None and application.assigned_to_id and application.assigned_to_id == admin.id:
+        return REVIEWER
+    if admin is not None and surface_gates.may_work_students(admin):
+        return ORG_ADMIN
+    return 'reader'
 
 
 def clean_body(body):
@@ -80,19 +102,29 @@ def add_note(application, body, *, author):
             lock_application_for(application, NOTE_STATUSES)
         except StatusRefused:
             raise ReviewerNoteError('notes_closed') from None
+        side = side_of(application, author)   # asked of the locked row: a reassignment cannot race it
+        if side == 'reader':
+            raise ReviewerNoteError('writer_only')
         if not window_open(application):
             raise ReviewerNoteError('notes_closed')
-        return ReviewerNote.objects.create(
-            application=application, body=text, author=author,
+        note = ReviewerNote.objects.create(
+            application=application, body=text, author=author, author_role=side,
             author_email=(getattr(author, 'email', '') or '')[:254])
+        people = staff_notifications.people_on_the_case(application, author)
+        staff_notifications.notify(application, kind=REVIEWER_NOTE, source_id=note.id, recipients=people)
+        staff_notifications.alert_by_email(application, author_role=side, recipients=people)
+        return note
 
 
-def notes_for(application):
-    """Every note on ``application``, oldest first, as the card draws them."""
+def notes_for(application, viewer=None):
+    """Every note on ``application``, oldest first, as the card draws them. ``is_you``: ``viewer`` wrote it."""
     rows = ReviewerNote.objects.filter(application=application).select_related('author')
+    viewer_id = getattr(viewer, 'id', None)
     return [{
         'id': n.id,
         'body': n.body,
         'author_name': (getattr(n.author, 'name', '') or '') or n.author_email,
+        'author_role': n.author_role,
+        'is_you': viewer_id is not None and n.author_id == viewer_id,
         'created_at': n.created_at.isoformat(),
     } for n in rows]

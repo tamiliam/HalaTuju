@@ -1,10 +1,11 @@
 /**
  * @jest-environment jsdom
  *
- * Request #55 (2026-11-07): "Notes for the reviewer", rendered. Pinned: the org admin's face (list,
- * box, live counter, append-only line, Add note), the reader's face (read-only list, or the empty
- * line), the box following the SERVED `can_add` and never the role, the 2,000 limit, and a refusal
- * worded by its code.
+ * Request #55 (2026-11-07), two-way since #73 (2026-11-16): "Org admin and reviewer notes", rendered.
+ * Pinned: the org admin's face (list, box, live counter, append-only line, Add note), the reviewer's face
+ * (Reply / Send reply), the reader's face (read-only list, or the empty line), each note's side ("Org
+ * admin", "Reviewer", "Reviewer (you)") and the reviewer's tint, the closed hint for both writers, the box
+ * following the SERVED `can_add` and `viewer`, the 2,000 limit, and a refusal worded by its code.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ReviewerNotesCard, looksEmpty, noteLength } from './ReviewerNotesCard'
@@ -19,13 +20,15 @@ const t = ((k: string, vars?: Record<string, string>) =>
 const P = 'admin.scholarship.reviewerNotes'
 
 const NOTE = { id: 1, body: 'Ask about the transport cost.', author_name: 'Org Admin One',
-  created_at: '2026-11-05T10:42:00+08:00' }
+  author_role: 'org_admin' as const, is_you: false, created_at: '2026-11-05T10:42:00+08:00' }
+const REPLY = { id: 2, body: 'The bus is RM90 a month.', author_name: 'Reviewer Two',
+  author_role: 'reviewer' as const, is_you: false, created_at: '2026-11-06T09:00:00+08:00' }
 const payload = (over: Partial<ReviewerNotes> = {}): ReviewerNotes => ({
-  notes: [NOTE], window_open: true, can_add: true, max_length: 2000, ...over,
+  notes: [NOTE], viewer: 'org_admin', window_open: true, can_add: true, max_length: 2000, ...over,
 })
 
-function mount(isWriter: boolean) {
-  return render(<ReviewerNotesCard appId={7} token="tok" t={t} isWriter={isWriter} refreshKey="interviewing" />)
+function mount() {
+  return render(<ReviewerNotesCard appId={7} token="tok" t={t} refreshKey="interviewing" />)
 }
 
 beforeEach(() => { get.mockReset(); add.mockReset() })
@@ -33,10 +36,10 @@ beforeEach(() => { get.mockReset(); add.mockReset() })
 describe('the org admin', () => {
   it('sees the notes, the box, the counter and the append-only line', async () => {
     get.mockResolvedValue(payload())
-    mount(true)
+    mount()
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
     expect(screen.getByText('Org Admin One')).toBeTruthy()
-    expect(screen.getByText(`${P}.introWriter`)).toBeTruthy()
+    expect(screen.getByText(`${P}.introOrgAdmin`)).toBeTruthy()
     expect(screen.getByLabelText(`${P}.addLabel`)).toBeTruthy()
     expect(screen.getByText(`${P}.appendOnly`)).toBeTruthy()
     expect(screen.getByText(`${P}.counter:0|2,000`)).toBeTruthy()
@@ -46,7 +49,7 @@ describe('the org admin', () => {
   it('counts as she types, and adds the note', async () => {
     get.mockResolvedValue(payload({ notes: [] }))
     add.mockResolvedValue(payload({ notes: [NOTE, { ...NOTE, id: 2, body: 'Second note' }] }))
-    mount(true)
+    mount()
     const box = await screen.findByLabelText(`${P}.addLabel`)
     fireEvent.change(box, { target: { value: 'Second note' } })
     expect(screen.getByText(`${P}.counter:11|2,000`)).toBeTruthy()
@@ -58,7 +61,7 @@ describe('the org admin', () => {
 
   it('will not send more than 2,000 characters, or only spaces', async () => {
     get.mockResolvedValue(payload({ notes: [] }))
-    mount(true)
+    mount()
     const box = await screen.findByLabelText(`${P}.addLabel`)
     const button = () => screen.getByRole('button', { name: `${P}.add` }) as HTMLButtonElement
     fireEvent.change(box, { target: { value: '   ' } })
@@ -73,7 +76,7 @@ describe('the org admin', () => {
   it('words a refusal by its code', async () => {
     get.mockResolvedValue(payload({ notes: [] }))
     add.mockRejectedValue(Object.assign(new Error('x'), { code: 'notes_closed' }))
-    mount(true)
+    mount()
     fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'Late note' } })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
     expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.notes_closed:2,000`)
@@ -82,41 +85,83 @@ describe('the org admin', () => {
 
   it('outside the window: the notes stay, the box goes, and the hint says why', async () => {
     get.mockResolvedValue(payload({ window_open: false, can_add: false }))
-    mount(true)
+    mount()
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
     expect(screen.queryByLabelText(`${P}.addLabel`)).toBeNull()
     expect(screen.getByText(`${P}.closedHint`)).toBeTruthy()
   })
 })
 
-describe('the reviewer or QC', () => {
-  it('reads the notes, with no box', async () => {
-    get.mockResolvedValue(payload({ can_add: false }))
-    mount(false)
+describe('QC (a reader)', () => {
+  it('reads the notes, with no box and no closed hint', async () => {
+    get.mockResolvedValue(payload({ viewer: 'reader', can_add: false, window_open: false }))
+    mount()
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
     expect(screen.getByText(`${P}.introReader`)).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByText(`${P}.closedHint`)).toBeNull()
   })
 
   it('sees the empty line when there are none', async () => {
-    get.mockResolvedValue(payload({ notes: [], can_add: false }))
-    mount(false)
+    get.mockResolvedValue(payload({ viewer: 'reader', notes: [], can_add: false }))
+    mount()
     expect(await screen.findByText(`${P}.empty`)).toBeTruthy()
   })
 
-  it('the org admin is never told "no notes from your org admin"', async () => {
+  it('a writer with no notes and a shut window sees the neutral empty line and the hint', async () => {
     get.mockResolvedValue(payload({ notes: [], window_open: false, can_add: false }))
-    mount(true)
+    mount()
     expect(await screen.findByText(`${P}.closedHint`)).toBeTruthy()
-    expect(screen.queryByText(`${P}.empty`)).toBeNull()
+    expect(screen.getByText(`${P}.empty`)).toBeTruthy()
   })
 
   it('the box follows the server, not the role', async () => {
     get.mockResolvedValue(payload({ can_add: false }))
-    mount(true)
+    mount()
     await screen.findByText(NOTE.body)
     expect(screen.queryByRole('textbox')).toBeNull()
+  })
+})
+
+describe('the assigned reviewer (#73)', () => {
+  it('replies: "Reply" and "Send reply", and the reply is sent', async () => {
+    get.mockResolvedValue(payload({ viewer: 'reviewer' }))
+    add.mockResolvedValue(payload({ viewer: 'reviewer', notes: [NOTE, { ...REPLY, is_you: true }] }))
+    mount()
+    expect(await screen.findByText(`${P}.introReviewer`)).toBeTruthy()
+    expect(screen.queryByLabelText(`${P}.addLabel`)).toBeNull()
+    const box = screen.getByLabelText(`${P}.replyLabel`)
+    expect(box.getAttribute('placeholder')).toBe(`${P}.replyPlaceholder`)
+    expect(screen.getByText(`${P}.appendOnly`)).toBeTruthy()
+    fireEvent.change(box, { target: { value: REPLY.body } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.sendReply` })) })
+    expect(add).toHaveBeenCalledWith(7, REPLY.body, { token: 'tok' })
+    expect(await screen.findByText(REPLY.body)).toBeTruthy()
+    expect(screen.getByText(`${P}.role.reviewerYou`, { exact: false })).toBeTruthy()
+  })
+
+  it('once the review is finished: no box, and the closed hint', async () => {
+    get.mockResolvedValue(payload({ viewer: 'reviewer', window_open: false, can_add: false }))
+    mount()
+    expect(await screen.findByText(NOTE.body)).toBeTruthy()
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.getByText(`${P}.closedHint`)).toBeTruthy()
+  })
+})
+
+describe('the conversation (#73)', () => {
+  it('names each side and tints the reviewer, oldest first', async () => {
+    get.mockResolvedValue(payload({ notes: [NOTE, REPLY] }))
+    const { container } = mount()
+    expect(await screen.findByText(REPLY.body)).toBeTruthy()
+    const items = container.querySelectorAll('li[data-note-side]')
+    expect(Array.from(items).map((li) => li.getAttribute('data-note-side'))).toEqual(['org_admin', 'reviewer'])
+    expect(items[0].textContent).toContain(`${P}.role.org_admin`)
+    expect(items[1].textContent).toContain(`${P}.role.reviewer`)
+    expect(items[1].textContent).not.toContain('reviewerYou')
+    expect(items[1].className).toContain('bg-primary-50')
+    expect(items[0].className).not.toContain('bg-primary-50')
   })
 })
 
@@ -143,7 +188,7 @@ describe('the card trims and blanks invisible characters (R4; server parity is R
 
   it('the button stays off for a note of invisible characters', async () => {
     get.mockResolvedValue(payload({ notes: [] }))
-    mount(true)
+    mount()
     fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: ch(0x3164, 0x2800) } })
     expect((screen.getByRole('button', { name: `${P}.add` }) as HTMLButtonElement).disabled).toBe(true)
   })
@@ -152,23 +197,23 @@ describe('the card trims and blanks invisible characters (R4; server parity is R
 describe('R6', () => {
   it('a refresh that fails after a first load says so, and keeps the notes on screen', async () => {
     get.mockResolvedValueOnce(payload({ can_add: false })).mockRejectedValueOnce(new Error('offline'))
-    const view = render(<ReviewerNotesCard appId={7} token="tok" t={t} isWriter={false} refreshKey="a" />)
+    const view = render(<ReviewerNotesCard appId={7} token="tok" t={t} refreshKey="a" />)
     expect(await screen.findByText(NOTE.body)).toBeTruthy()
-    view.rerender(<ReviewerNotesCard appId={7} token="tok" t={t} isWriter={false} refreshKey="b" />)
+    view.rerender(<ReviewerNotesCard appId={7} token="tok" t={t} refreshKey="b" />)
     expect(await screen.findByText(`${P}.loadError`)).toBeTruthy()
     expect(screen.getByText(NOTE.body)).toBeTruthy()
   })
 
   it('keeps the spaces a note was written with', async () => {
     get.mockResolvedValue(payload({ can_add: false }))
-    mount(false)
+    mount()
     expect((await screen.findByText(NOTE.body)).className).toContain('whitespace-pre-wrap')
   })
 
   it('words a bad_body refusal', async () => {
     get.mockResolvedValue(payload({ notes: [] }))
     add.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_body' }))
-    mount(true)
+    mount()
     fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'x' } })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
     expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.bad_body:2,000`)

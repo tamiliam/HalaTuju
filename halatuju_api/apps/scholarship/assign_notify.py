@@ -133,6 +133,11 @@ def send_one(event_id):
     event = (AssignmentEvent.objects
              .select_related('application__cohort', 'application__profile', 'to_admin')
              .get(pk=event_id))
+    # #73: the reviewer who lost the case loses its unseen new-note rows (reads already hide them; the
+    # reassign itself sits at its pinned query budget, so the delete happens here, off the request).
+    from . import staff_notifications
+    staff_notifications.forget(event.application_id, event.from_admin_id,
+                               keep_id=event.application.assigned_to_id)
     if event.application.assigned_to_id != event.to_admin_id:
         # Reassigned or unassigned before the cron ran: this reviewer no longer has the case, so
         # neither "new applicant" to them nor "your interviewer is ..." to the student. Closed as

@@ -334,9 +334,12 @@ export const REVIEWER_FAQ: QA[] = [
         closed instead: Close works before an award only at Submitted and Recommended.</>,
     },
     {
-      q: <>What is <strong>Notes for the reviewer</strong> on a student&rsquo;s page?</>,
-      a: <>Points your organisation admin would like you to explore with this student, written before or
-        while you review the case. They are read-only; if a note needs correcting, the org admin adds another.
-        The student and sponsors never see them, and they are not used in the AI-written profile.</>,
+      q: <>What is <strong>Org admin and reviewer notes</strong> on a student&rsquo;s page?</>,
+      a: <>A conversation between you and your organisation admin about this student: the points they would like
+        you to explore, and your replies (<strong>Reply</strong>, then <strong>Send reply</strong>). You can write
+        until you record your recommendation; a note cannot be edited or deleted, so to correct one, add another.
+        A <strong>New note</strong> mark by the student&rsquo;s name means your org admin has written since you
+        last opened the page. The student and sponsors never see the notes, and they are not used in the
+        AI-written profile.</>,
     },
 ]

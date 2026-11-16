@@ -36,7 +36,7 @@ export function AssignAndWitness({
   witnessEditing: boolean
   setWitnessEditing: Dispatch<SetStateAction<boolean>>
   doAssignWitness: () => void
-  /** Request #55: "Notes for the reviewer", drawn directly under Reviewer assigned (owner). */
+  /** Request #55 / #73: "Org admin and reviewer notes", drawn directly under Reviewer assigned (owner). */
   notesCard?: ReactNode
   /** Request #75: "Reject before interview", the alternative to assigning (`PreInterviewOption`). It
    *  renders itself only when the server offers it. It always sits in the same slot of the same card: under

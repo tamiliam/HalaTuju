@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: request #73 - two-way org admin and reviewer notes (2026-11-16)
+
+Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73). Analysis 167.
+- The card on the applicant's page is now **Org admin and reviewer notes**: one conversation, oldest first. Each note shows the author, their side ("Org admin", "Reviewer", or "Reviewer (you)") and the date; the reviewer's notes are tinted. 2,000 characters with a counter, append-only.
+- Writers: org admins and supers (students.edit), and the reviewer ASSIGNED to the case. QC and everyone else read only (`writer_only`). The org admin's box is "Add a note" / "Add note"; the reviewer's is "Reply" / "Send reply". The window shuts once the reviewer records a recommendation (`notes_closed`); both writers then see "The review is finished, so no more notes can be added. These stay on the file, read-only."
+- Each note records its side (`reviewer_notes.author_role`, decided on the locked row). A reassigned case's new reviewer reads the whole conversation and can reply; the old one can no longer write.
+- New table `staff_notifications` (one writer, `apps/scholarship/staff_notifications.py`): one row per person on the case except the writer, ids only, never the text. It drives a **New note** mark (dot plus words) by the student's name on the applications table (phone and desktop, per person, served as `new_note` on the list rows) and a bell line in `info` tone: "{count} students with a new note from a reviewer" (to the applications table) or "{count} student(s) with a new note from your org admin" (to the reviewer's own cases), a real link with a 44 px target. Opening the student's notes clears that person's mark. New `GET admin/scholarship/staff-notifications/count/` (one query).
+- An email goes to the OTHER side only (the assigned reviewer, or the org admin side), after the commit, in English, Malay and Tamil stacked; it never carries the note's text and links to the student's page.
+- Guides (Reviewer, Org admin, QC) and both FAQs updated. The bell line was added by the owner at no charge.
+
 ### refactor: request #75 - the profile-complete email no longer promises an interview (2026-11-19)
 
 Owner-approved wording (19 Nov). Students who finish their profile now read "If your application goes forward, we'll invite you to a short interview", and the closing line adds "or news about your application". Malay changes the same way. The email golden was updated by hand for these four strings only; `test_email_branding.py` passes.

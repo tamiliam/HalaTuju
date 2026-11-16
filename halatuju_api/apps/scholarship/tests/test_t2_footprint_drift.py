@@ -47,6 +47,8 @@ NOT_WORK = {
     'scholarship.ReviewerNote.author': 'the twin of author_email, which counts',
     'scholarship.AwardWithdrawalRequest.requested_by': 'the twin of requested_by_email, which counts',
     'scholarship.AwardWithdrawalRequest.decided_by': 'the twin of decided_by_email, which counts',
+    'scholarship.StaffNotification.recipient': 'a notice TO them (#73), not an act; CASCADE, so a delete '
+                                                'takes it too',
     'courses.ProfileClaimEvent.actor': 'an operator label typed at the shell (revoke_alias(by=...) '
                                        'has no caller in the app); no staff action writes it',
     # Email columns that are an address to write to or about, never a staff member's act.

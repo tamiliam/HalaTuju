@@ -660,7 +660,8 @@ class TestFenceCoverageCompleteness(TestCase):
         # Request #26 consent reframe: "Record call" — the SAME gate (_guardian_gate) as the correction.
         'AdminGuardianCallView': 'gate',
         # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
-        'AdminReviewerNotesView': 'gate+super/org_admin write',
+        # Request #73: the ASSIGNED reviewer writes too (the reply).
+        'AdminReviewerNotesView': 'gate+super/org_admin/assigned reviewer write',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         # Request #75: _require_app_write (a cross-org case is 404), then the `qc` permission key.
         'AdminRejectBeforeInterviewView': 'gate+qc key',
@@ -735,6 +736,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMeView': 'self-scoped',   # common profile S1: the caller's own account
         'AdminMePasswordView': 'self-scoped',   # common profile S1: the caller's own password
         'AdminMePhotoView': 'self-scoped',   # common profile S2: the caller's own photo
+        'AdminStaffNotificationCountView': 'self-scoped',   # request #73: counts the caller's own new-note rows
         # Common profile S4: the caller's OWN activity rows; every subject label is fenced at read
         # time by the detail view's own helpers (`staff_activity_read`, D8).
         'AdminMeActivityView': 'self-scoped',

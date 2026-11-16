@@ -185,6 +185,7 @@ NOT_STUDENT_SENDERS = frozenset({
     'send_sponsor_new_student_email', 'send_sponsor_digest_email', 'send_invoice_email',
     'send_receipt_email', 'send_payment_declared_email', 'send_invoicing_alert_email',
     'send_withdrawal_requested_email', 'send_withdrawal_outcome_email',   # staff (A1.13b)
+    'send_staff_note_email',            # an org admin or the assigned reviewer (request #73)
     # `send_partner_email` is the shared partner sender. Its ONE student-facing use (the partner
     # access notice) is `partner_access` above, managed on Sources.
     'send_partner_email',

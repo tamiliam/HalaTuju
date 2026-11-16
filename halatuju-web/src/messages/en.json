@@ -3449,7 +3449,11 @@
       "account": "Account",
       "attn": {
         "sponsors": "{count} sponsors awaiting vetting",
-        "requests": "{count} requests waiting on you"
+        "requests": "{count} requests waiting on you",
+        "notesFromReviewer": "{count} students with a new note from a reviewer",
+        "notesFromReviewerOne": "1 student with a new note from a reviewer",
+        "notesFromOrgAdmin": "{count} students with a new note from your org admin",
+        "notesFromOrgAdminOne": "1 student with a new note from your org admin"
       },
       "goTo": "Go to {page}",
       "then": "then",
@@ -4266,25 +4270,35 @@
         }
       },
       "reviewerNotes": {
-        "title": "Notes for the reviewer",
-        "introWriter": "What you would like the reviewer to explore. Seen by the assigned reviewer and QC only, never by the student or sponsors.",
-        "introReader": "From your org admin: points to explore with this student. Read-only.",
-        "empty": "No notes from your org admin.",
+        "title": "Org admin and reviewer notes",
+        "introOrgAdmin": "Between you and the assigned reviewer. Quality control can read them. Never seen by the student or sponsors.",
+        "introReviewer": "Between you and your org admin. Quality control can read them. Never seen by the student or sponsors.",
+        "introReader": "Between the org admin and the assigned reviewer. Read-only.",
+        "empty": "No notes yet.",
         "addLabel": "Add a note",
         "placeholder": "What should the reviewer look into?",
         "counter": "{count} / {max}",
         "appendOnly": "Notes can't be edited or deleted. To correct one, add another.",
         "add": "Add note",
         "adding": "Adding…",
-        "closedHint": "Notes can be added from Awaiting review until the reviewer records a decision. These stay on the file, read-only.",
+        "replyLabel": "Reply",
+        "replyPlaceholder": "Your reply to the org admin",
+        "sendReply": "Send reply",
+        "sending": "Sending…",
+        "closedHint": "The review is finished, so no more notes can be added. These stay on the file, read-only.",
         "loadError": "Could not load the notes.",
         "error": {
-          "writer_only": "Only an organisation admin can add a note for the reviewer.",
-          "notes_closed": "Notes can be added from Awaiting review until the reviewer records a decision.",
+          "writer_only": "Only an org admin or the assigned reviewer can add a note.",
+          "notes_closed": "The review is finished, so no more notes can be added.",
           "bad_body": "This note contains characters that cannot be saved. Remove them and try again.",
           "empty_body": "Write the note first.",
           "too_long": "A note can be at most {max} characters.",
           "generic": "Could not add the note. Please try again."
+        },
+        "role": {
+          "org_admin": "Org admin",
+          "reviewer": "Reviewer",
+          "reviewerYou": "Reviewer (you)"
         }
       },
       "requestInfoError": "Could not send the request.",
@@ -5497,7 +5511,8 @@
           "generic": "Couldn't reject this student. Please try again."
         },
         "or": "or"
-      }
+      },
+      "newNote": "New note"
     },
     "students": "Students",
     "invite": "Invite",

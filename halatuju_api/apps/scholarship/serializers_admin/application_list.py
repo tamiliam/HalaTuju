@@ -87,6 +87,9 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
     # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
     # the same value the detail serializer ships inside query_sla).
     ready_for_assignment = serializers.SerializerMethodField()
+    # #73: the caller has a note from the other side here they have not seen (the list's EXISTS column,
+    # `staff_notifications.with_new_note`); False wherever the column was not asked for.
+    new_note = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -102,7 +105,11 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
             'decision_reopened_at',
             # #75: 'pre_interview' shows "Rejected before interview" in the list's status pill.
             'rejection_category',
+            'new_note',
         ]
+
+    def get_new_note(self, obj):
+        return bool(getattr(obj, 'new_note', False))
 
     def get_ready_for_assignment(self, obj):
         from ..services import is_ready_for_assignment

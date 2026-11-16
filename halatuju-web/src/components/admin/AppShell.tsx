@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, type AdminScopes } from '@/lib/admin-api'
+import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, getNewNoteCount, type AdminScopes, type NewNoteCount } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -174,7 +174,8 @@ function Chrome(
   const r = effectiveRole(role)
   // A source user probes nothing: both probes are staff endpoints, which refuse the role, and no
   // row it can see is probe-gated (source sign-in, 2026-10-30). Nor does a mentor (S7a), nor a member (M1b).
-  const { probes, requestsWaiting } = useNavProbes(r === 'source_partner' || r === 'mentor' || r === 'member' ? null : token)
+  const staffToken = r === 'source_partner' || r === 'mentor' || r === 'member' ? null : token
+  const { probes, requestsWaiting } = useNavProbes(staffToken)
   /*
    * ⚠ THE MENU NOW DEPENDS ON WHETHER A GIFT IS KNOWN (owner, 2026-09-08: *"the programme
    * shouldn't show up until they are selected"*). `chosen` is `''` only when there are SEVERAL
@@ -303,8 +304,22 @@ function Chrome(
       .catch(() => { /* a badge is a hint; never block the shell on it */ })
   }, [token, wantsPaymentsCount, orgless, pathname])
 
-  // What the bell shows: counts the console already fetches, gathered in one place. Nothing
-  // here is a new endpoint, and nothing here has read state — see the note in the menu.
+  // Request #73: how many STUDENTS have a note from the other side this person has not opened (served, one
+  // read). A source partner, a mentor and a member are never on a case's notes, so they skip it. Same manners
+  // as the badges: a refusal is swallowed, and `Promise.resolve().then` keeps a missing function (a test's
+  // factory mock of admin-api) from throwing inside the shell.
+  const [newNotes, setNewNotes] = useState<NewNoteCount>({ from_reviewer: 0, from_org_admin: 0 })
+  useEffect(() => {
+    if (!staffToken) { setNewNotes({ from_reviewer: 0, from_org_admin: 0 }); return }
+    let live = true
+    Promise.resolve().then(() => getNewNoteCount({ token: staffToken }))
+      .then((d) => { if (live && d) setNewNotes(d) })
+      .catch(() => { /* a hint; never block the shell on it */ })
+    return () => { live = false }
+  }, [staffToken, pathname])
+
+  // What the bell shows: counts the console already fetches, gathered in one place. The one read added
+  // for it is #73's new-note count (its read state is the notes' own "opened"); the note in the menu stays.
   const attention: Attention[] = useMemo(() => {
     const out: Attention[] = []
     if (pendingSponsors > 0) {
@@ -324,8 +339,15 @@ function Chrome(
         tone: 'warn',
       })
     }
+    // #73: 'info' — a note to read, nothing stuck. Each line is a real link to where those students are.
+    const noteLine = (key: string, n: number, href: string) => {
+      if (n > 0) out.push({ key, href, tone: 'info',
+        label: t(`admin.shell.attn.${key}${n === 1 ? 'One' : ''}`, { count: String(n) }) })
+    }
+    noteLine('notesFromReviewer', newNotes.from_reviewer, '/admin/scholarship')
+    noteLine('notesFromOrgAdmin', newNotes.from_org_admin, '/admin/scholarship?assigned=me')
     return out
-  }, [pendingSponsors, requestsWaiting, t])
+  }, [pendingSponsors, requestsWaiting, newNotes, t])
 
   const badgeCounts = useMemo(
     () => ({ pendingSponsors, requestsWaiting, paymentsWaiting }),

@@ -100,7 +100,7 @@ from .credits import (
     AdminWalletCreditSignView,
 )
 from .guardian_contact import AdminGuardianCallView, AdminGuardianContactView
-from .reviewer_notes import AdminReviewerNotesView   # request #55
+from .reviewer_notes import AdminReviewerNotesView, AdminStaffNotificationCountView   # requests #55, #73
 from .pre_interview import AdminRejectBeforeInterviewView   # request #75
 from .graduation import (
     _BursaryAdminBase, AdminBursaryCountersignView, AdminBursaryWitnessView,

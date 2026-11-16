@@ -14,6 +14,7 @@ import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import { ApplicationUrlChips, useApplicationUrlFilters } from '@/components/admin/ApplicationUrlFilters'
 import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
+import NewNoteMark from '@/components/admin/NewNoteMark'   // #73: "New note" by the name
 import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
 import { AssignedPlain, AssigneeOptions, AssignLangNote, AssignLegend, assignsInCockpitOnly, legendIdFor } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
@@ -398,7 +399,7 @@ function StaffScholarshipList() {
                 <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                   <span className="min-w-0 grow basis-40 break-words text-[15px] font-semibold">
-                    {a.name || '—'}
+                    {a.name || '—'}{a.new_note && <NewNoteMark label={t('admin.scholarship.newNote')} />}
                   </span>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
                     {t(statusLabelKey(s))}
@@ -509,6 +510,7 @@ function StaffScholarshipList() {
                     <Link href={`/admin/scholarship/${a.id}`} className="text-primary-600 font-medium hover:underline">
                       {a.name || '—'}
                     </Link>
+                    {a.new_note && <NewNoteMark label={t('admin.scholarship.newNote')} />}
                   </td>
                   <td className="px-4 py-3 text-ground-600" title={sourceTitle(a.referral_source)}>{referralAcronym(a.referral_source, sourceNames[a.referral_source ?? '']) || '—'}</td>
                   <td className="px-4 py-3">

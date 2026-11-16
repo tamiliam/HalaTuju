@@ -79,11 +79,12 @@ export const roleQc: ManualChapter = {
     {
       anchor: 'qc-reviewer-notes',
       perm: 'qc',
-      title: 'Notes for the reviewer',
+      title: 'Org admin and reviewer notes',
       body: (
-        <>A case may carry <strong>Notes for the reviewer</strong> from the organisation admin, under
-        <strong> Reviewer assigned</strong>: what they asked the reviewer to explore. They are read-only for you.
-        When you check a case, it is worth seeing whether the review answered them.</>
+        <>A case may carry <strong>Org admin and reviewer notes</strong>, under <strong>Reviewer
+        assigned</strong>: what the organisation admin asked the reviewer to explore, and the reviewer&rsquo;s
+        replies, each marked with its side and date. They are read-only for you. When you check a case, it is
+        worth seeing whether the review answered them.</>
       ),
     },
     {

@@ -1624,14 +1624,15 @@
    "method": "post",
    "allow": [
     "super",
-    "org_admin_a"
+    "org_admin_a",
+    "reviewer_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, reviewer_a (the assigned reviewer replies, request #73); refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
@@ -4085,6 +4086,25 @@
    "object": null,
    "flags": [],
    "note": "UNCOVERED: id not mapped to a seeded object, gate swept only; nobody passes in this world"
+  },
+  {
+   "route": "api/v1/admin/scholarship/staff-notifications/count/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "qc_a",
+    "reviewer_a",
+    "reviewer_a2",
+    "finance_a",
+    "partner_a",
+    "org_admin_b"
+   ],
+   "hide": [],
+   "object": null,
+   "flags": [],
+   "note": "counts only the caller's own unseen note rows (request #73)"
   },
   {
    "route": "api/v1/admin/scholarship/surveys/",

@@ -726,7 +726,8 @@
     "may_unassign",
     "ready_for_assignment",
     "decision_reopened_at",
-    "rejection_category"
+    "rejection_category",
+    "new_note"
    ],
    "AdminGraduationMessageSerializer": [
     "id",

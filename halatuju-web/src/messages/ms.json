@@ -3449,7 +3449,11 @@
       "account": "Akaun",
       "attn": {
         "sponsors": "{count} penaja menunggu semakan",
-        "requests": "{count} permintaan menunggu tindakan anda"
+        "requests": "{count} permintaan menunggu tindakan anda",
+        "notesFromReviewer": "{count} pelajar dengan nota baharu daripada penyemak",
+        "notesFromReviewerOne": "1 pelajar dengan nota baharu daripada penyemak",
+        "notesFromOrgAdmin": "{count} pelajar dengan nota baharu daripada pentadbir organisasi anda",
+        "notesFromOrgAdminOne": "1 pelajar dengan nota baharu daripada pentadbir organisasi anda"
       },
       "goTo": "Pergi ke {page}",
       "then": "kemudian",
@@ -4266,25 +4270,35 @@
         }
       },
       "reviewerNotes": {
-        "title": "Nota untuk penyemak",
-        "introWriter": "Perkara yang anda mahu penyemak teliti. Hanya dilihat oleh penyemak yang ditugaskan dan QC, tidak sekali-kali oleh pelajar atau penaja.",
-        "introReader": "Daripada pentadbir organisasi anda: perkara untuk diteliti bersama pelajar ini. Baca sahaja.",
-        "empty": "Tiada nota daripada pentadbir organisasi anda.",
+        "title": "Nota pentadbir organisasi dan penyemak",
+        "introOrgAdmin": "Antara anda dan penyemak yang ditugaskan. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
+        "introReviewer": "Antara anda dan pentadbir organisasi anda. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
+        "introReader": "Antara pentadbir organisasi dan penyemak yang ditugaskan. Baca sahaja.",
+        "empty": "Belum ada nota.",
         "addLabel": "Tambah nota",
         "placeholder": "Apakah yang patut diteliti oleh penyemak?",
         "counter": "{count} / {max}",
         "appendOnly": "Nota tidak boleh diubah atau dipadam. Untuk membetulkannya, tambah nota lain.",
         "add": "Tambah nota",
         "adding": "Menambah…",
-        "closedHint": "Nota boleh ditambah dari peringkat Menunggu semakan sehingga penyemak merekodkan keputusan. Nota ini kekal dalam fail, baca sahaja.",
+        "replyLabel": "Balas",
+        "replyPlaceholder": "Balasan anda kepada pentadbir organisasi",
+        "sendReply": "Hantar balasan",
+        "sending": "Menghantar…",
+        "closedHint": "Semakan telah selesai, jadi tiada nota lagi boleh ditambah. Nota ini kekal dalam fail, baca sahaja.",
         "loadError": "Nota tidak dapat dimuatkan.",
         "error": {
-          "writer_only": "Hanya pentadbir organisasi boleh menambah nota untuk penyemak.",
-          "notes_closed": "Nota boleh ditambah dari peringkat Menunggu semakan sehingga penyemak merekodkan keputusan.",
+          "writer_only": "Hanya pentadbir organisasi atau penyemak yang ditugaskan boleh menambah nota.",
+          "notes_closed": "Semakan telah selesai, jadi tiada nota lagi boleh ditambah.",
           "bad_body": "Nota ini mengandungi aksara yang tidak boleh disimpan. Buang aksara itu dan cuba lagi.",
           "empty_body": "Tulis nota terlebih dahulu.",
           "too_long": "Nota boleh mengandungi paling banyak {max} aksara.",
           "generic": "Nota tidak dapat ditambah. Sila cuba lagi."
+        },
+        "role": {
+          "org_admin": "Pentadbir organisasi",
+          "reviewer": "Penyemak",
+          "reviewerYou": "Penyemak (anda)"
         }
       },
       "requestInfoError": "Tidak dapat menghantar permintaan.",
@@ -5497,7 +5511,8 @@
           "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
         },
         "or": "atau"
-      }
+      },
+      "newNote": "Nota baharu"
     },
     "students": "Pelajar",
     "invite": "Jemputan",

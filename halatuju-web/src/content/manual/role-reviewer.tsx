@@ -114,14 +114,18 @@ export const roleReviewer: ManualChapter = {
     {
       anchor: 'reviewer-notes-from-admin',
       perm: 'review',
-      title: 'Notes from your org admin',
+      title: 'Notes with your org admin',
       body: (
-        <>Before a case reaches you, your organisation admin may read it and write down what they would like
-        you to explore. Their notes sit on the student&rsquo;s page in <strong>Notes for the reviewer</strong>,
-        directly under <strong>Reviewer assigned</strong>, each with who wrote it and when, newest last. They
-        are read-only for you, and the card says <em>No notes from your org admin.</em> when there are none.
-        Read them before you plan your questions. The notes are for staff only: the student and sponsors
-        never see them, and they are never used in the AI-written profile or summary.</>
+        <>Your organisation admin may write down what they would like you to explore with a student, and you can
+        answer them. The conversation sits on the student&rsquo;s page in <strong>Org admin and reviewer
+        notes</strong>, directly under <strong>Reviewer assigned</strong>, oldest first. Each note shows who wrote
+        it, their side (<em>Org admin</em>, or <em>Reviewer (you)</em> for yours, tinted) and the date. Type in
+        <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>; a note cannot be
+        edited or deleted, so to correct one, add another. When your org admin writes, you get an email (it never
+        contains the note) and a <strong>New note</strong> mark by the student&rsquo;s name in your list, plus a
+        line in the bell; both clear when you open the student&rsquo;s page. Once you record your recommendation
+        the notes close and stay on the file, read-only. QC can read them; the student and sponsors never see
+        them, and they are never used in the AI-written profile or summary.</>
       ),
     },
     {

@@ -276,6 +276,19 @@ def r75_added_cells(shape):
     return {R75_POST: 400 if shape in R75_QC_HOLDERS else 404 if shape in R75_FENCED_OUT else 403}
 
 
+#: Request #73 (2026-11-16): the bell line's new-note count (`AdminStaffNotificationCountView`). A NEW route, so NEW
+#: cells, measured. It counts only the caller's own rows, so its door is the admin door alone: every signed-in admin
+#: row reads 200; the shapes that door refuses (an inactive row, a mentor login, the source user) get 403. The
+#: notes route's cells do not move: its POST still refuses every shape but the lead tier at the door, because the
+#: probe case has no reviewer (the assigned reviewer, the new writer, is pinned in `test_staff_notifications.py`).
+R73_COUNT = 'GET api/v1/admin/scholarship/staff-notifications/count/'
+R73_DOOR_REFUSED = ('admin_inactive', 'mentor', 'mentor_inactive', 'source_partner')
+
+
+def r73_added_cells(shape):
+    return {R73_COUNT: 403 if shape in R73_DOOR_REFUSED else 200}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -464,7 +477,7 @@ def _expected_row(shape):
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
            **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before),
-           **r75_added_cells(shape)}
+           **r75_added_cells(shape), **r73_added_cells(shape)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))

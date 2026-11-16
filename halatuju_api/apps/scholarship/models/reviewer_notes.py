@@ -24,15 +24,24 @@ from django.db.models import Q
 #: too, so an over-long body is a clean `too_long` from the service, never a database error.
 NOTE_MAX = 2000
 
+#: Who wrote a note, as the card labels it (request #73, 2026-11-16). Every note written before #73 was an
+#: org admin's (only they could write), so that is the default in the model AND in the database.
+ORG_ADMIN = 'org_admin'
+REVIEWER = 'reviewer'
+AUTHOR_ROLES = ((ORG_ADMIN, 'Org admin'), (REVIEWER, 'Reviewer'))
+
 
 class ReviewerNote(models.Model):
-    """One note from an organisation admin (or a platform super) to the reviewer of one application."""
+    """One note on one application, from its org admin side (an org admin or a platform super) or from the
+    reviewer assigned to it (request #73: the notes became a two-way conversation)."""
     application = models.ForeignKey(
         'ScholarshipApplication', on_delete=models.CASCADE, related_name='reviewer_notes')
     body = models.CharField(max_length=NOTE_MAX)
     author = models.ForeignKey(
         'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     author_email = models.CharField(max_length=254, blank=True, default='')
+    author_role = models.CharField(max_length=16, choices=AUTHOR_ROLES, default=ORG_ADMIN,
+                                   db_default=ORG_ADMIN)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

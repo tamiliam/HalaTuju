@@ -1,7 +1,8 @@
 """Request #55 (2026-11-07) — Notes for the reviewer.
 
 The owner's rules, each pinned here:
-  * WRITE: org_admin and a platform super only. READ: whoever may already open the file (the detail
+  * WRITE: org_admin and a platform super only — and, since request #73 (2026-11-16), the ASSIGNED
+    reviewer too (`test_staff_notifications.py` pins the two-way rules). READ: whoever may already open the file (the detail
     GET's fence): the assigned reviewer, QC, view-only admins, the org admin, a super. An unassigned
     reviewer, finance and partner are refused; another organisation is 404; a student or a sponsor
     reaches nothing.
@@ -64,8 +65,9 @@ class WhoMayWriteTest(_Base):
         self.assertEqual(self._post(sup).status_code, 201)
 
     def test_nobody_else_writes(self):
+        # Request #73 superseded the 'assigned reviewer' row here: the assigned reviewer now replies
+        # (`test_staff_notifications.WhoMayWriteBothWaysTest`).
         others = {
-            'assigned reviewer': self.reviewer,
             'qc': make_admin('qc', owning_org=self.org),
             'admin (view only)': make_admin('admin', owning_org=self.org),
             'finance': make_admin('finance', owning_org=self.org),
@@ -100,8 +102,8 @@ class WhoMayReadTest(_Base):
         reviewer_notes.add_note(self.app, MARK, author=self.org_admin)
 
     def test_the_files_readers_see_the_notes_read_only(self):
+        # Request #73: the assigned reviewer is a writer now (`can_add`), so is checked below, not here.
         readers = {
-            'assigned reviewer': self.reviewer,
             'qc': make_admin('qc', owning_org=self.org),
             'admin (view only)': make_admin('admin', owning_org=self.org),
         }
@@ -115,6 +117,9 @@ class WhoMayReadTest(_Base):
         r = self._get(self.org_admin)
         self.assertTrue(r.data['can_add'])
         self.assertEqual(r.data['max_length'], NOTE_MAX)
+        r = self._get(self.reviewer)
+        self.assertEqual([n['body'] for n in r.data['notes']], [MARK])
+        self.assertTrue(r.data['can_add'])
 
     def test_unassigned_reviewer_finance_and_partner_are_refused(self):
         for label, who in {
@@ -261,6 +266,7 @@ class OnlyTheseModulesReadNotesTest(TestCase):
         'scholarship/views_admin/__init__.py',
         'scholarship/views_admin/reviewer_notes.py',
         'scholarship/staff_footprint.py',   # counts the author's email stamp only
+        'scholarship/staff_notifications.py',   # #73: reads a note's author_role only, never its text
         'scholarship/urls.py',
     }
     PATTERN = re.compile(r'ReviewerNote|reviewer_notes|reviewer-notes')

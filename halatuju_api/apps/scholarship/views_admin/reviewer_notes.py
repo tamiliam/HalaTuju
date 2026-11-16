@@ -1,11 +1,18 @@
-"""GET/POST .../applications/<pk>/reviewer-notes/ — "Notes for the reviewer" (request #55, 2026-11-07).
+"""GET/POST .../applications/<pk>/reviewer-notes/ — "Org admin and reviewer notes" (request #55, 2026-11-07;
+two-way since request #73, 2026-11-16). Also GET .../staff-notifications/count/, the bell line's numbers.
 
 READ: whoever may already open the file — `_scoped_application`, the detail GET's own fence: super,
 org_admin, admin, qc (scope 'all', own organisation), the reviewer ASSIGNED to it (scope 'assigned');
 an unassigned reviewer 403, finance / partner 403 (scope 'none'), another organisation 404.
 
-WRITE: org_admin and a platform super ONLY (owner); the same fence; then the window and the body
-rules in `reviewer_notes.add_note`. Append-only: there is no PATCH and no DELETE.
+WRITE (#73): org admins and a platform super (students.edit), plus the reviewer ASSIGNED to the case; QC and
+everyone else read only. A caller who is neither is refused before the fence (as #55 did), so a stranger
+learns nothing about the case; the side is then decided again on the locked row in
+`reviewer_notes.add_note`, with the window and the body rules. Append-only: there is no PATCH and no DELETE.
+
+SEEN (#73): the GET is what draws the notes on the student page, so it clears the caller's "New note" mark
+for this case (`staff_notifications.mark_seen`). The payload says which side the caller is on (`viewer`), so
+the card picks its intro, its composer and "Reviewer (you)" from the server's answer.
 
 A SEPARATE fetch, not a key on the detail payload, so the applicant-detail GET stays at its pinned
 38 queries (`test_query_budgets.py`). Every refusal carries a `code`; the card words it in en/ms/ta.
@@ -17,34 +24,41 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import reviewer_notes, surface_gates
+from .. import reviewer_notes, staff_notifications, surface_gates
+from ..models import ScholarshipApplication
 from ..models.reviewer_notes import NOTE_MAX
 from .base import _AdminBase
 
 logger = logging.getLogger('apps.scholarship.views_admin')
 
 _MESSAGES = {
-    'writer_only': 'Only an organisation admin can add a note for the reviewer.',
-    'notes_closed': 'Notes can be added from Awaiting review until the reviewer records a decision.',
+    'writer_only': 'Only an org admin or the assigned reviewer can add a note.',
+    'notes_closed': 'The review is finished, so no more notes can be added.',
     'bad_body': 'This note contains characters that cannot be saved. Remove them and try again.',
     'empty_body': 'Write the note first.',
     'too_long': f'A note can be at most {NOTE_MAX:,} characters.',
 }
 
 
-def _may_write(view, admin):
-    return surface_gates.may_work_students(admin)   # students.edit (M3b G5; a super holds every key)
+def _may_write(admin, pk):
+    """Before the fence: students.edit (M3b G5; a super holds every key), else the case's assigned reviewer."""
+    if surface_gates.may_work_students(admin):
+        return True
+    # org-fence: a yes/no on the caller's OWN assignment only; the fence (`_scoped_application`) runs next.
+    return ScholarshipApplication.objects.filter(pk=pk, assigned_to_id=admin.id).exists()
 
 
 class AdminReviewerNotesView(_AdminBase):
-    """`GET` → `{notes, can_add, window_open, max_length}`; `POST {body}` → the same, 201."""
+    """`GET` → `{notes, viewer, can_add, window_open, max_length}`; `POST {body}` → the same, 201."""
 
     def _payload(self, app, admin):
         is_open = reviewer_notes.window_open(app)
+        viewer = reviewer_notes.side_of(app, admin)
         return {
-            'notes': reviewer_notes.notes_for(app),
+            'notes': reviewer_notes.notes_for(app, viewer=admin),
+            'viewer': viewer,
             'window_open': is_open,
-            'can_add': is_open and _may_write(self, admin),
+            'can_add': is_open and viewer != 'reader',
             'max_length': NOTE_MAX,
         }
 
@@ -56,13 +70,15 @@ class AdminReviewerNotesView(_AdminBase):
         # Review R5: the notes are part of the file, so their read is audited like the detail GET's
         # (`AUDIT applicant_detail_read`): ids only, never the text.
         logger.info('AUDIT reviewer_notes_read admin_id=%s app_id=%s', getattr(admin, 'id', '?'), pk)
+        if admin is not None:
+            staff_notifications.mark_seen(admin, app)
         return Response(self._payload(app, admin))
 
     def post(self, request, pk):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not _may_write(self, admin):
+        if not _may_write(admin, pk):
             return Response({'error': _MESSAGES['writer_only'], 'code': 'writer_only'},
                             status=status.HTTP_403_FORBIDDEN)
         app, err = self._scoped_application(request, pk)
@@ -79,3 +95,16 @@ class AdminReviewerNotesView(_AdminBase):
         logger.info('AUDIT reviewer_note_added admin_id=%s app_id=%s note_id=%s',
                     admin.id, app.id, note.id)
         return Response(self._payload(app, admin), status=status.HTTP_201_CREATED)
+
+
+class AdminStaffNotificationCountView(_AdminBase):
+    """`GET admin/scholarship/staff-notifications/count/` → `{from_reviewer, from_org_admin}`: how many
+    students have a note from the other side the caller has not seen. One query; the shell fetches it
+    after it draws, so it never holds the page up. Anyone signed in to the admin may ask (it counts only
+    their own rows)."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        return Response(staff_notifications.unseen_counts(admin))

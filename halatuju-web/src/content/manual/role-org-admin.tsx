@@ -223,16 +223,20 @@ export const roleOrgAdmin: ManualChapter = {
     },
     {
       anchor: 'org-admin-reviewer-notes',
-      title: 'Notes for the reviewer',
+      title: 'Org admin and reviewer notes',
       body: (
-        <>On an applicant&rsquo;s page, under <strong>Reviewer assigned</strong>, you can write
-        <strong> Notes for the reviewer</strong>: the points you would like explored in the interview. Type in
-        <strong> Add a note</strong> (up to 2,000 characters; the counter shows how many you have used) and press
-        <strong> Add note</strong>. Each note keeps your name and the time. You can add notes from
-        <strong> Awaiting review</strong> until the reviewer records a decision; after that they stay on the
-        file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another. The
-        assigned reviewer and QC read them (as can colleagues who may open the file); the student and sponsors
-        never do, and the notes are never used in the AI-written profile or summary.</>
+        <>On an applicant&rsquo;s page, under <strong>Reviewer assigned</strong>, <strong>Org admin and reviewer
+        notes</strong> is a conversation between you and the assigned reviewer: the points you would like
+        explored, and their replies. Type in <strong>Add a note</strong> (up to 2,000 characters; the counter
+        shows how many you have used) and press <strong>Add note</strong>. Each note shows who wrote it, their
+        side (<em>Org admin</em> or <em>Reviewer</em>, the reviewer&rsquo;s tinted) and the date, oldest first.
+        When the reviewer replies you get an email (it never contains the note), a <strong>New note</strong> mark
+        by the student&rsquo;s name on the applications table and a line in the bell; they clear when you open
+        the student&rsquo;s page. Notes can be added until the reviewer records a recommendation; after that they
+        stay on the file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another.
+        If the case moves to another reviewer, the new one reads the whole conversation. QC can read the notes
+        (as can colleagues who may open the file); the student and sponsors never do, and the notes are never
+        used in the AI-written profile or summary.</>
       ),
     },
     {

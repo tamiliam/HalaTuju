@@ -279,10 +279,11 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>How do I tell a reviewer what to look into on a case?</>,
-      a: <>Use <strong>Notes for the reviewer</strong> on the applicant&rsquo;s page, under Reviewer assigned.
-        You can add notes from Awaiting review until the reviewer records a decision, up to 2,000 characters
-        each. A note cannot be edited or deleted; to correct one, add another. They stay on the file
-        afterwards, and only staff who may open the file can read them.</>,
+      a: <>Use <strong>Org admin and reviewer notes</strong> on the applicant&rsquo;s page, under Reviewer
+        assigned. The assigned reviewer can reply there, and each side is told by email (never the note itself),
+        a <strong>New note</strong> mark by the name and a line in the bell. Notes can be added until the reviewer
+        records a recommendation, up to 2,000 characters each. A note cannot be edited or deleted; to correct one,
+        add another. They stay on the file afterwards, and only staff who may open the file can read them.</>,
     },
     {
       q: <>Can one person be an admin and a reviewer?</>,

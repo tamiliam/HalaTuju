@@ -133,3 +133,5 @@ from .development import DevelopmentModule, LessonRead, ModuleEmail, ModuleLesso
 from .reviewer_notes import ReviewerNote
 # A1.13b (2026-11-08) — model 89, NEW: an award withdrawal REQUEST (maker and checker, TD-198).
 from .withdrawals import AwardWithdrawalRequest
+# Request #73 (2026-11-16) — model 90, NEW: a staff member's unseen notices (the "New note" mark and the bell).
+from .staff_notifications import StaffNotification
