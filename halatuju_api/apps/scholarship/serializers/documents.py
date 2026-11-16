@@ -128,9 +128,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         """Genuineness fingerprint summary {status, reason, doc_seen} — soft, flag-gated.
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
-        if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
-                                'offer_letter', 'salary_slip', 'electricity_bill', 'water_bill',
-                                'school_leaving_cert', 'higher_results'):   # + STPM exact-read S3
+        from ..document_replace import AUTH_TYPES, AUTH_WRONG_TYPE_ONLY   # H6 shares these lists
+        if obj.doc_type not in AUTH_TYPES:   # incl. STPM exact-read S3 (higher_results)
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
@@ -140,31 +139,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         # Expose the CANONICAL outcome (genuine / suspect / not_<type>), folding any legacy
         # stored value, so the FE renders one consistent vocabulary across all document types.
         status = shown_status(auth.get('status'), obj.doc_type, auth.get('doc_seen', ''))   # + M4b final_owed
-        # Salary slip (MODEL_VERSION 1.0.0): surface ONLY the WRONG-TYPE reject (not_salary — a MyKad
-        # or other document in the salary-slip slot, #47) → the red "wrong document" chip. The informal
-        # 'suspect' band (a genuine but weakly-verifiable slip, common for real B40 families) would be
-        # amber noise, so a genuine/suspect slip renders normally (no chip). Mirrors how a genuine EPF
-        # shows nothing while a not_epf shows the wrong-type chip.
-        if obj.doc_type == 'salary_slip' and not status.startswith('not_'):
-            return None
-        # Electricity bill (MODEL_VERSION 1.0.0): same — surface ONLY the wrong-type reject
-        # (not_electricity_bill: a MyKad / water bill / junk in the electricity slot) → the red chip.
-        # The 'suspect' band is a thin/cropped-but-genuine bill (common), so hide it as amber noise;
-        # a genuine/suspect bill renders normally.
-        if obj.doc_type == 'electricity_bill' and not status.startswith('not_'):
-            return None
-        # Water bill (MODEL_VERSION 1.0.0): same — surface ONLY the wrong-type reject (not_water_bill:
-        # a MyKad / an ELECTRICITY bill / junk in the water slot) → the red chip. The 'suspect' band is
-        # a thin/cropped-but-genuine bill (common for real B40 families), so hide it as amber noise; a
-        # genuine/suspect bill renders normally. Closes the swap symmetrically with electricity_bill.
-        if obj.doc_type == 'water_bill' and not status.startswith('not_'):
-            return None
-        # School-leaving cert (MODEL_VERSION 1.0.0): surface ONLY the wrong-type reject
-        # (not_school_leaving_cert: a MyKad / results slip / another document in the slot) → the red
-        # chip. A 'suspect' (thin/cropped) OR 'unrecognised' (a free-form testimonial we can't
-        # structurally confirm — folded to 'suspect' by canonical_status) is a real B40 leaver doc, so
-        # hide it as amber noise; a genuine/suspect cert renders normally (never a false reject).
-        if obj.doc_type == 'school_leaving_cert' and not status.startswith('not_'):
+        # Salary slip, electricity bill, water bill, school-leaving cert: surface ONLY the wrong-type
+        # reject (not_<type>) as the red chip; the thin/cropped 'suspect' band (common for real B40
+        # families) is amber noise, so a genuine/suspect copy renders normally.
+        if obj.doc_type in AUTH_WRONG_TYPE_ONLY and not status.startswith('not_'):
             return None
         return None if not status else {'status': status,   # NOT CHECKED (1.8.0) reads as unscored
                                         'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}

@@ -150,3 +150,89 @@ class TestDocumentReplace(TestCase):
             self.assertEqual(self._post(client, app, 'bank_statement').status_code, 201)
         resp = self._post(client, app, 'bank_statement')
         self.assertEqual(resp.json()['code'], 'replace_limit_reached')
+
+    # ---- round 2: the cap never blocks a fix the case is asking for ----
+    def _ask(self, app, code, doc_type, status='open', **kw):
+        from apps.scholarship.models import ResolutionItem
+        return ResolutionItem.objects.create(application=app, code=code, doc_type=doc_type, kind='doc',
+                                             source='system', status=status, **kw)
+
+    def _three_then(self, client, app, doc_type='str'):
+        for _ in range(3):
+            self.assertEqual(self._post(client, app, doc_type).status_code, 201)
+
+    def _ok_copy(self, app, doc_type):
+        return ApplicantDocument.objects.create(
+            application=app, doc_type=doc_type, storage_path='first',
+            vision_fields={'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+
+    def test_open_str_not_current_ticket_exempts_a_copy_that_read_fine(self, _o, _n):
+        app, client = self._case()
+        self._ok_copy(app, 'str')
+        self._three_then(client, app)
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(
+            vision_fields={'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+        ticket = self._ask(app, 'str_not_current', 'str')
+        for _ in range(2):                                   # 4th and 5th: allowed, not counted
+            self.assertEqual(self._post(client, app, 'str').status_code, 201)
+            self.assertEqual(self._newest(app).replace_count, 3)
+            ApplicantDocument.objects.filter(pk=self._live(app).pk).update(
+                vision_fields={'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+        ticket.status = 'resolved'
+        ticket.save()                                        # ticket closed: counted again
+        self.assertEqual(self._post(client, app, 'str').status_code, 409)
+
+    def test_open_offer_no_identity_ticket_likewise(self, _o, _n):
+        app, client = self._case()
+        self._ok_copy(app, 'offer_letter')
+        self._three_then(client, app, 'offer_letter')
+        self.assertEqual(self._post(client, app, 'offer_letter').status_code, 409)
+        ticket = self._ask(app, 'offer_no_identity', 'offer_letter')
+        self.assertEqual(self._post(client, app, 'offer_letter').status_code, 201)
+        self.assertEqual(self._newest(app).replace_count, 3)
+        ticket.status = 'resolved'
+        ticket.save()
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(vision_fields={})
+        self.assertEqual(self._post(client, app, 'offer_letter').status_code, 409)
+
+    def test_an_open_ticket_for_another_type_exempts_nothing(self, _o, _n):
+        app, client = self._case()
+        self._first(app)
+        self._three_then(client, app, 'ic')
+        self._ask(app, 'str_not_current', 'str')
+        self.assertEqual(self._post(client, app, 'ic').status_code, 409)
+
+    def test_suspect_is_exempt_where_the_student_is_shown_it_and_counted_where_hidden(self, _o, _n):
+        suspect = {'authenticity': {'status': 'suspect'}}
+        app, client = self._case()
+        self._first(app, 'ic')
+        self._three_then(client, app, 'ic')
+        ApplicantDocument.objects.filter(pk=self._live(app).pk).update(vision_fields=suspect)
+        self.assertEqual(self._post(client, app, 'ic').status_code, 201)        # shown: a fix, not counted
+        self.assertEqual(self._newest(app).replace_count, 3)
+        app2, client2 = self._case()
+        self._first(app2, 'salary_slip', 'father')
+        for _ in range(3):
+            self.assertEqual(self._post(client2, app2, 'salary_slip', member='father').status_code, 201)
+        ApplicantDocument.objects.filter(pk=self._live(app2).pk).update(vision_fields=suspect)
+        self.assertEqual(self._post(client2, app2, 'salary_slip', member='father').status_code, 409)  # hidden: counted
+
+    def test_the_serializer_and_the_exemption_share_one_suspect_list(self, _o, _n):
+        from apps.scholarship.document_replace import AUTH_TYPES, SUSPECT_SHOWN_TYPES
+        from apps.scholarship.serializers import ApplicantDocumentSerializer
+        app, _c = self._case()
+        for dt in AUTH_TYPES:
+            d = ApplicantDocument.objects.create(application=app, doc_type=dt, storage_path='s', household_member=dt,
+                                                 vision_fields={'authenticity': {'status': 'suspect'}})
+            shown = ApplicantDocumentSerializer(d).data['authenticity'] is not None
+            self.assertEqual(shown, dt in SUSPECT_SHOWN_TYPES, dt)
+
+    def test_the_newest_live_copy_is_the_one_read(self, _o, _n):
+        # an STR sweep can hold two live copies (the member's and a legacy untagged one): read the newest
+        app, client = self._case()
+        old = self._first(app, 'str', '')
+        ApplicantDocument.objects.filter(pk=old.pk).update(verification_status='rejected')
+        new = self._first(app, 'str', 'father')
+        ApplicantDocument.objects.filter(pk=new.pk).update(replace_count=3)
+        resp = self._post(client, app, 'str', member='father')
+        self.assertEqual((resp.status_code, resp.json().get('code')), (409, 'replace_limit_reached'))

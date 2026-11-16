@@ -6,10 +6,13 @@ it survives sessions and devices.
 
 THE RULE (the server decides; the client's `replace` flag changes nothing). Every student upload into
 a slot that already has a LIVE copy is a replace, and it counts, UNLESS the live copy is one the
-student must fix (`must_fix`): returned by a reviewer (rejected), a problem verdict from the read, or
-authenticity failed (`not_<type>`). Fixing a returned document is the normal retry: never counted,
-never capped. A live copy still being read, or one that read fine, counts - otherwise rapid
-re-uploads would skip the cap.
+student must fix, or the case is asking for it again. The principle: the cap never blocks a student
+from fixing something we are asking them to fix, so what the student is shown as "needs you" is exempt.
+Exempt: the live copy was returned by a reviewer (rejected), has a problem verdict from the read, failed
+authenticity (`not_<type>`), or is `suspect` on a type where the serializer SHOWS suspect (`must_fix`);
+or an OPEN doc request asks for this slot's type (`open_request_asks`, e.g. a stale STR that read fine).
+Fixing is the normal retry: never counted, never capped. A live copy still being read, or one that read
+fine with nothing asked, counts - otherwise rapid re-uploads would skip the cap.
 
 A counted upload's new row carries the slot's highest count + 1; an exempt one carries the highest
 unchanged. The highest is taken across ALL copies (superseded ones too), so a replace the read turned
@@ -38,6 +41,14 @@ def replaces_used(application_id, doc_type, members, request_code):
 
 _OK_VERDICTS = ('', 'ok', 'review_manually')
 
+#: Types the serializer exposes `authenticity` for (single source: serializers/documents.py reads it).
+AUTH_TYPES = ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf', 'offer_letter',
+              'salary_slip', 'electricity_bill', 'water_bill', 'school_leaving_cert', 'higher_results')
+#: Of those, the types where the student is shown ONLY a wrong-type reject (`not_<type>`); a suspect
+#: band is hidden amber noise there. On every other type in AUTH_TYPES suspect IS shown.
+AUTH_WRONG_TYPE_ONLY = ('salary_slip', 'electricity_bill', 'water_bill', 'school_leaving_cert')
+SUSPECT_SHOWN_TYPES = tuple(t for t in AUTH_TYPES if t not in AUTH_WRONG_TYPE_ONLY)
+
 
 def must_fix(live):
     """True when the live copy is one the student has to fix, so a re-upload is a retry, not a replace."""
@@ -49,7 +60,25 @@ def must_fix(live):
     auth = vf.get('authenticity')
     if isinstance(auth, dict) and auth.get('status'):
         from .genuineness.bands import shown_status
-        return shown_status(auth.get('status'), live.doc_type, auth.get('doc_seen', '')).startswith('not_')
+        shown = shown_status(auth.get('status'), live.doc_type, auth.get('doc_seen', ''))
+        return shown.startswith('not_') or (shown == 'suspect' and live.doc_type in SUSPECT_SHOWN_TYPES)
+    return False
+
+
+def open_request_asks(application_id, doc_type, members):
+    """True when an OPEN doc request asks the student for this slot's type (and member, where the ticket
+    names one): a system ticket in STUDENT_DOC_REQUEST_CODES (str_not_current, offer_no_identity, a
+    *_missing / *_unreadable) or an officer doc request. One query; POST path only."""
+    from django.db.models import Q
+    from .models import ResolutionItem
+    from .resolution import STUDENT_DOC_REQUEST_CODES
+    rows = ResolutionItem.objects.filter(
+        Q(source='system', code__in=STUDENT_DOC_REQUEST_CODES) | Q(source='officer'),
+        application_id=application_id, status='open', kind='doc', doc_type=doc_type)
+    for item in rows:
+        who = (item.params or {}).get('household_member') if isinstance(item.params, dict) else ''
+        if not who or who in members:
+            return True
     return False
 
 
