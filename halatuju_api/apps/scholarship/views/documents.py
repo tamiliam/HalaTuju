@@ -16,6 +16,7 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
+from ..document_replace import replace_refusal, replaces_used
 from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
@@ -187,6 +188,7 @@ class DocumentListCreateView(APIView):
         refusal = documents_locked_refusal(app, new_doc_type) or self._refuse_bad_file(app, serializer.validated_data)
         if refusal:
             return refusal
+        want_replace = serializer.validated_data.pop('replace', False)   # H6: not a model field
         new_member = serializer.validated_data.get('household_member', '') or ''
         # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
         # document its OWN single-instance slot, so it can't overwrite the student's route doc
@@ -211,6 +213,14 @@ class DocumentListCreateView(APIView):
         refusal = self._refuse_over_cap(app, new_doc_type, replaces)
         if refusal:
             return refusal
+        # H6: a Replace on a sent / done document is counted per slot and capped at three (the lock was
+        # checked above, so a locked student is refused first). The count rides on the new row.
+        if want_replace and replaces:
+            used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
+            refusal = replace_refusal(used)
+            if refusal:
+                return refusal
+            serializer.validated_data['replace_count'] = used + 1
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable

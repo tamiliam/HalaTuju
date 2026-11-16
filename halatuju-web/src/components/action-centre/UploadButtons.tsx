@@ -8,7 +8,11 @@ import { useT } from '@/lib/i18n'
  * just opens its file picker). Both hand the chosen file to `onFile`. `sr-only` inputs, never `hidden`:
  * several Android browsers refuse to open the picker for a display:none input behind a label.
  */
-export function UploadButtons({ busy, onFile }: { busy: boolean; onFile: (file: File) => void }) {
+export function UploadButtons({ busy, onFile, uploadKey = 'scholarship.actionCentre.upload' }: {
+  busy: boolean; onFile: (file: File) => void
+  /** The first button's words: `Upload` by default, `Replace` on a sent / done document (H6). */
+  uploadKey?: string
+}) {
   const { t } = useT()
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -19,7 +23,7 @@ export function UploadButtons({ busy, onFile }: { busy: boolean; onFile: (file: 
   return (
     <div className="grid grid-cols-2 gap-2">
       <label className={`${face} bg-brand-fill text-brand-fill-ink hover:bg-brand-fill-hover ${busy ? 'opacity-50' : ''}`}>
-        {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
+        {busy ? t('scholarship.actionCentre.uploading') : t(uploadKey)}
         <input type="file" accept="image/*,.pdf" className="sr-only" disabled={busy} onChange={pick} />
       </label>
       <label className={`${face} border border-brand-shape text-primary-600 hover:bg-primary-50 ${busy ? 'opacity-50' : ''}`}>

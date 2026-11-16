@@ -9097,3 +9097,18 @@ unticks a v2 payments key on an organisation admin's Permissions tab saves, and 
 person keeps the power. No one gains a power; the switch just has no effect. Fix:
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
+
+### [TD-631] Three small limits in the student documents pages (H5 / H6) - low
+
+**Raised 2026-11-16 by H6. No money effect.** (a) `ActionCentre.tsx` `fetchItems` reads the document list with
+`listDocuments(...).catch(() => ({ documents: [] }))`, so a failed fetch of the documents lock is swallowed: a locked
+student then sees Upload and only learns the stage is locked from the plain 409 message after trying. (b)
+`ScholarshipDocuments.tsx` hides the income-proof card's upload when `lock.locked` and none of `INCOME_PROOF_TYPES` is in
+`open_doc_types`; that assumes the server never opens an income type after the lock (true today: only the bank statement,
+semester results and the two late higher-results asks are exempt). If an income type is ever exempted, the card needs a
+per-type check. (c) The 3-replace cap (`document_replace.py`) counts only an upload the client sends with `replace: true`;
+the client decides a document is "settled" (reads fine) from the served verdict. A direct API call that omits the flag
+re-uploads without the cap; it is the same as a plain re-upload today and harms no one, but the cap is a student-page
+guard, not a hard server rule. Fix: (a) keep the failure and show the load-error card or a locked-by-default state; (b)
+serve a per-type `replaceable` / `open` flag; (c) if the cap ever needs to be hard, derive "settled" on the server.
+*(A - S)*

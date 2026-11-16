@@ -31,6 +31,8 @@ import { setOnboardingReturn } from '@/lib/scholarship'
 import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'; import { PHONE_PILL_SM } from '@/lib/phonePill'
 import { KindIcon } from './KindIcon'
 import { UploadButtons } from './UploadButtons'
+import { ReplaceDocument } from './ReplaceDocument'
+import { docForItem, replaceLocked } from '@/lib/documentReplace'
 import { SetAsideCard, DoneCard, OfficerHoldCard } from './StatusCards'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
@@ -241,7 +243,16 @@ export function ActionCard({
 
   if (setAside) return <SetAsideCard fromLabel={fromLabel} title={title} />
 
-  if (done) return <DoneCard fromLabel={fromLabel} title={title} />
+  if (done) {
+    // H6: a cleared document can still be replaced until the documents lock (3 times at most).
+    const sent = item.kind === 'doc' && !replaceLocked(item.doc_type, docsLocked, openDocTypes) ? docForItem(docs, item) : null
+    return (
+      <DoneCard fromLabel={fromLabel} title={title}>
+        {sent && <ReplaceDocument doc={sent} token={token} limits={limits}
+          requestCode={item.code.startsWith('officer_') ? item.code : ''} onDone={onResolved} />}
+      </DoneCard>
+    )
+  }
 
   if (needsOfficerEye(item)) return <OfficerHoldCard fromLabel={fromLabel} />
 

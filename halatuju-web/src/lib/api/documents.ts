@@ -19,6 +19,10 @@ export interface ApplicantDocument {
   verification_status: string
   uploaded_at: string
   download_url: string | null
+  // H6: replaces this document's slot has used, and the cap (both SERVED; never mirrored). Optional so a
+  // payload from an older build still types; `lib/documentReplace` reads them with a fallback.
+  replace_count?: number
+  replace_limit?: number
   // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
   vision_nric: string
   vision_name: string
@@ -389,7 +393,7 @@ export async function readDocument(id: number, options?: ApiOptions): Promise<Re
  *  (a dropped line), the upload stands and the server reads it within 15 minutes: the caller gets
  *  the recorded document with `match_verdict: 'pending'` (the "still checking" state). */
 export async function recordDocument(
-  payload: { doc_type: string; storage_path: string; household_member?: string; request_code?: string; original_filename?: string; content_type?: string; size?: number },
+  payload: { doc_type: string; storage_path: string; household_member?: string; request_code?: string; replace?: boolean; original_filename?: string; content_type?: string; size?: number },
   options?: ApiOptions
 ): Promise<RecordedDocument> {
   const recorded: RecordedDocument = await apiRequest('/api/v1/scholarship/documents/', {
