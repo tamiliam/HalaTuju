@@ -9133,3 +9133,7 @@ of 6-7 (same first letter; Pebruari and Mach by name), and an exam word glued to
 STPM, STAM). A misspelling further out ("Mrch", "Ogoss"), a lowercase glued exam ("lepasanspm 2024") or a misspelt
 5-letter month (March, April, Julai: left out because "match", "mulai" and "nilai" sit that near) can still be read
 past. The 286-letter corpus holds none. *(A - S)*
+
+*Review 14 (2026-11-16, final, PASS) add:* "nomber", "disembah", "dismember", "Augusta" and "ferrari" read as months
+(none in the corpus). Capital "STAM" inside "STAMFORD" (a college name) makes a line with no session an exam line, so
+it reads unknown (safe direction).
