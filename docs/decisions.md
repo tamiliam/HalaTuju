@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — Owner ruling: the debt register keeps a band (ceiling 150, floor 100)
+
+- **Rule:** open entries in docs/technical-debt.md (code_health "td_open") stay inside a band: ceiling 150, floor 100. Bring the count down to 100, then hold it there; never let it climb back to 150.
+- **Pace:** "take our time". The count was 184 on 2026-11-16. Clean-up sprints run only in a free builder slot after the freeze lifts (18 Nov) and never ahead of post-audit work. Target: under 150 by the 11 Dec review.
+- **Enforcement:** docs/debt-band.json. Settings/_tools/code_health.py reads it: before 2026-12-11 it WARNs when the count is above the ceiling or rises; from 2026-12-11 a count above the ceiling FAILs the reading. At the floor the report says "hold, no more clean-up needed".
+- **Proof rule:** an entry closes only with proof that the problem is fixed. Reviewers also check that no new debt goes unrecorded to stay under the ceiling.
+- **Why:** td_open was "info" only, so nothing held it down: 162 after the 12 Nov sweep, 184 four days later. The audit target was 110.
+
 ## 2026-11-16 — NAVKEYS review round (pending architect): paying the bill is billing.edit
 
 Review round, on main, not live. No migration. Services: both.

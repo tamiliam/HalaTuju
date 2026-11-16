@@ -1,0 +1,6 @@
+{
+  "ceiling": 150,
+  "floor": 100,
+  "enforce_from": "2026-12-11",
+  "ruled": "owner 2026-11-16 (docs/decisions.md): hold between 100 and 150; under 150 by the 11 Dec review"
+}
