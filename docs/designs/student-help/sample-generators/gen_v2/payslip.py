@@ -29,7 +29,7 @@ b.append(m(82,450,"SICK LEAVE TAKEN : 0.00    BALANCE :  0.00"))
 b.append(m(532,438,"NETT PAY :")); b.append(m(710,438,"1,766.00","end"))
 b.append(L(617,442,710,442)); b.append(L(617,445,710,445))
 b.append(m(400,461,"EPF#      : 00000000")); b.append(m(576,461,"TAX# : SG 00000000 00"))
-b.append(m(400,473,"SOCSO/EIS#: 000000000")); b.append(m(576,473,"BANK# : 1234567890123"))
+b.append(m(400,473,"SOCSO/EIS#: 000000000")); b.append(m(576,473,"BANK# : 0000 0000 0000"))
 # ytd bar
 b.append(L(78,494,165,494)); b.append(m(167,497,"CURRENT-MONTH")); b.append(L(258,494,390,494))
 b.append(L(397,494,516,494)); b.append(m(520,497,"YEAR-TO-DATE")); b.append(L(608,494,710,494))

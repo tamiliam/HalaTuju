@@ -9,6 +9,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ActionCentre from './ActionCentre'
 import { DocSample } from './DocSample'
+import { SAMPLE_FILE } from '@/lib/docSamples'
 import { SingleDocCard } from './ScholarshipDocuments/cards'
 import * as api from '@/lib/api'
 import type { ResolutionItem } from '@/lib/api'
@@ -27,7 +28,7 @@ jest.mock('@/lib/api', () => ({
   getResolutionItems: jest.fn(),
   listDocuments: jest.fn(),
 }))
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: lookup, locale: 'en' }) }))
+jest.mock('@/lib/i18n', () => ({ ...jest.requireActual('@/lib/i18n'), useT: () => ({ t: lookup, locale: 'en' }) }))
 jest.mock('./DocumentHelpCoach', () => ({ __esModule: true, default: () => null, CoachCard: () => null }))
 jest.mock('./IncomeClusterCoach', () => ({ __esModule: true, default: () => null }))
 
@@ -45,11 +46,41 @@ describe('DocSample (the link and the viewer)', () => {
     expect(screen.queryByTestId('sample-viewer')).toBeNull()
     fireEvent.click(screen.getByText('See a sample'))
     expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getByTestId('sample-caption').textContent).toContain('not a real document')
-    expect(screen.getByTestId('sample-caption').textContent).toContain('Never send it')
+    expect(screen.getByTestId('sample-caption').textContent).toBe(
+      'This is a sample drawing, not a real parent/guardian IC. Do not upload it.')
     expect(screen.getByRole('img').getAttribute('src')).toBe('/samples/mykad.svg')
     fireEvent.click(screen.getByTestId('sample-close'))
     expect(screen.queryByTestId('sample-viewer')).toBeNull()
+  })
+
+  it('the caption names the type (a payslip, an EPF statement)', () => {
+    const { unmount } = render(<DocSample docType="salary_slip" />)
+    fireEvent.click(screen.getByText('See a sample'))
+    expect(screen.getByTestId('sample-caption').textContent).toContain('not a real salary slip')
+    unmount()
+    render(<DocSample docType="epf" />)
+    fireEvent.click(screen.getByText('See a sample'))
+    expect(screen.getByTestId('sample-caption').textContent).toContain('not a real EPF statement')
+  })
+
+  it('shows "What we check" with 1 to 4 real points for EVERY mapped type', () => {
+    for (const docType of Object.keys(SAMPLE_FILE)) {
+      const { unmount } = render(<DocSample docType={docType} />)
+      fireEvent.click(screen.getByText('See a sample'))
+      expect(screen.getByTestId('sample-check-heading').textContent).toBe('What we check')
+      const points = Array.from(screen.getByTestId('sample-check-list').querySelectorAll('li'))
+      expect(points.length).toBeGreaterThanOrEqual(1)
+      expect(points.length).toBeLessThanOrEqual(4)
+      // A missing key would show the raw key.
+      points.forEach((li) => expect(li.textContent).not.toContain('scholarship.docs'))
+      unmount()
+    }
+  })
+
+  it('shows the Matriculation points on a Matriculation card', () => {
+    render(<DocSample docType="higher_results" kind="matric" />)
+    fireEvent.click(screen.getByText('See a sample'))
+    expect(screen.getByTestId('sample-check-list').textContent).toContain('College name and matric number')
   })
 
   it('Escape closes it', () => {
@@ -96,6 +127,28 @@ describe('on the cards', () => {
     expect(screen.getAllByText('See a sample')).toHaveLength(1)
     fireEvent.click(screen.getByText('See a sample'))
     expect(screen.getByRole('img').getAttribute('src')).toBe('/samples/mykad.svg')
+  })
+
+  it('an Action Centre higher-results card maps to the matric sample, and to STPM', async () => {
+    mockApi.getResolutionItems.mockResolvedValue({
+      open: [item({ id: 3, doc_type: 'higher_results', params: { results_kind: 'matric' } })],
+      resolved: [],
+    })
+    mockApi.listDocuments.mockResolvedValue({ documents: [] })
+    const matric = render(<ActionCentre token="tkn" studentName="Test Student 07" applicationId={7} />)
+    await waitFor(() => expect(screen.getAllByText('See a sample')).toHaveLength(1))
+    fireEvent.click(screen.getByText('See a sample'))
+    expect(screen.getByRole('img').getAttribute('src')).toBe('/samples/higher_results_matric.svg')
+    matric.unmount()
+
+    mockApi.getResolutionItems.mockResolvedValue({
+      open: [item({ id: 4, doc_type: 'higher_results', params: { results_kind: 'stpm' } })],
+      resolved: [],
+    })
+    render(<ActionCentre token="tkn" studentName="Test Student 07" applicationId={7} />)
+    await waitFor(() => expect(screen.getAllByText('See a sample')).toHaveLength(1))
+    fireEvent.click(screen.getByText('See a sample'))
+    expect(screen.getByRole('img').getAttribute('src')).toBe('/samples/higher_results_stpm.svg')
   })
 
   it('the Documents tab card has the link', () => {
