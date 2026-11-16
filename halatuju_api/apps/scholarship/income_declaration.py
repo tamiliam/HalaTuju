@@ -65,7 +65,8 @@ _APPROVAL_SCHEMA = {'type': 'object', 'properties': APPROVAL_FIELDS, 'required':
 #: empty"), so a signed, stamped form was refused "no issuing body". A stamp ANYWHERE in the approver's
 #: section counts and an empty box never cancels it; one outside that section (the applicant's own part)
 #: does not — but only on a form that HAS an approver's section: a document with none (an informal payslip)
-#: keeps the earlier reading, its issuer's chop counting anywhere on the page.
+#: keeps the earlier reading, its issuer's chop counting anywhere on the page. A declaration or village
+#: head's form always has an approver's section, even a blank one (rebase hardening, same 1.28.0).
 #: Rules (`approval_missing`) unchanged; stored reads move only when re-read.
 APPROVAL_PROMPT = (
     'This image is a Malaysian income document (an employer\'s or village head\'s letter, an informal '
@@ -83,7 +84,8 @@ APPROVAL_PROMPT = (
     'printed stamp box (e.g. "Cop Rasmi") left EMPTY does NOT cancel a stamp impressed elsewhere in that '
     'section. ONLY on a form that HAS an approver\'s section (an income declaration or a village head\'s '
     'form), a stamp OUTSIDE the approver\'s section (e.g. in the applicant\'s or declarant\'s own part of '
-    'the form) is NOT the approver\'s stamp. A document with NO approver\'s section (e.g. an informal '
+    'the form) is NOT the approver\'s stamp. A declaration or village head\'s form ALWAYS has an '
+    'approver\'s section, even if it is left blank. A document with NO approver\'s section (e.g. an informal '
     'payslip) has no such limit: the issuing body\'s stamp / chop counts wherever it is visible on the page. '
     'A copy-certification stamp ("SALINAN DIAKUI SAH", a true-copy stamp), a received / date stamp '
     '("DITERIMA"), a postal stamp and similar stamps are NOT a stamp for this question. '
