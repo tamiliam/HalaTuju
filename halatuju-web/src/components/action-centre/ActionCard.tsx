@@ -32,6 +32,7 @@ import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '
 import { KindIcon } from './KindIcon'
 import { UploadButtons } from './UploadButtons'
 import { ReplaceDocument } from './ReplaceDocument'
+import { DeclineOptional } from './DeclineOptional'
 import { docForItem, replaceLocked } from '@/lib/documentReplace'
 import { SetAsideCard, DoneCard, OfficerHoldCard } from './StatusCards'
 
@@ -108,6 +109,7 @@ export function ActionCard({
     : 'scholarship.actionCentre.fromAssistant')
 
   const [busy, setBusy] = useState(false)
+  const [declining, setDeclining] = useState(false)   // H7: the "I don't have this" reasons are showing
   const [error, setError] = useState<string | null>(null)
   const [text, setText] = useState('')
   // After an upload that DIDN'T clear the task (the scan flagged a mismatch/unreadable),
@@ -245,9 +247,16 @@ export function ActionCard({
 
   if (done) {
     // H6: a cleared document can still be replaced until the documents lock (3 times at most).
-    const sent = item.kind === 'doc' && !replaceLocked(item.doc_type, docsLocked, openDocTypes) ? docForItem(docs, item) : null
+    const declined = typeof item.params?.declined_reason === 'string' ? item.params.declined_reason : ''
+    const sent = item.kind === 'doc' && !declined && !replaceLocked(item.doc_type, docsLocked, openDocTypes) ? docForItem(docs, item) : null
     return (
       <DoneCard fromLabel={fromLabel} title={title}>
+        {declined && (
+          <p className="mt-1 break-words text-sm text-ground-600">
+            {t('scholarship.actionCentre.decline.youTold', { reason: t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${declined}`) })}
+            {typeof item.params?.declined_note === 'string' && item.params.declined_note ? ` ${item.params.declined_note}` : ''}
+          </p>
+        )}
         {sent && <ReplaceDocument doc={sent} token={token} limits={limits}
           requestCode={item.code.startsWith('officer_') ? item.code : ''} onDone={onResolved} />}
       </DoneCard>
@@ -286,7 +295,9 @@ export function ActionCard({
           <div className="mt-4">
             {item.kind === 'doc' && (
               <>
-                {!(docsLocked && !openDocTypes.includes(item.doc_type)) && <UploadButtons busy={busy} onFile={onFile} />}
+                {!declining && !(docsLocked && !openDocTypes.includes(item.doc_type)) && <UploadButtons busy={busy} onFile={onFile} />}
+                <DeclineOptional item={item} token={token} open={declining} onOpen={() => setDeclining(true)}
+                  onCancel={() => setDeclining(false)} onDone={onResolved} />
                 {/* Contextual Cikgu Gopal. Income cluster docs (wrong-person slip/EPF, a
                     mismatching BC) speak through the single per-earner cluster coach — the
                     per-document coach returns null for them (audit #15b). Everything else uses

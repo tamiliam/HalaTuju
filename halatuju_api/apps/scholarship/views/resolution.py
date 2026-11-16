@@ -108,6 +108,13 @@ class ResolutionItemResolveView(APIView):
         # here.)
         if item.code != VIRCLE_CODE and querying_locked(item.application):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
+        # H7: "I don't have this" - a reason (+ note) closes an OPTIONAL document ask. A required one refuses.
+        if 'reason' in request.data:
+            from .. import optional_asks
+            err = optional_asks.decline(item, request.data.get('reason'), request.data.get('note'))
+            if err:
+                return Response({'error': err}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(ResolutionItemSerializer(item).data)
         if item.kind == 'doc' or item.code in STPM_ASKS:
             return Response({'error': 'upload_doc_instead' if item.kind == 'doc' else 'answer_on_page',
                              'doc_type': item.doc_type}, status=status.HTTP_400_BAD_REQUEST)

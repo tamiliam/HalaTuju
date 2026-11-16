@@ -122,11 +122,13 @@ class AdminResolutionItemActionView(_AdminBase):
             item.status = 'open'
             item.resolved_by = ''
             item.resolved_at = None
+            if (item.params or {}).get('declined_reason'):   # H7: asking again clears a student's "I don't have this"
+                item.params = {k: v for k, v in item.params.items() if k not in ('declined_reason', 'declined_note')}
         else:
             item.status = 'waived' if action == 'waive' else 'resolved'
             item.resolved_by = getattr(admin, 'email', '') or 'officer'
             item.resolved_at = timezone.now()
-        item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+        item.save(update_fields=['status', 'resolved_by', 'resolved_at', 'params'])
         # Common profile S3: "Ask again" raises the query again; waive / resolve closes it.
         if action == 'reopen':
             staff_activity.record(admin, staff_activity.QUERY_RAISED, item.application,

@@ -234,6 +234,25 @@ class TestAdminScholarship(TestCase):
         self.assertIsNone(item.resolved_at)
         self.assertEqual(item.resolution_text, 'He drives an e-hailing car part-time.')
 
+    def test_cockpit_shows_a_declined_optional_ask_and_ask_again_clears_the_decline(self):
+        """H7: the reviewer's Outstanding queue carries the student's "I don't have this" reason; Ask again
+        sends the ask back to the student and drops the decline, so Check 2 may ask it afresh."""
+        from apps.scholarship import optional_asks
+        from apps.scholarship.models import ResolutionItem
+        item = ResolutionItem.objects.create(
+            application=self.app, source='check2', code='water_bill_recheck', fact='income', kind='doc',
+            doc_type='water_bill')
+        self.assertIsNone(optional_asks.decline(item, 'other', 'We use a well.'))
+        self._auth(ADMIN)
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
+        row = {i['id']: i for i in r.json()['resolution_items']}[item.id]
+        self.assertEqual((row['params']['declined_reason'], row['params']['declined_note']), ('other', 'We use a well.'))
+        r = self.client.post(f'/api/v1/admin/scholarship/resolution-items/{item.id}/reopen/')
+        self.assertEqual(r.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+        self.assertFalse(optional_asks.is_declined(item))
+
     def _submitted(self):
         """An officer may only raise a query on a SUBMITTED student in Completed/Interviewing
         (owner 2026-07-13). The shared fixture is `shortlisted` with nothing submitted — the

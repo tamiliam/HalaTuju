@@ -29,7 +29,7 @@ import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import BursaryLetters from '@/components/bursary/BursaryLetters'
 import BursaryMentoring from '@/components/bursary/BursaryMentoring'
 import { AuthContext } from '@/lib/auth-context'
-import { sandboxApplication, sandboxDocuments } from './fixtures/scholarship'
+import { sandboxApplication, sandboxDocuments, sandboxResolutionItemsOptional } from './fixtures/scholarship'
 import { KEY_EXAM_TYPE, KEY_GRADES, KEY_PROFILE, KEY_STPM_STREAM, rememberBursaryFile } from '@/lib/storage'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -338,5 +338,13 @@ export const STUDENT_REST_SURFACES: Surface[] = [
         lock: { locked: false, open_doc_types: [] },
       }),
     },
+  },
+  {
+    slug: 'action-centre-optional',
+    title: 'Action Centre - an optional ask',
+    note: 'H7: an optional document ask carries the I-do-not-have-this button under Upload; a required ask beside '
+      + 'it does not. The reasons open only after the tap.',
+    render: () => <SignedIn><ActionCentre token="sandbox-not-a-real-token" studentName="Aina Contoh" applicationId={1} /></SignedIn>,
+    routes: { '/api/v1/scholarship/resolution-items/': () => sandboxResolutionItemsOptional },
   },
 ]

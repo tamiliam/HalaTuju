@@ -182,6 +182,7 @@ const ALLOWED: Entry[] = [
   // ── DISPLAY ──────────────────────────────────────────────────────────────────────────────────────────────
   ['app/admin/requests/[id]/page.tsx', "req.approved_by_role === 'super'", 1, 'DISPLAY', 'names who approved'],
   ['components/ActionCentre.tsx', "attributionFor(item) === 'reviewer'", 1, 'DISPLAY', 'names who an item came from'],
+  ['components/action-centre/ActionCard.tsx', "attributionFor(item) === 'reviewer'", 1, 'DISPLAY', 'names who an item came from'],
   ['content/manual/index.ts', `${SUPER}) return 'super'`, 1, 'DISPLAY', 'the Guide\'s chapters by role'],
   ['content/manual/index.ts', `!role || ${SUPER}) return []`, 1, 'DISPLAY', 'the Guide\'s chapters by role'],
   ['content/manual/index.ts', "role.role === 'reviewer' || role.role === 'qc' || role.role === 'org_admin'", 3, 'DISPLAY', 'the Guide\'s chapters by role'],

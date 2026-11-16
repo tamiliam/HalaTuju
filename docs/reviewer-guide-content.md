@@ -59,7 +59,8 @@ questions, and is rewritten into the final version when you save your verdict. Y
 ### 6. Asking the student something
 If something's unclear, don't guess. **Raise a query** or **request a document** — the student gets an
 email and replies, and their answer appears in the **Outstanding** box. Best done before the interview
-so your conversation is focused.
+so your conversation is focused. For an optional document (EPF, a utility bill, a school-leaving certificate)
+the student can tap **I don't have this**; the ask closes and the reason shows in **Outstanding**.
 `[SHOT 190317 — Outstanding + Raise a query]` · `[SHOT 190345 / 190404 — Request a document — optional]`
 
 ### 7. The interview stage
