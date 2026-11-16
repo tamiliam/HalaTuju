@@ -9098,7 +9098,7 @@ person keeps the power. No one gains a power; the switch just has no effect. Fix
 with TD-620 in M4, read the stored v2 `payments.*` keys and drop the by-role add; until then the card's "comes with
 the role" line is the guard. *(A - S)*
 
-### [TD-631] Two small limits in the student documents pages (H5 / H6) - low
+### [TD-640] Two small limits in the student documents pages (H5 / H6) - low
 
 **Raised 2026-11-16 by H6. No money effect.** (a) `ActionCentre.tsx` `fetchItems` reads the document list with
 `listDocuments(...).catch(() => ({ documents: [] }))`, so a failed fetch of the documents lock is swallowed: a locked
