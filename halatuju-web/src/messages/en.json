@@ -5461,6 +5461,7 @@
         "start": "Reject before interview",
         "help": "For a student whose documents already show they don't qualify. No interview is held.",
         "unassignFirst": "To reject before interview, set the reviewer back to Unassigned first.",
+        "unassignAsk": "To reject before interview, ask someone who assigns reviewers to set the reviewer back to Unassigned first.",
         "reasonLabel": "Main reason",
         "reasonPlaceholder": "Choose the main reason",
         "reasons": {
@@ -5479,6 +5480,7 @@
         "confirmTitle": "Are you sure?",
         "confirmBody": "{name} will be rejected before interview. Main reason: {reason}.",
         "confirmEmail": "The decline email goes once the quality control hold ends on {date}. You can cancel it until then.",
+        "confirmEmailNow": "There is no quality control hold, so the decline email goes at once.",
         "confirmYes": "Yes, reject",
         "back": "Go back",
         "running": "Rejecting…",
@@ -5487,7 +5489,7 @@
         "sent": "Decline email sent on {date}",
         "error": {
           "bad_status": "Only a student at Awaiting review can be rejected before interview.",
-          "has_reviewer": "This student has a reviewer. Set the reviewer back to Unassigned first.",
+          "has_reviewer": "This student has a reviewer now, so they cannot be rejected before interview.",
           "reason_required": "Choose the main reason.",
           "comments_required": "Say why you are rejecting. The note stays on the file for your team.",
           "comments_too_long": "The note can be 2,000 characters at most.",

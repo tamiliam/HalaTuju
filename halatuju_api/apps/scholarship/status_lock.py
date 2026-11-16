@@ -81,6 +81,17 @@ def lock_application_for(application, allowed_statuses):
     return row
 
 
+def relock_application(application):
+    """Lock and re-read the INSTANCE ``application`` whatever its status, refreshing it in place, so the
+    caller's own rules judge the fresh row (#75 review: `assign_reviewer`, against a reject before
+    interview that committed a moment ago). A row that has gone leaves the instance as it was."""
+    _require_atomic()
+    row = ScholarshipApplication.objects.select_for_update().filter(pk=application.pk).first()
+    if row is not None:
+        _copy_onto(application, row)
+    return application
+
+
 def lock_applications_for(applications, allowed_statuses):
     """Lock and re-read several application INSTANCES in primary-key order, refreshing each in
     place. Returns the list of those whose locked status is not in ``allowed_statuses`` (or whose

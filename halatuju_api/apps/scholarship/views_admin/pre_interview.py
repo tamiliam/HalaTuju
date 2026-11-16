@@ -14,7 +14,7 @@ from .base import _AdminBase
 #: code in en / ms / ta (`admin.scholarship.preInterview.error.<code>`).
 _REFUSALS = {
     'bad_status': 'Only a student at Awaiting review can be rejected before interview.',
-    'has_reviewer': 'This student has a reviewer. Set the reviewer back to Unassigned first.',
+    'has_reviewer': 'This student has a reviewer now, so they cannot be rejected before interview.',
     'reason_required': 'Choose the main reason.',
     'comments_required': 'Say why you are rejecting. The note stays on the file for your team.',
     'comments_too_long': 'The note can be 2,000 characters at most.',

@@ -4,7 +4,6 @@ Assigning a reviewer, pausing one, and the income-route switch.
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
-import contextlib
 import logging
 
 from django.db import transaction
@@ -370,19 +369,52 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
       - every change writes an AssignmentEvent (from -> to, by whom) and stamps
         assigned_at (null on unassign). A no-op (target unchanged) writes nothing.
     Returns the application.
+
+    ⚠ THE CASE ITSELF (#75 review): a reject before interview that commits while this runs must win.
+    An UNASSIGN re-reads the case under its row lock before any rule. An ASSIGN costs no extra query
+    (the assign query budget): its one UPDATE is written only if the row still holds the status and
+    the holder the rules judged (`_write_if_unmoved`); if not, the attempt rolls back and runs once
+    more on the locked row, so the refusal names what is true now. Lock order: reviewer, then case.
     """
-    from ..models import AssignmentEvent
     now = now or timezone.now()
+    try:
+        return _assign_once(application, reviewer, by_admin, now, relock=reviewer is None)
+    except _Moved:
+        return _assign_once(application, reviewer, by_admin, now, relock=True)
+
+
+class _Moved(Exception):
+    """The case row changed after it was read: `assign_reviewer` judges it again, locked."""
+
+
+def _write_if_unmoved(application, current, fields):
+    """The assign's one UPDATE, written only while the row still holds the status and the holder the
+    rules judged. Returns the rows written: 0 means it moved. On PostgreSQL a concurrent reject's row
+    lock makes this wait, then re-test the WHERE on the committed row."""
+    from ..models import ScholarshipApplication
+    return (ScholarshipApplication.objects
+            .filter(pk=application.pk, status=application.status,
+                    assigned_to_id=current.id if current else None)
+            .update(**{f: getattr(application, f) for f in fields}))
+
+
+def _assign_once(application, reviewer, by_admin, now, *, relock):
+    """`assign_reviewer`'s body: one attempt, in one transaction. ``relock`` re-reads the case under
+    its row lock first (the unassign, and the second try of an assign whose row moved)."""
+    from ..models import AssignmentEvent
 
     # ⚠ THE TARGET IS RE-READ UNDER ITS ROW LOCK (#39 Sprint 4, the TD-382 class). The editor's
     # permissions PATCH locks the same row to count the person's open cases before it removes
     # `review`; with both holding it, an assignment racing that removal is serialised — whichever
     # commits second sees the first, so a case can never land on somebody who just lost the power
-    # to open it. An UNASSIGN takes no lock and no transaction, exactly as before.
-    locked = transaction.atomic() if reviewer is not None else contextlib.nullcontext()
-    with locked:
+    # to open it. #75 review: then the CASE, when ``relock`` asks (see `assign_reviewer`).
+    from ..status_lock import relock_application
+    with transaction.atomic():
         if reviewer is not None:
             reviewer = _locked(reviewer)
+        if relock:
+            relock_application(application)
+        if reviewer is not None:
             # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — only someone
             # in Reviewers (an org admin: of their own organisation), and that row may have changed
             # since the endpoint asked. T1-d: re-picking the CURRENT holder is the no-op below, never
@@ -437,7 +469,8 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
             # (the teardown notifies that reviewer). Best-effort — never block the unassignment.
             from .. import scheduling
             try:
-                scheduling.release_for_unassign(application, now=now)
+                with transaction.atomic():   # a savepoint: a failure here never spoils the unassign
+                    scheduling.release_for_unassign(application, now=now)
             except Exception:
                 logger.exception('release_for_unassign failed for application %s', application.id)
             if application.status == 'interviewing':
@@ -454,7 +487,10 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
                    'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at']
         if status_reverted:
             _fields.append('status')
-        application.save(update_fields=_fields)
+        if relock:
+            application.save(update_fields=_fields)
+        elif not _write_if_unmoved(application, current, _fields):
+            raise _Moved   # rolls back the event above; `assign_reviewer` tries once more, locked
         _record_assignment(by_admin, application, current, reviewer)
 
     # A2.3 / TD-519: the reviewer's and the student's assignment emails are NOT sent here any more.

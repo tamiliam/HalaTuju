@@ -359,7 +359,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
-      <PreInterviewRecord app={app} t={t} busy={busy} doCancelDecline={doCancelDecline} />
+      <PreInterviewRecord app={app} t={t} />
 
 
       <AssignAndWitness
@@ -372,7 +372,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         doAssignWitness={doAssignWitness}
         notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
-        preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} onDone={setApp} />}
+        preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} canAssign={canAssign}
+          onDone={setApp} onStale={refreshApp} />}
       />
 
 

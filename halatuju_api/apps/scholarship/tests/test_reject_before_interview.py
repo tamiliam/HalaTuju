@@ -11,15 +11,21 @@ Pinned here, one test per rule the organisation approved:
     QC decline; until it goes the student still sees Awaiting review; cancel puts the student back at
     Awaiting review with no reviewer and nothing is sent. The reason and note never reach the student.
   * It never counts against a reviewer, and the Programme overview counts it, by reason.
+  * #75 review: the reject and the assign each re-read the case under its row lock, so whichever
+    commits second sees the first.
 """
 from datetime import timedelta
 
 from django.core import mail
+from unittest import mock
+
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
+from apps.scholarship.emails.student_decisions import _DECLINE_TEMPLATES
 from apps.scholarship.models import ScholarshipApplication
-from apps.scholarship.services import cancel_pending_decline, release_pending_declines
+from apps.scholarship.services import (AssignmentError, assign_reviewer, cancel_pending_decline,
+                                       release_pending_declines)
 from apps.scholarship.services.pre_interview import REASONS, counts, reject_before_interview
 from apps.scholarship.student_status import student_facing_status
 from apps.scholarship.tests.factories import (
@@ -80,6 +86,26 @@ class WhoMayRejectTest(_Base):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'profile_complete')
 
+    def test_the_assigned_reviewer_is_refused_by_the_qc_key_not_by_the_reviewer_rule(self):
+        # The write gate lets the case's own reviewer through; only `has_perm('qc')` stops them,
+        # with a 403 before the service would answer 400 has_reviewer.
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        app = make_application('assigned', cohort=self.cohort, reviewer=reviewer)
+        r = self._post(reviewer, app=app)
+        self.assertEqual(r.status_code, 403, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')
+
+    def test_an_org_admin_without_the_qc_key_is_refused(self):
+        from apps.courses.models import PartnerAdmin
+        real = PartnerAdmin.has_perm
+        with mock.patch.object(PartnerAdmin, 'has_perm',
+                               lambda self, key: False if key == 'qc' else real(self, key)):
+            r = self._post(self.org_admin)
+        self.assertEqual(r.status_code, 403, r.content)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'profile_complete')
+
     def test_the_detail_offers_it_to_a_key_holder_and_never_to_a_reviewer(self):
         url = f'/api/v1/admin/scholarship/applications/{self.app.pk}/'
         body = authed_client(self.org_admin).get(url).data
@@ -127,6 +153,65 @@ class WhereItWorksTest(_Base):
         r = self._post(self.org_admin)
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'bad_status')
+
+
+class TheRowLockTest(_Base):
+    """#75 review: each side re-reads the case under its row lock, so a stale instance loses."""
+    def setUp(self):
+        super().setUp()
+        self.reviewer = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+
+    def test_a_reviewer_set_after_the_case_was_loaded_refuses_the_reject(self):
+        stale = ScholarshipApplication.objects.get(pk=self.app.pk)
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
+        with self.assertRaisesMessage(ValueError, 'has_reviewer'):
+            reject_before_interview(stale, self.org_admin, 'not_b40', NOTE)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'profile_complete')
+        self.assertEqual(self.app.rejection_category, '')
+
+    def test_a_reject_committed_after_the_case_was_loaded_refuses_the_assign(self):
+        stale = ScholarshipApplication.objects.get(pk=self.app.pk)
+        reject_before_interview(ScholarshipApplication.objects.get(pk=self.app.pk),
+                                self.org_admin, 'not_b40', NOTE)
+        with self.assertRaises(AssignmentError) as cm:
+            assign_reviewer(stale, reviewer=self.reviewer, by_admin=self.org_admin)
+        self.assertEqual(str(cm.exception), 'not_assignable')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'rejected')
+        self.assertIsNone(self.app.assigned_to_id)
+
+    def test_an_assign_whose_row_moved_is_judged_again_with_one_event(self):
+        from apps.scholarship.models import AssignmentEvent
+        other = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        stale = ScholarshipApplication.objects.get(pk=self.app.pk)
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(assigned_to=other)
+        assign_reviewer(stale, reviewer=self.reviewer, by_admin=self.org_admin)
+        events = list(AssignmentEvent.objects.filter(application=self.app))
+        self.assertEqual([(e.from_admin_id, e.to_admin_id) for e in events],
+                         [(other.pk, self.reviewer.pk)])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.assigned_to_id, self.reviewer.pk)
+
+    def test_an_unassign_judges_the_locked_row_too(self):
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        stale = ScholarshipApplication.objects.get(pk=app.pk)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(status='interviewed')
+        with self.assertRaises(AssignmentError) as cm:
+            assign_reviewer(stale, reviewer=None, by_admin=self.org_admin)
+        self.assertEqual(str(cm.exception), 'findings_submitted')
+        app.refresh_from_db()
+        self.assertEqual(app.assigned_to_id, self.reviewer.pk)
+
+    def test_a_refused_unassign_never_starts_the_interview_teardown(self):
+        # The teardown emails the reviewer, so the unassign judges the locked row BEFORE it.
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        stale = ScholarshipApplication.objects.get(pk=app.pk)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(status='interviewed')
+        with mock.patch('apps.scholarship.scheduling.release_for_unassign') as teardown, \
+                self.assertRaises(AssignmentError):
+            assign_reviewer(stale, reviewer=None, by_admin=self.org_admin)
+        teardown.assert_not_called()
 
 
 class WhatIsRequiredTest(_Base):
@@ -207,10 +292,21 @@ class TheEmailTest(_Base):
         self.assertNotIn('ZQX-pre-interview-note', whole)
         self.assertNotIn('not_b40', whole)
         self.assertNotIn('interview', sent.subject.lower())
+        self.assertNotIn('interview', sent.body.lower())
         self.app.refresh_from_db()
         self.assertIsNotNone(self.app.decline_email_sent_at)
         self.assertEqual(self.app.pending_rejection_category, '')
         self.assertEqual(student_facing_status(self.app), 'rejected')
+
+    def test_the_decline_never_mentions_an_interview_in_any_language(self):
+        subjects, bodies = _DECLINE_TEMPLATES['pre_interview']
+        words = {'en': ('interview',), 'ms': ('temu duga', 'temuduga', 'temu bual', 'temubual'),
+                 'ta': ('நேர்காணல்', 'நேர்முக')}
+        for lang, banned in words.items():
+            with self.subTest(lang):
+                text = (subjects[lang] + bodies[lang]).lower()
+                for word in banned:
+                    self.assertNotIn(word, text)
 
     def test_the_detail_shows_the_sent_date(self):
         self._post(self.org_admin)
@@ -236,6 +332,9 @@ class TheEmailTest(_Base):
         self.assertEqual(self.app.rejection_reason, '')
         self.assertEqual(self.app.rejection_comments, '')
         self.assertIsNone(self.app.decline_due_at)
+        self.assertEqual(self.app.pre_decline_status, '')
+        self.assertEqual(self.app.pending_decline_by, '')
+        self.assertEqual(self.app.pending_rejection_category, '')
         self.assertEqual(release_pending_declines(now=timezone.now() + timedelta(days=3)), 0)
         self.assertEqual(mail.outbox, [])
         # And the door is open again.
@@ -276,6 +375,18 @@ class CountsTest(_Base):
         self.assertEqual(got['by_reason']['results_too_low'], 1)
         self.assertEqual(set(got['by_reason']), set(REASONS))
         self.assertEqual(got['by_reason']['other'], 0)
+
+    def test_another_organisations_rejections_stay_out(self):
+        other_org = make_org()
+        other = make_application('profile_complete', cohort=make_cohort(owning_organisation=other_org))
+        reject_before_interview(other, make_admin('org_admin', owning_org=other_org), 'not_b40', NOTE)
+        reject_before_interview(self.app, self.org_admin, 'other', NOTE)
+        got = counts(ScholarshipApplication.objects.filter(owning_organisation=self.org))
+        self.assertEqual(got['total'], 1)
+        self.assertEqual(got['by_reason']['not_b40'], 0)
+        r = authed_client(self.org_admin).get('/api/v1/admin/scholarship/programme-overview/')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.data['funnel']['pre_interview']['total'], 1)
 
     def test_a_cancelled_one_is_not_counted(self):
         reject_before_interview(self.app, self.org_admin, 'other', NOTE)

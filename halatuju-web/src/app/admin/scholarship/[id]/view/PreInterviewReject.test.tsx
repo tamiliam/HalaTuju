@@ -5,7 +5,9 @@
  * without it nothing shows (a reviewer, another stage); with a reviewer on the case only the
  * "unassign first" hint shows. The panel asks for a main reason and a note (counted against the
  * served limit), then an "Are you sure?" step names the student, the reason and the date the email
- * goes. The record card shows the held email with "Cancel decline", or the sent date. Dummy data only.
+ * goes (or that it goes at once with no hold). Focus moves with each step (#75 review). The record card
+ * shows the held date (the header's cool-off banner carries "Cancel decline"), or the sent date.
+ * Dummy data only.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { PreInterviewOption, PreInterviewRecord } from './PreInterviewReject'
@@ -25,9 +27,11 @@ const OFFER = {
 const caseOf = (over: Record<string, unknown> = {}) =>
   ({ id: 7, name: 'Dummy Student', status: 'profile_complete', assigned_to_id: null, pre_interview: OFFER, ...over }) as unknown as api.AdminScholarshipDetail
 
-const draw = (app: api.AdminScholarshipDetail) => {
+let onStale: jest.Mock
+const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
   const onDone = jest.fn()
-  render(<PreInterviewOption app={app} t={t} token="tok" busy="" onDone={onDone} />)
+  onStale = jest.fn()
+  render(<PreInterviewOption app={app} t={t} token="tok" busy="" canAssign={canAssign} onDone={onDone} onStale={onStale} />)
   return onDone
 }
 const fill = (reason: string, note: string) => {
@@ -54,6 +58,11 @@ describe('the door', () => {
     draw(caseOf({ assigned_to_id: 12 }))
     expect(screen.queryByRole('button', { name: `${P}.start` })).toBeNull()
     expect(screen.getByTestId('pre-interview-unassign-first').textContent).toBe(`${P}.unassignFirst`)
+  })
+
+  it('a viewer who cannot assign is told to ask someone who assigns reviewers', () => {
+    draw(caseOf({ assigned_to_id: 12 }), false)
+    expect(screen.getByTestId('pre-interview-unassign-first').textContent).toBe(`${P}.unassignAsk`)
   })
 })
 
@@ -90,6 +99,47 @@ describe('the panel', () => {
   })
 })
 
+describe('focus and labels (#75 review)', () => {
+  it('opening the form puts focus on the reason; Cancel puts it back on the start button', () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    expect(document.activeElement).toBe(screen.getByLabelText(`${P}.reasonLabel`))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.cancel` }))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.start` }))
+  })
+
+  it('the note names its hint and its counter', () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    const ids = (screen.getByLabelText(`${P}.whyLabel`).getAttribute('aria-describedby') || '').split(' ')
+    expect(ids.map((id) => document.getElementById(id)?.textContent)).toEqual([
+      `${P}.whyHint`, `${P}.counter|{"count":"0","max":"20"}`])
+  })
+
+  it('"Are you sure?" is an alert dialog named by its heading, which takes focus; Go back returns it to Reject', () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    const dialog = screen.getByRole('alertdialog', { name: `${P}.confirmTitle` })
+    expect(dialog).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: `${P}.confirmTitle` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.back` }))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.submit` }))
+  })
+
+  it('a refusal returns focus to Reject, never to the page body', async () => {
+    mockApi.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'comments_too_long' }))
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    await screen.findByRole('alert')
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.submit` }))
+  })
+})
+
 describe('are you sure?', () => {
   const toConfirm = () => {
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
@@ -108,6 +158,14 @@ describe('are you sure?', () => {
     expect(box.textContent).toContain(`${P}.reasons.results_too_low`)
     expect(box.textContent).toContain(`${P}.confirmEmail`)
     expect(mockApi.rejectBeforeInterview).not.toHaveBeenCalled()
+  })
+
+  it('with no hold, says the email goes at once', () => {
+    draw(caseOf({ pre_interview: { ...OFFER, hold_hours: 0 } }))
+    toConfirm()
+    const box = screen.getByTestId('pre-interview-confirm')
+    expect(box.textContent).toContain(`${P}.confirmEmailNow`)
+    expect(box.textContent).not.toContain(`${P}.confirmEmail|`)
   })
 
   it('Go back returns to the panel with the answers kept', () => {
@@ -133,6 +191,8 @@ describe('are you sure?', () => {
     toConfirm()
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.${code}`)
+    // A stale page (the stage or the reviewer moved) is reloaded; a note refusal is not.
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(code === 'comments_too_long' ? 0 : 1))
   })
 
   it('an unknown refusal reads as the generic words', async () => {
@@ -150,23 +210,21 @@ describe('the record', () => {
   })
 
   it('shows nothing for any other decline', () => {
-    render(<PreInterviewRecord app={rejected({ rejection_category: 'interview' })} t={t} busy="" doCancelDecline={jest.fn()} />)
+    render(<PreInterviewRecord app={rejected({ rejection_category: 'interview' })} t={t} />)
     expect(screen.queryByTestId('pre-interview-record')).toBeNull()
   })
 
-  it('while held: the scheduled date and Cancel decline', () => {
-    const cancel = jest.fn()
+  it('while held: the scheduled date, and no second Cancel decline (the header banner has the one)', () => {
     render(<PreInterviewRecord app={rejected({ decline_due_at: '2026-11-17T03:00:00Z', pending_rejection_category: 'pre_interview' })}
-      t={t} busy="" doCancelDecline={cancel} />)
+      t={t} />)
     const card = screen.getByTestId('pre-interview-record')
     expect(card.textContent).toContain('admin.scholarship.cooloff.declineScheduled')
     expect(card.textContent).toContain(`${P}.reasons.not_b40`)
-    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' }))
-    expect(cancel).toHaveBeenCalled()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('once sent: the sent date and no cancel', () => {
-    render(<PreInterviewRecord app={rejected({ decline_email_sent_at: '2026-11-17T03:00:00Z' })} t={t} busy="" doCancelDecline={jest.fn()} />)
+    render(<PreInterviewRecord app={rejected({ decline_email_sent_at: '2026-11-17T03:00:00Z' })} t={t} />)
     expect(screen.getByTestId('pre-interview-record').textContent).toContain(`${P}.sent`)
     expect(screen.queryByRole('button')).toBeNull()
   })

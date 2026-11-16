@@ -5461,6 +5461,7 @@
         "start": "Tolak sebelum temu duga",
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
+        "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
         "reasonLabel": "Sebab utama",
         "reasonPlaceholder": "Pilih sebab utama",
         "reasons": {
@@ -5479,6 +5480,7 @@
         "confirmTitle": "Adakah anda pasti?",
         "confirmBody": "{name} akan ditolak sebelum temu duga. Sebab utama: {reason}.",
         "confirmEmail": "E-mel penolakan dihantar sebaik sahaja tempoh tahanan kawalan mutu tamat pada {date}. Anda boleh membatalkannya sehingga itu.",
+        "confirmEmailNow": "Tiada tempoh tahanan kawalan mutu, jadi e-mel penolakan dihantar serta-merta.",
         "confirmYes": "Ya, tolak",
         "back": "Kembali",
         "running": "Menolak…",
@@ -5487,7 +5489,7 @@
         "sent": "E-mel penolakan dihantar pada {date}",
         "error": {
           "bad_status": "Hanya pelajar di peringkat Menunggu semakan boleh ditolak sebelum temu duga.",
-          "has_reviewer": "Pelajar ini mempunyai penyemak. Tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
+          "has_reviewer": "Pelajar ini kini mempunyai penyemak, jadi tidak boleh ditolak sebelum temu duga.",
           "reason_required": "Pilih sebab utama.",
           "comments_required": "Nyatakan mengapa anda menolak. Nota ini kekal dalam fail untuk pasukan anda.",
           "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",

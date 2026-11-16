@@ -99,7 +99,8 @@ export function CockpitHeader({
               {t('admin.scholarship.recordVerdict.title')}
             </button>
           )}
-          {app.status === 'rejected' && app.rejection_category && (
+          {/* #75 review: not when the status pill already reads "Rejected before interview". */}
+          {app.status === 'rejected' && app.rejection_category && displayStatus(app) !== 'rejected_before_interview' && (
             <span className={`rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
               {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
             </span>

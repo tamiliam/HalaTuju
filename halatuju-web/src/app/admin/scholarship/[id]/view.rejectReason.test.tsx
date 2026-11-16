@@ -99,3 +99,21 @@ describe('TD-227: a decline needs a reason, and says who', () => {
     expect(screen.queryByText(/admin\.scholarship\.reject\.notAssigned/)).toBeNull()
   })
 })
+
+describe('#75 review: the header says "Rejected before interview" once', () => {
+  const pill = (kind: string) => screen.queryAllByText(`admin.scholarship.reject.category.${kind}`)
+
+  it('no category pill beside a status pill that already reads it', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected',
+                    build: { rejection_category: 'pre_interview', rejection_reason: 'not_b40' } })
+    await loaded()
+    expect(screen.getAllByText('admin.scholarship.statuses.rejected_before_interview').length).toBeGreaterThan(0)
+    expect(pill('pre_interview')).toHaveLength(0)
+  })
+
+  it('any other decline keeps its category pill', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: 'interview' } })
+    await loaded()
+    expect(pill('interview').length).toBeGreaterThan(0)
+  })
+})

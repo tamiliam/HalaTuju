@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 review round - lock the case on assign, keep focus, tighter tests (2026-11-16)
+
+Branch req75, on top of 8317ae56f, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #75 review round).
+- `assign_reviewer` judges the true row. An unassign locks and re-reads the case before any rule (`status_lock.relock_application`), in one transaction, so its teardown never starts on a stale row; the teardown runs in a savepoint. An assign keeps its query budget (15 / 14): its UPDATE is a compare-and-set, and if the row moved the attempt rolls back and runs again on the locked row. An assign that started before a reject before interview now refuses `not_assignable` once the reject has committed.
+- Reject before interview keeps focus: the reason select when the form opens, the "Are you sure?" heading (an `alertdialog`, named by that heading) on confirm, the Reject button on Go back or a refusal, the start button on Cancel. The note names its hint and its counter (`aria-describedby`).
+- A `bad_status` or `has_reviewer` refusal reloads the case. The "unassign first" hint is worded by who may assign: a viewer who cannot is told to ask someone who assigns reviewers (en, ms, ta). The `has_reviewer` refusal now says what happened, not what to do (the hint below says that).
+- With no QC hold, "Are you sure?" says the email goes at once (en, ms, ta).
+- The record card no longer carries its own **Cancel decline**; the header's cool-off banner has the one. The header drops the category pill when the status pill already reads "Rejected before interview".
+- Tests: `test_reject_before_interview.py` 26 -> 35 (the reviewer re-check under the lock, both race directions, a moved row judged again with one event, an unassign, a refused unassign that never starts the teardown, the view's `qc` key check, the decline wording in en, ms and ta, another organisation's rejections, cancel clearing `pre_decline_status` and `pending_decline_by`); `PreInterviewReject.test.tsx` 16 -> 22; `view.rejectReason.test.tsx` +2 (the header pill).
+
 ### feat: request #75 - reject before interview (2026-11-16)
 
 Branch req75, not pushed. Migration `0215_pre_interview_reject` (additive). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #75). Analysis 172; it also answers #72.

@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — Request #75 review round
+
+One commit on top of 8317ae56f, not pushed. No migration. Services: both. The review's seven findings, and the calls made fixing them:
+
+1. **The case is judged on its true row, inside the assign query budget** (`assign_reviewer`). A plain relock cost one query and broke the assign budget (16 > 15, 15 > 14; never raised). So: an UNASSIGN locks and re-reads the case before any rule (`status_lock.relock_application`), because its interview teardown emails the reviewer and must never start on a stale row; it is now one transaction (it used to take none). An ASSIGN keeps its query count: its one UPDATE is a compare-and-set (`_write_if_unmoved`: only while the row holds the status and the holder the rules judged). If the row moved, the attempt rolls back (its AssignmentEvent too) and runs once more with the relock, so the refusal names what is true now (a committed reject gives `not_assignable`). Lock order: the reviewer row, then the case, on both paths, as the assign already did; the reject locks only the case and the permissions editor only the reviewer, so no order is reversed. The teardown runs in a savepoint inside its try, so a database error there cannot spoil the outer transaction.
+2. **Focus on Go back goes to the Reject button**, not the start button: Go back returns to the form, where the start button is not drawn; the Reject button is what opened the confirm. Cancel (form to idle) returns to the start button. A refusal also lands on the Reject button. The confirm focuses its heading (`tabIndex=-1`), not "Yes, reject", so a stray Enter cannot reject.
+3. **The `has_reviewer` words changed** in the cockpit and the API, so the refusal and the capability-worded hint below it do not repeat each other.
+
 ## 2026-11-16 — Request #75: reject before interview (analysis 172)
 
 Branch req75, one commit, not pushed. Migration `0215_pre_interview_reject` (additive). Services: both. Built to the brief `docs/plans/2026-11-16-req75-reject-before-interview-brief.md`; the builder's calls, for the architect to confirm:
