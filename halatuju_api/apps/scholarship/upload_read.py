@@ -148,6 +148,8 @@ def _check_sample(doc, ocr=None):
     """H9: an uploaded SAMPLE (stamped SAMPLE / CONTOH / SPECIMEN) is flagged not genuine, so it
     follows the existing wrong-document path. Types with no read (photo, letters) are not checked."""
     from .genuineness import sample_stamp
+    if not sample_stamp.check_enabled():      # switch off: no check and no extra Storage fetch
+        return
     if doc.doc_type in ('ic', 'parent_ic'):
         from . import vision as _vision
         image = _vision._fetch_image_bytes(doc.storage_path)

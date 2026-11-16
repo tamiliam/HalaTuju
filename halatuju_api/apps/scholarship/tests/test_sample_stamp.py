@@ -91,3 +91,50 @@ class TestSampleCheck(TestCase):
             upload_read._read_copy(doc.application, doc)
         chk.assert_called_once()
         self.assertEqual(chk.call_args.kwargs.get('text'), 'SAMPLE')
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestSampleCheckFixRound1(TestCase):
+    def test_clean_result_records_the_version_but_an_outage_does_not(self):
+        doc = _doc('str')
+        with patch(SEAM, return_value={'is_sample': False, 'reason': 'ordinary'}), patch(IMG, return_value=('i', 'image/jpeg')):
+            self.assertFalse(sample_stamp.check_uploaded_sample(doc, b'img', text='contoh tandatangan'))
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['sample_check_version'], sample_stamp.SAMPLE_CHECK_VERSION)
+        self.assertEqual(doc.vision_fields['authenticity']['status'], 'genuine')
+        gated = _doc('str')                  # text with no sample word: checked by the gate, clean
+        self.assertFalse(sample_stamp.check_uploaded_sample(gated, b'img', text='Kementerian Kewangan'))
+        gated.refresh_from_db()
+        self.assertEqual(gated.vision_fields['sample_check_version'], sample_stamp.SAMPLE_CHECK_VERSION)
+        down = _doc('str')                   # no answer: never checked, nothing recorded
+        with patch(SEAM, return_value={'_error': 'down'}), patch(IMG, return_value=('i', 'image/jpeg')):
+            self.assertFalse(sample_stamp.check_uploaded_sample(down, b'img', text='SAMPLE'))
+        down.refresh_from_db()
+        self.assertNotIn('sample_check_version', down.vision_fields)
+
+    def test_reviewer_sees_the_sample_reason_on_every_type_the_check_can_flag(self):
+        for doc_type in ('bank_statement', 'income_support_doc', 'guardianship_letter', 'semester_result'):
+            doc = _doc(doc_type)
+            self.assertIsNone(ApplicantDocumentSerializer(doc).data['authenticity'])     # unflagged: still hidden
+            with patch(SEAM, return_value={'is_sample': True, 'reason': 'x'}), patch(IMG, return_value=('i', 'image/jpeg')):
+                self.assertTrue(sample_stamp.check_uploaded_sample(doc, b'img', text='SAMPLE'))
+            doc.refresh_from_db()
+            shown = ApplicantDocumentSerializer(doc).data['authenticity']
+            self.assertEqual((shown['status'], shown['doc_seen']), ('not_' + doc_type, 'sample_document'))
+            self.assertIn('sample document', shown['reason'])
+
+    def test_switch_off_skips_the_check_and_the_extra_storage_fetch(self):
+        for env, kw in (({'SAMPLE_CHECK_ENABLED': '0'}, {}), ({}, {'DOC_GENUINENESS_CHECK_ENABLED': False})):
+            doc = _doc('ic')
+            with override_settings(**kw), patch.dict('os.environ', env), \
+                    patch('apps.scholarship.vision._fetch_image_bytes') as fetch, \
+                    patch(SEAM) as m:
+                upload_read._check_sample(doc, None)
+                self.assertFalse(sample_stamp.check_uploaded_sample(doc, b'img', text='SAMPLE'))
+            fetch.assert_not_called()
+            m.assert_not_called()
+        with patch.dict('os.environ', {'SAMPLE_CHECK_ENABLED': '1'}):      # on: the IC image is fetched
+            with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'x') as fetch, \
+                    patch.object(sample_stamp, 'check_uploaded_sample', return_value=False):
+                upload_read._check_sample(_doc('ic'), None)
+            fetch.assert_called_once()

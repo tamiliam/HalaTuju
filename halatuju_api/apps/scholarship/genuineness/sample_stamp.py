@@ -37,6 +37,24 @@ _PROMPT = (
     '"contoh tandatangan" next to a signature box). reason = one short sentence.')
 
 
+def check_enabled() -> bool:
+    """The sample check runs only when the genuineness check is on AND its own kill switch
+    env var ``SAMPLE_CHECK_ENABLED`` (default ON; set it to 0 on the service with --update-env-vars to stop it at
+    once, no code deploy; read per call, kept out of settings/base.py, which is at its size allowance)."""
+    import os
+    from django.conf import settings
+    on = os.environ.get('SAMPLE_CHECK_ENABLED', '1').strip().lower() not in ('0', 'false', 'no', 'off')
+    return bool(getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False) and on)
+
+
+def _record_clean(doc):
+    """Checked and clean: stamp the version so "checked, not a sample" differs from "never checked"."""
+    vf = dict(doc.vision_fields or {})
+    vf['sample_check_version'] = SAMPLE_CHECK_VERSION
+    doc.vision_fields = vf
+    doc.save(update_fields=['vision_fields'])
+
+
 def has_sample_word(text: str) -> bool:
     return bool(text and _SAMPLE_WORD.search(text))
 
@@ -59,16 +77,19 @@ def check_uploaded_sample(doc, image, text=None):
     ``text`` is the OCR text when we have it: with text and no sample word the model is not asked.
     Returns True when the document was flagged. NEVER raises."""
     try:
-        from django.conf import settings
-        if not getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False) or not image:
+        if not check_enabled() or not image:
             return False
         if text and not has_sample_word(text):
+            _record_clean(doc)
             return False
         from apps.scholarship import usage
         with usage.usage_context(application=getattr(doc, 'application', None),
                                  source='genuineness'):
             verdict = _ask_model(image, doc.content_type or '')
+        if verdict is None:     # no answer (outage, unsupported image): not checked, nothing recorded
+            return False
         if not verdict:
+            _record_clean(doc)
             return False
         vf = dict(doc.vision_fields or {})
         from .bands import stored_authenticity
