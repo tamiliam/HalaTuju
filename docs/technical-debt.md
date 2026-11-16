@@ -9167,3 +9167,8 @@ reference glued before it ("Tarikh : 1 Jun 2026 PENGESAHAN PELAJAR", "Ruj. Kami:
 the recorded corpus or the snapshots have these shapes; the lead stopped the layout loop at review 11. Fix, if real
 letters turn up: read past a known institution name, a date / reference label or "UNTUK PERHATIAN:" before the title,
 with a sentence-insert replay first so no ordinary offer moves. *(A - S)*
+
+*Review 13 (2026-11-16) add:* the reverse case is also synthetic. A line that starts with a confirmation title and then
+a glued opening ("Pengesahan Status Pelajar adalah dimaklumkan seperti berikut"), placed ABOVE an offer title, caps an
+ordinary offer to suspect (h2r13 ins4 probe). The TUAN/PUAN and "this is to confirm" forms already did this before
+the glued openings. This follows the settled title-line rule, can only lower a result, and touches **0 real letters**.
