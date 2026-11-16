@@ -177,6 +177,15 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a thirteenth review - simplify: no plain-intake-year exception; plural and glued exam words; misspelt months by edit distance (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Lead's decision (decisions.md, thirteenth review), WHEN IN DOUBT, UNKNOWN:
+- **The "plain intake year beats the session" exception is removed** (and the twelfth review's exam guard on it). A plain year after an intake word on a session line reads only if it is one of the session's two years: "Ambilan 2023 Sesi 2025/2026" and "Intake: 2024 school leavers, Session 2025/2026" are now unknown. No session on the line: unchanged.
+- **Exam words**: plural ("SPMs") and capital SPM / SPMV / STPM / STAM glued to letters ("SPMleavers", "lepasanSPM").
+- **Misspelt months by one rule**: same first letter, within 2 edits of an 8+ letter month name or 1 edit of a 6-7 letter one ("Febuary", "Feburary", "Januay", "Agust", "Septmber"); Pebruari and Mach by name. March / April / Julai left out ("match", "mulai").
+- **FAQ** (faq-reviewer.tsx) states all three. **TD-633** logged (branch number).
+- **Tests.** `ThirteenthReview` in the new `test_start_year_review13.py`, every reviewer input; old tests that expected 2023 updated. Probe table: 2 of 366 rows moved, outside -> unknown. Corpus split unchanged, 245 / 26 / 15.
+
 ### fix: H3a twelfth review - an exam line's plain intake year, deadline words, misspelt months, admission numbers (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Same rule, WHEN IN DOUBT, UNKNOWN (decisions.md, twelfth review):

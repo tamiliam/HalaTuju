@@ -392,7 +392,7 @@ class ReviewFixes(_Base):
     def test_the_review_probes_end_to_end_under_the_owners_rule(self):
         # Re-classed 16 Nov 2026 (the full table: test_start_year_gift_probes.py). The dates here are
         # as `vision.sanitize` stores them.
-        cases = (('Tahun ke-2 Sesi 2025/2026', '', 'unknown'), ('Ambilan 2023 Sesi 2025/2026', '', 'outside'),
+        cases = (('Tahun ke-2 Sesi 2025/2026', '', 'unknown'), ('Ambilan 2023 Sesi 2025/2026', '', 'unknown'),
                  ('SESI 2024/25 MAC 2025', '3 Mar 2025', 'inside'), ('SPM 2024, Ambilan 2025', '14 Jul 2025', 'inside'),
                  ('Session 2024/25 Feb 2025', '', 'unknown'), ('Sesi 2024/25 Februari 2025', '', 'unknown'),
                  ('Sesi 2024/2025Semester II', '', 'inside'), ('Ambilan Februari', '20 Dec 2024', 'outside'),

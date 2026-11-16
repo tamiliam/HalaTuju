@@ -219,7 +219,9 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Some gifts accept only students whose course started in certain years (for example 2025 and
         2026). The start year is read from her offer letter only, never from a date typed on the application:
         first the letter&rsquo;s reporting date; if it has none, a single year on the intake line; if it shows
-        only a session, the session&rsquo;s first year (&ldquo;2024/25&rdquo; means 2024), or its second year
+        a session, a plain year straight after an intake word counts only when it is one of the
+        session&rsquo;s two years (&ldquo;Ambilan 2023 Sesi 2025/2026&rdquo; is left for you to check: 2023 may
+        name a group of school leavers, not her intake); otherwise the session&rsquo;s first year (&ldquo;2024/25&rdquo; means 2024), or its second year
         when it says Sesi 2, Sesi II, Semester 2, Semester II or Ambilan 2. A month or date beside the
         session is never ignored. It counts only after an admission phrase (Tarikh Kemasukan, Tarikh
         Mendaftar, Tarikh Pendaftaran, Lapor Diri, Ambilan, Pengambilan, Kemasukan, Intake, Admission, Date
@@ -231,9 +233,10 @@ export const REVIEWER_FAQ: QA[] = [
         January to April and the first for May to December (&ldquo;Ambilan Sesi 2024-25 Mac&rdquo; means 2025).
         Words such as mulai, bermula, commencing or Semester start nothing. Any other month or date on that
         line (&ldquo;Sesi 2024/2025 bermula Februari&rdquo;, a closing or letter date, a date with no year or
-        a two-digit year such as &ldquo;16 Feb 25&rdquo;) makes it unclear, and an unclear date is left for
+        a two-digit year such as &ldquo;16 Feb 25&rdquo;) makes it unclear. A plainly misspelt month
+        (&ldquo;Febuary&rdquo;, &ldquo;Febuari&rdquo;, &ldquo;Agust&rdquo;) counts as that month. An unclear date is left for
         you to check. So is a reporting date with no full year (&ldquo;16 Februari&rdquo;). An exam year (SPM, STPM, SKM,
-        MUET and the like) is never taken as the start year. It is left for you to check when the letter names a later semester or
+        MUET and the like, also &ldquo;SPMs&rdquo; or &ldquo;SPMleavers&rdquo;) is never taken as the start year. It is left for you to check when the letter names a later semester or
         year (Year 2, Semester 3, final year, Upper Six, &ldquo;Part 4&rdquo;), even in the programme name;
         says readmission or credit transfer; is a confirmation letter that does not name her intake (Year 1,
         Lower Six, or an intake month and year: &ldquo;Semester 1&rdquo; is only her current semester); has

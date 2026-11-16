@@ -267,12 +267,15 @@ class ASessionLineWithAnotherDate(SimpleTestCase):
         self.assertEqual(_state('Sesi 2025/2026 Rujukan UPU/2024/77'), 'unknown')
 
     def test_a_plain_intake_year_beside_a_session_reads(self):
-        # The owner's order, step 2: a plain year straight after an intake word, whatever the session.
-        for intake, year in (('Ambilan 2023 Sesi 2025/2026', 2023), ('Ambilan 2023, Semester 1 Sesi 2025/2026', 2023),
-                             ('Ambilan 2025 (Sesi 2025/2026)', 2025), ('Sesi 2024/2025 Intake 2025', 2025),
+        # A plain year straight after an intake word, when it is one of the session's two years.
+        for intake, year in (('Ambilan 2025 (Sesi 2025/2026)', 2025), ('Sesi 2024/2025 Intake 2025', 2025),
                              ('Kemasukan: 2024 Sesi 2024/2025', 2024)):
             with self.subTest(intake=intake):
                 self.assertEqual(gift_reading(intake), (year, 'intake_year'))
+        # Thirteenth review: outside the session it is unknown (it may name a cohort).
+        for intake in ('Ambilan 2023 Sesi 2025/2026', 'Ambilan 2023, Semester 1 Sesi 2025/2026'):
+            with self.subTest(intake=intake):
+                self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
         # Not straight after, or after another start word: unknown.
         self.assertEqual(gift_reading('Ambilan Sesi 2025/2026 2024'), (None, 'unclear_date'))
         self.assertEqual(gift_reading('Sesi 2024/2025 mulai 2025'), (None, 'unclear_date'))
@@ -410,14 +413,14 @@ class TwelfthReview(SimpleTestCase):
     """Twelfth review (Opus), WHEN IN DOUBT, UNKNOWN: each input the reviewer wrote."""
 
     def test_a_plain_intake_year_on_an_exam_line_is_unknown(self):
-        # The year after the intake word may be the exam's ("2024 SPM leavers"), as step 2 already rules.
+        # The year after the intake word may be the exam's ("2024 SPM leavers"). Thirteenth review: any
+        # plain year outside the session is unknown, exam word or not (the exam guard is gone).
         for intake in ('Intake: 2024 SPM leavers, Session 2025/2026', 'Kemasukan 2024 lulus SPM, Sesi 2025/2026',
-                       'Kemasukan 2024 (Lepasan STPM) Sesi 2025/2026', 'Intake (2024 SPM) Session 2025/2026'):
+                       'Kemasukan 2024 (Lepasan STPM) Sesi 2025/2026', 'Intake (2024 SPM) Session 2025/2026',
+                       'Ambilan 2023 Sesi 2025/2026'):
             with self.subTest(intake=intake):
-                self.assertEqual(gift_reading(intake), (None, 'exam_line'))
+                self.assertEqual(gift_reading(intake), (None, 'unclear_date'))
                 self.assertEqual(_state(intake), 'unknown')
-        # With no exam word the plain intake year still reads.
-        self.assertEqual(gift_reading('Ambilan 2023 Sesi 2025/2026'), (2023, 'intake_year'))
 
     def test_a_deadline_word_is_an_event_word(self):
         for intake in ('Kemasukan Sesi 2024/2025, tawaran sah hingga Januari', 'Kemasukan Sesi 2024/2025 (tamat Mac)',
@@ -447,8 +450,10 @@ class TwelfthReview(SimpleTestCase):
         # Its Kemasukan is no admission phrase either: a month beside it is unknown.
         self.assertEqual(gift_reading('No. Kemasukan 2024 Sesi 2025/2026 Februari'), (None, 'unclear_month'))
         self.assertEqual(gift_reading('No. Kemasukan 2024'), (None, 'no_year'))
-        # An intake year after Kemasukan itself still reads; "Admission Notice" is no admission number.
-        self.assertEqual(gift_reading('Kemasukan 2024 Sesi 2025/2026'), (2024, 'intake_year'))
+        # A plain year after Kemasukan itself reads only inside the session (thirteenth review);
+        # "Admission Notice" is no admission number.
+        self.assertEqual(gift_reading('Kemasukan 2024 Sesi 2025/2026'), (None, 'unclear_date'))
+        self.assertEqual(gift_reading('Kemasukan 2025 Sesi 2025/2026'), (2025, 'intake_year'))
         self.assertEqual(gift_reading('Admission Notice 2024 Sesi 2025/2026'), (None, 'unclear_date'))
 
 

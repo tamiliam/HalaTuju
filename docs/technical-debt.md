@@ -9122,3 +9122,14 @@ continuing-student test (`started_before_cohort`: the STPM award size, the semes
 letter rarely carries a semester, so STPM sizing is seldom touched; a degree estimate may count one year too many.
 The gift's start-year rule does not use this reading (`session_year.gift_reading`). Fix only with an owner
 ruling and a dry run of the money on live letters (`eval/offer_s4_dry_run.py` compares `intake_year`). *(A - S)*
+
+### [TD-633] Start-year reader: synthetic misspellings / glued tokens can still read a wrong year - low
+
+**Raised 2026-11-16 by the H3a thirteenth review (logged, not fixed: the lead stopped the review loop).**
+Start-year reader: synthetic misspellings / glued tokens beyond the edit-distance and exam rules can still read a
+wrong year; 0 real letters; a wrong OUTSIDE only shows the student a reason and a reviewer still decides (H3a).
+`session_year` treats a word as a month only within two edits of a full month name of 8+ letters or one edit of one
+of 6-7 (same first letter; Pebruari and Mach by name), and an exam word glued to letters only in capitals (SPM, SPMV,
+STPM, STAM). A misspelling further out ("Mrch", "Ogoss"), a lowercase glued exam ("lepasanspm 2024") or a misspelt
+5-letter month (March, April, Julai: left out because "match", "mulai" and "nilai" sit that near) can still be read
+past. The 286-letter corpus holds none. *(A - S)*
