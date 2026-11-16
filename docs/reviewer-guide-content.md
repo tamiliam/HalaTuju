@@ -147,6 +147,8 @@ a check, never changes the verdict or amount, and the case can be assigned to a 
 It is not asked when the letter's date cannot be read, while the letter's reporting date is still to come
 (or cannot be read and may still be to come), or when any recent letter (offer or confirmation, any
 institution) is already on file.
+To close it for good without a letter, use Waive, not Resolve: Resolve lets the next sync re-open it and email
+the student again.
 
 **If the student is already in college, and has completed a semester or two, should I ask for additional documentation?**
 If they have completed one or more semesters and have their results (CGPA), you may ask them to upload their

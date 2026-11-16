@@ -259,7 +259,9 @@ export const REVIEWER_FAQ: QA[] = [
         It is not asked when the letter&rsquo;s date cannot be read, while the reporting date on the letter is
         still to come (or cannot be read and may still be to come), or when any recent letter is already on
         file (an offer or a confirmation letter, from any institution). Her upload of a recent letter closes
-        it; an old letter sent again leaves it open.</>,
+        it; an old letter sent again leaves it open.
+        To close it for good without a letter, use Waive, not Resolve: Resolve lets the next sync re-open it
+        and email the student again.</>,
     },
     {
       q: <>The student has completed a semester or two — should I ask for more?</>,

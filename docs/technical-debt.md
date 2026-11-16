@@ -9166,7 +9166,7 @@ so the confirmation takes the live slot from the genuine offer. The live letter 
 confirmation letters are suspect at best) and a person checks. **This already happens today for any usable
 confirmation upload** (it is the existing promotion rule, not new in H3b); H3b makes it more frequent by asking for
 confirmations. A suspect confirmation that is kept out reads 'mismatch' at upload and closes the ask at the next
-Check 2 sync. Decide whether a confirmation for the same institution should ever displace a genuine offer. *(A - M)*
+Check 2 sync. Decide whether a confirmation for the same institution should ever displace a genuine offer. Decide before go-live (owner). *(A - M)*
 
 ### [TD-637] Recent-letter ask: go-live wave of asks and query emails - read-only dry-run count owed - medium
 
@@ -9175,3 +9175,14 @@ every Completed-stage case whose live letter is older than the window (and whose
 the ask plus one query email at its next Check 2 sync. Before release, run a read-only dry-run count on live data
 (`recent_letter.wanted` per case, no writes, no emails) by organisation, and let the owner decide whether to send
 or to stage the wave. *(A - S)*
+
+### [TD-638] Recent-letter ask: known soft limits - low
+
+**Raised 2026-11-16 by the H3b tidy (logged, not fixed; branch number, renumbered at merge).** 0 money effect; all
+soft (the ask never blocks, fails or moves a verdict). (a) `application.reporting_date` is not used
+(`recent_letter.py` ~96), so a letter with no reporting date gets the ask even when the student gave a future
+reporting date. (b) Numeric reporting dates such as 15/03/2026 or 2026-03-15 are not read, so no ask until next year
+(extraction cleanup already rewrites most D/M/Y dates). (c) A recent letter naming someone else still closes the ask
+(the name-mismatch ticket covers it). (d) Resolve re-opens the ask on the next sync; reviewers should use Waive.
+(e) A letter that was recent can age past the window while the case is still at Completed, and the ask re-opens.
+*(A - S)*

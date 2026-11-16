@@ -177,6 +177,10 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-638 (2026-11-16)
+
+Branch help-h3, not pushed. Copy and debt log only; no logic change. en.json setting and reviewer line now say the course should already have started; FAQ and Reviewer Guide say to use Waive, not Resolve; **TD-638** logs the known soft limits; TD-636 marked "decide before go-live (owner)".
+
 ### fix: H3b review 1 - recent-letter ask closes on any recent letter, waits for the course to start, never holds assignment (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` unchanged.
