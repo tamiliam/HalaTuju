@@ -230,11 +230,16 @@ const A44_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
   ['role-reviewer', 'reviewer-scheduling', 'reviewer-scheduling-proposed'],
   ['role-reviewer', 'reviewer-scheduling-proposed', 'reviewer-scheduling-booked'],
 ]
+/** Request #75 (2026-11-16): one more Guide SECTION in the org admin chapter, "Rejecting before interview", after
+ *  "Notes for the reviewer". Same rule as #55. */
+const R75_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
+  ['role-org-admin', 'org-admin-reviewer-notes', 'org-admin-reject-before-interview'],
+]
 function r55GuideMoves(cells: Record<string, unknown>): Record<string, unknown> {
   const guide = (cells.guide as string[]).map((row) => {
     const [slug, list] = [row.slice(0, row.indexOf(':')), row.slice(row.indexOf(':') + 1)]
     let anchors = list ? list.split(',') : []
-    for (const [chapter, after, added] of [...R55_SECTIONS, ...A44_SECTIONS]) {
+    for (const [chapter, after, added] of [...R55_SECTIONS, ...A44_SECTIONS, ...R75_SECTIONS]) {
       const at = anchors.indexOf(after)
       if (slug === chapter && at >= 0) anchors = [...anchors.slice(0, at + 1), added, ...anchors.slice(at + 1)]
     }

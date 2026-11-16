@@ -12,7 +12,7 @@
  * pinned here, in both directions, and the funnel order stays the web's own decision.
  */
 import {
-  APPLICATION_STATUSES, SYNTHETIC_STATUSES, hasStatusTone,
+  APPLICATION_STATUSES, SYNTHETIC_STATUSES, hasStatusTone, PRE_INTERVIEW_CATEGORY,
 } from '@/lib/applicationStatus'
 import { pyChoiceValues, readApi } from '@/test/apiSource'
 
@@ -50,5 +50,11 @@ describe('APPLICATION_STATUSES vs ScholarshipApplication.STATUS_CHOICES', () => 
     // `reopened` is rendered from `decision_reopened_at`; if it ever became a stored status the
     // override in `displayStatus` would start hiding a real one.
     expect([...SYNTHETIC_STATUSES].filter((s) => backend.includes(s))).toEqual([])
+  })
+
+  test('request #75: the reject-before-interview kind is a real decline kind of the api', () => {
+    const kinds = pyChoiceValues(readApi(MODELS), 'REJECTION_CATEGORIES')
+    expect(kinds).toContain('incomplete')   // parse sanity
+    expect(kinds).toContain(PRE_INTERVIEW_CATEGORY)
   })
 })

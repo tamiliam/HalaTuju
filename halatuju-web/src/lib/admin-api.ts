@@ -139,6 +139,9 @@ export type { ReviewerNote, ReviewerNotes } from './admin-api/reviewerNotes'
 export { getScholarThanks, reviewScholarThanks } from './admin-api/graduationThanks'
 export type { AdminGraduationMessage, GraduationMessageStatus, GraduationReview, ScholarThanks } from './admin-api/graduationThanks'
 
+// Request #75: reject before interview (served door; the call is in decisions, with cancelPendingDecline).
+export type { PreInterviewOffer, PreInterviewReason } from './admin-api/preInterview'
+
 // Interview scheduling from the OFFICER's side, and the Check-3 session.
 export {
   getInterview, saveInterview, submitInterview, reopenInterview, proposeInterviewSlots,
@@ -161,6 +164,7 @@ export type {
 export {
   rejectApplication, orgRejectApplication, nudgeStudent, setReportingDate, cancelPendingDecline,
   holdPendingAward, verifyAcceptApplication, submitDeclineApplication, setMentoringCandidate,
+  rejectBeforeInterview,
 } from './admin-api/decisions'
 
 // The admin view of an uploaded document, its checks, and the referees.

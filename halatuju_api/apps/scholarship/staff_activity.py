@@ -142,7 +142,8 @@ WIRED = {
     VERIFY_ACCEPT: ('scholarship/views_admin/applications.py:AdminVerifyAcceptView.post',),
     DECLINE_SENT_TO_QC: ('scholarship/views_admin/verdict.py:AdminSubmitDeclineView.post',),
     DECLINED: ('scholarship/services/decline.py:admin_reject',
-               'scholarship/services/decline.py:org_admin_reject'),
+               'scholarship/services/decline.py:org_admin_reject',
+               'scholarship/services/pre_interview.py:reject_before_interview'),   # request #75
     QC_DECISION: ('scholarship/views_admin/verdict.py:_record_qc',),
     DECISION_REOPENED: ('scholarship/reopen.py:reopen_decision',),
     CASE_CLOSED: ('scholarship/closure.py:close_application',),

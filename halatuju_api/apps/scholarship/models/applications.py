@@ -427,7 +427,11 @@ class ScholarshipApplication(models.Model):
         ('interview', 'Reviewed but not selected'),               # admin: post-shortlist decline
         ('contractual', 'Failed post-award contractual steps'),   # admin: post-accept decline
         ('incomplete', 'Did not complete the application'),       # org_admin: drop a stuck shortlisted applicant
+        ('pre_interview', 'Rejected before interview'),           # #75: at Awaiting review, no reviewer
     ]
+    # #75: the main reason for a reject before interview (services/pre_interview.py). Internal only.
+    REJECTION_REASONS = [(c, c) for c in ('not_b40', 'not_government_institution', 'results_too_low',
+                                          'programme_requirements', 'not_responsive', 'other')]
     rejection_category = models.CharField(
         max_length=20, choices=REJECTION_CATEGORIES, blank=True, default='',
         help_text="Why the application was rejected; blank unless status='rejected'",
@@ -446,6 +450,8 @@ class ScholarshipApplication(models.Model):
         blank=True, default='',
         help_text="The rejecting admin's reason, recorded verbatim (bucket 'incomplete'); internal, never emailed",
     )
+    rejection_reason = models.CharField(max_length=40, choices=REJECTION_REASONS, blank=True, default='',
+                                        db_default='', help_text="#75 main reason (pre_interview only); internal")
 
     # Closure bucket — WHY an application reached status='closed' (manual close; closure.py has the
     # table by stage). Positive: 'graduated'/'completed'; negative: 'withdrawn'/'lapsed'/'terminated'/'stalled'.

@@ -1491,6 +1491,21 @@
    "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
+   "route": "api/v1/admin/scholarship/applications/<int:pk>/reject-before-interview/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "object app_a: reached by super, org_admin_a, qc_a (the qc key; request #75); refused to reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reject/",
    "method": "post",
    "allow": [

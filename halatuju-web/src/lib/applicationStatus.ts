@@ -52,8 +52,14 @@ export function isApplyStage(status: string | null | undefined): boolean {
 }
 
 /** Synthetic statuses — rendered from application state, not stored as a DB value.
- *  `reopened` is shown when `decision_reopened_at` is set (see `displayStatus`). */
-export const SYNTHETIC_STATUSES = ['reopened'] as const
+ *  `reopened` is shown when `decision_reopened_at` is set; `rejected_before_interview` (request #75)
+ *  when a rejected case's SERVED decline kind is `PRE_INTERVIEW_CATEGORY` (see `displayStatus`). */
+export const SYNTHETIC_STATUSES = ['reopened', 'rejected_before_interview'] as const
+
+/** Request #75: the decline kind of a reject before interview, as the api stores it in
+ *  `rejection_category` (`REJECTION_CATEGORIES`, models/applications.py).
+ *  drift-test: halatuju-web/src/lib/__tests__/applicationStatusDrift.test.ts */
+export const PRE_INTERVIEW_CATEGORY = 'pre_interview'
 
 /** Tailwind tone per status. Tones MUST be complete literal class names — Tailwind's JIT scanner
  *  cannot see a class assembled at runtime, so `` `bg-blue-${n}` `` would silently ship unstyled. */
@@ -75,6 +81,7 @@ const STATUS_TONE: Record<string, string> = {
   expired: 'bg-ground-100 text-ground-600',
   // Rejected — red.
   rejected: 'bg-critical-100 text-critical-700',
+  rejected_before_interview: 'bg-critical-100 text-critical-700',
   // Needs attention — amber (reserved).
   reopened: 'bg-caution-100 text-caution-700',
 }
@@ -100,7 +107,12 @@ export function hasStatusTone(status: string): boolean {
 }
 
 /** The status to DISPLAY for an application: a super-reopened decision shows "Reopened",
- *  overriding the stored accepted/rejected. Previously duplicated in both admin pages. */
-export function displayStatus(app: { status: string; decision_reopened_at?: string | null }): string {
-  return app.decision_reopened_at ? 'reopened' : app.status
+ *  overriding the stored accepted/rejected. Previously duplicated in both admin pages. A reject
+ *  before interview (request #75) shows "Rejected before interview", in the same red. */
+export function displayStatus(app: {
+  status: string; decision_reopened_at?: string | null; rejection_category?: string | null
+}): string {
+  if (app.decision_reopened_at) return 'reopened'
+  return app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY
+    ? 'rejected_before_interview' : app.status
 }

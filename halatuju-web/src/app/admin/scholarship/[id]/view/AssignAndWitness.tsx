@@ -15,7 +15,7 @@ export function AssignAndWitness({
   app, t, busy, isSuper, canAssign, decisionLocked, admins, doAssign,
   witnessCardVisible, activeSources, witnessSel, setWitnessSel,
   witnessBusy, witnessMsg, setWitnessMsg, witnessEditing, setWitnessEditing, doAssignWitness,
-  notesCard,
+  notesCard, preInterview,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -37,6 +37,10 @@ export function AssignAndWitness({
   doAssignWitness: () => void
   /** Request #55: "Notes for the reviewer", drawn directly under Reviewer assigned (owner). */
   notesCard?: ReactNode
+  /** Request #75: "Reject before interview", the alternative to assigning (`PreInterviewOption`). It
+   *  renders itself only when the server offers it, so a QC holder without the assign door gets it in a
+   *  card of its own. */
+  preInterview?: ReactNode
 }) {
   return (<>
 
@@ -49,9 +53,16 @@ export function AssignAndWitness({
             TD-613 (`reviewerCardState`): the card also shows, unlocked, whenever the server says the
             holder can no longer work this open case (`needs_new_holder`), and the lock is the
             server's `assignable`, so the card offers a change exactly when the server takes one. ─── */}
-      {canAssign && (() => {
+      {(() => {
         const card = reviewerCardState(app, decisionLocked)
-        if (!card.shows) return null
+        if (!canAssign || !card.shows) {
+          return app.pre_interview && preInterview ? (
+            <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
+              <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.preInterview.title')}</h2>
+              {preInterview}
+            </div>
+          ) : null
+        }
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
         // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
@@ -120,6 +131,7 @@ export function AssignAndWitness({
           ) : firstAssignBlocked && (
             <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}
+          {preInterview}
         </div>
         )
       })()}

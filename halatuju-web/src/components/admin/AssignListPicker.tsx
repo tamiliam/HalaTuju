@@ -57,3 +57,13 @@ export function AssigneeOptions({ reviewers, row, isSuper }: {
     </>
   )
 }
+
+/** Request #75: at Awaiting review the list offers no picker. It names who holds the case
+ *  ("Unassigned" or the reviewer); the choice between assigning and rejecting before interview is
+ *  made on the case's own page, where both are offered side by side. */
+export const assignsInCockpitOnly = (status: string) => status === 'profile_complete'
+
+export function AssignedPlain({ name, className }: { name: string | null; className: string }) {
+  const { t } = useT()
+  return <p className={className} data-assigned-plain>{name || t('admin.scholarship.unassigned')}</p>
+}

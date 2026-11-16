@@ -23,9 +23,11 @@ jest.mock('@/lib/programmeScope', () => ({ useProgrammeScope: () => ({ chosen: '
 
 const mockApi = api as jest.Mocked<typeof api>
 type Row = api.AdminScholarshipListData['applications'][number]
+// Request #75: the rows sit at Interviewing, because at Awaiting review the list offers no picker
+// (the cell is plain text; assigning or rejecting before interview happens on the case's page).
 const row = (id: number, extra: Partial<Row> = {}) => ({
   id, name: `Pelajar ${id}`, profile_id: null, cohort_code: 'c', qualification: 'spm', spm_a_count: 6,
-  stpm_pngk: null, referral_source: null, merit_score: 80, call_language: '', status: 'profile_complete',
+  stpm_pngk: null, referral_source: null, merit_score: 80, call_language: '', status: 'interviewing',
   bucket: 'A', shortlist_reason: '', submitted_at: '2026-10-21T00:00:00Z', profile_completed_at: null,
   assigned_to_id: null, assigned_to_name: null, assignable: true, ready_for_assignment: true, ...extra,
 }) as Row
@@ -93,6 +95,24 @@ describe('the case list on a phone (Mobile M6a)', () => {
     await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
     fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
     expect(await within(list).findByText('admin.scholarship.assign.error.not_signed_in|Balan')).toBeTruthy()
+  })
+
+  it('Request #75: at Awaiting review the cell is plain text, "Unassigned" or the reviewer, with no picker', async () => {
+    mockApi.getScholarshipApplications.mockResolvedValue({
+      count: 2, total_count: 2, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
+      applications: [row(1, { status: 'profile_complete' }),
+        row(2, { status: 'profile_complete', assigned_to_id: 7, assigned_to_name: 'Balan' })],
+    })
+    render(<AdminScholarshipList />)
+    const list = await phone()
+    await waitFor(() => expect(list.querySelectorAll('[data-assigned-plain]')).toHaveLength(2))
+    expect(Array.from(list.querySelectorAll('[data-assigned-plain]')).map((n) => n.textContent))
+      .toEqual(['admin.scholarship.unassigned', 'Balan'])
+    expect(within(list).queryByRole('combobox', { name: 'admin.scholarship.assigned' })).toBeNull()
+    const table = screen.getByRole('table')
+    expect(Array.from(table.querySelectorAll('[data-assigned-plain]')).map((n) => n.textContent))
+      .toEqual(['admin.scholarship.unassigned', 'Balan'])
+    expect(table.querySelector('tbody select')).toBeNull()
   })
 
   it('Sort asks the SERVER for the column and direction the table headers would', async () => {

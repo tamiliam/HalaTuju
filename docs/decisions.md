@@ -1,5 +1,40 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — Request #75: reject before interview (analysis 172)
+
+Branch req75, one commit, not pushed. Migration `0215_pre_interview_reject` (additive). Services: both. Built to the brief `docs/plans/2026-11-16-req75-reject-before-interview-brief.md`; the builder's calls, for the architect to confirm:
+
+1. **A thin door onto the QC decline machinery, not a second one.** `services/pre_interview.py` records with `decline._record_reject` in the new bucket `pre_interview`, writes the same cool-off markers (`pending_rejection_category`, `decline_due_at`, `pending_decline_by`) for the organisation's `qc_decline_hold_hours`, and leaves sending to the release cron and undoing to `cancel_pending_decline` (which now also clears `rejection_reason`). With a hold of 0 hours the email goes at once. `admin_reject` keeps refusing this bucket, so the assignee's `/reject/` door can never reach it.
+2. **Who is the `qc` key, checked in the view after `_require_app_write`.** No new permission. The case rules (stage, no reviewer, reason, note) live in the service and are read again under the row lock.
+3. **The rule is served.** `offer_for` puts `pre_interview` on the case detail (`hold_hours`, `reasons`, `note_max`) only for a `qc` key holder at Awaiting review; the cockpit draws from it and keeps no copy of the stage, the reasons or the limit. A key holder who cannot assign (QC) gets the option on its own card.
+4. **The cancel-decline reply is now the full case payload** (`_detail_payload`, with the viewer's context), so the option reappears without a reload. Before, it was the bare serializer.
+5. **List assignment at Awaiting review is now cockpit-only** (brief item 7): the Assigned cell is plain text there, so the first assignment is made on the case's page, where both choices sit side by side. Interviewing rows keep the inline picker.
+6. **Counts** sit on the Programme overview funnel (`funnel.pre_interview`), where the Rejected count already shows; every reason zero-filled, an unknown code folded into "other", a cancelled one not counted.
+7. **Left for the owner:**
+   - The profile-complete email rewording (en, ms) moves the goldens `profile_complete_student.bi` and `profile_complete_student.eo`, so it is NOT in this commit (brief item 9). "How it works" step 5 is reworded (no golden).
+   - A QC holder's reject before interview counts in their own QC "completed" pace (`programme_overview.qc_queue` reads `rejected_by`). Not excluded: that file is at its ledger limit.
+   - Migration number: the 0211 docstring plans its later DROP COLUMN step as "0212"; this migration takes 0212, so that step becomes 0213 or later.
+   - The hold, not a date: the detail GET is pinned byte-for-byte across two reads (`test_document_snapshot`), so a timestamp built from now cannot be served; the web adds `hold_hours` to the time of the confirm.
+   - 0212 adds the column with raw SQL (`SeparateDatabaseAndState`): on SQLite an AddField rebuilds the table from Django state and would drop 0211's three retired columns, which `test_a317_retired_columns` keeps. On Postgres it is the same plain ADD COLUMN with a default.
+
+## 2026-11-19 — Add source is back beside the invite, gated by the Sources permission
+
+Owner decision, 2026-11-19. Reverses ONE part of source sign-in S2 (2026-10-30, "Sources sign in"): "Add source moves
+into the invite" (e88810acd backend, bd22bfd7d web). The rest of S2 stands. Services: api, web. Migration: none.
+- **Two doors add a source:** the Sources page's Add (`POST admin/scholarship/sources/`) and Invitations → Source with a
+  new source (`source_name` + `source_code`). The invite form is kept exactly as it is.
+- **Who may add is the permission alone, at BOTH doors:** creating a source needs Sources "View and change"
+  (`sources.edit`, `_SourcesBase.may_open`). No role-name gate. The invite's new-source branch asks it as well as
+  `invitations.edit` (403 otherwise); inviting a person for an EXISTING source needs only `invitations.edit`. The web
+  offers "add a new one" on Invitations → Source only to holders of the `sources` door.
+- **One set of rules, no second copy:** both doors use `new_source_fields`, `new_source_refusal`, `_new_source_owner`
+  and the shared write `create_new_source`. This answers the reason S2 rejected alternative (A), "two doors": the
+  doors are two, the rules are one.
+- **A new source** joins no gift, has `show_in_apply` False by default and has no person (`sign_in` 'none'); its
+  person can be invited later (one person per source).
+- Follow-up: TD-668 (no organisation picker for a super on Add; code length / characters and `show_in_apply` text
+  not checked, both doors; pre-existing).
+
 ## 2026-11-18 — An IPTS offer breaks the rule for every gift: flag only, reviewers only
 
 Owner ruling, 2026-11-18: "HalaTuju only caters to public courses. We cannot process IPTS courses today." An offer

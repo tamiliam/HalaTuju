@@ -213,6 +213,8 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             # SERIALIZER ONLY — it must never reach the student-facing ApplicationReadSerializer.
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             'rejection_comments',
+            # #75: a reject before interview's main reason (internal) + when its email went.
+            'rejection_reason', 'decline_email_sent_at',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
             'closure_reason', 'closed_at', 'closed_by',
             # Lifecycle transition stamps — the DATE first reached each milestone; drive the

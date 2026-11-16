@@ -15,7 +15,7 @@ import { ApplicationUrlChips, useApplicationUrlFilters } from '@/components/admi
 import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
 import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
-import { AssigneeOptions, AssignLangNote, AssignLegend, legendIdFor } from '@/components/admin/AssignListPicker'
+import { AssignedPlain, AssigneeOptions, AssignLangNote, AssignLegend, assignsInCockpitOnly, legendIdFor } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { holdsDoor } from '@/lib/pageGuard'
 import {
@@ -425,7 +425,8 @@ function StaffScholarshipList() {
                 <svg aria-hidden className="h-5 w-5 shrink-0 text-ground-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 6 6 6-6 6" /></svg>
                 </Link>
 
-                {canAssign && (
+                {canAssign && assignsInCockpitOnly(a.status) && <AssignedPlain name={a.assigned_to_name} className="pb-3 text-sm text-ground-700" />}
+                {canAssign && !assignsInCockpitOnly(a.status) && (
                   <div className="pb-3">
                     <AssignLangNote lang={a.call_language} className="mb-1 text-xs text-ground-500" legendId={`assign-legend-${a.id}`} />
                     <select
@@ -523,7 +524,8 @@ function StaffScholarshipList() {
                     })()}
                   </td>
                   <td className="px-4 py-3 text-ground-500">{formatDate(a.submitted_at)}</td>
-                  {canAssign && (
+                  {canAssign && assignsInCockpitOnly(a.status) && <td className="px-4 py-3"><AssignedPlain name={a.assigned_to_name} className="text-sm text-ground-700" /></td>}
+                  {canAssign && !assignsInCockpitOnly(a.status) && (
                     <td className="px-4 py-3">
                       <AssignLangNote lang={a.call_language} className="mb-1 text-[11px] text-ground-500" />
                       <select

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: request #75 - reject before interview (2026-11-16)
+
+Branch req75, not pushed. Migration `0215_pre_interview_reject` (additive). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #75). Analysis 172; it also answers #72.
+- The applicant's page at Awaiting review with no reviewer offers **Reject before interview** under "Assign a reviewer": a secondary button in critical tone with a help line. With a reviewer on the case the button is hidden and a hint says to set the reviewer back to Unassigned first. A viewer who cannot assign but holds the `qc` key sees the option on its own card.
+- The panel asks for a main reason (one of six) and "Why are you rejecting?" (required, 2,000 characters with a counter, never sent to the student), then an "Are you sure?" step naming the student, the reason and the date the email goes.
+- Who: whoever holds the `qc` permission key (super, org admins, QC); never a reviewer. The door is served (`pre_interview` on the case detail: the reasons, the limit and the hold in hours), so the web keeps no copy. New `POST admin/scholarship/applications/<pk>/reject-before-interview/` refuses with codes (`bad_status`, `has_reviewer`, `reason_required`, `comments_required`, `comments_too_long`), worded in en, ms and ta.
+- Recorded at once as its own decline kind, `pre_interview` ("Rejected before interview"), with the note on `rejection_comments` and the reason on the new `rejection_reason` field. It never counts against a reviewer. The `/reject/` door still refuses this kind.
+- The email: the same warm decline, held for the organisation's QC decline hold; the student sees Awaiting review until it goes, and **Cancel decline** puts the case back at Awaiting review with no reviewer. Once sent, the page says "Decline email sent on [date]". The cancel reply is now the full case, so the option comes back without a reload.
+- Applications list: at Awaiting review the Assigned cell is plain text ("Unassigned" or the reviewer); the status reads "Rejected before interview" in critical tone.
+- Programme overview: under the funnel, the count of students rejected before interview, in total and by main reason.
+- "How it works" step 5 (en, ms, ta) now says the interview comes if the application goes forward. The profile-complete email's wording is NOT changed: it would move two email goldens, so it waits for the owner.
+- Docs: Org admin guide § *Rejecting before interview* and the Assigning section; FAQ (org admin); `docs/scholarship/role-matrix.md`.
+- Tests: `test_reject_before_interview.py` (26), `PreInterviewReject.test.tsx`, `PreInterviewCounts.test.tsx`, `applicationStatus.test.ts` (`displayStatus`), `applicationStatusDrift.test.ts` (the category), `page.phone.test.tsx` (plain text at Awaiting review), `teamTablesMatrix.test.ts` (the new Guide section), `test_org_fence.py` (classified).
+
+### feat: Add source is back (2026-11-19)
+
 ### revert: Add source is back - withdrawn before it went live (2026-11-19)
 
 Owner, 19 Nov: the invite form already has "add a new source (name and short code)" (live since 30 Oct, bd22bfd7d), so the Add button on Sources is not needed. The three commits d6814f2ce, 79d00fee7 and dbbf1de88 are reverted; every file they touched is back to its live state. Nothing changes for users. TD-668 now names only the short-code check at the invite door. Migration: none.

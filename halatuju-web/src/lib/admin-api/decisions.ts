@@ -60,6 +60,17 @@ export async function cancelPendingDecline(id: number, options?: ApiOptions) {
   )
 }
 
+/** Request #75: reject before interview (the qc key, Awaiting review, no reviewer). The email waits for the
+ * organisation's QC decline hold; `cancelPendingDecline` undoes it. */
+export async function rejectBeforeInterview(
+  id: number, reason: string, comments: string, options?: ApiOptions,
+) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/reject-before-interview/`, 'POST',
+    { reason, comments }, options,
+  )
+}
+
 /** Hold an accepted-but-unconfirmed award within the cool-off (amount returns to the sponsor). */
 export async function holdPendingAward(id: number, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(

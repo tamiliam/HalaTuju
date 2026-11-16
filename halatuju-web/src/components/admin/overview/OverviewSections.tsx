@@ -29,6 +29,7 @@ import TableFrame, { TH, TH_RIGHT } from '@/components/admin/TableFrame'
 import type { ProgrammeOverview } from '@/lib/admin-api'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
+import { PreInterviewCounts } from './PreInterviewCounts'
 import {
   FULL_AXIS_BOX, SMALL_AXIS_BOX, WIDE_AXIS_BOX, bandTone, monthOf, monthTicks, num,
   orderSlices, rm, rmAxis, thinTicks, weekLabel,
@@ -123,6 +124,7 @@ export function FunnelSection({ data, t }: SectionProps) {
               value={String(funnel.by_status[status] ?? 0)} />
           ))}
       </div>
+      <PreInterviewCounts funnel={funnel} t={t} />
     </section>
   )
 }

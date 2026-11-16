@@ -1918,7 +1918,7 @@
         "step4Title": "Lengkapkan profil anda",
         "step4Desc": "Jika disenarai pendek, kami akan meminta anda berkongsi beberapa butiran lagi dan memuat naik dokumen sokongan (IC, slip keputusan, bukti pendapatan isi rumah, dan lain-lain). Kami akan beritahu anda dengan tepat apa yang diperlukan.",
         "step5Title": "Temu bual ringkas",
-        "step5Desc": "Panggilan telefon ringkas, biasanya 20 minit, dalam bahasa pilihan anda. Ini untuk mengenali anda, bukan untuk menguji anda.",
+        "step5Desc": "Jika permohonan anda diteruskan, kami akan menjemput anda ke panggilan telefon ringkas, biasanya 20 minit, dalam bahasa pilihan anda. Ini untuk mengenali anda, bukan untuk menguji anda.",
         "step6Title": "Sedia untuk penaja",
         "step6Desc": "Dengan kebenaran bertulis anda, kami menyediakan profil sulit untuk pertimbangan penaja.",
         "step7Title": "Dipadankan dan dianugerahkan",
@@ -4195,7 +4195,8 @@
         "rejected": "Ditolak",
         "withdrawn": "Ditarik balik",
         "expired": "Tamat tempoh",
-        "reopened": "Dibuka semula"
+        "reopened": "Dibuka semula",
+        "rejected_before_interview": "Ditolak sebelum temu duga"
       },
       "reviewActions": "Semakan & tindakan",
       "assignTitle": "Tugaskan penyemak",
@@ -4495,7 +4496,8 @@
           "need": "Keperluan",
           "ineligible": "Tidak layak",
           "interview": "Tidak terpilih",
-          "contractual": "Kontrak"
+          "contractual": "Kontrak",
+          "pre_interview": "Ditolak sebelum temu duga"
         }
       },
       "gaps": {
@@ -5453,6 +5455,45 @@
         "ready": "Sedia untuk disimpan",
         "notReady": "Belum sedia untuk disimpan",
         "go": "Pergi ke keputusan"
+      },
+      "preInterview": {
+        "title": "Tolak sebelum temu duga",
+        "start": "Tolak sebelum temu duga",
+        "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
+        "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
+        "reasonLabel": "Sebab utama",
+        "reasonPlaceholder": "Pilih sebab utama",
+        "reasons": {
+          "not_b40": "Bukan B40",
+          "not_government_institution": "Tidak belajar di institusi kerajaan",
+          "results_too_low": "Keputusan terlalu rendah",
+          "programme_requirements": "Tidak memenuhi syarat program",
+          "not_responsive": "Tidak menjawab soalan",
+          "other": "Lain-lain"
+        },
+        "whyLabel": "Mengapa anda menolak?",
+        "whyHint": "Disimpan dalam fail pelajar untuk pasukan anda. Tidak sekali-kali dihantar kepada pelajar.",
+        "counter": "{count} / {max} aksara",
+        "submit": "Tolak pelajar",
+        "cancel": "Batal",
+        "confirmTitle": "Adakah anda pasti?",
+        "confirmBody": "{name} akan ditolak sebelum temu duga. Sebab utama: {reason}.",
+        "confirmEmail": "E-mel penolakan dihantar sebaik sahaja tempoh tahanan kawalan mutu tamat pada {date}. Anda boleh membatalkannya sehingga itu.",
+        "confirmYes": "Ya, tolak",
+        "back": "Kembali",
+        "running": "Menolak…",
+        "recordTitle": "Ditolak sebelum temu duga",
+        "recordReason": "Sebab utama: {reason}",
+        "sent": "E-mel penolakan dihantar pada {date}",
+        "error": {
+          "bad_status": "Hanya pelajar di peringkat Menunggu semakan boleh ditolak sebelum temu duga.",
+          "has_reviewer": "Pelajar ini mempunyai penyemak. Tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
+          "reason_required": "Pilih sebab utama.",
+          "comments_required": "Nyatakan mengapa anda menolak. Nota ini kekal dalam fail untuk pasukan anda.",
+          "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",
+          "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
+        },
+        "or": "atau"
       }
     },
     "students": "Pelajar",
@@ -7412,7 +7453,9 @@
       "allHidden": "Setiap panel pada Gambaran keseluruhan ini telah dimatikan untuk organisasi anda. Pentadbir organisasi boleh menghidupkannya semula melalui Sesuaikan.",
       "funnel": {
         "title": "Permohonan",
-        "total": "Permohonan diterima"
+        "total": "Permohonan diterima",
+        "preInterview": "Ditolak sebelum temu duga",
+        "preInterviewByReason": "Mengikut sebab utama"
       },
       "money": {
         "title": "Wang",

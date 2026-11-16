@@ -24,6 +24,8 @@ export interface OverviewFunnel {
   total: number
   /** All thirteen `STATUS_CHOICES`, zero-filled. An absent stage cannot be told from an empty one. */
   by_status: Record<string, number>
+  /** Request #75: rejected before interview, in total and by main reason (zero-filled). */
+  pre_interview?: { total: number; by_reason: Record<string, number> }
 }
 export interface OverviewMoney {
   students: number

@@ -662,6 +662,8 @@ class TestFenceCoverageCompleteness(TestCase):
         # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
         'AdminReviewerNotesView': 'gate+super/org_admin write',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
+        # Request #75: _require_app_write (a cross-org case is 404), then the `qc` permission key.
+        'AdminRejectBeforeInterviewView': 'gate+qc key',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',
         'AdminFinaliseProfileView': 'gate', 'AdminPublishAnonProfileView': 'gate',

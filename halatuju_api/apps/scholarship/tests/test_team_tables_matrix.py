@@ -264,6 +264,18 @@ def m1a_added_cells(row):
     return {M1A_STAFF_LIST: row[M1A_SAME_AS]}
 
 
+#: Request #75 (2026-11-16): reject before interview (`AdminRejectBeforeInterviewView`). A NEW route, so NEW cells,
+#: measured. The door is the application write fence plus the `qc` key: a holder passes and the empty body is
+#: refused (400); the shapes the application fence hides get its 404; everybody else is refused (403). Nobody moves.
+R75_POST = 'POST api/v1/admin/scholarship/applications/<int:pk>/reject-before-interview/'
+R75_QC_HOLDERS = ('super', 'org_admin', 'org_admin_mentor', 'qc', 'qc_spending')
+R75_FENCED_OUT = ('partner', 'reviewer_admin_keys_other_org')
+
+
+def r75_added_cells(shape):
+    return {R75_POST: 400 if shape in R75_QC_HOLDERS else 404 if shape in R75_FENCED_OUT else 403}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -451,7 +463,8 @@ def _expected_row(shape):
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before)}
+           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before),
+           **r75_added_cells(shape)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))

@@ -603,6 +603,8 @@
     "rejected_by",
     "rejected_by_name",
     "rejection_comments",
+    "rejection_reason",
+    "decline_email_sent_at",
     "closure_reason",
     "closed_at",
     "closed_by",
@@ -723,7 +725,8 @@
     "needs_new_holder",
     "may_unassign",
     "ready_for_assignment",
-    "decision_reopened_at"
+    "decision_reopened_at",
+    "rejection_category"
    ],
    "AdminGraduationMessageSerializer": [
     "id",

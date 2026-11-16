@@ -27,6 +27,7 @@ import {
   hasStatusTone,
   APPLY_STAGE_STATUSES,
   isApplyStage,
+  displayStatus,
 } from '@/lib/applicationStatus'
 import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
@@ -130,5 +131,20 @@ describe('isApplyStage (owner 2026-10-05)', () => {
     expect(isApplyStage('reopened')).toBe(false)
     expect(isApplyStage(undefined)).toBe(false)
     expect(isApplyStage('')).toBe(false)
+  })
+})
+
+describe('displayStatus (request #75)', () => {
+  it('a decline made before interview reads as its own status, in critical tone', () => {
+    expect(displayStatus({ status: 'rejected', rejection_category: 'pre_interview' })).toBe('rejected_before_interview')
+    expect(statusTone('rejected_before_interview')).toContain('critical')
+  })
+
+  it('every other decline stays Rejected, and a reopened decision still reads Reopened', () => {
+    expect(displayStatus({ status: 'rejected', rejection_category: 'interview' })).toBe('rejected')
+    expect(displayStatus({ status: 'rejected' })).toBe('rejected')
+    expect(displayStatus({ status: 'rejected', rejection_category: 'pre_interview', decision_reopened_at: '2026-11-16T00:00:00Z' }))
+      .toBe('reopened')
+    expect(displayStatus({ status: 'profile_complete', rejection_category: 'pre_interview' })).toBe('profile_complete')
   })
 })

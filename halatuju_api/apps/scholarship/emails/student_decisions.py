@@ -317,6 +317,9 @@ _DECLINE_TEMPLATES = {
     'merit': (MERIT_SUBJECTS, MERIT_BODIES),
     'need': (NEED_SUBJECTS, NEED_BODIES),
     'interview': (INTERVIEW_SUBJECTS, INTERVIEW_BODIES),
+    # #75: a reject before interview gets the SAME warm reviewed-applicant decline (it thanks the
+    # student for the application and documents; it never mentions an interview).
+    'pre_interview': (INTERVIEW_SUBJECTS, INTERVIEW_BODIES),
 }
 
 

@@ -23,10 +23,11 @@ import type { AdminApplicantDocument, AdminReferee } from './documents'
 import type { AdminResolutionItem } from './resolution'
 import type { AdminDisbursement, MaintenanceSubstate } from './lifecycle'
 import type { AwardWithdrawalRequest } from './awardWithdrawal'
+import type { PreInterviewDetailFields, PreInterviewListFields } from './preInterview'   // request #75
 
 // ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
-export interface AdminScholarshipListItem {
+export interface AdminScholarshipListItem extends PreInterviewListFields {
   id: number
   name: string
   profile_id: string | null
@@ -142,7 +143,7 @@ export type VerifyChecklist = Record<string, boolean | string | VerifyRelock | u
 }
 export interface VerifyRelock { by: string; at: string; checklist: Record<string, boolean> }
 
-export interface AdminScholarshipDetail {
+export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   id: number
   name: string
   school: string

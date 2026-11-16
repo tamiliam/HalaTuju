@@ -100,6 +100,8 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
             'ready_for_assignment',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
+            # #75: 'pre_interview' shows "Rejected before interview" in the list's status pill.
+            'rejection_category',
         ]
 
     def get_ready_for_assignment(self, obj):

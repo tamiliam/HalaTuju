@@ -117,8 +117,18 @@ export const FAQ: Record<Audience, QA[]> = {
         organisation admin can give it to a team member. At the other stages the Close card is hidden. Drop a stuck Shortlisted student with
         <strong> Reject</strong>. Once a reviewer has the case, the reviewer writes it in the interview findings
         and declines, and the decline goes to <strong>Quality check</strong>; nobody, a super admin included,
-        can decline it directly. The student gets an email when a case is closed, and can apply again in a
-        later round.</>,
+        can decline it directly. A student at <strong>Awaiting review</strong> with no reviewer whose documents
+        already show they do not qualify can be declined without an interview: see the next question. The
+        student gets an email when a case is closed, and can apply again in a later round.</>,
+    },
+    {
+      q: <>Can I reject a student <strong>before an interview</strong>?</>,
+      a: <>Yes, while the student is at <strong>Awaiting review</strong> and has no reviewer. On the
+        applicant&rsquo;s page, press <strong>Reject before interview</strong>, choose the main reason and say why
+        (the note stays with your team and never reaches the student), then confirm. It is recorded as
+        <strong> Rejected before interview</strong> and never counts against a reviewer. The decline email waits
+        for the quality control hold, and until it goes you can press <strong>Cancel decline</strong> to put the
+        student back at Awaiting review. See <em>Rejecting before interview</em> in your chapter of the Guide.</>,
     },
     {
       q: <>How do I let somebody do more (or less) than their role?</>,

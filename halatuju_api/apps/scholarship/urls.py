@@ -105,7 +105,7 @@ from .views_admin import (
     AdminReportingDateView,
     AdminNudgeStudentView,
     AdminRejectView,
-    AdminCancelDeclineView,
+    AdminCancelDeclineView, AdminRejectBeforeInterviewView,   # the second: request #75
     AdminHoldAwardView,
     AdminRefereeDetailView,
     AdminRecordVerdictView,
@@ -563,6 +563,7 @@ urlpatterns = [
          AdminBursaryWitnessView.as_view()),
     # Cool-off controls: cancel a pending decline / hold a pending award before it reveals.
     path('admin/scholarship/applications/<int:pk>/cancel-decline/', AdminCancelDeclineView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/reject-before-interview/', AdminRejectBeforeInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/hold-award/', AdminHoldAwardView.as_view()),
     # F7: super-only audited reviewer (re)assignment.
     path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),

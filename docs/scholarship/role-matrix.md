@@ -156,6 +156,16 @@ org admin keeping `see_all` (`services.R1_SUPER_TARGET_ROLES`) may still HOLD a 
   decision reopens it at Interviewing); 400 `notes_closed` otherwise. Append-only, 2,000 characters.
   Students and sponsors never; no AI prompt reads them. Manual: `role-org-admin` § *Notes for the
   reviewer*, `role-reviewer` § *Notes from your org admin*, `role-qc`; FAQ: org_admin, reviewer.
+- **Reject before interview is for whoever holds the `qc` permission key (request #75, 2026-11-16)**
+  — `POST admin/scholarship/applications/<pk>/reject-before-interview/` `{reason, comments}`. Gate:
+  `_require_app_write` (another organisation 404), then `has_perm('qc')`: super, `org_admin` and `qc`
+  hold it, a reviewer never does (403); keys decide, not role labels. Only at Awaiting review
+  (`profile_complete`, 400 `bad_status`) with no reviewer (400 `has_reviewer`); a main reason from six
+  and a note of 2,000 characters at most, both internal. Recorded at once in its own bucket
+  (`pre_interview`, "Rejected before interview"; never counted against a reviewer); the decline email
+  waits for the QC hold and `cancel-decline/` undoes it to Awaiting review with no reviewer. The
+  `/reject/` door refuses this bucket. Manual: `role-org-admin` § *Rejecting before interview*; FAQ:
+  org_admin.
 - **Last-org-admin protection:** the sole active `org_admin` of a tenant cannot be revoked.
 - **Gift scoping is super + `org_admin` only (S-ASSIGN, 2026-09-04), and it is NARROWER than
   reading the surface it sits on.** `admin` and `finance` may READ the reviewers list and the

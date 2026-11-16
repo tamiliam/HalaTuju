@@ -57,6 +57,7 @@ import { QcPanel } from './view/QcPanel'
 import { ReverifyIcCard } from './view/ReverifyIcCard'   // TD-378
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { AssignAndWitness } from './view/AssignAndWitness'
+import { PreInterviewOption, PreInterviewRecord } from './view/PreInterviewReject'   // request #75
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { WithdrawAwardCard } from './view/WithdrawAwardCard'
@@ -358,6 +359,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
+      <PreInterviewRecord app={app} t={t} busy={busy} doCancelDecline={doCancelDecline} />
 
 
       <AssignAndWitness
@@ -370,6 +372,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         doAssignWitness={doAssignWitness}
         notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
+        preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} onDone={setApp} />}
       />
 
 

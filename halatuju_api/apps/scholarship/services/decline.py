@@ -452,8 +452,10 @@ def _cancel_pending_decline_locked(application, by_email):
         application.rejected_at = None
         application.rejected_by = ''
         application.rejection_comments = ''
+        application.rejection_reason = ''   # #75: a reject before interview's main reason
         fields += ['status', 'pre_decline_status', 'award_amount', 'pre_decline_award_amount',
-                   'rejection_category', 'rejected_at', 'rejected_by', 'rejection_comments']
+                   'rejection_category', 'rejected_at', 'rejected_by', 'rejection_comments',
+                   'rejection_reason']
     application.save(update_fields=fields)
     if application.award_amount != award_was:
         logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=cancel',

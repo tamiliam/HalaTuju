@@ -49,12 +49,14 @@ def _detail_payload(app, admin):
     the assigned reviewer. The write flags (POST-AWARD-CUT) are `served_write_flags`, so the cockpit never re-derives them."""
     from .. import qc_separation
     from ..services.decline import rejected_by_unassigned
+    from ..services.pre_interview import offer_for as pre_interview_offer
     with snapshot_unless_open(app):   # A2.4: the POSTs that answer with the case read documents once too
         data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
         data['qc_refusal'] = qc_separation.for_viewer(admin, app)
         data.update(served_write_flags(admin, app))   # can_write, can_cancel_decline, can_tranche
         data['rejected_by_unassigned'] = rejected_by_unassigned(app)
         data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
+        data['pre_interview'] = pre_interview_offer(app, admin)   # #75; no query but at Awaiting review
     return data
 
 
@@ -546,7 +548,7 @@ class AdminCancelDeclineView(_AdminBase):
         if err:
             return err
         cancel_pending_decline(app, by_email=getattr(admin, 'email', '') or '')
-        return Response(_detail_payload(app, admin))   # serves the new `can_write`
+        return Response(_detail_payload(app, admin))   # serves the new `can_write`; #75: and `pre_interview`, so the door reopens
 
 
 class AdminHoldAwardView(_AdminBase):

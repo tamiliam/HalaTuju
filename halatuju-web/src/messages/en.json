@@ -1918,7 +1918,7 @@
         "step4Title": "Complete your profile",
         "step4Desc": "If shortlisted, we'll ask you to share a few more details and upload supporting documents (IC, results slip, proof of household income, etc.). We'll tell you exactly what's needed.",
         "step5Title": "A short interview",
-        "step5Desc": "A brief phone call, usually 20 minutes, in your preferred language. This is to get to know you, not to test you.",
+        "step5Desc": "If your application goes forward, we will invite you to a short phone call, usually 20 minutes, in your preferred language. It is to get to know you, not to test you.",
         "step6Title": "Ready for sponsors",
         "step6Desc": "With your written consent, we prepare a confidential profile for sponsors to consider.",
         "step7Title": "Matched and awarded",
@@ -4195,7 +4195,8 @@
         "rejected": "Rejected",
         "withdrawn": "Withdrawn",
         "expired": "Expired",
-        "reopened": "Reopened"
+        "reopened": "Reopened",
+        "rejected_before_interview": "Rejected before interview"
       },
       "reviewActions": "Review & actions",
       "assignTitle": "Assign a reviewer",
@@ -4495,7 +4496,8 @@
           "need": "Need",
           "ineligible": "Ineligible",
           "interview": "Not selected",
-          "contractual": "Contractual"
+          "contractual": "Contractual",
+          "pre_interview": "Rejected before interview"
         }
       },
       "gaps": {
@@ -5453,6 +5455,45 @@
         "ready": "Ready to save",
         "notReady": "Not ready to save yet",
         "go": "Go to the decision"
+      },
+      "preInterview": {
+        "title": "Reject before interview",
+        "start": "Reject before interview",
+        "help": "For a student whose documents already show they don't qualify. No interview is held.",
+        "unassignFirst": "To reject before interview, set the reviewer back to Unassigned first.",
+        "reasonLabel": "Main reason",
+        "reasonPlaceholder": "Choose the main reason",
+        "reasons": {
+          "not_b40": "Not B40",
+          "not_government_institution": "Not attending a government institution",
+          "results_too_low": "Results too low",
+          "programme_requirements": "Does not meet programme requirements",
+          "not_responsive": "Not responsive to questions",
+          "other": "Other"
+        },
+        "whyLabel": "Why are you rejecting?",
+        "whyHint": "Kept on the student's file for your team. Never sent to the student.",
+        "counter": "{count} / {max} characters",
+        "submit": "Reject student",
+        "cancel": "Cancel",
+        "confirmTitle": "Are you sure?",
+        "confirmBody": "{name} will be rejected before interview. Main reason: {reason}.",
+        "confirmEmail": "The decline email goes once the quality control hold ends on {date}. You can cancel it until then.",
+        "confirmYes": "Yes, reject",
+        "back": "Go back",
+        "running": "Rejecting…",
+        "recordTitle": "Rejected before interview",
+        "recordReason": "Main reason: {reason}",
+        "sent": "Decline email sent on {date}",
+        "error": {
+          "bad_status": "Only a student at Awaiting review can be rejected before interview.",
+          "has_reviewer": "This student has a reviewer. Set the reviewer back to Unassigned first.",
+          "reason_required": "Choose the main reason.",
+          "comments_required": "Say why you are rejecting. The note stays on the file for your team.",
+          "comments_too_long": "The note can be 2,000 characters at most.",
+          "generic": "Couldn't reject this student. Please try again."
+        },
+        "or": "or"
       }
     },
     "students": "Students",
@@ -7412,7 +7453,9 @@
       "allHidden": "Every panel on this Overview has been switched off for your organisation. An organisation admin can switch them back on with Customise.",
       "funnel": {
         "title": "Applications",
-        "total": "Applications received"
+        "total": "Applications received",
+        "preInterview": "Rejected before interview",
+        "preInterviewByReason": "By main reason"
       },
       "money": {
         "title": "Money",

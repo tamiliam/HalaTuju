@@ -270,6 +270,7 @@ def funnel(scope):
     be in reads as though the missing stages do not exist; a stage at zero is information.
     """
     from .models import ScholarshipApplication
+    from .services.pre_interview import counts as pre_interview_counts   # #75: and by reason
 
     by_status = {code: 0 for code, _ in ScholarshipApplication.STATUS_CHOICES}
     total = 0
@@ -277,7 +278,7 @@ def funnel(scope):
         total += 1
         if status in by_status:
             by_status[status] += 1
-    return {'total': total, 'by_status': by_status}
+    return {'total': total, 'by_status': by_status, 'pre_interview': pre_interview_counts(scope)}
 
 
 def money(scope):

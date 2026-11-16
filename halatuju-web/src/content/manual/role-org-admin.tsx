@@ -207,9 +207,11 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-assigning',
       title: 'Assigning applicants',
       body: (
-        <>On <strong>Applications</strong> you get an <strong>Assigned</strong> column with an inline control
-        to give a case to one of <em>your</em> reviewers (and the same control sits on each applicant&rsquo;s
-        page). You can only assign your own organisation&rsquo;s active reviewers, and never to yourself. A case can only change hands
+        <>On <strong>Applications</strong> you get an <strong>Assigned</strong> column. For a student at
+        <strong> Awaiting review</strong> it shows who has the case (<em>Unassigned</em> or the reviewer&rsquo;s
+        name): open the applicant&rsquo;s page to assign a reviewer there, or to reject before interview (see
+        below). For a student at <strong>Interviewing</strong> the column has an inline control to give the case
+        to another of <em>your</em> reviewers. You can only assign your own organisation&rsquo;s active reviewers, and never to yourself. A case can only change hands
         while a review is live (Awaiting review / Interviewing) — the control is disabled otherwise.
         <span className="mt-2 block">To see who can take more, open <strong>People</strong>. Each reviewer shows
         two figures: <strong>Awaiting review</strong> (cases they have not started) and <strong>Interviewing</strong>
@@ -231,6 +233,27 @@ export const roleOrgAdmin: ManualChapter = {
         file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another. The
         assigned reviewer and QC read them (as can colleagues who may open the file); the student and sponsors
         never do, and the notes are never used in the AI-written profile or summary.</>
+      ),
+    },
+    {
+      anchor: 'org-admin-reject-before-interview',
+      title: 'Rejecting before interview',
+      body: (
+        <>Some students&rsquo; documents already show they do not qualify. For a student at
+        <strong> Awaiting review</strong> with no reviewer, the applicant&rsquo;s page offers
+        <strong> Reject before interview</strong> under <strong>Assign a reviewer</strong>. No interview is held.
+        If a reviewer is already on the case, set the reviewer back to <em>Unassigned</em> first. Whoever holds
+        the quality control permission can do this (organisation admins and QC hold it); a reviewer never can.
+        <span className="mt-2 block">Choose the <strong>main reason</strong> and write <strong>why you are
+        rejecting</strong> (up to 2,000 characters). Both stay on the student&rsquo;s file for your team and are
+        never sent to the student. Press <strong>Reject student</strong>, check the summary, then press
+        <strong> Yes, reject</strong>.</span>
+        <span className="mt-2 block">The decision is recorded at once as <strong>Rejected before
+        interview</strong>, and it never counts against a reviewer. The student gets the same kind decline email
+        as after an interview, but only when the quality control hold ends; until then they still see
+        <em> Awaiting review</em>, and <strong>Cancel decline</strong> on the applicant&rsquo;s page puts them
+        back at Awaiting review with no reviewer. Once the email has gone, the page says <em>Decline email sent
+        on</em> and the date. The Overview counts these students, in total and by main reason.</span></>
       ),
     },
     {
