@@ -67,6 +67,7 @@ export function RateAndEstimate({
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <div className="flex gap-1.5">
                   <button
+                    id={`rate-fact-${fact}-pass`}
                     onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${

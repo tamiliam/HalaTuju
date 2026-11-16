@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: say what is still missing before Recommend or Decline (request #70, 2026-11-16)
+
+Branch req70, not pushed. No migration, no API change. Services: web.
+- One rule: `decisionMissing` (`src/lib/cockpitStages.ts`) returns the ordered missing items (findings not submitted or N unanswered, unrated facts, empty conclusion); `isDecisionReady` is now `decisionMissing(...).length === 0`, so the list and the gate cannot disagree.
+- The Decision card shows "Still to do:" under the buttons, each item a button that scrolls to and focuses its place (interview stage, first unrated fact, conclusion box). Recommend and Decline are `aria-disabled` while not ready (busy stays `disabled`): a press shows the list as a focused `role="alert"` and acts on nothing. The phone decision bar asks the card for the same alert.
+- Words in en, ms, ta (`recordVerdict.missing.*`); `saveNeedsReady` retired (`findingsIncomplete` stays: the server-refusal text reads it). Reviewer Guide and FAQ explain the list.
+
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
 
 Branch req69 on #75 and #73, not pushed. Migration: `0217_reviewerprofile_highest_position` (additive; renumbered from 0215, now depends on `0216_two_way_notes`; the column and its database default are unchanged). Services: api.

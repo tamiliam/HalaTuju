@@ -18,6 +18,7 @@ import {
   verdictSaveOutcome,
   isQueryingLocked,
   isDecisionReady,
+  decisionMissing,
   isApproveReady,
   verdictItemKey,
   headerTimeline,
@@ -1564,6 +1565,39 @@ describe('isDecisionReady', () => {
   })
   it('false when the reason is blank/whitespace', () => {
     expect(isDecisionReady('submitted', all, '   ', true)).toBe(false)
+  })
+})
+
+describe('decisionMissing (request #70)', () => {
+  const all = { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'pass' }
+  it('nothing missing when everything is done', () => {
+    expect(decisionMissing('submitted', all, 'Solid case.', 0)).toEqual([])
+  })
+  it('findings not submitted, alone', () => {
+    expect(decisionMissing('draft', all, 'x', 0)).toEqual([{ kind: 'findings_not_submitted' }])
+    expect(decisionMissing(undefined, all, 'x', 0)).toEqual([{ kind: 'findings_not_submitted' }])
+  })
+  it('unanswered questions, alone, with the count', () => {
+    expect(decisionMissing('submitted', all, 'x', 2)).toEqual([{ kind: 'findings_unanswered', count: 2 }])
+  })
+  it('unrated facts, alone, in the card order', () => {
+    expect(decisionMissing('submitted', { ...all, income: '', academic: '' }, 'x', 0))
+      .toEqual([{ kind: 'facts_unrated', facts: ['academic', 'income'] }])
+  })
+  it('empty or blank conclusion, alone', () => {
+    expect(decisionMissing('submitted', all, '   ', 0)).toEqual([{ kind: 'conclusion_empty' }])
+  })
+  it('all together, in the page order: interview, AI rating, conclusion', () => {
+    expect(decisionMissing('draft', {}, '', 3).map((i) => i.kind))
+      .toEqual(['findings_not_submitted', 'facts_unrated', 'conclusion_empty'])
+    expect(decisionMissing('submitted', {}, '', 3).map((i) => i.kind))
+      .toEqual(['findings_unanswered', 'facts_unrated', 'conclusion_empty'])
+  })
+  it('isDecisionReady is exactly "nothing missing"', () => {
+    for (const st of ['submitted', 'draft']) for (const n of [0, 1]) for (const r of ['', 'x'])
+      for (const v of [all, {}]) {
+        expect(isDecisionReady(st, v, r, n === 0)).toBe(decisionMissing(st, v, r, n).length === 0)
+      }
   })
 })
 

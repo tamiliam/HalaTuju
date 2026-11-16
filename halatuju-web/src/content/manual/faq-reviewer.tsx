@@ -306,7 +306,7 @@ export const REVIEWER_FAQ: QA[] = [
         proposes a few from this student&rsquo;s record; tap <strong>Generate more</strong> for others. A prompt,
         not a script: ask your own too, and jot <strong>one line</strong> per point before you submit. Every
         point needs an answer — <strong>Resolved</strong>, a short note (even &ldquo;See conclusion&rdquo;), or
-        <strong> Delete</strong> — or the submit is refused and Approve and Decline stay greyed out.</>,
+        <strong> Delete</strong> — or the submit is refused and Approve and Decline stay greyed out. Press either greyed button and the <strong>Still to do</strong> list names what is missing and links to it.</>,
     },
     {
       q: <>Why is there always a &ldquo;Motivation &amp; grit&rdquo; point on the agenda?</>,

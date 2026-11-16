@@ -5164,7 +5164,14 @@
         "chooseOutcome": "Choose Recommend or Decline.",
         "savedNotSubmitted": "Your verdict was saved on {date}, but this case has not moved to QC yet. Press Approve again to submit it.",
         "savedNotSubmittedDecline": "Your decline was saved on {date}, but this case has not been sent to QC yet. Press Decline again to send it.",
-        "saveNeedsReady": "Submit your findings, rate the AI and add your conclusion.",
+        "missing": {
+          "heading": "Still to do:",
+          "submit": "Submit your interview findings",
+          "answerOne": "Answer 1 interview question",
+          "answerMany": "Answer {count} interview questions",
+          "rate": "Rate the AI on {facts}",
+          "conclusion": "Write your conclusion"
+        },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
         "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
         "save": "Save & generate final profile",

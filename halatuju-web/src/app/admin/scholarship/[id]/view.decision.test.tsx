@@ -35,6 +35,8 @@ const loaded = () => screen.findByText('Test Student 07')
 
 const button = (key: string) =>
   screen.getByRole('button', { name: `admin.scholarship.${key}` }) as HTMLButtonElement
+/** Request #70: a not-ready Recommend / Decline is `aria-disabled` (focusable, clickable, never acts); busy stays `disabled`. */
+const off = (b: HTMLButtonElement) => b.disabled || b.getAttribute('aria-disabled') === 'true'
 const noButton = (key: string) =>
   screen.queryByRole('button', { name: `admin.scholarship.${key}` })
 
@@ -94,7 +96,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     // no exit but a super-only Reopen recorded against a reviewer who did nothing wrong.
     renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(false)
+    expect(off(button('recordVerdict.approve'))).toBe(false)
     expect(button('recordVerdict.save').disabled).toBe(false)
   })
 
@@ -104,7 +106,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     // button is live. Who gets `can_write` is the server's test (`may_write_case`).
     renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(false)
+    expect(off(button('recordVerdict.approve'))).toBe(false)
   })
 
   it('NOT stuck and nothing recorded: the controls are there but asleep', async () => {
@@ -114,8 +116,8 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     // page that simply never disables anything.
     renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(true)
-    expect(button('recordVerdict.decline').disabled).toBe(true)
+    expect(off(button('recordVerdict.approve'))).toBe(true)
+    expect(off(button('recordVerdict.decline'))).toBe(true)
     expect(button('recordVerdict.save').disabled).toBe(true)
   })
 
@@ -139,7 +141,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     })
     await loaded()
     expect(screen.getByText('admin.scholarship.recordVerdict.reopenedBanner')).toBeTruthy()
-    expect(button('recordVerdict.approve').disabled).toBe(false)
+    expect(off(button('recordVerdict.approve'))).toBe(false)
   })
 })
 
@@ -163,9 +165,9 @@ describe('every interview question needs an answer before the reviewer decides',
     for (const role of ROLES) {
       const { unmount } = renderCockpit({ role, writes: true, stage: 'interviewing', build: ready({}) })
       await loaded()
-      expect(button('recordVerdict.approve').disabled).toBe(true)
-      expect(button('recordVerdict.decline').disabled).toBe(true)
-      expect(screen.getByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeTruthy()
+      expect(off(button('recordVerdict.approve'))).toBe(true)
+      expect(off(button('recordVerdict.decline'))).toBe(true)
+      expect(screen.getByText('admin.scholarship.recordVerdict.missing.answerOne')).toBeTruthy()
       unmount()
     }
   })
@@ -175,8 +177,8 @@ describe('every interview question needs an answer before the reviewer decides',
       const { unmount } = renderCockpit({ role, writes: true, stage: 'interviewing', build: ready({
         'motivation:motivation_grit': { verdict: '', rationale: 'See conclusion' } }) })
       await loaded()
-      expect(button('recordVerdict.approve').disabled).toBe(false)
-      expect(button('recordVerdict.decline').disabled).toBe(false)
+      expect(off(button('recordVerdict.approve'))).toBe(false)
+      expect(off(button('recordVerdict.decline'))).toBe(false)
       expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
       unmount()
     }
@@ -186,7 +188,7 @@ describe('every interview question needs an answer before the reviewer decides',
     renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
       'motivation:motivation_grit': { verdict: 'deleted', rationale: '' } }) })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(false)
+    expect(off(button('recordVerdict.approve'))).toBe(false)
   })
 
   it('a decision recorded before the rule is not reached back over (the stuck Approve)',
@@ -196,14 +198,14 @@ describe('every interview question needs an answer before the reviewer decides',
     renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: {
       outcome: 'recommend', ...base, officer_verdict: { ...base.officer_verdict, overall: 'accept' } } })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(false)
+    expect(off(button('recordVerdict.approve'))).toBe(false)
   })
 
   it('a REOPENED decision is the reviewer\'s again, so the rule binds', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: {
       outcome: 'recommend', ...ready({}), decision_reopened_at: '2026-06-03T09:00:00.000Z' } })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(true)
+    expect(off(button('recordVerdict.approve'))).toBe(true)
   })
 
   it('⚠ review F1: a HOLD on file is not a decision — the empty interview still holds the buttons',
@@ -213,8 +215,8 @@ describe('every interview question needs an answer before the reviewer decides',
       officer_verdict: { identity: 'pass', academic: 'pass', income: 'pass', pathway: 'pass',
                          overall: 'hold' } }) })
     await loaded()
-    expect(button('recordVerdict.approve').disabled).toBe(true)
-    expect(button('recordVerdict.decline').disabled).toBe(true)
+    expect(off(button('recordVerdict.approve'))).toBe(true)
+    expect(off(button('recordVerdict.decline'))).toBe(true)
   })
 
   it('review F4: at QC\'s stage with no decision recorded, the rule does not reach', async () => {

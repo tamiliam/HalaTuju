@@ -5164,7 +5164,14 @@
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
         "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
-        "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
+        "missing": {
+          "heading": "Masih perlu dibuat:",
+          "submit": "Hantar penemuan temu duga anda",
+          "answerOne": "Jawab 1 soalan temu duga",
+          "answerMany": "Jawab {count} soalan temu duga",
+          "rate": "Nilai AI pada {facts}",
+          "conclusion": "Tulis kesimpulan anda"
+        },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",

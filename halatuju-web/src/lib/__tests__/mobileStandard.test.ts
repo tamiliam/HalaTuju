@@ -966,7 +966,9 @@ describe('the cockpit on a phone', () => {
     expect(code).toMatch(/import type \{ AdminScholarshipDetail \} from '@\/lib\/admin-api'/)
     expect(code).not.toMatch(/\bdo[A-Z]\w*\b|\bfetch\(|setOfficerVerdict|recordVerdict\(/)
     expect((code.match(/onClick=/g) ?? []).length).toBe(1)
-    expect(code).toMatch(/onClick=\{\(\) => document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
+    // Request #70: it still only jumps; a press while something is missing also asks the card to show its alert list.
+    expect(code).toMatch(/onClick=\{\(\) => \{\s*document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
+    expect(code).toContain('document.dispatchEvent(new Event(DECISION_ALERT_EVENT))')
     const view = readWeb('src/app/admin/scholarship/[id]/view.tsx', 'the cockpit view')
     // "Ready" only when nothing is in flight (M6b review).
     expect(view).toMatch(/decisionBarShows\(\{ app, decisionReopened, decisionRecorded, decisionLocked, canWrite \}\) && \(\s*<DecisionBar t=\{t\} outcome=\{officerVerdict\.overall\} canSave=\{canSave && !busy\} \/>/)
