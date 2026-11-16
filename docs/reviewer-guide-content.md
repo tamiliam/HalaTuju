@@ -142,8 +142,11 @@ conversation settles it. Or, ask them to upload the latest offer letter, and it 
 
 **Why was the student asked for a recent confirmation letter?**
 Her offer or confirmation letter is older than the organisation's window (3 months unless changed in
-Organisation settings). It is only a request: it never fails a check or changes the verdict or amount.
-It is not asked when the letter's date cannot be read, or a recent confirmation letter is already on file.
+Organisation settings) and her course should already have started. It is only a request: it never fails
+a check, never changes the verdict or amount, and the case can be assigned to a reviewer while it is open.
+It is not asked when the letter's date cannot be read, while the letter's reporting date is still to come
+(or cannot be read and may still be to come), or when any recent letter (offer or confirmation, any
+institution) is already on file.
 
 **If the student is already in college, and has completed a semester or two, should I ask for additional documentation?**
 If they have completed one or more semesters and have their results (CGPA), you may ask them to upload their

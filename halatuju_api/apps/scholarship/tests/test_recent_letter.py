@@ -1,10 +1,11 @@
 """H3b - an OLD offer / confirmation letter asks for a RECENT confirmation letter (soft).
 
 Pins: the window edge (exactly N months ago is still recent; one day more is old), an unreadable date
-(no ask - never guess), a recent confirmation letter already on file (no ask, live or kept out of the
-live slot), the organisation tunable, a failing letter (left to its own ask), the upload resolution
-(an old letter re-sent leaves the ask open), and that the ask NEVER blocks: no submission blocker,
-no verdict change, no status change.
+(no ask - never guess), ANY recent letter already on file (no ask: offer or confirmation, any
+institution, live or kept out of the live slot), no ask before the course should have started, the
+organisation tunable, a failing letter (left to its own ask), the upload resolution (a recent letter
+closes it, an old letter re-sent leaves it open), the one document read for both letter asks, and that
+the ask NEVER blocks: no submission blocker, no verdict change, no status change, no assignment hold.
 """
 import datetime
 
@@ -137,6 +138,62 @@ class TestWanted(_Base):
         self._letter(app, 'Jun 2026', seen='confirmation_polytechnic', superseded_at=timezone.now())
         self.assertTrue(recent_letter.wanted(app, today=TODAY))
 
+    def test_a_university_confirmation_scored_suspect_answers(self):
+        """Fix round 1: ANY recent letter closes it, whatever institution - a university's "Surat
+        Pengesahan Pelajar" scored suspect, live or kept out of the slot."""
+        for i, kept_out in enumerate((False, True)):
+            app = self._app(f'ua-conf{i}')
+            if kept_out:
+                self._letter(app, '20 Jun 2026', seen='ua_offer', status='suspect', superseded_at=timezone.now())
+                self._letter(app, '1 Januari 2025')
+            else:
+                self._letter(app, '1 Januari 2025', superseded_at=timezone.now())
+                self._letter(app, '20 Jun 2026', seen='ua_offer', status='suspect')
+            self.assertFalse(recent_letter.wanted(app, today=TODAY), kept_out)
+
+    def test_a_matriculation_confirmation_answers(self):
+        app = self._app('matric-conf')
+        self._letter(app, '20 Jun 2026', seen='matriculation', status='suspect', superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2025', seen='matriculation')
+        self.assertFalse(recent_letter.wanted(app, today=TODAY))
+
+    def test_a_recent_offer_kept_out_of_the_slot_answers(self):
+        """The old TD-634: a recent official OFFER kept out of the live slot now answers too."""
+        app = self._app('kept-offer')
+        self._letter(app, '20 Jun 2026', status='unknown', superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2025')
+        self.assertFalse(recent_letter.wanted(app, today=TODAY))
+
+
+class TestCourseStart(_Base):
+    """Fix round 1: no ask before the course should have started - an offer is naturally old then."""
+
+    def _with_report(self, label, reporting_date):
+        app = self._app(label)
+        doc = self._letter(app, '1 Januari 2026')                    # old against TODAY (30 Jun 2026)
+        doc.vision_fields['fields']['reporting_date'] = reporting_date
+        doc.save(update_fields=['vision_fields'])
+        return app
+
+    def test_a_reporting_date_still_to_come_never_asks(self):
+        for i, rd in enumerate(('8 JULAI 2026', '30 JUN 2026', '8 HINGGA 9 OGOS 2026', '1 Jan 2027')):
+            self.assertFalse(recent_letter.wanted(self._with_report(f'future{i}', rd), today=TODAY), rd)
+
+    def test_a_reporting_date_in_the_past_asks(self):
+        for i, rd in enumerate(('29 JUN 2026', '10 Februari 2026 (Isnin)', '28 JULAI 2025 2:30 PETANG')):
+            self.assertTrue(recent_letter.wanted(self._with_report(f'past{i}', rd), today=TODAY), rd)
+
+    def test_a_reporting_date_not_read_to_a_day(self):
+        """Might it still be to come? Then no ask. Only a year before this one is surely past."""
+        for i, rd in enumerate(('JUN 2026', 'Sesi 2026/2027', 'akan dimaklumkan', 'MINGGU PERTAMA')):
+            self.assertFalse(recent_letter.wanted(self._with_report(f'unknown{i}', rd), today=TODAY), rd)
+        for i, rd in enumerate(('SEPT 2025', 'Sesi 2024/2025')):
+            self.assertTrue(recent_letter.wanted(self._with_report(f'pastyr{i}', rd), today=TODAY), rd)
+
+    def test_no_reporting_date_keeps_the_plain_rule(self):
+        for i, rd in enumerate(('', '   ')):
+            self.assertTrue(recent_letter.wanted(self._with_report(f'none{i}', rd), today=TODAY), repr(rd))
+
 
 class TestTunable(_Base):
     def test_registry_spec_and_default(self):
@@ -210,6 +267,32 @@ class TestCheck2(_Base):
         resolve_doc_items_for_upload(app, old)
         self.assertIn(CODE, self._codes(app))
 
+    def test_an_upload_closes_the_ask(self):
+        """A recent letter uploaded in answer closes it through ``resolve_doc_items_for_upload``."""
+        from apps.scholarship.resolution import resolve_doc_items_for_upload
+        app = self._app('upload-close')
+        self._letter(app, self._old(), superseded_at=timezone.now())
+        new = self._letter(app, _iso(timezone.localdate()), seen='confirmation_polytechnic')
+        app.resolution_items.create(source='check2', code=CODE, kind='doc', doc_type='offer_letter',
+                                    fact='pathway', status='open')
+        self.assertEqual(resolve_doc_items_for_upload(app, new), 'ok')
+        self.assertNotIn(CODE, self._codes(app))
+
+    def test_a_suspect_upload_closes_it_at_the_next_sync(self):
+        """A suspect letter (a university confirmation) reads 'mismatch' on upload - the offer slot's own
+        rule, unchanged - so it closes the ask at the next Check-2 sync (her next Action Centre read)."""
+        from apps.scholarship.resolution import resolve_doc_items_for_upload
+        app = self._app('upload-suspect')
+        self._letter(app, self._old())
+        sync_check2_queries(app)
+        self.assertIn(CODE, self._codes(app))
+        new = self._letter(app, _iso(timezone.localdate()), seen='ua_offer', status='suspect',
+                           superseded_at=timezone.now())        # kept out: the genuine offer outranks it
+        self.assertEqual(resolve_doc_items_for_upload(app, new), 'mismatch')
+        self.assertIn(CODE, self._codes(app))
+        sync_check2_queries(app)
+        self.assertNotIn(CODE, self._codes(app))
+
     def test_the_ask_never_blocks(self):
         """No submission blocker, no verdict change, no status change: the ask is a request only."""
         from apps.scholarship.services import blockers
@@ -230,32 +313,67 @@ class TestCheck2(_Base):
         self.assertNotIn(CODE, repr(after))
 
 
-class TestSharedOfferRead(_Base):
-    """The Check-2 pass reads the live offer ONCE for both letter asks (TD-308 budget), so the
-    reporting-date ask uses ``recent_letter.reporting_date_unknown(offer)``. It must answer exactly as
-    the money module's ``pathway_engine.offer_reporting_date_unknown(application)``."""
+class TestOfferAsks(_Base):
+    """The Check-2 pass reads the documents ONCE for both letter asks (TD-308 budget) by calling the
+    money module's own ``offer_reporting_date_unknown`` and ``wanted`` under one document snapshot.
+    ON == OFF: the pair answers exactly as the two calls do with no snapshot."""
 
-    def test_doc_form_matches_the_pathway_engine(self):
+    def test_the_pair_equals_the_two_calls_without_a_snapshot(self):
         from apps.scholarship import pathway_engine
-        from apps.scholarship.document_snapshot import latest_doc
         cases = [None, {'fields': {'reporting_date': '8 JUN 2026'}, 'student_verdict': 'ok'},
                  {'fields': {'reporting_date': ''}, 'student_verdict': 'ok'},
                  {'fields': {'reporting_date': ''}}, {'fields': {'reporting_date': ''},
                                                        'student_verdict': 'review_manually'},
-                 {'fields': {'reporting_date': 'sometime'}, 'student_verdict': 'ok'}, 'junk']
+                 {'fields': {'reporting_date': 'sometime', 'offer_date': '1 Januari 2025'},
+                  'student_verdict': 'ok'},
+                 {'fields': {'offer_date': '1 Januari 2025'}, 'student_verdict': 'ok'}, 'junk']
         for i, vf in enumerate(cases):
-            app = self._app(f'drift{i}')
+            app = self._app(f'pair{i}')
             if vf is not None:
                 create_document(application=app, doc_type='offer_letter', storage_path=f'd/{i}',
                                 vision_fields=vf)
-            offer = latest_doc(app, 'offer_letter')
-            self.assertEqual(recent_letter.reporting_date_unknown(offer),
-                             pathway_engine.offer_reporting_date_unknown(app), vf)
+            self.assertEqual(recent_letter.offer_asks(app),
+                             (pathway_engine.offer_reporting_date_unknown(app), recent_letter.wanted(app)), vf)
 
-    def test_a_passed_letter_is_used_without_a_read(self):
-        app = self._app('passed')
-        self.assertFalse(recent_letter.wanted(app, today=TODAY, live=None))
-        old = self._letter(app, '1 Januari 2025')
-        with self.assertNumQueries(0):
-            self.assertFalse(recent_letter.wanted(app, today=TODAY, live=None))
-        self.assertTrue(recent_letter.wanted(app, today=TODAY, live=old))
+    def test_no_letter_costs_one_read(self):
+        app = self._app('one-read')
+        with self.assertNumQueries(1):
+            self.assertEqual(recent_letter.offer_asks(app), (False, False))
+
+
+class TestAssignmentHold(_Base):
+    """Lead's decision (fix round 1): the ask is NON-HOLDING - it never holds reviewer assignment;
+    any other open student request still does."""
+
+    def _fresh(self, label):
+        app = self._app(label)
+        app.profile_completed_at = timezone.now()          # inside the answer window
+        app.save(update_fields=['profile_completed_at'])
+        return app
+
+    def _ready(self, app):
+        from apps.scholarship.models import ScholarshipApplication
+        from apps.scholarship.services.queries_sla import is_ready_for_assignment, with_open_student_tasks
+        annotated = with_open_student_tasks(ScholarshipApplication.objects.filter(pk=app.pk)).get()
+        return is_ready_for_assignment(app), is_ready_for_assignment(annotated)
+
+    def test_the_excluded_code_is_this_one(self):
+        from apps.scholarship.services import queries_sla
+        self.assertEqual(queries_sla._NON_HOLDING_CODES, (CODE,))
+
+    def test_an_open_recent_letter_ask_alone_does_not_hold(self):
+        app = self._fresh('hold-alone')
+        self._letter(app, _iso(recent_letter.cutoff(timezone.localdate(), 3) - datetime.timedelta(days=1)))
+        sync_check2_queries(app)
+        self.assertTrue(app.resolution_items.filter(code=CODE, status='open').exists())
+        app.resolution_items.exclude(code=CODE).delete()     # only the recent-letter ask is left open
+        self.assertEqual(self._ready(app), (True, True))
+
+    def test_another_open_request_still_holds(self):
+        from apps.scholarship.models import ResolutionItem
+        app = self._fresh('hold-other')
+        ResolutionItem.objects.create(application=app, source='check2', code=CODE, kind='doc',
+                                      doc_type='offer_letter', fact='pathway', status='open')
+        ResolutionItem.objects.create(application=app, source='officer', code='officer_1', kind='clarify',
+                                      fact='other', status='open')
+        self.assertEqual(self._ready(app), (False, False))

@@ -1,20 +1,29 @@
 """H3b (2026-11-16, roadmap H3 Goal B) - an OLD offer or confirmation letter asks for a RECENT one.
 
 When the live offer-slot letter (an offer letter or a confirmation-of-studies letter) was issued more
-than the organisation's ``recent_letter_window_months`` ago (platform default 3), Check 2 raises ONE
-soft document request, ``CODE``: "please upload a recent confirmation letter from your institution".
+than the organisation's ``recent_letter_window_months`` ago (platform default 3), AND her course should
+already have started, Check 2 raises ONE soft document request, ``CODE``: "please upload a recent
+confirmation letter from your institution".
 
-SOFT BY DESIGN. It is an ordinary Check-2 doc request (``check2_queries.DOC_SPECS``): it never blocks
-submission, never fails a fact, never touches a verdict, the pathway or the money. Like every open
-student task it counts toward the assignment floor (``queries_sla.is_ready_for_assignment``) only until
-the organisation's answer window lapses - the same as the stale-payslip ask (``income_doc_stale``).
+SOFT BY DESIGN (the plan: a request, no block). It is an ordinary Check-2 doc request
+(``check2_queries.DOC_SPECS``): it never blocks submission, never fails a fact, never touches a
+verdict, the pathway or the money, and - unlike every other open student task - it does NOT hold
+reviewer assignment (``services.queries_sla`` leaves ``CODE`` out of the open-task hold, fix round 1).
+
+NOT BEFORE THE COURSE STARTS. A letter read with a reporting date still to come (today or later), or a
+reporting date that cannot be read to a day and might still be to come, means no ask: an offer letter
+is naturally months old before she reports. Only a reporting date in the past (or, read only to its
+year, a year before this one) lets the ask fire. A letter with NO reporting date at all (most
+confirmation letters) keeps the plain rule: the letter is older than the window.
 
 NO GUESSING. The letter's issue date is ``vision_fields['fields']['offer_date']``; a date this strict
 reader cannot place exactly (no year, two years, an ambiguous order, no day) means NO ask.
 
-NO LOOP. A recent confirmation letter already on file - live, or kept out of the live slot by the
-keep-better promotion (an official offer can outrank it) - means no ask: she has done what we asked.
-A failing letter (``offer_fails``) is left to its own, stronger ask.
+NO LOOP. ANY recent letter on file closes it: an offer or a confirmation letter, any institution
+(polytechnic, university, matriculation, Form 6, ...), live or kept out of the live slot by the
+keep-better promotion, dated inside the window and not FAILED (``offer_fails``). A suspect or unscored
+letter still counts - she has done what we asked; a person judges the letter itself. A failing live
+letter is left to its own, stronger ask.
 """
 import calendar
 import datetime as _dt
@@ -32,6 +41,7 @@ _DMY = re.compile(r'(\d{1,2})[./-](\d{1,2})[./-](20\d{2})')
 _YMD = re.compile(r'(20\d{2})-(\d{1,2})-(\d{1,2})')
 _D_MON_Y = re.compile(r'(\d{1,2})[ .-]+([a-z]+)\.?[ .-]+(20\d{2})')
 _MON_D_Y = re.compile(r'([a-z]+)\.? (\d{1,2}) (20\d{2})')
+_YEAR = re.compile(r'\b(20\d{2})\b')
 
 
 def _month(word):
@@ -39,14 +49,20 @@ def _month(word):
     return {**_RD_MONTHS, 'january': 1}.get(word)
 
 
+def _field(doc, key):
+    vf = getattr(doc, 'vision_fields', None)
+    fields = vf.get('fields') if isinstance(vf, dict) else None
+    raw = fields.get(key) if isinstance(fields, dict) else None
+    return raw if isinstance(raw, str) else None
+
+
 def letter_date(doc):
     """The letter's issue date as a ``date``, or None when it cannot be read EXACTLY. The whole value
     must be one date: D/M/YYYY (``/ . -``), YYYY-MM-DD, "D Month YYYY" or "Month D, YYYY" (Malay or
-    English month names). Anything else - a two-digit year, a stray word, an impossible day - is None."""
-    vf = getattr(doc, 'vision_fields', None)
-    fields = vf.get('fields') if isinstance(vf, dict) else None
-    raw = fields.get('offer_date') if isinstance(fields, dict) else None
-    if not isinstance(raw, str):
+    English month names). Anything else - a two-digit year, a stray word, an impossible day - is None
+    (TD-635: forms such as "5 Mac 2026M" or a date followed by its Hijri date are not read)."""
+    raw = _field(doc, 'offer_date')
+    if raw is None:
         return None
     s = ' '.join(_ORDINAL.sub(r'\1', raw.strip().lower()).replace(',', ' ').split())
     parts = None
@@ -66,6 +82,25 @@ def letter_date(doc):
         return None
 
 
+def course_should_have_started(doc, today) -> bool:
+    """May the course on this letter already have started? ``reporting_date`` is the letter's
+    report / registration date (``student_offer_check``), read by the money module's own
+    ``pathway_engine.parse_reporting_date`` (imported, not copied):
+      * no reporting date on the letter at all  -> True (the plain rule: only the letter's age counts);
+      * read to a day                            -> True only when that day is BEFORE today;
+      * not read to a day                        -> True only when every year it names is before this
+                                                    one (else it might still be to come: no ask)."""
+    from .pathway_engine import parse_reporting_date
+    raw = (_field(doc, 'reporting_date') or '').strip()
+    if not raw:
+        return True
+    when = parse_reporting_date(raw)
+    if when is not None:
+        return when < today
+    years = [int(y) for y in _YEAR.findall(raw)]
+    return bool(years) and max(years) < today.year
+
+
 def cutoff(today, months):
     """``today`` minus ``months`` calendar months, the day clamped to that month's end. A letter dated
     ON the cutoff is still recent; one day earlier is old."""
@@ -78,48 +113,45 @@ def window_months(application):
     return org_config.value(getattr(application, 'owning_organisation', None), WINDOW_KEY)
 
 
-def _recent_confirmation_on_file(application, edge):
-    """A non-failing confirmation letter dated on/after ``edge``, in ANY version of the offer slot."""
-    from .pathway_engine import is_confirmation_letter, offer_fails
-    # all-versions-read: a confirmation she sent in answer may be KEPT OUT of the live slot by the
+def _recent_letter_on_file(application, edge):
+    """Any non-failing letter in the offer slot dated on/after ``edge``, in ANY version of the slot:
+    an offer or a confirmation letter, from any institution."""
+    from .pathway_engine import offer_fails
+    # all-versions-read: a recent letter she sent in answer may be KEPT OUT of the live slot by the
     # keep-better promotion (an official offer outranks it); it still answers this ask, so look at all.
     for doc in application.documents.filter(doc_type='offer_letter'):
         when = letter_date(doc)
-        if when is not None and when >= edge and is_confirmation_letter(doc) and not offer_fails(doc):
+        if when is not None and when >= edge and not offer_fails(doc):
             return True
     return False
 
 
-_UNREAD = object()
-
-
-def reporting_date_unknown(offer) -> bool:
-    """``pathway_engine.offer_reporting_date_unknown`` for an offer ALREADY READ, so the Check-2 pass
-    reads the live offer once for both of its letter asks (the TD-308 query budget). Same body as the
-    money module's function, which stays untouched; ``test_recent_letter`` pins the two equal."""
-    from .pathway_engine import parse_reporting_date, student_offer_check
-    if offer is None:
-        return False
-    vf = offer.vision_fields if isinstance(getattr(offer, 'vision_fields', None), dict) else {}
-    sv = vf.get('student_verdict')
-    if not sv or sv == 'review_manually':          # not extracted yet → not this gap
-        return False
-    return parse_reporting_date(student_offer_check(offer).get('reporting_date')) is None
-
-
-def wanted(application, today=None, live=_UNREAD) -> bool:
+def wanted(application, today=None) -> bool:
     """Should Check 2 ask this student for a recent confirmation letter? Soft; see the module notes.
-    ``live``: the live offer-slot letter when the caller has already read it (None = no letter)."""
+    Yes only when the live letter is readable, not failing, dated before the window's edge, its course
+    should already have started, and no recent letter of any kind is on file."""
     from .document_snapshot import latest_doc
     from .pathway_engine import offer_fails
-    if live is _UNREAD:
-        live = latest_doc(application, 'offer_letter')
+    live = latest_doc(application, 'offer_letter')
     if live is None or offer_fails(live):
         return False
     when = letter_date(live)
     if when is None:
         return False
-    edge = cutoff(today or timezone.localdate(), window_months(application))
-    if when >= edge:
+    today = today or timezone.localdate()
+    edge = cutoff(today, window_months(application))
+    if when >= edge or not course_should_have_started(live, today):
         return False
-    return not _recent_confirmation_on_file(application, edge)
+    return not _recent_letter_on_file(application, edge)
+
+
+def offer_asks(application):
+    """``(reporting_date_unknown, recent_letter_wanted)`` for the Check-2 gap pass, reading the
+    application's documents ONCE for both letter asks (the TD-308 query budget): the money module's
+    own ``pathway_engine.offer_reporting_date_unknown`` and ``wanted`` above, under one
+    ``document_snapshot`` (joined when one is already open). Pure reads; the block closes before
+    Check 2 writes anything."""
+    from .document_snapshot import snapshot_unless_open
+    from .pathway_engine import offer_reporting_date_unknown
+    with snapshot_unless_open(application):
+        return offer_reporting_date_unknown(application), wanted(application)

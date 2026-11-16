@@ -6,6 +6,8 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.utils import timezone
 
+from ..recent_letter import CODE as RECENT_LETTER_CODE
+
 
 # ── Check 2 STEP 2/3 — the query SLA clock (design §5) ───────────────────────
 # Statuses where the post-submit query clock is live (submitted, not yet decided).
@@ -84,16 +86,20 @@ def query_sla(application, now=None):
 
 #: What makes a ResolutionItem a task the student still owes — read by BOTH shapes below.
 _OPEN_STUDENT_TASK = {'source__in': ('officer', 'check2'), 'status': 'open'}
+#: H3b fix round 1 (lead's decision; decisions.md): the recent-letter ask is SOFT - the plan says
+#: a request, no block - so it never holds reviewer assignment. BOTH shapes below exclude it.
+_NON_HOLDING_CODES = (RECENT_LETTER_CODE,)
 
 #: The list annotation's name (TD-162). Read by `is_ready_for_assignment` when it is present.
 OPEN_STUDENT_TASKS_ANNOTATION = 'annot_has_open_student_tasks'
 
 
 def open_student_tasks(application):
-    """Every still-open task the student owes — the items shown in their Action Centre /
-    the Check-2 Outstanding box (officer-raised + Check-2 queries/doc-requests). Broader
-    than ``open_clarify_queries`` (which is only the clarify-SLA subset)."""
-    return application.resolution_items.filter(**_OPEN_STUDENT_TASK)
+    """Every still-open task the student owes that HOLDS reviewer assignment — the items shown in
+    their Action Centre / the Check-2 Outstanding box (officer-raised + Check-2 queries/doc-requests),
+    less the soft ``_NON_HOLDING_CODES`` (H3b). Broader than ``open_clarify_queries`` (which is only
+    the clarify-SLA subset). Read only by ``is_ready_for_assignment``."""
+    return application.resolution_items.filter(**_OPEN_STUDENT_TASK).exclude(code__in=_NON_HOLDING_CODES)
 
 
 def with_open_student_tasks(queryset):
@@ -107,7 +113,8 @@ def with_open_student_tasks(queryset):
     if OPEN_STUDENT_TASKS_ANNOTATION in queryset.query.annotations:   # TD-505: annotate ONCE
         return queryset
     return queryset.annotate(**{OPEN_STUDENT_TASKS_ANNOTATION: Exists(
-        ResolutionItem.objects.filter(application=OuterRef('pk'), **_OPEN_STUDENT_TASK))})
+        ResolutionItem.objects.filter(application=OuterRef('pk'), **_OPEN_STUDENT_TASK)
+        .exclude(code__in=_NON_HOLDING_CODES))})
 
 
 def is_ready_for_assignment(application, now=None):
