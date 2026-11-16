@@ -74,6 +74,10 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: 16 Nov 11:00 MYT window - TD-623, TD-631, #67 scope 3b, the declined-reason fix and the SPM prerequisites label published (2026-11-16)
+- live 4619e1af1..b3b4c6114 (pushed 11:00 MYT). api halatuju-api-01304-45w, web halatuju-web-01125-npt, both 100% traffic. Both builds green; release-decisions job image b3b4c6114; api health 200; site 200.
+- No migration, no data step. Each change: 1st deploy. #67 align --apply not run (needs the owner's own yes); Requests runs the dry run only. Owner phone check sent with the release report. Window closed.
+
 ### release: 15 Nov 21:00 MYT window - TD-613 published (2026-11-15)
 - live 36c6982dc..4619e1af1 (pushed 20:59 MYT). api halatuju-api-01303-hc4, web halatuju-web-01124-5x6, both 100% traffic. Both builds green (web gates; api tests, push, deploy, release job sync; release-decisions job image 4619e1af1); api health 200; site 200.
 - No migration, no data step. TD-613: 1st deploy. TD-623 (on main) not included: own window. Owner phone check sent with the release report. Window closed.
