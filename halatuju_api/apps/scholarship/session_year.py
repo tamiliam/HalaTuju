@@ -8,9 +8,12 @@ The owner's reading of an offer letter (16 Nov 2026, replacing the closed-vocabu
 offer letters have a reporting date. Otherwise the title says the year like 2026, or it may say
 2024/25 (which means 2024)." A check of 286 real letters bore it out (docs/decisions.md). In order:
 
-  1. the letter's REPORTING DATE (its stored field, already cleaned by `vision.sanitize`) -> its year;
+  1. the letter's REPORTING DATE (its stored field, already cleaned by `vision.sanitize`) -> its year.
+     A reporting date that is there but holds no 20xx year ("16 Februari", "16/02/25") makes the whole
+     reading unknown: the letter names a date the reader cannot date, so no later step guesses;
   2. else ONE year on the intake line ("2026", "Ambilan Julai 2026") -> that year;
-  3. else a SESSION (2024/2025, 2024/25, 2024-2025). Lead's rule, 16 Nov - WHEN IN DOUBT, UNKNOWN:
+  3. else a SESSION (2024/2025, 2024/25, 2024-2025; not one straight after an exam word: "Lepasan STPM
+     2024/2025" is an exam line, unknown). Lead's rule, 16 Nov - WHEN IN DOUBT, UNKNOWN:
      a. NO other year, date or month-year on the line -> its FIRST year; its SECOND year with a
         second-intake word ("Sesi 2", "Sesi II", "Semester 2", "Semester II", "Ambilan 2"; a Sesi II
         beside a Semester 1 / Year 1 too) or a January-to-April month NAME on a line holding an intake
@@ -19,10 +22,12 @@ offer letters have a reporting date. Otherwise the title says the year like 2026
      b. ONE other date or month-year ("10/03/2025", "17.02.2025", "Feb 2025", "3 March 2025") RIGHT
         AFTER a start word (Ambilan, Kemasukan, Tarikh Kemasukan / Mendaftar / Pendaftaran, Lapor Diri,
         Intake, Admission, mulai, bermula, commencing, starting, Semester / Sem) and in one of the
-        session's two years -> that year ("Sesi 2024/2025 mulai 17.02.2025" = 2025). A plain year
+        session's two years -> that year ("Sesi 2024/2025 mulai 17.02.2025" = 2025). A start word
+        straight after a break word is none ("cuti semester bermula 1 Jan 2025"). A plain year
         right after an intake word reads too, whatever the session ("Ambilan 2023 Sesi 2025/2026" = 2023);
      c. ANY other extra year, date or month-year (a closing, letter, update or reference date, two
-        dates, no start word, a clash with an intake month or term, a year outside the session) ->
+        dates, no start word, a clash with an intake month or term, a year outside the session, a
+        numeric date with a two-digit year - "Lapor Diri 16/02/25" is never read as 2025) ->
         unknown ("Session 2024/25 Feb 2025" has no start word, so unknown);
   4. else unknown.
 
@@ -111,6 +116,12 @@ _INTAKE_LINE_RE = re.compile(
 _START_RE = re.compile(
     r'(?<![a-z])(?:tarikh\s+(?:kemasukan|mendaftar|pendaftaran)|lapor\s+diri|pengambilan|ambilan|kemasukan'
     r'|intake|admission|mulai|bermula|commencing|starting|semester|sem)(?![a-z])', re.I | re.A)
+# A break word: a start word straight after one starts a holiday, not the course ("cuti semester
+# bermula 1 Jan 2025", "semester break starting Feb 2025"). Read on the text just before the start word.
+_BREAK_BEFORE_RE = re.compile(r'(?<![a-z])(?:cuti(?:\s+(?:semester|sem))?|break|holidays?)[\s:,\-]*$', re.I | re.A)
+# A numeric date with a two-digit year ("16/02/25", "16.2.25"): on a session line it is an extra date
+# (unknown), never expanded to 20xx.
+_SHORT_DATE_RE = re.compile(r'(?<!\d)\d{1,2}\s*[/.\-]\s*\d{1,2}\s*[/.\-]\s*\d{2}(?!\d)')
 # The intake words whose plain year counts beside any session ("Ambilan 2023 Sesi 2025/2026" = 2023).
 _INTAKE_WORD_RE = re.compile(r'(?:pengambilan|ambilan|kemasukan|intake|admission)', re.I)
 # What may stand between a start word and its date: spaces and stops, a term number ("Semester 1
@@ -234,9 +245,13 @@ def _date_year(reporting_date):
 
 
 def _sessions(text):
-    """The distinct sessions ``(S, S+1)`` on the line, and the character places they take."""
+    """The distinct sessions ``(S, S+1)`` on the line, and the character places they take. A
+    session whose first year is an exam's own year ("Lepasan STPM 2024/2025") is none: an exam line."""
     sessions, taken = set(), set()
+    exam_years = {m.start(1) for m in _EXAM_YEAR_RE.finditer(text)}
     for m in _SESSION_RE.finditer(text):
+        if m.start(1) in exam_years:
+            continue
         a = int(m.group(1))
         tail = next(g for g in m.groups()[1:] if g)
         b = int(tail) if len(tail) == 4 else (a // 100) * 100 + int(tail)
@@ -271,7 +286,8 @@ def _unit(text, m):
 
 def _extras(text, taken):
     """A session line's other dates (`_unit`s): every 20xx year outside the session, but not an
-    exam's own year. It stops at two: two is already unknown."""
+    exam's own year, and every numeric date with a two-digit year (kind 'short': always unclear).
+    It stops at two: two is already unknown."""
     taken = set(taken)
     for m in _EXAM_YEAR_RE.finditer(text):
         taken.add(m.start(1))
@@ -280,16 +296,23 @@ def _extras(text, taken):
         if m.start(1) not in taken:
             out.append(_unit(text, m))
             if len(out) == 2:
+                return out
+    for m in _SHORT_DATE_RE.finditer(text):
+        if not any(i in taken for i in range(m.start(), m.end())):
+            out.append((m.start(), m.end(), None, 'short', None))
+            if len(out) == 2:
                 break
     return out
 
 
 def _start_word(text, at, taken):
     """The start word (`_START_RE`) that the date at ``at`` follows straight on (only `_GAP_RE`
-    between, the session masked as '#'), else None."""
+    between, the session masked as '#'), else None. A start word straight after a break word
+    (`_BREAK_BEFORE_RE`) is none."""
     last = None
-    for last in _START_RE.finditer(text, 0, at):
-        pass
+    for m in _START_RE.finditer(text, 0, at):
+        if not _BREAK_BEFORE_RE.search(text, max(0, m.start() - 24), m.start()):
+            last = m
     if last is None:
         return None
     gap = ''.join('#' if i in taken else c for i, c in enumerate(text[last.end():at], last.end()))
@@ -325,6 +348,8 @@ def _session_reading(text, session, taken, terms):
     if len(extras) > 1:
         return GiftReading(None, 'unclear_date')
     (start, _, year, kind, month), = extras
+    if kind == 'short':
+        return GiftReading(None, 'unclear_date')
     word = _start_word(text, start, taken)
     if kind == 'year':
         # The owner's step 2: a plain year straight after an intake word, whatever the session.
@@ -361,6 +386,9 @@ def gift_reading(intake, reporting_date='', *, context='', confirmation=False):
         rd_year = _date_year(reporting_date)
         if rd_year is not None:
             return GiftReading(rd_year, 'reporting_date')
+        if (reporting_date or '').strip() and not _YEAR_RE.search(reporting_date):
+            # A date is there but has no 20xx year ("16 Februari", "16/02/25"): no step guesses.
+            return GiftReading(None, 'undated_reporting_date')
     sessions, taken = _sessions(text)
     if len(sessions) > 1:
         return GiftReading(None, 'several_sessions')

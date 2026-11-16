@@ -177,6 +177,16 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a tenth review - an undatable date is unknown; an exam's session is no session; a break word starts no course (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9.
+- **Reporting date with no 20xx year** ("16 Februari", "16/02/25"): the whole reading is unknown; the session is not read in its place.
+- **Two-digit-year date on a session line** ("Lapor Diri 16/02/25"): an extra date, so unknown; never expanded to 2025.
+- **Exam session** ("Lepasan STPM 2024/2025"): an exam line, unknown.
+- **Break words** (cuti, cuti semester, break, holiday): a start word straight after one is none ("cuti semester bermula 1 Jan 2025" = unknown).
+- **FAQ.** The reviewer answer on "Course started in" names the two-digit-year and no-year cases.
+- **Tests.** `TenthReviewWhenInDoubtUnknown` in `test_start_year_gift_reading.py`. Probe table unchanged; corpus split unchanged: 246 / 26 / 14.
+
 ### fix: H3a ninth review - when in doubt, unknown: a session line reads one date only straight after a start word (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9.
