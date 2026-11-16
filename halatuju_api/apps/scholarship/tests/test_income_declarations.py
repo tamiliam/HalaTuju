@@ -1007,6 +1007,17 @@ class TheApproverStampAnywhereInItsSection(SimpleTestCase):
         # The payslip carve-out sits before the copy-stamp exclusion, so that exclusion still applies to it.
         self.assertLess(APPROVAL_PROMPT.index('has no such limit'), APPROVAL_PROMPT.index('A copy-certification'))
 
+    def test_a_declaration_or_village_head_form_always_has_an_approvers_section(self):
+        """H1 rebase hardening (Opus review): a blank approver's section is still a section, so a declaration or
+        village head's form never falls into the payslip carve-out (stamp counts anywhere on the page)."""
+        from apps.scholarship.income_declaration import APPROVAL_PROMPT
+        line = ('A declaration or village head\'s form ALWAYS has an approver\'s section, even if it is left '
+                'blank. ')
+        self.assertIn(line, APPROVAL_PROMPT)
+        # It sits between the scoped outside-the-section rule and the no-section carve-out it guards.
+        self.assertLess(APPROVAL_PROMPT.index('is NOT the approver\'s stamp'), APPROVAL_PROMPT.index(line))
+        self.assertLess(APPROVAL_PROMPT.index(line), APPROVAL_PROMPT.index('A document with NO approver\'s section'))
+
     def test_the_prompt_keeps_its_guards(self):
         """Not undone (#53 and its follow-up): printed text is not a stamp, an empty box alone is not a stamp,
         handwriting is not a stamp, a title never comes from a printed label, copy / received stamps never count."""
