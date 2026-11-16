@@ -81,7 +81,7 @@ PROBES = [
     ('Semester Kesebelas 2025', '', '', False, None),
     ('semester sepuluh 2025', '', '', False, None),
     ('Ambilan 2023, Semester 1 Sesi 2025/2026', '', '', False, 2023),
-    ('Intake Sept 2023 - Session 2025/2026', '', '', False, 2023),
+    ('Intake Sept 2023 - Session 2025/2026', '', '', False, None),     # ninth review: a month-year outside the session
     # h3r4: clear 2025 / 2026 starters
     ('Ambilan Julai 2025 (SPM 2024)', '14 Julai 2025', '', False, 2025),
     ('Keputusan SPM 2024; Ambilan 2025', '', '', False, None),
@@ -93,7 +93,7 @@ PROBES = [
     ('Ambilan Februari 2025 Sesi 2024/2025', '', '', False, 2025),
     ('Sesi 2024/2025', '3 Mac 2025', '', False, 2025),
     ('Intake March 2025 (Session 2024/2025)', '', '', False, 2025),
-    ('Session 2024/25 Feb 2025', '', '', False, 2025),
+    ('Session 2024/25 Feb 2025', '', '', False, None),                # ninth review: no start word before the date
     ('Semester II Sesi 2024/2025', '', '', False, 2025),
     ('Semester II 2024/2025', '17 Februari 2025', '', False, 2025),
     ('Sesi II 2024/2025', '6 Januari 2025', '', False, 2025),
@@ -106,7 +106,7 @@ PROBES = [
     ('Kemasukan 2025 (2024 lulus SPM)', '', '', False, None),
     ('Sesi Julai 2025 hingga Jun 2029', '', '', False, None),
     ('2024/2025 Semester 2 (Feb 2025 intake)', '', '', False, 2025),
-    ('Sesi 2025/2026 (Tarikh: 26/02/2025)', '', '', False, 2025),
+    ('Sesi 2025/2026 (Tarikh: 26/02/2025)', '', '', False, None),     # ninth review: a bare Tarikh is no start word
     ('Ambilan Sesi Februari 2025/2026', '', '', False, 2026),
     ('Intake 2025/26 September', '', '', False, 2025),
     ('2025/2026 Sem 1 Okt 2025', '', '', False, 2025),
@@ -117,7 +117,7 @@ PROBES = [
     ('Semester 1 Sesi 2025/2026', '', '', True, None),
     ('2025', '', '', True, None),
     # h3r4: second probe
-    ('Sesi 2024/25 Februari 2025', '', '', False, 2025),
+    ('Sesi 2024/25 Februari 2025', '', '', False, None),              # ninth review: no start word before the date
     ('SESI 2024/25 MAC 2025', '3 Mac 2025', '', False, 2025),
     ('SPM 2024, Ambilan 2025', '14 Julai 2025', '', False, 2025),
     ('Ambilan 2025 (Sesi 2025/2026)', '', '', False, 2025),
