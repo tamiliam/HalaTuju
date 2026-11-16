@@ -15,7 +15,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { QcOverrideNote, type T } from './shared'
 import { ReopenHeaderControl } from './ReopenHeaderControl'
-import { ReasonBox } from './ReasonBox'
+import { ReasonBox } from '@/components/admin/ReasonBox'
 import { decisionBarShows } from './DecisionBar'
 
 export function DecisionCard({

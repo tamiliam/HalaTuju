@@ -136,8 +136,8 @@ export type { AwardWithdrawalRequest } from './admin-api/awardWithdrawal'
 // Request #55: an organisation admin's notes for the reviewer (append-only).
 export { getReviewerNotes, addReviewerNote } from './admin-api/reviewerNotes'
 export type { ReviewerNote, ReviewerNotes } from './admin-api/reviewerNotes'
-export { getCaseGraduationMessages, reviewGraduationMessage } from './admin-api/graduationThanks'
-export type { AdminGraduationMessage, GraduationMessageStatus, GraduationReview } from './admin-api/graduationThanks'
+export { getScholarThanks, reviewScholarThanks } from './admin-api/graduationThanks'
+export type { AdminGraduationMessage, GraduationMessageStatus, GraduationReview, ScholarThanks } from './admin-api/graduationThanks'
 
 // Interview scheduling from the OFFICER's side, and the Check-3 session.
 export {

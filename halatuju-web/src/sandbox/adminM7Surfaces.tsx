@@ -4,7 +4,8 @@
  * Mobile M7a, mounted for mobile-check and the owner's phone review: the REAL "Can" admin screens inside the REAL
  * console shell, with invented fixtures — the scholar file, the scholars list, Announcements (a table as rows),
  * the sponsor terms list, the payment run, student detail, organisation settings, a request and the Requests list;
- * sprint P1 adds the scholar file's Activity tab on its own (the file's tabs are internal state, a phone's a <select>).
+ * sprint P1 adds the scholar file's Activity tab on its own (the file's tabs are internal state, a phone's a <select>);
+ * THANKS-SCHOLARS adds the file's Overview with a graduation thank-you waiting for a decision.
  *
  * ⚠ IDENTITY IS SYNTHETIC (an `AdminAuthContext` value, never the provider, never a sign-in), and the network is
  * the sandbox stub: every write here goes nowhere. The address is the shell's sandbox-only `path`; a detail page
@@ -105,6 +106,18 @@ const SCHOLAR_FILE = {
 /** Sprint P1: a scholar's activity log — staff with and without a photo, the scholar, a fully automatic row,
  *  an email that matches nobody, a call, a long note and a staff-only one. Newest first, as the server pages it;
  *  each time is relative to the run (so it reads "2 hours ago", not a date years back). */
+/** THANKS-SCHOLARS: a waiting thank-you, and the earlier send the check held back. Synthetic words, no student named. */
+const THANKS = [
+  { id: 2, application: 1, ref: 'HT-SANDBOX', status: 'pending', scan_result: [], scrubbed_text: '',
+    raw_text: 'Terima kasih kerana membantu saya menamatkan diploma. Saya kini bekerja sebagai juruteknik '
+      + 'dan menyara keluarga.', approved_by: '', review_note: '',
+    created_at: '2026-11-15T09:00:00+08:00', reviewed_at: null },
+  { id: 1, application: 1, ref: 'HT-SANDBOX', status: 'blocked', scan_result: ['school'], scrubbed_text: '',
+    raw_text: 'Terima kasih dari pelajar kolej saya.', approved_by: '', review_note: '',
+    created_at: '2026-11-14T09:00:00+08:00', reviewed_at: null },
+]
+const THANKS_ROUTE = '/api/v1/admin/scholarship/scholars/1/graduation-messages/'
+
 const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString()
 const STAFF_A = { name: 'Pentadbir Contoh', photo_url: null, kind: 'staff' }
 const STAFF_B = { name: 'Siti Pegawai Contoh', photo_url: null, kind: 'staff' }
@@ -217,7 +230,18 @@ export const ADMIN_CAN_SURFACES: Surface[] = [
     note: 'Mobile M7a: sections, not cards; the nine tabs are ONE chooser on a phone; the money as rows; the status '
       + 'read-only with a note (owner).',
     routes: { ...SCOPES, '/api/v1/admin/scholarship/scholars/1/': () => SCHOLAR_FILE,
-      '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(6) },
+      '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(6),
+      [THANKS_ROUTE]: () => ({ messages: [], may_decide: true }) },
+    render: () => <Console path="/admin/scholars/1" params={{ id: '1' }}><ScholarFilePage /></Console>,
+  },
+  {
+    slug: 'scholar-thanks',
+    title: 'Admin — a graduation thank-you on the scholar file',
+    note: 'Sprint THANKS-SCHOLARS: the Overview\'s thank-you card for a Scholars holder (served may_decide): the sponsor '
+      + 'text to edit, Approve and send, Reject, and the earlier version the check held back.',
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/scholars/1/': () => SCHOLAR_FILE,
+      '/api/v1/admin/scholarship/scholars/1/activity/': activityPage(6),
+      [THANKS_ROUTE]: () => ({ messages: THANKS, may_decide: true }) },
     render: () => <Console path="/admin/scholars/1" params={{ id: '1' }}><ScholarFilePage /></Console>,
   },
   {

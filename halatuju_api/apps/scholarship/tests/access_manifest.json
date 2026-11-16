@@ -271,20 +271,6 @@
    "note": ""
   },
   {
-   "route": "api/v1/admin/graduation-messages/<int:pk>/review/",
-   "method": "post",
-   "allow": [
-    "super",
-    "reviewer_a"
-   ],
-   "hide": [
-    "reviewer_a2"
-   ],
-   "object": "grad_message_a",
-   "flags": [],
-   "note": "THANKS: the review key, then the message's case through the case read fence; reached by super, reviewer_a (assigned); 404 to reviewer_a2 (same org, unassigned) before the body is read; 403 to org_admin_a (no review key), org_admin_b, student_b, sponsor_b"
-  },
-  {
    "route": "api/v1/admin/invitations/",
    "method": "get",
    "allow": [
@@ -1536,18 +1522,6 @@
    "object": "app_a",
    "flags": [],
    "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
-  },
-  {
-   "route": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/",
-   "method": "get",
-   "allow": [
-    "super",
-    "reviewer_a"
-   ],
-   "hide": [],
-   "object": "app_a",
-   "flags": [],
-   "note": "THANKS: the review key, then the case read fence; reached by super, reviewer_a; refused to reviewer_a2 (unassigned), org_admin_a (no review key), org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
@@ -3642,6 +3616,37 @@
    "object": "app_a",
    "flags": [],
    "note": "object app_a: reached by super, org_admin_a, admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a",
+    "mentor_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "THANKS-SCHOLARS (owner 2026-11-16, thank-yous are scholar maintenance): the scholar file's read (_file_for); reached by super, org_admin_a, admin_a, mentor_a (read-only, may_decide false); refused to reviewer_a (assigned, review key alone), reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/<int:message_id>/review/",
+   "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "app_a",
+   "flags": [],
+   "note": "THANKS-SCHOLARS: _file_for, the message inside that file, then may_decide_thanks (the scholar-file write); reached by super, org_admin_a, admin_a; refused to mentor_a, reviewer_a (assigned, review key alone), reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/<int:pk>/surveys/",

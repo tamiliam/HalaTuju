@@ -47,7 +47,7 @@ from apps.scholarship.tests.factories import (
 )
 from apps.scholarship.tests.source_walk import read_source
 from apps.scholarship.tests.team_matrix_s1 import s1_moved_cells, s1_web_shown   # sprint S1 (SHAPES: post-0095)
-from apps.scholarship.tests.team_matrix_thanks import thanks_cells   # sprint THANKS
+from apps.scholarship.tests.team_matrix_thanks import THANKS_OLD_POST, thanks_cells   # THANKS(-SCHOLARS)
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_before.json'
 MIXED_FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_mixed_before.json'
@@ -407,8 +407,8 @@ class AccessMatrix(TestCase):
 
 
 #: Cells of the BEFORE fixtures whose ROUTE has since been retired (the fixtures are never regenerated).
-#: TD-496 (owner 2026-11-07, B): the graduation-messages list; its moderation POST stays.
-RETIRED_CELLS = ('GET api/v1/admin/graduation-messages/',)
+#: TD-496 (owner 2026-11-07, B): the graduation-messages list; THANKS-SCHOLARS: its moderation POST.
+RETIRED_CELLS = ('GET api/v1/admin/graduation-messages/', THANKS_OLD_POST)
 
 
 def _before():

@@ -1,10 +1,12 @@
 'use client'
 
 /**
- * GRADUATION THANK-YOU (sprint THANKS, owner 2026-11-16): a student's thank-you reaches the sponsor only
- * after staff approve it, and staff do that HERE, on the case page. Whoever holds the `review` KEY sees the
- * card; the role is only a label (the caller passes `show` from the served `page_keys`). The server asks the
- * same key on both calls and keeps the organisation fence, so the card only decides what to draw.
+ * A SCHOLAR'S GRADUATION THANK-YOU, on the scholar file (sprint THANKS-SCHOLARS). OWNER RULING 2026-11-16:
+ * "Thank yous are part of the scholar maintenance process." A student's thank-you reaches the sponsor only
+ * after staff approve it, and that is scholar-file work: whoever may READ the file sees the card (the
+ * server's file fence: `scholars` holders, a super, and a current student's mentor, read-only), and the
+ * Approve / Reject controls are drawn ONLY when the server serves `may_decide` (serve, never derive: no key
+ * or role is checked here). The server asks the same rule again on every decision.
  *
  * The newest message is the one to act on:
  *   • pending: the text the sponsor will see (starts as the student's words, editable), Approve, and Reject
@@ -13,18 +15,20 @@
  *   • blocked: the automatic check found something that may name the student. Reject only, with the reason;
  *     the student edits and sends it again.
  *   • approved / rejected: read only.
- * Earlier versions (each send adds one) are listed read only underneath. No messages: no card.
+ * Without `may_decide` every message is read only. Earlier versions (each send adds one) are listed read
+ * only underneath. No messages: no card.
  */
 import { useEffect, useState } from 'react'
 import {
-  getCaseGraduationMessages, reviewGraduationMessage,
+  getScholarThanks, reviewScholarThanks,
   type AdminGraduationMessage, type GraduationMessageStatus,
 } from '@/lib/admin-api'
 import { formatDateTime } from '@/lib/formatDate'
+import { useT } from '@/lib/i18n'
 
 import { ReasonBox } from './ReasonBox'
-import type { T } from './shared'
 
+type T = ReturnType<typeof useT>['t']
 const K = 'admin.scholarship.graduationThanks'
 /** The refusal codes the review call answers with; anything else gets the generic line. */
 export const THANKS_ERRORS = ['scrubbed_leak', 'not_reviewable', 'empty_message', 'bad_action'] as const
@@ -65,13 +69,9 @@ function fieldWords(fields: string[], t: T): string {
   return fields.map((f) => (FIELDS.includes(f) ? t(`${K}.field.${f}`) : f)).join(', ')
 }
 
-export function GraduationThanksCard({ appId, token, t, show }: {
-  appId: number
-  token: string | null | undefined
-  t: T
-  /** The served `review` key (never the role). */
-  show: boolean
-}) {
+export default function ScholarThanks({ id, token }: { id: number; token: string | null }) {
+  const { t } = useT()
+  const [mayDecide, setMayDecide] = useState(false)
   const [messages, setMessages] = useState<AdminGraduationMessage[] | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
   const [text, setText] = useState('')
@@ -84,19 +84,18 @@ export function GraduationThanksCard({ appId, token, t, show }: {
   const [reads, setReads] = useState(0)
 
   useEffect(() => {
-    if (!show || !token) return
+    if (!token) return
     let live = true
-    getCaseGraduationMessages(appId, { token })
+    getScholarThanks(id, { token })
       .then((d) => {
         if (!live) return
-        setMessages(d.messages); setLoadFailed(false)
+        setMessages(d.messages); setMayDecide(d.may_decide === true); setLoadFailed(false)
         setText(d.messages[0]?.raw_text ?? '')
       })
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }
-  }, [appId, token, show, reads])
+  }, [id, token, reads])
 
-  if (!show) return null
   if (loadFailed && !messages) {
     return <p className="text-sm text-critical-600">{t(`${K}.loadError`)}</p>
   }
@@ -107,7 +106,7 @@ export function GraduationThanksCard({ appId, token, t, show }: {
     if (!token || busy) return
     setBusy(action); setError('')
     try {
-      const next = await reviewGraduationMessage(msg.id, action === 'approve'
+      const next = await reviewScholarThanks(id, msg.id, action === 'approve'
         ? { action, scrubbed_text: text }
         : { action, review_note: note }, { token })
       setMessages([next, ...earlier]); setRejecting(false); setNote('')
@@ -142,7 +141,7 @@ export function GraduationThanksCard({ appId, token, t, show }: {
       className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
       <div className="space-y-1">
         <h2 className="text-base font-semibold tracking-tight text-ground-900">{t(`${K}.title`)}</h2>
-        <p className="text-sm text-ground-600">{t(`${K}.intro`)}</p>
+        <p className="text-sm text-ground-600">{t(mayDecide ? `${K}.intro` : `${K}.introReadOnly`)}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -158,12 +157,12 @@ export function GraduationThanksCard({ appId, token, t, show }: {
             {t(`${K}.blockedReason`, { fields: fieldWords(msg.scan_result ?? [], t) })}
           </p>
           <p className="text-xs text-ground-600">{t(`${K}.blockedHint`)}</p>
-          {rejectButton}
-          {rejectBox}
+          {mayDecide && rejectButton}
+          {mayDecide && rejectBox}
         </div>
       )}
 
-      {msg.status === 'pending' && (
+      {msg.status === 'pending' && mayDecide && (
         <div className="space-y-2">
           <label htmlFor={`thanks-text-${msg.id}`} className="block text-sm font-medium text-ground-700">
             {t(`${K}.sponsorSees`)}

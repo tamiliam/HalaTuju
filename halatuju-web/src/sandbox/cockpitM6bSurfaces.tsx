@@ -17,7 +17,7 @@ import { AppShell } from '@/components/admin/AppShell'
 import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
 import { ORG_ADMIN_PAGE_KEYS } from './servedKeys'
-import type { AdminGraduationMessage, AdminScholarshipDetail } from '@/lib/admin-api'
+import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -72,24 +72,10 @@ const routesFor = (app: AdminScholarshipDetail): Record<string, () => unknown> =
   }),
 })
 
-/** Sprint THANKS: a login whose served keys include `review`, so the case page draws the thank-you card. */
-const REVIEW_HOLDER = { ...ROLE, page_keys: [...ORG_ADMIN_PAGE_KEYS, 'review'] }
-
-/** A waiting thank-you, and the earlier send the check held back. Synthetic words, no student named. */
-const THANKS: AdminGraduationMessage[] = [
-  { id: 2, application: 1, ref: 'HT-SANDBOX', status: 'pending', scan_result: [], scrubbed_text: '',
-    raw_text: 'Terima kasih kerana membantu saya menamatkan diploma. Saya kini bekerja sebagai juruteknik '
-      + 'dan menyara keluarga.', approved_by: '', review_note: '',
-    created_at: '2026-11-15T09:00:00+08:00', reviewed_at: null },
-  { id: 1, application: 1, ref: 'HT-SANDBOX', status: 'blocked', scan_result: ['school'], scrubbed_text: '',
-    raw_text: 'Terima kasih dari pelajar kolej saya.', approved_by: '', review_note: '',
-    created_at: '2026-11-14T09:00:00+08:00', reviewed_at: null },
-]
-
-function Case({ children, role = ROLE }: { children?: ReactNode; role?: typeof ROLE }) {
+function Case({ children }: { children?: ReactNode }) {
   return (
     <AdminAuthContext.Provider value={{
-      session: null, token: 'sandbox-not-a-real-token', isLoading: false, isAdminAuthenticated: true, role: role as never,
+      session: null, token: 'sandbox-not-a-real-token', isLoading: false, isAdminAuthenticated: true, role: ROLE as never,
       refreshRole: async () => {}, photoUrl: null, setPhotoUrl: () => {},
     } as never}>
       <AppShell path="/admin/scholarship/1"><AdminScholarshipDetailView applicationId={1} />{children}</AppShell>
@@ -140,16 +126,5 @@ export const COCKPIT_PHONE_SURFACES: Surface[] = [
     note: 'Mobile M6b (owner): on a phone the tranche actions and the Schedule form give way to a "use a computer" note.',
     routes: routesFor(FUNDED),
     render: () => <Case />,
-  },
-  {
-    slug: 'cockpit-thanks',
-    title: 'Cockpit — a graduation thank-you waiting for review',
-    note: 'Sprint THANKS: the Review key holder\'s card on the case page: the sponsor text to edit, Approve and send, '
-      + 'Reject, and the earlier version the check held back.',
-    routes: {
-      ...routesFor(FUNDED),
-      '/api/v1/admin/scholarship/applications/1/graduation-messages/': () => ({ messages: THANKS }),
-    },
-    render: () => <Case role={REVIEW_HOLDER} />,
   },
 ]

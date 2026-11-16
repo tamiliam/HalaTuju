@@ -4229,6 +4229,7 @@
       "graduationThanks": {
         "title": "Graduation thank-you",
         "intro": "The student's thank-you reaches their sponsor only after you approve it. The sponsor sees the approved text and the student's reference, never their name.",
+        "introReadOnly": "The student's thank-you reaches their sponsor only after staff approve it. The sponsor sees the approved text and the student's reference, never their name.",
         "sent": "Sent {date}",
         "studentWrote": "What the student wrote",
         "sponsorSees": "Text the sponsor will see",

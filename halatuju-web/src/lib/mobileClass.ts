@@ -153,8 +153,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/scholarship': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-list', 'admin-shell-menu', 'admin-list-filters'] },
   '/admin/scholarship/[id]': {
     cls: 'must', sprint: 'M6',
-    surfaces: ['officer-cockpit', 'cockpit-case', 'cockpit-viewer-image', 'cockpit-viewer-pdf', 'cockpit-payments',
-      'cockpit-thanks'],
+    surfaces: ['officer-cockpit', 'cockpit-case', 'cockpit-viewer-image', 'cockpit-viewer-pdf', 'cockpit-payments'],
   },
   '/admin/organisation': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation/programmes' },
   '/admin/administration': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation/programmes' },
@@ -172,7 +171,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/students': { cls: 'can', sprint: 'M7' },
   '/admin/students/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-student'] },
   '/admin/scholars': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholars'] },
-  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholar-file', 'p1-scholar-activity'] },
+  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholar-file', 'p1-scholar-activity', 'scholar-thanks'] },
   '/admin/programme/announcements': { cls: 'can', sprint: 'M7', surfaces: ['m7-announcements'] },   // maintenance S8: staff write news here
   '/admin/programme/surveys': { cls: 'can', sprint: 'M7' },   // maintenance S9: staff make surveys here
   '/admin/programme/surveys/[id]': { cls: 'can', sprint: 'M7' },   // maintenance S9: one survey's results

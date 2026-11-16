@@ -77,7 +77,7 @@ from .views_admin import (
     AdminDisbursementActionView,
     AdminDisbursementScheduleView,
     AdminMaintenanceSubstateView,
-    AdminGraduationMessageReviewView, AdminCaseGraduationMessagesView,
+    AdminScholarThanksView, AdminScholarThanksReviewView,   # THANKS-SCHOLARS
     AdminSetAwardAmountView,
     AdminSponsorshipListView,
     AdminApplicationRefereeView,
@@ -370,6 +370,8 @@ urlpatterns = [
     path('admin/scholarship/scholars/<int:pk>/contract/', AdminScholarContractView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/results/<int:result_id>/review/',
          AdminScholarResultReviewView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/graduation-messages/', AdminScholarThanksView.as_view()),  # THANKS-SCHOLARS
+    path('admin/scholarship/scholars/<int:pk>/graduation-messages/<int:message_id>/review/', AdminScholarThanksReviewView.as_view()),
     # Programme Overview (2026-09-15) — the page a person LANDS on inside a gift. Open to every
     # console role and shaped by role server-side, so it sits beside the gift's other Programme
     # routes rather than under a role-specific prefix.
@@ -549,7 +551,6 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/guardian-call/', AdminGuardianCallView.as_view()),
     path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reviewer-notes/', AdminReviewerNotesView.as_view()),
-    path('admin/scholarship/applications/<int:pk>/graduation-messages/', AdminCaseGraduationMessagesView.as_view()),  # THANKS
     # Break-glass: release an IC lock so an orphaned claim stops blocking the number's real
     # owner. SUPER ONLY — narrower than the gate that takes the lock, on purpose.
     path('admin/scholarship/applications/<int:pk>/release-nric-lock/',
@@ -596,5 +597,4 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
-    path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),   # F9a; the `review` key (THANKS)
 ] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + urls_award.urlpatterns + urls_billing.urlpatterns

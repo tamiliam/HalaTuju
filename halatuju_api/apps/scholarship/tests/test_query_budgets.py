@@ -939,27 +939,42 @@ class TestTheOverviewPendingCardsQueryBudget(TestCase):
         self.assertEqual(resolve('/' + PENDING_ROUTE).route, PENDING_ROUTE)
 
 
-#: Sprint THANKS review round (2026-11-16): the case page's thank-you read (`views_admin/graduation.py`,
-#: `AdminCaseGraduationMessagesView`). The key, the case fence, then ONE list query: a message costs
-#: nothing extra, so the two readings are EQUAL.
-THANKS_ROUTE = 'api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/'
+#: Sprint THANKS-SCHOLARS (2026-11-16): the scholar file's thank-you read (`views_admin/scholar_thanks.py`,
+#: `AdminScholarThanksView`; it replaced the case page's `applications/<pk>/graduation-messages/`). The file
+#: fence, then ONE list query: a message costs nothing extra, so the readings are EQUAL. A mentor's reading
+#: adds the ONE staff-name query (S1 ruling A: a name, never an email), however many messages there are.
+THANKS_ROUTE = 'api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/'
 THANKS_BUDGETS = {key: RECORD.get(key) for key in (
-    f'{THANKS_ROUTE}::GET::1-message', f'{THANKS_ROUTE}::GET::3-messages')}
+    f'{THANKS_ROUTE}::GET::1-message', f'{THANKS_ROUTE}::GET::3-messages',
+    f'{THANKS_ROUTE}::GET::3-messages-mentor')}
 
 
-@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
-class TestTheCaseThanksReadQueryBudget(TestCase):
-    """The case's thank-yous, counted, read by the assigned reviewer (the `review` key holder)."""
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class TestTheScholarThanksReadQueryBudget(TestCase):
+    """A scholar's thank-yous, counted, read by an organisation admin (a `scholars` holder) or the
+    student's mentor."""
 
     def _reading(self, key):
+        import datetime
+        from django.utils import timezone
+        from apps.scholarship import mentoring
         from apps.scholarship.models import GraduationMessage
+        from apps.scholarship.tests.test_mentoring import make_mentor
         n = int(key.split('::')[2].split('-')[0])
         org = make_org()
-        reviewer = make_admin('reviewer', owning_org=org)
-        app = make_application('submitted', cohort=make_cohort(owning_organisation=org), reviewer=reviewer)
+        lead = make_admin('org_admin', owning_org=org)
+        app = make_application('maintenance', cohort=make_cohort(owning_organisation=org),
+                               active_at=timezone.now() - datetime.timedelta(days=60))
         for i in range(n):
-            GraduationMessage.objects.create(application=app, raw_text=f'Thank you {i}.', status='pending')
-        client, url = authed_client(reviewer), f'/{THANKS_ROUTE}'.replace('<int:pk>', str(app.pk))
+            GraduationMessage.objects.create(application=app, raw_text=f'Thank you {i}.', status='rejected',
+                                             approved_by=lead.email)
+        reader = lead
+        if key.endswith('-mentor'):
+            mentor = make_mentor(org)
+            mentoring.assign(lead, app, mentor, email_student=False)
+            reader = mentoring._login(mentor)
+        client, url = authed_client(reader), f'/{THANKS_ROUTE}'.replace('<int:pk>', str(app.pk))
         self.assertEqual(client.get(url).status_code, 200)               # warm-up
         with CaptureQueriesContext(connection) as captured:
             response = client.get(url)
@@ -981,7 +996,7 @@ class TestTheCaseThanksReadQueryBudget(TestCase):
         self.assertEqual(loose, [], LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_the_budgeted_route_still_resolves(self):
-        self.assertEqual(resolve('/api/v1/admin/scholarship/applications/1/graduation-messages/').route,
+        self.assertEqual(resolve('/api/v1/admin/scholarship/scholars/1/graduation-messages/').route,
                          THANKS_ROUTE)
 
 

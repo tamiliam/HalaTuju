@@ -51,6 +51,20 @@ beforeEach(() => {
   mockRole = { role: 'org_admin', owning_org_id: 11 }
   mockApi.getScholarFile.mockResolvedValue(FILE)
   mockApi.getScholarActivity.mockResolvedValue({ count: 0, page: 1, page_size: 50, results: [] })
+  // THANKS-SCHOLARS: the Overview's thank-you card reads its own endpoint. None yet: no card.
+  mockApi.getScholarThanks.mockResolvedValue({ messages: [], may_decide: false })
+})
+
+// THANKS-SCHOLARS (owner 2026-11-16, "Thank yous are part of the scholar maintenance process."): the card
+// lives on the scholar file's Overview; its controls follow the served `may_decide`, never a key or role.
+it.each([[true, 1], [false, 0]] as const)('the Overview draws the waiting thank-you; may_decide=%s draws %i Approve', async (mayDecide, approves) => {
+  mockApi.getScholarThanks.mockResolvedValue({ may_decide: mayDecide, messages: [{ id: 5, application: 104,
+    ref: 'HT-ABC123', status: 'pending', raw_text: 'Thank you for everything.', scrubbed_text: '', scan_result: [],
+    approved_by: '', review_note: '', created_at: '2026-11-15T09:00:00+08:00', reviewed_at: null }] })
+  render(<ScholarFilePage />)
+  expect(await screen.findByText('admin.scholarship.graduationThanks.title')).toBeTruthy()
+  expect(mockApi.getScholarThanks).toHaveBeenCalledWith(104, { token: 'tok' })
+  expect(screen.queryAllByRole('button', { name: 'admin.scholarship.graduationThanks.approve' })).toHaveLength(approves)
 })
 
 it('draws the header and the cards from the payload', async () => {

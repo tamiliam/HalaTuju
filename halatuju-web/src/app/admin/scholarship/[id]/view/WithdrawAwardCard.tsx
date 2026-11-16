@@ -22,7 +22,7 @@ import {
 } from '@/lib/admin-api'
 import { formatDate } from '@/lib/formatDate'
 
-import { ReasonBox } from './ReasonBox'
+import { ReasonBox } from '@/components/admin/ReasonBox'
 import type { T } from './shared'
 
 const K = 'admin.scholarship.withdrawAward'

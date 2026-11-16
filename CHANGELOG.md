@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint THANKS-SCHOLARS - a graduation thank-you is decided on the scholar file, by Scholars holders (2026-11-16)
+
+Branch thanks-scholars, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS-SCHOLARS; owner: "Thank yous are part of the scholar maintenance process."; applies R5). Release-note draft: `docs/releases/thanks-release-note-draft.md`.
+- **Server:** new `views_admin/scholar_thanks.py`. `GET admin/scholarship/scholars/<pk>/graduation-messages/` (the file fence `_file_for`: Scholars holders in their organisation, a super, a current student's mentor read only) serves the messages and `may_decide`. `POST admin/scholarship/scholars/<pk>/graduation-messages/<message_id>/review/` goes fence, validate, lock; a message outside the file is the same 404 as a missing one. One decide rule, `may_decide_thanks` (today `_may_write_file`); no new key; no `file_closed` refusal. Retired: the case-page GET, `POST admin/graduation-messages/<pk>/review/` and `may_moderate_thanks`. `urls.py` stays at 600 lines.
+- **Web:** the card moved from the case page to the scholar file's Overview (`components/admin/ScholarThanks.tsx`; `ReasonBox` moved to `components/admin/`). Approve and Reject only when the served `may_decide` is true, read only otherwise (new `introReadOnly` string in en / ms / ta). Sandbox surface `cockpit-thanks` became `scholar-thanks` (its six baseline cells renamed, still zero).
+- **Tests:** `test_thanks_graduation_review.py` rewritten for the scholar file (Review alone, even the assigned reviewer, no longer reads or decides; mentor read only; cross-organisation and cross-file 404). Access manifest, access world, org-fence, the mentor closed list (`test_mentor_desk.py`, the GET only), team matrix (`team_matrix_thanks.py`: the file's own cells; the old POST cell retired) and the query budget (the new GET pinned at 4 for 1 and 3 messages, 8 for a mentor) re-declared. Web: `ScholarThanks.test.tsx`, a scholar page test; `view.graduationThanks.test.tsx` removed.
+
 ### fix: sprint THANKS review round - the review POST keeps the case fence; a decision locks the row; a non-text body is 400 (2026-11-16)
 
 Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS, review round).

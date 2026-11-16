@@ -459,6 +459,8 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
                          'AdminScholarLettersView', 'AdminScholarLetterPdfView', 'AdminScholarSurveysView',
                          'AdminScholarGrowthView', 'AdminScholarGrowthFileView', 'AdminScholarMentoringView'),
                         ('get',)),
+        # Sprint THANKS-SCHOLARS — the scholar's graduation thank-yous, read only (the decide POST none).
+        'AdminScholarThanksView': ('get',),
     }
 
     def test_the_closed_list(self):

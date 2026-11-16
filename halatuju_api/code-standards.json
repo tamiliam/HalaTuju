@@ -349,19 +349,27 @@
     },
     {
       "on": "2026-11-16",
-      "by": "sprint THANKS review round",
-      "why": "The case page's thank-you read, by the assigned reviewer, one message: the review key, the case fence, one list query. Measured 5 on 2026-11-16.",
+      "by": "sprint THANKS-SCHOLARS",
+      "why": "The scholar file's thank-you read, by an organisation admin (a scholars holder), one message: the file fence, one list query. Measured 4 on 2026-11-16. It replaces the THANKS review round's two records for the retired case-page read (applications/<pk>/graduation-messages/, 5 and 5), whose route no longer exists.",
       "ledger": "query_budgets",
-      "key": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/::GET::1-message",
-      "value": 5
+      "key": "api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/::GET::1-message",
+      "value": 4
     },
     {
       "on": "2026-11-16",
-      "by": "sprint THANKS review round",
-      "why": "The same with three messages. Measured 5 on 2026-11-16, equal to one message: a message costs nothing extra.",
+      "by": "sprint THANKS-SCHOLARS",
+      "why": "The same with three messages. Measured 4 on 2026-11-16, equal to one message: a message costs nothing extra.",
       "ledger": "query_budgets",
-      "key": "api/v1/admin/scholarship/applications/<int:pk>/graduation-messages/::GET::3-messages",
-      "value": 5
+      "key": "api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/::GET::3-messages",
+      "value": 4
+    },
+    {
+      "on": "2026-11-16",
+      "by": "sprint THANKS-SCHOLARS",
+      "why": "Three messages read by the student's mentor (read-only): the mentor fence and the ONE staff-name query (S1 ruling A, a name never an email). Measured 8 on 2026-11-16, and 8 for one message too: flat in the messages.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/scholars/<int:pk>/graduation-messages/::GET::3-messages-mentor",
+      "value": 8
     }
   ],
   "_history": [

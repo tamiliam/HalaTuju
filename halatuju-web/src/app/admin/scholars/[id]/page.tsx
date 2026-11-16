@@ -29,6 +29,7 @@ import ScholarResults from '@/components/admin/ScholarResults'
 import ScholarMoney from '@/components/admin/ScholarMoney'
 import ScholarContract from '@/components/admin/ScholarContract'
 import ScholarLetters from '@/components/admin/ScholarLetters'
+import ScholarThanks from '@/components/admin/ScholarThanks'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
@@ -322,7 +323,9 @@ function StaffScholarFile() {
             className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-0 md:grid-cols-2 md:gap-4">
             {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{seesSurveys && surveysCard}
           </section>
-          <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
+          <div className="min-w-0 flex-[1_1_320px] space-y-5 lg:max-w-md">
+            {/* THANKS-SCHOLARS: scholar maintenance; the buttons follow the served `may_decide`. */}
+            <ScholarThanks id={file.id} token={token} />
             <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={asMentor || !file.in_maintenance} />
           </div>
         </div>

@@ -1,6 +1,53 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-16 — THANKS-SCHOLARS: a graduation thank-you is scholar maintenance, decided on the scholar file
+
+Branch thanks-scholars, not pushed. No migration. Services: both. Supersedes the THANKS entry below (the `review` key
+and the case page) in full; its review round's lock, re-scan and body checks are kept.
+
+**Owner rulings (2026-11-16, direct).**
+- "Thank yous are part of the scholar maintenance process."
+- "the reviewer's relationship ends at awarded, and what they see is archived work. Applicant becomes a scholar and
+  scholars are maintained by admin. Thank you notes fall under maintenance, and anyone with edit permission in
+  scholars should be able to review/approve the thank you notes."
+
+This applies **R5** (2026-11-12, "An open case ends at awarded"): a thank-you is written after the award, so it
+is not the reviewer's work. A reviewer still sees their past students' cases as archived work, nothing more.
+
+**Decision.**
+1. **The thank-you routes live under the scholar file**, with the file's own rules (`views_admin/scholar_thanks.py`,
+   `_ScholarsBase`):
+   - `GET admin/scholarship/scholars/<pk>/graduation-messages/` reads through `_file_for`: `scholars` holders in
+     their own organisation, a super anywhere, and a mentor only for a current student, read only (the decider's
+     name, never an email). Everyone else gets the file's own answer: 403 without `scholars`, one 404 outside the
+     fence.
+   - `POST admin/scholarship/scholars/<pk>/graduation-messages/<message_id>/review/` goes fence, then validate,
+     then lock: `_file_for`, then the message must belong to this file (another file's message is the same 404
+     as a missing one), then the decide rule, then the body (`bad_action`, `bad_text`, `scrubbed_leak`,
+     `select_for_update`). A mentor never decides.
+2. **One decide rule, one home:** `_ThanksBase.may_decide_thanks(admin, app)`, which today is `_may_write_file`
+   (a `scholars` holder of the file's organisation; a super passes every key). The GET serves it as `may_decide`
+   and the POST asks it. **No new key.**
+3. **The web reads the served flag.** The card moved to the scholar file's Overview
+   (`components/admin/ScholarThanks.tsx`); Approve and Reject are drawn only when `may_decide` is true, and the
+   card is read only otherwise. No key or role is checked on the web. The case page no longer draws it.
+4. **There is no `file_closed` refusal** on the decide POST, unlike the other file writes: a student may thank their
+   sponsor after the file closes, and that thank-you must still be decidable.
+5. **Retired:** `GET admin/scholarship/applications/<pk>/graduation-messages/`,
+   `POST admin/graduation-messages/<pk>/review/` and `may_moderate_thanks`. Reviewer access elsewhere is unchanged.
+
+Scholars will be split into View and View-and-change for every scholar-file write in a later sprint; today's holders keep the change power.
+
+**Who moves.** An org admin holds `scholars` on the standard set, so they now read and decide. A reviewer holding
+`review` alone, the assigned one included, no longer reads or decides (403). The access matrix declares both
+routes as the scholar file's own cells (`tests/team_matrix_thanks.py`).
+
+**Not taken.** A new key now (the owner chose today's Scholars key, with the split later). Keeping the card on the
+case page for Scholars holders (the case page is the application's record; the thank-you belongs to the scholar).
+
 ## 2026-11-16 — THANKS: a graduation thank-you is approved from the case page, on the `review` key
+
+**Superseded by THANKS-SCHOLARS (above, same day):** the thank-you moved to the scholar file and its rules.
 
 Branch thanks, not pushed. No migration. Services: both. Debt: TD-632 (note updated).
 

@@ -207,11 +207,17 @@ class TestOrgFenceProof(TestCase):
         self.assertEqual(r.status_code, 404)
 
     def test_cross_org_graduation_review_404(self):
+        # THANKS-SCHOLARS: a thank-you is decided on the scholar file by a `scholars` holder. Org B's case is
+        # moved into maintenance (a file) so the 404 is the ORGANISATION fence, not "no file".
+        ScholarshipApplication.objects.filter(pk=self.b['app'].pk).update(status='active', active_at=timezone.now())
         msg_b = GraduationMessage.objects.get(application=self.b['app'])
-        self._auth('a-rev')  # a reviewer (role passes) from org A on org B's message → 404
-        r = self.client.post(
-            f'/api/v1/admin/graduation-messages/{msg_b.id}/review/', {'action': 'approve'}, format='json')
+        self._auth('a-oa')  # an org admin (holds `scholars`) from org A on org B's file → 404
+        base = f"/api/v1/admin/scholarship/scholars/{self.b['app'].id}/graduation-messages/"
+        self.assertEqual(self.client.get(base).status_code, 404)
+        r = self.client.post(f'{base}{msg_b.id}/review/', {'action': 'approve'}, format='json')
         self.assertEqual(r.status_code, 404)
+        self._auth('b-oa')  # ...and org B's own org admin reaches it
+        self.assertEqual(self.client.get(base).status_code, 200)
 
     # --- org_admin behaves exactly like the other org-scoped roles -----------
     def test_org_admin_list_isolated(self):
@@ -337,6 +343,11 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarMentoringActionView': 'scholars-org-fenced',
         'AdminScholarMentoringSessionsView': 'scholars-org-fenced',
         'AdminScholarResultReviewView': 'scholars-org-fenced',
+        # THANKS-SCHOLARS (owner 2026-11-16): a thank-you is scholar maintenance — `_file_for`, then the
+        # message looked up INSIDE that file; the decide rule is `may_decide_thanks`.
+        '_ThanksBase': 'scholars-org-fenced',
+        'AdminScholarThanksView': 'scholars-org-fenced',
+        'AdminScholarThanksReviewView': 'scholars-org-fenced',
         # S7c: a MENTOR's own students. Not the file's door — a mentor has no `_b40_scope` — but a
         # narrower one: `mentor_desk.current_assignments` reads only the caller's OWN open assignments,
         # on applications of the MENTOR's organisation (`owning_organisation_id=mentor.organisation_id`)
@@ -650,8 +661,6 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminGuardianCallView': 'gate',
         # Request #55: read = _scoped_application (the detail GET's fence); write = super/org_admin + the same.
         'AdminReviewerNotesView': 'gate+super/org_admin write',
-        # THANKS: the `review` key, then _scoped_application (the detail GET's fence).
-        'AdminCaseGraduationMessagesView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',
@@ -682,7 +691,6 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminAssignableAdminsView': 'list-fenced',
         # secondary fetch + _can_review_app / _org_allows re-gate
         'AdminDisbursementActionView': 'can-review', 'AdminResolutionItemActionView': 'can-review',
-        'AdminGraduationMessageReviewView': 'org-allows',
         # super-only (global)
         'AdminBursaryCountersignView': 'super-only',
         # cross-org by design (platform-level Sponsor account; not applicant data — D-1).
