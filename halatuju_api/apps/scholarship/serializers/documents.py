@@ -295,8 +295,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         return student_income_support_check(obj)
 
     def get_replace_count(self, obj):
-        # The live copy carries the slot's count (each replace saves used + 1), so no extra query per document.
-        return obj.replace_count
+        # The slot's highest count over every copy (the list annotates `slot_max` in its one query), so a
+        # replace the read turned down still counts. A row served alone is the newest, which carries it.
+        return getattr(obj, 'slot_max', None) or obj.replace_count
 
     def get_replace_limit(self, obj):
         from ..document_replace import REPLACE_LIMIT
@@ -329,8 +330,7 @@ class DocumentCreateSerializer(serializers.Serializer):
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     content_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     size = serializers.IntegerField(required=False, default=0)
-    # H6: set by the student's "Replace" on a sent / done document. It is what the 3-replace cap counts;
-    # a re-upload of a returned document ("Needs you") leaves it off and is never capped.
+    # H6: a UI hint only. The server decides what counts as a replace (document_replace.py).
     replace = serializers.BooleanField(required=False)
 
 
