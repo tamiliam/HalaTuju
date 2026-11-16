@@ -177,6 +177,17 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### fix: H3a twelfth review - an exam line's plain intake year, deadline words, misspelt months, admission numbers (2026-11-16)
+
+Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Same rule, WHEN IN DOUBT, UNKNOWN (decisions.md, twelfth review):
+- **A plain intake year beside a session on an exam line is unknown** ("Intake: 2024 SPM leavers, Session 2025/2026" was 2024).
+- **Deadline words are event words** (hingga, sehingga, until, tamat, berakhir, sah; "by" / "reply by" before a date or month): "Kemasukan Sesi 2024/2025 (tamat Mac)" is unknown.
+- **Misspelt Malay months are months** (Febuari, Pebruari, Febrauri, Mach): "Ambilan Febuari Sesi 2024/2025" = 2025.
+- **An admission number is no intake** (No. / Nombor Kemasukan, Admission No): "No. Kemasukan 2024 Sesi 2025/2026" = 2025.
+- **`gift_start_year` removed** (no production caller); its tests read `gift_reading`.
+- **FAQ.** The admission phrases include Date of Admission; an admission number is not one; deadline words named.
+- **Tests.** `TwelfthReview` in `test_start_year_gift_reading.py`, one per reviewer input. Probe table: 0 of 366 rows moved. Corpus split unchanged, 245 / 26 / 15.
+
 ### fix: H3a eleventh review - simplify: only admission phrases start a course; a month on a session line is never ignored (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Lead's rule (decisions.md, eleventh review), for a session line with no reporting date:

@@ -223,9 +223,11 @@ export const REVIEWER_FAQ: QA[] = [
         when it says Sesi 2, Sesi II, Semester 2, Semester II or Ambilan 2. A month or date beside the
         session is never ignored. It counts only after an admission phrase (Tarikh Kemasukan, Tarikh
         Mendaftar, Tarikh Pendaftaran, Lapor Diri, Ambilan, Pengambilan, Kemasukan, Intake, Admission, Date
-        of Registration): a full date inside the session gives its year (&ldquo;Tarikh Kemasukan:
+        of Registration, Date of Admission; an admission number such as &ldquo;No. Kemasukan&rdquo; is not
+        one): a full date inside the session gives its year (&ldquo;Tarikh Kemasukan:
         10/03/2025&rdquo; means 2025), and a month with no year, on a line with such a phrase and no event
-        word (cuti, exam, ujian, yuran, tutup, bertarikh, dikemaskini and the like), gives the second year for
+        or deadline word (cuti, exam, ujian, yuran, tutup, bertarikh, dikemaskini, hingga, tamat, until and
+        the like), gives the second year for
         January to April and the first for May to December (&ldquo;Ambilan Sesi 2024-25 Mac&rdquo; means 2025).
         Words such as mulai, bermula, commencing or Semester start nothing. Any other month or date on that
         line (&ldquo;Sesi 2024/2025 bermula Februari&rdquo;, a closing or letter date, a date with no year or
