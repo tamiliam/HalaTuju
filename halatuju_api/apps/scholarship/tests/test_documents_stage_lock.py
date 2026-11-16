@@ -97,3 +97,45 @@ class TestDocumentsStageLock(TestCase):
     def test_funded_student_semester_results_stay_open(self, _m):
         _app, client = self._case('maintenance')
         self.assertEqual(client.post(SIGN, {'doc_type': 'semester_result'}, format='json').status_code, 200)
+
+    # ── H4 review carry-overs, and what the list serves (H5) ────────
+    @patch('apps.scholarship.storage.object_exists', return_value=True)
+    def test_exempt_type_can_be_recorded_after_the_lock(self, _m):
+        app, client = self._case('awarded')
+        resp = self._post(client, app, 'bank_statement')
+        self.assertNotEqual(resp.json().get('code'), 'documents_locked')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(self._post(client, app, 'ic').json().get('code'), 'documents_locked')
+
+    def test_exempt_type_can_be_deleted_after_the_lock(self):
+        app, client = self._case('awarded')
+        doc = ApplicantDocument.objects.create(application=app, doc_type='bank_statement', storage_path='x')
+        self.assertEqual(client.delete(f'{DOCS}{doc.id}/').status_code, 200)
+        self.assertFalse(ApplicantDocument.objects.filter(id=doc.id).exists())
+
+    def test_delete_of_a_slip_says_slip_locked_before_the_lock(self):
+        app, client = self._case('awarded')
+        doc = ApplicantDocument.objects.create(
+            application=app, doc_type='semester_result', storage_path='x', request_code='in_programme')
+        resp = client.delete(f'{DOCS}{doc.id}/')
+        self.assertEqual(resp.status_code, 409)
+        self.assertEqual(resp.json()['code'], 'slip_locked')
+
+    def test_list_serves_the_lock_state(self):
+        _app, client = self._case('interviewing')
+        self.assertEqual(client.get(DOCS).json()['lock'], {'locked': False, 'open_doc_types': []})
+        _app, client = self._case('awaiting_qc', outcome='recommend')
+        lock = client.get(DOCS).json()['lock']
+        self.assertTrue(lock['locked'])
+        self.assertIn('higher_results', lock['open_doc_types'])
+        self.assertNotIn('ic', lock['open_doc_types'])
+        _app, client = self._case('awarded')
+        lock = client.get(DOCS).json()['lock']
+        self.assertEqual(lock['locked'], True)
+        self.assertIn('bank_statement', lock['open_doc_types'])
+        self.assertIn('semester_result', lock['open_doc_types'])
+
+    def test_funded_states_are_not_copied(self):
+        from apps.scholarship.views import common, document_lock
+        self.assertIs(document_lock._FUNDED_STATES, common._FUNDED_STATES)
+        self.assertFalse(hasattr(document_lock, 'FUNDED_STATES'))

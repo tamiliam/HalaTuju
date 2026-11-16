@@ -418,9 +418,14 @@ export interface DocumentLimits {
   max_other_docs?: number
 }
 
+/** H5: the documents stage lock, served with the list. `locked` once the interview has concluded;
+ *  `open_doc_types` are the few types still asked for after that (bank statement, funded semester
+ *  results, late higher results). drift-test: apps/scholarship/tests/test_documents_stage_lock.py */
+export interface DocumentLock { locked: boolean; open_doc_types: string[] }
+
 export async function listDocuments(
   options?: ApiOptions,
-): Promise<{ documents: ApplicantDocument[]; limits?: DocumentLimits; reading?: number }> {
+): Promise<{ documents: ApplicantDocument[]; limits?: DocumentLimits; reading?: number; lock?: DocumentLock }> {
   return apiRequest('/api/v1/scholarship/documents/', options)
 }
 

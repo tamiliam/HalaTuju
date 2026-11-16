@@ -24,9 +24,12 @@ import MatricPathwayPage from '@/app/pathway/matric/page'
 import StpmPathwayPage from '@/app/pathway/stpm/page'
 import BursaryFunds from '@/components/bursary/BursaryFunds'
 import BursaryContract from '@/components/bursary/BursaryContract'
+import ActionCentre from '@/components/ActionCentre'
+import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import BursaryLetters from '@/components/bursary/BursaryLetters'
 import BursaryMentoring from '@/components/bursary/BursaryMentoring'
 import { AuthContext } from '@/lib/auth-context'
+import { sandboxApplication, sandboxDocuments } from './fixtures/scholarship'
 import { KEY_EXAM_TYPE, KEY_GRADES, KEY_PROFILE, KEY_STPM_STREAM, rememberBursaryFile } from '@/lib/storage'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -305,5 +308,20 @@ export const STUDENT_REST_SURFACES: Surface[] = [
     note: 'The quiz on a phone: 16 px gutter, the 2 x 2 answer tiles, "Not sure yet" and Previous at 44 px.',
     render: () => <SignedIn><QuizPage /></SignedIn>,
     routes: { '/api/v1/quiz/questions/': () => QUIZ },
+  },
+  {
+    slug: 'action-centre-error',
+    title: 'Action Centre — could not load',
+    note: 'H5, the approved load-error card: the tasks call fails, so the student is told so and offered Try again '
+      + '(never a blank page that looks like nothing to do). No route is stubbed, so the stub answers 404.',
+    render: () => <SignedIn><ActionCentre token="sandbox-not-a-real-token" studentName="Aina Contoh" applicationId={1} /></SignedIn>,
+  },
+  {
+    slug: 'documents-locked',
+    title: 'Documents — locked at interview',
+    note: 'H5: once the interview stage has started the Documents tab keeps what was sent but offers no Upload, '
+      + 'Replace or Remove, and says why in one line. A type the server still takes would stay open.',
+    render: () => <SignedIn><ScholarshipDocuments token="sandbox-not-a-real-token" app={sandboxApplication} /></SignedIn>,
+    routes: { '/api/v1/scholarship/documents/': () => ({ documents: sandboxDocuments, lock: { locked: true, open_doc_types: [] } }) },
   },
 ]

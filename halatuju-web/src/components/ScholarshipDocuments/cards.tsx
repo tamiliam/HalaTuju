@@ -106,7 +106,7 @@ function FileChip({
   docType: string
   busy: boolean
   onUpload?: (docType: string, file: File) => void
-  onDelete: (id: number) => void
+  onDelete?: (id: number) => void   // omitted once documents are locked (H5): the file shows, nothing changes it
   t: (key: string) => string
 }) {
   return (
@@ -131,6 +131,7 @@ function FileChip({
     </div>
       {/* Mobile M4: two full-width 44 px buttons, never 20 px links side by side. Remove ASKS first
           (the parent's confirm sheet) and is off while this card uploads. */}
+      {onDelete && (
       <div className={`mt-2 grid gap-2 ${onUpload ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {onUpload && (
           <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
@@ -141,6 +142,7 @@ function FileChip({
           {t('scholarship.docs.remove')}
         </button>
       </div>
+      )}
     </div>
   )
 }
@@ -261,6 +263,7 @@ export function SingleDocCard({
   higherKind,
   higherSpmOnly = false,
   onChanged,
+  locked = false,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -286,6 +289,9 @@ export function SingleDocCard({
   higherSpmOnly?: boolean
   // A card action that changed the documents server-side (the higher card's "Move it …").
   onChanged?: () => void
+  // H5: the interview stage has started (the server's `lock`, minus the types it still asks for) — no
+  // Upload, Replace or Remove; the card says why. The server refuses anyway (409 documents_locked).
+  locked?: boolean
 }) {
   const [open, setOpen] = useState(false)
   // Busy is PER CARD (Mobile M4): two uploads at once each keep their own "Uploading…".
@@ -316,13 +322,13 @@ export function SingleDocCard({
   // The uploaded file(s) — the same bordered row either way; only Replace's home differs.
   const fileBlock = layout === 'chip' ? (
     <div className="mt-2">
-      <FileChip doc={existing[0]} docType={docType} busy={busy} onUpload={onPick} onDelete={onDelete} t={t} />
+      <FileChip doc={existing[0]} docType={docType} busy={busy} onUpload={locked ? undefined : onPick} onDelete={locked ? undefined : onDelete} t={t} />
     </div>
   ) : layout === 'list' ? (
     <ul className="mt-2 space-y-1">
       {existing.map((d) => (
         <li key={d.id}>
-          <FileChip doc={d} docType={docType} busy={busy} onDelete={onDelete} t={t} />
+          <FileChip doc={d} docType={docType} busy={busy} onDelete={locked ? undefined : onDelete} t={t} />
         </li>
       ))}
     </ul>
@@ -423,7 +429,8 @@ export function SingleDocCard({
       {fileBlock}
       {/* With one file, Replace lives under it (beside Remove). Otherwise ONE full-width button: CHOOSE a
           first file (the big camera-friendly one), or Replace when the card holds more than one. */}
-      {layout !== 'chip' && (
+      {locked && <p className="mt-3 text-sm text-ground-600">{t('scholarship.docs.lockedNote')}</p>}
+      {layout !== 'chip' && !locked && (
         <div className="mt-3 flex">
           <UploadTrigger
             docType={docType}

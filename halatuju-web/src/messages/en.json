@@ -1737,7 +1737,8 @@
           "pending": "Not checked yet"
         }
       },
-      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
+      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document.",
+      "lockedNote": "Your interview stage has started, so this document can no longer be changed here. If something is missing, your reviewer will ask you for it."
     },
     "referee": {
       "name": "Referee name",
@@ -2058,6 +2059,45 @@
       "error": "Sorry, we couldn't update that. Please try again."
     },
     "actionCentre": {
+      "takePhoto": "Take a photo",
+      "section": {
+        "needs": "Needs you",
+        "sent": "Sent, we are checking",
+        "done": "Done"
+      },
+      "needAgain": "We need this again",
+      "needAgainBody": "We could not use the last file. Please send it again.",
+      "badFile": "This file could not be opened. Please upload a clear photo or PDF.",
+      "sentAnswer": "Sent. Your reviewer will read it.",
+      "loadError": {
+        "title": "Unable to load tasks",
+        "body": "We could not load your tasks. Check your connection and try again.",
+        "retry": "Try again"
+      },
+      "why": {
+        "ic": "Why we ask: to confirm who you are.",
+        "results_slip": "Why we ask: to check your exam results.",
+        "higher_results": "Why we ask: to check your STPM, matriculation or other higher results.",
+        "photo": "Why we ask: so we know who you are in person.",
+        "epf": "Why we ask: to see your parent's savings record.",
+        "str": "Why we ask: to confirm your family's STR status.",
+        "statement_of_intent": "Why we ask: to hear in your own words why you want this.",
+        "reference_letter": "Why we ask: so someone who knows you can speak for you.",
+        "salary_slip": "Why we ask: to confirm your family income.",
+        "income_support_doc": "Why we ask: to show your family's income when there is no payslip or STR.",
+        "water_bill": "Why we ask: to confirm where your family lives.",
+        "electricity_bill": "Why we ask: to confirm where your family lives.",
+        "offer_letter": "Why we ask: to confirm your place at the college.",
+        "parent_ic": "Why we ask: to confirm who your parent or guardian is.",
+        "guardianship_letter": "Why we ask: to show that your guardian can act for you.",
+        "birth_certificate": "Why we ask: to link you to your parents.",
+        "bank_statement": "Why we ask: to confirm the bank account your bursary will be paid into.",
+        "school_leaving_cert": "Why we ask: to confirm when you left school.",
+        "semester_result": "Why we ask: to see how you are doing in your course.",
+        "doc": "Why we ask: so your reviewer can finish checking your application.",
+        "confirm": "Why we ask: to be sure our record of you is right.",
+        "answer": "Why we ask: so your reviewer understands your situation."
+      },
       "title": "Almost there, {name}",
       "intro": "A few quick things and your application is complete.",
       "lockedTitle": "A few things we need from you, {name}",
