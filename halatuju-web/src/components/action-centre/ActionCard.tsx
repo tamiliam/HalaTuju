@@ -298,8 +298,12 @@ export function ActionCard({
             {item.kind === 'doc' && (
               <>
                 {!declining && !(docsLocked && !openDocTypes.includes(item.doc_type)) && <UploadButtons busy={busy} onFile={onFile} />}
-                <DeclineOptional item={item} token={token} open={declining} onOpen={() => setDeclining(true)}
-                  onCancel={() => setDeclining(false)} onDone={onResolved} />
+                {/* The server refuses "I don't have this" once querying is locked (querying_closed), whatever the
+                    type, so it is hidden whenever documents are locked (not only for non-open types). */}
+                {!docsLocked && (
+                  <DeclineOptional item={item} token={token} open={declining} onOpen={() => setDeclining(true)}
+                    onCancel={() => setDeclining(false)} onDone={onResolved} />
+                )}
                 {/* Contextual Cikgu Gopal. Income cluster docs (wrong-person slip/EPF, a
                     mismatching BC) speak through the single per-earner cluster coach — the
                     per-document coach returns null for them (audit #15b). Everything else uses

@@ -100,3 +100,28 @@ describe('Replace on a Done document', () => {
     expect(await screen.findByText('You have already replaced this 3 times.')).toBeTruthy()
   })
 })
+
+describe('"I don\'t have this" after the interview lock', () => {
+  const OPEN: ResolutionItem = {
+    id: 4, fact: 'income', code: 'water_bill_recheck', params: {}, prompt: '', kind: 'doc', doc_type: 'water_bill',
+    status: 'open', source: 'check2', resolution_text: '', created_at: '2026-11-01T09:00:00.000Z', resolved_at: null,
+    decline_reasons: ['no_water_bill', 'other'],
+  } as unknown as ResolutionItem
+  const mountOpen = async (lock: { locked: boolean; open_doc_types: string[] }) => {
+    mockApi.getResolutionItems.mockResolvedValue({ open: [OPEN], resolved: [] })
+    mockApi.listDocuments.mockResolvedValue({ documents: [], lock } as never)
+    render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
+    await waitFor(() => expect(mockApi.listDocuments).toHaveBeenCalled())
+    await screen.findByText('scholarship.actionCentre.toDo')
+  }
+
+  it('is offered while documents are open', async () => {
+    await mountOpen({ locked: false, open_doc_types: [] })
+    expect(screen.getByText('scholarship.actionCentre.decline.button')).toBeTruthy()
+  })
+
+  it('is hidden once locked, even for an exempt type (the server refuses it: querying_closed)', async () => {
+    await mountOpen({ locked: true, open_doc_types: ['water_bill'] })
+    expect(screen.queryByText('scholarship.actionCentre.decline.button')).toBeNull()
+  })
+})

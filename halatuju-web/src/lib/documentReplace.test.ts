@@ -19,6 +19,10 @@ describe('isSettledDoc agrees with the server rule', () => {
     expect(isSettledDoc(doc({ authenticity: { status: 'not_ic' } }))).toBe(false)
     expect(isSettledDoc(doc({ vision_fields: { student_verdict: 'wrong_doc' } }))).toBe(false)
   })
+  it('a copy the reviewer returned (rejected) needs a fix, so Replace stays even with 3 used', () => {
+    expect(isSettledDoc(doc({ verification_status: 'rejected', replace_count: 3 }))).toBe(false)
+    expect(isSettledDoc(doc({ verification_status: 'accepted' }))).toBe(true)
+  })
   it('replacesLeft never goes below zero', () => {
     expect(replacesLeft(doc({ replace_count: 5 }))).toBe(0)
   })

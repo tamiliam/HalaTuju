@@ -197,6 +197,31 @@ class ApplicantDocument(models.Model):
         return f'{self.doc_type} for application #{self.application_id}'
 
 
+class DocumentSlotReplaces(models.Model):
+    """H6: the replaces a document slot has used, kept when the student taps Remove.
+
+    Remove hard-deletes the slot's whole chain, which is where the replace count lived, so the count
+    is parked here: one row per (application, doc type, household member, request code) with the
+    highest count the slot reached. The cap reads it with the live copies' counts (document_replace.py),
+    so Remove cannot reset it. Written only when a removed slot had used at least one replace."""
+    application = models.ForeignKey(ScholarshipApplication, on_delete=models.CASCADE, related_name='slot_replaces')
+    doc_type = models.CharField(max_length=30)
+    household_member = models.CharField(max_length=10, blank=True, default='')
+    request_code = models.CharField(max_length=20, blank=True, default='')
+    replace_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = 'document_slot_replaces'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['application', 'doc_type', 'household_member', 'request_code'],
+                name='document_slot_replaces_one_per_slot'),
+        ]
+
+    def __str__(self):
+        return f'{self.doc_type}/{self.household_member} x{self.replace_count} for application #{self.application_id}'
+
+
 class Referee(models.Model):
     """A person who can vouch for the applicant (teacher, counsellor, referring
     org contact). The B40 analysis flagged the absence of a referee."""

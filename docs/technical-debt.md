@@ -9284,3 +9284,18 @@ per-type check. (d) Two simultaneous POSTs into one slot can both read used=2 an
 Fix: (a) keep the failure and show the load-error card or a locked-by-default state; (b)
 serve a per-type `replaceable` / `open` flag.
 *(A - S)*
+
+### [TD-635] Two parallel uploads into one document slot can both pass the replace cap - low
+
+**Raised 2026-11-17 by the student-help review. No money effect.** The cap (`document_replace.replaces_used`) is read, then the new row is written, with no lock between: two uploads sent at the same moment can both see 2 used and both be accepted (4 replaces). Fix: lock the slot row (`select_for_update` on the live copy, or a unique `(slot, replace_count)`).
+*(A - S)*
+
+### [TD-636] After the interview lock, a document type stays open by type and stage, not by an open ask - low
+
+**Raised 2026-11-17 by the student-help review. No money effect.** `views/document_lock.py` `doc_type_open` keeps the late higher-results types open by doc type + status, not by whether an ask for that type is actually open, so a student can upload one the case never asked for. Fix: also require an open ask.
+*(A - S)*
+
+### [TD-637] A Check 2 item hidden while its flag is off can still be declined through the API - low
+
+**Raised 2026-11-17 by the student-help review. No money effect.** `optional_asks.decline` does not test `CHECK2_STUDENT_QUERIES_ENABLED`, so a student who knows the item id can decline a Check 2 ask the screen does not show. Fix: refuse a decline for an item the student cannot see (`resolution.item_student_visible`).
+*(A - S)*

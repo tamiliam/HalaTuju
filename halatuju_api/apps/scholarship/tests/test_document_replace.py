@@ -286,3 +286,52 @@ class TestDocumentReplace(TestCase):
         self._slip_at_cap(app2, client2)
         self._ask(app2, 'results_slip_name_mismatch', 'salary_slip')
         self.assertEqual(self._post(client2, app2, 'salary_slip', member='father').status_code, 409)
+
+    # ── Remove must not reset the cap (review round: a hard-delete took the count with it) ──────────
+    def _remove_live(self, client, app, doc_type='salary_slip'):
+        live = ApplicantDocument.objects.get(application=app, doc_type=doc_type, superseded_at__isnull=True)
+        with patch('apps.scholarship.storage.delete_own_doc_objects', return_value=None):
+            return client.delete(f'{DOCS}{live.id}/')
+
+    def test_remove_does_not_reset_the_cap(self, _o, _n):
+        app, client = self._case()
+        self._first(app, 'salary_slip', 'father')
+        for _ in range(3):
+            self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 409)
+        self.assertEqual(self._remove_live(client, app).status_code, 200)
+        self.assertEqual(ApplicantDocument.objects.filter(application=app).count(), 0)
+        resp = self._post(client, app, 'salary_slip', member='father')
+        self.assertEqual(resp.status_code, 409)
+        self.assertEqual(resp.json()['code'], 'replace_limit_reached')
+        self.assertEqual(ApplicantDocument.objects.filter(application=app).count(), 0)   # nothing recorded
+        # another member's slot is its own
+        self.assertEqual(self._post(client, app, 'salary_slip', member='mother').status_code, 201)
+
+    def test_remove_with_replaces_left_keeps_the_count_and_the_first_upload_is_no_replace(self, _o, _n):
+        app, client = self._case()
+        self._first(app, 'salary_slip', 'father')
+        for _ in range(2):
+            self._post(client, app, 'salary_slip', member='father')
+        self._remove_live(client, app)
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)
+        live = ApplicantDocument.objects.filter(application=app, doc_type='salary_slip').order_by('-id').first()
+        self.assertEqual(live.replace_count, 2)               # carried, not incremented: filling an empty slot
+
+    def test_a_never_used_slot_removed_then_filled_is_free(self, _o, _n):
+        app, client = self._case()
+        self._first(app, 'salary_slip', 'father')
+        self._remove_live(client, app)
+        for _ in range(1):
+            self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)
+        live = ApplicantDocument.objects.filter(application=app, doc_type='salary_slip').order_by('-id').first()
+        self.assertEqual(live.replace_count, 0)
+
+    def test_an_open_ask_still_lets_a_removed_full_slot_be_filled(self, _o, _n):
+        app, client = self._case()
+        self._first(app, 'salary_slip', 'father')
+        for _ in range(3):
+            self._post(client, app, 'salary_slip', member='father')
+        self._remove_live(client, app)
+        self._ask(app, 'officer_doc', 'salary_slip', source='officer')
+        self.assertEqual(self._post(client, app, 'salary_slip', member='father').status_code, 201)

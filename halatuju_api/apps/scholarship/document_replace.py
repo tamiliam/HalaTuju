@@ -2,7 +2,10 @@
 
 A document is its slot: (application, doc type, household member, request code), the same slot the
 upload door supersedes into. The count lives in the database (`ApplicantDocument.replace_count`), so
-it survives sessions and devices.
+it survives sessions and devices. A Remove deletes the slot's copies, so it parks the highest count in
+`DocumentSlotReplaces` first, and the count is the highest of the copies and that parked row: Remove cannot
+reset the cap. A new upload into a removed slot is not itself a replace (nothing is live), but it is refused
+when the three are used, and otherwise carries the count on unchanged.
 
 THE RULE (the server decides; the client's `replace` flag changes nothing). Every student upload into
 a slot that already has a LIVE copy is a replace, and it counts, UNLESS the live copy is one the
@@ -34,10 +37,27 @@ _MESSAGE = ('You have already replaced this document 3 times. If it is still wro
 
 def replaces_used(application_id, doc_type, members, request_code):
     """Replaces the slot has used so far (0 when none)."""
+    from .models import DocumentSlotReplaces
     top = ApplicantDocument.objects.filter(
         application_id=application_id, doc_type=doc_type, household_member__in=members,
         request_code=request_code).aggregate(m=Max('replace_count'))['m']
-    return top or 0
+    parked = DocumentSlotReplaces.objects.filter(
+        application_id=application_id, doc_type=doc_type, household_member__in=members,
+        request_code=request_code).aggregate(m=Max('replace_count'))['m']
+    return max(top or 0, parked or 0)
+
+
+def park_replaces(application_id, doc_type, household_member, request_code, count):
+    """Remember a removed slot's count (the highest wins), so Remove cannot reset the cap. No row for 0."""
+    if not count:
+        return
+    from .models import DocumentSlotReplaces
+    row, _ = DocumentSlotReplaces.objects.get_or_create(
+        application_id=application_id, doc_type=doc_type, household_member=household_member,
+        request_code=request_code, defaults={'replace_count': count})
+    if row.replace_count < count:
+        row.replace_count = count
+        row.save(update_fields=['replace_count'])
 
 
 _OK_VERDICTS = ('', 'ok', 'review_manually')

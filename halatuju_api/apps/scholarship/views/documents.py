@@ -16,7 +16,9 @@ from ..serializers import (
 )
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
-from ..document_replace import must_fix, open_request_asks, replace_refusal, replaces_used, slot_max_annotation
+from ..document_replace import (
+    must_fix, open_request_asks, park_replaces, replace_refusal, replaces_used, slot_max_annotation,
+)
 from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
 
@@ -227,6 +229,16 @@ class DocumentListCreateView(APIView):
                 if refusal:
                     return refusal
                 serializer.validated_data['replace_count'] = used + 1
+        elif single:
+            # A slot the student emptied with Remove keeps its count (parked): it is no replace to put a file
+            # back, but once the three are used the slot is shut, like a 4th replace, unless the case asks again.
+            used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
+            if used:
+                if not open_request_asks(app, new_doc_type, sweep_members):
+                    refusal = replace_refusal(used)
+                    if refusal:
+                        return refusal
+                serializer.validated_data['replace_count'] = used
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
@@ -362,6 +374,9 @@ class DocumentDetailView(APIView):
         if paths:
             delete_own_doc_objects(doc.application, paths)
         application = doc.application
+        # H6: the replace count lived on this chain; park it so Remove cannot reset the cap.
+        park_replaces(application.id, doc.doc_type, doc.household_member, doc.request_code,
+                      max(d.replace_count for d in chain))
         # Self-referential FK is SET_NULL, so delete order is safe; one query clears the chain.
         ApplicantDocument.objects.filter(id__in=[d.id for d in chain]).delete()
         # Removing a compulsory document can drop a confirmed profile below

@@ -28,6 +28,7 @@ export function replaceLocked(docType: string, locked: boolean, openTypes: strin
  *  chooses which cards show the counter and Replace. (An open request for the type is the server's
  *  other exemption; the Action Centre card for it carries no counter.) */
 export function isSettledDoc(doc: ApplicantDocument): boolean {
+  if (doc.verification_status === 'rejected') return false   // a returned copy is a fix: the server never caps it
   const v = doc.vision_fields?.student_verdict
   const s = doc.authenticity?.status
   return (!v || v === 'ok' || v === 'review_manually') && (!s || s === 'genuine')
