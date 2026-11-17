@@ -52,7 +52,7 @@ const ARUN: api.StaffPermissionsView = {
     admin_id: 14, mentor_id: null, name: 'Arun Pillai', email: 'arun@example.org', tables: ['admins'],
     lead: false, mentor_only: false, is_active: true, paused: false, joined_at: '2026-03-01T00:00:00Z',
     signed_in: true, last_seen_at: '2026-11-01T00:00:00Z',
-    profile: { job_title: 'Programme officer', about: '', qualification: '', university: '', graduation_year: null,
+    profile: { job_title: 'Programme officer', highest_position: '', about: '', qualification: '', university: '', graduation_year: null,
       field_of_study: '', phone: '', languages: ['en', 'ms'], other_language: '' },
   },
 }
@@ -115,7 +115,10 @@ it('has the two tabs, opens on Profile, and hands the card the GET it already ma
   await loaded()
   expect(screen.getAllByRole('tab').map((b) => b.textContent))
     .toEqual(['admin.person.tabProfile', 'admin.person.tabPermissions'])
-  expect(screen.getByTestId('person-field-jobTitle').textContent).toBe('Programme officer')
+  expect(screen.getByTestId('person-field-jobTitle').firstChild?.textContent).toBe('Programme officer')
+  // Request #69: not answered reads "Not given", under the job title.
+  expect(screen.getByTestId('person-field-highestPosition').textContent)
+    .toBe('admin.person.highestPosition admin.reviewers.detail.phoneNone')
   expect(screen.queryByTestId('perm-editor')).toBeNull()
   fireEvent.click(screen.getByText('admin.person.tabPermissions'))
   expect(screen.getByTestId('perm-editor').textContent).toBe('14')

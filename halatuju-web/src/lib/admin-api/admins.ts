@@ -243,6 +243,8 @@ export interface TeamPersonBlock {
   /** '' / null / [] = not filled in ("Not given"). */
   profile: {
     job_title: string
+    /** Request #69: a `HIGHEST_POSITIONS` key, '' = not given. Withheld exactly as `job_title` is. */
+    highest_position: string
     about: string
     qualification: string
     university: string

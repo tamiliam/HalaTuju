@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: highest position held on staff profiles, with a sponsor summary (request #69, 2026-11-17)
+
+Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; `db_default` ''). Services: both. Mock-up: canvas v8 (four boards, approved 17 Nov).
+- **Data:** `StaffProfile.highest_position`, one of `c_level`, `head`, `manager`, `individual` ("C-level, founder or business owner"; "Head of department or senior manager"; "Manager"; "Individual contributor (academic, doctor, etc.)"); blank is "not given". `PATCH admin/me/` saves and clears it (anything else is 400 `bad_highest_position`) and makes the caller's own profile row when there is none.
+- **Completion:** an "everyone" item (`profile_completion.py`), linked "Add your highest position" to the You card; never an important item.
+- **My Profile:** a select directly under Job title and above About (an empty cell under Name keeps it there in the two-column grid), "Choose one" clears it, the hint and the note "Individual data is never shared with sponsors."; optional.
+- **Console banner:** when nothing important is pending (or the important banner was hidden by its X), never on My Profile and never to someone who has answered, the top-banner slot asks "What is the highest position you have held?" with the four choices as 44 px buttons. One tap saves through `PATCH admin/me/`, hands the new completion to the console, shows "Thank you. Your answer is saved on your profile." for 4 s and goes. The X hides it for 7 days (the profile banner's own store, key `halatuju.banner.position.<account>`). Still one banner at a time (`ShellBanners` candidates; overdue and profile come first).
+- **Team person page:** "Highest position held: <answer>" or "Not given", inside the Job title row, so it has Job title's visibility exactly.
+- **Sponsor Trust page:** "Our volunteers" between Governance and Sources & uses: "{pct}% of our volunteers have held a senior manager role or above" (the top two shares added), four bars and "Based on the {n} volunteers who have told us." New `volunteer_positions.py`: the sponsor's one organisation (approved memberships, `usage.sole_organisation_id`; none or two gives nothing), its own active, non-archived team who answered (no super, source user or referral partner); below 5 answers the API sends `volunteers: null`; otherwise only `{count, shares}`, whole percentages by largest remainder (ties to the higher level), summing to 100.
+- **Words:** en, ms and ta (29 keys each). No schema document is kept for `reviewer_profiles`.
+- **Tests:** API: new `test_req69_highest_position.py`; `test_admin_me.py`, `test_profile_completion.py`, `test_t3_person_page.py` updated. Web: new `ShellBanners.position.test.tsx`, `profile/position.test.tsx`, `trust/volunteers.test.tsx`, `highestPosition-i18n.test.ts`; `CompletionCard.test.tsx`, `GroupPages.test.tsx` and the admins person page test extended. Sandbox: new `nudge-position-banner` surface; the trust surface shows the section.
+
 ### feat: request #73 - two-way org admin and reviewer notes (2026-11-16)
 
 Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73). Analysis 167.

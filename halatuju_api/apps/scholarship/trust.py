@@ -11,8 +11,12 @@ row (so the org fills it in over time WITHOUT a deploy). The live community coun
 are computed truthfully from the DB. The trilingual UI chrome lives in the frontend
 i18n — this module returns DATA only, never display copy. No PII ever crosses here:
 programme-level content + counts only, so it is allowlist-safe by construction.
+
+Request #69 (2026-11-17): `volunteers` — "Our volunteers", the share of the sponsor's
+organisation's team at each highest-position level (`volunteer_positions.py`: five answers
+or more, totals only, rounded by largest remainder).
 """
-from . import sponsor_feed
+from . import sponsor_feed, volunteer_positions
 from .models import TrustContent
 
 
@@ -30,9 +34,10 @@ def _default_content():
     }
 
 
-def get_trust_content():
+def get_trust_content(sponsor=None):
     """Return the trust-hub payload: the editable content row + live community
-    counts. Figures are flagged ``figures_are_illustrative`` so the FE can show an
+    counts, and (request #69) `volunteers` — the sponsor's organisation's highest-position
+    shares, or None (no sponsor, no single organisation, or fewer than five answers). Figures are flagged ``figures_are_illustrative`` so the FE can show an
     'illustrative' pill until real audited figures are published."""
     row = TrustContent.objects.filter(is_active=True).order_by('-updated_at').first()
     if row is None:
@@ -49,4 +54,7 @@ def get_trust_content():
         }
     # Live, truthful programme counts (no identity): the one part we can state as fact.
     content['community'] = sponsor_feed.community_stats()
+    # Request #69: totals only, never a person (`volunteer_positions.py`).
+    content['volunteers'] = (volunteer_positions.summary_for_sponsor(sponsor)
+                             if sponsor is not None else None)
     return content

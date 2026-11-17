@@ -62,6 +62,8 @@ export interface AdminMe {
   last_seen_at: string | null
   /** Common profile S2 — the person's own card. */
   job_title: string
+  /** Request #69: the highest position ever held — a `HIGHEST_POSITIONS` key, '' = not given. */
+  highest_position: HighestPosition | ''
   about: string
   phone: string
   share_phone_with_team: boolean
@@ -76,8 +78,12 @@ export interface AdminMe {
 }
 
 /** A profile item the completion counts (`profile_completion.item_keys`). */
-export type CompletionKey = 'photo' | 'name' | 'job_title' | 'about' | 'phone' | 'qualifications'
-  | 'language' | 'address' | 'mentoring_area'
+export type CompletionKey = 'photo' | 'name' | 'job_title' | 'highest_position' | 'about' | 'phone'
+  | 'qualifications' | 'language' | 'address' | 'mentoring_area'
+
+/** Request #69: the four levels, highest first (`StaffProfile.HIGHEST_POSITIONS`). No fifth. */
+export const HIGHEST_POSITIONS = ['c_level', 'head', 'manager', 'individual'] as const
+export type HighestPosition = (typeof HIGHEST_POSITIONS)[number]
 
 /** `admin/me/` `completion`: the items in page order, done / total, the percent (rounded down) and
  *  the banner's "important missing" keys (photo, phone, and a mentor's area). */
@@ -91,8 +97,8 @@ export interface ProfileCompletion {
 
 /** What `PATCH admin/me/` may write (only the keys sent are written). */
 export type AdminMeCard = Partial<Pick<AdminMe,
-  'name' | 'job_title' | 'about' | 'phone' | 'share_phone_with_team' | 'share_phone_with_students'
-  | 'mentoring_area'>>
+  'name' | 'job_title' | 'highest_position' | 'about' | 'phone' | 'share_phone_with_team'
+  | 'share_phone_with_students' | 'mentoring_area'>>
 
 export async function getAdminMe(lang: string, options?: ApiOptions) {
   return adminFetch<AdminMe>(`/api/v1/admin/me/?lang=${encodeURIComponent(lang)}`, options)

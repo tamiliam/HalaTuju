@@ -117,7 +117,7 @@ class ReviewerProfile(models.Model):
     `get_or_create` wherever it is first needed. The table name is unchanged.
 
     The six S2 columns (`job_title`, `about`, `photo_path`, `share_phone_with_team`, `other_language`,
-    `other_language_fluency`) carry a
+    `other_language_fluency`) and request #69's `highest_position` carry a
     DATABASE default as well as a Python one (`db_default`): between the migration and the deploy
     the old image still runs `get_or_create` without naming them, and NOT NULL without a database
     default would refuse that insert (lessons.md, 2026-10-19).
@@ -172,6 +172,15 @@ class ReviewerProfile(models.Model):
     share_phone_with_team = models.BooleanField(
         default=False, db_default=False,
         help_text='Show this phone on the Team (People) page. Off by default.')
+    # Request #69 (2026-11-17): the highest position the person has EVER held (retirees too). Blank =
+    # not given. Optional; counted by the completion bar; sponsors only ever see org totals
+    # (`volunteer_positions.py`, five answers or more). `db_default` for the migrate-first deploy.
+    HIGHEST_POSITIONS = [('c_level', 'C-level, founder or business owner'),
+                         ('head', 'Head of department or senior manager'),
+                         ('manager', 'Manager'),
+                         ('individual', 'Individual contributor (academic, doctor, etc.)')]
+    highest_position = models.CharField(max_length=20, blank=True, default='', db_default='',
+                                        choices=HIGHEST_POSITIONS)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

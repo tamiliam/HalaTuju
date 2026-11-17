@@ -487,14 +487,14 @@ class SponsorCommunityView(_PoolBase):
 class SponsorTrustView(_PoolBase):
     """GET /api/v1/sponsor/trust/ — R5: the Trust & Transparency hub content
     (who-we-are / governance / sources & uses / independent assurance) + live
-    community counts. Programme-level content + counts only — no student or sponsor
-    identity, allowlist-safe by construction. Behind SPONSOR_POOL_ENABLED +
+    community counts, and the sponsor's organisation's volunteer totals (#69). Counts only — no
+    student, staff or sponsor identity, allowlist-safe by construction. Behind SPONSOR_POOL_ENABLED +
     approved-sponsor (via _gate)."""
     def get(self, request):
-        _, err = self._gate(request)
+        sponsor, err = self._gate(request)
         if err:
             return err
-        return Response(trust_service.get_trust_content())
+        return Response(trust_service.get_trust_content(sponsor))
 
 
 class SponsorStandingGiftView(_PoolBase):

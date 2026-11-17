@@ -333,6 +333,16 @@ export interface SponsorTrust {
   }
   figures_are_illustrative: boolean
   community: SponsorCommunity
+  /** Request #69: "Our volunteers" — the share (whole %, summing to 100) of the sponsor's organisation's
+   *  team at each highest-position level, and how many answered. Null (or absent) below five answers,
+   *  or when the sponsor is with no single organisation: the page then leaves the section off. */
+  volunteers?: SponsorVolunteers | null
+}
+
+export const VOLUNTEER_LEVELS = ['c_level', 'head', 'manager', 'individual'] as const
+export interface SponsorVolunteers {
+  count: number
+  shares: Record<(typeof VOLUNTEER_LEVELS)[number], number>
 }
 
 export async function getSponsorTrust(options?: ApiOptions): Promise<SponsorTrust> {

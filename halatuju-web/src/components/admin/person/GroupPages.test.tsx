@@ -79,6 +79,10 @@ function expectTheCommonPage(chips: string[], tabs: string[] = BOTH_TABS) {
   expect(screen.getByTestId('person-profile')).toBeTruthy()
   expect(screen.getByTestId('person-field-university').textContent).toBe('admin.reviewers.detail.phoneNone')
   expect(screen.queryByTestId('person-field-address')).toBeNull()
+  // Request #69: the highest position held is a line under the job title, in its row.
+  const job = screen.getByTestId('person-field-jobTitle')
+  expect(within(job).getByTestId('person-field-highestPosition').textContent)
+    .toBe('admin.person.highestPosition admin.position.head')
 }
 
 describe('one page per group', () => {
@@ -281,7 +285,7 @@ describe('a staff member who mentors, on the mentor page (T3 review, M1b)', () =
     await waitFor(() => expect(screen.getByTestId('mentor-work')).toBeTruthy())
     expect(screen.queryByTestId('person-action-row')).toBeNull()
     expect(mA.getStaffPermissions).not.toHaveBeenCalled()
-    for (const k of ['jobTitle', 'about', 'qualification', 'university', 'fieldOfStudy', 'graduationYear']) {
+    for (const k of ['jobTitle', 'highestPosition', 'about', 'qualification', 'university', 'fieldOfStudy', 'graduationYear']) {
       expect(screen.queryByTestId(`person-field-${k}`)).toBeNull()
     }
     for (const k of ['email', 'phone', 'languages', 'area']) expect(screen.getByTestId(`person-field-${k}`)).toBeTruthy()

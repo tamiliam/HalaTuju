@@ -9,7 +9,7 @@ import { CARD, type CardProps } from './shared'
  * (`apps/scholarship/profile_completion.py`).
  */
 export const ITEM_CARD: Record<CompletionKey, string> = {
-  photo: 'you', name: 'you', job_title: 'you', about: 'you', phone: 'contact',
+  photo: 'you', name: 'you', job_title: 'you', highest_position: 'you', about: 'you', phone: 'contact',
   qualifications: 'qualifications', language: 'qualifications', address: 'address', mentoring_area: 'mentoring',
 }
 

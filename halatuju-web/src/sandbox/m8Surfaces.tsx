@@ -135,6 +135,7 @@ const TRUST = {
   assurance: { fy: '2025', students_verified: 163, disbursed: '1180000', auditor: 'Juruaudit Contoh & Rakan',
     report_url: 'https://contoh.invalid/laporan-2025.pdf' },
   figures_are_illustrative: true, community: { sponsors: 41, students_supported: 63, students_waiting: 12 },
+  volunteers: { count: 23, shares: { c_level: 13, head: 26, manager: 30, individual: 31 } },   // request #69
 }
 
 /** A synthetic recovery session under the sponsor client's key — see the header. Written during render, before the

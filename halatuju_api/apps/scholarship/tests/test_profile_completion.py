@@ -2,7 +2,8 @@
 
 `apps/scholarship/profile_completion.py`. Decisions 1-3 of `docs/plans/2026-11-08-staff-nudges.md`:
 per-role items (equal weight), done/total/percent, the banner's "important missing" list, and never a
-super.
+super. Request #69 (2026-11-17): `highest_position` joins the everyone items after `job_title`, for
+every kind of account, and is never an important item.
 """
 from django.test import TestCase, override_settings
 
@@ -11,9 +12,10 @@ from apps.scholarship.models import Mentor, StaffProfile
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
 
 ME = '/api/v1/admin/me/'
-BASE = ['photo', 'name', 'job_title', 'about', 'phone']
+BASE = ['photo', 'name', 'job_title', 'highest_position', 'about', 'phone']
 STUDENTS = BASE + ['qualifications', 'language', 'address']
-FULL_CARD = {'photo_path': 'staff-photos/1/a.webp', 'job_title': 'Officer', 'about': 'Hello', 'phone': '123456789'}
+FULL_CARD = {'photo_path': 'staff-photos/1/a.webp', 'job_title': 'Officer', 'highest_position': 'manager',
+             'about': 'Hello', 'phone': '123456789'}
 FULL_REVIEWER = {'highest_qualification': 'Degree', 'university': 'UM', 'graduation_year': 2010,
                  'field_of_study': 'Law', 'english_fluency': 'fluent', 'street_address': '1 Jalan',
                  'postcode': '50000', 'city': 'KL', 'state': 'Selangor'}
@@ -29,7 +31,7 @@ class TestItemSets(TestCase):
     def setUpTestData(cls):
         cls.org = make_org()
 
-    def test_staff_without_review_get_the_five_everyone_items(self):
+    def test_staff_without_review_get_the_six_everyone_items(self):
         for role in ('org_admin', 'admin', 'finance', 'qc', 'partner', 'source_partner'):
             with self.subTest(role=role):
                 self.assertEqual(_keys(make_admin(role, owning_org=self.org)), BASE)
@@ -65,18 +67,34 @@ class TestScoring(TestCase):
 
     def test_nothing_filled_but_the_name(self):
         c = profile_completion.completion(make_admin('admin', owning_org=self.org), None)
-        self.assertEqual((c['done'], c['total'], c['percent']), (1, 5, 20))
+        self.assertEqual((c['done'], c['total'], c['percent']), (1, 6, 16))
         self.assertEqual(c['important_missing'], ['photo', 'phone'])
 
-    def test_three_of_five_is_sixty_and_percent_rounds_down(self):
+    def test_three_of_six_is_fifty_and_percent_rounds_down(self):
         admin = make_admin('admin', owning_org=self.org)
         p = StaffProfile.objects.create(partner_admin=admin, job_title='Officer', phone='123')
         c = profile_completion.completion(admin, p)
-        self.assertEqual((c['done'], c['total'], c['percent']), (3, 5, 60))
+        self.assertEqual((c['done'], c['total'], c['percent']), (3, 6, 50))
         self.assertEqual(c['important_missing'], ['photo'])
         reviewer = make_admin('reviewer', owning_org=self.org)
-        p = StaffProfile.objects.create(partner_admin=reviewer, **FULL_CARD)   # 5 of 8 = 62.5
-        self.assertEqual(profile_completion.completion(reviewer, p)['percent'], 62)
+        p = StaffProfile.objects.create(partner_admin=reviewer, **FULL_CARD)   # 6 of 9 = 66.7
+        self.assertEqual(profile_completion.completion(reviewer, p)['percent'], 66)
+
+    def test_the_highest_position_counts_for_every_kind_and_is_never_important(self):
+        mentor = Mentor.objects.create(organisation=self.org)
+        for admin in (make_admin('org_admin', owning_org=self.org), make_admin('admin', owning_org=self.org),
+                      make_admin('reviewer', owning_org=self.org), make_admin('finance', owning_org=self.org),
+                      make_admin('qc', owning_org=self.org, mentor=mentor), make_admin('mentor', owning_org=self.org),
+                      make_admin('member', owning_org=self.org),
+                      make_admin('source_partner', owning_org=self.org)):
+            with self.subTest(role=admin.role):
+                blank = profile_completion.completion(admin, None)
+                self.assertFalse({i['key']: i['done'] for i in blank['items']}['highest_position'])
+                self.assertNotIn('highest_position', blank['important_missing'])
+                p = StaffProfile.objects.create(partner_admin=admin, highest_position='head')
+                after = profile_completion.completion(admin, p)
+                self.assertTrue({i['key']: i['done'] for i in after['items']}['highest_position'])
+                self.assertEqual(after['done'], blank['done'] + 1)
 
     def test_blank_text_does_not_count(self):
         admin = make_admin('admin', owning_org=self.org)
@@ -87,7 +105,7 @@ class TestScoring(TestCase):
         reviewer = make_admin('reviewer', owning_org=self.org)
         p = StaffProfile.objects.create(partner_admin=reviewer, **FULL_CARD, **FULL_REVIEWER)
         c = profile_completion.completion(reviewer, p)
-        self.assertEqual((c['done'], c['total'], c['percent'], c['important_missing']), (8, 8, 100, []))
+        self.assertEqual((c['done'], c['total'], c['percent'], c['important_missing']), (9, 9, 100, []))
         self.assertTrue(all(i['done'] for i in c['items']))
 
     def test_qualifications_are_one_item_needing_all_four_parts(self):
@@ -132,7 +150,7 @@ class TestServedOnAdminMe(TestCase):
         admin = make_admin('admin', owning_org=self.org)
         StaffProfile.objects.create(partner_admin=admin, job_title='Officer', phone='123')
         c = authed_client(admin).get(ME).json()['completion']
-        self.assertEqual((c['done'], c['total'], c['percent'], c['important_missing']), (3, 5, 60, ['photo']))
+        self.assertEqual((c['done'], c['total'], c['percent'], c['important_missing']), (3, 6, 50, ['photo']))
         self.assertEqual([i['key'] for i in c['items']], BASE)
 
     def test_a_super_is_served_none(self):

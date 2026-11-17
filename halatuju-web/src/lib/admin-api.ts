@@ -49,9 +49,11 @@ export type {
 // An admin's own profile, and a reviewer's own credentials.
 export {
   changeOwnPassword, deleteAdminPhoto, getAdminMe, getAdminProfile, getMyActivity, updateAdminMe, uploadAdminPhoto, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
+  HIGHEST_POSITIONS,   // request #69
 } from './admin-api/profiles'
 export type {
   ActivityItem, ActivityPage, ActivitySubject, AdminMe, AdminMeCard, CompletionKey, ProfileCompletion, AdminProfile, ReviewerProfile, LangFluency,
+  HighestPosition,
 } from './admin-api/profiles'
 
 // Organisation → Mentors (student maintenance S7a).

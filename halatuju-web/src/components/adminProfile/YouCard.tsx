@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { deleteAdminPhoto, uploadAdminPhoto } from '@/lib/admin-api'
+import { HIGHEST_POSITIONS } from '@/lib/admin-api/profiles'   // the leaf: a mocked barrel would empty the list
 import StaffAvatar from '@/components/admin/StaffAvatar'
 import { CardFrame, inputCls, labelCls, readOnlyCls, Req, type CardProps } from './shared'
 
@@ -23,8 +24,10 @@ function photoRefusal(err: { code?: string; status?: number }): string {
 
 /**
  * "You" — everyone: the photo (a 96 px circle; Add / Change / Remove, each its own action straight
- * to `admin/me/photo/`, not part of Save), the name (required), job title, About (600 characters,
- * with a counter) and the sign-in email, shown, never edited. Common profile S2.
+ * to `admin/me/photo/`, not part of Save), the name (required), job title, the highest position held
+ * (request #69: optional, one of four, "Choose one" clears it; under Job title on every width, so an
+ * empty cell sits under Name on a wide screen), About (600 characters, with a counter) and the
+ * sign-in email, shown, never edited. Common profile S2.
  */
 export default function YouCard({ state }: CardProps) {
   const { t, draft, set, setCard, email, token, photoUrl, onPhoto, staffMentor } = state
@@ -95,6 +98,18 @@ export default function YouCard({ state }: CardProps) {
           <input id="profile-job-title" type="text" maxLength={120} value={draft.card.job_title}
             placeholder={t(`${P}.jobTitleHint`)}
             onChange={(e) => setCard({ job_title: e.target.value })} className={inputCls} />
+        </div>
+        <div aria-hidden className="hidden sm:block" />
+        <div>
+          <label htmlFor="profile-highest-position" className={labelCls}>{t(`${P}.highestPosition`)}</label>
+          <select id="profile-highest-position" value={draft.card.highest_position} className={inputCls}
+            aria-describedby="profile-highest-position-hint profile-highest-position-note"
+            onChange={(e) => setCard({ highest_position: e.target.value })}>
+            <option value="">{t(`${P}.chooseOne`)}</option>
+            {HIGHEST_POSITIONS.map((k) => <option key={k} value={k}>{t(`admin.position.${k}`)}</option>)}
+          </select>
+          <p id="profile-highest-position-hint" className="mt-1 text-xs text-ground-500">{t(`${P}.highestPositionHint`)}</p>
+          <p id="profile-highest-position-note" className="mt-1 text-xs text-ground-500">{t(`${P}.highestPositionNote`)}</p>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="profile-about" className={labelCls}>{t(`${P}.about`)}</label>

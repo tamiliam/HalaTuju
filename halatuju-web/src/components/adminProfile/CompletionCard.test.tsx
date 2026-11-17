@@ -56,3 +56,10 @@ it('a missing item\'s link is 44 px tall on a phone, and the ticks fold away the
   expect(screen.getByRole('link', { name: `${P}.todo.photo` }).className).toContain('max-md:min-h-11')
   expect(screen.getByTestId('completion-done-name').className).toContain('max-sm:hidden')
 })
+
+it('request #69: the highest position is an item for everyone, linked to the You card, never important', () => {
+  render(<CompletionCard state={state({ ...SIXTY, items: [...SIXTY.items, { key: 'highest_position', done: false }],
+    total: 6 })} />)
+  expect(screen.getByRole('link', { name: `${P}.todo.highest_position` }).getAttribute('href')).toBe('#profile-card-you')
+  expect(ITEM_CARD.highest_position).toBe('you')
+})

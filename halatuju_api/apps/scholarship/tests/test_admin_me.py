@@ -22,6 +22,8 @@ KEYS = {'id', 'name', 'email', 'role', 'is_super', 'organisation', 'source', 're
         # Common profile S2: the person's own card.
         'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students',
         'photo_url',
+        # Request #69: the highest position held ('' = not given).
+        'highest_position',
         # Staff nudges (2026-11-08): how complete the profile is (`profile_completion`).
         'completion'}
 

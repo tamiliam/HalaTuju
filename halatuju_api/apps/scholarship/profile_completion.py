@@ -10,7 +10,8 @@ mentor, partner, source_partner. **Never a super** (`completion(...)` answers No
 WHAT COUNTS, equal weight, only what the person's profile asks of them (the Profile page's card
 rules, `lib/profileCards.ts` `cardsFor`, whose server twins live in `staff_contact.py`):
 
-- everyone — `photo`, `name`, `job_title`, `about`, `phone`;
+- everyone — `photo`, `name`, `job_title`, `highest_position` (request #69, 2026-11-17), `about`,
+  `phone`;
 - somebody who works with students (`staff_contact.works_with_students`: a `review` holder or a
   mentor) — also `qualifications` (the Reviewer-hold set as ONE item: qualification, university,
   graduation year, field of study — `reviewer_onboarding`), `language` (English, BM or Tamil at
@@ -20,7 +21,8 @@ rules, `lib/profileCards.ts` `cardsFor`, whose server twins live in `staff_conta
 The optional extras (the fourth language, the share-my-phone switches) never count.
 
 IMPORTANT (the banner's list): `photo` and `phone`, plus `mentoring_area` for a mentor. The address
-never (it is private); the Reviewer-hold fields never (the hold already enforces them).
+never (it is private); the Reviewer-hold fields never (the hold already enforces them);
+`highest_position` never (the console asks it on its own one-tap banner, after the important one).
 
 Shape: `{items: [{key, done}], done, total, percent, important_missing: [key]}` — `items` in the
 page's order, `percent` rounded DOWN so 100 means every item is done.
@@ -53,7 +55,7 @@ def item_keys(admin):
     """The keys this person's profile asks of them, in page order; () for a super or nobody."""
     if admin is None or admin.is_super:
         return ()
-    keys = ['photo', 'name', 'job_title', 'about', 'phone']
+    keys = ['photo', 'name', 'job_title', 'highest_position', 'about', 'phone']
     if works_with_students(admin):
         keys += ['qualifications', 'language', 'address']
     if admin.is_mentor or admin.mentors_now:
@@ -74,6 +76,7 @@ def completion(admin, profile, mentoring_area=''):
         'photo': lambda: _filled(profile, 'photo_path'),
         'name': lambda: bool((admin.name or '').strip()),
         'job_title': lambda: _filled(profile, 'job_title'),
+        'highest_position': lambda: _filled(profile, 'highest_position'),
         'about': lambda: _filled(profile, 'about'),
         'phone': lambda: _filled(profile, 'phone'),
         'qualifications': lambda: _qualifications(profile),

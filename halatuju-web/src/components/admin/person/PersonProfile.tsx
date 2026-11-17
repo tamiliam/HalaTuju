@@ -18,6 +18,8 @@ import type { TeamPersonData } from './useTeamPerson'
  * "not filled in" from "not shown to you". The HOME ADDRESS is never in the payload and never here
  * (role-matrix.md): assigning a case is not a reason to read where somebody lives.
  * ⚠ The phone is the server's to give (`staff_person.phone_of`): '' reads "Not given" as well.
+ * ⚠ Request #69: the highest position held is a line UNDER the job title, in the same row, so it is
+ * shown exactly when the job title is ("Highest position held: Not given" when blank).
  * ⚠ T3 review fix 1: `profile_full === false` (the mentor route, a viewer who opens this person by no
  * admin or reviewer route) draws NO row for the background fields — they were withheld, not left empty.
  */
@@ -33,7 +35,13 @@ export default function PersonProfile({ data, mentorWork }: { data: TeamPersonDa
   const full = p.profile_full !== false
   const rows: { key: string; label: string; value: ReactNode }[] = [
     ...(full ? [
-      { key: 'jobTitle', label: t('admin.myProfile.jobTitle'), value: text(pr.job_title) },
+      { key: 'jobTitle', label: t('admin.myProfile.jobTitle'), value: (<>
+        {text(pr.job_title)}
+        <span className="mt-1 block text-xs text-ground-700" data-testid="person-field-highestPosition">
+          <span className="text-ground-500">{t('admin.person.highestPosition')}</span>{' '}
+          {pr.highest_position ? t(`admin.position.${pr.highest_position}`) : none}
+        </span>
+      </>) },
       { key: 'about', label: t('admin.person.aboutField'), value: text(pr.about) },
     ] : []),
     { key: 'email', label: t('admin.reviewers.detail.email'), value: text(p.email) },

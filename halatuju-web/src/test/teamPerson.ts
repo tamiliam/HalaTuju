@@ -12,7 +12,7 @@ export const person = (over: Partial<admins.TeamPersonBlock> = {}): admins.TeamP
   admin_id: 5, mentor_id: null, name: 'Kavitha Raman', email: 'kavitha@example.org', tables: ['reviewers'],
   lead: false, mentor_only: false, is_active: true, paused: false, joined_at: '2026-03-01T00:00:00Z',
   signed_in: true, last_seen_at: TWO_DAYS_AGO,
-  profile: { job_title: 'Lecturer', about: '', qualification: 'MSc', university: '', graduation_year: null,
+  profile: { job_title: 'Lecturer', highest_position: 'head', about: '', qualification: 'MSc', university: '', graduation_year: null,
     field_of_study: '', phone: '', languages: ['en', 'ta'], other_language: '' },
   ...over,
 })

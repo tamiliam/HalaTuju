@@ -45,9 +45,9 @@ const sourceFormOf = (d: SourceProfile): SourceForm => ({
   contact_email: d.source.contact_email, phone: d.source.phone,
 })
 
-const CARD_KEYS = ['job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students'] as const
+const CARD_KEYS = ['job_title', 'highest_position', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students'] as const
 const cardOf = (m: AdminMe): MeCard => ({
-  job_title: m.job_title ?? '', about: m.about ?? '', phone: m.phone ?? '',
+  job_title: m.job_title ?? '', highest_position: m.highest_position ?? '', about: m.about ?? '', phone: m.phone ?? '',
   share_phone_with_team: !!m.share_phone_with_team, share_phone_with_students: m.share_phone_with_students ?? true,
 })
 /** The reviewer profile as the onboarding rule reads it: its phone is the card's (`admin/me/`). */
@@ -57,7 +57,7 @@ const withPhone = (r: ReviewerProfile | null, phone: string): ReviewerProfile =>
 /** An `admin/me/` refusal, in the reader's words (`views_admin/me.py`). */
 const ME_REFUSALS = ['name_required', 'name_too_long', 'phone_required', 'phone_too_long',
   'job_title_too_long', 'about_too_long', 'not_editable', 'mentoring_area_required',
-  'mentoring_area_too_long']
+  'mentoring_area_too_long', 'bad_highest_position']
 /** An `admin/reviewer-profile/` refusal with words of its own (request #58). */
 const OTHER_REFUSALS = ['not_reviewable']
 

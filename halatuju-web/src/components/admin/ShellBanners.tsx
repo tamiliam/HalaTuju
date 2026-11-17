@@ -7,6 +7,7 @@ import type { CompletionKey, ProfileCompletion } from '@/lib/admin-api'
 import { getOverdueSummary, type OverdueSummary } from '@/lib/admin-api/invoices'
 import { formatMyr } from '@/lib/billingCosts'
 import { TopBanner, type BannerTone } from './TopBanner'
+import { PositionBanner, PositionThanks } from './PositionBanner'
 
 /**
  * The console's top-banner SLOT (staff nudges, 2026-11-08): under the top bar on every admin page,
@@ -31,6 +32,14 @@ import { TopBanner, type BannerTone } from './TopBanner'
  * `billingLive` false for a super: the server always answers null, so the call is skipped), never while
  * on Billing, and asked again on leaving it, so a declaration made there clears it.
  *
+ * The position question (request #69, board 4): blue, LAST, so the important profile banner and the
+ * overdue banner win; shown only while the server says `highest_position` is not done, and not on the
+ * Profile page (the field is there). It asks with four one-tap buttons (`PositionBanner`); a tap saves
+ * through `PATCH admin/me/`, hands the new completion to `onCompletion` (so it never returns) and shows
+ * the thank-you for `THANKS_MS`, then nothing. Its X is the profile banner's own: hidden for 7 days in
+ * this browser, for this account (`PROFILE_DISMISS`, key `halatuju.banner.position.<account id>`). When
+ * the profile banner was hidden by its X, the question may take the slot; never two at once.
+ *
  * ⚠ Storage is read only after mount (`mounted`), so the server render and the first browser render
  * agree (hydration): no banner is painted until then.
  */
@@ -48,6 +57,8 @@ export interface ShellBannersProps {
   billingLive?: boolean
   /** Names THIS sign-in (the session user's `last_sign_in_at`): the overdue X lasts until it changes. */
   signInStamp?: string | null
+  /** The new `completion` after the position question saved (the shell's `setProfileCompletion`). */
+  onCompletion?: (c: ProfileCompletion | null) => void
 }
 
 interface Candidate {
@@ -61,6 +72,8 @@ interface Candidate {
 
 export const PROFILE_DISMISS: DismissScope = { kind: 'days', days: 7 }
 export const BILLING_HREF = '/admin/billing'
+/** How long "Thank you. Your answer is saved on your profile." stays before the slot empties. */
+export const THANKS_MS = 4000
 
 /** "a, b and c" — the reader's own word for "and". */
 export function joinList(items: string[], and: string): string {
@@ -69,13 +82,14 @@ export function joinList(items: string[], and: string): string {
 }
 
 export default function ShellBanners(
-  { pathname, accountId, completion, profileHref, token, billingLive, signInStamp }: ShellBannersProps,
+  { pathname, accountId, completion, profileHref, token, billingLive, signInStamp, onCompletion }: ShellBannersProps,
 ) {
   const { t } = useT()
   const [mounted, setMounted] = useState(false)
   // Hidden in THIS page view, whatever storage says (a browser that refuses storage, or no stamp).
   const [hiddenNow, setHiddenNow] = useState<string[]>([])
   const [overdue, setOverdue] = useState<OverdueSummary | null>(null)
+  const [thanked, setThanked] = useState(false)
   const onBilling = pathname === BILLING_HREF || pathname.startsWith(`${BILLING_HREF}/`)
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
@@ -88,7 +102,13 @@ export default function ShellBanners(
       .catch(() => { if (live) setOverdue(null) })
     return () => { live = false }
   }, [token, billingLive, onBilling])
+  useEffect(() => {
+    if (!thanked) return
+    const timer = setTimeout(() => setThanked(false), THANKS_MS)
+    return () => clearTimeout(timer)
+  }, [thanked])
   if (!mounted || accountId == null) return null
+  if (thanked) return <PositionThanks text={t('admin.nudge.positionThanks')} />
 
   const candidates: Candidate[] = []
   if (overdue && !onBilling) {
@@ -118,16 +138,31 @@ export default function ShellBanners(
       scope: PROFILE_DISMISS,
     })
   }
+  const unanswered = completion?.items.some((i) => i.key === 'highest_position' && !i.done)
+  if (unanswered && !onProfile) {
+    candidates.push({ id: 'position', tone: 'info', text: null, dismissLabel: t('admin.nudge.hide7'), scope: PROFILE_DISMISS })
+  }
 
   const shown = candidates.find((c) => !hiddenNow.includes(c.id) && !isDismissed(bannerKey(c.id, accountId), c.scope))
   if (!shown) return null
+  const hide = () => {
+    dismiss(bannerKey(shown.id, accountId), shown.scope)
+    setHiddenNow((h) => [...h, shown.id])
+  }
+  if (shown.id === 'position') {
+    return (
+      <PositionBanner t={t} token={token} dismissLabel={shown.dismissLabel} onDismiss={hide}
+        onSaved={(c) => {
+          setHiddenNow((h) => [...h, 'position'])   // gone even if the shell keeps no completion
+          setThanked(true)
+          if (c) onCompletion?.(c)
+        }} />
+    )
+  }
   return (
     <TopBanner tone={shown.tone} link={shown.link} dismissLabel={shown.dismissLabel}
       testId={`top-banner-${shown.id}`}
-      onDismiss={() => {
-        dismiss(bannerKey(shown.id, accountId), shown.scope)
-        setHiddenNow((h) => [...h, shown.id])
-      }}>
+      onDismiss={hide}>
       {shown.text}
     </TopBanner>
   )

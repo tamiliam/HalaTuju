@@ -20,7 +20,7 @@ until they save one on their own profile page; a GET that wrote one would be a s
 ⚠ THE MENTOR ROUTE SERVES LESS (T3 review fix 1). The mentor detail is read by an `admin`, and by any
 organisation admin, who cannot open a staff mentor through the admin route (404) and may not reach them
 through the reviewer route either. So the mentor route passes ``full=`` `opens_elsewhere(...)`: the
-profile's background fields (`BACKGROUND_KEYS`: job title, about, qualification, university, graduation
+profile's background fields (`BACKGROUND_KEYS`: job title, highest position held, about, qualification, university, graduation
 year, field of study) only when the viewer could already open that person by the admin or reviewer route
 under those routes' own fences. Otherwise exactly what the Mentors page served before T3: name, email, the
 gated phone, area and languages; the background fields read empty and `profile_full` is False.
@@ -41,10 +41,12 @@ SPOKEN = ('conversational', 'fluent')
 PERSON_KEYS = ('admin_id', 'mentor_id', 'name', 'email', 'tables', 'lead', 'mentor_only', 'is_active',
                'paused', 'joined_at', 'signed_in', 'last_seen_at', 'profile', 'profile_full')
 #: The exact keys of `profile`.
-PROFILE_KEYS = ('job_title', 'about', 'qualification', 'university', 'graduation_year',
+PROFILE_KEYS = ('job_title', 'highest_position', 'about', 'qualification', 'university', 'graduation_year',
                 'field_of_study', 'phone', 'languages', 'other_language')
 #: The profile fields the mentor route serves only to a viewer who could open the person elsewhere (fix 1).
-BACKGROUND_KEYS = ('job_title', 'about', 'qualification', 'university', 'graduation_year', 'field_of_study')
+#: Request #69: `highest_position` (a choice key, '' = not given) goes wherever `job_title` goes.
+BACKGROUND_KEYS = ('job_title', 'highest_position', 'about', 'qualification', 'university', 'graduation_year',
+                   'field_of_study')
 #: The keys `staff_permissions.team_holding(..., with_lead=True)` reads for the Reviewers table's detail.
 REVIEWER_ROUTE_KEYS = frozenset(('review', 'qc'))
 
@@ -98,10 +100,11 @@ def profile(target, rp=None, full=True):
     ``full=False`` (the mentor route, fix 1) empties `BACKGROUND_KEYS`."""
     rp = rp if rp is not None else _profile_of(target)
     if not full:
-        return {**profile(target, rp), 'job_title': '', 'about': '', 'qualification': '', 'university': '',
+        return {**profile(target, rp), 'job_title': '', 'highest_position': '', 'about': '', 'qualification': '', 'university': '',
                 'graduation_year': None, 'field_of_study': ''}
     return {
         'job_title': getattr(rp, 'job_title', '') or '',
+        'highest_position': getattr(rp, 'highest_position', '') or '',
         'about': getattr(rp, 'about', '') or '',
         'qualification': getattr(rp, 'highest_qualification', '') or '',
         'university': getattr(rp, 'university', '') or '',

@@ -73,7 +73,7 @@ const withPerson = (d: api.AdminReviewerDetail): api.AdminReviewerDetail => {
       mentor_only: false, is_active: r.is_active !== false, paused: !!d.paused, joined_at: String(r.created_at),
       signed_in: true, last_seen_at: '2026-11-01T00:00:00Z',
       profile: {
-        job_title: '', about: '', qualification: String(r.qualification ?? ''),
+        job_title: '', highest_position: '', about: '', qualification: String(r.qualification ?? ''),
         university: String(r.university ?? ''), field_of_study: String(r.field_of_study ?? ''),
         graduation_year: (r.graduation_year as number | null) ?? null, phone: String(r.phone ?? ''),
         languages: order.filter((c) => ((r.languages as string[]) ?? []).includes(c)),

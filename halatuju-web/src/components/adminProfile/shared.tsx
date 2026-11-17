@@ -26,6 +26,8 @@ export interface SourceForm {
 /** The person's own card — what `PATCH admin/me/` writes (common profile S2). */
 export interface MeCard {
   job_title: string
+  /** Request #69: a `HIGHEST_POSITIONS` key, or '' for "not given". */
+  highest_position: string
   about: string
   phone: string
   share_phone_with_team: boolean

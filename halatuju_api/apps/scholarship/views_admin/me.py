@@ -21,7 +21,8 @@ programme list is the same one its scope switcher already serves (`AdminScopeLis
 
 `POST admin/me/password/` — the signed-in person changes their OWN password (see `AdminMePasswordView`).
 
-Common profile S2 (2026-10-31): the GET also serves the person's card — `job_title`, `about`, `phone`,
+Common profile S2 (2026-10-31): the GET also serves the person's card — `job_title`,
+`highest_position` (request #69, 2026-11-17: a choice key, '' = not given), `about`, `phone`,
 `share_phone_with_team`, `share_phone_with_students`, `photo_url` (signed, ~1 h, only when a photo
 exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes the card
 (`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`). Staff
@@ -51,7 +52,9 @@ from .base import _AdminBase
 #: `admin/source/profile/` convention). `share_phone_with_students` only for somebody who works with
 #: students (`works_with_students`); `mentoring_area` only for a mentor (S7a).
 ME_FIELDS = ('name', 'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students',
-             'mentoring_area')
+             'mentoring_area', 'highest_position')
+#: Request #69: `highest_position` is one of the column's choice keys, or '' to clear it.
+HIGHEST_POSITION_KEYS = frozenset(k for k, _ in StaffProfile.HIGHEST_POSITIONS)
 ABOUT_MAX = 600
 #: `Mentor.area`'s column width.
 MENTORING_AREA_MAX = 120
@@ -109,6 +112,7 @@ def _card(profile, admin):
     reads what a new row WOULD start with — S7d: off for a staff member who mentors)."""
     return {
         'job_title': getattr(profile, 'job_title', '') or '',
+        'highest_position': getattr(profile, 'highest_position', '') or '',
         'about': getattr(profile, 'about', '') or '',
         'phone': getattr(profile, 'phone', '') or '',
         'share_phone_with_team': bool(getattr(profile, 'share_phone_with_team', False)),
@@ -131,7 +135,8 @@ def _card_text(value, limit, code):
 class AdminMeView(_AdminBase):
     """GET / PATCH /api/v1/admin/me/ — the caller's own account and card (see the module docstring).
 
-    PATCH `{name?, job_title?, about?, phone?, share_phone_with_team?, share_phone_with_students?}`:
+    PATCH `{name?, job_title?, highest_position?, about?, phone?, share_phone_with_team?,
+    share_phone_with_students?}`:
     only the keys sent are written. Refusals (400): `not_editable` + `fields` for any other key, or for
     `share_phone_with_students` from someone without `review`; `name_required`; `name_too_long`;
     `job_title_too_long` (120); `about_too_long` (600); `phone_too_long` (30, the column); and
@@ -139,7 +144,9 @@ class AdminMeView(_AdminBase):
     rule), everybody else may clear theirs. The phone is otherwise stored as typed, exactly as the
     reviewer profile does. A source user's NAME saves here too (opted in, GET and PATCH). A MENTOR's
     `mentoring_area` too (S7a): `mentoring_area_required`, `mentoring_area_too_long` (120); any other
-    role sending it is `not_editable`. Answers with the GET payload."""
+    role sending it is `not_editable`. Request #69: `highest_position`, one of the four choice keys or
+    '' (not given), anyone may send it; anything else is `bad_highest_position`. Answers with the GET
+    payload."""
     source_partner_methods = ('get', 'patch')
     mentor_methods = member_methods = ('get', 'patch')
 
@@ -174,6 +181,11 @@ class AdminMeView(_AdminBase):
                 if not isinstance(data[key], bool):
                     return _me_refusal('bad_request')
                 clean[key] = data[key]
+        if 'highest_position' in data:
+            value = data['highest_position']
+            if not isinstance(value, str) or (value and value not in HIGHEST_POSITION_KEYS):
+                return _me_refusal('bad_highest_position')
+            clean['highest_position'] = value
         if 'name' in clean and not clean['name']:
             return _me_refusal('name_required')
         if 'mentoring_area' in clean and not clean['mentoring_area']:

@@ -139,7 +139,7 @@ function Chrome(
   { scopes, scopesLoaded, path, children }:
   { scopes: AdminScopes; scopesLoaded: boolean; path?: string; children: ReactNode },
 ) {
-  const { role, token, photoUrl, profileCompletion, session } = useAdminAuth()
+  const { role, token, photoUrl, profileCompletion, setProfileCompletion, session } = useAdminAuth()
   const { t } = useT()
   const routerPath = usePathname()
   const pathname = path ?? routerPath
@@ -410,7 +410,7 @@ function Chrome(
       {/* Staff nudges: the top-banner slot, one banner at a time, lazily loaded (`ShellBanners`). */}
       <LazyShellBanners pathname={pathname} accountId={role?.admin_id} completion={profileCompletion}
         profileHref={profileHref} token={token} billingLive={probes.billing === 'live' && r !== 'super'}
-        signInStamp={session?.user?.last_sign_in_at ?? null} />
+        signInStamp={session?.user?.last_sign_in_at ?? null} onCompletion={setProfileCompletion} />
 
       <div className="relative flex flex-1">
         {/*

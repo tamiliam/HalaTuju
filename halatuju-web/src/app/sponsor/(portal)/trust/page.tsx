@@ -6,10 +6,12 @@ import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { figureTotal, figurePercent, formatRM } from '@/lib/sponsorTrust'
 import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
+import { VOLUNTEER_LEVELS, type SponsorVolunteers } from '@/lib/api/sponsor'
 
 /**
- * Trust & Transparency hub (R5) — the load-bearing trust layer. Four sections:
- * Who we are · Governance · Sources & uses of funds · Independent assurance. The
+ * Trust & Transparency hub (R5) — the load-bearing trust layer. Five sections:
+ * Who we are · Governance · Our volunteers (request #69: only when the server sends figures, five
+ * answers or more) · Sources & uses of funds · Independent assurance. The
  * editable DATA comes from the shared context's `trust` (DB-backed, no deploy to
  * update); the chrome + placeholders are trilingual i18n. Honest placeholders show
  * while the organisation is being formalised — nothing here is fabricated.
@@ -90,6 +92,8 @@ export default function TrustPage() {
         </section>
       </div>
 
+      {trust.volunteers && <VolunteersSection v={trust.volunteers} t={t} />}
+
       {/* Sources & uses of funds */}
       <section className={`${PHONE_SECTION_NO_GAP} md:mt-4`}>
         <div className="flex items-center justify-between">
@@ -163,6 +167,30 @@ function FigureBars({ figures, total, tone }: {
         </div>
       ))}
     </div>
+  )
+}
+
+/** Request #69, board 3: the headline adds the top two shares as served; four bars; the count. No
+ *  names or people: the server sends the count and the four shares only. */
+function VolunteersSection({ v, t }: { v: SponsorVolunteers; t: (k: string, p?: Record<string, string>) => string }) {
+  const V = 'sponsorPortal.trust.volunteers'
+  const pct = String(v.shares.c_level + v.shares.head)
+  return (
+    <section className={`${PHONE_SECTION_NO_GAP} space-y-3.5 md:mt-4`} data-testid="trust-volunteers">
+      <h2 className="font-semibold text-ground-900">{t(`${V}.title`)}</h2>
+      <p className="text-xl font-bold leading-snug text-ground-900">{t(`${V}.headline`, { pct })}</p>
+      <div className="grid gap-x-8 gap-y-3.5 text-sm md:grid-cols-2">
+        {VOLUNTEER_LEVELS.map((k) => (
+          <div key={k} data-testid={`trust-volunteers-${k}`}>
+            <div className="flex justify-between gap-3"><span>{t(`${V}.level.${k}`)}</span><b>{v.shares[k]}%</b></div>
+            <div className="mt-1.5 h-2 rounded-full bg-info-100">
+              <div className="h-2 rounded-full bg-info-600" style={{ width: `${v.shares[k]}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-sm text-ground-500">{t(`${V}.basedOn`, { n: String(v.count) })}</p>
+    </section>
   )
 }
 

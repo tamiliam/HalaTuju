@@ -372,6 +372,17 @@
         "trusteeLabel": "Pemegang amanah",
         "tbd": "Nama & latar belakang akan disenaraikan setelah dilantik."
       },
+      "volunteers": {
+        "title": "Sukarelawan kami",
+        "headline": "{pct}% sukarelawan kami pernah memegang jawatan pengurus kanan atau lebih tinggi",
+        "basedOn": "Berdasarkan {n} sukarelawan yang telah memberitahu kami.",
+        "level": {
+          "c_level": "Peringkat C, pengasas atau pemilik perniagaan",
+          "head": "Ketua jabatan atau pengurus kanan",
+          "manager": "Pengurus",
+          "individual": "Penyumbang individu (ahli akademik, doktor, dll.)"
+        }
+      },
       "sourcesUses": {
         "title": "Sumber & penggunaan dana",
         "body": "Wang seluruh program secara sepintas lalu — diterbitkan setiap tahun.",
@@ -5580,6 +5591,10 @@
       },
       "jobTitle": "Jawatan",
       "jobTitleHint": "Contohnya, Pegawai program",
+      "highestPosition": "Jawatan tertinggi pernah disandang",
+      "highestPositionHint": "Tahap tertinggi anda pada bila-bila masa dalam kerjaya, walaupun sudah bersara.",
+      "highestPositionNote": "Data individu tidak sekali-kali dikongsi dengan penaja.",
+      "chooseOne": "Pilih satu",
       "about": "Tentang saya",
       "aboutHint": "Beberapa baris yang akan dilihat oleh pasukan anda",
       "aboutCount": "{n} daripada {max} aksara",
@@ -5592,6 +5607,7 @@
         "phone_required": "Penilai perlu ada nombor telefon. Taip nombor anda.",
         "phone_too_long": "Nombor telefon itu terlalu panjang.",
         "job_title_too_long": "Hadkan jawatan kepada 120 aksara.",
+        "bad_highest_position": "Pilih salah satu daripada empat jawatan.",
         "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
         "not_editable": "Butiran itu tidak boleh diubah di sini.",
         "mentoring_area_required": "Taip bidang bimbingan anda.",
@@ -5735,6 +5751,7 @@
           "photo": "Foto",
           "name": "Nama",
           "job_title": "Jawatan",
+          "highest_position": "Jawatan tertinggi pernah disandang",
           "about": "Tentang saya",
           "phone": "Telefon",
           "qualifications": "Kelayakan",
@@ -5746,6 +5763,7 @@
           "photo": "Tambah foto",
           "name": "Tambah nama anda",
           "job_title": "Tambah jawatan anda",
+          "highest_position": "Tambah jawatan tertinggi anda",
           "about": "Tulis ringkasan Tentang saya",
           "phone": "Tambah nombor telefon",
           "qualifications": "Tambah kelayakan anda",
@@ -8762,6 +8780,7 @@
         "on": "pada {date}"
       },
       "aboutField": "Tentang",
+      "highestPosition": "Jawatan tertinggi pernah disandang:",
       "areaField": "Bidang bimbingan",
       "mentoringSince": "Mentor sejak",
       "privacyNote": "Alamat rumah ahli pasukan tidak pernah dipaparkan di sini.",
@@ -8775,6 +8794,12 @@
       },
       "revokeHasScholars": "Mereka masih membimbing penerima biasiswa ({n} kini), jadi akses mereka tidak boleh ditarik balik. Pindahkan setiap seorang kepada mentor lain dahulu, kemudian cuba lagi. Tiada apa-apa yang diubah.",
       "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
+    },
+    "position": {
+      "c_level": "Peringkat C, pengasas atau pemilik perniagaan",
+      "head": "Ketua jabatan atau pengurus kanan",
+      "manager": "Pengurus",
+      "individual": "Penyumbang individu (ahli akademik, doktor, dll.)"
     },
     "permHistory": {
       "title": "Perubahan",
@@ -9929,6 +9954,10 @@
       "and": "dan",
       "link": "Lengkapkan profil",
       "hide7": "Sembunyikan selama 7 hari",
+      "positionQuestion": "Apakah jawatan tertinggi yang pernah anda sandang?",
+      "positionWhy": "Membantu kami menunjukkan kepada penaja pengalaman di sebalik pasukan kami. Hanya jumlah keseluruhan dikongsi, bukan maklumat anda.",
+      "positionThanks": "Terima kasih. Jawapan anda telah disimpan dalam profil anda.",
+      "positionFailed": "Kami tidak dapat menyimpan jawapan anda. Sila cuba lagi.",
       "overdueTitle": "Bayaran tertunggak.",
       "overdueOne": "Invois {number} berjumlah {amount} sepatutnya dijelaskan 1 hari yang lalu.",
       "overdueMany": "Invois {number} berjumlah {amount} sepatutnya dijelaskan {days} hari yang lalu.",

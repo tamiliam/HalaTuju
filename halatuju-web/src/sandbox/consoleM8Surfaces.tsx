@@ -164,6 +164,11 @@ const COMPLETION = {
 }
 // The blue profile banner with every important item missing (a mentor's three), the longest text.
 const BANNER_COMPLETION = { ...COMPLETION, important_missing: ['photo', 'phone', 'mentoring_area'] }
+// Request #69: nothing important missing, the highest position not answered — the one-tap question.
+const POSITION_COMPLETION = {
+  items: ['photo', 'name', 'job_title', 'highest_position', 'about', 'phone'].map((key) => ({ key, done: key !== 'highest_position' })),
+  done: 5, total: 6, percent: 83, important_missing: [],
+}
 const me = (role: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
   id: role.admin_id, name: role.admin_name, email: 'staf.contoh@contoh.invalid', role: role.role, is_super: false,
   organisation: { id: 1, name: 'Yayasan Contoh' }, source: null, referral_partner: null,
@@ -418,6 +423,16 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     routes: { ...SCOPES, '/api/v1/admin/mentor/students/': () => MY_STUDENTS },
     render: () => (
       <Console path="/admin/my-students" role={MENTOR} completion={BANNER_COMPLETION}><MyStudentsPage /></Console>
+    ),
+  },
+  {
+    slug: 'nudge-position-banner',
+    title: 'Admin — the highest-position question (request #69)',
+    note: 'Request #69: the blue banner asks "What is the highest position you have held?" — four one-tap 44 px '
+      + 'buttons that wrap, the line on why, a 44 px X.',
+    routes: { ...SCOPES, '/api/v1/admin/mentor/students/': () => MY_STUDENTS },
+    render: () => (
+      <Console path="/admin/my-students" role={MENTOR} completion={POSITION_COMPLETION}><MyStudentsPage /></Console>
     ),
   },
   {

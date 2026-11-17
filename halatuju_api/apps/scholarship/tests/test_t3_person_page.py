@@ -27,7 +27,7 @@ HOME = 'Lorong Contoh 7'          # a home address that must never reach any pay
 
 def _profile(admin, **kw):
     fields = dict(street_address=HOME, address=HOME, postcode='50000', city='Klang', state='Selangor',
-                  phone='012-000 0000', job_title='Volunteer lead', about='Likes maths.',
+                  phone='012-000 0000', job_title='Volunteer lead', highest_position='head', about='Likes maths.',
                   highest_qualification='Degree', university='Example University',
                   graduation_year=2010, field_of_study='Physics', english_fluency='fluent',
                   bm_fluency='conversational', tamil_fluency='basic', share_phone_with_team=False)
@@ -97,6 +97,7 @@ class TestThePersonBlock(TestCase):
         self.assertEqual(p['admin_id'], self.admin.pk)
         self.assertIsNone(p['mentor_id'])
         self.assertEqual(p['profile']['job_title'], 'Volunteer lead')
+        self.assertEqual(p['profile']['highest_position'], 'head')   # request #69: beside the job title
         self.assertEqual(p['profile']['qualification'], 'Degree')
         self.assertEqual(p['profile']['languages'], ['en', 'ms'])   # 'basic' is not spoken
 
@@ -166,7 +167,7 @@ class TestThePersonBlock(TestCase):
         p = self._get(self.lead, self._admin_url(self.finance)).json()['person']['profile']
         self.assertFalse(before)
         self.assertFalse(ReviewerProfile.objects.filter(partner_admin=self.finance).exists())
-        self.assertEqual(p, {'job_title': '', 'about': '', 'qualification': '', 'university': '',
+        self.assertEqual(p, {'job_title': '', 'highest_position': '', 'about': '', 'qualification': '', 'university': '',
                              'graduation_year': None, 'field_of_study': '', 'phone': '',
                              'languages': [], 'other_language': ''})
 
@@ -184,12 +185,14 @@ class TestThePersonBlock(TestCase):
         self.assertIs(p['profile_full'], full)
         prof = p['profile']
         if full:
-            self.assertEqual((prof['job_title'], prof['about'], prof['qualification'], prof['university'],
-                              prof['graduation_year'], prof['field_of_study']),
-                             ('Volunteer lead', 'Likes maths.', 'Degree', 'Example University', 2010, 'Physics'))
+            self.assertEqual((prof['job_title'], prof['highest_position'], prof['about'], prof['qualification'],
+                              prof['university'], prof['graduation_year'], prof['field_of_study']),
+                             ('Volunteer lead', 'head', 'Likes maths.', 'Degree', 'Example University', 2010,
+                              'Physics'))
         else:
-            self.assertEqual((prof['job_title'], prof['about'], prof['qualification'], prof['university'],
-                              prof['graduation_year'], prof['field_of_study']), ('', '', '', '', None, ''))
+            self.assertEqual((prof['job_title'], prof['highest_position'], prof['about'], prof['qualification'],
+                              prof['university'], prof['graduation_year'], prof['field_of_study']),
+                             ('', '', '', '', '', None, ''))
         # What the Mentors page served before T3 stays, either way: name, email, languages.
         self.assertTrue(p['name'] and p['email'])
         self.assertEqual(prof['languages'], ['en', 'ms'])

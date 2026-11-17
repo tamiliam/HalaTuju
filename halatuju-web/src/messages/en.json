@@ -372,6 +372,17 @@
         "trusteeLabel": "Trustee",
         "tbd": "Names & backgrounds to be listed once appointed."
       },
+      "volunteers": {
+        "title": "Our volunteers",
+        "headline": "{pct}% of our volunteers have held a senior manager role or above",
+        "basedOn": "Based on the {n} volunteers who have told us.",
+        "level": {
+          "c_level": "C-level, founder or business owner",
+          "head": "Head of department or senior manager",
+          "manager": "Manager",
+          "individual": "Individual contributor (academic, doctor, etc.)"
+        }
+      },
       "sourcesUses": {
         "title": "Sources & uses of funds",
         "body": "The whole programme's money at a glance — published annually.",
@@ -5580,6 +5591,10 @@
       },
       "jobTitle": "Job title",
       "jobTitleHint": "For example, Programme officer",
+      "highestPosition": "Highest position held",
+      "highestPositionHint": "Your highest level at any point in your career, even if retired.",
+      "highestPositionNote": "Individual data is never shared with sponsors.",
+      "chooseOne": "Choose one",
       "about": "About",
       "aboutHint": "A few lines your team will see",
       "aboutCount": "{n} of {max} characters",
@@ -5592,6 +5607,7 @@
         "phone_required": "A reviewer needs a phone number. Type yours.",
         "phone_too_long": "That phone number is too long.",
         "job_title_too_long": "Keep the job title to 120 characters.",
+        "bad_highest_position": "Choose one of the four positions.",
         "about_too_long": "Keep About to 600 characters.",
         "not_editable": "That detail cannot be changed here.",
         "mentoring_area_required": "Type your area of mentoring.",
@@ -5735,6 +5751,7 @@
           "photo": "Photo",
           "name": "Name",
           "job_title": "Job title",
+          "highest_position": "Highest position held",
           "about": "About",
           "phone": "Phone",
           "qualifications": "Qualifications",
@@ -5746,6 +5763,7 @@
           "photo": "Add a photo",
           "name": "Add your name",
           "job_title": "Add your job title",
+          "highest_position": "Add your highest position",
           "about": "Write a short About",
           "phone": "Add a phone number",
           "qualifications": "Add your qualifications",
@@ -8762,6 +8780,7 @@
         "on": "on {date}"
       },
       "aboutField": "About",
+      "highestPosition": "Highest position held:",
       "areaField": "Area of mentoring",
       "mentoringSince": "Mentoring since",
       "privacyNote": "A team member's home address is never shown here.",
@@ -8775,6 +8794,12 @@
       },
       "revokeHasScholars": "They still mentor scholars ({n} now), so their access cannot be revoked. Move each one to another mentor first, then try again. Nothing was changed.",
       "loadFailed": "We could not load this page. Please try again."
+    },
+    "position": {
+      "c_level": "C-level, founder or business owner",
+      "head": "Head of department or senior manager",
+      "manager": "Manager",
+      "individual": "Individual contributor (academic, doctor, etc.)"
     },
     "permHistory": {
       "title": "Changes",
@@ -9929,6 +9954,10 @@
       "and": "and",
       "link": "Complete profile",
       "hide7": "Hide for 7 days",
+      "positionQuestion": "What is the highest position you have held?",
+      "positionWhy": "Helps us show sponsors the experience behind our team. Only totals are shared, never you.",
+      "positionThanks": "Thank you. Your answer is saved on your profile.",
+      "positionFailed": "We could not save your answer. Please try again.",
       "overdueTitle": "Payment overdue.",
       "overdueOne": "Invoice {number} for {amount} was due 1 day ago.",
       "overdueMany": "Invoice {number} for {amount} was due {days} days ago.",
