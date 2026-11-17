@@ -41,7 +41,9 @@ export function DeclineOptional({ item, token, open, onOpen, onCancel, onDone }:
     }
   }
   const cancel = () => { setPicked(''); setNote(''); setError(''); onCancel() }
-  const label = (key: string) => t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${key}`)
+  // The reasons ride the Documents slice with the card (second bundle trim); the officer's case page
+  // reads its own copy, `admin.scholarship.caveats.declinedReasons` (OutstandingPanel.declined.test pins them equal).
+  const label = (key: string) => t(`documentsTab.actionCentre.decline.reasons.${item.doc_type}.${key}`)
 
   if (!open) {
     return (

@@ -255,7 +255,7 @@ export function ActionCard({
       <DoneCard fromLabel={fromLabel} title={title}>
         {declined && (
           <p className="mt-1 break-words text-sm text-ground-600">
-            {t('documentsTab.actionCentre.decline.youTold', { reason: t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${declined}`) })}
+            {t('documentsTab.actionCentre.decline.youTold', { reason: t(`documentsTab.actionCentre.decline.reasons.${item.doc_type}.${declined}`) })}
             {typeof item.params?.declined_note === 'string' && item.params.declined_note ? ` ${item.params.declined_note}` : ''}
           </p>
         )}

@@ -158,6 +158,13 @@ Branch sh-trim (for student-help), not pushed. No migration. No api change. Serv
 - Code: `components/LazyActionCentre.tsx` loads the Action Centre by `import()` on `/scholarship/application` (page and next-steps). The Action Centre imports the Documents slice and waits for the slice of the language on screen before it draws, so a Malay or Tamil reader never sees those words in English first. A failed chunk shows the existing network-error line in place.
 - Readings (local exact build): `/scholarship/apply` 201.107 to 198.628 kB (line 198.8), `/profile` 202.785 to 200.306 (200.8), `/scholarship/application` 226.831 to 209.363 (line LOWERED by the ratchet, 218.7 to 210), median 157.091 to 157.104 (157.5). No line raised.
 
+### perf: student-help bundle trim 2 - the decline reasons ride the Documents slice; the officer page keeps its own copy (2026-11-18)
+
+Branch sh-trim2 (for student-help), not pushed. No migration. No api change. Services: web.
+- Words: the "I don't have this" reasons (`scholarship.actionCentre.decline.reasons.*`, four document types) moved to `documentsTab.actionCentre.decline.reasons.*`, so they load with the Action Centre and leave the first load of every scholarship page. The officer's case page (`OutstandingPanel`) reads its own copy, `admin.scholarship.caveats.declinedReasons.*`, in the admin slice; a new test pins the two copies equal in en / ms / ta. Same words, same order, all three languages.
+- Why the release gate read 199.017: that worktree's `node_modules` was a junction to a folder outside the project. Webpack then resolves module paths outside the tree, the module ids and order change, and the shared chunk gzips about 0.4 kB bigger. A clean in-tree install reads 198.627 for both 147f89400 and 2c023d131.
+- Readings (local exact build, clean install): `/scholarship/apply` 198.627 to 198.286 kB (line 198.8), `/profile` 200.305 to 199.964 (200.8), `/scholarship/application` 209.362 to 209.021 (210), median 157.103 to 157.107 (157.5). Every route on the Scholarship slice fell by 0.341; the rest rose by 0.004 (webpack runtime). No line raised.
+
 ### chore: merge train B - student-help (H4 to H9) rebased onto merge train A (2026-11-17)
 
 Branch student-help, not pushed. Migration renamed `0212_document_replace_count` to `0213_document_replace_count` (depends on `0212_cohort_allowed_start_years`; same table, same DDL). Services: both (api + web).

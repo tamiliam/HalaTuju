@@ -2538,37 +2538,6 @@
         "degree": "பட்டப்படிப்பு",
         "poly": "பாலிடெக்னிக்",
         "university": "பல்கலைக்கழகம்"
-      },
-      "decline": {
-        "reasons": {
-          "epf": {
-            "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
-            "abroad": "Works abroad",
-            "cannot_get_now": "Has EPF, but cannot get the statement now",
-            "not_with_us": "Does not live with us, or we have no contact",
-            "other": "Other"
-          },
-          "electricity_bill": {
-            "landlord_pays": "The landlord pays it, or it is in the rent",
-            "shared_meter": "We share a meter with another house",
-            "no_supply": "We have no electricity supply",
-            "lost_bill": "We lost the bill and cannot get a copy",
-            "other": "Other"
-          },
-          "water_bill": {
-            "no_water_bill": "We use a well, river or hill water (no water bill)",
-            "landlord_pays": "The landlord pays it, or it is in the rent",
-            "shared_meter": "We share a meter with another house",
-            "lost_bill": "We lost the bill and cannot get a copy",
-            "other": "Other"
-          },
-          "school_leaving_cert": {
-            "not_given_yet": "The school has not given it to me yet",
-            "lost_asked_copy": "I lost it and I am asking for a copy",
-            "cannot_reach_school": "I cannot reach the school",
-            "other": "Other"
-          }
-        }
       }
     },
     "summary": {
@@ -5226,7 +5195,36 @@
       "caveats": {
         "studentAnswer": "மாணவரின் பதில்",
         "delete": "நீக்கு",
-        "declined": "Student does not have this"
+        "declined": "Student does not have this",
+        "declinedReasons": {
+          "epf": {
+            "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
+            "abroad": "Works abroad",
+            "cannot_get_now": "Has EPF, but cannot get the statement now",
+            "not_with_us": "Does not live with us, or we have no contact",
+            "other": "Other"
+          },
+          "electricity_bill": {
+            "landlord_pays": "The landlord pays it, or it is in the rent",
+            "shared_meter": "We share a meter with another house",
+            "no_supply": "We have no electricity supply",
+            "lost_bill": "We lost the bill and cannot get a copy",
+            "other": "Other"
+          },
+          "water_bill": {
+            "no_water_bill": "We use a well, river or hill water (no water bill)",
+            "landlord_pays": "The landlord pays it, or it is in the rent",
+            "shared_meter": "We share a meter with another house",
+            "lost_bill": "We lost the bill and cannot get a copy",
+            "other": "Other"
+          },
+          "school_leaving_cert": {
+            "not_given_yet": "The school has not given it to me yet",
+            "lost_asked_copy": "I lost it and I am asking for a copy",
+            "cannot_reach_school": "I cannot reach the school",
+            "other": "Other"
+          }
+        }
       },
       "outstanding": {
         "title": "சரிபார்ப்பு 2 — நிலுவையில் உள்ளவை",
@@ -10078,7 +10076,36 @@
         "send": "Send",
         "sending": "Sending…",
         "error": "Sorry, we couldn't send that. Please try again.",
-        "youTold": "You told us: {reason}"
+        "youTold": "You told us: {reason}",
+        "reasons": {
+          "epf": {
+            "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
+            "abroad": "Works abroad",
+            "cannot_get_now": "Has EPF, but cannot get the statement now",
+            "not_with_us": "Does not live with us, or we have no contact",
+            "other": "Other"
+          },
+          "electricity_bill": {
+            "landlord_pays": "The landlord pays it, or it is in the rent",
+            "shared_meter": "We share a meter with another house",
+            "no_supply": "We have no electricity supply",
+            "lost_bill": "We lost the bill and cannot get a copy",
+            "other": "Other"
+          },
+          "water_bill": {
+            "no_water_bill": "We use a well, river or hill water (no water bill)",
+            "landlord_pays": "The landlord pays it, or it is in the rent",
+            "shared_meter": "We share a meter with another house",
+            "lost_bill": "We lost the bill and cannot get a copy",
+            "other": "Other"
+          },
+          "school_leaving_cert": {
+            "not_given_yet": "The school has not given it to me yet",
+            "lost_asked_copy": "I lost it and I am asking for a copy",
+            "cannot_reach_school": "I cannot reach the school",
+            "other": "Other"
+          }
+        }
       },
       "lockedTitle": "உங்களிடமிருந்து சில விவரங்கள் தேவை, {name}",
       "lockedIntro": "உங்கள் விண்ணப்பத்தை நாங்கள் மதிப்பாய்வு செய்து வருகிறோம்; சில கூடுதல் விவரங்கள் தேவை. கீழே உள்ள ஒவ்வொன்றுக்கும் பதிலளிக்கவும் — சில நிமிடங்களே ஆகும்.",

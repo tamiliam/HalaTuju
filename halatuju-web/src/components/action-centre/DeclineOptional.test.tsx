@@ -30,8 +30,8 @@ const Host = ({ item = ITEM, onDone = () => {} }: { item?: ResolutionItem; onDon
   return <DeclineOptional item={item} token="tkn" open={open} onOpen={() => setOpen(true)} onCancel={() => setOpen(false)} onDone={onDone} />
 }
 const P = 'documentsTab.actionCentre.decline.'
-// The reasons stay in the scholarship slice: the admin Outstanding panel reads them too.
-const R = 'scholarship.actionCentre.decline.'
+// The reasons ride the Documents slice too (second bundle trim); the admin panel has its own copy.
+const R = P
 
 beforeEach(() => { jest.clearAllMocks(); mockApi.declineResolutionItem.mockResolvedValue({} as never) })
 

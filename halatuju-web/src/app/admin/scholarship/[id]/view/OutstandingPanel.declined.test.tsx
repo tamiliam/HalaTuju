@@ -7,6 +7,8 @@ import { render, screen } from '@testing-library/react'
 import { OutstandingPanel } from './OutstandingPanel'
 import type { AdminResolutionItem, AdminScholarshipDetail } from '@/lib/admin-api'
 import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 
 const t = (key: string) => {
   const v = key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], en)
@@ -44,5 +46,19 @@ describe('a declined optional ask on the reviewer panel', () => {
   it('shows nothing extra when nothing was declined', () => {
     panel(ITEM({}))
     expect(screen.queryByText('Student does not have this')).toBeNull()
+  })
+})
+
+// Second bundle trim: the student's reasons ride the Documents slice (off /scholarship/apply's first
+// load) and the officer's page reads its own copy in the admin slice. Same words, every language.
+describe('the officer reads the same reason words the student picked', () => {
+  it.each([['en', en], ['ms', ms], ['ta', ta]])('%s: admin copy equals the student copy', (_lang, cat) => {
+    const c = cat as unknown as {
+      admin: { scholarship: { caveats: { declinedReasons: unknown } } }
+      documentsTab: { actionCentre: { decline: { reasons: unknown } } }
+    }
+    expect(c.admin.scholarship.caveats.declinedReasons).toEqual(c.documentsTab.actionCentre.decline.reasons)
+    expect(Object.keys(c.documentsTab.actionCentre.decline.reasons as object).sort())
+      .toEqual(['electricity_bill', 'epf', 'school_leaving_cert', 'water_bill'])
   })
 })

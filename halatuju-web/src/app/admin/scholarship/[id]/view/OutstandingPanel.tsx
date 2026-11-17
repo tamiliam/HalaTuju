@@ -183,7 +183,7 @@ export function OutstandingPanel({
                                   {t('admin.scholarship.caveats.declined')}
                                 </p>
                                 <p className="mt-0.5 text-sm text-ground-800 break-words">
-                                  {t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${item.params.declined_reason}`)}
+                                  {t(`admin.scholarship.caveats.declinedReasons.${item.doc_type}.${item.params.declined_reason}`)}
                                   {typeof item.params.declined_note === 'string' && item.params.declined_note ? `: ${item.params.declined_note}` : ''}
                                 </p>
                               </div>
